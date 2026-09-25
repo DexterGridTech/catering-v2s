@@ -54,7 +54,8 @@ public final class CollectionRequestSupport {
     public static boolean booleanValue(JsonNode request, String key, boolean fallback) {
         String value = optional(request, key);
         if (value == null || value.isBlank()) return fallback;
-        if (request != null && request.path(key).isBoolean()) return request.path(key).asBoolean();
+        if (request != null && request.path(key).isBoolean())
+            return request.path(key).asBoolean();
         if ("true".equalsIgnoreCase(value)) return true;
         if ("false".equalsIgnoreCase(value)) return false;
         throw new InvalidRequestValue(key, key + " must be boolean");

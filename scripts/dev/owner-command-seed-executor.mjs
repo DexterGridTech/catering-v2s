@@ -15,6 +15,7 @@ import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManaged
 import {canonicalStartToken} from './managed-process-tree.mjs';
 import {validateRemoteJavaControl} from './r5-remote-java.mjs';
 import {validateFixtureContract} from './r5-fixture-contract.mjs';
+import {createSeedHttpClient} from './seed-http-client.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const fixturePath = path.join(root, 'doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json');
@@ -525,6 +526,7 @@ function invocationKey(runId, stage) {
   if (key.length > 128) throw new FormalSeedFailure('SEED_IDEMPOTENCY_KEY_TOO_LONG');
   return key;
 }
+export {invocationKey};
 export function invocationKeyForTest(runId, stage) { return invocationKey(runId, stage); }
 function canonicalUserName(displayName) { return requireValue(displayName, 'SEED_ACCOUNT_DISPLAY_NAME'); }
 function canonicalLogin(key) { return `r5-${key}`.replaceAll(/[^a-z0-9-]/g, '-').slice(0, 60); }
@@ -647,30 +649,26 @@ async function executeFormalSeed() {
     // of leaving an earlier optimistic terminal manifest behind.
     persist(business, cleanup);
   };
-  async function request(stage, operationId, pathParameters = {}, {queryParameters = {}, cookie, body, form, expected = [200], idempotency} = {}) {
-    const started = Date.now(); const operation = resolveGeneratedOperationById(registry, operationId);
-    const pathname = materializeGeneratedOperationPath(operation, {pathParameters, queryParameters});
-    const requestIsIdempotent = idempotency ?? operation.method !== 'GET';
-    const correlationId = `seed-${crypto.randomUUID()}`;
-    const headers = {Accept: 'application/json', ...buildManagedDiagnosticHeaders({manifest, credentials, operationId: operation.operationId, routeTemplate: operation.path, correlationId})};
-    if (cookie) headers.Cookie = cookie;
-    const idempotencyKey = requestIsIdempotent ? invocationKey(runId, stage) : null;
-    if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
-    if (body?.idempotencyKey === '$header') body = {...body, idempotencyKey};
-    let payload;
-    if (form) payload = form; else if (body !== undefined) { headers['Content-Type'] = 'application/json'; payload = JSON.stringify(body); }
-    let response;
-    try { response = await fetch(`${managedEnvironment.V2S_DEV_HTTP_BASE_URL}${pathname}`, {method: operation.method, headers, body: payload, signal: AbortSignal.timeout(15_000)}); }
-    catch { firstFailure ??= `${stage}_NETWORK`; calls.push({stageId: stage, managedDevRunId: manifest.runId, owner: operation.owner, consumerFace: operation.consumerFaces?.join(',') ?? null, operationId: operation.operationId, method: operation.method, routeTemplate: operation.path, durationMs: Date.now() - started, status: 0, outcome: 'FAILED', correlationId, requestId: null}); phase(stage, 'FAIL', {operationId: operation.operationId, httpStatus: 0}); throw new FormalSeedFailure(firstFailure); }
-    const text = await response.text(); let json; try { json = text ? JSON.parse(text) : null; } catch { json = null; }
-    const accepted = expected.includes(response.status);
-    const requestId = response.headers.get('x-request-id');
-    calls.push({stageId: stage, managedDevRunId: manifest.runId, owner: operation.owner, consumerFace: operation.consumerFaces?.join(',') ?? null, operationId: operation.operationId, method: operation.method, routeTemplate: operation.path, durationMs: Date.now() - started, status: response.status, outcome: accepted ? 'SUCCEEDED' : 'FAILED', correlationId: response.headers.get('x-correlation-id') ?? correlationId, requestId});
-    const problemCode = typeof json?.errorCode === 'string' ? json.errorCode : 'UNCLASSIFIED';
-    phase(stage, accepted ? 'PASS' : 'FAIL', {operationId: operation.operationId, httpStatus: response.status, requestId, ...(accepted ? {} : {problemCode})});
-    if (!accepted) { firstFailure ??= `${stage}_HTTP_${response.status}_${problemCode}`; throw new FormalSeedFailure(firstFailure); }
-    return {json, cookie: response.headers.get('set-cookie')?.split(';', 1)[0] ?? null};
-  }
+  const request = createSeedHttpClient({
+    baseUrl: managedEnvironment.V2S_DEV_HTTP_BASE_URL,
+    resolveOperation: operationId => resolveGeneratedOperationById(registry, operationId),
+    materializeOperationPath: materializeGeneratedOperationPath,
+    buildDiagnosticHeaders: buildManagedDiagnosticHeaders,
+    manifest,
+    credentials,
+    calls,
+    correlationPrefix: 'seed',
+    timeoutMs: 15_000,
+    idempotencyKeyFor: stage => invocationKey(runId, stage),
+    failureFactory: code => new FormalSeedFailure(code),
+    onFailure: code => { firstFailure ??= code; },
+    onPhase: phase,
+    decorateCall: (call, {operation}) => ({
+      managedDevRunId: manifest.runId,
+      owner: operation.owner,
+      consumerFace: operation.consumerFaces?.join(',') ?? null,
+    }),
+  }).request;
   try {
     const bootstrapStarted = Date.now();
     const bootstrap = spawnSync(process.execPath, [bootstrapScript], {cwd: root, encoding: 'utf8', env: managedEnvironment});
@@ -744,13 +742,15 @@ async function executeFormalSeed() {
     };
     const createInvitation = async (plan) => {
       const created = await request(`invitation-${plan.invitationKey}`, 'createWorkspaceInvitation', {groupWorkspaceKey: aurora}, {cookie: platformCookie, expected: [201], body: {mobile: plan.mobile, targetOrganizationType: plan.targetOrganizationType, targetOrganizationRef: nodeIdFor(plan), roleIds: [requireValue(ids.role[plan.roleKey]?.id, 'SEED_ROLE_ID')]}});
-      ids.invitation[plan.invitationKey] = created.json;
-      return created.json;
+      const readback = requireValue(created.json, 'SEED_INVITATION_CREATE_READBACK_MISSING');
+      requireValue(readback.invitationRouteFacts?.invitationToken, 'SEED_INVITATION_ROUTE_FACTS');
+      ids.invitation[plan.invitationKey] = readback;
+      return readback;
     };
     const advanceInvitation = async (plan, invitation, target = 'COMPLETED') => {
       const token = requireValue(invitation.invitationRouteFacts?.invitationToken, 'SEED_INVITATION_ROUTE_FACTS');
       const publicInvitationPath = {groupWorkspaceKey: aurora, invitationToken: token};
-      await request(`invitation-accept-${plan.invitationKey}`, 'acceptPublicInvitation', publicInvitationPath);
+      await request(`invitation-accept-${plan.invitationKey}`, 'acceptPublicInvitation', {pathParameters: publicInvitationPath});
       if (target === 'ACCEPT_INTENT_RECORDED') return;
       await request(`invitation-otp-${plan.invitationKey}`, 'sendPublicInvitationOtp', publicInvitationPath, {body: {mobile: plan.mobile}});
       const verified = await request(`invitation-verify-${plan.invitationKey}`, 'verifyPublicInvitationOtp', publicInvitationPath, {body: {mobile: plan.mobile, code: credentials.V2S_SEED_OTP_FIXED_VALUE}});
@@ -759,7 +759,7 @@ async function executeFormalSeed() {
       const transientKey = plan.accountKey ?? plan.invitationKey;
       await request(`invitation-credentials-${plan.invitationKey}`, 'savePublicInvitationCredentials', publicInvitationPath, {body: {verificationGrant: requireValue(verified.json?.verificationGrant, 'SEED_VERIFICATION_GRANT'), userName: canonicalUserName(account?.displayName ?? plan.displayName), loginName: canonicalLogin(transientKey), password: account?.status === 'DISABLED' ? credentials.V2S_SEED_OPERATIONS_DISABLED_PASSWORD : credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
       if (target === 'CREDENTIAL_READY') return;
-      await request(`invitation-complete-${plan.invitationKey}`, 'completePublicInvitation', publicInvitationPath);
+      await request(`invitation-complete-${plan.invitationKey}`, 'completePublicInvitation', {pathParameters: publicInvitationPath});
     };
     const bootstrapInvitation = await createInvitation(groupPlan); await advanceInvitation(groupPlan, bootstrapInvitation);
     const operationsLogin = await request('operations-login', 'operationsWorkspacePasswordLogin', {groupWorkspaceKey: aurora}, {body: {loginName: canonicalLogin(groupPlan.accountKey), password: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
@@ -874,7 +874,7 @@ async function executeFormalSeed() {
     // state through the owner command and retain its authoritative readback.
     for (const role of fixture.stableFixtures.workspaceIam.roles.filter((entry) => entry.status !== 'ENABLED')) {
       const current = ids.role[role.key];
-      const updated = await request(`role-transition-${role.key}`, 'transitionWorkspaceRoleStatus', {groupWorkspaceKey: aurora, roleId: requireValue(current?.id, 'SEED_ROLE_ID')}, {cookie: platformCookie, body: {targetStatus: requireValue(role.status, 'SEED_ROLE_STATUS'), expectedVersion: requireValue(current?.revision, 'SEED_ROLE_VERSION'), idempotencyKey: '$header'}});
+      const updated = await request(`role-transition-${role.key}`, 'transitionWorkspaceRoleStatus', {groupWorkspaceKey: aurora, roleId: requireValue(current?.id, 'SEED_ROLE_ID')}, {cookie: platformCookie, body: {targetStatus: requireValue(role.status, 'SEED_ROLE_STATUS'), expectedVersion: requireValue(current?.revision, 'SEED_ROLE_VERSION')}});
       if (updated.json?.status !== role.status) throw new FormalSeedFailure(`SEED_ROLE_STATUS_READBACK_INVALID:${role.key}`);
       ids.role[role.key] = updated.json;
     }

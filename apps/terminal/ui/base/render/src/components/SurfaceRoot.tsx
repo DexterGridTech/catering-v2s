@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useMemo, useRef} from 'react'
+import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react'
 import {Animated, StyleSheet, View, type LayoutChangeEvent} from 'react-native'
 import {LayerStack} from './LayerStack'
 import {ScreenContainer} from './ScreenContainer'
@@ -10,6 +10,19 @@ import {useUiStateSelector} from '../hooks/useUiStateSelector'
 import {useSurfacePresentationOffset} from '../contexts/SurfacePresentationOffsetContext'
 import type {RenderStateRoot, SurfaceRootProps} from '../types/props'
 
+const SurfaceRootContent = ({children}: Readonly<{readonly children?: ReactNode}>) => {
+  const presentationOffsetY = useSurfacePresentationOffset()
+  return (
+    <View style={styles.content}>
+      <Animated.View style={[styles.presentedContent, {transform: [{translateY: presentationOffsetY}]}]}>
+        {children}
+        <ScreenContainer />
+      </Animated.View>
+      <LayerStack />
+    </View>
+  )
+}
+
 export const SurfaceRoot = ({
   displayMode,
   containerKey,
@@ -20,7 +33,6 @@ export const SurfaceRoot = ({
   surfaceHostSource,
 }: SurfaceRootProps) => {
   const renderContext = useRenderContext()
-  const presentationOffsetY = useSurfacePresentationOffset()
   const {logger, selectSurfaceForm, createRouteContext} = renderContext
   const selectedSurfaceForm = useUiStateSelector(selectSurfaceForm)
   const surfaceForm = selectedSurfaceForm ?? 'laptop'
@@ -99,15 +111,7 @@ export const SurfaceRoot = ({
       },
     })
   }, [containerKey, displayMode, logger, renderContentFrame])
-  const content = (
-    <View style={styles.content}>
-      <Animated.View style={[styles.presentedContent, {transform: [{translateY: presentationOffsetY}]}]}>
-        {children}
-        <ScreenContainer />
-      </Animated.View>
-      <LayerStack />
-    </View>
-  )
+  const content = <SurfaceRootContent>{children}</SurfaceRootContent>
   const framedContent = renderContentFrame?.({content}) ?? content
   const hostedContent = canvas === undefined ? framedContent : (
     <SurfaceHostController canvas={canvas} source={surfaceHostSource} snapshot={surfaceHostSnapshot}>

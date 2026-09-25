@@ -10,7 +10,7 @@ import {
   type SurfaceOrientation,
   type SurfaceSize,
   type TerminalSurfaces,
-} from '@catering-v2s/ui-base-console-assembly'
+} from '@catering-v2s/ui-base-integration-assembly'
 
 export type {
   PortraitSurfaceDeclarations,
@@ -20,7 +20,7 @@ export type {
   SurfaceOrientation,
   SurfaceSize,
   TerminalSurfaces,
-} from '@catering-v2s/ui-base-console-assembly'
+} from '@catering-v2s/ui-base-integration-assembly'
 
 const errorPrefix = 'sample-console'
 

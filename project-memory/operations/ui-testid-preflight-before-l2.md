@@ -36,3 +36,7 @@ UI 代码是否符合批准的需求/IA/交互/详设、前端规范、同类既
 可见 option label/anchor，但必须在控件分母注明 `COMPOSITE_OPTION_ANCHOR`、同一点击语义和 focused/static
 proof；Button、MenuItem、Checkbox、Radio、输入框、file input 等可直接标记的控件仍必须标在真实动作节点，
 不得以外层 wrapper 或宽 locator 替代。
+
+运行器强制(Dexter 2026-09-25):L2 运行器在启动前读取详设 §3a 的准入状态,缺失、未 PASS 或准入后控制面与 UI 有改动即拒绝启动
+(`doc/platform/browser-l2-execution-standard.md` §4.1)。准入记录必须由 fresh 独立复核产生并绑定控制面/UI 字节摘要；相同失败族在相同摘要上不得无变更重跑。详设 §3a 还必须列出本批 L2 控制面文件全集(场景、blueprint、定位绑定、
+执行配置、fixture、时间预算、spec、P1 生成器);缺表即设计 NO-GO。反例:门店终端批详设缺这张表,L2 跑了 36 次只通过 1 次。

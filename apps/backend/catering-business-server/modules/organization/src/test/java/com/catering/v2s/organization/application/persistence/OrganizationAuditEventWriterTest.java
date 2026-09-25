@@ -28,8 +28,7 @@ class OrganizationAuditEventWriterTest {
                 AuditActor.system(),
                 "UPDATED",
                 10L,
-                List.of(new AuditChange(
-                        "name", "名称", AuditValueState.VALUE, "旧", AuditValueState.VALUE, "新"))));
+                List.of(new AuditChange("name", "名称", AuditValueState.VALUE, "旧", AuditValueState.VALUE, "新"))));
 
         assertTrue(jdbc.sql.startsWith("INSERT INTO organization.audit_event"));
         assertEquals(eventId, jdbc.arguments[0]);

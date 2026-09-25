@@ -3,16 +3,6 @@
   "kind": "active-document-index",
   "documents": [
     {
-      "documentId": "roadmap-program-registry",
-      "path": "doc/platform/roadmap-program-registry.json",
-      "role": "PROGRAM_RESOLVER"
-    },
-    {
-      "documentId": "v2s-w0-w4-roadmap",
-      "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-      "role": "ACTIVE_STATE_OWNER"
-    },
-    {
       "documentId": "service-shape",
       "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
       "role": "FROZEN_INPUT"
@@ -21,11 +11,6 @@
       "documentId": "carryover-manifest",
       "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
       "role": "FROZEN_INPUT"
-    },
-    {
-      "documentId": "standards-coverage-matrix",
-      "path": "contracts/policy/standards-coverage-matrix.json",
-      "role": "ACTIVE_ENFORCEMENT_TRACE"
     },
     {
       "documentId": "heritage-registry",

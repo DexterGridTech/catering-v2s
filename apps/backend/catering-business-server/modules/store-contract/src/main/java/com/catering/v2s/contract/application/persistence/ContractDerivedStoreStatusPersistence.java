@@ -18,20 +18,21 @@ public class ContractDerivedStoreStatusPersistence {
         this.jdbc = jdbc;
     }
 
-    public DerivedStoreStatusFacts read(UUID workspaceUuid, String key, List<UUID> storeIds, java.time.LocalDate today) {
+    public DerivedStoreStatusFacts read(
+            UUID workspaceUuid, String key, List<UUID> storeIds, java.time.LocalDate today) {
         Map<UUID, String> statuses = new LinkedHashMap<>();
         for (UUID storeId : storeIds) statuses.put(storeId, "NOT_OPERATING");
         jdbc.query(
                 ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_SELECT_STORE_ID_FILTER_STATUS_ACTIVE
                         + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_OPEN_PAREN_EFFECTIVE_TO_OPERATING_FILTER
                         + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_STATUS_ACTIVE_EFFECTIVE_FROM_PREPARING
-                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_STORE_CONTRACT_DERIVED_STATUS_WORKSPACE_UUID
+                        + ContractTaskReadServiceSql
+                                .CONTRACT_TASK_READ_SERVICE_STORE_CONTRACT_DERIVED_STATUS_WORKSPACE_UUID
                         + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY
                         + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONDITION_STORE_ID
                         + String.join(
                                 ContractTaskReadServiceSql.PLACEHOLDER_SEPARATOR,
-                                Collections.nCopies(
-                                        storeIds.size(), ContractTaskReadServiceSql.PARAMETER_PLACEHOLDER))
+                                Collections.nCopies(storeIds.size(), ContractTaskReadServiceSql.PARAMETER_PLACEHOLDER))
                         + ContractTaskReadServiceSql.DERIVED_STORE_STATUS_GROUP_SUFFIX,
                 (row, index) -> {
                     statuses.put(row.getObject("store_id", UUID.class), row.getString("derived_status"));

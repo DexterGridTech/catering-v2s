@@ -1,22 +1,21 @@
 package com.catering.v2s.salesmenu.application;
 
-import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
+import static com.catering.v2s.salesmenu.application.SalesMenuReadModels.*;
+
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationOwnerApi;
-import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.catering.v2s.platform.asset.api.SalesMenuAssetReadApi;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.salesmenu.api.SalesMenuAssetCommandApi;
-import com.catering.v2s.salesmenu.api.SalesMenuCommandApi;
 import com.catering.v2s.salesmenu.api.SalesMenuOwnerApi;
 import com.catering.v2s.salesmenu.api.SalesMenuReadback;
-import com.catering.v2s.salesmenu.domain.SalesMenuActivationStatus;
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
 import com.catering.v2s.salesmenu.domain.SalesMenuAggregate;
 import com.catering.v2s.salesmenu.domain.SalesMenuAssetTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuAssetTargetMode;
@@ -27,15 +26,11 @@ import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMedia;
 import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMediaMode;
 import com.catering.v2s.salesmenu.domain.SalesMenuItemPageQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuItemQuery;
-import com.catering.v2s.salesmenu.domain.SalesMenuListQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleState;
-import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTargetKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuMoveDirection;
-import com.catering.v2s.salesmenu.domain.SalesMenuOperationQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuOperationResult;
 import com.catering.v2s.salesmenu.domain.SalesMenuOrderingConstraints;
-import com.catering.v2s.salesmenu.domain.SalesMenuPublicationBlockerKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuSaleContent;
 import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentInput;
 import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentKind;
@@ -46,15 +41,12 @@ import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOption;
 import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOptionValue;
 import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuVersionQuery;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Time;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -70,12 +62,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.catering.v2s.salesmenu.application.SalesMenuReadModels.*;
-
 /** Owns the salesmenuitem sales-menu facts. */
-
 @Service
-
 public class SalesMenuItemService {
 
     private static final String CAPABILITY = "EDIT_STORE_SALES_MENU";
@@ -108,7 +96,6 @@ public class SalesMenuItemService {
     }
 
     @Autowired
-
     public SalesMenuItemService(
             SalesMenuPersistence persistence,
             TimeProvider time,
@@ -129,7 +116,6 @@ public class SalesMenuItemService {
         this.organization = organization;
         this.assets = assets;
         this.assetCommands = assetCommands;
-
     }
 
     public SalesMenuReadback.DraftItemPage listDraftItems(SalesMenuItemPageQuery query) {
@@ -415,8 +401,8 @@ public class SalesMenuItemService {
                 new SalesMenuTarget(scope, target.salesMenuRef()), mode != SalesMenuAssetTargetMode.RELEASE_STAGED);
         if (mode != SalesMenuAssetTargetMode.RELEASE_STAGED) {
             if (menu.archived()) throw problem("SALES_MENU_ARCHIVED", 409, "已归档销售菜单不可修改");
-            List<LongValueRow> currentDraftItems = persistence.readCurrentDraftItemVersionForAssetTarget(
-                    target.salesMenuRef(), target.salesItemRef());
+            List<LongValueRow> currentDraftItems =
+                    persistence.readCurrentDraftItemVersionForAssetTarget(target.salesMenuRef(), target.salesItemRef());
             if (currentDraftItems.isEmpty()) {
                 throw problem("SALES_MENU_ITEM_NOT_FOUND", 404, "销售菜单商品不存在");
             }
@@ -543,11 +529,12 @@ public class SalesMenuItemService {
         String hash = hash(receiptRequest(request));
         persistence.lockCommandReceipt(context.scope().workspaceUuid(), operation, context.idempotencyKey());
         L locked = lock.get();
-        ReceiptRow existing = persistence.readCommandReceipt(
-                        context.scope().workspaceUuid(), operation, context.idempotencyKey())
-                .stream()
-                .findFirst()
-                .orElse(null);
+        ReceiptRow existing =
+                persistence
+                        .readCommandReceipt(context.scope().workspaceUuid(), operation, context.idempotencyKey())
+                        .stream()
+                        .findFirst()
+                        .orElse(null);
         if (existing != null) return replay(operation, context, hash);
         P state = preflight.apply(locked);
         T result = action.apply(state);
@@ -582,8 +569,8 @@ public class SalesMenuItemService {
     }
 
     private <T> T replay(String operation, SalesMenuOwnerApi.CommandContext context, String hash) {
-        var row = persistence.readCommandReceiptForReplay(
-                        context.scope().workspaceUuid(), operation, context.idempotencyKey())
+        var row = persistence
+                .readCommandReceiptForReplay(context.scope().workspaceUuid(), operation, context.idempotencyKey())
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> problem("RECEIPT_MISSING", 500, "命令回执缺失"));
@@ -628,25 +615,17 @@ public class SalesMenuItemService {
         persistence.insertDraftVersionItemsBatch(version, section, collectionRef, seeds);
     }
 
-    private void move(
-            UUID version,
-            UUID ref,
-            SalesMenuMoveDirection direction,
-            UUID section,
-            MoveCurrentRow current) {
+    private void move(UUID version, UUID ref, SalesMenuMoveDirection direction, UUID section, MoveCurrentRow current) {
         long currentOrder = current.displayOrder();
-        var other = persistence
-                .findItemAdjacent(version, ref, direction, section, currentOrder)
-                .stream()
+        var other = persistence.findItemAdjacent(version, ref, direction, section, currentOrder).stream()
                 .findFirst()
                 .orElseThrow(() -> problem("MOVE_NOT_ALLOWED", 409, "已到排序边界"));
         long temp = persistence.maxItemDisplayOrder(version, section);
-        if (persistence.setItemDisplayOrder(version, ref, temp)
-                != 1) throw problem("TARGET_NOT_FOUND", 404, "排序目标不存在");
-        if (persistence.setItemDisplayOrder(version, other.ref(), currentOrder)
-                != 1) throw problem("TARGET_NOT_FOUND", 404, "排序目标不存在");
-        if (persistence.setItemDisplayOrder(version, ref, other.displayOrder())
-                != 1) throw problem("TARGET_NOT_FOUND", 404, "排序目标不存在");
+        if (persistence.setItemDisplayOrder(version, ref, temp) != 1) throw problem("TARGET_NOT_FOUND", 404, "排序目标不存在");
+        if (persistence.setItemDisplayOrder(version, other.ref(), currentOrder) != 1)
+            throw problem("TARGET_NOT_FOUND", 404, "排序目标不存在");
+        if (persistence.setItemDisplayOrder(version, ref, other.displayOrder()) != 1)
+            throw problem("TARGET_NOT_FOUND", 404, "排序目标不存在");
     }
 
     private ItemPage pagedItemRows(SalesMenuItemPageQuery query, SalesMenuVersionKind kind) {
@@ -939,11 +918,11 @@ public class SalesMenuItemService {
         if (rows.isEmpty()) return Map.of();
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
-        List<OrderOptionGroupRow> groups = persistence.readItemOrderOptionGroups(
-                rows.getFirst().versionRef(), itemRefs);
+        List<OrderOptionGroupRow> groups =
+                persistence.readItemOrderOptionGroups(rows.getFirst().versionRef(), itemRefs);
         if (groups.isEmpty()) return Map.of();
-        List<OrderOptionValueRow> values = persistence.readItemOrderOptionValues(
-                rows.getFirst().versionRef(), itemRefs);
+        List<OrderOptionValueRow> values =
+                persistence.readItemOrderOptionValues(rows.getFirst().versionRef(), itemRefs);
         Map<OptionKey, List<OrderOptionValueRow>> valuesByGroup = new LinkedHashMap<>();
         values.forEach(value -> valuesByGroup
                 .computeIfAbsent(
@@ -1073,9 +1052,9 @@ public class SalesMenuItemService {
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
         if (!allowWithoutOwnerApis && catalog == null && organization == null) return Map.of();
         Map<UUID, List<SkuRow>> result = new LinkedHashMap<>();
-        persistence.readItemSkuRows(rows.getFirst().versionRef(), itemRefs)
-                .forEach(row -> result.computeIfAbsent(row.salesItemRef(), ignored -> new ArrayList<>())
-                        .add(row));
+        persistence.readItemSkuRows(rows.getFirst().versionRef(), itemRefs).forEach(row -> result.computeIfAbsent(
+                        row.salesItemRef(), ignored -> new ArrayList<>())
+                .add(row));
         result.replaceAll((ignored, values) -> List.copyOf(values));
         return Map.copyOf(result);
     }
@@ -1089,9 +1068,9 @@ public class SalesMenuItemService {
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
         Map<UUID, List<UUID>> result = new HashMap<>();
-        persistence.readItemMediaRows(rows.getFirst().versionRef(), itemRefs)
-                .forEach(row -> result.computeIfAbsent(row.salesItemRef(), ignored -> new ArrayList<>())
-                        .add(row.assetRef()));
+        persistence.readItemMediaRows(rows.getFirst().versionRef(), itemRefs).forEach(row -> result.computeIfAbsent(
+                        row.salesItemRef(), ignored -> new ArrayList<>())
+                .add(row.assetRef()));
         result.replaceAll((ignored, refs) -> List.copyOf(refs));
         if (validateAssets) validateAssetFacts(result);
         return Map.copyOf(result);
@@ -1207,7 +1186,8 @@ public class SalesMenuItemService {
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
         Map<ManualTargetKey, ManualSaleStatusRow> result = new HashMap<>();
-        persistence.readCurrentManualStatuses(channel, itemRefs)
+        persistence
+                .readCurrentManualStatuses(channel, itemRefs)
                 .forEach(row ->
                         result.put(new ManualTargetKey(row.salesItemRef(), row.targetKind(), row.targetRef()), row));
         return Map.copyOf(result);
@@ -1247,8 +1227,7 @@ public class SalesMenuItemService {
     }
 
     private UUID draftVersion(UUID menu) {
-        return persistence.readDraftVersion(menu)
-                .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
+        return persistence.readDraftVersion(menu).orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
     }
 
     private void advanceDraftRevision(UUID version) {
@@ -1257,7 +1236,8 @@ public class SalesMenuItemService {
     }
 
     private UUID publishedVersion(UUID menu) {
-        return persistence.readLatestPublishedVersion(menu)
+        return persistence
+                .readLatestPublishedVersion(menu)
                 .orElseThrow(() -> problem("PUBLICATION_NOT_FOUND", 404, "尚无发布版本"));
     }
 
@@ -1265,7 +1245,8 @@ public class SalesMenuItemService {
         persistence.deleteDraftItemMediaRows(version, item);
         if (media.mode() == SalesMenuDisplayMediaMode.CUSTOM)
             for (int i = 0; i < media.assetRefs().size(); i++)
-                persistence.insertDraftItemMedia(version, item, media.assetRefs().get(i), i);
+                persistence.insertDraftItemMedia(
+                        version, item, media.assetRefs().get(i), i);
     }
 
     private void replaceOrderOptions(UUID version, UUID item, List<SalesMenuReadback.SalesMenuOrderOption> options) {
@@ -1630,7 +1611,8 @@ public class SalesMenuItemService {
     private Map<UUID, Long> alreadyAddedCounts(UUID menu, UUID version, Set<UUID> catalogItemRefs) {
         if (catalogItemRefs.isEmpty()) return Map.of();
         Map<UUID, Long> result = new LinkedHashMap<>();
-        persistence.countDraftItemsByCatalog(menu, version, catalogItemRefs)
+        persistence
+                .countDraftItemsByCatalog(menu, version, catalogItemRefs)
                 .forEach(row -> result.put(row.itemRef(), row.count()));
         return Map.copyOf(result);
     }
@@ -1647,18 +1629,15 @@ public class SalesMenuItemService {
     }
 
     private void requireSection(UUID menu, UUID version, UUID section) {
-        if (!persistence.sectionExists(menu, version, section))
-            throw problem("SECTION_NOT_FOUND", 404, "分组不存在");
+        if (!persistence.sectionExists(menu, version, section)) throw problem("SECTION_NOT_FOUND", 404, "分组不存在");
     }
 
     private void requireItem(UUID version, UUID item) {
-        if (!persistence.draftItemExists(version, item))
-            throw problem("SALES_ITEM_NOT_FOUND", 404, "销售菜单商品不存在");
+        if (!persistence.draftItemExists(version, item)) throw problem("SALES_ITEM_NOT_FOUND", 404, "销售菜单商品不存在");
     }
 
     private MoveCurrentRow requireItemMoveCurrent(UUID version, UUID item) {
-        return persistence.readDraftItemMoveCurrent(version, item)
-                .stream()
+        return persistence.readDraftItemMoveCurrent(version, item).stream()
                 .findFirst()
                 .map(row -> new MoveCurrentRow(row.sectionRef(), row.displayOrder()))
                 .orElseThrow(() -> problem("SALES_ITEM_NOT_FOUND", 404, "销售菜单商品不存在"));
@@ -1911,8 +1890,7 @@ public class SalesMenuItemService {
         return new UuidValueRow(result.getObject(1, UUID.class));
     }
 
-    private record MenuCommandLock(
-            SalesMenuAggregate menu, OrganizationOwnerApi.SalesMenuStoreJudgment store) {}
+    private record MenuCommandLock(SalesMenuAggregate menu, OrganizationOwnerApi.SalesMenuStoreJudgment store) {}
 
     private record AddItemsLock(MenuCommandLock menuLock, UUID draftVersion) {}
 
@@ -1937,5 +1915,4 @@ public class SalesMenuItemService {
     private record ManualTargetKey(UUID salesItemRef, SalesMenuManualSaleTargetKind targetKind, UUID targetRef) {}
 
     private record OptionKey(UUID salesItemRef, UUID definitionRef) {}
-
 }

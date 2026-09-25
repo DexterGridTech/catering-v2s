@@ -30,14 +30,14 @@ import com.catering.v2s.organization.application.OrganizationOverviewTaskReadSer
 import com.catering.v2s.organization.application.StoreCandidateTaskReadService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import java.util.UUID;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 @RestController
 @RequestMapping("/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview")
@@ -246,7 +246,8 @@ public final class PlatformOrganizationOverviewController {
                 value.unifiedSocialCreditCode(),
                 hierarchy
                         ? value.extensionFields().stream()
-                                .map(field -> new OrganizationOverviewItemExtensionFieldsItem(field.name(), field.value()))
+                                .map(field ->
+                                        new OrganizationOverviewItemExtensionFieldsItem(field.name(), field.value()))
                                 .toList()
                         : null,
                 hierarchy ? null : extensionValues(value.extensionValues()),

@@ -195,6 +195,26 @@ test('normal-run remote script emits query status before deriving cleanup marker
   assert.match(remoteScript, /container_cleanup=FAIL; if test \"\$after_container_query_status\" = PASS && cmp -s/);
 });
 
+test('recovery cleanup deletes only resources added after the run baseline', () => {
+  let recoveryScript = '';
+  cleanupRemoteWorkspaceDetailed('/tmp/r5-tc-1789418414756-70098', body => {
+    recoveryScript = body;
+    return {
+      status: 1,
+      stdout:
+        'REMOTE_ROOT_PRESENT=true\nREMOTE_ACTIVE_PROCESS_COUNT=0\nREMOTE_ACTIVE_PROCESS_PIDS=\nREMOTE_TESTCONTAINERS_CONTAINER_COUNT=0\nREMOTE_TESTCONTAINERS_VOLUME_COUNT=0\nREMOTE_CLEANUP_FAILURE=TEST_ONLY\n',
+      stderr: '',
+    };
+  }, {containerIds: [], volumeIds: []});
+  assert.match(recoveryScript, /baseline_container_ids=''/);
+  assert.match(recoveryScript, /before_container_ids_file="\$root\/before-container-ids"/);
+  assert.match(recoveryScript, /if test -f "\$before_container_ids_file"; then before_container_ids=/);
+  assert.match(recoveryScript, /owned_container_ids="\$\(comm -13/);
+  assert.match(recoveryScript, /docker rm -f -- "\$container_id"/);
+  assert.match(recoveryScript, /owned_volume_ids="\$\(comm -13/);
+  assert.match(recoveryScript, /docker volume rm -- "\$volume_id"/);
+});
+
 test('runner marker parsing retains early cleanup markers beyond the stdout tail window', () => {
   const output = [
     'REMOTE_TESTCONTAINERS_CONTAINER_QUERY=PASS',

@@ -24,7 +24,6 @@ if (command === "agent-context") {
     "CONTEXT_MODE=DETERMINISTIC_ONLY",
     "ENTRY=AGENTS.md",
     "ENTRY=PLATFORM-BLUEPRINT.md",
-    "ENTRY=doc/platform/roadmap-program-registry.json",
     "ENTRY=project-memory/index.md",
     "ENTRY=scripts/README.md",
     ""
@@ -72,7 +71,6 @@ if (command === "agent-context") {
     "WORKING_SET=PASS",
     "PATH=AGENTS.md",
     "PATH=PLATFORM-BLUEPRINT.md",
-    "PATH=doc/platform/roadmap-program-registry.json",
     "PATH=project-memory/index.md",
     "PATH=scripts/README.md",
     ""

@@ -49,15 +49,15 @@ public final class OperationsAuditHistoryController {
                     case "TENANT" -> new OperationsAuditQuery.Tenant(target, page, pageSize);
                     case AuditEntityTypes.HEAD_COMPANY -> new OperationsAuditQuery.HeadCompany(target, page, pageSize);
                     case AuditEntityTypes.STORE -> new OperationsAuditQuery.Store(target, page, pageSize);
-                    case AuditEntityTypes.STORE_SERVICE_POINT_AREA ->
-                            new OperationsAuditQuery.StoreServicePointArea(target, page, pageSize);
-                    case AuditEntityTypes.STORE_SERVICE_POINT ->
-                            new OperationsAuditQuery.StoreServicePoint(target, page, pageSize);
-                    case AuditEntityTypes.STORE_QR_CONFIGURATION ->
-                            new OperationsAuditQuery.StoreQrConfiguration(target, page, pageSize);
+                    case AuditEntityTypes.STORE_SERVICE_POINT_AREA -> new OperationsAuditQuery.StoreServicePointArea(
+                            target, page, pageSize);
+                    case AuditEntityTypes.STORE_SERVICE_POINT -> new OperationsAuditQuery.StoreServicePoint(
+                            target, page, pageSize);
+                    case AuditEntityTypes.STORE_QR_CONFIGURATION -> new OperationsAuditQuery.StoreQrConfiguration(
+                            target, page, pageSize);
                     case "STORE_CONTRACT" -> new OperationsAuditQuery.StoreContract(target, page, pageSize);
-                    case AuditEntityTypes.STORE_TERMINAL ->
-                            new OperationsAuditQuery.StoreTerminal(target, page, pageSize);
+                    case AuditEntityTypes.STORE_TERMINAL -> new OperationsAuditQuery.StoreTerminal(
+                            target, page, pageSize);
                     default -> throw new InvalidEdgeRequestException("unsupported operations audit target");
                 });
         return AuditHistoryWireMapper.page(result);

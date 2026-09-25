@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -17,21 +19,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 final class ExtensionAcceptanceScenarios {
-    private static final List<String> HOST_TYPES =
-            List.of(
-                    "BRAND",
-                    "TENANT",
-                    "HEAD_COMPANY",
-                    "STORE",
-                    "CONTRACT",
-                    "COMMERCIAL_GROUP",
-                    "REGION",
-                    "PROJECT",
-                    "SERVICE_POINT");
+    private static final List<String> HOST_TYPES = List.of(
+            "BRAND",
+            "TENANT",
+            "HEAD_COMPANY",
+            "STORE",
+            "CONTRACT",
+            "COMMERCIAL_GROUP",
+            "REGION",
+            "PROJECT",
+            "SERVICE_POINT");
 
     private final BackendAcceptanceTest host;
 
@@ -335,7 +334,10 @@ final class ExtensionAcceptanceScenarios {
         assertEquals("2026-09-15", extensionValues.path("brandDate").asText(), "BUSINESS: DATE raw value is returned");
         assertTrue(extensionValues.path("brandBoolean").asBoolean(), "BUSINESS: BOOLEAN raw value is returned");
         assertEquals("直营", extensionValues.path("brandSelect").asText(), "BUSINESS: SELECT raw value is returned");
-        assertEquals(created.json().path("id").asText(), typed.json().path("items").get(0).path("id").asText(), "BUSINESS: filter result identity is owner-scoped");
+        assertEquals(
+                created.json().path("id").asText(),
+                typed.json().path("items").get(0).path("id").asText(),
+                "BUSINESS: filter result identity is owner-scoped");
 
         assertEquals(
                 1,
@@ -395,11 +397,23 @@ final class ExtensionAcceptanceScenarios {
                         + definitionRevision,
                 operations.cookie(),
                 Set.of(400));
-        assertEquals("EXTENSION_FILTER_INVALID", invalid.problemCode(), "BUSINESS: invalid filters use the typed problem code");
-        Set<String> invalidReasons = new java.util.LinkedHashSet<>();
-        invalid.json().path("details").path("invalidFields").forEach(reason -> invalidReasons.add(reason.path("reason").asText()));
         assertEquals(
-                Set.of("MAX_CONDITIONS_EXCEEDED", "FIELD_DISABLED", "UNKNOWN_FIELD_KEY", "TYPE_MISMATCH", "OPTION_INVALID", "DUPLICATE_FIELD_KEY"),
+                "EXTENSION_FILTER_INVALID",
+                invalid.problemCode(),
+                "BUSINESS: invalid filters use the typed problem code");
+        Set<String> invalidReasons = new java.util.LinkedHashSet<>();
+        invalid.json()
+                .path("details")
+                .path("invalidFields")
+                .forEach(reason -> invalidReasons.add(reason.path("reason").asText()));
+        assertEquals(
+                Set.of(
+                        "MAX_CONDITIONS_EXCEEDED",
+                        "FIELD_DISABLED",
+                        "UNKNOWN_FIELD_KEY",
+                        "TYPE_MISMATCH",
+                        "OPTION_INVALID",
+                        "DUPLICATE_FIELD_KEY"),
                 invalidReasons,
                 "BUSINESS: invalid filters aggregate the full typed validation reason set");
 
@@ -542,9 +556,16 @@ final class ExtensionAcceptanceScenarios {
     }
 
     private static Map<String, Object> field(
-            String hostType, String key, String label, String type, List<String> options, int displayOrder, String status) {
+            String hostType,
+            String key,
+            String label,
+            String type,
+            List<String> options,
+            int displayOrder,
+            String status) {
         Map<String, Object> value = new LinkedHashMap<>();
-        boolean flatHost = Set.of("BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT").contains(hostType);
+        boolean flatHost =
+                Set.of("BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT").contains(hostType);
         value.put("key", key);
         value.put("label", label);
         value.put("type", type);
@@ -658,10 +679,15 @@ final class ExtensionAcceptanceScenarios {
     private static ArrayNode expectedDefinitions(String hostType, String suffix) {
         ArrayNode result = JsonNodeFactory.instance.arrayNode();
         result.add(expectedField(
-                hostType.toLowerCase() + "Area", "面积-" + suffix, "NUMBER", true,
+                hostType.toLowerCase() + "Area",
+                "面积-" + suffix,
+                "NUMBER",
+                true,
                 isFlatHost(hostType) ? true : null,
                 isFlatHost(hostType) ? true : null,
-                List.of(), "ENABLED", 0));
+                List.of(),
+                "ENABLED",
+                0));
         result.add(expectedField(
                 hostType.toLowerCase() + "Kind",
                 "类型-" + suffix,
@@ -689,8 +715,10 @@ final class ExtensionAcceptanceScenarios {
         result.put("key", key);
         result.put("label", label);
         result.put("type", type);
-        if (listDisplay == null) result.putNull("listDisplay"); else result.put("listDisplay", listDisplay);
-        if (searchable == null) result.putNull("searchable"); else result.put("searchable", searchable);
+        if (listDisplay == null) result.putNull("listDisplay");
+        else result.put("listDisplay", listDisplay);
+        if (searchable == null) result.putNull("searchable");
+        else result.put("searchable", searchable);
         result.put("required", required);
         ArrayNode optionValues = result.putArray("options");
         options.forEach(optionValues::add);

@@ -1,22 +1,22 @@
 package com.catering.v2s.catalog.application;
 
 import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
-import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
-import com.catering.v2s.platform.command.CatalogAuthorizationScope;
-import com.catering.v2s.platform.command.CatalogTargetCapability;
-import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
-import com.catering.v2s.platform.command.WorkspaceExecutionContext;
-import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
-import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
-import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
-import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.catalog.application.persistence.CatalogProductionTagOwnerPersistence;
 import com.catering.v2s.catalog.application.persistence.CatalogProductionTagOwnerPersistence.CopyTagRow;
 import com.catering.v2s.catalog.application.persistence.CatalogProductionTagOwnerPersistence.PageRow;
 import com.catering.v2s.catalog.application.persistence.CatalogProductionTagOwnerPersistence.ReceiptRow;
 import com.catering.v2s.catalog.application.persistence.CatalogProductionTagOwnerPersistence.TagRow;
 import com.catering.v2s.catalog.application.persistence.CatalogProductionTagOwnerPersistence.TypedMutationRow;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.platform.command.CatalogAuthorizationScope;
+import com.catering.v2s.platform.command.CatalogTargetCapability;
+import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
+import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
+import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
+import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -154,7 +154,8 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
                 : tagRefs.stream().filter(Objects::nonNull).distinct().toList();
         if (requested.isEmpty()) return List.of();
         Map<UUID, CatalogProductionTagOwnerApi.ProductionTagReferenceReadback> found = new HashMap<>();
-        persistence.readTagReferencesByRefs(dataNodeRef, brandRef, requested)
+        persistence
+                .readTagReferencesByRefs(dataNodeRef, brandRef, requested)
                 .forEach(value -> found.put(value.tagRef(), value));
         return requested.stream().map(found::get).filter(Objects::nonNull).toList();
     }
@@ -290,12 +291,11 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
         String operation = "createOperationsProductionTag";
         String requestHash = hash(request);
         try {
-            TypedMutationRow row = persistence.createTypedTag(
-                    scope, brand, tagRef, code, name, key, operation, requestHash);
+            TypedMutationRow row =
+                    persistence.createTypedTag(scope, brand, tagRef, code, name, key, operation, requestHash);
             return typedReceiptReadback(row, operation, requestHash);
         } catch (DuplicateKeyException failure) {
-            throw new CatalogProductionTagOwnerApi.Problem(
-                    "DUPLICATE_CODE", 409, "生产标签编码已存在", failure);
+            throw new CatalogProductionTagOwnerApi.Problem("DUPLICATE_CODE", 409, "生产标签编码已存在", failure);
         }
     }
 
@@ -340,18 +340,19 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
             String code,
             long expectedVersion,
             String key,
-        String operation,
-        JsonNode request,
-        String changedColumn,
-        String changedValue) {
+            String operation,
+            JsonNode request,
+            String changedColumn,
+            String changedValue) {
         String requestHash = hash(request);
-        TypedMutationRow row = switch (changedColumn) {
-            case "name" -> persistence.updateTypedTagName(
-                    scope, brand, code, expectedVersion, key, operation, requestHash, changedValue);
-            case "status" -> persistence.updateTypedTagStatus(
-                    scope, brand, code, expectedVersion, key, operation, requestHash, changedValue);
-            default -> throw new IllegalArgumentException("unsupported production tag mutation");
-        };
+        TypedMutationRow row =
+                switch (changedColumn) {
+                    case "name" -> persistence.updateTypedTagName(
+                            scope, brand, code, expectedVersion, key, operation, requestHash, changedValue);
+                    case "status" -> persistence.updateTypedTagStatus(
+                            scope, brand, code, expectedVersion, key, operation, requestHash, changedValue);
+                    default -> throw new IllegalArgumentException("unsupported production tag mutation");
+                };
         if (row.currentTagRef() == null || "VOIDED".equals(row.currentStatus()))
             throw new CatalogProductionTagOwnerApi.Problem("NOT_FOUND", 404, "生产标签不存在或已作废");
         if (row.currentVersion() != expectedVersion && row.currentVersion() != expectedVersion + 1L)
@@ -365,12 +366,10 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
             TypedMutationRow row, String operation, String requestHash) {
         if (row.replayResponse() != null
                 && (!operation.equals(row.receiptOperation()) || !requestHash.equals(row.receiptHash()))) {
-            throw new CatalogProductionTagOwnerApi.Problem(
-                    "IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
+            throw new CatalogProductionTagOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
         }
         String response = row.replayResponse() == null ? row.writtenResponse() : row.replayResponse();
-        if (response == null)
-            throw new IllegalStateException("production tag receipt response is missing");
+        if (response == null) throw new IllegalStateException("production tag receipt response is missing");
         try {
             return mapper.readValue(response, ProductionTagCommandReadback.class);
         } catch (Exception failure) {
@@ -494,8 +493,8 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
                 || !result.isObject()
                 || result.path("owner").asText().isBlank()
                 || result.path("status").asText().isBlank()
-            || !result.path("version").canConvertToLong()
-            || !result.path("referenceMap").isArray()) {
+                || !result.path("version").canConvertToLong()
+                || !result.path("referenceMap").isArray()) {
             throw new CatalogProductionTagOwnerApi.Problem(
                     "RESULT_UNKNOWN", 500, "production copy readback is missing a required field");
         }
@@ -575,8 +574,7 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
         String currentFingerprint = judgement.path("digest").asText();
         String blocker = judgement.path("firstBlockingProblem").asText("");
         if (!blocker.isBlank()) {
-            throw new CatalogProductionTagOwnerApi.Problem(
-                    blocker, 422, "生产标签复制存在不兼容事实");
+            throw new CatalogProductionTagOwnerApi.Problem(blocker, 422, "生产标签复制存在不兼容事实");
         }
         String receiptKey = idempotencyKey == null ? "" : idempotencyKey.trim();
         if (!receiptKey.isBlank()) {
@@ -642,7 +640,10 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
                                         : null)));
             List<CopyTagRow> copyRows = planned.stream()
                     .map(row -> new CopyTagRow(
-                            row.targetRef(), row.source().code(), row.source().name(), row.source().status()))
+                            row.targetRef(),
+                            row.source().code(),
+                            row.source().name(),
+                            row.source().status()))
                     .toList();
             int[] inserted = persistence.copyTags(targetDataNodeRef, brandRef, copyRows);
             int copied = java.util.Arrays.stream(inserted)
@@ -913,8 +914,7 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
         TagRow current = find(scope, brand, code);
         if (current == null) throw new CatalogProductionTagOwnerApi.Problem("NOT_FOUND", 404, "生产标签不存在");
         if (persistence.updateTagName(scope, brand, code, name, expected) != 1)
-            throw new CatalogProductionTagOwnerApi.Problem(
-                    "VERSION_CONFLICT", 409, "生产标签版本已变化");
+            throw new CatalogProductionTagOwnerApi.Problem("VERSION_CONFLICT", 409, "生产标签版本已变化");
         return command(requestId, tagResult(code, name, status(scope, brand, code), expected + 1), expected + 1);
     }
 
@@ -926,8 +926,7 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
         TagRow current = find(scope, brand, code);
         if (current == null) throw new CatalogProductionTagOwnerApi.Problem("NOT_FOUND", 404, "生产标签不存在");
         if (persistence.updateTagStatus(scope, brand, code, target, expected) != 1)
-            throw new CatalogProductionTagOwnerApi.Problem(
-                    "VERSION_CONFLICT", 409, "生产标签版本已变化");
+            throw new CatalogProductionTagOwnerApi.Problem("VERSION_CONFLICT", 409, "生产标签版本已变化");
         return command(requestId, tagResult(code, name(scope, brand, code), target, expected + 1), expected + 1);
     }
 
@@ -1106,8 +1105,7 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
         ReceiptRow row = persistence.findReceiptReplay(scope, key);
         if (row == null) return null;
         if (!row.operation().equals(operation) || !row.hash().equals(hash(request)))
-            throw new CatalogProductionTagOwnerApi.Problem(
-                    "IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
+            throw new CatalogProductionTagOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
         return json(row.response());
     }
 

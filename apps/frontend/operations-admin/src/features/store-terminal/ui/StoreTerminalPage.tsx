@@ -10,8 +10,8 @@ import {
   useSubmissionLifecycle,
   useOverlayLock,
 } from '@catering-v2s/admin-ui-foundation';
-import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
-import {operationsProblemOf, type ApiProblem} from '../../../app/api/OperationsTransport';
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {operationsLogger, operationsProblemOf, type ApiProblem} from '../../../app/api/OperationsTransport';
 import {
   OPERATIONS_ADMIN_OPERATION_IDS,
   type StoreTerminalDetail,
@@ -26,7 +26,6 @@ import {
   terminalFormValuesFromDetail,
   storeTerminalDeviceTypeLabels,
   storeTerminalStatusLabels,
-  terminalDraftMatchesFormValues,
   type StoreTerminalEditor,
   type StoreTerminalFormValues,
 } from '../model/storeTerminalModel';
@@ -41,16 +40,17 @@ type StatusMutationAttempt = {
   terminal: StoreTerminalDetail;
   status: StoreTerminalStatus;
   contextKey: string;
-  idempotencyKey: string;
 };
-type UnknownMutationAttempt = {
-  mode: 'create' | 'edit';
-  terminalRef?: string;
-  expectedVersion?: number;
-};
+type LocalDrawerNotice = {title: string; detail: string};
 
 function problemText(error: unknown, fallback: string) {
   return operationsProblemOf(error).detail || fallback;
+}
+
+function clientFailureCode(error: unknown): string | undefined {
+  if (!(error instanceof Error)) return typeof error;
+  if (/^(WIRE_|OPERATIONS_)[A-Z0-9_]+$/.test(error.message)) return error.message;
+  return error.name;
 }
 
 export function StoreTerminalPage({queryContext, actionCapabilityKeys}: OperationsPageProps) {
@@ -60,31 +60,29 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
   const [selectedTerminalRef, setSelectedTerminalRef] = useState<string>();
   const [selectionIntentRef, setSelectionIntentRef] = useState<string>();
   const [editor, setEditor] = useState<StoreTerminalEditor>();
+  const [editorConfigurationOpen, setEditorConfigurationOpen] = useState(false);
   const [drawerProblem, setDrawerProblem] = useState<ApiProblem>();
+  const [drawerNotice, setDrawerNotice] = useState<LocalDrawerNotice>();
   const [statusRequest, setStatusRequest] = useState<StatusRequest>();
   const [statusProblem, setStatusProblem] = useState<string>();
   const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [statusRequiresRefresh, setStatusRequiresRefresh] = useState(false);
-  const [statusResultUnknown, setStatusResultUnknown] = useState(false);
   const [editorRequiresReopen, setEditorRequiresReopen] = useState(false);
   const [editorContextStale, setEditorContextStale] = useState(false);
-  const [recoveryPending, setRecoveryPending] = useState(false);
   const previousContextKey = useRef(contextKey);
   const formEditorIdentity = useRef<string | undefined>(undefined);
   const contentRef = useRef<HTMLDivElement>(null);
+  const statusTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [contentWidth, setContentWidth] = useState<number>();
   const form = Form.useForm<StoreTerminalFormValues>()[0];
-  const statusMutationAttempt = useRef<StatusMutationAttempt | undefined>(undefined);
-  const unknownMutationAttempt = useRef<UnknownMutationAttempt | undefined>(undefined);
   const drawerLifecycle = useDrawerFormLifecycle({
     open: Boolean(editor),
     onOpenChange: next => {
       if (!next) {
         setEditor(undefined);
+        setEditorConfigurationOpen(false);
         setEditorRequiresReopen(false);
         setEditorContextStale(false);
-        setRecoveryPending(false);
-        unknownMutationAttempt.current = undefined;
       }
     },
     dirtyMessage: '已修改的终端资料不会保存。',
@@ -100,11 +98,21 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
   });
   const statusLifecycle = useSubmissionLifecycle();
   useOverlayLock(Boolean(statusRequest));
+  const statusAfterOpenChange = useCallback((visible: boolean) => {
+    if (!visible && statusTriggerRef.current) {
+      const trigger = statusTriggerRef.current;
+      window.requestAnimationFrame(() => {
+        trigger.focus();
+        if (statusTriggerRef.current === trigger) statusTriggerRef.current = null;
+      });
+    }
+  }, []);
+  const openEditorConfiguration = useCallback(() => setEditorConfigurationOpen(true), []);
   const read = useStoreTerminalReadModel({
     queryContext,
     gateReady: true,
     selectedTerminalRef,
-    editorOpen: Boolean(editor),
+    editorOpen: Boolean(editor) && (editor?.mode === 'edit' || editorConfigurationOpen),
   });
 
   useEffect(() => {
@@ -122,30 +130,24 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
     setStatusRequest(undefined);
     setStatusProblem(undefined);
     setStatusRequiresRefresh(false);
-    setStatusResultUnknown(false);
-    statusMutationAttempt.current = undefined;
     statusLifecycle.reset();
     read.setAreaQueryText('');
     read.setTagQueryText('');
 
     const discardEditor = () => {
       setEditor(undefined);
+      setEditorConfigurationOpen(false);
       setDrawerProblem(undefined);
+      setDrawerNotice(undefined);
       setEditorRequiresReopen(false);
       setEditorContextStale(false);
-      setRecoveryPending(false);
-      unknownMutationAttempt.current = undefined;
       drawerLifecycle.reset();
     };
     if (editor) {
       setEditorContextStale(true);
-      setDrawerProblem({
-        type: 'about:blank',
+      setDrawerNotice({
         title: '门店上下文已变化',
         detail: '当前编辑资料属于之前的门店，请关闭后重新选择门店并编辑。',
-        status: 409,
-        errorCode: 'PLATFORM_COMMON_VERSION_CONFLICT',
-        correlationId: 'frontend-context-change',
       });
       drawerLifecycle.requestDiscard(discardEditor);
     } else discardEditor();
@@ -201,149 +203,118 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
     // newer snapshot must not silently make that old draft writable with the
     // newer version; the user must close and reopen the editor explicitly.
     setEditorRequiresReopen(true);
-    setDrawerProblem({
-      type: 'about:blank',
+    setDrawerNotice({
       title: '终端资料已变化',
       detail: '已读取最新资料，请取消当前草稿后重新打开编辑。',
-      status: 409,
-      errorCode: 'PLATFORM_COMMON_VERSION_CONFLICT',
-      correlationId: `frontend-readback-${String(refreshed.terminalRef)}`,
     });
   };
 
-  const runMutation = async (values: StoreTerminalFormValues, allowRecoveryRetry = false) => {
+  const runMutation = async (values: StoreTerminalFormValues) => {
     if (!queryContext.scopeRef || !editor || editor.contextKey !== contextKey) return;
-    if ((editorRequiresReopen || editorContextStale || recoveryPending) && !allowRecoveryRetry) return;
+    if (editorRequiresReopen || editorContextStale) return;
     setDrawerProblem(undefined);
+    setDrawerNotice(undefined);
     drawerLifecycle.setSubmitting(true);
-    unknownMutationAttempt.current = {
-      mode: editor.mode,
-      terminalRef: editor.terminal ? String(editor.terminal.terminalRef) : undefined,
-      expectedVersion: editor.terminal?.version,
-    };
+    const operationId =
+      editor.mode === 'create'
+        ? OPERATIONS_ADMIN_OPERATION_IDS.postOperationsStoreTerminal
+        : OPERATIONS_ADMIN_OPERATION_IDS.putOperationsStoreTerminal;
+    operationsLogger.info({
+      event: 'frontend.store_terminal.mutation.started',
+      phase: 'mutation',
+      outcome: 'STARTED',
+      operationId,
+      diagnostic: {
+        mode: editor.mode,
+        printerCount: values.printers.length,
+        functionCount: values.functions.length,
+        incompletePrinterRows: values.printers.filter(
+          printer =>
+            !printer || !printer.clientKey || !printer.name || !printer.modelKey || !printer.connectionMethodKey,
+        ).length,
+        incompleteFunctionRows: values.functions.filter(
+          fn => !fn || !fn.clientKey || !fn.functionKey || !fn.scenes || !Array.isArray(fn.selectedRangeKeys),
+        ).length,
+        functionRowShapes: JSON.stringify(
+          values.functions.map(fn => ({
+            present: Boolean(fn),
+            hasClientKey: Boolean(fn?.clientKey),
+            hasFunctionKey: Boolean(fn?.functionKey),
+            hasScenes: Boolean(fn?.scenes),
+            hasRangeArray: Array.isArray(fn?.selectedRangeKeys),
+          })),
+        ),
+      },
+    });
     let succeeded = false;
-    const idempotencyKey = drawerLifecycle.getIdempotencyKey();
+    const idempotencyKey = editor.mode === 'create' ? drawerLifecycle.getIdempotencyKey() : undefined;
     try {
       const result =
         editor.mode === 'create'
           ? await createStoreTerminal(
               {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: String(queryContext.scopeRef)},
               values,
-              idempotencyKey,
+              idempotencyKey as string,
             )
           : editor.terminal
             ? await replaceStoreTerminal(
                 {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: String(queryContext.scopeRef)},
                 editor.terminal,
                 values,
-                idempotencyKey,
               )
             : undefined;
       if (!result) {
         drawerLifecycle.setSubmitting(false);
+        operationsLogger.warn({
+          event: 'frontend.store_terminal.mutation.empty_result',
+          phase: 'mutation',
+          outcome: 'EMPTY_RESULT',
+          operationId,
+        });
         return;
       }
+      operationsLogger.info({
+        event: 'frontend.store_terminal.mutation.succeeded',
+        phase: 'mutation',
+        outcome: 'SUCCEEDED',
+        operationId,
+      });
       setSelectionIntentRef(String(result.terminalRef));
-      unknownMutationAttempt.current = undefined;
       succeeded = true;
       drawerLifecycle.closeAfterSuccess();
       await read.refetchTerminals();
       await read.refetchDetail();
     } catch (error) {
       const problem = operationsProblemOf(error);
-      if (problem.errorCode === 'PLATFORM_COMMON_RESULT_UNKNOWN') {
-        setRecoveryPending(true);
-        setDrawerProblem({
-          ...problem,
-          title: '操作结果待确认',
-          detail: '请先读取原操作结果；结果确认前不能继续编辑。',
-        });
-      } else {
-        unknownMutationAttempt.current = undefined;
-        if (String(problem.errorCode) === 'STORE_TERMINAL_VERSION_CONFLICT' || problem.errorCode === 'PLATFORM_COMMON_VERSION_CONFLICT') {
-          setEditorRequiresReopen(true);
-        }
-        setDrawerProblem(problem);
+      if (problem.errorCode === 'PLATFORM_COMMON_VERSION_CONFLICT') {
+        setEditorRequiresReopen(true);
       }
+      // Edit and automatic-create requests use a content-derived key, so
+      // submitting the same form replays the same command. Keep the server
+      // problem intact and avoid a feature-local recovery state machine.
+      setDrawerProblem(problem);
+      operationsLogger.error({
+        event: 'frontend.store_terminal.mutation.failed',
+        phase: 'mutation',
+        outcome: 'ERROR',
+        operationId,
+        errorCode: problem.errorCode,
+        status: problem.status,
+        diagnostic: {
+          failureSource: error instanceof Error && error.name === 'ApiFailure' ? 'api' : 'client',
+          clientFailureCode: clientFailureCode(error) ?? 'UNKNOWN',
+          clientFailureMessage: error instanceof Error ? error.message.slice(0, 160) : 'NON_ERROR_THROWABLE',
+          clientFailureStack:
+            error instanceof Error ? (error.stack ?? '').replace(/\s+/g, ' ').slice(0, 320) : 'NON_ERROR_THROWABLE',
+        },
+      });
       drawerLifecycle.setSubmitting(false);
     } finally {
       if (!succeeded) drawerLifecycle.setSubmitting(false);
     }
   };
 
-  const recoverUnknownResult = async () => {
-    const attempt = unknownMutationAttempt.current;
-    const currentEditor = editor;
-    if (!attempt || !currentEditor) {
-      setRecoveryPending(false);
-      await form.submit();
-      return;
-    }
-    try {
-      if (attempt.mode === 'create') {
-        // A list match is not an authoritative result readback: another
-        // operator may have created an indistinguishable terminal. Reusing
-        // the original command key makes the owner read/replay its receipt
-        // and returns the exact terminal ref without creating a new intent.
-        const values = await form.validateFields();
-        setRecoveryPending(false);
-        await runMutation(values, true);
-        return;
-      }
-
-      const result = await read.refetchDetail();
-      const refreshed = result.data;
-      if (
-        refreshed &&
-        String(refreshed.terminalRef) === attempt.terminalRef &&
-        refreshed.version > (attempt.expectedVersion ?? refreshed.version)
-      ) {
-        const draft = form.getFieldsValue(true) as StoreTerminalFormValues;
-        if (terminalDraftMatchesFormValues(refreshed, draft)) {
-          unknownMutationAttempt.current = undefined;
-          setRecoveryPending(false);
-          setSelectionIntentRef(String(refreshed.terminalRef));
-          drawerLifecycle.closeAfterSuccess();
-          await read.refetchTerminals();
-          await read.refetchDetail();
-          return;
-        }
-        unknownMutationAttempt.current = undefined;
-        setRecoveryPending(false);
-        setEditorRequiresReopen(true);
-        setDrawerProblem({
-          type: 'about:blank',
-          title: '终端资料已变化',
-          detail: '最新资料与当前草稿不一致，请取消后重新编辑。',
-          status: 409,
-          errorCode: 'PLATFORM_COMMON_VERSION_CONFLICT',
-          correlationId: 'frontend-readback',
-        });
-        return;
-      }
-      // Readback did not observe the write.  Only now replay the unchanged
-      // draft with the exact original idempotency key.
-      const values = await form.validateFields();
-      setRecoveryPending(false);
-      await runMutation(values, true);
-    } catch (error) {
-      if ((error as {errorFields?: unknown})?.errorFields) {
-        setRecoveryPending(false);
-        return;
-      }
-      setDrawerProblem({
-        ...operationsProblemOf(error),
-        title: '操作结果仍待确认',
-        detail: '读取原操作结果失败，请重试读取；未确认前不能继续编辑。',
-      });
-      setRecoveryPending(true);
-      drawerLifecycle.setSubmitting(false);
-    }
-  };
-
   const completeStatusMutation = async (attempt: StatusMutationAttempt) => {
-    statusMutationAttempt.current = undefined;
-    setStatusResultUnknown(false);
     setStatusRequest(undefined);
     setStatusRequiresRefresh(false);
     statusLifecycle.reset();
@@ -367,55 +338,6 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
     }
   };
 
-  const recoverUnknownStatus = async () => {
-    const attempt = statusMutationAttempt.current;
-    if (!attempt || attempt.contextKey !== contextKey || !queryContext.scopeRef) return;
-    setStatusSubmitting(true);
-    setStatusProblem(undefined);
-    try {
-      const result = await read.refetchDetail();
-      const refreshed = result.data;
-      if (!refreshed || String(refreshed.terminalRef) !== String(attempt.terminal.terminalRef)) {
-        setStatusProblem('详情读取失败，请再次确认以重试读取。');
-        return;
-      }
-      if (refreshed.status === attempt.status) {
-        await completeStatusMutation(attempt);
-        return;
-      }
-      if (refreshed.version !== attempt.terminal.version) {
-        statusMutationAttempt.current = undefined;
-        setStatusResultUnknown(false);
-        setStatusRequiresRefresh(true);
-        setStatusProblem('终端资料已变化，请取消后从最新详情重新操作。');
-        return;
-      }
-      // The readback proves that the first request did not change the state;
-      // replay the exact same idempotent intent, never manufacture a new key.
-      setStatusResultUnknown(false);
-      await changeStoreTerminalStatus(
-        {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: String(queryContext.scopeRef)},
-        attempt.terminal,
-        attempt.status,
-        attempt.idempotencyKey,
-      );
-      await completeStatusMutation(attempt);
-    } catch (error) {
-      const problem = operationsProblemOf(error);
-      if (problem.errorCode === 'PLATFORM_COMMON_RESULT_UNKNOWN') {
-        setStatusResultUnknown(true);
-        setStatusProblem('操作结果仍待确认，请再次确认以读取最新状态。');
-      } else {
-        statusMutationAttempt.current = undefined;
-        setStatusResultUnknown(false);
-        setStatusRequiresRefresh(true);
-        setStatusProblem(`${problemText(error, '终端状态操作失败，请重试。')} 请取消后从最新详情重新操作。`);
-      }
-    } finally {
-      setStatusSubmitting(false);
-    }
-  };
-
   const confirmStatus = async () => {
     if (
       !statusRequest ||
@@ -425,34 +347,45 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
       statusRequiresRefresh
     )
       return;
-    if (statusResultUnknown) {
-      await recoverUnknownStatus();
-      return;
-    }
     setStatusSubmitting(true);
     setStatusProblem(undefined);
     const attempt: StatusMutationAttempt = {
       terminal: statusRequest.terminal,
       status: statusRequest.status,
       contextKey,
-      idempotencyKey: statusLifecycle.getIdempotencyKey(),
     };
-    statusMutationAttempt.current = attempt;
+    operationsLogger.info({
+      event: 'frontend.store_terminal.status_mutation.started',
+      phase: 'status.mutation',
+      outcome: 'STARTED',
+      diagnostic: {requestedStatus: attempt.status},
+    });
     try {
       await changeStoreTerminalStatus(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: String(queryContext.scopeRef)},
         attempt.terminal,
         attempt.status,
-        attempt.idempotencyKey,
       );
       await completeStatusMutation(attempt);
+      operationsLogger.info({
+        event: 'frontend.store_terminal.status_mutation.succeeded',
+        phase: 'status.mutation',
+        outcome: 'SUCCEEDED',
+        diagnostic: {requestedStatus: attempt.status},
+      });
     } catch (error) {
       const problem = operationsProblemOf(error);
+      operationsLogger.error({
+        event: 'frontend.store_terminal.status_mutation.failed',
+        phase: 'status.mutation',
+        outcome: 'ERROR',
+        errorCode: problem.errorCode,
+        status: problem.status,
+        diagnostic: {requestedStatus: attempt.status},
+      });
       if (problem.errorCode === 'PLATFORM_COMMON_RESULT_UNKNOWN') {
-        setStatusResultUnknown(true);
-        setStatusProblem('操作结果待确认，请再次确认以读取最新状态。');
+        setStatusProblem('操作结果待确认，请再次点击确认以重放原操作。');
       } else {
-        statusMutationAttempt.current = undefined;
         setStatusRequiresRefresh(true);
         let refreshed = true;
         try {
@@ -496,10 +429,10 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
               icon={<PlusOutlined />}
               onClick={() => {
                 setDrawerProblem(undefined);
+                setDrawerNotice(undefined);
                 setEditorRequiresReopen(false);
                 setEditorContextStale(false);
-                setRecoveryPending(false);
-                unknownMutationAttempt.current = undefined;
+                setEditorConfigurationOpen(false);
                 setEditor({mode: 'create', contextKey});
               }}
               {...testId(storeTerminalTestIds.create)}
@@ -606,23 +539,23 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
             value={read.detail}
             emptyDescription={read.terminals.length === 0 ? '创建后，在这里查看详情' : '请选择终端'}
             canEdit={canEdit}
+            statusTriggerRef={statusTriggerRef}
             onEdit={() => {
               if (read.detail) {
                 setDrawerProblem(undefined);
+                setDrawerNotice(undefined);
                 setEditorRequiresReopen(false);
                 setEditorContextStale(false);
-                setRecoveryPending(false);
-                unknownMutationAttempt.current = undefined;
+                setEditorConfigurationOpen(true);
                 setEditor({mode: 'edit', terminal: read.detail, contextKey});
               }
             }}
-            onStatus={status => {
+            onStatus={(status, trigger) => {
               if (!read.detail) return;
+              if (trigger) statusTriggerRef.current = trigger;
               setStatusProblem(undefined);
               setStatusRequiresRefresh(false);
-              setStatusResultUnknown(false);
               statusLifecycle.reset();
-              statusMutationAttempt.current = undefined;
               setStatusRequest({terminal: read.detail, status, contextKey});
             }}
           />
@@ -633,6 +566,7 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
 
   const drawerProps = {
     editor,
+    onConfigurationOpen: openEditorConfiguration,
     form,
     lifecycle: drawerLifecycle,
     areaCandidates: read.areaCandidates,
@@ -644,21 +578,27 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
     onRetryAreaCandidates: () => void read.areaCandidatesQuery.refetch(),
     onRetryTagCandidates: () => void read.tagCandidatesQuery.refetch(),
     onFinish: (values: StoreTerminalFormValues) => void runMutation(values),
-    onRetry: () => void recoverUnknownResult(),
+    onRetry: () => void form.submit(),
     problem: drawerProblem,
+    notice: drawerNotice,
     onClearProblem: () => {
-      if (!editorRequiresReopen && !editorContextStale && !recoveryPending) setDrawerProblem(undefined);
+      if (!editorRequiresReopen && !editorContextStale) {
+        setDrawerProblem(undefined);
+        setDrawerNotice(undefined);
+      }
     },
     onRefreshDetail: () => void refreshEditorDetail(),
     saveDisabled: editorRequiresReopen || editorContextStale,
-    recoveryPending,
     candidateCacheKey: contextKey,
     areaQueryText: read.areaQueryText,
     tagQueryText: read.tagQueryText,
     onAreaQueryTextChange: read.setAreaQueryText,
     onTagQueryTextChange: read.setTagQueryText,
     onValuesChange: () => {
-      if (!editorRequiresReopen && !editorContextStale && !recoveryPending) setDrawerProblem(undefined);
+      if (!editorRequiresReopen && !editorContextStale) {
+        setDrawerProblem(undefined);
+        setDrawerNotice(undefined);
+      }
       drawerLifecycle.setDirty(true);
       drawerLifecycle.markBusinessIntentChanged();
     },
@@ -696,8 +636,6 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
           if (!statusSubmitting) {
             setStatusRequest(undefined);
             setStatusRequiresRefresh(false);
-            setStatusResultUnknown(false);
-            statusMutationAttempt.current = undefined;
             statusLifecycle.reset();
           }
         }}
@@ -706,6 +644,9 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
         cancelTestId={storeTerminalTestIds.statusCancel}
         modalTestId={storeTerminalTestIds.statusModal}
         problemTestId={storeTerminalTestIds.statusProblem}
+        modalProps={{
+          afterOpenChange: statusAfterOpenChange,
+        }}
       >
         <p>
           {statusRequest?.status === 'VOIDED'

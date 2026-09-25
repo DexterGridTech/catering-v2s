@@ -11,6 +11,7 @@ import {
   PrimitiveDisclosure,
   PrimitiveDropdownSelect,
   PrimitiveEmptyState,
+  PrimitiveForm,
   PrimitiveGrid,
   PrimitiveInlineAlert,
   PrimitiveList,
@@ -53,6 +54,31 @@ const createWithNodeMock = create as unknown as (
 ) => ReactTestRenderer;
 
 describe('ui primitives', () => {
+  it('keeps the form host native-transparent and prevents browser submit defaults', () => {
+    const nativeRenderer = mount(<PrimitiveForm><View testID="sample:form-child" /></PrimitiveForm>);
+    expect(nativeRenderer.root.findByProps({testID: 'sample:form-child'})).toBeDefined();
+    expect(nativeRenderer.root.findAll(node => node.type === 'form')).toHaveLength(0);
+    act(() => { nativeRenderer.unmount(); });
+
+    const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
+    try {
+      Object.defineProperty(globalThis, 'document', {configurable: true, value: {}});
+      const onSubmit = vi.fn();
+      const browserRenderer = mount(<PrimitiveForm onSubmit={onSubmit}><View testID="sample:web-form-child" /></PrimitiveForm>);
+      const form = browserRenderer.root.findAll(node => node.type === 'form')[0]!;
+      const preventDefault = vi.fn();
+      const submit = form.props.onSubmit as (event: {readonly preventDefault: () => void}) => void;
+      act(() => { submit({preventDefault}); });
+      expect(preventDefault).toHaveBeenCalledTimes(1);
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      act(() => { browserRenderer.unmount(); });
+    } finally {
+      if (originalDocument === undefined) delete (globalThis as {document?: unknown}).document;
+      else Object.defineProperty(globalThis, 'document', originalDocument);
+    }
+    expect(Object.getOwnPropertyDescriptor(globalThis, 'document')).toEqual(originalDocument);
+  });
+
   it('renders addressable native controls with required testIDs', () => {
     const renderer = mount(
       <PrimitiveContainer testID="sample:root">
@@ -557,6 +583,8 @@ describe('ui primitives', () => {
   it('forwards generic scroll measurement and offset observation without business props', () => {
     const scrollRef = createRef<PrimitiveScrollViewHandle>();
     const onScrollOffsetChange = vi.fn();
+    const onScrollEndDrag = vi.fn();
+    const onMomentumScrollEnd = vi.fn();
     const onContentHeightChange = vi.fn();
     const nativeMeasureLayout = vi.fn();
     const measureInWindow = vi.fn();
@@ -568,6 +596,8 @@ describe('ui primitives', () => {
           testID="sample:scroll-contract"
           onContentHeightChange={onContentHeightChange}
           onScrollOffsetChange={onScrollOffsetChange}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
         >
           内容
         </PrimitiveScrollView>,
@@ -599,6 +629,19 @@ describe('ui primitives', () => {
     }) => void;
     onScroll({nativeEvent: {contentOffset: {y: 42}}});
     expect(onScrollOffsetChange).toHaveBeenCalledWith(42);
+    const onScrollEndDragHandler = scrollView.props.onScrollEndDrag as (event: {
+      readonly nativeEvent: {
+        readonly contentOffset: {readonly y: number};
+        readonly velocity: {readonly y: number};
+      };
+    }) => void;
+    onScrollEndDragHandler({nativeEvent: {contentOffset: {y: 40}, velocity: {y: 0}}});
+    expect(onScrollEndDrag).toHaveBeenCalledWith(40, 0);
+    const onMomentumScrollEndHandler = scrollView.props.onMomentumScrollEnd as (event: {
+      readonly nativeEvent: {readonly contentOffset: {readonly y: number}};
+    }) => void;
+    onMomentumScrollEndHandler({nativeEvent: {contentOffset: {y: 41}}});
+    expect(onMomentumScrollEnd).toHaveBeenCalledWith(41);
     expect(scrollView.props.onContentSizeChange).toEqual(expect.any(Function));
     const onContentSizeChange = scrollView.props.onContentSizeChange as (width: number, height: number) => void;
     act(() => { onContentSizeChange(280, 960) });

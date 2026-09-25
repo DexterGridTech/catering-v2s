@@ -65,10 +65,11 @@ public final class StoreOperatingRuleCodec {
         if (source == null || source.isBlank()) return Map.of();
         try {
             JsonNode node = JSON.readTree(source);
-            if (node == null || !node.isObject()) throw new IllegalArgumentException("operating rule JSON must be an object");
+            if (node == null || !node.isObject())
+                throw new IllegalArgumentException("operating rule JSON must be an object");
             var values = new LinkedHashMap<String, Serializable>();
-            node.fields().forEachRemaining(
-                    entry -> values.put(entry.getKey(), (Serializable) scalar(entry.getValue())));
+            node.fields()
+                    .forEachRemaining(entry -> values.put(entry.getKey(), (Serializable) scalar(entry.getValue())));
             return values;
         } catch (IOException failure) {
             throw new IllegalArgumentException("operating rule JSON is invalid", failure);

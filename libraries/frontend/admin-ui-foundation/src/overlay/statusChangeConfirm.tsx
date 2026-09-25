@@ -40,6 +40,8 @@ export function StatusChangeConfirm({
   children,
   modalProps,
 }: StatusChangeConfirmProps) {
+  const wrapProps = modalTestId ? {...(modalProps?.wrapProps ?? {}), ...testId(modalTestId)} : modalProps?.wrapProps;
+
   return (
     <Modal
       {...modalProps}
@@ -55,7 +57,7 @@ export function StatusChangeConfirm({
       cancelText={cancelLabel}
       okButtonProps={{danger: dangerous, disabled: confirmDisabled, ...testId(confirmTestId)}}
       cancelButtonProps={testId(cancelTestId)}
-      {...(modalTestId ? testId(modalTestId) : {})}
+      wrapProps={wrapProps}
     >
       {problem ? (
         <Alert

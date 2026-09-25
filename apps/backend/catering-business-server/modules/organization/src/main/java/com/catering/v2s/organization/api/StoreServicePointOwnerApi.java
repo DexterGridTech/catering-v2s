@@ -9,7 +9,8 @@ import java.util.UUID;
 public interface StoreServicePointOwnerApi {
     AreaPage listAreas(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, String cursor, int pageSize);
 
-    List<AreaReference> readAreasByRefs(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, List<UUID> areaRefs);
+    List<AreaReference> readAreasByRefs(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, List<UUID> areaRefs);
 
     AreaCandidatePage searchTerminalAreaCandidates(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, String query, String cursor, int pageSize);

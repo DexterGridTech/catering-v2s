@@ -48,50 +48,30 @@ Claude review 继续是该流程之后的独立外部 review，不得替代独�
 对照作者材料写差异说明。prompt 必须以“找出设计/实现为什么不成立”为立场，不得使用
 确认式措辞。
 
-prompt 中必须逐项显式列出并要求回读以下最小输入；缺任一项，该轮无效：
+prompt 中必须逐项显式列出并要求回读以下最小输入；缺任一适用项，该轮无效：
 
 1. `AGENTS.md`、`CLAUDE.md` 全文；
-2. Registry 解析出的 current Roadmap `CURRENT_*` 及本任务的 exact authorization；
+2. Dexter 本轮明确指派与授权原文、批准范围（随 reviewer prompt 提供）；
 3. 全部 project-memory kernel；按六维路由执行 recall，并逐条打开全部命中原文与其
    applicable source refs；
 4. confirmed business corpus 的命中条目及其“不得推导”边界；没有业务词干命中时，
    明记 `NO_CORPUS_ENTRY_MATCHED` 与检索词；
-5. 被审对象全文、全部上游冻结输入（Journey decision、交互工件、granularity manifest），
-   以及 `doc/decisions/` 全目录标题列表逐条复核，并打开全部相关 decision 全文；
-6. standards matrix 对应 checklist 与 verification-governance decision。
+5. 被审对象全文及所有适用的原始需求、已接受设计与交互输入；列出
+   `doc/decisions/` 全目录标题并打开所有相关 decision 全文；
+6. 适用的设计模板、领域规范、`doc/platform/review-standard.md` 与
+   `doc/decisions/2026-07-24-v2s-verification-governance.md`。
 
-每轮必须创建一个 reviewer input checklist，逐项记录 repository-relative path、
-SHA-256、是否已读及 corpus 检索结论。review artifact 必须包含：
+每轮必须创建 reviewer input checklist，逐项记录输入路径或命令、是否已读及 corpus 检索结论。
+review artifact 必须包含：
 
 ```text
 reviewerKind=INDEPENDENT_SUBAGENT
-reviewerInputChecklist={path,sha256}
+reviewerInputChecklist=<repository-relative-path>
 blindReviewDeclaration=<先独立 verdict、后对照作者材料>
 authorMaterialReadAfterIndependentVerdict=true
 ```
 
-## 3. 机械边界与留痕
-
-`scripts/check/implementation-design-granularity` 只做机械校验：当 manifest 声明
-`INDEPENDENT_SUBAGENT_V1` policy 时，检查上述四个 review fields 存在、checklist 的
-path/hash 字段存在且 checklist 文件存在。它不得读取清单正文来判断是否真的读完，
-不得判断 reviewer 是否独立，也不得裁决 findings 的语义；这些由 Claude 与 Dexter
-独立核验。
-
-每个未来 implementation-facing manifest 必须声明：
-
-```json
-"adversarialReviewPolicy": {
-  "version": "INDEPENDENT_SUBAGENT_V1",
-  "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
-  "blindReviewRequired": true
-}
-```
-
-旧 manifest/review artifact 没有此声明时保持历史可读，不得通过事后补字段伪造独立性，
-也不得因此重开已收口 cycle。
-
-## 4. 生效与 supersede
+## 3. 生效与 supersede
 
 本修订 supersede：
 
@@ -104,7 +84,7 @@ path/hash 字段存在且 checklist 文件存在。它不得读取清单正文�
 它不追溯重开任何已经收口的 cycle，包括 R3 及已启动的 R4 design cycle；也不授权实现、
 数据操作、动态运行或任何新业务范围。
 
-## 5. 2026-07-30 逐点实施与复核纪律
+## 4. 2026-07-30 逐点实施与复核纪律
 
 Dexter 要求避免以过度泛化准备挤占实际实施。作者对每个实际变更点只准备该点可执行、
 可复核所需的最小输入；写入前必须重开对应 IA/原始业务条目、六维路由命中的全部
@@ -112,12 +92,12 @@ project-memory 及 owning source、适用详设/设计约束和当前可复用�
 proof 后，作者必须用同一输入逐项回读实现与证据，确认用户任务、交互、owner、约束和
 复用判断没有漂移。
 
-独立 reviewer 的 prompt 与 immutable checklist 必须包含每个变更点的前读和后读留痕；
+独立 reviewer 的 prompt 与 checklist 必须包含每个变更点的前读和后读留痕；
 reviewer 必须以这些原文逐点核验，而不是用总览阅读、静态通过或后续 L2 推定一致。
 缺失任一变更点的双读、或以不相干的泛化准备取代它，必须作为 finding。该纪律只强化
 实施和 review 质量，不授权新范围，也不要求 prompt hook 查询或注入上下文。
 
-## 6. 2026-09-15 Dexter 补充裁决：重复失败后的主 agent 接管
+## 5. 2026-09-15 Dexter 补充裁决：重复失败后的主 agent 接管
 
 正常路径仍必须优先由 fresh、独立的子 agent 完成对抗式 review，以及任务要求的独立实施对账。
 若同一 review 任务的 fresh reviewer 因工具错误、进程/运行失败、明确越界，或经诊断确认的卡死，

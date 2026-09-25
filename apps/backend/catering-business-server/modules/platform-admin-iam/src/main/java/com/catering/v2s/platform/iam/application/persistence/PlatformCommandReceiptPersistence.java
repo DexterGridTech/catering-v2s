@@ -35,10 +35,6 @@ public class PlatformCommandReceiptPersistence {
 
     public int insert(String idempotencyKey, String requestHash, String responseJson, long createdAt) {
         return jdbc.update(
-                PlatformCommandReceiptServiceSql.INSERT,
-                idempotencyKey,
-                requestHash,
-                responseJson,
-                createdAt);
+                PlatformCommandReceiptServiceSql.INSERT, idempotencyKey, requestHash, responseJson, createdAt);
     }
 }

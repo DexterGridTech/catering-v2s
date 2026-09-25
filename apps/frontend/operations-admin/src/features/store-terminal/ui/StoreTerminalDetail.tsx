@@ -1,12 +1,18 @@
-import {Fragment, type ReactNode} from 'react';
-import {MoreOutlined} from '@ant-design/icons';
-import {Button, Card, Descriptions, Dropdown, Empty, Space, Tag, Typography} from 'antd';
-import type {MenuProps} from 'antd';
-import {adminDetailDescriptionsProps, lifecycleColor, NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
+import {Fragment, type ReactNode, type RefObject} from 'react';
+import {Button, Card, Descriptions, Empty, Space, Tag, Typography} from 'antd';
+import {
+  AdminDetailActionMenu,
+  AdminDetailActionLabel,
+  adminDetailDescriptionsProps,
+  lifecycleColor,
+  NameCodeText,
+  testId,
+} from '@catering-v2s/admin-ui-foundation';
 import type {
   StoreTerminalDetail as StoreTerminalDetailValue,
   StoreTerminalStatus,
 } from '../../../app/api/generated/operations-edge';
+import {STORE_TERMINAL_RANGE_KEYS} from '../../../app/api/generated/storeTerminalRules';
 import {
   scenesForFunction,
   storeTerminalConnectionMethodLabels,
@@ -31,7 +37,7 @@ function rangeText(range: {key: string; all: boolean; refs: string[]}, value: St
   if (range.all) return `全部${storeTerminalRangeLabels[range.key] ?? range.key}`;
   if (!range.refs.length) return storeTerminalRangeLabels[range.key] ?? range.key;
   const labels = range.refs.map(ref => {
-    if (range.key === 'TABLE_AREA') {
+    if (range.key === STORE_TERMINAL_RANGE_KEYS.TABLE_AREA) {
       const area = value.areaReferences.find(item => String(item.areaRef) === String(ref));
       return area ? (
         <span key={String(ref)}>
@@ -74,12 +80,14 @@ export function StoreTerminalDetail({
   canEdit,
   onEdit,
   onStatus,
+  statusTriggerRef,
   emptyDescription = '请选择终端',
 }: {
   value?: StoreTerminalDetailValue;
   canEdit: boolean;
   onEdit: () => void;
-  onStatus: (status: StoreTerminalStatus) => void;
+  onStatus: (status: StoreTerminalStatus, trigger?: HTMLButtonElement) => void;
+  statusTriggerRef?: RefObject<HTMLButtonElement | null>;
   emptyDescription?: ReactNode;
 }) {
   if (!value) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyDescription} />;
@@ -87,12 +95,12 @@ export function StoreTerminalDetail({
   const actionItem = (status: StoreTerminalStatus, label: string, danger = false) => ({
     key: status,
     label: (
-      <Button type="text" block danger={danger} {...testId(storeTerminalTestIds.statusAction(status))}>
-        {label}
-      </Button>
+      <AdminDetailActionLabel testIdValue={storeTerminalTestIds.statusAction(status)}>{label}</AdminDetailActionLabel>
     ),
+    danger,
+    onClick: () => onStatus(status, statusTriggerRef?.current ?? undefined),
   });
-  const actionItems: MenuProps['items'] = [
+  const actionItems = [
     ...(value.status === 'ENABLED'
       ? [actionItem('DISABLED', '停用终端')]
       : value.status === 'DISABLED'
@@ -121,16 +129,11 @@ export function StoreTerminalDetail({
                 </Button>
               )}
               {actionItems.length > 0 && (
-                <Dropdown
-                  menu={{items: actionItems, onClick: ({key}) => onStatus(key as StoreTerminalStatus)}}
-                  trigger={['click']}
-                >
-                  <Button
-                    aria-label="更多终端操作"
-                    icon={<MoreOutlined />}
-                    {...testId(storeTerminalTestIds.actionMenu)}
-                  />
-                </Dropdown>
+                <AdminDetailActionMenu
+                  items={actionItems}
+                  triggerTestId={storeTerminalTestIds.actionMenu}
+                  triggerRef={statusTriggerRef}
+                />
               )}
             </Space>
           ) : undefined

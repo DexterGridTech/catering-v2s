@@ -952,6 +952,7 @@ identity、候选 Checkbox、AntD Radio 与 Upload 的节点证据；`Segmented`
 | generated                                    | `sales-menu-l2-scenarios.json`、`sales-menu-l2-locator-bindings.json`、`sales-menu-l2-activation-candidate.json`、`sales-menu-l2-execution.json`、`sales-menu-l2-timing-budget.json`                 |
 | TEST fixture                                 | `contracts/policy/sales-menu-l2-fixture.json` 描述；`scripts/test/sales-menu-l2-fixture.mjs` 校验；runner 只用真实 owner/API 物化/readback                                                           |
 | spec                                         | `apps/frontend/operations-admin/src/tests/l2/sales-menu.spec.ts` 只消费 generated profile，不手写 case id 列表                                                                                       |
+| shared helper proof                        | `apps/frontend/operations-admin/src/tests/l2/operationsL2.test.ts` 是共享 `operationsL2.ts` helper 的 Vitest/static proof，进入 policy 的不可变 admission control-plane digest；不进入只收集 `scripts/**/*.test.mjs` 的 Node 健康入口，由 operations-admin Vitest 执行 |
 | runner                                       | 保留 `scripts/test/browser-l2`/`browser-l2-runtime.mjs` 唯一入口；增加显式 `--suite sales-menu` 与窄 `salesMenuSuite` adapter；共用 lifecycle/secret/join/progress/cleanup，不建第二 runner/registry |
 
 L2 case exact-set 固定为以下 20 条；31 条 UI 检查映射到 case，但“UI 数=case 数”不是规则：

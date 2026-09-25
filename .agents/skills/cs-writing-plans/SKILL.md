@@ -5,12 +5,12 @@ description: Produce a bounded catering-v2s implementation-facing design only af
 
 # cs-writing-plans
 
-Authority boundary: `AGENTS.md`, the current Roadmap authorization, approved Journey/interaction
+Authority boundary: `AGENTS.md`, Dexter's explicit session assignment, approved Journey/interaction
 artifacts, project-memory and local templates win over the frozen vendor source. This adapter
 does not create a branch, commit, use a worktree, dispatch agents, or advance to implementation.
 Git is always Dexter's.
 
-Use only after the applicable business/design sources and explicit Roadmap authority are available.
+Use only after the applicable business/design sources and Dexter's explicit session assignment are available.
 UI-bearing work still requires an accepted Journey and interaction artifact; a backend-only
 backend-acceptance scenario extension follows the active business-scenario standard and does not
 invent or wait for a UI Journey. If a required prerequisite is pending, stop and return it to Dexter;
@@ -59,7 +59,7 @@ left for implementation to bridge.
 
 A TER (`apps/terminal`) design's verification units must follow `TR-16` in
 `doc/platform/terminal-coding-standard.md`: name the `ui/integration` package and its Expo Web entry, the
-`assembly` package and target VM or device, the shared scenario list run on both ends, and which scenarios
+`application` package and target VM or device, the shared scenario list run on both ends, and which scenarios
 depend on an `adapter/*` capability and may go straight to the device. Do not restate the rule here.
 
 The resulting design starts with:

@@ -1,11 +1,11 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.OrganizationHierarchyCommandReceiptPersistence;
 import com.catering.v2s.organization.api.OrganizationNodeReadback;
+import com.catering.v2s.organization.application.persistence.OrganizationHierarchyCommandReceiptPersistence;
 import com.catering.v2s.platform.foundation.json.LegacyReceiptJson;
 import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
-import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Set;
@@ -50,22 +50,14 @@ public final class OrganizationHierarchyCommandReceiptService {
             if (!requestHash.equals(existing.requestHash())) throw new OrganizationIdempotencyConflictException();
             OrganizationNodeReadback replay = deserialize(existing.responseJson());
             if (LegacyReceiptJson.looksLikeLegacy(JSON, existing.responseJson())) {
-                persistence.replaceResponse(
-                        serialize(replay),
-                        workspaceUuid,
-                        key);
+                persistence.replaceResponse(serialize(replay), workspaceUuid, key);
             }
             return replay;
         }
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             OrganizationNodeReadback result = command.get();
             persistence.insertSucceeded(
-                    workspaceUuid,
-                    key,
-                    result.id(),
-                    requestHash,
-                    serialize(result),
-                    time.currentEpochMillis());
+                    workspaceUuid, key, result.id(), requestHash, serialize(result), time.currentEpochMillis());
             return result;
         }
     }
@@ -74,7 +66,10 @@ public final class OrganizationHierarchyCommandReceiptService {
         if (value == null) return null;
         try {
             return CommandReceiptSupport.deserialize(
-                    JSON, value, OrganizationNodeReadback.class, "organization hierarchy receipt deserialization failed");
+                    JSON,
+                    value,
+                    OrganizationNodeReadback.class,
+                    "organization hierarchy receipt deserialization failed");
         } catch (Exception directFailure) {
             try {
                 return JSON.treeToValue(
@@ -89,8 +84,7 @@ public final class OrganizationHierarchyCommandReceiptService {
 
     private static String serialize(OrganizationNodeReadback value) {
         try {
-            return CommandReceiptSupport.serialize(
-                    JSON, value, "organization hierarchy receipt serialization failed");
+            return CommandReceiptSupport.serialize(JSON, value, "organization hierarchy receipt serialization failed");
         } catch (Exception failure) {
             throw new IllegalStateException("organization hierarchy receipt serialization failed", failure);
         }

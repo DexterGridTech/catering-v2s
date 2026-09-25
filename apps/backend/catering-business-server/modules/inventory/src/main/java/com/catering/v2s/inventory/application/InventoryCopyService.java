@@ -1,17 +1,16 @@
 package com.catering.v2s.inventory.application;
 
-import com.catering.v2s.inventory.application.persistence.InventoryCopyPersistence;
-import com.catering.v2s.inventory.application.persistence.InventoryCopyServiceSql;
 import static com.catering.v2s.inventory.api.InventoryOwnerApi.*;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
+import com.catering.v2s.inventory.application.persistence.InventoryCopyPersistence;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
-import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
+import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -20,21 +19,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -1011,13 +1006,13 @@ public class InventoryCopyService {
             String scope, String brand, List<TargetIdentity> identities, boolean requireCompleteConsumptionUnit) {
         if (identities.isEmpty()) return Map.of();
         List<InventoryCopyPersistence.TargetIdentity> persistenceIdentities = identities.stream()
-                .map(identity -> new InventoryCopyPersistence.TargetIdentity(
-                        identity.itemRef(), identity.productSkuRef()))
+                .map(identity ->
+                        new InventoryCopyPersistence.TargetIdentity(identity.itemRef(), identity.productSkuRef()))
                 .toList();
         Map<TargetIdentity, TargetRow> result = new LinkedHashMap<>();
-        for (InventoryCopyPersistence.TargetRecord record :
-                persistence.readTargetRowsByIdentities(scope, brand, persistenceIdentities, requireCompleteConsumptionUnit)
-                        .values()) {
+        for (InventoryCopyPersistence.TargetRecord record : persistence
+                .readTargetRowsByIdentities(scope, brand, persistenceIdentities, requireCompleteConsumptionUnit)
+                .values()) {
             TargetRow row = targetRow(record);
             TargetIdentity identity = new TargetIdentity(row.itemRef(), row.productSkuRef());
             if (result.putIfAbsent(identity, row) != null)
@@ -1072,16 +1067,16 @@ public class InventoryCopyService {
     }
 
     private InventoryCopyPersistence.TargetWrite targetWrite(
-            PlannedTarget target,
-            String targetDataNodeRef,
-            String brandRef,
-            Map<UUID, ReferenceMapping> mappings) {
+            PlannedTarget target, String targetDataNodeRef, String brandRef, Map<UUID, ReferenceMapping> mappings) {
         ReferenceMapping sku = target.skuMapping();
-        InventoryOwnerApi.UnitSnapshot consumption = mappedUnitSnapshot(target.source().consumptionUnitSnapshot(), mappings);
-        InventoryConfiguration sourceConfiguration = configurationReadback(json(target.source().configuration()));
+        InventoryOwnerApi.UnitSnapshot consumption =
+                mappedUnitSnapshot(target.source().consumptionUnitSnapshot(), mappings);
+        InventoryConfiguration sourceConfiguration =
+                configurationReadback(json(target.source().configuration()));
         InventoryOwnerApi.UnitSnapshot counting =
                 mappedUnitSnapshot(sourceConfiguration.countingUnitSnapshot(), mappings);
-        String inventoryMode = json(target.source().configuration()).path("mode").asText("");
+        String inventoryMode =
+                json(target.source().configuration()).path("mode").asText("");
         if (inventoryMode.isBlank())
             throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存对象缺少 inventory mode");
         return new InventoryCopyPersistence.TargetWrite(
@@ -1106,8 +1101,7 @@ public class InventoryCopyService {
                 time.currentEpochMillis());
     }
 
-    private InventoryCopyPersistence.BomWrite bomWrite(
-            PreparedBom bom, String targetDataNodeRef, String brandRef) {
+    private InventoryCopyPersistence.BomWrite bomWrite(PreparedBom bom, String targetDataNodeRef, String brandRef) {
         return new InventoryCopyPersistence.BomWrite(
                 targetDataNodeRef,
                 brandRef,
@@ -1148,9 +1142,9 @@ public class InventoryCopyService {
             boolean enabledOnly,
             boolean requireCompleteConsumptionUnit) {
         Map<UUID, TargetRow> resolved = new LinkedHashMap<>();
-        for (InventoryCopyPersistence.TargetRecord record :
-                persistence.readTargetsByRefs(scope, brand, targetRefs, enabledOnly, requireCompleteConsumptionUnit)
-                        .values()) {
+        for (InventoryCopyPersistence.TargetRecord record : persistence
+                .readTargetsByRefs(scope, brand, targetRefs, enabledOnly, requireCompleteConsumptionUnit)
+                .values()) {
             TargetRow row = targetRow(record);
             if (resolved.putIfAbsent(row.ref(), row) != null)
                 throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
@@ -1593,8 +1587,9 @@ public class InventoryCopyService {
         if (targets == null || targets.isEmpty()) return java.util.Map.of();
         List<UUID> targetRefs = targets.stream().map(TargetRow::ref).toList();
         java.util.Map<UUID, ChangeSnapshot> snapshots = new java.util.HashMap<>();
-        for (Map.Entry<UUID, InventoryCopyPersistence.ChangeSnapshotRecord> entry :
-                persistence.readChangeSnapshots(targetRefs, time.currentEpochMillis()).entrySet()) {
+        for (Map.Entry<UUID, InventoryCopyPersistence.ChangeSnapshotRecord> entry : persistence
+                .readChangeSnapshots(targetRefs, time.currentEpochMillis())
+                .entrySet()) {
             InventoryCopyPersistence.ChangeSnapshotRecord snapshot = entry.getValue();
             snapshots.put(
                     entry.getKey(),
@@ -2087,9 +2082,6 @@ public class InventoryCopyService {
         }
     }
 
-
-
-
     private record TargetRow(
             UUID ref,
             UUID itemRef,
@@ -2108,15 +2100,9 @@ public class InventoryCopyService {
             String inventoryMode,
             boolean componentEligible) {}
 
-
-
-
-
     private record TargetIdentity(UUID itemRef, UUID productSkuRef) {}
 
     private record CatalogTargetDisplay(String itemCode, String itemName, String skuCode, String skuName) {}
-
-
 
     private record TargetConfigurationRow(UUID itemRef, UUID targetRef, String configuration) {}
 
@@ -2135,7 +2121,6 @@ public class InventoryCopyService {
             String optionValueCode,
             long version,
             String rows) {}
-
 
     private record PreparedBom(
             ReferenceMapping item, ReferenceMapping sku, ReferenceMapping option, long version, String rows) {}
@@ -2172,10 +2157,8 @@ public class InventoryCopyService {
             String targetUnitDimension,
             Integer targetUnitPrecision) {}
 
-
     private record ChangeSnapshot(
             BigDecimal today, BigDecimal sevenDays, BigDecimal thirtyDays, String lastSource, Long lastAt) {}
-
 
     private record Receipt(String operation, String requestHash, JsonNode response) {}
 }

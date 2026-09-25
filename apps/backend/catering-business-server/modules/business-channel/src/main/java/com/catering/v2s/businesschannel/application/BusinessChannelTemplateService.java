@@ -1,8 +1,5 @@
 package com.catering.v2s.businesschannel.application;
 
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence;
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence.ChannelProjection;
-
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
@@ -12,6 +9,8 @@ import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi.CreateTemp
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi.TransitionTemplateStatusCommand;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi.UpdateTemplateCommand;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence.ChannelProjection;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence;
 import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
@@ -25,7 +24,6 @@ import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -146,7 +144,8 @@ public class BusinessChannelTemplateService {
         if (normalizedSortKey == null && normalizedSortDirection != null) {
             throw problem("VALIDATION_ERROR", 422, "sortDirection requires sortKey");
         }
-        List<BusinessChannelTemplatePersistence.TemplateProjection> projections = persistence.pageTemplates(
+        List<BusinessChannelTemplatePersistence.TemplateProjection> projections = persistence
+                .pageTemplates(
                         workspaceUuid,
                         groupWorkspaceKey,
                         projectRef,
@@ -169,7 +168,6 @@ public class BusinessChannelTemplateService {
         return new BusinessChannelReadback.TemplatePage(
                 rows.stream().map(BusinessChannelTemplateService::template).toList(), null, rows.size());
     }
-
 
     @Transactional(readOnly = true)
     public BusinessChannelReadback.TemplatePage pageStoreTemplateCandidates(
@@ -230,7 +228,6 @@ public class BusinessChannelTemplateService {
                 mapped.stream().map(BusinessChannelTemplateService::template).toList(), nextCursor, total);
     }
 
-
     @Transactional(readOnly = true)
     public BusinessChannelReadback.VisibleStorePage pageTemplateVisibleStores(
             UUID workspaceUuid,
@@ -277,7 +274,6 @@ public class BusinessChannelTemplateService {
         return new BusinessChannelReadback.VisibleStorePage(page, nextCursor, total);
     }
 
-
     @Transactional(readOnly = true)
     public BusinessChannelReadback.Template readTemplate(
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
@@ -285,16 +281,15 @@ public class BusinessChannelTemplateService {
         return template(readTemplateRow(workspaceUuid, groupWorkspaceKey, templateRef));
     }
 
-
     @Transactional(readOnly = true)
     public BusinessChannelReadback.TemplateCommandContext readTemplateCommandContext(
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
         requireScope(workspaceUuid, groupWorkspaceKey);
         if (templateRef == null) throw problem("VALIDATION_ERROR", 422, "templateRef is required");
-        return persistence.readTemplateCommandContext(workspaceUuid, groupWorkspaceKey, templateRef)
+        return persistence
+                .readTemplateCommandContext(workspaceUuid, groupWorkspaceKey, templateRef)
                 .orElseThrow(() -> problem("NOT_FOUND", 404, "template was not found in the workspace"));
     }
-
 
     @Transactional
     public BusinessChannelReadback.Template createTemplate(CreateTemplateCommand command) {
@@ -406,7 +401,6 @@ public class BusinessChannelTemplateService {
                 });
     }
 
-
     @Transactional
     public BusinessChannelReadback.Template updateTemplate(UpdateTemplateCommand command) {
         requireScope(command.workspaceUuid(), command.groupWorkspaceKey());
@@ -442,7 +436,7 @@ public class BusinessChannelTemplateService {
                 () -> {
                     BusinessChannelTemplatePersistence.TemplateUpdateProjection current =
                             readTemplateProjectionForUpdate(
-                            command.workspaceUuid(), command.groupWorkspaceKey(), command.templateRef());
+                                    command.workspaceUuid(), command.groupWorkspaceKey(), command.templateRef());
                     BusinessChannelTemplatePersistence.TemplateProjection currentProjection = current.projection();
                     // The locked template row is the authoritative relation between templateRef and projectRef. The
                     // server-minted grant is checked again after the lock before any version check or write.
@@ -491,14 +485,14 @@ public class BusinessChannelTemplateService {
                             visibleStoreRefs);
                     BusinessChannelTemplatePersistence.TemplateProjection updated =
                             updateTemplateAndVisibleStoreRelations(
-                            command.workspaceUuid(),
-                            command.groupWorkspaceKey(),
-                            command.templateRef(),
-                            command.templateName(),
-                            storeVisibilityScope,
-                            urlRule,
-                            command.expectedVersion(),
-                            visibleStoreRefs);
+                                    command.workspaceUuid(),
+                                    command.groupWorkspaceKey(),
+                                    command.templateRef(),
+                                    command.templateName(),
+                                    storeVisibilityScope,
+                                    urlRule,
+                                    command.expectedVersion(),
+                                    visibleStoreRefs);
                     audit(
                             command.workspaceUuid(),
                             command.groupWorkspaceKey(),
@@ -519,7 +513,6 @@ public class BusinessChannelTemplateService {
                     return template(templateRow(updated, facts));
                 });
     }
-
 
     @Transactional
     public BusinessChannelReadback.Template transitionTemplateStatus(TransitionTemplateStatusCommand command) {
@@ -592,15 +585,11 @@ public class BusinessChannelTemplateService {
                 });
     }
 
-
-
     private CollaborationReadback.ProviderProfile providerFor(
             String accessKind, String providerCode, UUID workspaceUuid, String groupWorkspaceKey) {
         if (!BusinessChannelPolicy.EXTERNAL.equals(accessKind)) return null;
         return collaborationCatalog.readProviderProfile(workspaceUuid, groupWorkspaceKey, providerCode);
     }
-
-
 
     private void validateTemplateProvider(
             BusinessChannelTemplatePersistence.TemplateCommandProjection template,
@@ -608,8 +597,6 @@ public class BusinessChannelTemplateService {
             String groupWorkspaceKey) {
         validateTemplateProvider(template, workspaceUuid, groupWorkspaceKey, null);
     }
-
-
 
     private void validateTemplateProvider(
             BusinessChannelTemplatePersistence.TemplateCommandProjection template,
@@ -627,8 +614,6 @@ public class BusinessChannelTemplateService {
                         : providerFromTree(preloadedTree, template.providerCode()));
     }
 
-
-
     private static CollaborationReadback.ProviderProfile providerFromTree(
             CollaborationReadback.Tree tree, String providerCode) {
         if (tree == null || providerCode == null) return null;
@@ -637,8 +622,6 @@ public class BusinessChannelTemplateService {
                 .findFirst()
                 .orElse(null);
     }
-
-
 
     private void requireOperationsGrant(
             OperationsOwnerScopeGrant grant,
@@ -663,8 +646,6 @@ public class BusinessChannelTemplateService {
             throw problem("AUTHORIZATION_REQUIRED", 409, "operations owner grant does not match command context");
         }
     }
-
-
 
     private void requireOperationsGrantTargetEnvelope(
             OperationsOwnerScopeGrant grant,
@@ -695,8 +676,6 @@ public class BusinessChannelTemplateService {
                 requirementId);
     }
 
-
-
     private static TemplateRow templateAfterStatusTransition(TemplateRow current, String targetStatus) {
         return new TemplateRow(
                 current.templateRef(),
@@ -717,34 +696,27 @@ public class BusinessChannelTemplateService {
                 current.version() + 1);
     }
 
-
-
     private TemplateRow readTemplateRow(UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
         if (templateRef == null) throw problem("VALIDATION_ERROR", 422, "templateRef is required");
-        BusinessChannelTemplatePersistence.TemplateProjection projection =
-                persistence.readTemplate(workspaceUuid, groupWorkspaceKey, templateRef, false)
+        BusinessChannelTemplatePersistence.TemplateProjection projection = persistence
+                .readTemplate(workspaceUuid, groupWorkspaceKey, templateRef, false)
                 .orElseThrow(() -> problem("NOT_FOUND", 404, "template was not found in the workspace"));
         return templateRow(projection, statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection), List.of()));
     }
-
-
 
     private TemplateRow readTemplateForUpdate(UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
-        BusinessChannelTemplatePersistence.TemplateProjection projection =
-                persistence.readTemplate(workspaceUuid, groupWorkspaceKey, templateRef, true)
+        BusinessChannelTemplatePersistence.TemplateProjection projection = persistence
+                .readTemplate(workspaceUuid, groupWorkspaceKey, templateRef, true)
                 .orElseThrow(() -> problem("NOT_FOUND", 404, "template was not found in the workspace"));
         return templateRow(projection, statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection), List.of()));
     }
-
-
 
     private BusinessChannelTemplatePersistence.TemplateUpdateProjection readTemplateProjectionForUpdate(
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
-        return persistence.readTemplateForUpdate(workspaceUuid, groupWorkspaceKey, templateRef)
+        return persistence
+                .readTemplateForUpdate(workspaceUuid, groupWorkspaceKey, templateRef)
                 .orElseThrow(() -> problem("NOT_FOUND", 404, "template was not found in the workspace"));
     }
-
-
 
     private StatusFacts statusFacts(
             UUID workspaceUuid,
@@ -753,8 +725,6 @@ public class BusinessChannelTemplateService {
             List<ChannelProjection> channels) {
         return statusFacts(workspaceUuid, groupWorkspaceKey, templates, channels, null);
     }
-
-
 
     private StatusFacts statusFacts(
             UUID workspaceUuid,
@@ -798,8 +768,6 @@ public class BusinessChannelTemplateService {
         return new StatusFacts(workspaceStatus, ancestors, providers, externalSystems);
     }
 
-
-
     private static void addRef(Set<UUID> refs, UUID ref) {
         if (ref != null) refs.add(ref);
     }
@@ -832,14 +800,10 @@ public class BusinessChannelTemplateService {
                 projection.version());
     }
 
-
-
     private Map<UUID, List<BusinessChannelReadback.StatusDimension>> readOrganizationAncestors(
             UUID workspaceUuid, String groupWorkspaceKey, Set<UUID> nodeRefs) {
         return persistence.readOrganizationAncestors(workspaceUuid, groupWorkspaceKey, nodeRefs);
     }
-
-
 
     private static void appendOrganizationAncestors(
             List<BusinessChannelReadback.StatusDimension> dimensions, StatusFacts facts, UUID nodeRef) {
@@ -849,16 +813,12 @@ public class BusinessChannelTemplateService {
         }
     }
 
-
-
     private static void addDimension(
             List<BusinessChannelReadback.StatusDimension> dimensions, String type, UUID ref, String status) {
         if (ref != null && status != null) {
             addDimension(dimensions, type, ref.toString(), status);
         }
     }
-
-
 
     private static void addDimension(
             List<BusinessChannelReadback.StatusDimension> dimensions, String type, String ref, String status) {
@@ -869,8 +829,6 @@ public class BusinessChannelTemplateService {
         if (!duplicate) dimensions.add(new BusinessChannelReadback.StatusDimension(type, ref, status));
     }
 
-
-
     private void addWorkspaceDimension(
             List<BusinessChannelReadback.StatusDimension> dimensions, String groupWorkspaceKey, StatusFacts facts) {
         addDimension(dimensions, "GROUP_WORKSPACE", groupWorkspaceKey, facts.workspaceStatus());
@@ -880,8 +838,6 @@ public class BusinessChannelTemplateService {
         return !"COLLABORATION_BINDING".equals(dimension.type())
                 && !BusinessChannelPolicy.ENABLED.equals(dimension.status());
     }
-
-
 
     private void verifyVisibleStoreTemplate(
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef, UUID projectRef) {
@@ -895,8 +851,6 @@ public class BusinessChannelTemplateService {
             throw problem("BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT", 422, "template is outside the requested project");
         }
     }
-
-
 
     private void validateVisibleStoreMembership(
             UUID workspaceUuid, String groupWorkspaceKey, UUID projectRef, List<UUID> visibleStoreRefs) {
@@ -918,8 +872,6 @@ public class BusinessChannelTemplateService {
         }
     }
 
-
-
     private void requireEnabledStore(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
         String status = organizationOwner
                 .requireSalesMenuStore(workspaceUuid, groupWorkspaceKey, storeRef)
@@ -929,8 +881,6 @@ public class BusinessChannelTemplateService {
                     "BUSINESS_CHANNEL_STORE_VISIBILITY_STALE", 409, "store is not enabled for new business channels");
         }
     }
-
-
 
     void requireStoreChannelCreateEligibility(
             UUID workspaceUuid,
@@ -957,8 +907,6 @@ public class BusinessChannelTemplateService {
         }
     }
 
-
-
     private BusinessChannelTemplatePersistence.TemplateProjection updateTemplateAndVisibleStoreRelations(
             UUID workspaceUuid,
             String groupWorkspaceKey,
@@ -968,7 +916,8 @@ public class BusinessChannelTemplateService {
             String urlRule,
             long expectedVersion,
             List<UUID> visibleStoreRefs) {
-        return persistence.updateTemplateAndVisibleStoreRelations(
+        return persistence
+                .updateTemplateAndVisibleStoreRelations(
                         workspaceUuid,
                         groupWorkspaceKey,
                         templateRef,
@@ -980,8 +929,6 @@ public class BusinessChannelTemplateService {
                         time.currentEpochMillis())
                 .orElseThrow(() -> problem("VERSION_CONFLICT", 409, "template version has changed"));
     }
-
-
 
     private static String normalizedStoreVisibilityScope(String operatorKind, String storeVisibilityScope) {
         return BusinessChannelPolicy.STORE.equals(operatorKind)
@@ -1005,8 +952,6 @@ public class BusinessChannelTemplateService {
         return normalized;
     }
 
-
-
     private static UUID parseUuid(String value, String field) {
         try {
             return UUID.fromString(value);
@@ -1014,8 +959,6 @@ public class BusinessChannelTemplateService {
             throw problem("VALIDATION_ERROR", 422, field + " is invalid", failure);
         }
     }
-
-
 
     private static OpaqueCollectionCursor.Position decodeCursor(String cursor, String identity) {
         try {
@@ -1025,25 +968,18 @@ public class BusinessChannelTemplateService {
         }
     }
 
-
-
     private static int pageSize(int requested) {
         int value = requested == 0 ? DEFAULT_PAGE_SIZE : requested;
         if (value < 1 || value > MAX_PAGE_SIZE) throw problem("VALIDATION_ERROR", 422, "pageSize is invalid");
         return value;
     }
 
-
-
     private static String optionalEnum(String value, String name, String... allowed) {
         if (value == null) return null;
         return BusinessChannelPolicy.requireEnum(value, name, allowed);
     }
 
-
-
-    private static String templateSortValue(
-            BusinessChannelTemplatePersistence.TemplateProjection row, String sortKey) {
+    private static String templateSortValue(BusinessChannelTemplatePersistence.TemplateProjection row, String sortKey) {
         if (sortKey == null) return row.templateRef().toString();
         return switch (sortKey) {
             case "TEMPLATE_NAME" -> Objects.toString(row.templateName(), "");
@@ -1056,28 +992,20 @@ public class BusinessChannelTemplateService {
         };
     }
 
-
-
     private static void requireScope(UUID workspaceUuid, String groupWorkspaceKey) {
         if (workspaceUuid == null) throw problem("VALIDATION_ERROR", 422, "workspaceUuid is required");
         BusinessChannelPolicy.required(groupWorkspaceKey, "groupWorkspaceKey", 120);
     }
 
-
-
     private static void requireVersion(long actual, long expected) {
         if (expected < 1 || actual != expected) throw problem("VERSION_CONFLICT", 409, "version has changed");
     }
-
-
 
     private static void requireMutable(String status) {
         if (BusinessChannelPolicy.VOIDED.equals(status)) {
             throw problem("VOIDED_RECORD_IMMUTABLE", 409, "该业务渠道已作废，不能继续修改");
         }
     }
-
-
 
     private static BusinessChannelReadback.Template template(TemplateRow row) {
         return new BusinessChannelReadback.Template(
@@ -1099,14 +1027,10 @@ public class BusinessChannelTemplateService {
                 row.version());
     }
 
-
-
     private static AuditChange change(String field, Object before, Object after) {
         return AuditChange.forNullableScalar(
                 field, before == null ? null : before.toString(), after == null ? null : after.toString());
     }
-
-
 
     private void audit(
             UUID workspaceUuid,
@@ -1127,8 +1051,6 @@ public class BusinessChannelTemplateService {
                 time.currentEpochMillis());
     }
 
-
-
     private static String canonical(String operation, Object... values) {
         return operation + "\u001f"
                 + Arrays.stream(values)
@@ -1145,19 +1067,13 @@ public class BusinessChannelTemplateService {
         return CanonicalCursorIdentity.encode(components);
     }
 
-
-
     private static <T> T notFound(String resource) {
         throw problem("NOT_FOUND", 404, resource + " was not found in the workspace");
     }
 
-
-
     private static BusinessChannelCommandApi.Problem problem(String code, int status, String message) {
         return new BusinessChannelCommandApi.Problem(code, status, message);
     }
-
-
 
     private static BusinessChannelCommandApi.Problem problem(String code, int status, String message, Throwable cause) {
         return new BusinessChannelCommandApi.Problem(code, status, message, cause);

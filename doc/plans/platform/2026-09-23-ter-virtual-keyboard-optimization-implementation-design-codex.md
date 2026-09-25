@@ -22,10 +22,11 @@ HANDOFF_RULE=新键盘先在旧键盘下层升起，旧键盘再向下退出；�
 OFFSET_RULE=|K_B−K_A|>0.5 个逻辑单位时 λ=clamp((K(t)−K_A)/(K_B−K_A),0,1)，offset(t)=offset_A+(offset_B−offset_A)×λ；|K_B−K_A|≤0.5 时 offset 先按同一 progress p 在两端线性插值，再逐帧 clamp 到 [−K(t),0]。
 MEASURE_RULE=焦点框与 viewport 以 measureLayout 相对未平移 InputSurfaceFrame 根测量；InputScrollArea 子字段改相对 scroll content 测量，再与 viewport 根相对矩形及 onScroll 回读 offset 合成；不跨 ScrollView 边界测量，不从 layout 读数扣 presentation offset。只在计算当前可见矩形时把 presentation offset 加一次。PIN visible anchor 使用同一 measureLayout 坐标契约。
 SCROLL_RULE=按中心规则平移（无论是否达到上限）后焦点框仍不完整可见时，在固定尺寸内部滚动区域补足；滚动只计算平移后真实可见交集，不重复计入平移。
+SCROLL_SETTLE_RULE=滚动成功以 onScroll 回读在 0.5 个逻辑单位容差内证明焦点框完整落入可见交集为准；滚动终止以归一化 onMomentumScrollEnd，或无动量时的 onScrollEndDrag 为准，键盘 250ms 动画完成不是滚动终止信号。每个滚动请求另有一次 1500ms 有界 watchdog，终止信号或 watchdog 到达时用最后 offset 判定成功/失败并清除 pending；Web/Android 均不得因缺少 onScroll 永久 pending。
 WIDTH_RULE=键盘外框宽度等于所属 surface 的实测可用宽度，四角半径为 0；键帽列轨按最终外框宽度、真实内边距、键间隙和布局列数填满并判容量。
 VISIBLE_BAND_RULE=覆盖模型的可见带为所属 surface 的 [0,H-K] 与焦点所属固定尺寸内部视口经整体平移后的交集；旧 MIN_CONTENT_HEIGHT=208 不作为通过条件。
 FOCUS_SESSION_RULE=keyboardState.activeFieldId 等于该字段且输入 owner 为 virtual 的区间；中间 native blur 未改变 owner 时不结束会话。
-ANIMATION_RULE=每 surface 由 InputSurfaceFrame 几何 owner 持有独立键盘呈现状态（idle/measure/enter/display/handoff/exit），与 keyboardState.visible 的可编辑语义分离；呈现快照保存 outgoing 的键位、K、冻结键帽标签和 incoming 的键位、K、hasNextField，动画结束才卸载。唯一 Animated.Value progress 以 250ms、Easing.inOut(Easing.quad) 缓动，经预计算分段线性 interpolate 驱动键盘和内容平移；scroll host 在同一交接起点仅发起一次 scrollTo(animated=true)，不逐帧 JS scrollTo。
+ANIMATION_RULE=每 surface 由 InputSurfaceFrame 几何 owner 持有独立键盘呈现状态（idle/measure/enter/display/handoff/exit），与 keyboardState.visible 的可编辑语义分离；呈现快照保存 outgoing 的键位、K、冻结键帽标签和 incoming 的键位、K、hasNextField，动画结束才卸载。唯一 Animated.Value progress 以 250ms、Easing.inOut(Easing.quad) 缓动，经预计算分段线性 interpolate 驱动键盘和内容平移；scroll host 在同一交接起点仅发起一次 scrollTo(animated=true)，不逐帧 JS scrollTo；键盘动画结束只把呈现标为 settled，不清除或强制结算滚动 readback。
 ```
 
 ## 2. 真实目标、方案取舍与 CP 总览
@@ -99,7 +100,7 @@ ANIMATION_RULE=每 surface 由 InputSurfaceFrame 几何 owner 持有独立键盘
 
 ### 4.3 内部滚动的合法时机
 
-屏幕可见带 `B=[0,H−K(t)]`；滚动视口原边界 `[viewportTop,viewportBottom]` 加**一次**内容 presentation offset 后为 `V(t)`；真实可用区 `I=B∩V(t)`。焦点可见边界框（含现有 scroll offset 的实际值）全部在 I 中才无需 scroll。否则不问整体位移是否饱和，按最小 delta 移动**既有固定尺寸**内部视口的内容；上缘裁切 delta 为负，下缘裁切 delta 为正，目标 offset clamp 在 `[0,maxScroll]` 并由 `onScroll`/`measureLayout` readback 验证，只有 readback 后全框在 I 才算成功。对非滚动宿主 delta 不可达即容量状态。`scrollIntoView.ts` 原上下缘二支保留，但把 `viewportAlreadyShrunk:true` 的旧收缩假设替换为 surface 交集；`InputScrollArea` 不改变自己或父容器尺寸，不加第二 scroll ancestor。滚动只在内容位移起始时发出一次 `scrollTo({y:target, animated:true})`，与唯一 progress clock 同时开始；不逐帧写滚动值、不执行第二段追赶动画。动画结束时核对 scroll readback 与最终焦点框；未达到可见条件按容量/滚动失败恢复，不能假称成功。
+屏幕可见带 `B=[0,H−K(t)]`；滚动视口原边界 `[viewportTop,viewportBottom]` 加**一次**内容 presentation offset 后为 `V(t)`；真实可用区 `I=B∩V(t)`。焦点可见边界框（含现有 scroll offset 的实际值）在 `0.5` 个逻辑单位容差内全部在 I 中才无需 scroll。否则不问整体位移是否饱和，按最小 delta 移动**既有固定尺寸**内部视口的内容；上缘裁切 delta 为负，下缘裁切 delta 为正，目标 offset clamp 在 `[0,maxScroll]`，并由 `onScroll` readback 验证；单次回读达到目标且仍不完整可见时立即判定 clamp 失败，非目标中间回读必须保留 pending。对非滚动宿主 delta 不可达即容量状态。`scrollIntoView.ts` 原上下缘二支保留，但把 `viewportAlreadyShrunk:true` 的旧收缩假设替换为 surface 交集；`InputScrollArea` 不改变自己或父容器尺寸，不加第二 scroll ancestor。滚动只在内容位移起始时发出一次 `scrollTo({y:target, animated:true})`，与唯一 progress clock 同时开始；不逐帧写滚动值、不执行第二段追赶动画。滚动“已结束”只由 primitive 归一化的 `onMomentumScrollEnd`，或速度在容差内的 `onScrollEndDrag` 给出；平台没有终止事件时由该请求唯一的 `1500ms` watchdog 以最后 offset 收敛。键盘 250ms 动画完成只把呈现置为 settled，不强制清除 readback；终止信号/有界 watchdog 才核对最终焦点框，成功才提交，未达到可见条件按容量/滚动失败恢复，不能假称成功。
 
 三类有效滚动/容量样本：内部视口上缘/未饱和下缘裁切；focus-next/程序化聚焦到屏外或裁切字段；字段高度大于 `H−K`（物理上无法全显，直接容量不足而非假称滚动成功）。若字段键盘前全显且高≤`H−K`，中心规则与 K 上限已保全框，不应以 `centerY=700` 的饱和例伪造滚动场景。`InputScrollArea` 只可改善其真实子字段；PIN 当前无 scroll area 时保留明确反例。焦点进入滚动区域后，对 Web 与 Android 分别用同一坐标样本核对：viewport root-local `y=100`、content-local field `y=500`、`onScroll=80`，组合后的未平移字段 surface `y=520`；若整体 presentation offset 为 `−100`，可见 `y=420`。另给普通字段 root-local `y=400`、presentation `−150`，两平台 `measureLayout` 都仍为 400，可见坐标为 250，不再重复扣 150。测试矩阵要覆盖未平移/已平移 × 未滚动/已滚动；不得对 ScrollView 子字段直接 relative-measure 到 surface root。
 
@@ -114,6 +115,14 @@ ANIMATION_RULE=每 surface 由 InputSurfaceFrame 几何 owner 持有独立键盘
 `InputSurfaceFrame` 是 progress 的唯一 writer/动画时钟 owner，按每次 transition 的 K/offset 轨迹预计算分段线性输入/输出区间并创建 `presentationOffsetY` Animated interpolation。由 `ui/base/render` 声明并公开 `SurfacePresentationOffsetProvider` 与 `useSurfacePresentationOffset`：provider 接受 `Animated.Value | Animated.AnimatedInterpolation<number>`，hook 在无 provider 时返回 `0`；该 context 只承载派生 offset node，不创建第二时钟。Input 在既有 input→render 依赖方向内提供该 context，render 的普通内容平移 wrapper 与 `LayerStack` 消费同一 node。`SurfaceRoot` 将 `{children, ScreenContainer}` 放在满 W×H 的 presentation wrapper 中；`LayerStack` 仍是并列、固定铺满的 absolute stack，其 backdrop Pressable 与全屏 focusable wrapper 保持固定，只对 `resolvePart(...)` 所在内层满尺寸 Animated.View 应用相同 translateY。不能把 transform 写在 surface/frame 根、LayerStack 根、backdrop 或弹窗内单个按钮上；`LayerStack` 的既有 layer ordering、tier/guard、back dismissal 和焦点恢复不变。
 
 `InputSurfaceFrame` 将 AdminLauncher/render 内容和键盘 overlay 分为 sibling：内容始终 W×H，不消耗 K 的 flex 高度；键盘 overlay `position:absolute,left:0,right:0,bottom:0,zIndex/elevation > LayerStack 的 1000`，不会参与内容布局。overlay 按独立 presentation phase 挂载，不由 `keyboardState.visible` 决定。measure 阶段先渲染 incoming 但放在底侧画外、视觉不可见、不可访问且不可命中，以便真实 `onLayout`；enter/display/handoff/exit 由快照维持 outgoing/incoming 键帽，owner 变 `none` 不卸载，只有 exit 动画完成才清快照卸载。handoff 中新键盘位于旧键盘下层。enter/handoff/exit 在 `H−K(t)..H` 设置透明 hit shield，吞掉键盘区域所有点按；只有显示稳定且当前 virtual owner 有效时按键事件才分发。异布局时旧键盘完全退出、目标复核成功并提交 owner 后撤 shield，再允许新键盘响应。surface 其它区域仍保留原 focus-scope 点击关闭语义；键盘面原 `stopPropagation` 保留，按键不得落到 backdrop 或 surface dismiss。双屏各有自己的 presentation state/progress/overlay，不共享实例。frame/unmount 时停止所拥有动画并把 progress 重置 0，不能留下半截位移。
+
+装配与单位的硬门：`ConsoleSurfaceInputFrame` 必须由 `SurfaceRoot` 的 `renderContentFrame` 包住 `AdminLauncher`/`content`，并位于 `SurfaceHostController` 的 canvas 子树内；`SurfaceRootContent` 只能在该 input provider 下读取 `useSurfacePresentationOffset`。因此 frame `onLayout`、字段/viewport `measureLayout`、键盘外框 `K`、presentation offset、overlay 与 hit shield 均使用同一 canvas logical unit，host→canvas scale 只作为共同祖先 transform；禁止把 input frame 放回 canvas 外，或在 input 内按 host scale 手工换算。`SurfaceRoot` 函数体不得越过 `renderContentFrame` 读取 input presentation context。
+
+### 4.5.1 性能与渲染稳定性契约
+
+键盘层 React key 只由稳定呈现角色与不可变层身份组成：当前 incoming 使用 `incoming:${fieldId}:${layout}`，当前 active 使用 `active:${fieldId}:${layout}`；被中断或冻结的层保留创建时的 immutable `layerKey`（包括原 active/incoming 身份与 transition serial），不得重新按 fieldId 合成，也不得把数组 index、动画帧或 phase 后缀拼进 key。这样 A(l1)→B(l2)→A(l1)→C 的快速中断即使出现两个同 fieldId 的冻结层，也不会发生 key 覆盖；非交互键盘传给 `VirtualKeyboard` 的 `onKey` 必须使用模块级稳定 noop，不得在 render 中创建内联空函数。
+
+动画仍只有每 surface 一个 native-driver `Animated.Value`，无动画计时器、逐帧 JS 回调或新增 listener；滚动仅允许每个 pending request 一个 `1500ms` 有界 watchdog，并在 success、terminal event、cancel、unmount 后清理，不驱动动画或逐帧更新。高度缓存随 frame geometry/宽高变化清空且有界。focused 必须覆盖 phase/owner 变化时同 serial 不重复 `progress.setValue(0)`、冻结层 immutable key/noop、scroll intermediate readback 不误失败、terminal event/无 event watchdog 能收敛以及 unmount/redirect 停止动画；破坏任一约束都必须先红后绿。
 
 上游 exact API 变更表：
 

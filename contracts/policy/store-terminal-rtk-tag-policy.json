@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "kind": "store-terminal-rtk-tag-policy",
+  "revision": "STORE_TERMINAL_RTK_TAGS_20260925",
+  "tagType": "wire",
+  "operationCount": 7,
+  "operations": [
+    {
+      "operationId": "getOperationsStoreTerminals",
+      "provides": [
+        {"kind": "requestPath", "prefix": "store-terminal-store", "path": "storeRef"},
+        {"kind": "static", "id": "store-terminal-list"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsStoreTerminal",
+      "provides": [
+        {"kind": "requestPath", "prefix": "store-terminal-store", "path": "storeRef"},
+        {"kind": "requestPath", "prefix": "store-terminal-terminal", "path": "terminalRef"},
+        {"kind": "static", "id": "store-terminal-detail"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsStoreTerminalAreaCandidates",
+      "provides": [
+        {"kind": "requestPath", "prefix": "store-terminal-store", "path": "storeRef"},
+        {"kind": "static", "id": "store-terminal-area-candidates"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsStoreTerminalTagCandidates",
+      "provides": [
+        {"kind": "requestPath", "prefix": "store-terminal-store", "path": "storeRef"},
+        {"kind": "static", "id": "store-terminal-tag-candidates"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "postOperationsStoreTerminal",
+      "provides": [],
+      "invalidates": []
+    },
+    {
+      "operationId": "putOperationsStoreTerminal",
+      "provides": [],
+      "invalidates": []
+    },
+    {
+      "operationId": "postOperationsStoreTerminalStatus",
+      "provides": [],
+      "invalidates": []
+    }
+  ]
+}

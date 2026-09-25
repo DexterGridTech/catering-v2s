@@ -1,11 +1,10 @@
 package com.catering.v2s.businesschannel.application;
 
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence.ChannelProjection;
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTaskReadPersistence;
-
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence.ChannelProjection;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTaskReadPersistence;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
 import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
@@ -121,8 +120,8 @@ public class BusinessChannelTaskReadService {
         requireScope(workspaceUuid, groupWorkspaceKey);
         String normalizedStoreRef = BusinessChannelPolicy.required(storeRef, "storeRef", 240);
         if (channelRef == null) throw problem("VALIDATION_ERROR", 422, "channelRef is required");
-        List<ChannelProjection> projections = persistence.requireSalesMenuChannel(
-                workspaceUuid, groupWorkspaceKey, normalizedStoreRef, channelRef);
+        List<ChannelProjection> projections =
+                persistence.requireSalesMenuChannel(workspaceUuid, groupWorkspaceKey, normalizedStoreRef, channelRef);
         if (projections.isEmpty()) throw salesMenuChannelIneligible();
         return salesMenuChannelJudgment(projections.get(0));
     }
@@ -155,16 +154,15 @@ public class BusinessChannelTaskReadService {
             UUID workspaceUuid, String groupWorkspaceKey, UUID bindingRef) {
         requireScope(workspaceUuid, groupWorkspaceKey);
         if (bindingRef == null) throw problem("VALIDATION_ERROR", 422, "bindingRef is required");
-        List<ChannelProjection> projections = persistence.findChannelsForBinding(
-                workspaceUuid, groupWorkspaceKey, bindingRef);
+        List<ChannelProjection> projections =
+                persistence.findChannelsForBinding(workspaceUuid, groupWorkspaceKey, bindingRef);
         StatusFacts facts = statusFacts(workspaceUuid, groupWorkspaceKey, projections);
         return projections.stream()
                 .map(projection -> channel(channelRow(projection, facts)))
                 .toList();
     }
 
-    private StatusFacts statusFacts(
-            UUID workspaceUuid, String groupWorkspaceKey, List<ChannelProjection> channels) {
+    private StatusFacts statusFacts(UUID workspaceUuid, String groupWorkspaceKey, List<ChannelProjection> channels) {
         return statusFacts(workspaceUuid, groupWorkspaceKey, channels, null);
     }
 
@@ -509,5 +507,4 @@ public class BusinessChannelTaskReadService {
             List<BusinessChannelReadback.StatusDimension> statusDimensions,
             List<BusinessChannelReadback.StatusDimension> blockers,
             long version) {}
-
 }

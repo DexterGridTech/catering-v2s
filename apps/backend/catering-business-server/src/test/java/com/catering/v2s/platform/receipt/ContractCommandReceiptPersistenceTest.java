@@ -30,8 +30,7 @@ class ContractCommandReceiptPersistenceTest {
         ContractCommandReceiptPersistence persistence = new ContractCommandReceiptPersistence(jdbc);
         assertTrue(persistence.find(workspace, key) == null);
 
-        verify(jdbc).queryForList(
-                contains("pg_advisory_xact_lock"), eq(workspace.toString()), eq(key));
+        verify(jdbc).queryForList(contains("pg_advisory_xact_lock"), eq(workspace.toString()), eq(key));
         org.mockito.ArgumentCaptor<String> sql = org.mockito.ArgumentCaptor.forClass(String.class);
         verify(jdbc).query(sql.capture(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class));
         assertFalse(sql.getValue().contains("pg_advisory_xact_lock"));
@@ -39,7 +38,8 @@ class ContractCommandReceiptPersistenceTest {
     }
 
     private static void whenQueryReturnsEmpty(JdbcTemplate jdbc) throws Exception {
-        org.mockito.Mockito.when(jdbc.queryForList(anyString(), any(Object[].class))).thenReturn(List.of());
+        org.mockito.Mockito.when(jdbc.queryForList(anyString(), any(Object[].class)))
+                .thenReturn(List.of());
         doAnswer(invocation -> {
                     ResultSetExtractor<?> extractor = invocation.getArgument(2);
                     ResultSet result = mock(ResultSet.class);

@@ -75,8 +75,8 @@ public final class OperationsStoreProfileController {
         java.util.UUID storeId = requireStore(session);
         OrganizationEntityReadback entity = entities.requireEntity(
                 OrganizationEntityType.STORE.wire(), session.workspaceUuid(), groupWorkspaceKey, storeId);
-        var operatingRules = entities.requireStoreOperatingRuleSwitches(
-                session.workspaceUuid(), groupWorkspaceKey, storeId);
+        var operatingRules =
+                entities.requireStoreOperatingRuleSwitches(session.workspaceUuid(), groupWorkspaceKey, storeId);
         return StoreWireMapper.store(
                 entity,
                 reads.store(session.workspaceUuid(), groupWorkspaceKey, storeId),

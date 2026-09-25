@@ -1,13 +1,11 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.OrganizationAuditHistoryPersistence;
 import com.catering.v2s.audit.contract.*;
 import com.catering.v2s.audit.contract.AuditEntityTypes;
 import com.catering.v2s.organization.api.CommercialGroupInitializationAuditLookup;
 import com.catering.v2s.organization.api.OrganizationVisibilityLookup.VisibleOrganizationFacts;
-import java.util.List;
+import com.catering.v2s.organization.application.persistence.OrganizationAuditHistoryPersistence;
 import java.util.Set;
-import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;

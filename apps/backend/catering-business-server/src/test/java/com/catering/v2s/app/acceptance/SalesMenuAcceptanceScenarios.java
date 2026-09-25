@@ -483,6 +483,7 @@ final class SalesMenuAcceptanceScenarios {
                         menus, source.ref(), item.ref(), menus.channels().getFirst(), "manual-sold-out"),
                 menus.session().cookie(),
                 manualTargetCommandBody("ITEM", item.ref(), "源菜单手工停售", version),
+                idempotencyHeaders("sales-menu-source-manual-sold-out"),
                 Set.of(200));
         version = assertCommand(soldOut, "setOperationsSalesMenuItemSoldOut", source.ref(), item.ref());
         version = updateItem(
@@ -3697,12 +3698,13 @@ final class SalesMenuAcceptanceScenarios {
                 "BUSINESS: stock returning does not auto-restore manual sale status");
 
         JsonNode beforeMissingReason = publishedItem(context, menus, menuRef, itemRef, firstChannel);
-        Map<String, Object> missingReason = manualTargetCommandBody("ITEM", itemRef, null, version);
+        Map<String, Object> missingReason = manualTargetCommandBody("ITEM", itemRef, "", version);
         BackendAcceptanceTest.Response reasonRejected = context.post(
                 OPERATIONS_SALES_MENU_SOLD_OUT,
                 publishedItemCommandPath(menus, menuRef, itemRef, firstChannel, "manual-sold-out"),
                 menus.session().cookie(),
                 missingReason,
+                idempotencyHeaders("sales-menu-missing-reason"),
                 Set.of(422));
         assertFalse(
                 reasonRejected.problemCode().isBlank(),
@@ -3747,6 +3749,7 @@ final class SalesMenuAcceptanceScenarios {
                 publishedItemCommandPath(menus, menuRef, itemRef, firstChannel, "manual-restore"),
                 menus.session().cookie(),
                 notConfirmedBody,
+                idempotencyHeaders("sales-menu-unconfirmed-restore"),
                 Set.of(422));
         assertEquals(
                 "CONFIRMATION_REQUIRED",
@@ -4143,6 +4146,7 @@ final class SalesMenuAcceptanceScenarios {
                 publishedItemCommandPath(menus, menu.ref(), draftItem.ref(), channel, "manual-sold-out"),
                 menus.session().cookie(),
                 manualTargetCommandBody("ITEM", draftItem.ref(), "SM05 route check", version),
+                idempotencyHeaders("sales-menu-route-sold-out"),
                 Set.of(200));
         version = assertCommand(soldOut, "setOperationsSalesMenuItemSoldOut", menu.ref(), draftItem.ref());
         BackendAcceptanceTest.Response restored = context.post(
@@ -4150,6 +4154,7 @@ final class SalesMenuAcceptanceScenarios {
                 publishedItemCommandPath(menus, menu.ref(), draftItem.ref(), channel, "manual-restore"),
                 menus.session().cookie(),
                 manualRestoreCommandBody("ITEM", draftItem.ref(), version),
+                idempotencyHeaders("sales-menu-route-restore"),
                 Set.of(200));
         version = assertCommand(restored, "restoreOperationsSalesMenuItemSale", menu.ref(), draftItem.ref());
         BackendAcceptanceTest.Response records = context.get(

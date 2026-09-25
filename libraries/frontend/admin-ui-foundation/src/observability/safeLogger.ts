@@ -56,7 +56,7 @@ export type SafeLogger = {
 };
 
 const blockedKeys =
-  /password|passwordhash|otp|token|cookie|authorization|credential|requestbody|responsebody|rawpayload|mobile/i;
+  /password|passwordhash|otp|token|cookie|authorization|credential|requestbody|responsebody|rawpayload|mobile|activationcode/i;
 
 const safeId = () => {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();

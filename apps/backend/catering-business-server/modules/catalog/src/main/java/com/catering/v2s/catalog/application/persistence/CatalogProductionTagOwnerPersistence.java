@@ -85,7 +85,8 @@ public class CatalogProductionTagOwnerPersistence {
         arguments.add(dataNodeRef);
         arguments.add(brandRef);
         arguments.addAll(tagRefs);
-        return jdbc.query(
+        return jdbc
+                .query(
                         CatalogProductionTagOwnerServiceSql.READ_TAG_REFERENCES_BY_REFS_PREFIX
                                 + placeholders
                                 + CatalogProductionTagOwnerServiceSql.READ_TAG_REFERENCES_BY_REFS_SUFFIX,
@@ -222,33 +223,29 @@ public class CatalogProductionTagOwnerPersistence {
 
     public int[] copyTags(String targetScope, String brand, List<CopyTagRow> rows) {
         List<CopyTagRow> batchRows = List.copyOf(rows);
-        return jdbc.batchUpdate(
-                CatalogProductionTagOwnerServiceSql.COPY_TAGS,
-                new BatchPreparedStatementSetter() {
-                    @Override
-                    public void setValues(java.sql.PreparedStatement statement, int index)
-                            throws java.sql.SQLException {
-                        CopyTagRow row = batchRows.get(index);
-                        statement.setObject(1, row.targetRef());
-                        statement.setString(2, targetScope);
-                        statement.setString(3, brand);
-                        statement.setString(4, row.code());
-                        statement.setString(5, row.name());
-                        statement.setString(6, row.status());
-                        statement.setLong(7, 1L);
-                        statement.setLong(8, time.currentEpochMillis());
-                        statement.setLong(9, time.currentEpochMillis());
-                    }
+        return jdbc.batchUpdate(CatalogProductionTagOwnerServiceSql.COPY_TAGS, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(java.sql.PreparedStatement statement, int index) throws java.sql.SQLException {
+                CopyTagRow row = batchRows.get(index);
+                statement.setObject(1, row.targetRef());
+                statement.setString(2, targetScope);
+                statement.setString(3, brand);
+                statement.setString(4, row.code());
+                statement.setString(5, row.name());
+                statement.setString(6, row.status());
+                statement.setLong(7, 1L);
+                statement.setLong(8, time.currentEpochMillis());
+                statement.setLong(9, time.currentEpochMillis());
+            }
 
-                    @Override
-                    public int getBatchSize() {
-                        return batchRows.size();
-                    }
-                });
+            @Override
+            public int getBatchSize() {
+                return batchRows.size();
+            }
+        });
     }
 
-    public void createTag(
-            String scope, String brand, UUID tagRef, String code, String name) {
+    public void createTag(String scope, String brand, UUID tagRef, String code, String name) {
         jdbc.update(
                 CatalogProductionTagOwnerServiceSql.CREATE_TAG,
                 tagRef,
@@ -260,8 +257,7 @@ public class CatalogProductionTagOwnerPersistence {
                 time.currentEpochMillis());
     }
 
-    public int updateTagName(
-            String scope, String brand, String code, String name, long expectedVersion) {
+    public int updateTagName(String scope, String brand, String code, String name, long expectedVersion) {
         return jdbc.update(
                 CatalogProductionTagOwnerServiceSql.UPDATE_TAG_NAME,
                 name,
@@ -272,8 +268,7 @@ public class CatalogProductionTagOwnerPersistence {
                 expectedVersion);
     }
 
-    public int updateTagStatus(
-            String scope, String brand, String code, String status, long expectedVersion) {
+    public int updateTagStatus(String scope, String brand, String code, String status, long expectedVersion) {
         return jdbc.update(
                 CatalogProductionTagOwnerServiceSql.UPDATE_TAG_STATUS,
                 status,
@@ -362,10 +357,11 @@ public class CatalogProductionTagOwnerPersistence {
 
     public ReceiptRow findReceiptReplay(String scope, String key) {
         AdvisoryLock.acquire(jdbc, "catalog-production-receipt", scope, key);
-        return jdbc.query(
+        return jdbc
+                .query(
                         CatalogProductionTagOwnerServiceSql.READ_RECEIPT_REPLAY,
-                        (result, number) -> new ReceiptRow(
-                                result.getString(1), result.getString(2), result.getString(3)),
+                        (result, number) ->
+                                new ReceiptRow(result.getString(1), result.getString(2), result.getString(3)),
                         scope,
                         key)
                 .stream()
@@ -373,12 +369,7 @@ public class CatalogProductionTagOwnerPersistence {
                 .orElse(null);
     }
 
-    public void saveReceipt(
-            String scope,
-            String key,
-            String operation,
-            String requestHash,
-            String canonicalResponse) {
+    public void saveReceipt(String scope, String key, String operation, String requestHash, String canonicalResponse) {
         jdbc.update(
                 CatalogProductionTagOwnerServiceSql.WRITE_RECEIPT,
                 UUID.randomUUID(),
@@ -406,13 +397,7 @@ public class CatalogProductionTagOwnerPersistence {
     }
 
     public record PageRow(
-            UUID tagRef,
-            String code,
-            String name,
-            String status,
-            long version,
-            long updatedAt,
-            long total) {}
+            UUID tagRef, String code, String name, String status, long version, long updatedAt, long total) {}
 
     public record TypedMutationRow(
             UUID currentTagRef,
@@ -429,4 +414,3 @@ public class CatalogProductionTagOwnerPersistence {
 
     public record ReceiptRow(String operation, String hash, String response) {}
 }
-

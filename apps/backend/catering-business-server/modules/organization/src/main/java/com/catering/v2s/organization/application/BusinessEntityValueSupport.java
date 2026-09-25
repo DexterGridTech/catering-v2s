@@ -133,12 +133,10 @@ final class BusinessEntityValueSupport {
             com.catering.v2s.organization.api.OrganizationEntityReadback after,
             ExtensionDefinitionReadback definition,
             ExtensionSubmission submission) {
-        Map<String, String> beforeValues = before == null || before.extensionValues() == null
-                ? Map.of()
-                : before.extensionValues();
-        Map<String, String> afterValues = after == null || after.extensionValues() == null
-                ? Map.of()
-                : after.extensionValues();
+        Map<String, String> beforeValues =
+                before == null || before.extensionValues() == null ? Map.of() : before.extensionValues();
+        Map<String, String> afterValues =
+                after == null || after.extensionValues() == null ? Map.of() : after.extensionValues();
         return extensionChanges(beforeValues, afterValues, definition, submission);
     }
 
@@ -153,10 +151,7 @@ final class BusinessEntityValueSupport {
             ExtensionDefinitionReadback definition,
             ExtensionSubmission submission) {
         return extensionChanges(
-                extensionValues(beforeValuesJson),
-                extensionValues(afterValuesJson),
-                definition,
-                submission);
+                extensionValues(beforeValuesJson), extensionValues(afterValuesJson), definition, submission);
     }
 
     private static List<AuditChange> extensionChanges(
@@ -164,7 +159,9 @@ final class BusinessEntityValueSupport {
             Map<String, String> afterValues,
             ExtensionDefinitionReadback definition,
             ExtensionSubmission submission) {
-        if (definition == null || definition.fields() == null || definition.fields().isEmpty()) return List.of();
+        if (definition == null
+                || definition.fields() == null
+                || definition.fields().isEmpty()) return List.of();
         Map<String, ExtensionSubmission.Mode> intent = submission == null
                 ? Map.of()
                 : submission.fields().stream()
@@ -184,7 +181,9 @@ final class BusinessEntityValueSupport {
             JsonNode parsed = JSON.readTree(source);
             if (parsed == null || !parsed.isObject()) throw new BusinessEntityService.OrganizationValidationException();
             Map<String, String> values = new LinkedHashMap<>();
-            parsed.properties().forEach(entry -> values.put(entry.getKey(), entry.getValue().toString()));
+            parsed.properties()
+                    .forEach(
+                            entry -> values.put(entry.getKey(), entry.getValue().toString()));
             return values;
         } catch (BusinessEntityService.OrganizationValidationException failure) {
             throw failure;
@@ -200,24 +199,15 @@ final class BusinessEntityValueSupport {
             Map<String, ExtensionSubmission.Mode> intent) {
         String key = field.fieldKey();
         AuditCell before = extensionCell(field, beforeValues, key, false);
-        boolean explicitlyCleared = intent.get(key) == ExtensionSubmission.Mode.CLEAR
-                && before.state() != AuditValueState.MISSING;
+        boolean explicitlyCleared =
+                intent.get(key) == ExtensionSubmission.Mode.CLEAR && before.state() != AuditValueState.MISSING;
         AuditCell after = extensionCell(field, afterValues, key, explicitlyCleared);
         if (before.sameAs(after)) return null;
-        return new AuditChange(
-                key,
-                field.label(),
-                before.state(),
-                before.value(),
-                after.state(),
-                after.value());
+        return new AuditChange(key, field.label(), before.state(), before.value(), after.state(), after.value());
     }
 
     private static AuditCell extensionCell(
-            ExtensionDefinitionReadback.Field field,
-            Map<String, String> values,
-            String key,
-            boolean cleared) {
+            ExtensionDefinitionReadback.Field field, Map<String, String> values, String key, boolean cleared) {
         if (!values.containsKey(key))
             return new AuditCell(cleared ? AuditValueState.CLEARED : AuditValueState.MISSING, null);
         String raw = values.get(key);
@@ -271,8 +261,7 @@ final class BusinessEntityValueSupport {
     static String entityType(String value) {
         String type = Objects.requireNonNullElse(value, "").toUpperCase(Locale.ROOT);
         if (!java.util.Set.of("BRAND", "TENANT", com.catering.v2s.organization.api.BusinessEntityTypes.HEAD_COMPANY)
-                .contains(type))
-            throw new BusinessEntityService.OrganizationValidationException();
+                .contains(type)) throw new BusinessEntityService.OrganizationValidationException();
         return type;
     }
 

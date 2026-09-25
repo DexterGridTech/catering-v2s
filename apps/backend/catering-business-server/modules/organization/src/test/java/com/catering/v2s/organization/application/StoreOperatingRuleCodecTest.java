@@ -1,7 +1,7 @@
 package com.catering.v2s.organization.application;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 class StoreOperatingRuleCodecTest {
     @Test
     void readAddsDefaultsAndIgnoresUnknownPersistedKeys() {
-        Map<String, Serializable> values = StoreOperatingRuleCodec.resolved(
-                "{\"tableManagementEnabled\":true,\"unknownFutureRule\":true}");
+        Map<String, Serializable> values =
+                StoreOperatingRuleCodec.resolved("{\"tableManagementEnabled\":true,\"unknownFutureRule\":true}");
 
         assertTrue((Boolean) values.get("tableManagementEnabled"));
         assertFalse(values.containsKey("unknownFutureRule"));

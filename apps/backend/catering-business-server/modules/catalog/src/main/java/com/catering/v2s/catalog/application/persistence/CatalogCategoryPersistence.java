@@ -10,7 +10,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -73,16 +72,20 @@ public class CatalogCategoryPersistence {
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_TEXT_HASHTEXT_CURRENT_CATEGORY_CATEGORY_REF
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_RECEIPT_LOCK_STATUS_VERSION_DATA_NODE_REF
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_BRAND_REF_CATEGORY_REF_STATUS_VOIDED
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_OPEN_PAREN_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_JOIN_RECEIPT_LOCK_DATA_NODE_REF_IDEMPOTENCY_KEY_UPDATED_CATEGORY
+                + CatalogCategoryServiceSql
+                        .CATALOG_CATEGORY_SERVICE_OPEN_PAREN_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT
+                + CatalogCategoryServiceSql
+                        .CATALOG_CATEGORY_SERVICE_JOIN_RECEIPT_LOCK_DATA_NODE_REF_IDEMPOTENCY_KEY_UPDATED_CATEGORY
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_CATEGORY_NAME_VERSION
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_FROM_CLAUSE_CURRENT_CATEGORY_CURRENT_CATEGORY_CATEGORY_REF
+                + CatalogCategoryServiceSql
+                        .CATALOG_CATEGORY_SERVICE_FROM_CLAUSE_CURRENT_CATEGORY_CURRENT_CATEGORY_CATEGORY_REF
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PRIOR_RECEIPT_CURRENT_VERSION_CATEGORY_CATEGORY_REF
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_CODE_NAME_STATUS
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_DISPLAY_ORDER
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_UPDATED_CATEGORY_CATEGORY_SUBTREE_CATEGORY_REF
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_SUBTREE_CHILD_CATEGORY_REF_PARENT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CHILD_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_ALTERNATE_A
+                + CatalogCategoryServiceSql
+                        .CATALOG_CATEGORY_SERVICE_CHILD_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_ALTERNATE_A
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_CHILD_STATUS_VOIDED_DELETION_AVAILABILITY
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_CATEGORY_REF_SUBTREE_SIZE
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_ITEM_ITEM_REF_BLOCKING_REFERENCE_COUNT
@@ -90,7 +93,8 @@ public class CatalogCategoryPersistence {
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_ITEM_REFERENCE_REF_REFS_ITEM_REF
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_INBOUND_REFS_CODE_ITEM
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_ITEM_CATEGORY
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_ITEM_RELATION_REFS_CATEGORY_REF_SUBTREE_REFS_ITEM
+                + CatalogCategoryServiceSql
+                        .CATALOG_CATEGORY_SERVICE_CATALOG_ITEM_RELATION_REFS_CATEGORY_REF_SUBTREE_REFS_ITEM
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_ITEM_ITEM_REF_RELATION_REFS_DATA_NODE_REF
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_SUBTREE_ITEM_STATUS_VOIDED_REFS
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_ITEM_CATEGORY_SUBTREE
@@ -99,13 +103,17 @@ public class CatalogCategoryPersistence {
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_VOIDED_RESPONSE_JSONB_BUILD_OBJECT_CATEGORY_REF
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_CODE_NAME_STATUS_ALTERNATE_A
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_PARENT_CATEGORY_REF_VERSION
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_VERSION_DISPLAY_ORDER_DELETION_AVAILABILITY
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CAN_DELETE_AVAILABILITY_BLOCKING_REFERENCE_COUNT_SUBTREE_SIZE
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_BLOCKING_REFERENCE_COUNT_AVAILABILITY_BLOCKING_REFERENCES
+                + CatalogCategoryServiceSql
+                        .CATALOG_CATEGORY_SERVICE_CATEGORY_VERSION_DISPLAY_ORDER_DELETION_AVAILABILITY
+                + CatalogCategoryServiceSql
+                        .CATALOG_CATEGORY_SERVICE_CAN_DELETE_AVAILABILITY_BLOCKING_REFERENCE_COUNT_SUBTREE_SIZE
+                + CatalogCategoryServiceSql
+                        .CATALOG_CATEGORY_SERVICE_BLOCKING_REFERENCE_COUNT_AVAILABILITY_BLOCKING_REFERENCES
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_AVAILABILITY_BLOCKING_REFERENCE_FACTS_BODY
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_FROM_CLAUSE_UPDATED_CATEGORY_CATEGORY
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_COMMAND_RECEIPT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID
+                + CatalogCategoryServiceSql
+                        .CATALOG_CATEGORY_SERVICE_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CREATED_AT_EPOCH_MILLIS
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_RESPONSE_BODY_TEXT
                 + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CURRENT_CATEGORY_CATEGORY_REF_VERSION_PRIOR_RECEIPT
@@ -154,108 +162,168 @@ public class CatalogCategoryPersistence {
             String operation,
             String requestHash) {
         long timestamp = time.currentEpochMillis();
-        String sql = CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CTE_RECEIPT_LOCK_PG_ADVISORY_XACT_LOCK_HASHTEXT_ALTERNATE_A
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_TEXT_HASHTEXT_HIERARCHY_LOCK
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PG_ADVISORY_XACT_LOCK_HASHTEXT_TEXT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_LOCKED_CATEGORIES_CATEGORY_CATEGORY_REF_CODE
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_PARENT_CATEGORY_REF_VERSION_DISPLAY_ORDER
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_HIERARCHY_LOCK_CATALOG_CATEGORY_CATEGORY
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_DATA_NODE_REF_BRAND_REF_STATUS
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_MOVE_INPUT_CATEGORY_REF_TEXT_ACTION
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PARAMETER_PLACEHOLDER_REQUESTED_PARENT_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_LOCKED_CATEGORIES_CURRENT_CATEGORY_CATEGORY
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_JOIN_MOVE_INPUT_INPUT_CATEGORY_REF_CATEGORY_PRIOR_RECEIPT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_OPEN_PAREN_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT_ALTERNATE_A
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_RECEIPT_LOCK_DATA_NODE_REF_IDEMPOTENCY_KEY_REQUESTED_PARENT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_MOVE_INPUT_CATEGORY_INPUT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_INPUT_REQUESTED_PARENT_REF_CATEGORY_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_OPEN_PAREN_CURRENT_CATEGORY_CATEGORY_REF_CHILD
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_DEPTH_CHILD
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CHILD_PARENT_CATEGORY_REF_SUBTREE_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_REQUESTED_PARENT_DEPTH_CATEGORY_REF_PARENT_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_PARENT_ANCESTORS
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PARENT_ANCESTORS_LOCKED_CATEGORIES_PARENT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PARENT_CATEGORY_REF_PARENT_ANCESTORS_PARENT_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SIBLING_CATEGORY_REF_DISPLAY_ORDER_LAG
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SIBLING_DISPLAY_ORDER_CODE_PREVIOUS_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SIBLING_DISPLAY_ORDER_CODE_PREVIOUS_DISPLAY_ORDER
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_OPEN_PAREN_SIBLING_DISPLAY_ORDER_CODE_NEXT_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_OPEN_PAREN_LOCKED_CATEGORIES_SIBLING_DISPLAY_ORDER_CODE_NEXT_DISPLAY_ORDER
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CURRENT_CATEGORY_CURRENT_SIBLING_PARENT_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SIBLINGS_CURRENT_PARENT_CATEGORY_REF_CURRENT_SIBLING_SIBLING
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CURRENT_CATEGORY_SIBLING_CURRENT_CATEGORY_REF_MOVE_PLAN
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_INPUT_ACTION_REQUESTED_PARENT_REF_EXPECTED_VERSION
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_INPUT_UPDATED_AT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CURRENT_CATEGORY_REF_CURRENT_CATEGORY_REF_VERSION
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CURRENT_DISPLAY_ORDER_CURRENT_DISPLAY_ORDER_CURRENT_SIBLING
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CURRENT_SIBLING_PREVIOUS_DISPLAY_ORDER_NEXT_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PARENT_ANCESTORS_CURRENT_SIBLING_NEXT_DISPLAY_ORDER_DEPTH
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_TARGET_DEPTH_DEPTH_SUBTREE_DEPTH
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_LOCKED_CATEGORIES_CATEGORY_DISPLAY_ORDER
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_REQUESTED_PARENT_REF_CATEGORY_PARENT_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_REPARENT_DISPLAY_ORDER_CURRENT_CATEGORY_REF_NOT_FOUND
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CURRENT_VERSION_INPUT_EXPECTED_VERSION
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_VERSION_CONFLICT_INPUT_ACTION_REPARENT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_WHEN_INPUT_ACTION_REPARENT_REQUESTED_PARENT_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_REQUESTED_PARENT_CATEGORY_REF_NOT_FOUND_INPUT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_INPUT_REQUESTED_PARENT_REF_CURRENT_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_SUBTREE_CATEGORY_REF_INPUT_REQUESTED_PARENT_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_HIERARCHY_CYCLE_INPUT_ACTION_REPARENT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_DEPTH_ALTERNATE_A
-                + CATALOG_CATEGORY_MAX_DEPTH
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_THEN_CATEGORY_DEPTH_EXCEEDED_INPUT_ACTION_CURRENT_SIBLING
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_THEN_MOVE_BOUNDARY_INPUT_ACTION_DOWN
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CURRENT_CATEGORY_MOVE_BOUNDARY_VALIDATION_CODE_INPUT_CURRENT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CURRENT_SIBLING_UPDATED_CATEGORIES
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_OPEN_PAREN_CATALOG_CATEGORY_CATEGORY_PARENT_CATEGORY_REF_PLAN_ACTION
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_CATEGORY_CATEGORY_REF_PLAN_CURRENT_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_PARENT_CATEGORY_REF_DISPLAY_ORDER_PLAN
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_CATEGORY_REF_PLAN_CURRENT_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PLAN_ACTION_CATEGORY_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PLAN_PREVIOUS_DISPLAY_ORDER_ACTION_CATEGORY
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PLAN_CURRENT_DISPLAY_ORDER_ACTION_DOWN
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_CATEGORY_REF_PLAN_CURRENT_CATEGORY_REF_ALTERNATE_A
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_THEN_PLAN_NEXT_DISPLAY_ORDER_ACTION_DOWN
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PLAN_CURRENT_DISPLAY_ORDER_CATEGORY_DISPLAY_ORDER
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_UPDATE_MOVE_PLAN_UPDATED_AT_EPOCH_MILLIS_PLAN_UPDATED_AT_VALIDATION_CODE
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_PRIOR_RECEIPT_CATEGORY_CATEGORY_REF_PLAN_CURRENT_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_ALTERNATIVE_CATEGORY_CATEGORY_REF_PLAN_PREVIOUS_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_CATEGORY_REF_CODE_NAME
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_UPDATED_CATEGORIES
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_EMPTY_LITERAL
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_MOVE_PLAN_CATEGORY_PLAN_CATEGORY_REF_CURRENT_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_UPDATED_CURRENT_READBACK_SUBTREE_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_READBACK_SUBTREE_CHILD_CATEGORY_REF_PARENT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CHILD_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_ALTERNATE_B
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_CATEGORY_REF_SUBTREE_SIZE_ITEM
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_BLOCKING_REFERENCE_COUNT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_JSONB_AGG_JSONB_BUILD_OBJECT_REFERENCE_KIND_CATALOG_ITEM
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CODE_REFS_NAME_DIRECTION
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_READBACK_SUBTREE_ITEM_ITEM_REF_CODE_NAME
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_ITEM_CATEGORY_RELATION_REFS_CATEGORY_REF_SUBTREE_REFS
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_JOIN_CATALOG_ITEM_ITEM_ITEM_REF_RELATION_REFS_DATA_NODE_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_ITEM_BRAND_REF_STATUS_VOIDED
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_FROM_CLAUSE_READBACK_SUBTREE_SUBTREE
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_ITEM_CATEGORY_RELATION_CATEGORY_REF_SUBTREE
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_ITEM_ITEM_ITEM_REF_RELATION_DATA_NODE_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_ITEM_BRAND_REF_STATUS_VOIDED_ALTERNATE_A
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_REF_CATEGORY_CODE_NAME
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_STATUS_PARENT_CATEGORY_REF_VERSION
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_DISPLAY_ORDER
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_DISPLAY_ORDER_ALTERNATE_A
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_DELETION_AVAILABILITY
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_SIZE_AVAILABILITY_BLOCKING_REFERENCE_COUNT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_AVAILABILITY_BLOCKING_REFERENCE_COUNT_BLOCKING_REFERENCES
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_UPDATED_CURRENT_AVAILABILITY_BLOCKING_REFERENCE_FACTS_BODY
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_DELETION_AVAILABILITY_CATEGORY_AVAILABILITY_WRITTEN_RECEIPT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_RESPONSE_REQUEST_HASH_CREATED_AT_EPOCH_MILLIS_BODY
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_RETURNING_RESPONSE_TEXT
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_PLAN_VALIDATION_CODE_CURRENT_CATEGORY_CATEGORY_REF
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PRIOR_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_MOVE_PLAN_WRITTEN_RECEIPT_RESPONSE_WRITTEN_RESPONSE_PLAN
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PRIOR_RECEIPT_LEFT_JOIN_CURRENT_CATEGORY_O
-                + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_WRITTEN_RECEIPT_LEFT_JOIN_WRITTEN_RECEIPT_ON_ALTERNATE_A;
+        String sql =
+                CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CTE_RECEIPT_LOCK_PG_ADVISORY_XACT_LOCK_HASHTEXT_ALTERNATE_A
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_TEXT_HASHTEXT_HIERARCHY_LOCK
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PG_ADVISORY_XACT_LOCK_HASHTEXT_TEXT
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_LOCKED_CATEGORIES_CATEGORY_CATEGORY_REF_CODE
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATEGORY_PARENT_CATEGORY_REF_VERSION_DISPLAY_ORDER
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_HIERARCHY_LOCK_CATALOG_CATEGORY_CATEGORY
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_DATA_NODE_REF_BRAND_REF_STATUS
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_MOVE_INPUT_CATEGORY_REF_TEXT_ACTION
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PARAMETER_PLACEHOLDER_REQUESTED_PARENT_REF
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_LOCKED_CATEGORIES_CURRENT_CATEGORY_CATEGORY
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_JOIN_MOVE_INPUT_INPUT_CATEGORY_REF_CATEGORY_PRIOR_RECEIPT
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_OPEN_PAREN_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT_ALTERNATE_A
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_RECEIPT_LOCK_DATA_NODE_REF_IDEMPOTENCY_KEY_REQUESTED_PARENT
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_MOVE_INPUT_CATEGORY_INPUT
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_INPUT_REQUESTED_PARENT_REF_CATEGORY_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_OPEN_PAREN_CURRENT_CATEGORY_CATEGORY_REF_CHILD
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_DEPTH_CHILD
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CHILD_PARENT_CATEGORY_REF_SUBTREE_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_REQUESTED_PARENT_DEPTH_CATEGORY_REF_PARENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_PARENT_ANCESTORS
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PARENT_ANCESTORS_LOCKED_CATEGORIES_PARENT
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_PARENT_CATEGORY_REF_PARENT_ANCESTORS_PARENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SIBLING_CATEGORY_REF_DISPLAY_ORDER_LAG
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SIBLING_DISPLAY_ORDER_CODE_PREVIOUS_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_SIBLING_DISPLAY_ORDER_CODE_PREVIOUS_DISPLAY_ORDER
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_OPEN_PAREN_SIBLING_DISPLAY_ORDER_CODE_NEXT_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_OPEN_PAREN_LOCKED_CATEGORIES_SIBLING_DISPLAY_ORDER_CODE_NEXT_DISPLAY_ORDER
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CURRENT_CATEGORY_CURRENT_SIBLING_PARENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_SIBLINGS_CURRENT_PARENT_CATEGORY_REF_CURRENT_SIBLING_SIBLING
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CURRENT_CATEGORY_SIBLING_CURRENT_CATEGORY_REF_MOVE_PLAN
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_INPUT_ACTION_REQUESTED_PARENT_REF_EXPECTED_VERSION
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_INPUT_UPDATED_AT
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CURRENT_CATEGORY_REF_CURRENT_CATEGORY_REF_VERSION
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CURRENT_DISPLAY_ORDER_CURRENT_DISPLAY_ORDER_CURRENT_SIBLING
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CURRENT_SIBLING_PREVIOUS_DISPLAY_ORDER_NEXT_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_PARENT_ANCESTORS_CURRENT_SIBLING_NEXT_DISPLAY_ORDER_DEPTH
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_TARGET_DEPTH_DEPTH_SUBTREE_DEPTH
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_LOCKED_CATEGORIES_CATEGORY_DISPLAY_ORDER
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_REQUESTED_PARENT_REF_CATEGORY_PARENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_REPARENT_DISPLAY_ORDER_CURRENT_CATEGORY_REF_NOT_FOUND
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CURRENT_VERSION_INPUT_EXPECTED_VERSION
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_VERSION_CONFLICT_INPUT_ACTION_REPARENT
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_WHEN_INPUT_ACTION_REPARENT_REQUESTED_PARENT_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_REQUESTED_PARENT_CATEGORY_REF_NOT_FOUND_INPUT
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_INPUT_REQUESTED_PARENT_REF_CURRENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CONDITION_SUBTREE_CATEGORY_REF_INPUT_REQUESTED_PARENT_REF
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_HIERARCHY_CYCLE_INPUT_ACTION_REPARENT
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_DEPTH_ALTERNATE_A
+                        + CATALOG_CATEGORY_MAX_DEPTH
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_THEN_CATEGORY_DEPTH_EXCEEDED_INPUT_ACTION_CURRENT_SIBLING
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_THEN_MOVE_BOUNDARY_INPUT_ACTION_DOWN
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CURRENT_CATEGORY_MOVE_BOUNDARY_VALIDATION_CODE_INPUT_CURRENT
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CURRENT_SIBLING_UPDATED_CATEGORIES
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_OPEN_PAREN_CATALOG_CATEGORY_CATEGORY_PARENT_CATEGORY_REF_PLAN_ACTION
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CONDITION_CATEGORY_CATEGORY_REF_PLAN_CURRENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATEGORY_PARENT_CATEGORY_REF_DISPLAY_ORDER_PLAN
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATEGORY_CATEGORY_REF_PLAN_CURRENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PLAN_ACTION_CATEGORY_CATEGORY_REF
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PLAN_PREVIOUS_DISPLAY_ORDER_ACTION_CATEGORY
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PLAN_CURRENT_DISPLAY_ORDER_ACTION_DOWN
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATEGORY_CATEGORY_REF_PLAN_CURRENT_CATEGORY_REF_ALTERNATE_A
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_THEN_PLAN_NEXT_DISPLAY_ORDER_ACTION_DOWN
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_PLAN_CURRENT_DISPLAY_ORDER_CATEGORY_DISPLAY_ORDER
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_UPDATE_MOVE_PLAN_UPDATED_AT_EPOCH_MILLIS_PLAN_UPDATED_AT_VALIDATION_CODE
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CONDITION_PRIOR_RECEIPT_CATEGORY_CATEGORY_REF_PLAN_CURRENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_ALTERNATIVE_CATEGORY_CATEGORY_REF_PLAN_PREVIOUS_REF
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_CATEGORY_REF_CODE_NAME
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_UPDATED_CATEGORIES
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_EMPTY_LITERAL
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_MOVE_PLAN_CATEGORY_PLAN_CATEGORY_REF_CURRENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_UPDATED_CURRENT_READBACK_SUBTREE_CATEGORY_REF
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_READBACK_SUBTREE_CHILD_CATEGORY_REF_PARENT
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CHILD_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_ALTERNATE_B
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_CATEGORY_REF_SUBTREE_SIZE_ITEM
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_BLOCKING_REFERENCE_COUNT
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_JSONB_AGG_JSONB_BUILD_OBJECT_REFERENCE_KIND_CATALOG_ITEM
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CODE_REFS_NAME_DIRECTION
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_READBACK_SUBTREE_ITEM_ITEM_REF_CODE_NAME
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATALOG_ITEM_CATEGORY_RELATION_REFS_CATEGORY_REF_SUBTREE_REFS
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_JOIN_CATALOG_ITEM_ITEM_ITEM_REF_RELATION_REFS_DATA_NODE_REF
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_ITEM_BRAND_REF_STATUS_VOIDED
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_FROM_CLAUSE_READBACK_SUBTREE_SUBTREE
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATALOG_ITEM_CATEGORY_RELATION_CATEGORY_REF_SUBTREE
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATALOG_ITEM_ITEM_ITEM_REF_RELATION_DATA_NODE_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CONDITION_ITEM_BRAND_REF_STATUS_VOIDED_ALTERNATE_A
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_REF_CATEGORY_CODE_NAME
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_STATUS_PARENT_CATEGORY_REF_VERSION
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_DISPLAY_ORDER
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_DISPLAY_ORDER_ALTERNATE_A
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_DELETION_AVAILABILITY
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_SUBTREE_SIZE_AVAILABILITY_BLOCKING_REFERENCE_COUNT
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_AVAILABILITY_BLOCKING_REFERENCE_COUNT_BLOCKING_REFERENCES
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_UPDATED_CURRENT_AVAILABILITY_BLOCKING_REFERENCE_FACTS_BODY
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_DELETION_AVAILABILITY_CATEGORY_AVAILABILITY_WRITTEN_RECEIPT
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_RESPONSE_REQUEST_HASH_CREATED_AT_EPOCH_MILLIS_BODY
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_RETURNING_RESPONSE_TEXT
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_SELECT_PLAN_VALIDATION_CODE_CURRENT_CATEGORY_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_PRIOR_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_MOVE_PLAN_WRITTEN_RECEIPT_RESPONSE_WRITTEN_RESPONSE_PLAN
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PRIOR_RECEIPT_LEFT_JOIN_CURRENT_CATEGORY_O
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_WRITTEN_RECEIPT_LEFT_JOIN_WRITTEN_RECEIPT_ON_ALTERNATE_A;
         return jdbc.queryForObject(
                 sql,
                 (result, ignored) -> new TypedCategoryMoveRow(
@@ -293,7 +361,9 @@ public class CatalogCategoryPersistence {
 
     public int updateName(UUID categoryRef, String name, long updatedAt) {
         return jdbc.update(
-                CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_UPDATE_CATALOG_CATEGORY_NAME_VERSION_UPDATED_AT_EPOCH_MILLIS + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_REF,
+                CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_UPDATE_CATALOG_CATEGORY_NAME_VERSION_UPDATED_AT_EPOCH_MILLIS
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_REF,
                 name,
                 updatedAt,
                 categoryRef);
@@ -315,19 +385,26 @@ public class CatalogCategoryPersistence {
             String scope, String brand, UUID parentCategoryRef, UUID movingCategoryRef) {
         return jdbc.query(
                 CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CTE_ANCESTORS_CATEGORY_REF_PARENT_CATEGORY_REF_DEPTH
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_CATALOG_CATEGORY_CATEGORY_REF_PARENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_SELECT_CATALOG_CATEGORY_CATEGORY_REF_PARENT_CATEGORY_REF
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_WHERE_DATA_NODE_REF
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_BRAND_REF_CATEGORY_REF_STATUS_VOIDED
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_ANCESTORS
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CONDITION_BRAND_REF_CATEGORY_REF_STATUS_VOIDED
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_SELECT_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_ANCESTORS
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_FROM_CLAUSE_ANCESTORS_PARENT
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PARENT_CATEGORY_REF_ANCESTORS_PARENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_PARENT_CATEGORY_REF_ANCESTORS_PARENT_CATEGORY_REF
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_PARENT_BRAND_REF_STATUS_VOIDED
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_SUBTREE_CATEGORY_REF_DEPTH
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_STATUS
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_CATALOG_CATEGORY_CHILD_CATEGORY_REF_SUBTREE_DEPTH
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_JOIN_SUBTREE_CHILD_PARENT_CATEGORY_REF_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_SELECT_CATALOG_CATEGORY_CHILD_CATEGORY_REF_SUBTREE_DEPTH
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_JOIN_SUBTREE_CHILD_PARENT_CATEGORY_REF_CATEGORY_REF
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_WHERE_CHILD_DATA_NODE_REF_BRAND_REF
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_ANCESTORS_CHILD_STATUS_VOIDED_DEPTH
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CONDITION_ANCESTORS_CHILD_STATUS_VOIDED_DEPTH
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_DEPTH,
                 statement -> {
                     statement.setString(1, scope);
@@ -350,11 +427,15 @@ public class CatalogCategoryPersistence {
     public int readSubtreeDepth(String scope, String brand, UUID rootCategoryRef) {
         Integer depth = jdbc.queryForObject(
                 CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CTE_CATALOG_CATEGORY_SUBTREE_CATEGORY_REF_DEPTH
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_WHERE_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_STATUS
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_WHERE_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_STATUS
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_SUBTREE_CHILD_CATEGORY_REF_DEPTH
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_JOIN_CONDITION_CHILD_PARENT_CATEGORY_REF_SUBTREE_CATEGORY_REF
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_WHERE_CHILD_DATA_NODE_REF_BRAND_REF_ALTERNATE_A
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_SUBTREE_CHILD_STATUS_VOIDED_DEPTH,
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_JOIN_CONDITION_CHILD_PARENT_CATEGORY_REF_SUBTREE_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_WHERE_CHILD_DATA_NODE_REF_BRAND_REF_ALTERNATE_A
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CONDITION_SUBTREE_CHILD_STATUS_VOIDED_DEPTH,
                 Integer.class,
                 scope,
                 brand,
@@ -366,7 +447,9 @@ public class CatalogCategoryPersistence {
 
     public int updateSiblingOrder(UUID categoryRef, int displayOrder, long updatedAt) {
         return jdbc.update(
-                CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_UPDATE_CATALOG_CATEGORY_DISPLAY_ORDER_VERSION_UPDATED_AT_EPOCH_MILLIS + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_REF_ALTERNATE_B,
+                CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_UPDATE_CATALOG_CATEGORY_DISPLAY_ORDER_VERSION_UPDATED_AT_EPOCH_MILLIS
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_REF_ALTERNATE_B,
                 displayOrder,
                 updatedAt,
                 categoryRef);
@@ -384,20 +467,21 @@ public class CatalogCategoryPersistence {
         args.addAll(stable);
         List<CategoryRow> rows = jdbc.query(
                 CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF
                         + placeholders
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CLOSE_PAREN_STATUS_VOIDED_CATEGORY_REF,
                 (result, row) -> categoryRow(result),
                 args.toArray());
-        if (rows.size() != stable.size())
-            throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在或已删除");
+        if (rows.size() != stable.size()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在或已删除");
         return rows;
     }
 
     public List<CategoryRow> lockSiblings(String scope, String brand, UUID parentCategoryRef) {
         return jdbc.query(
                 CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE_ALTERNATE_A
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_PARENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_PARENT_CATEGORY_REF
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_NOT_PREDICATE_PREFIX
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_STATUS_VOIDED_CATEGORY_REF,
                 (result, row) -> categoryRow(result),
@@ -409,11 +493,14 @@ public class CatalogCategoryPersistence {
     public List<UUID> subtreeRefs(String scope, String brand, UUID rootCategoryRef) {
         List<UUID> refs = jdbc.query(
                 CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CTE_CATALOG_CATEGORY_SUBTREE_CATEGORY_REF
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_STATUS_ALTERNATE_A
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_STATUS_ALTERNATE_A
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_CHILD_CATEGORY_REF_PARENT
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CHILD_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CHILD_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CHILD_BRAND_REF
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_SUBTREE_CHILD_STATUS_VOIDED_CATEGORY_REF,
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CONDITION_SUBTREE_CHILD_STATUS_VOIDED_CATEGORY_REF,
                 (result, row) -> result.getObject(1, UUID.class),
                 scope,
                 brand,
@@ -434,8 +521,10 @@ public class CatalogCategoryPersistence {
             long displayOrder,
             long createdAt) {
         return jdbc.update(
-                CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_INSERT_INTO_CATALOG_CATEGORY_INSERT_INTO_CATALOG_CATALOG_
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATEGORY_REF_DATA_NODE_REF_BRAND_REF_CODE_NAME_PARENT_CATEGORY_REF_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_VALUES,
+                CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_INSERT_INTO_CATALOG_CATEGORY_INSERT_INTO_CATALOG_CATALOG_
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATEGORY_REF_DATA_NODE_REF_BRAND_REF_CODE_NAME_PARENT_CATEGORY_REF_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_VALUES,
                 categoryRef,
                 dataNodeRef,
                 brandRef,
@@ -455,7 +544,8 @@ public class CatalogCategoryPersistence {
             long updatedAt,
             long expectedVersion) {
         return jdbc.update(
-                CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_UPDATE_CATALOG_CATEGORY_STATUS_VERSION_UPDATED_AT_EPOCH_MILLIS
+                CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_UPDATE_CATALOG_CATEGORY_STATUS_VERSION_UPDATED_AT_EPOCH_MILLIS
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_WHERE_DATA_NODE_REF_BRAND_REF_CATEGORY_REF
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_VERSION_STATUS_VOIDED,
                 status,
@@ -468,13 +558,18 @@ public class CatalogCategoryPersistence {
 
     public int readDepth(String scope, String brand, UUID categoryRef) {
         Integer depth = jdbc.queryForObject(
-                CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CTE_ANCESTORS_CATEGORY_REF_PARENT_CATEGORY_REF_DEPTH_ALTERNATE_A
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_CATALOG_CATEGORY_CATEGORY_REF_PARENT_CATEGORY_REF_ALTERNATE_A
+                CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CTE_ANCESTORS_CATEGORY_REF_PARENT_CATEGORY_REF_DEPTH_ALTERNATE_A
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_SELECT_CATALOG_CATEGORY_CATEGORY_REF_PARENT_CATEGORY_REF_ALTERNATE_A
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_WHERE_DATA_NODE_REF_ALTERNATE_A
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_BRAND_REF_CATEGORY_REF_STATUS_VOIDED_ALTERNATE_A
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_ANCESTORS_ALTERNATE_A
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CONDITION_BRAND_REF_CATEGORY_REF_STATUS_VOIDED_ALTERNATE_A
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_SELECT_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_ANCESTORS_ALTERNATE_A
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_FROM_CLAUSE_CATALOG_CATEGORY_PARENT
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_JOIN_ANCESTORS_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_JOIN_ANCESTORS_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_WHERE_PARENT_DATA_NODE_REF_BRAND_REF_STATUS
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_ANCESTORS_DEPTH,
                 Integer.class,
@@ -489,7 +584,8 @@ public class CatalogCategoryPersistence {
     public CategoryRow read(String dataNodeRef, String brandRef, UUID categoryRef) {
         return readRow(
                 CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE_ALTERNATE_B
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_ALTERNATE_A
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_ALTERNATE_A
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_STATUS_VOIDED,
                 dataNodeRef,
                 brandRef,
@@ -499,7 +595,8 @@ public class CatalogCategoryPersistence {
     public CategoryRow lock(String dataNodeRef, String brandRef, UUID categoryRef) {
         return readRow(
                 CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE_ALTERNATE_C
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_ALTERNATE_B
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_ALTERNATE_B
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_STATUS_VOIDED_ALTERNATE_A,
                 dataNodeRef,
                 brandRef,
@@ -508,7 +605,9 @@ public class CatalogCategoryPersistence {
 
     public CategoryRow readIncludingVoided(String dataNodeRef, String brandRef, UUID categoryRef) {
         return readRow(
-                CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE_ALTERNATE_D + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_ALTERNATE_C,
+                CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE_ALTERNATE_D
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_ALTERNATE_C,
                 dataNodeRef,
                 brandRef,
                 categoryRef);
@@ -529,8 +628,10 @@ public class CatalogCategoryPersistence {
                 CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CTE_CATALOG_CATEGORY_SUBTREE_CATEGORY_REF_ALTERNATE_A
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_CHILD
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_FROM_CLAUSE_SUBTREE_CHILD_PARENT
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_JOIN_CONDITION_CHILD_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_WHERE_CHILD_DATA_NODE_REF_BRAND_REF_ALTERNATE_B
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_JOIN_CONDITION_CHILD_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_WHERE_CHILD_DATA_NODE_REF_BRAND_REF_ALTERNATE_B
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_SUBTREE_CATEGORY_REF,
                 (result, row) -> result.getObject(1, UUID.class),
                 scope,
@@ -554,7 +655,8 @@ public class CatalogCategoryPersistence {
         return jdbc.query(
                 CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_CATALOG_ITEM_CATEGORY_ITEM_CODE_RELATION
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_JOIN_CATALOG_ITEM_ITEM
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_JOIN_CONDITION_ITEM_ITEM_REF_RELATION_DATA_NODE_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_JOIN_CONDITION_ITEM_ITEM_REF_RELATION_DATA_NODE_REF
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_ITEM_STATUS_VOIDED_RELATION
                         + placeholders
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CLOSE_PAREN_ITEM_CODE,
@@ -566,9 +668,12 @@ public class CatalogCategoryPersistence {
             String scope, String brand, UUID categoryRef) {
         return jdbc.query(
                 CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CTE_CATALOG_CATEGORY_SUBTREE_CATEGORY_REF_ALTERNATE_B
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_STATUS_ALTERNATE_B
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SUBTREE_CHILD_CATEGORY_REF_PARENT_ALTERNATE_A
-                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CHILD_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_ALTERNATE_C
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_STATUS_ALTERNATE_B
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_SUBTREE_CHILD_CATEGORY_REF_PARENT_ALTERNATE_A
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_CHILD_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_ALTERNATE_C
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CHILD_BRAND_REF_STATUS_VOIDED
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_SUBTREE_ITEM_ITEM_REF_CODE_NAME
                         + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_FROM_CLAUSE_ANCHOR
@@ -615,7 +720,9 @@ public class CatalogCategoryPersistence {
 
     public long nextDisplayOrder(String scope, String brand, UUID parentCategoryRef) {
         Long next = jdbc.queryForObject(
-                CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_CATALOG_CATEGORY_DISPLAY_ORDER_DATA_NODE_REF + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_BRAND_REF_PARENT_CATEGORY_REF_STATUS_VOIDED,
+                CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_CATALOG_CATEGORY_DISPLAY_ORDER_DATA_NODE_REF
+                        + CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_BRAND_REF_PARENT_CATEGORY_REF_STATUS_VOIDED,
                 Long.class,
                 scope,
                 brand,
@@ -633,22 +740,19 @@ public class CatalogCategoryPersistence {
 
     public List<ReceiptRow> readReceipt(String dataNodeRef, String key) {
         return jdbc.query(
-                CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_SELECT_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_IDEMPOTENCY_KEY,
-                (result, row) -> new ReceiptRow(
-                        result.getString(1), result.getString(2), result.getString(3)),
+                CatalogCategoryServiceSql
+                                .CATALOG_CATEGORY_SERVICE_SELECT_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_CONDITION_IDEMPOTENCY_KEY,
+                (result, row) -> new ReceiptRow(result.getString(1), result.getString(2), result.getString(3)),
                 dataNodeRef,
                 key);
     }
 
     public int saveReceipt(
-            String scope,
-            String key,
-            String operationId,
-            String requestHash,
-            String responseJson,
-            long createdAt) {
+            String scope, String key, String operationId, String requestHash, String responseJson, long createdAt) {
         return jdbc.update(
-                CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_INSERT_INTO_COMMAND_RECEIPT + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_RESPONSE_CREATED_AT_EPOCH_MILLIS,
+                CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_INSERT_INTO_COMMAND_RECEIPT
+                        + CatalogCategoryServiceSql.CATALOG_CATEGORY_SERVICE_RESPONSE_CREATED_AT_EPOCH_MILLIS,
                 UUID.randomUUID(),
                 scope,
                 key,

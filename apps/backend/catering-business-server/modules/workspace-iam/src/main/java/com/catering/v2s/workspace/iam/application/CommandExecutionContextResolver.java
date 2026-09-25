@@ -126,8 +126,7 @@ public final class CommandExecutionContextResolver {
             if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW) {
                 throw new CatalogScopeForbiddenException(catalogResolution.denialReason());
             }
-            if (token.storeOperatingRuleKey() != null
-                    && ServiceNodeTypes.STORE.equals(dataNodeType)) {
+            if (token.storeOperatingRuleKey() != null && ServiceNodeTypes.STORE.equals(dataNodeType)) {
                 if (storeOperatingRuleGate == null) {
                     throw new IllegalStateException("store operating-rule gate is not wired");
                 }

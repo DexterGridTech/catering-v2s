@@ -17,6 +17,7 @@ import {canonicalStartToken} from "./managed-process-tree.mjs";
 import {validateRemoteJavaControl} from "./r5-remote-java.mjs";
 import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents, validateManagedDiagnosticTransport} from "./managed-diagnostic-protocol.mjs";
 import {buildSeedReport, loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById, writeSeedReportPair} from "../test/seed-report.mjs";
+import {createSeedHttpClient} from "./seed-http-client.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const runtimeRoot = path.resolve(process.env.V2S_RUNTIME_DIR || path.join(root, ".runtime/r5"));
@@ -245,29 +246,27 @@ async function executeManagedSeed() {
     process.stderr.write(`EXTERNAL_COLLABORATION_BUSINESS_CHANNEL_SEED=REFUSED; REASON=${firstFailure}; RUN_MANIFEST=${manifestPath}; REPORT=${reportPath}\n`); process.exitCode = 2; return;
   }
   const requestKey = (name) => `r5-external-${sha256(`${runId}:${name}`).slice(0, 48)}`;
-  const request = async (name, operationId, pathParameters = {}, options = {}) => {
-    const operation = resolveGeneratedOperationById(inputs.registry, operationId);
-    const pathname = materializeGeneratedOperationPath(operation, {pathParameters, queryParameters: options.queryParameters ?? {}});
-    const began = Date.now(); const correlationId = crypto.randomUUID();
-    const headers = {Accept: "application/json", ...buildManagedDiagnosticHeaders({manifest: managed.manifest, credentials: managed.credentials, operationId, routeTemplate: operation.path, correlationId})};
-    if (options.cookie) headers.Cookie = options.cookie;
-    if (options.body !== undefined) headers["Content-Type"] = "application/json";
-    if (operation.method !== "GET") headers["Idempotency-Key"] = requestKey(name);
-    let response;
-    try {
-      response = await fetch(`${managed.environment.V2S_DEV_HTTP_BASE_URL}${pathname}`, {method: operation.method, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), signal: AbortSignal.timeout(15_000)});
-    } catch {
-      firstFailure ??= `${name}_NETWORK`;
-      calls.push({stageId: name, managedDevRunId: managed.manifest.runId, owner: operation.owner, consumerFace: operation.consumerFaces?.join(",") ?? null, operationId, method: operation.method, routeTemplate: operation.path, status: 0, durationMs: Date.now() - began, outcome: "FAILED", correlationId, requestId: null});
-      phase(name, "FAIL", {operationId, httpStatus: 0}); fail(firstFailure);
-    }
-    const text = await response.text(); let json = null; try { json = text ? JSON.parse(text) : null; } catch { /* classify by HTTP below */ }
-    const expected = options.expected ?? [200]; const accepted = expected.includes(response.status); const requestId = response.headers.get("x-request-id");
-    calls.push({stageId: name, managedDevRunId: managed.manifest.runId, owner: operation.owner, consumerFace: operation.consumerFaces?.join(",") ?? null, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, durationMs: Date.now() - began, outcome: accepted ? "SUCCEEDED" : "FAILED", correlationId: response.headers.get("x-correlation-id") ?? correlationId, requestId});
-    phase(name, accepted ? "PASS" : "FAIL", {operationId, httpStatus: response.status, requestId, ...(accepted ? {} : {problemCode: json?.errorCode ?? json?.code ?? "UNCLASSIFIED"})});
-    if (!accepted) { firstFailure ??= `${name}_HTTP_${response.status}_${json?.errorCode ?? json?.code ?? "UNCLASSIFIED"}`; fail(firstFailure); }
-    return {json, cookie: cookieFromHeaders(response.headers), status: response.status};
-  };
+  const request = createSeedHttpClient({
+    baseUrl: managed.environment.V2S_DEV_HTTP_BASE_URL,
+    resolveOperation: operationId => resolveGeneratedOperationById(inputs.registry, operationId),
+    materializeOperationPath: materializeGeneratedOperationPath,
+    buildDiagnosticHeaders: buildManagedDiagnosticHeaders,
+    manifest: managed.manifest,
+    credentials: managed.credentials,
+    calls,
+    correlationPrefix: 'external-business-channel',
+    timeoutMs: 15_000,
+    idempotencyKeyFor: name => requestKey(name),
+    cookieFromHeaders,
+    failureFactory: code => new ExternalCollaborationBusinessChannelSeedFailure(code),
+    onFailure: code => { firstFailure ??= code; },
+    onPhase: phase,
+    decorateCall: (call, {operation}) => ({
+      managedDevRunId: managed.manifest.runId,
+      owner: operation.owner,
+      consumerFace: operation.consumerFaces?.join(',') ?? null,
+    }),
+  }).request;
   const assertChannel = (json, expected, ownerRef, templateRef, bindingRef = null) => {
     const actual = dataOf(json);
     if (actual?.templateRef !== templateRef || actual?.ownerNodeType !== expected.ownerNodeType || actual?.ownerNodeRef !== ownerRef || actual?.channelCode !== expected.channelCode || actual?.channelName !== expected.channelName || actual?.status !== expected.status || (actual?.bindingRef ?? null) !== bindingRef) fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_CHANNEL_READBACK_INVALID:${expected.code}`);

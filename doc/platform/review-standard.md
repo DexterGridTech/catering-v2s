@@ -35,12 +35,13 @@
 REVIEW_TARGET=DESIGN | IMPLEMENTATION | EXPERIENCE_RETROSPECTIVE
 ```
 
-**动作 1 有两个版本,按被审对象二选一。选错或不选,本轮无效。**
+**动作 1 有三个版本,按被审对象选一。选错或不选,本轮无效。**
 
 | 被审对象 | 代码在不在 | 走哪个动作 1 |
 |---|---|---|
 | `DESIGN` — 只有设计文档,代码未写 | 不在 | **动作 1-B** |
-| `IMPLEMENTATION` / `EXPERIENCE_RETROSPECTIVE` | 在 | **动作 1-A** |
+| `IMPLEMENTATION` / 体验类 `EXPERIENCE_RETROSPECTIVE`(用户看到的东西不对) | 在 | **动作 1-A** |
+| 过程类 `EXPERIENCE_RETROSPECTIVE`(交付拖延、反复失败) | 在 | **动作 1-C** |
 
 ⛔ **零产出即停机,不得当作通过。**
 动作 1-A 在没有目标源码时会产出空清单,动作 1-B 在没有目标文档时同样 ——
@@ -98,6 +99,24 @@ PY
 
 **产出**:一张缺项与矛盾清单。**同样只产出事实,不下判断;为空同样按停机规则处理。**
 
+⚠️ 模板缺项必须**逐节**列出(有 / 缺 / `NOT_APPLICABLE`),并写进 §5 的 `TEMPLATE_COVERAGE`;挑重点核对不算执行了本动作。
+
+> 实证:2026-09-24 门店终端批的详设缺 §3a 控件分母表,两轮作者盲审与两轮 Claude 设计评审都没发现,
+> 实施时 L2 跑了 36 次只通过 1 次。
+
+### 动作 1-C · 从运行产物与过程记录提取事实(过程回溯)
+
+问题出在过程(交付拖延、同一失败反复出现)而不是用户可见体验时,提取四样,缺一不可:
+
+| 提取什么 | 怎么做 |
+|---|---|
+| **运行时间线** | 按开始时间列出本批每一次受管运行(L2、acceptance、reset、seed,含旁路运行根目录),各写结果与首败 |
+| **当前字节的真实状态** | 用最新一次运行与最后一次通过的字节绑定,逐文件比对当前字节 |
+| **应有的过程记录** | 逐项查仓内是否有:§3a 准入、CP 对账、整体对账、seed 试运行、逐代码对账 |
+| **规则出处** | 每类失败对应的正本条款在哪,它在动作发生时是文字还是工具检查 |
+
+**产出**:事实清单,不下判断;为空同样按停机规则处理。
+
 ### 动作 2 · 与本批设计文档逐条对账
 
 把动作 1 的每一项拿去对账。**对账对象随动作 1 的版本变**:
@@ -145,7 +164,7 @@ PY
 
 ```text
 REVIEW_TARGET=<DESIGN | IMPLEMENTATION | EXPERIENCE_RETROSPECTIVE>
-ACTION_1_VARIANT=<1-A 代码提取 | 1-B 文档提取>   ← 与 REVIEW_TARGET 不匹配即本轮无效
+ACTION_1_VARIANT=<1-A 代码提取 | 1-B 文档提取 | 1-C 过程提取>   ← 与 REVIEW_TARGET 不匹配即本轮无效
 VERDICT=GO | GO_WITH_UNVERIFIED_UI | NO-GO
 M/S/N=<数量>   ← 严重度定义见 project-memory/operations/verification-governance.md
 L1_ENGINEERING=<PASS / findings>          ← 不变量、范围外改动、证据档位、反向 PROOF
@@ -153,6 +172,7 @@ L2_USER_VISIBLE=<PASS / findings>         ← 缺这一行的 UI-bearing 复核�
 L3_UNVERIFIED=<空 / 逐条列出>             ← 非空时 VERDICT 只能是 GO_WITH_UNVERIFIED_UI
 SAME_ROOT_SCAN=<每条 finding 的全集与判定>
 DESIGN_GAPS=<评审中发现的、正本里缺判据的条目>
+TEMPLATE_COVERAGE=<DESIGN 必填:四份模板逐节 有 / 缺 / NOT_APPLICABLE>
 EVIDENCE_TIER=<按 charter 与实施话术的档位定义>
 ```
 

@@ -1,15 +1,12 @@
 package com.catering.v2s.inventory.application;
 
-import com.catering.v2s.inventory.application.persistence.InventoryCatalogLifecyclePersistence;
 import static com.catering.v2s.inventory.api.InventoryOwnerApi.*;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
-import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.inventory.application.persistence.InventoryCatalogLifecyclePersistence;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
-import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
-import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -25,8 +22,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,8 +52,7 @@ public class InventoryCatalogLifecycleService {
     private final ObjectMapper mapper;
 
     @Autowired
-    public InventoryCatalogLifecycleService(
-            InventoryCatalogLifecyclePersistence persistence, ObjectMapper mapper) {
+    public InventoryCatalogLifecycleService(InventoryCatalogLifecyclePersistence persistence, ObjectMapper mapper) {
         this.persistence = persistence;
         this.mapper = mapper;
     }
@@ -73,8 +69,8 @@ public class InventoryCatalogLifecycleService {
         CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", null);
         if (unitRef == null || intendedChange == null)
             throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "单位生命周期判断参数不完整");
-        InventoryCatalogLifecyclePersistence.UnitLifecycleUsage usage = persistence.readUnitLifecycleUsage(
-                scope.dataNodeId().toString(), scope.brandRef(), unitRef);
+        InventoryCatalogLifecyclePersistence.UnitLifecycleUsage usage =
+                persistence.readUnitLifecycleUsage(scope.dataNodeId().toString(), scope.brandRef(), unitRef);
         List<UUID> targetRefs = usage.targetRefs();
         long ledgerCount = usage.ledgerCount();
         long bomCount = usage.bomCount();
@@ -112,8 +108,7 @@ public class InventoryCatalogLifecycleService {
             skuUnits.put(entry.productSkuRef(), entry.unitSnapshot());
         }
         List<InventoryCatalogLifecyclePersistence.TargetConsumptionUnitRow> targets =
-                persistence.readTargetConsumptionUnitRows(
-                        scope.dataNodeId().toString(), scope.brandRef(), itemRef);
+                persistence.readTargetConsumptionUnitRows(scope.dataNodeId().toString(), scope.brandRef(), itemRef);
         for (InventoryCatalogLifecyclePersistence.TargetConsumptionUnitRow target : targets) {
             UnitSnapshot candidate =
                     target.productSkuRef() == null ? itemBaseMeasureUnit : skuUnits.get(target.productSkuRef());
@@ -338,9 +333,8 @@ public class InventoryCatalogLifecycleService {
                 .put("subjectRef", subject.ref().toString());
         JsonNode receiptRequest = typedReceiptRequest(request, dataNodeRef, scope.brandRef());
         String requestHash = hash(receiptRequest);
-        InventoryCatalogLifecyclePersistence.BatchRetirementFacts outcome =
-                persistence.readBatchRetirementFacts(
-                        dataNodeRef, scope.brandRef(), subject, key, operation, requestHash);
+        InventoryCatalogLifecyclePersistence.BatchRetirementFacts outcome = persistence.readBatchRetirementFacts(
+                dataNodeRef, scope.brandRef(), subject, key, operation, requestHash);
 
         if (outcome.priorOperation() != null) {
             if (!operation.equals(outcome.priorOperation()) || !requestHash.equals(outcome.priorRequestHash())) {
@@ -450,8 +444,8 @@ public class InventoryCatalogLifecycleService {
         Map<UUID, VoidDependencyAccumulator> accumulators = new LinkedHashMap<>();
         orderedSubjects.forEach(ref -> accumulators.put(
                 ref, new VoidDependencyAccumulator(new InventoryOwnerApi.CatalogVoidSubject(kind, ref))));
-        for (InventoryCatalogLifecyclePersistence.VoidDependencyFact fact : persistence.readVoidDependencyFacts(
-                scope, brand, kind, orderedSubjects)) {
+        for (InventoryCatalogLifecyclePersistence.VoidDependencyFact fact :
+                persistence.readVoidDependencyFacts(scope, brand, kind, orderedSubjects)) {
             VoidDependencyAccumulator accumulator = accumulators.get(fact.subjectRef());
             if (accumulator == null) {
                 throw new InventoryOwnerApi.Problem(
@@ -714,6 +708,4 @@ public class InventoryCatalogLifecycleService {
                     inbound);
         }
     }
-
-
 }

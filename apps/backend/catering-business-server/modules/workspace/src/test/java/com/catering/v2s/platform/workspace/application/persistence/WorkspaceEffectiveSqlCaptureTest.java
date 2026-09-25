@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import org.mockito.invocation.InvocationOnMock;
 import org.junit.jupiter.api.Test;
+import org.mockito.invocation.InvocationOnMock;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.ResultSetExtractor;
@@ -39,9 +39,7 @@ class WorkspaceEffectiveSqlCaptureTest {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         doAnswer(invocation -> {
                     captures.add(new Capture(
-                            "update",
-                            invocation.getArgument(0, String.class),
-                            varargValues(invocation, 1).length));
+                            "update", invocation.getArgument(0, String.class), varargValues(invocation, 1).length));
                     return 1;
                 })
                 .when(jdbc)
@@ -66,9 +64,7 @@ class WorkspaceEffectiveSqlCaptureTest {
                 .queryForObject(anyString(), eq(Long.class), any(Object[].class));
         doAnswer(invocation -> {
                     captures.add(new Capture(
-                            "query",
-                            invocation.getArgument(0, String.class),
-                            varargValues(invocation, 2).length));
+                            "query", invocation.getArgument(0, String.class), varargValues(invocation, 2).length));
                     return List.of();
                 })
                 .when(jdbc)
@@ -95,26 +91,34 @@ class WorkspaceEffectiveSqlCaptureTest {
                             .when(statement)
                             .setLong(anyInt(), anyLong());
                     invocation.getArgument(1, PreparedStatementSetter.class).setValues(statement);
-                    captures.add(new Capture(
-                            "queryExtractor",
-                            invocation.getArgument(0, String.class),
-                            boundSlots.size()));
+                    captures.add(
+                            new Capture("queryExtractor", invocation.getArgument(0, String.class), boundSlots.size()));
                     ResultSet rows = mock(ResultSet.class);
                     org.mockito.Mockito.when(rows.next()).thenReturn(false);
                     return invocation.getArgument(2, ResultSetExtractor.class).extractData(rows);
                 })
                 .when(jdbc)
-                .query(anyString(), any(org.springframework.jdbc.core.PreparedStatementSetter.class), any(ResultSetExtractor.class));
+                .query(
+                        anyString(),
+                        any(org.springframework.jdbc.core.PreparedStatementSetter.class),
+                        any(ResultSetExtractor.class));
 
         UUID workspaceUuid = UUID.randomUUID();
         String key = "workspace-key";
         WorkspaceAdministrationPersistence administration = new WorkspaceAdministrationPersistence(jdbc);
-        administration.create(workspaceUuid, key, "Workspace", "workspace", "Operations", UUID.randomUUID().toString(), null, 1L);
+        administration.create(
+                workspaceUuid,
+                key,
+                "Workspace",
+                "workspace",
+                "Operations",
+                UUID.randomUUID().toString(),
+                null,
+                1L);
         administration.page(new WorkspaceAdministrationPageRequest(null, null, null, null, 1, 20, "NAME", "ASC"));
         administration.findByKey(key);
         administration.findStatus(workspaceUuid, key);
-        administration.updateDisplay(
-                "Workspace", "workspace", "Operations", null, null, 2L, key, 1L);
+        administration.updateDisplay("Workspace", "workspace", "Operations", null, null, 2L, key, 1L);
         administration.transitionStatus("DISABLED", 3L, key, 1L);
         administration.findLegacyId(workspaceUuid, key);
         WorkspaceAdministrationReadback workspace = new WorkspaceAdministrationReadback(
@@ -164,10 +168,15 @@ class WorkspaceEffectiveSqlCaptureTest {
         StringBuilder xml = new StringBuilder("<workspace-effective-sql-capture-after>\n");
         for (int index = 0; index < captures.size(); index++) {
             Capture capture = captures.get(index);
-            xml.append("  <point index=\"").append(index + 1)
-                    .append("\" sink=\"").append(capture.sink())
-                    .append("\" parameterCount=\"").append(capture.parameterCount()).append("\"><![CDATA[")
-                    .append(capture.sql()).append("]]></point>\n");
+            xml.append("  <point index=\"")
+                    .append(index + 1)
+                    .append("\" sink=\"")
+                    .append(capture.sink())
+                    .append("\" parameterCount=\"")
+                    .append(capture.parameterCount())
+                    .append("\"><![CDATA[")
+                    .append(capture.sql())
+                    .append("]]></point>\n");
         }
         xml.append("</workspace-effective-sql-capture-after>\n");
         Files.writeString(Path.of("workspace-effective-sql-capture-after.xml").toAbsolutePath(), xml);
@@ -175,8 +184,8 @@ class WorkspaceEffectiveSqlCaptureTest {
 
     private static Object[] varargValues(InvocationOnMock invocation, int fixedArgumentCount) {
         Object[] arguments = invocation.getArguments();
-        if (arguments.length == fixedArgumentCount + 1
-                && arguments[fixedArgumentCount] instanceof Object[] values) return values;
+        if (arguments.length == fixedArgumentCount + 1 && arguments[fixedArgumentCount] instanceof Object[] values)
+            return values;
         return Arrays.copyOfRange(arguments, fixedArgumentCount, arguments.length);
     }
 

@@ -628,7 +628,7 @@ selector/Reselect 提供稳定引用，或在确有理由时传入窄的 equalit
 
 **允许的窄例外**：render framework 内部的 `RenderContext.ts`、`RenderProvider.tsx`、
 `createRenderSnapshotReader.ts`、`useUiStateSelector.ts` 与 `useRenderStatus.ts` 可以通过 private accessor
-读 source/snapshot 以实现订阅；`apps/terminal/ui/base/console-assembly` 创建 state source 并向
+读 source/snapshot 以实现订阅；`apps/terminal/ui/base/integration-assembly` 创建 state source 并向
 `RenderProvider` 注入 `stateSource` 属于 assembly→render 的基础设施接线，但不得继续传给业务组件。
 专门验证订阅机制的 `ui-base-render` tests 可以选择 full root。kernel actor/foundation 的同步
 `getState()` 继续遵循其 owner selector/API，不迁移成 React hook。以上例外不得成为 feature、integration
@@ -652,14 +652,14 @@ focused tests 与 implementation review 判定。门不能以字符串命中或�
 
 ---
 
-### `TR-16` · 不涉及 adapter 的功能，先过 integration 的 Expo Web，再上设备跑 assembly，两端表现必须一致
+### `TR-16` · 不涉及 adapter 的功能，先过 integration 的 Expo Web，再上设备跑 application，两端表现必须一致
 
 **规则**（Dexter 2026-09-24）：被测行为不依赖 `adapter/*` 真实平台能力的功能，**未在 integration 的 Expo Web
-上验证通过之前，不得到虚拟机或真机上运行 assembly 包**。动态验证必须按以下顺序进行：
+上验证通过之前，不得到虚拟机或真机上运行 application 包**。动态验证必须按以下顺序进行：
 
 1. **先 Web**：在承载该功能的 `apps/terminal/ui/integration/*` 包的 Expo Web 环境（包内 `web` 脚本）中，
    以当前源码字节，按批准的场景清单实际操作，观察并记录业务结果与可见形态；
-2. **后设备**：Web 验证通过后，才允许构建 `apps/terminal/assembly/*` 的包，并在虚拟机或真机上运行；
+2. **后设备**：Web 验证通过后，才允许构建 `apps/terminal/application/*` 的包，并在虚拟机或真机上运行；
 3. **证明两端一致**：在设备上用**同一份场景清单**重跑，逐场景并列记录两端结果。两端出现差异时只有两种处置：
    说明它来自平台固有差异（如像素取整、字体渲染、系统栏）且不影响该场景的行为判据；或按缺陷修复后两端重跑。
    只有一端的结果，不能声称两端一致。
@@ -742,7 +742,7 @@ implementation review 判定，不能因两端结果一致而默认成立。
    高度变化和字段切换只触发必要的一次测量/最小滚动；既有 registry、快照、selection、owner
    和失败恢复语义必须保持。
 8. **验证顺序与证据**：先在承载行为的 `ui/integration/*` Expo Web 入口按同一场景清单验证，
-   再运行 `assembly/*` 设备入口；遵守 `TR-16`，不得用 typecheck、jsdom 或键盘 testID 存在冒充
+   再运行 `application/*` 设备入口；遵守 `TR-16`，不得用 typecheck、jsdom 或键盘 testID 存在冒充
    Web/Android 画面通过。视觉或交互结论必须检查实际键帽形态、label/value、命中、焦点框、遮罩、
    滚动和布局盒，而不是只检查节点存在。
 9. **公共面同步**：触及 input 的 public type、hook、context、layout 或 renderer 时，必须按同一

@@ -21,10 +21,10 @@ class ProductionTagReferenceReadbackTest {
         UUID second = UUID.randomUUID();
         when(jdbc.query(anyString(), any(org.springframework.jdbc.core.RowMapper.class), any(Object[].class)))
                 .thenReturn(List.of(
-                        new com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi
-                                .ProductionTagReferenceReadback(second, "SECOND", "Second", "ENABLED", 1),
-                        new com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi
-                                .ProductionTagReferenceReadback(first, "FIRST", "First", "ENABLED", 1)));
+                        new com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi.ProductionTagReferenceReadback(
+                                second, "SECOND", "Second", "ENABLED", 1),
+                        new com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi.ProductionTagReferenceReadback(
+                                first, "FIRST", "First", "ENABLED", 1)));
         CatalogProductionTagOwnerService service = new CatalogProductionTagOwnerService(
                 new CatalogProductionTagOwnerPersistence(jdbc, () -> 1L), new ObjectMapper());
 
@@ -35,4 +35,3 @@ class ProductionTagReferenceReadbackTest {
                 result.stream().map(value -> value.tagRef()).toList());
     }
 }
-

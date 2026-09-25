@@ -1,10 +1,10 @@
 package com.catering.v2s.app.edge.audit;
 
 import com.catering.v2s.app.edge.generated.wire.AuditChange;
-import com.catering.v2s.app.edge.generated.wire.AuditValueState;
 import com.catering.v2s.app.edge.generated.wire.AuditHistoryItem;
 import com.catering.v2s.app.edge.generated.wire.AuditHistoryPage;
 import com.catering.v2s.app.edge.generated.wire.AuditTarget;
+import com.catering.v2s.app.edge.generated.wire.AuditValueState;
 
 /** Generated-wire adaptation only; action and field keys remain stable non-localized contract values. */
 public final class AuditHistoryWireMapper {
@@ -26,9 +26,15 @@ public final class AuditHistoryWireMapper {
                                         .map(change -> new AuditChange(
                                                 change.fieldKey(),
                                                 change.fieldLabelSnapshot(),
-                                                change.beforeState() == null ? null : AuditValueState.valueOf(change.beforeState().name()),
+                                                change.beforeState() == null
+                                                        ? null
+                                                        : AuditValueState.valueOf(change.beforeState()
+                                                                .name()),
                                                 change.beforeValue(),
-                                                change.afterState() == null ? null : AuditValueState.valueOf(change.afterState().name()),
+                                                change.afterState() == null
+                                                        ? null
+                                                        : AuditValueState.valueOf(change.afterState()
+                                                                .name()),
                                                 change.afterValue()))
                                         .toList()))
                         .toList(),

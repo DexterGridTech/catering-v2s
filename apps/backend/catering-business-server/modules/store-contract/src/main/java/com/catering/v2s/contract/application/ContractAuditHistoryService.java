@@ -1,7 +1,7 @@
 package com.catering.v2s.contract.application;
 
-import com.catering.v2s.contract.application.persistence.ContractAuditHistoryPersistence;
 import com.catering.v2s.audit.contract.*;
+import com.catering.v2s.contract.application.persistence.ContractAuditHistoryPersistence;
 import com.catering.v2s.organization.api.OrganizationVisibilityLookup.VisibleOrganizationFacts;
 import java.util.UUID;
 import org.springframework.stereotype.Service;

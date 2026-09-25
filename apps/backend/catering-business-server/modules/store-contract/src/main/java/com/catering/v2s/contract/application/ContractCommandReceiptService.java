@@ -1,9 +1,9 @@
 package com.catering.v2s.contract.application;
 
-import com.catering.v2s.contract.application.persistence.ContractCommandReceiptPersistence;
 import com.catering.v2s.contract.api.StoreContractReadback;
-import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.contract.application.persistence.ContractCommandReceiptPersistence;
 import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;

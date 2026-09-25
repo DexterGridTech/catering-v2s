@@ -16,14 +16,14 @@ export interface LogFields { readonly [key: string]: LogValue }
 
 export interface LogScope {
   readonly moduleName: string;
-  readonly layer?: 'kernel' | 'ui' | 'adapter' | 'assembly';
+  readonly layer?: 'kernel' | 'ui' | 'adapter' | 'application';
   readonly subsystem?: string;
   readonly component?: string;
 }
 
 export interface LogScopeBinding {
   readonly moduleName?: string;
-  readonly layer?: 'kernel' | 'ui' | 'adapter' | 'assembly';
+  readonly layer?: 'kernel' | 'ui' | 'adapter' | 'application';
   readonly subsystem?: string;
   readonly component?: string;
 }

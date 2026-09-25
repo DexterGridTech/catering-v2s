@@ -8,8 +8,8 @@ import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 /**
  * Non-persistent execution-boundary checks shared by Catalog target services.
  *
- * <p>This class deliberately contains no JDBC, transaction, receipt, lock, or owner-fact behavior. It keeps the
- * typed execution-context guard in one place while each aggregate service retains its own business facts.
+ * <p>This class deliberately contains no JDBC, transaction, receipt, lock, or owner-fact behavior. It keeps the typed
+ * execution-context guard in one place while each aggregate service retains its own business facts.
  */
 final class CatalogOwnerScopeSupport {
     private CatalogOwnerScopeSupport() {}

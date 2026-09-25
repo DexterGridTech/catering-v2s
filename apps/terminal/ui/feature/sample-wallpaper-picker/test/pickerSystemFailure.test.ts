@@ -4,7 +4,7 @@ import {describe, expect, it} from 'vitest'
 import {createAppError, createModuleErrorFactory, createRequestId} from '@catering-v2s/kernel-base-contracts'
 import {createDisplayContextModule} from '@catering-v2s/kernel-base-display-context'
 import {createUiCatalog, createUiStateModule, selectLayers} from '@catering-v2s/kernel-base-ui-state'
-import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort, NativeLoadingCapability} from '@catering-v2s/ui-base-test-support'
+import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort, NativeLoadingCapability} from '@catering-v2s/kernel-base-platform-ports'
 import {
   defineActor,
   onCommand,

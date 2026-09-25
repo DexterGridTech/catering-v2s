@@ -42,18 +42,30 @@ public class OrganizationCommandService
     private final CommercialGroupCommandReceiptService receipts;
 
     public OrganizationCommandService(JdbcTemplate jdbcTemplate, Object workspaces, TimeProvider time) {
-        this(new OrganizationCommandPersistence(jdbcTemplate), time, null, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
+        this(
+                new OrganizationCommandPersistence(jdbcTemplate),
+                time,
+                null,
+                new CommercialGroupCommandReceiptService(jdbcTemplate, time));
     }
 
     /** Compatibility constructor for owner tests that inject a workspace-presence predicate. */
     public OrganizationCommandService(
             JdbcTemplate jdbcTemplate, BiPredicate<UUID, String> workspaces, TimeProvider time) {
-        this(new OrganizationCommandPersistence(jdbcTemplate), time, null, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
+        this(
+                new OrganizationCommandPersistence(jdbcTemplate),
+                time,
+                null,
+                new CommercialGroupCommandReceiptService(jdbcTemplate, time));
     }
 
     public OrganizationCommandService(
             JdbcTemplate jdbcTemplate, Object workspaces, TimeProvider time, ExtensionDefinitionLookup definitions) {
-        this(new OrganizationCommandPersistence(jdbcTemplate), time, definitions, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
+        this(
+                new OrganizationCommandPersistence(jdbcTemplate),
+                time,
+                definitions,
+                new CommercialGroupCommandReceiptService(jdbcTemplate, time));
     }
 
     /** Compatibility constructor for owner tests that inject a workspace-presence predicate. */
@@ -62,7 +74,11 @@ public class OrganizationCommandService
             BiPredicate<UUID, String> workspaces,
             TimeProvider time,
             ExtensionDefinitionLookup definitions) {
-        this(new OrganizationCommandPersistence(jdbcTemplate), time, definitions, new CommercialGroupCommandReceiptService(jdbcTemplate, time));
+        this(
+                new OrganizationCommandPersistence(jdbcTemplate),
+                time,
+                definitions,
+                new CommercialGroupCommandReceiptService(jdbcTemplate, time));
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -214,8 +230,7 @@ public class OrganizationCommandService
                     createdAtEpochMillis,
                     extensions.json(),
                     extensions.revision());
-            persistence.completeInitializationIdempotency(
-                    id, code, name, workspaceUuid, idempotencyKey);
+            persistence.completeInitializationIdempotency(id, code, name, workspaceUuid, idempotencyKey);
             persistence.insertInitializationAudit(
                     workspaceUuid,
                     groupWorkspaceKey,
@@ -223,8 +238,10 @@ public class OrganizationCommandService
                     actor,
                     time.currentEpochMillis(),
                     AuditChangeJson.write(java.util.List.of(
-                            com.catering.v2s.audit.contract.AuditChange.forNullableScalar("commercialGroupCode", null, code),
-                            com.catering.v2s.audit.contract.AuditChange.forNullableScalar("commercialGroupName", null, name))));
+                            com.catering.v2s.audit.contract.AuditChange.forNullableScalar(
+                                    "commercialGroupCode", null, code),
+                            com.catering.v2s.audit.contract.AuditChange.forNullableScalar(
+                                    "commercialGroupName", null, name))));
             return OwnerOperationDiagnostics.readback(
                     () -> readback(id, groupWorkspaceKey, code, name, actor.displaySnapshot()));
         } catch (DuplicateKeyException exception) {
@@ -338,16 +355,15 @@ public class OrganizationCommandService
         if (current.revision() != expectedVersion) {
             throw new OrganizationHierarchyService.OrganizationConflictException();
         }
-        CommercialGroupReadback updated = OwnerOperationDiagnostics.readback(
-                () -> persistence.updateCommercialGroup(
-                        groupWorkspaceKey,
-                        code,
-                        name,
-                        extensions.json(),
-                        extensions.revision(),
-                        now,
-                        current.id(),
-                        expectedVersion));
+        CommercialGroupReadback updated = OwnerOperationDiagnostics.readback(() -> persistence.updateCommercialGroup(
+                groupWorkspaceKey,
+                code,
+                name,
+                extensions.json(),
+                extensions.revision(),
+                now,
+                current.id(),
+                expectedVersion));
         if (updated == null) throw new OrganizationHierarchyService.OrganizationConflictException();
         persistence.insertUpdateAudit(
                 workspaceUuid,
@@ -380,8 +396,7 @@ public class OrganizationCommandService
         UUID result = persistence.findCommercialGroupRef(groupWorkspaceKey);
         if (result == null)
             throw new OrganizationCommandException(
-                    OrganizationProblem.COMMERCIAL_GROUP_NOT_INITIALIZED,
-                    "commercial group is unavailable");
+                    OrganizationProblem.COMMERCIAL_GROUP_NOT_INITIALIZED, "commercial group is unavailable");
         return result;
     }
 
@@ -400,8 +415,7 @@ public class OrganizationCommandService
                 persistence.findCommercialGroupNameCode(groupWorkspaceKey, commercialGroupRef);
         if (result == null)
             throw new OrganizationCommandException(
-                    OrganizationProblem.COMMERCIAL_GROUP_NOT_INITIALIZED,
-                    "commercial group is unavailable");
+                    OrganizationProblem.COMMERCIAL_GROUP_NOT_INITIALIZED, "commercial group is unavailable");
         return nameCode(result.name(), result.code());
     }
 
@@ -418,7 +432,8 @@ public class OrganizationCommandService
 
     private CommercialGroupReadback readback(
             long id, String groupWorkspaceKey, String code, String name, String subject) {
-        CommercialGroupReadback result = persistence.findCommercialGroupById(id, groupWorkspaceKey, code, name, subject);
+        CommercialGroupReadback result =
+                persistence.findCommercialGroupById(id, groupWorkspaceKey, code, name, subject);
         if (result == null)
             throw new OrganizationCommandException(
                     OrganizationProblem.VALIDATION_FAILED, "commercial group readback unavailable");

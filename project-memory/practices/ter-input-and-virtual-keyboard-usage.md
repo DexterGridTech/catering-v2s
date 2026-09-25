@@ -35,7 +35,7 @@ sourceRefs: ["doc/platform/terminal-coding-standard.md","project-memory/practice
 4. 涉及布局、Shift、URL 字符、动画或非键盘 UI 时，按 `TR-17` 的反例栏找反例；不能只看 testID、类型、
    常态截图或 focused 结果。
 5. 触及 public API 或布局正本时，先列出 README、`src/index.ts`、`terminal-invariants.json` 和 focused
-   测试的同步面；验证先按 `TR-16` 在对应 integration Web，再按同一场景到 assembly/设备。
+   测试的同步面；验证先按 `TR-16` 在对应 integration Web，再按同一场景到 application/设备。
 
 ## 不可直接推断的事项
 

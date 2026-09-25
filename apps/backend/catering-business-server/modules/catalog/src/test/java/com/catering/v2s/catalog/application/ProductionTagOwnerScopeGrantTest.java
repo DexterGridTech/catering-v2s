@@ -37,8 +37,8 @@ class ProductionTagOwnerScopeGrantTest {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         UUID workspaceId = UUID.randomUUID();
         UUID targetId = UUID.randomUUID();
-        CatalogProductionTagOwnerService service = new CatalogProductionTagOwnerService(
-                new CatalogProductionTagOwnerPersistence(jdbc, () -> 1L), mapper);
+        CatalogProductionTagOwnerService service =
+                new CatalogProductionTagOwnerService(new CatalogProductionTagOwnerPersistence(jdbc, () -> 1L), mapper);
 
         CatalogProductionTagOwnerApi.Problem failure = assertThrows(
                 CatalogProductionTagOwnerApi.Problem.class,
@@ -64,8 +64,8 @@ class ProductionTagOwnerScopeGrantTest {
         UUID workspaceId = UUID.randomUUID();
         UUID sourceId = UUID.randomUUID();
         UUID targetId = UUID.randomUUID();
-        CatalogProductionTagOwnerService service = new CatalogProductionTagOwnerService(
-                new CatalogProductionTagOwnerPersistence(jdbc, () -> 1L), mapper);
+        CatalogProductionTagOwnerService service =
+                new CatalogProductionTagOwnerService(new CatalogProductionTagOwnerPersistence(jdbc, () -> 1L), mapper);
 
         CatalogProductionTagOwnerApi.Problem failure = assertThrows(
                 CatalogProductionTagOwnerApi.Problem.class,
@@ -88,8 +88,8 @@ class ProductionTagOwnerScopeGrantTest {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         UUID workspaceId = UUID.randomUUID();
         UUID targetId = UUID.randomUUID();
-        CatalogProductionTagOwnerService service = new CatalogProductionTagOwnerService(
-                new CatalogProductionTagOwnerPersistence(jdbc, () -> 1L), mapper);
+        CatalogProductionTagOwnerService service =
+                new CatalogProductionTagOwnerService(new CatalogProductionTagOwnerPersistence(jdbc, () -> 1L), mapper);
 
         CatalogProductionTagOwnerApi.Problem failure = assertThrows(
                 CatalogProductionTagOwnerApi.Problem.class,
@@ -113,8 +113,8 @@ class ProductionTagOwnerScopeGrantTest {
     void typedWriteRejectsMismatchedGrantBeforeProductionReceiptReplay() {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         UUID targetId = UUID.randomUUID();
-        CatalogProductionTagOwnerService service = new CatalogProductionTagOwnerService(
-                new CatalogProductionTagOwnerPersistence(jdbc, () -> 1L), mapper);
+        CatalogProductionTagOwnerService service =
+                new CatalogProductionTagOwnerService(new CatalogProductionTagOwnerPersistence(jdbc, () -> 1L), mapper);
         CatalogProductionTagOwnerApi.Problem failure = assertThrows(
                 CatalogProductionTagOwnerApi.Problem.class,
                 () -> service.write(typedContextWithMismatchedGrant(targetId), validCreateRequest(), "receipt"));

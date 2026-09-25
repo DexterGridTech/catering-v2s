@@ -2,22 +2,13 @@
   "schemaVersion": 1,
   "kind": "store-terminal-l2-execution-profile",
   "revision": "STORE_TERMINAL_L2_20260924",
-  "mode": "INCREMENTAL",
-  "enabledCaseIds": [
-    "terminal-list-detail",
-    "terminal-create-basic",
-    "terminal-create-configuration",
-    "terminal-edit-configuration",
-    "terminal-status-actions",
-    "terminal-readonly-state"
-  ],
-  "sourceOfTruth": "contracts/policy/store-terminal-l2-scenarios.json",
+  "mode": "FRAMEWORK_ONLY",
+  "enabledCaseIds": [],
+  "sourceOfTruth": "contracts/policy/store-terminal-l2-case-blueprint.json",
   "noSeedRuntimeInput": true,
   "activationCandidate": {
     "path": "contracts/policy/store-terminal-l2-activation-candidate.json",
-    "digest": "3e94ffa7c192e539b380cba6f8b4de50da395a715fa41d56a22c481e454edfc6"
+    "digest": "5c31c09c85d7e381ecb905d540bfeb195dc0c2787f975ce2ea5821638fb3c94b"
   },
-  "readiness": {
-    "runBinding": {"runId": "PENDING", "namespace": "PENDING", "database": "PENDING", "assetPrefix": "PENDING"}
-  }
+  "enablementRule": "P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited."
 }

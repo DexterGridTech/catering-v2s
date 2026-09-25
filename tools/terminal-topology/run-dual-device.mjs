@@ -47,14 +47,14 @@ const profiles = Object.freeze({
     name: 'sample-terminal',
     packageName: 'com.anonymous.sampleterminal',
     activity: 'com.anonymous.sampleterminal/.MainActivity',
-    apk: path.join(repositoryRoot, 'apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk'),
+    apk: path.join(repositoryRoot, 'apps/terminal/application/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk'),
     memberJourney: false,
   }),
   'sample-wallpaper-terminal': Object.freeze({
     name: 'sample-wallpaper-terminal',
     packageName: 'com.catering.v2s.terminal.samplewallpaper',
     activity: 'com.catering.v2s.terminal.samplewallpaper/.MainActivity',
-    apk: path.join(repositoryRoot, 'apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk'),
+    apk: path.join(repositoryRoot, 'apps/terminal/application/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk'),
     memberJourney: false,
   }),
 })

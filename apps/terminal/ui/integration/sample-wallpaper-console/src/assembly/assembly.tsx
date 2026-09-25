@@ -3,12 +3,12 @@ import {moduleName as integrationModuleName} from '../moduleName'
 import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports'
 import {type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render'
 import {
-  createConsoleAssembly,
+  createIntegrationAssembly,
   createStartupReadyPayload,
   createSurfaceForDisplayIndex as createSharedSurfaceForDisplayIndex,
   selectStateSyncSlices,
-  type ConsoleAssembly,
-} from '@catering-v2s/ui-base-console-assembly'
+  type IntegrationAssembly,
+} from '@catering-v2s/ui-base-integration-assembly'
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth'
 import {sampleWallpaperPickerAssembly, WallpaperBackground} from '@catering-v2s/ui-feature-sample-wallpaper-picker'
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session'
@@ -26,7 +26,7 @@ import {
 
 const defaultPersistenceKey = 'sample-wallpaper-console'
 
-export type WallpaperConsoleAssembly = ConsoleAssembly
+export type WallpaperConsoleAssembly = IntegrationAssembly
 
 export const createSurfaceForDisplayIndex = createSharedSurfaceForDisplayIndex
 
@@ -52,7 +52,7 @@ export async function createSampleWallpaperConsoleAssembly(
   const nativeLoadingCapability = input.nativeLoadingCapability
   const surfaceForm = input.surfaceForm
   const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD')
-  return createConsoleAssembly<SampleWallpaperConsoleReadyPayload>({
+  return createIntegrationAssembly<SampleWallpaperConsoleReadyPayload>({
     appName: 'sample-wallpaper-console',
     errorPrefix: 'sample-wallpaper-console',
     runtimeName: 'sample-wallpaper-console',

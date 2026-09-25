@@ -84,6 +84,14 @@ function validate(source, schema, schemaValidator = compileSchema(schema)) {
   for (const scene of source.scenes) {
     if (!functions.has(scene.functionKey)) fail(`unknown-scene-function:${scene.key}:${scene.functionKey}`);
   }
+  for (const rule of source.functions) {
+    if (rule.key === 'QUEUE_CALL' && rule.allowedRangeKeys.length !== 0) {
+      fail(`queue-call-must-have-no-ranges:${rule.key}`);
+    }
+    if (rule.key !== 'QUEUE_CALL' && rule.allowedRangeKeys.length === 0) {
+      fail(`function-must-have-range-domain:${rule.key}`);
+    }
+  }
   for (const model of source.printerModels) {
     if (!printerBrands.has(model.brandKey)) fail(`unknown-printer-brand:${model.key}:${model.brandKey}`);
     if (model.evidenceUri !== null) {
@@ -292,6 +300,9 @@ function javaSource(source, hash) {
       ]),
     ),
   ].join('\n\n');
+  const rangeKeyConstants = source.ranges
+    .map(row => `    public static final String RANGE_${row.key} = ${javaString(row.key)};`)
+    .join('\n');
 
   const generated = `// GENERATED FILE. DO NOT EDIT. sourceSha256=${hash}
 package com.catering.v2s.storeterminal.domain.generated;
@@ -313,6 +324,8 @@ ${[
   javaRecord('PrinterBrand', ['String key', 'String label']),
   javaRecord('PrinterModel', ['String key', 'String brandKey', 'String label', 'List<String> paperSpecKeys', 'List<String> allowedConnectionMethodKeys', 'String evidenceUri']),
 ].join('\n\n')}
+
+${rangeKeyConstants}
 
     // spotless:off
 ${definitions}
@@ -373,11 +386,18 @@ function tsSource(source, hash) {
   ]
     .map(([name, values]) => `export const STORE_TERMINAL_${name} = ${literal(values)} as const;`)
     .join('\n\n');
+  const rangeKeyConstants = source.ranges
+    .map(row => `  ${row.key}: ${JSON.stringify(row.key)},`)
+    .join('\n');
 
   return `// GENERATED FILE. DO NOT EDIT. sourceSha256=${hash}
 export const STORE_TERMINAL_RULES_SOURCE_SHA256 = ${JSON.stringify(hash)} as const;
 
 ${sections}
+
+export const STORE_TERMINAL_RANGE_KEYS = {
+${rangeKeyConstants}
+} as const;
 
 export type StoreTerminalDeviceTypeKey = typeof STORE_TERMINAL_DEVICE_TYPES[number]['key'];
 export type StoreTerminalFunctionKey = typeof STORE_TERMINAL_FUNCTIONS[number]['key'];
@@ -499,6 +519,18 @@ function selfTest() {
       'duplicate-function-key',
       copy => {
         copy.functions[1].key = copy.functions[0].key;
+      },
+    ],
+    [
+      'queue-call-range-added',
+      copy => {
+        copy.functions.find(rule => rule.key === 'QUEUE_CALL').allowedRangeKeys = ['PRODUCTION_TAG'];
+      },
+    ],
+    [
+      'non-queue-empty-range-domain',
+      copy => {
+        copy.functions.find(rule => rule.key === 'KDS').allowedRangeKeys = [];
       },
     ],
     [

@@ -3,6 +3,7 @@ package com.catering.v2s.organization.application.persistence;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationNodeTypes;
+import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup.CatalogCommandScopeFacts;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup.CommandTaskPathFacts;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup.SessionTaskTargetFacts;
@@ -10,6 +11,8 @@ import com.catering.v2s.organization.api.OrganizationTaskPathLookup.StoreProject
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPath;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPathNode;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPathRef;
+import com.catering.v2s.organization.application.BusinessEntityService;
+import com.catering.v2s.organization.application.OrganizationTaskPathService;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import java.sql.Array;
 import java.sql.SQLException;
@@ -21,9 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
-import com.catering.v2s.organization.application.OrganizationTaskPathService;
-import com.catering.v2s.organization.application.BusinessEntityService;
-import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import org.springframework.stereotype.Repository;
 
 /** Resolves only organization-owned task facts; consumers receive no schema access. */
@@ -41,7 +41,8 @@ public class OrganizationTaskPathPersistence {
         if (workspaceUuid == null || key == null) throw new OrganizationTaskPathService.TaskPathNotFoundException();
         return jdbc.query(
                 OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_COMMERCIAL_GROUP_UUID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY,
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY,
                 statement -> statement.setString(1, key),
                 result -> {
                     if (!result.next()) throw new OrganizationTaskPathService.TaskPathNotFoundException();
@@ -58,7 +59,8 @@ public class OrganizationTaskPathPersistence {
     }
 
     public TaskPath requireTaskPath(UUID workspaceUuid, String key, String targetType, UUID targetId) {
-        if (workspaceUuid == null || key == null || targetId == null) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        if (workspaceUuid == null || key == null || targetId == null)
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
         if (ServiceNodeTypes.PROJECT.equals(targetType)) {
             return requireEnabledProjectTaskPath(workspaceUuid, key, targetId);
         }
@@ -76,35 +78,56 @@ public class OrganizationTaskPathPersistence {
 
     /** One non-transactional owner statement for the Store edge's project scope and immutable update facts. */
     public StoreProjectCommandFacts requireStoreProjectCommandFacts(UUID workspaceUuid, String key, UUID storeId) {
-        if (workspaceUuid == null || key == null || storeId == null) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        if (workspaceUuid == null || key == null || storeId == null)
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
         return jdbc.query(
-                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CTE_GROUP_FACT_COMMERCIAL_GROUP_UUID_GROUP_ID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_STORE_FACT
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_PROJECT_ID_TENANT_ID_BRAND_ID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_STORE_PROJECT
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PROJECT_STORE_PROJECT_ID_WORKSPACE_UUID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_STORE_NODE_TYPE
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_GROUP_FACT_PROJECT_STATUS_ENABLED_STORE
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ANCESTRY
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_FACT_PROJECT_ID_TARGET_ID_NODE
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ORGANIZATION_NODE_NODE_NAME_DEPTH
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_STORE_FACT_PROJECT_ID_WORKSPACE_UUID
+                OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_CTE_GROUP_FACT_COMMERCIAL_GROUP_UUID_GROUP_ID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_STORE_FACT
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_STORE_PROJECT_ID_TENANT_ID_BRAND_ID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_STORE_PROJECT
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_PROJECT_STORE_PROJECT_ID_WORKSPACE_UUID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_STORE_NODE_TYPE
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_GROUP_FACT_PROJECT_STATUS_ENABLED_STORE
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ANCESTRY
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_STORE_FACT_PROJECT_ID_TARGET_ID_NODE
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ORGANIZATION_NODE_NODE_NAME_DEPTH
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_NODE_STORE_FACT_PROJECT_ID_WORKSPACE_UUID
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_STATUS_ENABLED_ANCESTRY
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PARENT_NODE_TYPE_CODE_NAME
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ANCESTRY_ORGANIZATION_NODE_PARENT_PARENT_ID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ANCESTRY_ORGANIZATION_NODE_PARENT_PARENT_ID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_FACT_PROJECT_ID_TENANT_ID_BRAND_ID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ANCESTRY_TARGET_ID_NODE_TYPE_FILTER
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_DEPTH_ANCESTOR_IDS
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_DEPTH_PATH_NODE_REFS
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_STORE_FACT_PROJECT_ID_TENANT_ID_BRAND_ID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ANCESTRY_TARGET_ID_NODE_TYPE_FILTER
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_DEPTH_ANCESTOR_IDS
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_DEPTH_PATH_NODE_REFS
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_CODE_DEPTH
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_NAME_DEPTH
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_NODE_TYPE_DEPTH
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_NODE_TYPE_DEPTH
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STRING_AGG_ANCESTRY_CODE_NAME
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ANCESTRY_DISPLAY_PATH_GROUP_ID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ANCESTRY_TARGET_ID_STORE_FACT_PROJECT_ID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_FACT_TENANT_ID_BRAND_ID_CODE
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ANCESTRY_TARGET_ID_STORE_FACT_PROJECT_ID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_STORE_FACT_TENANT_ID_BRAND_ID_CODE
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_FACT_GROUP_ID,
                 statement -> {
                     statement.setString(1, key);
@@ -140,19 +163,27 @@ public class OrganizationTaskPathPersistence {
 
     /** One set-based membership owner read; Store status is intentionally not filtered for template saves. */
     public Map<UUID, UUID> requireStoreProjectMemberships(UUID workspaceUuid, String key, List<UUID> storeIds) {
-        if (workspaceUuid == null || key == null || storeIds == null) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        if (workspaceUuid == null || key == null || storeIds == null)
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
         LinkedHashSet<UUID> requested = new LinkedHashSet<>();
         for (UUID storeId : storeIds) {
-            if (storeId == null || !requested.add(storeId)) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+            if (storeId == null || !requested.add(storeId))
+                throw new OrganizationTaskPathService.TaskPathNotFoundException();
         }
         if (requested.isEmpty()) return Map.of();
         return jdbc.query(
-                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CTE_COMMERCIAL_GROUP_GROUP_FACT_COMMERCIAL_GROUP_UUID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHERE_GROUP_WORKSPACE_KEY_STORE_STORE_ID_PROJECT_ID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_STORE_PROJECT_ALTERNATE_A
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PROJECT_STORE_PROJECT_ID_WORKSPACE_UUID_ALTERNATE_A
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_STORE_NODE_TYPE_ALTERNATE_A
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_GROUP_FACT_PROJECT_STATUS_ENABLED_STORE_ALTERNATE_A
+                OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_CTE_COMMERCIAL_GROUP_GROUP_FACT_COMMERCIAL_GROUP_UUID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_WHERE_GROUP_WORKSPACE_KEY_STORE_STORE_ID_PROJECT_ID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_STORE_PROJECT_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_PROJECT_STORE_PROJECT_ID_WORKSPACE_UUID_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_STORE_NODE_TYPE_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_GROUP_FACT_PROJECT_STATUS_ENABLED_STORE_ALTERNATE_A
                         + placeholders(requested.size())
                         + OrganizationTaskPathServiceSql.STORE_MEMBERSHIP_SCOPE_SUFFIX,
                 statement -> {
@@ -172,7 +203,8 @@ public class OrganizationTaskPathPersistence {
                             throw new OrganizationTaskPathService.TaskPathNotFoundException();
                         }
                     }
-                    if (!projectRefsByStore.keySet().equals(requested)) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+                    if (!projectRefsByStore.keySet().equals(requested))
+                        throw new OrganizationTaskPathService.TaskPathNotFoundException();
                     return Map.copyOf(projectRefsByStore);
                 });
     }
@@ -183,7 +215,8 @@ public class OrganizationTaskPathPersistence {
             String targetType,
             UUID targetId,
             CatalogScopeLookup.CatalogBrandSelection selection) {
-        if (workspaceUuid == null || key == null || targetId == null) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        if (workspaceUuid == null || key == null || targetId == null)
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
         return switch (targetType) {
             case ServiceNodeTypes.STORE -> storeCatalogCommandScopeFacts(workspaceUuid, key, targetId, selection);
             case ServiceNodeTypes.HEAD_COMPANY -> headCompanyCatalogCommandScopeFacts(
@@ -199,26 +232,41 @@ public class OrganizationTaskPathPersistence {
      */
     private TaskPath requireEnabledProjectTaskPath(UUID workspaceUuid, String key, UUID targetId) {
         return jdbc.query(
-                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CTE_GROUP_FACT_COMMERCIAL_GROUP_UUID_GROUP_ID_ALTERNATE_A
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_PARAMS
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_TEXT_GROUP_WORKSPACE_KEY_TARGET_ID
+                OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_CTE_GROUP_FACT_COMMERCIAL_GROUP_UUID_GROUP_ID_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_PARAMS
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_TEXT_GROUP_WORKSPACE_KEY_TARGET_ID
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_GROUP_FACT_ANCESTRY_NODE_TARGET_ID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ORGANIZATION_NODE_NODE_NODE_TYPE_CODE_NAME
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_GROUP_FACT_ANCESTRY_NODE_TARGET_ID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ORGANIZATION_NODE_NODE_NODE_TYPE_CODE_NAME
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PARAMS_NODE_WORKSPACE_UUID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_GROUP_WORKSPACE_KEY_PARAMS_STATUS
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_NODE_GROUP_WORKSPACE_KEY_PARAMS_STATUS
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_PARAMS_TARGET_ID_ANCESTRY
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PARENT_NODE_TYPE_CODE_NAME_ALTERNATE_A
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ANCESTRY_ORGANIZATION_NODE_PARENT_PARENT_ID_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_PARENT_NODE_TYPE_CODE_NAME_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ANCESTRY_ORGANIZATION_NODE_PARENT_PARENT_ID_ALTERNATE_A
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CROSS_JOIN
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PARAMS_PARENT_WORKSPACE_UUID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PARENT_GROUP_WORKSPACE_KEY_PARAMS_STATUS
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ANCESTRY_TARGET_ID_NODE_TYPE_FILTER_ALTERNATE_A
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_DEPTH_ANCESTOR_IDS_ALTERNATE_A
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_DEPTH_PATH_NODE_REFS_ALTERNATE_A
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_CODE_DEPTH_ALTERNATE_A
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_NAME_DEPTH_ALTERNATE_A
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_NODE_TYPE_DEPTH_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_PARENT_GROUP_WORKSPACE_KEY_PARAMS_STATUS
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ANCESTRY_TARGET_ID_NODE_TYPE_FILTER_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_DEPTH_ANCESTOR_IDS_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_DEPTH_PATH_NODE_REFS_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_CODE_DEPTH_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_NAME_DEPTH_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_ANCESTRY_NODE_TYPE_DEPTH_ALTERNATE_A
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STRING_AGG_ANCESTRY_CODE
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ANCESTRY_NAME_DEPTH_DISPLAY_PATH
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PARAMS_GROUP_ID
@@ -252,21 +300,33 @@ public class OrganizationTaskPathPersistence {
      * owner statement so the authorization read does not fan out into separate group/store/node reads.
      */
     private TaskPath requireStoreTaskPath(UUID workspaceUuid, String key, UUID targetId, boolean allowDisabledStore) {
-        String storeStatusPredicate = allowDisabledStore ? "" : OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_STORE_STATUS_ENABLED;
+        String storeStatusPredicate = allowDisabledStore
+                ? ""
+                : OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_STORE_STATUS_ENABLED;
         return jdbc.query(
-                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CTE_GROUP_FACT_COMMERCIAL_GROUP_UUID_GROUP_ID_ALTERNATE_B
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_STORE_FACT_ALTERNATE_A
+                OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_CTE_GROUP_FACT_COMMERCIAL_GROUP_UUID_GROUP_ID_ALTERNATE_B
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_STORE_FACT_ALTERNATE_A
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_STORE_ID_PROJECT_ID_CODE
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PROJECT_PARENT_ID_REGION_ID_CODE
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_REGION_CODE_REGION_CODE_NAME
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_STORE_PROJECT_ALTERNATE_B
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PROJECT_STORE_PROJECT_ID_WORKSPACE_UUID_ALTERNATE_B
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_STORE_NODE_TYPE_ALTERNATE_B
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ORGANIZATION_NODE_PROJECT_STATUS_ENABLED_REGION
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_REGION_PROJECT_PARENT_ID_WORKSPACE_UUID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_REGION_GROUP_WORKSPACE_KEY_PROJECT_NODE_TYPE
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_GROUP_FACT_REGION_STATUS_ENABLED_STORE
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_STORE_PROJECT_ALTERNATE_B
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_PROJECT_STORE_PROJECT_ID_WORKSPACE_UUID_ALTERNATE_B
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_STORE_NODE_TYPE_ALTERNATE_B
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ORGANIZATION_NODE_PROJECT_STATUS_ENABLED_REGION
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_REGION_PROJECT_PARENT_ID_WORKSPACE_UUID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_REGION_GROUP_WORKSPACE_KEY_PROJECT_NODE_TYPE
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_GROUP_FACT_REGION_STATUS_ENABLED_STORE
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + storeStatusPredicate
                         + OrganizationTaskPathServiceSql.STORE_FACT_SELECT_SUFFIX,
                 statement -> {
@@ -315,7 +375,8 @@ public class OrganizationTaskPathPersistence {
     /** A disabled Store may remain a business-channel target, but its organization ancestors remain enabled-only. */
     public TaskPath requireTaskPathAllowingDisabledTarget(
             UUID workspaceUuid, String key, String targetType, UUID targetId) {
-        if (!ServiceNodeTypes.STORE.equals(targetType)) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        if (!ServiceNodeTypes.STORE.equals(targetType))
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
         return requireStoreTaskPath(workspaceUuid, key, targetId, true);
     }
 
@@ -326,7 +387,8 @@ public class OrganizationTaskPathPersistence {
 
     public Map<TaskPathRef, TaskPath> describePersistedTaskPaths(
             UUID workspaceUuid, String key, List<TaskPathRef> targets) {
-        if (workspaceUuid == null || key == null || targets == null) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        if (workspaceUuid == null || key == null || targets == null)
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
         LinkedHashSet<TaskPathRef> requested = validatedTargets(targets);
         if (requested.isEmpty()) return Map.of();
         Map<TaskPathRef, TaskPath> result = jdbc.query(
@@ -358,7 +420,8 @@ public class OrganizationTaskPathPersistence {
                 });
         if (result == null
                 || result.size() != requested.size()
-                || !result.keySet().equals(requested)) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+                || !result.keySet().equals(requested))
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
         return result;
     }
 
@@ -394,7 +457,8 @@ public class OrganizationTaskPathPersistence {
             List<TaskPathRef> targets,
             boolean includeDisabledEntityFacts,
             boolean includeDisabledNodeFacts) {
-        if (workspaceUuid == null || key == null || targets == null) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        if (workspaceUuid == null || key == null || targets == null)
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
         LinkedHashSet<TaskPathRef> requested = validatedTargets(targets);
         if (requested.isEmpty()) return Map.of();
         UUID groupId = groups.requireCommercialGroupRef(workspaceUuid, key);
@@ -406,7 +470,8 @@ public class OrganizationTaskPathPersistence {
 
         Set<UUID> headCompanyIds = idsFor(requested, ServiceNodeTypes.HEAD_COMPANY);
         Map<UUID, Entity> headCompanies = headCompanies(workspaceUuid, key, headCompanyIds, includeDisabledEntityFacts);
-        if (headCompanies.size() != headCompanyIds.size()) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        if (headCompanies.size() != headCompanyIds.size())
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
 
         Set<UUID> nodeIds = new LinkedHashSet<>();
         nodeIds.addAll(idsFor(requested, ServiceNodeTypes.REGION));
@@ -417,7 +482,8 @@ public class OrganizationTaskPathPersistence {
         for (TaskPathRef target : requested) {
             switch (target.targetType()) {
                 case ServiceNodeTypes.GROUP -> {
-                    if (!groupId.equals(target.targetId())) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+                    if (!groupId.equals(target.targetId()))
+                        throw new OrganizationTaskPathService.TaskPathNotFoundException();
                     result.put(
                             target,
                             new TaskPath(
@@ -429,7 +495,8 @@ public class OrganizationTaskPathPersistence {
                 }
                 case ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> {
                     NodePath node = nodes.get(target.targetId());
-                    if (node == null || !target.targetType().equals(node.type())) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+                    if (node == null || !target.targetType().equals(node.type()))
+                        throw new OrganizationTaskPathService.TaskPathNotFoundException();
                     result.put(target, node.taskPath());
                 }
                 case ServiceNodeTypes.HEAD_COMPANY -> {
@@ -478,104 +545,159 @@ public class OrganizationTaskPathPersistence {
      */
     private static String persistedTaskPathsSql() {
         return OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CTE_REQUESTED_TARGET_TYPE_TARGET_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_JSONB_TO_RECORDSET_TARGET_TYPE_TARGET_ID_REQUEST_TEXT
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_SELECT_JSONB_TO_RECORDSET_TARGET_TYPE_TARGET_ID_REQUEST_TEXT
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_TARGET_ID
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CLOSE_PAREN_COMMERCIAL_GROUP
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_COMMERCIAL_GROUP_UUID_ALTERNATE_A
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_ALTERNATE_A
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_ALTERNATE_A
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CLOSE_PAREN_TARGET_ROWS
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_REQUESTED_TARGET_TYPE_TARGET_ID_COMMERCIAL_GROUP
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_ID_HEAD_COMPANY_HEAD_COMPANY_ID_STORE
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_COMMERCIAL_GROUP_FROM_REQUESTED_CROSS_JOIN_CO
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ORGANIZATION_NODE_NODE_REQUESTED_TARGET_TYPE_REGION
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_SELECT_REQUESTED_TARGET_TYPE_TARGET_ID_COMMERCIAL_GROUP
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_NODE_ID_HEAD_COMPANY_HEAD_COMPANY_ID_STORE
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_COMMERCIAL_GROUP_FROM_REQUESTED_CROSS_JOIN_CO
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ORGANIZATION_NODE_NODE_REQUESTED_TARGET_TYPE_REGION
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_REQUESTED_TARGET_ID_WORKSPACE_UUID
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_REQUESTED_TARGET_TYPE
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_REQUESTED_TARGET_ID_WORKSPACE_UUID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_REQUESTED_TARGET_ID_WORKSPACE_UUID
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_GROUP_WORKSPACE_KEY
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_REQUESTED_TARGET_TYPE
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_REQUESTED_TARGET_ID_WORKSPACE_UUID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CLOSE_PAREN_NODE_SEEDS_TARGET_TYPE_TARGET_ID_PARENT_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_TARGET_TYPE_TARGET_ID_NODE_PARENT_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_TARGET_ROWS_FROM_TARGET_ROWS_JOIN
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_NODE_TARGET_ROWS_NODE_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_UNION_TARGET_ROWS_TARGET_TYPE_TARGET_ID_PROJECT
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_CLOSE_PAREN_NODE_SEEDS_TARGET_TYPE_TARGET_ID_PARENT_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_SELECT_TARGET_TYPE_TARGET_ID_NODE_PARENT_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_TARGET_ROWS_FROM_TARGET_ROWS_JOIN
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_NODE_TARGET_ROWS_NODE_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_UNION_TARGET_ROWS_TARGET_TYPE_TARGET_ID_PROJECT
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_TARGET_ROWS_PROJECT_CODE_NAME_NODE_TYPE
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_JOIN_ORGANIZATION_NODE_PROJECT
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PROJECT_TARGET_ROWS_PROJECT_ID_WORKSPACE_UUID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CLOSE_PAREN_ANCESTRY_TARGET_TYPE_TARGET_ID_PARENT_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_NODE_SEEDS_TARGET_TYPE_TARGET_ID_PARENT_ID_CODE
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_UNION_ANCESTRY_TARGET_TYPE_TARGET_ID_PARENT
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_PROJECT_TARGET_ROWS_PROJECT_ID_WORKSPACE_UUID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_CLOSE_PAREN_ANCESTRY_TARGET_TYPE_TARGET_ID_PARENT_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_SELECT_NODE_SEEDS_TARGET_TYPE_TARGET_ID_PARENT_ID_CODE
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_UNION_ANCESTRY_TARGET_TYPE_TARGET_ID_PARENT
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PARENT_CODE_NAME_NODE_TYPE
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_ORGANIZATION_NODE_PARENT
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ANCESTRY_PARENT_ID_PARENT_WORKSPACE_UUID
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PARENT_GROUP_WORKSPACE_KEY
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CLOSE_PAREN_NODE_PATHS
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_TARGET_TYPE_TARGET_ID_ARRAY_AGG_DEPTH
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_SELECT_TARGET_TYPE_TARGET_ID_ARRAY_AGG_DEPTH
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_DEPTH_PATH_NODE_REFS_CODE
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PATH_NODE_CODES_ARRAY_AGG_NAME_DEPTH
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ORDER_BY_DEPTH_PATH_NODE_TYPES_STRING_AGG_CODE
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_DESC_DIRECTION_ANCESTRY_DISPLAY_PATH_TARGET_TYPE_TARGET_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CLOSE_PAREN_TARGET_ROWS_TARGET_TYPE_TARGET_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CASE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ORDER_BY_DEPTH_PATH_NODE_TYPES_STRING_AGG_CODE
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_DESC_DIRECTION_ANCESTRY_DISPLAY_PATH_TARGET_TYPE_TARGET_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_CLOSE_PAREN_TARGET_ROWS_TARGET_TYPE_TARGET_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_CASE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_TARGET_ROWS_GROUP_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_PREPEND_TARGET_ROWS_GROUP_ID_NODE_PATHS
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_PREPEND_TARGET_ROWS_GROUP_ID_NODE_PATHS
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_TARGET_ROWS_GROUP_ID_HEAD_COMPANY_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_APPEND_ARRAY_PREPEND_TARGET_ROWS_GROUP_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_APPEND_ARRAY_PREPEND_TARGET_ROWS_GROUP_ID
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_TARGET_ROWS_STORE_ID_ANCESTOR_IDS
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CASE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID_ALTERNATE_A
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_CASE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID_ALTERNATE_A
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_TARGET_ROWS_GROUP_ID_ALTERNATE_A
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT_ALTERNATE_A
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT_ALTERNATE_A
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_PATH_NODE_REFS
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_A
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_A
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_TARGET_ROWS_HEAD_COMPANY_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_A
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_APPEND_NODE_PATHS_PATH_NODE_REFS_TARGET_ROWS
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_A
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_APPEND_NODE_PATHS_PATH_NODE_REFS_TARGET_ROWS
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PATH_NODE_REFS
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CASE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID_ALTERNATE_B
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_CASE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID_ALTERNATE_B
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_COMMERCIAL_GROUP_COMMERCIAL_GROUP_CODE
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT_ALTERNATE_B
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT_ALTERNATE_B
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_PATH_NODE_CODES
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_B
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_B
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_CODE
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_B
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_APPEND_NODE_PATHS_PATH_NODE_CODES_STORE
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CASE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID_ALTERNATE_C
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_B
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_APPEND_NODE_PATHS_PATH_NODE_CODES_STORE
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_CASE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID_ALTERNATE_C
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_COMMERCIAL_GROUP_COMMERCIAL_GROUP_NAME
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT_ALTERNATE_C
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT_ALTERNATE_C
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_PATH_NODE_NAMES
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_C
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_C
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_NAME
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_C
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_APPEND_NODE_PATHS_PATH_NODE_NAMES_STORE
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CASE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID_ALTERNATE_D
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_C
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_APPEND_NODE_PATHS_PATH_NODE_NAMES_STORE
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_CASE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID_ALTERNATE_D
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_GROUP
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT_ALTERNATE_D
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT_ALTERNATE_D
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_PATH_NODE_TYPES
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_D
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_D
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_D
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_APPEND_NODE_PATHS_PATH_NODE_TYPES_STORE
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CASE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID_ALTERNATE_E
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_D
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_APPEND_NODE_PATHS_PATH_NODE_TYPES_STORE
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_CASE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID_ALTERNATE_E
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_COMMERCIAL_GROUP
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT_ALTERNATE_E
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT_ALTERNATE_E
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_DISPLAY_PATH
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_E
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_E
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_CODE_NAME
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_E
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_E
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_DISPLAY_PATH_STORE_CODE
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_DISPLAY_PATH
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_COMMERCIAL_GROUP_FROM_TARGET_ROWS_CROSS_JOIN_
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_COMMERCIAL_GROUP_FROM_TARGET_ROWS_CROSS_JOIN_
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_TARGET_TYPE_TARGET_ROWS
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_TARGET_ID_TARGET_ROWS
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_TARGET_ROWS_HEAD_COMPANY_ID
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_TARGET_ROWS_STORE_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHERE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID
-                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_WHERE_TARGET_ROWS_TARGET_TYPE_TARGET_ID_GROUP_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID
+                + OrganizationTaskPathServiceSql
+                        .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID
                 + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_IS_NOT_NULL;
     }
 
@@ -645,7 +767,8 @@ public class OrganizationTaskPathPersistence {
 
     public Map<TaskPathRef, String> describeTaskTargetLabels(
             UUID workspaceUuid, String key, List<TaskPathRef> targets) {
-        if (workspaceUuid == null || key == null || targets == null) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        if (workspaceUuid == null || key == null || targets == null)
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
         LinkedHashSet<TaskPathRef> requested = new LinkedHashSet<>(targets);
         if (requested.isEmpty()) return Map.of();
         if (requested.stream()
@@ -675,9 +798,12 @@ public class OrganizationTaskPathPersistence {
         nodeIds.addAll(idsFor(requested, ServiceNodeTypes.PROJECT));
         if (!nodeIds.isEmpty()) {
             List<Node> nodes = jdbc.query(
-                    OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_NODE_TYPE_CODE_NAME
-                            + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED
-                            + placeholders(nodeIds.size()) + OrganizationTaskPathServiceSql.SQL_CLOSE_PAREN,
+                    OrganizationTaskPathServiceSql
+                                    .ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_NODE_TYPE_CODE_NAME
+                            + OrganizationTaskPathServiceSql
+                                    .ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED
+                            + placeholders(nodeIds.size())
+                            + OrganizationTaskPathServiceSql.SQL_CLOSE_PAREN,
                     (row, index) -> new Node(
                             row.getObject(1, UUID.class),
                             row.getObject(2, UUID.class),
@@ -748,9 +874,12 @@ public class OrganizationTaskPathPersistence {
         List<Node> nodeFacts = nodeIds.isEmpty()
                 ? List.of()
                 : jdbc.query(
-                        OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_NODE_TYPE_CODE_NAME_ALTERNATE_A
-                                + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_A
-                                + placeholders(nodeIds.size()) + OrganizationTaskPathServiceSql.SQL_CLOSE_PAREN,
+                        OrganizationTaskPathServiceSql
+                                        .ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_NODE_TYPE_CODE_NAME_ALTERNATE_A
+                                + OrganizationTaskPathServiceSql
+                                        .ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_A
+                                + placeholders(nodeIds.size())
+                                + OrganizationTaskPathServiceSql.SQL_CLOSE_PAREN,
                         (row, index) -> new Node(
                                 row.getObject(1, UUID.class),
                                 row.getObject(2, UUID.class),
@@ -841,7 +970,8 @@ public class OrganizationTaskPathPersistence {
 
     private TaskPath groupPath(UUID workspaceUuid, String key, UUID groupId, UUID targetId) {
         TaskPath group = requireGroupTaskPath(workspaceUuid, key);
-        if (!groupId.equals(targetId) || !groupId.equals(group.targetId())) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        if (!groupId.equals(targetId) || !groupId.equals(group.targetId()))
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
         return group;
     }
 
@@ -889,15 +1019,21 @@ public class OrganizationTaskPathPersistence {
             throw new BusinessEntityService.OrganizationValidationException(invalid);
         }
         return jdbc.query(
-                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CTE_COMMERCIAL_GROUP_GROUP_ROOT_COMMERCIAL_GROUP_UUID
+                OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_CTE_COMMERCIAL_GROUP_GROUP_ROOT_COMMERCIAL_GROUP_UUID
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_GROUP_WORKSPACE_KEY
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_COMPANY_NAME_VERSION_BRAND
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_AUTHORIZATION_FACT_AUTHORIZED_AT_EPOCH_MILLIS
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_AUTHORIZATION_FACT_AUTHORIZED_AT_EPOCH_MILLIS
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_GROUP_ROOT_COMPANY
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_HEAD_COMPANY_BRAND_AUTHORIZATION_AUTHORIZATION_FACT
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_BRAND_AUTHORIZATION_FACT_HEAD_COMPANY_ID_COMPANY
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_BRAND_AUTHORIZATION_FACT_BRAND_ID_COMPANY
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_COMPANY_GROUP_WORKSPACE_KEY_STATUS_ENABLED
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_HEAD_COMPANY_BRAND_AUTHORIZATION_AUTHORIZATION_FACT
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_BRAND_AUTHORIZATION_FACT_HEAD_COMPANY_ID_COMPANY
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_BRAND_AUTHORIZATION_FACT_BRAND_ID_COMPANY
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_COMPANY_GROUP_WORKSPACE_KEY_STATUS_ENABLED
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_AUTHORIZATION_FACT_BRAND_ID
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_BRAND_STATUS_ENABLED,
                 statement -> {
@@ -933,12 +1069,18 @@ public class OrganizationTaskPathPersistence {
     private TaskPath storePath(UUID workspaceUuid, String key, UUID groupId, UUID targetId) {
         StorePathRow target = jdbc.query(
                 OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_PROJECT_ID_CODE_NAME_PARENT_ID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_ORGANIZATION_NODE_PROJECT_ID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_ORGANIZATION_NODE_NODE_TYPE_PROJECT_STATUS_ENABLED
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_JOIN_CONDITION_PARENT_ID_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_REGION_STATUS
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_B,
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_ORGANIZATION_NODE_PROJECT_ID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_CONDITION_ORGANIZATION_NODE_NODE_TYPE_PROJECT_STATUS_ENABLED
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_JOIN_CONDITION_PARENT_ID_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_REGION_STATUS
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_B,
                 statement -> {
                     statement.setObject(1, targetId);
                     statement.setObject(2, workspaceUuid);
@@ -979,20 +1121,29 @@ public class OrganizationTaskPathPersistence {
             UUID workspaceUuid, String key, UUID targetId, CatalogScopeLookup.CatalogBrandSelection selection) {
         String requestedBrandRef = selection == null ? null : selection.value();
         return jdbc.query(
-                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_GROUP_ROOT_COMMERCIAL_GROUP_UUID_STORE_PROJECT_ID
+                OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_SELECT_GROUP_ROOT_COMMERCIAL_GROUP_UUID_STORE_PROJECT_ID
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_REGION_PROJECT_CODE_NAME
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_VERSION
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_STORE_GROUP_ROOT
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_GROUP_WORKSPACE_KEY_GROUP_ROOT
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_STORE_GROUP_WORKSPACE_KEY_GROUP_ROOT
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ORGANIZATION_NODE
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PROJECT_STORE_PROJECT_ID_WORKSPACE_UUID_ALTERNATE_C
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_STORE_NODE_TYPE_ALTERNATE_C
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ORGANIZATION_NODE_PROJECT_STATUS_ENABLED_REGION_ALTERNATE_A
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_PROJECT_STORE_PROJECT_ID_WORKSPACE_UUID_ALTERNATE_C
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_STORE_NODE_TYPE_ALTERNATE_C
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ORGANIZATION_NODE_PROJECT_STATUS_ENABLED_REGION_ALTERNATE_A
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_REGION_PROJECT_PARENT_ID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_REGION_WORKSPACE_UUID_PROJECT_GROUP_WORKSPACE_KEY
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_REGION_NODE_TYPE
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_GROUP_ROOT_GROUP_WORKSPACE_KEY_STORE_WORKSPACE_UUID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_STORE_GROUP_WORKSPACE_KEY_STATUS_ENABLED,
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_CONDITION_REGION_WORKSPACE_UUID_PROJECT_GROUP_WORKSPACE_KEY
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_REGION_NODE_TYPE
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_GROUP_ROOT_GROUP_WORKSPACE_KEY_STORE_WORKSPACE_UUID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_STORE_GROUP_WORKSPACE_KEY_STATUS_ENABLED,
                 statement -> {
                     statement.setString(1, key);
                     statement.setObject(2, targetId);
@@ -1051,10 +1202,13 @@ public class OrganizationTaskPathPersistence {
     private Map<UUID, Store> stores(UUID workspaceUuid, String key, Set<UUID> ids, boolean includeDisabledFacts) {
         if (ids.isEmpty()) return Map.of();
         List<Store> values = jdbc.query(
-                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_STORE_PROJECT_ID_CODE_NAME_WORKSPACE_UUID
+                OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_SELECT_STORE_PROJECT_ID_CODE_NAME_WORKSPACE_UUID
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_A
-                        + enabledOnly(includeDisabledFacts) + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_AND_ID_IN
-                        + placeholders(ids.size()) + OrganizationTaskPathServiceSql.SQL_CLOSE_PAREN,
+                        + enabledOnly(includeDisabledFacts)
+                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_AND_ID_IN
+                        + placeholders(ids.size())
+                        + OrganizationTaskPathServiceSql.SQL_CLOSE_PAREN,
                 (row, index) -> new Store(
                         row.getObject(1, UUID.class), row.getObject(2, UUID.class), row.getString(3), row.getString(4)),
                 arguments(workspaceUuid, key, ids));
@@ -1067,9 +1221,12 @@ public class OrganizationTaskPathPersistence {
             UUID workspaceUuid, String key, Set<UUID> ids, boolean includeDisabledFacts) {
         if (ids.isEmpty()) return Map.of();
         List<Entity> values = jdbc.query(
-                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_HEAD_COMPANY_CODE_NAME_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + enabledOnly(includeDisabledFacts) + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_AND_ID_IN_ALTERNATE_A
-                        + placeholders(ids.size()) + OrganizationTaskPathServiceSql.SQL_CLOSE_PAREN,
+                OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_SELECT_HEAD_COMPANY_CODE_NAME_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + enabledOnly(includeDisabledFacts)
+                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_AND_ID_IN_ALTERNATE_A
+                        + placeholders(ids.size())
+                        + OrganizationTaskPathServiceSql.SQL_CLOSE_PAREN,
                 (row, index) -> new Entity(row.getObject(1, UUID.class), row.getString(2), row.getString(3)),
                 arguments(workspaceUuid, key, ids));
         LinkedHashMap<UUID, Entity> result = new LinkedHashMap<>();
@@ -1082,23 +1239,36 @@ public class OrganizationTaskPathPersistence {
         if (ids.isEmpty()) return Map.of();
         Map<UUID, NodePath> values = jdbc.query(
                 OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CTE_ANCESTRY
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_NODE_TARGET_ID_PARENT_ID_NODE_TYPE
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_SELECT_NODE_TARGET_ID_PARENT_ID_NODE_TYPE
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_DEPTH
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_ORGANIZATION_NODE_NODE_WORKSPACE_UUID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_ORGANIZATION_NODE_NODE_WORKSPACE_UUID
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_NODE_GROUP_WORKSPACE_KEY
-                        + enabledOnly("node", includeDisabledFacts) + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_NODE + placeholders(ids.size())
+                        + enabledOnly("node", includeDisabledFacts)
+                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_NODE
+                        + placeholders(ids.size())
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CLOSE_PAREN_UNION_ALL
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_ANCESTRY_TARGET_ID_PARENT_PARENT_ID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_SELECT_ANCESTRY_TARGET_ID_PARENT_PARENT_ID
                         + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_PARENT_NAME_ANCESTRY_DEPTH
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_PARENT_ID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_PARENT_ID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + enabledOnly("parent", includeDisabledFacts)
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CLOSE_PAREN_TARGET_ID_NODE_TYPE_FILTER_DEPTH
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ORDER_BY_DEPTH_ANCESTOR_IDS_ARRAY_AGG_PATH_NODE_REFS
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_CODE_DEPTH_PATH_NODE_CODES
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_NAME_DEPTH_PATH_NODE_NAMES
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_NODE_TYPE_DEPTH_PATH_NODE_TYPES
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_ANCESTRY_NAME_DEPTH_DISPLAY_PATH_TARGET_ID,
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_CLOSE_PAREN_TARGET_ID_NODE_TYPE_FILTER_DEPTH
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ORDER_BY_DEPTH_ANCESTOR_IDS_ARRAY_AGG_PATH_NODE_REFS
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_CODE_DEPTH_PATH_NODE_CODES
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_NAME_DEPTH_PATH_NODE_NAMES
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ARRAY_AGG_NODE_TYPE_DEPTH_PATH_NODE_TYPES
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_ANCESTRY_NAME_DEPTH_DISPLAY_PATH_TARGET_ID,
                 statement -> bind(statement, workspaceUuid, key, ids, workspaceUuid, key),
                 result -> {
                     LinkedHashMap<UUID, NodePath> paths = new LinkedHashMap<>();
@@ -1142,9 +1312,12 @@ public class OrganizationTaskPathPersistence {
                 .forEach(target -> ids.add(target.targetId()));
         if (ids.isEmpty()) return Set.of();
         List<TaskPathRef> values = jdbc.query(
-                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_NODE_NODE_TYPE_WORKSPACE_UUID
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED
-                        + placeholders(ids.size()) + OrganizationTaskPathServiceSql.SQL_CLOSE_PAREN,
+                OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_NODE_NODE_TYPE_WORKSPACE_UUID
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED
+                        + placeholders(ids.size())
+                        + OrganizationTaskPathServiceSql.SQL_CLOSE_PAREN,
                 (row, index) -> new TaskPathRef(row.getString(2), row.getObject(1, UUID.class)),
                 arguments(workspaceUuid, key, ids));
         return Set.copyOf(values);
@@ -1155,9 +1328,13 @@ public class OrganizationTaskPathPersistence {
         Set<UUID> ids = idsFor(targets, targetType);
         if (ids.isEmpty()) return Set.of();
         List<TaskPathRef> values = jdbc.query(
-                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_SELECT_ID_FROM_ORGANIZATION + table
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED
-                        + placeholders(ids.size()) + OrganizationTaskPathServiceSql.SQL_CLOSE_PAREN,
+                OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_SELECT_ID_FROM_ORGANIZATION
+                        + table
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED
+                        + placeholders(ids.size())
+                        + OrganizationTaskPathServiceSql.SQL_CLOSE_PAREN,
                 (row, index) -> new TaskPathRef(targetType, row.getObject(1, UUID.class)),
                 arguments(workspaceUuid, key, ids));
         return Set.copyOf(values);
@@ -1184,13 +1361,16 @@ public class OrganizationTaskPathPersistence {
     }
 
     private static String enabledOnly(boolean includeDisabledFacts) {
-        return includeDisabledFacts ? "" : OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_STATUS_ENABLED;
+        return includeDisabledFacts
+                ? ""
+                : OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_CONDITION_STATUS_ENABLED;
     }
 
     private static String enabledOnly(String table, boolean includeDisabledFacts) {
         return includeDisabledFacts
                 ? ""
-                : OrganizationTaskPathServiceSql.ENABLED_STATUS_FILTER_PREFIX + table
+                : OrganizationTaskPathServiceSql.ENABLED_STATUS_FILTER_PREFIX
+                        + table
                         + OrganizationTaskPathServiceSql.ENABLED_STATUS_FILTER_SUFFIX;
     }
 
@@ -1220,8 +1400,10 @@ public class OrganizationTaskPathPersistence {
 
     private Node node(UUID workspaceUuid, String key, UUID id, String expectedType) {
         Node result = jdbc.query(
-                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_NODE_TYPE_CODE_NAME_ALTERNATE_B
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_C,
+                OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_NODE_TYPE_CODE_NAME_ALTERNATE_B
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_C,
                 statement -> {
                     statement.setObject(1, id);
                     statement.setObject(2, workspaceUuid);
@@ -1235,14 +1417,17 @@ public class OrganizationTaskPathPersistence {
                                 row.getString(4),
                                 row.getString(5))
                         : null);
-        if (result == null || !expectedType.equals(result.type())) throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        if (result == null || !expectedType.equals(result.type()))
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
         return result;
     }
 
     private Entity entity(UUID workspaceUuid, String key, UUID id, String table) {
         Entity result = jdbc.query(
-                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_CODE_NAME + table
-                        + OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_A,
+                OrganizationTaskPathServiceSql.ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_CODE_NAME
+                        + table
+                        + OrganizationTaskPathServiceSql
+                                .ORGANIZATION_TASK_PATH_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_A,
                 statement -> {
                     statement.setObject(1, id);
                     statement.setObject(2, workspaceUuid);
@@ -1273,5 +1458,4 @@ public class OrganizationTaskPathPersistence {
     private record Entity(UUID id, String code, String name) {}
 
     private record NodePath(String type, TaskPath taskPath) {}
-
 }

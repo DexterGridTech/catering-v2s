@@ -27,7 +27,7 @@
     "react-native": "0.86.3"
   },
   "devDependencies": {
-    "@catering-v2s/ui-base-test-support": "workspace:*",
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*",
     "@types/react": "~19.2.2",
     "react": "19.2.3",
     "react-native": "0.86.3",

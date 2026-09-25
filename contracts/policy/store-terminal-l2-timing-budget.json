@@ -36,15 +36,15 @@
       "caseTimeoutMs": 30000
     },
     {
-      "caseId": "terminal-status-actions",
-      "scenarioId": "TER-L2-A01",
+      "caseId": "terminal-readonly-state",
+      "scenarioId": "TER-L2-M01",
       "caseExpectedDbMs": 900,
       "caseLocalActionMs": 1500,
       "caseTimeoutMs": 30000
     },
     {
-      "caseId": "terminal-readonly-state",
-      "scenarioId": "TER-L2-M01",
+      "caseId": "terminal-status-actions",
+      "scenarioId": "TER-L2-A01",
       "caseExpectedDbMs": 900,
       "caseLocalActionMs": 1500,
       "caseTimeoutMs": 30000

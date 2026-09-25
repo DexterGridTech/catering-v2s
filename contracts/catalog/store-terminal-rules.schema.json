@@ -21,7 +21,7 @@
           "label": {"$ref": "#/$defs/label"},
           "supportedDeviceTypeKeys": {"$ref": "#/$defs/keyArray"},
           "maxPerTerminal": {"type": ["integer", "null"], "minimum": 1},
-          "allowedRangeKeys": {"$ref": "#/$defs/keyArray"}
+          "allowedRangeKeys": {"$ref": "#/$defs/rangeKeyArray"}
         }
       }
     },
@@ -159,6 +159,7 @@
     "key": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]{0,119}$"},
     "label": {"type": "string", "minLength": 1, "maxLength": 120},
     "keyArray": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/key"}},
+    "rangeKeyArray": {"type": "array", "minItems": 0, "uniqueItems": true, "items": {"$ref": "#/$defs/key"}},
     "entries": {
       "type": "array",
       "minItems": 1,

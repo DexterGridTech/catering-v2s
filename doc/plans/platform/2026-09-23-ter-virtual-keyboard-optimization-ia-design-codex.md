@@ -15,10 +15,11 @@ HANDOFF_RULE=新键盘先在旧键盘下层升起，旧键盘再向下退出；�
 OFFSET_RULE=|K_B−K_A|>0.5 个逻辑单位时 λ=clamp((K(t)−K_A)/(K_B−K_A),0,1)，offset(t)=offset_A+(offset_B−offset_A)×λ；|K_B−K_A|≤0.5 时 offset 先按同一 progress p 在两端线性插值，再逐帧 clamp 到 [−K(t),0]。
 MEASURE_RULE=焦点框与 viewport 以 measureLayout 相对未平移 InputSurfaceFrame 根测量；InputScrollArea 子字段改相对 scroll content 测量，再与 viewport 根相对矩形及 onScroll 回读 offset 合成；不跨 ScrollView 边界测量，不从 layout 读数扣 presentation offset。只在计算当前可见矩形时把 presentation offset 加一次。PIN visible anchor 使用同一 measureLayout 坐标契约。
 SCROLL_RULE=按中心规则平移（无论是否达到上限）后焦点框仍不完整可见时，在固定尺寸内部滚动区域补足；滚动只计算平移后真实可见交集，不重复计入平移。
+SCROLL_SETTLE_RULE=滚动成功以 onScroll 回读在 0.5 个逻辑单位容差内证明焦点框完整落入可见交集为准；滚动终止以归一化 onMomentumScrollEnd，或无动量时的 onScrollEndDrag 为准，键盘 250ms 动画完成不是滚动终止信号。每个滚动请求另有一次 1500ms 有界 watchdog，终止信号或 watchdog 到达时用最后 offset 判定成功/失败并清除 pending；Web/Android 均不得因缺少 onScroll 永久 pending。
 WIDTH_RULE=键盘外框宽度等于所属 surface 的实测可用宽度，四角半径为 0；键帽列轨按最终外框宽度、真实内边距、键间隙和布局列数填满并判容量。
 VISIBLE_BAND_RULE=覆盖模型的可见带为所属 surface 的 [0,H-K] 与焦点所属固定尺寸内部视口经整体平移后的交集；旧 MIN_CONTENT_HEIGHT=208 不作为通过条件。
 FOCUS_SESSION_RULE=keyboardState.activeFieldId 等于该字段且输入 owner 为 virtual 的区间；中间 native blur 未改变 owner 时不结束会话。
-ANIMATION_RULE=每 surface 由 InputSurfaceFrame 几何 owner 持有独立键盘呈现状态（idle/measure/enter/display/handoff/exit），与 keyboardState.visible 的可编辑语义分离；呈现快照保存 outgoing 的键位、K、冻结键帽标签和 incoming 的键位、K、hasNextField，动画结束才卸载。唯一 Animated.Value progress 以 250ms、Easing.inOut(Easing.quad) 缓动，经预计算分段线性 interpolate 驱动键盘和内容平移；scroll host 在同一交接起点仅发起一次 scrollTo(animated=true)，不逐帧 JS scrollTo。
+ANIMATION_RULE=每 surface 由 InputSurfaceFrame 几何 owner 持有独立键盘呈现状态（idle/measure/enter/display/handoff/exit），与 keyboardState.visible 的可编辑语义分离；呈现快照保存 outgoing 的键位、K、冻结键帽标签和 incoming 的键位、K、hasNextField，动画结束才卸载。唯一 Animated.Value progress 以 250ms、Easing.inOut(Easing.quad) 缓动，经预计算分段线性 interpolate 驱动键盘和内容平移；scroll host 在同一交接起点仅发起一次 scrollTo(animated=true)，不逐帧 JS scrollTo；键盘动画结束只把呈现标为 settled，不清除或强制结算滚动 readback。
 ```
 
 这里 `K_A/K_B` 是两把键盘各自完整外框的实测逻辑高。对于底边锚定、下移 `d_i` 的外框，`v_i=clamp(K_i-d_i,0,K_i)`，新在旧下层时 `K=max(v_A,v_B)`。异布局切换时，新键盘先在旧键盘下层升起，旧键盘再向下退出；交接期间键盘区持续吞掉点按，旧键盘完全退出且必要滚动完成后新键盘才接键。待提交目标用 `blockedFieldId`/`preflightFocusTarget` 保存和复核；目标替换、取消、scope 改变或字段卸载时清理。此表达是可见遮挡的几何事实，不从动画进度或旧 height 估算。`full` 为 laptop 246、mobile 189；alpha 为 190/146，numeric/financial 为 246/189。运行时以实测外框为准，未测量不可进入 virtual owner。呈现快照与输入 owner 分离：owner 暂为 `none` 时，handoff/exit 仍保持画面挂载；只有动画完成才卸载。

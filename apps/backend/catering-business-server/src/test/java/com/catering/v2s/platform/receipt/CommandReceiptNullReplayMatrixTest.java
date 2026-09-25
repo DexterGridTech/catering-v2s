@@ -33,9 +33,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Proof carrier for the shared legacy receipt rule: a claimed receipt with a
- * null response is a successful claim-only replay and must not execute the
- * command again. The ten rows intentionally name every generic receipt owner;
+ * Proof carrier for the shared legacy receipt rule: a claimed receipt with a null response is a successful claim-only
+ * replay and must not execute the command again. The ten rows intentionally name every generic receipt owner;
  * owner-specific concurrency and HTTP acceptance remain separate evidence.
  */
 class CommandReceiptNullReplayMatrixTest {
@@ -123,8 +122,7 @@ class CommandReceiptNullReplayMatrixTest {
         when(persistence.read(workspace, key))
                 .thenReturn(new OrganizationHierarchyCommandReceiptPersistence.Receipt(hash(), null));
 
-        var replay = new OrganizationHierarchyCommandReceiptService(
-                        mock(JdbcTemplate.class), persistence, () -> 1L)
+        var replay = new OrganizationHierarchyCommandReceiptService(mock(JdbcTemplate.class), persistence, () -> 1L)
                 .execute(workspace, key, REQUEST, () -> failReplay());
 
         assertNull(replay);
@@ -137,8 +135,7 @@ class CommandReceiptNullReplayMatrixTest {
         when(persistence.find(key))
                 .thenReturn(Optional.of(new PlatformCommandReceiptPersistence.Receipt(hash(), null)));
 
-        var replay = new PlatformCommandReceiptService(persistence, () -> 1L)
-                .execute(key, REQUEST, () -> failReplay());
+        var replay = new PlatformCommandReceiptService(persistence, () -> 1L).execute(key, REQUEST, () -> failReplay());
 
         assertNull(replay);
     }
@@ -148,8 +145,7 @@ class CommandReceiptNullReplayMatrixTest {
         UUID workspace = UUID.randomUUID();
         String key = "contract-null-receipt-01";
         ContractCommandReceiptPersistence persistence = mock(ContractCommandReceiptPersistence.class);
-        when(persistence.find(workspace, key))
-                .thenReturn(new ContractCommandReceiptPersistence.Receipt(hash(), null));
+        when(persistence.find(workspace, key)).thenReturn(new ContractCommandReceiptPersistence.Receipt(hash(), null));
 
         var replay = new ContractCommandReceiptService(persistence, () -> 1L)
                 .execute(workspace, key, REQUEST, () -> failReplay());

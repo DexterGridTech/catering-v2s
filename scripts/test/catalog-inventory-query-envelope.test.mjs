@@ -188,7 +188,7 @@ test('CP-B2 reference lifecycle validation distinguishes new bindings from exist
   assert.throws(() => assert.match(categoryRedMutation, /CATALOG_WORKBENCH_READ_SERVICE_CONDITION_STATUS_ENABLED_PARENT_CATEGORY_REF/), /did not match/);
 
   const compositeCandidateStart = workbenchPersistence.indexOf('if ("COMPOSITE_COMPONENT".equals(query.candidateUsage()))');
-  const compositeCandidateEnd = workbenchPersistence.indexOf('sql.append(CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_CLOSE_PAREN_FILTERED', compositeCandidateStart);
+  const compositeCandidateEnd = workbenchPersistence.indexOf('CATALOG_WORKBENCH_READ_SERVICE_CLOSE_PAREN_FILTERED_AGGREGATE_TOTAL_PAGED_ITEM_REF', compositeCandidateStart);
   assert.ok(compositeCandidateStart >= 0 && compositeCandidateEnd > compositeCandidateStart);
   const compositeCandidate = workbenchPersistence.slice(compositeCandidateStart, compositeCandidateEnd);
   assert.match(compositeCandidate, /CATALOG_WORKBENCH_READ_SERVICE_CONDITION_STATUS_ENABLED_CODE/);
@@ -692,7 +692,7 @@ test('CatalogOwner parent-page summaries keep SQL placeholder and JSON array pro
     catalogTagProjection,
     /String placeholders = String\.join\([\s\S]*?Collections\.nCopies\(refs\.size\(\), CatalogWorkbenchReadServiceSql\.PARAMETER_PLACEHOLDER\)\);/,
   );
-  assert.match(catalogTagProjection, /\+ placeholders\n\s*\+ CatalogWorkbenchReadServiceSql\./);
+  assert.match(catalogTagProjection, /\+ placeholders\s*\+ CatalogWorkbenchReadServiceSql(?:\s*\n\s*\.)?/);
   assert.doesNotMatch(catalogTagProjection, /placeholders\(itemRefs\)/);
   assert.match(itemSummaryProjection, /item\.set\("attributeFacts", arrayCopy\(sections\.path\("attributeAssignments"\)\)\);/);
   assert.match(itemSummaryProjection, /item\.set\("preparationFacts", preparationFacts\(/);
@@ -780,7 +780,7 @@ test('catalog hierarchy, production-tag navigation, and SKU page preserve their 
   const navigation =
     workbenchOwner.match(/private ObjectNode navigation\([\s\S]*?ArrayNode tags = data\.putArray\("tags"\);/)?.[0] ?? '';
   const skuPage =
-    itemOwner.match(/private ObjectNode itemSkus\([\s\S]*?List<SkuCandidateRow> rows = persistence\.readSkuCandidates\(/)?.[0] ?? '';
+    itemOwner.match(/private ObjectNode itemSkus\([\s\S]*?List<SkuCandidateRow> rows = persistence[\s\S]*?\.readSkuCandidates\(/)?.[0] ?? '';
   const navigationTags =
     productionOwner.match(
       /public List<CatalogProductionTagOwnerApi\.ProductionTagNavigationReadback> readNavigationTags\([\s\S]*?\n    \}/,
@@ -1207,8 +1207,8 @@ test('catalog detail reads preparation facts through one owner-local projection 
     /private Set<UUID> existingProductionTagRef\(ItemRow current, ObjectNode request\)[\s\S]*?currentSections\.has\("productionTagRef"\)/,
   );
   assert.match(owner, /if \(ref\.isNull\(\)\) return Set\.of\(\);/);
-  assert.match(referenceReplace, /jdbc\.update\(CatalogItemReferenceFactsSql\.CATALOG_ITEM_REFERENCE_FACTS_DELETE_CATALOG_ITEM_REFERENCE_ITEM_REF_ALTERNATE_A, itemRef\);/);
-  assert.match(referenceReplace, /jdbc\.batchUpdate\(CatalogItemReferenceFactsSql\.CATALOG_ITEM_REFERENCE_FACTS_INSERT_INTO_CATALOG_ITEM_REFERENCE_ITEM_REF_KIND_REF, rows\);/);
+  assert.match(referenceReplace, /jdbc\.update\(\s*CatalogItemReferenceFactsSql\s*\.\s*CATALOG_ITEM_REFERENCE_FACTS_DELETE_CATALOG_ITEM_REFERENCE_ITEM_REF_ALTERNATE_A,\s*itemRef\);/);
+  assert.match(referenceReplace, /jdbc\.batchUpdate\(\s*CatalogItemReferenceFactsSql\s*\.\s*CATALOG_ITEM_REFERENCE_FACTS_INSERT_INTO_CATALOG_ITEM_REFERENCE_ITEM_REF_KIND_REF,\s*rows\);/);
   assert.match(referenceSql, /DELETE FROM catalog\.catalog_item_reference WHERE item_ref=\?/);
   assert.match(referenceSql, /INSERT INTO catalog\.catalog_item_reference\(item_ref,kind,ref\) VALUES\(\?,\?,\?\)/);
   assert.doesNotMatch(referenceReplace, /WITH deleted AS/);

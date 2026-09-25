@@ -3,7 +3,6 @@ package com.catering.v2s.businesschannel.application.persistence;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -37,13 +36,18 @@ public class BusinessChannelTaskReadPersistence {
             String sortDirection) {
         List<Object> arguments = new ArrayList<>(List.of(workspaceUuid, groupWorkspaceKey, storeRef));
         StringBuilder predicate = new StringBuilder(
-                BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TARGET_NODE_TYPE_STORE
-                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_NODE_REF_TARGET_STORE
-                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_ACCESS_KIND_INTERNAL_OPERATOR_KIND_STORE
-                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_ORDER_KIND_DINE_IN_TAKEAWAY);
+                BusinessChannelTaskReadServiceSql
+                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TARGET_NODE_TYPE_STORE
+                        + BusinessChannelTaskReadServiceSql
+                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_NODE_REF_TARGET_STORE
+                        + BusinessChannelTaskReadServiceSql
+                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_ACCESS_KIND_INTERNAL_OPERATOR_KIND_STORE
+                        + BusinessChannelTaskReadServiceSql
+                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_ORDER_KIND_DINE_IN_TAKEAWAY);
         if (cursorTieBreaker != null) {
             if (sortKey == null) {
-                predicate.append(BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_CHANNEL_REF);
+                predicate.append(
+                        BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_CHANNEL_REF);
                 arguments.add(cursorTieBreaker);
             } else {
                 String expression = salesMenuChannelSortExpression(sortKey);
@@ -55,7 +59,9 @@ public class BusinessChannelTaskReadPersistence {
                         .append(expression)
                         .append(' ')
                         .append(comparison)
-                        .append(BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_PARAMETER_PLACEHOLDER)
+                        .append(
+                                BusinessChannelTaskReadServiceSql
+                                        .BUSINESS_CHANNEL_TASK_READ_SERVICE_PARAMETER_PLACEHOLDER)
                         .append(expression)
                         .append(BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CHANNEL_REF);
                 arguments.add(cursorSortValue);
@@ -64,9 +70,13 @@ public class BusinessChannelTaskReadPersistence {
             }
         }
         return query(
-                BusinessChannelQuerySupport.channelProjection(BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_JOIN_BUSINESS_CHANNEL_TEMPLATE_JOIN_BUSINESS_CHANNEL_BUSINE
-                                + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_JOIN_CONDITION_TEMPLATE_REF_WORKSPACE_UUID
-                                + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_GROUP_WORKSPACE_KEY)
+                BusinessChannelQuerySupport.channelProjection(
+                                BusinessChannelTaskReadServiceSql
+                                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_JOIN_BUSINESS_CHANNEL_TEMPLATE_JOIN_BUSINESS_CHANNEL_BUSINE
+                                        + BusinessChannelTaskReadServiceSql
+                                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_JOIN_CONDITION_TEMPLATE_REF_WORKSPACE_UUID
+                                        + BusinessChannelTaskReadServiceSql
+                                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_GROUP_WORKSPACE_KEY)
                         + predicate
                         + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_ORDER_BY
                         + salesMenuChannelOrderBy(sortKey, sortDirection)
@@ -78,20 +88,26 @@ public class BusinessChannelTaskReadPersistence {
             UUID workspaceUuid, String groupWorkspaceKey, String storeRef, UUID channelRef) {
         return query(
                 BusinessChannelQuerySupport.channelSelect(
-                        BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CHANNEL_REF
-                                + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_NODE_TYPE_STORE_TARGET_NODE_REF
-                                + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_STORE_ACCESS_KIND_INTERNAL
-                                + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_OPERATOR_KIND_STORE_ORDER_KIND_DINE_IN),
+                        BusinessChannelTaskReadServiceSql
+                                        .BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CHANNEL_REF
+                                + BusinessChannelTaskReadServiceSql
+                                        .BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_NODE_TYPE_STORE_TARGET_NODE_REF
+                                + BusinessChannelTaskReadServiceSql
+                                        .BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_STORE_ACCESS_KIND_INTERNAL
+                                + BusinessChannelTaskReadServiceSql
+                                        .BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_OPERATOR_KIND_STORE_ORDER_KIND_DINE_IN),
                 List.of(workspaceUuid, groupWorkspaceKey, channelRef, storeRef));
     }
 
     public boolean salesMenuChannelBelongsToStore(
             UUID workspaceUuid, String groupWorkspaceKey, String storeRef, UUID channelRef) {
         return !query(
-                        BusinessChannelQuerySupport.channelSelect(
-                                BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CHANNEL_REF_ALTERNATE_A
-                                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_NODE_TYPE_STORE_TARGET_NODE_REF_ALTERNATE_A
-                                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_STORE),
+                        BusinessChannelQuerySupport.channelSelect(BusinessChannelTaskReadServiceSql
+                                        .BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CHANNEL_REF_ALTERNATE_A
+                                + BusinessChannelTaskReadServiceSql
+                                        .BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_NODE_TYPE_STORE_TARGET_NODE_REF_ALTERNATE_A
+                                + BusinessChannelTaskReadServiceSql
+                                        .BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_STORE),
                         List.of(workspaceUuid, groupWorkspaceKey, channelRef, storeRef))
                 .isEmpty();
     }
@@ -100,7 +116,8 @@ public class BusinessChannelTaskReadPersistence {
             UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef) {
         return query(
                         BusinessChannelQuerySupport.channelCommandSelect(
-                                BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CHANNEL_REF_ALTERNATE_B),
+                                BusinessChannelTaskReadServiceSql
+                                        .BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CHANNEL_REF_ALTERNATE_B),
                         List.of(workspaceUuid, groupWorkspaceKey, channelRef))
                 .stream()
                 .findFirst();
@@ -110,8 +127,10 @@ public class BusinessChannelTaskReadPersistence {
             UUID workspaceUuid, String groupWorkspaceKey, UUID bindingRef) {
         return query(
                 BusinessChannelQuerySupport.channelSelect(
-                        BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_BINDING_REF
-                                + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_ORDER_BY_CHANNEL_REF),
+                        BusinessChannelTaskReadServiceSql
+                                        .BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_BINDING_REF
+                                + BusinessChannelTaskReadServiceSql
+                                        .BUSINESS_CHANNEL_TASK_READ_SERVICE_ORDER_BY_CHANNEL_REF),
                 List.of(workspaceUuid, groupWorkspaceKey, bindingRef));
     }
 
@@ -132,21 +151,30 @@ public class BusinessChannelTaskReadPersistence {
         Map<UUID, List<BusinessChannelReadback.StatusDimension>> ancestors = new LinkedHashMap<>();
         jdbc.query(
                 BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CTE_ANCESTRY
-                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_SELECT_SOURCE_REF_PARENT_ID_NODE_TYPE_STATUS
-                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_FROM_CLAUSE_ORGANIZATION_NODE_FROM_ORGANIZATION_ORGANIZATI
+                        + BusinessChannelTaskReadServiceSql
+                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_SELECT_SOURCE_REF_PARENT_ID_NODE_TYPE_STATUS
+                        + BusinessChannelTaskReadServiceSql
+                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_FROM_CLAUSE_ORGANIZATION_NODE_FROM_ORGANIZATION_ORGANIZATI
                         + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WHERE_ID_IN
                         + placeholders
-                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CLOSE_PAREN_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_UNION_CHILD_SOURCE_REF_PARENT_PARENT_ID
-                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_PARENT_NODE_TYPE_STATUS_CHILD
-                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_CHILD_PARENT_ID
-                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_SELECT_ANCESTRY_SOURCE_REF_NODE_TYPE_STATUS_DEPTH,
+                        + BusinessChannelTaskReadServiceSql
+                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_CLOSE_PAREN_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + BusinessChannelTaskReadServiceSql
+                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_UNION_CHILD_SOURCE_REF_PARENT_PARENT_ID
+                        + BusinessChannelTaskReadServiceSql
+                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_PARENT_NODE_TYPE_STATUS_CHILD
+                        + BusinessChannelTaskReadServiceSql
+                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_CHILD_PARENT_ID
+                        + BusinessChannelTaskReadServiceSql
+                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + BusinessChannelTaskReadServiceSql
+                                .BUSINESS_CHANNEL_TASK_READ_SERVICE_SELECT_ANCESTRY_SOURCE_REF_NODE_TYPE_STATUS_DEPTH,
                 statement -> bind(statement, arguments),
                 result -> {
                     while (result.next()) {
                         UUID sourceRef = result.getObject("source_ref", UUID.class);
-                        ancestors.computeIfAbsent(sourceRef, ignored -> new ArrayList<>())
+                        ancestors
+                                .computeIfAbsent(sourceRef, ignored -> new ArrayList<>())
                                 .add(new BusinessChannelReadback.StatusDimension(
                                         "ORGANIZATION_" + result.getString("node_type"),
                                         result.getObject("id", UUID.class).toString(),
@@ -158,7 +186,8 @@ public class BusinessChannelTaskReadPersistence {
     }
 
     private List<BusinessChannelPersistence.ChannelProjection> query(String sql, List<Object> arguments) {
-        return jdbc.query(sql, statement -> bind(statement, arguments), BusinessChannelPersistence::mapChannelProjection);
+        return jdbc.query(
+                sql, statement -> bind(statement, arguments), BusinessChannelPersistence::mapChannelProjection);
     }
 
     private static String salesMenuChannelOrderBy(String sortKey, String sortDirection) {

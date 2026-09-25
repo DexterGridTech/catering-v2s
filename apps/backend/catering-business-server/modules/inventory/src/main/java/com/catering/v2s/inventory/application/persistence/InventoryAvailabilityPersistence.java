@@ -41,7 +41,10 @@ public class InventoryAvailabilityPersistence {
             boolean componentEligible) {}
 
     public Map<TargetIdentity, TargetRow> readTargets(
-            String dataNodeRef, String brandRef, List<TargetIdentity> identities, boolean requireCompleteConsumptionUnit) {
+            String dataNodeRef,
+            String brandRef,
+            List<TargetIdentity> identities,
+            boolean requireCompleteConsumptionUnit) {
         if (identities == null || identities.isEmpty()) return Map.of();
         String predicates = String.join(
                 InventoryAvailabilityServiceSql.IDENTITY_OR_JOINER,
@@ -61,7 +64,8 @@ public class InventoryAvailabilityPersistence {
                 + InventoryAvailabilityServiceSql.SQL_CLOSE_PAREN;
         if (requireCompleteConsumptionUnit) {
             Map<TargetIdentity, TargetRow> result = new LinkedHashMap<>();
-            for (TargetRow row : jdbc.query(sql, (row, number) -> targetRowWithConsumptionUnitSnapshot(row), args.toArray())) {
+            for (TargetRow row :
+                    jdbc.query(sql, (row, number) -> targetRowWithConsumptionUnitSnapshot(row), args.toArray())) {
                 result.put(new TargetIdentity(row.itemRef(), row.productSkuRef()), row);
             }
             return result;
@@ -83,8 +87,7 @@ public class InventoryAvailabilityPersistence {
                         TargetRow row = targetRow(resultSet, unitSnapshot(resultSet, 11));
                         TargetIdentity identity = new TargetIdentity(row.itemRef(), row.productSkuRef());
                         if (result.putIfAbsent(identity, row) != null)
-                            throw new InventoryOwnerApi.Problem(
-                                    "REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
+                            throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
                     }
                     return result;
                 });
@@ -119,13 +122,11 @@ public class InventoryAvailabilityPersistence {
     private static InventoryOwnerApi.UnitSnapshot requiredUnitSnapshot(ResultSet result, int firstColumn)
             throws SQLException {
         InventoryOwnerApi.UnitSnapshot snapshot = unitSnapshot(result, firstColumn);
-        if (snapshot == null)
-            throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "单位快照不完整");
+        if (snapshot == null) throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "单位快照不完整");
         return snapshot;
     }
 
-    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(ResultSet result, int firstColumn)
-            throws SQLException {
+    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(ResultSet result, int firstColumn) throws SQLException {
         String refValue = result.getString(firstColumn);
         UUID ref;
         try {

@@ -53,7 +53,8 @@ public class CatalogUnitDefinitionService {
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.UnitDefinitionCreateCommand command,
             String idempotencyKey) {
-        CatalogAuthorizationScope scope = CatalogOwnerScopeSupport.typedCommandScope(context, "createOperationsCatalogUnit");
+        CatalogAuthorizationScope scope =
+                CatalogOwnerScopeSupport.typedCommandScope(context, "createOperationsCatalogUnit");
         return unitDefinitionFacts.create(scope.dataNodeId().toString(), scope.brandRef(), command, now());
     }
 
@@ -62,7 +63,8 @@ public class CatalogUnitDefinitionService {
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.UnitDefinitionUpdateCommand command,
             String idempotencyKey) {
-        CatalogAuthorizationScope scope = CatalogOwnerScopeSupport.typedCommandScope(context, "updateOperationsCatalogUnit");
+        CatalogAuthorizationScope scope =
+                CatalogOwnerScopeSupport.typedCommandScope(context, "updateOperationsCatalogUnit");
         inventory.validateCatalogUnitLifecycle(
                 context,
                 command.unitRef(),

@@ -6,14 +6,15 @@ import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.collaboration.api.CollaborationCommandApi;
 import com.catering.v2s.contract.application.ContractCommandReceiptService;
 import com.catering.v2s.contract.application.ContractCommandService;
+import com.catering.v2s.extension.api.ExtensionFilterQuery;
 import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
-import com.catering.v2s.extension.api.ExtensionFilterQuery;
-import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
+import com.catering.v2s.organization.api.StoreOperatingRuleGate;
 import com.catering.v2s.organization.application.BusinessEntityCommandReceiptService;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationCommandService;
@@ -22,7 +23,6 @@ import com.catering.v2s.organization.application.OrganizationHierarchyService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
 import com.catering.v2s.organization.application.OrganizationTaskPathService;
 import com.catering.v2s.organization.application.StoreOperatingRuleCodec;
-import com.catering.v2s.organization.api.StoreOperatingRuleGate;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.asset.application.PlatformAssetService.AssetIdempotencyConflictException;
 import com.catering.v2s.platform.foundation.contract.OwnerProblem;
@@ -34,6 +34,8 @@ import com.catering.v2s.platform.workspace.application.WorkspaceCommandReceiptSe
 import com.catering.v2s.salesmenu.api.SalesMenuOwnerApi;
 import com.catering.v2s.storeterminal.application.StoreTerminalAuditHistoryService;
 import com.catering.v2s.storeterminal.application.StoreTerminalOwnerService;
+import com.catering.v2s.storeterminal.domain.PrinterSpecification;
+import com.catering.v2s.storeterminal.domain.TerminalConfiguration;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceAccountService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAssignmentScopeService;
@@ -374,11 +376,7 @@ public final class ContractProblemAdvice {
         details.put("currentDefinitionRevision", exception.currentRevision());
         details.put("retryable", true);
         return problem(
-                HttpStatus.CONFLICT,
-                "EXTENSION_DEFINITION_REVISION_STALE",
-                "扩展字段定义已更新，请重新读取后再筛选",
-                request,
-                details);
+                HttpStatus.CONFLICT, "EXTENSION_DEFINITION_REVISION_STALE", "扩展字段定义已更新，请重新读取后再筛选", request, details);
     }
 
     @ExceptionHandler(ExtensionFilterQuery.InvalidFilterException.class)
@@ -393,12 +391,7 @@ public final class ContractProblemAdvice {
         }
         ObjectNode details = DETAILS_JSON.createObjectNode();
         details.set("invalidFields", reasons);
-        return problem(
-                HttpStatus.BAD_REQUEST,
-                "EXTENSION_FILTER_INVALID",
-                "扩展字段筛选条件不符合当前字段定义",
-                request,
-                details);
+        return problem(HttpStatus.BAD_REQUEST, "EXTENSION_FILTER_INVALID", "扩展字段筛选条件不符合当前字段定义", request, details);
     }
 
     @ExceptionHandler(PlatformAuthenticationService.LoginNameConflictException.class)
@@ -471,15 +464,17 @@ public final class ContractProblemAdvice {
                         ? "EXTENSION_DEFINITION_INVALID"
                         : exception instanceof BusinessEntityService.OrganizationOperatingRuleValidationException
                                 ? "ORGANIZATION_STORE_OPERATING_RULES_INVALID"
-                        : exception instanceof WorkspaceRoleService.RoleCapabilityUnknownException
-                                ? "WORKSPACE_IAM_ROLE_CAPABILITY_UNKNOWN"
-                                : exception instanceof WorkspaceRoleService.PageAccessCatalogMismatchException
-                                        ? "WORKSPACE_IAM_PAGE_ACCESS_CATALOG_MISMATCH"
-                                        : exception instanceof WorkspaceUserService.PageValidationException
-                                                ? "PLATFORM_COMMON_VALIDATION_FAILED"
-                                                : exception instanceof WorkspaceRoleService.RoleValidationException
-                                                        ? "WORKSPACE_IAM_ROLE_CAPABILITY_INCOMPATIBLE"
-                                                        : "PLATFORM_COMMON_VALIDATION_FAILED";
+                                : exception instanceof WorkspaceRoleService.RoleCapabilityUnknownException
+                                        ? "WORKSPACE_IAM_ROLE_CAPABILITY_UNKNOWN"
+                                        : exception instanceof WorkspaceRoleService.PageAccessCatalogMismatchException
+                                                ? "WORKSPACE_IAM_PAGE_ACCESS_CATALOG_MISMATCH"
+                                                : exception instanceof WorkspaceUserService.PageValidationException
+                                                        ? "PLATFORM_COMMON_VALIDATION_FAILED"
+                                                        : exception
+                                                                        instanceof
+                                                                        WorkspaceRoleService.RoleValidationException
+                                                                ? "WORKSPACE_IAM_ROLE_CAPABILITY_INCOMPATIBLE"
+                                                                : "PLATFORM_COMMON_VALIDATION_FAILED";
         return problem(
                 storageFailure != null ? HttpStatus.INTERNAL_SERVER_ERROR : HttpStatus.UNPROCESSABLE_ENTITY,
                 code,
@@ -574,6 +569,16 @@ public final class ContractProblemAdvice {
         if (failure == null) return "none";
         String value = failure.getClass().getSimpleName();
         return value.matches("[A-Za-z0-9_$]{1,128}") ? value : "unknown";
+    }
+
+    private static String safeValidationReason(Throwable failure) {
+        if (failure instanceof PrinterSpecification.InvalidRuleException invalid) {
+            return "PRINTER_" + invalid.field().name();
+        }
+        if (failure instanceof TerminalConfiguration.InvalidConfigurationException invalid) {
+            return invalid.rule().name();
+        }
+        return safeType(failure);
     }
 
     private static String dependencyFor(String operation) {
@@ -681,11 +686,7 @@ public final class ContractProblemAdvice {
     @ExceptionHandler(StoreTerminalOwnerService.TerminalStoreUnavailableException.class)
     ResponseEntity<Problem> storeTerminalUnavailable(
             StoreTerminalOwnerService.TerminalStoreUnavailableException exception, HttpServletRequest request) {
-        return problem(
-                HttpStatus.FORBIDDEN,
-                "ORGANIZATION_STORE_STATUS_TRANSITION_INVALID",
-                "当前门店状态不支持此操作",
-                request);
+        return problem(HttpStatus.FORBIDDEN, "PLATFORM_COMMON_ACCESS_DENIED", "当前主体无权执行该操作", request);
     }
 
     @ExceptionHandler({
@@ -706,9 +707,14 @@ public final class ContractProblemAdvice {
                                 ? "STORE_TERMINAL_ACTIVATION_CODE_EXHAUSTED"
                                 : exception instanceof StoreTerminalOwnerService.TerminalVoidedImmutableException
                                         ? "STORE_TERMINAL_VOIDED_IMMUTABLE"
-                                        : exception instanceof StoreTerminalOwnerService.TerminalStatusTransitionInvalidException
+                                        : exception
+                                                        instanceof
+                                                        StoreTerminalOwnerService
+                                                                .TerminalStatusTransitionInvalidException
                                                 ? "STORE_TERMINAL_STATUS_TRANSITION_INVALID"
-                                                : exception instanceof StoreTerminalOwnerService.IdempotencyConflictException
+                                                : exception
+                                                                instanceof
+                                                                StoreTerminalOwnerService.IdempotencyConflictException
                                                         ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
                                                         : "PLATFORM_COMMON_VERSION_CONFLICT";
         return problem(HttpStatus.CONFLICT, code, "终端操作与当前 owner 状态冲突，请重新读取后再操作", request);
@@ -716,30 +722,39 @@ public final class ContractProblemAdvice {
 
     @ExceptionHandler({
         StoreTerminalOwnerService.TerminalReferenceInvalidException.class,
+        StoreTerminalOwnerService.InvalidTerminalInputException.class,
         StoreTerminalOwnerService.InvalidTerminalRequestException.class
     })
     ResponseEntity<Problem> storeTerminalInvalid(RuntimeException exception, HttpServletRequest request) {
         String code = exception instanceof StoreTerminalOwnerService.TerminalReferenceInvalidException
                 ? "STORE_TERMINAL_REFERENCE_INVALID"
+                : exception instanceof StoreTerminalOwnerService.InvalidTerminalInputException
+                        ? "PLATFORM_COMMON_VALIDATION_FAILED"
                 : "STORE_TERMINAL_RULE_INVALID";
+        String validationReason = safeValidationReason(rootCause(exception));
         log.atWarn()
                 .addKeyValue("event", "STORE_TERMINAL_TYPED_INVALID_REQUEST")
                 .addKeyValue("exceptionType", safeType(exception))
                 .addKeyValue("rootCauseType", safeType(rootCause(exception)))
+                .addKeyValue("validationReason", validationReason)
                 .addKeyValue("errorCode", code)
-                .log("store-terminal request rejected by typed owner validation");
+                .log(
+                        "store-terminal request rejected by typed owner validation; validationReason={}",
+                        validationReason);
         return problem(
-                HttpStatus.UNPROCESSABLE_ENTITY,
+                exception instanceof StoreTerminalOwnerService.InvalidTerminalInputException
+                        ? HttpStatus.BAD_REQUEST
+                        : HttpStatus.UNPROCESSABLE_ENTITY,
                 code,
                 exception instanceof StoreTerminalOwnerService.TerminalReferenceInvalidException
                         ? "终端关联资料不可用，请刷新后重试"
+                        : exception instanceof StoreTerminalOwnerService.InvalidTerminalInputException
+                                ? "请求参数不合法，请检查后重试"
                         : "终端配置不符合当前规则，请检查后重试",
                 request);
     }
 
-    @ExceptionHandler({
-        StoreTerminalOwnerService.ReceiptCorruptException.class
-    })
+    @ExceptionHandler({StoreTerminalOwnerService.ReceiptCorruptException.class})
     ResponseEntity<Problem> storeTerminalResultUnknown(RuntimeException exception, HttpServletRequest request) {
         return problem(
                 HttpStatus.INTERNAL_SERVER_ERROR,

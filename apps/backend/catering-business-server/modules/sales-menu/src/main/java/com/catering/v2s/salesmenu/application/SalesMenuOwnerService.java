@@ -25,7 +25,6 @@ import com.catering.v2s.salesmenu.domain.SalesMenuScope;
 import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionQuery;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,7 +116,14 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
                 new SalesMenuItemService(
                         persistence, time, json, catalog, inventory, channels, organization, assets, assetCommands),
                 new SalesMenuPublicationService(
-                        persistence, time, json, catalog, inventory, channels, organization, assets,
+                        persistence,
+                        time,
+                        json,
+                        catalog,
+                        inventory,
+                        channels,
+                        organization,
+                        assets,
                         catalogAssetReferenceLock),
                 new SalesMenuManualSaleService(persistence, time, json, catalog, inventory, channels, organization),
                 new SalesMenuOperationRecordService(persistence, time, json, channels, organization),

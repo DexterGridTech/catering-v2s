@@ -1,7 +1,7 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspaceOtpRateLimitPersistence;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceOtpRateLimitPersistence;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
@@ -42,8 +42,9 @@ public final class WorkspaceOtpRateLimitService {
         persistence.lock(workspace, purpose, subject);
         long now = time.currentEpochMillis();
         WorkspaceOtpRateLimitPersistence.BucketRow row = persistence.bucket(workspace, key, purpose, subject);
-        Bucket current = row == null ? null : new Bucket(
-                row.windowStartedAt(), row.sendCount(), row.verifyFailedAttempts(), row.lockedUntil());
+        Bucket current = row == null
+                ? null
+                : new Bucket(row.windowStartedAt(), row.sendCount(), row.verifyFailedAttempts(), row.lockedUntil());
         if (current != null && current.lockedUntil() != null && current.lockedUntil() > now)
             throw new WorkspaceAuthenticationService.OtpRateLimitedException();
         boolean resetWindow = current == null || now - current.windowStartedAt() >= WINDOW;
@@ -55,16 +56,7 @@ public final class WorkspaceOtpRateLimitService {
         if (send) sends++;
         if (failedVerify) failures++;
         Long lockedUntil = failures >= 5 ? now + WINDOW : null;
-        persistence.upsertBucket(
-                workspace,
-                key,
-                purpose,
-                subject,
-                started,
-                sends,
-                failures,
-                lockedUntil,
-                now);
+        persistence.upsertBucket(workspace, key, purpose, subject, started, sends, failures, lockedUntil, now);
         if (lockedUntil != null) throw new WorkspaceAuthenticationService.OtpRateLimitedException();
     }
 

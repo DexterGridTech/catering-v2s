@@ -8,242 +8,64 @@
   "locatorKind": "APP_TEST_ID_ON_REAL_ACTION_NODE",
   "noSeedRuntimeInput": true,
   "controls": {
-    "STORE_SCOPE": {
-      "testId": "operations-data-scope-trigger",
-      "interaction": "scope-selector",
-      "actualActionNode": "SCOPE_TRIGGER",
-      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
-      "sourceFiles": ["apps/frontend/operations-admin/src/tests/l2/operationsL2.ts"]
-    },
-    "TERMINAL_PAGE": {
-      "testId": "operations-store-terminal-page",
-      "interaction": "page-surface",
-      "actualActionNode": "PAGE_ROOT",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"
-      ]
-    },
-    "TERMINAL_LIST": {
-      "testId": "operations-store-terminal-list",
-      "interaction": "list-surface",
-      "actualActionNode": "CARD_LIST",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"
-      ]
-    },
-    "TERMINAL_LIST_ITEM": {
-      "testIdTemplate": "operations-store-terminal-list-item-${terminalRef}",
-      "interaction": "list-selection",
-      "actualActionNode": "LIST_ITEM_BUTTON",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"
-      ]
-    },
-    "TERMINAL_DETAIL": {
-      "testId": "operations-store-terminal-detail",
-      "interaction": "detail-surface",
-      "actualActionNode": "DETAIL_CARD",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.test.tsx",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.tsx"
-      ]
-    },
-    "TERMINAL_CREATE": {
-      "testId": "operations-store-terminal-create",
-      "interaction": "create-button",
-      "actualActionNode": "BUTTON",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"
-      ]
-    },
-    "TERMINAL_EDIT": {
-      "testId": "operations-store-terminal-edit",
-      "interaction": "edit-button",
-      "actualActionNode": "BUTTON",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.test.tsx",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.tsx"
-      ]
-    },
-    "TERMINAL_ACTION_MENU": {
-      "testId": "operations-store-terminal-actions",
-      "interaction": "status-action-menu",
-      "actualActionNode": "BUTTON",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.test.tsx",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.tsx"
-      ]
-    },
-    "TERMINAL_FORM": {
-      "testId": "operations-store-terminal-form",
-      "interaction": "drawer-form",
-      "actualActionNode": "DRAWER",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"
-      ]
-    },
-    "TERMINAL_NAME": {
-      "testId": "operations-store-terminal-name",
-      "interaction": "text-input",
-      "actualActionNode": "INPUT",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"
-      ]
-    },
-    "TERMINAL_DEVICE_TYPE": {
-      "testId": "operations-store-terminal-device-type",
-      "interaction": "radio-group",
-      "actualActionNode": "RADIO_GROUP",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"
-      ]
-    },
-    "TERMINAL_FORM_NEXT": {
-      "testId": "operations-store-terminal-form-next",
-      "interaction": "form-next",
-      "actualActionNode": "BUTTON",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"
-      ]
-    },
-    "TERMINAL_FORM_BACK": {
-      "testId": "operations-store-terminal-form-back",
-      "interaction": "form-back",
-      "actualActionNode": "BUTTON",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"
-      ]
-    },
-    "TERMINAL_FORM_CANCEL": {
-      "testId": "operations-store-terminal-form-cancel",
-      "interaction": "form-cancel",
-      "actualActionNode": "BUTTON",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"
-      ]
-    },
-    "TERMINAL_DIRTY_GUARD_CONFIRM": {
-      "testId": "operations-store-terminal-dirty-guard-confirm",
-      "interaction": "dirty-discard-confirm",
-      "actualActionNode": "BUTTON",
-      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"
-      ]
-    },
-    "TERMINAL_DIRTY_GUARD_CANCEL": {
-      "testId": "operations-store-terminal-dirty-guard-cancel",
-      "interaction": "dirty-discard-cancel",
-      "actualActionNode": "BUTTON",
-      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"
-      ]
-    },
-    "TERMINAL_PRINTER_ADD": {
-      "testId": "operations-store-terminal-printer-add",
-      "interaction": "printer-add",
-      "actualActionNode": "BUTTON",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"
-      ]
-    },
-    "TERMINAL_FUNCTION_ADD": {
-      "testId": "operations-store-terminal-function-add",
-      "interaction": "function-add",
-      "actualActionNode": "BUTTON",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"
-      ]
-    },
-    "TERMINAL_SCENE_PICKER": {
-      "testIdTemplate": "operations-store-terminal-scene-picker-${functionRef}",
-      "interaction": "scene-picker",
-      "actualActionNode": "SCENE_PICKER",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"
-      ]
-    },
-    "TERMINAL_AREA_CANDIDATES": {
-      "testIdTemplate": "operations-store-terminal-area-candidates-${functionRef}",
-      "interaction": "area-candidates",
-      "actualActionNode": "MULTI_SELECT",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"
-      ]
-    },
-    "TERMINAL_TAG_CANDIDATES": {
-      "testIdTemplate": "operations-store-terminal-tag-candidates-${functionRef}",
-      "interaction": "tag-candidates",
-      "actualActionNode": "MULTI_SELECT",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"
-      ]
-    },
-    "TERMINAL_STATUS_ACTION": {
-      "testIdTemplate": "operations-store-terminal-status-action-${status}",
-      "interaction": "status-menu-item",
-      "actualActionNode": "MENU_ITEM",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.test.tsx",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.tsx"
-      ]
-    },
-    "TERMINAL_STATUS_MODAL": {
-      "testId": "operations-store-terminal-status-modal",
-      "interaction": "status-modal",
-      "actualActionNode": "MODAL",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.test.tsx",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"
-      ]
-    },
-    "TERMINAL_STATUS_CANCEL": {
-      "testId": "operations-store-terminal-status-cancel",
-      "interaction": "status-cancel",
-      "actualActionNode": "BUTTON",
-      "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.test.tsx",
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
-        "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"
-      ]
-    }
+    "STORE_SCOPE": {"testId": "operations-data-scope-trigger", "interaction": "scope-selector", "actualActionNode": "SCOPE_TRIGGER", "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs", "sourceFiles": ["apps/frontend/operations-admin/src/tests/l2/operationsL2.ts"]},
+    "TERMINAL_PAGE": {"testId": "operations-store-terminal-page", "interaction": "page-surface", "actualActionNode": "PAGE_ROOT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_LIST": {"testId": "operations-store-terminal-list", "interaction": "list-surface", "actualActionNode": "CARD_LIST", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_LIST_ITEM": {"testIdTemplate": "operations-store-terminal-list-item-${terminalRef}", "interaction": "list-selection", "actualActionNode": "LIST_ITEM_BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts", "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_LIST_RETRY": {"testId": "operations-store-terminal-list-retry", "interaction": "list-read-retry", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_DETAIL": {"testId": "operations-store-terminal-detail", "interaction": "detail-surface", "actualActionNode": "DETAIL_CARD", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.tsx"]},
+    "TERMINAL_DETAIL_RETRY": {"testId": "operations-store-terminal-detail-retry", "interaction": "detail-read-retry", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_CREATE": {"testId": "operations-store-terminal-create", "interaction": "create-button", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_EDIT": {"testId": "operations-store-terminal-edit", "interaction": "edit-button", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.tsx"]},
+    "TERMINAL_ACTION_MENU": {"testId": "operations-store-terminal-actions", "interaction": "status-action-menu-trigger", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.tsx"]},
+    "TERMINAL_PAGINATION": {"testId": "operations-store-terminal-pagination", "interaction": "pagination-surface", "actualActionNode": "PAGINATION_CONTROL_GROUP", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_PAGINATION_NEXT": {"testId": "operations-store-terminal-pagination-next", "interaction": "pagination-next", "actualActionNode": "PAGINATION_BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_PAGINATION_PREVIOUS": {"testId": "operations-store-terminal-pagination-previous", "interaction": "pagination-previous", "actualActionNode": "PAGINATION_BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_FORM": {"testId": "operations-store-terminal-form", "interaction": "drawer-form", "actualActionNode": "DRAWER", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_FORM_TAB_BASIC": {"testId": "operations-store-terminal-form-tab-basic", "interaction": "basic-printer-tab", "actualActionNode": "TAB", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts", "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_FORM_TAB_FUNCTIONS": {"testId": "operations-store-terminal-form-tab-functions", "interaction": "function-range-tab", "actualActionNode": "TAB", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts", "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_NAME": {"testId": "operations-store-terminal-name", "interaction": "text-input", "actualActionNode": "INPUT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_DEVICE_TYPE": {"testId": "operations-store-terminal-device-type", "interaction": "radio-group-surface", "actualActionNode": "RADIO_GROUP", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_DEVICE_TYPE_OPTION": {"testIdTemplate": "operations-store-terminal-device-type-${deviceType}", "interaction": "radio-option", "actualActionNode": "RADIO_OPTION", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts", "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_ACTIVATION_CODE": {"testId": "operations-store-terminal-activation-code", "interaction": "activation-code-input", "actualActionNode": "INPUT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_ACTIVATION_CODE_CLEAR": {"testId": "operations-store-terminal-activation-code-clear", "interaction": "activation-code-clear", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_FORM_CANCEL": {"testId": "operations-store-terminal-form-cancel", "interaction": "form-cancel", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_FORM_SAVE": {"testId": "operations-store-terminal-form-save", "interaction": "form-save", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_DIRTY_GUARD_CONFIRM": {"testId": "operations-store-terminal-dirty-guard-confirm", "interaction": "dirty-discard-confirm", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_DIRTY_GUARD_CANCEL": {"testId": "operations-store-terminal-dirty-guard-cancel", "interaction": "dirty-discard-cancel", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_PRINTER_ADD": {"testId": "operations-store-terminal-printer-add", "interaction": "printer-add", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_PRINTER": {"testIdTemplate": "operations-store-terminal-printer-${identity}", "interaction": "printer-card", "actualActionNode": "CARD", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts", "apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalPrinterEditor.tsx"]},
+    "TERMINAL_PRINTER_NAME": {"testIdTemplate": "operations-store-terminal-printer-name-${identity}", "interaction": "printer-name", "actualActionNode": "INPUT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalPrinterEditor.tsx"]},
+    "TERMINAL_PRINTER_BRAND": {"testIdTemplate": "operations-store-terminal-printer-brand-${identity}", "interaction": "printer-brand", "actualActionNode": "SELECT_INPUT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalPrinterEditor.tsx"]},
+    "TERMINAL_PRINTER_MODEL": {"testIdTemplate": "operations-store-terminal-printer-model-${identity}", "interaction": "printer-model", "actualActionNode": "SELECT_INPUT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalPrinterEditor.tsx"]},
+    "TERMINAL_PRINTER_PAPER_SPEC": {"testIdTemplate": "operations-store-terminal-printer-paper-${identity}", "interaction": "printer-paper-spec", "actualActionNode": "SELECT_INPUT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalPrinterEditor.tsx"]},
+    "TERMINAL_PRINTER_CONNECTION": {"testIdTemplate": "operations-store-terminal-printer-connection-${identity}", "interaction": "printer-connection", "actualActionNode": "SELECT_INPUT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalPrinterEditor.tsx"]},
+    "TERMINAL_PRINTER_PARAMETER": {"testIdTemplate": "operations-store-terminal-printer-parameter-${identity}", "interaction": "printer-connection-parameter", "actualActionNode": "INPUT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalPrinterEditor.tsx"]},
+    "TERMINAL_PRINTER_REMOVE": {"testIdTemplate": "operations-store-terminal-printer-remove-${identity}", "interaction": "printer-remove", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalPrinterEditor.tsx"]},
+    "TERMINAL_PRINTER_REMOVE_CONFIRM": {"testIdTemplate": "operations-store-terminal-printer-remove-confirm-${identity}", "interaction": "printer-remove-confirm", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_PRINTER_REMOVE_CANCEL": {"testIdTemplate": "operations-store-terminal-printer-remove-cancel-${identity}", "interaction": "printer-remove-cancel", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_FUNCTION_LIST": {"testId": "operations-store-terminal-function-list", "interaction": "function-list-surface", "actualActionNode": "CARD", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_FUNCTION_NAV": {"testIdTemplate": "operations-store-terminal-function-nav-${identity}", "interaction": "function-selection", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_FUNCTION_ADD": {"testId": "operations-store-terminal-function-add", "interaction": "function-add", "actualActionNode": "SELECT_INPUT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx"]},
+    "TERMINAL_FUNCTION": {"testIdTemplate": "operations-store-terminal-function-${identity}", "interaction": "function-editor", "actualActionNode": "CARD", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"]},
+    "TERMINAL_FUNCTION_REMOVE": {"testIdTemplate": "operations-store-terminal-function-remove-${identity}", "interaction": "function-remove", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"]},
+    "TERMINAL_FUNCTION_TYPE": {"testIdTemplate": "operations-store-terminal-function-type-${identity}", "interaction": "function-type-readonly", "actualActionNode": "TEXT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts", "apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"]},
+    "TERMINAL_RANGE_GROUP": {"testIdTemplate": "operations-store-terminal-range-${identity}", "interaction": "range-group-surface", "actualActionNode": "CHECKBOX_GROUP", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts", "apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"]},
+    "TERMINAL_RANGE_OPTION": {"testIdTemplate": "operations-store-terminal-range-${identity}-${rangeKey}", "interaction": "range-option", "actualActionNode": "CHECKBOX", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"]},
+    "TERMINAL_AREA_CANDIDATES": {"testIdTemplate": "operations-store-terminal-area-candidates-${identity}", "interaction": "area-candidates", "actualActionNode": "MULTI_SELECT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"]},
+    "TERMINAL_AREA_CANDIDATES_RETRY": {"testIdTemplate": "operations-store-terminal-area-candidates-retry-${identity}", "interaction": "area-candidates-read-retry", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts", "apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"]},
+    "TERMINAL_TAG_CANDIDATES": {"testIdTemplate": "operations-store-terminal-tag-candidates-${identity}", "interaction": "tag-candidates", "actualActionNode": "MULTI_SELECT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"]},
+    "TERMINAL_TAG_CANDIDATES_RETRY": {"testIdTemplate": "operations-store-terminal-tag-candidates-retry-${identity}", "interaction": "tag-candidates-read-retry", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts", "apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"]},
+    "TERMINAL_SCENE_PICKER": {"testIdTemplate": "operations-store-terminal-scene-picker-${identity}", "interaction": "scene-picker-surface", "actualActionNode": "SCENE_PICKER", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"]},
+    "TERMINAL_SCENE": {"testIdTemplate": "operations-store-terminal-scene-${functionIdentity}-${sceneKey}", "interaction": "scene-editor", "actualActionNode": "CARD", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalSceneEditor.tsx"]},
+    "TERMINAL_SCENE_TOGGLE": {"testIdTemplate": "operations-store-terminal-scene-toggle-${functionIdentity}-${sceneKey}", "interaction": "scene-toggle", "actualActionNode": "CHECKBOX", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx"]},
+    "TERMINAL_SCENE_ORDER_TYPES": {"testIdTemplate": "operations-store-terminal-scene-order-types-${functionIdentity}-${sceneKey}", "interaction": "scene-order-type-group", "actualActionNode": "CHECKBOX_GROUP", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalSceneEditor.tsx"]},
+    "TERMINAL_SCENE_ORDER_TYPE": {"testIdTemplate": "operations-store-terminal-scene-order-type-${functionIdentity}-${sceneKey}-${orderType}", "interaction": "scene-order-type", "actualActionNode": "CHECKBOX", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalSceneEditor.tsx"]},
+    "TERMINAL_SCENE_PRINTERS": {"testIdTemplate": "operations-store-terminal-scene-printers-${functionIdentity}-${sceneKey}", "interaction": "scene-printers", "actualActionNode": "MULTI_SELECT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalSceneEditor.tsx"]},
+    "TERMINAL_STATUS_ACTION": {"testIdTemplate": "operations-store-terminal-status-action-${status}", "interaction": "status-menu-item", "actualActionNode": "MENU_ITEM", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts", "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.tsx"]},
+    "TERMINAL_STATUS_MODAL": {"testId": "operations-store-terminal-status-modal", "interaction": "status-modal", "actualActionNode": "MODAL", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_STATUS_CONFIRM": {"testId": "operations-store-terminal-status-confirm", "interaction": "status-confirm", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_STATUS_CANCEL": {"testId": "operations-store-terminal-status-cancel", "interaction": "status-cancel", "actualActionNode": "BUTTON", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]},
+    "TERMINAL_STATUS_PROBLEM": {"testId": "operations-store-terminal-status-problem", "interaction": "status-problem", "actualActionNode": "ALERT", "focusedStaticProof": "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx", "sourceFiles": ["apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx"]}
   }
 }

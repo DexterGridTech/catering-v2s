@@ -44,8 +44,7 @@ class AdvisoryLockTest {
 
         AdvisoryLock.acquireHashTextPair(jdbc, "workspace:scope", "request-1");
 
-        assertEquals(
-                "SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), hashtext(CAST(? AS text)))", jdbc.sql);
+        assertEquals("SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), hashtext(CAST(? AS text)))", jdbc.sql);
         assertArrayEquals(new Object[] {"workspace:scope", "request-1"}, jdbc.arguments);
 
         AdvisoryLock.acquireHashText(jdbc, "platform-asset-object:object-1");

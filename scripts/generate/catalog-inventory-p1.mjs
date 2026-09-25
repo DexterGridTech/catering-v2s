@@ -509,11 +509,11 @@ for (const [assetKey, asset] of Object.entries(mediaCatalog.assets || {})) {
     throw new Error('P1_MEDIA_ASSET_HASH_INVALID:' + assetKey);
 }
 if (
-  mediaCatalog.coverage?.v4CatalogItemCount !== 73 ||
-  mediaCatalog.coverage?.v4MediaAssetCount !== 34 ||
+  mediaCatalog.coverage?.catalogItemCount !== 73 ||
+  mediaCatalog.coverage?.mediaAssetCount !== 34 ||
   mediaCatalog.coverage?.fullCatalogParityRequiredInP2 !== true
 ) {
-  throw new Error('P1_V4_SEED_PARITY_METADATA_INVALID');
+  throw new Error('P1_CATALOG_SEED_PARITY_METADATA_INVALID');
 }
 if (
   !copyPolicy.limits ||
@@ -756,7 +756,7 @@ const shapes = [
     requiresBenefitTargetRef: row[8],
     disabledReason: row[9],
     cannotMean: ['不代表已经加入销售菜单', '不代表库存余额一定存在'],
-    evidenceRefs: ['CATALOG_V6', 'CATALOG_V1', 'V4_MANIFEST'],
+    evidenceRefs: ['CATALOG_V6', 'CATALOG_V1', 'CATALOG_BASELINE'],
   };
 });
 
@@ -1553,10 +1553,6 @@ const shapeManifest = {
   sourceBindings: {
     requirements: {path: REQUIREMENTS_PATH, sha256: requirementsHash},
     ia: {path: IA_PATH, sha256: iaHash},
-    v4Manifest: {
-      path: '../catering-server-v4/frontend/packages/generated-contracts/src/catalog-item-editor-manifest.ts',
-      authority: 'read-only baseline',
-    },
   },
   capabilityValues: capabilityValues,
   enumLabels,
@@ -5997,7 +5993,7 @@ for (const dataset of seedDatasets) {
 // The seed executor must never invent display text from an opaque code. Keep
 // the finite business-label contract beside the generated seed datasets so
 // the plan, executor and schema consume the same owner. Catalogue/tag/SKU
-// labels follow the read-only v4 classification fixture; the representative
+// labels follow the catalog classification fixture; the representative
 // option groups, option values and inventory units are the explicit P1 seed
 // definitions above and retain their existing Chinese business terminology.
 const seedBusinessLabels = {
@@ -8186,9 +8182,9 @@ const fixtureCatalog = {
       compositeRelationRequirement: 'ENABLED_TARGET_ITEM_AND_SKU',
     },
     fullCatalogParity: {
-      sourceDirectory: mediaCatalog.sourceBindings.v4CatalogItemSources,
-      expectedCatalogItemCount: mediaCatalog.coverage.v4CatalogItemCount,
-      expectedMediaAssetCount: mediaCatalog.coverage.v4MediaAssetCount,
+      sourceDirectory: mediaCatalog.sourceBindings.catalogItemSourceDirectory,
+      expectedCatalogItemCount: mediaCatalog.coverage.catalogItemCount,
+      expectedMediaAssetCount: mediaCatalog.coverage.mediaAssetCount,
       requiredIn: FULL_CATALOG_PARITY_DELIVERY_PHASE,
       reductionIsNotFinalSeedPolicy: true,
     },
@@ -8423,9 +8419,9 @@ const fixtureSchema = {
         ),
         fullCatalogParity: fixtureObject(
           {
-            sourceDirectory: stringField('v4 catalog source directory'),
-            expectedCatalogItemCount: integerField('expected v4 catalog item count'),
-            expectedMediaAssetCount: integerField('expected v4 media asset count'),
+            sourceDirectory: stringField('v2s catalog source directory'),
+            expectedCatalogItemCount: integerField('expected catalog item count'),
+            expectedMediaAssetCount: integerField('expected media asset count'),
             requiredIn: stringField('required phase'),
             reductionIsNotFinalSeedPolicy: booleanField('no final reduction'),
           },
@@ -8666,6 +8662,15 @@ const fixtureSchema = {
         unitDimension: stringField('unit dimension'),
         precision: integerField('unit precision'),
         standardSalePrice: {type: ['number', 'null'], description: 'nullable standard sale price'},
+        // Seed source datasets express SKU prices in cents before the owner
+        // request is materialized. Keep that source-only shape in the
+        // canonical fixture schema instead of letting verify reject a field
+        // already consumed by the seed executor.
+        standardSalePriceCents: {
+          type: ['integer', 'null'],
+          minimum: 0,
+          description: 'nullable standard sale price in cents',
+        },
         skuCodes: arrayField('SKU codes'),
         referenceKind: stringField('reference kind'),
         attributes: {type: 'object', additionalProperties: {type: 'string'}},

@@ -1,9 +1,9 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.BusinessEntityCommandReceiptPersistence;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
-import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.organization.application.persistence.BusinessEntityCommandReceiptPersistence;
 import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
@@ -24,8 +24,7 @@ public final class BusinessEntityCommandReceiptService {
     }
 
     @Autowired
-    public BusinessEntityCommandReceiptService(
-            BusinessEntityCommandReceiptPersistence persistence, TimeProvider time) {
+    public BusinessEntityCommandReceiptService(BusinessEntityCommandReceiptPersistence persistence, TimeProvider time) {
         this.persistence = persistence;
         this.time = time;
     }
@@ -52,10 +51,7 @@ public final class BusinessEntityCommandReceiptService {
         if (existing != null) return BrandAuthorizationAcknowledgement.INSTANCE;
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             command.run();
-            persistence.markAuthorizationSucceeded(
-                    headCompanyId,
-                    workspaceUuid,
-                    idempotencyKey);
+            persistence.markAuthorizationSucceeded(headCompanyId, workspaceUuid, idempotencyKey);
             return BrandAuthorizationAcknowledgement.INSTANCE;
         }
     }
@@ -73,10 +69,7 @@ public final class BusinessEntityCommandReceiptService {
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             T result = command.get();
             persistence.markSucceeded(
-                    entityId.apply(result),
-                    serializer.apply(result),
-                    workspaceUuid,
-                    requiredKey(idempotencyKey));
+                    entityId.apply(result), serializer.apply(result), workspaceUuid, requiredKey(idempotencyKey));
             return result;
         }
     }
@@ -89,14 +82,11 @@ public final class BusinessEntityCommandReceiptService {
         if (workspaceUuid == null) throw new BusinessEntityService.OrganizationValidationException();
         String key = requiredKey(idempotencyKey);
         String requestHash = CommandReceiptSupport.requestHash(canonicalRequest);
-        int claimed = persistence.claim(
-                workspaceUuid,
-                key,
-                requestHash,
-                time.currentEpochMillis());
+        int claimed = persistence.claim(workspaceUuid, key, requestHash, time.currentEpochMillis());
         if (CommandReceiptSupport.claimOutcome(claimed) == CommandReceiptSupport.ClaimOutcome.CLAIMED) return null;
         BusinessEntityCommandReceiptPersistence.Receipt stored = persistence.read(workspaceUuid, key);
-        Receipt existing = stored == null ? null : new Receipt(stored.requestHash(), stored.responseJson(), stored.state());
+        Receipt existing =
+                stored == null ? null : new Receipt(stored.requestHash(), stored.responseJson(), stored.state());
         if (existing == null || !"SUCCEEDED".equals(existing.state()))
             throw new BusinessEntityReceiptCorruptException(
                     new IllegalStateException("organization command receipt is not terminal"));

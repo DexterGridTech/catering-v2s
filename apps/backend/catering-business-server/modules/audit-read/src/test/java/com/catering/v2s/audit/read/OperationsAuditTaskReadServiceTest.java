@@ -11,10 +11,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.catering.v2s.audit.contract.AuditEntityTypes;
 import com.catering.v2s.audit.contract.AuditHistoryPage;
 import com.catering.v2s.audit.contract.AuditReadScope;
 import com.catering.v2s.audit.contract.AuditTarget;
-import com.catering.v2s.audit.contract.AuditEntityTypes;
 import com.catering.v2s.audit.read.OperationsAuditTaskReadService.OperationsAuditQuery;
 import com.catering.v2s.contract.application.ContractAuditHistoryService;
 import com.catering.v2s.organization.api.OrganizationVisibilityLookup;
@@ -115,8 +115,8 @@ class OperationsAuditTaskReadServiceTest {
         assertDoesNotThrow(() -> new OperationsAuditQuery.StoreQrConfiguration(
                 new AuditTarget(AuditEntityTypes.STORE_QR_CONFIGURATION, id), 1, 20));
         assertDoesNotThrow(() -> new OperationsAuditQuery.StoreContract(new AuditTarget("STORE_CONTRACT", id), 1, 20));
-        assertDoesNotThrow(() -> new OperationsAuditQuery.StoreTerminal(
-                new AuditTarget(AuditEntityTypes.STORE_TERMINAL, id), 1, 20));
+        assertDoesNotThrow(() ->
+                new OperationsAuditQuery.StoreTerminal(new AuditTarget(AuditEntityTypes.STORE_TERMINAL, id), 1, 20));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new OperationsAuditQuery.WorkspaceAccount(new AuditTarget("STORE", id), 1, 20));

@@ -4,7 +4,7 @@
   "status": "PASS",
   "authority": "STATIC_PLAN_ONLY",
   "revision": "CATALOG_INVENTORY_P1_20260806",
-  "fixtureDigest": "dee31f2a1e4e25cb99ddaa50b49eaffd429226ee6d3e3650935c22cde01f6f25",
+  "fixtureDigest": "f8d4c54e236c939bcb9717acca99e4c6eb7090b6d96ce73a9137086fbe103412",
   "profile": "catalog-inventory",
   "mediaPlan": [
     {
@@ -7951,7 +7951,7 @@
   "parity": {
     "catalogItems": 73,
     "mediaAssets": 34,
-    "source": "v4-formal-uat-complex-scenario"
+    "source": "v2s-local-catalog-source"
   },
   "ownerScopes": {
     "headCompany": {
@@ -7963,6 +7963,7 @@
       "brandRefEnv": "CATALOG_INVENTORY_BRAND_REF"
     }
   },
+  "catalogSourceDirectory": "contracts/policy/catalog-inventory-source/items",
   "noDirectDatabaseWrites": true,
   "catalogLifecycle": {
     "operationId": "saveOperationsCatalogItem",
@@ -7980,5 +7981,5 @@
     "compositeRelationSequence": "after-target-item-activation",
     "compositeRelationRequirement": "ENABLED_TARGET_ITEM_AND_SKU"
   },
-  "planDigest": "416b9972791e3d4c5fb187e5c47f6c3308b0bd7a7de109f22a015f09dab76f44"
+  "planDigest": "32a0a2f993aae28067aef21bd27d3a5dfacae1fd8fa6427ac55b97b97d379589"
 }

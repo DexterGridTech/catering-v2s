@@ -1,30 +1,24 @@
 # Independent subagent adversarial review input checklist
 
-Use one immutable copy per review round. The reviewer prompt must reproduce this checklist
-explicitly and say: “first try to falsify the reviewed design/implementation; form findings and
-verdict before reading author self-review or dispositions.”
+Use one copy per review round. The reviewer prompt must reproduce this checklist explicitly and say:
+“first try to falsify the reviewed design/implementation; form findings and verdict before reading
+author self-review or dispositions.”
 
-| Required input | Repository-relative path / command | SHA-256 or command output | Read / result |
-| --- | --- | --- | --- |
-| AGENTS | `AGENTS.md` | `<sha256>` | `READ` |
-| Claude entry | `CLAUDE.md` | `<sha256>` | `READ` |
-| Current Roadmap | `<registry-selected-roadmap>` + `CURRENT_*` | `<sha256>` | `READ` |
-| Exact authorization | `<decision/path>` | `<sha256>` | `READ` |
-| All kernel | `project-memory/kernel/*.md` | `<path@sha256 each>` | `READ_ALL` |
-| Six-dimension route | `scripts/context/recall-memory <six flags>` | `<full command/output hash>` | `RUN` |
-| Every routed hit | `<path@sha256 each>` | `<sha256>` | `READ_ALL` |
-| Applicable source refs | `<path + literal heading>` | `<sha256>` | `READ_ALL` |
-| Per-change prewrite reread | `<change point: IA/original requirement + every routed memory/owning source + applicable detail design/constraints + reusable source>` | `<path@sha256 each>` | `READ_FOR_EACH_CHANGE` |
-| Per-change post-proof reread | `<same pointwise input, resulting source and focused proof>` | `<path@sha256 or proof output each>` | `REVIEWED_FOR_EACH_CHANGE` |
-| Corpus search | `<search terms>` | `<matched G-xx or NO_CORPUS_ENTRY_MATCHED>` | `READ` |
-| Reviewed object | `<path>` | `<sha256>` | `READ_FULL` |
-| Upstream frozen inputs | `<Journey/interaction/manifest paths>` | `<path@sha256 each>` | `READ_ALL` |
-| Approved implementation-facing design semantic denominator | `<design path + exact headings; design-to-artifact coverage matrix path>` | `<path@sha256 each>` | `READ_FULL_AND_DERIVE_EXPECTED_SET` |
-| Design-to-byte coverage experiment | `<expected nested field paths/types, closed-set additions, and generated targets>` | `<command/output hash + missing/extra/type diff>` | `RUN_BEFORE_AUTHOR_MATERIAL` |
-| Closed design-finding regression ledger | `<design review finding/author intake path + every closed finding ID>` | `<path@sha256 each>` | `READ_AND_RECHECK_CURRENT_BYTES` |
-| All decisions | `doc/decisions/` full-directory title list + relevant paths | `<listing hash + path@sha256>` | `TITLES_REVIEWED` |
-| Standards matrix | `contracts/policy/standards-coverage-matrix.json` | `<sha256>` | `READ_CHECKLIST` |
-| Verification governance | `doc/decisions/2026-07-24-v2s-verification-governance.md` | `<sha256>` | `READ` |
+| Required input | Path, command, or session input | Read / result |
+| --- | --- | --- |
+| Codex entry | `AGENTS.md` | `READ` |
+| Claude entry | `CLAUDE.md` | `READ` |
+| Current assignment and authorization | Dexter's explicit assignment included in the reviewer prompt | `READ` |
+| All kernels | `project-memory/kernel/*.md` | `READ_ALL` |
+| Six-dimension route | `scripts/context/recall-memory <six flags>` | `RUN` |
+| Every routed hit and applicable source ref | `<repository-relative paths and headings>` | `READ_ALL` |
+| Per-change prewrite reread, when applicable | `<original requirement + routed memory/owning source + applicable design/constraints + reusable source>` | `READ_FOR_EACH_CHANGE` |
+| Per-change post-proof reread, when applicable | `<same pointwise input, resulting source and focused proof>` | `REVIEWED_FOR_EACH_CHANGE` |
+| Corpus search | `<search terms>` | `<matched entry or NO_CORPUS_ENTRY_MATCHED>` |
+| Reviewed object | `<path>` | `READ_FULL` |
+| Applicable source inputs | `<original requirement, accepted design, interaction inputs>` | `READ_ALL` |
+| Relevant decisions | `doc/decisions/` title list plus applicable decisions | `TITLES_REVIEWED` |
+| Applicable standards | `<design template, domain standard, review standard, verification governance>` | `READ` |
 
 ## Blind-review declaration
 
@@ -32,8 +26,3 @@ verdict before reading author self-review or dispositions.”
 wrote my findings and verdict before reading the author self-review or author finding disposition.`
 `I also treated every missing or substituted per-change prewrite/post-proof reread as a finding; a
 general preparation pass, static result, or later L2 did not substitute for pointwise source review.`
-`For contract/read-model implementation I derived the expected nested field/type set from the approved
-design before reading author material; I did not treat a generator, fixture, schema skeleton, or
-author-supplied field map as the oracle. I performed a design-to-byte diff, including deletion of one
-required field, one previously closed design finding, and one time/amount type convention as red
-mutations. Structural type/compile/reachability PASS never counted as semantic payload completeness.`

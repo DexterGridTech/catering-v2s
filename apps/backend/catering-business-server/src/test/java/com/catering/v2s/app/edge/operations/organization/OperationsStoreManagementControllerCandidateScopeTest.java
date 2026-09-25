@@ -23,9 +23,9 @@ import com.catering.v2s.organization.api.OperationsStoreCommandApi;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.StoreOperatingRuleReadback;
-import com.catering.v2s.organization.domain.generated.StoreOperatingRuleCatalog;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
+import com.catering.v2s.organization.domain.generated.StoreOperatingRuleCatalog;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
@@ -151,8 +151,8 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                         KEY,
                         "STORE",
                         new OrganizationOverviewTaskReadService.Query(
-                                "STORE", null, null, null, null, null, null, projectId, null, null, null, null,
-                                null, projectId, null, null),
+                                "STORE", null, null, null, null, null, null, projectId, null, null, null, null, null,
+                                projectId, null, null),
                         1,
                         20);
         verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
@@ -259,8 +259,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         when(fixture.entities.requireEntity("STORE", fixture.workspaceId, KEY, storeId))
                 .thenReturn(storeEntity(detail, fixture.workspaceId));
         when(fixture.entities.requireStoreOperatingRuleSwitches(fixture.workspaceId, KEY, storeId))
-                .thenReturn(new StoreOperatingRuleReadback(
-                        storeId, StoreOperatingRuleCatalog.values(Map.of(), false)));
+                .thenReturn(new StoreOperatingRuleReadback(storeId, StoreOperatingRuleCatalog.values(Map.of(), false)));
         when(fixture.contracts.derivedStoreStatus(fixture.workspaceId, KEY, storeId))
                 .thenReturn("OPERATING");
 
@@ -384,8 +383,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                         11L,
                         Map.of()));
         when(fixture.entities.requireStoreOperatingRuleSwitches(fixture.workspaceId, KEY, storeId))
-                .thenReturn(new StoreOperatingRuleReadback(
-                        storeId, StoreOperatingRuleCatalog.values(Map.of(), false)));
+                .thenReturn(new StoreOperatingRuleReadback(storeId, StoreOperatingRuleCatalog.values(Map.of(), false)));
         when(fixture.overview.readStoreDetail(
                         new OperationsStoreCommandApi.StoreDetailQuery(fixture.workspaceId, KEY, storeId)))
                 .thenReturn(new OperationsStoreCommandApi.StoreOrganizationDetailReadback(
@@ -439,18 +437,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                         "备注",
                         JSON.createObjectNode().put("remark", "test"),
                         new OrganizationStoreOperatingRuleValues(
-                                false,
-                                false,
-                                "",
-                                false,
-                                false,
-                                false,
-                                false,
-                                false,
-                                false,
-                                false,
-                                false,
-                                false)));
+                                false, false, "", false, false, false, false, false, false, false, false, false)));
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals("门店一", response.getBody().name());

@@ -66,6 +66,8 @@ export const InputSurfaceFrame = ({onMeasuredFrame, children}: InputSurfaceFrame
 type FrozenKeyboardLayer = Readonly<{
   readonly snapshot: InputKeyboardSnapshot;
   readonly translateY: number;
+  /** Immutable identity retained when a visible layer is frozen for a new transition. */
+  readonly layerKey: string;
 }>;
 
 type KeyboardPresentation =
@@ -120,6 +122,11 @@ type FocusTarget = Readonly<{
   readonly revision: number;
 }>;
 
+type PresentationTargetInput = Readonly<{
+  readonly fieldId: string;
+  readonly fallback: number;
+}>;
+
 type ScheduledScrollStart = Readonly<{
   readonly fieldId: string;
   readonly start: () => void;
@@ -146,6 +153,28 @@ const interpolateNumber = (progress: number, inputRange: readonly number[], outp
 const maxVisibleHeight = (layers: readonly FrozenKeyboardLayer[]): number =>
   Math.max(0, ...layers.map(layer => layer.snapshot.height - layer.translateY));
 
+const activeLayerKeyOf = (snapshot: InputKeyboardSnapshot): string =>
+  `active:${snapshot.fieldId}:${snapshot.layout}`;
+
+const incomingSampleLayerKeyOf = (serial: number, snapshot: InputKeyboardSnapshot): string =>
+  `incoming:${serial}:${snapshot.fieldId}:${snapshot.layout}`;
+
+const presentationScrollFieldIdOf = (presentation: KeyboardPresentation): string | null => {
+  switch (presentation.phase) {
+    case 'display':
+    case 'reposition':
+      return presentation.active.fieldId;
+    case 'enter':
+    case 'handoff':
+      return presentation.incoming.fieldId;
+    case 'measure':
+      return null;
+    case 'idle':
+    case 'exit':
+      return null;
+  }
+};
+
 const samplePresentation = (
   presentation: KeyboardPresentation,
   progress: number,
@@ -158,21 +187,27 @@ const samplePresentation = (
       return {layers: presentation.outgoing, offset: presentation.startOffset};
     case 'enter':
       return {
-        layers: [{snapshot: presentation.incoming, translateY: presentation.incoming.height * (1 - progress)}],
+        layers: [{
+          snapshot: presentation.incoming,
+          translateY: presentation.incoming.height * (1 - progress),
+          layerKey: incomingSampleLayerKeyOf(presentation.serial, presentation.incoming),
+        }],
         offset: presentation.startOffset + (presentation.targetOffset - presentation.startOffset) * progress,
       };
     case 'display':
-      return {layers: [{snapshot: presentation.active, translateY: 0}], offset: stableOffset};
+      return {layers: [{snapshot: presentation.active, translateY: 0, layerKey: activeLayerKeyOf(presentation.active)}], offset: stableOffset};
     case 'handoff':
       return {
         layers: [
           ...presentation.outgoing.map(layer => ({
             snapshot: layer.snapshot,
             translateY: layer.translateY + interpolateNumber(progress, presentation.track.inputRange, presentation.track.outgoingTranslateY),
+            layerKey: layer.layerKey,
           })),
           {
             snapshot: presentation.incoming,
             translateY: interpolateNumber(progress, presentation.track.inputRange, presentation.track.incomingTranslateY),
+            layerKey: incomingSampleLayerKeyOf(presentation.serial, presentation.incoming),
           },
         ],
         offset: interpolateNumber(progress, presentation.track.inputRange, presentation.track.offset),
@@ -182,12 +217,13 @@ const samplePresentation = (
         layers: presentation.outgoing.map(layer => ({
           snapshot: layer.snapshot,
           translateY: layer.translateY + presentation.obstructionHeight * progress,
+          layerKey: layer.layerKey,
         })),
         offset: presentation.startOffset * (1 - progress),
       };
     case 'reposition':
       return {
-        layers: [{snapshot: presentation.active, translateY: 0}],
+        layers: [{snapshot: presentation.active, translateY: 0, layerKey: activeLayerKeyOf(presentation.active)}],
         offset: presentation.startOffset + (presentation.targetOffset - presentation.startOffset) * progress,
       };
   }
@@ -312,7 +348,7 @@ const InputSurfaceFrameContents = ({
   const desiredSignature = desiredSnapshot === null
     ? null
     : `${desiredSnapshot.fieldId}|${desiredSnapshot.layout}|${desiredSnapshot.frameWidth}|${desiredSnapshot.height}|${desiredSnapshot.shift}|${desiredSnapshot.hasNextField}`;
-  const targetOffsetFor = useCallback((fieldId: string, fallback: number): number =>
+  const targetOffsetFor = useCallback(({fieldId, fallback}: PresentationTargetInput): number =>
     focusTargetRef.current?.fieldId === fieldId ? focusTargetRef.current.offset : fallback,
   []);
   const freezeVisibleLayers = useCallback((current: KeyboardPresentation, value: number): PresentationSample =>
@@ -327,7 +363,7 @@ const InputSurfaceFrameContents = ({
       incoming,
       kind: outgoing.length === 0 ? 'enter' : 'handoff',
       startOffset,
-      targetOffset: targetOffsetFor(incoming.fieldId, startOffset),
+      targetOffset: targetOffsetFor({fieldId: incoming.fieldId, fallback: startOffset}),
     });
   }, [nextPresentationSerial, setPresentationState, targetOffsetFor]);
   const beginExit = useCallback((outgoing: readonly FrozenKeyboardLayer[], startOffset: number) => {
@@ -458,12 +494,16 @@ const InputSurfaceFrameContents = ({
   }, [controller]);
 
   const dismissFromSurfaceClick = useCallback((event: unknown) => {
-    if (isWebInputTarget(event)) return;
-    if (state.activeFieldId === null && state.blockedFieldId !== null && state.blockedCapacity === null) {
+    const target = webEventTargetOf(event);
+    const pendingTarget = pendingFieldId !== null && controller.isFieldEventTarget(pendingFieldId, target);
+    if (pendingTarget) return;
+    if (pendingFieldId !== null) {
+      controller.dismissActiveField();
       return;
     }
+    if (isWebInputTarget(event)) return;
     controller.dismissActiveField();
-  }, [controller, state.activeFieldId, state.blockedCapacity, state.blockedFieldId]);
+  }, [controller, pendingFieldId]);
   const finishPendingPresentation = useCallback((incoming: InputKeyboardSnapshot, targetOffset: number): boolean => {
     const pending = state.owner === 'none'
       && state.blockedFieldId === incoming.fieldId
@@ -476,6 +516,8 @@ const InputSurfaceFrameContents = ({
     setPresentationState({phase: 'display', active: incoming});
     return true;
   }, [assignPresentationOffset, commitPendingFocus, setPresentationState, state.activeFieldId, state.blockedCapacity, state.blockedFieldId, state.owner]);
+  const finishPendingPresentationRef = useRef(finishPendingPresentation);
+  finishPendingPresentationRef.current = finishPendingPresentation;
   const onKeyboardLayout = useCallback((snapshot: InputKeyboardSnapshot) => (event: LayoutChangeEvent) => {
     const {height} = event.nativeEvent.layout;
     if (!Number.isFinite(height) || height <= 0) return;
@@ -498,7 +540,7 @@ const InputSurfaceFrameContents = ({
       return;
     }
     const incoming = {...current.incoming, height};
-    const targetOffset = targetOffsetFor(incoming.fieldId, current.targetOffset);
+    const targetOffset = targetOffsetFor({fieldId: incoming.fieldId, fallback: current.targetOffset});
     const focusTarget = focusTargetRef.current;
     if (focusTarget?.fieldId === incoming.fieldId && frameMetrics !== null) {
       setFocusTargetState(
@@ -507,7 +549,7 @@ const InputSurfaceFrameContents = ({
         calculatePresentationOffsetY(focusTarget.rect, frameMetrics.height, height),
       );
     }
-    const resolvedTargetOffset = targetOffsetFor(incoming.fieldId, targetOffset);
+    const resolvedTargetOffset = targetOffsetFor({fieldId: incoming.fieldId, fallback: targetOffset});
     if (current.kind === 'enter') {
       setPresentationState({
         phase: 'enter',
@@ -572,15 +614,17 @@ const InputSurfaceFrameContents = ({
         && desiredSnapshot.fieldId === expectedFieldId
         && (expectedSignature === null || expectedSignature === actualSignature);
       if (current.phase === 'exit' && desiredSnapshot === null) return;
-      if (!matches) retargetPresentation(desiredSnapshot);
-      else if (current.phase === 'enter' || current.phase === 'handoff') {
-        const targetOffset = targetOffsetFor(desiredSnapshot.fieldId, current.targetOffset);
-        if (Math.abs(targetOffset - current.targetOffset) > 0.5) retargetPresentation(desiredSnapshot);
+      if (!matches) {
+        retargetPresentation(desiredSnapshot);
+        return;
       }
+      if (current.phase !== 'enter' && current.phase !== 'handoff') return;
+      const targetOffset = targetOffsetFor({fieldId: desiredSnapshot.fieldId, fallback: current.targetOffset});
+      if (Math.abs(targetOffset - current.targetOffset) > 0.5) retargetPresentation(desiredSnapshot);
       return;
     }
     if (desiredSnapshot === null) {
-      if (current.phase === 'display') beginExit([{snapshot: current.active, translateY: 0}], presentationOffsetRef.current);
+      if (current.phase === 'display') beginExit([{snapshot: current.active, translateY: 0, layerKey: activeLayerKeyOf(current.active)}], presentationOffsetRef.current);
       return;
     }
     if (current.phase === 'idle') {
@@ -592,11 +636,11 @@ const InputSurfaceFrameContents = ({
       && current.active.frameWidth === desiredSnapshot.frameWidth
       && Math.abs(current.active.height - desiredSnapshot.height) <= 0.5;
     if (!sameDimensions) {
-      beginMeasure(desiredSnapshot, [{snapshot: current.active, translateY: 0}]);
+      beginMeasure(desiredSnapshot, [{snapshot: current.active, translateY: 0, layerKey: activeLayerKeyOf(current.active)}]);
       return;
     }
     if (current.active.fieldId !== desiredSnapshot.fieldId) {
-      const targetOffset = targetOffsetFor(desiredSnapshot.fieldId, presentationOffsetRef.current);
+      const targetOffset = targetOffsetFor({fieldId: desiredSnapshot.fieldId, fallback: presentationOffsetRef.current});
       if (focusTargetRef.current?.fieldId === desiredSnapshot.fieldId) {
         setPresentationState({
           phase: 'reposition',
@@ -608,7 +652,7 @@ const InputSurfaceFrameContents = ({
       } else setPresentationState({phase: 'display', active: desiredSnapshot});
       return;
     }
-    const targetOffset = targetOffsetFor(desiredSnapshot.fieldId, presentationOffsetRef.current);
+    const targetOffset = targetOffsetFor({fieldId: desiredSnapshot.fieldId, fallback: presentationOffsetRef.current});
     if (Math.abs(targetOffset - presentationOffsetRef.current) > 0.5) {
       setPresentationState({
         phase: 'reposition',
@@ -637,13 +681,22 @@ const InputSurfaceFrameContents = ({
 
   const animationPhase = presentation.phase;
   const animationSerial = 'serial' in presentation ? presentation.serial : null;
+  type PresentationAnimationInput = Readonly<{
+    readonly phase: KeyboardPresentation['phase'];
+    readonly fieldId: string | null;
+  }>;
+  const startPresentationAnimation = useCallback(({phase, fieldId}: PresentationAnimationInput) => {
+    if (phase === 'measure') return;
+    if (phase === 'exit' || phase === 'idle') {
+      scheduledScrollStartRef.current = null;
+      return;
+    }
+    if (fieldId !== null) startScheduledScrollFor(fieldId);
+  }, [startScheduledScrollFor]);
   useLayoutEffect(() => {
     const current = presentationRef.current;
-    if (current.phase === 'display') startScheduledScrollFor(current.active.fieldId);
-    else if (current.phase === 'enter' || current.phase === 'handoff') startScheduledScrollFor(current.incoming.fieldId);
-    else if (current.phase === 'reposition') startScheduledScrollFor(current.active.fieldId);
-    else if (current.phase === 'exit' || current.phase === 'idle') scheduledScrollStartRef.current = null;
-  }, [presentation.phase, scheduledScrollRevision, startScheduledScrollFor]);
+    startPresentationAnimation({phase: current.phase, fieldId: presentationScrollFieldIdOf(current)});
+  }, [presentation.phase, scheduledScrollRevision, startPresentationAnimation]);
   useLayoutEffect(() => {
     if (
       presentation.phase !== 'enter'
@@ -674,8 +727,13 @@ const InputSurfaceFrameContents = ({
       animationRef.current = null;
       if (current.phase === 'enter' || current.phase === 'handoff') {
         if (!current.settled) {
-          setPresentationState({...current, settled: true});
-          finishPendingPresentation(current.incoming, current.targetOffset);
+          const settled = {...current, settled: true};
+          setPresentationState(settled);
+          // Keyboard presentation completion is not a ScrollView terminal
+          // signal. InputScrollArea owns scroll readback and will call the
+          // same finish path when its target becomes visible or a terminal
+          // scroll outcome is known.
+          finishPendingPresentationRef.current(settled.incoming, settled.targetOffset);
         }
       } else if (current.phase === 'exit') {
         assignPresentationOffset(0);
@@ -689,7 +747,6 @@ const InputSurfaceFrameContents = ({
     animationPhase,
     animationSerial,
     assignPresentationOffset,
-    finishPendingPresentation,
     progress,
     setPresentationState,
     startScheduledScrollFor,
@@ -718,56 +775,62 @@ const InputSurfaceFrameContents = ({
   const renderedLayers = useMemo(() => {
     type RenderedLayer = Readonly<{
       readonly snapshot: InputKeyboardSnapshot;
+      readonly layerKey: string;
       readonly translateY: number | Animated.AnimatedInterpolation<number>;
       readonly interactive?: boolean;
       readonly hidden?: boolean;
       readonly suffix?: string;
       readonly onLayout?: (event: LayoutChangeEvent) => void;
     }>;
-    const layer = (
-      snapshot: InputKeyboardSnapshot,
-      translateY: number | Animated.AnimatedInterpolation<number>,
-      options: Omit<RenderedLayer, 'snapshot' | 'translateY'> = {},
-    ): RenderedLayer => ({snapshot, translateY, ...options});
+    type KeyboardLayerRenderInput = Readonly<{
+      readonly snapshot: InputKeyboardSnapshot;
+      readonly translateY: number | Animated.AnimatedInterpolation<number>;
+      readonly layerKey: string;
+      readonly options?: Omit<RenderedLayer, 'snapshot' | 'translateY' | 'layerKey'>;
+    }>;
+    const layer = ({snapshot, translateY, layerKey, options = {}}: KeyboardLayerRenderInput): RenderedLayer => ({snapshot, translateY, layerKey, ...options});
     switch (presentation.phase) {
       case 'idle': return [] as RenderedLayer[];
       case 'measure': return [
-        ...presentation.outgoing.map((item, index) => layer(item.snapshot, item.translateY, {suffix: `outgoing-${index}`})),
-        layer(presentation.incoming, presentation.incoming.height, {
+        ...presentation.outgoing.map((item, index) => layer({snapshot: item.snapshot, translateY: item.translateY, layerKey: item.layerKey, options: {suffix: `outgoing-${index}`}})),
+        layer({snapshot: presentation.incoming, translateY: presentation.incoming.height, layerKey: `incoming:${presentation.incoming.fieldId}:${presentation.incoming.layout}`, options: {
           hidden: true,
           suffix: 'measure',
           onLayout: onKeyboardLayout(presentation.incoming),
-        }),
+        }}),
       ];
-      case 'enter': return [layer(
-        presentation.incoming,
-        animatedInterpolation(progress, [0, 1], [presentation.incoming.height, 0]),
-      )];
-      case 'display': return [layer(presentation.active, 0, {
+      case 'enter': return [layer({
+        snapshot: presentation.incoming,
+        translateY: animatedInterpolation(progress, [0, 1], [presentation.incoming.height, 0]),
+        layerKey: `incoming:${presentation.incoming.fieldId}:${presentation.incoming.layout}`,
+      })];
+      case 'display': return [layer({snapshot: presentation.active, translateY: 0, layerKey: `active:${presentation.active.fieldId}:${presentation.active.layout}`, options: {
         interactive: state.visible && state.activeFieldId === presentation.active.fieldId,
         onLayout: onKeyboardLayout(presentation.active),
-      })];
+      }})];
       case 'handoff': return [
-        layer(presentation.incoming, animatedInterpolation(progress, presentation.track.inputRange, presentation.track.incomingTranslateY)),
-        ...presentation.outgoing.map((item, index) => layer(
-          item.snapshot,
-          animatedInterpolation(
+        layer({snapshot: presentation.incoming, translateY: animatedInterpolation(progress, presentation.track.inputRange, presentation.track.incomingTranslateY), layerKey: `incoming:${presentation.incoming.fieldId}:${presentation.incoming.layout}`}),
+        ...presentation.outgoing.map((item, index) => layer({
+          snapshot: item.snapshot,
+          translateY: animatedInterpolation(
             progress,
             presentation.track.inputRange,
             presentation.track.outgoingTranslateY.map(shift => item.translateY + shift),
           ),
-          {suffix: `outgoing-${index}`},
-        )),
+          layerKey: item.layerKey,
+          options: {suffix: `outgoing-${index}`},
+        })),
       ];
-      case 'exit': return presentation.outgoing.map((item, index) => layer(
-        item.snapshot,
-        animatedInterpolation(progress, [0, 1], [item.translateY, item.translateY + presentation.obstructionHeight]),
-        {suffix: `outgoing-${index}`},
-      ));
-      case 'reposition': return [layer(presentation.active, 0, {
+      case 'exit': return presentation.outgoing.map((item, index) => layer({
+        snapshot: item.snapshot,
+        translateY: animatedInterpolation(progress, [0, 1], [item.translateY, item.translateY + presentation.obstructionHeight]),
+        layerKey: item.layerKey,
+        options: {suffix: `outgoing-${index}`},
+      }));
+      case 'reposition': return [layer({snapshot: presentation.active, translateY: 0, layerKey: `active:${presentation.active.fieldId}:${presentation.active.layout}`, options: {
         interactive: state.visible && state.activeFieldId === presentation.active.fieldId,
         onLayout: onKeyboardLayout(presentation.active),
-      })];
+      }})];
     }
   }, [onKeyboardLayout, presentation, progress, state.activeFieldId, state.visible]);
 
@@ -841,8 +904,9 @@ const InputSurfaceFrameContents = ({
               && presentation.phase !== 'measure';
             return (
               <Animated.View
-                key={`${item.snapshot.fieldId}:${item.snapshot.layout}:${item.suffix ?? 'active'}:${index}`}
+                key={item.layerKey}
                 testID={`ui.base.input:keyboard-layer-position:${item.suffix ?? 'active'}`}
+                nativeID={item.layerKey}
                 accessibilityElementsHidden={!interactive || item.hidden === true}
                 importantForAccessibility={interactive ? 'auto' : 'no-hide-descendants'}
                 onLayout={item.onLayout}

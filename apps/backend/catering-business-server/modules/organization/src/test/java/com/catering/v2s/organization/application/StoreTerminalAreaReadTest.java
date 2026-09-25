@@ -35,17 +35,22 @@ class StoreTerminalAreaReadTest {
         UUID voidedArea = UUID.fromString("30000000-0000-4000-8000-000000000003");
         UUID enabledArea = UUID.fromString("30000000-0000-4000-8000-000000000001");
         UUID absentArea = UUID.fromString("30000000-0000-4000-8000-000000000009");
-        when(jdbc.queryForObject(anyString(), eq(Long.class), any(Object[].class))).thenReturn(1L);
+        when(jdbc.queryForObject(anyString(), eq(Long.class), any(Object[].class)))
+                .thenReturn(1L);
         stubAreaRows(
                 jdbc,
                 List.of(
                         new AreaRow(enabledArea, "大厅", "TABLE-01", "TABLE_AREA", "ENABLED", 10),
                         new AreaRow(voidedArea, "旧扫码区", "SCAN-01", "SCAN_AREA", "VOIDED", 20)));
 
-        List<StoreServicePointOwnerApi.AreaReference> result = service(jdbc).readAreasByRefs(
-                WORKSPACE, GROUP, STORE, List.of(voidedArea, enabledArea, absentArea, voidedArea));
+        List<StoreServicePointOwnerApi.AreaReference> result = service(jdbc)
+                .readAreasByRefs(WORKSPACE, GROUP, STORE, List.of(voidedArea, enabledArea, absentArea, voidedArea));
 
-        assertEquals(List.of(voidedArea, enabledArea), result.stream().map(StoreServicePointOwnerApi.AreaReference::areaRef).toList());
+        assertEquals(
+                List.of(voidedArea, enabledArea),
+                result.stream()
+                        .map(StoreServicePointOwnerApi.AreaReference::areaRef)
+                        .toList());
         assertEquals("VOIDED", result.getFirst().status());
         assertEquals("SCAN_AREA", result.getFirst().areaType());
         assertEquals("ENABLED", result.getLast().status());
@@ -66,9 +71,10 @@ class StoreTerminalAreaReadTest {
         when(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class))).thenAnswer(invocation -> {
             sql.add(invocation.getArgument(0));
             Object[] invocationArguments = invocation.getArguments();
-            Object[] queryArguments = invocationArguments.length == 3 && invocationArguments[2] instanceof Object[] values
-                    ? values
-                    : Arrays.copyOfRange(invocationArguments, 2, invocationArguments.length);
+            Object[] queryArguments =
+                    invocationArguments.length == 3 && invocationArguments[2] instanceof Object[] values
+                            ? values
+                            : Arrays.copyOfRange(invocationArguments, 2, invocationArguments.length);
             arguments.add(queryArguments);
             RowMapper mapper = invocation.getArgument(1);
             List<AreaRow> rows = queryIndex.getAndIncrement() == 0 ? firstQueryRows : secondQueryRows;
@@ -76,10 +82,10 @@ class StoreTerminalAreaReadTest {
         });
 
         StoreServicePointOwnerApi owner = service(jdbc);
-        StoreServicePointOwnerApi.AreaCandidatePage firstPage = owner.searchTerminalAreaCandidates(
-                WORKSPACE, GROUP, STORE, " tea!%_ ", null, 20);
-        StoreServicePointOwnerApi.AreaCandidatePage secondPage = owner.searchTerminalAreaCandidates(
-                WORKSPACE, GROUP, STORE, "tea!%_", firstPage.nextCursor(), 20);
+        StoreServicePointOwnerApi.AreaCandidatePage firstPage =
+                owner.searchTerminalAreaCandidates(WORKSPACE, GROUP, STORE, " tea!%_ ", null, 20);
+        StoreServicePointOwnerApi.AreaCandidatePage secondPage =
+                owner.searchTerminalAreaCandidates(WORKSPACE, GROUP, STORE, "tea!%_", firstPage.nextCursor(), 20);
 
         assertEquals(25L, firstPage.total());
         assertEquals(20, firstPage.items().size());
@@ -87,28 +93,36 @@ class StoreTerminalAreaReadTest {
         assertEquals(25L, secondPage.total());
         assertEquals(5, secondPage.items().size());
         assertNull(secondPage.nextCursor());
-        assertEquals(areaRows(1, 21).get(19).areaRef(), firstPage.items().getLast().areaRef());
-        assertEquals(areaRows(21, 26).getFirst().areaRef(), secondPage.items().getFirst().areaRef());
+        assertEquals(
+                areaRows(1, 21).get(19).areaRef(), firstPage.items().getLast().areaRef());
+        assertEquals(
+                areaRows(21, 26).getFirst().areaRef(),
+                secondPage.items().getFirst().areaRef());
         assertTrue(sql.getFirst().contains("area_type='TABLE_AREA'"));
         assertTrue(sql.getFirst().contains("status='ENABLED'"));
         assertTrue(sql.getFirst().contains("name ILIKE ? ESCAPE '!' OR code ILIKE ? ESCAPE '!'"));
         assertTrue(sql.getFirst().contains("ORDER BY display_order, area_ref LIMIT ?"));
         assertTrue(sql.getLast().contains("display_order > ? OR (display_order = ? AND area_ref > ?)"));
         assertTrue(Arrays.asList(arguments.getFirst()).contains("%tea!!!%!_%"));
-        assertTrue(Arrays.asList(arguments.getLast()).contains(firstPage.items().getLast().areaRef()));
+        assertTrue(Arrays.asList(arguments.getLast())
+                .contains(firstPage.items().getLast().areaRef()));
 
         assertThrows(
                 BusinessEntityService.OrganizationValidationException.class,
-                () -> owner.searchTerminalAreaCandidates(WORKSPACE, GROUP, STORE, "different", firstPage.nextCursor(), 20));
+                () -> owner.searchTerminalAreaCandidates(
+                        WORKSPACE, GROUP, STORE, "different", firstPage.nextCursor(), 20));
         assertEquals(2, sql.size());
     }
 
     @Test
     void emptyReferenceReadStillValidatesStoreButDoesNotQueryAreas() {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
-        when(jdbc.queryForObject(anyString(), eq(Long.class), any(Object[].class))).thenReturn(1L);
+        when(jdbc.queryForObject(anyString(), eq(Long.class), any(Object[].class)))
+                .thenReturn(1L);
 
-        assertTrue(service(jdbc).readAreasByRefs(WORKSPACE, GROUP, STORE, List.of()).isEmpty());
+        assertTrue(service(jdbc)
+                .readAreasByRefs(WORKSPACE, GROUP, STORE, List.of())
+                .isEmpty());
 
         verify(jdbc).queryForObject(anyString(), eq(Long.class), any(Object[].class));
         verify(jdbc, org.mockito.Mockito.never()).query(anyString(), any(RowMapper.class), any(Object[].class));

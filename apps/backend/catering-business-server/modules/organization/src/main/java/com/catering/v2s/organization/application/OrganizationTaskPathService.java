@@ -1,9 +1,9 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.OrganizationTaskPathPersistence;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
+import com.catering.v2s.organization.application.persistence.OrganizationTaskPathPersistence;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,8 +63,7 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
 
     @Override
     @Transactional(readOnly = true)
-    public TaskPath requireStatusTransitionTaskPath(
-            UUID workspaceUuid, String key, String targetType, UUID targetId) {
+    public TaskPath requireStatusTransitionTaskPath(UUID workspaceUuid, String key, String targetType, UUID targetId) {
         return persistence.requireStatusTransitionTaskPath(workspaceUuid, key, targetType, targetId);
     }
 
@@ -77,8 +76,7 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
 
     @Override
     @Transactional(readOnly = true)
-    public Map<TaskPathRef, TaskPath> requireTaskPaths(
-            UUID workspaceUuid, String key, List<TaskPathRef> targets) {
+    public Map<TaskPathRef, TaskPath> requireTaskPaths(UUID workspaceUuid, String key, List<TaskPathRef> targets) {
         return persistence.requireTaskPaths(workspaceUuid, key, targets);
     }
 
@@ -91,8 +89,7 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
 
     @Override
     @Transactional(readOnly = true)
-    public Set<TaskPathRef> availableTaskTargets(
-            UUID workspaceUuid, String key, List<TaskPathRef> targets) {
+    public Set<TaskPathRef> availableTaskTargets(UUID workspaceUuid, String key, List<TaskPathRef> targets) {
         return persistence.availableTaskTargets(workspaceUuid, key, targets);
     }
 
@@ -105,8 +102,7 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
 
     @Override
     @Transactional(readOnly = true)
-    public SessionTaskTargetFacts sessionTaskTargetFacts(
-            UUID workspaceUuid, String key, List<TaskPathRef> targets) {
+    public SessionTaskTargetFacts sessionTaskTargetFacts(UUID workspaceUuid, String key, List<TaskPathRef> targets) {
         return persistence.sessionTaskTargetFacts(workspaceUuid, key, targets);
     }
 

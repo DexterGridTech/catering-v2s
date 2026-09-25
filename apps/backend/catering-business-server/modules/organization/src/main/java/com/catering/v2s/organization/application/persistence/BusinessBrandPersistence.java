@@ -25,7 +25,8 @@ public class BusinessBrandPersistence {
             String remark,
             long now) {
         return jdbc.update(
-                BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_INSERT_INTO_BRAND_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
+                BusinessBrandServiceSql
+                                .BUSINESS_BRAND_SERVICE_INSERT_INTO_BRAND_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
                         + BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_REMARK_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS
                         + BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_OPEN_PAREN_ENABLED,
                 id,
@@ -51,7 +52,8 @@ public class BusinessBrandPersistence {
             long expectedVersion) {
         return jdbc.update(
                 BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_UPDATE_BRAND_CODE_NAME_ALIAS_REMARK
-                        + BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
+                        + BusinessBrandServiceSql
+                                .BUSINESS_BRAND_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
                 code,
                 name,
                 alias,
@@ -64,15 +66,11 @@ public class BusinessBrandPersistence {
     }
 
     public int transitionStatus(
-            UUID id,
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            String status,
-            long now,
-            long expectedVersion) {
+            UUID id, UUID workspaceUuid, String groupWorkspaceKey, String status, long now, long expectedVersion) {
         return jdbc.update(
                 BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_UPDATE_BRAND_STATUS_VERSION_UPDATED_AT_EPOCH_MILLIS
-                        + BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
+                        + BusinessBrandServiceSql
+                                .BUSINESS_BRAND_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
                 status,
                 now,
                 id,
@@ -82,11 +80,7 @@ public class BusinessBrandPersistence {
     }
 
     public ConflictFlags findConflicts(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            UUID currentId,
-            String code,
-            String name) {
+            UUID workspaceUuid, String groupWorkspaceKey, UUID currentId, String code, String name) {
         String exclusion = currentId == null ? "" : BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_CONDITION_AND_ID;
         String sql = BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_SELECT_BRAND_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                 + BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_CONDITION_STATUS_VOIDED_CODE
@@ -97,23 +91,9 @@ public class BusinessBrandPersistence {
                 + exclusion
                 + ") AS name_conflict";
         Object[] args = currentId == null
-                ? new Object[] {
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    code,
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    name
-                }
+                ? new Object[] {workspaceUuid, groupWorkspaceKey, code, workspaceUuid, groupWorkspaceKey, name}
                 : new Object[] {
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    code,
-                    currentId,
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    name,
-                    currentId
+                    workspaceUuid, groupWorkspaceKey, code, currentId, workspaceUuid, groupWorkspaceKey, name, currentId
                 };
         return jdbc.query(
                 sql,
@@ -136,7 +116,8 @@ public class BusinessBrandPersistence {
 
     public int replaceExtensionValuesWithoutDefinition(UUID id, String extensionValues) {
         return jdbc.update(
-                BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_UPDATE_BRAND_EXTENSION_VALUES_EXTENSION_RULE_REVISION_ALTERNATE_A,
+                BusinessBrandServiceSql
+                        .BUSINESS_BRAND_SERVICE_UPDATE_BRAND_EXTENSION_VALUES_EXTENSION_RULE_REVISION_ALTERNATE_A,
                 extensionValues,
                 0L,
                 id);

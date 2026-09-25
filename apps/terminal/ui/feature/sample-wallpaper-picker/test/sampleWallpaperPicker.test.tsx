@@ -5,7 +5,7 @@ import {createElement, type ReactElement} from 'react'
 import {createHash} from 'node:crypto'
 import {readFileSync} from 'node:fs'
 import {describe, expect, it, vi} from 'vitest'
-import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort, NativeLoadingCapability} from '@catering-v2s/ui-base-test-support'
+import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort, NativeLoadingCapability} from '@catering-v2s/kernel-base-platform-ports'
 import type {CommandDispatchResult, Runtime} from '@catering-v2s/kernel-base-runtime'
 import {
   createRendererCatalog,

@@ -1,11 +1,11 @@
 package com.catering.v2s.organization.application.persistence;
 
+import com.catering.v2s.extension.api.ExtensionFilterQuery;
 import com.catering.v2s.organization.api.BusinessEntityTypes;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.api.OrganizationOwnerApi;
 import com.catering.v2s.organization.api.StoreContractLookup.StoreContractContext;
-import com.catering.v2s.extension.api.ExtensionFilterQuery;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,12 +33,16 @@ public class BusinessEntityTaskReadPersistence {
     public List<OrganizationEntityReadback> authorizedBrands(
             UUID workspaceUuid, String groupWorkspaceKey, UUID headCompanyId) {
         return jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_VARCHAR_CREDIT_CODE_ALIAS_REMARK
+                BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_VARCHAR_CREDIT_CODE_ALIAS_REMARK
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_VERSION
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_EXTENSION_RULE_REVISION
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_HEAD_COMPANY_BRAND_AUTHORIZATION
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_BRAND_BRAND_ID_HEAD_COMPANY_ID_WORKSPACE_UUID
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_HEAD_COMPANY_BRAND_AUTHORIZATION
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_BRAND_BRAND_ID_HEAD_COMPANY_ID_WORKSPACE_UUID
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONDITION
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY,
                 (row, index) -> OrganizationEntityReadbackMapper.read("BRAND", row),
@@ -51,19 +55,26 @@ public class BusinessEntityTaskReadPersistence {
             UUID workspaceUuid, String groupWorkspaceKey, List<UUID> headCompanyIds) {
         String placeholders = String.join(
                 BusinessEntityTaskReadServiceSql.PLACEHOLDER_SEPARATOR,
-                Collections.nCopies(
-                        headCompanyIds.size(), BusinessEntityTaskReadServiceSql.PARAMETER_PLACEHOLDER));
+                Collections.nCopies(headCompanyIds.size(), BusinessEntityTaskReadServiceSql.PARAMETER_PLACEHOLDER));
         return jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME_ALTERNATE_A
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_VARCHAR_CREDIT_CODE_ALIAS_REMARK_ALTERNATE_A
+                BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME_ALTERNATE_A
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_VARCHAR_CREDIT_CODE_ALIAS_REMARK_ALTERNATE_A
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_VERSION_ALTERNATE_A
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_EXTENSION_RULE_REVISION_ALTERNATE_A
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_HEAD_COMPANY_EXTENSION_VALUES_TEXT_HEAD_COMPANY_ID
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_EXTENSION_RULE_REVISION_ALTERNATE_A
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_HEAD_COMPANY_EXTENSION_VALUES_TEXT_HEAD_COMPANY_ID
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_JOIN
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_HEAD_COMPANY_BRAND_AUTHORIZATION_HEAD_COMPANY_ID
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_BRAND_BRAND_ID_WORKSPACE_UUID
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_WORKSPACE_UUID
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_A
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_HEAD_COMPANY_BRAND_AUTHORIZATION_HEAD_COMPANY_ID
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_BRAND_BRAND_ID_WORKSPACE_UUID
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_WORKSPACE_UUID
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_A
                         + placeholders
                         + BusinessEntityTaskReadServiceSql.AUTHORIZED_BRANDS_ORDER_SUFFIX,
                 statement -> {
@@ -81,19 +92,19 @@ public class BusinessEntityTaskReadPersistence {
                 });
     }
 
-    public List<HeadCompanyBrandAuthorizationFact> authorizedBrandAuthorizations(
-            UUID headCompanyId) {
+    public List<HeadCompanyBrandAuthorizationFact> authorizedBrandAuthorizations(UUID headCompanyId) {
         return jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_HEAD_COMPANY_BRAND_AUTHORIZATION
+                BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_HEAD_COMPANY_BRAND_AUTHORIZATION
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_HEAD_COMPANY_ID_BRAND_ID,
-                (row, index) -> new HeadCompanyBrandAuthorizationFact(
-                        row.getObject(1, UUID.class), row.getLong(2)),
+                (row, index) -> new HeadCompanyBrandAuthorizationFact(row.getObject(1, UUID.class), row.getLong(2)),
                 headCompanyId);
     }
 
     public boolean isEnterableStore(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
         return jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_STATUS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
+                BusinessEntityTaskReadServiceSql
+                        .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_STATUS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, storeId);
                     statement.setObject(2, workspaceUuid);
@@ -105,9 +116,12 @@ public class BusinessEntityTaskReadPersistence {
     public Optional<OrganizationOwnerApi.SalesMenuStoreJudgment> salesMenuStore(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
         OrganizationOwnerApi.SalesMenuStoreJudgment value = jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_STORE_REF_STATUS_BRAND_ID
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_FROM_CLAUSE_STORE_FROM_ORGANIZATION_STORE_STOR
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
+                BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_STORE_REF_STATUS_BRAND_ID
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_FROM_CLAUSE_STORE_FROM_ORGANIZATION_STORE_STOR
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, storeRef);
                     statement.setObject(2, workspaceUuid);
@@ -130,8 +144,10 @@ public class BusinessEntityTaskReadPersistence {
     public Optional<CatalogScopeLookup.CatalogBrandJudgment> storeCatalogBrand(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
         List<CatalogScopeLookup.CatalogBrandJudgment> values = jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_BRAND_ID_VERSION_WORKSPACE_UUID
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED,
+                BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_BRAND_ID_VERSION_WORKSPACE_UUID
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED,
                 statement -> {
                     statement.setObject(1, storeId);
                     statement.setObject(2, workspaceUuid);
@@ -147,10 +163,14 @@ public class BusinessEntityTaskReadPersistence {
     public Optional<CatalogScopeLookup.CatalogBrandJudgment> headCompanyCatalogBrand(
             UUID workspaceUuid, String groupWorkspaceKey, UUID headCompanyId, UUID brandId) {
         List<CatalogScopeLookup.CatalogBrandJudgment> values = jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_VERSION_AUTHORIZED_AT_EPOCH_MILLIS
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_HEAD_COMPANY_HEAD_COMPANY_BRAND_AUTHORIZATION
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_BRAND_HEAD_COMPANY_ID_BRAND_ID
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED
+                BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_VERSION_AUTHORIZED_AT_EPOCH_MILLIS
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_HEAD_COMPANY_HEAD_COMPANY_BRAND_AUTHORIZATION
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_BRAND_HEAD_COMPANY_ID_BRAND_ID
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONDITION_ALTERNATE_A
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_STATUS_ENABLED,
                 statement -> {
@@ -169,9 +189,12 @@ public class BusinessEntityTaskReadPersistence {
     }
 
     public Optional<UUID> storeBrand(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
-        return jdbc.query(
-                        BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_BRAND_ID_HEAD_COMPANY_ID_WORKSPACE_UUID
-                                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_A,
+        return jdbc
+                .query(
+                        BusinessEntityTaskReadServiceSql
+                                        .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_BRAND_ID_HEAD_COMPANY_ID_WORKSPACE_UUID
+                                + BusinessEntityTaskReadServiceSql
+                                        .BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_A,
                         statement -> {
                             statement.setObject(1, storeId);
                             statement.setObject(2, workspaceUuid);
@@ -183,9 +206,12 @@ public class BusinessEntityTaskReadPersistence {
     }
 
     public Optional<UUID> storeSource(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
-        return jdbc.query(
-                        BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_HEAD_COMPANY_ID_WORKSPACE_UUID
-                                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_B,
+        return jdbc
+                .query(
+                        BusinessEntityTaskReadServiceSql
+                                        .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_HEAD_COMPANY_ID_WORKSPACE_UUID
+                                + BusinessEntityTaskReadServiceSql
+                                        .BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_B,
                         statement -> {
                             statement.setObject(1, storeId);
                             statement.setObject(2, workspaceUuid);
@@ -197,13 +223,16 @@ public class BusinessEntityTaskReadPersistence {
                 .findFirst();
     }
 
-    public boolean sourceBrandAllowed(
-            UUID workspaceUuid, String groupWorkspaceKey, UUID sourceStoreId, UUID brandId) {
+    public boolean sourceBrandAllowed(UUID workspaceUuid, String groupWorkspaceKey, UUID sourceStoreId, UUID brandId) {
         return jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_HEAD_COMPANY_SELECT_EXISTS_SELECT_1_FROM_
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_HEAD_COMPANY_BRAND_AUTHORIZATION_HEAD_COMPANY_ID_ALTERNATE_A
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_BRAND_BRAND_ID_WORKSPACE_UUID_ALTERNATE_A
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_C,
+                BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_HEAD_COMPANY_SELECT_EXISTS_SELECT_1_FROM_
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_HEAD_COMPANY_BRAND_AUTHORIZATION_HEAD_COMPANY_ID_ALTERNATE_A
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_BRAND_BRAND_ID_WORKSPACE_UUID_ALTERNATE_A
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_C,
                 statement -> {
                     statement.setObject(1, sourceStoreId);
                     statement.setObject(2, workspaceUuid);
@@ -213,18 +242,19 @@ public class BusinessEntityTaskReadPersistence {
                 result -> result.next() && result.getBoolean(1));
     }
 
-    public Optional<StorePathFact> storePath(
-            UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
+    public Optional<StorePathFact> storePath(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
         List<StorePathFact> values = jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_PROJECT_ID_CODE_NAME_WORKSPACE_UUID
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_B,
+                BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_PROJECT_ID_CODE_NAME_WORKSPACE_UUID
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_B,
                 statement -> {
                     statement.setObject(1, storeId);
                     statement.setObject(2, workspaceUuid);
                     statement.setString(3, groupWorkspaceKey);
                 },
-                (result, index) -> new StorePathFact(
-                        result.getObject(1, UUID.class), result.getString(2), result.getString(3)));
+                (result, index) ->
+                        new StorePathFact(result.getObject(1, UUID.class), result.getString(2), result.getString(3)));
         return values.stream().findFirst();
     }
 
@@ -232,10 +262,14 @@ public class BusinessEntityTaskReadPersistence {
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeId, boolean lockStoreAndTenant) {
         String lockSuffix = lockStoreAndTenant ? BusinessEntityTaskReadServiceSql.STORE_TENANT_LOCK_SUFFIX : "";
         StoreContractContext value = jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_TENANT_ID_PROJECT_ID_STATUS_TENANT_STATUS
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_FROM_CLAUSE_TENANT_TENANT_ID
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_PROJECT_PHASE_NAME_PHASE_PROJECT_ID
+                BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_TENANT_ID_PROJECT_ID_STATUS_TENANT_STATUS
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_FROM_CLAUSE_TENANT_TENANT_ID
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_PROJECT_PHASE_NAME_PHASE_PROJECT_ID
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WORKSPACE_UUID
                         + lockSuffix,
                 statement -> {
@@ -265,12 +299,14 @@ public class BusinessEntityTaskReadPersistence {
         String table = table(type);
         String fields = fields(type);
         List<OrganizationEntityReadback> values = jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME_ALTERNATE_B
+                BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME_ALTERNATE_B
                         + fields
                         + ", status, version, extension_rule_revision, created_at_epoch_millis, "
                         + BusinessEntityTaskReadServiceSql.ENTITY_TABLE_COMMON_SUFFIX
                         + table
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 (row, index) -> OrganizationEntityReadbackMapper.read(type, row),
                 id,
                 workspaceUuid,
@@ -279,8 +315,10 @@ public class BusinessEntityTaskReadPersistence {
     }
 
     public Optional<UUID> commercialGroupId(String groupWorkspaceKey) {
-        return jdbc.query(
-                        BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_COMMERCIAL_GROUP_COMMERCIAL_GROUP_UUID_GROUP_WORKSPACE_KEY,
+        return jdbc
+                .query(
+                        BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_COMMERCIAL_GROUP_COMMERCIAL_GROUP_UUID_GROUP_WORKSPACE_KEY,
                         (row, index) -> row.getObject(1, UUID.class),
                         groupWorkspaceKey)
                 .stream()
@@ -288,8 +326,10 @@ public class BusinessEntityTaskReadPersistence {
     }
 
     public Optional<UUID> storeProjectId(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
-        return jdbc.query(
-                        BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_PROJECT_ID_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
+        return jdbc
+                .query(
+                        BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_PROJECT_ID_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                         statement -> {
                             statement.setObject(1, storeId);
                             statement.setObject(2, workspaceUuid);
@@ -300,11 +340,13 @@ public class BusinessEntityTaskReadPersistence {
                 .findFirst();
     }
 
-    public Optional<StoreUpdateFacts> storeUpdateFacts(
-            UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
-        return jdbc.query(
-                        BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_PROJECT_ID_TENANT_ID_BRAND_ID_CODE
-                                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A,
+    public Optional<StoreUpdateFacts> storeUpdateFacts(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
+        return jdbc
+                .query(
+                        BusinessEntityTaskReadServiceSql
+                                        .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_STORE_PROJECT_ID_TENANT_ID_BRAND_ID_CODE
+                                + BusinessEntityTaskReadServiceSql
+                                        .BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A,
                         statement -> {
                             statement.setObject(1, storeId);
                             statement.setObject(2, workspaceUuid);
@@ -324,12 +366,14 @@ public class BusinessEntityTaskReadPersistence {
         String type = normalizeEntityType(entityType);
         String table = table(type);
         return jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME_ALTERNATE_C
+                BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME_ALTERNATE_C
                         + fields(type)
                         + ", status, version, extension_rule_revision, created_at_epoch_millis, "
                         + BusinessEntityTaskReadServiceSql.ENTITY_TABLE_COMMON_SUFFIX
                         + table
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE,
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE,
                 (row, index) -> OrganizationEntityReadbackMapper.read(type, row),
                 workspaceUuid,
                 groupWorkspaceKey);
@@ -383,22 +427,25 @@ public class BusinessEntityTaskReadPersistence {
             ExtensionFilterQuery.Prepared extensionFilter) {
         String type = entityType == null ? null : normalizeEntityType(entityType);
         if (page < 1 || pageSize < 1 || pageSize > 100) throw new IllegalArgumentException("invalid page");
-        String order = switch (Objects.requireNonNullElse(sort, "NAME")) {
-            case "NAME" -> BusinessEntityTaskReadServiceSql.ENTITY_ORDER_NAME;
-            case "CODE" -> BusinessEntityTaskReadServiceSql.ENTITY_ORDER_CODE;
-            case "UPDATED_AT" -> BusinessEntityTaskReadServiceSql.ENTITY_ORDER_UPDATED_AT;
-            default -> throw new IllegalArgumentException("invalid sort");
-        };
-        String safeDirection = switch (Objects.requireNonNullElse(
-                direction, BusinessEntityTaskReadServiceSql.SORT_DIRECTION_ASC)) {
-            case "ASC", "DESC" -> Objects.requireNonNullElse(
-                    direction, BusinessEntityTaskReadServiceSql.SORT_DIRECTION_ASC);
-            default -> throw new IllegalArgumentException("invalid direction");
-        };
-        String safeStatus = status == null ? null : switch (status) {
-            case "ENABLED", "DISABLED", "VOIDED" -> status;
-            default -> throw new IllegalArgumentException("invalid status");
-        };
+        String order =
+                switch (Objects.requireNonNullElse(sort, "NAME")) {
+                    case "NAME" -> BusinessEntityTaskReadServiceSql.ENTITY_ORDER_NAME;
+                    case "CODE" -> BusinessEntityTaskReadServiceSql.ENTITY_ORDER_CODE;
+                    case "UPDATED_AT" -> BusinessEntityTaskReadServiceSql.ENTITY_ORDER_UPDATED_AT;
+                    default -> throw new IllegalArgumentException("invalid sort");
+                };
+        String safeDirection =
+                switch (Objects.requireNonNullElse(direction, BusinessEntityTaskReadServiceSql.SORT_DIRECTION_ASC)) {
+                    case "ASC", "DESC" -> Objects.requireNonNullElse(
+                            direction, BusinessEntityTaskReadServiceSql.SORT_DIRECTION_ASC);
+                    default -> throw new IllegalArgumentException("invalid direction");
+                };
+        String safeStatus = status == null
+                ? null
+                : switch (status) {
+                    case "ENABLED", "DISABLED", "VOIDED" -> status;
+                    default -> throw new IllegalArgumentException("invalid status");
+                };
         String nameFilter = filter(name);
         String codeFilter = filter(code);
         String legalNameFilter = filter(legalName);
@@ -431,15 +478,17 @@ public class BusinessEntityTaskReadPersistence {
             parameters.add(safeStatus);
             parameters.add(type);
             parameters.add(type);
-            predicate = BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_OPEN_PAREN_TEXT_LOWER_NAME_LIKE
-                    + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_PARAMETER_PLACEHOLDER_TEXT_LOWER_LEGAL_NAME_LIKE
-                    + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_NULL_VALUE_PREFIX
-                    + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_LOWER_CREDIT_CODE_LIKE_TEXT
-                    + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_TEXT_ENTITY_TYPE;
+            predicate =
+                    BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_OPEN_PAREN_TEXT_LOWER_NAME_LIKE
+                            + BusinessEntityTaskReadServiceSql
+                                    .BUSINESS_ENTITY_TASK_READ_SERVICE_PARAMETER_PLACEHOLDER_TEXT_LOWER_LEGAL_NAME_LIKE
+                            + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_NULL_VALUE_PREFIX
+                            + BusinessEntityTaskReadServiceSql
+                                    .BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_LOWER_CREDIT_CODE_LIKE_TEXT
+                            + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_TEXT_ENTITY_TYPE;
         }
-        ExtensionFilterQuery.Prepared filters = extensionFilter == null
-                ? ExtensionFilterQuery.Prepared.empty()
-                : extensionFilter;
+        ExtensionFilterQuery.Prepared filters =
+                extensionFilter == null ? ExtensionFilterQuery.Prepared.empty() : extensionFilter;
         String extensionPredicate = filters.isEmpty() ? "" : " AND " + filters.predicate("entities.extension_values");
         parameters.addAll(filters.parameters());
         String rows = businessEntityRowsSql();
@@ -467,22 +516,21 @@ public class BusinessEntityTaskReadPersistence {
                         + BusinessEntityTaskReadServiceSql.SQL_SPACE
                         + safeDirection
                         + BusinessEntityTaskReadServiceSql.ENTITY_PAGE_ORDER_SUFFIX,
-                (row, index) -> new PageItem(
-                        row.getString(17), OrganizationEntityReadbackMapper.read(row.getString(17), row)),
+                (row, index) ->
+                        new PageItem(row.getString(17), OrganizationEntityReadbackMapper.read(row.getString(17), row)),
                 pageParameters.toArray());
         return new PageData(items, total == null ? 0L : total, page, pageSize);
     }
 
-    public List<PageItem> findBusinessEntity(
-            UUID workspaceUuid, String groupWorkspaceKey, UUID entityId) {
+    public List<PageItem> findBusinessEntity(UUID workspaceUuid, String groupWorkspaceKey, UUID entityId) {
         return jdbc.query(
                 BusinessEntityTaskReadServiceSql.SELECT_PREFIX
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_PROJECTION
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_FROM_CLAUSE_ALTERNATE_A
                         + businessEntityRowsSql()
                         + BusinessEntityTaskReadServiceSql.ENTITY_ID_WHERE_SUFFIX,
-                (row, index) -> new PageItem(
-                        row.getString(17), OrganizationEntityReadbackMapper.read(row.getString(17), row)),
+                (row, index) ->
+                        new PageItem(row.getString(17), OrganizationEntityReadbackMapper.read(row.getString(17), row)),
                 workspaceUuid,
                 groupWorkspaceKey,
                 workspaceUuid,
@@ -502,16 +550,17 @@ public class BusinessEntityTaskReadPersistence {
         for (int index = 0; index < ids.size(); index++) parameters[index + 2] = ids.get(index);
         Map<UUID, OrganizationEntityReadback> values = new LinkedHashMap<>();
         jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME_ALTERNATE_E
+                BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME_ALTERNATE_E
                         + fields(type)
                         + BusinessEntityTaskReadServiceSql.ENTITY_PAGE_PROJECTION_SUFFIX
                         + BusinessEntityTaskReadServiceSql.ENTITY_TABLE_COMMON_SUFFIX
                         + table
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_B
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_B
                         + String.join(
                                 BusinessEntityTaskReadServiceSql.PLACEHOLDER_SEPARATOR,
-                                Collections.nCopies(
-                                        ids.size(), BusinessEntityTaskReadServiceSql.PARAMETER_PLACEHOLDER))
+                                Collections.nCopies(ids.size(), BusinessEntityTaskReadServiceSql.PARAMETER_PLACEHOLDER))
                         + BusinessEntityTaskReadServiceSql.ENTITY_MULTI_ID_CLOSE_SUFFIX,
                 (row, index) -> {
                     OrganizationEntityReadback value = OrganizationEntityReadbackMapper.read(type, row);
@@ -525,8 +574,10 @@ public class BusinessEntityTaskReadPersistence {
     public boolean isEnabled(String entityType, UUID workspaceUuid, String groupWorkspaceKey, UUID id) {
         String table = table(normalizeEntityType(entityType));
         return jdbc.query(
-                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_ORGANIZATION_STATUS_ENABLED + table
-                        + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_C,
+                BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_ORGANIZATION_STATUS_ENABLED
+                        + table
+                        + BusinessEntityTaskReadServiceSql
+                                .BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_C,
                 statement -> {
                     statement.setObject(1, id);
                     statement.setObject(2, workspaceUuid);
@@ -540,22 +591,29 @@ public class BusinessEntityTaskReadPersistence {
     }
 
     private static String businessEntityRowsSql() {
-        return BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME_ALTERNATE_D
+        return BusinessEntityTaskReadServiceSql
+                        .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME_ALTERNATE_D
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CREDIT_CODE_ALIAS_REMARK_VARCHAR
-                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CREATED_AT_EPOCH_MILLIS_EXTENSION_VALUES
+                + BusinessEntityTaskReadServiceSql
+                        .BUSINESS_ENTITY_TASK_READ_SERVICE_CREATED_AT_EPOCH_MILLIS_EXTENSION_VALUES
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_FROM_CLAUSE_ALTERNATE_B
-                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_BRAND_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
+                + BusinessEntityTaskReadServiceSql
+                        .BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_BRAND_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                + BusinessEntityTaskReadServiceSql
+                        .BUSINESS_ENTITY_TASK_READ_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_REMARK_VARCHAR_NOTES_STATUS
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_UPDATE_TENANT_EXTENSION_VALUES
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE
-                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A
+                + BusinessEntityTaskReadServiceSql
+                        .BUSINESS_ENTITY_TASK_READ_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_C
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CODE_NAME_LEGAL_NAME_CREDIT_CODE
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_STATUS
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_VERSION_ALTERNATE_B
-                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_HEAD_COMPANY_EXTENSION_VALUES_ENTITY_TYPE
-                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_B;
+                + BusinessEntityTaskReadServiceSql
+                        .BUSINESS_ENTITY_TASK_READ_SERVICE_HEAD_COMPANY_EXTENSION_VALUES_ENTITY_TYPE
+                + BusinessEntityTaskReadServiceSql
+                        .BUSINESS_ENTITY_TASK_READ_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_B;
     }
 
     private static String normalizeEntityType(String value) {

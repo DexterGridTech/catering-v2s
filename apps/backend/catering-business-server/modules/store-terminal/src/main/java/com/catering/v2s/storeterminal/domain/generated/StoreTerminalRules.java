@@ -1,10 +1,10 @@
-// GENERATED FILE. DO NOT EDIT. sourceSha256=a2fa58ab2df72f0ce21352295f4f58a6ab06905a636cd6b5b0eedf57b8bdd292
+// GENERATED FILE. DO NOT EDIT. sourceSha256=4781c98eb12af0e83eeab190d99c2e0861a42fffbd78cffa5e63b06e771d092c
 package com.catering.v2s.storeterminal.domain.generated;
 
 import java.util.List;
 
 public final class StoreTerminalRules {
-    public static final String SOURCE_SHA256 = "a2fa58ab2df72f0ce21352295f4f58a6ab06905a636cd6b5b0eedf57b8bdd292";
+    public static final String SOURCE_SHA256 = "4781c98eb12af0e83eeab190d99c2e0861a42fffbd78cffa5e63b06e771d092c";
 
     public record DeviceType(String key, String label, String description) {}
 
@@ -45,6 +45,11 @@ public final class StoreTerminalRules {
             List<String> allowedConnectionMethodKeys,
             String evidenceUri) {}
 
+    public static final String RANGE_TABLE_AREA = "TABLE_AREA";
+    public static final String RANGE_NO_TABLE = "NO_TABLE";
+    public static final String RANGE_DELIVERY = "DELIVERY";
+    public static final String RANGE_PRODUCTION_TAG = "PRODUCTION_TAG";
+
     // spotless:off
     public static final List<DeviceType> DEVICE_TYPES = List.of(
             new DeviceType("laptop", "台式", "台式可配置全部六类功能"),
@@ -66,14 +71,13 @@ public final class StoreTerminalRules {
             new FunctionRule("KDS", "KDS", List.of("laptop"), 1, List.of("PRODUCTION_TAG")),
             new FunctionRule("KITCHEN_PRINT", "厨打", List.of("laptop", "mobile"), null, List.of("PRODUCTION_TAG")),
             new FunctionRule("DISPATCH", "出餐", List.of("laptop"), 1, List.of("TABLE_AREA", "NO_TABLE", "DELIVERY")),
-            new FunctionRule("QUEUE_CALL", "排队叫号", List.of("laptop", "mobile"), 1, List.of("NONE")));
+            new FunctionRule("QUEUE_CALL", "排队叫号", List.of("laptop", "mobile"), 1, List.of()));
 
     public static final List<RangeRule> RANGE_RULES = List.of(
             new RangeRule("TABLE_AREA", "桌台区"),
             new RangeRule("NO_TABLE", "无桌台"),
             new RangeRule("DELIVERY", "外卖"),
-            new RangeRule("PRODUCTION_TAG", "生产标签"),
-            new RangeRule("NONE", "无范围"));
+            new RangeRule("PRODUCTION_TAG", "生产标签"));
 
     public static final List<SceneRule> SCENE_RULES = List.of(
             new SceneRule(

@@ -8,7 +8,7 @@
 `@catering-v2s/ui-base-dev-host` 提供。
 
 本包不拥有业务事实或具体 renderer，不感知 `surfaceMode`，也不构造 platform port。
-它拥有自己的可移除 integration runtime module，并通过 `ui.base.console-assembly` 接入启动
+它拥有自己的可移除 integration runtime module，并通过 `ui.base.integration-assembly` 接入启动
 诊断写入；base module descriptor 不再由本包私藏或伪造。
 
 ## 结构

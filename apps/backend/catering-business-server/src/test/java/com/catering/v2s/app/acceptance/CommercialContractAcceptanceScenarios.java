@@ -129,17 +129,11 @@ final class CommercialContractAcceptanceScenarios {
                 + "&phaseName=Opening&pageSize=1&extensionFilters="
                 + filterWire(typedFilterSpecs("contractFilter", "match-value"))
                 + "&definitionRevision=1";
-        Response page = context.get(
-                OPERATIONS_CONTRACT_LIST,
-                requestBase + "&page=1",
-                operations.cookie(),
-                Set.of(200));
+        Response page =
+                context.get(OPERATIONS_CONTRACT_LIST, requestBase + "&page=1", operations.cookie(), Set.of(200));
         assertContractExtensionPage(page, 1, "contractFilter", "operations contract list");
-        Response secondPage = context.get(
-                OPERATIONS_CONTRACT_LIST,
-                requestBase + "&page=2",
-                operations.cookie(),
-                Set.of(200));
+        Response secondPage =
+                context.get(OPERATIONS_CONTRACT_LIST, requestBase + "&page=2", operations.cookie(), Set.of(200));
         assertContractExtensionPage(secondPage, 2, "contractFilter", "operations contract list");
         assertNotEquals(
                 page.json().path("items").get(0).path("id").asText(),
@@ -170,21 +164,26 @@ final class CommercialContractAcceptanceScenarios {
                 + "?phaseName=Opening&pageSize=1&extensionFilters="
                 + filterWire(typedFilterSpecs("contractFilter", "match-value"))
                 + "&definitionRevision=1";
-        Response page = context.get(
-                PLATFORM_CONTRACT_OVERVIEW_PAGE,
-                requestBase + "&page=1",
-                platform.cookie(),
-                Set.of(200));
+        Response page =
+                context.get(PLATFORM_CONTRACT_OVERVIEW_PAGE, requestBase + "&page=1", platform.cookie(), Set.of(200));
         assertContractExtensionPage(page, 1, "contractFilter", "platform contract overview");
-        Response secondPage = context.get(
-                PLATFORM_CONTRACT_OVERVIEW_PAGE,
-                requestBase + "&page=2",
-                platform.cookie(),
-                Set.of(200));
+        Response secondPage =
+                context.get(PLATFORM_CONTRACT_OVERVIEW_PAGE, requestBase + "&page=2", platform.cookie(), Set.of(200));
         assertContractExtensionPage(secondPage, 2, "contractFilter", "platform contract overview");
         assertNotEquals(
-                page.json().path("items").get(0).path("contractRef").path("code").asText(),
-                secondPage.json().path("items").get(0).path("contractRef").path("code").asText(),
+                page.json()
+                        .path("items")
+                        .get(0)
+                        .path("contractRef")
+                        .path("code")
+                        .asText(),
+                secondPage
+                        .json()
+                        .path("items")
+                        .get(0)
+                        .path("contractRef")
+                        .path("code")
+                        .asText(),
                 "BUSINESS: platform contract pages do not repeat an item");
     }
 
@@ -225,13 +224,9 @@ final class CommercialContractAcceptanceScenarios {
         assertEquals(expectedPage, metadata.path("page").asInt(), "BUSINESS: " + label + " preserves page identity");
         assertEquals(1, metadata.path("pageSize").asInt(), "BUSINESS: " + label + " preserves page size");
         assertEquals(
-                2,
-                metadata.path("total").asInt(),
-                "BUSINESS: " + label + " totals the core and extension matches");
+                2, metadata.path("total").asInt(), "BUSINESS: " + label + " totals the core and extension matches");
         assertEquals(
-                1,
-                page.json().path("items").size(),
-                "BUSINESS: " + label + " keeps one filtered contract per page");
+                1, page.json().path("items").size(), "BUSINESS: " + label + " keeps one filtered contract per page");
         assertEquals(
                 1,
                 metadata.path("definitionRevision").asLong(),
@@ -250,12 +245,9 @@ final class CommercialContractAcceptanceScenarios {
                 values.path(fieldPrefix + "Date").asText(),
                 "BUSINESS: " + label + " returns DATE raw value");
         assertTrue(
-                values.path(fieldPrefix + "Boolean").asBoolean(),
-                "BUSINESS: " + label + " returns BOOLEAN raw value");
+                values.path(fieldPrefix + "Boolean").asBoolean(), "BUSINESS: " + label + " returns BOOLEAN raw value");
         assertEquals(
-                "直营",
-                values.path(fieldPrefix + "Select").asText(),
-                "BUSINESS: " + label + " returns SELECT raw value");
+                "直营", values.path(fieldPrefix + "Select").asText(), "BUSINESS: " + label + " returns SELECT raw value");
     }
 
     @AcceptanceScenario(

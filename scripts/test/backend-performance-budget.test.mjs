@@ -274,6 +274,7 @@ function calibrationReport({blockedCount = 0, operationStatuses = {}} = {}) {
     budget: {
       generated: false,
       activation: 'NOT_YET_AUTHORIZED_BY_CP05;CP02_REQUIRES_REMEDIATED_SHAPE',
+      baselineDecisionRef: 'TEST-CP05-THREE-RUN-BASELINE',
       readyCount: EXPECTED_OPERATION_COUNT - blockedCount,
       blockedCount,
     },
@@ -801,6 +802,18 @@ test('CP-05 report rejects a repeated batch cardinality calibration set', () => 
   assert.throws(
     () => validateCp05CalibrationReport(incomplete),
     /BUDGET_CP05_BATCH_CARDINALITY_EVIDENCE_INVALID:missing=1,100/,
+  );
+});
+
+test('CP-05 three-run calibration requires an explicit baseline decision reference', () => {
+  const report = calibrationReport();
+  const withoutDecisionRef = {
+    ...report,
+    budget: {...report.budget, baselineDecisionRef: undefined},
+  };
+  assert.throws(
+    () => validateCp05CalibrationReport(withoutDecisionRef),
+    /BUDGET_CP05_BASELINE_DECISION_REF_REQUIRED/,
   );
 });
 

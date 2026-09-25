@@ -1,9 +1,9 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspacePasswordRecoveryPersistence;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspacePasswordRecoveryPersistence;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 import java.util.UUID;
@@ -146,10 +146,7 @@ public class WorkspacePasswordRecoveryService {
         otpLimits.beforeVerify(
                 recovery.workspaceUuid(), recovery.groupWorkspaceKey(), "OPERATIONS_PASSWORD_RECOVERY", recovery.id());
         long now = time.currentEpochMillis();
-        int consumed = persistence.consumeOtp(
-                now,
-                recovery.id(),
-                sha256(rawOtp));
+        int consumed = persistence.consumeOtp(now, recovery.id(), sha256(rawOtp));
         if (recovery.accountId() == null || consumed != 1) {
             persistence.incrementOtpAttempt(recovery.id());
             otpLimits.invalidVerify(

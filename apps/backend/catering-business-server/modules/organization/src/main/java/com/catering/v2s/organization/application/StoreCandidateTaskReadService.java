@@ -1,8 +1,8 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.StoreCandidateTaskReadPersistence;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.WorkspaceAssignmentScopeLookup;
+import com.catering.v2s.organization.application.persistence.StoreCandidateTaskReadPersistence;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;

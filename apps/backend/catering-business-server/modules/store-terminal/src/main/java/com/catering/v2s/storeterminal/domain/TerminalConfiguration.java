@@ -107,11 +107,14 @@ public final class TerminalConfiguration {
             if (new HashSet<>(range.refs()).size() != range.refs().size()) {
                 throw invalid(Rule.RANGE_SELECTION_INVALID);
             }
-            if (range.all() && !("TABLE_AREA".equals(range.key()) || "PRODUCTION_TAG".equals(range.key()))) {
+            if (range.all()
+                    && !(StoreTerminalRules.RANGE_TABLE_AREA.equals(range.key())
+                            || StoreTerminalRules.RANGE_PRODUCTION_TAG.equals(range.key()))) {
                 throw invalid(Rule.RANGE_SELECTION_INVALID);
             }
             if (!range.refs().isEmpty()
-                    && !("TABLE_AREA".equals(range.key()) || "PRODUCTION_TAG".equals(range.key()))) {
+                    && !(StoreTerminalRules.RANGE_TABLE_AREA.equals(range.key())
+                            || StoreTerminalRules.RANGE_PRODUCTION_TAG.equals(range.key()))) {
                 throw invalid(Rule.RANGE_SELECTION_INVALID);
             }
         }

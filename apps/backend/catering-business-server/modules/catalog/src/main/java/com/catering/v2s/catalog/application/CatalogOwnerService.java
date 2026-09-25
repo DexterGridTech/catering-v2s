@@ -170,12 +170,15 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
         this.unitDefinitionService = unitDefinitionService;
         this.orderOptionDefinitionService = orderOptionDefinitionService;
         this.categoryService = categoryService;
-        this.dictionaryService = dictionaryService == null ? new CatalogDictionaryService(jdbc, mapper, time) : dictionaryService;
+        this.dictionaryService =
+                dictionaryService == null ? new CatalogDictionaryService(jdbc, mapper, time) : dictionaryService;
         this.itemService = itemService == null
-                ? new CatalogItemService(jdbc, mapper, time, assetReferenceLocks, productionTags, inventory, transactions)
+                ? new CatalogItemService(
+                        jdbc, mapper, time, assetReferenceLocks, productionTags, inventory, transactions)
                 : itemService;
         this.copyService = copyService == null
-                ? new CatalogCopyService(jdbc, mapper, time, assetReferenceLocks, productionTags, inventory, transactions)
+                ? new CatalogCopyService(
+                        jdbc, mapper, time, assetReferenceLocks, productionTags, inventory, transactions)
                 : copyService;
         this.workbenchReadService = workbenchReadService == null
                 ? new CatalogWorkbenchReadService(

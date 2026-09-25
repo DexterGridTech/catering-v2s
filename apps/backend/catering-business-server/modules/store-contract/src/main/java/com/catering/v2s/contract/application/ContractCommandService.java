@@ -1,13 +1,13 @@
 package com.catering.v2s.contract.application;
 
-import com.catering.v2s.contract.application.persistence.ContractCommandPersistence;
-import com.catering.v2s.contract.application.persistence.ContractDerivedStoreStatusPersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.contract.api.OperationsStoreContractCommandApi;
 import com.catering.v2s.contract.api.StoreContractReadback;
+import com.catering.v2s.contract.application.persistence.ContractCommandPersistence;
+import com.catering.v2s.contract.application.persistence.ContractDerivedStoreStatusPersistence;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
@@ -806,16 +806,10 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             UUID contractId,
             long expectedVersion,
             AuditActor actor,
-        StoreContractReadback existing) {
+            StoreContractReadback existing) {
         long now = time.currentEpochMillis();
-        if (persistence.invalidate(
-                        now,
-                        now,
-                        contractId,
-                        workspaceUuid,
-                        key,
-                        expectedVersion)
-                != 1) throw new ContractConflictException();
+        if (persistence.invalidate(now, now, contractId, workspaceUuid, key, expectedVersion) != 1)
+            throw new ContractConflictException();
         StoreContractReadback invalidated = new StoreContractReadback(
                 existing.id(),
                 existing.workspaceUuid(),
@@ -902,7 +896,8 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
 
     @Transactional(readOnly = true)
     public String derivedStoreStatus(UUID workspaceUuid, String key, UUID storeId) {
-        return derivedStatusPersistence.read(workspaceUuid, key, List.of(storeId), businessDate.today())
+        return derivedStatusPersistence
+                .read(workspaceUuid, key, List.of(storeId), businessDate.today())
                 .statusOf(storeId);
     }
 
@@ -1105,9 +1100,12 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
     private static List<AuditChange> changed(StoreContractReadback before, StoreContractReadback after) {
         return List.of(
                         AuditChange.forNullableScalar("contractNo", before.contractNo(), after.contractNo()),
-                        AuditChange.forNullableScalar("effectiveFrom", date(before.effectiveFrom()), date(after.effectiveFrom())),
-                        AuditChange.forNullableScalar("effectiveTo", date(before.effectiveTo()), date(after.effectiveTo())),
-                        AuditChange.forNullableScalar("phaseName", before.phaseNameSnapshot(), after.phaseNameSnapshot()),
+                        AuditChange.forNullableScalar(
+                                "effectiveFrom", date(before.effectiveFrom()), date(after.effectiveFrom())),
+                        AuditChange.forNullableScalar(
+                                "effectiveTo", date(before.effectiveTo()), date(after.effectiveTo())),
+                        AuditChange.forNullableScalar(
+                                "phaseName", before.phaseNameSnapshot(), after.phaseNameSnapshot()),
                         AuditChange.forNullableScalar("status", before.status(), after.status()),
                         AuditChange.forNullableScalar("items", items(before.items()), items(after.items())))
                 .stream()

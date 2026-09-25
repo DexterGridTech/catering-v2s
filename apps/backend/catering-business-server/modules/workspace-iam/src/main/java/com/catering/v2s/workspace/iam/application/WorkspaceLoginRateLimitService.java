@@ -1,7 +1,7 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspaceLoginRateLimitPersistence;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceLoginRateLimitPersistence;
 import java.nio.charset.StandardCharsets;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -33,8 +33,7 @@ public final class WorkspaceLoginRateLimitService {
         this.hmacSecret = secret.getBytes(StandardCharsets.UTF_8);
     }
     /** Test-only compatibility constructor; the Spring constructor remains the production configuration path. */
-    WorkspaceLoginRateLimitService(
-            org.springframework.jdbc.core.JdbcTemplate jdbc, TimeProvider time) {
+    WorkspaceLoginRateLimitService(org.springframework.jdbc.core.JdbcTemplate jdbc, TimeProvider time) {
         this(new WorkspaceLoginRateLimitPersistence(jdbc), time);
     }
 
@@ -101,14 +100,7 @@ public final class WorkspaceLoginRateLimitService {
         long started = resetWindow ? now : current.windowStartedAt();
         int attempts = resetWindow ? 1 : current.failedAttempts() + 1;
         Long until = attempts >= limit ? now + lock : null;
-        persistence.upsertBucket(
-                key,
-                dimension,
-                fingerprint,
-                started,
-                attempts,
-                until,
-                now);
+        persistence.upsertBucket(key, dimension, fingerprint, started, attempts, until, now);
     }
 
     private String hmac(String value) {

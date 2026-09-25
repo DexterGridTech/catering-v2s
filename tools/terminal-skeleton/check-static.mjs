@@ -457,18 +457,6 @@ function runRuntimeDependencyContract(context) {
   }
 }
 
-function plannedWorkspaceDependencies(packageJson, spec) {
-  const planned = packageJson.plannedDependencies ?? [];
-  if (!Array.isArray(planned) || planned.some(packageName => typeof packageName !== 'string')) {
-    throw new Error('package.json plannedDependencies must be a string array');
-  }
-  return sorted(planned.map(packageName => {
-    const moduleName = packageNameToModuleName(packageName, spec);
-    if (!moduleName) throw new Error(`planned dependency is not a TER workspace package: ${packageName}`);
-    return moduleName;
-  }));
-}
-
 function moduleSpecifierMatches(actual, expected) {
   if (actual === expected) return true;
   return ['.ts', '.tsx', '.js', '.jsx'].some(extension => actual === `${expected}${extension}`);
@@ -476,7 +464,7 @@ function moduleSpecifierMatches(actual, expected) {
 
 function entryFile(packageDirectory, relativePath, label) {
   const filePath = path.join(packageDirectory, relativePath);
-  if (!fs.existsSync(filePath)) throw new Error(`assembly entry file missing: ${label} (${relativePath})`);
+  if (!fs.existsSync(filePath)) throw new Error(`application entry file missing: ${label} (${relativePath})`);
   return filePath;
 }
 
@@ -499,41 +487,41 @@ function assertRuntimeImport(filePath, expectedSpecifier, label) {
   }
 }
 
-function runAssemblyEntryReachability(context) {
+function runApplicationEntryReachability(context) {
   const {projected, root} = context;
-  const assemblyModuleNames = Object.keys(projected)
+  const applicationModuleNames = Object.keys(projected)
     .filter(moduleName => {
       const [layer, tier] = moduleName.split('.');
-      return layer === 'assembly' && tier !== 'base';
+      return layer === 'application' && tier !== 'base';
     })
     .sort();
-  if (!assemblyModuleNames.length) {
-    throw new Error('no non-base assembly App entry was discovered');
+  if (!applicationModuleNames.length) {
+    throw new Error('no non-base application App entry was discovered');
   }
-  for (const assemblyModuleName of assemblyModuleNames) {
-    const assemblyDirectory = moduleNameToPath(assemblyModuleName, root);
-    const entryPath = entryFile(assemblyDirectory, 'index.ts', `${assemblyModuleName} index.ts`);
-    const appPath = entryFile(assemblyDirectory, 'App.tsx', `${assemblyModuleName} App.tsx`);
+  for (const applicationModuleName of applicationModuleNames) {
+    const applicationDirectory = moduleNameToPath(applicationModuleName, root);
+    const entryPath = entryFile(applicationDirectory, 'index.ts', `${applicationModuleName} index.ts`);
+    const appPath = entryFile(applicationDirectory, 'App.tsx', `${applicationModuleName} App.tsx`);
     const platformPortsPath = entryFile(
-      assemblyDirectory,
+      applicationDirectory,
       'src/assembly/platformPorts.ts',
-      `${assemblyModuleName} assembly/platformPorts.ts`,
+      `${applicationModuleName} assembly/platformPorts.ts`,
     );
 
-    assertRuntimeImport(entryPath, './App', `${assemblyModuleName} index.ts`);
-    assertRuntimeImport(appPath, './src/assembly/platformPorts', `${assemblyModuleName} App.tsx`);
+    assertRuntimeImport(entryPath, './App', `${applicationModuleName} index.ts`);
+    assertRuntimeImport(appPath, './src/assembly/platformPorts', `${applicationModuleName} App.tsx`);
 
     const appSource = fs.readFileSync(appPath, 'utf8');
     if (/skeletonBootstrap|bootstrapSession|bootstrapRuntime/.test(appSource)) {
-      throw new Error(`${assemblyModuleName} App.tsx must not contain bootstrap wiring`);
+      throw new Error(`${applicationModuleName} App.tsx must not contain bootstrap wiring`);
     }
     if (/\b(?:require|import)\s*\(/.test(appSource)) {
-      throw new Error(`${assemblyModuleName} App.tsx must not use dynamic import or require`);
+      throw new Error(`${applicationModuleName} App.tsx must not use dynamic import or require`);
     }
 
     const platformPortsSource = fs.readFileSync(platformPortsPath, 'utf8');
     if (/\b(?:require|import)\s*\(/.test(platformPortsSource)) {
-      throw new Error(`${assemblyModuleName} platformPorts.ts must not use dynamic import or require`);
+      throw new Error(`${applicationModuleName} platformPorts.ts must not use dynamic import or require`);
     }
   }
 }
@@ -605,12 +593,7 @@ function runGraphComparison(context) {
     assertEqualSet(
       `${moduleName} dependencies`,
       declaredByField(entry.package, 'dependencies', spec),
-      expected.dependencies.filter(dependency => !plannedWorkspaceDependencies(entry.package, spec).includes(dependency)),
-    );
-    assertEqualSet(
-      `${moduleName} plannedDependencies`,
-      plannedWorkspaceDependencies(entry.package, spec),
-      expected.dependencies.filter(dependency => plannedWorkspaceDependencies(entry.package, spec).includes(dependency)),
+      expected.dependencies,
     );
     assertEqualSet(
       `${moduleName} devDependencies`,
@@ -633,7 +616,7 @@ function runGraphComparison(context) {
     const sourceImports = sourceSpecifiers.map(value => packageNameToModuleName(value, spec)).filter(Boolean);
     assertEqualSet(`${moduleName} source imports`, sourceImports, declared);
   }
-  runAssemblyEntryReachability(context);
+  runApplicationEntryReachability(context);
   // The package-local invariant files own the closed-union denominator.  Do
   // not freeze the migration-time 9/22 totals here: a later owner package may
   // add or remove a legitimate consumer and must update its own invariant
@@ -664,8 +647,8 @@ function runTripleNaming(context) {
       throw new Error(`${moduleName} package.json must not carry plannedKind/kind`);
     }
   }
-  if (Object.keys(spec.graph).length !== 33)
-    throw new Error(`skeleton spec must contain 33 nodes, got ${Object.keys(spec.graph).length}`);
+  if (Object.keys(spec.graph).length !== 29)
+    throw new Error(`skeleton spec must contain 29 nodes, got ${Object.keys(spec.graph).length}`);
 }
 
 function layerFor(moduleName) {
@@ -680,21 +663,21 @@ function baseGraphDependencyViolation(sourceModuleName, targetModuleName) {
   if (targetSegments[1] === 'feature' || targetSegments[1] === 'integration') {
     return `${sourceModuleName} may not depend on ${targetModuleName}`;
   }
-  if (targetSegments[0] === 'assembly' && targetSegments[1] !== 'base') {
+  if (targetSegments[0] === 'application' && targetSegments[1] !== 'base') {
     return `${sourceModuleName} may not depend on App package ${targetModuleName}`;
   }
-  if (sourceSegments[0] === 'assembly' && targetSegments[0] === 'adapter'
+  if (sourceSegments[0] === 'application' && targetSegments[0] === 'adapter'
     && sourceSegments[2] !== targetSegments[1]) {
     return `${sourceModuleName} may only depend on same-platform adapter ${targetModuleName}`;
   }
   return null;
 }
 
-function assemblyAdapterDependencyViolation(sourceModuleName, targetModuleName) {
+function applicationAdapterDependencyViolation(sourceModuleName, targetModuleName) {
   if (!targetModuleName) return null;
   const sourceSegments = sourceModuleName.split('.');
   const targetSegments = targetModuleName.split('.');
-  if (sourceSegments[0] === 'assembly' && sourceSegments[1] !== 'base' && targetSegments[0] === 'adapter') {
+  if (sourceSegments[0] === 'application' && sourceSegments[1] !== 'base' && targetSegments[0] === 'adapter') {
     return `${sourceModuleName} may not depend on adapter ${targetModuleName}`;
   }
   return null;
@@ -702,7 +685,7 @@ function assemblyAdapterDependencyViolation(sourceModuleName, targetModuleName) 
 
 function sourceDependencyViolation(sourceModuleName, targetModuleName) {
   return baseGraphDependencyViolation(sourceModuleName, targetModuleName)
-    ?? assemblyAdapterDependencyViolation(sourceModuleName, targetModuleName);
+    ?? applicationAdapterDependencyViolation(sourceModuleName, targetModuleName);
 }
 
 function sourceLine(node, sourceFile) {
@@ -719,7 +702,7 @@ function runBaseSourceDependencyBoundary(context) {
   const packageByName = packageRecordByName(packageRecords);
   for (const sourcePackage of packageRecords.filter(entry => {
     const [layer, tier] = entry.moduleName.split('.');
-    return projected[entry.moduleName] && (tier === 'base' || layer === 'assembly');
+    return projected[entry.moduleName] && (tier === 'base' || layer === 'application');
   })) {
     const sourceModuleName = sourcePackage.moduleName;
     const inspectTarget = (targetPackage, filePath, line, shape) => {
@@ -779,9 +762,6 @@ function runDependencyDirection(context) {
       }
       if (moduleName.startsWith('adapter.') && dependency !== 'kernel.base.platform-ports') {
         throw new Error(`${moduleName} may only depend on kernel.base.platform-ports: ${dependency}`);
-      }
-      if (moduleName.startsWith('assembly.') && dependency === moduleName) {
-        throw new Error(`${moduleName} contains a self edge`);
       }
       const sourceViolation = sourceDependencyViolation(moduleName, dependency);
       if (sourceViolation !== null) throw new Error(sourceViolation);
@@ -1155,7 +1135,7 @@ function runScaffoldHygiene(context) {
   for (const requiredLine of REQUIRED_IGNORE_LINES)
     if (!ignored.has(requiredLine)) violations.push(`missing .gitignore entry ${requiredLine}`);
   const scaffoldPackages = Object.keys(projected).filter(
-    moduleName => moduleName.startsWith('adapter.') || moduleName.startsWith('assembly.'),
+    moduleName => moduleName.startsWith('adapter.') || moduleName.startsWith('application.'),
   );
   for (const moduleName of scaffoldPackages) {
     const packageRoot = moduleNameToPath(moduleName, root);

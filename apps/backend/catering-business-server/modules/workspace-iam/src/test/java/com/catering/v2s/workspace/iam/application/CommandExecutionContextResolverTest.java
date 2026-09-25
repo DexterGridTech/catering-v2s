@@ -115,9 +115,8 @@ class CommandExecutionContextResolverTest {
     void resolvesNonCatalogOperationsFromOneFreshCommandFactLoad() {
         WorkspaceSessionReadback session = session("EDIT_STORE_CATALOG");
         RecordingAuthenticationService authentication = new RecordingAuthenticationService(commandFacts(session));
-        CommandExecutionContextResolver resolver =
-                new CommandExecutionContextResolver(
-                        capabilities(), lookup(), authentication, (workspace, group, targetType, storeId) -> {});
+        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(
+                capabilities(), lookup(), authentication, (workspace, group, targetType, storeId) -> {});
 
         WorkspaceCommandAuthorizationFacts facts = resolver.resolveOperations("fresh-session-credential", GROUP);
 
@@ -130,9 +129,8 @@ class CommandExecutionContextResolverTest {
     void rejectsMismatchedWorkspaceBeforeAnyTargetOrCatalogJudgment() {
         RecordingAuthenticationService authentication =
                 new RecordingAuthenticationService(commandFacts(session("EDIT_STORE_CATALOG")));
-        CommandExecutionContextResolver resolver =
-                new CommandExecutionContextResolver(
-                        capabilities(), lookup(), authentication, (workspace, group, targetType, storeId) -> {});
+        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(
+                capabilities(), lookup(), authentication, (workspace, group, targetType, storeId) -> {});
 
         assertThrows(
                 WorkspaceAuthenticationService.SessionInvalidException.class,
@@ -144,9 +142,8 @@ class CommandExecutionContextResolverTest {
     void rejectsStaleContextVersionAfterExactlyOneFreshCommandFactLoad() {
         RecordingAuthenticationService authentication =
                 new RecordingAuthenticationService(commandFacts(session("EDIT_STORE_CATALOG")));
-        CommandExecutionContextResolver resolver =
-                new CommandExecutionContextResolver(
-                        capabilities(), lookup(), authentication, (workspace, group, targetType, storeId) -> {});
+        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(
+                capabilities(), lookup(), authentication, (workspace, group, targetType, storeId) -> {});
 
         assertThrows(
                 WorkspaceAuthenticationService.SessionConflictException.class,

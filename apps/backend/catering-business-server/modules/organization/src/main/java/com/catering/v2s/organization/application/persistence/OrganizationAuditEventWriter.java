@@ -1,7 +1,7 @@
 package com.catering.v2s.organization.application.persistence;
 
-import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditEvent;
 import com.catering.v2s.audit.contract.AuditEventWriter;
 import com.catering.v2s.audit.contract.AuditTarget;

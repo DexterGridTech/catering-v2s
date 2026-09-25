@@ -23,19 +23,18 @@ class JdbcGroupWorkspaceRepositoryTest {
     void listAndDetailKeepRepositoryReadbackShape() throws Exception {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         PlatformExecutionContext context = mock(PlatformExecutionContext.class);
-        when(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class)))
-                .thenAnswer(invocation -> {
-                    RowMapper<?> mapper = invocation.getArgument(1);
-                    ResultSet row = mock(ResultSet.class);
-                    when(row.getString("group_workspace_key")).thenReturn("workspace-key");
-                    when(row.getString("name")).thenReturn("Workspace");
-                    when(row.getString("commercial_group_status")).thenReturn("INITIALIZED");
-                    when(row.getLong("id")).thenReturn(7L);
-                    when(row.getObject("workspace_uuid", UUID.class)).thenReturn(UUID.randomUUID());
-                    when(row.getString("workspace_status")).thenReturn("ENABLED");
-                    when(row.getObject("commercial_group_id", Long.class)).thenReturn(null);
-                    return List.of(mapper.mapRow(row, 0));
-                });
+        when(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class))).thenAnswer(invocation -> {
+            RowMapper<?> mapper = invocation.getArgument(1);
+            ResultSet row = mock(ResultSet.class);
+            when(row.getString("group_workspace_key")).thenReturn("workspace-key");
+            when(row.getString("name")).thenReturn("Workspace");
+            when(row.getString("commercial_group_status")).thenReturn("INITIALIZED");
+            when(row.getLong("id")).thenReturn(7L);
+            when(row.getObject("workspace_uuid", UUID.class)).thenReturn(UUID.randomUUID());
+            when(row.getString("workspace_status")).thenReturn("ENABLED");
+            when(row.getObject("commercial_group_id", Long.class)).thenReturn(null);
+            return List.of(mapper.mapRow(row, 0));
+        });
 
         JdbcGroupWorkspaceRepository repository = new JdbcGroupWorkspaceRepository(jdbc);
 

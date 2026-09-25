@@ -8,7 +8,7 @@ export {PrimitiveIcon, PrimitiveIconBadge} from './components/PrimitiveIcon';
 export {PrimitiveBadge, PrimitiveEmptyState, PrimitiveInlineAlert, PrimitiveProgress, PrimitiveSkeleton, PrimitiveSpinner} from './components/PrimitiveFeedback';
 export {PrimitiveCard, PrimitiveCenter, PrimitiveDivider, PrimitiveGrid, PrimitiveStack} from './components/PrimitiveLayout';
 export {PrimitiveCodeBlock} from './components/PrimitiveCodeBlock';
-export {PrimitiveCheckbox, PrimitiveCodeInput, PrimitiveDropdownSelect, PrimitiveFormField, PrimitivePressOption, PrimitiveRadio, PrimitiveSelect, PrimitiveSwitch, PrimitiveTextarea} from './components/PrimitiveForms';
+export {PrimitiveCheckbox, PrimitiveCodeInput, PrimitiveDropdownSelect, PrimitiveForm, PrimitiveFormField, PrimitivePressOption, PrimitiveRadio, PrimitiveSelect, PrimitiveSwitch, PrimitiveTextarea} from './components/PrimitiveForms';
 export type {PrimitivePressOptionProps} from './components/PrimitiveForms';
 export {PrimitiveDisclosure, PrimitiveFactGrid, PrimitiveRatioBar, PrimitiveStatusLine, PrimitiveSurfaceMap} from './components/PrimitiveAdmin';
 export {adminGeometry, baseTokens} from './theme/tokens';
@@ -33,6 +33,8 @@ export type {
   PrimitiveCodeBlockProps,
   PrimitiveFeedbackProps,
   PrimitiveFormControlProps,
+  PrimitiveFormProps,
+  PrimitiveFormSubmitEvent,
   PrimitiveFormFieldProps,
   PrimitiveFactGridProps,
   PrimitiveFactItem,

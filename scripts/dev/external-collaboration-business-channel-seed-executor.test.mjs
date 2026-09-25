@@ -128,8 +128,9 @@ test('business-channel seed rejects generated route, provider, channel-code and 
 test('business-channel seed runtime path uses generated operations and keeps write confirmation separate from static modes', async () => {
   const source = await readFile(new URL('./external-collaboration-business-channel-seed-executor.mjs', import.meta.url), 'utf8');
   assert.match(source, /loadGeneratedOperationRegistry\(registryPath\)/);
-  assert.match(source, /resolveGeneratedOperationById\(inputs\.registry, operationId\)/);
-  assert.match(source, /materializeGeneratedOperationPath\(operation, \{pathParameters, queryParameters:/);
+  assert.match(source, /createSeedHttpClient\(\{/);
+  assert.match(source, /resolveOperation: operationId => resolveGeneratedOperationById\(inputs\.registry, operationId\)/);
+  assert.match(source, /materializeOperationPath: materializeGeneratedOperationPath/);
   assert.match(source, /R5_COMPLETE_SEED_CHILD_CONTEXT/);
   assert.match(source, /RUN_FROM_R5_COMPLETE_SEED_ONLY/);
   assert.doesNotMatch(source, /EXTERNAL_COLLABORATION_BUSINESS_CHANNEL_SEED_CONFIRMATION|EXPLICIT_EXTERNAL_COLLABORATION_BUSINESS_CHANNEL_SEED/);

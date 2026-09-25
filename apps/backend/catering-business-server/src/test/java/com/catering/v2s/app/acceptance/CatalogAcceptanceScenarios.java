@@ -2254,18 +2254,14 @@ final class CatalogAcceptanceScenarios {
                 OPERATIONS_PRODUCTION_TAG_CREATE,
                 "/api/operations/catalog-inventory/production-tags",
                 session.cookie(),
-                Map.of(
-                        "dataNodeRef", fixture.storeId().toString(),
-                        "code", code,
-                        "name", "Duplicate production tag"),
+                Map.of("dataNodeRef", fixture.storeId().toString(), "code", code, "name", "Duplicate production tag"),
                 Map.of("Idempotency-Key", "acceptance-production-tag-duplicate-" + suffix),
                 Set.of(409, 422));
         assertEquals("DUPLICATE_CODE", duplicate.problemCode(), "BUSINESS: duplicate production-tag code is typed");
 
         Response listing = context.get(
                 OPERATIONS_PRODUCTION_TAGS,
-                "/api/operations/catalog-inventory/production-tags?dataNodeRef=" + fixture.storeId()
-                        + "&query=" + code,
+                "/api/operations/catalog-inventory/production-tags?dataNodeRef=" + fixture.storeId() + "&query=" + code,
                 session.cookie(),
                 Set.of(200));
         assertEquals(
@@ -2284,8 +2280,8 @@ final class CatalogAcceptanceScenarios {
         Session session = host.login(context, fixture);
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String code = "ACC-IDEMPOTENT-TAG-" + suffix;
-        Map<String, Object> body = Map.of(
-                "dataNodeRef", fixture.storeId().toString(), "code", code, "name", "Idempotent production tag");
+        Map<String, Object> body =
+                Map.of("dataNodeRef", fixture.storeId().toString(), "code", code, "name", "Idempotent production tag");
         Map<String, String> headers = Map.of("Idempotency-Key", "acceptance-production-tag-replay-" + suffix);
 
         Response first = context.post(
@@ -2311,10 +2307,7 @@ final class CatalogAcceptanceScenarios {
                 OPERATIONS_PRODUCTION_TAG_CREATE,
                 "/api/operations/catalog-inventory/production-tags",
                 session.cookie(),
-                Map.of(
-                        "dataNodeRef", fixture.storeId().toString(),
-                        "code", code,
-                        "name", "Mismatched replay"),
+                Map.of("dataNodeRef", fixture.storeId().toString(), "code", code, "name", "Mismatched replay"),
                 headers,
                 Set.of(409, 422));
         assertEquals(
@@ -2720,14 +2713,22 @@ final class CatalogAcceptanceScenarios {
                 "/api/operations/catalog-inventory/copy/local/execute",
                 closed.session().cookie(),
                 Map.of(
-                        "sourceItemCode", "CLOSED-GATE-SOURCE",
-                        "targetItemCode", "CLOSED-GATE-TARGET",
-                        "selectedSections", List.of("BASIC"),
-                        "preflightDigest", "closed-store-gate",
-                        "expectedSourceVersion", 1L,
-                        "expectedTargetVersion", 1L,
-                        "compatibilityDispositions", List.of(),
-                        "dataNodeRef", closed.fixture().storeId()),
+                        "sourceItemCode",
+                        "CLOSED-GATE-SOURCE",
+                        "targetItemCode",
+                        "CLOSED-GATE-TARGET",
+                        "selectedSections",
+                        List.of("BASIC"),
+                        "preflightDigest",
+                        "closed-store-gate",
+                        "expectedSourceVersion",
+                        1L,
+                        "expectedTargetVersion",
+                        1L,
+                        "compatibilityDispositions",
+                        List.of(),
+                        "dataNodeRef",
+                        closed.fixture().storeId()),
                 Set.of(403));
         assertCatalogManagementDisabled(rejected, "local copy");
     }
@@ -2764,25 +2765,32 @@ final class CatalogAcceptanceScenarios {
     }
 
     private static Session selectStore(
-            BackendAcceptanceTest.ScenarioContext context,
-            Fixture projectFixture,
-            Session session,
-            UUID storeId)
+            BackendAcceptanceTest.ScenarioContext context, Fixture projectFixture, Session session, UUID storeId)
             throws Exception {
         Response selected = context.post(
                 OPERATIONS_WORKSPACE_SESSION_DATA_NODE,
                 "/api/operations/group-workspaces/" + projectFixture.groupWorkspaceKey() + "/session/data-node",
                 session.cookie(),
                 Map.of(
-                        "dataNodeRef", storeId,
-                        "dataNodeType", "STORE",
-                        "requiredContextVersion", session.contextVersion()),
+                        "dataNodeRef",
+                        storeId,
+                        "dataNodeType",
+                        "STORE",
+                        "requiredContextVersion",
+                        session.contextVersion()),
                 Set.of(200));
         assertEquals(
                 storeId.toString(),
-                selected.json().path("scopeContext").path("store").path("dataNodeRef").asText(),
+                selected.json()
+                        .path("scopeContext")
+                        .path("store")
+                        .path("dataNodeRef")
+                        .asText(),
                 "BUSINESS: closed-store gate scenario selects the intended Store");
-        return new Session(session.cookie(), selected.json(), selected.json().path("contextVersion").asLong());
+        return new Session(
+                session.cookie(),
+                selected.json(),
+                selected.json().path("contextVersion").asLong());
     }
 
     private static void assertCatalogManagementDisabled(Response response, String operation) {

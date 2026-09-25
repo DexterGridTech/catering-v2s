@@ -12,16 +12,33 @@ import {useInputSurfaceGeometry} from '../contexts/InputSurfaceGeometryContext'
 import type {InputFieldOptions, InputFieldResult, InputVisibleAnchorHandle} from '../types/types'
 import type {PrimitiveInputHandle} from '@catering-v2s/ui-base-primitives'
 import {BUSINESS_FOCUS_SCOPE_ID} from '../foundations/focusScope'
+import type {LayoutRect} from '../foundations/scrollIntoView'
 
 type InputPressEvent = Readonly<{
   readonly stopPropagation: () => void
 }>
+
+type FocusRectMeasurement = readonly [number, number, number, number]
+
+type FocusRectPresentationInput = Readonly<{
+  readonly fieldId: string
+  readonly rect: LayoutRect
+}>
+
+const focusRectOf = (measurement: FocusRectMeasurement): Readonly<{readonly x: number; readonly y: number; readonly width: number; readonly height: number}> | null => {
+  const [x, y, width, height] = measurement
+  if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return null
+  return {x, y, width, height}
+}
 
 export const useInputField = (options: InputFieldOptions): InputFieldResult => {
   const controller = useInputController()
   const keyboardState = useInputKeyboardState()
   const scrollAncestor = useInputScrollAncestor()
   const geometry = useInputSurfaceGeometry()
+  const presentFocusRect = useCallback((input: FocusRectPresentationInput): number => {
+    return geometry?.presentFocusRect(input.fieldId, input.rect) ?? 0
+  }, [geometry?.presentFocusRect])
   const initialValue = options.initialValue ?? ''
   const initialSelection = normalizeSelection(initialValue, options.initialSelection ?? {
     start: initialValue.length,
@@ -64,6 +81,7 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
   useLayoutEffect(() => {
     const token = controller.registerField({
       fieldId: options.fieldId,
+      testID: options.testID,
       value: editStateRef.current.value,
       selection: editStateRef.current.selection,
       keyboardKind: options.keyboardKind,
@@ -122,14 +140,15 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
     }
     input.measureLayout(
       surfaceRoot,
-      (x, y, width, height) => {
-        if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) {
+      (...measurement: FocusRectMeasurement) => {
+        const rect = focusRectOf(measurement)
+        if (rect === null) {
           geometry.reportFocusVisibilityFailure(options.fieldId, 'invalid-focus-rectangle')
           return
         }
-        const offsetY = geometry.presentFocusRect(options.fieldId, {x, y, width, height})
+        const offsetY = presentFocusRect({fieldId: options.fieldId, rect})
         const visibleBottom = geometry.surfaceHeight - geometry.keyboardHeight
-        const fullyVisible = y + offsetY >= 0 && y + height + offsetY <= visibleBottom
+        const fullyVisible = rect.y + offsetY >= 0 && rect.y + rect.height + offsetY <= visibleBottom
         if (fullyVisible) geometry.reportFocusVisibilitySuccess(options.fieldId)
         else geometry.reportFocusVisibilityFailure(options.fieldId, 'focus-rectangle-outside-visible-band')
       },
@@ -147,7 +166,7 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
     options.fieldId,
     options.nativeLess,
     geometry?.keyboardHeight,
-    geometry?.presentFocusRect,
+    presentFocusRect,
     geometry?.reportFocusVisibilityFailure,
     geometry?.reportFocusVisibilitySuccess,
     geometry?.surfaceRoot,

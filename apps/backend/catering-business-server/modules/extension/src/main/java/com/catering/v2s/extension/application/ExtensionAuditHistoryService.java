@@ -1,7 +1,7 @@
 package com.catering.v2s.extension.application;
 
-import com.catering.v2s.audit.contract.AuditHistoryPage;
 import com.catering.v2s.audit.contract.AuditHistoryItem;
+import com.catering.v2s.audit.contract.AuditHistoryPage;
 import com.catering.v2s.audit.contract.AuditHistoryResultSetReader;
 import com.catering.v2s.audit.contract.AuditReadScope;
 import com.catering.v2s.audit.contract.AuditTarget;
@@ -43,8 +43,8 @@ public class ExtensionAuditHistoryService {
         if (page < 1 || pageSize < 1 || pageSize > 100)
             throw new IllegalArgumentException("unsupported extension audit target");
         long offset = Math.multiplyExact(page - 1, pageSize);
-        AuditHistoryResultSetReader.TargetProjection value = persistence.readExtensionDefinition(
-                scope, entityType, pageSize, offset);
+        AuditHistoryResultSetReader.TargetProjection value =
+                persistence.readExtensionDefinition(scope, entityType, pageSize, offset);
         if (!value.targetExists()) throw new ExtensionDefinitionService.DefinitionNotFoundException();
         return new AuditHistoryPage(value.items(), page, pageSize, value.total());
     }

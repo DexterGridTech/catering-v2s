@@ -18,6 +18,7 @@ import {
   STORE_TERMINAL_PRINTER_BRANDS,
   STORE_TERMINAL_PRINTER_MODELS,
   STORE_TERMINAL_RANGES,
+  STORE_TERMINAL_RANGE_KEYS,
   storeTerminalScenesForFunction,
   type StoreTerminalConnectionMethodKey,
   type StoreTerminalDeviceTypeKey,
@@ -67,6 +68,18 @@ export type TerminalSceneForm = {
   printerKeys: string[];
 };
 
+export type TerminalSceneValidationCode = 'PAPER_SPEC_MISMATCH' | 'PRINTER_INVALID';
+
+export class TerminalSceneValidationError extends Error {
+  readonly code: TerminalSceneValidationCode;
+
+  constructor(code: TerminalSceneValidationCode, message: string) {
+    super(message);
+    this.name = 'TerminalSceneValidationError';
+    this.code = code;
+  }
+}
+
 export type TerminalFunctionForm = {
   ref?: string;
   clientKey: string;
@@ -98,11 +111,42 @@ export type StoreTerminalFormValues = {
   functions: TerminalFunctionForm[];
 };
 
-export function terminalFunctionIdentity(
-  value: Pick<TerminalFunctionForm, 'ref' | 'clientKey'> | undefined,
-  fallback?: string,
-) {
-  return value?.ref ?? value?.clientKey ?? fallback ?? '';
+export function terminalFunctionIdentity(value: Pick<TerminalFunctionForm, 'ref' | 'clientKey'> | undefined) {
+  return value?.ref ?? value?.clientKey ?? '';
+}
+
+export function terminalPrinterIdentity(value: Pick<TerminalPrinterForm, 'ref' | 'clientKey'> | undefined) {
+  return value?.ref ?? value?.clientKey ?? '';
+}
+
+export function requireTerminalIdentity(identity: string, subject: 'function' | 'printer') {
+  if (typeof identity !== 'string' || identity.trim().length === 0 || identity !== identity.trim()) {
+    throw new Error(`STORE_TERMINAL_${subject.toUpperCase()}_IDENTITY_MISSING`);
+  }
+  return identity;
+}
+
+/**
+ * Resolves a scene selection against the same printer collection that will be
+ * submitted.  A scene must never silently turn an empty, stale, or unknown
+ * selection into a different wire binding (or into no binding at all).
+ */
+export function resolveTerminalPrinter(
+  printerKey: unknown,
+  printers: readonly TerminalPrinterForm[],
+): TerminalPrinterForm {
+  if (typeof printerKey !== 'string' || printerKey.trim().length === 0) {
+    throw new Error('TERMINAL_SCENE_PRINTER_IDENTITY_MISSING');
+  }
+  const normalizedPrinterKey = printerKey as string;
+  const printer = compactValues<TerminalPrinterForm>(printers).find(
+    value => terminalPrinterIdentity(value) === normalizedPrinterKey,
+  );
+  if (!printer) {
+    throw new Error('TERMINAL_SCENE_PRINTER_IDENTITY_INVALID');
+  }
+  requireTerminalIdentity(terminalPrinterIdentity(printer), 'printer');
+  return printer;
 }
 
 export function resolveFunctionSelection(
@@ -144,31 +188,6 @@ export function newTerminalFunction(functionKey: StoreTerminalFunctionKey = 'ORD
         scene.key,
         {selected: false, orderTypes: [], printerKeys: []},
       ]),
-    ),
-  };
-}
-
-/**
- * A function change is a change of the rule owner, not a label edit.  Keep the
- * child identity so an existing function remains the same aggregate child,
- * but clear every function-specific range and scene value.  Carrying those
- * values across function types can leave a range that the new function does
- * not support and would only be rejected at save time.
- */
-export function replaceTerminalFunctionConfiguration(
-  current: TerminalFunctionForm,
-  nextFunctionKey: string,
-): TerminalFunctionForm {
-  return {
-    ...current,
-    functionKey: nextFunctionKey,
-    selectedRangeKeys: [],
-    tableAreaAll: false,
-    tableAreaRefs: [],
-    productionTagAll: false,
-    productionTagRefs: [],
-    scenes: Object.fromEntries(
-      scenesForFunction(nextFunctionKey).map(scene => [scene.key, {selected: false, orderTypes: [], printerKeys: []}]),
     ),
   };
 }
@@ -230,10 +249,12 @@ export function terminalFormValuesFromDetail(terminal?: StoreTerminalDetail): St
       clientKey: `function-existing-${fn.ref}`,
       functionKey: fn.functionKey,
       selectedRangeKeys: fn.ranges.map(range => range.key),
-      tableAreaAll: fn.ranges.find(range => range.key === 'TABLE_AREA')?.all ?? false,
-      tableAreaRefs: fn.ranges.find(range => range.key === 'TABLE_AREA')?.refs.map(String) ?? [],
-      productionTagAll: fn.ranges.find(range => range.key === 'PRODUCTION_TAG')?.all ?? false,
-      productionTagRefs: fn.ranges.find(range => range.key === 'PRODUCTION_TAG')?.refs.map(String) ?? [],
+      tableAreaAll: fn.ranges.find(range => range.key === STORE_TERMINAL_RANGE_KEYS.TABLE_AREA)?.all ?? false,
+      tableAreaRefs:
+        fn.ranges.find(range => range.key === STORE_TERMINAL_RANGE_KEYS.TABLE_AREA)?.refs.map(String) ?? [],
+      productionTagAll: fn.ranges.find(range => range.key === STORE_TERMINAL_RANGE_KEYS.PRODUCTION_TAG)?.all ?? false,
+      productionTagRefs:
+        fn.ranges.find(range => range.key === STORE_TERMINAL_RANGE_KEYS.PRODUCTION_TAG)?.refs.map(String) ?? [],
       scenes: Object.fromEntries(
         storeTerminalScenesForFunction(fn.functionKey as StoreTerminalFunctionKey).map(scene => {
           const current = fn.scenes.find(value => value.sceneKey === scene.key);
@@ -253,55 +274,223 @@ export function terminalFormValuesFromDetail(terminal?: StoreTerminalDetail): St
   };
 }
 
+function stringValue(value: unknown) {
+  return typeof value === 'string' ? value : '';
+}
+
+function compactValues<T>(values: readonly (T | null | undefined)[] | unknown): T[] {
+  return Array.isArray(values) ? values.filter((value): value is T => value != null) : [];
+}
+
+function stringValues(values: readonly (string | null | undefined)[] | unknown): string[] {
+  return Array.isArray(values)
+    ? values.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    : [];
+}
+
+function strictStringValues(values: unknown, errorCode: string, allowUndefined = false): string[] {
+  if (values === undefined && allowUndefined) return [];
+  if (!Array.isArray(values)) throw new Error(errorCode);
+  return values.map(value => {
+    if (typeof value !== 'string' || value.trim().length === 0) throw new Error(errorCode);
+    return value;
+  });
+}
+
+function strictRows<T>(values: unknown, errorCode: string, allowUndefined = false): T[] {
+  if (values === undefined && allowUndefined) return [];
+  if (!Array.isArray(values)) throw new Error(errorCode);
+  return values.map(value => {
+    if (value === null || value === undefined || typeof value !== 'object') throw new Error(errorCode);
+    return value as T;
+  });
+}
+
+export function scenePrinterKeys(value: unknown): string[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) throw new Error('TERMINAL_SCENE_PRINTER_IDENTITY_INVALID');
+  const keys = value.map(printerKey => {
+    if (typeof printerKey !== 'string' || printerKey.trim().length === 0 || printerKey !== printerKey.trim()) {
+      throw new Error('TERMINAL_SCENE_PRINTER_IDENTITY_MISSING');
+    }
+    return printerKey;
+  });
+  if (new Set(keys).size !== keys.length) {
+    throw new Error('TERMINAL_SCENE_PRINTER_IDENTITY_DUPLICATE');
+  }
+  return keys;
+}
+
+export function scenePrinterKeysForDisplay(
+  value: unknown,
+): {valid: true; keys: string[]} | {valid: false; keys: string[]; errorCode: string} {
+  if (value === undefined) return {valid: true, keys: []};
+  if (!Array.isArray(value)) {
+    return {valid: false, keys: [], errorCode: 'TERMINAL_SCENE_PRINTER_IDENTITY_INVALID'};
+  }
+  for (const printerKey of value) {
+    if (typeof printerKey !== 'string' || printerKey.trim().length === 0 || printerKey !== printerKey.trim()) {
+      return {valid: false, keys: [], errorCode: 'TERMINAL_SCENE_PRINTER_IDENTITY_MISSING'};
+    }
+  }
+  const keys = value as string[];
+  if (new Set(keys).size !== keys.length) {
+    return {valid: false, keys: [], errorCode: 'TERMINAL_SCENE_PRINTER_IDENTITY_DUPLICATE'};
+  }
+  return {valid: true, keys};
+}
+
+export function terminalSceneDraftHasInvalidCollections(
+  value: unknown,
+  allowedOrderTypeKeys?: readonly string[],
+  knownPrinterKeys?: readonly string[],
+): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const scene = value as {orderTypes?: unknown; printerKeys?: unknown};
+  const orderTypes = scene.orderTypes;
+  if (
+    orderTypes !== undefined &&
+    (!Array.isArray(orderTypes) ||
+      orderTypes.some(
+        orderType =>
+          typeof orderType !== 'string' ||
+          orderType.trim().length === 0 ||
+          (allowedOrderTypeKeys !== undefined && !allowedOrderTypeKeys.includes(orderType)),
+      ))
+  ) {
+    return true;
+  }
+  if (Array.isArray(orderTypes) && new Set(orderTypes).size !== orderTypes.length) return true;
+  const printerDisplay = scenePrinterKeysForDisplay(scene.printerKeys);
+  if (!printerDisplay.valid) return true;
+  return knownPrinterKeys !== undefined && printerDisplay.keys.some(key => !knownPrinterKeys.includes(key));
+}
+
+function preserveScenePrinterKeys(value: unknown): string[] {
+  // Do not normalize an invalid scene binding into an empty selection. The
+  // serializer must see null, a non-array, or an empty/whitespace element so
+  // that scenePrinterKeys can fail closed; an actually empty array remains a
+  // valid soft-constraint value.
+  return value as string[];
+}
+
+function preserveSceneOrderTypes(value: unknown): string[] {
+  // Do not turn an invalid order-type collection into an empty selection.
+  // Keeping the raw value lets the editor expose a read failure and lets the
+  // strict serializer reject it instead of silently losing the rule.
+  return value as string[];
+}
+
+export function normalizeTerminalPrinterForm(
+  value: Partial<TerminalPrinterForm> | undefined,
+  fallbackClientKey?: string,
+): TerminalPrinterForm | undefined {
+  if (!value && !fallbackClientKey) return undefined;
+  return {
+    ...(value?.ref ? {ref: String(value.ref)} : {}),
+    clientKey: stringValue(value?.clientKey) || fallbackClientKey || '',
+    name: stringValue(value?.name),
+    brandKey: stringValue(value?.brandKey),
+    modelKey: stringValue(value?.modelKey),
+    paperSpecKey: stringValue(value?.paperSpecKey),
+    connectionMethodKey: stringValue(value?.connectionMethodKey),
+    connectionParameter: stringValue(value?.connectionParameter),
+  };
+}
+
+export function normalizeTerminalFunctionForm(
+  value: Partial<TerminalFunctionForm> | undefined,
+  fallbackClientKey?: string,
+): TerminalFunctionForm | undefined {
+  if (!value && !fallbackClientKey) return undefined;
+  const scenes = Object.fromEntries(
+    Object.entries(value?.scenes ?? {}).map(([sceneKey, scene]) => [
+      sceneKey,
+      {
+        selected: scene?.selected === true,
+        orderTypes: preserveSceneOrderTypes(scene?.orderTypes),
+        printerKeys: preserveScenePrinterKeys(scene?.printerKeys),
+      },
+    ]),
+  );
+  return {
+    ...(value?.ref ? {ref: String(value.ref)} : {}),
+    clientKey: stringValue(value?.clientKey) || fallbackClientKey || '',
+    functionKey: stringValue(value?.functionKey),
+    selectedRangeKeys: stringValues(value?.selectedRangeKeys),
+    tableAreaAll: value?.tableAreaAll === true,
+    tableAreaRefs: stringValues(value?.tableAreaRefs),
+    productionTagAll: value?.productionTagAll === true,
+    productionTagRefs: stringValues(value?.productionTagRefs),
+    scenes,
+  };
+}
+
+export function terminalPrinterReadyForBinding(printer: TerminalPrinterForm | undefined) {
+  const identity = terminalPrinterIdentity(printer);
+  const validIdentity = typeof identity === 'string' && identity.length > 0 && identity === identity.trim();
+  return Boolean(
+    printer &&
+    validIdentity &&
+    stringValue(printer.name).trim() &&
+    printer.brandKey &&
+    printer.modelKey &&
+    printer.paperSpecKey &&
+    printer.connectionMethodKey,
+  );
+}
+
 function comparablePrinter(printer: TerminalPrinterForm) {
   return {
-    name: printer.name.trim(),
-    brandKey: printer.brandKey,
-    modelKey: printer.modelKey,
-    paperSpecKey: printer.paperSpecKey,
-    connectionMethodKey: printer.connectionMethodKey,
-    connectionParameter: printer.connectionParameter?.trim() ?? '',
+    name: stringValue(printer.name).trim(),
+    brandKey: stringValue(printer.brandKey),
+    modelKey: stringValue(printer.modelKey),
+    paperSpecKey: stringValue(printer.paperSpecKey),
+    connectionMethodKey: stringValue(printer.connectionMethodKey),
+    connectionParameter: stringValue(printer.connectionParameter).trim(),
   };
 }
 
 function comparableConfiguration(values: StoreTerminalFormValues) {
+  const printers = compactValues<TerminalPrinterForm>(values.printers);
+  const functions = compactValues<TerminalFunctionForm>(values.functions);
   const printerByKey = new Map(
-    values.printers.flatMap(printer => {
-      const identity = printer.ref ?? printer.clientKey;
+    printers.flatMap(printer => {
+      const identity = stringValue(printer.ref ?? printer.clientKey);
       return identity ? [[String(identity), comparablePrinter(printer)] as const] : [];
     }),
   );
   const printerForScene = (key: string) => printerByKey.get(String(key)) ?? {identity: String(key)};
   return {
-    printers: values.printers
+    printers: printers
       .map(comparablePrinter)
       .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
-    functions: values.functions
+    functions: functions
       .map(functionForm => ({
-        functionKey: functionForm.functionKey,
-        ranges: functionForm.selectedRangeKeys
+        functionKey: stringValue(functionForm.functionKey),
+        ranges: stringValues(functionForm.selectedRangeKeys)
           .map(key => ({
             key,
             all:
-              key === 'TABLE_AREA'
-                ? functionForm.tableAreaAll
-                : key === 'PRODUCTION_TAG'
-                  ? functionForm.productionTagAll
+              key === STORE_TERMINAL_RANGE_KEYS.TABLE_AREA
+                ? functionForm.tableAreaAll === true
+                : key === STORE_TERMINAL_RANGE_KEYS.PRODUCTION_TAG
+                  ? functionForm.productionTagAll === true
                   : false,
             refs:
-              key === 'TABLE_AREA'
-                ? [...functionForm.tableAreaRefs].sort()
-                : key === 'PRODUCTION_TAG'
-                  ? [...functionForm.productionTagRefs].sort()
+              key === STORE_TERMINAL_RANGE_KEYS.TABLE_AREA
+                ? stringValues(functionForm.tableAreaRefs).sort()
+                : key === STORE_TERMINAL_RANGE_KEYS.PRODUCTION_TAG
+                  ? stringValues(functionForm.productionTagRefs).sort()
                   : [],
           }))
           .sort((left, right) => left.key.localeCompare(right.key)),
-        scenes: Object.entries(functionForm.scenes)
-          .filter(([, scene]) => scene.selected)
+        scenes: Object.entries(functionForm.scenes ?? {})
+          .filter(([, scene]) => scene?.selected === true)
           .map(([sceneKey, scene]) => ({
             sceneKey,
-            orderTypes: [...scene.orderTypes].sort(),
-            printers: scene.printerKeys
+            orderTypes: stringValues(scene?.orderTypes).sort(),
+            printers: stringValues(scene?.printerKeys)
               .map(printerForScene)
               .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
           }))
@@ -316,7 +505,14 @@ export function terminalDraftMatchesFormValues(
   terminal: StoreTerminalDetail,
   values: StoreTerminalFormValues,
 ): boolean {
-  const readBack = terminalFormValuesFromDetail(terminal);
+  if (typeof values.name !== 'string' || typeof values.deviceType !== 'string') return false;
+  let readBack: StoreTerminalFormValues;
+  try {
+    configurationInput(values);
+    readBack = terminalFormValuesFromDetail(terminal);
+  } catch {
+    return false;
+  }
   return (
     terminal.name === values.name.trim() &&
     terminal.deviceType === values.deviceType &&
@@ -325,23 +521,30 @@ export function terminalDraftMatchesFormValues(
 }
 
 function rangeSelections(functionForm: TerminalFunctionForm): StoreTerminalRangeSelection[] {
-  return functionForm.selectedRangeKeys.map(key => ({
+  const selectedRangeKeys = strictStringValues(functionForm.selectedRangeKeys, 'STORE_TERMINAL_RULE_INVALID');
+  const tableAreaRefs = strictStringValues(functionForm.tableAreaRefs, 'STORE_TERMINAL_RULE_INVALID', true);
+  const productionTagRefs = strictStringValues(functionForm.productionTagRefs, 'STORE_TERMINAL_RULE_INVALID', true);
+  const allowedRangeKeys = new Set(allowedRangesForFunction(functionForm.functionKey));
+  if (selectedRangeKeys.some(key => !allowedRangeKeys.has(key as never))) {
+    throw new Error('STORE_TERMINAL_RULE_INVALID');
+  }
+  return selectedRangeKeys.map(key => ({
     key,
     all:
-      key === 'TABLE_AREA'
-        ? functionForm.tableAreaAll
-        : key === 'PRODUCTION_TAG'
-          ? functionForm.productionTagAll
+      key === STORE_TERMINAL_RANGE_KEYS.TABLE_AREA
+        ? functionForm.tableAreaAll === true
+        : key === STORE_TERMINAL_RANGE_KEYS.PRODUCTION_TAG
+          ? functionForm.productionTagAll === true
           : false,
     refs:
-      key === 'TABLE_AREA'
-        ? functionForm.tableAreaAll
+      key === STORE_TERMINAL_RANGE_KEYS.TABLE_AREA
+        ? functionForm.tableAreaAll === true
           ? []
-          : functionForm.tableAreaRefs.map(ref => wireUuid(ref))
-        : key === 'PRODUCTION_TAG'
-          ? functionForm.productionTagAll
+          : tableAreaRefs.map(ref => wireUuid(ref))
+        : key === STORE_TERMINAL_RANGE_KEYS.PRODUCTION_TAG
+          ? functionForm.productionTagAll === true
             ? []
-            : functionForm.productionTagRefs.map(ref => wireUuid(ref))
+            : productionTagRefs.map(ref => wireUuid(ref))
           : [],
   }));
 }
@@ -350,49 +553,92 @@ function sceneSelections(
   functionForm: TerminalFunctionForm,
   printers: readonly TerminalPrinterForm[],
 ): StoreTerminalSceneSelection[] {
-  const printerRefs = new Set(printers.flatMap(printer => (printer.ref ? [String(printer.ref)] : [])));
+  if (!functionRuleForKey(functionForm.functionKey)) throw new Error('STORE_TERMINAL_RULE_INVALID');
+  const scenes = functionForm.scenes;
+  if (!scenes || typeof scenes !== 'object' || Array.isArray(scenes)) {
+    throw new Error('STORE_TERMINAL_RULE_INVALID');
+  }
+  const declaredScenes = new Set<string>(
+    storeTerminalScenesForFunction(functionForm.functionKey as StoreTerminalFunctionKey).map(scene => scene.key),
+  );
+  if (Object.keys(scenes).some(sceneKey => !declaredScenes.has(sceneKey))) {
+    throw new Error('STORE_TERMINAL_RULE_INVALID');
+  }
   return storeTerminalScenesForFunction(functionForm.functionKey as StoreTerminalFunctionKey)
-    .filter(scene => functionForm.scenes[scene.key]?.selected === true)
+    .filter(scene => scenes[scene.key]?.selected === true)
     .map(scene => {
-      const value = functionForm.scenes[scene.key] ?? {selected: false, orderTypes: [], printerKeys: []};
+      const value = scenes[scene.key] ?? {selected: false, orderTypes: [], printerKeys: []};
+      const orderTypes = strictStringValues(value?.orderTypes, 'STORE_TERMINAL_RULE_INVALID', true);
+      const rawPrinterKeys: unknown = value?.printerKeys;
+      if (rawPrinterKeys !== undefined && !Array.isArray(rawPrinterKeys)) {
+        throw new Error('TERMINAL_SCENE_PRINTER_IDENTITY_INVALID');
+      }
+      const printerKeys = scenePrinterKeys(rawPrinterKeys);
+      if (orderTypes.some(orderType => !STORE_TERMINAL_ORDER_TYPES.some(item => item.key === orderType))) {
+        throw new Error('STORE_TERMINAL_RULE_INVALID');
+      }
+      if (new Set(orderTypes).size !== orderTypes.length) {
+        throw new Error('STORE_TERMINAL_RULE_INVALID');
+      }
       return {
         sceneKey: scene.key,
-        orderTypes: value.orderTypes,
-        printers: value.printerKeys.map(printerKey =>
-          printerRefs.has(printerKey) ? {printerRef: wireUuid(printerKey)} : {printerClientKey: printerKey},
-        ),
+        orderTypes,
+        printers: printerKeys.map(printerKey => {
+          const printer = resolveTerminalPrinter(printerKey, printers);
+          const identity = requireTerminalIdentity(terminalPrinterIdentity(printer), 'printer');
+          return printer.ref ? {printerRef: wireUuid(printer.ref)} : {printerClientKey: identity};
+        }),
       };
     });
 }
 
 function printerInputs(printers: readonly TerminalPrinterForm[]): StoreTerminalPrinterInput[] {
-  return printers.map(printer => ({
-    ...(printer.ref ? {ref: wireUuid(printer.ref)} : {clientKey: printer.clientKey}),
-    name: printer.name.trim(),
-    brandKey: printer.brandKey,
-    modelKey: printer.modelKey,
-    paperSpecKey: printer.paperSpecKey,
-    connectionMethodKey: printer.connectionMethodKey,
-    connectionParameter: printer.connectionParameter?.trim() || null,
-  }));
+  const identities = printers.map(printer => requireTerminalIdentity(terminalPrinterIdentity(printer), 'printer'));
+  if (new Set(identities).size !== identities.length) {
+    throw new Error('STORE_TERMINAL_PRINTER_IDENTITY_DUPLICATE');
+  }
+  return printers.map(printer => {
+    return {
+      ...(printer.ref ? {ref: wireUuid(printer.ref)} : {clientKey: printer.clientKey}),
+      name: stringValue(printer.name).trim(),
+      brandKey: stringValue(printer.brandKey),
+      modelKey: stringValue(printer.modelKey),
+      paperSpecKey: stringValue(printer.paperSpecKey),
+      connectionMethodKey: stringValue(printer.connectionMethodKey),
+      connectionParameter: stringValue(printer.connectionParameter).trim() || null,
+    };
+  });
 }
 
 function functionInputs(
   functions: readonly TerminalFunctionForm[],
   printers: readonly TerminalPrinterForm[],
 ): StoreTerminalFunctionInput[] {
-  return functions.map(functionForm => ({
-    ...(functionForm.ref ? {ref: wireUuid(functionForm.ref)} : {clientKey: functionForm.clientKey}),
-    functionKey: functionForm.functionKey,
-    ranges: rangeSelections(functionForm),
-    scenes: sceneSelections(functionForm, printers),
-  }));
+  const identities = functions.map(functionForm =>
+    requireTerminalIdentity(terminalFunctionIdentity(functionForm), 'function'),
+  );
+  if (new Set(identities).size !== identities.length) {
+    throw new Error('STORE_TERMINAL_FUNCTION_IDENTITY_DUPLICATE');
+  }
+  return functions.map(functionForm => {
+    const functionKey = stringValue(functionForm.functionKey);
+    if (!functionKey.trim()) throw new Error('STORE_TERMINAL_FUNCTION_KEY_MISSING');
+    if (!functionRuleForKey(functionKey)) throw new Error('STORE_TERMINAL_RULE_INVALID');
+    return {
+      ...(functionForm.ref ? {ref: wireUuid(functionForm.ref)} : {clientKey: functionForm.clientKey}),
+      functionKey,
+      ranges: rangeSelections(functionForm),
+      scenes: sceneSelections(functionForm, printers),
+    };
+  });
 }
 
 export function configurationInput(values: StoreTerminalFormValues): StoreTerminalConfigurationInput {
+  const printers = strictRows<TerminalPrinterForm>(values.printers, 'STORE_TERMINAL_PRINTER_INPUT_INVALID', true);
+  const functions = strictRows<TerminalFunctionForm>(values.functions, 'STORE_TERMINAL_FUNCTION_INPUT_INVALID');
   return {
-    printers: printerInputs(values.printers),
-    functions: functionInputs(values.functions, values.printers),
+    printers: printerInputs(printers),
+    functions: functionInputs(functions, printers),
   };
 }
 
@@ -448,6 +694,10 @@ export function functionRuleForKey(functionKey: string) {
   return STORE_TERMINAL_FUNCTIONS.find(fn => fn.key === functionKey);
 }
 
+export function storeTerminalFunctionMaxInstances(functionKey: string) {
+  return functionRuleForKey(functionKey)?.maxPerTerminal ?? null;
+}
+
 export function functionOptionsForDeviceType(deviceType: string, currentFunctionKey?: string) {
   return STORE_TERMINAL_FUNCTIONS.filter(
     fn => fn.supportedDeviceTypeKeys.includes(deviceType as never) || fn.key === currentFunctionKey,
@@ -460,10 +710,17 @@ export function functionsForDeviceType(deviceType: string) {
 
 export function addableFunctionsForDeviceType(
   deviceType: string,
-  existingFunctions: readonly Pick<TerminalFunctionForm, 'functionKey'>[],
+  existingFunctions?: readonly Pick<TerminalFunctionForm, 'functionKey'>[],
 ) {
   const counts = new Map<string, number>();
-  for (const value of existingFunctions) counts.set(value.functionKey, (counts.get(value.functionKey) ?? 0) + 1);
+  // Form.List can expose an empty slot while a newly added row is being
+  // registered. Treat that transient value as absent at this pure derivation
+  // boundary instead of allowing a render-time crash to replace the drawer.
+  const currentFunctions = compactValues<Pick<TerminalFunctionForm, 'functionKey'>>(existingFunctions);
+  for (const value of currentFunctions) {
+    if (typeof value.functionKey !== 'string') continue;
+    counts.set(value.functionKey, (counts.get(value.functionKey) ?? 0) + 1);
+  }
   return functionsForDeviceType(deviceType).filter(value => {
     const max = value.maxPerTerminal;
     return max == null || (counts.get(value.key) ?? 0) < max;
@@ -497,7 +754,9 @@ export function nextTerminalRefAfterVoid(
   if (voidedIndex < 0) return String(visible[0].terminalRef);
 
   const previousOrder = new Map(previousItems.map((item, index) => [String(item.terminalRef), index]));
-  const previousItem = [...visible].reverse().find(item => (previousOrder.get(String(item.terminalRef)) ?? -1) < voidedIndex);
+  const previousItem = [...visible]
+    .reverse()
+    .find(item => (previousOrder.get(String(item.terminalRef)) ?? -1) < voidedIndex);
   return String(
     visible.find(item => (previousOrder.get(String(item.terminalRef)) ?? -1) > voidedIndex)?.terminalRef ??
       previousItem?.terminalRef ??

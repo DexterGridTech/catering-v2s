@@ -237,7 +237,7 @@
         "apps/frontend/operations-admin/src/tests/l2/user-management.spec.ts",
         "apps/frontend/operations-admin/src/tests/l2/store-profile.spec.ts"
       ],
-      "requirement": "Each P6-3 business surface is exercised by a non-empty real browser L2 case through the current managed run (joint local run); the package exit must bind the run-scoped business PASS and independent cleanup PASS. This evidence does not authorize UAT, DEV seed/reset or Roadmap status mutation."
+      "requirement": "Each P6-3 business surface is exercised by a non-empty real browser L2 case through the current managed run (joint local run); the package exit must bind the run-scoped business PASS and independent cleanup PASS. This evidence does not authorize UAT, DEV seed/reset, dynamic environment actions, data operations, or any current-task authorization/status change."
     }
   ],
   "legacyDeferredTestCount": 0,

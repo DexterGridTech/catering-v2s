@@ -123,8 +123,8 @@ runMutation('F_A2C', 'picker', [[
 ]])
 
 runMutation('F_A2A', 'integration', [
-  ['apps/terminal/ui/feature/sample-wallpaper-picker/src/components/laptop/WallpaperPicker.tsx', source => replaceExactly(source, '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="transparent">', '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="fill">', 'F-A2a laptop picker container')],
-  ['apps/terminal/ui/feature/sample-wallpaper-picker/src/components/mobile/WallpaperPicker.tsx', source => replaceExactly(source, '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="transparent">', '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="fill">', 'F-A2a mobile picker container')],
+  ['apps/terminal/ui/feature/sample-wallpaper-picker/src/components/laptop/WallpaperPicker.tsx', source => replaceExactly(source, '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="transparent" style={rootStyle}>', '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="fill" style={rootStyle}>', 'F-A2a laptop picker container')],
+  ['apps/terminal/ui/feature/sample-wallpaper-picker/src/components/mobile/WallpaperPicker.tsx', source => replaceExactly(source, '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="transparent" style={rootStyle}>', '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="fill" style={rootStyle}>', 'F-A2a mobile picker container')],
   ['apps/terminal/ui/integration/sample-wallpaper-console/src/components/laptop/Waiting.tsx', source => replaceExactly(source, 'layout="transparent"', 'layout="fill"', 'F-A2a waiting container')],
   ['apps/terminal/ui/integration/sample-wallpaper-console/src/components/laptop/Welcome.tsx', source => replaceExactly(source, 'layout="transparent"', 'layout="fill"', 'F-A2a welcome container')],
 ])
@@ -178,7 +178,7 @@ runMutation('F_A7B', 'integration', [[
 ]])
 
 runAdmissionMutation('F_A9', 'integration', [[
-  'apps/terminal/ui/base/console-assembly/src/foundations/consoleAssembly.tsx',
+  'apps/terminal/ui/base/integration-assembly/src/foundations/integrationAssembly.tsx',
   source => replaceExactly(
     replaceExactly(source, "if (displayMode === 'SECONDARY' && assembly.surfaceDeclarations.SECONDARY === undefined) {", 'if (false) {', 'F-A9 display index guard'),
     'if (declaredSize === undefined) {', 'if (false) {', 'F-A9 declared size guard',

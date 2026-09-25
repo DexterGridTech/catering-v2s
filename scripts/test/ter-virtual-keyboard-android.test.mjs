@@ -22,6 +22,7 @@ import {
   sameResourceNodeBounds,
   URL_SYMBOL_KEYS,
   URL_SYMBOL_SEQUENCE,
+  adminLauncherTapPlan,
   parseDumpsysDisplayFacts,
   parseDisplayWindowIdentity,
   parsePngFileDescription,
@@ -47,7 +48,7 @@ function validManifest() {
     },
     appBindings: {
       'sample-terminal': {
-        apkPath: 'apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk',
+        apkPath: 'apps/terminal/application/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk',
         bytes: 128,
         sha256: 'a'.repeat(64),
       },
@@ -373,7 +374,7 @@ test('managed cleanup recovers only runner-recorded invalidated app ownership on
     manifest.launchDiagnostics = [{
       intentId: intent.intentId, shape: intent.shape, appName: intent.appName,
       packageName: intent.packageName, host: intent.host, bootId: intent.bootId,
-      startupPid: startupPid == null ? null : String(startupPid), observedMarkers: markers,
+      startupPid: startupPid == null ? null : String(startupPid), observedMarkers: markers, markerCount: markers.length,
     }];
     return {manifest, intent};
   };
@@ -412,12 +413,25 @@ test('managed cleanup recovers only runner-recorded invalidated app ownership on
   for (const invalid of [
     makeManifest({resolution: 'PROCESS_ADOPTED'}),
     makeManifest({markers: []}),
+    makeManifest({markers: ['untrusted.launch-marker']}),
+    makeManifest({markers: ['activity.onCreate:start', 'activity.onCreate:start']}),
   ]) {
     assert.throws(() => runner.resolveInvalidatedRemoteLaunch(invalid.manifest, invalid.intent.intentId, {
       host: invalid.intent.host, bootId: invalid.intent.bootId, processes: [],
     }), /VK_ANDROID_HISTORICAL_LAUNCH_IDENTITY_MISMATCH/);
     assert.equal(invalid.manifest.ownedRemoteProcesses.length, 0);
   }
+
+  const mismatchedMarkerCount = makeManifest();
+  mismatchedMarkerCount.manifest.launchDiagnostics[0].markerCount = 2;
+  assert.throws(() => runner.validateRunManifest(mismatchedMarkerCount.manifest), /VK_ANDROID_MANIFEST_APP_BINDING_INVALID/);
+
+  const mismatchedDiagnosticIdentity = makeManifest();
+  mismatchedDiagnosticIdentity.manifest.launchDiagnostics[0].bootId = 'other-boot-12345678';
+  assert.throws(() => runner.resolveInvalidatedRemoteLaunch(
+    mismatchedDiagnosticIdentity.manifest, mismatchedDiagnosticIdentity.intent.intentId,
+    {host: mismatchedDiagnosticIdentity.intent.host, bootId: mismatchedDiagnosticIdentity.intent.bootId, processes: []},
+  ), /VK_ANDROID_HISTORICAL_LAUNCH_IDENTITY_MISMATCH/);
 
   const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
   const recovery = source.slice(source.indexOf('async function recoverInvalidatedLaunchOwnership('), source.indexOf('async function doCleanup('));
@@ -999,6 +1013,7 @@ test('manifest preserves bounded legacy insufficient launch reinspection records
     {...legacy, signals: {...legacy.signals, jsErrorSeen: true}},
     {...legacy, evidenceStatus: 'MATCHED', startupPid: '4500', startupAtEpochMs: 1790203633400},
     {...legacy, rawOutput: 'must not be preserved'},
+    {...legacy, processObservation: {}, exitInfo: {}},
   ];
   for (const invalid of unsafeLegacyVariants) {
     const candidate = validManifest();
@@ -1073,7 +1088,8 @@ test('resolved launch log collection verifies boot before reading bounded read-o
   const processStat = `321 (com.anonymous.sampleterminal) ${statFields.join(' ')}`;
   const exitInfoText = 'No historical process exit information';
   const calls = [];
-  const replies = [intent.bootId, epochLogcat, briefLogcat, processTableText, processStat, exitInfoText, intent.bootId];
+  const replies = [intent.bootId, epochLogcat, briefLogcat, processTableText,
+    {stdout: processStat, stderr: '', exitCode: 0, signal: null}, exitInfoText, intent.bootId];
   const evidence = await runner.collectResolvedLaunchLogEvidence(validManifest(), intent, async (manifest, device, label, args, options) => {
     calls.push({runId: manifest.runId, serial: device.serial, label, args, options});
     return replies.shift();
@@ -1119,7 +1135,8 @@ test('resolved launch log collection verifies boot before reading bounded read-o
   assert.equal(mismatchCalls.length, 1);
 
   const postMismatchCalls = [];
-  const postMismatchReplies = [intent.bootId, epochLogcat, briefLogcat, processTableText, processStat, exitInfoText, 'boot-87654321'];
+  const postMismatchReplies = [intent.bootId, epochLogcat, briefLogcat, processTableText,
+    {stdout: processStat, stderr: '', exitCode: 0, signal: null}, exitInfoText, 'boot-87654321'];
   await assert.rejects(() => runner.collectResolvedLaunchLogEvidence(validManifest(), intent,
     async (_manifest, _device, label, args) => {
       postMismatchCalls.push({label, args});
@@ -1129,7 +1146,7 @@ test('resolved launch log collection verifies boot before reading bounded read-o
   assert.equal(postMismatchCalls[6].label, 'dual-sample-terminal-reinspection-post-boot-id');
 });
 
-test('remote process readback passes pidof and stat operands directly and preserves expected absence stderr', async () => {
+test('remote process readback passes pidof, stat, and cmdline operands directly and preserves expected absence stderr', async () => {
   assert.equal(typeof runner.remoteNamedProcessIdentity, 'function');
   const calls = [];
   const identity = await runner.remoteNamedProcessIdentity(validManifest(),
@@ -1154,13 +1171,97 @@ test('remote process readback passes pidof and stat operands directly and preser
       missingStatCalls.push({label, args, options});
       if (label.endsWith('remote-boot-id')) return 'boot-12345678';
       if (label.endsWith('remote-process')) return {stdout: '321\n', stderr: '', exitCode: 0};
-      if (label.endsWith('remote-stat-321')) return {stdout: '', stderr: 'cat: /proc/321/stat: No such file', exitCode: 1};
+      if (label.endsWith('remote-stat-321')) return {stdout: '', stderr: 'cat: /proc/321/stat: No such file', exitCode: 1, signal: null};
       throw new Error(`unexpected read: ${label}`);
     });
   assert.deepEqual(missingStat.processes, []);
   assert.deepEqual(missingStatCalls[1].args, ['shell', 'pidof', 'system_server']);
   assert.deepEqual(missingStatCalls[2].args, ['shell', 'cat', '/proc/321/stat']);
   assert.deepEqual(missingStatCalls[2].options?.acceptedExitCodes, [0, 1]);
+
+  const mismatchedStat = await runner.remoteNamedProcessIdentity(validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'}, 'system_server',
+    async (_manifest, _device, label) => {
+      if (label.endsWith('remote-boot-id')) return 'boot-12345678';
+      if (label.endsWith('remote-process')) return {stdout: '321\n', stderr: '', exitCode: 0};
+      return {stdout: '321 (other-process) S 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9001', stderr: '', exitCode: 0};
+    });
+  assert.deepEqual(mismatchedStat.processes, []);
+});
+
+test('named process identity accepts Android-truncated stat comm only with exact cmdline binding', async () => {
+  const statFields = ['S', '1', ...Array(17).fill('0'), '9001'];
+  const calls = [];
+  const identity = await runner.remoteNamedProcessIdentity(validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'}, 'com.anonymous.sampleterminal',
+    async (_manifest, _device, label, args, options) => {
+      calls.push({label, args, options});
+      if (label.endsWith('remote-boot-id')) return 'boot-12345678';
+      if (label.endsWith('remote-process')) return {stdout: '321\n', stderr: '', exitCode: 0, signal: null};
+      if (label.endsWith('remote-stat-321')) return {stdout: `321 (.sampleterminal) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
+      if (label.endsWith('remote-cmdline-321')) return {stdout: 'com.anonymous.sampleterminal\u0000', stderr: '', exitCode: 0, signal: null};
+      throw new Error(`unexpected read: ${label}`);
+    });
+
+  assert.deepEqual(identity, {host: 'emulator-5554', bootId: 'boot-12345678', processes: [{pid: 321, startTicks: '9001'}]});
+  assert.deepEqual(calls[3].args, ['shell', 'cat', '/proc/321/cmdline']);
+  assert.equal(calls[3].options?.returnCommandResult, true);
+  assert.equal(calls[3].options?.diagnosticOutput, 'sanitized');
+});
+
+test('named process identity rejects a PID whose exact cmdline is not the requested package', async () => {
+  const statFields = ['S', '1', ...Array(17).fill('0'), '9001'];
+  const identity = await runner.remoteNamedProcessIdentity(validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'}, 'com.anonymous.sampleterminal',
+    async (_manifest, _device, label) => {
+      if (label.endsWith('remote-boot-id')) return 'boot-12345678';
+      if (label.endsWith('remote-process')) return {stdout: '321\n', stderr: '', exitCode: 0, signal: null};
+      if (label.endsWith('remote-stat-321')) return {stdout: `321 (.sampleterminal) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
+      return {stdout: 'com.other.application\u0000', stderr: '', exitCode: 0, signal: null};
+    });
+  assert.deepEqual(identity.processes, []);
+});
+
+test('process readback rejects unexpected exit-one diagnostics instead of treating them as absence', async () => {
+  await assert.rejects(() => runner.remoteNamedProcessIdentity(validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'}, 'system_server',
+    async (_manifest, _device, label) => label.endsWith('remote-boot-id')
+      ? 'boot-12345678'
+      : {stdout: '', stderr: 'permission denied', exitCode: 1, signal: null}),
+  /VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID/);
+
+  await assert.rejects(() => runner.remotePidIdentity(validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'}, 321, 'screenrecord', '/sdcard/run-dual-transition.mp4',
+    async (_manifest, _device, label) => label.endsWith('boot-id')
+      ? 'boot-12345678'
+      : {stdout: '', stderr: 'cat: /proc/321/stat: Permission denied', exitCode: 1, signal: null}),
+  /VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID/);
+
+  await assert.rejects(() => runner.remoteNamedProcessIdentity(validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'}, 'system_server',
+    async (_manifest, _device, label) => label.endsWith('remote-boot-id')
+      ? 'boot-12345678'
+      : {stdout: '', stderr: 'pidof: command not found', exitCode: 1, signal: null}),
+  /VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID/);
+
+  await assert.rejects(() => runner.remotePidIdentity(validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'}, 321, 'screenrecord', '/sdcard/run-dual-transition.mp4',
+    async (_manifest, _device, label) => label.endsWith('boot-id')
+      ? 'boot-12345678'
+      : {stdout: '', stderr: 'cat: command not found', exitCode: 1, signal: null}),
+  /VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID/);
+});
+
+test('named process identity rejects a proc stat comm mismatch after pidof', async () => {
+  const statFields = ['S', '1', ...Array(17).fill('0'), '9001'];
+  const identity = await runner.remoteNamedProcessIdentity(validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'}, 'com.anonymous.sampleterminal',
+    async (_manifest, _device, label) => {
+      if (label.endsWith('remote-boot-id')) return 'boot-12345678';
+      if (label.endsWith('remote-process')) return {stdout: '321\n', stderr: '', exitCode: 0, signal: null};
+      return {stdout: `321 (other.process) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
+    });
+  assert.deepEqual(identity, {host: 'emulator-5554', bootId: 'boot-12345678', processes: []});
 });
 
 test('process readback preflight checks known-present system_server before every target package on both devices', async () => {
@@ -1245,11 +1346,41 @@ test('remote PID identity reads stat and cmdline as direct adb shell argv', asyn
     async (_manifest, _device, label, args) => {
       missingStatCalls.push({label, args});
       if (label.endsWith('boot-id')) return 'boot-12345678';
-      return {stdout: '', stderr: 'cat: /proc/321/stat: No such file', exitCode: 1};
+      return {stdout: '', stderr: 'cat: /proc/321/stat: No such file', exitCode: 1, signal: null};
     });
   assert.equal(missingStat.process, null);
   assert.deepEqual(missingStatCalls[1].args, ['shell', 'cat', '/proc/321/stat']);
   assert.equal(missingStatCalls.length, 2);
+});
+
+test('remote PID identity requires exact executable and argument tokens', async () => {
+  const statFields = ['S', '1', ...Array(17).fill('0'), '9001'];
+  const readIdentity = cmdline => runner.remotePidIdentity(validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'}, 321, 'screenrecord', '/sdcard/run-dual-transition.mp4',
+    async (_manifest, _device, label) => {
+      if (label.endsWith('boot-id')) return 'boot-12345678';
+      if (label.includes('-stat-')) return {stdout: `321 (screenrecord) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
+      return {stdout: cmdline, stderr: '', exitCode: 0, signal: null};
+    });
+
+  assert.equal((await readIdentity('screenrecord-helper\u0000/sdcard/run-dual-transition.mp4\u0000')).process, null);
+  assert.equal((await readIdentity('screenrecord\u0000/sdcard/run-dual-transition.mp4.bak\u0000')).process, null);
+});
+
+test('remote PID identity binds Android app packages by exact cmdline when stat comm is truncated', async () => {
+  const statFields = ['S', '1', ...Array(17).fill('0'), '9001'];
+  const readIdentity = cmdline => runner.remotePidIdentity(validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'}, 321, 'com.anonymous.sampleterminal', null,
+    async (_manifest, _device, label, args) => {
+      if (label.endsWith('boot-id')) return 'boot-12345678';
+      if (label.includes('-stat-')) return {stdout: `321 (.sampleterminal) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
+      assert.deepEqual(args, ['shell', 'cat', '/proc/321/cmdline']);
+      return {stdout: cmdline, stderr: '', exitCode: 0, signal: null};
+    });
+
+  assert.deepEqual((await readIdentity('com.anonymous.sampleterminal\u0000')).process,
+    {pid: 321, startTicks: '9001'});
+  assert.equal((await readIdentity('com.other.application\u0000')).process, null);
 });
 
 test('screenrecord startup passes one complete shell command string to adb', async () => {
@@ -1430,6 +1561,22 @@ test('diagnostic command success preserves the previous last-known-good checkpoi
   assert.equal(runner.recordLastKnownGood(manifest, 'next-owned-runtime-step'), 'next-owned-runtime-step');
 });
 
+test('command diagnostics do not mark a result-validated exit one as PASS', () => {
+  const record = runner.commandDiagnosticRecord({
+    phase: 'CLEANUP', label: 'dual-sample-terminal-remote-process', executable: 'adb',
+    args: ['shell', 'pidof', 'com.anonymous.sampleterminal'], durationMs: 12,
+    exitCode: 1, signal: null, stdout: '', stderr: 'permission denied',
+    acceptedExitCodes: [0, 1], resultAccepted: false, outputPolicy: 'sanitized',
+  });
+  assert.equal(record.result, 'FAIL');
+  assert.equal(record.stderr, 'permission denied');
+  assert.throws(() => runner.commandDiagnosticRecord({
+    phase: 'CLEANUP', label: 'invalid-result-validation', executable: 'adb', args: [],
+    durationMs: 1, exitCode: 1, signal: null, stdout: '', stderr: '',
+    acceptedExitCodes: [0, 1], resultAccepted: 'false', outputPolicy: 'sanitized',
+  }), /VK_ANDROID_COMMAND_RESULT_VALIDATION_INVALID/);
+});
+
 test('command logs mirror complete runtime history when evidence logs directory is absent', () => {
   assert.equal(typeof runner.appendCommandLogRecord, 'function');
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ter-vk-command-log-'));
@@ -1484,9 +1631,33 @@ test('transition video samples are tied only to the probed video timeline, never
   assert.throws(() => runner.transitionVideoSampleOffsets(0), /VK_ANDROID_TRANSITION_VIDEO_DURATION_INVALID/);
 });
 
+test('transition samples stop at the last decodable video frame when the container has trailing time', () => {
+  assert.deepEqual(runner.parseVideoFrameTimestamps(JSON.stringify({frames: [
+    {best_effort_timestamp_time: '0.000000'},
+    {best_effort_timestamp_time: '0.760156'},
+    {best_effort_timestamp_time: '1.760700'},
+  ]})), [0, 0.760156, 1.7607]);
+  assert.deepEqual(runner.transitionVideoSampleOffsets(2.272622, [0, 0.760156, 1.7607]), [
+    {index: 1, offsetFromVideoStartMs: 293.45},
+    {index: 2, offsetFromVideoStartMs: 586.9},
+    {index: 3, offsetFromVideoStartMs: 880.35},
+    {index: 4, offsetFromVideoStartMs: 1173.8},
+    {index: 5, offsetFromVideoStartMs: 1467.25},
+  ]);
+  assert.throws(() => runner.parseVideoFrameTimestamps('{"frames":[]}'), /VK_ANDROID_TRANSITION_FRAME_TIMELINE_INVALID/);
+  assert.throws(() => runner.transitionVideoSampleOffsets(2, []), /VK_ANDROID_TRANSITION_FRAME_TIMELINE_INVALID/);
+  const source = fs.readFileSync(new URL('./ter-virtual-keyboard-android.mjs', import.meta.url), 'utf8');
+  assert.match(source, /transition-frame-timeline/);
+  assert.match(source, /LAST_DECODED_VIDEO_FRAME/);
+  assert.match(source, /VK_ANDROID_TRANSITION_FRAME_OUTPUT_MISSING/);
+});
+
 test('cleanup recovery never skips the full repository runtime resource inventory for new work', () => {
   assert.equal(typeof runner.runtimeResourceRoot, 'function');
   assert.equal(runner.runtimeResourceRoot('/workspace/repo'), path.join('/workspace/repo', '.runtime'));
+  assert.deepEqual(runner.terResourcePreflightArgs('/workspace/repo'), [
+    '--profile', 'admin-validation-with-ter', '/workspace/repo/.runtime',
+  ]);
 });
 
 test('ADB command validation rejects destructive argument vectors independent of source formatting', () => {
@@ -1624,6 +1795,16 @@ test('testID taps are scoped to the requested Android logical display', () => {
   ), /VK_ANDROID_RESOURCE_NODE_AMBIGUOUS/);
 });
 
+test('admin launcher gesture uses the bounded five-tap physical point plan', () => {
+  const plan = adminLauncherTapPlan(0);
+  assert.equal(plan.length, 5);
+  assert.deepEqual(plan.map(item => item.tapIndex), [1, 2, 3, 4, 5]);
+  assert.deepEqual(plan[0].args, ['shell', 'input', '-d', '0', 'tap', '48', '48']);
+  assert.deepEqual(plan[4].args, ['shell', 'input', '-d', '0', 'tap', '48', '48']);
+  assert.throws(() => adminLauncherTapPlan(-1), /VK_ANDROID_ADMIN_LAUNCH_DISPLAY_INVALID/);
+  assert.throws(() => adminLauncherTapPlan(1.5), /VK_ANDROID_ADMIN_LAUNCH_DISPLAY_INVALID/);
+});
+
 test('URL symbol taps use the shifted-state nodes only after confirming unchanged key geometry', () => {
   assert.equal(sameResourceNodeBounds(
     {left: 1, top: 2, right: 10, bottom: 11},
@@ -1748,12 +1929,12 @@ test('controlled keyboard harness accepts only its exact explicit route', () => 
 
 test('both Android apps mount the harness only from the exact primary-surface route and declare its UI dependencies', () => {
   const appDirectories = [
-    'apps/terminal/assembly/android/sample-terminal',
-    'apps/terminal/assembly/android/sample-wallpaper-terminal',
+    'apps/terminal/application/android/sample-terminal',
+    'apps/terminal/application/android/sample-wallpaper-terminal',
   ];
   for (const directory of appDirectories) {
     const appSource = fs.readFileSync(path.join(root, directory, 'App.tsx'), 'utf8');
-    const harnessSource = fs.readFileSync(path.join(root, directory, 'src/controlledKeyboardHarness.tsx'), 'utf8');
+    const harnessSource = fs.readFileSync(path.join(root, directory, 'src/components/controlledKeyboardHarness.tsx'), 'utf8');
     const packageJson = JSON.parse(fs.readFileSync(path.join(root, directory, 'package.json'), 'utf8'));
     const dependenciesSource = fs.readFileSync(path.join(root, directory, 'src/dependencies.ts'), 'utf8');
 
@@ -1803,4 +1984,24 @@ test('controlled-harness screenshots remain separate from the 19 product IA-fram
   assert.equal(manifest.controlledHarnessCaptures[0].coveredIaId, 'VK-IA-09');
   assert.equal(captureObservationMatrix(manifest.frameMatrix)['VK-IA-09'].routes['dual/sample-terminal/primary'].status, 'OPEN_NOT_OBSERVED');
   assert.throws(() => runner.recordCapture(manifest, 'VK-IA-09', {...record, iaId: 'VK-IA-08'}, 'CONTROLLED_HARNESS'), /VK_ANDROID_IA_ID_OUT_OF_RANGE/);
+});
+
+test('transition samples use the shared product capture registration with explicit evidence kind', () => {
+  const manifest = {frameMatrix: emptyFrameMatrix()};
+  const record = {
+    shape: 'dual', app: 'sample-terminal', iaId: 'VK-IA-15', surface: 'primary',
+    screenshot: 'evidence/transition-1.png', captureEvidence: 'evidence/transition-1.capture-evidence.json',
+    transitionVideo: 'evidence/transition.mp4', state: 'transition-video-sample-1-uncalibrated',
+    transitionIndex: 1, controlsInventory: null, visibleControlCount: 0, visibleControls: [],
+  };
+
+  runner.recordCapture(manifest, 'VK-IA-15', record, 'PRODUCT_TRANSITION_SAMPLE');
+  assert.equal(manifest.frameMatrix['VK-IA-15'].captures.length, 1);
+  assert.equal(manifest.frameMatrix['VK-IA-15'].captures[0].evidenceKind, 'PRODUCT_TRANSITION_SAMPLE');
+  assert.equal(manifest.frameMatrix['VK-IA-15'].reason, 'AWAITING_PER_CONTROL_VISUAL_JUDGMENT');
+  assert.throws(() => runner.recordCapture(manifest, 'VK-IA-15', record, 'UNKNOWN_PRODUCT_CAPTURE'), /VK_ANDROID_CAPTURE_EVIDENCE_KIND_INVALID/);
+
+  const source = fs.readFileSync(new URL('./ter-virtual-keyboard-android.mjs', import.meta.url), 'utf8');
+  assert.match(source, /recordCapture\(manifest, iaId, capture, 'PRODUCT_TRANSITION_SAMPLE'\)/);
+  assert.doesNotMatch(source, /manifest\.frameMatrix\[iaId\]\.captures\.push\(capture\)/);
 });

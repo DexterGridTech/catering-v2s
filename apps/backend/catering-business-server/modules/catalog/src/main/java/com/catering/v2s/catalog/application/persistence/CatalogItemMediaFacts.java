@@ -1,6 +1,5 @@
 package com.catering.v2s.catalog.application.persistence;
 
-import com.catering.v2s.catalog.application.persistence.CatalogItemMediaFactsSql;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -36,8 +35,10 @@ public class CatalogItemMediaFacts {
         Map<UUID, ArrayNode> result = new LinkedHashMap<>();
         refs.forEach(ref -> result.put(ref, mapper.createArrayNode()));
         jdbc.query(
-                CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_SELECT_CATALOG_ITEM_IMAGE_ITEM_REF_ASSET_REF + placeholders
-                        + CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_CLOSE_PAREN_ITEM_REF_DISPLAY_ORDER_ASSET_REF,
+                CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_SELECT_CATALOG_ITEM_IMAGE_ITEM_REF_ASSET_REF
+                        + placeholders
+                        + CatalogItemMediaFactsSql
+                                .CATALOG_ITEM_MEDIA_FACTS_CLOSE_PAREN_ITEM_REF_DISPLAY_ORDER_ASSET_REF,
                 statement -> {
                     for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
                 },
@@ -56,7 +57,8 @@ public class CatalogItemMediaFacts {
         jdbc.update(CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_DELETE_CATALOG_ITEM_IMAGE_ITEM_REF, itemRef);
         if (!assets.isEmpty())
             jdbc.batchUpdate(
-                    CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_INSERT_INTO_CATALOG_ITEM_IMAGE_ITEM_REF_ASSET_REF_DISPLAY_ORDER,
+                    CatalogItemMediaFactsSql
+                            .CATALOG_ITEM_MEDIA_FACTS_INSERT_INTO_CATALOG_ITEM_IMAGE_ITEM_REF_ASSET_REF_DISPLAY_ORDER,
                     assets.stream()
                             .map(assetRef -> new Object[] {itemRef, assetRef, assets.indexOf(assetRef)})
                             .toList());
@@ -74,11 +76,15 @@ public class CatalogItemMediaFacts {
             }
         if (!rows.isEmpty())
             jdbc.batchUpdate(
-                    CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_INSERT_INTO_CATALOG_ITEM_IMAGE_ITEM_REF_ASSET_REF_DISPLAY_ORDER_ALTERNATE_A, rows);
+                    CatalogItemMediaFactsSql
+                            .CATALOG_ITEM_MEDIA_FACTS_INSERT_INTO_CATALOG_ITEM_IMAGE_ITEM_REF_ASSET_REF_DISPLAY_ORDER_ALTERNATE_A,
+                    rows);
     }
 
     public boolean referenced(String dataNodeRef, String brandRef, UUID assetRef) {
-        String scope = dataNodeRef == null ? "" : CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_CONDITION_ITEM_DATA_NODE_REF_BRAND_REF;
+        String scope = dataNodeRef == null
+                ? ""
+                : CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_CONDITION_ITEM_DATA_NODE_REF_BRAND_REF;
         List<Object> arguments = new ArrayList<>();
         arguments.add(assetRef);
         if (dataNodeRef != null) {
@@ -88,7 +94,8 @@ public class CatalogItemMediaFacts {
         Boolean found = jdbc.queryForObject(
                 CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_SELECT_CATALOG_ITEM_IMAGE_ITEM
                         + CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_ITEM_ITEM_REF_IMAGE_ASSET_REF
-                        + scope + CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_CLOSE_PAREN,
+                        + scope
+                        + CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_CLOSE_PAREN,
                 Boolean.class,
                 arguments.toArray());
         return Boolean.TRUE.equals(found);
@@ -100,7 +107,9 @@ public class CatalogItemMediaFacts {
         String placeholders = String.join(
                 CatalogItemMediaFactsSql.PLACEHOLDER_SEPARATOR,
                 Collections.nCopies(refs.size(), CatalogItemMediaFactsSql.PARAMETER_PLACEHOLDER));
-        String scope = dataNodeRef == null ? "" : CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_CONDITION_ITEM_DATA_NODE_REF_BRAND_REF_ALTERNATE_A;
+        String scope = dataNodeRef == null
+                ? ""
+                : CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_CONDITION_ITEM_DATA_NODE_REF_BRAND_REF_ALTERNATE_A;
         List<Object> arguments = new ArrayList<>(refs);
         if (dataNodeRef != null) {
             arguments.add(dataNodeRef);
@@ -109,7 +118,9 @@ public class CatalogItemMediaFacts {
         return Set.copyOf(jdbc.query(
                 CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_SELECT_CATALOG_ITEM_IMAGE_ASSET_REF_ITEM
                         + CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_JOIN_CONDITION_ITEM_ITEM_REF_IMAGE_ASSET_REF
-                        + placeholders + CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_CLOSE_PAREN_ITEM_STATUS_VOIDED + scope,
+                        + placeholders
+                        + CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_CLOSE_PAREN_ITEM_STATUS_VOIDED
+                        + scope,
                 (rows, row) -> rows.getObject(1, UUID.class),
                 arguments.toArray()));
     }

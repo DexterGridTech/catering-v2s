@@ -8,8 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditReadScope;
 import com.catering.v2s.audit.contract.AuditTarget;
-import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
+import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
@@ -121,7 +121,16 @@ class OrganizationOwnerServiceTest {
                 "PROJECT",
                 0,
                 List.of(new ExtensionDefinitionService.Field(
-                        "projectBudget", "Project budget", "NUMBER", null, null, false, List.of(), "ENABLED", 0, null)));
+                        "projectBudget",
+                        "Project budget",
+                        "NUMBER",
+                        null,
+                        null,
+                        false,
+                        List.of(),
+                        "ENABLED",
+                        0,
+                        null)));
     }
 
     @Test

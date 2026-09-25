@@ -9,12 +9,12 @@
     "terminal-create-basic",
     "terminal-create-configuration",
     "terminal-edit-configuration",
-    "terminal-status-actions",
-    "terminal-readonly-state"
+    "terminal-readonly-state",
+    "terminal-status-actions"
   ],
-  "fixtureRefs": ["FIXTURE-STORE-TERMINAL-BASE"],
+  "fixtureRefs": ["FIXTURE-STORE-TERMINAL-BASE", "FIXTURE-STORE-TERMINAL-READONLY"],
   "testIdSource": "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
   "locatorBinding": "contracts/policy/store-terminal-l2-locator-bindings.json",
   "noSeedRuntimeInput": true,
-  "candidateDigest": "3e94ffa7c192e539b380cba6f8b4de50da395a715fa41d56a22c481e454edfc6"
+  "candidateDigest": "5c31c09c85d7e381ecb905d540bfeb195dc0c2787f975ce2ea5821638fb3c94b"
 }

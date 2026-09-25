@@ -59,6 +59,7 @@ export function abortOperationsRequests() {
 type ObservedFetchArgs<RequiresSession extends boolean> = FetchArgs & {requiresSession: RequiresSession};
 
 function toWireRequest<RequiresSession extends boolean>(request: {
+  operationId?: string;
   path: string;
   pathParameters: object;
   method: string;
@@ -67,21 +68,37 @@ function toWireRequest<RequiresSession extends boolean>(request: {
   headers?: Readonly<Record<string, string>>;
   body?: unknown;
 }): ObservedFetchArgs<RequiresSession> {
-  const path = expandPath(request.path, request.pathParameters);
-  const query = new URLSearchParams(
-    Object.entries(request.query ?? {})
-      .filter(([, value]) => value !== undefined && value !== null)
-      .map(([name, value]) => [name, String(value)]),
-  );
-  const headers = new Headers(request.headers);
-  headers.set('Accept', 'application/json');
-  return {
-    url: query.size === 0 ? path : `${path}?${query.toString()}`,
-    method: request.method.toUpperCase(),
-    headers,
-    body: serializeJsonOrMultipartBody(request.body, headers),
-    requiresSession: request.requiresSession,
-  };
+  try {
+    const path = expandPath(request.path, request.pathParameters);
+    const query = new URLSearchParams(
+      Object.entries(request.query ?? {})
+        .filter(([, value]) => value !== undefined && value !== null)
+        .map(([name, value]) => [name, String(value)]),
+    );
+    const headers = new Headers(request.headers);
+    headers.set('Accept', 'application/json');
+    return {
+      url: query.size === 0 ? path : `${path}?${query.toString()}`,
+      method: request.method.toUpperCase(),
+      headers,
+      body: serializeJsonOrMultipartBody(request.body, headers),
+      requiresSession: request.requiresSession,
+    };
+  } catch (error) {
+    operationsLogger.error({
+      event: 'frontend.request.wire_build_failed',
+      phase: 'request',
+      outcome: 'ERROR',
+      operationId: request.operationId ?? request.path,
+      errorCode: error instanceof Error ? error.name : 'WIRE_BUILD_ERROR',
+      diagnostic: {
+        stage: 'wire_request_build',
+        method: request.method,
+        hasBody: request.body !== undefined,
+      },
+    });
+    throw error;
+  }
 }
 
 const toOperationsWireRequest = <I extends keyof OperationsFaceOperationContracts>(

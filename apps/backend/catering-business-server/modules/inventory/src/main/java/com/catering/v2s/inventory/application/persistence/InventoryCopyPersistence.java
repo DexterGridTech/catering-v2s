@@ -10,7 +10,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -28,28 +27,30 @@ public class InventoryCopyPersistence {
     public InventoryOwnerApi.UnitSnapshot readConsumptionUnitSnapshot(UUID targetRef) {
         return jdbc
                 .query(
-                        InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION
+                        InventoryCopyServiceSql
+                                        .INVENTORY_COPY_SERVICE_SELECT_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION
                                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_STOCK_TARGET_TARGET_REF,
                         (result, rowNumber) -> requiredUnitSnapshot(result, 1),
                         targetRef)
                 .stream()
                 .findFirst()
-                .orElseThrow(() -> new InventoryOwnerApi.Problem(
-                        "CONSUMPTION_UNIT_SNAPSHOT_REQUIRED",
-                        422,
-                        "库存对象必须保存有效消耗单位快照"));
+                .orElseThrow(() ->
+                        new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "库存对象必须保存有效消耗单位快照"));
     }
 
     public int[] copyCatalogItems(List<TargetWrite> rows) {
         return jdbc.batchUpdate(
                 InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INSERT_INTO
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INVENTORY_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_ITEM_CODE_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_ITEM_CODE
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_VALUE_SEPARATOR_SKU_CODE_MEASURE_MODE_INVENTORY_MODE_CONSUMPTION_UNIT_REF
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_INVENTORY_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_ITEM_CODE_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_ITEM_CODE
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_VALUE_SEPARATOR_SKU_CODE_MEASURE_MODE_INVENTORY_MODE_CONSUMPTION_UNIT_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONSUMPTION_UNIT_NAME
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_COUNTING_UNIT_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_COUNTING_UNIT_PRECISION
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_PARAMETER_PLACEHOLDER_CAST_AS_JSONB_0_1_ON_CONFLIC,
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_PARAMETER_PLACEHOLDER_CAST_AS_JSONB_0_1_ON_CONFLIC,
                 new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(java.sql.PreparedStatement statement, int index) throws SQLException {
@@ -81,13 +82,16 @@ public class InventoryCopyPersistence {
     public int[] copyCatalogSkus(List<BomWrite> rows) {
         return jdbc.batchUpdate(
                 InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INSERT_INTO_ALTERNATE_A
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INVENTORY_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE_VERSION_ROWS_UPDATED_AT_EPOCH_MILLIS
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_INVENTORY_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE_VERSION_ROWS_UPDATED_AT_EPOCH_MILLIS
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_VALUES_VALUES_CAST_AS_JSONB_ON_CONF
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_OPEN_PAREN_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_OPEN_PAREN_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_OPTION_VALUE_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_DEFINITION_STATUS_ENABLED
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SET_DO_UPDATE_SET
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_VERSION_EXCLUDED_VERSION_ROWS_EXCLUDED_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS,
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_VERSION_EXCLUDED_VERSION_ROWS_EXCLUDED_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS,
                 new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(java.sql.PreparedStatement statement, int index) throws SQLException {
@@ -113,8 +117,7 @@ public class InventoryCopyPersistence {
                 });
     }
 
-    public List<CatalogTargetDisplay> readCatalogTargetDisplays(
-            String scope, String brand, Collection<UUID> itemRefs) {
+    public List<CatalogTargetDisplay> readCatalogTargetDisplays(String scope, String brand, Collection<UUID> itemRefs) {
         LinkedHashSet<UUID> orderedRefs = new LinkedHashSet<>(itemRefs);
         if (orderedRefs.isEmpty()) return List.of();
         UUID[] values = orderedRefs.toArray(UUID[]::new);
@@ -167,22 +170,21 @@ public class InventoryCopyPersistence {
                         TargetRecord row = targetRecord(result, 1, requireCompleteConsumptionUnit);
                         TargetIdentity identity = new TargetIdentity(row.itemRef(), row.productSkuRef());
                         if (rows.putIfAbsent(identity, row) != null)
-                            throw new InventoryOwnerApi.Problem(
-                                    "REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
+                            throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
                     }
                     return rows;
                 });
     }
 
-    public List<TargetRecord> readTargetsByItemRefs(
-            String scope, String brand, Collection<UUID> itemRefs) {
+    public List<TargetRecord> readTargetsByItemRefs(String scope, String brand, Collection<UUID> itemRefs) {
         List<UUID> orderedRefs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
         if (orderedRefs.isEmpty()) return List.of();
         UUID[] values = orderedRefs.toArray(UUID[]::new);
         return jdbc.query(
                 InventoryCopyServiceSql.SELECT_PREFIX
                         + InventoryCopyServiceSql.TARGET_SELECT_COLUMNS
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF_ALTERNATE_A
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF_ALTERNATE_A
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_BRAND_REF_DEFINITION_STATUS_ENABLED_ITEM_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_ORDER_BY_ITEM_REF_PRODUCT_SKU_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_TARGET_REF,
@@ -202,11 +204,13 @@ public class InventoryCopyPersistence {
             boolean requireCompleteConsumptionUnit) {
         if (targetRefs.isEmpty()) return Map.of();
         UUID[] values = targetRefs.toArray(UUID[]::new);
-        String statusPredicate = enabledOnly ? InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONDITION_DEFINITION_STATUS_ENABLED : "";
+        String statusPredicate =
+                enabledOnly ? InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONDITION_DEFINITION_STATUS_ENABLED : "";
         return jdbc.query(
                 InventoryCopyServiceSql.SELECT_PREFIX
                         + InventoryCopyServiceSql.TARGET_SELECT_COLUMNS
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF_ALTERNATE_B
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF_ALTERNATE_B
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_BRAND_REF
                         + statusPredicate
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONDITION_TARGET_REF,
@@ -220,24 +224,24 @@ public class InventoryCopyPersistence {
                     while (result.next()) {
                         TargetRecord row = targetRecord(result, 1, requireCompleteConsumptionUnit);
                         if (rows.putIfAbsent(row.ref(), row) != null)
-                            throw new InventoryOwnerApi.Problem(
-                                    "REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
+                            throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
                     }
                     return rows;
                 });
     }
 
-    public List<BomOwnerRecord> readBomOwnersByItemRefs(
-            String scope, String brand, Collection<UUID> itemRefs) {
+    public List<BomOwnerRecord> readBomOwnersByItemRefs(String scope, String brand, Collection<UUID> itemRefs) {
         List<UUID> orderedRefs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
         if (orderedRefs.isEmpty()) return List.of();
         UUID[] values = orderedRefs.toArray(UUID[]::new);
         return jdbc.query(
                 InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ITEM_CODE
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ITEM_CODE
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_STOCK_BOM_VERSION_ROWS_TEXT_DATA_NODE_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONDITION_ITEM_REF
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_ORDER_BY_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF,
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_ORDER_BY_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -260,16 +264,16 @@ public class InventoryCopyPersistence {
         if (orderedRefs.isEmpty()) return List.of();
         UUID[] values = orderedRefs.toArray(UUID[]::new);
         return jdbc.query(
-                InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_STOCK_TARGET_ITEM_REF_TARGET_REF_CONFIGURATION_TEXT + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_BRAND_REF_ITEM_REF_TARGET_REF,
+                InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_SELECT_STOCK_TARGET_ITEM_REF_TARGET_REF_CONFIGURATION_TEXT
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_BRAND_REF_ITEM_REF_TARGET_REF,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
                     statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
                 },
                 (result, rowNumber) -> new TargetConfigurationRecord(
-                        result.getObject(1, UUID.class),
-                        result.getObject(2, UUID.class),
-                        result.getString(3)));
+                        result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3)));
     }
 
     public List<String> readBomRowsByItemRefs(String scope, String brand, Collection<UUID> itemRefs) {
@@ -279,7 +283,8 @@ public class InventoryCopyPersistence {
         return jdbc.query(
                 InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_STOCK_BOM_ROWS_TEXT_DATA_NODE_REF_BRAND_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONDITION_ITEM_REF_ALTERNATE_A
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_ORDER_BY_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ALTERNATE_A,
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_ORDER_BY_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ALTERNATE_A,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -292,8 +297,10 @@ public class InventoryCopyPersistence {
         return jdbc.queryForObject(
                 InventoryCopyServiceSql.SELECT_PREFIX
                         + InventoryCopyServiceSql.TARGET_SELECT_COLUMNS
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF_BRAND_REF_TARGET_REF
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONDITION_DEFINITION_STATUS_ENABLED_ALTERNATE_A,
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF_BRAND_REF_TARGET_REF
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_CONDITION_DEFINITION_STATUS_ENABLED_ALTERNATE_A,
                 (result, rowNumber) -> targetRecord(result, 1, true),
                 scope,
                 brand,
@@ -311,52 +318,58 @@ public class InventoryCopyPersistence {
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_AGGREGATE_TARGET_REF
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_DELTA_FILTER_OCCURRED_AT_EPOCH_MILLIS_NOW_EPOCH
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_TODAY_CHANGE
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_DELTA_FILTER_OCCURRED_AT_EPOCH_MILLIS_NOW_EPOCH_ALTERNATE_A
+                + InventoryCopyServiceSql
+                        .INVENTORY_COPY_SERVICE_DELTA_FILTER_OCCURRED_AT_EPOCH_MILLIS_NOW_EPOCH_ALTERNATE_A
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SEVEN_DAY_CHANGE
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_DELTA_FILTER_OCCURRED_AT_EPOCH_MILLIS_NOW_EPOCH_ALTERNATE_B
+                + InventoryCopyServiceSql
+                        .INVENTORY_COPY_SERVICE_DELTA_FILTER_OCCURRED_AT_EPOCH_MILLIS_NOW_EPOCH_ALTERNATE_B
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_THIRTY_DAY_CHANGE
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_BOUNDS_TARGET_REF
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_GROUP_BY_TARGET_REF
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_LATEST_TARGET_REF_OPERATION_ID_OCCURRED_AT_EPOCH_MILLIS
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_OPEN_PAREN_TARGET_REF_OCCURRED_AT_EPOCH_MILLIS_ENTRY_REF
+                + InventoryCopyServiceSql
+                        .INVENTORY_COPY_SERVICE_OPEN_PAREN_TARGET_REF_OCCURRED_AT_EPOCH_MILLIS_ENTRY_REF
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_ROW_NUMBER_WINDOW_FUNCTION
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_SELECTED_TARGET_REF
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_ALTERNATE_A
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_S_TARGET_REF_A_TODAY_CHANGE_A_SEVEN_DAY_CHANGE_A_THIRTY_DAY_CHANGE_LATEST_OPERATION_ID_LATEST_OPERATION_ID_LATEST_OCCURRED_AT_EPOCH_MILLIS
+                + InventoryCopyServiceSql
+                        .INVENTORY_COPY_SERVICE_S_TARGET_REF_A_TODAY_CHANGE_A_SEVEN_DAY_CHANGE_A_THIRTY_DAY_CHANGE_LATEST_OPERATION_ID_LATEST_OPERATION_ID_LATEST_OCCURRED_AT_EPOCH_MILLIS
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_LATEST_TARGET_REF
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_LATEST_TARGET_REF;
         List<Object> args = new ArrayList<>(targetRefs);
         args.add(nowEpochMillis);
-        return jdbc.query(
-                sql,
-                args.toArray(),
-                result -> {
-                    Map<UUID, ChangeSnapshotRecord> snapshots = new LinkedHashMap<>();
-                    while (result.next()) {
-                        Long lastAt = result.getObject(6) == null ? null : result.getLong(6);
-                        snapshots.put(
-                                result.getObject(1, UUID.class),
-                                new ChangeSnapshotRecord(
-                                        result.getBigDecimal(2) == null ? BigDecimal.ZERO : result.getBigDecimal(2),
-                                        result.getBigDecimal(3) == null ? BigDecimal.ZERO : result.getBigDecimal(3),
-                                        result.getBigDecimal(4) == null ? BigDecimal.ZERO : result.getBigDecimal(4),
-                                        result.getString(5),
-                                        lastAt));
-                    }
-                    return snapshots;
-                });
+        return jdbc.query(sql, args.toArray(), result -> {
+            Map<UUID, ChangeSnapshotRecord> snapshots = new LinkedHashMap<>();
+            while (result.next()) {
+                Long lastAt = result.getObject(6) == null ? null : result.getLong(6);
+                snapshots.put(
+                        result.getObject(1, UUID.class),
+                        new ChangeSnapshotRecord(
+                                result.getBigDecimal(2) == null ? BigDecimal.ZERO : result.getBigDecimal(2),
+                                result.getBigDecimal(3) == null ? BigDecimal.ZERO : result.getBigDecimal(3),
+                                result.getBigDecimal(4) == null ? BigDecimal.ZERO : result.getBigDecimal(4),
+                                result.getString(5),
+                                lastAt));
+            }
+            return snapshots;
+        });
     }
 
     public long readGeneration(String scope, String brand) {
-        Long value = jdbc.queryForObject(InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_STOCK_TARGET_VERSION_DATA_NODE_REF_BRAND_REF, Long.class, scope, brand);
+        Long value = jdbc.queryForObject(
+                InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_STOCK_TARGET_VERSION_DATA_NODE_REF_BRAND_REF,
+                Long.class,
+                scope,
+                brand);
         return value == null ? 0L : value;
     }
 
     public ReceiptRecord readReceipt(String scope, String key) {
         List<ReceiptRecord> rows = jdbc.query(
-                InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONDITION_IDEMPOTENCY_KEY,
-                (result, rowNumber) -> new ReceiptRecord(
-                        result.getString(1), result.getString(2), result.getString(3)),
+                InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_SELECT_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONDITION_IDEMPOTENCY_KEY,
+                (result, rowNumber) -> new ReceiptRecord(result.getString(1), result.getString(2), result.getString(3)),
                 scope,
                 key);
         return rows.isEmpty() ? null : rows.get(0);
@@ -372,7 +385,8 @@ public class InventoryCopyPersistence {
             long createdAt) {
         return jdbc.update(
                 InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INSERT_INTO_ALTERNATE_B
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INVENTORY_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID_REQUEST_HASH_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB,
+                        + InventoryCopyServiceSql
+                                .INVENTORY_COPY_SERVICE_INVENTORY_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID_REQUEST_HASH_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB,
                 receiptRef,
                 scope,
                 key,
@@ -402,9 +416,8 @@ public class InventoryCopyPersistence {
 
     private static TargetRecord targetRecord(ResultSet row, int firstColumn, boolean requireCompleteUnit)
             throws SQLException {
-        InventoryOwnerApi.UnitSnapshot consumption = requireCompleteUnit
-                ? requiredUnitSnapshot(row, firstColumn + 10)
-                : unitSnapshot(row, firstColumn + 10);
+        InventoryOwnerApi.UnitSnapshot consumption =
+                requireCompleteUnit ? requiredUnitSnapshot(row, firstColumn + 10) : unitSnapshot(row, firstColumn + 10);
         boolean hasUnitConfigurationColumns = row.getMetaData().getColumnCount() >= firstColumn + 22;
         return new TargetRecord(
                 row.getObject(firstColumn, UUID.class),
@@ -422,20 +435,17 @@ public class InventoryCopyPersistence {
                 hasUnitConfigurationColumns ? row.getBigDecimal(firstColumn + 20) : null,
                 hasUnitConfigurationColumns ? row.getString(firstColumn + 21) : "ENABLED",
                 hasUnitConfigurationColumns ? row.getString(firstColumn + 22) : null,
-                row.getMetaData().getColumnCount() >= firstColumn + 23
-                        && row.getBoolean(firstColumn + 23));
+                row.getMetaData().getColumnCount() >= firstColumn + 23 && row.getBoolean(firstColumn + 23));
     }
 
     private static InventoryOwnerApi.UnitSnapshot requiredUnitSnapshot(ResultSet result, int firstColumn)
             throws SQLException {
         InventoryOwnerApi.UnitSnapshot snapshot = unitSnapshot(result, firstColumn);
-        if (snapshot == null)
-            throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "单位快照不完整");
+        if (snapshot == null) throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "单位快照不完整");
         return snapshot;
     }
 
-    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(ResultSet result, int firstColumn)
-            throws SQLException {
+    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(ResultSet result, int firstColumn) throws SQLException {
         String refValue = result.getString(firstColumn);
         UUID ref;
         try {

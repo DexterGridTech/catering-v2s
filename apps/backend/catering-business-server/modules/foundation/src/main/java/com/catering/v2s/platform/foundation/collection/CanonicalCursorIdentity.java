@@ -8,9 +8,9 @@ import java.util.Objects;
 /**
  * Canonical, delimiter-safe encoding for the owner dimensions bound into an opaque cursor.
  *
- * <p>Each component is length-prefixed and null is encoded distinctly from the text {@code "null"}. Owners still
- * choose and validate their dimensions; this class only prevents a wire identity from changing when a value contains
- * the old delimiter.
+ * <p>Each component is length-prefixed and null is encoded distinctly from the text {@code "null"}. Owners still choose
+ * and validate their dimensions; this class only prevents a wire identity from changing when a value contains the old
+ * delimiter.
  */
 public final class CanonicalCursorIdentity {
     private CanonicalCursorIdentity() {}

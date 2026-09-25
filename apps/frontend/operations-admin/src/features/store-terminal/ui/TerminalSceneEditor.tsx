@@ -2,7 +2,16 @@ import {Card, Checkbox, Form, Select, Space, Typography} from 'antd';
 import type {FormInstance} from 'antd';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import type {StoreTerminalFormValues, TerminalPrinterForm, TerminalSceneForm} from '../model/storeTerminalModel';
-import {storeTerminalOrderTypeLabels} from '../model/storeTerminalModel';
+import {
+  requireTerminalIdentity,
+  resolveTerminalPrinter,
+  scenePrinterKeysForDisplay,
+  terminalSceneDraftHasInvalidCollections,
+  TerminalSceneValidationError,
+  storeTerminalOrderTypeLabels,
+  terminalPrinterIdentity,
+  terminalPrinterReadyForBinding,
+} from '../model/storeTerminalModel';
 import {STORE_TERMINAL_ORDER_TYPES} from '../../../app/api/generated/storeTerminalRules';
 import {storeTerminalTestIds} from '../storeTerminalTestIds';
 
@@ -21,14 +30,43 @@ export function TerminalSceneEditor({
   printerValues: readonly TerminalPrinterForm[];
   showToggle?: boolean;
 }) {
-  const sceneValue = (Form.useWatch(['functions', index, 'scenes', scene.key], form) as
-    TerminalSceneForm | undefined) ?? {selected: false, orderTypes: [], printerKeys: []};
-
+  const watchedScene = Form.useWatch(['functions', index, 'scenes', scene.key], form) as
+    Partial<TerminalSceneForm> | undefined;
+  // The scene editor is controlled by this subscription. A one-off
+  // getFieldValue fallback can win over the fresh nested value during a
+  // Form.List commit and make the visible selection diverge from the draft.
+  const currentScene = watchedScene;
+  const displayPrinterKeys = scenePrinterKeysForDisplay(currentScene?.printerKeys);
+  const knownPrinterKeys = printerValues
+    .map(printer => terminalPrinterIdentity(printer))
+    .filter(
+      (identity): identity is string =>
+        typeof identity === 'string' && identity.length > 0 && identity === identity.trim(),
+    );
+  const invalidSceneConfiguration = terminalSceneDraftHasInvalidCollections(
+    currentScene,
+    STORE_TERMINAL_ORDER_TYPES.map(value => value.key),
+    knownPrinterKeys,
+  );
+  const sceneValue = currentScene
+    ? {
+        selected: Boolean(currentScene.selected),
+        orderTypes: Array.isArray(currentScene.orderTypes)
+          ? currentScene.orderTypes.filter(value => typeof value === 'string' && value.length > 0)
+          : [],
+        printerKeys: displayPrinterKeys.keys,
+      }
+    : {selected: false, orderTypes: [], printerKeys: []};
+  const selectablePrinters = printerValues.filter(printer => {
+    const identity = terminalPrinterIdentity(printer);
+    const validIdentity = typeof identity === 'string' && identity.length > 0 && identity === identity.trim();
+    return terminalPrinterReadyForBinding(printer) || (validIdentity && sceneValue.printerKeys.includes(identity));
+  });
   return (
     <Card size="small" style={{marginBottom: 8}} {...testId(storeTerminalTestIds.scene(functionIdentity, scene.key))}>
       <Space direction="vertical" size={8} style={{display: 'flex'}}>
         {showToggle ? (
-          <Form.Item name={['functions', index, 'scenes', scene.key, 'selected']} valuePropName="checked" noStyle>
+          <Form.Item name={[index, 'scenes', scene.key, 'selected']} valuePropName="checked" noStyle>
             <Checkbox {...testId(storeTerminalTestIds.sceneToggle(functionIdentity, scene.key))}>
               {scene.label}
             </Checkbox>
@@ -38,7 +76,8 @@ export function TerminalSceneEditor({
         )}
         {sceneValue.selected && (
           <>
-            <Form.Item name={['functions', index, 'scenes', scene.key, 'orderTypes']} label="订单类型">
+            {invalidSceneConfiguration && <Typography.Text type="danger">场景配置读取失败，请重新选择</Typography.Text>}
+            <Form.Item name={[index, 'scenes', scene.key, 'orderTypes']} label="订单类型">
               <Checkbox.Group {...testId(storeTerminalTestIds.sceneOrderTypes(functionIdentity, scene.key))}>
                 {STORE_TERMINAL_ORDER_TYPES.map(value => (
                   <Checkbox
@@ -52,16 +91,26 @@ export function TerminalSceneEditor({
               </Checkbox.Group>
             </Form.Item>
             <Form.Item
-              name={['functions', index, 'scenes', scene.key, 'printerKeys']}
+              name={[index, 'scenes', scene.key, 'printerKeys']}
               label="打印机"
               rules={[
                 {
                   validator: async (_, values: string[] | undefined) => {
-                    const incompatible = (values ?? []).some(key => {
-                      const printer = printerValues.find(value => (value.ref || value.clientKey) === key);
-                      return printer && !scene.allowedPaperSpecKeys.includes(printer.paperSpecKey);
-                    });
-                    if (incompatible) throw new Error('存在与该场景纸规格不匹配的打印机');
+                    try {
+                      const incompatible = (values ?? []).some(key => {
+                        const printer = resolveTerminalPrinter(key, printerValues);
+                        return !scene.allowedPaperSpecKeys.includes(printer.paperSpecKey);
+                      });
+                      if (incompatible) {
+                        throw new TerminalSceneValidationError(
+                          'PAPER_SPEC_MISMATCH',
+                          '存在与该场景纸规格不匹配的打印机',
+                        );
+                      }
+                    } catch (error) {
+                      if (error instanceof TerminalSceneValidationError) throw error;
+                      throw new TerminalSceneValidationError('PRINTER_INVALID', '所选打印机已失效，请重新选择');
+                    }
                   },
                 },
               ]}
@@ -69,8 +118,8 @@ export function TerminalSceneEditor({
               <Select
                 mode="multiple"
                 {...testId(storeTerminalTestIds.scenePrinters(functionIdentity, scene.key))}
-                options={printerValues.map((printer, printerIndex) => {
-                  const key = printer.ref || printer.clientKey;
+                options={selectablePrinters.map((printer, printerIndex) => {
+                  const key = requireTerminalIdentity(terminalPrinterIdentity(printer), 'printer');
                   const compatible = scene.allowedPaperSpecKeys.includes(printer.paperSpecKey);
                   const selected = sceneValue.printerKeys.includes(key);
                   return {
@@ -79,8 +128,8 @@ export function TerminalSceneEditor({
                     disabled: !compatible && !selected,
                   };
                 })}
-                placeholder={printerValues.length ? '请选择打印机' : '请先定义打印机'}
-                disabled={!printerValues.length}
+                placeholder={selectablePrinters.length ? '请选择打印机' : '请先完成打印机定义'}
+                disabled={!selectablePrinters.length}
               />
             </Form.Item>
           </>

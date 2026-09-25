@@ -37,8 +37,8 @@ public class CatalogOrderOptionDefinitionService {
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.OrderOptionDefinitionCreateCommand command,
             String idempotencyKey) {
-        CatalogAuthorizationScope scope = CatalogOwnerScopeSupport.typedCommandScope(
-                context, "createOperationsCatalogOrderOptionDefinition");
+        CatalogAuthorizationScope scope =
+                CatalogOwnerScopeSupport.typedCommandScope(context, "createOperationsCatalogOrderOptionDefinition");
         return definitionFacts.createOrderOption(scope.dataNodeId().toString(), scope.brandRef(), command, now());
     }
 
@@ -47,8 +47,8 @@ public class CatalogOrderOptionDefinitionService {
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.OrderOptionDefinitionUpdateCommand command,
             String idempotencyKey) {
-        CatalogAuthorizationScope scope = CatalogOwnerScopeSupport.typedCommandScope(
-                context, "updateOperationsCatalogOrderOptionDefinition");
+        CatalogAuthorizationScope scope =
+                CatalogOwnerScopeSupport.typedCommandScope(context, "updateOperationsCatalogOrderOptionDefinition");
         return definitionFacts.updateOrderOption(scope.dataNodeId().toString(), scope.brandRef(), command, now());
     }
 

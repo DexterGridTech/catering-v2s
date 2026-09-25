@@ -114,7 +114,7 @@ function moduleNameFromPackageDirectory(root, packageRoot) {
 
 function packageDirectories(root) {
   const result = []
-  for (const layer of ['kernel', 'ui', 'adapter', 'assembly']) {
+  for (const layer of ['kernel', 'ui', 'adapter', 'application']) {
     const layerRoot = path.join(root, 'apps/terminal', layer)
     if (!fs.existsSync(layerRoot)) continue
     const visit = directory => {
@@ -163,7 +163,7 @@ function workspaceLayer(moduleSpecifier) {
   if (name.startsWith('kernel-')) return 'kernel'
   if (name.startsWith('ui-')) return 'ui'
   if (name.startsWith('adapter-')) return 'adapter'
-  if (name.startsWith('assembly-')) return 'assembly'
+  if (name.startsWith('application-')) return 'application'
   return null
 }
 
@@ -181,8 +181,8 @@ function lineOf(node, sourceFile) {
 
 function isInvalidDirection(fromLayer, toLayer) {
   if (fromLayer === 'kernel') return toLayer !== 'kernel'
-  if (fromLayer === 'ui') return toLayer === 'adapter' || toLayer === 'assembly'
-  if (fromLayer === 'adapter') return toLayer === 'ui' || toLayer === 'assembly'
+  if (fromLayer === 'ui') return toLayer === 'adapter' || toLayer === 'application'
+  if (fromLayer === 'adapter') return toLayer === 'ui' || toLayer === 'application'
   return false
 }
 

@@ -43,76 +43,134 @@ class CollaborationOwnerEffectiveSqlCaptureTest {
         List<Point> points = new ArrayList<>();
         TimeProvider time = () -> NOW;
 
-        capture(points, "collaboration/owner-enablements/read-tree/query/01", jdbc ->
-                new CollaborationOwnerPersistence(jdbc, time).readTree(WORKSPACE, WORKSPACE_KEY));
+        capture(points, "collaboration/owner-enablements/read-tree/query/01", jdbc -> new CollaborationOwnerPersistence(
+                        jdbc, time)
+                .readTree(WORKSPACE, WORKSPACE_KEY));
         for (EnablementKind kind : EnablementKind.values()) {
-            capture(points, "collaboration/owner-enablements/read-one/query/" + kind.name(), jdbc ->
-                    new CollaborationOwnerPersistence(jdbc, time).readEnablement(kind, WORKSPACE, WORKSPACE_KEY, "CODE"));
-            capture(points, "collaboration/owner-enablements/read-one-for-update/query/" + kind.name(), jdbc ->
-                    new CollaborationOwnerPersistence(jdbc, time)
+            capture(
+                    points,
+                    "collaboration/owner-enablements/read-one/query/" + kind.name(),
+                    jdbc -> new CollaborationOwnerPersistence(jdbc, time)
+                            .readEnablement(kind, WORKSPACE, WORKSPACE_KEY, "CODE"));
+            capture(
+                    points,
+                    "collaboration/owner-enablements/read-one-for-update/query/" + kind.name(),
+                    jdbc -> new CollaborationOwnerPersistence(jdbc, time)
                             .readEnablementForUpdate(kind, WORKSPACE, WORKSPACE_KEY, "CODE"));
-            capture(points, "collaboration/owner-enablements/read-all/query/" + kind.name(), jdbc ->
-                    new CollaborationOwnerPersistence(jdbc, time).readEnablements(kind, WORKSPACE, WORKSPACE_KEY));
-            capture(points, "collaboration/owner-enablements/lock/query/" + kind.name(), jdbc ->
-                    new CollaborationOwnerPersistence(jdbc, time).lockEnablement(kind, WORKSPACE, WORKSPACE_KEY, "CODE"));
-            capture(points, "collaboration/owner-enablements/insert/update/" + kind.name(), jdbc ->
-                    new CollaborationOwnerPersistence(jdbc, time)
+            capture(
+                    points,
+                    "collaboration/owner-enablements/read-all/query/" + kind.name(),
+                    jdbc -> new CollaborationOwnerPersistence(jdbc, time)
+                            .readEnablements(kind, WORKSPACE, WORKSPACE_KEY));
+            capture(
+                    points,
+                    "collaboration/owner-enablements/lock/query/" + kind.name(),
+                    jdbc -> new CollaborationOwnerPersistence(jdbc, time)
+                            .lockEnablement(kind, WORKSPACE, WORKSPACE_KEY, "CODE"));
+            capture(
+                    points,
+                    "collaboration/owner-enablements/insert/update/" + kind.name(),
+                    jdbc -> new CollaborationOwnerPersistence(jdbc, time)
                             .insertEnablement(kind, WORKSPACE, WORKSPACE_KEY, "CODE", "ENABLED"));
-            capture(points, "collaboration/owner-enablements/update/update/" + kind.name(), jdbc ->
-                    new CollaborationOwnerPersistence(jdbc, time)
+            capture(
+                    points,
+                    "collaboration/owner-enablements/update/update/" + kind.name(),
+                    jdbc -> new CollaborationOwnerPersistence(jdbc, time)
                             .updateEnablement(kind, WORKSPACE, WORKSPACE_KEY, "CODE", "DISABLED", 7L));
         }
 
         CollaborationOwnerPersistence.BindingRow row = bindingRow();
-        capture(points, "collaboration/owner-binding/read/query/01", jdbc ->
-                new CollaborationOwnerPersistence(jdbc, time).readBinding(WORKSPACE, WORKSPACE_KEY, BINDING));
-        capture(points, "collaboration/owner-binding/read-for-update/query/01", jdbc ->
-                new CollaborationOwnerPersistence(jdbc, time).readBindingForUpdate(WORKSPACE, WORKSPACE_KEY, BINDING));
-        capture(points, "collaboration/owner-binding/read-by-reference/query/01", jdbc ->
-                new CollaborationOwnerPersistence(jdbc, time).readBindingByReference(BINDING));
+        capture(points, "collaboration/owner-binding/read/query/01", jdbc -> new CollaborationOwnerPersistence(
+                        jdbc, time)
+                .readBinding(WORKSPACE, WORKSPACE_KEY, BINDING));
+        capture(
+                points,
+                "collaboration/owner-binding/read-for-update/query/01",
+                jdbc -> new CollaborationOwnerPersistence(jdbc, time)
+                        .readBindingForUpdate(WORKSPACE, WORKSPACE_KEY, BINDING));
+        capture(
+                points,
+                "collaboration/owner-binding/read-by-reference/query/01",
+                jdbc -> new CollaborationOwnerPersistence(jdbc, time).readBindingByReference(BINDING));
         for (String sortKey : List.of("NODE", "BUSINESS", "EXTERNAL_OWNER_ID", "STATUS")) {
             for (String direction : List.of("ASC", "DESC")) {
                 String branch = sortKey + "_" + direction;
-                capture(points, "collaboration/owner-binding/page/query/" + branch, jdbc ->
-                        new CollaborationOwnerPersistence(jdbc, time)
-                                .pageBindings(WORKSPACE, WORKSPACE_KEY, "PROVIDER", "name", "node", sortKey, direction, 10, 20L));
+                capture(
+                        points,
+                        "collaboration/owner-binding/page/query/" + branch,
+                        jdbc -> new CollaborationOwnerPersistence(jdbc, time)
+                                .pageBindings(
+                                        WORKSPACE,
+                                        WORKSPACE_KEY,
+                                        "PROVIDER",
+                                        "name",
+                                        "node",
+                                        sortKey,
+                                        direction,
+                                        10,
+                                        20L));
             }
         }
         for (String direction : List.of("ASC", "DESC")) {
-            capture(points, "collaboration/owner-binding/page/query/DEFAULT_" + direction, jdbc ->
-                    new CollaborationOwnerPersistence(jdbc, time)
-                            .pageBindings(WORKSPACE, WORKSPACE_KEY, "PROVIDER", "name", "node", "BINDING_NAME", direction, 10, 20L));
+            capture(
+                    points,
+                    "collaboration/owner-binding/page/query/DEFAULT_" + direction,
+                    jdbc -> new CollaborationOwnerPersistence(jdbc, time)
+                            .pageBindings(
+                                    WORKSPACE,
+                                    WORKSPACE_KEY,
+                                    "PROVIDER",
+                                    "name",
+                                    "node",
+                                    "BINDING_NAME",
+                                    direction,
+                                    10,
+                                    20L));
         }
-        capture(points, "collaboration/owner-binding/find-for-node/query/01", jdbc ->
-                new CollaborationOwnerPersistence(jdbc, time)
-                        .findBindingsForNode(WORKSPACE, WORKSPACE_KEY, "PROVIDER", "STORE", NODE.toString()));
-        capture(points, "collaboration/owner-binding/insert/query/01", jdbc ->
-                new CollaborationOwnerPersistence(jdbc, time)
-                        .insertBinding(WORKSPACE, WORKSPACE_KEY, "SYSTEM", "PROVIDER", "TAKEAWAY", "STORE", NODE.toString(), "Binding", "owner", "EFFECTIVE"));
-        capture(points, "collaboration/owner-binding/update/update/01", jdbc ->
-                new CollaborationOwnerPersistence(jdbc, time)
-                        .updateBinding(BINDING, WORKSPACE, WORKSPACE_KEY, "Binding 2", "owner-2", 7L));
-        capture(points, "collaboration/owner-binding/delete/query/01", jdbc ->
-                new CollaborationOwnerPersistence(jdbc, time).deleteBinding(BINDING, WORKSPACE, WORKSPACE_KEY, 7L));
-        capture(points, "collaboration/owner-binding/authorization/update/01", jdbc ->
-                new CollaborationOwnerPersistence(jdbc, time)
+        capture(points, "collaboration/owner-binding/find-for-node/query/01", jdbc -> new CollaborationOwnerPersistence(
+                        jdbc, time)
+                .findBindingsForNode(WORKSPACE, WORKSPACE_KEY, "PROVIDER", "STORE", NODE.toString()));
+        capture(points, "collaboration/owner-binding/insert/query/01", jdbc -> new CollaborationOwnerPersistence(
+                        jdbc, time)
+                .insertBinding(
+                        WORKSPACE,
+                        WORKSPACE_KEY,
+                        "SYSTEM",
+                        "PROVIDER",
+                        "TAKEAWAY",
+                        "STORE",
+                        NODE.toString(),
+                        "Binding",
+                        "owner",
+                        "EFFECTIVE"));
+        capture(points, "collaboration/owner-binding/update/update/01", jdbc -> new CollaborationOwnerPersistence(
+                        jdbc, time)
+                .updateBinding(BINDING, WORKSPACE, WORKSPACE_KEY, "Binding 2", "owner-2", 7L));
+        capture(points, "collaboration/owner-binding/delete/query/01", jdbc -> new CollaborationOwnerPersistence(
+                        jdbc, time)
+                .deleteBinding(BINDING, WORKSPACE, WORKSPACE_KEY, 7L));
+        capture(
+                points,
+                "collaboration/owner-binding/authorization/update/01",
+                jdbc -> new CollaborationOwnerPersistence(jdbc, time)
                         .applyAuthorization(BINDING, "owner", "authorization", 7L));
-        capture(points, "collaboration/owner-binding/revocation/update/01", jdbc ->
-                new CollaborationOwnerPersistence(jdbc, time).applyRevocation(BINDING, 7L));
-        capture(points, "collaboration/owner-binding/node-path/query/01", jdbc ->
-                new CollaborationOwnerPersistence(jdbc, time).readNodePath(row));
-        capture(points, "collaboration/audit/insert/update/01", jdbc ->
-                new CollaborationOwnerPersistence(jdbc, time)
-                        .writeAudit(new AuditRecord(
-                                WORKSPACE,
-                                WORKSPACE_KEY,
-                                BINDING.toString(),
-                                "OWNER_BINDING",
-                                "BINDING_UPDATED",
-                                "SYSTEM",
-                                null,
-                                "system",
-                                "{}")));
+        capture(points, "collaboration/owner-binding/revocation/update/01", jdbc -> new CollaborationOwnerPersistence(
+                        jdbc, time)
+                .applyRevocation(BINDING, 7L));
+        capture(points, "collaboration/owner-binding/node-path/query/01", jdbc -> new CollaborationOwnerPersistence(
+                        jdbc, time)
+                .readNodePath(row));
+        capture(points, "collaboration/audit/insert/update/01", jdbc -> new CollaborationOwnerPersistence(jdbc, time)
+                .writeAudit(new AuditRecord(
+                        WORKSPACE,
+                        WORKSPACE_KEY,
+                        BINDING.toString(),
+                        "OWNER_BINDING",
+                        "BINDING_UPDATED",
+                        "SYSTEM",
+                        null,
+                        "system",
+                        "{}")));
 
         assertEquals(34, points.size());
         assertEquals(points.size(), points.stream().map(Point::key).distinct().count());
@@ -156,46 +214,36 @@ class CollaborationOwnerEffectiveSqlCaptureTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static void configure(JdbcTemplate jdbc, List<RawCall> calls) {
         doAnswer(invocation -> {
-                    calls.add(new RawCall(
-                            "query",
-                            invocation.getArgument(0),
-                            captureSetter(invocation.getArgument(1))));
+                    calls.add(
+                            new RawCall("query", invocation.getArgument(0), captureSetter(invocation.getArgument(1))));
                     return List.of();
                 })
                 .when(jdbc)
                 .query(anyString(), any(PreparedStatementSetter.class), any(RowMapper.class));
         doAnswer(invocation -> {
-                    calls.add(new RawCall(
-                            "query",
-                            invocation.getArgument(0),
-                            captureSetter(invocation.getArgument(1))));
+                    calls.add(
+                            new RawCall("query", invocation.getArgument(0), captureSetter(invocation.getArgument(1))));
                     return null;
                 })
                 .when(jdbc)
                 .query(anyString(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class));
         doAnswer(invocation -> {
-                    calls.add(new RawCall(
-                            "query",
-                            invocation.getArgument(0),
-                            captureSetter(invocation.getArgument(1))));
+                    calls.add(
+                            new RawCall("query", invocation.getArgument(0), captureSetter(invocation.getArgument(1))));
                     return null;
                 })
                 .when(jdbc)
                 .query(anyString(), any(ResultSetExtractor.class));
         doAnswer(invocation -> {
                     calls.add(new RawCall(
-                            "queryForList",
-                            invocation.getArgument(0),
-                            describeValues(varargValues(invocation))));
+                            "queryForList", invocation.getArgument(0), describeValues(varargValues(invocation))));
                     return List.of();
                 })
                 .when(jdbc)
                 .queryForList(anyString(), any(Object[].class));
         doAnswer(invocation -> {
-                    calls.add(new RawCall(
-                            "update",
-                            invocation.getArgument(0),
-                            describeValues(varargValues(invocation))));
+                    calls.add(
+                            new RawCall("update", invocation.getArgument(0), describeValues(varargValues(invocation))));
                     return 1;
                 })
                 .when(jdbc)
@@ -206,11 +254,15 @@ class CollaborationOwnerEffectiveSqlCaptureTest {
         PreparedStatement statement = mock(PreparedStatement.class);
         setter.setValues(statement);
         Collection<Invocation> invocations = mockingDetails(statement).getInvocations();
-        return invocations.stream().map(CollaborationOwnerEffectiveSqlCaptureTest::describeInvocation).toList();
+        return invocations.stream()
+                .map(CollaborationOwnerEffectiveSqlCaptureTest::describeInvocation)
+                .toList();
     }
 
     private static List<String> describeValues(Object[] values) {
-        return Arrays.stream(values).map(CollaborationOwnerEffectiveSqlCaptureTest::describeValue).toList();
+        return Arrays.stream(values)
+                .map(CollaborationOwnerEffectiveSqlCaptureTest::describeValue)
+                .toList();
     }
 
     private static Object[] varargValues(InvocationOnMock invocation) {
@@ -245,9 +297,11 @@ class CollaborationOwnerEffectiveSqlCaptureTest {
                         + "\" slots=\"" + escape(String.join("|", point.slots()))
                         + "\"><![CDATA[" + point.sql().replace("]]>", "]]]]><![CDATA[>") + "]]></point>")
                 .collect(Collectors.joining("\n"));
-        Files.writeString(output, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<sql-capture phase=\"after\">\n"
-                + body
-                + "\n</sql-capture>\n");
+        Files.writeString(
+                output,
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<sql-capture phase=\"after\">\n"
+                        + body
+                        + "\n</sql-capture>\n");
     }
 
     private static String escape(String value) {

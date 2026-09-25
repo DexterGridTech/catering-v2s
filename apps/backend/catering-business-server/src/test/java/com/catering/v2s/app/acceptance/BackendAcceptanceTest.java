@@ -697,9 +697,9 @@ class BackendAcceptanceTest {
     /**
      * Runs only when the managed CP-09 proof is explicitly requested. The proof is disabled by default because
      * V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF is absent or not true; explicit enablement requires setting that
-     * environment variable to true in the managed proof command. It is deliberately not an
-     * {@link AcceptanceScenario}: connection-scope probes must not change the product-business scenario denominator or
-     * be reported as a substitute for those scenarios.
+     * environment variable to true in the managed proof command. It is deliberately not an {@link AcceptanceScenario}:
+     * connection-scope probes must not change the product-business scenario denominator or be reported as a substitute
+     * for those scenarios.
      */
     @Test
     @EnabledIfEnvironmentVariable(named = "V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF", matches = "true")
@@ -758,7 +758,8 @@ class BackendAcceptanceTest {
 
     static Map<String, Object> acceptanceStoreOperatingRuleSwitches() {
         Map<String, Object> values = new java.util.LinkedHashMap<>(StoreOperatingRuleCatalog.defaults());
-        values.put(StoreOperatingRuleCatalog.definition("catalogManagementEnabled").key(), true);
+        values.put(
+                StoreOperatingRuleCatalog.definition("catalogManagementEnabled").key(), true);
         return Map.copyOf(values);
     }
 
@@ -1449,8 +1450,7 @@ class BackendAcceptanceTest {
     }
 
     long organizationStoreVersion(UUID storeId) {
-        return jdbc.queryForObject(
-                "SELECT version FROM organization.store WHERE id=?", Long.class, storeId);
+        return jdbc.queryForObject("SELECT version FROM organization.store WHERE id=?", Long.class, storeId);
     }
 
     String text(String sql, Object... args) {
@@ -1834,8 +1834,8 @@ class BackendAcceptanceTest {
             ByteArrayOutputStream content = new ByteArrayOutputStream();
             writePart(content, boundary, "content", fileName, mediaType, bytes);
             content.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
-            String query = "?fileName=" + encode(fileName) + "&mediaType=" + encode(mediaType)
-                    + "&contentDigest=" + encode(digest);
+            String query = "?fileName=" + encode(fileName) + "&mediaType=" + encode(mediaType) + "&contentDigest="
+                    + encode(digest);
             return send(route, "POST", path + query, cookie, content.toByteArray(), boundary, expected);
         }
 

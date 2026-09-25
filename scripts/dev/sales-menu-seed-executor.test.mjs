@@ -153,8 +153,9 @@ test('sales-menu child accepts only one matching r5 parent context and refuses d
 
 test('sales-menu child keeps generated multipart transport and bind grants at the actual owner boundary', async () => {
   const source = await readFile(executorUrl, 'utf8');
-  assert.match(source, /resolveGeneratedOperationById\(inputs\.registry, operationId\)/);
-  assert.match(source, /materializeGeneratedOperationPath\(operation, \{pathParameters, queryParameters:/);
+  assert.match(source, /createSeedHttpClient\(\{/);
+  assert.match(source, /resolveOperation: operationId => resolveGeneratedOperationById\(inputs\.registry, operationId\)/);
+  assert.match(source, /materializeOperationPath: materializeGeneratedOperationPath/);
   assert.match(source, /new FormData\(\)/);
   assert.match(source, /X-Sales-Menu-Asset-Bind-Grants/);
   assert.match(source, /expectedProblemCode: 'SALES_MENU_MANUAL_REASON_REQUIRED'/);

@@ -1,0 +1,1604 @@
+{
+  "items": {
+    "standardItemWithOptions": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "SALAD-CAESAR-001",
+      "name": "凯撒沙拉",
+      "shortName": "凯撒沙拉",
+      "categoryKey": "SALAD",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE",
+        "TAKEOUT"
+      ],
+      "description": "经典凯撒沙拉，支持酱汁、加料和餐具点单选项，适合堂食和线上点餐。",
+      "standardSalePriceCents": 4800,
+      "identifiers": [],
+      "optionGroups": [
+        {
+          "optionGroupRef": "caesar-sauce",
+          "optionGroupCode": "CAESAR_SAUCE",
+          "groupName": "酱汁",
+          "optionGroupKind": "TASTE",
+          "selectionRule": "SINGLE",
+          "required": true,
+          "minSelections": 1,
+          "maxSelections": 1,
+          "optionValues": [
+            {
+              "optionValueRef": "caesar-sauce-classic",
+              "optionValueCode": "CAESAR_SAUCE_CLASSIC",
+              "name": "标准凯撒酱",
+              "printName": "标准凯撒酱",
+              "preparationImpact": "标准凯撒酱",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "caesar-sauce-light",
+              "optionValueCode": "CAESAR_SAUCE_LIGHT",
+              "name": "少酱",
+              "printName": "少酱",
+              "preparationImpact": "少酱",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "caesar-sauce-vinaigrette",
+              "optionValueCode": "CAESAR_SAUCE_VINAIGRETTE",
+              "name": "油醋汁",
+              "printName": "油醋汁",
+              "preparationImpact": "油醋汁",
+              "standardPriceDeltaCents": 0
+            }
+          ]
+        },
+        {
+          "optionGroupRef": "caesar-addon",
+          "optionGroupCode": "CAESAR_ADDON",
+          "groupName": "配料",
+          "optionGroupKind": "ADD_ON",
+          "selectionRule": "MULTIPLE",
+          "required": false,
+          "minSelections": 0,
+          "maxSelections": 3,
+          "optionValues": [
+            {
+              "optionValueRef": "caesar-addon-chicken",
+              "optionValueCode": "CAESAR_ADDON_CHICKEN",
+              "name": "加鸡胸肉",
+              "printName": "加鸡胸肉",
+              "preparationImpact": "加鸡胸肉",
+              "standardPriceDeltaCents": 800,
+              "mediaAssetKey": "chickenBreast"
+            },
+            {
+              "optionValueRef": "caesar-addon-bacon",
+              "optionValueCode": "CAESAR_ADDON_BACON",
+              "name": "加培根",
+              "printName": "加培根",
+              "preparationImpact": "加培根",
+              "standardPriceDeltaCents": 500
+            },
+            {
+              "optionValueRef": "caesar-addon-egg",
+              "optionValueCode": "CAESAR_ADDON_EGG",
+              "name": "加溏心蛋",
+              "printName": "加溏心蛋",
+              "preparationImpact": "加溏心蛋",
+              "standardPriceDeltaCents": 400
+            }
+          ]
+        },
+        {
+          "optionGroupRef": "caesar-cutlery",
+          "optionGroupCode": "CAESAR_CUTLERY",
+          "groupName": "餐具",
+          "optionGroupKind": "PACKAGING",
+          "selectionRule": "SINGLE",
+          "required": true,
+          "minSelections": 1,
+          "maxSelections": 1,
+          "optionValues": [
+            {
+              "optionValueRef": "caesar-cutlery-yes",
+              "optionValueCode": "CAESAR_CUTLERY_YES",
+              "name": "需要餐具",
+              "printName": "需要餐具",
+              "preparationImpact": "需要餐具",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "caesar-cutlery-no",
+              "optionValueCode": "CAESAR_CUTLERY_NO",
+              "name": "不需要餐具",
+              "printName": "不需要餐具",
+              "preparationImpact": "不需要餐具",
+              "standardPriceDeltaCents": 0
+            }
+          ]
+        }
+      ],
+      "preparationProfile": {
+        "stationTags": [
+          "冷菜台"
+        ],
+        "printName": "凯撒沙拉",
+        "printTags": [
+          "冷菜"
+        ],
+        "preparationNotes": "生菜沥干后拌酱，鸡胸肉切片摆盘。",
+        "allergenNotes": "含蛋、奶制品",
+        "estimatedPreparationSeconds": 300
+      },
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialMixedLettuce",
+              "quantityPerUnit": 120,
+              "sortNo": 1
+            },
+            {
+              "componentFixtureKey": "materialChickenBreast",
+              "quantityPerUnit": 80,
+              "sortNo": 2
+            },
+            {
+              "componentFixtureKey": "materialCup",
+              "quantityPerUnit": 1,
+              "sortNo": 3
+            }
+          ]
+        },
+        {
+          "nodeKey": "OPTION_VALUE:caesar-addon-chicken",
+          "nodeType": "OPTION_VALUE",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialChickenBreast",
+              "quantityPerUnit": 80,
+              "sortNo": 1
+            }
+          ]
+        },
+        {
+          "nodeKey": "OPTION_VALUE:caesar-addon-bacon",
+          "nodeType": "OPTION_VALUE",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialBacon",
+              "quantityPerUnit": 25,
+              "sortNo": 1
+            }
+          ]
+        },
+        {
+          "nodeKey": "OPTION_VALUE:caesar-addon-egg",
+          "nodeType": "OPTION_VALUE",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialEgg",
+              "quantityPerUnit": 1,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "caesarSalad"
+    },
+    "standardItemCopyTarget": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "SALAD-BURRATA-TOMATO-001",
+      "name": "布拉塔番茄沙拉",
+      "shortName": "布拉塔番茄沙拉",
+      "categoryKey": "SALAD",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "DINNER"
+      ],
+      "description": "布拉塔芝士配番茄和罗勒，用于普通商品点单选项复制目标。",
+      "standardSalePriceCents": 5800,
+      "identifiers": [],
+      "optionGroups": [
+        {
+          "optionGroupRef": "burrata-sauce",
+          "optionGroupCode": "BURRATA_SAUCE",
+          "groupName": "酱汁",
+          "optionGroupKind": "TASTE",
+          "selectionRule": "SINGLE",
+          "required": true,
+          "minSelections": 1,
+          "maxSelections": 1,
+          "optionValues": [
+            {
+              "optionValueRef": "burrata-sauce-balsamic",
+              "optionValueCode": "BURRATA_SAUCE_BALSAMIC",
+              "name": "黑醋汁",
+              "printName": "黑醋汁",
+              "preparationImpact": "黑醋汁",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "burrata-sauce-olive",
+              "optionValueCode": "BURRATA_SAUCE_OLIVE",
+              "name": "橄榄油海盐",
+              "printName": "橄榄油海盐",
+              "preparationImpact": "橄榄油海盐",
+              "standardPriceDeltaCents": 0
+            }
+          ]
+        }
+      ],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialTomato",
+              "quantityPerUnit": 120,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "burrata"
+    },
+    "standardCoffeeWithOptions": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "BEV-POUROVER-001",
+      "name": "手冲单品咖啡",
+      "shortName": "手冲单品咖啡",
+      "categoryKey": "BEVERAGE",
+      "salesUnitKey": "CUP",
+      "tagKeys": [
+        "DINNER"
+      ],
+      "description": "手冲单品咖啡，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 3600,
+      "identifiers": [],
+      "optionGroups": [
+        {
+          "optionGroupRef": "coffee-bean",
+          "optionGroupCode": "COFFEE_BEAN",
+          "groupName": "豆种",
+          "optionGroupKind": "TASTE",
+          "selectionRule": "SINGLE",
+          "required": true,
+          "minSelections": 1,
+          "maxSelections": 1,
+          "optionValues": [
+            {
+              "optionValueRef": "coffee-bean-ethiopia",
+              "optionValueCode": "COFFEE_BEAN_ETHIOPIA",
+              "name": "埃塞俄比亚",
+              "printName": "埃塞俄比亚",
+              "preparationImpact": "埃塞俄比亚",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "coffee-bean-colombia",
+              "optionValueCode": "COFFEE_BEAN_COLOMBIA",
+              "name": "哥伦比亚",
+              "printName": "哥伦比亚",
+              "preparationImpact": "哥伦比亚",
+              "standardPriceDeltaCents": 0
+            }
+          ]
+        },
+        {
+          "optionGroupRef": "coffee-process",
+          "optionGroupCode": "COFFEE_PROCESS",
+          "groupName": "处理法",
+          "optionGroupKind": "METHOD",
+          "selectionRule": "SINGLE",
+          "required": true,
+          "minSelections": 1,
+          "maxSelections": 1,
+          "optionValues": [
+            {
+              "optionValueRef": "coffee-process-washed",
+              "optionValueCode": "COFFEE_PROCESS_WASHED",
+              "name": "水洗",
+              "printName": "水洗",
+              "preparationImpact": "水洗",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "coffee-process-natural",
+              "optionValueCode": "COFFEE_PROCESS_NATURAL",
+              "name": "日晒",
+              "printName": "日晒",
+              "preparationImpact": "日晒",
+              "standardPriceDeltaCents": 0
+            }
+          ]
+        },
+        {
+          "optionGroupRef": "coffee-serve",
+          "optionGroupCode": "COFFEE_SERVE",
+          "groupName": "出品方式",
+          "optionGroupKind": "METHOD",
+          "selectionRule": "SINGLE",
+          "required": true,
+          "minSelections": 1,
+          "maxSelections": 1,
+          "optionValues": [
+            {
+              "optionValueRef": "coffee-serve-hot",
+              "optionValueCode": "COFFEE_SERVE_HOT",
+              "name": "热手冲",
+              "printName": "热手冲",
+              "preparationImpact": "热手冲",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "coffee-serve-iced",
+              "optionValueCode": "COFFEE_SERVE_ICED",
+              "name": "冰手冲",
+              "printName": "冰手冲",
+              "preparationImpact": "冰手冲",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "coffee-serve-iceball",
+              "optionValueCode": "COFFEE_SERVE_ICEBALL",
+              "name": "加冰球",
+              "printName": "加冰球",
+              "preparationImpact": "加冰球",
+              "standardPriceDeltaCents": 0
+            }
+          ]
+        }
+      ],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialCoffeeBean",
+              "quantityPerUnit": 22,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "coffee"
+    },
+    "standardPearlMilk": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "APP-GARLIC-BREAD-001",
+      "name": "蒜香面包",
+      "shortName": "蒜香面包",
+      "categoryKey": "APPETIZER",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "LUNCH",
+        "TAKEOUT"
+      ],
+      "description": "蒜香面包，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 2800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialMozzarella",
+              "quantityPerUnit": 20,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "garlicBread"
+    },
+    "skuManagedItem": {
+      "shapeKey": "SKU_VARIANT_SALE_COUNTED",
+      "catalogItemCode": "MAIN-STEAK-SIRLOIN-001",
+      "name": "黑椒西冷牛排",
+      "shortName": "黑椒西冷牛排",
+      "categoryKey": "MAIN",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "黑椒西冷牛排，按规格或熟度管理 SKU 价格和库存颗粒度。",
+      "standardSalePriceCents": 0,
+      "preparationProfile": {
+        "stationTags": [
+          "热厨"
+        ],
+        "printName": "黑椒西冷牛排",
+        "printTags": [
+          "主菜"
+        ],
+        "preparationNotes": "按熟度煎制，出餐前淋黑椒汁。",
+        "allergenNotes": null,
+        "estimatedPreparationSeconds": 720
+      },
+      "skus": [
+        {
+          "productSkuRef": "sku-steak-medium-rare",
+          "skuCode": "STEAK-MEDIUM-RARE",
+          "skuName": "西冷牛排五分熟",
+          "attributeValues": {
+            "DONENESS": "MEDIUM_RARE"
+          },
+          "standardSalePriceCents": 12800,
+          "skuBarcode": "690000010101",
+          "isDefault": true,
+          "mediaAssetKey": "sirloinSteak"
+        },
+        {
+          "productSkuRef": "sku-steak-medium",
+          "skuCode": "STEAK-MEDIUM",
+          "skuName": "西冷牛排七分熟",
+          "attributeValues": {
+            "DONENESS": "MEDIUM"
+          },
+          "standardSalePriceCents": 12800,
+          "skuBarcode": "690000010102",
+          "isDefault": false,
+          "mediaAssetKey": "sirloinSteak"
+        },
+        {
+          "productSkuRef": "sku-steak-well-done",
+          "skuCode": "STEAK-WELL-DONE",
+          "skuName": "西冷牛排全熟",
+          "attributeValues": {
+            "DONENESS": "WELL_DONE"
+          },
+          "standardSalePriceCents": 12800,
+          "skuBarcode": "690000010103",
+          "isDefault": false,
+          "mediaAssetKey": "sirloinSteak"
+        }
+      ],
+      "inventoryBomRules": [
+        {
+          "nodeKey": "SKU:sku-steak-medium-rare",
+          "nodeType": "SKU",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialPearl",
+              "quantityPerUnit": 220,
+              "sortNo": 1
+            },
+            {
+              "componentFixtureKey": "materialVanillaSyrup",
+              "quantityPerUnit": 35,
+              "sortNo": 2
+            }
+          ]
+        },
+        {
+          "nodeKey": "SKU:sku-steak-medium",
+          "nodeType": "SKU",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialPearl",
+              "quantityPerUnit": 220,
+              "sortNo": 1
+            },
+            {
+              "componentFixtureKey": "materialVanillaSyrup",
+              "quantityPerUnit": 35,
+              "sortNo": 2
+            }
+          ]
+        },
+        {
+          "nodeKey": "SKU:sku-steak-well-done",
+          "nodeType": "SKU",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialPearl",
+              "quantityPerUnit": 220,
+              "sortNo": 1
+            },
+            {
+              "componentFixtureKey": "materialVanillaSyrup",
+              "quantityPerUnit": 35,
+              "sortNo": 2
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "sirloinSteak"
+    },
+    "skuManagedCopyTarget": {
+      "shapeKey": "SKU_VARIANT_SALE_COUNTED",
+      "catalogItemCode": "PIZZA-MARGHERITA-001",
+      "name": "玛格丽特披萨",
+      "shortName": "玛格丽特披萨",
+      "categoryKey": "PIZZA",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "玛格丽特披萨，按规格或熟度管理 SKU 价格和库存颗粒度。",
+      "standardSalePriceCents": 0,
+      "preparationProfile": null,
+      "skus": [
+        {
+          "productSkuRef": "sku-pizza-9",
+          "skuCode": "PIZZA-MARGHERITA-9",
+          "skuName": "玛格丽特披萨 9 寸",
+          "attributeValues": {
+            "PIZZA_SIZE": "NINE_INCH"
+          },
+          "standardSalePriceCents": 6800,
+          "skuBarcode": "690000010201",
+          "isDefault": true,
+          "mediaAssetKey": "margheritaPizza"
+        },
+        {
+          "productSkuRef": "sku-pizza-12",
+          "skuCode": "PIZZA-MARGHERITA-12",
+          "skuName": "玛格丽特披萨 12 寸",
+          "attributeValues": {
+            "PIZZA_SIZE": "TWELVE_INCH"
+          },
+          "standardSalePriceCents": 8800,
+          "skuBarcode": "690000010202",
+          "isDefault": false,
+          "mediaAssetKey": "margheritaPizza"
+        }
+      ],
+      "inventoryBomRules": [
+        {
+          "nodeKey": "SKU:sku-pizza-9",
+          "nodeType": "SKU",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialPizzaDough",
+              "quantityPerUnit": 1,
+              "sortNo": 1
+            },
+            {
+              "componentFixtureKey": "materialMozzarella",
+              "quantityPerUnit": 90,
+              "sortNo": 2
+            }
+          ]
+        },
+        {
+          "nodeKey": "SKU:sku-pizza-12",
+          "nodeType": "SKU",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialPizzaDough",
+              "quantityPerUnit": 1,
+              "sortNo": 1
+            },
+            {
+              "componentFixtureKey": "materialMozzarella",
+              "quantityPerUnit": 130,
+              "sortNo": 2
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "margheritaPizza"
+    },
+    "appFrenchFries": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "APP-FRENCH-FRIES-001",
+      "name": "松露薯条",
+      "shortName": "松露薯条",
+      "categoryKey": "APPETIZER",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "松露薯条，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 3200,
+      "identifiers": [],
+      "optionGroups": [
+        {
+          "optionGroupRef": "fries-dip",
+          "optionGroupCode": "FRIES_DIP",
+          "groupName": "蘸酱",
+          "optionGroupKind": "TASTE",
+          "selectionRule": "SINGLE",
+          "required": true,
+          "minSelections": 1,
+          "maxSelections": 1,
+          "optionValues": [
+            {
+              "optionValueRef": "fries-dip-ketchup",
+              "optionValueCode": "FRIES_DIP_KETCHUP",
+              "name": "番茄酱",
+              "printName": "番茄酱",
+              "preparationImpact": "番茄酱",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "fries-dip-garlic-mayo",
+              "optionValueCode": "FRIES_DIP_GARLIC_MAYO",
+              "name": "蒜香蛋黄酱",
+              "printName": "蒜香蛋黄酱",
+              "preparationImpact": "蒜香蛋黄酱",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "fries-dip-truffle-cheese",
+              "optionValueCode": "FRIES_DIP_TRUFFLE_CHEESE",
+              "name": "松露芝士酱",
+              "printName": "松露芝士酱",
+              "preparationImpact": "松露芝士酱",
+              "standardPriceDeltaCents": 300
+            }
+          ]
+        },
+        {
+          "optionGroupRef": "fries-addon",
+          "optionGroupCode": "FRIES_ADDON",
+          "groupName": "加料",
+          "optionGroupKind": "ADD_ON",
+          "selectionRule": "MULTIPLE",
+          "required": false,
+          "minSelections": 0,
+          "maxSelections": 2,
+          "optionValues": [
+            {
+              "optionValueRef": "fries-addon-bacon",
+              "optionValueCode": "FRIES_ADDON_BACON",
+              "name": "培根碎",
+              "printName": "培根碎",
+              "preparationImpact": "培根碎",
+              "standardPriceDeltaCents": 500
+            },
+            {
+              "optionValueRef": "fries-addon-parmesan",
+              "optionValueCode": "FRIES_ADDON_PARMESAN",
+              "name": "帕玛森芝士",
+              "printName": "帕玛森芝士",
+              "preparationImpact": "帕玛森芝士",
+              "standardPriceDeltaCents": 400
+            },
+            {
+              "optionValueRef": "fries-addon-large",
+              "optionValueCode": "FRIES_ADDON_LARGE",
+              "name": "升级大份",
+              "printName": "升级大份",
+              "preparationImpact": "升级大份",
+              "standardPriceDeltaCents": 800
+            }
+          ]
+        }
+      ],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialPotato",
+              "quantityPerUnit": 180,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "frenchFries"
+    },
+    "appRoastVegetables": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "APP-ROAST-VEG-001",
+      "name": "烤时蔬拼盘",
+      "shortName": "烤时蔬拼盘",
+      "categoryKey": "APPETIZER",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "烤时蔬拼盘，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 3800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialTomato",
+              "quantityPerUnit": 100,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "roastVegetables"
+    },
+    "soupMushroom": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "SOUP-MUSHROOM-001",
+      "name": "奶油蘑菇汤",
+      "shortName": "奶油蘑菇汤",
+      "categoryKey": "SOUP",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "奶油蘑菇汤，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 3600,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialMushroom",
+              "quantityPerUnit": 120,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "mushroomSoup"
+    },
+    "soupClamChowder": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "SOUP-CLAM-CHOWDER-001",
+      "name": "蛤蜊浓汤",
+      "shortName": "蛤蜊浓汤",
+      "categoryKey": "SOUP",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "蛤蜊浓汤，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 4200,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialCream",
+              "quantityPerUnit": 80,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "clamChowder"
+    },
+    "pastaTomato": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "PASTA-TOMATO-BASIL-001",
+      "name": "番茄罗勒意面",
+      "shortName": "番茄罗勒意面",
+      "categoryKey": "PASTA_RICE",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "LUNCH",
+        "DINNER"
+      ],
+      "description": "番茄罗勒意面，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 6200,
+      "identifiers": [],
+      "optionGroups": [
+        {
+          "optionGroupRef": "tomato-pasta-cook",
+          "optionGroupCode": "TOMATO_PASTA_COOK",
+          "groupName": "面条熟度",
+          "optionGroupKind": "METHOD",
+          "selectionRule": "SINGLE",
+          "required": true,
+          "minSelections": 1,
+          "maxSelections": 1,
+          "optionValues": [
+            {
+              "optionValueRef": "tomato-pasta-cook-normal",
+              "optionValueCode": "TOMATO_PASTA_COOK_NORMAL",
+              "name": "标准口感",
+              "printName": "标准口感",
+              "preparationImpact": "标准口感",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "tomato-pasta-cook-al-dente",
+              "optionValueCode": "TOMATO_PASTA_COOK_AL_DENTE",
+              "name": "偏硬口感",
+              "printName": "偏硬口感",
+              "preparationImpact": "偏硬口感",
+              "standardPriceDeltaCents": 0
+            }
+          ]
+        },
+        {
+          "optionGroupRef": "tomato-pasta-spicy",
+          "optionGroupCode": "TOMATO_PASTA_SPICY",
+          "groupName": "辣度",
+          "optionGroupKind": "TASTE",
+          "selectionRule": "SINGLE",
+          "required": true,
+          "minSelections": 1,
+          "maxSelections": 1,
+          "optionValues": [
+            {
+              "optionValueRef": "tomato-pasta-spicy-none",
+              "optionValueCode": "TOMATO_PASTA_SPICY_NONE",
+              "name": "不辣",
+              "printName": "不辣",
+              "preparationImpact": "不辣",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "tomato-pasta-spicy-mild",
+              "optionValueCode": "TOMATO_PASTA_SPICY_MILD",
+              "name": "微辣",
+              "printName": "微辣",
+              "preparationImpact": "微辣",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "tomato-pasta-spicy-medium",
+              "optionValueCode": "TOMATO_PASTA_SPICY_MEDIUM",
+              "name": "中辣",
+              "printName": "中辣",
+              "preparationImpact": "中辣",
+              "standardPriceDeltaCents": 0
+            }
+          ]
+        },
+        {
+          "optionGroupRef": "tomato-pasta-addon",
+          "optionGroupCode": "TOMATO_PASTA_ADDON",
+          "groupName": "加料",
+          "optionGroupKind": "ADD_ON",
+          "selectionRule": "MULTIPLE",
+          "required": false,
+          "minSelections": 0,
+          "maxSelections": 3,
+          "optionValues": [
+            {
+              "optionValueRef": "tomato-pasta-addon-chicken",
+              "optionValueCode": "TOMATO_PASTA_ADDON_CHICKEN",
+              "name": "加烤鸡胸",
+              "printName": "加烤鸡胸",
+              "preparationImpact": "加烤鸡胸",
+              "standardPriceDeltaCents": 800,
+              "mediaAssetKey": "chickenBreast"
+            },
+            {
+              "optionValueRef": "tomato-pasta-addon-mushroom",
+              "optionValueCode": "TOMATO_PASTA_ADDON_MUSHROOM",
+              "name": "加蘑菇",
+              "printName": "加蘑菇",
+              "preparationImpact": "加蘑菇",
+              "standardPriceDeltaCents": 500
+            },
+            {
+              "optionValueRef": "tomato-pasta-addon-cheese",
+              "optionValueCode": "TOMATO_PASTA_ADDON_CHEESE",
+              "name": "加马苏里拉芝士",
+              "printName": "加马苏里拉芝士",
+              "preparationImpact": "加马苏里拉芝士",
+              "standardPriceDeltaCents": 600
+            }
+          ]
+        }
+      ],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialGrassJelly",
+              "quantityPerUnit": 120,
+              "sortNo": 1
+            },
+            {
+              "componentFixtureKey": "materialCup",
+              "quantityPerUnit": 1,
+              "sortNo": 2
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "tomatoPasta"
+    },
+    "pastaMushroom": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "PASTA-CREAM-MUSHROOM-001",
+      "name": "奶油蘑菇意面",
+      "shortName": "奶油蘑菇意面",
+      "categoryKey": "PASTA_RICE",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "LUNCH",
+        "DINNER"
+      ],
+      "description": "奶油蘑菇意面，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 6800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialGrassJelly",
+              "quantityPerUnit": 120,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "tomatoPasta"
+    },
+    "risottoSeafood": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "RICE-SEAFOOD-RISOTTO-001",
+      "name": "海鲜烩饭",
+      "shortName": "海鲜烩饭",
+      "categoryKey": "PASTA_RICE",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "LUNCH",
+        "DINNER"
+      ],
+      "description": "海鲜烩饭，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 7800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialCoconutJelly",
+              "quantityPerUnit": 90,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "seafoodRisotto"
+    },
+    "mainSalmon": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "MAIN-SALMON-001",
+      "name": "香煎三文鱼",
+      "shortName": "香煎三文鱼",
+      "categoryKey": "MAIN",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "DINNER"
+      ],
+      "description": "香煎三文鱼，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 11800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialCoconutJelly",
+              "quantityPerUnit": 180,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "salmonFillet"
+    },
+    "mainChicken": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "MAIN-GRILLED-CHICKEN-001",
+      "name": "香草烤鸡胸",
+      "shortName": "香草烤鸡胸",
+      "categoryKey": "MAIN",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "DINNER"
+      ],
+      "description": "香草烤鸡胸，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 7800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialChickenBreast",
+              "quantityPerUnit": 180,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "chickenMain"
+    },
+    "burgerBeef": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "MAIN-BEEF-BURGER-001",
+      "name": "安格斯牛肉汉堡",
+      "shortName": "安格斯牛肉汉堡",
+      "categoryKey": "MAIN",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "DINNER"
+      ],
+      "description": "安格斯牛肉汉堡，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 7200,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialPearl",
+              "quantityPerUnit": 120,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "burger"
+    },
+    "dessertTiramisu": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "DESSERT-TIRAMISU-001",
+      "name": "提拉米苏",
+      "shortName": "提拉米苏",
+      "categoryKey": "DESSERT",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "提拉米苏，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 3800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialCream",
+              "quantityPerUnit": 60,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "tiramisu"
+    },
+    "dessertCheesecake": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "DESSERT-CHEESECAKE-001",
+      "name": "纽约芝士蛋糕",
+      "shortName": "纽约芝士蛋糕",
+      "categoryKey": "DESSERT",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "纽约芝士蛋糕，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 4200,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialCream",
+              "quantityPerUnit": 60,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "cheesecake"
+    },
+    "bevLemonade": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "BEV-LEMONADE-001",
+      "name": "柠檬气泡水",
+      "shortName": "柠檬气泡水",
+      "categoryKey": "BEVERAGE",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "柠檬气泡水，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 2600,
+      "identifiers": [],
+      "optionGroups": [
+        {
+          "optionGroupRef": "lemonade-ice",
+          "optionGroupCode": "LEMONADE_ICE",
+          "groupName": "冰量",
+          "optionGroupKind": "TEMPERATURE",
+          "selectionRule": "SINGLE",
+          "required": true,
+          "minSelections": 1,
+          "maxSelections": 1,
+          "optionValues": [
+            {
+              "optionValueRef": "lemonade-ice-normal",
+              "optionValueCode": "LEMONADE_ICE_NORMAL",
+              "name": "正常冰",
+              "printName": "正常冰",
+              "preparationImpact": "正常冰",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "lemonade-ice-less",
+              "optionValueCode": "LEMONADE_ICE_LESS",
+              "name": "少冰",
+              "printName": "少冰",
+              "preparationImpact": "少冰",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "lemonade-ice-none",
+              "optionValueCode": "LEMONADE_ICE_NONE",
+              "name": "去冰",
+              "printName": "去冰",
+              "preparationImpact": "去冰",
+              "standardPriceDeltaCents": 0
+            }
+          ]
+        },
+        {
+          "optionGroupRef": "lemonade-sweetness",
+          "optionGroupCode": "LEMONADE_SWEETNESS",
+          "groupName": "甜度",
+          "optionGroupKind": "SWEETNESS",
+          "selectionRule": "SINGLE",
+          "required": true,
+          "minSelections": 1,
+          "maxSelections": 1,
+          "optionValues": [
+            {
+              "optionValueRef": "lemonade-sweetness-regular",
+              "optionValueCode": "LEMONADE_SWEETNESS_REGULAR",
+              "name": "标准甜",
+              "printName": "标准甜",
+              "preparationImpact": "标准甜",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "lemonade-sweetness-less",
+              "optionValueCode": "LEMONADE_SWEETNESS_LESS",
+              "name": "少甜",
+              "printName": "少甜",
+              "preparationImpact": "少甜",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "lemonade-sweetness-zero",
+              "optionValueCode": "LEMONADE_SWEETNESS_ZERO",
+              "name": "无糖",
+              "printName": "无糖",
+              "preparationImpact": "无糖",
+              "standardPriceDeltaCents": 0
+            }
+          ]
+        },
+        {
+          "optionGroupRef": "lemonade-flavor",
+          "optionGroupCode": "LEMONADE_FLAVOR",
+          "groupName": "风味",
+          "optionGroupKind": "TASTE",
+          "selectionRule": "SINGLE",
+          "required": false,
+          "minSelections": 0,
+          "maxSelections": 1,
+          "optionValues": [
+            {
+              "optionValueRef": "lemonade-flavor-mint",
+              "optionValueCode": "LEMONADE_FLAVOR_MINT",
+              "name": "加薄荷",
+              "printName": "加薄荷",
+              "preparationImpact": "加薄荷",
+              "standardPriceDeltaCents": 0
+            },
+            {
+              "optionValueRef": "lemonade-flavor-berry",
+              "optionValueCode": "LEMONADE_FLAVOR_BERRY",
+              "name": "加莓果",
+              "printName": "加莓果",
+              "preparationImpact": "加莓果",
+              "standardPriceDeltaCents": 500
+            }
+          ]
+        }
+      ],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialLemon",
+              "quantityPerUnit": 1,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "lemonade"
+    },
+    "bevAmericano": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "BEV-AMERICANO-001",
+      "name": "美式咖啡",
+      "shortName": "美式咖啡",
+      "categoryKey": "BEVERAGE",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "美式咖啡，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 2800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialCoffeeBean",
+              "quantityPerUnit": 18,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "coffee"
+    },
+    "bevSparklingWater": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "BEV-SPARKLING-WATER-001",
+      "name": "气泡矿泉水",
+      "shortName": "气泡矿泉水",
+      "categoryKey": "BEVERAGE",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "气泡矿泉水，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 1800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "lemonade"
+    },
+    "sideMashedPotato": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "SIDE-MASHED-POTATO-001",
+      "name": "奶油土豆泥",
+      "shortName": "奶油土豆泥",
+      "categoryKey": "APPETIZER",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "奶油土豆泥，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 2800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialPotato",
+              "quantityPerUnit": 160,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "potato"
+    },
+    "sideMixedSalad": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "SIDE-MIXED-SALAD-001",
+      "name": "田园小沙拉",
+      "shortName": "田园小沙拉",
+      "categoryKey": "SALAD",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "田园小沙拉，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 3000,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialMixedLettuce",
+              "quantityPerUnit": 100,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "mixedLettuce"
+    },
+    "pizzaPepperoni": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "PIZZA-PEPPERONI-001",
+      "name": "意式辣香肠披萨",
+      "shortName": "意式辣香肠披萨",
+      "categoryKey": "PIZZA",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "意式辣香肠披萨，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 7800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialPizzaDough",
+              "quantityPerUnit": 1,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "margheritaPizza"
+    },
+    "pizzaMushroom": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "PIZZA-MUSHROOM-001",
+      "name": "蘑菇芝士披萨",
+      "shortName": "蘑菇芝士披萨",
+      "categoryKey": "PIZZA",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "蘑菇芝士披萨，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 7600,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialPizzaDough",
+              "quantityPerUnit": 1,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "margheritaPizza"
+    },
+    "appChickenWings": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "APP-CHICKEN-WINGS-001",
+      "name": "烤鸡翅",
+      "shortName": "烤鸡翅",
+      "categoryKey": "APPETIZER",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "烤鸡翅，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 4600,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialChickenBreast",
+              "quantityPerUnit": 160,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "chickenMain"
+    },
+    "dessertBrownie": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "DESSERT-BROWNIE-001",
+      "name": "巧克力布朗尼",
+      "shortName": "巧克力布朗尼",
+      "categoryKey": "DESSERT",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "巧克力布朗尼，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 3600,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialCream",
+              "quantityPerUnit": 40,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "cheesecake"
+    },
+    "skuPastaPortion": {
+      "shapeKey": "SKU_VARIANT_SALE_COUNTED",
+      "catalogItemCode": "PASTA-BOLOGNESE-001",
+      "name": "肉酱意面",
+      "shortName": "肉酱意面",
+      "categoryKey": "PASTA_RICE",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "肉酱意面，按规格或熟度管理 SKU 价格和库存颗粒度。",
+      "standardSalePriceCents": 0,
+      "preparationProfile": null,
+      "skus": [
+        {
+          "productSkuRef": "sku-bolognese-regular",
+          "skuCode": "BOLOGNESE-REGULAR",
+          "skuName": "肉酱意面标准份",
+          "attributeValues": {
+            "PORTION_SIZE": "REGULAR"
+          },
+          "standardSalePriceCents": 6600,
+          "skuBarcode": "690000010301",
+          "isDefault": true,
+          "mediaAssetKey": "tomatoPasta"
+        },
+        {
+          "productSkuRef": "sku-bolognese-large",
+          "skuCode": "BOLOGNESE-LARGE",
+          "skuName": "肉酱意面大份",
+          "attributeValues": {
+            "PORTION_SIZE": "LARGE"
+          },
+          "standardSalePriceCents": 8200,
+          "skuBarcode": "690000010302",
+          "isDefault": false,
+          "mediaAssetKey": "tomatoPasta"
+        }
+      ],
+      "inventoryBomRules": [
+        {
+          "nodeKey": "SKU:sku-bolognese-regular",
+          "nodeType": "SKU",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialGrassJelly",
+              "quantityPerUnit": 120,
+              "sortNo": 1
+            },
+            {
+              "componentFixtureKey": "materialTomatoSauce",
+              "quantityPerUnit": 80,
+              "sortNo": 2
+            }
+          ]
+        },
+        {
+          "nodeKey": "SKU:sku-bolognese-large",
+          "nodeType": "SKU",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialGrassJelly",
+              "quantityPerUnit": 180,
+              "sortNo": 1
+            },
+            {
+              "componentFixtureKey": "materialTomatoSauce",
+              "quantityPerUnit": 120,
+              "sortNo": 2
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "tomatoPasta"
+    }
+  }
+}

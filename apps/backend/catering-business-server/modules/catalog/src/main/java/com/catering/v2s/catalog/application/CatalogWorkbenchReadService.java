@@ -1,24 +1,15 @@
 package com.catering.v2s.catalog.application;
 
-import com.catering.v2s.catalog.application.persistence.CatalogWorkbenchReadPersistence;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
-import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
 import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
+import com.catering.v2s.catalog.application.persistence.CatalogWorkbenchReadPersistence;
+import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
-import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
-import com.catering.v2s.platform.command.CatalogAuthorizationScope;
-import com.catering.v2s.platform.command.CatalogTargetCapability;
-import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
-import com.catering.v2s.platform.command.WorkspaceExecutionContext;
-import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
 import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
-import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
-import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
-import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
+import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -37,13 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
-
 
 /** Catalog workbench and cross-fact task-read owner; it owns no Catalog mutation. */
 @Service
@@ -104,6 +90,7 @@ public class CatalogWorkbenchReadService {
     private final CatalogSkuMediaFacts skuMediaFacts;
     private final CatalogItemReferenceFacts itemReferenceFacts;
     private final PlatformTransactionManager transactions;
+
     @Autowired
     public CatalogWorkbenchReadService(
             CatalogWorkbenchReadPersistence persistence,
@@ -155,41 +142,40 @@ public class CatalogWorkbenchReadService {
                 transactions);
     }
 
-public JsonNode readWorkbenchContext(String dataNodeRef, String brandRef, String requestId) {
+    public JsonNode readWorkbenchContext(String dataNodeRef, String brandRef, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return workbenchContext(dataNodeRef, brandRef, requestId);
     }
 
-public JsonNode readNavigation(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
+    public JsonNode readNavigation(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return navigation(dataNodeRef, brandRef, requestId, request);
     }
 
-public JsonNode readItems(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
+    public JsonNode readItems(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return items(dataNodeRef, brandRef, requestId, request);
     }
 
-public JsonNode readCategoryCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
+    public JsonNode readCategoryCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return categoryCandidates(dataNodeRef, brandRef, requestId, request);
     }
 
-public List<CatalogOwnerApi.InventoryDisplayFact> readInventoryDisplayFacts(
+    public List<CatalogOwnerApi.InventoryDisplayFact> readInventoryDisplayFacts(
             String dataNodeRef, String brandRef, List<UUID> orderedItemRefs) {
         requireScope(dataNodeRef, brandRef);
         if (orderedItemRefs == null || orderedItemRefs.isEmpty()) return List.of();
 
-        List<CatalogOwnerApi.InventoryDisplayFact> projectedFacts = persistence
-                .readInventoryDisplayFacts(dataNodeRef, brandRef, orderedItemRefs)
-                .stream()
-                .map(value -> new CatalogOwnerApi.InventoryDisplayFact(
-                        value.itemRef(),
-                        value.inventoryStatus(),
-                        value.inventoryMode(),
-                        value.consumptionUnitJson(),
-                        value.bomLineCount()))
-                .toList();
+        List<CatalogOwnerApi.InventoryDisplayFact> projectedFacts =
+                persistence.readInventoryDisplayFacts(dataNodeRef, brandRef, orderedItemRefs).stream()
+                        .map(value -> new CatalogOwnerApi.InventoryDisplayFact(
+                                value.itemRef(),
+                                value.inventoryStatus(),
+                                value.inventoryMode(),
+                                value.consumptionUnitJson(),
+                                value.bomLineCount()))
+                        .toList();
         Map<UUID, CatalogOwnerApi.InventoryDisplayFact> factsByItemRef = new LinkedHashMap<>();
         projectedFacts.forEach(fact -> factsByItemRef.put(fact.itemRef(), fact));
         return orderedItemRefs.stream()
@@ -198,23 +184,22 @@ public List<CatalogOwnerApi.InventoryDisplayFact> readInventoryDisplayFacts(
                 .toList();
     }
 
-public CatalogOwnerApi.InventoryTargetDisplayFact readInventoryTargetDisplayFact(
+    public CatalogOwnerApi.InventoryTargetDisplayFact readInventoryTargetDisplayFact(
             String dataNodeRef, String brandRef, UUID itemRef, UUID productSkuRef) {
         requireScope(dataNodeRef, brandRef);
         if (itemRef == null) return CatalogOwnerApi.InventoryTargetDisplayFact.absent(null);
-        List<CatalogOwnerApi.InventoryTargetDisplayFact> rows = persistence
-                .readInventoryTargetDisplayFact(dataNodeRef, brandRef, itemRef, productSkuRef)
-                .stream()
-                .map(value -> new CatalogOwnerApi.InventoryTargetDisplayFact(
-                        value.itemRef(),
-                        value.inventoryStatus(),
-                        value.inventoryMode(),
-                        value.consumptionUnitJson()))
-                .toList();
+        List<CatalogOwnerApi.InventoryTargetDisplayFact> rows =
+                persistence.readInventoryTargetDisplayFact(dataNodeRef, brandRef, itemRef, productSkuRef).stream()
+                        .map(value -> new CatalogOwnerApi.InventoryTargetDisplayFact(
+                                value.itemRef(),
+                                value.inventoryStatus(),
+                                value.inventoryMode(),
+                                value.consumptionUnitJson()))
+                        .toList();
         return rows.isEmpty() ? CatalogOwnerApi.InventoryTargetDisplayFact.absent(itemRef) : rows.getFirst();
     }
 
-public CatalogOwnerApi.SalesMenuCandidatePage readSalesMenuCandidatePage(
+    public CatalogOwnerApi.SalesMenuCandidatePage readSalesMenuCandidatePage(
             CatalogOwnerApi.SalesMenuCandidatePageQuery query) {
         java.util.Objects.requireNonNull(query, "query");
         requireScope(query.dataNodeRef(), query.brandRef());
@@ -250,8 +235,6 @@ public CatalogOwnerApi.SalesMenuCandidatePage readSalesMenuCandidatePage(
                 query.dataNodeRef(),
                 query.brandRef(),
                 pageRows.stream().map(SalesMenuItemRow::itemRef).toList(),
-
-
                 false,
                 true,
                 false);
@@ -266,7 +249,7 @@ public CatalogOwnerApi.SalesMenuCandidatePage readSalesMenuCandidatePage(
         return new CatalogOwnerApi.SalesMenuCandidatePage(candidates, query.cursor(), nextCursor);
     }
 
-public Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> readSalesMenuItemFacts(
+    public Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> readSalesMenuItemFacts(
             String dataNodeRef, String brandRef, Set<UUID> itemRefs) {
         List<SalesMenuItemRow> rows = readSalesMenuItemRows(dataNodeRef, brandRef, itemRefs);
         if (rows.isEmpty()) return Map.of();
@@ -283,7 +266,7 @@ public Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> readSalesMenuItemFacts(
         return Map.copyOf(result);
     }
 
-public Map<UUID, CatalogOwnerApi.SalesMenuItemReferenceFact> readSalesMenuItemReferenceFacts(
+    public Map<UUID, CatalogOwnerApi.SalesMenuItemReferenceFact> readSalesMenuItemReferenceFacts(
             String dataNodeRef, String brandRef, Set<UUID> itemRefs) {
         List<SalesMenuItemRow> rows = readSalesMenuItemRows(dataNodeRef, brandRef, itemRefs);
         if (rows.isEmpty()) return Map.of();
@@ -295,7 +278,7 @@ public Map<UUID, CatalogOwnerApi.SalesMenuItemReferenceFact> readSalesMenuItemRe
         return Map.copyOf(result);
     }
 
-private List<SalesMenuItemRow> readSalesMenuItemRows(String dataNodeRef, String brandRef, Set<UUID> itemRefs) {
+    private List<SalesMenuItemRow> readSalesMenuItemRows(String dataNodeRef, String brandRef, Set<UUID> itemRefs) {
         requireScope(dataNodeRef, brandRef);
         if (itemRefs == null || itemRefs.isEmpty()) return List.of();
         for (UUID itemRef : itemRefs)
@@ -314,7 +297,7 @@ private List<SalesMenuItemRow> readSalesMenuItemRows(String dataNodeRef, String 
                 .toList();
     }
 
-private CatalogOwnerApi.SalesMenuCandidate salesMenuCandidate(SalesMenuItemRow row, SalesMenuFactSnapshot facts) {
+    private CatalogOwnerApi.SalesMenuCandidate salesMenuCandidate(SalesMenuItemRow row, SalesMenuFactSnapshot facts) {
         List<CatalogOwnerApi.SalesMenuSkuFact> skus =
                 salesMenuSkuFacts(facts.skusByItem().get(row.itemRef()));
         List<CatalogOwnerApi.SalesMenuSkuVariantAxisFact> axes =
@@ -331,7 +314,7 @@ private CatalogOwnerApi.SalesMenuCandidate salesMenuCandidate(SalesMenuItemRow r
                 salesMenuSkuSummary(row.shapeKey(), skus, axes));
     }
 
-private CatalogOwnerApi.SalesMenuItemFacts salesMenuItemFacts(SalesMenuItemRow row, SalesMenuFactSnapshot facts) {
+    private CatalogOwnerApi.SalesMenuItemFacts salesMenuItemFacts(SalesMenuItemRow row, SalesMenuFactSnapshot facts) {
         List<CatalogOwnerApi.SalesMenuSkuFact> skus =
                 salesMenuSkuFacts(facts.skusByItem().get(row.itemRef()));
         List<CatalogOwnerApi.SalesMenuSkuVariantAxisFact> axes =
@@ -354,7 +337,7 @@ private CatalogOwnerApi.SalesMenuItemFacts salesMenuItemFacts(SalesMenuItemRow r
                 axes);
     }
 
-private SalesMenuFactSnapshot readSalesMenuFactSnapshot(
+    private SalesMenuFactSnapshot readSalesMenuFactSnapshot(
             String dataNodeRef,
             String brandRef,
             Collection<UUID> itemRefs,
@@ -402,7 +385,7 @@ private SalesMenuFactSnapshot readSalesMenuFactSnapshot(
                 Map.copyOf(orderOptionsByItem));
     }
 
-private List<CatalogOwnerApi.SalesMenuSkuFact> salesMenuSkuFacts(ArrayNode values) {
+    private List<CatalogOwnerApi.SalesMenuSkuFact> salesMenuSkuFacts(ArrayNode values) {
         if (values == null || !values.isArray()) return List.of();
         List<CatalogOwnerApi.SalesMenuSkuFact> result = new ArrayList<>();
         for (JsonNode value : values) {
@@ -426,7 +409,7 @@ private List<CatalogOwnerApi.SalesMenuSkuFact> salesMenuSkuFacts(ArrayNode value
         return List.copyOf(result);
     }
 
-private List<CatalogOwnerApi.SalesMenuOrderOptionFact> salesMenuOrderOptionFacts(ArrayNode values) {
+    private List<CatalogOwnerApi.SalesMenuOrderOptionFact> salesMenuOrderOptionFacts(ArrayNode values) {
         if (values == null || !values.isArray()) return List.of();
         List<CatalogOwnerApi.SalesMenuOrderOptionFact> result = new ArrayList<>();
         for (JsonNode value : values) {
@@ -455,7 +438,7 @@ private List<CatalogOwnerApi.SalesMenuOrderOptionFact> salesMenuOrderOptionFacts
         return List.copyOf(result);
     }
 
-private List<CatalogOwnerApi.SalesMenuSkuAttributeValueFact> salesMenuSkuAttributeFacts(JsonNode values) {
+    private List<CatalogOwnerApi.SalesMenuSkuAttributeValueFact> salesMenuSkuAttributeFacts(JsonNode values) {
         if (values == null || values.isMissingNode() || values.isNull()) return List.of();
         if (!values.isArray()) throw salesMenuResultProblem("sku.attributeValueRefs");
         List<CatalogOwnerApi.SalesMenuSkuAttributeValueFact> result = new ArrayList<>();
@@ -472,7 +455,7 @@ private List<CatalogOwnerApi.SalesMenuSkuAttributeValueFact> salesMenuSkuAttribu
         return List.copyOf(result);
     }
 
-private List<CatalogOwnerApi.SalesMenuSkuVariantAxisFact> salesMenuVariantAxes(ArrayNode values) {
+    private List<CatalogOwnerApi.SalesMenuSkuVariantAxisFact> salesMenuVariantAxes(ArrayNode values) {
         if (values == null || !values.isArray()) return List.of();
         List<CatalogOwnerApi.SalesMenuSkuVariantAxisFact> result = new ArrayList<>();
         for (JsonNode value : values)
@@ -485,7 +468,7 @@ private List<CatalogOwnerApi.SalesMenuSkuVariantAxisFact> salesMenuVariantAxes(A
         return List.copyOf(result);
     }
 
-private List<CatalogOwnerApi.SalesMenuSkuVariantValueFact> salesMenuVariantValues(JsonNode values) {
+    private List<CatalogOwnerApi.SalesMenuSkuVariantValueFact> salesMenuVariantValues(JsonNode values) {
         if (values == null || values.isMissingNode() || values.isNull()) return List.of();
         if (!values.isArray()) throw salesMenuResultProblem("sku.variantAxes.values");
         List<CatalogOwnerApi.SalesMenuSkuVariantValueFact> result = new ArrayList<>();
@@ -499,7 +482,7 @@ private List<CatalogOwnerApi.SalesMenuSkuVariantValueFact> salesMenuVariantValue
         return List.copyOf(result);
     }
 
-private CatalogOwnerApi.SalesMenuSkuSummary salesMenuSkuSummary(
+    private CatalogOwnerApi.SalesMenuSkuSummary salesMenuSkuSummary(
             String shapeKey,
             List<CatalogOwnerApi.SalesMenuSkuFact> skus,
             List<CatalogOwnerApi.SalesMenuSkuVariantAxisFact> axes) {
@@ -534,12 +517,12 @@ private CatalogOwnerApi.SalesMenuSkuSummary salesMenuSkuSummary(
                 maximum);
     }
 
-private static UUID salesMenuPrimaryImage(ArrayNode values) {
+    private static UUID salesMenuPrimaryImage(ArrayNode values) {
         if (values == null || values.isEmpty()) return null;
         return requiredSalesMenuUuid(values.get(0), "defaultImageAssetRef");
     }
 
-private static List<UUID> salesMenuUuidFacts(JsonNode values, String field) {
+    private static List<UUID> salesMenuUuidFacts(JsonNode values, String field) {
         if (values == null || values.isMissingNode() || values.isNull()) return List.of();
 
         if (!values.isArray()) throw salesMenuResultProblem(field);
@@ -549,7 +532,7 @@ private static List<UUID> salesMenuUuidFacts(JsonNode values, String field) {
         return List.copyOf(result);
     }
 
-private static UUID requiredSalesMenuUuid(JsonNode value, String field) {
+    private static UUID requiredSalesMenuUuid(JsonNode value, String field) {
         JsonNode fieldValue = salesMenuFieldValue(value, field);
         if (fieldValue == null || !fieldValue.isTextual() || fieldValue.asText().isBlank())
             throw salesMenuResultProblem(field);
@@ -560,61 +543,61 @@ private static UUID requiredSalesMenuUuid(JsonNode value, String field) {
         }
     }
 
-private static String requiredSalesMenuText(JsonNode value, String field) {
+    private static String requiredSalesMenuText(JsonNode value, String field) {
         String result = optionalSalesMenuText(value, field);
         if (result == null) throw salesMenuResultProblem(field);
         return result;
     }
 
-private static JsonNode salesMenuFieldValue(JsonNode value, String field) {
+    private static JsonNode salesMenuFieldValue(JsonNode value, String field) {
         if (value == null || value.isMissingNode() || value.isNull() || !value.isObject()) return value;
         return value.get(field.substring(field.lastIndexOf('.') + 1));
     }
 
-private static String optionalSalesMenuText(JsonNode value, String field) {
+    private static String optionalSalesMenuText(JsonNode value, String field) {
         JsonNode fieldValue = salesMenuFieldValue(value, field);
         if (fieldValue == null || fieldValue.isMissingNode() || fieldValue.isNull()) return null;
         String result = fieldValue.asText(null);
         return result == null || result.isBlank() ? null : result;
     }
 
-private static Long optionalSalesMenuLong(JsonNode value, String field) {
+    private static Long optionalSalesMenuLong(JsonNode value, String field) {
         if (value == null || value.isMissingNode() || value.isNull()) return null;
         if (!value.isIntegralNumber()) throw salesMenuResultProblem(field);
         return value.longValue();
     }
 
-private static Integer optionalSalesMenuInteger(JsonNode value, String field) {
+    private static Integer optionalSalesMenuInteger(JsonNode value, String field) {
         if (value == null || value.isMissingNode() || value.isNull()) return null;
         if (!value.isIntegralNumber()) throw salesMenuResultProblem(field);
         return value.intValue();
     }
 
-private static CatalogOwnerApi.Problem salesMenuResultProblem(String field) {
+    private static CatalogOwnerApi.Problem salesMenuResultProblem(String field) {
         return new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, field + " catalog fact is invalid");
     }
 
-public static void validateItemPageQuery(ObjectNode request) {
+    public static void validateItemPageQuery(ObjectNode request) {
         CatalogOwnerValueSupport.validateItemPageQuery(request);
     }
 
-private static String nullableText(JsonNode object, String field) {
+    private static String nullableText(JsonNode object, String field) {
         return object.path(field).isNull() || object.path(field).isMissingNode()
                 ? null
                 : object.path(field).asText();
     }
 
-private static UUID nullableUuid(JsonNode object, String field) {
+    private static UUID nullableUuid(JsonNode object, String field) {
         String value = nullableText(object, field);
         return value == null || value.isBlank() ? null : UUID.fromString(value);
     }
 
-private static void putNullableUuid(ObjectNode target, String field, UUID value) {
+    private static void putNullableUuid(ObjectNode target, String field, UUID value) {
         if (value == null) target.putNull(field);
         else target.put(field, value.toString());
     }
 
-private ObjectNode workbenchContext(String dataNodeRef, String brandRef, String requestId) {
+    private ObjectNode workbenchContext(String dataNodeRef, String brandRef, String requestId) {
         ObjectNode data = mapper.createObjectNode();
         data.put("ownerType", "DATA_NODE").put("ownerRef", dataNodeRef).put("brandRef", brandRef);
         data.put("scopeName", dataNodeRef).put("scopeCode", dataNodeRef).putNull("headCompanyRef");
@@ -630,11 +613,11 @@ private ObjectNode workbenchContext(String dataNodeRef, String brandRef, String 
         return envelope(requestId, data);
     }
 
-private ObjectNode navigation(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
+    private ObjectNode navigation(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
         ObjectNode data = mapper.createObjectNode();
         ArrayNode tree = data.putArray("tree");
-        for (CatalogWorkbenchReadPersistence.NavigationCategoryRow row
-                : persistence.readNavigationCategories(dataNodeRef, brandRef)) {
+        for (CatalogWorkbenchReadPersistence.NavigationCategoryRow row :
+                persistence.readNavigationCategories(dataNodeRef, brandRef)) {
             long directCount = row.directCount();
             long count = row.count();
             long blockingCount = row.blockingReferenceCount();
@@ -646,9 +629,7 @@ private ObjectNode navigation(String dataNodeRef, String brandRef, String reques
                     .put("displayOrder", row.displayOrder());
             if (row.parentCategoryRef() == null) node.putNull("parentCategoryRef");
             else node.put("parentCategoryRef", row.parentCategoryRef().toString());
-            node.put("count", count)
-                    .put("directCount", directCount)
-                    .put("countSemantics", "SELF_AND_DESCENDANTS");
+            node.put("count", count).put("directCount", directCount).put("countSemantics", "SELF_AND_DESCENDANTS");
             ObjectNode deletion = node.putObject("deletionAvailability");
             deletion.put("canDelete", blockingCount == 0)
                     .put("subtreeSize", row.subtreeSize())
@@ -669,8 +650,8 @@ private ObjectNode navigation(String dataNodeRef, String brandRef, String reques
             }
         }
         ArrayNode tags = data.putArray("tags");
-        for (CatalogWorkbenchReadPersistence.NavigationTagRow row
-                : persistence.readNavigationTags(dataNodeRef, brandRef))
+        for (CatalogWorkbenchReadPersistence.NavigationTagRow row :
+                persistence.readNavigationTags(dataNodeRef, brandRef))
             tags.addObject()
                     .put("tagRef", row.tagRef().toString())
                     .put("code", row.code())
@@ -684,12 +665,10 @@ private ObjectNode navigation(String dataNodeRef, String brandRef, String reques
                 brandRef,
                 productionTagDefinitions.stream()
                         .map(CatalogProductionTagOwnerApi.ProductionTagNavigationReadback::tagRef)
-
                         .toList());
         for (CatalogProductionTagOwnerApi.ProductionTagNavigationReadback tag : productionTagDefinitions) {
             productionTagNodes
                     .addObject()
-
                     .put("tagRef", tag.tagRef().toString())
                     .put("code", tag.code())
                     .put("name", tag.name())
@@ -704,8 +683,8 @@ private ObjectNode navigation(String dataNodeRef, String brandRef, String reques
         long generation = 0L;
         long allCount = 0L;
         long uncategorizedCount = 0L;
-        for (CatalogWorkbenchReadPersistence.NavigationShapeRow row
-                : persistence.readNavigationShapes(now() - 7L * 24L * 60L * 60L * 1000L, dataNodeRef, brandRef)) {
+        for (CatalogWorkbenchReadPersistence.NavigationShapeRow row :
+                persistence.readNavigationShapes(now() - 7L * 24L * 60L * 60L * 1000L, dataNodeRef, brandRef)) {
             shapeCounts.put(row.shapeKey(), row.count());
             generation = Math.max(generation, row.generation());
             allCount += row.count();
@@ -729,16 +708,17 @@ private ObjectNode navigation(String dataNodeRef, String brandRef, String reques
         return envelope(requestId, data);
     }
 
-private Map<UUID, Long> productionTagReferenceCounts(
+    private Map<UUID, Long> productionTagReferenceCounts(
             String dataNodeRef, String brandRef, List<UUID> productionTagDefinitionRefs) {
         if (productionTagDefinitionRefs == null || productionTagDefinitionRefs.isEmpty()) return Map.of();
         Map<UUID, Long> counts = new LinkedHashMap<>();
-        persistence.readProductionTagReferenceCounts(dataNodeRef, brandRef, productionTagDefinitionRefs)
+        persistence
+                .readProductionTagReferenceCounts(dataNodeRef, brandRef, productionTagDefinitionRefs)
                 .forEach(value -> counts.put(value.tagRef(), value.count()));
         return Map.copyOf(counts);
     }
 
-private ObjectNode categoryCandidates(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
+    private ObjectNode categoryCandidates(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
         String usage = required(request, "usage");
         if (!Set.of("ITEM_ASSIGNMENT", "CATEGORY_CREATE", "CATEGORY_REPARENT").contains(usage))
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "分类选择用途无效");
@@ -845,7 +825,7 @@ private ObjectNode categoryCandidates(String dataNodeRef, String brandRef, Strin
         return envelope(requestId, data);
     }
 
-private static String categoryCandidateSortKey(int displayOrder, String name, String code) {
+    private static String categoryCandidateSortKey(int displayOrder, String name, String code) {
         return String.format(
                 Locale.ROOT,
                 "%010d|%s|%s",
@@ -854,12 +834,12 @@ private static String categoryCandidateSortKey(int displayOrder, String name, St
                 code);
     }
 
-private static String categoryDepthDisabledReason(String usage) {
+    private static String categoryDepthDisabledReason(String usage) {
         if ("CATEGORY_CREATE".equals(usage)) return "商品分类最多只能建立三级";
         return "移动后分类不能超过三级";
     }
 
-private JsonNode nullableJson(String raw, String failureMessage) {
+    private JsonNode nullableJson(String raw, String failureMessage) {
         if (raw == null) return mapper.nullNode();
         try {
             return mapper.readTree(raw);
@@ -868,7 +848,7 @@ private JsonNode nullableJson(String raw, String failureMessage) {
         }
     }
 
-private ObjectNode items(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
+    private ObjectNode items(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
         validateItemPageQuery(request);
         String keyword = optional(request, "keyword");
         String smartViewKey = optional(request, "smartViewKey");
@@ -908,9 +888,7 @@ private ObjectNode items(String dataNodeRef, String brandRef, String requestId, 
             return envelope(requestId, empty);
         }
 
-        long recentlyUpdatedSince = "RECENTLY_UPDATED".equals(smartViewKey)
-                ? now() - 7L * 24L * 60L * 60L * 1000L
-                : 0L;
+        long recentlyUpdatedSince = "RECENTLY_UPDATED".equals(smartViewKey) ? now() - 7L * 24L * 60L * 60L * 1000L : 0L;
         List<PageItemRow> rows = persistence
                 .readItemPage(new CatalogWorkbenchReadPersistence.ItemPageQuery(
                         dataNodeRef,
@@ -1014,7 +992,7 @@ private ObjectNode items(String dataNodeRef, String brandRef, String requestId, 
         return envelope(requestId, data);
     }
 
-private static InventoryOwnerApi.UnitSnapshot unitSnapshot(CatalogOwnerApi.UnitDefinitionReadback unit) {
+    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(CatalogOwnerApi.UnitDefinitionReadback unit) {
         return unit == null
                 ? null
                 : new InventoryOwnerApi.UnitSnapshot(
@@ -1025,15 +1003,14 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(CatalogOwnerApi.UnitD
                         unit.precision());
     }
 
-private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
+    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
             UUID unitRef, String code, String name, String dimension, Integer precision) {
         return unitRef == null
                 ? null
-                : new InventoryOwnerApi.UnitSnapshot(
-                        unitRef, code, name, dimension, precision == null ? 0 : precision);
+                : new InventoryOwnerApi.UnitSnapshot(unitRef, code, name, dimension, precision == null ? 0 : precision);
     }
 
-/** The shape manifest is the only authority for fields derived from shapeKey. */
+    /** The shape manifest is the only authority for fields derived from shapeKey. */
     private CatalogInventoryShapeManifest.ShapeRule shapeRule(String shapeKey) {
         try {
             return CatalogInventoryShapeManifest.SHAPE_RULES.stream()
@@ -1046,7 +1023,7 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
         }
     }
 
-/**
+    /**
      * List rows need exactly one category relation and its complete business path. Keep both projections in this
      * set-read: loading the relation first and then recursively loading its labels was a fixed two-query fan-out for
      * every page, while consumers still need the ref as well as the path for smart-view rows.
@@ -1056,8 +1033,8 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
         List<UUID> itemRefs = rows.stream().map(ItemRow::ref).toList();
         Map<UUID, UUID> categoryRefByItem = new LinkedHashMap<>();
         Map<UUID, List<CategoryPathNode>> pathNodesByItem = new LinkedHashMap<>();
-        for (CatalogWorkbenchReadPersistence.CategorySummaryRow row
-                : persistence.readCategorySummary(dataNodeRef, brandRef, itemRefs)) {
+        for (CatalogWorkbenchReadPersistence.CategorySummaryRow row :
+                persistence.readCategorySummary(dataNodeRef, brandRef, itemRefs)) {
             UUID itemRef = row.itemRef();
             UUID categoryRef = row.categoryRef();
             if (itemRef == null || categoryRef == null) continue;
@@ -1086,7 +1063,7 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
         return new CategorySummaryFacts(Map.copyOf(categoryRefByItem), Map.copyOf(pathNodesByItem));
     }
 
-/**
+    /**
      * Resolves catalog-tag business labels for the current parent-item page in one owner-local query. The list
      * projection deliberately retains the persisted refs for command compatibility, but consumers must render this
      * owner-sorted label list rather than joining navigation state or guessing from an opaque ref.
@@ -1096,8 +1073,8 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
         if (rows.isEmpty()) return Map.of();
         List<UUID> itemRefs = rows.stream().map(ItemRow::ref).toList();
         Map<UUID, List<CatalogTagFact>> factsByItem = new LinkedHashMap<>();
-        for (CatalogWorkbenchReadPersistence.CatalogTagFactRow row
-                : persistence.readCatalogTagFacts(dataNodeRef, brandRef, itemRefs)) {
+        for (CatalogWorkbenchReadPersistence.CatalogTagFactRow row :
+                persistence.readCatalogTagFacts(dataNodeRef, brandRef, itemRefs)) {
             UUID itemRef = row.itemRef();
             UUID tagRef = row.tagRef();
             String tagCode = row.code();
@@ -1107,8 +1084,7 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
                     || tagCode == null
                     || tagCode.isBlank()
                     || tagName == null
-                    || tagName.isBlank())
-                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品标签摘要读取失败");
+                    || tagName.isBlank()) throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品标签摘要读取失败");
             factsByItem
                     .computeIfAbsent(itemRef, ignored -> new ArrayList<>())
                     .add(new CatalogTagFact(tagRef, tagCode, tagName));
@@ -1118,7 +1094,7 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
         return Map.copyOf(result);
     }
 
-/**
+    /**
      * Resolves the one production-tag business name for each row in the current parent-item page. This is deliberately
      * a single production-owner task read for the page: consumers receive a display-ready summary and never infer a tag
      * name from an opaque reference or from navigation state.
@@ -1133,14 +1109,10 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
         }
         if (productionTagRefByItem.isEmpty()) return Map.of();
         List<UUID> requestedRefs = new ArrayList<>(new LinkedHashSet<>(productionTagRefByItem.values()));
-        Map<UUID, com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi.ProductionTagReferenceReadback>
-                tagsByRef =
-                        productionTags.readTagReferencesByRefs(dataNodeRef, brandRef, requestedRefs, requestId).stream()
-                                .collect(java.util.stream.Collectors.toMap(
-                                        value -> value.tagRef(),
-                                        value -> value,
-                                        (left, right) -> left,
-                                        LinkedHashMap::new));
+        Map<UUID, com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi.ProductionTagReferenceReadback> tagsByRef =
+                productionTags.readTagReferencesByRefs(dataNodeRef, brandRef, requestedRefs, requestId).stream()
+                        .collect(java.util.stream.Collectors.toMap(
+                                value -> value.tagRef(), value -> value, (left, right) -> left, LinkedHashMap::new));
         Map<UUID, CatalogProductionTagOwnerApi.ProductionTagReferenceReadback> result = new LinkedHashMap<>();
         productionTagRefByItem.forEach((itemRef, tagRef) -> {
             var tag = tagsByRef.get(tagRef);
@@ -1151,14 +1123,14 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
         return Map.copyOf(result);
     }
 
-private ObjectNode envelope(String requestId, JsonNode data) {
+    private ObjectNode envelope(String requestId, JsonNode data) {
         return mapper.createObjectNode()
                 .put("revision", CatalogOwnerTypes.REVISION)
                 .put("requestId", requestId)
                 .set("data", data);
     }
 
-private ObjectNode itemSummary(
+    private ObjectNode itemSummary(
             ItemRow row,
             Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> unitDefinitions,
             CategorySummaryFacts categorySummaryFacts,
@@ -1247,7 +1219,7 @@ private ObjectNode itemSummary(
         return item;
     }
 
-private ArrayNode categoryPathArray(CategorySummaryFacts facts, UUID itemRef) {
+    private ArrayNode categoryPathArray(CategorySummaryFacts facts, UUID itemRef) {
         ArrayNode result = mapper.createArrayNode();
         facts.pathNodesByItem().getOrDefault(itemRef, List.of()).forEach(node -> result.addObject()
                 .put("categoryRef", node.categoryRef().toString())
@@ -1256,12 +1228,12 @@ private ArrayNode categoryPathArray(CategorySummaryFacts facts, UUID itemRef) {
         return result;
     }
 
-private ArrayNode arrayCopy(JsonNode value) {
+    private ArrayNode arrayCopy(JsonNode value) {
         if (value != null && value.isArray()) return (ArrayNode) value.deepCopy();
         return mapper.createArrayNode();
     }
 
-private ArrayNode specificationFacts(JsonNode sections) {
+    private ArrayNode specificationFacts(JsonNode sections) {
         JsonNode axes = sections.path("skuVariantDimensions");
         if (axes.isArray() && !axes.isEmpty()) return specificationFactsFromAxes(axes);
         Map<String, ObjectNode> byAttribute = new LinkedHashMap<>();
@@ -1305,7 +1277,7 @@ private ArrayNode specificationFacts(JsonNode sections) {
         return result;
     }
 
-/** The summary contract deliberately omits the axis-level order; axis order remains in skuVariantDimensions. */
+    /** The summary contract deliberately omits the axis-level order; axis order remains in skuVariantDimensions. */
     private ArrayNode specificationFactsFromAxes(JsonNode axes) {
         ArrayNode result = mapper.createArrayNode();
         axes.forEach(axis -> {
@@ -1315,10 +1287,8 @@ private ArrayNode specificationFacts(JsonNode sections) {
                     .put("attributeName", axis.path("attributeName").asText(""));
             ArrayNode values = fact.putArray("values");
             if (axis.path("values").isArray())
-
                 axis.path("values").forEach(value -> values.addObject()
                         .put("valueRef", value.path("valueRef").asText(""))
-
                         .put("valueCode", value.path("valueCode").asText(""))
                         .put("valueLabel", value.path("valueLabel").asText(""))
                         .put("displayOrder", value.path("displayOrder").asInt(0))
@@ -1327,7 +1297,7 @@ private ArrayNode specificationFacts(JsonNode sections) {
         return result;
     }
 
-private ObjectNode preparationFacts(
+    private ObjectNode preparationFacts(
             CatalogProductionTagOwnerApi.ProductionTagReferenceReadback productionTag,
             JsonNode preparationProfile,
             DerivedSkuFacts skuFacts,
@@ -1347,7 +1317,7 @@ private ObjectNode preparationFacts(
         return result;
     }
 
-private boolean skuPreparationDiffers(JsonNode sections, JsonNode itemProfile) {
+    private boolean skuPreparationDiffers(JsonNode sections, JsonNode itemProfile) {
         JsonNode normalizedItem = itemProfile == null || itemProfile.isNull() ? null : itemProfile;
         JsonNode skus = sections.path("skus");
         if (!skus.isArray()) return false;
@@ -1359,7 +1329,7 @@ private boolean skuPreparationDiffers(JsonNode sections, JsonNode itemProfile) {
         return false;
     }
 
-/** Product rule: the first ordered item-image relation is the primary image. */
+    /** Product rule: the first ordered item-image relation is the primary image. */
     private static String primaryImageAssetRef(JsonNode orderedImages) {
         if (orderedImages == null || !orderedImages.isArray() || orderedImages.isEmpty()) return null;
         JsonNode first = orderedImages.get(0);
@@ -1368,24 +1338,24 @@ private boolean skuPreparationDiffers(JsonNode sections, JsonNode itemProfile) {
         return assetRef.isBlank() ? null : assetRef;
     }
 
-private void putNullableLong(ObjectNode target, String key, JsonNode value) {
+    private void putNullableLong(ObjectNode target, String key, JsonNode value) {
         if (value != null && value.isIntegralNumber()) target.put(key, value.asLong());
         else target.putNull(key);
     }
 
-private void putNullableLong(ObjectNode target, String key, Long value) {
+    private void putNullableLong(ObjectNode target, String key, Long value) {
         if (value == null) target.putNull(key);
         else target.put(key, value);
     }
 
-private String sourceFact(ItemRow row, JsonNode sections) {
+    private String sourceFact(ItemRow row, JsonNode sections) {
         String source = firstText(sections, "source", "sourceType", "ownershipSource");
         if ("AUTO_SYNC".equals(source)) return "AUTO_SYNC";
         if ("TEMPORARY".equals(source) || "EXTERNAL_ORDER_TEMPORARY".equals(source)) return "TEMPORARY";
         return row.sourceScopeRef() == null ? "SELF_MANAGED" : "COPIED";
     }
 
-private Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> unitDefinitionsForRefs(
+    private Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> unitDefinitionsForRefs(
             String dataNodeRef, String brandRef, Collection<UUID> refs) {
         Set<UUID> requested = new LinkedHashSet<>();
         if (refs != null) refs.stream().filter(java.util.Objects::nonNull).forEach(requested::add);
@@ -1397,7 +1367,7 @@ private Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> unitDefinitionsForRefs
         return Map.copyOf(result);
     }
 
-/**
+    /**
      * Effective unit labels come from the saved snapshot; only lifecycle status is read from the current definition.
      */
     private void setStoredUnitAssignment(
@@ -1439,7 +1409,7 @@ private Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> unitDefinitionsForRefs
                 .put("inheritanceSource", inheritanceSource);
     }
 
-private void setStoredUnitAssignment(
+    private void setStoredUnitAssignment(
             ObjectNode target,
             String field,
             UUID unitRef,
@@ -1462,7 +1432,7 @@ private void setStoredUnitAssignment(
                 .put("inheritanceSource", inheritanceSource);
     }
 
-private DerivedSkuFacts derivedSkuFacts(JsonNode sections, CatalogInventoryShapeManifest.ShapeRule rule) {
+    private DerivedSkuFacts derivedSkuFacts(JsonNode sections, CatalogInventoryShapeManifest.ShapeRule rule) {
         JsonNode skus = sections.path("skus");
         int total = skus.isArray() ? skus.size() : 0;
         int enabled = skus.isArray()
@@ -1512,7 +1482,7 @@ private DerivedSkuFacts derivedSkuFacts(JsonNode sections, CatalogInventoryShape
                 standardSalePriceMax);
     }
 
-/**
+    /**
      * Rehydrates the established owner read shape from owner relations; catalog_item.sections never persists these
      * relational facts. The list projection reads the SKU-axis relation in one set-based batch so its
      * specificationFacts projection preserves the authoritative axis membership, order and dictionary status used by
@@ -1573,7 +1543,7 @@ private DerivedSkuFacts derivedSkuFacts(JsonNode sections, CatalogInventoryShape
         return List.copyOf(hydrated);
     }
 
-/** Adds the typed identification/preparation projection without making it another persisted JSON authority. */
+    /** Adds the typed identification/preparation projection without making it another persisted JSON authority. */
     private void decoratePreparationFacts(
             UUID itemRef,
             ObjectNode sections,
@@ -1619,7 +1589,6 @@ private DerivedSkuFacts derivedSkuFacts(JsonNode sections, CatalogInventoryShape
             for (JsonNode configNode : configsNode) {
 
                 if (!(configNode instanceof ObjectNode config)
-
                         || !config.path("values").isArray()) continue;
                 int groupOrder = config.path("displayOrder").asInt(0);
                 for (JsonNode valueNode : config.path("values")) {
@@ -1646,35 +1615,38 @@ private DerivedSkuFacts derivedSkuFacts(JsonNode sections, CatalogInventoryShape
         }
     }
 
-private void setNullableJson(ObjectNode target, String field, JsonNode value) {
+    private void setNullableJson(ObjectNode target, String field, JsonNode value) {
         if (value == null || value.isNull()) target.putNull(field);
         else target.set(field, value.deepCopy());
     }
 
-private Map<UUID, ItemUnitRefs> itemUnitRefsByItemRefs(Collection<UUID> itemRefs) {
+    private Map<UUID, ItemUnitRefs> itemUnitRefsByItemRefs(Collection<UUID> itemRefs) {
         if (itemRefs == null || itemRefs.isEmpty()) return Map.of();
         Map<UUID, ItemUnitRefs> result = new LinkedHashMap<>();
-        persistence.readItemUnitRefs(itemRefs).values().forEach(row -> result.put(
-                row.itemRef(),
-                new ItemUnitRefs(
-                        row.salesUnitRef(),
-                        unitSnapshot(
+        persistence
+                .readItemUnitRefs(itemRefs)
+                .values()
+                .forEach(row -> result.put(
+                        row.itemRef(),
+                        new ItemUnitRefs(
                                 row.salesUnitRef(),
-                                row.salesUnitCode(),
-                                row.salesUnitName(),
-                                row.salesUnitDimension(),
-                                row.salesUnitPrecision()),
-                        row.baseMeasureUnitRef(),
-                        unitSnapshot(
+                                unitSnapshot(
+                                        row.salesUnitRef(),
+                                        row.salesUnitCode(),
+                                        row.salesUnitName(),
+                                        row.salesUnitDimension(),
+                                        row.salesUnitPrecision()),
                                 row.baseMeasureUnitRef(),
-                                row.baseMeasureUnitCode(),
-                                row.baseMeasureUnitName(),
-                                row.baseMeasureUnitDimension(),
-                                row.baseMeasureUnitPrecision()))));
+                                unitSnapshot(
+                                        row.baseMeasureUnitRef(),
+                                        row.baseMeasureUnitCode(),
+                                        row.baseMeasureUnitName(),
+                                        row.baseMeasureUnitDimension(),
+                                        row.baseMeasureUnitPrecision()))));
         return result;
     }
 
-private static int parsePageSize(ObjectNode request, String key, int fallback) {
+    private static int parsePageSize(ObjectNode request, String key, int fallback) {
         try {
             return CollectionRequestSupport.pageSize(request, key, fallback);
         } catch (CollectionRequestSupport.InvalidRequestValue failure) {
@@ -1682,7 +1654,7 @@ private static int parsePageSize(ObjectNode request, String key, int fallback) {
         }
     }
 
-private static OpaqueCollectionCursor.Position decodeCollectionCursor(ObjectNode request, String queryIdentity) {
+    private static OpaqueCollectionCursor.Position decodeCollectionCursor(ObjectNode request, String queryIdentity) {
         try {
             return OpaqueCollectionCursor.decode(optional(request, "cursor"), queryIdentity);
         } catch (OpaqueCollectionCursor.InvalidCursor failure) {
@@ -1690,7 +1662,7 @@ private static OpaqueCollectionCursor.Position decodeCollectionCursor(ObjectNode
         }
     }
 
-private static OpaqueCollectionCursor.Position decodeSalesMenuCursor(String cursor, String queryIdentity) {
+    private static OpaqueCollectionCursor.Position decodeSalesMenuCursor(String cursor, String queryIdentity) {
         try {
             return OpaqueCollectionCursor.decode(cursor, queryIdentity);
         } catch (OpaqueCollectionCursor.InvalidCursor failure) {
@@ -1698,14 +1670,14 @@ private static OpaqueCollectionCursor.Position decodeSalesMenuCursor(String curs
         }
     }
 
-private static String cursorIdentity(String operationId, String... parts) {
+    private static String cursorIdentity(String operationId, String... parts) {
         String[] components = new String[parts.length + 1];
         components[0] = operationId;
         System.arraycopy(parts, 0, components, 1, parts.length);
         return CanonicalCursorIdentity.encode(components);
     }
 
-private static long parseCursor(ObjectNode request, String key) {
+    private static long parseCursor(ObjectNode request, String key) {
         try {
             return CollectionRequestSupport.cursor(request, key);
         } catch (CollectionRequestSupport.InvalidRequestValue failure) {
@@ -1713,7 +1685,7 @@ private static long parseCursor(ObjectNode request, String key) {
         }
     }
 
-private static boolean parseBoolean(ObjectNode request, String key, boolean fallback) {
+    private static boolean parseBoolean(ObjectNode request, String key, boolean fallback) {
         try {
             return CollectionRequestSupport.booleanValue(request, key, fallback);
         } catch (CollectionRequestSupport.InvalidRequestValue failure) {
@@ -1721,7 +1693,7 @@ private static boolean parseBoolean(ObjectNode request, String key, boolean fall
         }
     }
 
-private static List<String> textArray(JsonNode value) {
+    private static List<String> textArray(JsonNode value) {
         if (value == null || !value.isArray()) return List.of();
         LinkedHashSet<String> result = new LinkedHashSet<>();
         value.forEach(entry -> {
@@ -1730,7 +1702,7 @@ private static List<String> textArray(JsonNode value) {
         return List.copyOf(result);
     }
 
-private static List<UUID> uuidArray(JsonNode value, String field) {
+    private static List<UUID> uuidArray(JsonNode value, String field) {
         if (value == null || value.isMissingNode() || value.isNull()) return List.of();
         if (!value.isArray()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, field + " must be an array");
         LinkedHashSet<UUID> result = new LinkedHashSet<>();
@@ -1747,29 +1719,29 @@ private static List<UUID> uuidArray(JsonNode value, String field) {
         return List.copyOf(result);
     }
 
-private long generation(String dataNodeRef, String brandRef) {
+    private long generation(String dataNodeRef, String brandRef) {
         return persistence.generation(dataNodeRef, brandRef);
     }
 
-private static void requireScope(String dataNodeRef, String brandRef) {
+    private static void requireScope(String dataNodeRef, String brandRef) {
         if (dataNodeRef == null || dataNodeRef.isBlank() || brandRef == null || brandRef.isBlank())
             throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "owner scope is required");
     }
 
-private static String required(ObjectNode request, String key) {
+    private static String required(ObjectNode request, String key) {
         String value = optional(request, key);
         if (value == null || value.isBlank())
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, key + " is required");
         return value;
     }
 
-private static String required(JsonNode request, String key) {
+    private static String required(JsonNode request, String key) {
         String value = request == null ? "" : request.path(key).asText("");
         if (value.isBlank()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, key + " is required");
         return value;
     }
 
-private static UUID optionalUuid(ObjectNode request, String key) {
+    private static UUID optionalUuid(ObjectNode request, String key) {
         String value = optional(request, key);
         if (value == null || value.isBlank()) return null;
         try {
@@ -1779,11 +1751,11 @@ private static UUID optionalUuid(ObjectNode request, String key) {
         }
     }
 
-private static String optional(ObjectNode request, String key) {
+    private static String optional(ObjectNode request, String key) {
         return CollectionRequestSupport.optional(request, key);
-}
+    }
 
-private String canonicalJson(JsonNode value) {
+    private String canonicalJson(JsonNode value) {
         try {
             return mapper.writeValueAsString(value == null ? mapper.createObjectNode() : value);
         } catch (Exception ex) {
@@ -1791,7 +1763,7 @@ private String canonicalJson(JsonNode value) {
         }
     }
 
-private JsonNode json(String value) {
+    private JsonNode json(String value) {
         if (value == null || value.isBlank()) {
             throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "catalog JSON fact is missing");
         }
@@ -1808,11 +1780,11 @@ private JsonNode json(String value) {
         }
     }
 
-private long now() {
+    private long now() {
         return time.currentEpochMillis();
     }
 
-private static String firstText(JsonNode node, String... keys) {
+    private static String firstText(JsonNode node, String... keys) {
         if (node == null || node.isNull()) return null;
         for (String key : keys)
             if (node.path(key).isValueNode() && !node.path(key).asText().isBlank())
@@ -1820,7 +1792,7 @@ private static String firstText(JsonNode node, String... keys) {
         return null;
     }
 
-private record CategoryCandidateRow(
+    private record CategoryCandidateRow(
             UUID categoryRef,
             String code,
             String name,
@@ -1832,18 +1804,18 @@ private record CategoryCandidateRow(
             boolean depthBlocked,
             long total) {}
 
-private record CategoryPathNode(UUID categoryRef, String code, String name) {}
+    private record CategoryPathNode(UUID categoryRef, String code, String name) {}
 
-private record CatalogTagFact(UUID tagRef, String code, String name) {}
+    private record CatalogTagFact(UUID tagRef, String code, String name) {}
 
-private record CategorySummaryFacts(
+    private record CategorySummaryFacts(
             Map<UUID, UUID> categoryRefByItem, Map<UUID, List<CategoryPathNode>> pathNodesByItem) {
         static CategorySummaryFacts empty() {
             return new CategorySummaryFacts(Map.of(), Map.of());
         }
     }
 
-private record DerivedSkuFacts(
+    private record DerivedSkuFacts(
             int enabledCount,
             int nonArchivedCount,
             int totalCount,
@@ -1852,7 +1824,7 @@ private record DerivedSkuFacts(
             Long standardSalePriceMin,
             Long standardSalePriceMax) {}
 
-private record ItemRow(
+    private record ItemRow(
             UUID ref,
             String code,
             String name,
@@ -1869,7 +1841,7 @@ private record ItemRow(
         }
     }
 
-private record SalesMenuItemRow(
+    private record SalesMenuItemRow(
             UUID itemRef,
             String itemCode,
             String itemName,
@@ -1878,7 +1850,7 @@ private record SalesMenuItemRow(
             Long defaultPriceCents,
             long version) {}
 
-private record SalesMenuFactSnapshot(
+    private record SalesMenuFactSnapshot(
             Map<UUID, ArrayNode> skusByItem,
             Map<UUID, ArrayNode> axesByItem,
             Map<UUID, ArrayNode> imagesByItem,
@@ -1891,17 +1863,15 @@ private record SalesMenuFactSnapshot(
         }
     }
 
-private record ItemUnitRefs(
+    private record ItemUnitRefs(
             UUID salesUnitRef,
             InventoryOwnerApi.UnitSnapshot salesUnitSnapshot,
             UUID baseMeasureUnitRef,
-
-
             InventoryOwnerApi.UnitSnapshot baseMeasureUnitSnapshot) {}
 
-private record PageItemRow(ItemRow item, long total) {}
+    private record PageItemRow(ItemRow item, long total) {}
 
-private interface CatalogObject {
+    private interface CatalogObject {
         String objectType();
 
         String code();
@@ -1910,5 +1880,4 @@ private interface CatalogObject {
 
         long version();
     }
-
 }

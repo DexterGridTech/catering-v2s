@@ -66,8 +66,8 @@ public class UpdateOperationsProductionTagOperation {
             String idempotencyKey) {}
 
     private static long requiredLong(Long value, String field) {
-        if (value == null) throw new CatalogProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, field + " is required");
+        if (value == null)
+            throw new CatalogProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, field + " is required");
         return value;
     }
 }
-

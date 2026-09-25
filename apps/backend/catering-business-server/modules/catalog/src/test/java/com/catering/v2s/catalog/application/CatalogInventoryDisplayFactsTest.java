@@ -11,9 +11,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.catering.v2s.catalog.application.persistence.CatalogWorkbenchReadPersistence;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
+import com.catering.v2s.catalog.application.persistence.CatalogWorkbenchReadPersistence;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;

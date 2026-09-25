@@ -20,7 +20,6 @@ import com.catering.v2s.app.edge.generated.wire.StoreServicePointAssetStageReadb
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointAssetStageRequest;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointDetail;
-import com.catering.v2s.app.edge.generated.wire.StoreServicePointOrderDirection;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointOrderRequest;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointPage;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointStatus;
@@ -128,8 +127,18 @@ public class OperationsStoreServicePointController {
         StoreServicePointAreaCreateRequest input = bodyRequired(body);
         OperationsOwnerScopeGrant grant = grant(session, REQ_CREATE_AREA, storeRef);
         var result = m1Bindings.bindPostOperationsStoreServicePointArea(new StoreServicePointOwnerApi.AreaCommand(
-                session.workspaceUuid(), groupWorkspaceKey, storeRef, null, input.name(), input.code(),
-                input.areaType().wire(), StoreServicePointStatus.ENABLED.wire(), null, idempotencyKey, sessions.actor(session), grant));
+                session.workspaceUuid(),
+                groupWorkspaceKey,
+                storeRef,
+                null,
+                input.name(),
+                input.code(),
+                input.areaType().wire(),
+                StoreServicePointStatus.ENABLED.wire(),
+                null,
+                idempotencyKey,
+                sessions.actor(session),
+                grant));
         return ResponseEntity.status(HttpStatus.CREATED).body(area(result));
     }
 
@@ -143,8 +152,17 @@ public class OperationsStoreServicePointController {
             @RequestBody StoreServicePointAreaUpdateRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
         var value = m1Bindings.bindPatchOperationsStoreServicePointArea(new StoreServicePointOwnerApi.AreaCommand(
-                session.workspaceUuid(), groupWorkspaceKey, storeRef, areaRef, bodyRequired(body).name(), body.code(),
-                body.areaType().wire(), body.status().wire(), body.expectedVersion(), idempotencyKey, sessions.actor(session),
+                session.workspaceUuid(),
+                groupWorkspaceKey,
+                storeRef,
+                areaRef,
+                bodyRequired(body).name(),
+                body.code(),
+                body.areaType().wire(),
+                body.status().wire(),
+                body.expectedVersion(),
+                idempotencyKey,
+                sessions.actor(session),
                 grant(session, REQ_UPDATE_AREA, storeRef)));
         return area(value);
     }
@@ -158,10 +176,18 @@ public class OperationsStoreServicePointController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody StoreServicePointAreaStatusRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
-        var value = m1Bindings.bindPostOperationsStoreServicePointAreaStatus(new StoreServicePointOwnerApi.StatusCommand(
-                session.workspaceUuid(), groupWorkspaceKey, storeRef, areaRef, "AREA", bodyRequired(body).status().wire(),
-                required(body.expectedVersion(), "expectedVersion"), idempotencyKey, sessions.actor(session),
-                grant(session, REQ_AREA_STATUS, storeRef)));
+        var value =
+                m1Bindings.bindPostOperationsStoreServicePointAreaStatus(new StoreServicePointOwnerApi.StatusCommand(
+                        session.workspaceUuid(),
+                        groupWorkspaceKey,
+                        storeRef,
+                        areaRef,
+                        "AREA",
+                        bodyRequired(body).status().wire(),
+                        required(body.expectedVersion(), "expectedVersion"),
+                        idempotencyKey,
+                        sessions.actor(session),
+                        grant(session, REQ_AREA_STATUS, storeRef)));
         return area(value);
     }
 
@@ -175,8 +201,15 @@ public class OperationsStoreServicePointController {
             @RequestBody StoreServicePointAreaOrderRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
         var value = m1Bindings.bindPostOperationsStoreServicePointAreaOrder(new StoreServicePointOwnerApi.OrderCommand(
-                session.workspaceUuid(), groupWorkspaceKey, storeRef, areaRef, "AREA", bodyRequired(body).direction().wire(),
-                required(body.expectedVersion(), "expectedVersion"), idempotencyKey, sessions.actor(session),
+                session.workspaceUuid(),
+                groupWorkspaceKey,
+                storeRef,
+                areaRef,
+                "AREA",
+                bodyRequired(body).direction().wire(),
+                required(body.expectedVersion(), "expectedVersion"),
+                idempotencyKey,
+                sessions.actor(session),
                 grant(session, REQ_AREA_ORDER, storeRef)));
         return area(value);
     }
@@ -191,7 +224,8 @@ public class OperationsStoreServicePointController {
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false, defaultValue = "20") int pageSize) {
         WorkspaceSessionReadback session = readSession(request, groupWorkspaceKey, storeRef);
-        return pointPage(owner.listPoints(session.workspaceUuid(), groupWorkspaceKey, storeRef, areaRef, cursor, pageSize));
+        return pointPage(
+                owner.listPoints(session.workspaceUuid(), groupWorkspaceKey, storeRef, areaRef, cursor, pageSize));
     }
 
     @PostMapping("/service-point-areas/{areaRef}/service-points")
@@ -205,12 +239,26 @@ public class OperationsStoreServicePointController {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
         StoreServicePointCreateRequest input = bodyRequired(body);
         var result = m1Bindings.bindPostOperationsStoreServicePoint(new StoreServicePointOwnerApi.PointCommand(
-                session.workspaceUuid(), groupWorkspaceKey, storeRef, null, areaRef, input.name(), input.code(),
-                input.pointType().wire(), StoreServicePointStatus.ENABLED.wire(), longValue(input.seatCapacity()),
-                textValue(input.tableShape()), booleanValue(input.reservable()), input.imageAssetRef(),
-                textValue(input.imageBindGrant()), ExtensionSubmissionWireMapper.toSubmission(input.extensionValues()),
+                session.workspaceUuid(),
+                groupWorkspaceKey,
+                storeRef,
+                null,
+                areaRef,
+                input.name(),
+                input.code(),
+                input.pointType().wire(),
+                StoreServicePointStatus.ENABLED.wire(),
+                longValue(input.seatCapacity()),
+                textValue(input.tableShape()),
+                booleanValue(input.reservable()),
+                input.imageAssetRef(),
+                textValue(input.imageBindGrant()),
+                ExtensionSubmissionWireMapper.toSubmission(input.extensionValues()),
                 longValue(input.extensionRuleRevision()),
-                null, idempotencyKey, sessions.actor(session), grant(session, REQ_CREATE_POINT, storeRef)));
+                null,
+                idempotencyKey,
+                sessions.actor(session),
+                grant(session, REQ_CREATE_POINT, storeRef)));
         return ResponseEntity.status(HttpStatus.CREATED).body(point(result));
     }
 
@@ -236,12 +284,26 @@ public class OperationsStoreServicePointController {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
         StoreServicePointUpdateRequest input = bodyRequired(body);
         var result = m1Bindings.bindPatchOperationsStoreServicePoint(new StoreServicePointOwnerApi.PointCommand(
-                session.workspaceUuid(), groupWorkspaceKey, storeRef, servicePointRef, null, input.name(), input.code(),
-                input.pointType().wire(), input.status().wire(), longValue(input.seatCapacity()), textValue(input.tableShape()),
-                booleanValue(input.reservable()), input.imageAssetRef(), textValue(input.imageBindGrant()),
-                ExtensionSubmissionWireMapper.toSubmission(input.extensionValues()), longValue(input.extensionRuleRevision()),
+                session.workspaceUuid(),
+                groupWorkspaceKey,
+                storeRef,
+                servicePointRef,
+                null,
+                input.name(),
+                input.code(),
+                input.pointType().wire(),
+                input.status().wire(),
+                longValue(input.seatCapacity()),
+                textValue(input.tableShape()),
+                booleanValue(input.reservable()),
+                input.imageAssetRef(),
+                textValue(input.imageBindGrant()),
+                ExtensionSubmissionWireMapper.toSubmission(input.extensionValues()),
+                longValue(input.extensionRuleRevision()),
                 required(input.expectedVersion(), "expectedVersion"),
-                idempotencyKey, sessions.actor(session), grant(session, REQ_UPDATE_POINT, storeRef)));
+                idempotencyKey,
+                sessions.actor(session),
+                grant(session, REQ_UPDATE_POINT, storeRef)));
         return point(result);
     }
 
@@ -255,8 +317,15 @@ public class OperationsStoreServicePointController {
             @RequestBody StoreServicePointStatusRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
         var value = m1Bindings.bindPostOperationsStoreServicePointStatus(new StoreServicePointOwnerApi.StatusCommand(
-                session.workspaceUuid(), groupWorkspaceKey, storeRef, servicePointRef, "POINT", bodyRequired(body).status().wire(),
-                required(body.expectedVersion(), "expectedVersion"), idempotencyKey, sessions.actor(session),
+                session.workspaceUuid(),
+                groupWorkspaceKey,
+                storeRef,
+                servicePointRef,
+                "POINT",
+                bodyRequired(body).status().wire(),
+                required(body.expectedVersion(), "expectedVersion"),
+                idempotencyKey,
+                sessions.actor(session),
                 grant(session, REQ_POINT_STATUS, storeRef)));
         return point(value);
     }
@@ -271,8 +340,15 @@ public class OperationsStoreServicePointController {
             @RequestBody StoreServicePointOrderRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
         var value = m1Bindings.bindPostOperationsStoreServicePointOrder(new StoreServicePointOwnerApi.OrderCommand(
-                session.workspaceUuid(), groupWorkspaceKey, storeRef, servicePointRef, "POINT", bodyRequired(body).direction().wire(),
-                required(body.expectedVersion(), "expectedVersion"), idempotencyKey, sessions.actor(session),
+                session.workspaceUuid(),
+                groupWorkspaceKey,
+                storeRef,
+                servicePointRef,
+                "POINT",
+                bodyRequired(body).direction().wire(),
+                required(body.expectedVersion(), "expectedVersion"),
+                idempotencyKey,
+                sessions.actor(session),
                 grant(session, REQ_POINT_ORDER, storeRef)));
         return point(value);
     }
@@ -280,9 +356,7 @@ public class OperationsStoreServicePointController {
     @GetMapping("/qr-configuration")
     @Transactional(readOnly = true)
     public StoreQrConfigurationView readQr(
-            EdgeRequestContext request,
-            @PathVariable String groupWorkspaceKey,
-            @PathVariable UUID storeRef) {
+            EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID storeRef) {
         WorkspaceSessionReadback session = readSession(request, groupWorkspaceKey, storeRef);
         return qr(owner.readQrConfiguration(session.workspaceUuid(), groupWorkspaceKey, storeRef));
     }
@@ -296,23 +370,33 @@ public class OperationsStoreServicePointController {
             @RequestBody StoreQrConfigurationUpdateRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
         StoreQrConfigurationUpdateRequest input = bodyRequired(body);
-        var value = m1Bindings.bindPatchOperationsStoreQrConfiguration(new StoreServicePointOwnerApi.QrConfigurationCommand(
-                session.workspaceUuid(), groupWorkspaceKey, storeRef, Boolean.TRUE.equals(input.enabled()), input.channelRef(),
-                required(input.expectedVersion(), "expectedVersion"), idempotencyKey, sessions.actor(session),
-                grant(session, REQ_UPDATE_QR, storeRef)));
+        var value =
+                m1Bindings.bindPatchOperationsStoreQrConfiguration(new StoreServicePointOwnerApi.QrConfigurationCommand(
+                        session.workspaceUuid(),
+                        groupWorkspaceKey,
+                        storeRef,
+                        Boolean.TRUE.equals(input.enabled()),
+                        input.channelRef(),
+                        required(input.expectedVersion(), "expectedVersion"),
+                        idempotencyKey,
+                        sessions.actor(session),
+                        grant(session, REQ_UPDATE_QR, storeRef)));
         return qr(value);
     }
 
     @GetMapping("/qr-channel-candidates")
     @Transactional(readOnly = true)
     public StoreQrChannelCandidatePage qrCandidates(
-            EdgeRequestContext request,
-            @PathVariable String groupWorkspaceKey,
-            @PathVariable UUID storeRef) {
+            EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID storeRef) {
         WorkspaceSessionReadback session = readSession(request, groupWorkspaceKey, storeRef);
-        List<QrChannelEligibilityLookup.Candidate> values = channels.listCandidates(
-                session.workspaceUuid(), groupWorkspaceKey, storeRef);
-        return new StoreQrChannelCandidatePage(values.stream().map(OperationsStoreServicePointController::candidate).toList(), null, (long) values.size());
+        List<QrChannelEligibilityLookup.Candidate> values =
+                channels.listCandidates(session.workspaceUuid(), groupWorkspaceKey, storeRef);
+        return new StoreQrChannelCandidatePage(
+                values.stream()
+                        .map(OperationsStoreServicePointController::candidate)
+                        .toList(),
+                null,
+                (long) values.size());
     }
 
     @PostMapping(value = "/service-point-assets/stage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -358,7 +442,8 @@ public class OperationsStoreServicePointController {
         grant(session, REQ_RELEASE_ASSET, storeRef);
         requireOperatingRule(session, groupWorkspaceKey, storeRef);
         StoreServicePointAssetReleaseRequest input = bodyRequired(body);
-        return m1Bindings.bindReleaseStagedStoreServicePointImage(input, session.workspaceUuid(), groupWorkspaceKey, assetRef);
+        return m1Bindings.bindReleaseStagedStoreServicePointImage(
+                input, session.workspaceUuid(), groupWorkspaceKey, assetRef);
     }
 
     private WorkspaceSessionReadback readSession(EdgeRequestContext request, String groupWorkspaceKey, UUID storeRef) {
@@ -384,49 +469,117 @@ public class OperationsStoreServicePointController {
 
     private void requireOperatingRule(WorkspaceSessionReadback session, String groupWorkspaceKey, UUID storeRef) {
         entities.requireStoreOperatingRuleForStoreTarget(
-                session.workspaceUuid(), groupWorkspaceKey, ServiceNodeTypes.STORE, storeRef, StoreServicePointService.OPERATING_RULE_KEY);
+                session.workspaceUuid(),
+                groupWorkspaceKey,
+                ServiceNodeTypes.STORE,
+                storeRef,
+                StoreServicePointService.OPERATING_RULE_KEY);
     }
 
     private static StoreServicePointAreaPage areaPage(StoreServicePointOwnerApi.AreaPage value) {
-        return new StoreServicePointAreaPage(value.items().stream().map(OperationsStoreServicePointController::area).toList(),
-                json(value.nextCursor()), value.total());
+        return new StoreServicePointAreaPage(
+                value.items().stream()
+                        .map(OperationsStoreServicePointController::area)
+                        .toList(),
+                json(value.nextCursor()),
+                value.total());
     }
 
     private static StoreServicePointPage pointPage(StoreServicePointOwnerApi.PointPage value) {
-        return new StoreServicePointPage(value.items().stream().map(OperationsStoreServicePointController::point).toList(),
-                json(value.nextCursor()), value.total());
+        return new StoreServicePointPage(
+                value.items().stream()
+                        .map(OperationsStoreServicePointController::point)
+                        .toList(),
+                json(value.nextCursor()),
+                value.total());
     }
 
     private static StoreServicePointArea area(StoreServicePointOwnerApi.Area value) {
         return new StoreServicePointArea(
-                value.areaRef(), value.storeRef(), value.name(), value.code(), enumValue(StoreServicePointAreaType.class, value.areaType()),
-                enumValue(StoreServicePointStatus.class, value.status()), value.displayOrder(), value.version(), value.createdAt(),
-                value.updatedAt(), value.canMoveUp(), value.canMoveDown());
+                value.areaRef(),
+                value.storeRef(),
+                value.name(),
+                value.code(),
+                enumValue(StoreServicePointAreaType.class, value.areaType()),
+                enumValue(StoreServicePointStatus.class, value.status()),
+                value.displayOrder(),
+                value.version(),
+                value.createdAt(),
+                value.updatedAt(),
+                value.canMoveUp(),
+                value.canMoveDown());
     }
 
     private static StoreServicePoint point(StoreServicePointOwnerApi.Point value) {
         return new StoreServicePoint(
-                value.pointRef(), value.storeRef(), value.areaRef(), value.name(), value.code(), enumValue(StoreServicePointType.class, value.pointType()),
-                enumValue(StoreServicePointStatus.class, value.status()), value.displayOrder(), json(value.seatCapacity()), json(value.tableShape()),
-                json(value.reservable()), value.imageAssetRef(), jsonNode(value.extensionValuesJson()), json(value.extensionRuleRevision()),
-                value.effectiveAvailable(), json(value.qrUrl()), value.version(), value.createdAt(), value.updatedAt(), value.canMoveUp(), value.canMoveDown());
+                value.pointRef(),
+                value.storeRef(),
+                value.areaRef(),
+                value.name(),
+                value.code(),
+                enumValue(StoreServicePointType.class, value.pointType()),
+                enumValue(StoreServicePointStatus.class, value.status()),
+                value.displayOrder(),
+                json(value.seatCapacity()),
+                json(value.tableShape()),
+                json(value.reservable()),
+                value.imageAssetRef(),
+                jsonNode(value.extensionValuesJson()),
+                json(value.extensionRuleRevision()),
+                value.effectiveAvailable(),
+                json(value.qrUrl()),
+                value.version(),
+                value.createdAt(),
+                value.updatedAt(),
+                value.canMoveUp(),
+                value.canMoveDown());
     }
 
     private static StoreServicePointDetail detail(StoreServicePointOwnerApi.Point value) {
         return new StoreServicePointDetail(
-                value.pointRef(), value.storeRef(), value.areaRef(), value.name(), value.code(), enumValue(StoreServicePointType.class, value.pointType()),
-                enumValue(StoreServicePointStatus.class, value.status()), value.displayOrder(), json(value.seatCapacity()), json(value.tableShape()),
-                json(value.reservable()), value.imageAssetRef(), jsonNode(value.extensionValuesJson()), json(value.extensionRuleRevision()),
-                value.effectiveAvailable(), json(value.qrUrl()), value.version(), value.createdAt(), value.updatedAt(), value.canMoveUp(), value.canMoveDown());
+                value.pointRef(),
+                value.storeRef(),
+                value.areaRef(),
+                value.name(),
+                value.code(),
+                enumValue(StoreServicePointType.class, value.pointType()),
+                enumValue(StoreServicePointStatus.class, value.status()),
+                value.displayOrder(),
+                json(value.seatCapacity()),
+                json(value.tableShape()),
+                json(value.reservable()),
+                value.imageAssetRef(),
+                jsonNode(value.extensionValuesJson()),
+                json(value.extensionRuleRevision()),
+                value.effectiveAvailable(),
+                json(value.qrUrl()),
+                value.version(),
+                value.createdAt(),
+                value.updatedAt(),
+                value.canMoveUp(),
+                value.canMoveDown());
     }
 
     private static StoreQrConfigurationView qr(StoreServicePointOwnerApi.QrConfiguration value) {
-        return new StoreQrConfigurationView(value.storeRef(), value.enabled(), value.channelRef(), json(value.channelName()), value.version(), value.updatedAt());
+        return new StoreQrConfigurationView(
+                value.storeRef(),
+                value.enabled(),
+                value.channelRef(),
+                json(value.channelName()),
+                value.version(),
+                value.updatedAt());
     }
 
     private static StoreQrChannelCandidate candidate(QrChannelEligibilityLookup.Candidate value) {
-        return new StoreQrChannelCandidate(value.channelRef(), value.templateRef(), json(value.channelCode()), value.channelName(), value.templateName(),
-                value.status(), value.bindingStatus(), json(value.urlRule()));
+        return new StoreQrChannelCandidate(
+                value.channelRef(),
+                value.templateRef(),
+                json(value.channelCode()),
+                value.channelName(),
+                value.templateName(),
+                value.status(),
+                value.bindingStatus(),
+                json(value.urlRule()));
     }
 
     private static <E extends Enum<E>> E enumValue(Class<E> type, String value) {

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/application-base-android",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/application-base-android", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "AndroidPlatformBinding",
+    "AndroidSurfaceForm",
+    "AndroidTerminalApp",
+    "AndroidTerminalAppProps",
+    "NativeLoadingCapability",
+    "NativeLoadingHideResult",
+    "NativeLoadingTarget",
+    "createAndroidNativeLoadingCapability",
+    "createAndroidAppControlPort",
+    "createAndroidPlatformBinding",
+    "createAndroidTopologyHostPort",
+    "createAndroidTopologyPeerChannel",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName"
+  ]
+}

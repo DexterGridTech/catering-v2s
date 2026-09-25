@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {readFileSync} from 'node:fs';
+import {mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
@@ -16,12 +17,16 @@ import {
   catalogLibraryCaseIdentityPlan,
   deriveL2CaseFailure,
   fixtureSkuFactsForItem,
+  heldRuntimeStatePaths,
   l2FixtureStageSuffix,
   loadL2ActivationCandidate,
   materializeL2TimingBudget,
   materializeReadbackFactTemplate,
   parseFocusedCaseId,
   playwrightArtifactDirectoryForRun,
+  requirePreviewFrontendMode,
+  requestedFrontendMode,
+  validateRefreshFrontendState,
   requiredCatalogItemCommandResourceRef,
   requiredCatalogItemDetailVoidAvailability,
   requireActivatedCatalogLibraryExecution,
@@ -49,6 +54,7 @@ import {validateBlueprint as validateSalesMenuBlueprint} from '../generate/sales
 
 const root = path.resolve(import.meta.dirname, '../..');
 const readJson = relative => JSON.parse(readFileSync(path.join(root, relative), 'utf8'));
+const devRunnerSource = readFileSync(path.join(root, 'scripts/dev/r5-dev-runner.mjs'), 'utf8');
 const runtimeSource = readFileSync(path.join(root, 'scripts/test/browser-l2-runtime.mjs'), 'utf8');
 const catalogL2Source = readFileSync(
   path.join(root, 'apps/frontend/operations-admin/src/tests/l2/catalog-inventory.spec.ts'),
@@ -70,12 +76,73 @@ const operationsL2Source = readFileSync(
   path.join(root, 'apps/frontend/operations-admin/src/tests/l2/operationsL2.ts'),
   'utf8',
 );
+const storeTerminalL2Source = readFileSync(
+  path.join(root, 'apps/frontend/operations-admin/src/tests/l2/store-terminal.spec.ts'),
+  'utf8',
+);
 const cursorPaginationSource = readFileSync(
   path.join(root, 'libraries/frontend/admin-ui-foundation/src/list/cursorPagination.tsx'),
   'utf8',
 );
 const fixtureSource = readFileSync(path.join(root, 'scripts/test/catalog-inventory-l2-fixture.mjs'), 'utf8');
 const p1Source = readFileSync(path.join(root, 'scripts/generate/catalog-inventory-p1.mjs'), 'utf8');
+
+test('managed browser L2 defaults to HMR-free preview and rejects dev mode', () => {
+  const previous = process.env.R5_L2_FRONTEND_MODE;
+  try {
+    delete process.env.R5_L2_FRONTEND_MODE;
+    assert.equal(requestedFrontendMode(), 'preview');
+    process.env.R5_L2_FRONTEND_MODE = 'preview';
+    assert.equal(requestedFrontendMode(), 'preview');
+    process.env.R5_L2_FRONTEND_MODE = 'dev';
+    assert.throws(() => requestedFrontendMode(), /L2_FRONTEND_MODE_HMR_UNSAFE/);
+    assert.equal(requirePreviewFrontendMode('preview'), 'preview');
+    assert.throws(() => requirePreviewFrontendMode('dev'), /L2_FRONTEND_MODE_HMR_UNSAFE/);
+  } finally {
+    if (previous === undefined) delete process.env.R5_L2_FRONTEND_MODE;
+    else process.env.R5_L2_FRONTEND_MODE = previous;
+  }
+});
+
+test('frontend refresh rejects persisted dev state before process replacement', () => {
+  assert.equal(validateRefreshFrontendState({frontendMode: 'preview'}), 'preview');
+  assert.throws(
+    () => validateRefreshFrontendState({frontendMode: 'dev'}),
+    /L2_FRONTEND_MODE_HMR_UNSAFE/,
+  );
+});
+
+test('browser L2 lifecycle admission scans every run-scoped held state and cleanup identities', () => {
+  const temporaryRoot = mkdtempSync(path.join(os.tmpdir(), 'v2s-l2-held-state-'));
+  try {
+    const heldRun = path.join(temporaryRoot, 'l2-held-run');
+    mkdirSync(heldRun, {recursive: true});
+    writeFileSync(
+      path.join(heldRun, 'runtime-state.json'),
+      `${JSON.stringify({status: 'READY', identity: {runId: 'held-run'}})}\n`,
+    );
+    writeFileSync(path.join(temporaryRoot, 'current-runtime-state.json'), `${JSON.stringify({status: 'FINISHED'})}\n`);
+    assert.deepEqual(heldRuntimeStatePaths(temporaryRoot), [
+      path.join(temporaryRoot, 'current-runtime-state.json'),
+      path.join(heldRun, 'runtime-state.json'),
+    ]);
+    assert.match(runtimeSource, /lifecycle-admission\.lock/);
+    assert.match(runtimeSource, /acquireLifecycleAdmission\(\{suite, phase: 'FINALIZE'\}\)/);
+    assert.match(runtimeSource, /readRunLocalProcessIdentities\(state\.runDirectory\)/);
+  } finally {
+    rmSync(temporaryRoot, {recursive: true, force: true});
+  }
+});
+
+test('store-terminal Playwright consumes only the same-run generated execution profile', () => {
+  const executionEnvironmentSource = runtimeSource.slice(
+    runtimeSource.indexOf('R5_L2_JOIN_EVENTS'),
+    runtimeSource.indexOf('R5_L2_STORE_TERMINAL_TIMING') + 'R5_L2_STORE_TERMINAL_TIMING'.length,
+  );
+  assert.match(executionEnvironmentSource, /\[config\.executionEnv\]: executionProfilePathForState\(state, suite\)/);
+  assert.doesNotMatch(executionEnvironmentSource, /R5_L2_STORE_TERMINAL_EXECUTION:\s*storeTerminalExecutionPath/);
+  assert.match(runtimeSource, /L2_STORE_TERMINAL_EXECUTION_PROFILE_BINDING_MISMATCH/);
+});
 const salesMenuFixture = readJson('contracts/policy/sales-menu-l2-fixture.json');
 const salesMenuBlueprint = readJson('contracts/policy/sales-menu-l2-case-blueprint.json');
 const salesMenuGeneratedScenarios = readJson('contracts/policy/sales-menu-l2-scenarios.json');
@@ -789,7 +856,7 @@ test('browser L2 reports a completed case failure without hiding concurrent sour
   );
   assert.match(
     runtimeSource,
-    /firstFailure,\s+remoteArtifactFailure,\s+sourceByteBindingAfterRunFailure,\s+firstFailedCaseId:/,
+    /firstFailure,\s+(?:admissionDigest:\s*state\.admissionDigest\s*\?\?\s*null,\s+)?remoteArtifactFailure,\s+sourceByteBindingAfterRunFailure,\s+firstFailedCaseId:/,
     'the public execution manifest must retain source drift beside the selected case failure',
   );
 });
@@ -1051,7 +1118,7 @@ test('browser L2 namespace binding is closed to the managed namespace grammar', 
 test('browser L2 failure cleanup awaits remote cleanup and owns partial startup processes', () => {
   assert.match(
     runtimeSource,
-    /async function cleanupOwnedL2Resources\(state, credentials\) \{[\s\S]*?await stopRemoteJava\(state\.remote\.host, state\.remoteJava\)[\s\S]*?await stopOwnedProcesses\(state\.processes\)[\s\S]*?await cleanupRemote\(state\.remote\.host, state\.identity, credentials\)/,
+    /async function cleanupOwnedL2Resources\(state, credentials\) \{[\s\S]*?await stopRemoteJava\(state\.remote\.host, state\.remoteJava\)[\s\S]*?cleanupRemoteJavaRoot\(state\.remote\.host, state\.remoteRoot\)[\s\S]*?await stopOwnedRunProcesses\(state\)[\s\S]*?await cleanupRemote\(state\.remote\.host, state\.identity, credentials\)/,
   );
   assert.equal((runtimeSource.match(/errors\.push\(\.\.\.\(await cleanupRemote\(/g) ?? []).length, 1);
   assert.doesNotMatch(runtimeSource, /minio\/mc rm[^\n]*\|\| true/);
@@ -1272,6 +1339,15 @@ test('browser L2 readiness consumes the generated candidate instead of an execut
   assert.doesNotMatch(runtimeSource, /CATALOG_LIBRARY_CASE_IDS/);
 });
 
+test('browser L2 run initializes its active-case accumulator before reading runtime state', () => {
+  const runSource = runtimeSource.slice(runtimeSource.indexOf('async function runBrowserL2'));
+  const activeInitializer = runSource.indexOf('let active = [];');
+  const runtimeStateRead = runSource.indexOf('state = readRuntimeState(suite);');
+  assert.ok(activeInitializer >= 0, 'active-case accumulator initializer is missing');
+  assert.ok(runtimeStateRead > activeInitializer, 'runtime state must be read after local initialization');
+  assert.doesNotMatch(runSource, /let active = Array\.isArray\(state\.activeCaseIds\)/);
+});
+
 test('browser L2 owns a remote Spring backend and exposes only HTTP plus asset ingress', () => {
   assert.match(
     runtimeSource,
@@ -1295,6 +1371,20 @@ test('browser L2 owns a remote Spring backend and exposes only HTTP plus asset i
   assert.match(runtimeSource, /remoteArtifactFailure/);
 });
 
+test('remote Spring readiness survives SSH teardown and requires a live listener', () => {
+  assert.match(
+    devRunnerSource,
+    /exec nohup \.\/gradlew --no-daemon :apps:backend:catering-business-server:bootRun/,
+  );
+  assert.match(devRunnerSource, /`http_port=\$\{quote\(String\(control\.httpPort\)\)\}`/);
+  assert.match(devRunnerSource, /ss -ltnH "sport = :\$http_port"/);
+  assert.match(devRunnerSource, /listenerReady/);
+  assert.match(devRunnerSource, /probe\?\.readyMarkerSeen === true && probe\?\.listenerReady === true/);
+  assert.match(devRunnerSource, /remoteJavaStartupFailure\(host, control\)/);
+  assert.match(devRunnerSource, /REMOTE_BUSINESS_SERVER_STARTUP_FAILED/);
+  assert.match(runtimeSource, /remoteReadiness\.listenerReady !== true/);
+});
+
 test('browser L2 interrupted runs have a managed cleanup recovery path', () => {
   assert.match(runtimeSource, /async function cleanupRuntimeState\(\n  state,\n  \{/);
   assert.match(runtimeSource, /await cleanupOwnedL2Resources\(state, credentials\)/);
@@ -1308,6 +1398,36 @@ test('browser L2 interrupted runs have a managed cleanup recovery path', () => {
   assert.match(runtimeSource, /brokenBoundary = 'L2_RUNTIME_FINALIZATION'/);
   assert.match(runtimeSource, /preflightComplete \? 'INCOMPLETE_FINALIZATION' : 'INCOMPLETE_PREFLIGHT'/);
   assert.match(runtimeSource, /preflightComplete \? 'L2_RUNTIME_FINALIZATION' : 'L2_RUNTIME_PREFLIGHT'/);
+});
+
+test('browser L2 readiness interrupts retain owned-process cleanup instead of exiting before state capture', () => {
+  assert.match(runtimeSource, /async function readiness\(suite = 'catalog-inventory'\)/);
+  assert.match(runtimeSource, /const throwIfInterrupted = \(\) =>/);
+  assert.match(runtimeSource, /process\.once\('SIGINT', handleSignal\);\n  process\.once\('SIGTERM', handleSignal\);/);
+  assert.match(runtimeSource, /runtime = await startRemoteRuntime\([\s\S]*?\);\n    throwIfInterrupted\(\);/);
+  assert.match(
+    runtimeSource,
+    /firstFailure = interruptedSignal \? `L2_RUNTIME_INTERRUPTED_\$\{interruptedSignal\}` : errorCode\(error\);/,
+  );
+  assert.match(
+    runtimeSource,
+    /finally \{[\s\S]*?releaseReadinessAdmission\?\.\(\);[\s\S]*?process\.removeListener\('SIGINT', handleSignal\);[\s\S]*?process\.removeListener\('SIGTERM', handleSignal\);[\s\S]*?\n  \}\n\}/,
+  );
+});
+
+test('browser L2 persists the tunnel identity for managed recovery', () => {
+  assert.match(
+    runtimeSource,
+    /privateWrite\(path\.join\(path\.dirname\(logPath\), 'l2-remote-http-asset-tunnel\.identity\.json'\), identity\)/,
+  );
+  assert.match(runtimeSource, /const managedLocalProcessIdentityFileNames = Object\.freeze\(\[/);
+  assert.match(runtimeSource, /'l2-remote-http-asset-tunnel\.identity\.json'/);
+});
+
+test('browser L2 cleanup discovers refreshed frontend identities', () => {
+  assert.match(runtimeSource, /managedLocalProcessIdentityPattern = \/\^\(\?:l2-remote-http-asset-tunnel/);
+  assert.match(runtimeSource, /refresh-\\d\+\)\?\\\.identity\\\.json\$\//);
+  assert.match(runtimeSource, /readdirSync\(runDirectory\)\.filter\(fileName => managedLocalProcessIdentityPattern\.test\(fileName\)\)/);
 });
 
 test('browser L2 failed readiness keeps an exact managed cleanup recovery state', () => {
@@ -1444,7 +1564,7 @@ test('browser L2 store bootstrap role exposes the approved sales-menu page', () 
   assert.ok(storeRoleBlock, 'store role bootstrap block must remain structurally discoverable');
   assert.match(
     storeRoleBlock,
-    /serviceNodeType: 'STORE',[\s\S]*?pageAccessKeys: \[\s*'PG-IAM-STORE-USERS',\s*'PG-CATALOG-STORE-ITEMS',\s*'PG-BUSINESS-CHANNEL-STORE',\s*'PG-SALES-MENU-STORE',\s*\]/,
+    /serviceNodeType: 'STORE',[\s\S]*?pageAccessKeys: \[[\s\S]*?'PG-IAM-STORE-USERS',[\s\S]*?'PG-CATALOG-STORE-ITEMS',[\s\S]*?'PG-BUSINESS-CHANNEL-STORE',[\s\S]*?'PG-SALES-MENU-STORE',[\s\S]*?'PG-STORE-TERMINALS',[\s\S]*?\]/,
   );
   assert.doesNotMatch(storeRoleBlock, /PG-CATALOG-BRAND-ITEMS/);
 });
@@ -1489,6 +1609,199 @@ test('browser L2 Playwright environment closes both spec module input sets', () 
   assert.match(runtimeSource, /R5_L2_SALES_MENU_BINDINGS: salesMenuBindingPath/);
   assert.match(runtimeSource, /R5_L2_SALES_MENU_EXECUTION: salesMenuExecutionPath/);
   assert.match(runtimeSource, /R5_L2_SALES_MENU_ACTIVATION_CANDIDATE: salesMenuActivationCandidatePath/);
+});
+
+test('store-terminal L2 resolves runner-injected contract paths independently of Playwright cwd', () => {
+  assert.match(storeTerminalL2Source, /function findRepoFile\(relativePath: string, environmentKey: string\)/);
+  assert.match(storeTerminalL2Source, /process\.env\[environmentKey\]/);
+  assert.match(storeTerminalL2Source, /R5_L2_STORE_TERMINAL_CASES/);
+  assert.match(storeTerminalL2Source, /R5_L2_STORE_TERMINAL_BINDINGS/);
+  assert.match(storeTerminalL2Source, /R5_L2_STORE_TERMINAL_EXECUTION/);
+  assert.match(storeTerminalL2Source, /R5_L2_STORE_TERMINAL_ACTIVATION_CANDIDATE/);
+  assert.match(storeTerminalL2Source, /R5_L2_STORE_TERMINAL_TIMING/);
+  assert.doesNotMatch(storeTerminalL2Source, /process\.env\[relativePath\]/);
+});
+
+test('store-terminal L2 closes the action to request lifecycle and keeps setup reads out of the action envelope', () => {
+  assert.match(storeTerminalL2Source, /const actionIdsByRequest = new WeakMap<Request, string>\(\)/);
+  assert.match(storeTerminalL2Source, /actionId\?: string/);
+  assert.match(storeTerminalL2Source, /interceptedCompletionIds: Map<string, string\[\]>;/);
+  assert.doesNotMatch(storeTerminalL2Source, /interceptedRequestIds/);
+  assert.match(
+    storeTerminalL2Source,
+    /const authenticationOperationIds = new Set\(\[\s*'getOperationsWorkspaceLoginEntry',\s*'operationsWorkspacePasswordLogin'\s*,?\s*\]\)/,
+  );
+  assert.match(storeTerminalL2Source, /function declaredActionFor\(row: StoreTerminalCase\)/);
+  assert.match(storeTerminalL2Source, /async function runDeclaredAction<T>\(runtime: Runtime/);
+  assert.match(storeTerminalL2Source, /kind: 'ACTION_START'/);
+  assert.match(storeTerminalL2Source, /kind: 'ACTION_COMPLETE'/);
+  assert.match(storeTerminalL2Source, /actionId: action \? activeActionContext\?\.actionId : undefined/);
+  assert.match(
+    storeTerminalL2Source,
+    /const actionId =\s*actionIdsByRequest\.get\(request\) \?\?\s*\(authenticationOperationIds\.has\(operation\.operationId\) \? activeActionContext\?\.actionId : undefined\);[\s\S]*?if \(!actionId\) return;/,
+  );
+  assert.match(
+    storeTerminalL2Source,
+    /const suffix = `\/terminals\/\$\{terminalRef\}`;[\s\S]*?entry\.operationId === 'getOperationsStoreTerminal'[\s\S]*?entry\.pathname\.endsWith\(suffix\)/,
+  );
+  assert.match(storeTerminalL2Source, /const interceptedCompletions = runtime\.interceptedCompletionIds\.get\(operation\.operationId\)/);
+  assert.match(storeTerminalL2Source, /const interceptedCompletionId = interceptedCompletions\?\.shift\(\)/);
+  assert.match(storeTerminalL2Source, /const intercepted = typeof interceptedCompletionId === 'string'/);
+  assert.match(storeTerminalL2Source, /backendExpected: !intercepted && headers\['x-l2-backend-expected'\] !== 'false'/);
+  assert.match(storeTerminalL2Source, /await runDeclaredAction\(runtime, async \(\) => \{/);
+  assert.match(storeTerminalL2Source, /await installDiagnostics\(page, runtime\);/);
+  assert.match(
+    storeTerminalL2Source,
+    /const listReadBaseline = runtime\.observations\.filter\([\s\S]*?await page\.goto\(requiredEnvironment\('R5_L2_STORE_TERMINAL_ROUTE'\)\)/,
+  );
+  assert.match(storeTerminalL2Source, /await observer\.drain\(\);\s*assertControls\(runtime\);/);
+  assert.match(storeTerminalL2Source, /STORE_TERMINAL_L2_REQUIRED_OPERATION_ACTION_SCOPE_MISSING/);
+  assert.match(storeTerminalL2Source, /entry\.actionId === actionId/);
+});
+
+test('store-terminal create-basic L2 case does not require candidate reads before configuration is opened', () => {
+  const scenario = readJson('contracts/policy/store-terminal-l2-scenarios.json');
+  const row = scenario.scenarios.flatMap(entry => entry.cases).find(entry => entry.caseId === 'terminal-create-basic');
+  assert.ok(row);
+  assert.deepEqual(row.parameter.network.required, [
+    'getOperationsWorkspaceLoginEntry',
+    'operationsWorkspacePasswordLogin',
+    'getOperationsStoreTerminals',
+  ]);
+  assert.deepEqual(row.parameter.operationIds, row.parameter.network.required);
+  assert.deepEqual(row.parameter.network.backgroundAllowed, [
+    'getOperationsWorkspaceSessionEntry',
+    'getOperationsStoreTerminal',
+    'getOperationsStoreTerminalAreaCandidates',
+    'getOperationsStoreTerminalTagCandidates',
+  ]);
+  assert.equal(
+    row.parameter.network.requests.some(entry => entry.operationId.includes('Candidates')),
+    true,
+  );
+  assert.equal(
+    new Set(row.parameter.network.requests.map(entry => entry.operationId)).size,
+    row.parameter.network.requests.length,
+  );
+});
+
+test('store-terminal L2 budgets every allowed background read', () => {
+  const scenario = readJson('contracts/policy/store-terminal-l2-scenarios.json');
+  for (const entry of scenario.scenarios) {
+    for (const row of entry.cases) {
+      const requests = new Map(
+        (row.parameter.network.requests ?? []).map(request => [request.operationId, request.maxRequestCount]),
+      );
+      for (const operationId of row.parameter.network.backgroundAllowed ?? []) {
+        assert.equal(
+          Number.isInteger(requests.get(operationId)) && requests.get(operationId) >= 1,
+          true,
+          `STORE_TERMINAL_L2_BACKGROUND_OPERATION_BUDGET_MISSING:${row.caseId}:${operationId}`,
+        );
+      }
+    }
+  }
+});
+
+test('store-terminal list/detail Journey declares both injected read-recovery controls', () => {
+  const scenario = readJson('contracts/policy/store-terminal-l2-scenarios.json');
+  const row = scenario.scenarios.flatMap(entry => entry.cases).find(entry => entry.caseId === 'terminal-list-detail');
+  assert.ok(row);
+  assert.deepEqual(row.parameter.actionControlKeys, [
+    'STORE_SCOPE',
+    'TERMINAL_LIST_RETRY',
+    'TERMINAL_LIST_ITEM',
+    'TERMINAL_DETAIL_RETRY',
+  ]);
+  assert.ok(row.parameter.controlKeys.includes('TERMINAL_LIST_RETRY'));
+  assert.ok(row.parameter.controlKeys.includes('TERMINAL_DETAIL_RETRY'));
+  assert.match(storeTerminalL2Source, /failNextListRead: exercisesReadRecovery/);
+  assert.match(storeTerminalL2Source, /failNextDetailRead: false/);
+  assert.match(storeTerminalL2Source, /runtime\.failNextDetailRead = true/);
+  assert.match(
+    storeTerminalL2Source,
+    /operation\.operationId === 'getOperationsStoreTerminal'[\s\S]*?runtime\.failNextDetailRead[\s\S]*?runtime\.detailReadFailureUsed/,
+  );
+  assert.match(storeTerminalL2Source, /await expect[\s\S]*?\.poll\(\(\) => runtime\.detailReadFailureUsed === true/);
+  assert.match(storeTerminalL2Source, /const completions = runtime\.interceptedCompletionIds\.get\(operation\.operationId\) \?\? \[\]/);
+  assert.match(storeTerminalL2Source, /completions\.push\(completionId\)/);
+  assert.match(storeTerminalL2Source, /runtime\.interceptedCompletionIds\.set\(operation\.operationId, completions\)/);
+  assert.match(storeTerminalL2Source, /const interceptedCompletions = runtime\.interceptedCompletionIds\.get\(operation\.operationId\)/);
+});
+
+test('store-terminal L2 re-resolves controlled nodes after a click-triggered rerender', () => {
+  assert.match(
+    storeTerminalL2Source,
+    /async function clickExactAndRestore\(page: Page, controlKey: string, testId: string\): Promise<Locator> \{[\s\S]*?await clickExact\(page, controlKey, testId\);[\s\S]*?const restoredLocator = page\.getByTestId\(testId\);[\s\S]*?await expect\(restoredLocator\)\.toBeVisible\(\);[\s\S]*?await restoredLocator\.click\(\);/,
+  );
+});
+
+test('store-terminal L2 clicks the declared tab action node instead of its label marker', () => {
+  assert.match(
+    storeTerminalL2Source,
+    /binding\?\.actualActionNode === 'TAB'[\s\S]*?root\.locator\('xpath=ancestor::\*\[@role="tab"\]'\)\.first\(\)/,
+  );
+});
+
+test('store-terminal readonly Journey proves readonly access without inheriting recovery actions', () => {
+  const scenario = readJson('contracts/policy/store-terminal-l2-scenarios.json');
+  const row = scenario.scenarios.flatMap(entry => entry.cases).find(entry => entry.caseId === 'terminal-readonly-state');
+  assert.ok(row);
+  assert.deepEqual(row.parameter.actionControlKeys, ['STORE_SCOPE', 'TERMINAL_LIST_ITEM']);
+  assert.deepEqual(row.parameter.controlKeys, ['STORE_SCOPE', 'TERMINAL_PAGE', 'TERMINAL_LIST', 'TERMINAL_LIST_ITEM', 'TERMINAL_DETAIL']);
+  assert.deepEqual(row.parameter.absentControlKeys, ['TERMINAL_CREATE', 'TERMINAL_EDIT', 'TERMINAL_ACTION_MENU']);
+  assert.match(storeTerminalL2Source, /const exercisesReadRecovery = row\.caseId === 'terminal-list-detail';/);
+  assert.doesNotMatch(storeTerminalL2Source, /row\.caseId === 'terminal-list-detail' \|\| row\.caseId === 'terminal-readonly-state'/);
+  assert.match(storeTerminalL2Source, /assertAbsentControls\(page, runtime\)/);
+});
+
+test('store-terminal readonly Journey uses an isolated fixture terminal after status mutations', () => {
+  const scenario = readJson('contracts/policy/store-terminal-l2-scenarios.json');
+  const row = scenario.scenarios.flatMap(entry => entry.cases).find(entry => entry.caseId === 'terminal-readonly-state');
+  assert.equal(row?.fixtureRef, 'FIXTURE-STORE-TERMINAL-READONLY');
+  assert.deepEqual(scenario.serialFixtureOrder?.isolatedCaseIds, ['terminal-readonly-state']);
+  assert.match(runtimeSource, /store-terminal-readonly-create/);
+  assert.match(runtimeSource, /store-terminal-readonly-readback/);
+  assert.match(runtimeSource, /const fixture = readJson\(storeTerminalFixturePath\);[\s\S]*?const scenarios = readJson\(storeTerminalScenarioPath\);/);
+  assert.match(runtimeSource, /const primaryFixtureRef = scenarioByCaseId\.get\('terminal-status-actions'\)\.fixtureRef;/);
+  assert.match(runtimeSource, /const readonlyFixtureRef = scenarioByCaseId\.get\('terminal-readonly-state'\)\.fixtureRef;/);
+  assert.match(
+    runtimeSource,
+    /const cases = Object\.fromEntries\(\s*\[\s*'terminal-list-detail',\s*'terminal-create-basic',\s*'terminal-create-configuration',\s*'terminal-edit-configuration',\s*'terminal-readonly-state',\s*'terminal-status-actions',/,
+  );
+  assert.match(
+    runtimeSource,
+    /'terminal-edit-configuration',[\s\S]*?'terminal-readonly-state',[\s\S]*?'terminal-status-actions'/,
+  );
+  assert.match(
+    runtimeSource,
+    /caseId === 'terminal-readonly-state'[\s\S]*?fixtureRef: readonlyFacts\.fixtureRef[\s\S]*?terminalRef: String\(readonlyFacts\.terminalRef\)[\s\S]*?terminalName: readonlyFacts\.terminalName/,
+  );
+});
+
+test('store-terminal create and edit Journeys require their owner write inside the declared action', () => {
+  const scenario = readJson('contracts/policy/store-terminal-l2-scenarios.json');
+  const cases = new Map(scenario.scenarios.flatMap(entry => entry.cases).map(row => [row.caseId, row]));
+  assert.deepEqual(cases.get('terminal-create-configuration')?.parameter.network.required, [
+    'getOperationsWorkspaceLoginEntry',
+    'operationsWorkspacePasswordLogin',
+    'getOperationsStoreTerminals',
+    'getOperationsStoreTerminalAreaCandidates',
+    'getOperationsStoreTerminalTagCandidates',
+    'postOperationsStoreTerminal',
+  ]);
+  assert.deepEqual(cases.get('terminal-edit-configuration')?.parameter.network.required, [
+    'getOperationsWorkspaceLoginEntry',
+    'operationsWorkspacePasswordLogin',
+    'getOperationsStoreTerminals',
+    'getOperationsStoreTerminal',
+    'getOperationsStoreTerminalAreaCandidates',
+    'putOperationsStoreTerminal',
+  ]);
+  assert.ok(cases.get('terminal-edit-configuration')?.parameter.operationIds.includes('getOperationsStoreTerminalTagCandidates'));
+  assert.ok(cases.get('terminal-edit-configuration')?.parameter.network.backgroundAllowed.includes('getOperationsStoreTerminalTagCandidates'));
+  assert.match(storeTerminalL2Source, /TERMINAL_FORM_SAVE/);
+  assert.match(storeTerminalL2Source, /STORE_TERMINAL_L2_REQUIRED_OPERATION_ACTION_SCOPE_MISSING/);
 });
 
 test('browser L2 catalog bootstrap follows the owner HTTP 200 create responses', () => {
@@ -1699,6 +2012,7 @@ test('browser L2 readiness evidence binds current repository bytes and exposes o
   assert.equal(validation.bindingDigest, sourceBinding.bindingDigest);
   assert.equal(validation.fileCount, sourceBinding.fileCount);
   assert.equal(validation.byteCount, sourceBinding.byteCount);
+  assert.equal(binding.kind, 'catalog-inventory-l2-repository-byte-binding');
   assert.equal(binding.scope, 'apps-backend-and-apps-frontend-input-files-excluding-managed-runtime-and-build-output');
   assert.deepEqual(binding.includedDirectories, ['apps/backend', 'apps/frontend']);
   assert.ok(binding.files.length > 0);
@@ -1726,6 +2040,26 @@ test('browser L2 readiness evidence binds current repository bytes and exposes o
         /\.(apk|aab|keystore)$/.test(file.path),
     ),
     false,
+  );
+
+  const storeTerminalRunId = `${identity.runId}-store-terminal`;
+  const storeTerminalBinding = writeRepositoryByteBinding({
+    runDirectory,
+    identity: {...identity, runId: storeTerminalRunId},
+    suite: 'store-terminal',
+  });
+  const storeTerminalValidation = validateRepositoryByteBinding(storeTerminalBinding.path, {
+    expectedRunId: storeTerminalRunId,
+    suite: 'store-terminal',
+  });
+  const storeTerminalBindingJson = readJson(
+    '.runtime/browser-l2/l2-source-byte-binding-focused/repository-byte-binding.json',
+  );
+  assert.equal(storeTerminalBindingJson.kind, 'store-terminal-l2-repository-byte-binding');
+  assert.equal(storeTerminalValidation.bindingDigest, storeTerminalBinding.bindingDigest);
+  assert.throws(
+    () => validateRepositoryByteBinding(storeTerminalBinding.path, {expectedRunId: storeTerminalRunId}),
+    error => error.code === 'L2_SOURCE_BYTE_BINDING_INVALID',
   );
 
   const candidate = loadL2ActivationCandidate();

@@ -1,6 +1,5 @@
 package com.catering.v2s.salesmenu.application;
 
-import com.catering.v2s.salesmenu.api.SalesMenuReadback;
 import com.catering.v2s.salesmenu.domain.SalesMenuCursorIdentity;
 import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTargetKind;
 import java.sql.ResultSet;

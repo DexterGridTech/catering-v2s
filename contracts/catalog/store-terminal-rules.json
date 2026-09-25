@@ -12,14 +12,13 @@
     {"key": "KDS", "label": "KDS", "supportedDeviceTypeKeys": ["laptop"], "maxPerTerminal": 1, "allowedRangeKeys": ["PRODUCTION_TAG"]},
     {"key": "KITCHEN_PRINT", "label": "厨打", "supportedDeviceTypeKeys": ["laptop", "mobile"], "maxPerTerminal": null, "allowedRangeKeys": ["PRODUCTION_TAG"]},
     {"key": "DISPATCH", "label": "出餐", "supportedDeviceTypeKeys": ["laptop"], "maxPerTerminal": 1, "allowedRangeKeys": ["TABLE_AREA", "NO_TABLE", "DELIVERY"]},
-    {"key": "QUEUE_CALL", "label": "排队叫号", "supportedDeviceTypeKeys": ["laptop", "mobile"], "maxPerTerminal": 1, "allowedRangeKeys": ["NONE"]}
+    {"key": "QUEUE_CALL", "label": "排队叫号", "supportedDeviceTypeKeys": ["laptop", "mobile"], "maxPerTerminal": 1, "allowedRangeKeys": []}
   ],
   "ranges": [
     {"key": "TABLE_AREA", "label": "桌台区"},
     {"key": "NO_TABLE", "label": "无桌台"},
     {"key": "DELIVERY", "label": "外卖"},
-    {"key": "PRODUCTION_TAG", "label": "生产标签"},
-    {"key": "NONE", "label": "无范围"}
+    {"key": "PRODUCTION_TAG", "label": "生产标签"}
   ],
   "scenes": [
     {"key": "TABLE_ORDER_TICKET", "label": "客单（压桌单）", "functionKey": "ORDERING_CASHIER", "allowedPaperSpecKeys": ["THERMAL_58", "THERMAL_80"]},

@@ -1,10 +1,8 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.BusinessTenantPersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
-import com.catering.v2s.audit.contract.AuditEntityTypes;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
@@ -16,10 +14,10 @@ import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.Tena
 import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.TenantUpdateCommand;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
+import com.catering.v2s.organization.application.persistence.BusinessTenantPersistence;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -61,7 +59,12 @@ public class BusinessTenantService {
             ExtensionDefinitionLookup definitions,
             BusinessEntityCommandReceiptService receipts,
             com.catering.v2s.organization.api.OrganizationNodeLookup nodes) {
-        this(new BusinessTenantPersistence(jdbc), time, definitions, receipts, new BusinessEntityTaskReadService(jdbc, nodes));
+        this(
+                new BusinessTenantPersistence(jdbc),
+                time,
+                definitions,
+                receipts,
+                new BusinessEntityTaskReadService(jdbc, nodes));
     }
 
     BusinessTenantService(
@@ -75,10 +78,7 @@ public class BusinessTenantService {
 
     @Transactional
     public OrganizationEntityReadback createTenant(TenantCreateCommand command) {
-        requireGroupGrant(
-                command.ownerScopeGrant(),
-                command.workspaceUuid(),
-                command.groupWorkspaceKey());
+        requireGroupGrant(command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey());
         return receipts.execute(
                 command.workspaceUuid(),
                 command.idempotencyKey(),
@@ -108,10 +108,7 @@ public class BusinessTenantService {
 
     @Transactional
     public OrganizationEntityReadback updateTenant(TenantUpdateCommand command) {
-        requireGroupGrant(
-                command.ownerScopeGrant(),
-                command.workspaceUuid(),
-                command.groupWorkspaceKey());
+        requireGroupGrant(command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey());
         return receipts.execute(
                 command.workspaceUuid(),
                 command.idempotencyKey(),
@@ -145,10 +142,7 @@ public class BusinessTenantService {
 
     @Transactional
     public OrganizationEntityReadback transitionTenantStatus(TenantStatusCommand command) {
-        requireGroupGrant(
-                command.ownerScopeGrant(),
-                command.workspaceUuid(),
-                command.groupWorkspaceKey());
+        requireGroupGrant(command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey());
         return transitionEntityStatus(
                 BusinessEntityTypes.TENANT,
                 command.workspaceUuid(),
@@ -378,12 +372,15 @@ public class BusinessTenantService {
                 legalName,
                 creditCode,
                 remark,
-                new ExtensionSubmission(values == null ? List.of() : values.entrySet().stream()
-                        .map(entry -> BusinessEntityValueSupport.isJsonNull(entry.getValue())
-                                ? ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey())
-                                : new ExtensionSubmission.ExtensionFieldValue(
-                                        entry.getKey(), entry.getValue(), ExtensionSubmission.Mode.SET))
-                        .toList()),
+                new ExtensionSubmission(
+                        values == null
+                                ? List.of()
+                                : values.entrySet().stream()
+                                        .map(entry -> BusinessEntityValueSupport.isJsonNull(entry.getValue())
+                                                ? ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey())
+                                                : new ExtensionSubmission.ExtensionFieldValue(
+                                                        entry.getKey(), entry.getValue(), ExtensionSubmission.Mode.SET))
+                                        .toList()),
                 actor);
     }
 
@@ -399,7 +396,8 @@ public class BusinessTenantService {
             long expectedVersion,
             ExtensionSubmission submission,
             AuditActor actor) {
-        OrganizationEntityReadback before = reads.requireEntity(BusinessEntityTypes.TENANT, workspaceUuid, groupWorkspaceKey, id);
+        OrganizationEntityReadback before =
+                reads.requireEntity(BusinessEntityTypes.TENANT, workspaceUuid, groupWorkspaceKey, id);
         BusinessEntityValueSupport.requireMutable(before.status());
         ensureAvailable(workspaceUuid, groupWorkspaceKey, id, code, name);
         if (persistence.update(
@@ -454,13 +452,16 @@ public class BusinessTenantService {
                 legalName,
                 creditCode,
                 remark,
-                    expectedVersion,
-                    new ExtensionSubmission(values == null ? List.of() : values.entrySet().stream()
-                        .map(entry -> BusinessEntityValueSupport.isJsonNull(entry.getValue())
-                                ? ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey())
-                                : new ExtensionSubmission.ExtensionFieldValue(
-                                        entry.getKey(), entry.getValue(), ExtensionSubmission.Mode.SET))
-                        .toList()),
+                expectedVersion,
+                new ExtensionSubmission(
+                        values == null
+                                ? List.of()
+                                : values.entrySet().stream()
+                                        .map(entry -> BusinessEntityValueSupport.isJsonNull(entry.getValue())
+                                                ? ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey())
+                                                : new ExtensionSubmission.ExtensionFieldValue(
+                                                        entry.getKey(), entry.getValue(), ExtensionSubmission.Mode.SET))
+                                        .toList()),
                 actor);
     }
 
@@ -471,7 +472,8 @@ public class BusinessTenantService {
             String status,
             long expectedVersion,
             AuditActor actor) {
-        OrganizationEntityReadback before = reads.requireEntity(BusinessEntityTypes.TENANT, workspaceUuid, groupWorkspaceKey, id);
+        OrganizationEntityReadback before =
+                reads.requireEntity(BusinessEntityTypes.TENANT, workspaceUuid, groupWorkspaceKey, id);
         if (!VALID_STATUS.contains(status)
                 || "VOIDED".equals(before.status())
                 || persistence.transitionStatus(
@@ -495,7 +497,8 @@ public class BusinessTenantService {
         return updated;
     }
 
-    private void ensureAvailable(UUID workspaceUuid, String groupWorkspaceKey, UUID currentId, String code, String name) {
+    private void ensureAvailable(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID currentId, String code, String name) {
         BusinessTenantPersistence.ConflictFlags conflicts = persistence.findConflicts(
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -513,13 +516,15 @@ public class BusinessTenantService {
                     definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.TENANT);
             if (!actual.isEmpty()) ExtensionDefinitionService.requireConsumableDefinition(definition);
             Map<String, ExtensionDefinitionReadback.Field> known = definition.fields().stream()
-                    .collect(java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, value -> value));
+                    .collect(java.util.stream.Collectors.toMap(
+                            ExtensionDefinitionReadback.Field::fieldKey, value -> value));
             if (actual.keySet().stream().anyMatch(field -> !known.containsKey(field))
-                    || actual.entrySet().stream().anyMatch(entry ->
-                            !"DISABLED".equals(known.get(entry.getKey()).status())
-                                    && !BusinessEntityValueSupport.isJsonNull(entry.getValue())
-                                    && !BusinessEntityValueSupport.validJsonValue(
-                                            known.get(entry.getKey()), entry.getValue())))
+                    || actual.entrySet().stream()
+                            .anyMatch(entry ->
+                                    !"DISABLED".equals(known.get(entry.getKey()).status())
+                                            && !BusinessEntityValueSupport.isJsonNull(entry.getValue())
+                                            && !BusinessEntityValueSupport.validJsonValue(
+                                                    known.get(entry.getKey()), entry.getValue())))
                 throw new BusinessEntityService.OrganizationValidationException();
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (!actual.isEmpty()) throw new BusinessEntityService.OrganizationValidationException(absent);
@@ -572,11 +577,7 @@ public class BusinessTenantService {
 
     private void requireGroupGrant(OperationsOwnerScopeGrant grant, UUID workspaceUuid, String groupWorkspaceKey) {
         if (grant == null
-                || !grant.matches(
-                        workspaceUuid,
-                        groupWorkspaceKey,
-                        ServiceNodeTypes.GROUP,
-                        grant.targetId())
+                || !grant.matches(workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP, grant.targetId())
                 || grant.targetId() == null
                 || !Objects.equals(grant.targetType(), ServiceNodeTypes.GROUP))
             throw new BusinessEntityService.OrganizationAuthorizationException();

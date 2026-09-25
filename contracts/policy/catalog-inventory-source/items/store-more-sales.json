@@ -1,0 +1,275 @@
+{
+  "items": {
+    "skuCoffeeSize": {
+      "shapeKey": "SKU_VARIANT_SALE_COUNTED",
+      "catalogItemCode": "BEV-LATTE-001",
+      "name": "拿铁咖啡",
+      "shortName": "拿铁咖啡",
+      "categoryKey": "BEVERAGE",
+      "salesUnitKey": "CUP",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "拿铁咖啡，按规格或熟度管理 SKU 价格和库存颗粒度。",
+      "standardSalePriceCents": 0,
+      "preparationProfile": null,
+      "skus": [
+        {
+          "productSkuRef": "sku-latte-small",
+          "skuCode": "LATTE-SMALL",
+          "skuName": "小杯拿铁",
+          "attributeValues": {
+            "DRINK_SIZE": "SMALL"
+          },
+          "standardSalePriceCents": 2800,
+          "skuBarcode": "690000010401",
+          "isDefault": true,
+          "mediaAssetKey": "coffee"
+        },
+        {
+          "productSkuRef": "sku-latte-medium",
+          "skuCode": "LATTE-MEDIUM",
+          "skuName": "中杯拿铁",
+          "attributeValues": {
+            "DRINK_SIZE": "MEDIUM"
+          },
+          "standardSalePriceCents": 3200,
+          "skuBarcode": "690000010402",
+          "isDefault": false,
+          "mediaAssetKey": "coffee"
+        },
+        {
+          "productSkuRef": "sku-latte-large",
+          "skuCode": "LATTE-LARGE",
+          "skuName": "大杯拿铁",
+          "attributeValues": {
+            "DRINK_SIZE": "LARGE"
+          },
+          "standardSalePriceCents": 3800,
+          "skuBarcode": "690000010403",
+          "isDefault": false,
+          "mediaAssetKey": "coffee"
+        }
+      ],
+      "inventoryBomRules": [
+        {
+          "nodeKey": "SKU:sku-latte-small",
+          "nodeType": "SKU",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialCoffeeBean",
+              "quantityPerUnit": 14,
+              "sortNo": 1
+            }
+          ]
+        },
+        {
+          "nodeKey": "SKU:sku-latte-medium",
+          "nodeType": "SKU",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialCoffeeBean",
+              "quantityPerUnit": 18,
+              "sortNo": 1
+            }
+          ]
+        },
+        {
+          "nodeKey": "SKU:sku-latte-large",
+          "nodeType": "SKU",
+          "mode": "BOM",
+          "bomLines": [
+            {
+              "componentFixtureKey": "materialCoffeeBean",
+              "quantityPerUnit": 24,
+              "sortNo": 1
+            }
+          ]
+        }
+      ],
+      "mediaAssetKey": "coffee"
+    },
+    "saladGrilledChicken": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "SALAD-GRILLED-CHICKEN-001",
+      "name": "烤鸡胸沙拉",
+      "shortName": "烤鸡胸沙拉",
+      "categoryKey": "SALAD",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "烤鸡胸沙拉，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 5600,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "caesarSalad"
+    },
+    "saladSalmon": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "SALAD-SALMON-001",
+      "name": "三文鱼牛油果沙拉",
+      "shortName": "三文鱼牛油果沙拉",
+      "categoryKey": "SALAD",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "三文鱼牛油果沙拉，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 6800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "salmonFillet"
+    },
+    "mainPorkRibs": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "MAIN-PORK-RIBS-001",
+      "name": "慢烤猪肋排",
+      "shortName": "慢烤猪肋排",
+      "categoryKey": "MAIN",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "慢烤猪肋排，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 13800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "sirloinSteak"
+    },
+    "mainLambChop": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "MAIN-LAMB-CHOP-001",
+      "name": "迷迭香羊排",
+      "shortName": "迷迭香羊排",
+      "categoryKey": "MAIN",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "迷迭香羊排，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 15800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "sirloinSteak"
+    },
+    "pastaSeafood": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "PASTA-SEAFOOD-001",
+      "name": "海鲜番茄意面",
+      "shortName": "海鲜番茄意面",
+      "categoryKey": "PASTA_RICE",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "海鲜番茄意面，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 7800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "seafoodRisotto"
+    },
+    "dessertPannaCotta": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "DESSERT-PANNA-COTTA-001",
+      "name": "香草奶冻",
+      "shortName": "香草奶冻",
+      "categoryKey": "DESSERT",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "香草奶冻，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 3200,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "cheesecake"
+    },
+    "bevIcedTea": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "BEV-ICED-TEA-001",
+      "name": "冰柠檬红茶",
+      "shortName": "冰柠檬红茶",
+      "categoryKey": "BEVERAGE",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "冰柠檬红茶，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 2400,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "lemonade"
+    },
+    "bevRedWineGlass": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "BEV-RED-WINE-GLASS-001",
+      "name": "杯装红酒",
+      "shortName": "杯装红酒",
+      "categoryKey": "BEVERAGE",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "杯装红酒，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 5800,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "lemonade"
+    },
+    "sideCorn": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "SIDE-GRILLED-CORN-001",
+      "name": "烤玉米",
+      "shortName": "烤玉米",
+      "categoryKey": "APPETIZER",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "烤玉米，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 2600,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "roastVegetables"
+    },
+    "sideOnionRings": {
+      "shapeKey": "STANDARD_SALE_COUNTED",
+      "catalogItemCode": "SIDE-ONION-RINGS-001",
+      "name": "洋葱圈",
+      "shortName": "洋葱圈",
+      "categoryKey": "APPETIZER",
+      "salesUnitKey": "PORTION",
+      "tagKeys": [
+        "SIGNATURE"
+      ],
+      "description": "洋葱圈，适合西餐厅堂食、POS 点餐和线上点餐。",
+      "standardSalePriceCents": 3000,
+      "identifiers": [],
+      "optionGroups": [],
+      "preparationProfile": null,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "frenchFries"
+    }
+  }
+}

@@ -2,7 +2,6 @@ package com.catering.v2s.organization.application;
 
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
-import com.catering.v2s.organization.api.BusinessEntityTypes;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi;
 import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.BrandCreateCommand;
@@ -18,14 +17,14 @@ import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.Tena
 import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.TenantStatusCommand;
 import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.TenantUpdateCommand;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
-import com.catering.v2s.organization.api.OrganizationEntityLookup;
-import com.catering.v2s.organization.api.OrganizationEntityReadback;
-import com.catering.v2s.organization.api.OrganizationNodeLookup;
-import com.catering.v2s.organization.api.OrganizationOwnerApi;
 import com.catering.v2s.organization.api.OperationsStoreCommandApi;
 import com.catering.v2s.organization.api.OperationsStoreCommandApi.CreateStoreCommand;
 import com.catering.v2s.organization.api.OperationsStoreCommandApi.StoreStatusCommand;
 import com.catering.v2s.organization.api.OperationsStoreCommandApi.UpdateStoreCommand;
+import com.catering.v2s.organization.api.OrganizationEntityLookup;
+import com.catering.v2s.organization.api.OrganizationEntityReadback;
+import com.catering.v2s.organization.api.OrganizationNodeLookup;
+import com.catering.v2s.organization.api.OrganizationOwnerApi;
 import com.catering.v2s.organization.api.StoreAssignmentLookup;
 import com.catering.v2s.organization.api.StoreContractLookup;
 import com.catering.v2s.organization.api.StoreOperatingRuleGate;
@@ -42,8 +41,8 @@ import org.springframework.stereotype.Service;
  * Compatibility facade for the organization owner.
  *
  * <p>The public type remains the established owner boundary used by other modules, edge adapters and legacy tests.
- * Mutation facts and transactions live in the concrete owner services; task reads live in the read service. This
- * facade deliberately contains no JDBC, transaction policy or business-entity mutation logic.
+ * Mutation facts and transactions live in the concrete owner services; task reads live in the read service. This facade
+ * deliberately contains no JDBC, transaction policy or business-entity mutation logic.
  */
 @Service
 public class BusinessEntityService
@@ -113,9 +112,8 @@ public class BusinessEntityService
             ExtensionDefinitionLookup definitions,
             OrganizationNodeLookup nodes,
             BusinessEntityCommandReceiptService suppliedReceipts) {
-        BusinessEntityCommandReceiptService receipts = suppliedReceipts == null
-                ? new BusinessEntityCommandReceiptService(jdbc, time)
-                : suppliedReceipts;
+        BusinessEntityCommandReceiptService receipts =
+                suppliedReceipts == null ? new BusinessEntityCommandReceiptService(jdbc, time) : suppliedReceipts;
         BusinessEntityTaskReadService reads = new BusinessEntityTaskReadService(jdbc, definitions, nodes);
         BusinessBrandService brand = new BusinessBrandService(jdbc, time, definitions, receipts, reads);
         BusinessTenantService tenant = new BusinessTenantService(jdbc, time, definitions, receipts, reads);
@@ -542,15 +540,7 @@ public class BusinessEntityService
             long expectedVersion,
             AuditActor actor) {
         return commandRouter.transitionEntityStatus(
-                entityType,
-                workspaceUuid,
-                groupWorkspaceKey,
-                id,
-                status,
-                expectedVersion,
-                null,
-                actor,
-                null);
+                entityType, workspaceUuid, groupWorkspaceKey, id, status, expectedVersion, null, actor, null);
     }
 
     public OrganizationEntityReadback transitionEntityStatus(
@@ -582,15 +572,7 @@ public class BusinessEntityService
             String idempotencyKey,
             AuditActor actor) {
         return commandRouter.transitionEntityStatus(
-                entityType,
-                workspaceUuid,
-                groupWorkspaceKey,
-                id,
-                status,
-                expectedVersion,
-                idempotencyKey,
-                actor,
-                null);
+                entityType, workspaceUuid, groupWorkspaceKey, id, status, expectedVersion, idempotencyKey, actor, null);
     }
 
     public OrganizationEntityReadback transitionEntityStatus(
@@ -985,13 +967,7 @@ public class BusinessEntityService
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
         return headCompany.addHeadCompanyBrandAuthorization(
-                workspaceUuid,
-                groupWorkspaceKey,
-                headCompanyId,
-                brandId,
-                idempotencyKey,
-                actor,
-                ownerScopeGrant);
+                workspaceUuid, groupWorkspaceKey, headCompanyId, brandId, idempotencyKey, actor, ownerScopeGrant);
     }
 
     public BusinessEntityCommandReceiptService.BrandAuthorizationAcknowledgement removeHeadCompanyBrandAuthorization(
@@ -1014,13 +990,7 @@ public class BusinessEntityService
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
         return headCompany.removeHeadCompanyBrandAuthorization(
-                workspaceUuid,
-                groupWorkspaceKey,
-                headCompanyId,
-                brandId,
-                idempotencyKey,
-                actor,
-                ownerScopeGrant);
+                workspaceUuid, groupWorkspaceKey, headCompanyId, brandId, idempotencyKey, actor, ownerScopeGrant);
     }
 
     @Override
@@ -1055,11 +1025,7 @@ public class BusinessEntityService
 
     @Override
     public void requireStoreOperatingRuleForStoreTarget(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            String targetType,
-            UUID storeId,
-            String ruleKey) {
+            UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID storeId, String ruleKey) {
         if (!com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.STORE.equals(targetType)
                 || workspaceUuid == null
                 || groupWorkspaceKey == null
@@ -1162,8 +1128,8 @@ public class BusinessEntityService
     }
 
     public StoreUpdateFacts readStoreUpdateFacts(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
-        BusinessEntityTaskReadService.StoreUpdateFacts facts = reads.readStoreUpdateFacts(
-                workspaceUuid, groupWorkspaceKey, storeId);
+        BusinessEntityTaskReadService.StoreUpdateFacts facts =
+                reads.readStoreUpdateFacts(workspaceUuid, groupWorkspaceKey, storeId);
         return new StoreUpdateFacts(facts.projectId(), facts.tenantId(), facts.brandId(), facts.code());
     }
 
@@ -1343,8 +1309,7 @@ public class BusinessEntityService
                 definitionRevision);
     }
 
-    public BusinessEntityPageItem requireBusinessEntity(
-            UUID workspaceUuid, String groupWorkspaceKey, UUID entityId) {
+    public BusinessEntityPageItem requireBusinessEntity(UUID workspaceUuid, String groupWorkspaceKey, UUID entityId) {
         return reads.requireBusinessEntity(workspaceUuid, groupWorkspaceKey, entityId);
     }
 

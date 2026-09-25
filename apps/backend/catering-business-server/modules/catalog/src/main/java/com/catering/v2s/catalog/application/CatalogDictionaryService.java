@@ -1,16 +1,16 @@
 package com.catering.v2s.catalog.application;
 
+import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.catalog.application.persistence.CatalogDictionaryPersistence;
 import com.catering.v2s.catalog.application.persistence.CatalogDictionaryPersistence.DictionaryListingRow;
 import com.catering.v2s.catalog.application.persistence.CatalogDictionaryPersistence.DictionaryRow;
-import com.catering.v2s.catalog.api.CatalogOwnerApi;
-import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
-import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
 import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
+import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -49,10 +49,7 @@ public class CatalogDictionaryService {
     }
 
     CatalogDictionaryService(
-            JdbcTemplate jdbc,
-            ObjectMapper mapper,
-            TimeProvider time,
-            CatalogItemReferenceFacts itemReferenceFacts) {
+            JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time, CatalogItemReferenceFacts itemReferenceFacts) {
         this(new CatalogDictionaryPersistence(jdbc, time), mapper, time, itemReferenceFacts);
     }
 
@@ -79,8 +76,8 @@ public class CatalogDictionaryService {
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.DictionaryEntryCreateCommand command,
             String idempotencyKey) {
-        CatalogAuthorizationScope scope = CatalogOwnerScopeSupport.typedCommandScope(
-                context, "createOperationsCatalogDictionaryEntry");
+        CatalogAuthorizationScope scope =
+                CatalogOwnerScopeSupport.typedCommandScope(context, "createOperationsCatalogDictionaryEntry");
         ObjectNode request =
                 dictionaryRequest(command.dictionaryKind(), "code", command.code(), null, command.name(), null);
         putNullableUuid(request, "parentEntryRef", command.parentEntryRef());
@@ -99,8 +96,8 @@ public class CatalogDictionaryService {
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.DictionaryEntryUpdateCommand command,
             String idempotencyKey) {
-        CatalogAuthorizationScope scope = CatalogOwnerScopeSupport.typedCommandScope(
-                context, "updateOperationsCatalogDictionaryEntry");
+        CatalogAuthorizationScope scope =
+                CatalogOwnerScopeSupport.typedCommandScope(context, "updateOperationsCatalogDictionaryEntry");
         return dictionaryCommandReadback(executeDictionaryWrite(
                 context,
                 "updateOperationsCatalogDictionaryEntry",
@@ -122,8 +119,8 @@ public class CatalogDictionaryService {
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.DictionaryEntryReorderCommand command,
             String idempotencyKey) {
-        CatalogAuthorizationScope scope = CatalogOwnerScopeSupport.typedCommandScope(
-                context, "reorderOperationsCatalogDictionaryEntry");
+        CatalogAuthorizationScope scope =
+                CatalogOwnerScopeSupport.typedCommandScope(context, "reorderOperationsCatalogDictionaryEntry");
         ObjectNode request = mapper.createObjectNode().put("dictionaryKind", command.dictionaryKind());
         ArrayNode codes = request.putArray("orderedCodes");
         command.orderedCodes().forEach(codes::add);
@@ -142,8 +139,8 @@ public class CatalogDictionaryService {
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.DictionaryEntryTransitionCommand command,
             String idempotencyKey) {
-        CatalogAuthorizationScope scope = CatalogOwnerScopeSupport.typedCommandScope(
-                context, "transitionOperationsCatalogDictionaryEntryStatus");
+        CatalogAuthorizationScope scope =
+                CatalogOwnerScopeSupport.typedCommandScope(context, "transitionOperationsCatalogDictionaryEntryStatus");
         return dictionaryCommandReadback(executeDictionaryWrite(
                 context,
                 "transitionOperationsCatalogDictionaryEntryStatus",
@@ -161,9 +158,7 @@ public class CatalogDictionaryService {
     }
 
     JsonNode write(
-            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
-            ObjectNode request,
-            String idempotencyKey) {
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
         String operationId = context.operationToken().operationId();
         CatalogAuthorizationScope scope = CatalogOwnerScopeSupport.typedCommandScope(context, operationId);
         return executeDictionaryWrite(
@@ -194,25 +189,25 @@ public class CatalogDictionaryService {
             if (replay != null) return replay;
         }
         try (var command = OwnerOperationDiagnostics.beginCommand()) {
-            JsonNode result = switch (operationId) {
-                case "createOperationsCatalogDictionaryEntry" -> createDictionary(
-                        dataNodeRef, brandRef, requestId, request);
-                case "updateOperationsCatalogDictionaryEntry" -> updateDictionary(
-                        dataNodeRef, brandRef, requestId, request);
-                case "reorderOperationsCatalogDictionaryEntry" -> reorderDictionary(
-                        dataNodeRef, brandRef, requestId, request);
-                case "transitionOperationsCatalogDictionaryEntryStatus" -> transitionDictionary(
-                        commandContext, dataNodeRef, brandRef, requestId, request);
-                default -> throw new CatalogOwnerApi.Problem(
-                        "VALIDATION_ERROR", 422, "catalog dictionary write operation is not registered");
-            };
+            JsonNode result =
+                    switch (operationId) {
+                        case "createOperationsCatalogDictionaryEntry" -> createDictionary(
+                                dataNodeRef, brandRef, requestId, request);
+                        case "updateOperationsCatalogDictionaryEntry" -> updateDictionary(
+                                dataNodeRef, brandRef, requestId, request);
+                        case "reorderOperationsCatalogDictionaryEntry" -> reorderDictionary(
+                                dataNodeRef, brandRef, requestId, request);
+                        case "transitionOperationsCatalogDictionaryEntryStatus" -> transitionDictionary(
+                                commandContext, dataNodeRef, brandRef, requestId, request);
+                        default -> throw new CatalogOwnerApi.Problem(
+                                "VALIDATION_ERROR", 422, "catalog dictionary write operation is not registered");
+                    };
             if (!receiptKey.isEmpty()) saveReceipt(dataNodeRef, receiptKey, operationId, receiptRequest, result);
             return result;
         }
     }
 
-    private void recheckWriteFactsBeforeReceipt(
-            String operationId, String scope, String brand, ObjectNode request) {
+    private void recheckWriteFactsBeforeReceipt(String operationId, String scope, String brand, ObjectNode request) {
         switch (operationId) {
             case "updateOperationsCatalogDictionaryEntry", "transitionOperationsCatalogDictionaryEntryStatus" -> {
                 String kind = requiredDictionaryKind(request);
@@ -276,7 +271,8 @@ public class CatalogDictionaryService {
             ObjectNode voidAvailability = entry.putObject("voidAvailability");
             voidAvailability.put("canVoid", !"VOIDED".equals(row.status()) && !referenced);
             ArrayNode blocking = voidAvailability.putArray("blockingReferences");
-            if (referenced) blocking.addObject().put("referenceKind", "CATALOG_ITEM").put("referenceRef", entryRef);
+            if (referenced)
+                blocking.addObject().put("referenceKind", "CATALOG_ITEM").put("referenceRef", entryRef);
             voidAvailability.putArray("dependentFacts");
         }
         data.put("total", listing.total()).put("generation", listing.generation());
@@ -307,8 +303,8 @@ public class CatalogDictionaryService {
                 code = required(request, "entryCode"),
                 name = required(request, "name");
         long expected = requiredLong(request, "expectedVersion", 1);
-        if (persistence.updateEntry(dataNodeRef, brandRef, kind, code, name, expected, now())
-                != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "字典版本已变化");
+        if (persistence.updateEntry(dataNodeRef, brandRef, kind, code, name, expected, now()) != 1)
+            throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "字典版本已变化");
         return dictionaryCommand(
                 requestId,
                 dictionaryEntryRef(dataNodeRef, brandRef, kind, code),
@@ -336,8 +332,7 @@ public class CatalogDictionaryService {
 
         long updatedAt = now();
         for (int index = 0; index < current.size(); index++) {
-            persistence.reorderEntry(
-                    dataNodeRef, brandRef, kind, orderedCodes.get(index), index, updatedAt);
+            persistence.reorderEntry(dataNodeRef, brandRef, kind, orderedCodes.get(index), index, updatedAt);
         }
         return dictionary(dataNodeRef, brandRef, requestId, kind, request);
     }
@@ -360,8 +355,8 @@ public class CatalogDictionaryService {
             }
             requireInventoryDictionaryReferenceUnreferenced(commandContext, dataNodeRef, brandRef, kind, code);
         }
-        if (persistence.transitionStatus(dataNodeRef, brandRef, kind, code, status, expected, now())
-                != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "字典版本已变化");
+        if (persistence.transitionStatus(dataNodeRef, brandRef, kind, code, status, expected, now()) != 1)
+            throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "字典版本已变化");
         return dictionaryCommand(
                 requestId,
                 dictionaryEntryRef(dataNodeRef, brandRef, kind, code),
@@ -402,18 +397,11 @@ public class CatalogDictionaryService {
             cursorTieBreaker = cursor.tieBreaker();
         }
         List<DictionaryListingRow> rows = persistence.loadListing(
-                scope,
-                brand,
-                kind,
-                parentEntryRef,
-                query,
-                status,
-                cursorDisplayOrder,
-                cursorTieBreaker,
-                pageSize);
+                scope, brand, kind, parentEntryRef, query, status, cursorDisplayOrder, cursorTieBreaker, pageSize);
         long generation = rows.isEmpty() ? 0L : rows.get(0).generation();
         long total = rows.isEmpty() ? 0L : rows.get(0).total();
-        List<DictionaryListingRow> presentRows = rows.stream().filter(row -> row.entryRef() != null).toList();
+        List<DictionaryListingRow> presentRows =
+                rows.stream().filter(row -> row.entryRef() != null).toList();
         boolean hasNext = presentRows.size() > pageSize;
         if (hasNext) presentRows = presentRows.subList(0, pageSize);
         List<DictionaryEntryRow> entries = presentRows.stream()
@@ -456,7 +444,8 @@ public class CatalogDictionaryService {
     private static void validateDictionaryOrder(List<DictionaryRow> current, List<String> orderedCodes) {
         if (orderedCodes.size() != current.size())
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "orderedCodes 必须完整覆盖当前字典且不能重复");
-        Set<String> currentCodes = current.stream().map(DictionaryRow::code).collect(java.util.stream.Collectors.toSet());
+        Set<String> currentCodes =
+                current.stream().map(DictionaryRow::code).collect(java.util.stream.Collectors.toSet());
         Set<String> submittedCodes = new java.util.HashSet<>(orderedCodes);
         if (submittedCodes.size() != orderedCodes.size() || !currentCodes.equals(submittedCodes))
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "orderedCodes 必须完整覆盖当前字典且不能重复");
@@ -466,7 +455,8 @@ public class CatalogDictionaryService {
             String scope, String brand, String kind, List<UUID> entryRefs) {
         if (entryRefs.isEmpty()) return new DictionaryReferenceSnapshot(Set.of());
         Set<UUID> referenced = new LinkedHashSet<>();
-        referenced.addAll(itemReferenceFacts.referencedRefs(scope, brand, CatalogOwnerValueSupport.dictionaryObjectType(kind), entryRefs));
+        referenced.addAll(itemReferenceFacts.referencedRefs(
+                scope, brand, CatalogOwnerValueSupport.dictionaryObjectType(kind), entryRefs));
         referenced.addAll(relationalSkuDictionaryReferences(scope, brand, kind, entryRefs));
         return new DictionaryReferenceSnapshot(referenced);
     }
@@ -477,7 +467,9 @@ public class CatalogDictionaryService {
 
     private boolean dictionaryReferenced(String scope, String brand, String kind, String entryCode) {
         UUID entryRef = dictionaryEntryRef(scope, brand, kind, entryCode);
-        return entryRef != null && dictionaryReferenceSnapshot(scope, brand, kind, List.of(entryRef)).isReferenced(entryRef);
+        return entryRef != null
+                && dictionaryReferenceSnapshot(scope, brand, kind, List.of(entryRef))
+                        .isReferenced(entryRef);
     }
 
     private void validateDictionaryParent(String scope, String brand, String kind, UUID parentEntryRef) {
@@ -488,7 +480,8 @@ public class CatalogDictionaryService {
         }
         if (parentEntryRef == null) return;
         if (!persistence.validParent(parentEntryRef.toString(), scope, brand))
-            throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "parentEntryRef 必须是当前 scope 的 SKU_ATTRIBUTE");
+            throw new CatalogOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED", 422, "parentEntryRef 必须是当前 scope 的 SKU_ATTRIBUTE");
     }
 
     private String dictionaryName(String scope, String brand, String kind, String code) {
@@ -551,12 +544,14 @@ public class CatalogDictionaryService {
             List<CatalogOwnerApi.DictionaryBlockingReference> blocking = new ArrayList<>();
             for (JsonNode reference : availability.path("blockingReferences")) {
                 blocking.add(new CatalogOwnerApi.DictionaryBlockingReference(
-                        reference.path("referenceKind").asText(), reference.path("referenceRef").asText()));
+                        reference.path("referenceKind").asText(),
+                        reference.path("referenceRef").asText()));
             }
             List<CatalogOwnerApi.DictionaryDependentFact> dependencies = new ArrayList<>();
             for (JsonNode dependency : availability.path("dependentFacts")) {
                 dependencies.add(new CatalogOwnerApi.DictionaryDependentFact(
-                        dependency.path("factKind").asText(), dependency.path("factRef").asText()));
+                        dependency.path("factKind").asText(),
+                        dependency.path("factRef").asText()));
             }
             entries.add(new CatalogOwnerApi.DictionaryEntryView(
                     entry.path("entryRef").asText(),
@@ -589,7 +584,8 @@ public class CatalogDictionaryService {
             Long expectedVersion,
             String name,
             String targetStatus) {
-        ObjectNode request = mapper.createObjectNode().put("dictionaryKind", dictionaryKind).put(codeField, code);
+        ObjectNode request =
+                mapper.createObjectNode().put("dictionaryKind", dictionaryKind).put(codeField, code);
         if (expectedVersion != null) request.put("expectedVersion", expectedVersion);
         if (name != null) request.put("name", name);
         if (targetStatus != null) request.put("targetStatus", targetStatus);

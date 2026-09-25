@@ -22,27 +22,26 @@ public class WorkspaceIamCommandReceiptPersistence {
 
     public ReceiptRow find(UUID workspaceUuid, String key) {
         return jdbc.query(
-                WorkspaceIamCommandReceiptServiceSql.WORKSPACE_IAM_COMMAND_RECEIPT_SERVICE_SELECT_REQUEST_HASH_RESPONSE_JSON_TEXT
-                        + WorkspaceIamCommandReceiptServiceSql.WORKSPACE_IAM_COMMAND_RECEIPT_SERVICE_FROM_CLAUSE_WORKSPACE_COMMAND_RECEIPT,
+                WorkspaceIamCommandReceiptServiceSql
+                                .WORKSPACE_IAM_COMMAND_RECEIPT_SERVICE_SELECT_REQUEST_HASH_RESPONSE_JSON_TEXT
+                        + WorkspaceIamCommandReceiptServiceSql
+                                .WORKSPACE_IAM_COMMAND_RECEIPT_SERVICE_FROM_CLAUSE_WORKSPACE_COMMAND_RECEIPT,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, key);
                 },
-                result -> result.next()
-                        ? new ReceiptRow(result.getString(1), result.getString(2))
-                        : null);
+                result -> result.next() ? new ReceiptRow(result.getString(1), result.getString(2)) : null);
     }
 
     public void insert(
-            UUID workspaceUuid,
-            String key,
-            String requestHash,
-            String responseJson,
-            long createdAtEpochMillis) {
+            UUID workspaceUuid, String key, String requestHash, String responseJson, long createdAtEpochMillis) {
         jdbc.update(
-                WorkspaceIamCommandReceiptServiceSql.WORKSPACE_IAM_COMMAND_RECEIPT_SERVICE_INSERT_INTO_WORKSPACE_COMMAND_RECEIPT
-                        + WorkspaceIamCommandReceiptServiceSql.WORKSPACE_IAM_COMMAND_RECEIPT_SERVICE_OPEN_PAREN_WORKSPACE_UUID
-                        + WorkspaceIamCommandReceiptServiceSql.WORKSPACE_IAM_COMMAND_RECEIPT_SERVICE_VALUES_VALUES_JSONB,
+                WorkspaceIamCommandReceiptServiceSql
+                                .WORKSPACE_IAM_COMMAND_RECEIPT_SERVICE_INSERT_INTO_WORKSPACE_COMMAND_RECEIPT
+                        + WorkspaceIamCommandReceiptServiceSql
+                                .WORKSPACE_IAM_COMMAND_RECEIPT_SERVICE_OPEN_PAREN_WORKSPACE_UUID
+                        + WorkspaceIamCommandReceiptServiceSql
+                                .WORKSPACE_IAM_COMMAND_RECEIPT_SERVICE_VALUES_VALUES_JSONB,
                 workspaceUuid,
                 key,
                 requestHash,

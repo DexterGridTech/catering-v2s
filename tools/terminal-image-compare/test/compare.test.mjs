@@ -63,9 +63,9 @@ const createCellPattern = (changedPixelsPerCell, value) => {
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..', '..')
 const toolPath = path.join(repositoryRoot, 'tools/terminal-image-compare/compare.mjs')
-const backgroundPath = path.join(repositoryRoot, 'apps/terminal/assembly/android/sample-terminal/assets/android-icon-background.png')
-const foregroundPath = path.join(repositoryRoot, 'apps/terminal/assembly/android/sample-terminal/assets/android-icon-foreground.png')
-const differentSizePath = path.join(repositoryRoot, 'apps/terminal/assembly/android/sample-terminal/assets/favicon.png')
+const backgroundPath = path.join(repositoryRoot, 'apps/terminal/application/android/sample-terminal/assets/android-icon-background.png')
+const foregroundPath = path.join(repositoryRoot, 'apps/terminal/application/android/sample-terminal/assets/android-icon-foreground.png')
+const differentSizePath = path.join(repositoryRoot, 'apps/terminal/application/android/sample-terminal/assets/favicon.png')
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'terminal-image-compare-'))
 const metadataPath = path.join(tempRoot, 'metadata.json')
 const metadata = {

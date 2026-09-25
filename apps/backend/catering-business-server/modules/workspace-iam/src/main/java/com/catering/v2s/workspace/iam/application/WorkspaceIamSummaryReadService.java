@@ -1,7 +1,7 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspaceIamSummaryReadPersistence;
 import com.catering.v2s.platform.workspace.api.WorkspaceIamSummaryLookup;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceIamSummaryReadPersistence;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

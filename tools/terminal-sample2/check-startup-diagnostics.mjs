@@ -5,7 +5,7 @@ import {spawnSync} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
-const packageRoot = path.join(repositoryRoot, 'apps/terminal/ui/base/console-assembly')
+const packageRoot = path.join(repositoryRoot, 'apps/terminal/ui/base/integration-assembly')
 const sourcePath = path.join(packageRoot, 'src/foundations/startupDiagnosticsWriter.ts')
 
 const testSource = String.raw`
@@ -55,7 +55,7 @@ describe('startup diagnostics production writer contract', () => {
         startupRunId: 'run-a',
         appName: 'sample-console',
         surfaceProvenance: {surfaceKey: 'PRIMARY', displayIndex: 0},
-        writer: 'ui.base.console-assembly',
+        writer: 'ui.base.integration-assembly',
       },
     })
     expect(() => writer.writeComplete()).toThrow(/startup\.complete was written twice/)

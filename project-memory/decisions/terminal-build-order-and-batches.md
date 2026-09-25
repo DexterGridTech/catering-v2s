@@ -6,7 +6,7 @@ taskKinds: ["design","implementation","review"]
 domains: ["platform"]
 consumerFaces: ["all"]
 owners: ["platform","frontend-platform"]
-impacts: ["architecture","roadmap"]
+impacts: ["architecture"]
 triggers: ["task-start","implementation","review"]
 assertions: ["TER_FOUNDATION_FIRST_THREE_BATCHES","TER_DEPENDENCY_GRAPH_FROM_REAL_IMPORTS","TER_FOUNDATION_DONE_CRITERIA","TER_SKELETON_TWO_BATCH_VERTICAL_SLICE"]
 sourceRefs: ["doc/plans/platform/2026-08-29-v2s-terminal-skeleton-requirements-claude.md","doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md"]
@@ -57,3 +57,13 @@ sourceRefs: ["doc/plans/platform/2026-08-29-v2s-terminal-skeleton-requirements-c
   **不启真机、不启浏览器、不验证任何 command / slice / 持久化 / 业务渲染 / 双屏 / 端口行为。**
   ⚠️ 原"双运行面 + 装 APK + 杀进程重启恢复原状"是**能力验收**口径，属包级细化阶段，
   不是骨架完成标准。**骨架跑通只证明接线，报告不得表述成"包都能用了"。**
+
+## 2026-09-25 包布局整理取代条目
+
+本文件前述批次历史保留为历史记录。自 2026-09-25 起，TER 顶层可运行层的现状名称为
+`application/{android,electron}`，不再把该层的目录、workspace package、moduleName 或 TR-16
+运行目标称为 `assembly`。包布局整理的当前执行顺序与验收以
+`doc/plans/platform/2026-09-25-ter-package-layout-cleanup-formal-requirements-claude.md`、
+`doc/plans/platform/2026-09-25-ter-package-layout-cleanup-implementation-design-codex.md` 和
+`doc/plans/platform/2026-09-25-ter-package-layout-cleanup-implementation-plan-codex.md` 为准；
+本段不改写前述批次发生时的历史事实。

@@ -1,16 +1,16 @@
 package com.catering.v2s.inventory.application;
 
-import com.catering.v2s.inventory.application.persistence.InventoryBomPersistence;
 import static com.catering.v2s.inventory.api.InventoryOwnerApi.*;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
+import com.catering.v2s.inventory.application.persistence.InventoryBomPersistence;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
-import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
+import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -19,11 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -78,10 +75,12 @@ public class InventoryBomService {
 
     private ResolvedBomTargets resolveBomTargets(String scope, String brand, List<UUID> targetRefs) {
         Map<UUID, ResolvedBomTargets.TargetFact> facts = new LinkedHashMap<>();
-        persistence.resolveBomTargets(scope, brand, targetRefs).forEach((ref, fact) -> facts.put(
-                ref,
-                new ResolvedBomTargets.TargetFact(
-                        fact.definitionStatus(), fact.componentEligible(), fact.consumptionUnitRef())));
+        persistence
+                .resolveBomTargets(scope, brand, targetRefs)
+                .forEach((ref, fact) -> facts.put(
+                        ref,
+                        new ResolvedBomTargets.TargetFact(
+                                fact.definitionStatus(), fact.componentEligible(), fact.consumptionUnitRef())));
         return ResolvedBomTargets.from(facts);
     }
 
@@ -355,7 +354,8 @@ public class InventoryBomService {
             requireCatalogBusinessName(display.itemName(), "耗用对象缺少商品名称");
             result.put(
                     new TargetIdentity(identity.itemRef(), identity.productSkuRef()),
-                    new CatalogTargetDisplay(display.itemCode(), display.itemName(), display.skuCode(), display.skuName()));
+                    new CatalogTargetDisplay(
+                            display.itemCode(), display.itemName(), display.skuCode(), display.skuName()));
         });
         return Map.copyOf(result);
     }
@@ -684,8 +684,8 @@ public class InventoryBomService {
                     "扣料原材料必须选择已有库存对象的商品");
         }
         lockCatalogItemRefs(List.of(materialItemRef));
-        List<UUID> targetRefs = persistence.findTargetRefsByItem(
-                scope.dataNodeId().toString(), scope.brandRef(), materialItemRef);
+        List<UUID> targetRefs =
+                persistence.findTargetRefsByItem(scope.dataNodeId().toString(), scope.brandRef(), materialItemRef);
         if (targetRefs.isEmpty()) {
             throw new InventoryOwnerApi.Problem(
                     "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL",
@@ -723,7 +723,8 @@ public class InventoryBomService {
         String dataNodeRef = scope.dataNodeId().toString();
         lockCatalogItemRefs(refs);
         Map<UUID, List<CatalogMaterialTargetRow>> rowsByItem = new LinkedHashMap<>();
-        persistence.readTargetsByItemRefs(dataNodeRef, scope.brandRef(), refs)
+        persistence
+                .readTargetsByItemRefs(dataNodeRef, scope.brandRef(), refs)
                 .forEach((itemRef, rows) -> rows.forEach(row -> rowsByItem
                         .computeIfAbsent(itemRef, ignored -> new ArrayList<>())
                         .add(new CatalogMaterialTargetRow(
@@ -764,8 +765,8 @@ public class InventoryBomService {
                         .toList();
         if (optionValueRefs.isEmpty()) return new OptionValueBomDeleteReadback(List.of(), 0L);
         lockCatalogOptionValueRefs(optionValueRefs);
-        int deleted = persistence.deleteOptionValueBoms(
-                scope.dataNodeId().toString(), scope.brandRef(), optionValueRefs);
+        int deleted =
+                persistence.deleteOptionValueBoms(scope.dataNodeId().toString(), scope.brandRef(), optionValueRefs);
         return new OptionValueBomDeleteReadback(optionValueRefs, deleted);
     }
 
@@ -808,11 +809,9 @@ public class InventoryBomService {
         if (replay != null) return replay;
         lockCatalogItemRefs(List.of(command.sourceItemRef(), command.targetItemRef()));
         lockCatalogOptionValueRefs(optionValueRefs);
-        List<CatalogBomRow> sourceRows = persistence.readOptionValueBoms(
-                        scope.dataNodeId().toString(),
-                        scope.brandRef(),
-                        command.sourceItemRef(),
-                        optionValueRefs)
+        List<CatalogBomRow> sourceRows = persistence
+                .readOptionValueBoms(
+                        scope.dataNodeId().toString(), scope.brandRef(), command.sourceItemRef(), optionValueRefs)
                 .stream()
                 .map(row -> new CatalogBomRow(
                         row.productSkuRef(),
@@ -901,8 +900,7 @@ public class InventoryBomService {
         List<RuleFact> targets = loadRuleTargetFacts(scope, brand, itemRef);
         List<RuleFact> boms = loadRuleBomFacts(scope, brand, itemRef);
         Map<UUID, TargetRow> bomComponentTargets = loadSubmittedBomComponentTargets(scope, brand, submitted);
-        ResolvedBomTargets resolvedBomTargets =
-                resolveBomTargets(scope, brand, submittedBomTargetRefs(submitted));
+        ResolvedBomTargets resolvedBomTargets = resolveBomTargets(scope, brand, submittedBomTargetRefs(submitted));
         Map<String, RuleFact> targetByIdentity = factsByIdentity(targets);
         Map<String, RuleFact> bomByIdentity = factsByIdentity(boms);
         LinkedHashSet<String> allKeys = new LinkedHashSet<>();
@@ -1589,11 +1587,10 @@ public class InventoryBomService {
                     || ("NEGATIVE".equals(lineSign) && quantity.signum() > 0))
                 throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM 行方向与数量符号不一致");
         });
-        List<CurrentBomRow> current = persistence
-                .readCurrentBomRows(scope, brand, itemRef, productSkuRef, optionValueRef)
-                .stream()
-                .map(row -> new CurrentBomRow(row.version(), json(row.rows())))
-                .toList();
+        List<CurrentBomRow> current =
+                persistence.readCurrentBomRows(scope, brand, itemRef, productSkuRef, optionValueRef).stream()
+                        .map(row -> new CurrentBomRow(row.version(), json(row.rows())))
+                        .toList();
         CurrentBomRow existing = current.isEmpty() ? null : current.get(0);
         if ((existing == null ? 0L : existing.version()) != expected)
             throw new InventoryOwnerApi.Problem("VERSION_CONFLICT", 409, "商品 BOM 版本已变化");
@@ -1693,14 +1690,15 @@ public class InventoryBomService {
             Set<UUID> targetRefs,
             boolean enabledOnly,
             boolean requireCompleteConsumptionUnit) {
-        return persistence.readTargetsByRefs(scope, brand, targetRefs, enabledOnly, requireCompleteConsumptionUnit).entrySet()
+        return persistence
+                .readTargetsByRefs(scope, brand, targetRefs, enabledOnly, requireCompleteConsumptionUnit)
+                .entrySet()
                 .stream()
-                .collect(
-                        java.util.stream.Collectors.toMap(
-                                Map.Entry::getKey,
-                                entry -> targetRow(entry.getValue()),
-                                (left, right) -> left,
-                                LinkedHashMap::new));
+                .collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> targetRow(entry.getValue()),
+                        (left, right) -> left,
+                        LinkedHashMap::new));
     }
 
     private CatalogDefinitionFacts loadCatalogDefinitionFacts(
@@ -1721,20 +1719,18 @@ public class InventoryBomService {
                         row.version(),
                         row.rows()))
                 .toList();
-        List<TargetRow> directTargets = records.directTargets().stream().map(row -> targetRow(row)).toList();
+        List<TargetRow> directTargets =
+                records.directTargets().stream().map(row -> targetRow(row)).toList();
         Map<UUID, TargetRow> componentTargets = preloadedComponentTargets == null
                 ? records.componentTargets().entrySet().stream()
-                        .collect(
-                                java.util.stream.Collectors.toMap(
-                                        Map.Entry::getKey,
-                                        entry -> targetRow(entry.getValue()),
-                                        (left, right) -> left,
-                                        LinkedHashMap::new))
+                        .collect(java.util.stream.Collectors.toMap(
+                                Map.Entry::getKey,
+                                entry -> targetRow(entry.getValue()),
+                                (left, right) -> left,
+                                LinkedHashMap::new))
                 : preloadedComponentTargets;
         return new CatalogDefinitionFacts(
-                List.copyOf(directTargets),
-                List.copyOf(bomOwners),
-                Map.copyOf(componentTargets));
+                List.copyOf(directTargets), List.copyOf(bomOwners), Map.copyOf(componentTargets));
     }
 
     private UUID bomTargetRef(JsonNode row) {
@@ -1910,8 +1906,8 @@ public class InventoryBomService {
             return envelope(requestId, data);
         }
         Map<SummaryKey, InventorySummaryFacts> found = new LinkedHashMap<>();
-        for (InventoryBomPersistence.InventorySummaryRecord record : persistence.readInventoryDeductionSummaries(
-                scope, brand, itemRefs, productSkuRefs)) {
+        for (InventoryBomPersistence.InventorySummaryRecord record :
+                persistence.readInventoryDeductionSummaries(scope, brand, itemRefs, productSkuRefs)) {
             UUID summaryItemRef = record.itemRef();
             UUID summarySkuRef = record.productSkuRef();
             // A SKU is globally identified by product_sku_ref. The caller's SKU-summary request
@@ -1920,22 +1916,16 @@ public class InventoryBomService {
             // itemRef because they have no SKU identity.
             SummaryKey key = new SummaryKey(summarySkuRef == null ? summaryItemRef : null, summarySkuRef);
             if (found.containsKey(key))
-                throw new InventoryOwnerApi.Problem(
-                        "RESULT_UNKNOWN", 500, "同一商品或规格存在多个启用中的库存扣减定义");
+                throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "同一商品或规格存在多个启用中的库存扣减定义");
             if ("DIRECT".equals(record.factKind())) {
                 if (!"DIRECT".equals(record.inventoryMode()))
-                    throw new InventoryOwnerApi.Problem(
-                            "RESULT_UNKNOWN", 500, "库存扣减方式与库存对象定义不一致");
+                    throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存扣减方式与库存对象定义不一致");
                 InventoryOwnerApi.UnitSnapshot snapshot = record.consumptionUnitSnapshot();
-                if (snapshot == null)
-                    throw new InventoryOwnerApi.Problem(
-                            "RESULT_UNKNOWN", 500, "直接扣减对象的消费单位快照缺失");
+                if (snapshot == null) throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "直接扣减对象的消费单位快照缺失");
                 found.put(key, new InventorySummaryFacts("DIRECT", snapshot, null));
             } else if ("BOM".equals(record.factKind())) {
                 int lineCount = record.bomLineCount();
-                if (lineCount < 1)
-                    throw new InventoryOwnerApi.Problem(
-                            "RESULT_UNKNOWN", 500, "启用中的用料扣减定义没有有效用料行");
+                if (lineCount < 1) throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "启用中的用料扣减定义没有有效用料行");
                 found.put(key, new InventorySummaryFacts("BOM", null, lineCount));
             } else {
                 throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存扣减事实类型无法识别");
@@ -2335,7 +2325,6 @@ public class InventoryBomService {
 
     private record CurrentBomRow(long version, JsonNode rows) {}
 
-
     private record TargetRow(
             UUID ref,
             UUID itemRef,
@@ -2357,8 +2346,6 @@ public class InventoryBomService {
     private record CatalogDefinitionFacts(
             List<TargetRow> directTargets, List<CatalogBomRow> bomOwners, Map<UUID, TargetRow> componentTargets) {}
 
-
-
     private record CatalogMaterialTargetRow(
             UUID itemRef, UUID targetRef, InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot) {}
 
@@ -2371,8 +2358,6 @@ public class InventoryBomService {
     private record InventorySummaryFacts(
             String mode, InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot, Integer bomLineCount) {}
 
-
-
     private record CatalogBomRow(
             UUID productSkuRef,
             UUID optionValueRef,
@@ -2380,15 +2365,6 @@ public class InventoryBomService {
             String optionValueCode,
             long version,
             String rows) {}
-
-
-
-
-
-
-
-
-
 
     private record Receipt(String operation, String requestHash, JsonNode response) {}
 }

@@ -2,8 +2,8 @@ package com.catering.v2s.businesschannel.application;
 
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.application.persistence.BusinessChannelCommandReceiptPersistence;
-import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
@@ -85,8 +85,7 @@ public final class BusinessChannelCommandReceiptService {
 
     private static String write(Object value) {
         try {
-            return CommandReceiptSupport.serialize(
-                    JSON, value, "business-channel command readback is not writable");
+            return CommandReceiptSupport.serialize(JSON, value, "business-channel command readback is not writable");
         } catch (Exception failure) {
             throw problem("RECEIPT_CORRUPT", 500, "business-channel command readback is not writable", failure);
         }

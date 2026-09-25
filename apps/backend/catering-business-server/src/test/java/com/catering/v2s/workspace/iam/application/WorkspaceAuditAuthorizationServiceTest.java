@@ -7,9 +7,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAuditAuthorizationPersistence;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAuditAuthorizationPersistence;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;

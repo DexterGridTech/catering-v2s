@@ -20,11 +20,11 @@ const spec = readSkeletonSpec(skeletonGraphPath);
 const batchOne = projectSkeletonGraph(spec, 1);
 const batchTwo = projectSkeletonGraph(spec, 2);
 
-assert.equal(Object.keys(spec.graph).length, 33, 'the literal skeleton specification has 33 nodes');
-assert.equal(Object.keys(batchOne).length, 16, 'batch one projects 16 nodes');
-assert.equal(Object.keys(batchTwo).length, 33, 'batch two projects 33 nodes');
-assert.equal(moduleNameToPackageName('assembly.android.sample-terminal'), '@catering-v2s/assembly-android-sample-terminal');
-assert.equal(moduleNameToPackageName('assembly.android.sample-wallpaper-terminal'), '@catering-v2s/assembly-android-sample-wallpaper-terminal');
+assert.equal(Object.keys(spec.graph).length, 29, 'the literal skeleton specification has 29 nodes');
+assert.equal(Object.keys(batchOne).length, 13, 'batch one projects 13 nodes');
+assert.equal(Object.keys(batchTwo).length, 29, 'batch two projects 29 nodes');
+assert.equal(moduleNameToPackageName('application.android.sample-terminal'), '@catering-v2s/application-android-sample-terminal');
+assert.equal(moduleNameToPackageName('application.android.sample-wallpaper-terminal'), '@catering-v2s/application-android-sample-wallpaper-terminal');
 assert.equal(moduleNameToRelativePath('kernel.base.contracts'), 'apps/terminal/kernel/base/contracts');
 
 const help = spawnSync(process.execPath, [checkStaticPath, '--help'], {cwd: repoRoot, encoding: 'utf8'});
@@ -79,9 +79,26 @@ try {
     'dir',
   );
   const adapterRoot = path.join(fixtureRoot, 'apps/terminal/adapter/android/persist-kv');
+  const applicationRoot = path.join(fixtureRoot, 'apps/terminal/application/base/android');
+  const applicationNodeModulesRoot = path.join(applicationRoot, 'node_modules');
   const cleanReport = runStaticChecks({root: fixtureRoot, batch: 2});
   assert.ok(cleanReport.results.every(result => result.status === 'PASS'));
   assert.equal(cleanReport.hygiene.status, 'PASS', cleanReport.hygiene.error);
+
+  fs.mkdirSync(applicationNodeModulesRoot, {recursive: true});
+  try {
+    const report = runStaticChecks({root: fixtureRoot, batch: 2});
+    assert.ok(report.results.every(result => result.status === 'PASS'), 'application node_modules must only affect hygiene');
+    assert.equal(report.hygiene.status, 'FAIL');
+    assert.match(report.hygiene.error, /scaffold metadata remains:/);
+    console.log(`TERMINAL_SKELETON_RED_APPLICATION_NODE_MODULES=SCAFFOLD_HYGIENE:${report.hygiene.status};${report.hygiene.error}`);
+  } finally {
+    fs.rmSync(applicationNodeModulesRoot, {recursive: true, force: true});
+    const restored = runStaticChecks({root: fixtureRoot, batch: 2});
+    assert.ok(restored.results.every(result => result.status === 'PASS'));
+    assert.equal(restored.hygiene.status, 'PASS', restored.hygiene.error);
+    console.log('TERMINAL_SKELETON_RED_APPLICATION_NODE_MODULES_RESTORE=PASS');
+  }
 
   function gate(report, name) {
     const result = report.results.find(candidate => candidate.name === name);
@@ -270,7 +287,7 @@ try {
   assert.match(missingIgnoreReport.hygiene.error, /missing \.gitignore entry \.turbo\//);
 
   fs.writeFileSync(gitignorePath, fs.readFileSync(path.join(repoRoot, '.gitignore'), 'utf8'));
-  const appPath = path.join(fixtureRoot, 'apps/terminal/assembly/android/sample-terminal/App.tsx');
+  const appPath = path.join(fixtureRoot, 'apps/terminal/application/android/sample-terminal/App.tsx');
   const appSource = fs.readFileSync(appPath, 'utf8');
   fs.writeFileSync(
     appPath,
@@ -307,20 +324,20 @@ try {
   const displayModuleNameSource = fs.readFileSync(displayModuleNamePath, 'utf8');
   const displayGraphSource = fs.readFileSync(fixtureGraphPath, 'utf8');
 
-  const assemblyBasePackagePath = path.join(
+  const applicationBasePackagePath = path.join(
     fixtureRoot,
-    'apps/terminal/assembly/base/android/package.json',
+    'apps/terminal/application/base/android/package.json',
   );
-  const assemblyBaseIndexPath = path.join(
+  const applicationBaseIndexPath = path.join(
     fixtureRoot,
-    'apps/terminal/assembly/base/android/src/index.ts',
+    'apps/terminal/application/base/android/src/index.ts',
   );
-  const assemblyBaseGraphPattern =
-    /('assembly\.base\.android':\s*\{\s*batch: 2,\s*plannedKind: 'toolkit',\s*dependencies: )\[([\s\S]*?)\]/;
+  const applicationBaseGraphPattern =
+    /('application\.base\.android':\s*\{\s*batch: 2,\s*plannedKind: 'toolkit',\s*dependencies: )\[([\s\S]*?)\]/;
   withMutations(
     [
       {
-        filePath: assemblyBasePackagePath,
+        filePath: applicationBasePackagePath,
         mutate: source => {
           const packageJson = JSON.parse(source);
           packageJson.dependencies['@catering-v2s/ui-feature-sample-staff-auth'] = 'workspace:*';
@@ -328,15 +345,15 @@ try {
         },
       },
       {
-        filePath: assemblyBaseIndexPath,
+        filePath: applicationBaseIndexPath,
         mutate: source => `${source}\nimport '@catering-v2s/ui-feature-sample-staff-auth'\n`,
       },
       {
         filePath: fixtureGraphPath,
         mutate: source => {
-          assert.match(source, assemblyBaseGraphPattern);
+          assert.match(source, applicationBaseGraphPattern);
           return source.replace(
-            assemblyBaseGraphPattern,
+            applicationBaseGraphPattern,
             "$1[$2'ui.feature.sample-staff-auth']",
           );
         },
@@ -344,25 +361,25 @@ try {
     ],
     report => {
       assertGateVector(report, ['dependency-direction', 'runtime-dependency-contract']);
-      assert.match(gate(report, 'dependency-direction').error, /assembly\.base\.android may not depend on ui\.feature\.sample-staff-auth/);
+      assert.match(gate(report, 'dependency-direction').error, /application\.base\.android may not depend on ui\.feature\.sample-staff-auth/);
       console.log(`TERMINAL_SKELETON_RED_BASE_GRAPH_FEATURE=${gate(report, 'dependency-direction').status}`);
     },
   );
 
   const sampleTerminalPackagePath = path.join(
     fixtureRoot,
-    'apps/terminal/assembly/android/sample-terminal/package.json',
+    'apps/terminal/application/android/sample-terminal/package.json',
   );
   const sampleTerminalPlatformPortsPath = path.join(
     fixtureRoot,
-    'apps/terminal/assembly/android/sample-terminal/src/assembly/platformPorts.ts',
+    'apps/terminal/application/android/sample-terminal/src/assembly/platformPorts.ts',
   );
   const sampleTerminalDependenciesPath = path.join(
     fixtureRoot,
-    'apps/terminal/assembly/android/sample-terminal/src/dependencies.ts',
+    'apps/terminal/application/android/sample-terminal/src/dependencies.ts',
   );
   const sampleTerminalGraphPattern =
-    /('assembly\.android\.sample-terminal':\s*\{[\s\S]*?dependencies:\s*\[[\s\S]*?)(\n\s*\])/;
+    /('application\.android\.sample-terminal':\s*\{[\s\S]*?dependencies:\s*\[[\s\S]*?)(\n\s*\])/;
   withMutations(
     [
       {
@@ -399,7 +416,7 @@ try {
     ],
     report => {
       assertGateVector(report, ['dependency-direction']);
-      assert.match(gate(report, 'dependency-direction').error, /assembly\.android\.sample-terminal may not depend on adapter/);
+      assert.match(gate(report, 'dependency-direction').error, /application\.android\.sample-terminal may not depend on adapter/);
       console.log(`TERMINAL_SKELETON_RED_APP_ADAPTER_GRAPH=${gate(report, 'dependency-direction').status}`);
     },
   );
@@ -409,7 +426,7 @@ try {
     source => `${source}\nimport {createAndroidDevicePort} from '../../../../../adapter/android/device/src/index'\nvoid createAndroidDevicePort\n`,
     report => {
       assertGateVector(report, ['dependency-direction']);
-      assert.match(gate(report, 'dependency-direction').error, /assembly\.android\.sample-terminal may not depend on adapter/);
+      assert.match(gate(report, 'dependency-direction').error, /application\.android\.sample-terminal may not depend on adapter/);
       console.log(`TERMINAL_SKELETON_RED_APP_ADAPTER_RELATIVE=${gate(report, 'dependency-direction').status}`);
     },
   );
@@ -443,24 +460,24 @@ try {
   // inserting an unknown graph name.  The package census, package name,
   // moduleName, graph, root workspace and source imports all remain
   // internally consistent, so the only intended red is the R-E1 direction
-  // predicate: assembly.base.android must not wire adapter.electron.*.
+  // predicate: application.base.android must not wire adapter.electron.*.
   const androidDeviceFixtureRoot = path.join(fixtureRoot, 'apps/terminal/adapter/android/device');
   const electronDeviceFixtureRoot = path.join(fixtureRoot, 'apps/terminal/adapter/electron/device');
   const crossPlatformGraphSource = fs.readFileSync(fixtureGraphPath, 'utf8');
   const crossPlatformRootPackageSource = fs.readFileSync(rootPackagePath, 'utf8');
   const crossPlatformAssemblyPackagePath = path.join(
     fixtureRoot,
-    'apps/terminal/assembly/base/android/package.json',
+    'apps/terminal/application/base/android/package.json',
   );
   const crossPlatformAssemblyPackageSource = fs.readFileSync(crossPlatformAssemblyPackagePath, 'utf8');
   const crossPlatformAssemblyDependenciesPath = path.join(
     fixtureRoot,
-    'apps/terminal/assembly/base/android/src/dependencies.ts',
+    'apps/terminal/application/base/android/src/dependencies.ts',
   );
   const crossPlatformAssemblyDependenciesSource = fs.readFileSync(crossPlatformAssemblyDependenciesPath, 'utf8');
   const crossPlatformAndroidPlatformPath = path.join(
     fixtureRoot,
-    'apps/terminal/assembly/base/android/src/foundations/androidPlatform.ts',
+    'apps/terminal/application/base/android/src/foundations/androidPlatform.ts',
   );
   const crossPlatformAndroidPlatformSource = fs.readFileSync(crossPlatformAndroidPlatformPath, 'utf8');
   fs.mkdirSync(path.dirname(electronDeviceFixtureRoot), {recursive: true});
@@ -522,7 +539,7 @@ try {
     assertGateVector(crossPlatformReport, ['dependency-direction']);
     assert.match(
       gate(crossPlatformReport, 'dependency-direction').error,
-      /assembly\.base\.android may only depend on same-platform adapter adapter\.electron\.device/,
+      /application\.base\.android may only depend on same-platform adapter adapter\.electron\.device/,
     );
     console.log(`TERMINAL_SKELETON_RED_BASE_CROSS_PLATFORM_ADAPTER=${gate(crossPlatformReport, 'dependency-direction').status}`);
   } finally {
@@ -722,52 +739,48 @@ try {
     fs.writeFileSync(fixtureGraphPath, originalFixtureGraph);
   }
 
-  const kernelTestSupportPackagePath = path.join(
+  const platformPortsPackagePath = path.join(
     fixtureRoot,
-    'apps/terminal/kernel/base/test-support/package.json',
+    'apps/terminal/kernel/base/platform-ports/package.json',
   );
-  const kernelTestSupportDependenciesPath = path.join(
+  const platformPortsDependenciesPath = path.join(
     fixtureRoot,
-    'apps/terminal/kernel/base/test-support/src/dependencies.ts',
+    'apps/terminal/kernel/base/platform-ports/src/dependencies.ts',
   );
   withMutations(
     [
       {
-        filePath: kernelTestSupportPackagePath,
+        filePath: platformPortsPackagePath,
         mutate: source => {
           const packageJson = JSON.parse(source);
-          delete packageJson.devDependencies['@catering-v2s/kernel-base-runtime'];
-          packageJson.devDependencies['@catering-v2s/ui-base-primitives'] = 'workspace:*';
+          packageJson.dependencies['@catering-v2s/ui-base-primitives'] = 'workspace:*';
           return `${JSON.stringify(packageJson, null, 2)}\n`;
         },
       },
       {
-        filePath: kernelTestSupportDependenciesPath,
+        filePath: platformPortsDependenciesPath,
         mutate: source =>
           source
             .replace(
-              "import {moduleName as runtime} from '@catering-v2s/kernel-base-runtime';",
-              "import {moduleName as uiBasePrimitives} from '@catering-v2s/ui-base-primitives';",
+              "import {moduleName as contracts} from '@catering-v2s/kernel-base-contracts';",
+              "import {moduleName as contracts} from '@catering-v2s/kernel-base-contracts';\nimport {moduleName as uiBasePrimitives} from '@catering-v2s/ui-base-primitives';",
             )
-            .replace('[contracts, state, runtime]', '[contracts, state, uiBasePrimitives]'),
+            .replace('[contracts]', '[contracts, uiBasePrimitives]'),
       },
       {
         filePath: fixtureGraphPath,
         mutate: source => {
           const pattern =
-            /('kernel\.base\.test-support':\s*\{[\s\S]*?devDependencies:\s*)\[[^\]]*\]/;
+            /('kernel\.base\.platform-ports':\s*\{[\s\S]*?dependencies:\s*)\[[^\]]*\]/;
           assert.match(source, pattern);
-          return source.replace(
-            pattern,
-            "$1['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.state', 'ui.base.primitives']",
-          );
+          return source.replace(pattern, "$1['kernel.base.contracts', 'ui.base.primitives']");
         },
       },
     ],
     report => {
-      assertGateVector(report, ['dependency-direction', 'runtime-dependency-contract']);
+      assertGateVector(report, ['dependency-direction']);
       assert.equal(gate(report, 'dependency-direction').status, 'FAIL');
-      assert.match(gate(report, 'dependency-direction').error, /kernel\.base\.test-support/);
+      assert.match(gate(report, 'dependency-direction').error, /kernel\.base\.platform-ports/);
     },
   );
 
@@ -841,7 +854,7 @@ try {
 
   withTextMutation(
     primitivesDependenciesPath,
-    source => `import '@catering-v2s/ui-base-automation/src/index';\n${source}`,
+    source => `import '@catering-v2s/ui-base-render/src/index';\n${source}`,
     report => {
       assertGateVector(report, ['graph-comparison']);
       assert.match(gate(report, 'graph-comparison').error, /non-root workspace import/);

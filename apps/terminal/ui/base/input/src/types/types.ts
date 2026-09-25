@@ -55,6 +55,7 @@ export type InputProviderProps = Readonly<{
 
 export type InputFieldController = Readonly<{
   readonly fieldId: string;
+  readonly testID: string;
   readonly token: InputRegistrationToken;
   readonly keyboardKind: 'virtual';
   readonly layout: KeyboardLayout;
@@ -69,6 +70,7 @@ export type InputFieldController = Readonly<{
 
 export type InputFieldRegistration = Readonly<{
   readonly fieldId: string;
+  readonly testID: string;
   readonly value: string;
   readonly selection: PrimitiveInputSelection;
   readonly keyboardKind: 'virtual';
@@ -100,6 +102,7 @@ export type InputController = Readonly<{
   readonly handleBlur: (fieldId: string) => void;
   readonly blurField: (fieldId: string) => void;
   readonly dismissActiveField: () => void;
+  readonly isFieldEventTarget: (fieldId: string, target: unknown) => boolean;
   readonly preflightFocusTarget: (fieldId: string) => boolean;
   readonly focusField: (fieldId: string) => void;
   readonly completeField: (fieldId: string) => void;

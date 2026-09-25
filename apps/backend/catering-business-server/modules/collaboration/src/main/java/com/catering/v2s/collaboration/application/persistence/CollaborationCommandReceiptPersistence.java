@@ -21,8 +21,10 @@ public class CollaborationCommandReceiptPersistence {
 
     public Optional<Receipt> find(UUID workspaceUuid, String groupWorkspaceKey, String idempotencyKey) {
         return jdbc.query(
-                CollaborationCommandReceiptServiceSql.COLLABORATION_COMMAND_RECEIPT_SERVICE_SELECT_COMMAND_RECEIPT_REQUEST_HASH_RESPONSE_JSON_TEXT
-                        + CollaborationCommandReceiptServiceSql.COLLABORATION_COMMAND_RECEIPT_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_IDEMPOTENCY_KEY,
+                CollaborationCommandReceiptServiceSql
+                                .COLLABORATION_COMMAND_RECEIPT_SERVICE_SELECT_COMMAND_RECEIPT_REQUEST_HASH_RESPONSE_JSON_TEXT
+                        + CollaborationCommandReceiptServiceSql
+                                .COLLABORATION_COMMAND_RECEIPT_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_IDEMPOTENCY_KEY,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, groupWorkspaceKey);
@@ -43,10 +45,13 @@ public class CollaborationCommandReceiptPersistence {
             String responseJson,
             long createdAtEpochMillis) {
         jdbc.update(
-                CollaborationCommandReceiptServiceSql.COLLABORATION_COMMAND_RECEIPT_SERVICE_INSERT_INTO_COMMAND_RECEIPT_INSERT_INTO_COLLABORATION_CO
-                        + CollaborationCommandReceiptServiceSql.COLLABORATION_COMMAND_RECEIPT_SERVICE_OPEN_PAREN_RECEIPT_REF
+                CollaborationCommandReceiptServiceSql
+                                .COLLABORATION_COMMAND_RECEIPT_SERVICE_INSERT_INTO_COMMAND_RECEIPT_INSERT_INTO_COLLABORATION_CO
+                        + CollaborationCommandReceiptServiceSql
+                                .COLLABORATION_COMMAND_RECEIPT_SERVICE_OPEN_PAREN_RECEIPT_REF
                         + CollaborationCommandReceiptServiceSql.COLLABORATION_COMMAND_RECEIPT_SERVICE_REQUEST_HASH
-                        + CollaborationCommandReceiptServiceSql.COLLABORATION_COMMAND_RECEIPT_SERVICE_VALUES_VALUES_JSONB,
+                        + CollaborationCommandReceiptServiceSql
+                                .COLLABORATION_COMMAND_RECEIPT_SERVICE_VALUES_VALUES_JSONB,
                 receiptRef,
                 workspaceUuid,
                 groupWorkspaceKey,

@@ -16,7 +16,12 @@ const profile = readJson("scripts/dev/profiles/catalog-inventory.json");
 const mediaCatalog = readJson("contracts/policy/catalog-inventory-media-assets.json");
 const editorManifest = readJson("contracts/catalog/catalog-item-editor-manifest.json");
 const registry = readJson("apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json");
-const v4Dir = path.resolve(root, profile.v4CatalogSourceDirectory);
+
+const resolveCatalogSourceDirectory = () => {
+  const candidate = path.resolve(root, profile.catalogSourceDirectory);
+  if (!candidate.startsWith(`${root}${path.sep}`)) fail("SEED_CATALOG_SOURCE_OUTSIDE_REPO", candidate);
+  return candidate;
+};
 
 const sourceScopeKey = (item) => item?.headquarterTemplate === true ? "HEAD_COMPANY" : "STORE";
 const salesMenuAvailabilityCodes = [
@@ -136,16 +141,17 @@ const assertPlan = (input) => {
     mediaPlan.push({mediaAssetKey: Object.entries(mediaCatalog.assets).find(([, a]) => a.fileName === fileName)?.[0], fileName, mediaType: expected.contentType, contentDigest: actual, bytes: fs.statSync(path.join(mediaDir, fileName)).size});
   }
 
-  if (!fs.existsSync(v4Dir)) fail("SEED_V4_SOURCE_MISSING", v4Dir);
-  const sourceFiles = fs.readdirSync(v4Dir).filter((name) => name.endsWith(".json")).sort();
+  const catalogSourceDir = resolveCatalogSourceDirectory();
+  if (!fs.existsSync(catalogSourceDir)) fail("SEED_CATALOG_SOURCE_MISSING", catalogSourceDir);
+  const sourceFiles = fs.readdirSync(catalogSourceDir).filter((name) => name.endsWith(".json")).sort();
   const sourceItems = [];
   for (const fileName of sourceFiles) {
-    const json = JSON.parse(fs.readFileSync(path.join(v4Dir, fileName), "utf8"));
+    const json = JSON.parse(fs.readFileSync(path.join(catalogSourceDir, fileName), "utf8"));
     for (const [fixtureKey, item] of Object.entries(json.items ?? {})) sourceItems.push({fixtureKey, sourceFile: fileName, ...item});
   }
-  if (sourceItems.length !== profile.parity.catalogItems) fail("SEED_V4_CATALOG_COUNT_DRIFT", `${sourceItems.length}!=${profile.parity.catalogItems}`);
-  if (new Set(sourceItems.map((item) => item.catalogItemCode)).size !== sourceItems.length) fail("SEED_V4_CODE_DUPLICATE");
-  for (const item of sourceItems) if (!mediaCatalog.assets[item.mediaAssetKey]) fail("SEED_V4_MEDIA_KEY_UNKNOWN", `${item.catalogItemCode}:${item.mediaAssetKey}`);
+  if (sourceItems.length !== profile.parity.catalogItems) fail("SEED_CATALOG_SOURCE_COUNT_DRIFT", `${sourceItems.length}!=${profile.parity.catalogItems}`);
+  if (new Set(sourceItems.map((item) => item.catalogItemCode)).size !== sourceItems.length) fail("SEED_CATALOG_SOURCE_CODE_DUPLICATE");
+  for (const item of sourceItems) if (!mediaCatalog.assets[item.mediaAssetKey]) fail("SEED_CATALOG_SOURCE_MEDIA_KEY_UNKNOWN", `${item.catalogItemCode}:${item.mediaAssetKey}`);
 
   const salesMenuAvailability = profile.salesMenuAvailability;
   const availabilityItems = salesMenuAvailability?.items;
@@ -268,9 +274,10 @@ const assertPlan = (input) => {
     requiredOperations: [...requiredOps].sort(),
     parity: profile.parity,
     ownerScopes: profile.ownerScopes,
+    catalogSourceDirectory: path.relative(root, catalogSourceDir),
     noDirectDatabaseWrites: true,
     catalogLifecycle,
-    planDigest: sha256(JSON.stringify({mediaPlan, sourceItems, eligibleSourceItems, excludedSourceItems, sourceDependencyEdges, sourceCompositeRelationTargetFixtureKeys, salesMenuAvailability, seedDatasets, dependencyEdges, relations, order, catalogLifecycle})),
+    planDigest: sha256(JSON.stringify({mediaPlan, catalogSourceDirectory: path.relative(root, catalogSourceDir), sourceItems, eligibleSourceItems, excludedSourceItems, sourceDependencyEdges, sourceCompositeRelationTargetFixtureKeys, salesMenuAvailability, seedDatasets, dependencyEdges, relations, order, catalogLifecycle})),
   };
 };
 
@@ -289,7 +296,8 @@ const runSelfTest = () => {
     ["SAVE_OPERATION", () => { const old = fixture.seedExecutionPlan.catalogSave.operationId; fixture.seedExecutionPlan.catalogSave.operationId = "missingSave"; try { assertPlan(fixture); } finally { fixture.seedExecutionPlan.catalogSave.operationId = old; } }],
     ["CATALOG_LIFECYCLE", () => { const old = fixture.seedExecutionPlan.catalogLifecycle.transitionStatuses; fixture.seedExecutionPlan.catalogLifecycle.transitionStatuses = []; try { assertPlan(fixture); } finally { fixture.seedExecutionPlan.catalogLifecycle.transitionStatuses = old; } }],
     ["VOIDED_SKU_BOM", () => assertPlan({...fixture, seedDatasets: fixture.seedDatasets.map((d) => d.fixtureId === "SEED-LATTE" ? {...d, entities: {...d.entities, bomLines: [...(d.entities.bomLines ?? []), {skuCode: "LATTE-SKU-L", componentCode: "BEAN-001", quantity: 24}]}} : d)})],
-    ["V4_COUNT", () => assertPlan({...fixture, revision: fixture.revision, seedDatasets: fixture.seedDatasets}) && (() => { const old = profile.parity.catalogItems; profile.parity.catalogItems = 72; try { assertPlan(fixture); } finally { profile.parity.catalogItems = old; } })()],
+    ["CATALOG_SOURCE_COUNT", () => assertPlan({...fixture, revision: fixture.revision, seedDatasets: fixture.seedDatasets}) && (() => { const old = profile.parity.catalogItems; profile.parity.catalogItems = 72; try { assertPlan(fixture); } finally { profile.parity.catalogItems = old; } })()],
+    ["CATALOG_SOURCE_OUTSIDE_REPO", () => { const old = profile.catalogSourceDirectory; profile.catalogSourceDirectory = "../external-catalog-source/items"; try { assertPlan(fixture); } finally { profile.catalogSourceDirectory = old; } }],
     ["SOURCE_RELATION_DANGLING", () => sourceDependencyEdgesFor([{...sourceGraphFixture[0], compositeStructure: {componentGroups: [{components: [{componentFixtureKey: "missing"}]}]}}], () => true)],
     ["SOURCE_RELATION_CROSS_SCOPE", () => sourceDependencyEdgesFor([{...sourceGraphFixture[0], headquarterTemplate: true}, sourceGraphFixture[1]], () => true)],
     ["SALES_MENU_AVAILABILITY", () => { const old = profile.salesMenuAvailability.items[3].expectedAvailability.reason; profile.salesMenuAvailability.items[3].expectedAvailability.reason = null; try { assertPlan(fixture); } finally { profile.salesMenuAvailability.items[3].expectedAvailability.reason = old; } }]

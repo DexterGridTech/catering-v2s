@@ -84,6 +84,10 @@ export type PrimitiveScrollViewProps = PrimitiveAddressableProps &
     readonly onContentHeightChange?: (height: number) => void;
     readonly onLayout?: (event: LayoutChangeEvent) => void;
     readonly onScrollOffsetChange?: (offsetY: number) => void;
+    /** Normalized terminal signal for a user drag; non-zero velocity may be followed by momentum. */
+    readonly onScrollEndDrag?: (offsetY: number, velocityY: number | null) => void;
+    /** Normalized terminal signal for programmatic or inertial scrolling. */
+    readonly onMomentumScrollEnd?: (offsetY: number) => void;
   }>;
 
 type PrimitiveTextAccessibilityRole = 'alert' | 'status';
@@ -304,6 +308,15 @@ export type PrimitiveFormControlProps = PrimitiveAddressableProps &
     readonly disabled?: boolean;
     readonly busy?: boolean;
   }>;
+
+export type PrimitiveFormSubmitEvent = Readonly<{
+  readonly preventDefault: () => void;
+}>;
+
+export type PrimitiveFormProps = Readonly<{
+  readonly children?: ReactNode;
+  readonly onSubmit?: (event: PrimitiveFormSubmitEvent) => void;
+}>;
 
 export type PrimitiveCheckboxProps = PrimitiveFormControlProps &
   Readonly<{

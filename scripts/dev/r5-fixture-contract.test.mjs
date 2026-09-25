@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
-import {computeFixtureExpectedCounts, validateFixtureContract, validateFixtureExpectedCounts, validateFixtureSeedStages} from './r5-fixture-contract.mjs';
+import {computeFixtureExpectedCounts, validateFixtureContract, validateFixtureContractPhaseNames, validateFixtureExpectedCounts, validateFixtureSeedStages} from './r5-fixture-contract.mjs';
 
 const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
 const fixture = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
@@ -32,4 +32,14 @@ test('fixture contract rejects count drift and stage drift before seed execution
   const missingReadback = structuredClone(fixture);
   missingReadback.seedStages[0].readback = [];
   assert.throws(() => validateFixtureSeedStages(missingReadback), /R5_SEED_FIXTURE_STAGE_INVALID:bootstrap/);
+});
+
+test('fixture contract rejects missing or cross-project contract phase names before HTTP seed execution', () => {
+  const missingPhaseName = structuredClone(fixture);
+  delete missingPhaseName.stableFixtures.contracts[1].phaseNameSnapshot;
+  assert.throws(() => validateFixtureContractPhaseNames(missingPhaseName), /R5_SEED_FIXTURE_CONTRACT_PHASE_NAME_MISSING:contract-current-b/);
+
+  const invalidPhaseName = structuredClone(fixture);
+  invalidPhaseName.stableFixtures.contracts[1].phaseNameSnapshot = '不存在的阶段';
+  assert.throws(() => validateFixtureContractPhaseNames(invalidPhaseName), /R5_SEED_FIXTURE_CONTRACT_PHASE_NAME_INVALID:contract-current-b/);
 });

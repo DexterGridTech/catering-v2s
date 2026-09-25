@@ -11,6 +11,7 @@ import com.catering.v2s.organization.application.OrganizationOverviewTaskReadSer
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +19,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import java.util.UUID;
 
 /** Explicit Store-target rule read; it never reuses the project-target Store-management detail path. */
 @RestController
@@ -51,15 +51,15 @@ public class OperationsStoreOperatingRuleController {
             @PathVariable String groupWorkspaceKey,
             @PathVariable UUID storeId,
             @RequestParam long expectedContextVersion) {
-        WorkspaceSessionReadback session = sessions.requireWorkspaceReadAtContextVersion(
-                request, groupWorkspaceKey, expectedContextVersion);
+        WorkspaceSessionReadback session =
+                sessions.requireWorkspaceReadAtContextVersion(request, groupWorkspaceKey, expectedContextVersion);
         user.resolveTaskScope(session, ServiceNodeTypes.STORE, storeId);
-        OrganizationOverviewTaskReadService.Item item = reads.store(
-                session.workspaceUuid(), groupWorkspaceKey, storeId);
-        OrganizationEntityReadback entity = entities.requireEntity(
-                ServiceNodeTypes.STORE, session.workspaceUuid(), groupWorkspaceKey, storeId);
-        var operatingRules = entities.requireStoreOperatingRuleSwitches(
-                session.workspaceUuid(), groupWorkspaceKey, storeId);
+        OrganizationOverviewTaskReadService.Item item =
+                reads.store(session.workspaceUuid(), groupWorkspaceKey, storeId);
+        OrganizationEntityReadback entity =
+                entities.requireEntity(ServiceNodeTypes.STORE, session.workspaceUuid(), groupWorkspaceKey, storeId);
+        var operatingRules =
+                entities.requireStoreOperatingRuleSwitches(session.workspaceUuid(), groupWorkspaceKey, storeId);
         return StoreWireMapper.store(
                 entity,
                 item,

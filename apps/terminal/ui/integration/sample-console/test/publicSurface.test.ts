@@ -114,10 +114,10 @@ describe('sample-console integration public surface', () => {
   })
 
   it('keeps the Android host package-root imports bound to the documented exports', () => {
-    const appPath = fileURLToPath(new URL('../../../../assembly/android/sample-terminal/App.tsx', import.meta.url))
-    const platformPortsPath = fileURLToPath(new URL('../../../../assembly/android/sample-terminal/src/assembly/platformPorts.ts', import.meta.url))
-    const dependenciesPath = fileURLToPath(new URL('../../../../assembly/android/sample-terminal/src/dependencies.ts', import.meta.url))
-    const metroConfigPath = fileURLToPath(new URL('../../../../assembly/android/sample-terminal/metro.config.js', import.meta.url))
+    const appPath = fileURLToPath(new URL('../../../../application/android/sample-terminal/App.tsx', import.meta.url))
+    const platformPortsPath = fileURLToPath(new URL('../../../../application/android/sample-terminal/src/assembly/platformPorts.ts', import.meta.url))
+    const dependenciesPath = fileURLToPath(new URL('../../../../application/android/sample-terminal/src/dependencies.ts', import.meta.url))
+    const metroConfigPath = fileURLToPath(new URL('../../../../application/android/sample-terminal/metro.config.js', import.meta.url))
 
     expectNamedImports(appPath, packageName, [
       {name: 'createSurfaceForDisplayIndex', typeOnly: false},

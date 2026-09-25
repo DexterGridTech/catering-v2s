@@ -18,6 +18,7 @@ import {canonicalStartToken} from './managed-process-tree.mjs';
 import {validateRemoteJavaControl} from './r5-remote-java.mjs';
 import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents, validateManagedDiagnosticTransport} from './managed-diagnostic-protocol.mjs';
 import {buildSeedReport, loadGeneratedOperationRegistry, materializeGeneratedOperationPath, normalizeEdgePath, resolveGeneratedOperationById, writeSeedReportPair} from '../test/seed-report.mjs';
+import {createSeedHttpClient} from './seed-http-client.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const runtimeRoot = path.resolve(process.env.V2S_RUNTIME_DIR || path.join(root, '.runtime/r5'));
@@ -369,33 +370,27 @@ async function executeManagedSeed() {
     process.stderr.write(`SALES_MENU_SEED=REFUSED; REASON=${firstFailure}; RUN_MANIFEST=${manifestPath}; REPORT=${reportPath}\n`); process.exitCode = 2; return;
   }
   const keyFor = name => `r5-sales-menu-${sha256(`${runId}:${name}`).slice(0, 48)}`;
-  const request = async (name, operationId, pathParameters = {}, options = {}) => {
-    const operation = resolveGeneratedOperationById(inputs.registry, operationId);
-    const pathname = materializeGeneratedOperationPath(operation, {pathParameters, queryParameters: options.queryParameters ?? {}});
-    const correlationId = crypto.randomUUID(); const began = Date.now();
-    const headers = {Accept: 'application/json', ...buildManagedDiagnosticHeaders({manifest: managed.manifest, credentials: managed.credentials, operationId, routeTemplate: operation.path, correlationId})};
-    if (options.cookie) headers.Cookie = options.cookie;
-    if (options.brandRef) headers['X-Workspace-Brand-Ref'] = options.brandRef;
-    if (options.headers) Object.assign(headers, options.headers);
-    if (operation.method !== 'GET') headers['Idempotency-Key'] = keyFor(name);
-    let body;
-    if (options.form) body = options.form;
-    else if (options.body !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(options.body); }
-    let response;
-    try { response = await fetch(`${managed.environment.V2S_DEV_HTTP_BASE_URL}${pathname}`, {method: operation.method, headers, body, signal: AbortSignal.timeout(20_000)}); }
-    catch (error) { firstFailure ??= `${name}_NETWORK`; phase(name, 'FAIL', {operationId, httpStatus: 0}); fail(firstFailure); }
-    const text = await response.text(); let json = null; try { json = text ? JSON.parse(text) : null; } catch { /* classification below */ }
-    const expected = options.expected ?? [200]; const accepted = expected.includes(response.status); const requestId = response.headers.get('x-request-id');
-    const expectedProblemCode = options.expectedProblemCode ?? null;
-    const problemCode = problemCodeOf(json);
-    if (accepted && expectedProblemCode && problemCode !== expectedProblemCode) {
-      firstFailure ??= `${name}_PROBLEM_${problemCode ?? 'UNCLASSIFIED'}`; phase(name, 'FAIL', {operationId, httpStatus: response.status, requestId, problemCode: problemCode ?? 'UNCLASSIFIED'}); fail(firstFailure);
-    }
-    calls.push({stageId: name, managedDevRunId: managed.manifest.runId, owner: operation.owner, consumerFace: operation.consumerFaces?.join(',') ?? null, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, durationMs: Date.now() - began, outcome: accepted ? (expectedProblemCode ? 'EXPECTED_BUSINESS_REJECTION' : 'SUCCEEDED') : 'FAILED', correlationId: response.headers.get('x-correlation-id') ?? correlationId, requestId});
-    phase(name, accepted ? 'PASS' : 'FAIL', {operationId, httpStatus: response.status, requestId, ...(accepted && expectedProblemCode ? {expectedProblemCode} : accepted ? {} : {problemCode: problemCode ?? 'UNCLASSIFIED'})});
-    if (!accepted) { firstFailure ??= `${name}_HTTP_${response.status}_${problemCode ?? 'UNCLASSIFIED'}`; fail(firstFailure); }
-    return {json, cookie: cookieFromHeaders(response.headers)};
-  };
+  const request = createSeedHttpClient({
+    baseUrl: managed.environment.V2S_DEV_HTTP_BASE_URL,
+    resolveOperation: operationId => resolveGeneratedOperationById(inputs.registry, operationId),
+    materializeOperationPath: materializeGeneratedOperationPath,
+    buildDiagnosticHeaders: buildManagedDiagnosticHeaders,
+    manifest: managed.manifest,
+    credentials: managed.credentials,
+    calls,
+    correlationPrefix: 'sales-menu',
+    timeoutMs: 20_000,
+    idempotencyKeyFor: name => keyFor(name),
+    cookieFromHeaders,
+    failureFactory: code => new SalesMenuSeedFailure(code),
+    onFailure: code => { firstFailure ??= code; },
+    onPhase: phase,
+    decorateCall: (call, {operation}) => ({
+      managedDevRunId: managed.manifest.runId,
+      owner: operation.owner,
+      consumerFace: operation.consumerFaces?.join(',') ?? null,
+    }),
+  }).request;
   const workspaceKey = 'aurora';
   try {
     const login = await request('store-login', 'operationsWorkspacePasswordLogin', {groupWorkspaceKey: workspaceKey}, {body: {loginName: 'r5-account-single-role', password: managed.credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});

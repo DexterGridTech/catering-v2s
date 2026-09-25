@@ -52,15 +52,16 @@ operations capability 只表达用户发起的写工作流，不得作为页面�
 
 ## Backend acceptance 设计红线
 
-后台动态验收当前实现并运行 28 条真实场景，覆盖 IAM、ORG、商业合同、asset 与 Catalog；原 196 个
-provider 壳与 scenario registry 已下线删除。新增 operation 时只复制当前真实场景的
-fixture/request/business assertion 结构；必须能区分 HTTP 成功与业务
-断言成功，不能以 `response.ok`、路径字符串或“不抛异常”代替业务真值。
+后台动态验收的业务场景必须写在
+`apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/` 下对应业务域的
+`*AcceptanceScenarios.java`，由 `BackendAcceptanceScenarioCatalog` 自动发现；不得在入口文件冻结场景数量、
+业务域清单或场景文件清单。新增 operation 时只复制真实场景的 fixture/request/business assertion 结构；必须能
+区分 HTTP 成功与业务断言成功，不能以 `response.ok`、路径字符串或“不抛异常”代替业务真值。
 
 PERFORMANCE/CLEANUP verdict、baseline、known-uncovered、自动精确分母、lane/并行、校准和
 package/hash 记账与旧 scenario-level performanceCriterion 均已退役。业务 scenario 内 DB 调用数不参与
-`CONTRACT`/`BUSINESS`；Dexter 2026-08-22 已另行恢复 generated 238-operation budget 与独立 run-level
-verifier，消费 production HTTP completion events，判 DB/connection/transaction-begin/section ceiling。
+`CONTRACT`/`BUSINESS`；generated operation budget 与独立 run-level verifier，消费 production HTTP completion
+events，判 DB/connection/transaction-begin/section ceiling。
 该 verifier 不复活 provider 壳、旧 scenario registry、accepted-baseline 或性能 lane，也不得把性能
 PASS 冒充业务 scenario PASS。
 
@@ -74,4 +75,4 @@ PASS 冒充业务 scenario PASS。
 
 ## Heritage
 
-all-v2、all-v1、v4 与 v6 只作为 hash-bound、显式引用、只读 Heritage；禁止写回和 runtime/build fallback。Roadmap 状态只由本仓 Registry 解析出的唯一 active owner 持有。
+all-v2、all-v1、v4 与 v6 只作为 hash-bound、显式引用、只读 Heritage；禁止写回和 runtime/build fallback。

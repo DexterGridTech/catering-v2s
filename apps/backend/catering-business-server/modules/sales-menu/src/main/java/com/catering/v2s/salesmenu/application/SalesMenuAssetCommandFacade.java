@@ -180,8 +180,7 @@ public final class SalesMenuAssetCommandFacade implements SalesMenuAssetCommandA
                         "STORE",
                         target.storeRef(),
                         STORE_SALES_MENU_CAPABILITY)
-                || (grant.expectedContextVersion() >= 0
-                        && !grant.matchesExpectedContextVersion(contextVersion))) {
+                || (grant.expectedContextVersion() >= 0 && !grant.matchesExpectedContextVersion(contextVersion))) {
             throw new SalesMenuOwnerApi.Problem("GRANT_INVALID", 403, "销售菜单授权无效");
         }
         if (storeOperatingRuleGate == null) {

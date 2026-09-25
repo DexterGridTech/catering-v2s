@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url'
 import {checkNativeProjection} from './check-native-projection.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
-const sourceAppsRoot = path.join(repositoryRoot, 'apps/terminal/assembly/android')
+const sourceAppsRoot = path.join(repositoryRoot, 'apps/terminal/application/android')
 
 function copyTree(source, destination) {
   fs.cpSync(source, destination, {
@@ -31,7 +31,7 @@ function walkFiles(directory) {
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ter-native-projection-'))
-  const appsRoot = path.join(root, 'apps/terminal/assembly/android')
+  const appsRoot = path.join(root, 'apps/terminal/application/android')
   fs.mkdirSync(appsRoot, {recursive: true})
   for (const appName of ['sample-terminal', 'sample-wallpaper-terminal']) {
     copyTree(path.join(sourceAppsRoot, appName), path.join(appsRoot, appName))
@@ -81,6 +81,12 @@ withFixture(({appsRoot}) => {
   const source = fs.readFileSync(configPath, 'utf8')
   fs.writeFileSync(configPath, source.replace("globalCssPath: '@catering-v2s/ui-integration-sample-console/theme/global.css',", "globalCssPath: '@catering-v2s/private/theme/global.css',"))
 }, 'CONFIG_PRIVATE_DIFF')
+
+withFixtureError(({appsRoot}) => {
+  const configPath = path.join(appsRoot, 'sample-terminal/tailwind.config.cjs')
+  const source = fs.readFileSync(configPath, 'utf8')
+  fs.writeFileSync(configPath, `${source}\nmodule.exports.darkMode = 'class'\n`)
+}, 'DARK_MODE_RESIDUAL', /TER apps must not carry a darkMode difference/)
 
 withFixture(({appsRoot}) => {
   const registryPath = path.join(appsRoot, 'sample-terminal/android/native-resource-registry.json')

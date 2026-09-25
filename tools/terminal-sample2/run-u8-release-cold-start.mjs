@@ -15,17 +15,17 @@ const defaultOutput = path.join(
 const appProfiles = Object.freeze([
   {
     id: 'sample-terminal',
-    assemblyRoot: path.join(repositoryRoot, 'apps/terminal/assembly/android/sample-terminal'),
+    applicationRoot: path.join(repositoryRoot, 'apps/terminal/application/android/sample-terminal'),
     packageName: 'com.anonymous.sampleterminal',
     activity: 'com.anonymous.sampleterminal/.MainActivity',
-    apk: path.join(repositoryRoot, 'apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk'),
+    apk: path.join(repositoryRoot, 'apps/terminal/application/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk'),
   },
   {
     id: 'sample-wallpaper-terminal',
-    assemblyRoot: path.join(repositoryRoot, 'apps/terminal/assembly/android/sample-wallpaper-terminal'),
+    applicationRoot: path.join(repositoryRoot, 'apps/terminal/application/android/sample-wallpaper-terminal'),
     packageName: 'com.catering.v2s.terminal.samplewallpaper',
     activity: 'com.catering.v2s.terminal.samplewallpaper/.MainActivity',
-    apk: path.join(repositoryRoot, 'apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk'),
+    apk: path.join(repositoryRoot, 'apps/terminal/application/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk'),
   },
 ])
 
@@ -146,6 +146,32 @@ const packagePid = (serial, packageName) => {
   return cleanLine(outputText(result)).trim()
 }
 
+const displayFragment = (windowsXml, displayId) => {
+  const opening = new RegExp(`<display id=["']${displayId}["']>`).exec(windowsXml)
+  if (opening === null) return null
+  const closing = windowsXml.indexOf('</display>', opening.index + opening[0].length)
+  if (closing < 0) return null
+  return windowsXml.slice(opening.index, closing + '</display>'.length)
+}
+
+const readUiWindowsForDisplay = (serial, remotePath, displayId, label) => {
+  const dump = runAdb(
+    serial,
+    ['shell', 'uiautomator', 'dump', '--windows', remotePath],
+    `${label} dump`,
+    {allowFailure: true},
+  )
+  const xml = runAdb(serial, ['exec-out', 'cat', remotePath], `${label} readback`, {allowFailure: true})
+  const windowsXml = cleanLine(outputText(xml))
+  const fragment = displayFragment(windowsXml, displayId)
+  runAdb(serial, ['shell', 'rm', '-f', remotePath], `${label} remote cleanup`, {allowFailure: true})
+  return {
+    dumpStatus: dump.status,
+    windowsXml,
+    fragment,
+  }
+}
+
 const readPrimaryUi = (serial, remotePath, label) => {
   const dump = runAdb(serial, ['shell', 'uiautomator', 'dump', remotePath], `${label} dump`, {allowFailure: true})
   const xml = runAdb(serial, ['exec-out', 'cat', remotePath], `${label} readback`, {allowFailure: true})
@@ -194,6 +220,7 @@ const launchOne = async (profile, serial, shape, directory) => {
     firstFailure: null,
     display: null,
     surfaceFlinger: null,
+    secondaryUiReadback: null,
     timeline: [],
   }
   let logcat = ''
@@ -384,6 +411,36 @@ const launchOne = async (profile, serial, shape, directory) => {
     if (primaryUiText === null) throw new Error('settled primary UI dump/readback did not return XML')
     writeText(recordDirectory, 'ui-primary.xml', primaryUiText)
     writeText(recordDirectory, 'ui-primary-readback.xml', primaryUiText)
+    if (shape === 'dual' && !expectedFailure) {
+      const display = readDisplayInventory(serial)
+      const secondaryDisplayId = display.displayIds.find(id => id !== 0)
+      if (!Number.isInteger(secondaryDisplayId)) throw new Error('settled secondary UI requires a non-primary logical display')
+      const secondaryRemotePath = `/sdcard/ter-u8-settled-${process.pid}-${profile.id}-${shape}-secondary.xml`
+      const secondaryReadback = readUiWindowsForDisplay(
+        serial,
+        secondaryRemotePath,
+        secondaryDisplayId,
+        'settled secondary UI',
+      )
+      if (secondaryReadback.dumpStatus !== 0 || secondaryReadback.fragment === null) {
+        throw new Error(`settled secondary UI dump/readback missing display ${secondaryDisplayId} fragment`)
+      }
+      writeText(recordDirectory, 'ui-secondary-uiautomator-windows.xml', secondaryReadback.windowsXml)
+      writeText(recordDirectory, 'ui-secondary.xml', secondaryReadback.fragment)
+      const secondaryPartKeys = [...secondaryReadback.fragment.matchAll(/resource-id="([^"]+)"/g)]
+        .map(match => match[1])
+        .filter(value => value.startsWith('sample.'))
+      if (profile.id === 'sample-wallpaper-terminal'
+        && !secondaryReadback.fragment.includes('resource-id="sample.wallpaper-console.waiting"')) {
+        throw new Error('settled secondary UI missing sample.wallpaper-console.waiting')
+      }
+      record.secondaryUiReadback = {
+        displayId: secondaryDisplayId,
+        windowsPath: 'ui-secondary-uiautomator-windows.xml',
+        fragmentPath: 'ui-secondary.xml',
+        partKeys: [...new Set(secondaryPartKeys)],
+      }
+    }
     captureSurface(
       serial,
       expectedFailure ? surfaceFlinger.virtualIds[0] : surfaceFlinger.primaryIds[0],
@@ -397,6 +454,7 @@ const launchOne = async (profile, serial, shape, directory) => {
       splashVisible: splashVisible(settledWindow),
       packagePid: packagePid(serial, profile.packageName),
       secondarySurfaceObserved: /secondary-(react-surface|presentation|surface-host)/i.test(logcat),
+      secondaryUiReadback: record.secondaryUiReadback,
       primaryUiHasRnContent: hasFirstRnContent(primaryUiText),
     })
 
@@ -405,6 +463,7 @@ const launchOne = async (profile, serial, shape, directory) => {
     const completeSequence = completeLine !== null
     const secondaryExpected = shape === 'dual'
       ? record.timeline.at(-1)?.secondarySurfaceObserved === true
+        && record.secondaryUiReadback?.fragmentPath === 'ui-secondary.xml'
       : true
     if (expectedFailure) {
       if (failureLine === null) throw new Error('wrong-primary-display did not render the startup failure page')
@@ -510,7 +569,7 @@ const records = []
 try {
   for (const profile of selectedProfiles) {
     if (!args.get('skipBuild')) {
-      const build = run('./gradlew', ['assembleRelease', '--no-daemon', '--console=plain'], {cwd: path.join(profile.assemblyRoot, 'android')})
+      const build = run('./gradlew', ['assembleRelease', '--no-daemon', '--console=plain'], {cwd: path.join(profile.applicationRoot, 'android')})
       writeText(outputDirectory, `${profile.id}-assemble-release.log`, outputText(build))
     }
     if (!fs.existsSync(profile.apk)) throw new Error(`${profile.id}: release APK missing at ${profile.apk}`)

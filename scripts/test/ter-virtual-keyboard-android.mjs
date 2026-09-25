@@ -77,12 +77,12 @@ const APPS = Object.freeze({
   'sample-terminal': Object.freeze({
     packageName: 'com.anonymous.sampleterminal',
     activity: 'com.anonymous.sampleterminal/.MainActivity',
-    androidRoot: 'apps/terminal/assembly/android/sample-terminal/android',
+    androidRoot: 'apps/terminal/application/android/sample-terminal/android',
   }),
   'sample-wallpaper-terminal': Object.freeze({
     packageName: 'com.catering.v2s.terminal.samplewallpaper',
     activity: 'com.catering.v2s.terminal.samplewallpaper/.MainActivity',
-    androidRoot: 'apps/terminal/assembly/android/sample-wallpaper-terminal/android',
+    androidRoot: 'apps/terminal/application/android/sample-wallpaper-terminal/android',
   }),
 });
 const APP_LAUNCH_BREADCRUMBS = Object.freeze([
@@ -100,11 +100,23 @@ const APP_LAUNCH_BREADCRUMBS = Object.freeze([
   Object.freeze({summary: 'native.loading-overlay-skipped:config-unavailable', wire: 'event=native.loading-overlay-skipped reason=config-unavailable'}),
   Object.freeze({summary: 'native.loading-overlay-skipped:content-unavailable', wire: 'event=native.loading-overlay-skipped reason=content-unavailable'}),
 ]);
+const APP_LAUNCH_BREADCRUMB_SUMMARIES = new Set(APP_LAUNCH_BREADCRUMBS.map(item => item.summary));
 const LEGACY_APP_LAUNCH_BREADCRUMB_SUMMARIES = new Set(['native.loading-overlay-attached-after-super']);
 const NATIVE_FATAL_SIGNAL_ALLOWLIST = new Set(['SIGABRT', 'SIGBUS', 'SIGFPE', 'SIGILL', 'SIGSEGV', 'SIGSYS', 'SIGTRAP']);
 const MAX_REINSPECTION_PID_LENGTH = 10;
 const MAX_REINSPECTION_DIAGNOSTIC_STRING_LENGTH = 256;
 const MAX_REINSPECTION_LOCATION_LENGTH = 160;
+const PRODUCT_CAPTURE_EVIDENCE_KINDS = Object.freeze(['PRODUCT_FRAME', 'PRODUCT_TRANSITION_SAMPLE']);
+
+function validLaunchBreadcrumbRecord(observedMarkers, markerCount) {
+  return Array.isArray(observedMarkers)
+    && Number.isSafeInteger(markerCount) && markerCount >= 0
+    && observedMarkers.length <= APP_LAUNCH_BREADCRUMB_SUMMARIES.size
+    && markerCount === observedMarkers.length
+    && new Set(observedMarkers).size === observedMarkers.length
+    && observedMarkers.every(marker => APP_LAUNCH_BREADCRUMB_SUMMARIES.has(marker));
+}
+
 export const URL_SYMBOL_KEYS = Object.freeze([
   Object.freeze({keyId: 'text-1', value: ':'}), Object.freeze({keyId: 'text-2', value: '/'}),
   Object.freeze({keyId: 'text-3', value: '.'}), Object.freeze({keyId: 'text-4', value: '?'}),
@@ -115,6 +127,20 @@ export const URL_SYMBOL_KEYS = Object.freeze([
 export const URL_SYMBOL_SEQUENCE = URL_SYMBOL_KEYS.map(item => item.value).join('');
 const URL_SYMBOL_HARNESS_FIELD_ID = 'harness:full-field';
 export const CONTROLLED_KEYBOARD_HARNESS_URL = 'ter-vk://controlled/full';
+
+// The production admin launcher is a five-tap gesture in the physical top-left
+// point of the surface. Keep this runner action deliberately narrow: it is not
+// a general coordinate injector and it does not bypass the launcher readback
+// gate below.
+export const ADMIN_LAUNCH_GESTURE_TAP = Object.freeze({x: 48, y: 48, repetitions: 5});
+
+export function adminLauncherTapPlan(displayId) {
+  if (!Number.isSafeInteger(displayId) || displayId < 0) fail('VK_ANDROID_ADMIN_LAUNCH_DISPLAY_INVALID');
+  return Object.freeze(Array.from({length: ADMIN_LAUNCH_GESTURE_TAP.repetitions}, (_, index) => Object.freeze({
+    tapIndex: index + 1,
+    args: ['shell', 'input', '-d', String(displayId), 'tap', String(ADMIN_LAUNCH_GESTURE_TAP.x), String(ADMIN_LAUNCH_GESTURE_TAP.y)],
+  })));
+}
 
 export function parseArgs(argv) {
   const result = {positionals: []};
@@ -353,7 +379,7 @@ export function recordCapture(manifest, iaId, record, evidenceKind = 'PRODUCT_FR
     manifest.controlledHarnessCaptures.push({...record, evidenceKind, coveredIaId: iaId});
     return;
   }
-  if (evidenceKind !== 'PRODUCT_FRAME') fail('VK_ANDROID_CAPTURE_EVIDENCE_KIND_INVALID');
+  if (!PRODUCT_CAPTURE_EVIDENCE_KINDS.includes(evidenceKind)) fail('VK_ANDROID_CAPTURE_EVIDENCE_KIND_INVALID');
   const frame = manifest.frameMatrix?.[iaId];
   if (!frame) fail('VK_ANDROID_IA_ID_OUT_OF_RANGE');
   frame.captures.push({...record, evidenceKind});
@@ -481,6 +507,10 @@ export function runtimeResourceRoot(repoRoot = ROOT) {
   return path.join(repoRoot, '.runtime');
 }
 
+export function terResourcePreflightArgs(repoRoot = ROOT) {
+  return ['--profile', 'admin-validation-with-ter', runtimeResourceRoot(repoRoot)];
+}
+
 export function validatePrepareOptions(args) {
   const runId = safeRunId(args['run-id']);
   const dualSerial = safeSerial(args['dual-serial']);
@@ -566,9 +596,13 @@ export function validateRunManifest(manifest) {
   if (manifest.launchLogReinspections !== undefined && !Array.isArray(manifest.launchLogReinspections)) fail('VK_ANDROID_MANIFEST_INVALID');
   for (const diagnostic of manifest.launchDiagnostics ?? []) {
     const signals = diagnostic.signals?.nativeFatalSignals;
+    const breadcrumbFieldsPresent = diagnostic.observedMarkers !== undefined || diagnostic.markerCount !== undefined;
     if ((diagnostic.startupPid !== undefined && diagnostic.startupPid !== null && !/^\d+$/.test(diagnostic.startupPid))
       || (signals !== undefined && (!Array.isArray(signals) || signals.some(signal => !NATIVE_FATAL_SIGNAL_ALLOWLIST.has(signal))
-        || (signals.length > 0 && !/^\d+$/.test(diagnostic.startupPid ?? ''))))) fail('VK_ANDROID_MANIFEST_APP_BINDING_INVALID');
+        || (signals.length > 0 && !/^\d+$/.test(diagnostic.startupPid ?? ''))))
+      || (breadcrumbFieldsPresent && !validLaunchBreadcrumbRecord(diagnostic.observedMarkers, diagnostic.markerCount))) {
+      fail('VK_ANDROID_MANIFEST_APP_BINDING_INVALID');
+    }
   }
   const inspectedIntentIds = new Set();
   for (const inspection of manifest.launchLogInspections ?? []) {
@@ -1106,7 +1140,9 @@ export function resolveInvalidatedRemoteLaunch(manifest, intentId, observed, rec
   const launchEvidence = (manifest.launchDiagnostics ?? []).filter(value => value.intentId === intentId
     && value.shape === intent.shape && value.appName === intent.appName
     && (value.packageName == null || value.packageName === intent.packageName)
-    && Array.isArray(value.observedMarkers) && value.observedMarkers.length > 0);
+    && value.host === intent.host && value.bootId === intent.bootId
+    && validLaunchBreadcrumbRecord(value.observedMarkers, value.markerCount)
+    && value.observedMarkers.length > 0);
   const app = intent && APPS[intent.appName];
   if (!intent || intent.resolution !== 'PROCESS_ABSENT' || intent.processCount !== 0
     || !app || intent.packageName !== app.packageName || !device || device.serial !== intent.host
@@ -1157,11 +1193,12 @@ export function resolveInvalidatedRemoteLaunch(manifest, intentId, observed, rec
   return resolution;
 }
 
-export function commandDiagnosticRecord({phase, label, executable, args, durationMs, exitCode, signal, stdout, stderr, outputPolicy = 'sanitized', acceptedExitCodes = [0]}) {
+export function commandDiagnosticRecord({phase, label, executable, args, durationMs, exitCode, signal, stdout, stderr, outputPolicy = 'sanitized', acceptedExitCodes = [0], resultAccepted = true}) {
   if (!['sanitized', 'omit'].includes(outputPolicy)) fail('VK_ANDROID_COMMAND_OUTPUT_POLICY_INVALID');
   if (!Array.isArray(acceptedExitCodes) || acceptedExitCodes.length === 0
     || acceptedExitCodes.some(code => !Number.isInteger(code) || code < 0 || code > 255)
     || new Set(acceptedExitCodes).size !== acceptedExitCodes.length) fail('VK_ANDROID_EXPECTED_EXIT_CODES_INVALID');
+  if (typeof resultAccepted !== 'boolean') fail('VK_ANDROID_COMMAND_RESULT_VALIDATION_INVALID');
   const render = value => redact(value).slice(0, 4096);
   const persisted = value => outputPolicy === 'omit' ? '[RAW_OUTPUT_OMITTED]' : render(value);
   return Object.freeze({
@@ -1173,7 +1210,7 @@ export function commandDiagnosticRecord({phase, label, executable, args, duratio
     stderr: persisted(stderr),
     stdoutTruncated: Buffer.byteLength(stdout ?? '') > 4096,
     stderrTruncated: Buffer.byteLength(stderr ?? '') > 4096,
-    result: acceptedExitCodes.includes(exitCode) && !signal ? 'PASS' : 'FAIL',
+    result: acceptedExitCodes.includes(exitCode) && resultAccepted && !signal ? 'PASS' : 'FAIL',
   });
 }
 
@@ -1259,7 +1296,7 @@ export function appendCommandLogRecord({runtimeLogPath, evidenceLogPath, evidenc
 
 function resourcePreflight(manifest = null) {
   const checker = path.join(ROOT, 'scripts/env/check-runtime-resource-budget');
-  const result = spawnSync(checker, [runtimeResourceRoot(ROOT)], {cwd: ROOT, encoding: 'utf8'});
+  const result = spawnSync(checker, terResourcePreflightArgs(ROOT), {cwd: ROOT, encoding: 'utf8'});
   if (manifest) {
     const target = path.join(RUNTIME_ROOT, manifest.runId, 'resource-preflight.json');
     const evidenceTarget = path.join(EVIDENCE_ROOT, manifest.runId, 'resource-preflight.json');
@@ -1392,14 +1429,17 @@ async function runManaged(manifest, label, command, args, options = {}) {
   const currentRows = ownedProcessRows(identity);
   const exitedCleanly = currentRows.length === 0;
   const exitAccepted = acceptedExitCodes.includes(exit.code);
-  const commandPassed = exitAccepted && !limitFailure && exitedCleanly;
+  const resultAccepted = typeof options.resultValidator === 'function'
+    ? options.resultValidator({stdout: stdoutText, stderr: stderrText, exitCode: exit.code, signal: exit.signal})
+    : true;
+  const commandPassed = exitAccepted && resultAccepted && !limitFailure && exitedCleanly;
   manifest.processes = exitedCleanly ? [] : currentRows;
   manifest.activeProcessIdentity = exitedCleanly ? null : {...identity, commandLabel: label};
   manifest.activeCommand = null;
   const diagnosticPath = appendCommandLog(manifest, commandDiagnosticRecord({
     phase: manifest.phase, label, executable: command, args, durationMs: finishedAt - startedAt,
     exitCode: exit.code, signal: exit.signal, stdout, stderr,
-    acceptedExitCodes,
+    acceptedExitCodes, resultAccepted,
     outputPolicy: options.diagnosticOutput ?? 'sanitized',
   }));
   manifest.commandResults ??= [];
@@ -1416,7 +1456,7 @@ async function runManaged(manifest, label, command, args, options = {}) {
   appendEvent(manifest, 'COMMAND_FINISHED', {label, exitCode: exit.code, acceptedExitCodes: [...acceptedExitCodes], signal: exit.signal, durationMs: finishedAt - startedAt, outputBytes: stdout.length + stderr.length, result: commandPassed ? 'PASS' : 'FAIL', failureCode: limitFailure ?? (commandPassed ? null : 'VK_ANDROID_COMMAND_FAILED')});
   saveManifest(manifest);
   if (limitFailure) fail(limitFailure);
-  if (!exitAccepted) fail('VK_ANDROID_COMMAND_FAILED');
+  if (!exitAccepted || !resultAccepted) fail('VK_ANDROID_COMMAND_FAILED');
   if (!exitedCleanly) fail('VK_ANDROID_CHILD_TREE_NOT_EMPTY');
   if (options.returnCommandResult === true) return {stdout: stdoutText, stderr: stderrText, exitCode: exit.code};
   return options.binary ? stdout : output;
@@ -1674,15 +1714,56 @@ async function remoteProcessIdentity(manifest, device, packageName) {
   return remoteNamedProcessIdentity(manifest, device, packageName);
 }
 
-function processReadbackOptions() {
-  return {acceptedExitCodes: [0, 1], returnCommandResult: true, diagnosticOutput: 'sanitized', preserveLastKnownGood: true};
+function processReadbackAbsenceMatches({exitCode, signal, stderr}, kind) {
+  if (signal || exitCode !== 1) return false;
+  const diagnostic = String(stderr ?? '').trim();
+  if (kind === 'pidof') {
+    return diagnostic === '' || /(?:no matching process|no process found)/i.test(diagnostic);
+  }
+  if (kind === 'proc-stat' || kind === 'proc-cmdline') {
+    return /(?:no such file(?: or directory)?|cannot (?:open|access))/i.test(diagnostic);
+  }
+  return false;
 }
 
-function processReadbackStdout(result) {
-  if (typeof result === 'string') return result;
+function processReadbackOptions(kind) {
+  if (!['pidof', 'proc-stat', 'proc-cmdline'].includes(kind)) fail('VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID');
+  return {
+    acceptedExitCodes: [0, 1], returnCommandResult: true, diagnosticOutput: 'sanitized', preserveLastKnownGood: true,
+    resultValidator: result => result.exitCode === 0 && result.signal == null
+      || processReadbackAbsenceMatches(result, kind),
+  };
+}
+
+function processReadbackStdout(result, kind) {
   if (!result || typeof result.stdout !== 'string' || typeof result.stderr !== 'string'
-    || ![0, 1].includes(result.exitCode)) fail('VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID');
-  return result.exitCode === 0 ? result.stdout : '';
+    || ![0, 1].includes(result.exitCode) || !['pidof', 'proc-stat', 'proc-cmdline'].includes(kind)) {
+    fail('VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID');
+  }
+  if (result.exitCode === 0 && result.signal == null) return result.stdout;
+  if (processReadbackAbsenceMatches(result, kind)) return '';
+  fail('VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID');
+}
+
+function procStatComm(stat) {
+  const open = stat.indexOf('(');
+  const close = stat.lastIndexOf(')');
+  if (open <= 0 || close <= open) return null;
+  return stat.slice(open + 1, close);
+}
+
+function procExecutableMatches(expectedExecutable, value) {
+  const actual = String(value ?? '').split('/').at(-1);
+  const expected = String(expectedExecutable ?? '').split('/').at(-1);
+  return actual === expected
+    || (expected.includes('.') && actual.startsWith(`${expected}:`)
+      && /^[A-Za-z0-9._-]{1,96}$/.test(actual.slice(expected.length + 1)));
+}
+
+function procCmdlineMatches(cmdline, expectedExecutable, expectedArgument) {
+  const argv = String(cmdline).split('\u0000').filter(value => value.length > 0);
+  if (argv.length === 0 || !procExecutableMatches(expectedExecutable, argv[0])) return false;
+  return expectedArgument === null || argv.slice(1).includes(expectedArgument);
 }
 
 function assertProcessReadbackIdentityBound(manifest, shape, device, identity) {
@@ -1727,15 +1808,18 @@ export async function remoteNamedProcessIdentity(manifest, device, processName, 
   if (!/^[A-Za-z0-9._-]{1,160}$/.test(processName ?? '')) fail('VK_ANDROID_REMOTE_PROCESS_NAME_INVALID');
   const bootId = (await readAdbText(manifest, device, `${device.shape}-remote-boot-id`, ['shell', 'cat', '/proc/sys/kernel/random/boot_id'])).trim();
   if (!/^[A-Za-z0-9-]{8,96}$/.test(bootId)) fail('VK_ANDROID_REMOTE_PROCESS_IDENTITY_INVALID');
-  const lookup = await readAdbText(manifest, device, `${device.shape}-${processName}-remote-process`, ['shell', 'pidof', processName], processReadbackOptions());
-  const text = processReadbackStdout(lookup);
+  const lookup = await readAdbText(manifest, device, `${device.shape}-${processName}-remote-process`, ['shell', 'pidof', processName], processReadbackOptions('pidof'));
+  const text = processReadbackStdout(lookup, 'pidof');
   const pids = [...new Set(text.trim().split(/\s+/).map(Number).filter(pid => Number.isInteger(pid) && pid > 0))].sort((left, right) => left - right);
   if (pids.length === 0) return {host: device.serial, bootId, processes: []};
   const processes = [];
   for (const pid of pids) {
-    const statResult = await readAdbText(manifest, device, `${device.shape}-${processName}-remote-stat-${pid}`, ['shell', 'cat', `/proc/${pid}/stat`], processReadbackOptions());
-    const stat = processReadbackStdout(statResult);
+    const statResult = await readAdbText(manifest, device, `${device.shape}-${processName}-remote-stat-${pid}`, ['shell', 'cat', `/proc/${pid}/stat`], processReadbackOptions('proc-stat'));
+    const stat = processReadbackStdout(statResult, 'proc-stat');
     if (stat.trim() === '') continue;
+    const cmdlineResult = await readAdbText(manifest, device, `${device.shape}-${processName}-remote-cmdline-${pid}`, ['shell', 'cat', `/proc/${pid}/cmdline`], processReadbackOptions('proc-cmdline'));
+    const cmdline = processReadbackStdout(cmdlineResult, 'proc-cmdline');
+    if (cmdline.trim() === '' || !procCmdlineMatches(cmdline, processName, null)) continue;
     const afterName = stat.slice(stat.lastIndexOf(')') + 1).trim().split(/\s+/);
     const startTicks = afterName[19];
     if (!/^\d+$/.test(startTicks ?? '')) fail('VK_ANDROID_REMOTE_PROCESS_IDENTITY_INVALID');
@@ -1747,13 +1831,16 @@ export async function remoteNamedProcessIdentity(manifest, device, processName, 
 export async function remotePidIdentity(manifest, device, pid, expectedExecutable, expectedArgument = null, readAdbText = adbText) {
   const bootId = (await readAdbText(manifest, device, `${device.shape}-${expectedExecutable}-boot-id`, ['shell', 'cat', '/proc/sys/kernel/random/boot_id'])).trim();
   if (!/^[A-Za-z0-9-]{8,96}$/.test(bootId)) fail('VK_ANDROID_REMOTE_PROCESS_IDENTITY_INVALID');
-  const statResult = await readAdbText(manifest, device, `${device.shape}-${expectedExecutable}-stat-${pid}`, ['shell', 'cat', `/proc/${pid}/stat`], processReadbackOptions());
-  const stat = processReadbackStdout(statResult);
+  const statResult = await readAdbText(manifest, device, `${device.shape}-${expectedExecutable}-stat-${pid}`, ['shell', 'cat', `/proc/${pid}/stat`], processReadbackOptions('proc-stat'));
+  const stat = processReadbackStdout(statResult, 'proc-stat');
   if (stat.trim() === '') return {host: device.serial, bootId, process: null};
-  const cmdlineResult = await readAdbText(manifest, device, `${device.shape}-${expectedExecutable}-cmdline-${pid}`, ['shell', 'cat', `/proc/${pid}/cmdline`], processReadbackOptions());
-  const cmdline = processReadbackStdout(cmdlineResult);
+  const comm = procStatComm(stat);
+  const isKnownAppPackage = Object.values(APPS).some(app => app.packageName === expectedExecutable);
+  if (!isKnownAppPackage && !procExecutableMatches(expectedExecutable, comm)) return {host: device.serial, bootId, process: null};
+  const cmdlineResult = await readAdbText(manifest, device, `${device.shape}-${expectedExecutable}-cmdline-${pid}`, ['shell', 'cat', `/proc/${pid}/cmdline`], processReadbackOptions('proc-cmdline'));
+  const cmdline = processReadbackStdout(cmdlineResult, 'proc-cmdline');
   if (cmdline.trim() === '') return {host: device.serial, bootId, process: null};
-  if (!cmdline.includes(expectedExecutable) || (expectedArgument !== null && !cmdline.includes(expectedArgument))) return {host: device.serial, bootId, process: null};
+  if (!procCmdlineMatches(cmdline, expectedExecutable, expectedArgument)) return {host: device.serial, bootId, process: null};
   const afterName = stat.slice(stat.lastIndexOf(')') + 1).trim().split(/\s+/);
   const startTicks = afterName[19];
   if (!/^\d+$/.test(startTicks ?? '')) fail('VK_ANDROID_REMOTE_PROCESS_IDENTITY_INVALID');
@@ -1774,11 +1861,41 @@ export function screenrecordProcessUsesPath(processTableText, remoteVideo) {
   return processTableText.split(/\r?\n/).some(line => line.includes(remoteVideo));
 }
 
-export function transitionVideoSampleOffsets(durationSeconds) {
+export function parseVideoFrameTimestamps(probeText) {
+  let probe;
+  try {
+    probe = JSON.parse(String(probeText ?? ''));
+  } catch {
+    fail('VK_ANDROID_TRANSITION_FRAME_TIMELINE_INVALID');
+  }
+  const timestamps = (Array.isArray(probe?.frames) ? probe.frames : [])
+    .map(frame => {
+      const raw = frame?.best_effort_timestamp_time;
+      if (typeof raw === 'number') return raw;
+      if (typeof raw !== 'string' || raw.trim() === '') return Number.NaN;
+      return Number(raw);
+    })
+    .filter(value => Number.isFinite(value) && value >= 0);
+  const unique = [...new Set(timestamps)].sort((left, right) => left - right);
+  if (unique.length === 0 || unique.at(-1) <= 0) fail('VK_ANDROID_TRANSITION_FRAME_TIMELINE_INVALID');
+  return Object.freeze(unique);
+}
+
+export function transitionVideoSampleOffsets(durationSeconds, frameTimestamps = null) {
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) fail('VK_ANDROID_TRANSITION_VIDEO_DURATION_INVALID');
+  let sampleDurationSeconds = durationSeconds;
+  if (frameTimestamps !== null) {
+    if (!Array.isArray(frameTimestamps) || frameTimestamps.length === 0
+      || frameTimestamps.some(value => !Number.isFinite(value) || value < 0)) {
+      fail('VK_ANDROID_TRANSITION_FRAME_TIMELINE_INVALID');
+    }
+    const decodableEndSeconds = Math.max(...frameTimestamps);
+    if (!Number.isFinite(decodableEndSeconds) || decodableEndSeconds <= 0) fail('VK_ANDROID_TRANSITION_FRAME_TIMELINE_INVALID');
+    sampleDurationSeconds = Math.min(durationSeconds, decodableEndSeconds);
+  }
   return Object.freeze([1, 2, 3, 4, 5].map(index => Object.freeze({
     index,
-    offsetFromVideoStartMs: Number((durationSeconds * 1000 * index / 6).toFixed(3)),
+    offsetFromVideoStartMs: Number((sampleDurationSeconds * 1000 * index / 6).toFixed(3)),
   })));
 }
 
@@ -1970,6 +2087,33 @@ async function tapResource(manifest, shape, resourceId, surface = 'primary') {
   return {issuedAtMonotonic, completedAtMonotonic: performance.now()};
 }
 
+async function triggerAdminLauncherGesture(manifest, shape, surface = 'primary') {
+  requireOwnedApp(manifest, shape);
+  const device = deviceFor(manifest, shape);
+  if (surface === 'secondary' && shape !== 'dual') fail('VK_ANDROID_SECONDARY_SURFACE_UNAVAILABLE');
+  const logical = surface === 'primary' ? device.inventory.pairing?.primary : device.inventory.pairing?.secondary;
+  const actual = logical ?? validateDeviceShape({shape, logical: device.inventory.logical, surfaces: device.inventory.surfaces})[surface];
+  const {xml} = await uiDump(manifest, device, actual.id);
+  const launcher = parseResourceNode(xml, 'terminal.admin:launcher', actual.id);
+  if (!launcher || !launcher.enabled || launcher.right <= launcher.left || launcher.bottom <= launcher.top) {
+    fail('VK_ANDROID_ADMIN_LAUNCHER_NOT_OBSERVED');
+  }
+  for (const plan of adminLauncherTapPlan(actual.id)) {
+    await adbText(manifest, device, `${shape}-admin-launch-gesture-${plan.tapIndex}`, plan.args);
+    appendEvent(manifest, 'ADMIN_LAUNCH_GESTURE_TAP', {
+      shape,
+      surface,
+      displayId: actual.id,
+      tapIndex: plan.tapIndex,
+      x: ADMIN_LAUNCH_GESTURE_TAP.x,
+      y: ADMIN_LAUNCH_GESTURE_TAP.y,
+    });
+  }
+  manifest.lastKnownGood = `${shape}-admin-launch-gesture`;
+  saveManifest(manifest);
+  process.stdout.write(`ADMIN_LAUNCH_GESTURE=PASS\nTAPS=${ADMIN_LAUNCH_GESTURE_TAP.repetitions}\n`);
+}
+
 async function tapNodeCenter(manifest, device, displayId, node, label) {
   if (!node?.enabled || node.right <= node.left || node.bottom <= node.top) fail('VK_ANDROID_RESOURCE_NODE_NOT_ACTIONABLE');
   const x = Math.floor((node.left + node.right) / 2);
@@ -2047,11 +2191,18 @@ async function recordTransition(manifest, shape, appName, iaId, resourceId, surf
   if (!videoStream || videoStream.width !== logical.width || videoStream.height !== logical.height || !Number.isFinite(durationSeconds) || durationSeconds < 0.5) {
     fail('VK_ANDROID_SCREENRECORD_GEOMETRY_OR_DURATION_INVALID');
   }
+  const frameTimelineText = await command(manifest, `${shape}-${appName}-${iaId}-transition-frame-timeline`, 'ffprobe', [
+    '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'frame=best_effort_timestamp_time', '-of', 'json', videoFile,
+  ], {maxBytes: 256 * 1024});
+  const frameTimestamps = parseVideoFrameTimestamps(frameTimelineText);
+  const decodableEndSeconds = frameTimestamps.at(-1);
+  if (decodableEndSeconds < 0.5) fail('VK_ANDROID_SCREENRECORD_GEOMETRY_OR_DURATION_INVALID');
+  const sampleDurationSeconds = Math.min(durationSeconds, decodableEndSeconds);
   const displayDumpPath = writeCaptureTextArtifact(`${stem}.dumpsys-display.txt`, displayDumpText);
   const surfaceDumpPath = writeCaptureTextArtifact(`${stem}.surfaceflinger-displays.txt`, surfaceDumpText);
   const logicalDumpPath = writeCaptureTextArtifact(`${stem}.cmd-display-get-displays.txt`, logicalText);
   const recordEvidencePath = `${stem}.transition-evidence.json`;
-  const sampleOffsets = transitionVideoSampleOffsets(durationSeconds);
+  const sampleOffsets = transitionVideoSampleOffsets(durationSeconds, frameTimestamps);
   const recordEvidence = {
     serial: device.serial, app: appName, packageName: app.packageName, activity: app.activity, shape, surface,
     iaId, triggerResourceId: resourceId,
@@ -2060,7 +2211,8 @@ async function recordTransition(manifest, shape, appName, iaId, resourceId, surf
     logicalResolution: `${logical.width}x${logical.height}`, surfaceFlingerId: sf.id, surfaceFlingerName: sf.name,
     windowIdentity, video: path.relative(ROOT, videoFile), videoBytes: remoteVideoBytes.length, videoSha256: remoteVideoSha256,
     videoDurationSeconds: durationSeconds, videoWidth: videoStream.width, videoHeight: videoStream.height,
-    videoTimelineBinding: 'UNALIGNED_TO_TAP_EVENT',
+    videoDecodableEndSeconds: decodableEndSeconds, sampleDurationSeconds,
+    videoTimelineBinding: 'UNALIGNED_TO_TAP_EVENT', sampleTimeBasis: 'LAST_DECODED_VIDEO_FRAME',
     sampleTargets: sampleOffsets.map(item => ({
       index: item.index, offsetFromVideoStartMs: item.offsetFromVideoStartMs,
       animationProgress: null, status: 'OPEN_UNCALIBRATED_VIDEO_TIME',
@@ -2075,9 +2227,10 @@ async function recordTransition(manifest, shape, appName, iaId, resourceId, surf
   for (const sample of sampleOffsets) {
     const index = sample.index - 1;
     const offsetSeconds = Number((sample.offsetFromVideoStartMs / 1000).toFixed(3));
-    if (offsetSeconds >= durationSeconds) fail('VK_ANDROID_SCREENRECORD_SAMPLE_OUTSIDE_VIDEO');
+    if (offsetSeconds >= sampleDurationSeconds) fail('VK_ANDROID_SCREENRECORD_SAMPLE_OUTSIDE_VIDEO');
     const frameFile = `${stem}-transition-${index + 1}.png`;
     await command(manifest, `${shape}-${appName}-${iaId}-transition-extract-${index + 1}`, 'ffmpeg', ['-hide_banner', '-loglevel', 'error', '-ss', String(offsetSeconds), '-i', videoFile, '-frames:v', '1', '-fps_mode', 'passthrough', '-y', frameFile], {maxBytes: 32 * 1024});
+    if (!fs.existsSync(frameFile)) fail('VK_ANDROID_TRANSITION_FRAME_OUTPUT_MISSING');
     const frameBytes = fs.readFileSync(frameFile);
     const frameDimensions = pngDimensions(frameBytes);
     if (frameDimensions.width !== logical.width || frameDimensions.height !== logical.height) fail('VK_ANDROID_TRANSITION_FRAME_DIMENSIONS_INVALID');
@@ -2095,7 +2248,7 @@ async function recordTransition(manifest, shape, appName, iaId, resourceId, surf
       elapsedMs: 0, state: `transition-video-sample-${sample.index}-uncalibrated`, transitionIndex: sample.index, controlsInventory: null,
       visibleControlCount: 0, visibleControls: [],
     };
-    manifest.frameMatrix[iaId].captures.push(capture);
+    recordCapture(manifest, iaId, capture, 'PRODUCT_TRANSITION_SAMPLE');
     sampleFiles.push({index: sample.index, offsetFromVideoStartMs: sample.offsetFromVideoStartMs, offsetSeconds, screenshot: relative, captureEvidence: path.relative(ROOT, evidencePath)});
   }
   manifest.transitions ??= [];
@@ -2443,8 +2596,8 @@ export async function collectResolvedLaunchLogEvidence(manifest, intent, readAdb
   for (const candidate of processCandidates) {
     const statResult = await readAdbText(manifest, device, `${intent.shape}-${intent.appName}-reinspection-stat-${candidate.pid}`, [
       'shell', 'cat', `/proc/${candidate.pid}/stat`,
-    ], {...processReadbackOptions(), maxBytes: 4096});
-    statReadbacks.set(String(candidate.pid), processReadbackStdout(statResult));
+    ], {...processReadbackOptions('proc-stat'), maxBytes: 4096});
+    statReadbacks.set(String(candidate.pid), processReadbackStdout(statResult, 'proc-stat'));
   }
   const exitInfoText = await readAdbText(manifest, device, `${intent.shape}-${intent.appName}-reinspection-exit-info`, [
     'shell', 'dumpsys', 'activity', 'exit-info', intent.packageName,
@@ -2602,6 +2755,7 @@ async function dispatch(argv) {
   if (action === 'reinspect-resolved-launch-logs') return reinspectResolvedLaunchLogs(manifest, launchLogReinspectionIntent);
   if (action === 'inspect') return inspectResource(manifest, args.device, args['resource-id'], args.surface ?? 'primary');
   if (action === 'tap') return tapResource(manifest, args.device, args['resource-id'], args.surface ?? 'primary');
+  if (action === 'admin-launch-gesture') return triggerAdminLauncherGesture(manifest, args.device, args.surface ?? 'primary');
   if (action === 'insert-url-symbol-sequence') return insertUrlSymbolSequence(manifest, args.device, args.app);
   if (action === 'capture') {
     const result = await capture(manifest, args.device, args.app, args['ia-id'], args.surface ?? 'primary', args.state ?? 'stable');

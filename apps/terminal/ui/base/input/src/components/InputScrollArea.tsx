@@ -1,4 +1,4 @@
-import {useCallback, useRef, type ReactNode} from 'react'
+import {useCallback, useLayoutEffect, useRef, type ReactNode} from 'react'
 import type {LayoutChangeEvent} from 'react-native'
 import {
   PrimitiveScrollView,
@@ -9,6 +9,7 @@ import {InputScrollAncestorContext} from '../contexts/context'
 import {useInputSurfaceGeometry} from '../contexts/InputSurfaceGeometryContext'
 import {
   calculateScrollOffset,
+  INPUT_SCROLL_VISIBILITY_TOLERANCE,
   isRectInsideVisibleVerticalIntersection,
   visibleVerticalIntersectionOf,
   type LayoutRect,
@@ -30,6 +31,25 @@ type ScrollReadback = Readonly<{
   readonly requestedOffset: number
 }>
 
+type ScrollReadbackMeasurement = readonly [number, number, number, number]
+type ScrollFieldMeasurement = readonly [number, number, number, number]
+
+type ScrollMeasurementInput = Readonly<{
+  readonly viewportRect: LayoutRect
+  readonly contentFieldRect: LayoutRect
+}>
+
+const layoutRectOf = (measurement: ScrollReadbackMeasurement | ScrollFieldMeasurement): LayoutRect | null => {
+  const [x, y, width, height] = measurement
+  if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return null
+  return {x, y, width, height}
+}
+
+// This is one request-scoped escape hatch for platforms that do not emit a
+// terminal scroll event. It is not the keyboard animation clock and never
+// drives a per-frame update.
+const SCROLL_READBACK_SETTLE_TIMEOUT_MS = 1_500
+
 export const InputScrollArea = ({testID, children, contentPaddingBottom}: InputScrollAreaProps) => {
   const scrollRef = useRef<PrimitiveScrollViewHandle | null>(null)
   const currentOffsetRef = useRef(0)
@@ -37,7 +57,42 @@ export const InputScrollArea = ({testID, children, contentPaddingBottom}: InputS
   const contentHeightRef = useRef<number | null>(null)
   const requestSerialRef = useRef(0)
   const readbackRef = useRef<ScrollReadback | null>(null)
+  const readbackWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const geometry = useInputSurfaceGeometry()
+  const clearReadback = useCallback(() => {
+    if (readbackWatchdogRef.current !== null) {
+      clearTimeout(readbackWatchdogRef.current)
+      readbackWatchdogRef.current = null
+    }
+    readbackRef.current = null
+  }, [])
+  const evaluateReadback = useCallback((pending: ScrollReadback, nextOffset: number, failureReason: string | null): boolean => {
+    const fieldRect: LayoutRect = {
+      x: pending.viewportRect.x + pending.contentFieldRect.x,
+      y: pending.viewportRect.y + pending.contentFieldRect.y - nextOffset + pending.presentationOffsetY,
+      width: pending.contentFieldRect.width,
+      height: pending.contentFieldRect.height,
+    }
+    const intersection = visibleVerticalIntersectionOf({
+      viewportRect: pending.viewportRect,
+      surfaceHeight: pending.surfaceHeight,
+      keyboardHeight: pending.keyboardHeight,
+      presentationOffsetY: pending.presentationOffsetY,
+    })
+    const fullyVisible = isRectInsideVisibleVerticalIntersection(fieldRect, intersection)
+    const targetReached = Math.abs(nextOffset - pending.requestedOffset) <= INPUT_SCROLL_VISIBILITY_TOLERANCE
+    if (!fullyVisible && failureReason === null && !targetReached) return false
+    clearReadback()
+    if (fullyVisible) geometry?.reportFocusVisibilitySuccess(pending.fieldId)
+    else geometry?.reportFocusVisibilityFailure(pending.fieldId, failureReason ?? 'scroll-clamped-before-visible')
+    return true
+  }, [clearReadback, geometry?.reportFocusVisibilityFailure, geometry?.reportFocusVisibilitySuccess])
+  const settleReadback = useCallback((fieldId: string, failureReason: string) => {
+    const pending = readbackRef.current
+    if (pending === null || pending.fieldId !== fieldId) return
+    geometry?.cancelScheduledScroll(fieldId)
+    evaluateReadback(pending, currentOffsetRef.current, failureReason)
+  }, [evaluateReadback, geometry?.cancelScheduledScroll])
   const onViewportLayout = useCallback((event: LayoutChangeEvent) => {
     const {x, y, width, height} = event.nativeEvent.layout
     if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return
@@ -64,6 +119,7 @@ export const InputScrollArea = ({testID, children, contentPaddingBottom}: InputS
   ) => {
     const requestSerial = ++requestSerialRef.current
     geometry?.cancelScheduledScroll(fieldId)
+    clearReadback()
     const input = inputRef?.current ?? null
     const scroll = scrollRef.current
     const viewportSize = viewportSizeRef.current
@@ -89,21 +145,23 @@ export const InputScrollArea = ({testID, children, contentPaddingBottom}: InputS
 
     let viewportRect: LayoutRect | null = null
     let contentFieldRect: LayoutRect | null = null
-    const applyMeasurement = () => {
-      if (requestSerialRef.current !== requestSerial || viewportRect === null || contentFieldRect === null) return
+    const applyMeasurement = ({viewportRect: measuredViewportRect, contentFieldRect: measuredContentFieldRect}: ScrollMeasurementInput) => {
+      if (requestSerialRef.current !== requestSerial) return
+      viewportRect = measuredViewportRect
+      contentFieldRect = measuredContentFieldRect
       const currentOffset = currentOffsetRef.current
       const fieldRect: LayoutRect = {
-        x: viewportRect.x + contentFieldRect.x,
-        y: viewportRect.y + contentFieldRect.y - currentOffset,
-        width: contentFieldRect.width,
-        height: contentFieldRect.height,
+        x: measuredViewportRect.x + measuredContentFieldRect.x,
+        y: measuredViewportRect.y + measuredContentFieldRect.y - currentOffset,
+        width: measuredContentFieldRect.width,
+        height: measuredContentFieldRect.height,
       }
       const presentationOffsetY = geometry.presentFocusRect(fieldId, fieldRect)
       const keyboardHeight = geometry.keyboardHeight > 0 ? geometry.keyboardHeight : requestedKeyboardHeight
       const maxScroll = Math.max(0, contentHeight - viewportSize.height)
       const nextOffset = calculateScrollOffset({
         inputRect: fieldRect,
-        viewportRect,
+        viewportRect: measuredViewportRect,
         currentOffset,
         maxScroll,
         surfaceHeight: geometry.surfaceHeight,
@@ -111,7 +169,7 @@ export const InputScrollArea = ({testID, children, contentPaddingBottom}: InputS
         presentationOffsetY,
       })
       const intersection = visibleVerticalIntersectionOf({
-        viewportRect,
+        viewportRect: measuredViewportRect,
         surfaceHeight: geometry.surfaceHeight,
         keyboardHeight,
         presentationOffsetY,
@@ -123,15 +181,15 @@ export const InputScrollArea = ({testID, children, contentPaddingBottom}: InputS
       const visibleAtRequestedOffset = isRectInsideVisibleVerticalIntersection(finalFieldRect, intersection)
       readbackRef.current = {
         fieldId,
-        contentFieldRect,
-        viewportRect,
+        contentFieldRect: measuredContentFieldRect,
+        viewportRect: measuredViewportRect,
         surfaceHeight: geometry.surfaceHeight,
         keyboardHeight,
         presentationOffsetY,
         requestedOffset: nextOffset,
       }
       if (nextOffset === currentOffset) {
-        readbackRef.current = null
+        clearReadback()
         if (visibleAtRequestedOffset) geometry.reportFocusVisibilitySuccess(fieldId)
         else geometry.reportFocusVisibilityFailure(fieldId, 'scroll-range-insufficient')
         return
@@ -140,17 +198,22 @@ export const InputScrollArea = ({testID, children, contentPaddingBottom}: InputS
         if (requestSerialRef.current !== requestSerial) return
         scroll.scrollTo({y: nextOffset, animated: true})
       })
+      readbackWatchdogRef.current = setTimeout(() => {
+        if (readbackRef.current?.fieldId !== fieldId) return
+        settleReadback(fieldId, 'scroll-readback-timeout')
+      }, SCROLL_READBACK_SETTLE_TIMEOUT_MS)
     }
 
     scroll.measureLayout(
       surfaceRoot,
-      (x, y, width, height) => {
-        if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) {
+      (...measurement: ScrollReadbackMeasurement) => {
+        const measured = layoutRectOf(measurement)
+        if (measured === null) {
           geometry.reportFocusVisibilityFailure(fieldId, 'invalid-scroll-viewport-rectangle')
           return
         }
-        viewportRect = {x, y, width, height}
-        applyMeasurement()
+        viewportRect = measured
+        if (contentFieldRect !== null) applyMeasurement({viewportRect: measured, contentFieldRect})
       },
       () => {
         geometry.reportFocusVisibilityFailure(fieldId, 'scroll-viewport-measurement-failed')
@@ -158,13 +221,14 @@ export const InputScrollArea = ({testID, children, contentPaddingBottom}: InputS
     )
     input.measureLayout(
       contentNode,
-      (x, y, width, height) => {
-        if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) {
+      (...measurement: ScrollFieldMeasurement) => {
+        const measured = layoutRectOf(measurement)
+        if (measured === null) {
           geometry.reportFocusVisibilityFailure(fieldId, 'invalid-scroll-field-rectangle')
           return
         }
-        contentFieldRect = {x, y, width, height}
-        applyMeasurement()
+        contentFieldRect = measured
+        if (viewportRect !== null) applyMeasurement({viewportRect, contentFieldRect: measured})
       },
       () => {
         geometry.reportFocusVisibilityFailure(fieldId, 'scroll-field-measurement-failed')
@@ -173,11 +237,13 @@ export const InputScrollArea = ({testID, children, contentPaddingBottom}: InputS
   }, [
     geometry?.keyboardHeight,
     geometry?.cancelScheduledScroll,
+    clearReadback,
     geometry?.presentFocusRect,
     geometry?.reportFocusVisibilityFailure,
     geometry?.surfaceHeight,
     geometry?.surfaceRoot,
     geometry?.scheduleScrollAtPresentationStart,
+    settleReadback,
   ])
 
   const onScrollOffsetChange = useCallback((offsetY: number) => {
@@ -185,29 +251,27 @@ export const InputScrollArea = ({testID, children, contentPaddingBottom}: InputS
     currentOffsetRef.current = nextOffset
     const pending = readbackRef.current
     if (pending !== null) {
-      const fieldRect: LayoutRect = {
-        x: pending.viewportRect.x + pending.contentFieldRect.x,
-        y: pending.viewportRect.y + pending.contentFieldRect.y - nextOffset + pending.presentationOffsetY,
-        width: pending.contentFieldRect.width,
-        height: pending.contentFieldRect.height,
-      }
-      const intersection = visibleVerticalIntersectionOf({
-        viewportRect: pending.viewportRect,
-        surfaceHeight: pending.surfaceHeight,
-        keyboardHeight: pending.keyboardHeight,
-        presentationOffsetY: pending.presentationOffsetY,
-      })
-      const fullyVisible = isRectInsideVisibleVerticalIntersection(fieldRect, intersection)
-      const targetReached = Math.abs(nextOffset - pending.requestedOffset) <= 0.5
-      if (fullyVisible) {
-        readbackRef.current = null
-        geometry?.reportFocusVisibilitySuccess(pending.fieldId)
-      } else if (targetReached) {
-        readbackRef.current = null
-        geometry?.reportFocusVisibilityFailure(pending.fieldId, 'scroll-clamped-before-visible')
-      }
+      const targetReached = Math.abs(nextOffset - pending.requestedOffset) <= INPUT_SCROLL_VISIBILITY_TOLERANCE
+      evaluateReadback(pending, nextOffset, targetReached ? 'scroll-clamped-before-visible' : null)
     }
-  }, [geometry?.reportFocusVisibilityFailure, geometry?.reportFocusVisibilitySuccess])
+  }, [evaluateReadback])
+
+  const onScrollEndDrag = useCallback((offsetY: number, velocityY: number | null) => {
+    onScrollOffsetChange(offsetY)
+    if (velocityY !== null && Math.abs(velocityY) > INPUT_SCROLL_VISIBILITY_TOLERANCE) return
+    const pending = readbackRef.current
+    if (pending !== null) settleReadback(pending.fieldId, 'scroll-ended-before-visible')
+  }, [onScrollOffsetChange, settleReadback])
+
+  const onMomentumScrollEnd = useCallback((offsetY: number) => {
+    onScrollOffsetChange(offsetY)
+    const pending = readbackRef.current
+    if (pending !== null) settleReadback(pending.fieldId, 'scroll-ended-before-visible')
+  }, [onScrollOffsetChange, settleReadback])
+
+  useLayoutEffect(() => () => {
+    clearReadback()
+  }, [clearReadback])
 
   const value = useCallback((
     fieldId: string,
@@ -226,6 +290,8 @@ export const InputScrollArea = ({testID, children, contentPaddingBottom}: InputS
         onLayout={onViewportLayout}
         onContentHeightChange={onContentHeightChange}
         onScrollOffsetChange={onScrollOffsetChange}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollEnd={onMomentumScrollEnd}
       >
         {children}
       </PrimitiveScrollView>

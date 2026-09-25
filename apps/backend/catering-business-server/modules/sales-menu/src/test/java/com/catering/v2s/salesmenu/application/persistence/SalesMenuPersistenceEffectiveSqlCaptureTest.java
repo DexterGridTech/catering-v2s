@@ -1,7 +1,7 @@
 package com.catering.v2s.salesmenu.application.persistence;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,8 +13,6 @@ import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.salesmenu.api.SalesMenuReadback;
 import com.catering.v2s.salesmenu.application.SalesMenuReadModels;
 import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMediaMode;
-import com.catering.v2s.salesmenu.domain.SalesMenuItemQuery;
-import com.catering.v2s.salesmenu.domain.SalesMenuItemTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuListQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuMoveDirection;
 import com.catering.v2s.salesmenu.domain.SalesMenuOperationQuery;
@@ -34,7 +32,6 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -154,22 +151,46 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
             capture(points, "sales-menu/persistence/" + signature(method), persistence -> invoke(method, persistence));
         }
 
-        capture(points, "sales-menu/persistence/list-menu-rows/cursor", persistence -> persistence.listMenuRows(
-                listQuery(), new OpaqueCollectionCursor.Position("Menu", ITEM), "menu"));
-        capture(points, "sales-menu/persistence/find-adjacent/item/down/no-section", persistence -> persistence.findAdjacent(
-                SalesMenuPersistence.OrderingTable.ITEM, VERSION, ITEM, SalesMenuMoveDirection.DOWN, null, 3L));
-        capture(points, "sales-menu/persistence/find-adjacent/section/up/section", persistence -> persistence.findAdjacent(
-                SalesMenuPersistence.OrderingTable.SECTION, VERSION, SECTION, SalesMenuMoveDirection.UP, SECTION, 3L));
-        capture(points, "sales-menu/persistence/max-display-order/item/no-section", persistence -> persistence.maxDisplayOrder(
-                SalesMenuPersistence.OrderingTable.ITEM, VERSION, null));
-        capture(points, "sales-menu/persistence/find-item-adjacent/down/no-section", persistence -> persistence.findItemAdjacent(
-                VERSION, ITEM, SalesMenuMoveDirection.DOWN, null, 3L));
-        capture(points, "sales-menu/persistence/max-item-display-order/no-section", persistence -> persistence.maxItemDisplayOrder(
-                VERSION, null));
-        capture(points, "sales-menu/persistence/read-version-item-page/no-frontier", persistence -> persistence.readVersionItemPage(
-                VERSION, SECTION, null, null, 20));
-        capture(points, "sales-menu/persistence/read-version-item-rows/no-target", persistence -> persistence.readVersionItemRows(
-                VERSION, null, null));
+        capture(
+                points,
+                "sales-menu/persistence/list-menu-rows/cursor",
+                persistence -> persistence.listMenuRows(
+                        listQuery(), new OpaqueCollectionCursor.Position("Menu", ITEM), "menu"));
+        capture(
+                points,
+                "sales-menu/persistence/find-adjacent/item/down/no-section",
+                persistence -> persistence.findAdjacent(
+                        SalesMenuPersistence.OrderingTable.ITEM, VERSION, ITEM, SalesMenuMoveDirection.DOWN, null, 3L));
+        capture(
+                points,
+                "sales-menu/persistence/find-adjacent/section/up/section",
+                persistence -> persistence.findAdjacent(
+                        SalesMenuPersistence.OrderingTable.SECTION,
+                        VERSION,
+                        SECTION,
+                        SalesMenuMoveDirection.UP,
+                        SECTION,
+                        3L));
+        capture(
+                points,
+                "sales-menu/persistence/max-display-order/item/no-section",
+                persistence -> persistence.maxDisplayOrder(SalesMenuPersistence.OrderingTable.ITEM, VERSION, null));
+        capture(
+                points,
+                "sales-menu/persistence/find-item-adjacent/down/no-section",
+                persistence -> persistence.findItemAdjacent(VERSION, ITEM, SalesMenuMoveDirection.DOWN, null, 3L));
+        capture(
+                points,
+                "sales-menu/persistence/max-item-display-order/no-section",
+                persistence -> persistence.maxItemDisplayOrder(VERSION, null));
+        capture(
+                points,
+                "sales-menu/persistence/read-version-item-page/no-frontier",
+                persistence -> persistence.readVersionItemPage(VERSION, SECTION, null, null, 20));
+        capture(
+                points,
+                "sales-menu/persistence/read-version-item-rows/no-target",
+                persistence -> persistence.readVersionItemRows(VERSION, null, null));
 
         assertTrue(points.size() >= methods.size(), "each public typed method must reach a JDBC sink");
         assertTrue(points.stream().map(Point::key).distinct().count() == points.size(), "capture keys must be unique");
@@ -178,7 +199,8 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
         List<BranchPoint> branches = new ArrayList<>();
         captureReachableSqlBranches(branches);
         assertTrue(branches.size() > 60, "all effective SQL branch cases must be represented explicitly");
-        Set<String> actualBranchCaseIds = branches.stream().map(BranchPoint::branchCaseId).collect(Collectors.toSet());
+        Set<String> actualBranchCaseIds =
+                branches.stream().map(BranchPoint::branchCaseId).collect(Collectors.toSet());
         assertEquals(EXPECTED_BRANCH_CASE_IDS, actualBranchCaseIds, "stable branch-case-id set must remain complete");
         assertEquals(EXPECTED_BRANCH_CASE_IDS.size(), branches.size(), "stable branch-case-id count must remain exact");
         assertTrue(
@@ -193,7 +215,8 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
             if (!Modifier.isPublic(method.getModifiers()) || method.isSynthetic()) continue;
             assertFalse(method.isVarArgs(), signature(method));
             assertTrue(
-                    Arrays.stream(method.getParameterTypes()).noneMatch(RowMapper.class::isAssignableFrom), signature(method));
+                    Arrays.stream(method.getParameterTypes()).noneMatch(RowMapper.class::isAssignableFrom),
+                    signature(method));
         }
     }
 
@@ -203,7 +226,8 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
         } catch (InvocationTargetException failure) {
             Throwable cause = failure.getCause();
             if (cause instanceof RuntimeException runtime && !(runtime instanceof NullPointerException)) return;
-            throw new AssertionError("typed persistence method did not reach its JDBC boundary: " + signature(method), cause);
+            throw new AssertionError(
+                    "typed persistence method did not reach its JDBC boundary: " + signature(method), cause);
         } catch (ReflectiveOperationException failure) {
             throw new AssertionError("cannot invoke " + signature(method), failure);
         }
@@ -282,7 +306,8 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
         if (element.contains("PublicationItemSeed")) return List.of(publicationItemSeed());
         if (element.contains("PublicationSkuSeed")) return List.of(publicationSkuSeed());
         if (element.contains("PublicationMediaSeed")) return List.of(publicationMediaSeed());
-        if (element.contains("DraftItemSeed")) return List.of(new SalesMenuPersistence.DraftItemSeed(ITEM, "Item", "ITEM", "CUSTOM", 1L));
+        if (element.contains("DraftItemSeed"))
+            return List.of(new SalesMenuPersistence.DraftItemSeed(ITEM, "Item", "ITEM", "CUSTOM", 1L));
         if (element.contains("UUID")) return List.of(ITEM);
         if (element.contains("String")) return List.of("value");
         if (element.contains("SalesMenuOrderOptionValue")) return List.of(optionValue());
@@ -309,7 +334,14 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
 
     private static SalesMenuReadback.SalesMenuOrderOption option() {
         return new SalesMenuReadback.SalesMenuOrderOption(
-                UUID.fromString("00000000-0000-0000-0000-000000000010"), "Option", "SINGLE", 1, false, 0, 1, List.of(optionValue()));
+                UUID.fromString("00000000-0000-0000-0000-000000000010"),
+                "Option",
+                "SINGLE",
+                1,
+                false,
+                0,
+                1,
+                List.of(optionValue()));
     }
 
     private static SalesMenuReadback.SalesMenuOrderOptionValue optionValue() {
@@ -319,8 +351,28 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
 
     private static SalesMenuReadModels.ItemRow itemRow() {
         return new SalesMenuReadModels.ItemRow(
-                VERSION, ITEM, ITEM, SECTION, 1L, 1L, null, "Item", "ITEM", "CUSTOM", null, null, null, null, null,
-                100L, "{}", SalesMenuDisplayMediaMode.INHERIT_CATALOG.name(), null, "[]", false, false);
+                VERSION,
+                ITEM,
+                ITEM,
+                SECTION,
+                1L,
+                1L,
+                null,
+                "Item",
+                "ITEM",
+                "CUSTOM",
+                null,
+                null,
+                null,
+                null,
+                null,
+                100L,
+                "{}",
+                SalesMenuDisplayMediaMode.INHERIT_CATALOG.name(),
+                null,
+                "[]",
+                false,
+                false);
     }
 
     private static SalesMenuReadModels.SkuRow skuRow() {
@@ -333,8 +385,25 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
 
     private static SalesMenuPersistence.PublicationItemSeed publicationItemSeed() {
         return new SalesMenuPersistence.PublicationItemSeed(
-                VERSION, ITEM, SECTION, MENU, 1L, null, "Item", "ITEM", "CUSTOM", null, null, null, null, null, 100L,
-                "{}", SalesMenuDisplayMediaMode.INHERIT_CATALOG.name(), null, "[]");
+                VERSION,
+                ITEM,
+                SECTION,
+                MENU,
+                1L,
+                null,
+                "Item",
+                "ITEM",
+                "CUSTOM",
+                null,
+                null,
+                null,
+                null,
+                null,
+                100L,
+                "{}",
+                SalesMenuDisplayMediaMode.INHERIT_CATALOG.name(),
+                null,
+                "[]");
     }
 
     private static SalesMenuPersistence.PublicationSkuSeed publicationSkuSeed() {
@@ -369,35 +438,30 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
                 "sales-menu/persistence/insert-version/source-draft-present",
                 true,
                 persistence -> persistence.insertVersion(
-                        VERSION,
-                        MENU,
-                        SalesMenuVersionKind.values()[0],
-                        1L,
-                        SalesMenuSchedule.allDay(),
-                        MENU,
-                        2L));
+                        VERSION, MENU, SalesMenuVersionKind.values()[0], 1L, SalesMenuSchedule.allDay(), MENU, 2L));
 
         captureBatchBranches(
                 branches,
                 "insert-published-items",
                 persistence -> persistence.insertPublishedItems(List.of()),
                 persistence -> persistence.insertPublishedItems(List.of(publicationItemSeed())),
-                persistence -> persistence.insertPublishedItems(List.of(
-                        publicationItemSeed(), publicationItemSeed(OTHER_ITEM, SECTION, MENU))));
+                persistence -> persistence.insertPublishedItems(
+                        List.of(publicationItemSeed(), publicationItemSeed(OTHER_ITEM, SECTION, MENU))));
         captureBatchBranches(
                 branches,
                 "insert-published-skus",
                 persistence -> persistence.insertPublishedSkus(List.of()),
                 persistence -> persistence.insertPublishedSkus(List.of(publicationSkuSeed())),
-                persistence -> persistence.insertPublishedSkus(List.of(
-                        publicationSkuSeed(), publicationSkuSeed(OTHER_ITEM, OTHER_SKU))));
+                persistence -> persistence.insertPublishedSkus(
+                        List.of(publicationSkuSeed(), publicationSkuSeed(OTHER_ITEM, OTHER_SKU))));
         captureBatchBranches(
                 branches,
                 "insert-published-media",
                 persistence -> persistence.insertPublishedMedia(List.of()),
                 persistence -> persistence.insertPublishedMedia(List.of(publicationMediaSeed())),
                 persistence -> persistence.insertPublishedMedia(List.of(
-                        publicationMediaSeed(), new SalesMenuPersistence.PublicationMediaSeed(VERSION, OTHER_ITEM, OTHER_ASSET, 2))));
+                        publicationMediaSeed(),
+                        new SalesMenuPersistence.PublicationMediaSeed(VERSION, OTHER_ITEM, OTHER_ASSET, 2))));
 
         captureCollectionReadBranches(
                 branches,
@@ -408,13 +472,9 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
                 "read-order-option-values",
                 persistence -> persistence.readOrderOptionValues(VERSION, List.of()));
         captureCollectionReadBranches(
-                branches,
-                "read-sku-rows",
-                persistence -> persistence.readSkuRows(VERSION, List.of()));
+                branches, "read-sku-rows", persistence -> persistence.readSkuRows(VERSION, List.of()));
         captureCollectionReadBranches(
-                branches,
-                "read-media-items",
-                persistence -> persistence.readMediaItems(VERSION, List.of()));
+                branches, "read-media-items", persistence -> persistence.readMediaItems(VERSION, List.of()));
 
         captureOrderingTableBranches(branches);
         captureOperationRecordBranches(branches);
@@ -657,22 +717,19 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
             }
         } else {
             assertTrue(calls.isEmpty(), branchCaseId + " must not reach JdbcTemplate");
-            branches.add(new BranchPoint(
-                    branchCaseId, "NO_JDBC", "", "", List.of(), parameterMappingFor(branchCaseId)));
+            branches.add(
+                    new BranchPoint(branchCaseId, "NO_JDBC", "", "", List.of(), parameterMappingFor(branchCaseId)));
         }
     }
 
     private static void captureRejectedBranch(
-            List<BranchPoint> branches,
-            String branchCaseId,
-            java.util.function.Consumer<SalesMenuPersistence> action) {
+            List<BranchPoint> branches, String branchCaseId, java.util.function.Consumer<SalesMenuPersistence> action) {
         List<RawCall> calls = new ArrayList<>();
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         configure(jdbc, calls);
         assertThrows(IllegalArgumentException.class, () -> action.accept(new SalesMenuPersistence(jdbc)));
         assertTrue(calls.isEmpty(), branchCaseId + " must reject before JdbcTemplate");
-        branches.add(new BranchPoint(
-                branchCaseId, "REJECTED", "", "", List.of(), parameterMappingFor(branchCaseId)));
+        branches.add(new BranchPoint(branchCaseId, "REJECTED", "", "", List.of(), parameterMappingFor(branchCaseId)));
     }
 
     private static String parameterMappingFor(String branchCaseId) {
@@ -697,9 +754,12 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
         if (branchCaseId.contains("read-version-item-page")) {
             return "versionRef|sectionRef|afterDisplayOrder|afterDisplayOrder|afterItemRef|limit-plus-one";
         }
-        if (branchCaseId.contains("read-version-item-rows")) return "versionRef|sectionRef-if-present|itemRef-if-present";
-        if (branchCaseId.contains("read-manual-item-rows")) return "versionRef|sectionRef-if-present|itemRef-if-present";
-        if (branchCaseId.contains("count-draft-items-by-catalog")) return "collectionRef|versionRef|catalogItemRefs-in-order";
+        if (branchCaseId.contains("read-version-item-rows"))
+            return "versionRef|sectionRef-if-present|itemRef-if-present";
+        if (branchCaseId.contains("read-manual-item-rows"))
+            return "versionRef|sectionRef-if-present|itemRef-if-present";
+        if (branchCaseId.contains("count-draft-items-by-catalog"))
+            return "collectionRef|versionRef|catalogItemRefs-in-order";
         if (branchCaseId.contains("insert-sales-items-batch")) return "itemRefs[i]|collectionRef|catalogItemRefs[i]";
         if (branchCaseId.contains("insert-draft-version-items-batch")) {
             return "items[i].fields|versionRef|sectionRef|collectionRef|displayMediaMode";
@@ -749,7 +809,8 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
         return new SalesMenuPersistence.PublicationSkuSeed(VERSION, itemRef, skuRef, 100L, "SKU", "SKU", 100L, 1L);
     }
 
-    private static void capture(List<Point> points, String key, java.util.function.Consumer<SalesMenuPersistence> action) {
+    private static void capture(
+            List<Point> points, String key, java.util.function.Consumer<SalesMenuPersistence> action) {
         List<RawCall> calls = new ArrayList<>();
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         configure(jdbc, calls);
@@ -777,13 +838,19 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
                 .when(jdbc)
                 .query(anyString(), any(RowMapper.class), any(Object[].class));
         doAnswer(invocation -> {
-                    calls.add(new RawCall("queryForList", invocation.getArgument(0, String.class), describeValues(varargValues(invocation))));
+                    calls.add(new RawCall(
+                            "queryForList",
+                            invocation.getArgument(0, String.class),
+                            describeValues(varargValues(invocation))));
                     return List.of();
                 })
                 .when(jdbc)
                 .queryForList(anyString(), any(Object[].class));
         doAnswer(invocation -> {
-                    calls.add(new RawCall("update", invocation.getArgument(0, String.class), describeValues(varargValues(invocation))));
+                    calls.add(new RawCall(
+                            "update",
+                            invocation.getArgument(0, String.class),
+                            describeValues(varargValues(invocation))));
                     return 1;
                 })
                 .when(jdbc)
@@ -797,7 +864,9 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
     }
 
     private static List<String> describeValues(Object[] values) {
-        return Arrays.stream(values).map(SalesMenuPersistenceEffectiveSqlCaptureTest::describeValue).toList();
+        return Arrays.stream(values)
+                .map(SalesMenuPersistenceEffectiveSqlCaptureTest::describeValue)
+                .toList();
     }
 
     private static String describeValue(Object value) {
@@ -811,7 +880,9 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
     private static String signature(Method method) {
         return method.getName()
                 + "("
-                + Arrays.stream(method.getParameterTypes()).map(Class::getSimpleName).collect(Collectors.joining(","))
+                + Arrays.stream(method.getParameterTypes())
+                        .map(Class::getSimpleName)
+                        .collect(Collectors.joining(","))
                 + ")";
     }
 

@@ -25,7 +25,8 @@ class PlatformWorkspaceAuditHistoryServiceTest {
     @Test
     void mergesOwnerAndOrganizationHistoryInAuthoritativeOrder() throws Exception {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
-        CommercialGroupInitializationAuditLookup commercialGroupAudit = mock(CommercialGroupInitializationAuditLookup.class);
+        CommercialGroupInitializationAuditLookup commercialGroupAudit =
+                mock(CommercialGroupInitializationAuditLookup.class);
         UUID workspaceUuid = UUID.randomUUID();
         AuditReadScope scope = new AuditReadScope(workspaceUuid, "workspace-key");
         UUID ownerId = UUID.randomUUID();
@@ -48,7 +49,12 @@ class PlatformWorkspaceAuditHistoryServiceTest {
                     return extractor.extractData(rows);
                 });
         AuditHistoryItem organizationItem = new AuditHistoryItem(
-                organizationId, 30L, "organization", "ORGANIZATION_ACTION", new AuditTarget("COMMERCIAL_GROUP", "7"), List.of());
+                organizationId,
+                30L,
+                "organization",
+                "ORGANIZATION_ACTION",
+                new AuditTarget("COMMERCIAL_GROUP", "7"),
+                List.of());
         when(commercialGroupAudit.readInitializationForGroupWorkspace(scope, "41", 1, 1))
                 .thenReturn(new AuditHistoryPage(List.of(organizationItem), 1, 1, 1));
 
@@ -56,7 +62,9 @@ class PlatformWorkspaceAuditHistoryServiceTest {
                         new PlatformWorkspaceAuditHistoryPersistence(jdbc), commercialGroupAudit)
                 .readGroupWorkspace(scope, "workspace-key", 1, 20);
 
-        assertEquals(List.of(organizationItem.id(), ownerId), actual.items().stream().map(AuditHistoryItem::id).toList());
+        assertEquals(
+                List.of(organizationItem.id(), ownerId),
+                actual.items().stream().map(AuditHistoryItem::id).toList());
         assertEquals(2, actual.total());
         verify(commercialGroupAudit).readInitializationForGroupWorkspace(scope, "41", 1, 1);
     }

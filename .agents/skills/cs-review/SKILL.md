@@ -27,7 +27,7 @@ itself a finding:
 Severity grading (`M` / `S` / `N`) follows
 `project-memory/operations/verification-governance.md`.
 
-`AGENTS.md`, the current Roadmap authorization and Dexter's session instructions outrank all of the
+`AGENTS.md`, Dexter's explicit session instructions and the applicable task documents outrank all of the
 above. Git is always Dexter's; a review never creates a branch, commits, or advances implementation.
 
 ## Required actions

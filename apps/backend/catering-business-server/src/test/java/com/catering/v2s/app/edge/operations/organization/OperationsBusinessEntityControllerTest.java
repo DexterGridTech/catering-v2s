@@ -175,10 +175,10 @@ class OperationsBusinessEntityControllerTest {
                         "ENABLED",
                         "NAME",
                         "ASC",
-                            2,
-                            5,
-                            null,
-                            null);
+                        2,
+                        5,
+                        null,
+                        null);
         verify(entities)
                 .pageEntities(
                         "HEAD_COMPANY",
@@ -191,10 +191,10 @@ class OperationsBusinessEntityControllerTest {
                         "DISABLED",
                         "UPDATED_AT",
                         "DESC",
-                            4,
-                            3,
-                            null,
-                            null);
+                        4,
+                        3,
+                        null,
+                        null);
         verifyNoMoreInteractions(entities);
     }
 
@@ -250,20 +250,7 @@ class OperationsBusinessEntityControllerTest {
                     .thenReturn(new BusinessEntityService.EntityPage(heads, itemCount, 1, itemCount));
 
             var response = controller.headCompanies(
-                    request,
-                    WORKSPACE_KEY,
-                    1L,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    "NAME",
-                    "ASC",
-                    1,
-                    itemCount,
-                    null,
-                    null);
+                    request, WORKSPACE_KEY, 1L, null, null, null, null, null, "NAME", "ASC", 1, itemCount, null, null);
 
             assertEquals(itemCount, response.items().size());
             verify(entities)

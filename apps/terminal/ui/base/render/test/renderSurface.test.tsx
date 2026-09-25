@@ -18,6 +18,7 @@ import {
   RenderProvider,
   ScreenContainer,
   SurfacePresentationOffsetProvider,
+  useSurfacePresentationOffset,
   SurfaceFocusBoundaryContext,
   SurfaceRoot,
   calculateSurfaceHostGeometry,
@@ -133,6 +134,14 @@ type StandardLayerProps = Readonly<{marker: string}>
 const StandardLayer: ComponentType<StandardLayerProps> = props => createElement('render-layer', props)
 type AlertLayerProps = Readonly<{marker: string}>
 const AlertLayer: ComponentType<AlertLayerProps> = props => createElement('render-layer', props)
+
+const SurfacePresentationProbe = () => {
+  const offset = useSurfacePresentationOffset()
+  return createElement(View, {
+    testID: 'surface-presentation-probe',
+    style: {transform: [{translateY: offset}]},
+  })
+}
 
 const part = <TProps extends object>(input: Readonly<{
   readonly partKey: string
@@ -347,6 +356,72 @@ describe('render surface hosts', () => {
       {scaleY: 600 / 540},
     ])
     expect(StyleSheet.flatten(canvas.props.style)).not.toHaveProperty('stableHostLogicalSize')
+    renderer.unmount()
+  })
+
+  it('keeps presentation and input geometry in the canvas unit under a non-unit host scale', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const host = createHostSource(hostSnapshot(800, 600))
+    const presentationOffset = new Animated.Value(-246)
+    source.setRoot(rootWithContent(emptyContent()))
+    source.setStatus('started')
+
+    const renderer = mount(createElement(
+      RenderProvider,
+      {stateSource: source.stateSource, uiCatalog: createUiCatalog([]), rendererCatalog: createRendererCatalog([]), logger, ...unusedRenderProviderBindings},
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+        renderContentFrame: ({content}) => createElement(
+          SurfacePresentationOffsetProvider,
+          {offset: presentationOffset},
+          content,
+        ),
+      }, createElement(SurfacePresentationProbe)),
+    ))
+
+    const canvas = findByTestID(renderer, 'ui-base-render:surface-host-canvas')
+    const probe = findByTestID(renderer, 'surface-presentation-probe')
+    const canvasStyle = StyleSheet.flatten(canvas.props.style) as Readonly<{readonly transform: readonly Readonly<Record<string, number>>[]}>
+    const probeStyle = StyleSheet.flatten(probe.props.style) as Readonly<{readonly transform: readonly Readonly<Record<string, unknown>>[]}>
+    const presentedContent = renderer.root.findAll(node => node.type === Animated.View).find(node => {
+      const style = StyleSheet.flatten(node.props.style) as Readonly<{readonly transform?: readonly Readonly<Record<string, unknown>>[]}> | null
+      return style?.transform?.some(transform => transform.translateY === presentationOffset) === true
+    })
+    expect(canvasStyle.transform).toEqual([{scaleX: 800 / 960}, {scaleY: 600 / 540}])
+    expect(probeStyle.transform).toEqual([{translateY: presentationOffset}])
+    expect(presentedContent).toBeDefined()
+    renderer.unmount()
+  })
+
+  it('keeps the input frame returned by renderContentFrame inside the hosted canvas subtree', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const host = createHostSource(hostSnapshot(800, 600))
+    source.setRoot(rootWithContent(emptyContent()))
+    source.setStatus('started')
+
+    const renderer = mount(createElement(
+      RenderProvider,
+      {stateSource: source.stateSource, uiCatalog: createUiCatalog([]), rendererCatalog: createRendererCatalog([]), logger, ...unusedRenderProviderBindings},
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+        renderContentFrame: ({content}) => createElement(
+          View,
+          {testID: 'ui.base.input:surface-frame'},
+          content,
+        ),
+      }),
+    ))
+
+    const canvas = findByTestID(renderer, 'ui-base-render:surface-host-canvas')
+    expect(canvas.findAll(node => node.props.testID === 'ui.base.input:surface-frame')).toHaveLength(1)
     renderer.unmount()
   })
 
@@ -580,19 +655,21 @@ describe('render surface hosts', () => {
     const frame = findByTestID(renderer, 'surface-frame')
     const frameProps = frame.props as Readonly<{readonly children: readonly ReactElement[] | ReactElement}>
     const frameChildren = Array.isArray(frameProps.children) ? frameProps.children : [frameProps.children]
-    const content = frameChildren[0]!
-    const contentProps = content.props as Readonly<{readonly style: unknown; readonly children: readonly unknown[]}>
     expect(frameCalls).toBe(1)
-    expect(content.type).toBe(View)
+    expect(frameChildren).toHaveLength(2)
+    const contentView = renderer.root.findAll(node => node.type === View).find(node => {
+      const style = StyleSheet.flatten(node.props.style) as Readonly<{readonly flex?: number}> | null
+      return style?.flex === 1 && node.findAll(child => child.type === Animated.View).length > 0
+    })
+    expect(contentView).toBeDefined()
+    const contentProps = contentView!.props as unknown as Readonly<{readonly style: unknown; readonly children: readonly unknown[]}>
     expect(StyleSheet.flatten(contentProps.style)).toMatchObject({flex: 1})
-    const presentedContent = contentProps.children[0] as ReactElement
-    const layerStack = contentProps.children[1] as ReactElement
-    expect(presentedContent.type).toBe(Animated.View)
+    const presentedContent = contentView!.findAll(node => node.type === Animated.View)[0]!
+    const layerStack = contentView!.findAll(node => node.type === LayerStack)[0]!
     const presentedChildren = (presentedContent.props as Readonly<{readonly children?: unknown}>).children
     expect(presentedChildren).toEqual(expect.arrayContaining([
       expect.objectContaining({type: ScreenContainer}),
     ]))
-    expect(layerStack.type).toBe(LayerStack)
     expect(renderer.root.findByType('render-screen').props.marker).toBeUndefined()
     renderer.unmount()
   })

@@ -1,12 +1,5 @@
 package com.catering.v2s.collaboration.application;
 
-import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence;
-import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.BindingPageRow;
-import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.BindingRow;
-import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.AuditRecord;
-import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.EnablementKind;
-import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.EnablementRow;
-import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.EnablementSnapshot;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
@@ -16,6 +9,13 @@ import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCatalogSource;
 import com.catering.v2s.collaboration.api.CollaborationCommandApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.AuditRecord;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.BindingPageRow;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.BindingRow;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.EnablementKind;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.EnablementRow;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.EnablementSnapshot;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -515,7 +515,8 @@ public class CollaborationOwnerService
                 "STATUS_CHANGED",
                 actor,
                 ENABLEMENT_CHANGED,
-                List.of(AuditChange.forNullableScalar("status", current == null ? null : current.status(), targetStatus)));
+                List.of(AuditChange.forNullableScalar(
+                        "status", current == null ? null : current.status(), targetStatus)));
         return persistence.readEnablement(kind, workspaceUuid, groupWorkspaceKey, code);
     }
 
@@ -591,7 +592,8 @@ public class CollaborationOwnerService
                 List.of(
                         AuditChange.forNullableScalar(
                                 "bindingDisplayName", current.bindingDisplayName(), updated.bindingDisplayName()),
-                        AuditChange.forNullableScalar("externalOwnerId", current.externalOwnerId(), updated.externalOwnerId())));
+                        AuditChange.forNullableScalar(
+                                "externalOwnerId", current.externalOwnerId(), updated.externalOwnerId())));
         return ownerBinding(updated);
     }
 
@@ -656,7 +658,8 @@ public class CollaborationOwnerService
                 AUTHORIZATION_APPLIED,
                 List.of(
                         AuditChange.forNullableScalar("status", current.status(), CollaborationBindingPolicy.EFFECTIVE),
-                        AuditChange.forNullableScalar("externalOwnerId", current.externalOwnerId(), updated.externalOwnerId())));
+                        AuditChange.forNullableScalar(
+                                "externalOwnerId", current.externalOwnerId(), updated.externalOwnerId())));
         return ownerBinding(updated);
     }
 
@@ -669,8 +672,8 @@ public class CollaborationOwnerService
         }
         if (DELETED.equals(current.status())) return ownerBinding(current);
         if (current.externalRevokedAt() != null && INVALID.equals(current.status())) return ownerBinding(current);
-        if (persistence.applyRevocation(current.bindingRef(), current.version())
-                != 1) throw problem("VERSION_CONFLICT", 409, "binding version has changed");
+        if (persistence.applyRevocation(current.bindingRef(), current.version()) != 1)
+            throw problem("VERSION_CONFLICT", 409, "binding version has changed");
         BindingRow updated = readBindingRow(current.workspaceUuid(), current.groupWorkspaceKey(), current.bindingRef());
         audit(
                 current.workspaceUuid(),
@@ -942,5 +945,4 @@ public class CollaborationOwnerService
     private static CollaborationCommandApi.Problem problem(String code, int status, String message, Throwable cause) {
         return new CollaborationCommandApi.Problem(code, status, message, cause);
     }
-
 }

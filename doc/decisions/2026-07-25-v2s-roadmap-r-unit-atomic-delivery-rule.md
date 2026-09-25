@@ -1,3 +1,5 @@
+已由 `doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md` 取代；本文仅保留为历史决定。
+
 ---
 title: v2s 每个 Roadmap R 的一次性设计实施复核规则
 status: ACCEPTED

@@ -3,12 +3,12 @@ import {moduleName as integrationModuleName} from '../moduleName'
 import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports'
 import {definePart, type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render'
 import {
-  createConsoleAssembly,
+  createIntegrationAssembly,
   createStartupReadyPayload,
   createSurfaceForDisplayIndex as createSharedSurfaceForDisplayIndex,
   selectStateSyncSlices,
-  type ConsoleAssembly,
-} from '@catering-v2s/ui-base-console-assembly'
+  type IntegrationAssembly,
+} from '@catering-v2s/ui-base-integration-assembly'
 import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk'
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth'
 import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry'
@@ -47,7 +47,7 @@ export const createSampleDefinedParts = (includeSampleAdminSection = true) => {
   return Object.freeze(includeSampleAdminSection ? [...baseParts, sampleAdminTestPart] : baseParts)
 }
 
-export type SampleAssembly = ConsoleAssembly
+export type SampleAssembly = IntegrationAssembly
 
 export const createSurfaceForDisplayIndex = createSharedSurfaceForDisplayIndex
 
@@ -73,7 +73,7 @@ export async function createSampleAssembly(
   const nativeLoadingCapability = input.nativeLoadingCapability
   const surfaceForm = input.surfaceForm
   const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD')
-  return createConsoleAssembly<SampleConsoleReadyPayload>({
+  return createIntegrationAssembly<SampleConsoleReadyPayload>({
     appName: 'sample-console',
     errorPrefix: 'sample-console',
     runtimeName: 'sample-console',

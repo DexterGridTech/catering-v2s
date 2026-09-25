@@ -43,7 +43,7 @@
             {
               "from": null,
               "to": 14,
-              "reason": "current managed acceptance program maximum"
+              "reason": "CP-05 maximum database operation count across three runs"
             }
           ]
         },
@@ -126,7 +126,7 @@
             {
               "from": null,
               "to": 32,
-              "reason": "current managed acceptance program maximum"
+              "reason": "CP-05 maximum database operation count across three runs"
             }
           ]
         },
@@ -210,7 +210,7 @@
             {
               "from": null,
               "to": 21,
-              "reason": "current managed acceptance program maximum"
+              "reason": "CP-05 maximum database operation count across three runs"
             }
           ]
         },

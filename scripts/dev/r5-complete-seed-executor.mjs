@@ -33,6 +33,11 @@ function compact(value) {
   return String(value ?? "UNKNOWN").replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").slice(0, 240);
 }
 
+export function childFirstFailure(result) {
+  const text = `${result?.stderr ?? ""}\n${result?.stdout ?? ""}`;
+  return compact(text.match(/(?:REASON|FIRST_FAILURE)=([A-Za-z0-9_:-]+)/)?.[1] ?? `EXIT_${result?.status ?? "UNKNOWN"}`);
+}
+
 function readJson(file, code) {
   if (!fs.existsSync(file)) throw failure(`${code}_MISSING`);
   try { return JSON.parse(fs.readFileSync(file, "utf8")); }
@@ -53,6 +58,60 @@ function requirePass(value, code) {
 
 function requireCleanupPass(value, code) {
   if (typeof value !== "string" || !value.startsWith("PASS")) throw failure(code);
+}
+
+function requireChildStagePass(stage, code) {
+  if (stage.exitStatus !== 0) throw failure(`${code}:EXIT_${stage.exitStatus}`);
+  if (!stage.manifest || !stage.report) throw failure(`${code}:RECEIPT_MISSING`);
+  requirePass(stage.manifest.business, `${code}:MANIFEST_BUSINESS_NOT_PASS`);
+  requireCleanupPass(stage.manifest.cleanup, `${code}:MANIFEST_CLEANUP_NOT_PASS`);
+  requirePass(stage.report.status, `${code}:REPORT_STATUS_NOT_PASS`);
+  if (Object.hasOwn(stage.report, "business")) requirePass(stage.report.business, `${code}:REPORT_BUSINESS_NOT_PASS`);
+}
+
+function validateStoreTerminalPostStep({terminalPostStep, fixture}) {
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const expected = fixture?.stableFixtures?.organization?.storeTerminals;
+  const actual = terminalPostStep.report;
+  if (!Array.isArray(expected) || expected.length !== 8) throw failure("COMPLETE_SEED_STORE_TERMINAL_FIXTURE_INVALID");
+  const expectedByKey = new Map(expected.map((entry) => [entry.key, entry]));
+  const detailReadback = actual?.detailReadback;
+  const listReadback = actual?.listReadback;
+  const expectedList = expected.filter((entry) => entry.status !== "VOIDED");
+  if (!Array.isArray(detailReadback) || detailReadback.length !== expected.length) throw failure("COMPLETE_SEED_STORE_TERMINAL_DETAIL_READBACK_DENOMINATOR_INVALID");
+  if (new Set(detailReadback.map((entry) => entry?.key)).size !== expected.length) throw failure("COMPLETE_SEED_STORE_TERMINAL_DETAIL_READBACK_KEYS_INVALID");
+  if (!Array.isArray(listReadback) || listReadback.length !== expectedList.length) throw failure("COMPLETE_SEED_STORE_TERMINAL_LIST_READBACK_DENOMINATOR_INVALID");
+  const expectedListKeys = new Set(expectedList.map((entry) => entry.key));
+  if (new Set(listReadback.map((entry) => entry?.key)).size !== expectedList.length
+      || listReadback.some((entry) => entry?.status === "VOIDED" || !expectedListKeys.has(entry?.key)))
+    throw failure("COMPLETE_SEED_STORE_TERMINAL_LIST_READBACK_KEYS_INVALID");
+  for (const entry of detailReadback) {
+    const source = expectedByKey.get(entry?.key);
+    if (!source || !uuid.test(String(entry.terminalRef ?? "")) || !entry.name || entry.name !== source.name || entry.status !== source.status)
+      throw failure(`COMPLETE_SEED_STORE_TERMINAL_READBACK_INVALID:${entry?.key ?? "UNKNOWN"}`);
+    if (!Number.isInteger(Number(entry.version)) || Number(entry.version) <= 0) throw failure(`COMPLETE_SEED_STORE_TERMINAL_VERSION_INVALID:${entry.key}`);
+    const expectedPrinterKeys = source.configuration?.printers?.map((printer) => printer.clientKey) ?? [];
+    const expectedFunctionKeys = source.configuration?.functions?.map((fn) => fn.clientKey) ?? [];
+    const actualPrinterMap = entry.printerRefsByClientKey;
+    const actualFunctionMap = entry.functionRefsByClientKey;
+    if (!actualPrinterMap || !actualFunctionMap ||
+        JSON.stringify(Object.keys(actualPrinterMap).sort()) !== JSON.stringify([...expectedPrinterKeys].sort()) ||
+        JSON.stringify(Object.keys(actualFunctionMap).sort()) !== JSON.stringify([...expectedFunctionKeys].sort()))
+      throw failure(`COMPLETE_SEED_STORE_TERMINAL_CHILD_KEYS_INVALID:${entry.key}`);
+    if (Object.values(actualPrinterMap).some((ref) => !uuid.test(String(ref))) || Object.values(actualFunctionMap).some((ref) => !uuid.test(String(ref))))
+      throw failure(`COMPLETE_SEED_STORE_TERMINAL_CHILD_REFS_INVALID:${entry.key}`);
+    if (Object.hasOwn(entry, "activationCode")) throw failure(`COMPLETE_SEED_STORE_TERMINAL_ACTIVATION_LEAK:${entry.key}`);
+  }
+  const roleStoreReadback = actual.roleStoreReadback;
+  const roleTarget = detailReadback.find((entry) => entry.terminalRef === roleStoreReadback?.terminalRef);
+  if (!roleStoreReadback || !roleTarget || !uuid.test(String(roleStoreReadback.terminalRef ?? "")) ||
+      !Number.isInteger(Number(roleStoreReadback.areaCandidateCount)) ||
+      !Number.isInteger(Number(roleStoreReadback.tagCandidateCount)) ||
+      roleStoreReadback.status !== roleTarget.status ||
+      Number(roleStoreReadback.version) !== Number(roleTarget.version) ||
+      roleStoreReadback.deniedEditStatus !== 403 || roleStoreReadback.deniedStatusStatus !== 403 ||
+      roleStoreReadback.deniedCreateStatus !== 403 || roleStoreReadback.unchangedAfterDenial !== true)
+    throw failure("COMPLETE_SEED_STORE_TERMINAL_ROLE_READBACK_INVALID");
 }
 
 /** Pure boundary validation; unit tests exercise every red case without DEV. */
@@ -101,14 +160,27 @@ export function validateCompleteSeedEvidence({managedDevRunId, stages, fixture =
     throw failure("COMPLETE_SEED_POST_STEP_DENOMINATOR_INVALID");
   }
   const terminalPostStep = postSteps[0];
+  const terminalDetailReadback = terminalPostStep.report?.detailReadback;
+  const terminalListReadback = terminalPostStep.report?.listReadback;
   if (terminalPostStep.exitStatus !== 0 || !terminalPostStep.reportPath || !terminalPostStep.report
       || terminalPostStep.report.managedDevRunId !== managedDevRunId
       || terminalPostStep.report.business !== "PASS"
       || !String(terminalPostStep.report.cleanup ?? "").startsWith("PASS")
       || terminalPostStep.report.created !== 8
-      || terminalPostStep.report.readback !== 8) {
+      || terminalPostStep.report.roleGroup !== "EDIT"
+      || terminalPostStep.report.roleProject !== "EDIT"
+      || terminalPostStep.report.roleStore !== "READ_ONLY"
+      || !Array.isArray(terminalDetailReadback)
+      || terminalDetailReadback.length !== 8
+      || new Set(terminalDetailReadback.map((entry) => entry?.key)).size !== 8
+      || terminalDetailReadback.some((entry) => !entry?.terminalRef || Object.hasOwn(entry, "activationCode"))
+      || !Array.isArray(terminalListReadback)
+      || terminalListReadback.length !== 7
+      || new Set(terminalListReadback.map((entry) => entry?.key)).size !== 7
+      || terminalListReadback.some((entry) => !entry?.terminalRef || entry?.status === "VOIDED" || Object.hasOwn(entry, "activationCode"))) {
     throw failure("COMPLETE_SEED_STORE_TERMINAL_POST_STEP_INVALID");
   }
+  if (fixture) validateStoreTerminalPostStep({terminalPostStep, fixture});
   return Object.freeze({managedDevRunId, sourceItems, eligibleItems, excludedItems, availabilityItemCount: availability.length, stageIds: [...COMPLETE_SEED_STAGE_IDS], postStepIds: ["store-terminal"]});
 }
 
@@ -263,7 +335,7 @@ export function renderCompleteSeedMarkdown(report, componentDetails = loadCompon
     "## 终端后置 Seed",
     "",
     report.postSteps?.length
-      ? markdownTable(["后置步骤", "Business", "Cleanup", "创建数", "读回数", "报告"], report.postSteps.map((step) => [step.id, step.business ?? "-", step.cleanup ?? "-", step.created ?? "-", step.readback ?? "-", step.reportPath ?? "-"]))
+      ? markdownTable(["后置步骤", "Business", "Cleanup", "创建数", "详情读回数", "列表读回数", "报告"], report.postSteps.map((step) => [step.id, step.business ?? "-", step.cleanup ?? "-", step.created ?? "-", step.detailReadback ?? "-", step.listReadback ?? "-", step.reportPath ?? "-"]))
       : "未执行终端后置步骤。",
     "",
     "## Catalog / Inventory 数据计划",
@@ -313,11 +385,15 @@ function dryRun() {
     const businessChannel = spawnSync(process.execPath, ["scripts/dev/external-collaboration-business-channel-seed-executor.mjs", "--plan-only"], {cwd: root, encoding: "utf8"});
     if (businessChannel.status !== 0) throw failure("COMPLETE_SEED_BUSINESS_CHANNEL_PLAN_FAILED");
     const salesMenu = spawnSync(process.execPath, ["scripts/dev/sales-menu-seed-executor.mjs", "--plan-only"], {cwd: root, encoding: "utf8"});
-    if (salesMenu.status !== 0) throw failure("COMPLETE_SEED_SALES_MENU_PLAN_FAILED");
+    if (salesMenu.status !== 0) throw failure(`COMPLETE_SEED_SALES_MENU_PLAN_FAILED:${childFirstFailure(salesMenu)}`);
+    const terminal = spawnSync(process.execPath, ["scripts/dev/store-terminal-seed-executor.mjs", "--plan-only"], {cwd: root, encoding: "utf8"});
+    if (terminal.status !== 0) throw failure(`COMPLETE_SEED_STORE_TERMINAL_PLAN_FAILED:${childFirstFailure(terminal)}`);
+    const terminalMarker = String(terminal.stdout ?? "").match(/R5_STORE_TERMINAL_SEED_PLAN=PASS; TERMINALS=(\d+); PLAN_DIGEST=([0-9a-f]{64})/);
+    if (!terminalMarker || terminalMarker[1] !== "8") throw failure("COMPLETE_SEED_STORE_TERMINAL_PLAN_MARKER_INVALID");
     const plan = readJson(planPath, "COMPLETE_SEED_CATALOG_PLAN");
     const sourceItems = plan.sourceItems?.length;
     if (!Number.isInteger(sourceItems) || sourceItems !== plan.eligibleSourceItems?.length + plan.excludedSourceItems?.length) throw failure("COMPLETE_SEED_CATALOG_DENOMINATOR_INVALID");
-    process.stdout.write(`R5_COMPLETE_SEED_DRY_RUN=PASS; COMPONENTS=${COMPLETE_SEED_STAGE_IDS.join(",")}; SOURCE_ITEMS=${sourceItems}; CREATED_ITEMS=${plan.eligibleSourceItems.length}; EXCLUDED_ITEMS=${plan.excludedSourceItems.length}; MEDIA=${plan.mediaPlan.length}\n`);
+    process.stdout.write(`R5_COMPLETE_SEED_DRY_RUN=PASS; COMPONENTS=${COMPLETE_SEED_STAGE_IDS.join(",")}; SOURCE_ITEMS=${sourceItems}; CREATED_ITEMS=${plan.eligibleSourceItems.length}; EXCLUDED_ITEMS=${plan.excludedSourceItems.length}; MEDIA=${plan.mediaPlan.length}; TERMINALS=${terminalMarker[1]}; TERMINAL_PLAN_DIGEST=${terminalMarker[2]}\n`);
   } finally {
     fs.rmSync(temporary, {recursive: true, force: true});
   }
@@ -361,7 +437,7 @@ async function execute() {
     owner.manifest = readJson(owner.manifestPath, "COMPLETE_SEED_OWNER_MANIFEST");
     owner.report = readJson(owner.reportPath, "COMPLETE_SEED_OWNER_REPORT");
     components.push({id: owner.id, business: owner.manifest.business, cleanup: owner.manifest.cleanup, durationMs: owner.durationMs, manifestPath: owner.manifestPath, reportPath: owner.reportPath});
-    if (owner.exitStatus !== 0 || owner.manifest.business !== "PASS" || owner.report.status !== "PASS") throw failure(`COMPLETE_SEED_OWNER_FAILED:${owner.manifest.firstFailure ?? owner.exitStatus}`);
+    requireChildStagePass(owner, "COMPLETE_SEED_OWNER_FAILED");
     phase("owner-command", "PASS", {durationMs: owner.durationMs});
 
     phase("external-collaboration-business-channel", "RUNNING");
@@ -373,7 +449,7 @@ async function execute() {
     businessChannel.manifest = readJson(businessChannel.manifestPath, "COMPLETE_SEED_BUSINESS_CHANNEL_MANIFEST");
     businessChannel.report = readJson(businessChannel.reportPath, "COMPLETE_SEED_BUSINESS_CHANNEL_REPORT");
     components.push({id: businessChannel.id, business: businessChannel.manifest.business, cleanup: businessChannel.manifest.cleanup, durationMs: businessChannel.durationMs, manifestPath: businessChannel.manifestPath, reportPath: businessChannel.reportPath});
-    if (businessChannel.exitStatus !== 0 || businessChannel.manifest.business !== "PASS" || businessChannel.report.status !== "PASS") throw failure(`COMPLETE_SEED_BUSINESS_CHANNEL_FAILED:${businessChannel.manifest.firstFailure ?? businessChannel.exitStatus}`);
+    requireChildStagePass(businessChannel, "COMPLETE_SEED_BUSINESS_CHANNEL_FAILED");
     phase("external-collaboration-business-channel", "PASS", {durationMs: businessChannel.durationMs});
 
     phase("catalog-inventory", "RUNNING");
@@ -385,6 +461,7 @@ async function execute() {
     catalog.report = readJson(catalog.reportPath, "COMPLETE_SEED_CATALOG_REPORT");
     catalog.availabilityReceiptSha256 = createHash("sha256").update(fs.readFileSync(catalog.reportPath)).digest("hex");
     components.push({id: catalog.id, business: catalog.manifest.business, cleanup: catalog.manifest.cleanup, durationMs: catalog.durationMs, planPath, manifestPath: catalog.manifestPath, reportPath: catalog.reportPath});
+    requireChildStagePass(catalog, "COMPLETE_SEED_CATALOG_FAILED");
     let catalogAvailabilityContract;
     try { catalogAvailabilityContract = validateAvailabilityReceiptAgainstPlan({plan, receipt: catalog.report.salesMenuAvailabilityReceipt}); }
     catch { throw failure("COMPLETE_SEED_CATALOG_AVAILABILITY_RECEIPT_INVALID"); }
@@ -405,20 +482,26 @@ async function execute() {
     salesMenu.manifest = readJson(salesMenu.manifestPath, "COMPLETE_SEED_SALES_MENU_MANIFEST");
     salesMenu.report = readJson(salesMenu.reportPath, "COMPLETE_SEED_SALES_MENU_REPORT");
     components.push({id: salesMenu.id, business: salesMenu.manifest.business, cleanup: salesMenu.manifest.cleanup, durationMs: salesMenu.durationMs, manifestPath: salesMenu.manifestPath, reportPath: salesMenu.reportPath});
+    requireChildStagePass(salesMenu, "COMPLETE_SEED_SALES_MENU_FAILED");
     phase("sales-menu", "PASS", {durationMs: salesMenu.durationMs});
     phase("store-terminal-post-step", "RUNNING");
     const terminalResult = await runChild({name: "store-terminal", script: "scripts/dev/store-terminal-seed-executor.mjs", environment: process.env, phase});
     const terminalOutput = `${terminalResult.stdout}\n${terminalResult.stderr}`;
     const terminalPostStep = {id: "store-terminal", ...terminalResult, reportPath: resultPath(terminalOutput, "REPORT")};
-    if (!terminalPostStep.reportPath) throw failure("COMPLETE_SEED_STORE_TERMINAL_POST_STEP_REPORT_MISSING");
+    if (!terminalPostStep.reportPath) throw failure(`COMPLETE_SEED_STORE_TERMINAL_POST_STEP_FAILED:${childFirstFailure(terminalResult)}`);
     terminalPostStep.report = readJson(terminalPostStep.reportPath, "COMPLETE_SEED_STORE_TERMINAL_POST_STEP_REPORT");
     terminalPostStep.business = terminalPostStep.report.business;
     terminalPostStep.cleanup = terminalPostStep.report.cleanup;
     terminalPostStep.created = terminalPostStep.report.created;
-    terminalPostStep.readback = terminalPostStep.report.readback;
-    postSteps.push({id: terminalPostStep.id, business: terminalPostStep.business, cleanup: terminalPostStep.cleanup, created: terminalPostStep.created, readback: terminalPostStep.readback, reportPath: terminalPostStep.reportPath});
+    terminalPostStep.detailReadback = Array.isArray(terminalPostStep.report.detailReadback)
+      ? terminalPostStep.report.detailReadback.length
+      : terminalPostStep.report.detailReadback;
+    terminalPostStep.listReadback = Array.isArray(terminalPostStep.report.listReadback)
+      ? terminalPostStep.report.listReadback.length
+      : terminalPostStep.report.listReadback;
+    postSteps.push({id: terminalPostStep.id, business: terminalPostStep.business, cleanup: terminalPostStep.cleanup, created: terminalPostStep.created, detailReadback: terminalPostStep.detailReadback, listReadback: terminalPostStep.listReadback, reportPath: terminalPostStep.reportPath});
     if (terminalPostStep.exitStatus !== 0) throw failure(`COMPLETE_SEED_STORE_TERMINAL_POST_STEP_FAILED:${terminalPostStep.report?.firstFailure ?? terminalPostStep.exitStatus}`);
-    phase("store-terminal-post-step", "PASS", {created: terminalPostStep.created, readback: terminalPostStep.readback});
+    phase("store-terminal-post-step", "PASS", {created: terminalPostStep.created, detailReadback: terminalPostStep.detailReadback, listReadback: terminalPostStep.listReadback});
     validateCompleteSeedEvidence({managedDevRunId: manifest.runId, stages: [owner, businessChannel, catalog, salesMenu], fixture, postSteps: [terminalPostStep]});
     business = "PASS";
     cleanup = "PASS_PRESERVED_DEV_STATE";
@@ -457,6 +540,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToP
         process.exitCode = 2;
       }
     }
-  } else if (process.argv.includes("--dry-run")) dryRun();
+  } else if (process.argv.includes("--dry-run")) {
+    try { dryRun(); }
+    catch (error) { process.stderr.write(`R5_COMPLETE_SEED_DRY_RUN=FAIL; FIRST_FAILURE=${error.code ?? compact(error.message)}\n`); process.exitCode = 2; }
+  }
   else execute().catch((error) => { process.stderr.write(`R5_COMPLETE_SEED=REFUSED; REASON=${error.code ?? compact(error.message)}\n`); process.exitCode = 2; });
 }

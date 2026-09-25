@@ -164,9 +164,8 @@ class TransitionOperationsCatalogItemStatusOperationTest {
                                 "BRAND", "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"),
                         null));
         CatalogScopeLookup catalogScopes = mock(CatalogScopeLookup.class);
-        CommandExecutionContextResolver resolver =
-                new CommandExecutionContextResolver(
-                        capabilities, catalogScopes, sessions, (workspace, group, targetType, storeId) -> {});
+        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(
+                capabilities, catalogScopes, sessions, (workspace, group, targetType, storeId) -> {});
         WorkspaceExecutionContext<CatalogAuthorizationScope> context = resolver.resolveCatalog(
                 "session",
                 token,

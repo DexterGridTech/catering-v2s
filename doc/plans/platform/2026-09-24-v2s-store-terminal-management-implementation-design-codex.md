@@ -1,8 +1,10 @@
+SKILL_USED=cs-writing-plans@72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a226f4cc7b99d0
+
 # 门店终端管理 · 实现向详设
 
 ## 0. 输入、授权与口径
 
-DATE=2026-09-24；设计复核=Claude R2 NO-GO（M/S/N=0/3/5），finding 已按逐项处置表修订；状态=IMPLEMENTATION_IN_PROGRESS；实施授权=true；动态验证授权=true；Browser L2/reset/DEV/seed 授权=true；UAT/部署授权=false。
+DATE=2026-09-25；设计复核=Claude R2 NO-GO（M/S/N=0/3/5），既有 finding 已按逐项处置表修订；CP-07 已完成第二轮独立复核后的作者收口，状态=DESIGN_DELTA_SELF_REVIEW_READY_FOR_IMPLEMENTATION；实施授权=true；动态验证授权=true；Browser L2/reset/DEV/seed 授权=true；UAT/部署授权=false。实施期性能基线采用 `doc/decisions/2026-09-25-v2s-store-terminal-cp05-baseline-293.md` 的 `DEXTER-2026-09-25-V2S-STORE-TERMINAL-CP05-BASELINE-293`，报告闭集为 293、三次最大值规则；三次报告缺 `baselineDecisionRef` 时机器拒绝消费，当前不重建不可恢复的 286 报告。
 
 输入：doc/plans/platform/2026-09-23-v2s-store-terminal-management-requirements-claude.md §0–14；同目录 2026-09-23-v2s-store-terminal-management-ia-codex.md 与 ui-interaction-design-codex.md，DEXTER_WIREFRAME_REVIEW=ACCEPTED_2026-09-24。项目规范：AGENTS.md、PLATFORM-BLUEPRINT.md、doc/platform/backend-coding-standard.md、doc/platform/frontend-coding-standard.md、doc/decisions/templates/implementation-design-template.md、doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md、project-memory/decisions/deterministic-context-only.md 与 owner-read-model-and-lifecycle-standard.md。
 
@@ -32,6 +34,7 @@ DATE=2026-09-24；设计复核=Claude R2 NO-GO（M/S/N=0/3/5），finding 已按
 | CP-04 | 运营后台六 IA screen，foundation 接线 | CP-01/03 | 逐控件 IA 对账及 focused/render |
 | CP-05 | backend acceptance、测试、seed 数据正本和执行器、静态门 | CP-02..04 | V-1..29、red mutation、business/cleanup 分报 |
 | CP-06 | CP 级 fresh 三维复核、全批整体复核、逐代码与详设 P9 | CP-01..05 | 只允许 MATCHED/OPEN；OPEN 不交付 |
+| CP-07 | 用户体验纠偏：移除 Steps/伪分步，改普通 Tabs 与紧凑 section；既有功能类型只读并由 owner 强校验；删除 `NONE` 范围；按 contract 场景集合条件渲染打印场景 | 当前实现基线、需求 §15.13；先设计自审与 fresh 只读三维对账 | contract/generator、owner focused/HTTP、frontend focused/render/static、L2 控制面与 seed/acceptance 对账；任何 OPEN 停止 |
 
 每个 CP 完成且开始下一 CP 前，fresh 独立子 agent 只读对需求、详设/IA、项目记忆三维证伪；OPEN 由主 agent 修复后再复核。全批另做整体三维，不能用阶段结果相加替代。主 agent 独占写入。任何运行结果都要 business/cleanup 分开。
 
@@ -50,11 +53,11 @@ DATE=2026-09-24；设计复核=Claude R2 NO-GO（M/S/N=0/3/5），finding 已按
 | 同一事实只有一个住址 | frontend 规范 §3-E、`useStoreServicePointReadModel` 参考形态 | focused 切换门店/终端及重新获取时核对唯一 owner 数据（REVIEW_ONLY） | 组件 state 只持选择/草稿，不镜像服务端终端 | 左列表、右详情、编辑抽屉 |
 | 失败可见且原因不得改写 | frontend 规范 §3-D、backend 规范 §2-B/§1-D | acceptance→focused 核 409/422/500 及焦点/草稿保留（NECESSARY_NOT_SUFFICIENT） | 服务端 typed reason 不被 UI 改写成泛成功 | 全写入、两种候选、详情 |
 | owner 错误到 HTTP 的映射与注册处 | `ContractProblemAdvice`、`operationsProblemFeedback.ts` | contract/acceptance 枚举 §4 CP-03 problem 表并检查原位错误（NECESSARY_NOT_SUFFICIENT） | 7 个本域领域码进入 disposition；每个 operation 的最终集合严格等于其 `errorSetRef` 基础集加该 operation 的 augmentation；401/403/404 沿用通用处理 |
-| 幂等键构成与重放语义 | frontend 规范 §3-G、foundation receipt 协议；`StoreServicePointService` | focused/acceptance 同键同体、同键异码、结果未知重试（NECESSARY_NOT_SUFFICIENT） | 手填/自动两种 canonical 意图分开；receipt 不存原码 | 三写，尤其 create 两分支 |
+| 幂等键构成与重放语义 | frontend 规范 §3-G、foundation receipt 协议；`StoreServicePointService` | focused/acceptance 同键同体、同键异码、结果未知重试（NECESSARY_NOT_SUFFICIENT） | 编辑与状态变更使用请求内容派生键；新建自动激活码也使用内容派生键；新建手填激活码因不得进入任何持久摘要，保留 foundation 意图键，并以 `MANUAL_ACTIVATION_CODE_IDEMPOTENCY_EXCEPTION` 登记该 §3-G 例外。三者 receipt 均不存原码 | 三写，尤其 create 两分支 |
 | 该用生成物的地方不得手搓字符串 | backend 规范 §2-D、`edge-codegen.mjs`、本批规则 generator | generator --check/红变异＋编译类型检验（NECESSARY_NOT_SUFFICIENT） | H 字典 Java/TS/OpenAPI 同源，wire 由 edge 生成 | H1–H8、7 operations、前后 DTO |
 | 日志落点与脱敏字段 | AGENTS.md 观测硬约束、observability standard | focused 日志截获与受管 run 实际日志查 code/连接标识/原 payload（NECESSARY_NOT_SUFFICIENT） | 仅稳定 request/run/阶段 ID，不打印秘密或原请求 | owner、edge、seed、acceptance |
 | 迁移回填与可逆性 | 单一 Flyway history、`StoreServicePoint` 迁移集成形态 | Testcontainers 检查 terminal/receipt/audit_event、约束/索引及失败回滚（NECESSARY_NOT_SUFFICIENT） | 新 owner additive schema；旧数据为零、不回填；不承诺自动 down migration | 三张表与终端级索引；reset 重建整个目标数据库 |
-| 前端共享行为 | `admin-ui-foundation` 的 `useDrawerFormLifecycle`、`useSubmissionLifecycle`、`useCursorCandidates` | focused/render dirty、关闭确认、候选取消与 focus（NECESSARY_NOT_SUFFICIENT） | 单页两 Card 布局留 app，生命周期绝不复制 | Create/Edit Drawer、列表、两类候选 |
+| 前端共享行为 | `admin-ui-foundation` 的 `useDrawerFormLifecycle`、`useSubmissionLifecycle`、`useCursorCandidates` | focused/render dirty、关闭确认、候选取消与 focus（NECESSARY_NOT_SUFFICIENT） | 两个普通 Tabs 与本页 section 只表达业务分组，不新建 foundation 布局 primitive；生命周期绝不复制 | Create/Edit Drawer、列表、两类候选 |
 | 管理后台交互一致性 | frontend 规范 §3-K-1..10、已接受 IA 六屏 | IA-ID 逐控件位置/样式/行为/失败恢复对照（REVIEW_ONLY）；L2 另授权 | 右侧详情是 Card；不得套不可编辑表单或伪 Drawer | TER-P01/C01/C02/E01/A01/M01 全部触点 |
 | 候选/下拉数据源 | `StoreServicePointOwnerApi` 新窄读；`CatalogProductionTagOwnerApi.readTags/readTagReferencesByRefs` | acceptance 多页、旧作废、跨店、开关关闭（NECESSARY_NOT_SUFFICIENT） | 不抽取第一页后在 UI 过滤，不另存候选字典 | 桌台区、标签、规则字典、打印机型号 |
 | 编码与名称呈现 | frontend 规范 §3-K；生成规则的中文标签 | render 核列表/详情/选项只显中文名与必要编码（REVIEW_ONLY） | 技术 owner key、内部 ref 不作用户文案 | 六屏、四角色、所有 H 字典 |
@@ -83,9 +86,45 @@ DATE=2026-09-24；设计复核=Claude R2 NO-GO（M/S/N=0/3/5），finding 已按
 
 ## 3a. 六屏 UI/testId 前置
 
-TER-P01：左头新建、ref 选中、前后页、右详情编辑/更多；列表 DTO/DOM 无码。TER-C01：两设备 Radio、下一步、取消。TER-C02：基本信息新增“激活码（选填）”Input 与“不填写则自动生成”，为空/清空不预览随机码；手填重复在该项原位报错。TER-C02/E01：三区段导航，终端名/设备，每台打印机的名/品牌/型号/纸规格/连接方式/单字符串条件参数/移除，添加打印机，每功能实例增删/选中，范围同框“全部/指定”与远程候选搜索翻页，无桌台/外卖，每实例每场景勾选/订单类型/打印机多选，保存/取消/上一步；E01 不出现码的输入。TER-A01/M01：菜单项、确认/取消。testId 挂真实触点；动态 key 为稳定功能实例 ref＋场景 key＋打印机 ref，创建 draft 用本次稳定 client key，不用数组下标或可编辑名称。
+UI_DESIGN_REVIEW=PASS
+TESTID_REVIEW=PASS
+L2_SCRIPT_ADMISSION=PASS
+L2_ADMISSION_REVIEW=当前 CP-07 控制面已完成 focused 静态验证与 fresh 独立只读核验，准入记录绑定当前 digest；不等于 Browser L2 业务 PASS
+L2_CONTROL_PLANE_POLICY=contracts/policy/store-terminal-l2-admission.json
+L2_CASE_DENOMINATOR=6
+L2_UI_SOURCE_DIRECTORY=apps/frontend/operations-admin/src/features/store-terminal
+
+TER-P01：左头新建、ref 选中、前后页、右详情编辑/更多；列表 DTO/DOM 无码。TER-C01：两个设备 Radio、默认“基本信息与打印机”Tab、名称与设备同排、紧凑打印机 section。TER-C02/E01：普通 Tabs “基本信息与打印机”→“功能与范围”，无 Steps/下一步/上一步；每功能实例增删/选中，既有功能类型只读，范围同框“全部/指定”与远程候选搜索翻页，无桌台/外卖，每实例每场景勾选/订单类型/打印机多选；无 contract 场景的功能不渲染打印场景区域；QUEUE_CALL 不渲染范围或“无范围”；保存/取消。TER-A01/M01：菜单项、确认/取消。testId 挂真实触点；动态 key 为稳定功能实例 ref＋scene key＋printer ref，创建 draft 用本次稳定 client key，不用数组下标或可编辑名称。
 
 逐控件记录 IA-ID、surface/container、位置、样式、行为、失败恢复、焦点与触点；不符先修 UI，UI_DESIGN_REVIEW、TESTID_REVIEW、focused 任一不通过即 L2_SCRIPT_ADMISSION=FAIL。Browser L2 已获本轮授权，但必须在上述前置核对全部通过后才执行；真实位置/焦点/叠层以 L2 证据验证，不能用静态 testId 升格。
+
+### 3a.1 L2 控制面全集与 case 分母（运行器读取）
+
+本批 Browser L2 的唯一 case 分母是以下六个 case，顺序也是 P1 生成器与运行器的顺序；只读 case 使用独立终端，但仍机械要求先于会作废共享基础终端的状态操作 case，以保持确定性的执行序列与可复核证据：
+
+| caseId | screen / 责任 | 主要 UI source |
+|---|---|---|
+| `terminal-list-detail` | TER-P01 列表与详情 | `StoreTerminalPage.tsx`、`StoreTerminalDetail.tsx` |
+| `terminal-create-basic` | TER-C01/C02 基本信息 | `TerminalCreateDrawer.tsx`、`StoreTerminalFormDrawer.tsx` |
+| `terminal-create-configuration` | TER-C02 配置创建 | `TerminalPrinterEditor.tsx`、`TerminalFunctionEditor.tsx`、`TerminalSceneEditor.tsx` |
+| `terminal-edit-configuration` | E01 编辑与整体验证 | `TerminalEditDrawer.tsx`、上述配置编辑器 |
+| `terminal-readonly-state` | M01 无写权限与正常只读态；读取失败恢复由 TER-P01 覆盖；使用独立只读终端 fixture，不依赖状态场景存活 | `StoreTerminalPage.tsx`、`StoreTerminalDetail.tsx` |
+| `terminal-status-actions` | TER-A01 状态菜单与确认；会作废本 case 的基础终端 | `StoreTerminalDetail.tsx`、`StoreTerminalPage.tsx` |
+
+运行器读取 `contracts/policy/store-terminal-l2-admission.json`，其 `controlPlaneFiles` 必须完整覆盖以下八类，不允许从历史运行目录或环境变量取得：
+
+| 类别 | 当前全集 |
+|---|---|
+| scenarios | `contracts/policy/store-terminal-l2-scenarios.json` |
+| blueprint | `contracts/policy/store-terminal-l2-case-blueprint.json` |
+| locator bindings | `contracts/policy/store-terminal-l2-locator-bindings.json` |
+| execution source/profile | `scripts/generate/store-terminal-l2-p1.mjs`；`contracts/policy/store-terminal-l2-execution.json` 是 P1 生成的 run-scoped profile，不进入不可变 admission digest，由 P1/finalize 单独校验 |
+| fixture | `contracts/policy/store-terminal-l2-fixture.json` |
+| timing | `contracts/policy/store-terminal-l2-timing-budget.json` |
+| spec/helper | `apps/frontend/operations-admin/src/tests/l2/store-terminal.spec.ts`、`apps/frontend/operations-admin/src/tests/l2/operationsL2.ts`；共享 helper 的 Vitest/static proof 为 `apps/frontend/operations-admin/src/tests/l2/operationsL2.test.ts`，三者均进入不可变 admission control-plane digest |
+| runner and proofs | `scripts/test/browser-l2-runtime.mjs`、`scripts/test/browser-l2-runtime.test.mjs`、`scripts/test/store-terminal-l2-admission.mjs`、`scripts/test/store-terminal-l2-admission.test.mjs`、`scripts/test/store-terminal-l2-p1.test.mjs`、`scripts/test/l2-locator-bindings.static.test.mjs` |
+
+需求、详设、实施计划与整个 `apps/frontend/operations-admin/src/features/store-terminal` UI 目录也属于同一准入字节集合。`operationsL2.test.ts` 是共享 `operationsL2.ts` helper 的 Vitest/static proof，属于控制面字节集合但不进入只收集 `scripts/**/*.test.mjs` 的 `test-health-entry-runner.mjs` Node 分母；前端 Vitest 负责真实执行它。所有 locator binding 引用的 focused static proof 也必须进入 `controlPlaneFiles`；当前共享证明文件为 `scripts/test/l2-locator-bindings.static.test.mjs`。唯一例外是 `contracts/policy/store-terminal-l2-execution.json`：它是由 P1 依据 readiness 生成的 run-scoped profile，不能进入不可变摘要，必须由 P1/finalize 以 run binding 单独校验。准入校验同时逐字比较 candidate、blueprint、scenario、timing、fixture 五份来源的 case 顺序与集合，并逐 case 比较 `caseId→fixtureRef`，要求 candidate 的 fixtureRef 集合与 scenario 完全一致；状态型破坏 case 与只读 case 不得复用同一会被作废的 fixture。它还要求 `operationCoverage` 恰好等于六个 case 的 `operationIds + required + backgroundAllowed` 并集；不允许只校验“数量为 6”或只登记部分 operation。独立 reviewer 记录必须声明 `REVIEW_TARGET=L2_SCRIPT_ADMISSION`、`REVIEWER_KIND=INDEPENDENT_SUBAGENT`、`L2_ADMISSION_REVIEW_STATUS=PASS` 与当前 `ADMISSION_SOURCE_DIGEST`；缺少记录、状态不是 PASS、case 集合不一致、fixture 绑定不一致、operation 覆盖不完整或任一控制面/UI 字节变化，运行器在 readiness 前拒绝启动。准入通过不替代逐控件位置/样式/行为复核；它只证明运行器不会在未复核或已漂移的输入上启动。
 
 ## 4. CP 技术设计
 
@@ -145,7 +184,7 @@ contract 连接方式闭集（厂商证据只说明该系列可选接口，不�
 
 organization 的 StoreServicePointOwnerApi 增 bounded readAreasByRefs(workspace,group,store,refs)，从同源 persistence 读取当前类型/状态，含作废，不能用 listAreas 分页扫描代替。另增 task-specific searchTerminalAreaCandidates(workspace,group,store,query,cursor,pageSize)：在 organization owner 的 SQL 查询阶段按 ENABLED＋TABLE_AREA＋名称/编码关键字过滤，再做 cursor 分页；现有 listAreas 无 query/type/status 谓词，不能先取一页再在调用者内过滤，否则空页和漏候选。catalog 用 readTags(...usage=BINDABLE_CANDIDATE) 候选、readTagReferencesByRefs 旧引用，brand 由 CatalogScopeLookup.requireCatalogBrand 按持久 STORE 事实取，不信客户端。新 ref 必须本店/同品牌启用且区域为 TABLE_AREA；已存 ref 可保留原样，即使停用/作废/改型；“是否已存”只从数据库当前聚合版判，不能听客户端。不存在或跨 scope fail closed，不泄漏别店名称。经营规则开关不进入终端读写 gate。
 
-三写事务序列冻结为：① edge 做 session、page/action grant 和 selected-store path 准入；② owner 在一个 `REQUIRED` 事务内重核 actor/store scope 并 claim 幂等意图；③ create 取空旧聚合、replace 锁定本终端并读当前 version/完整 JSONB，status 只锁定本终端并读当前 version/status；④ create/replace 才从 organization/catalog 公开 API 取得必要 refs 与持久门店品牌，区分“请求新增 ref”和“原聚合已存 ref”，来源读取失败直接 typed fail/回滚，不能降成空候选；⑤ create/replace 校验完整聚合与 H 规则，status 只校验允许的生命周期转换、scope 与 version，不重验未变更的 JSONB 配置或跨 owner refs；⑥ create 分配手填/随机码并插入 terminal 行，replace 用 expectedVersion CAS 原子替换完整配置文档，status 只改状态与版本；⑦ 同一 REQUIRED 事务内由 owner 的 `StoreTerminalAuditEventWriter` 写脱敏审计，并写不含码且仅含终端 ref/version/status 的 receipt 结果；⑧ 提交后以 owner 读回供 response，结果未知时同键查询 receipt，不再次盲建。任一步失败整体回滚（包括 claim、JSONB 配置和审计）；跨 owner 只有读，不借读边推导目标 owner 的锁或写权。旧 ref 的豁免只对相同身份/同一功能范围轴的原聚合成员成立，不是“此终端曾引用过就任意新增”。来源 owner 在判定后立即变更造成的既有引用失效，按已存 ref 的后续更新语义处理，不建立跨 owner 长期 FK/锁。
+三写事务序列冻结为：① edge 做 session、page/action grant 和 selected-store path 准入；② owner 在一个 `REQUIRED` 事务内重核 actor/store scope 并 claim 幂等意图；③ create 取空旧聚合、replace 锁定本终端并读当前 version/完整 JSONB，status 只锁定本终端并读当前 version/status；④ create/replace 才从 organization/catalog 公开 API 取得必要 refs 与持久门店品牌，区分“请求新增 ref”和“原聚合已存 ref”，来源读取失败直接 typed fail/回滚，不能降成空候选；⑤ create/replace 校验完整聚合与 H 规则，status 只校验允许的生命周期转换、scope 与 version，不重验未变更的 JSONB 配置或跨 owner refs；⑥ create 分配手填/随机码并插入 terminal 行，replace 用 expectedVersion CAS 原子替换完整配置文档，status 只改状态与版本；⑦ 同一 REQUIRED 事务内由 owner 的 `StoreTerminalAuditEventWriter` 写脱敏审计，并写不含码且仅含终端 ref/version/status 的 receipt 结果；⑧ 提交后以 owner 读回供 response，结果未知时同键查询 receipt，不再次盲建。任一步失败整体回滚（包括 claim、JSONB 配置和审计）；跨 owner 只有读，不借读边推导目标 owner 的锁或写权。幂等键规则固定为：编辑和状态变更按请求内容派生；新建自动激活码也按内容派生；新建手填激活码不进入任何持久摘要，保留 foundation 意图键，并在详设与实现对账中登记 `MANUAL_ACTIVATION_CODE_IDEMPOTENCY_EXCEPTION`。旧 ref 的豁免只对相同身份/同一功能范围轴的原聚合成员成立，不是“此终端曾引用过就任意新增”。来源 owner 在判定后立即变更造成的既有引用失效，按已存 ref 的后续更新语义处理，不建立跨 owner 长期 FK/锁。
 
 ### CP-03：edge、权限、审计
 
@@ -279,7 +318,7 @@ owner API 消费者：StoreTerminalOwnerApi 的读取由 OperationsStoreTerminal
 | 审计写入与读取 | `getOperationsEntityAuditHistory.entityType` 单源补齐三个既有漏登值并新增 `STORE_TERMINAL`（共四个加入项）；不直接改 paths shard | owner audit_event migration/writer/policies；`StoreTerminalAuditHistoryService` 单 SQL；audit-read variant/controller/build dependency | 复用既有 audit-history surface，不增 IA 控件 | migration constraints、rollback、恰一事件、白名单拒绝；V-25 HTTP 403/404/voided/readback/无码 | 不承载审计 seed；测试只断言 DEV 测试码不泄漏 | 同步；组织审计表无终端写入 |
 | 手填/自动激活码与隐私 | create optional 字符串、detail 专有属性、list 不含，typed problem | terminal unique、receipt MANUAL/AUTO 比对、SecureRandom 测试装配、owner 审计/edge/log 脱敏 | Create Drawer 选填/原位错、Edit 无控件、Page 详情而非列表显示 | owner 码竞争/幂等/DB unique、HTTP V14–17/25、frontend 泄漏负例；L2 前置门通过后验证 | fixture 固定八码，executor 手填并逐字详情回读、报告无码 | 同步；生产自动码不可改为 seed 常量 |
 | 逐场景无序 printer set | H 场景合同/OpenAPI schema 不含 priority | terminal JSONB configuration 中按 function ref/clientKey＋sceneKey 保存 printer refs；aggregate validator、audit diff | `TerminalSceneEditor` 每场景多选，无功能级打印机控件 | owner/HTTP V9–13/22/25、render 两场景隔离；L2 前置门通过后验证 | 多厨打不同集合样本及 readback | 同步；不建 scene/printer 子表或顺序列；旧需求 V12/25 的顺序断言已被 Dexter 覆盖 |
-| DEV 四阶段后置 | fixture contract JSON、非 OpenAPI 生成物 | 本批 owner HTTP seed 写；数据库由既有整库 reset 重建 | 页面体验读回，不另存状态 | seed static/red mutation、受管 readback/cleanup；L2 不承担 seed 正确性 | 新 terminal plan/executor；`r5-complete-seed-executor.mjs` 四组件校验后、business PASS 前的独立 post-step；旧 extension 9 的三个 executor `N/A_WITH_REASON` | 同步；不改四阶段/四组件顺序，不增加第五组件 |
+| DEV 四阶段后置 | fixture contract JSON、非 OpenAPI 生成物 | 本批 owner HTTP seed 写；数据库由既有整库 reset 重建 | 页面体验读回，不另存状态 | seed static/red mutation、受管 readback/cleanup；L2 不承担 seed 正确性 | `store-terminal-seed-executor.mjs`（含 `buildStoreTerminalSeedPlan`/`--plan-only`）；`r5-complete-seed-executor.mjs` 四组件校验后、business PASS 前的独立 post-step；旧 extension 9 的三个 executor `N/A_WITH_REASON` | 同步；不改四阶段/四组件顺序，不增加第五组件；不另建第二 plan 住址 |
 
 实施前用 `rg --files` 冻结具体文件分母，新增文件是目标而非当前存在。同步检查 contracts/openapi-source、contracts/registry、edge-codegen 生成产物、generated operation count、角色预置、scripts/check、scripts/test/test-health-entry-runner.mjs。不能只改源不改生成物，也不能只改 seed validator 不改数据。frontend foundation 不变更时以 `N/A_WITH_REASON=仅单页主从 grid、共享生命周期直接消费` 明记，不为单页需求抽取无第二消费者的布局。
 
@@ -289,12 +328,14 @@ owner API 消费者：StoreTerminalOwnerApi 的读取由 OperationsStoreTerminal
 
 ## 10b. 丰富的 seed 数据与全链
 
-唯一数据正本：doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json；标签数据正本沿用 contracts/policy/catalog-inventory-fixture-catalog.json。终端样例要引用真实已 seed 的 store-operating、area-table-main、store-operating 品牌下 HOT_KITCHEN/COLD_DISH/BEVERAGE/PACKING 等标签；不能凭编码直接造 ref。最少八台，分别在正本声明稳定 key、门店、状态、设备、功能/打印机/场景预期与读回 oracle：
+唯一数据正本：doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json；标签数据正本沿用 contracts/policy/catalog-inventory-fixture-catalog.json。终端样例要引用真实已 seed 的 store-operating、area-table-main、store-operating 品牌下 HOT_KITCHEN/PACKING/BEVERAGE/COLD_DISH 等标签；不能引用完整 seed 在终端后置前已转为 DISABLED 的标签，也不能凭编码直接造 ref。最少八台，分别在正本声明稳定 key、门店、状态、设备、功能/打印机/场景预期与读回 oracle：
+
+动态前置不是说明性文字：`node scripts/dev/store-terminal-seed-executor.mjs --plan-only` 先验证八台终端、固定激活码、打印机/场景引用和计划摘要；`node scripts/dev/r5-complete-seed-executor.mjs --dry-run` 再由父流程调用该子计划，并把子阶段首败作为父 `FIRST_FAILURE`。只有父 dry-run 成功，`r5-reset.mjs` 才允许进入受管 DEV 停止或 `DROP DATABASE`；这道保护失败时不产生破坏性动作。reset 后的终端 post-step 由父 seed 以独立 child identity 执行并纳入父 business/cleanup，不能用独立 executor 的成功替代完整 seed。上述命令的静态/红例必须与本节数据正本同批维护，计划成功不等于业务 seed 成功。
 
 | 样例 key/门店 | 功能与范围 | 打印机/纸型/连接/场景；目的 |
 |---|---|---|
 | term-front / store-operating / 62000001 | 台式点餐收银，指定 area-table-main＋无桌台 | `BUILTIN_THERMAL_58` / `THERMAL_58` / BUILT_IN，无参数；结账单；证明内置不需要连接参数 |
-| term-kitchen-multi / store-operating / 62000002 | 台式两个独立厨打：HOT_KITCHEN 与 COLD_DISH，可重叠 | `EPSON_TM_T88VII` / `THERMAL_80` / NETWORK / `10.20.0.21` ＋ `GENERIC_THERMAL_80` / `THERMAL_80` / USB / `USB-KITCHEN-THERMAL-02` ＋ `GENERIC_LABEL_40_30` / `LABEL_40_30` / USB / `USB-KITCHEN-LABEL-01`；“制作单”同场景无序绑定前两台同纸型打印机，“标签制作联”绑定标签机 |
+| term-kitchen-multi / store-operating / 62000002 | 台式两个独立厨打：HOT_KITCHEN 与 PACKING，可重叠 | `EPSON_TM_T88VII` / `THERMAL_80` / NETWORK / `10.20.0.21` ＋ `GENERIC_THERMAL_80` / `THERMAL_80` / USB / `USB-KITCHEN-THERMAL-02` ＋ `GENERIC_LABEL_40_30` / `LABEL_40_30` / USB / `USB-KITCHEN-LABEL-01`；“制作单”同场景无序绑定前两台同纸型打印机，“标签制作单”绑定标签机 |
 | term-kds / store-operating / 62000003 | 台式 KDS，全部生产标签 | 零打印机/零场景；固定 H 功能与软约束 |
 | term-handheld / store-operating / 62000004 | 手持接单确认＋排队叫号，空桌台范围 | `GENERIC_THERMAL_58` / `THERMAL_58` / BLUETOOTH / `BT-HANDHELD-QUEUE-01`，排队号票 |
 | term-label / store-operating / 62000005 | 台式厨打，指定 BEVERAGE | `GENERIC_LABEL_40_60` / `LABEL_40_60` / CLOUD / `CLOUD-LABEL-STORE-01`，标签制作联；证明云端设备 ID 与通用标签型号 |
@@ -310,7 +351,7 @@ seed 文件同步的准确分母如下，区分“需改”和“只核无须改
 |---|---|
 | `doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json` | 唯一数据正本新增八个 terminal 对象，逐条固定 `62000001`..`62000008`、完整 configuration 与型号/连接方式；同步 role-group、role-project 页面与写权限及 role-store 页面只读权限（无 EDIT）；将过时的固定 owner schema 数量措辞改为整库重建语义；现有区域/标签仍由原 owner 提供 |
 | `scripts/dev/r5-fixture-contract.mjs`＋对应 test | `COUNT_KEYS` 与 `expectedCounts` 加 `storeTerminals: 8`，从唯一正本数据计数并验证八条身份/码格式/集团内全状态唯一/配置关系；原 `extensionDefinitions:9` 保持 9；不得复用正本既有 `terminalFixtureBoundary`（它指邀请到期的终态夹具，不是门店终端实体） |
-| 新 `scripts/dev/store-terminal-seed-plan.mjs`、`store-terminal-seed-executor.mjs`＋各自 test | plan 只读 fixture 八条；executor 经 owner HTTP 建立/必要状态转移并逐详情读回；手填码取正本，失败不记录原码；单独计 `planned=created=readback=8`，声明 business/cleanup |
+| `scripts/dev/store-terminal-seed-executor.mjs`＋对应 test | **`N/A_WITH_REASON`：不另建 `store-terminal-seed-plan.mjs`。** 同一 executor 已由 `buildStoreTerminalSeedPlan` 统一承载 plan 校验，并以 `--plan-only` 作为父流程唯一静态 plan 入口；executor 经 owner HTTP 建立/必要状态转移并逐详情读回；手填码取正本，失败不记录原码；单独计 `planned=created=readback=8`，声明 business/cleanup。拆出第二个 plan 文件会复制 fixture 校验并制造第二住址。 |
 | `scripts/dev/r5-complete-seed-executor.mjs`＋对应 test | `COMPLETE_SEED_STAGE_IDS` 保持四值和原顺序，不新增 stage/component；现有四组件校验与整体 `business=PASS` 之间增加独立 post-step descriptor；上游失败不启动，post-step 任一 count/读回失败让父 business=FAIL，cleanup 独立；manifest 有 parent/child identity 与各计数 |
 | `scripts/dev/r5-seed-plan.mjs`、`owner-command-seed-executor.mjs` 及其 tests | 同步 `role-group` 与 `role-project` 的 `PG-STORE-TERMINALS`、`EDIT_STORE_TERMINAL` 校验及 GROUP seed capability；`role-store` 只取得页面只读权且必须断言没有 EDIT。post-step 使用已完成邀请 `inv-completed-multi-a` 建立的 GROUP session 并显式切换到目标门店。extension 定义数量与 host 闭集的现有断言仍为 9，不改 |
 | `scripts/dev/catalog-inventory-seed-executor.mjs` 及其 tests、`contracts/policy/catalog-inventory-fixture-catalog.json` | `N/A_WITH_REASON`：已有生产标签为来源事实，终端只在该阶段之后按 readback 解 ref，不复制标签或改 catalog fixture |
@@ -369,3 +410,99 @@ V-29 的手写纸规格期望矩阵固定如下，所有其余型号×纸规格�
 ## 15. 实施期设计修订（Dexter 要求 Claude 定方案）
 
 依据 `doc/review/platform/2026-09-24-v2s-store-terminal-audit-persistence-ruling-claude.md`，将审计持久化明确为 store-terminal owner 自有 `store_terminal.audit_event` 与读取路由：不写 organization 审计表，不建公共审计写 API；写入同 terminal 与 command_receipt 的 REQUIRED 事务，读取沿用 store-contract 的门店可见性单 SQL 模式。同步修改本详设 §1 方案 B、CP-02、CP-03、§9a、§10、§11 V-25；实施计划对应 CP-02/03/05。IA 不变：终端页不新增审计历史入口，V-25 通过已存在审计 HTTP surface 验收。
+实施期对 seed 计划住址再作一项闭合说明：`buildStoreTerminalSeedPlan` 与 `--plan-only` 已存在于 `scripts/dev/store-terminal-seed-executor.mjs`，父 `r5-complete-seed-executor.mjs` 的 STATIC_PLAN 直接调用它；因此独立 `store-terminal-seed-plan.mjs` 标为 `N/A_WITH_REASON`，不复制 plan 逻辑、不建立第二数据住址。对应 test 继续由 `store-terminal-seed-executor.test.mjs` 覆盖。
+
+## 16. CP-07 · 用户交互纠偏与功能/范围语义收口
+
+### 16.1 目的、根因与方案选择
+
+本批不是对截图逐点止血，而是收口四个同源问题：
+
+1. 当前 Drawer 用 Ant Design `Steps` 同时表达“第一步/第二步”和正文内“基本信息/打印机/功能与范围”导航，导致用户必须理解一个并不存在的分段提交流程；
+2. 既有功能行仍把 `functionKey` 渲染成可变 Select，UI 允许产生一个 owner 不应接受的“原 ref 换类型”请求；
+3. `QUEUE_CALL` 用 `NONE` 伪造“无范围”这一业务值，使没有范围与一个可选择的范围键混淆；
+4. 场景集合为空时仍渲染打印场景标题、选择器和空提示，给用户暗示该功能有可配置场景。
+
+可选方案：
+
+| 方案 | 做法 | 取舍 |
+|---|---|---|
+| A 保留 Steps | 继续以 Steps 表示信息先后，并修文案 | 拒绝：仍把信息顺序误导成流程状态，且产生重复导航与上一步/下一步动作 |
+| B 单页 section | 去掉所有导航，所有 section 连续滚动 | 拒绝：终端聚合可能很长，用户在打印机与功能之间失去稳定定位；不能满足同一 Drawer 内两类信息的快速切换 |
+| C 两个普通 Tabs + section | 去掉 Steps；Tabs 只分组“基本信息与打印机”“功能与范围”，Tab 内全宽 sections，保存仍是整聚合一次提交 | **采用**：保留信息先后与定位能力，不制造分段事务；能直接复用 AntD Tabs、既有 Drawer lifecycle 与当前 Form store，不建新的 foundation layout primitive |
+
+“先定义打印机再选功能”在 C 中是信息顺序和候选依赖，不是强制存在一台打印机的校验门：KDS 等合法功能允许零打印机；功能 Tab 可访问，但场景打印机候选为空时给原位指引。这样同时满足用户的操作心智和既有“零打印机/零场景是合法软约束”事实。
+
+### 16.2 生效的交互与业务判据
+
+| 主题 | 生效规则 | 不能被误读成 |
+|---|---|---|
+| Drawer 结构 | `Tabs(items=[基本信息与打印机, 功能与范围])`；默认第一个；`destroyOnHidden=false`/Form preserve 保持同一草稿；每个 Tab 用 `section` 表达内容分区；抽屉正文全宽唯一滚动 | 不是 `Steps`，不是两次保存，不是 Tab 间清空草稿 |
+| 基本信息 | 名称与设备类型同一行；激活码仅新建且仍可选填；打印机 section 在功能 Tab 之前，卡片用紧凑网格/`Space.Compact` | 不把终端 `deviceType` 改成不可变；R-1.4 仍允许改设备类型，兼容性由 owner 判定 |
+| 功能类型 | 添加新功能时选择 `functionKey`；已有 `ref` 的功能行显示只读标签，不能提供 Select；删除后可从添加入口建立另一类型；后端 `TerminalConfigurationCodec.normalize` 对 prior `ref -> functionKey` 做 fail-closed 比较 | 不以 UI 隐藏作为唯一安全边界；不允许通过 HTTP 手写请求换类型 |
+| 范围 | contract 不再有 `NONE`；`QUEUE_CALL.allowedRangeKeys=[]`，其 request 为 `ranges:[]`；有范围的功能仍用一个可多选框，“全部”与具体 refs 互斥 | 不增加“无范围” Checkbox/Option；不把空数组转成 `NONE` |
+| 场景 | `scenesForFunction(functionKey).length===0` 时不渲染 Divider、scene picker、空选择提示或场景卡；长度大于 0 时每条场景仍独立选订单类型和同等打印机集合 | 不把功能级打印机选择重新引入；不因未选任何场景而隐藏“有场景”的选择器 |
+| 失败与保存 | 仍由 `useDrawerFormLifecycle` 管 dirty/关闭；整份表单一次 `form.submit()`；Tab 切换不发命令；功能类型绕过 UI 的请求返回现有 `STORE_TERMINAL_RULE_INVALID` 并不写入 | 不新增局部命令、第二 dirty guard 或本地“成功”状态 |
+
+### 16.3 精确变更单元与 owner 边界
+
+| 单元 | 精确路径 | 变更与验证 |
+|---|---|---|
+| 规则正本 | `contracts/catalog/store-terminal-rules.json` | 删除 `ranges[NONE]`，将 `QUEUE_CALL.allowedRangeKeys` 改为空数组；不手改生成物 |
+| 规则生成 | `scripts/generate/store-terminal-rules.mjs`、`scripts/test/store-terminal-rules-generator.test.mjs` | 生成器继续负责 Java/TS/OpenAPI；测试冻结 Queue 空数组、无 NONE、场景/范围交叉闭集和真实 red mutation |
+| 生成物 | `apps/backend/catering-business-server/modules/store-terminal/src/main/java/com/catering/v2s/storeterminal/domain/generated/StoreTerminalRules.java`、`apps/frontend/operations-admin/src/app/api/generated/storeTerminalRules.ts`、`contracts/openapi/components/store-terminal/store-terminal-rules.generated.json` | 只由 generator 写出；`--check` 与编译/类型检查验证无漂移 |
+| owner 聚合 | `apps/backend/catering-business-server/modules/store-terminal/src/main/java/com/catering/v2s/storeterminal/application/TerminalConfigurationCodec.java`、`apps/backend/catering-business-server/modules/store-terminal/src/main/java/com/catering/v2s/storeterminal/domain/TerminalConfiguration.java`、`apps/backend/catering-business-server/modules/store-terminal/src/main/java/com/catering/v2s/storeterminal/application/StoreTerminalOwnerService.java` | prior configuration 建 `functionRef -> functionKey` 映射；既有 ref 的 key 变化抛现有规则无效异常；create 的 clientKey 不受此约束；空 ranges 继续合法，NONE 不再可被 contract/owner 接受 |
+| owner focused/HTTP | `apps/backend/catering-business-server/modules/store-terminal/src/test/java/com/catering/v2s/storeterminal/application/StoreTerminalOwnerServiceTest.java`、`apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/StoreTerminalAcceptanceScenarios.java` | 新增既有 ref 换 functionKey 的无写入负例；Queue 空范围成功读回；有场景/无场景和设备类型兼容各有正负例；错误仍为 `STORE_TERMINAL_RULE_INVALID` |
+| 前端表单 | `apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx` | 去掉 `Steps`、step/section 滚动状态、下一步/上一步；使用普通 `Tabs`；全宽 section；name/device 同排；错误定位切换 Tab 而非滚动到 Step |
+| 前端功能/范围/场景 | `apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx`、`apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalSceneEditor.tsx`、`apps/frontend/operations-admin/src/features/store-terminal/model/storeTerminalModel.ts` | 功能既有行类型只读；删除无效的原行换类型逻辑/测试；allowed 为空不渲染范围选择；scenes 为空不渲染任何打印场景区；场景 printer 关系保持逐场景 |
+| 前端打印机与触点 | `apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalPrinterEditor.tsx`、`apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts`、`apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts`、`apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts` | 保留已有级联与 `Space.Compact`，将 card section 收紧；删除 Steps/sectionNav/next/back 触点，新增两个 Tab 触点与只读 function type 观察触点；红 mutation 必须能抓回旧 Steps/可变 Select |
+| L2 控制面 | `contracts/policy/store-terminal-l2-case-blueprint.json`、`store-terminal-l2-scenarios.json`、`store-terminal-l2-locator-bindings.json`、`store-terminal-l2-admission.json`、`store-terminal-l2-fixture.json`、`store-terminal-l2-timing-budget.json`、`scripts/generate/store-terminal-l2-p1.mjs`、`apps/frontend/operations-admin/src/tests/l2/store-terminal.spec.ts` 及相应静态测试 | 将旧 sectionNav/next/back 绑定改为两个 Tab；增加 C02 的真实负向断言：`QUEUE_CALL` 无 `TERMINAL_RANGE_GROUP`，`KDS` 与 `ORDER_CONFIRMATION` 保留 contract range group 但无 `TERMINAL_SCENE_PICKER`；既有 function type 只观察不操作；改动后 admission 失效，fresh 复核前不得运行 |
+| seed/验收连带 | `doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json`、`scripts/dev/store-terminal-seed-executor.mjs` 及 test、`scripts/dev/r5-complete-seed-executor.mjs` 相关校验、`StoreTerminalAcceptanceScenarios.java` | 所有 Queue 样本移除 NONE，改为 `ranges:[]`；八台读回仍逐台核配置；seed plan/dry-run 分母随实际变更核对，不新增第二 data source；V-23/V-29 等不受影响的矩阵需明确 N/A_WITH_REASON |
+
+### 16.4 关闭条件、闭包等级与动态顺序
+
+本 CP 所有机器门均标记 `NECESSARY_NOT_SUFFICIENT`：
+
+- `--check`/生成物 hash 能抓到产物漂移，但抓不到用户能否正确理解 Tabs；
+- 静态禁止 `Steps`、旧 testId 和可变 Select 能抓到直接绕过，但抓不到间接组件或运行时渲染条件；
+- backend focused 能抓到既有 ref 换类型和 Queue 非法 NONE，但抓不到所有 acceptance scope/浏览器焦点；
+- render/L2 能观察真实条件渲染，但不能代替 owner 聚合与生成链校验。
+
+不存在 `PROVES_CLOSURE` 判据。`REVIEW_ONLY` 项为 Tab 是否表达分组而非流程、section 密度是否仍可读、无场景是否完全不产生区域，以及“先定义打印机”与零打印机合法性的用户心智；由 fresh 独立只读 reviewer 逐 IA/交互/详设/项目记忆对照，不能由绿色静态测试代替。
+
+CP-07 的顺序固定为：
+
+1. 先完成本节与需求 §15.13、IA、交互、实施计划同步；自审扫描旧步骤词、旧 testId、`NONE` 业务引用和 scene-less 渲染；
+2. fresh 独立子 agent 完成 CP-07 三维设计对账；任一 OPEN 停，不进入代码；
+3. 改 contract 正本并运行 generator focused/red mutation/`--check`，确认生成物；
+4. 后端先建既有 function ref 换类型的 focused red case，再实现 prior-key 校验，随后跑 owner/acceptance 定向场景；
+5. 前端先更新 testId/static/render focused，再改表单，证明旧 Steps、旧 next/back、旧 function Select 变异会红；
+6. 更新 L2 控制面并重新完成 UI/testId/准入复核；只跑受影响 case，确认后再跑六场景；
+7. 若 seed/fixture 有实际变更，先 `r5-complete-seed-executor.mjs --dry-run`，再按动态前整体准入执行 reset→DEV→seed；所有 business/cleanup 分开记录；
+8. 最后做 CP-07 与全批逐代码/详设对账，只允许 MATCHED 或 OPEN；OPEN 不交付。
+
+### 16.5 本轮设计自审（作者自审，非独立 verdict）
+
+自审分母：需求 §15.13、IA 六个 screen、交互工件 §4/§7/§8、详设 §3/§3a/§10b/§11、实施计划 CP-01..07、contract 正本/生成链、owner codec、Form/Function/Scene/Printer source、静态测试、L2 六类控制面、seed 正本/执行器/acceptance。逐项检查：
+
+| 检查 | 结果 | 仍需的独立/动态证明 |
+|---|---|---|
+| Steps 与 next/back 移除且没有把 Tab 当分段提交 | SELF_REVIEW_MATCHED | fresh UI 对账、focused/render、L2 |
+| 名称/设备同排、打印机先于功能、紧凑 section、Tabs 保留草稿 | SELF_REVIEW_MATCHED | fresh 逐控件对账、Browser L2 |
+| 既有 function ref 类型只读，owner 绕过请求失败且无写入 | SELF_REVIEW_MATCHED（实现尚未改，当前证据为设计约束） | backend focused/HTTP 与源码复核 |
+| Queue 无 NONE，空 ranges 合法；所有同族 seed/测试同步 | SELF_REVIEW_OPEN_UNTIL_IMPLEMENTED | generator、acceptance、seed plan/readback、全变体扫描 |
+| scene-less 功能不生成打印场景 UI，scene-full 仍逐场景配置 | SELF_REVIEW_MATCHED（实现尚未改，当前证据为设计约束） | frontend render/static、L2 C02 对 KDS 的 `TERMINAL_SCENE_PICKER` 缺席断言 |
+| §3a/L2 admission 绑定当前控制面，不复用旧 PASS | SELF_REVIEW_MATCHED | fresh admission review 后才 PASS |
+
+本自审不声明 Browser L2、reset、DEV 或 seed 动态通过；当前 `UI_DESIGN_REVIEW=PASS`、`TESTID_REVIEW=PASS`、`L2_SCRIPT_ADMISSION=PASS` 只表示准入前置与当前控制面记录已闭合，真实业务运行仍须按受管入口执行并单独记录 business/cleanup。
+
+### 16.6 设计复核轮次与最终收口
+
+本 CP 的 DESIGN 独立复核已达到项目治理允许的两轮上限，不再以换文件名或换措辞重开第三轮：
+
+| 轮次 | reviewer | 结论 | 处置 |
+|---|---|---|---|
+| 1 | fresh 独立只读子 agent | `NO-GO`，M/S/N=`0/2/1` | 补齐需求 `USER_FEEDBACK_01..11` 分母、修正 D-29 的旧“第二步”措辞、补全 generated Java 的 `domain/generated` 路径；主 agent 已修并自查 |
+| 2 | fresh 独立只读子 agent | `NO-GO`，M/S/N=`0/1/0` | 修正 IA `TER-C02` 与交互工件 `TER-C02` 把基本信息、激活码、打印机定义误画进“功能与范围”Tab 的矛盾；主 agent 已修并自查 |
+
+`ROUND_FINAL_DECISION=SELF_DECIDED`；`DESIGN_SELF_REVIEW=GO_FOR_IMPLEMENTATION`。作者收口前重开需求 §15.13、IA `TER-C01/C02`、交互 `TER-C01/C02`、本详设 §16 与实施计划 CP-07，确认 C02 只描述功能/范围/条件性场景，C01 才描述名称、设备类型、激活码与打印机定义；11 条反馈仍逐条有落点；generated Java 路径与实际文件一致；没有把 Tabs 误写成步骤或局部提交。该结论不是独立 reviewer 的 GO，也不把尚未运行的代码、生成、测试、L2、reset、DEV 或 seed 升格为 PASS；进入实现后仍须按 CP-07 顺序执行并在动态前重新准入。

@@ -18,9 +18,11 @@ public class WorkspaceIamSummaryReadPersistence {
 
     public WorkspaceIamSummaryLookup.AccountAndRoleSummary accountAndRoleSummary(UUID workspaceUuid) {
         return jdbc.queryForObject(
-                WorkspaceIamSummaryReadServiceSql.WORKSPACE_IAM_SUMMARY_READ_SERVICE_SELECT_WORKSPACE_ACCOUNT_WORKSPACE_UUID
+                WorkspaceIamSummaryReadServiceSql
+                                .WORKSPACE_IAM_SUMMARY_READ_SERVICE_SELECT_WORKSPACE_ACCOUNT_WORKSPACE_UUID
                         + WorkspaceIamSummaryReadServiceSql.WORKSPACE_IAM_SUMMARY_READ_SERVICE_ACCOUNT_COUNT
-                        + WorkspaceIamSummaryReadServiceSql.WORKSPACE_IAM_SUMMARY_READ_SERVICE_OPEN_PAREN_WORKSPACE_ROLE_WORKSPACE_UUID_ROLE_COUNT,
+                        + WorkspaceIamSummaryReadServiceSql
+                                .WORKSPACE_IAM_SUMMARY_READ_SERVICE_OPEN_PAREN_WORKSPACE_ROLE_WORKSPACE_UUID_ROLE_COUNT,
                 (result, row) -> new WorkspaceIamSummaryLookup.AccountAndRoleSummary(
                         result.getLong("account_count"), result.getLong("role_count")),
                 workspaceUuid,
@@ -29,13 +31,19 @@ public class WorkspaceIamSummaryReadPersistence {
 
     public long accountCount(UUID workspaceUuid) {
         Long count = jdbc.queryForObject(
-                WorkspaceIamSummaryReadServiceSql.WORKSPACE_IAM_SUMMARY_READ_SERVICE_SELECT_WORKSPACE_ACCOUNT_WORKSPACE_UUID_ALTERNATE_A, Long.class, workspaceUuid);
+                WorkspaceIamSummaryReadServiceSql
+                        .WORKSPACE_IAM_SUMMARY_READ_SERVICE_SELECT_WORKSPACE_ACCOUNT_WORKSPACE_UUID_ALTERNATE_A,
+                Long.class,
+                workspaceUuid);
         return count == null ? 0L : count;
     }
 
     public long roleCount(UUID workspaceUuid) {
         Long count = jdbc.queryForObject(
-                WorkspaceIamSummaryReadServiceSql.WORKSPACE_IAM_SUMMARY_READ_SERVICE_SELECT_WORKSPACE_ROLE_WORKSPACE_UUID, Long.class, workspaceUuid);
+                WorkspaceIamSummaryReadServiceSql
+                        .WORKSPACE_IAM_SUMMARY_READ_SERVICE_SELECT_WORKSPACE_ROLE_WORKSPACE_UUID,
+                Long.class,
+                workspaceUuid);
         return count == null ? 0L : count;
     }
 }

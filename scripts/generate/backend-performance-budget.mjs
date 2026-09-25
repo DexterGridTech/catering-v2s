@@ -978,6 +978,13 @@ export function validateCp05CalibrationReport(report) {
     measurement.classificationRule === 'CURRENT_MANAGED_ACCEPTANCE_RUN_MAX;AVERAGE_NOT_USED' &&
     report.budget?.currentRunAuthorityDecisionRef === CURRENT_PROGRAM_RESULT_BUDGET_DECISION_REF &&
     report.source?.mode === 'CURRENT_MANAGED_ACCEPTANCE_RESULT';
+  if (measurement.runCount === 3) {
+    requireText(
+      reportBudget.baselineDecisionRef,
+      'BUDGET_CP05_BASELINE_DECISION_REF_REQUIRED',
+      'report.budget.baselineDecisionRef',
+    );
+  }
   const reportExpectedCount = measurement.expectedOperations;
   if (
     !Number.isInteger(reportExpectedCount) ||

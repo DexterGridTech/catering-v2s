@@ -66,4 +66,3 @@ public class CreateOperationsProductionTagOperation {
                 value.version());
     }
 }
-

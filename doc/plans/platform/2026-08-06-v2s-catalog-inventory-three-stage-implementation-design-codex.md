@@ -682,6 +682,13 @@ P3 新增 locator binding catalog，把 P1 的 18/43 业务 cases 绑定到真�
 binding 的 scenario IDs 与 P1 exact-set，零多、零少。testId 只用于 IA 已批准的歧义/自动化 surface，
 不能为了测试把隐藏元素渲染到 DOM。
 
+### 5.2.1 L2 准入控制面中的共享 helper proof
+
+`contracts/policy/catalog-inventory-l2-admission.json` 的不可变 `controlPlaneFiles` 除了本域 spec、P1、fixture、场景、locator、runner 与 focused proof 外，还必须登记共享的
+`apps/frontend/operations-admin/src/tests/l2/operationsL2.test.ts`。它是
+`operationsL2.ts` 的 Vitest/static proof，属于 L2 准入字节集合，由 operations-admin 的 Vitest 执行；它不进入只收集
+`scripts/**/*.test.mjs` 的 `scripts/test/test-health-entry-runner.mjs` Node 测试分母。policy 的 digest、独立 reviewer 记录和 UI 目录摘要必须同时绑定该文件；P1 生成的 run-scoped execution profile 仍不进入不可变摘要。
+
 ### 5.3 L2 责任
 
 L2 只验浏览器才能证明的事实：

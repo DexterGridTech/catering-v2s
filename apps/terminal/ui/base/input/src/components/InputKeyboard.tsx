@@ -27,6 +27,8 @@ export type InputKeyboardProps = Readonly<{
   readonly testIDSuffix?: string;
 }>;
 
+const noopKeyboardKey = (_key: KeyboardKey): void => undefined;
+
 export const InputKeyboard = ({snapshot, interactive, onKey, onLayout, testIDSuffix}: InputKeyboardProps = {}) => {
   const state = useInputKeyboardState();
   const controller = useInputController();
@@ -54,7 +56,7 @@ export const InputKeyboard = ({snapshot, interactive, onKey, onLayout, testIDSuf
       shift={current.shift}
       hasNextField={current.hasNextField}
       testIDSuffix={testIDSuffix}
-      onKey={canInteract ? onKey ?? controller.handleKeyboardKey : () => undefined}
+        onKey={canInteract ? onKey ?? controller.handleKeyboardKey : noopKeyboardKey}
     />
   );
   const backdrop = (

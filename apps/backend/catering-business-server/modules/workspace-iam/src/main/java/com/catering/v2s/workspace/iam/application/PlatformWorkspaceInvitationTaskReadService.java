@@ -1,8 +1,8 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.PlatformWorkspaceInvitationTaskReadPersistence;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
+import com.catering.v2s.workspace.iam.application.persistence.PlatformWorkspaceInvitationTaskReadPersistence;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -55,12 +55,9 @@ public class PlatformWorkspaceInvitationTaskReadService {
     }
 
     private List<WorkspaceInvitationService.ManagementInvitationView> views(
-            UUID workspaceUuid,
-            String key,
-            List<PlatformWorkspaceInvitationTaskReadPersistence.Row> rows) {
-        List<PlatformWorkspaceInvitationTaskReadPersistence.Row> actual = rows.stream()
-                .filter(row -> row.id() != null)
-                .toList();
+            UUID workspaceUuid, String key, List<PlatformWorkspaceInvitationTaskReadPersistence.Row> rows) {
+        List<PlatformWorkspaceInvitationTaskReadPersistence.Row> actual =
+                rows.stream().filter(row -> row.id() != null).toList();
         LinkedHashSet<OrganizationTaskPathLookup.TaskPathRef> refs = new LinkedHashSet<>();
         for (PlatformWorkspaceInvitationTaskReadPersistence.Row row : actual)
             for (Intent intent : intents(row))

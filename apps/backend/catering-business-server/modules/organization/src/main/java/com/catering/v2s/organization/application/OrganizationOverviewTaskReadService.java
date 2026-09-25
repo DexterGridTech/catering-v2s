@@ -2,8 +2,8 @@ package com.catering.v2s.organization.application;
 
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
-import com.catering.v2s.organization.application.persistence.OrganizationOverviewTaskReadPersistence;
 import com.catering.v2s.organization.api.OperationsStoreCommandApi;
+import com.catering.v2s.organization.application.persistence.OrganizationOverviewTaskReadPersistence;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -201,9 +201,7 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
 
         public Query validated(String category) {
             String safeSort = sort == null ? "UPDATED_AT" : sort;
-            String safeDirection = direction == null
-                    ? SORT_DIRECTION_DESC
-                    : direction;
+            String safeDirection = direction == null ? SORT_DIRECTION_DESC : direction;
             if (!List.of("NAME", "CODE", "UPDATED_AT").contains(safeSort)
                     || !List.of("ASC", "DESC").contains(safeDirection)
                     || !validStatus(status)
@@ -232,8 +230,7 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                         || tenantId != null
                         || headCompanyId != null) throw new QueryValidationException("invalid entity query");
             } else if (com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.STORE.equals(category)) {
-                if (type != null
-                        && !com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.STORE.equals(type))
+                if (type != null && !com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.STORE.equals(type))
                     throw new QueryValidationException("invalid store query");
             } else throw new QueryValidationException("unsupported overview category");
             if (!"BUSINESS_ENTITY".equals(category) && (legalName != null || unifiedSocialCreditCode != null))

@@ -143,7 +143,7 @@ class PlatformOrganizationOverviewControllerTest {
                                 null,
                                 null),
                         1,
-                20);
+                        20);
     }
 
     @Test
@@ -164,16 +164,10 @@ class PlatformOrganizationOverviewControllerTest {
         when(workspace.workspaceUuid()).thenReturn(workspaceId);
         when(overview.platformHierarchyTree(workspaceId, "organization-test"))
                 .thenReturn(new OrganizationOverviewTaskReadService.HierarchyTree(
-                        "GROUP", "集团", List.of(new OrganizationOverviewTaskReadService.TreeNode(
-                                projectId,
-                                "REGION",
-                                "R-01",
-                                "大区",
-                                "VOIDED",
-                                null,
-                                3L,
-                                List.of(),
-                                List.of()))));
+                        "GROUP",
+                        "集团",
+                        List.of(new OrganizationOverviewTaskReadService.TreeNode(
+                                projectId, "REGION", "R-01", "大区", "VOIDED", null, 3L, List.of(), List.of()))));
         when(overview.platformOverviewTaskPage(any(), any(), any(), any(), any(Integer.class), any(Integer.class)))
                 .thenReturn(new OrganizationOverviewTaskReadService.Page(
                         new OrganizationOverviewTaskReadService.Metadata(
@@ -215,10 +209,18 @@ class PlatformOrganizationOverviewControllerTest {
                 mock(StoreCandidateTaskReadService.class),
                 mock(ExtensionDefinitionService.class));
 
-        assertEquals("VOIDED", controller.hierarchy(request, "organization-test").regions().getFirst().status().name());
         assertEquals(
                 "VOIDED",
-                controller.page(
+                controller
+                        .hierarchy(request, "organization-test")
+                        .regions()
+                        .getFirst()
+                        .status()
+                        .name());
+        assertEquals(
+                "VOIDED",
+                controller
+                        .page(
                                 request,
                                 "organization-test",
                                 "BUSINESS_ENTITY",
@@ -295,6 +297,8 @@ class PlatformOrganizationOverviewControllerTest {
                         "1"));
 
         assertEquals("invalid platform organization overview query", failure.getMessage());
-        assertEquals(OrganizationOverviewTaskReadService.QueryValidationException.class, failure.getCause().getClass());
+        assertEquals(
+                OrganizationOverviewTaskReadService.QueryValidationException.class,
+                failure.getCause().getClass());
     }
 }

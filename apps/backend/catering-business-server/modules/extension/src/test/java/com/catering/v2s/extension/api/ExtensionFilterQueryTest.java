@@ -1,14 +1,13 @@
 package com.catering.v2s.extension.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,8 +38,8 @@ class ExtensionFilterQueryTest {
             return DEFINITION;
         };
 
-        ExtensionFilterQuery.Prepared prepared = ExtensionFilterQuery.prepare(
-                lookup, WORKSPACE, "extension-test", "BRAND", "[]", "not-a-revision");
+        ExtensionFilterQuery.Prepared prepared =
+                ExtensionFilterQuery.prepare(lookup, WORKSPACE, "extension-test", "BRAND", "[]", "not-a-revision");
 
         assertTrue(prepared.isEmpty());
         assertEquals(null, prepared.definitionRevision());
@@ -78,11 +77,20 @@ class ExtensionFilterQueryTest {
         assertFalse(predicate.contains("->> ?)::boolean"));
         assertEquals(
                 List.of(
-                        "text", "text", "%alpha!!!%!_%",
-                        "number", "number", new BigDecimal("12.50"),
-                        "date", "date", "2026-09-15",
-                        "boolean", "boolean", true,
-                        "select", "直营"),
+                        "text",
+                        "text",
+                        "%alpha!!!%!_%",
+                        "number",
+                        "number",
+                        new BigDecimal("12.50"),
+                        "date",
+                        "date",
+                        "2026-09-15",
+                        "boolean",
+                        "boolean",
+                        true,
+                        "select",
+                        "直营"),
                 prepared.parameters());
     }
 
@@ -123,7 +131,9 @@ class ExtensionFilterQueryTest {
                         "7"));
         assertEquals(
                 List.of("FIELD_NOT_SEARCHABLE", "UNKNOWN_FIELD_KEY", "TYPE_MISMATCH", "OPTION_INVALID"),
-                invalid.reasons().stream().map(ExtensionFilterQuery.InvalidReason::reason).toList());
+                invalid.reasons().stream()
+                        .map(ExtensionFilterQuery.InvalidReason::reason)
+                        .toList());
         assertEquals(2, lookups.get());
     }
 
@@ -164,7 +174,9 @@ class ExtensionFilterQueryTest {
                         "BRAND",
                         "[{\"fieldKey\":\"number\",\"type\":\"NUMBER\",\"value\":\"1\"}]",
                         null));
-        assertEquals("DEFINITION_REVISION_REQUIRED", missingRevision.reasons().getFirst().reason());
+        assertEquals(
+                "DEFINITION_REVISION_REQUIRED",
+                missingRevision.reasons().getFirst().reason());
         assertEquals(0, lookups.get());
 
         ExtensionFilterQuery.InvalidFilterException invalidNumber = assertThrows(

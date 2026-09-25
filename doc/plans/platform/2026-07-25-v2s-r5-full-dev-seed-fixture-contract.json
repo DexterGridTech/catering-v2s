@@ -308,7 +308,7 @@
           "deviceType": "laptop",
           "status": "ENABLED",
           "activationCode": "62000001",
-          "configuration": {"printers": [{"clientKey": "front-builtin", "name": "前台内置打印机", "brandKey": "GENERIC", "modelKey": "BUILTIN_THERMAL_58", "paperSpecKey": "THERMAL_58", "connectionMethodKey": "BUILT_IN"}], "functions": [{"clientKey": "front-cashier", "functionKey": "ORDERING_CASHIER", "ranges": [], "scenes": [{"sceneKey": "TABLE_ORDER_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "front-builtin"}]}]}]}
+          "configuration": {"printers": [{"clientKey": "front-builtin", "name": "前台内置打印机", "brandKey": "GENERIC", "modelKey": "BUILTIN_THERMAL_58", "paperSpecKey": "THERMAL_58", "connectionMethodKey": "BUILT_IN"}], "functions": [{"clientKey": "front-cashier", "functionKey": "ORDERING_CASHIER", "ranges": [{"key": "TABLE_AREA", "all": false, "referenceKeys": ["area-table-main"]}, {"key": "NO_TABLE", "all": false, "referenceKeys": []}], "scenes": [{"sceneKey": "CHECKOUT_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "front-builtin"}]}]}]}
         },
         {
           "key": "term-kitchen-multi",
@@ -317,7 +317,7 @@
           "deviceType": "laptop",
           "status": "ENABLED",
           "activationCode": "62000002",
-          "configuration": {"printers": [{"clientKey": "kitchen-network", "name": "后厨网口热敏", "brandKey": "EPSON", "modelKey": "EPSON_TM_T88VII", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "NETWORK", "connectionParameter": "192.168.10.21"}, {"clientKey": "kitchen-usb", "name": "后厨USB热敏", "brandKey": "GENERIC", "modelKey": "GENERIC_THERMAL_80", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "USB", "connectionParameter": "USB-KITCHEN-01"}, {"clientKey": "kitchen-label", "name": "后厨USB标签", "brandKey": "GENERIC", "modelKey": "GENERIC_LABEL_40_30", "paperSpecKey": "LABEL_40_30", "connectionMethodKey": "USB", "connectionParameter": "USB-KITCHEN-LABEL-01"}], "functions": [{"clientKey": "kitchen-print-main", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": true, "refs": []}], "scenes": [{"sceneKey": "PREPARATION_TICKET", "orderTypes": ["DINE_IN", "TAKEAWAY"], "printers": [{"printerClientKey": "kitchen-network"}, {"printerClientKey": "kitchen-usb"}]}]}, {"clientKey": "kitchen-print-label", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": true, "refs": []}], "scenes": [{"sceneKey": "LABEL_PREPARATION_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "kitchen-label"}]}]}]}
+          "configuration": {"printers": [{"clientKey": "kitchen-network", "name": "后厨网口热敏", "brandKey": "EPSON", "modelKey": "EPSON_TM_T88VII", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "NETWORK", "connectionParameter": "10.20.0.21"}, {"clientKey": "kitchen-usb", "name": "后厨USB热敏", "brandKey": "GENERIC", "modelKey": "GENERIC_THERMAL_80", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "USB", "connectionParameter": "USB-KITCHEN-THERMAL-02"}, {"clientKey": "kitchen-label", "name": "后厨USB标签", "brandKey": "GENERIC", "modelKey": "GENERIC_LABEL_40_30", "paperSpecKey": "LABEL_40_30", "connectionMethodKey": "USB", "connectionParameter": "USB-KITCHEN-LABEL-01"}], "functions": [{"clientKey": "kitchen-print-main", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": false, "referenceKeys": ["HOT_KITCHEN"]}], "scenes": [{"sceneKey": "PREPARATION_TICKET", "orderTypes": ["DINE_IN", "TAKEAWAY"], "printers": [{"printerClientKey": "kitchen-network"}, {"printerClientKey": "kitchen-usb"}]}]}, {"clientKey": "kitchen-print-label", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": false, "referenceKeys": ["PACKING"]}], "scenes": [{"sceneKey": "LABEL_PREPARATION_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "kitchen-label"}]}]}]}
         },
         {
           "key": "term-kds",
@@ -326,7 +326,7 @@
           "deviceType": "laptop",
           "status": "ENABLED",
           "activationCode": "62000003",
-          "configuration": {"printers": [], "functions": [{"clientKey": "kds-main", "functionKey": "KDS", "ranges": [{"key": "PRODUCTION_TAG", "all": true, "refs": []}], "scenes": []}]}
+          "configuration": {"printers": [], "functions": [{"clientKey": "kds-main", "functionKey": "KDS", "ranges": [{"key": "PRODUCTION_TAG", "all": true, "referenceKeys": []}], "scenes": []}]}
         },
         {
           "key": "term-handheld",
@@ -335,7 +335,7 @@
           "deviceType": "mobile",
           "status": "ENABLED",
           "activationCode": "62000004",
-          "configuration": {"printers": [{"clientKey": "handheld-bt", "name": "移动蓝牙热敏", "brandKey": "GENERIC", "modelKey": "GENERIC_THERMAL_58", "paperSpecKey": "THERMAL_58", "connectionMethodKey": "BLUETOOTH", "connectionParameter": "BT-HANDHELD-01"}], "functions": [{"clientKey": "handheld-ordering", "functionKey": "ORDERING_CASHIER", "ranges": [], "scenes": [{"sceneKey": "TABLE_ORDER_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "handheld-bt"}]}]}]}
+          "configuration": {"printers": [{"clientKey": "handheld-bt", "name": "移动蓝牙热敏", "brandKey": "GENERIC", "modelKey": "GENERIC_THERMAL_58", "paperSpecKey": "THERMAL_58", "connectionMethodKey": "BLUETOOTH", "connectionParameter": "BT-HANDHELD-QUEUE-01"}], "functions": [{"clientKey": "handheld-confirm", "functionKey": "ORDER_CONFIRMATION", "ranges": [{"key": "NO_TABLE", "all": false, "referenceKeys": []}], "scenes": []}, {"clientKey": "handheld-queue", "functionKey": "QUEUE_CALL", "ranges": [], "scenes": [{"sceneKey": "QUEUE_NUMBER_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "handheld-bt"}]}]}]}
         },
         {
           "key": "term-label",
@@ -344,16 +344,16 @@
           "deviceType": "laptop",
           "status": "ENABLED",
           "activationCode": "62000005",
-          "configuration": {"printers": [{"clientKey": "label-cloud", "name": "云端标签打印机", "brandKey": "GENERIC", "modelKey": "GENERIC_LABEL_40_60", "paperSpecKey": "LABEL_40_60", "connectionMethodKey": "CLOUD", "connectionParameter": "cloud-label-01"}], "functions": [{"clientKey": "label-kitchen", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": true, "refs": []}], "scenes": [{"sceneKey": "LABEL_PREPARATION_TICKET", "orderTypes": ["DINE_IN", "TAKEAWAY"], "printers": [{"printerClientKey": "label-cloud"}]}]}]}
+          "configuration": {"printers": [{"clientKey": "label-cloud", "name": "云端标签打印机", "brandKey": "GENERIC", "modelKey": "GENERIC_LABEL_40_60", "paperSpecKey": "LABEL_40_60", "connectionMethodKey": "CLOUD", "connectionParameter": "CLOUD-LABEL-STORE-01"}], "functions": [{"clientKey": "label-kitchen", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": false, "referenceKeys": ["BEVERAGE"]}], "scenes": [{"sceneKey": "LABEL_PREPARATION_TICKET", "orderTypes": ["DINE_IN", "TAKEAWAY"], "printers": [{"printerClientKey": "label-cloud"}]}]}]}
         },
         {
           "key": "term-preparing",
-          "store": "store-operating",
+          "store": "store-preparing",
           "name": "备餐调度终端",
-          "deviceType": "laptop",
+          "deviceType": "mobile",
           "status": "ENABLED",
           "activationCode": "62000006",
-          "configuration": {"printers": [], "functions": [{"clientKey": "preparing-dispatch", "functionKey": "DISPATCH", "ranges": [], "scenes": []}]}
+          "configuration": {"printers": [], "functions": [{"clientKey": "preparing-kitchen", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": true, "referenceKeys": []}], "scenes": []}]}
         },
         {
           "key": "term-disabled",
@@ -362,7 +362,7 @@
           "deviceType": "laptop",
           "status": "DISABLED",
           "activationCode": "62000007",
-          "configuration": {"printers": [{"clientKey": "disabled-thermal", "name": "备用网口热敏", "brandKey": "GENERIC", "modelKey": "GENERIC_THERMAL_80", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "NETWORK", "connectionParameter": "192.168.10.27"}], "functions": [{"clientKey": "disabled-ordering", "functionKey": "ORDERING_CASHIER", "ranges": [], "scenes": []}]}
+          "configuration": {"printers": [{"clientKey": "disabled-thermal", "name": "备用网口热敏", "brandKey": "GENERIC", "modelKey": "GENERIC_THERMAL_80", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "NETWORK", "connectionParameter": "10.20.0.27"}], "functions": [{"clientKey": "disabled-dispatch", "functionKey": "DISPATCH", "ranges": [{"key": "TABLE_AREA", "all": true, "referenceKeys": []}, {"key": "DELIVERY", "all": false, "referenceKeys": []}], "scenes": [{"sceneKey": "DISH_CHECK_SUMMARY", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "disabled-thermal"}]}]}]}
         },
         {
           "key": "term-history",
@@ -371,7 +371,7 @@
           "deviceType": "laptop",
           "status": "VOIDED",
           "activationCode": "62000008",
-          "configuration": {"printers": [{"clientKey": "history-builtin", "name": "历史内置打印机", "brandKey": "GENERIC", "modelKey": "BUILTIN_THERMAL_80", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "BUILT_IN"}], "functions": [{"clientKey": "history-ordering", "functionKey": "ORDERING_CASHIER", "ranges": [], "scenes": []}]}
+          "configuration": {"printers": [{"clientKey": "history-builtin", "name": "历史内置打印机", "brandKey": "GENERIC", "modelKey": "BUILTIN_THERMAL_80", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "BUILT_IN"}], "functions": [{"clientKey": "history-ordering", "functionKey": "ORDERING_CASHIER", "ranges": [{"key": "TABLE_AREA", "all": false, "referenceKeys": ["area-table-main"]}], "scenes": [{"sceneKey": "CHECKOUT_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "history-builtin"}]}]}]}
         }
       ]
     },
@@ -435,10 +435,10 @@
     },
     "contracts": [
       {"key": "contract-current-a", "contractNo": "R5-CUR-001", "store": "store-operating", "status": "ACTIVE", "effectiveFrom": "2026-07-01", "effectiveTo": "2026-08-31", "phaseNameSnapshot": "一期", "extensionValues": {"settlementMode": "月结", "signedDate": "2026-06-15", "depositRate": 0.2, "renewal": true}, "items": [{"code": "SKU-TEA-01", "name": "招牌茶饮"}]},
-      {"key": "contract-current-b", "contractNo": "R5-CUR-002", "store": "store-operating", "status": "ACTIVE", "effectiveFrom": "2026-07-25", "effectiveTo": null, "extensionValues": {"settlementMode": "预付", "signedDate": "2026-07-01", "depositRate": 0.1, "renewal": false}, "items": [{"code": "SKU-TEA-02", "name": "季节茶饮"}]},
-      {"key": "contract-future", "contractNo": "R5-FUT-001", "store": "store-preparing", "status": "ACTIVE", "effectiveFrom": "2026-08-01", "effectiveTo": "2026-12-31", "extensionValues": {"settlementMode": "月结", "signedDate": "2026-07-20", "depositRate": 0.15}, "items": [{"code": "SKU-BAKE-01", "name": "招牌面包"}]},
-      {"key": "contract-invalid", "contractNo": "R5-INV-001", "store": "store-history", "status": "INVALID", "effectiveFrom": "2026-05-01", "effectiveTo": "2026-06-30", "extensionValues": {"settlementMode": "历史结算", "signedDate": "2026-04-10", "renewal": false}, "items": [{"code": "SKU-HIS-01", "name": "历史商品"}]},
-      {"key": "contract-ended", "contractNo": "R5-END-001", "store": "store-history", "status": "ACTIVE", "effectiveFrom": "2026-01-01", "effectiveTo": "2026-07-24", "extensionValues": {"settlementMode": "到期结算", "depositRate": 0.05}, "items": [{"code": "SKU-HIS-02", "name": "到期商品"}]}
+      {"key": "contract-current-b", "contractNo": "R5-CUR-002", "store": "store-operating", "status": "ACTIVE", "effectiveFrom": "2026-07-25", "effectiveTo": null, "phaseNameSnapshot": "二期", "extensionValues": {"settlementMode": "预付", "signedDate": "2026-07-01", "depositRate": 0.1, "renewal": false}, "items": [{"code": "SKU-TEA-02", "name": "季节茶饮"}]},
+      {"key": "contract-future", "contractNo": "R5-FUT-001", "store": "store-preparing", "status": "ACTIVE", "effectiveFrom": "2026-08-01", "effectiveTo": "2026-12-31", "phaseNameSnapshot": "二期", "extensionValues": {"settlementMode": "月结", "signedDate": "2026-07-20", "depositRate": 0.15}, "items": [{"code": "SKU-BAKE-01", "name": "招牌面包"}]},
+      {"key": "contract-invalid", "contractNo": "R5-INV-001", "store": "store-history", "status": "INVALID", "effectiveFrom": "2026-05-01", "effectiveTo": "2026-06-30", "phaseNameSnapshot": "一期", "extensionValues": {"settlementMode": "历史结算", "signedDate": "2026-04-10", "renewal": false}, "items": [{"code": "SKU-HIS-01", "name": "历史商品"}]},
+      {"key": "contract-ended", "contractNo": "R5-END-001", "store": "store-history", "status": "ACTIVE", "effectiveFrom": "2026-01-01", "effectiveTo": "2026-07-24", "phaseNameSnapshot": "一期", "extensionValues": {"settlementMode": "到期结算", "depositRate": 0.05}, "items": [{"code": "SKU-HIS-02", "name": "到期商品"}]}
     ]
   },
   "expectedCounts": {

@@ -1,6 +1,5 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.OrganizationHierarchyPersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
@@ -12,6 +11,7 @@ import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationNodeLookup;
 import com.catering.v2s.organization.api.OrganizationNodeReadback;
 import com.catering.v2s.organization.api.OrganizationNodeTypes;
+import com.catering.v2s.organization.application.persistence.OrganizationHierarchyPersistence;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import java.util.List;
@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrganizationHierarchyService implements OrganizationNodeLookup, OperationsOrganizationHierarchyCommandApi {
     /** The commercial group is the logical root. Only its REGION and PROJECT descendants are organization nodes. */
     private static final List<String> NODE_TYPES = List.of(OrganizationNodeTypes.REGION, OrganizationNodeTypes.PROJECT);
+
     private static final String SORT_DIRECTION_ASC = "ASC";
     private static final String SORT_DIRECTION_DESC = "DESC";
 
@@ -37,11 +38,21 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
     private final ExtensionDefinitionLookup definitions;
 
     public OrganizationHierarchyService(JdbcTemplate jdbc, TimeProvider time) {
-        this(new OrganizationHierarchyPersistence(jdbc), time, new OrganizationHierarchyCommandReceiptService(jdbc, time), null, null);
+        this(
+                new OrganizationHierarchyPersistence(jdbc),
+                time,
+                new OrganizationHierarchyCommandReceiptService(jdbc, time),
+                null,
+                null);
     }
 
     public OrganizationHierarchyService(JdbcTemplate jdbc, TimeProvider time, ExtensionDefinitionLookup definitions) {
-        this(new OrganizationHierarchyPersistence(jdbc), time, new OrganizationHierarchyCommandReceiptService(jdbc, time), null, definitions);
+        this(
+                new OrganizationHierarchyPersistence(jdbc),
+                time,
+                new OrganizationHierarchyCommandReceiptService(jdbc, time),
+                null,
+                definitions);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -644,7 +655,8 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
         OrganizationNodeReadback node = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
         return new HierarchyPageItem(
                 node,
-                persistence.readPaths(workspaceUuid, groupWorkspaceKey, List.of(nodeId))
+                persistence
+                        .readPaths(workspaceUuid, groupWorkspaceKey, List.of(nodeId))
                         .getOrDefault(nodeId, List.of()));
     }
 
@@ -1305,14 +1317,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             long occurredAt,
             AuditActor actor,
             String changesJson) {
-        persistence.insertAudit(
-                workspaceUuid,
-                key,
-                nodeId,
-                action,
-                occurredAt,
-                actor,
-                changesJson);
+        persistence.insertAudit(workspaceUuid, key, nodeId, action, occurredAt, actor, changesJson);
     }
 
     private static String json(String value) {
@@ -1391,26 +1396,14 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             int page,
             int pageSize) {
         public static HierarchyQuery empty() {
-            return new HierarchyQuery(
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    "UPDATED_AT",
-                    SORT_DIRECTION_DESC,
-                    1,
-                    50);
+            return new HierarchyQuery(null, null, null, null, null, "UPDATED_AT", SORT_DIRECTION_DESC, 1, 50);
         }
 
         private HierarchyQuery validated() {
             String safeSort = sort == null ? "UPDATED_AT" : sort;
             String safeDirection = direction == null ? SORT_DIRECTION_DESC : direction;
             if (!List.of("NAME", "CODE", "UPDATED_AT").contains(safeSort)
-                    || !List.of(
-                                    SORT_DIRECTION_ASC,
-                                    SORT_DIRECTION_DESC)
-                            .contains(safeDirection)
+                    || !List.of(SORT_DIRECTION_ASC, SORT_DIRECTION_DESC).contains(safeDirection)
                     || (type != null && !NODE_TYPES.contains(type))
                     || (status != null
                             && !List.of("ENABLED", "DISABLED", "VOIDED").contains(status))

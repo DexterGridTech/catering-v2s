@@ -1,9 +1,7 @@
 package com.catering.v2s.salesmenu.application;
 
-import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
-import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence.PublicationItemSeed;
-import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence.PublicationMediaSeed;
-import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence.PublicationSkuSeed;
+import static com.catering.v2s.salesmenu.application.SalesMenuReadModels.*;
+
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
@@ -12,47 +10,28 @@ import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationOwnerApi;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.catering.v2s.platform.asset.api.SalesMenuAssetReadApi;
-import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
-import com.catering.v2s.salesmenu.api.SalesMenuAssetCommandApi;
-import com.catering.v2s.salesmenu.api.SalesMenuCommandApi;
 import com.catering.v2s.salesmenu.api.SalesMenuOwnerApi;
 import com.catering.v2s.salesmenu.api.SalesMenuReadback;
-import com.catering.v2s.salesmenu.domain.SalesMenuActivationStatus;
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence.PublicationItemSeed;
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence.PublicationMediaSeed;
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence.PublicationSkuSeed;
 import com.catering.v2s.salesmenu.domain.SalesMenuAggregate;
 import com.catering.v2s.salesmenu.domain.SalesMenuAssetTarget;
-import com.catering.v2s.salesmenu.domain.SalesMenuAssetTargetMode;
-import com.catering.v2s.salesmenu.domain.SalesMenuCandidateQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuCommandReadbackStatus;
-import com.catering.v2s.salesmenu.domain.SalesMenuCursorIdentity;
 import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMedia;
 import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMediaMode;
-import com.catering.v2s.salesmenu.domain.SalesMenuItemPageQuery;
-import com.catering.v2s.salesmenu.domain.SalesMenuItemQuery;
-import com.catering.v2s.salesmenu.domain.SalesMenuListQuery;
-import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleState;
-import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTarget;
-import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTargetKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuMoveDirection;
-import com.catering.v2s.salesmenu.domain.SalesMenuOperationQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuOperationResult;
 import com.catering.v2s.salesmenu.domain.SalesMenuOrderingConstraints;
 import com.catering.v2s.salesmenu.domain.SalesMenuPublicationBlockerKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuSaleContent;
-import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentInput;
 import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuSalesUnit;
 import com.catering.v2s.salesmenu.domain.SalesMenuSchedule;
 import com.catering.v2s.salesmenu.domain.SalesMenuScope;
-import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOption;
-import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOptionValue;
 import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuVersionQuery;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.sql.Time;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,12 +49,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.catering.v2s.salesmenu.application.SalesMenuReadModels.*;
-
 /** Owns the salesmenupublication sales-menu facts. */
-
 @Service
-
 public class SalesMenuPublicationService {
 
     private static final String CAPABILITY = "EDIT_STORE_SALES_MENU";
@@ -95,7 +70,6 @@ public class SalesMenuPublicationService {
     }
 
     @Autowired
-
     public SalesMenuPublicationService(
             SalesMenuPersistence persistence,
             TimeProvider time,
@@ -116,7 +90,6 @@ public class SalesMenuPublicationService {
         this.organization = organization;
         this.assets = assets;
         this.catalogAssetReferenceLock = catalogAssetReferenceLock;
-
     }
 
     public SalesMenuReadback.PublicationPreview publicationPreview(SalesMenuTarget target, UUID channelRef) {
@@ -209,14 +182,12 @@ public class SalesMenuPublicationService {
         String hash = hash(receiptRequest(request));
         persistence.lockCommandReceipt(context.scope().workspaceUuid(), operation, context.idempotencyKey());
         L locked = lock.get();
-        ReceiptRow existing = persistence
-                .readCommandReceipt(
-                        context.scope().workspaceUuid(),
-                        operation,
-                        context.idempotencyKey())
-                .stream()
-                .findFirst()
-                .orElse(null);
+        ReceiptRow existing =
+                persistence
+                        .readCommandReceipt(context.scope().workspaceUuid(), operation, context.idempotencyKey())
+                        .stream()
+                        .findFirst()
+                        .orElse(null);
         if (existing != null) return replay(operation, context, hash);
         P state = preflight.apply(locked);
         T result = action.apply(state);
@@ -241,10 +212,7 @@ public class SalesMenuPublicationService {
 
     private <T> T replay(String operation, SalesMenuOwnerApi.CommandContext context, String hash) {
         var row = persistence
-                .readCommandReceiptForReplay(
-                        context.scope().workspaceUuid(),
-                        operation,
-                        context.idempotencyKey())
+                .readCommandReceiptForReplay(context.scope().workspaceUuid(), operation, context.idempotencyKey())
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> problem("RECEIPT_MISSING", 500, "命令回执缺失"));
@@ -637,14 +605,7 @@ public class SalesMenuPublicationService {
             SalesMenuSchedule schedule,
             UUID sourceDraft,
             Long sourceDraftRevision) {
-        persistence.insertVersion(
-                version,
-                menu,
-                kind,
-                revision,
-                schedule,
-                sourceDraft,
-                sourceDraftRevision);
+        persistence.insertVersion(version, menu, kind, revision, schedule, sourceDraft, sourceDraftRevision);
     }
 
     private List<ItemRow> itemRows(SalesMenuTarget target, SalesMenuVersionKind kind, UUID section, UUID itemRef) {
@@ -674,9 +635,11 @@ public class SalesMenuPublicationService {
         if (rows.isEmpty()) return Map.of();
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
-        List<OrderOptionGroupRow> groups = persistence.readItemOrderOptionGroups(rows.getFirst().versionRef(), itemRefs);
+        List<OrderOptionGroupRow> groups =
+                persistence.readItemOrderOptionGroups(rows.getFirst().versionRef(), itemRefs);
         if (groups.isEmpty()) return Map.of();
-        List<OrderOptionValueRow> values = persistence.readItemOrderOptionValues(rows.getFirst().versionRef(), itemRefs);
+        List<OrderOptionValueRow> values =
+                persistence.readItemOrderOptionValues(rows.getFirst().versionRef(), itemRefs);
         Map<OptionKey, List<OrderOptionValueRow>> valuesByGroup = new LinkedHashMap<>();
         values.forEach(value -> valuesByGroup
                 .computeIfAbsent(
@@ -747,9 +710,9 @@ public class SalesMenuPublicationService {
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
         if (!allowWithoutOwnerApis && catalog == null && organization == null) return Map.of();
         Map<UUID, List<SkuRow>> result = new LinkedHashMap<>();
-        persistence.readItemSkuRows(rows.getFirst().versionRef(), itemRefs)
-                .forEach(row -> result.computeIfAbsent(row.salesItemRef(), ignored -> new ArrayList<>())
-                        .add(row));
+        persistence.readItemSkuRows(rows.getFirst().versionRef(), itemRefs).forEach(row -> result.computeIfAbsent(
+                        row.salesItemRef(), ignored -> new ArrayList<>())
+                .add(row));
         result.replaceAll((ignored, values) -> List.copyOf(values));
         return Map.copyOf(result);
     }
@@ -763,9 +726,9 @@ public class SalesMenuPublicationService {
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
         Map<UUID, List<UUID>> result = new HashMap<>();
-        persistence.readItemMediaRows(rows.getFirst().versionRef(), itemRefs)
-                .forEach(row -> result.computeIfAbsent(row.salesItemRef(), ignored -> new ArrayList<>())
-                        .add(row.assetRef()));
+        persistence.readItemMediaRows(rows.getFirst().versionRef(), itemRefs).forEach(row -> result.computeIfAbsent(
+                        row.salesItemRef(), ignored -> new ArrayList<>())
+                .add(row.assetRef()));
         result.replaceAll((ignored, refs) -> List.copyOf(refs));
         if (validateAssets) validateAssetFacts(result);
         return Map.copyOf(result);
@@ -815,12 +778,12 @@ public class SalesMenuPublicationService {
     }
 
     private UUID draftVersion(UUID menu) {
-        return persistence.readDraftVersion(menu)
-                .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
+        return persistence.readDraftVersion(menu).orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
     }
 
     private UUID publishedVersion(UUID menu) {
-        return persistence.readLatestPublishedVersion(menu)
+        return persistence
+                .readLatestPublishedVersion(menu)
                 .orElseThrow(() -> problem("PUBLICATION_NOT_FOUND", 404, "尚无发布版本"));
     }
 
@@ -1012,8 +975,7 @@ public class SalesMenuPublicationService {
         return latestPublishedSourceDraftRevision == null || draftRevision != latestPublishedSourceDraftRevision;
     }
 
-    private record MenuCommandLock(
-            SalesMenuAggregate menu, OrganizationOwnerApi.SalesMenuStoreJudgment store) {}
+    private record MenuCommandLock(SalesMenuAggregate menu, OrganizationOwnerApi.SalesMenuStoreJudgment store) {}
 
     private record PublishPreflight(SalesMenuAggregate menu, PublicationValidation validation) {}
 
@@ -1027,5 +989,4 @@ public class SalesMenuPublicationService {
             List<SalesMenuReadback.PublicationBlocker> blockers) {}
 
     private record OptionKey(UUID salesItemRef, UUID definitionRef) {}
-
 }

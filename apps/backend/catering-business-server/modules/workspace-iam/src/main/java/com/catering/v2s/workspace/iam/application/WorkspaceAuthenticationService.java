@@ -1,6 +1,5 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAuthenticationPersistence;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationEntityLookup;
 import com.catering.v2s.organization.api.OrganizationNodeLookup;
@@ -16,6 +15,7 @@ import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog;
 import com.catering.v2s.workspace.iam.api.WorkspaceRoleReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAuthenticationPersistence;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.security.SecureRandom;
@@ -186,8 +186,8 @@ public class WorkspaceAuthenticationService {
     private Account authenticatePassword(
             String groupWorkspaceKey, String loginName, char[] password, String sourceAddress) {
         WorkspaceLoginRateLimitService.Attempt attempt = loginLimits.begin(groupWorkspaceKey, loginName, sourceAddress);
-        Account account = account(persistence.accountByLogin(
-                groupWorkspaceKey, loginName == null ? "" : loginName.toLowerCase()));
+        Account account = account(
+                persistence.accountByLogin(groupWorkspaceKey, loginName == null ? "" : loginName.toLowerCase()));
         if (account == null) {
             loginLimits.recordInvalid(groupWorkspaceKey, attempt);
             throw new InvalidCredentialsException();
@@ -219,12 +219,7 @@ public class WorkspaceAuthenticationService {
         persistence.supersedeLoginOtp(account.id());
         String otp = String.format("%06d", random.nextInt(1_000_000));
         persistence.insertLoginOtp(
-                UUID.randomUUID(),
-                account.workspaceUuid(),
-                account.key(),
-                sha256(otp),
-                account.id(),
-                expires);
+                UUID.randomUUID(), account.workspaceUuid(), account.key(), sha256(otp), account.id(), expires);
         return new OtpDelivery(expires, debugCodeExposure ? otp : null);
     }
 
@@ -241,8 +236,7 @@ public class WorkspaceAuthenticationService {
     private Account verifyOtp(String groupWorkspaceKey, String mobile, String otp) {
         Account account = accountByMobile(groupWorkspaceKey, normalizedMobile(mobile));
         otpLimits.beforeVerify(account.workspaceUuid(), account.key(), "WORKSPACE_LOGIN", account.id());
-        int consumed = persistence.consumeLoginOtp(
-                time.currentEpochMillis(), account.id(), sha256(otp));
+        int consumed = persistence.consumeLoginOtp(time.currentEpochMillis(), account.id(), sha256(otp));
         if (consumed != 1) {
             persistence.incrementLoginOtpAttempts(account.id());
             otpLimits.invalidVerify(account.workspaceUuid(), account.key(), "WORKSPACE_LOGIN", account.id());
@@ -453,8 +447,8 @@ public class WorkspaceAuthenticationService {
     }
 
     private WorkspaceAuthenticationPersistence.ReadAuthorizationRow activeAuthorizationRow(String rawToken) {
-        WorkspaceAuthenticationPersistence.ReadAuthorizationRow row = persistence.activeAuthorizationRow(
-                sha256(rawToken), time.currentEpochMillis());
+        WorkspaceAuthenticationPersistence.ReadAuthorizationRow row =
+                persistence.activeAuthorizationRow(sha256(rawToken), time.currentEpochMillis());
         if (row == null) throw new SessionInvalidException();
         return row;
     }
@@ -707,8 +701,8 @@ public class WorkspaceAuthenticationService {
     public PasswordChangeResult changeCurrentPassword(
             String rawToken, char[] currentPassword, char[] newPassword, long expectedSessionVersion) {
         if (newPassword == null || newPassword.length < 8) throw new InvalidCredentialsException();
-        WorkspaceAuthenticationPersistence.SessionCredentialRow current = persistence.sessionCredential(
-                sha256(rawToken), time.currentEpochMillis());
+        WorkspaceAuthenticationPersistence.SessionCredentialRow current =
+                persistence.sessionCredential(sha256(rawToken), time.currentEpochMillis());
         if (current == null) throw new SessionInvalidException();
         if (current.contextVersion() != expectedSessionVersion) throw new SessionConflictException();
         if (!passwords.matches(
@@ -773,11 +767,10 @@ public class WorkspaceAuthenticationService {
     }
 
     private CreatedSession createRawSession(Account account) {
-        List<Assignment> assignments = persistence.activeAssignments(
-                        account.id(), account.workspaceUuid(), account.key())
-                .stream()
-                .map(value -> new Assignment(value.id(), value.roleId(), value.nodeType(), value.nodeId()))
-                .toList();
+        List<Assignment> assignments =
+                persistence.activeAssignments(account.id(), account.workspaceUuid(), account.key()).stream()
+                        .map(value -> new Assignment(value.id(), value.roleId(), value.nodeType(), value.nodeId()))
+                        .toList();
         List<Assignment> enterable = availableAssignments(account.workspaceUuid(), account.key(), assignments);
         Assignment selected = enterable.size() == 1 ? enterable.getFirst() : null;
         LockedSelection locked = selected == null
@@ -798,8 +791,7 @@ public class WorkspaceAuthenticationService {
                 locked.selection().storeId(),
                 locked.selection().headCompanyId(),
                 now + SESSION_TTL_MILLIS);
-        persistence.recordAuthentication(
-                UUID.randomUUID(), account.workspaceUuid(), account.key(), account.id(), now);
+        persistence.recordAuthentication(UUID.randomUUID(), account.workspaceUuid(), account.key(), account.id(), now);
         return new CreatedSession(raw, sessionId, selected, locked.visibleFacts(), enterable);
     }
 
@@ -854,8 +846,7 @@ public class WorkspaceAuthenticationService {
     }
 
     private SessionRow require(String raw) {
-        WorkspaceAuthenticationPersistence.SessionRow row = persistence.session(
-                sha256(raw), time.currentEpochMillis());
+        WorkspaceAuthenticationPersistence.SessionRow row = persistence.session(sha256(raw), time.currentEpochMillis());
         if (row == null) throw new SessionInvalidException();
         return new SessionRow(
                 row.id(),
@@ -1114,8 +1105,8 @@ public class WorkspaceAuthenticationService {
     }
 
     private Assignment requireAssignment(SessionRow current, UUID assignmentId) {
-        WorkspaceAuthenticationPersistence.AssignmentRow row = persistence.assignment(
-                assignmentId, current.accountId(), current.workspaceUuid(), current.key());
+        WorkspaceAuthenticationPersistence.AssignmentRow row =
+                persistence.assignment(assignmentId, current.accountId(), current.workspaceUuid(), current.key());
         if (row == null) throw new SessionInvalidException();
         return new Assignment(row.id(), row.roleId(), row.nodeType(), row.nodeId());
     }

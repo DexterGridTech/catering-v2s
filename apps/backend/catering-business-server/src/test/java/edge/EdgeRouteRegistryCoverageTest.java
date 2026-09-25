@@ -35,22 +35,27 @@ class EdgeRouteRegistryCoverageTest {
                     "GET /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
                     "getOperationsStoreTerminals"),
             Map.entry(
-                    "GET /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+                    "GET /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/"
+                            + "{terminalRef}",
                     "getOperationsStoreTerminal"),
             Map.entry(
                     "POST /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
                     "postOperationsStoreTerminal"),
             Map.entry(
-                    "PUT /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+                    "PUT /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/"
+                            + "{terminalRef}",
                     "putOperationsStoreTerminal"),
             Map.entry(
-                    "POST /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status",
+                    "POST /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/"
+                            + "{terminalRef}/status",
                     "postOperationsStoreTerminalStatus"),
             Map.entry(
-                    "GET /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates",
+                    "GET /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/"
+                            + "area-candidates",
                     "getOperationsStoreTerminalAreaCandidates"),
             Map.entry(
-                    "GET /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates",
+                    "GET /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/"
+                            + "tag-candidates",
                     "getOperationsStoreTerminalTagCandidates"));
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 

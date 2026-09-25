@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
-import {COMPLETE_SEED_STAGE_IDS, completeSeedMarkdownPath, renderCompleteSeedMarkdown, validateCompleteSeedEvidence} from "./r5-complete-seed-executor.mjs";
+import {COMPLETE_SEED_STAGE_IDS, childFirstFailure, completeSeedMarkdownPath, renderCompleteSeedMarkdown, validateCompleteSeedEvidence} from "./r5-complete-seed-executor.mjs";
 import {availabilityContractDigest, availabilityContractFactsFromPlan} from "./catalog-availability-receipt.mjs";
 
+const completeSeedSource = fs.readFileSync(path.resolve("scripts/dev/r5-complete-seed-executor.mjs"), "utf8");
+
 const devRunId = "dev-run-1";
+const fixture = JSON.parse(fs.readFileSync(path.resolve("doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json"), "utf8"));
 const availabilityItems = () => [
   ["R5-SALES-AVAIL-NO-TARGET-001", null, "NOT_APPLICABLE", null, null],
   ["R5-SALES-AVAIL-NORMAL-001", {balance: "1", allowNegative: false, lowStockThreshold: "0"}, "APPLICABLE", "AVAILABLE", null],
@@ -18,6 +23,25 @@ const availabilityReceipt = () => availabilityItems().map((item, index) => ({
   targetPresent: item.expectedTarget !== null,
   expectedAvailability: item.expectedAvailability,
 }));
+
+test("complete seed dry-run includes the terminal post-step plan and preserves child first failure", () => {
+  assert.match(completeSeedSource, /store-terminal-seed-executor\.mjs\", \"--plan-only\"/);
+  assert.match(completeSeedSource, /COMPLETE_SEED_STORE_TERMINAL_PLAN_FAILED:/);
+  assert.match(completeSeedSource, /TERMINAL_PLAN_DIGEST=/);
+});
+
+test("complete seed does not mask a failed child stage as PASS", () => {
+  assert.match(completeSeedSource, /requireChildStagePass\(catalog, "COMPLETE_SEED_CATALOG_FAILED"\);\s*let catalogAvailabilityContract/s);
+  assert.match(completeSeedSource, /requireChildStagePass\(salesMenu, "COMPLETE_SEED_SALES_MENU_FAILED"\);\s*phase\("sales-menu", "PASS"/s);
+});
+
+test("complete seed preserves the terminal child first failure when no report exists", () => {
+  assert.match(completeSeedSource, /if \(!terminalPostStep\.reportPath\) throw failure\(`COMPLETE_SEED_STORE_TERMINAL_POST_STEP_FAILED:\$\{childFirstFailure\(terminalResult\)\}`\)/);
+});
+
+test("complete seed preserves lower-case child failure reasons", () => {
+  assert.equal(childFirstFailure({stdout: "R5_STORE_TERMINAL_POST_STEP=FAIL; REASON=group-store-select_HTTP_409_PLATFORM_COMMON_CONTEXT_STALE"}), "group-store-select_HTTP_409_PLATFORM_COMMON_CONTEXT_STALE");
+});
 const valid = () => [{
   id: "owner-command", exitStatus: 0,
   manifest: {managedDevRunId: devRunId, business: "PASS", cleanup: "PASS_NO_PERSISTENT_SEED_PROCESS"},
@@ -40,8 +64,66 @@ const valid = () => [{
 }];
 
 test("complete r5 seed accepts exactly the ordered owner then catalog receipts", () => {
-  const postSteps = [{id: "store-terminal", exitStatus: 0, reportPath: "/runtime/r5/store-terminal/post-step.json", report: {managedDevRunId: devRunId, business: "PASS", cleanup: "PASS_NO_PERSISTENT_SEED_PROCESS", created: 8, readback: 8}}];
+  const postSteps = [{id: "store-terminal", exitStatus: 0, reportPath: "/runtime/r5/store-terminal/post-step.json", report: {managedDevRunId: devRunId, business: "PASS", cleanup: "PASS_NO_PERSISTENT_SEED_PROCESS", created: 8, roleGroup: "EDIT", roleProject: "EDIT", roleStore: "READ_ONLY", detailReadback: Array.from({length: 8}, (_, index) => ({key: `terminal-${index}`, terminalRef: `terminal-ref-${index}`})), listReadback: Array.from({length: 7}, (_, index) => ({key: `terminal-${index}`, terminalRef: `terminal-ref-${index}`}))}}];
   assert.deepEqual(validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: valid(), postSteps}), {managedDevRunId: devRunId, sourceItems: 73, eligibleItems: 72, excludedItems: 1, availabilityItemCount: 6, stageIds: [...COMPLETE_SEED_STAGE_IDS], postStepIds: ["store-terminal"]});
+});
+
+test("complete r5 seed rejects missing terminal role evidence or activation-code leakage", () => {
+  const baseReport = {managedDevRunId: devRunId, business: "PASS", cleanup: "PASS_NO_PERSISTENT_SEED_PROCESS", created: 8, roleGroup: "EDIT", roleProject: "EDIT", roleStore: "READ_ONLY", detailReadback: Array.from({length: 8}, (_, index) => ({key: `terminal-${index}`, terminalRef: `terminal-ref-${index}`})), listReadback: Array.from({length: 7}, (_, index) => ({key: `terminal-${index}`, terminalRef: `terminal-ref-${index}`}))};
+  const missingRole = [{id: "store-terminal", exitStatus: 0, reportPath: "/runtime/r5/store-terminal/post-step.json", report: {...baseReport, roleProject: "UNKNOWN"}}];
+  assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: valid(), postSteps: missingRole}), /COMPLETE_SEED_STORE_TERMINAL_POST_STEP_INVALID/);
+  const leaked = [{id: "store-terminal", exitStatus: 0, reportPath: "/runtime/r5/store-terminal/post-step.json", report: {...baseReport, detailReadback: baseReport.detailReadback.map((entry, index) => index === 0 ? {...entry, activationCode: "62999999"} : entry)}}];
+  assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: valid(), postSteps: leaked}), /COMPLETE_SEED_STORE_TERMINAL_POST_STEP_INVALID/);
+  const missingListReadback = [{id: "store-terminal", exitStatus: 0, reportPath: "/runtime/r5/store-terminal/post-step.json", report: {...baseReport, listReadback: baseReport.listReadback.slice(1)}}];
+  assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: valid(), postSteps: missingListReadback}), /COMPLETE_SEED_STORE_TERMINAL_POST_STEP_INVALID/);
+});
+
+test("complete r5 seed parent readback proves fixture identities, child refs, and readonly invariants", () => {
+  const terminals = fixture.stableFixtures.organization.storeTerminals;
+  const uuid = index => `11111111-1111-4${String(index).padStart(3, "0")}-8111-${String(index).padStart(12, "0")}`;
+  const readback = terminals.map((terminal, index) => ({
+    key: terminal.key,
+    terminalRef: uuid(index + 1),
+    name: terminal.name,
+    status: terminal.status,
+    version: terminal.status === "ENABLED" ? 1 : 3,
+    printerRefsByClientKey: Object.fromEntries((terminal.configuration.printers ?? []).map((printer, childIndex) => [printer.clientKey, uuid(index * 10 + childIndex + 20)])),
+    functionRefsByClientKey: Object.fromEntries((terminal.configuration.functions ?? []).map((fn, childIndex) => [fn.clientKey, uuid(index * 10 + childIndex + 40)])),
+  }));
+  const postSteps = [{
+    id: "store-terminal",
+    exitStatus: 0,
+    reportPath: "/runtime/r5/store-terminal/post-step.json",
+    report: {
+      managedDevRunId: devRunId,
+      business: "PASS",
+      cleanup: "PASS_NO_PERSISTENT_SEED_PROCESS",
+      created: terminals.length,
+      roleGroup: "EDIT",
+      roleProject: "EDIT",
+      roleStore: "READ_ONLY",
+      detailReadback: readback,
+      listReadback: readback.filter((entry) => entry.status !== "VOIDED").map(({key, terminalRef, name, status}) => ({key, terminalRef, name, status})),
+      roleStoreReadback: {
+        terminalRef: readback[0].terminalRef,
+        status: readback[0].status,
+        version: readback[0].version,
+        areaCandidateCount: 3,
+        tagCandidateCount: 4,
+        deniedEditStatus: 403,
+        deniedStatusStatus: 403,
+        deniedCreateStatus: 403,
+        unchangedAfterDenial: true,
+      },
+    },
+  }];
+  assert.doesNotThrow(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: valid(), fixture, postSteps}));
+  const wrongChildRef = structuredClone(postSteps);
+  wrongChildRef[0].report.detailReadback[1].printerRefsByClientKey = {wrong: "not-a-uuid"};
+  assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: valid(), fixture, postSteps: wrongChildRef}), /COMPLETE_SEED_STORE_TERMINAL_CHILD_KEYS_INVALID/);
+  const wrongRoleReadback = structuredClone(postSteps);
+  wrongRoleReadback[0].report.roleStoreReadback.version += 1;
+  assert.throws(() => validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: valid(), fixture, postSteps: wrongRoleReadback}), /COMPLETE_SEED_STORE_TERMINAL_ROLE_READBACK_INVALID/);
 });
 
 test("complete r5 seed exposes the paired human report beside the machine report", () => {

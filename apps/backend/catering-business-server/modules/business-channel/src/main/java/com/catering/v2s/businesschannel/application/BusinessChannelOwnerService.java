@@ -1,6 +1,5 @@
 package com.catering.v2s.businesschannel.application;
 
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi.CreateChannelCommand;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi.CreateTemplateCommand;
@@ -12,11 +11,12 @@ import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi.UpdateTemp
 import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence;
 import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
-import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.organization.api.OrganizationOwnerApi;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
+import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import java.util.List;
 import java.util.UUID;
@@ -28,8 +28,8 @@ import org.springframework.stereotype.Service;
  * Stable business-channel owner facade.
  *
  * <p>The public owner boundary remains unchanged while the implementation is divided by aggregate-owned method
- * families. Commands and ordinary reads delegate to their owning service; task-shaped reads delegate to the
- * task-read service.
+ * families. Commands and ordinary reads delegate to their owning service; task-shaped reads delegate to the task-read
+ * service.
  */
 @Service
 public class BusinessChannelOwnerService
@@ -82,10 +82,7 @@ public class BusinessChannelOwnerService
                         receipts,
                         organizationOwner,
                         organizationTaskPaths),
-                new BusinessChannelTaskReadService(
-                        jdbc,
-                        collaborationCatalog,
-                        workspaceStatuses));
+                new BusinessChannelTaskReadService(jdbc, collaborationCatalog, workspaceStatuses));
     }
 
     @Override
@@ -112,14 +109,7 @@ public class BusinessChannelOwnerService
             String sortKey,
             String sortDirection) {
         return templateService.pageStoreTemplateCandidates(
-                workspaceUuid,
-                groupWorkspaceKey,
-                projectRef,
-                storeRef,
-                cursor,
-                pageSize,
-                sortKey,
-                sortDirection);
+                workspaceUuid, groupWorkspaceKey, projectRef, storeRef, cursor, pageSize, sortKey, sortDirection);
     }
 
     @Override
@@ -132,13 +122,7 @@ public class BusinessChannelOwnerService
             String cursor,
             int pageSize) {
         return templateService.pageTemplateVisibleStores(
-                workspaceUuid,
-                groupWorkspaceKey,
-                templateRef,
-                projectRef,
-                storeStatusFilter,
-                cursor,
-                pageSize);
+                workspaceUuid, groupWorkspaceKey, templateRef, projectRef, storeStatusFilter, cursor, pageSize);
     }
 
     @Override
@@ -249,5 +233,4 @@ public class BusinessChannelOwnerService
             DetachChannelBindingCommand command, long expectedVersion) {
         return channelService.detachChannelBinding(command, expectedVersion);
     }
-
 }

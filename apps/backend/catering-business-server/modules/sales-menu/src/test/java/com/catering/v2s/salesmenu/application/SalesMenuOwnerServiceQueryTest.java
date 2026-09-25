@@ -50,7 +50,8 @@ class SalesMenuOwnerServiceQueryTest {
         SalesMenuRepository repository = mock(SalesMenuRepository.class);
         when(repository.query(anyString(), any(RowMapper.class), any(Object[].class)))
                 .thenReturn(List.of());
-        SalesMenuOwnerService service = new SalesMenuOwnerService(new LegacySalesMenuPersistenceAdapter(repository), fixedTime(), new ObjectMapper());
+        SalesMenuOwnerService service = new SalesMenuOwnerService(
+                new LegacySalesMenuPersistenceAdapter(repository), fixedTime(), new ObjectMapper());
         SalesMenuScope scope = scope();
 
         var page = service.listMenus(
@@ -81,7 +82,8 @@ class SalesMenuOwnerServiceQueryTest {
                     return List.of(mapper.mapRow(menuListResult(), 0));
                 });
 
-        var page = new SalesMenuOwnerService(new LegacySalesMenuPersistenceAdapter(repository), fixedTime(), new ObjectMapper())
+        var page = new SalesMenuOwnerService(
+                        new LegacySalesMenuPersistenceAdapter(repository), fixedTime(), new ObjectMapper())
                 .listMenus(new SalesMenuListQuery(scope(), CHANNEL, "", new SalesMenuPageRequest(null, 20)));
 
         assertEquals(31L, page.items().getFirst().version());
@@ -99,7 +101,8 @@ class SalesMenuOwnerServiceQueryTest {
                     return List.of(mapper.mapRow(activationResult(), 0));
                 });
 
-        var detail = new SalesMenuOwnerService(new LegacySalesMenuPersistenceAdapter(repository), fixedTime(), new ObjectMapper())
+        var detail = new SalesMenuOwnerService(
+                        new LegacySalesMenuPersistenceAdapter(repository), fixedTime(), new ObjectMapper())
                 .readMenu(new SalesMenuTarget(scope(), MENU), CHANNEL);
 
         assertEquals(31L, detail.version());
@@ -112,7 +115,8 @@ class SalesMenuOwnerServiceQueryTest {
         SalesMenuRepository repository = mock(SalesMenuRepository.class);
         when(repository.query(anyString(), any(RowMapper.class), any(Object[].class)))
                 .thenReturn(List.of());
-        SalesMenuOwnerService service = new SalesMenuOwnerService(new LegacySalesMenuPersistenceAdapter(repository), fixedTime(), new ObjectMapper());
+        SalesMenuOwnerService service = new SalesMenuOwnerService(
+                new LegacySalesMenuPersistenceAdapter(repository), fixedTime(), new ObjectMapper());
         SalesMenuScope scope = scope();
         SalesMenuPageRequest firstPage = new SalesMenuPageRequest(null, 20);
         SalesMenuCursorIdentity identity = new SalesMenuCursorIdentity(
@@ -129,7 +133,8 @@ class SalesMenuOwnerServiceQueryTest {
     @Test
     void aCursorFromAnotherScopeIsRejectedBeforeTheOwnerQuery() {
         SalesMenuRepository repository = mock(SalesMenuRepository.class);
-        SalesMenuOwnerService service = new SalesMenuOwnerService(new LegacySalesMenuPersistenceAdapter(repository), fixedTime(), new ObjectMapper());
+        SalesMenuOwnerService service = new SalesMenuOwnerService(
+                new LegacySalesMenuPersistenceAdapter(repository), fixedTime(), new ObjectMapper());
         SalesMenuScope scope = scope();
         SalesMenuCursorIdentity otherScopeIdentity = new SalesMenuCursorIdentity(
                 "getOperationsSalesMenus",
@@ -175,7 +180,8 @@ class SalesMenuOwnerServiceQueryTest {
                             mapper.mapRow(operationResult("menu-wide"), 0),
                             mapper.mapRow(operationResult("channel-" + requestedChannels.getLast()), 1));
                 });
-        SalesMenuOwnerService service = new SalesMenuOwnerService(new LegacySalesMenuPersistenceAdapter(repository), fixedTime(), new ObjectMapper());
+        SalesMenuOwnerService service = new SalesMenuOwnerService(
+                new LegacySalesMenuPersistenceAdapter(repository), fixedTime(), new ObjectMapper());
 
         var pageA = service.listOperationRecords(operationQuery(channelA));
         var pageB = service.listOperationRecords(operationQuery(channelB));

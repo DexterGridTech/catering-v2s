@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.catering.v2s.audit.contract.AuditActor;
-import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
+import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.application.BusinessEntityService;

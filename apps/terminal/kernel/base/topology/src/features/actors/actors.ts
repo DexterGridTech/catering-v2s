@@ -55,12 +55,14 @@ const topologyCallTimeoutMs = topologyTransportConfig.callTimeoutMs
 
 type TopologyFailureCode = Exclude<TopologyFailureReasonCode, 'allowed'>
 
-const topologyFailure = (
-  context: ActorExecutionContext,
-  code: TopologyFailureCode,
-  message: string,
-  cause?: unknown,
-) => createAppError(
+type TopologyFailureInput = Readonly<{
+  readonly context: ActorExecutionContext
+  readonly code: TopologyFailureCode
+  readonly message: string
+  readonly cause?: unknown
+}>
+
+const createTopologyFailure = ({context, code, message, cause}: TopologyFailureInput) => createAppError(
   {
     key: `${moduleName}.topology_${code.toLowerCase()}`,
     name: 'Topology command failed',
@@ -82,6 +84,42 @@ const topologyFailure = (
   },
 )
 
+type PeerCloseResolutionInput = Readonly<{
+  readonly context: ActorExecutionContext
+  readonly instanceMode: ReturnType<typeof selectRuntimeInstanceMode>
+}>
+
+type SlaveUnpairPersistenceInput = Readonly<{
+  readonly context: ActorExecutionContext
+}>
+
+type PeerCloseAction =
+  | ReturnType<typeof topologyActions.clearMasterLocator>
+  | ReturnType<typeof topologyActions.setRepairPending>
+  | ReturnType<typeof topologyActions.clearPeerIdentity>
+
+type PeerCloseResolution = Readonly<{
+  readonly actions: readonly PeerCloseAction[]
+}>
+
+const persistSlaveUnpair = async ({context}: SlaveUnpairPersistenceInput): Promise<PeerCloseResolution> => {
+  const persistenceCompleted = await flushUnpairPersistence(context)
+  return {
+    actions: [
+      topologyActions.clearMasterLocator(),
+      topologyActions.setRepairPending(!persistenceCompleted),
+    ],
+  }
+}
+
+const resolvePeerClose = async ({context, instanceMode}: PeerCloseResolutionInput): Promise<PeerCloseResolution> => {
+  if (instanceMode === 'MASTER') {
+    return {actions: [topologyActions.clearPeerIdentity()]}
+  }
+  if (instanceMode === 'SLAVE') return persistSlaveUnpair({context})
+  return {actions: []}
+}
+
 const normalizePairHost = (host: string): string => {
   const normalized = host.trim()
   if (normalized.length === 0 || normalized.includes('/') || normalized.includes(':')) {
@@ -102,22 +140,22 @@ const toTopologyIdentity = (response: TopologyIdentityResponse): TopologyIdentit
 const ensurePairPreconditions = (context: ActorExecutionContext) => {
   const facts = selectTopologyFacts(context.getState())
   if (facts === undefined || facts.displayCount === null) {
-    throw topologyFailure(context, 'TOPOLOGY_UNAVAILABLE', 'Topology display facts are unavailable')
+    throw createTopologyFailure({context, code: 'TOPOLOGY_UNAVAILABLE', message: 'Topology display facts are unavailable'})
   }
   if (facts.surfaceForm !== 'laptop') {
-    throw topologyFailure(context, 'TOPOLOGY_UNSUPPORTED_FORM', 'Topology pairing requires a laptop surface')
+    throw createTopologyFailure({context, code: 'TOPOLOGY_UNSUPPORTED_FORM', message: 'Topology pairing requires a laptop surface'})
   }
   if (facts.displayCount !== 1) {
-    throw topologyFailure(context, 'TOPOLOGY_REQUIRES_SINGLE_SCREEN', 'Topology pairing requires one physical screen')
+    throw createTopologyFailure({context, code: 'TOPOLOGY_REQUIRES_SINGLE_SCREEN', message: 'Topology pairing requires one physical screen'})
   }
   if (facts.paired) {
-    throw topologyFailure(context, 'TOPOLOGY_ALREADY_PAIRED', 'Topology is already paired')
+    throw createTopologyFailure({context, code: 'TOPOLOGY_ALREADY_PAIRED', message: 'Topology is already paired'})
   }
   if (facts.instanceMode !== 'MASTER' || facts.displayRole !== 'CHIEF') {
-    throw topologyFailure(context, 'TOPOLOGY_REQUIRES_MASTER', 'Topology pairing requires MASTER and CHIEF')
+    throw createTopologyFailure({context, code: 'TOPOLOGY_REQUIRES_MASTER', message: 'Topology pairing requires MASTER and CHIEF'})
   }
   if (selectTopologyState(context.getState()).repairPending) {
-    throw topologyFailure(context, 'TOPOLOGY_UNAVAILABLE', 'Topology repair is pending')
+    throw createTopologyFailure({context, code: 'TOPOLOGY_UNAVAILABLE', message: 'Topology repair is pending'})
   }
   return facts
 }
@@ -363,10 +401,10 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     try {
       host = normalizePairHost(context.command.payload.host)
     } catch (error) {
-      throw topologyFailure(context, 'TOPOLOGY_INVALID_LOCATOR', 'Topology host is invalid', error)
+      throw createTopologyFailure({context, code: 'TOPOLOGY_INVALID_LOCATOR', message: 'Topology host is invalid', cause: error})
     }
     if (!input.identityClient) {
-      throw topologyFailure(context, 'TOPOLOGY_IDENTITY_FAILED', 'Topology identity client is unavailable')
+      throw createTopologyFailure({context, code: 'TOPOLOGY_IDENTITY_FAILED', message: 'Topology identity client is unavailable'})
     }
 
     let identityResponse: TopologyIdentityResponse
@@ -374,15 +412,15 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       identityResponse = await input.identityClient.query(host)
     } catch (error) {
       pairingLog(context, 'identity-failed', {phase: 'identity-query'})
-      throw topologyFailure(context, 'TOPOLOGY_IDENTITY_FAILED', 'Topology identity query failed', error)
+      throw createTopologyFailure({context, code: 'TOPOLOGY_IDENTITY_FAILED', message: 'Topology identity query failed', cause: error})
     }
 
     const peerIdentity = toTopologyIdentity(identityResponse)
     if (input.moduleName !== undefined && peerIdentity.moduleName !== input.moduleName) {
-      throw topologyFailure(context, 'TOPOLOGY_PROTOCOL_REJECTED', 'Topology identity module does not match')
+      throw createTopologyFailure({context, code: 'TOPOLOGY_PROTOCOL_REJECTED', message: 'Topology identity module does not match'})
     }
     if (peerIdentity.instanceMode !== 'MASTER' || peerIdentity.displayRole !== 'CHIEF') {
-      throw topologyFailure(context, 'TOPOLOGY_PROTOCOL_REJECTED', 'Topology peer is not a MASTER and CHIEF')
+      throw createTopologyFailure({context, code: 'TOPOLOGY_PROTOCOL_REJECTED', message: 'Topology peer is not a MASTER and CHIEF'})
     }
 
     const locator = Object.freeze({
@@ -404,7 +442,7 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
         errorType: error instanceof Error ? error.name : typeof error,
         errorCode: safeErrorCode(error),
       })
-      throw topologyFailure(context, 'TOPOLOGY_UNAVAILABLE', 'Topology direct pairing failed', error)
+      throw createTopologyFailure({context, code: 'TOPOLOGY_UNAVAILABLE', message: 'Topology direct pairing failed', cause: error})
     }
 
     pairingLog(context, 'completed', {phase: 'pair-by-host'})
@@ -414,7 +452,7 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     ensurePairPreconditions(context)
     const payload = context.command.payload
     if (input.moduleName !== undefined && payload.locator.identity.moduleName !== input.moduleName) {
-      throw topologyFailure(context, 'TOPOLOGY_PROTOCOL_REJECTED', 'Topology pairing requires matching integration module')
+      throw createTopologyFailure({context, code: 'TOPOLOGY_PROTOCOL_REJECTED', message: 'Topology pairing requires matching integration module'})
     }
     context.dispatchAction(topologyActions.setRepairPending(true))
     context.dispatchAction(topologyActions.setMasterLocator(payload.locator))
@@ -456,7 +494,7 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     const current = selectTopologyState(context.getState())
     const currentFacts = selectTopologyFacts(context.getState())
     if (currentFacts === undefined || !currentFacts.paired) {
-      throw topologyFailure(context, 'TOPOLOGY_NOT_PAIRED', 'Topology is not paired')
+      throw createTopologyFailure({context, code: 'TOPOLOGY_NOT_PAIRED', message: 'Topology is not paired'})
     }
     const initialInstanceMode = selectRuntimeInstanceMode(context.getState())
     context.dispatchAction(topologyActions.setRepairPending(true))
@@ -509,7 +547,7 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
         })
         const hostAfterStop = selectTopologyState(context.getState())
         if (hostAfterStop.hostActual !== 'stopped') {
-          throw topologyFailure(context, 'TOPOLOGY_HOST_FAILED', 'Topology host did not stop during unpair')
+          throw createTopologyFailure({context, code: 'TOPOLOGY_HOST_FAILED', message: 'Topology host did not stop during unpair'})
         }
         unpairingLog(context, 'host-stop-completed', {
           hostDesired: hostAfterStop.hostDesired,
@@ -519,7 +557,7 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       context.dispatchAction(topologyActions.clearMasterLocator())
       context.dispatchAction(topologyActions.setRepairPending(false))
       if (!(await flushUnpairPersistence(context))) {
-        throw topologyFailure(context, 'TOPOLOGY_UNAVAILABLE', 'Topology unpair persistence did not complete')
+        throw createTopologyFailure({context, code: 'TOPOLOGY_UNAVAILABLE', message: 'Topology unpair persistence did not complete'})
       }
       if (!peerNoticeSent) await sendExplicitUnpairNotice(context, input.peerChannel, shouldNotifyPeer)
       await input.peerChannel?.close('TOPOLOGY_UNPAIRED')
@@ -563,20 +601,10 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       context.dispatchAction(topologyActions.bumpPeerConnectionRevision())
       if (event.reason === 'TOPOLOGY_UNPAIRED') {
         const instanceMode = selectRuntimeInstanceMode(context.getState())
-        if (instanceMode === 'MASTER') {
-          // A transient close preserves the accepted peer identity. Only an
-          // explicit unpair notice clears the master's pairing fact.
-          context.dispatchAction(topologyActions.clearPeerIdentity())
-        } else if (instanceMode === 'SLAVE') {
-          // The slave owns the persisted locator. Without clearing it, the
-          // reconnect loop can pair the runtimes again after the master has
-          // completed its own unpair operation.
-          context.dispatchAction(topologyActions.clearMasterLocator())
-          context.dispatchAction(topologyActions.setRepairPending(false))
-          if (!(await flushUnpairPersistence(context))) {
-            context.dispatchAction(topologyActions.setRepairPending(true))
-          }
-        }
+        // A transient close preserves facts; an explicit unpair notice resolves
+        // the role-specific owner boundary through one typed transition.
+        const peerCloseResolution = await resolvePeerClose({context, instanceMode})
+        for (const action of peerCloseResolution.actions) context.dispatchAction(action)
       }
     }
     return null

@@ -1,6 +1,5 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspaceInvitationPersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
@@ -19,6 +18,7 @@ import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog.UserManagementAction;
 import com.catering.v2s.workspace.iam.api.WorkspaceInvitationReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceInvitationPersistence;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HexFormat;
@@ -294,10 +294,7 @@ public class WorkspaceInvitationService {
                 now);
         for (AssignmentIntent intent : intents) {
             persistence.insertAssignmentIntent(
-                    invitationId,
-                    intent.roleId(),
-                    intent.serviceNodeType(),
-                    intent.serviceNodeId());
+                    invitationId, intent.roleId(), intent.serviceNodeType(), intent.serviceNodeId());
         }
         audit(workspaceUuid, groupWorkspaceKey, invitationId, "WORKSPACE_INVITATION_CREATED", actor, null, "PENDING");
         WorkspaceInvitationReadback readback = new WorkspaceInvitationReadback(
@@ -397,7 +394,6 @@ public class WorkspaceInvitationService {
         String normalized = value.replace(" ", "").replace("-", "");
         return normalized.startsWith("+") ? normalized.substring(1) : normalized;
     }
-
 
     @Transactional(readOnly = true)
     public ManagementInvitationView managementView(WorkspaceInvitationReadback invitation) {
@@ -504,11 +500,7 @@ public class WorkspaceInvitationService {
             UUID workspaceUuid, String groupWorkspaceKey, UUID invitationId, long expectedVersion, AuditActor actor) {
         Invitation before = invitation(workspaceUuid, groupWorkspaceKey, invitationId);
         if (persistence.cancel(
-                        invitationId,
-                        workspaceUuid,
-                        groupWorkspaceKey,
-                        time.currentEpochMillis(),
-                        expectedVersion)
+                        invitationId, workspaceUuid, groupWorkspaceKey, time.currentEpochMillis(), expectedVersion)
                 != 1) throw new InvitationStateException();
         audit(
                 workspaceUuid,
@@ -576,8 +568,7 @@ public class WorkspaceInvitationService {
         Invitation previous = invitation(workspaceUuid, groupWorkspaceKey, invitationId);
         if (!Set.of("PENDING", "CANCELLED", "EXPIRED").contains(previous.status())
                 || previous.version() != expectedVersion) throw new InvitationStateException();
-        if (persistence.reissue(invitationId, expectedVersion)
-                != 1) throw new InvitationStateException();
+        if (persistence.reissue(invitationId, expectedVersion) != 1) throw new InvitationStateException();
         List<AssignmentIntent> intents = assignmentIntents(invitationId);
         audit(
                 workspaceUuid,
@@ -642,8 +633,7 @@ public class WorkspaceInvitationService {
         Invitation invitation = requireGroupInvitation(groupWorkspaceKey, rawInvitationToken);
         String nextStep = publicResumeStep(invitation);
         if ("ACCEPT".equals(nextStep)) {
-            if (persistence.acceptIntent(invitation.id(), time.currentEpochMillis(), invitation.version())
-                    == 1) {
+            if (persistence.acceptIntent(invitation.id(), time.currentEpochMillis(), invitation.version()) == 1) {
                 audit(
                         invitation.workspaceUuid(),
                         invitation.groupWorkspaceKey(),
@@ -734,9 +724,8 @@ public class WorkspaceInvitationService {
         String grant = randomToken();
         long expires = Math.min(invitation.expiresAtEpochMillis(), time.currentEpochMillis() + 15 * 60 * 1000L);
         boolean firstVerification = "ACCEPT_INTENT_RECORDED".equals(invitation.status());
-        if (firstVerification
-                && persistence.markMobileVerified(invitation.id(), invitation.version())
-                        != 1) throw new InvitationStateException();
+        if (firstVerification && persistence.markMobileVerified(invitation.id(), invitation.version()) != 1)
+            throw new InvitationStateException();
         persistence.upsertPublicProgress(invitation.id(), sha256(grant), expires);
         if (firstVerification)
             audit(
@@ -772,8 +761,8 @@ public class WorkspaceInvitationService {
                         time.currentEpochMillis(),
                         invitation.id())
                 != 1) throw new InvitationStateException();
-        if (persistence.markCredentialReady(invitation.id(), invitation.version())
-                != 1) throw new InvitationStateException();
+        if (persistence.markCredentialReady(invitation.id(), invitation.version()) != 1)
+            throw new InvitationStateException();
         audit(
                 invitation.workspaceUuid(),
                 invitation.groupWorkspaceKey(),
@@ -916,8 +905,8 @@ public class WorkspaceInvitationService {
     }
 
     private UUID completeReadyInvitation(Invitation invitation, Progress progress) {
-        if (persistence.markCompleting(invitation.id(), invitation.version())
-                != 1) throw new InvitationStateException();
+        if (persistence.markCompleting(invitation.id(), invitation.version()) != 1)
+            throw new InvitationStateException();
         List<AssignmentIntent> intents = assignmentIntents(invitation.id());
         if (intents.isEmpty()) throw new InvitationValidationException();
         for (AssignmentIntent intent : intents) {
@@ -953,8 +942,8 @@ public class WorkspaceInvitationService {
                     intent.serviceNodeId(),
                     time.currentEpochMillis(),
                     time.currentEpochMillis());
-        if (persistence.markCompleted(invitation.id(), time.currentEpochMillis())
-                != 1) throw new InvitationStateException();
+        if (persistence.markCompleted(invitation.id(), time.currentEpochMillis()) != 1)
+            throw new InvitationStateException();
         return accountId;
     }
 
@@ -1064,7 +1053,8 @@ public class WorkspaceInvitationService {
             String afterStatus) {
         AuditChangePolicy policy = new AuditChangePolicy("WORKSPACE_INVITATION", action, INVITATION_FIELDS);
         List<AuditChange> changes = List.of(
-                AuditChange.forNullableScalar("status", beforeStatus, afterStatus), AuditChange.forNullableScalar("lifecycleEvent", null, action));
+                AuditChange.forNullableScalar("status", beforeStatus, afterStatus),
+                AuditChange.forNullableScalar("lifecycleEvent", null, action));
         persistence.appendAudit(
                 UUID.randomUUID(),
                 workspaceUuid,

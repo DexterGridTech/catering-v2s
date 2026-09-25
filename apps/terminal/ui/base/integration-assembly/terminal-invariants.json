@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/ui-base-integration-assembly",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-integration-assembly", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "IntegrationAssembly", "IntegrationAssemblyInput", "IntegrationSurfaceCreationInput", "IntegrationSurfaceDeclarations",
+    "PortraitSurfaceDeclarations", "StateSyncSlice", "SurfaceCreationInput", "SurfaceDeclarations",
+    "SurfaceForm", "SurfaceOrientation", "SurfaceSize", "TerminalSurfaceErrorOptions", "TerminalSurfaces",
+    "TopologyStateSyncSlice", "StartupReadyActorInput", "StartupReadyPayload",
+    "StartupDiagnosticsWriter", "StartupDiagnosticsWriterInput",
+    "createIntegrationAssembly", "createDispatchCommand", "createStartupDiagnosticsWriter", "createStartupReadyActor",
+    "createStartupReadyPayload", "createStateSource", "createSurfaceForDisplayIndex", "dependencyModuleNames",
+    "devDependencyModuleNames", "getSurfaceDeclarations", "moduleName", "readTerminalSurfaces",
+    "selectStateSyncSlices", "surfaceFormForOrientation"
+  ]
+}

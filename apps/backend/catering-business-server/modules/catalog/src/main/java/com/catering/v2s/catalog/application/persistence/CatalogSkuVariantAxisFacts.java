@@ -1,6 +1,5 @@
 package com.catering.v2s.catalog.application.persistence;
 
-import com.catering.v2s.catalog.application.persistence.CatalogSkuVariantAxisFactsSql;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,14 +37,18 @@ public class CatalogSkuVariantAxisFacts {
         refs.forEach(ref -> result.put(ref, mapper.createArrayNode()));
         jdbc.query(
                 CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_SELECT
-                        + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_AXIS_ITEM_REF_AXIS_SKU_VARIANT_AXIS_REF_AXIS_ATTRIBUTE_REF_ATTRIBUTE_CODE_ATTRIBUTE_NAME_CATALOG_DICTIONARY_ENTRY_ATTRIBUTE_ON
+                        + CatalogSkuVariantAxisFactsSql
+                                .CATALOG_SKU_VARIANT_AXIS_FACTS_AXIS_ITEM_REF_AXIS_SKU_VARIANT_AXIS_REF_AXIS_ATTRIBUTE_REF_ATTRIBUTE_CODE_ATTRIBUTE_NAME_CATALOG_DICTIONARY_ENTRY_ATTRIBUTE_ON
                         + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_CATALOG_SKU_VARIANT_AXIS_VALUE
                         + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_VALUE
-                        + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_JOIN_CONDITION_DICTIONARY_ENTRY_VALUE_SKU_VARIANT_AXIS_REF_AXIS
-                        + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_VALUE_ENTRY_ENTRY_REF_VALUE_VALUE_REF
+                        + CatalogSkuVariantAxisFactsSql
+                                .CATALOG_SKU_VARIANT_AXIS_FACTS_JOIN_CONDITION_DICTIONARY_ENTRY_VALUE_SKU_VARIANT_AXIS_REF_AXIS
+                        + CatalogSkuVariantAxisFactsSql
+                                .CATALOG_SKU_VARIANT_AXIS_FACTS_VALUE_ENTRY_ENTRY_REF_VALUE_VALUE_REF
                         + placeholders
                         + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_CLOSE_PAREN_ORDER_BY
-                        + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_AXIS_ITEM_REF_DISPLAY_ORDER_ATTRIBUTE_REF,
+                        + CatalogSkuVariantAxisFactsSql
+                                .CATALOG_SKU_VARIANT_AXIS_FACTS_AXIS_ITEM_REF_DISPLAY_ORDER_ATTRIBUTE_REF,
                 statement -> {
                     for (int i = 0; i < refs.size(); i++) statement.setObject(i + 1, refs.get(i));
                 },
@@ -107,7 +110,8 @@ public class CatalogSkuVariantAxisFacts {
                                 && existing.get(axis.attributeRef()).displayOrder() != axis.displayOrder()));
         if (shift)
             jdbc.update(
-                    CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_UPDATE_CATALOG_SKU_VARIANT_AXIS_DISPLAY_ORDER_ITEM_REF,
+                    CatalogSkuVariantAxisFactsSql
+                            .CATALOG_SKU_VARIANT_AXIS_FACTS_UPDATE_CATALOG_SKU_VARIANT_AXIS_DISPLAY_ORDER_ITEM_REF,
                     itemRef);
         LinkedHashSet<UUID> retained = new LinkedHashSet<>();
         List<Object[]> axisInserts = new ArrayList<>();
@@ -137,13 +141,15 @@ public class CatalogSkuVariantAxisFacts {
         axisRefsRequiringValueDelete.addAll(removedAxisRefs);
         if (!axisRefsRequiringValueDelete.isEmpty())
             jdbc.update(
-                    CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_DELETE_CATALOG_SKU_VARIANT_AXIS_VALUE_SKU_VARIANT_AXIS_REF
+                    CatalogSkuVariantAxisFactsSql
+                                    .CATALOG_SKU_VARIANT_AXIS_FACTS_DELETE_CATALOG_SKU_VARIANT_AXIS_VALUE_SKU_VARIANT_AXIS_REF
                             + placeholders(axisRefsRequiringValueDelete)
                             + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_CLOSE_PAREN,
                     axisRefsRequiringValueDelete.toArray());
         if (!removedAxisRefs.isEmpty())
             jdbc.update(
-                    CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_DELETE_CATALOG_SKU_VARIANT_AXIS_SKU_VARIANT_AXIS_REF
+                    CatalogSkuVariantAxisFactsSql
+                                    .CATALOG_SKU_VARIANT_AXIS_FACTS_DELETE_CATALOG_SKU_VARIANT_AXIS_SKU_VARIANT_AXIS_REF
                             + placeholders(removedAxisRefs)
                             + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_CLOSE_PAREN_ALTERNATE_A,
                     removedAxisRefs.toArray());
@@ -154,11 +160,13 @@ public class CatalogSkuVariantAxisFacts {
                     axisInserts);
         if (!axisUpdates.isEmpty())
             jdbc.batchUpdate(
-                    CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_UPDATE_CATALOG_SKU_VARIANT_AXIS_DISPLAY_ORDER_SKU_VARIANT_AXIS_REF,
+                    CatalogSkuVariantAxisFactsSql
+                            .CATALOG_SKU_VARIANT_AXIS_FACTS_UPDATE_CATALOG_SKU_VARIANT_AXIS_DISPLAY_ORDER_SKU_VARIANT_AXIS_REF,
                     axisUpdates);
         if (!valueInserts.isEmpty())
             jdbc.batchUpdate(
-                    CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_INSERT_INTO_CATALOG_SKU_VARIANT_AXIS_VALUE
+                    CatalogSkuVariantAxisFactsSql
+                                    .CATALOG_SKU_VARIANT_AXIS_FACTS_INSERT_INTO_CATALOG_SKU_VARIANT_AXIS_VALUE
                             + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_DISPLAY_ORDER_ALTERNATE_A,
                     valueInserts);
     }
@@ -187,7 +195,8 @@ public class CatalogSkuVariantAxisFacts {
                 axisRows);
         if (!valueRows.isEmpty())
             jdbc.batchUpdate(
-                    CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_INSERT_INTO_CATALOG_SKU_VARIANT_AXIS_VALUE_ALTERNATE_A
+                    CatalogSkuVariantAxisFactsSql
+                                    .CATALOG_SKU_VARIANT_AXIS_FACTS_INSERT_INTO_CATALOG_SKU_VARIANT_AXIS_VALUE_ALTERNATE_A
                             + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_VALUES_ALTERNATE_A,
                     valueRows);
     }
@@ -197,8 +206,10 @@ public class CatalogSkuVariantAxisFacts {
         Map<UUID, ExistingAxis> existing = jdbc.query(
                 CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_SELECT_AXIS_ATTRIBUTE_REF_VALUE_VALUE_REF
                         + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_CATALOG_SKU_VARIANT_AXIS_AXIS
-                        + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_CATALOG_SKU_VARIANT_AXIS_VALUE_VALUE
-                        + CatalogSkuVariantAxisFactsSql.CATALOG_SKU_VARIANT_AXIS_FACTS_VALUE_SKU_VARIANT_AXIS_REF_AXIS_ITEM_REF,
+                        + CatalogSkuVariantAxisFactsSql
+                                .CATALOG_SKU_VARIANT_AXIS_FACTS_CATALOG_SKU_VARIANT_AXIS_VALUE_VALUE
+                        + CatalogSkuVariantAxisFactsSql
+                                .CATALOG_SKU_VARIANT_AXIS_FACTS_VALUE_SKU_VARIANT_AXIS_REF_AXIS_ITEM_REF,
                 rows -> {
                     Map<UUID, ExistingAxisBuilder> builders = new LinkedHashMap<>();
                     while (rows.next()) {

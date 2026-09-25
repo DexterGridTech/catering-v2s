@@ -39,7 +39,8 @@ public class PlatformIamAuditHistoryService {
         if (page < 1 || pageSize < 1 || pageSize > 100)
             throw new IllegalArgumentException("unsupported platform IAM audit target");
         long offset = Math.multiplyExact(page - 1, pageSize);
-        AuditHistoryResultSetReader.TargetProjection value = persistence.readTargetPage(platformAdminId, pageSize, offset);
+        AuditHistoryResultSetReader.TargetProjection value =
+                persistence.readTargetPage(platformAdminId, pageSize, offset);
         if (!value.targetExists()) throw new PlatformAuthenticationService.PlatformAdminNotFoundException();
         return new AuditHistoryPage(value.items(), page, pageSize, value.total());
     }

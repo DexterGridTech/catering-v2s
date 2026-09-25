@@ -21,11 +21,11 @@ TER = `apps/terminal`，v2s 仓内的终端产品工程。设计输入是对 POC
   ⚠️ Claude 曾以"R 原子交付与半小时切小冲突"为由建议另立，**是读错了**：
   两条的正确读法是"R 的**范围**要定得足够小"。
 - `TER_FOUR_LAYER_NESTED_STRUCTURE`：四层**嵌套**目录（非平铺）——
-  `kernel/{base,feature}` · `ui/{base,feature,integration}` · `adapter/{android,electron}` · `assembly/{android,electron}`。
+  `kernel/{base,feature}` · `ui/{base,feature,integration}` · `adapter/{android,electron}` · `application/{android,electron}`。
   `ui-state` 留在 `kernel/base`（它是 React-free 的状态协议），渲染在 `ui/base`。
   **integration 是真实的 UI 与业务整合层，不是测试包**；"必须能在 Expo Web 上跑"是加在它身上的约束。
   它**不得依赖 adapter**（反向依赖）——web 上的能力由端口默认实例覆盖，**不建 `adapter/web`**。
-  由此导出的验证顺序（不涉及 adapter 的功能先过 integration 的 Expo Web，再上设备跑 assembly 并证明两端一致）
+  由此导出的验证顺序（不涉及 adapter 的功能先过 integration 的 Expo Web，再上设备跑 application 并证明两端一致）
   见 `doc/platform/terminal-coding-standard.md` 的 `TR-16`，本条不复述。
 - `TER_EVENT_TO_COMMAND_ACTOR_PATTERN`：🔴 **Dexter 2026-09-02 定为「本 TER 工程最重要的设计模式」** ——
   **事件 → command → 关心它的业务方自己的 actor → `dispatchAction`**；内部外部一律照此，

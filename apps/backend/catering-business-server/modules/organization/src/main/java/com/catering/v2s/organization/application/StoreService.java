@@ -1,6 +1,5 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.StorePersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
@@ -12,21 +11,20 @@ import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
-import com.catering.v2s.organization.api.BusinessEntityTypes;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
-import com.catering.v2s.organization.api.OperationsStoreCommandApi;
 import com.catering.v2s.organization.api.OperationsStoreCommandApi.CreateStoreCommand;
 import com.catering.v2s.organization.api.OperationsStoreCommandApi.StoreStatusCommand;
 import com.catering.v2s.organization.api.OperationsStoreCommandApi.UpdateStoreCommand;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.api.StoreOperatingRuleReadback;
+import com.catering.v2s.organization.application.persistence.StorePersistence;
 import com.catering.v2s.organization.domain.generated.StoreOperatingRuleCatalog;
 import com.catering.v2s.organization.domain.generated.StoreOperatingRuleCatalog.Values;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
-import java.util.List;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -88,7 +86,8 @@ public class StoreService {
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
                 ServiceNodeTypes.PROJECT);
-        if (!ownerProjectId.equals(command.projectId())) throw new BusinessEntityService.OrganizationValidationException();
+        if (!ownerProjectId.equals(command.projectId()))
+            throw new BusinessEntityService.OrganizationValidationException();
         requireOwnerGrantForResolvedTarget(
                 command.ownerScopeGrant(),
                 command.workspaceUuid(),
@@ -111,9 +110,19 @@ public class StoreService {
                         command.notes(),
                         command.extensionSubmission(),
                         command.operatingRuleSwitches()),
-                () -> createNow(command.workspaceUuid(), command.groupWorkspaceKey(), ownerProjectId, command.tenantId(),
-                        command.brandId(), command.headCompanyId(), command.code(), command.name(), command.notes(),
-                        command.extensionSubmission(), command.operatingRuleSwitches(), command.actor()));
+                () -> createNow(
+                        command.workspaceUuid(),
+                        command.groupWorkspaceKey(),
+                        ownerProjectId,
+                        command.tenantId(),
+                        command.brandId(),
+                        command.headCompanyId(),
+                        command.code(),
+                        command.name(),
+                        command.notes(),
+                        command.extensionSubmission(),
+                        command.operatingRuleSwitches(),
+                        command.actor()));
     }
 
     @Transactional
@@ -126,7 +135,8 @@ public class StoreService {
                 command.groupWorkspaceKey(),
                 ServiceNodeTypes.PROJECT,
                 ownerProjectId);
-        if (!ownerProjectId.equals(command.projectId())) throw new BusinessEntityService.OrganizationValidationException();
+        if (!ownerProjectId.equals(command.projectId()))
+            throw new BusinessEntityService.OrganizationValidationException();
         return receipts.execute(
                 command.workspaceUuid(),
                 command.idempotencyKey(),
@@ -212,28 +222,61 @@ public class StoreService {
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant,
             Map<String, ?> operatingRuleSwitches) {
-        Values rules = operatingRuleSwitches == null
-                ? null
-                : StoreOperatingRuleCatalog.values(operatingRuleSwitches, true);
+        Values rules =
+                operatingRuleSwitches == null ? null : StoreOperatingRuleCatalog.values(operatingRuleSwitches, true);
         if (ownerScopeGrant != null) {
-            UUID ownerProjectId = resolvedOwnerTargetId(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.PROJECT);
+            UUID ownerProjectId =
+                    resolvedOwnerTargetId(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.PROJECT);
             if (!ownerProjectId.equals(projectId)) throw new BusinessEntityService.OrganizationValidationException();
-            requireOwnerGrantForResolvedTarget(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.PROJECT, ownerProjectId);
+            requireOwnerGrantForResolvedTarget(
+                    ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.PROJECT, ownerProjectId);
         }
         validateValues(workspaceUuid, groupWorkspaceKey, extensionValues);
         ExtensionSubmission submission = submission(extensionValues);
         AuditActor safeActor = actor == null ? AuditActor.system() : actor;
         if (idempotencyKey == null)
-            return createNow(workspaceUuid, groupWorkspaceKey, projectId, tenantId, brandId, headCompanyId, code, name,
-                    notes, submission, rules, safeActor);
+            return createNow(
+                    workspaceUuid,
+                    groupWorkspaceKey,
+                    projectId,
+                    tenantId,
+                    brandId,
+                    headCompanyId,
+                    code,
+                    name,
+                    notes,
+                    submission,
+                    rules,
+                    safeActor);
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
                 BusinessEntityValueSupport.canonical(
-                        "createStore", workspaceUuid, groupWorkspaceKey, projectId, tenantId, brandId, headCompanyId,
-                        code, name, notes, extensionValues, rules == null ? null : rules.asMap()),
-                () -> createNow(workspaceUuid, groupWorkspaceKey, projectId, tenantId, brandId, headCompanyId, code, name,
-                        notes, submission, rules, safeActor));
+                        "createStore",
+                        workspaceUuid,
+                        groupWorkspaceKey,
+                        projectId,
+                        tenantId,
+                        brandId,
+                        headCompanyId,
+                        code,
+                        name,
+                        notes,
+                        extensionValues,
+                        rules == null ? null : rules.asMap()),
+                () -> createNow(
+                        workspaceUuid,
+                        groupWorkspaceKey,
+                        projectId,
+                        tenantId,
+                        brandId,
+                        headCompanyId,
+                        code,
+                        name,
+                        notes,
+                        submission,
+                        rules,
+                        safeActor));
     }
 
     /** Canonical map-based update used by the legacy organization owner overloads. */
@@ -260,25 +303,25 @@ public class StoreService {
             requireOwnerGrant(
                     ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.PROJECT, ownerProjectId);
             if (!ownerProjectId.equals(projectId)) throw new BusinessEntityService.OrganizationValidationException();
-            current = readStoreCommandFacts(
-                    new UpdateStoreCommand(
-                            workspaceUuid,
-                            groupWorkspaceKey,
-                            id,
-                            projectId,
-                            tenantId,
-                            brandId,
-                            headCompanyId,
-                            code,
-                            name,
-                            notes,
-                            expectedVersion,
-                            submission(extensionValues),
-                            idempotencyKey,
-                            actor == null ? AuditActor.system() : actor,
-                            ownerScopeGrant));
+            current = readStoreCommandFacts(new UpdateStoreCommand(
+                    workspaceUuid,
+                    groupWorkspaceKey,
+                    id,
+                    projectId,
+                    tenantId,
+                    brandId,
+                    headCompanyId,
+                    code,
+                    name,
+                    notes,
+                    expectedVersion,
+                    submission(extensionValues),
+                    idempotencyKey,
+                    actor == null ? AuditActor.system() : actor,
+                    ownerScopeGrant));
         } else {
-            OrganizationEntityReadback before = reads.requireEntity(ServiceNodeTypes.STORE, workspaceUuid, groupWorkspaceKey, id);
+            OrganizationEntityReadback before =
+                    reads.requireEntity(ServiceNodeTypes.STORE, workspaceUuid, groupWorkspaceKey, id);
             validateStoreReferences(workspaceUuid, groupWorkspaceKey, projectId, tenantId, brandId, headCompanyId);
             current = new StoreCommandFacts(
                     before,
@@ -301,18 +344,30 @@ public class StoreService {
                 headCompanyId,
                 code,
                 name,
-                        notes,
-                        expectedVersion,
-                        submission,
-                        safeActor,
-                        null);
+                notes,
+                expectedVersion,
+                submission,
+                safeActor,
+                null);
         if (idempotencyKey == null) return updateNow(input, current);
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
                 BusinessEntityValueSupport.canonical(
-                        "updateStore", workspaceUuid, groupWorkspaceKey, id, projectId, tenantId, brandId,
-                        headCompanyId, code, name, notes, expectedVersion, extensionValues, null),
+                        "updateStore",
+                        workspaceUuid,
+                        groupWorkspaceKey,
+                        id,
+                        projectId,
+                        tenantId,
+                        brandId,
+                        headCompanyId,
+                        code,
+                        name,
+                        notes,
+                        expectedVersion,
+                        extensionValues,
+                        null),
                 () -> updateNow(input, current));
     }
 
@@ -328,20 +383,29 @@ public class StoreService {
             String idempotencyKey,
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        if (!ServiceNodeTypes.STORE.equals(entityType)) throw new BusinessEntityService.OrganizationValidationException();
+        if (!ServiceNodeTypes.STORE.equals(entityType))
+            throw new BusinessEntityService.OrganizationValidationException();
         StoreStatusFacts current = readStoreStatusFacts(workspaceUuid, groupWorkspaceKey, id);
         if (ownerScopeGrant != null)
             requireOwnerGrantForResolvedTarget(
                     ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.PROJECT, current.projectId());
         AuditActor safeActor = actor == null ? AuditActor.system() : actor;
         if (idempotencyKey == null)
-            return transitionNow(workspaceUuid, groupWorkspaceKey, id, status, expectedVersion, safeActor, current.before());
+            return transitionNow(
+                    workspaceUuid, groupWorkspaceKey, id, status, expectedVersion, safeActor, current.before());
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
                 BusinessEntityValueSupport.canonical(
-                        "transitionEntityStatus", entityType, workspaceUuid, groupWorkspaceKey, id, status, expectedVersion),
-                () -> transitionNow(workspaceUuid, groupWorkspaceKey, id, status, expectedVersion, safeActor, current.before()));
+                        "transitionEntityStatus",
+                        entityType,
+                        workspaceUuid,
+                        groupWorkspaceKey,
+                        id,
+                        status,
+                        expectedVersion),
+                () -> transitionNow(
+                        workspaceUuid, groupWorkspaceKey, id, status, expectedVersion, safeActor, current.before()));
     }
 
     public StoreUpdateFacts readStoreUpdateFacts(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
@@ -377,13 +441,13 @@ public class StoreService {
         Map<UUID, StoreOperatingRuleReadback> result = new java.util.LinkedHashMap<>();
         for (UUID storeId : storeIds.stream().distinct().toList()) {
             String source = raw.get(storeId);
-            if (source == null)
-                throw new BusinessEntityService.OrganizationNotFoundException();
+            if (source == null) throw new BusinessEntityService.OrganizationNotFoundException();
             try {
                 result.put(
                         storeId,
                         new StoreOperatingRuleReadback(
-                                storeId, StoreOperatingRuleCatalog.values(StoreOperatingRuleCodec.resolved(source), true)));
+                                storeId,
+                                StoreOperatingRuleCatalog.values(StoreOperatingRuleCodec.resolved(source), true)));
             } catch (IllegalArgumentException invalid) {
                 throw new BusinessEntityService.OrganizationValidationException(invalid);
             }
@@ -478,8 +542,8 @@ public class StoreService {
         OrganizationEntityReadback before = current.before();
         BusinessEntityValueSupport.requireMutable(before.status());
         current.requireEnabledReferences();
-        Map<String, ?> beforeRules = readOperatingRuleValues(
-                input.workspaceUuid(), input.groupWorkspaceKey(), input.storeId());
+        Map<String, ?> beforeRules =
+                readOperatingRuleValues(input.workspaceUuid(), input.groupWorkspaceKey(), input.storeId());
         String operatingRuleJson;
         try {
             operatingRuleJson = input.operatingRuleSwitches() == null
@@ -519,10 +583,10 @@ public class StoreService {
                 input.groupWorkspaceKey(),
                 before.extensionValues(),
                 input.extensionSubmission());
-        OrganizationEntityReadback updated = OwnerOperationDiagnostics.readback(
-                () -> reads.requireEntity(ServiceNodeTypes.STORE, input.workspaceUuid(), input.groupWorkspaceKey(), input.storeId()));
-        Map<String, ?> afterRules = readOperatingRuleValues(
-                input.workspaceUuid(), input.groupWorkspaceKey(), input.storeId());
+        OrganizationEntityReadback updated = OwnerOperationDiagnostics.readback(() -> reads.requireEntity(
+                ServiceNodeTypes.STORE, input.workspaceUuid(), input.groupWorkspaceKey(), input.storeId()));
+        Map<String, ?> afterRules =
+                readOperatingRuleValues(input.workspaceUuid(), input.groupWorkspaceKey(), input.storeId());
         audit(
                 input.workspaceUuid(),
                 input.groupWorkspaceKey(),
@@ -634,12 +698,15 @@ public class StoreService {
                     definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.STORE);
             if (!actual.isEmpty()) ExtensionDefinitionService.requireConsumableDefinition(definition);
             Map<String, ExtensionDefinitionReadback.Field> known = definition.fields().stream()
-                    .collect(java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, value -> value));
+                    .collect(java.util.stream.Collectors.toMap(
+                            ExtensionDefinitionReadback.Field::fieldKey, value -> value));
             if (actual.keySet().stream().anyMatch(field -> !known.containsKey(field))
-                    || actual.entrySet().stream().anyMatch(entry ->
-                            !"DISABLED".equals(known.get(entry.getKey()).status())
-                                    && !BusinessEntityValueSupport.isJsonNull(entry.getValue())
-                                    && !BusinessEntityValueSupport.validJsonValue(known.get(entry.getKey()), entry.getValue())))
+                    || actual.entrySet().stream()
+                            .anyMatch(entry ->
+                                    !"DISABLED".equals(known.get(entry.getKey()).status())
+                                            && !BusinessEntityValueSupport.isJsonNull(entry.getValue())
+                                            && !BusinessEntityValueSupport.validJsonValue(
+                                                    known.get(entry.getKey()), entry.getValue())))
                 throw new BusinessEntityService.OrganizationValidationException();
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (!actual.isEmpty()) throw new BusinessEntityService.OrganizationValidationException(absent);
@@ -693,12 +760,15 @@ public class StoreService {
     }
 
     private ExtensionSubmission submission(Map<String, String> values) {
-        return new ExtensionSubmission(values == null ? List.of() : values.entrySet().stream()
-                .map(entry -> BusinessEntityValueSupport.isJsonNull(entry.getValue())
-                        ? ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey())
-                        : new ExtensionSubmission.ExtensionFieldValue(
-                                entry.getKey(), entry.getValue(), ExtensionSubmission.Mode.SET))
-                .toList());
+        return new ExtensionSubmission(
+                values == null
+                        ? List.of()
+                        : values.entrySet().stream()
+                                .map(entry -> BusinessEntityValueSupport.isJsonNull(entry.getValue())
+                                        ? ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey())
+                                        : new ExtensionSubmission.ExtensionFieldValue(
+                                                entry.getKey(), entry.getValue(), ExtensionSubmission.Mode.SET))
+                                .toList());
     }
 
     private void requireOwnerGrant(
@@ -709,8 +779,10 @@ public class StoreService {
             UUID targetId) {
         if (grant == null || !grant.matches(workspaceUuid, groupWorkspaceKey, targetType, targetId))
             throw new BusinessEntityService.OrganizationAuthorizationException();
-        if (ServiceNodeTypes.PROJECT.equals(targetType)) reads.requireProjectId(workspaceUuid, groupWorkspaceKey, targetId);
-        else if (ServiceNodeTypes.GROUP.equals(targetType)) reads.requireCommercialGroupId(workspaceUuid, groupWorkspaceKey);
+        if (ServiceNodeTypes.PROJECT.equals(targetType))
+            reads.requireProjectId(workspaceUuid, groupWorkspaceKey, targetId);
+        else if (ServiceNodeTypes.GROUP.equals(targetType))
+            reads.requireCommercialGroupId(workspaceUuid, groupWorkspaceKey);
         else reads.requireEntity(targetType, workspaceUuid, groupWorkspaceKey, targetId);
     }
 
@@ -730,8 +802,7 @@ public class StoreService {
                 || !Objects.equals(grant.workspaceUuid(), workspaceUuid)
                 || !Objects.equals(grant.groupWorkspaceKey(), groupWorkspaceKey)
                 || !Objects.equals(grant.targetType(), targetType)
-                || grant.targetId() == null)
-            throw new BusinessEntityService.OrganizationAuthorizationException();
+                || grant.targetId() == null) throw new BusinessEntityService.OrganizationAuthorizationException();
         return grant.targetId();
     }
 
@@ -833,9 +904,7 @@ public class StoreService {
     }
 
     private static AuditChange operatingRuleChange(
-            StoreOperatingRuleCatalog.Definition definition,
-            Map<String, ?> before,
-            Map<String, ?> after) {
+            StoreOperatingRuleCatalog.Definition definition, Map<String, ?> before, Map<String, ?> after) {
         boolean beforePresent = before.containsKey(definition.key());
         boolean afterPresent = after.containsKey(definition.key());
         Object beforeValue = before.get(definition.key());
@@ -845,13 +914,7 @@ public class StoreService {
         String beforeText = auditScalar(beforeState, beforeValue);
         String afterText = auditScalar(afterState, afterValue);
         if (beforeState == afterState && Objects.equals(beforeText, afterText)) return null;
-        return new AuditChange(
-                definition.key(),
-                definition.label(),
-                beforeState,
-                beforeText,
-                afterState,
-                afterText);
+        return new AuditChange(definition.key(), definition.label(), beforeState, beforeText, afterState, afterText);
     }
 
     private static AuditValueState auditState(boolean present, Object value) {

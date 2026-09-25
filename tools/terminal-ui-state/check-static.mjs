@@ -409,9 +409,16 @@ function runWorkspaceReuse({root}) {
 }
 
 function graphEntry(source) {
-  const match = source.match(/'kernel\.base\.ui-state':\s*\{([\s\S]*?)\n\s*\},\n\s*'kernel\.base\.test-support':/)
-  if (!match) throw new Error('skeleton graph has no ui-state entry')
-  return match[1]
+  const marker = "  'kernel.base.ui-state': {"
+  const markerIndex = source.indexOf(marker)
+  if (markerIndex < 0) throw new Error('skeleton graph has no ui-state entry')
+  const bodyStart = markerIndex + marker.length
+  const nextEntry = source.slice(bodyStart).match(/\n  '[^']+': \{/)
+  if (nextEntry === null) throw new Error('skeleton graph ui-state entry has no boundary')
+  const body = source.slice(bodyStart, bodyStart + nextEntry.index)
+  const closing = '\n  },'
+  if (!body.endsWith(closing)) throw new Error('skeleton graph ui-state entry has invalid boundary')
+  return body.slice(0, -closing.length)
 }
 
 function runSkeletonGraph({graphPath}) {

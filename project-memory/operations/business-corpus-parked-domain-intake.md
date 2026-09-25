@@ -17,7 +17,7 @@ sourceRefs: ["doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adop
 ## Status
 
 All entries below are `PARKED_UNVERIFIED`: they are questions plus sources, not product facts,
-implementation backlog or Roadmap work. Grill resumes only when Dexter explicitly starts it based
+implementation backlog work. Grill resumes only when Dexter explicitly starts it based
 on development progress. There is no automatic trigger, schedule or generic “complete V6 22
 domains” initiative.
 

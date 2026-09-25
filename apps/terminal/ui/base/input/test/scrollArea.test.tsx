@@ -149,21 +149,22 @@ describe('InputScrollArea', () => {
     const scrollView = renderer.root.findAllByType(ScrollView).find(node => node.props.testID === 'sample:scroll-area')!
     expect(requestScroll.current).not.toBeNull()
     const input = renderer.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:scroll-field')!
-    act(() => { input.props.onFocus({nativeEvent: {}}) })
-    measureIncomingKeyboard(renderer)
-    act(() => { requestScroll.current!(246) })
-    act(() => { requestScroll.current!(246) })
-    expect(scrollTo).toHaveBeenCalledTimes(3)
-    act(() => {
-      scrollView.props.onScroll({nativeEvent: {contentOffset: {y: 240}}})
-    })
-    act(() => { requestScroll.current!(100) })
-    expect(scrollTo).toHaveBeenCalledTimes(3)
-    expect(scrollTo).toHaveBeenLastCalledWith({y: 300, animated: true})
-    act(() => {
-      scrollView.props.onScroll({nativeEvent: {contentOffset: {y: 300}}})
-    })
-    act(() => { renderer.unmount() })
+    try {
+      setAnimatedTimingAutoFinishForTests(false)
+      act(() => { input.props.onFocus({nativeEvent: {}}) })
+      measureIncomingKeyboard(renderer)
+      act(() => { requestScroll.current!(100) })
+      expect(scrollTo).toHaveBeenLastCalledWith({y: 300, animated: true})
+      const requestedOffset = scrollTo.mock.calls.at(-1)?.[0]?.y
+      expect(requestedOffset).toBe(300)
+      act(() => {
+        scrollView.props.onScroll({nativeEvent: {contentOffset: {y: requestedOffset}}})
+      })
+      act(() => { advanceAnimatedTimingsForTests(1) })
+    } finally {
+      setAnimatedTimingAutoFinishForTests(true)
+      act(() => { renderer.unmount() })
+    }
   })
 
   it('starts exactly one animated scroll request with the measured keyboard entrance and commits after readback', () => {
@@ -184,13 +185,116 @@ describe('InputScrollArea', () => {
       expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({animated: true}))
       expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'})
 
-      act(() => { advanceAnimatedTimingsForTests(1) })
-      expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'})
       const requestedOffset = scrollTo.mock.calls[0]?.[0]?.y
       expect(requestedOffset).toEqual(expect.any(Number))
       act(() => { scrollView.props.onScroll({nativeEvent: {contentOffset: {y: requestedOffset}}}) })
+      act(() => { advanceAnimatedTimingsForTests(1) })
       expect(keyboardState.current).toMatchObject({activeFieldId: 'scroll-field', owner: 'virtual'})
       expect(scrollTo).toHaveBeenCalledTimes(1)
+    } finally {
+      setAnimatedTimingAutoFinishForTests(true)
+      act(() => { renderer.unmount() })
+    }
+  })
+
+  it('keeps readback pending at keyboard animation completion until the final scroll event proves visibility', () => {
+    const scrollTo = vi.fn()
+    const {renderer, keyboardState} = mountWithNativeGeometry(scrollTo)
+    const input = renderer.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:scroll-field')!
+    const scrollView = renderer.root.findAllByType(ScrollView).find(node => node.props.testID === 'sample:scroll-area')!
+
+    try {
+      setAnimatedTimingAutoFinishForTests(false)
+      act(() => { input.props.onFocus({nativeEvent: {}}) })
+      const measureLayer = renderer.root.findByProps({testID: 'ui.base.input:keyboard-layer-position:measure'})
+      act(() => { measureLayer.props.onLayout({nativeEvent: {layout: {height: 246}}}) })
+      expect(scrollTo).toHaveBeenCalledTimes(1)
+      const requestedOffset = scrollTo.mock.calls[0]?.[0]?.y
+      expect(requestedOffset).toEqual(expect.any(Number))
+      act(() => {
+        scrollView.props.onScroll({nativeEvent: {contentOffset: {y: Math.max(0, requestedOffset - 20)}}})
+      })
+      act(() => { advanceAnimatedTimingsForTests(1) })
+      expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'})
+      expect(renderer.root.findAllByProps({testID: 'ui.base.input:focus-visibility-error'})).toHaveLength(0)
+      act(() => {
+        scrollView.props.onScroll({nativeEvent: {contentOffset: {y: requestedOffset}}})
+      })
+      expect(keyboardState.current).toMatchObject({activeFieldId: 'scroll-field', owner: 'virtual'})
+    } finally {
+      setAnimatedTimingAutoFinishForTests(true)
+      act(() => { renderer.unmount() })
+    }
+  })
+
+  it('settles an invisible readback from a terminal drag event even when no onScroll arrives', () => {
+    const scrollTo = vi.fn()
+    const {renderer, keyboardState} = mountWithNativeGeometry(scrollTo, 550)
+    const input = renderer.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:scroll-field')!
+    const scrollView = renderer.root.findAllByType(ScrollView).find(node => node.props.testID === 'sample:scroll-area')!
+
+    try {
+      setAnimatedTimingAutoFinishForTests(false)
+      act(() => { input.props.onFocus({nativeEvent: {}}) })
+      const measureLayer = renderer.root.findByProps({testID: 'ui.base.input:keyboard-layer-position:measure'})
+      act(() => { measureLayer.props.onLayout({nativeEvent: {layout: {height: 246}}}) })
+      expect(scrollTo).toHaveBeenCalledTimes(1)
+      act(() => {
+        scrollView.props.onScrollEndDrag({nativeEvent: {
+          contentOffset: {y: 100},
+          velocity: {y: 0},
+        }})
+      })
+      expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'})
+      expect(renderer.root.findByProps({testID: 'ui.base.input:focus-visibility-error'}).props.children)
+        .toBe('焦点框无法完整显示，请调整窗口尺寸或退出输入')
+    } finally {
+      setAnimatedTimingAutoFinishForTests(true)
+      act(() => { renderer.unmount() })
+    }
+  })
+
+  it('uses one bounded watchdog when neither scroll readback nor a terminal event arrives', () => {
+    vi.useFakeTimers()
+    const scrollTo = vi.fn()
+    const {renderer, keyboardState} = mountWithNativeGeometry(scrollTo, 550)
+    const input = renderer.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:scroll-field')!
+
+    try {
+      setAnimatedTimingAutoFinishForTests(false)
+      act(() => { input.props.onFocus({nativeEvent: {}}) })
+      const measureLayer = renderer.root.findByProps({testID: 'ui.base.input:keyboard-layer-position:measure'})
+      act(() => { measureLayer.props.onLayout({nativeEvent: {layout: {height: 246}}}) })
+      expect(scrollTo).toHaveBeenCalledTimes(1)
+      act(() => { vi.advanceTimersByTime(1_500) })
+      expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'})
+      expect(renderer.root.findByProps({testID: 'ui.base.input:focus-visibility-error'}).props.children)
+        .toBe('焦点框无法完整显示，请调整窗口尺寸或退出输入')
+    } finally {
+      setAnimatedTimingAutoFinishForTests(true)
+      vi.useRealTimers()
+      act(() => { renderer.unmount() })
+    }
+  })
+
+  it('accepts a half-unit readback difference when the field is fully visible', () => {
+    const scrollTo = vi.fn()
+    const {renderer, keyboardState} = mountWithNativeGeometry(scrollTo)
+    const input = renderer.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:scroll-field')!
+    const scrollView = renderer.root.findAllByType(ScrollView).find(node => node.props.testID === 'sample:scroll-area')!
+
+    try {
+      setAnimatedTimingAutoFinishForTests(false)
+      act(() => { input.props.onFocus({nativeEvent: {}}) })
+      const measureLayer = renderer.root.findByProps({testID: 'ui.base.input:keyboard-layer-position:measure'})
+      act(() => { measureLayer.props.onLayout({nativeEvent: {layout: {height: 246}}}) })
+      const requestedOffset = scrollTo.mock.calls[0]?.[0]?.y
+      expect(requestedOffset).toEqual(expect.any(Number))
+      act(() => {
+        scrollView.props.onScroll({nativeEvent: {contentOffset: {y: requestedOffset - 0.4}}})
+      })
+      act(() => { advanceAnimatedTimingsForTests(1) })
+      expect(keyboardState.current).toMatchObject({activeFieldId: 'scroll-field', owner: 'virtual'})
     } finally {
       setAnimatedTimingAutoFinishForTests(true)
       act(() => { renderer.unmount() })

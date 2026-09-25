@@ -42,18 +42,13 @@ final class StoreServicePointAcceptanceScenarios {
         assertEquals(2, initial.path("total").asInt(), "BUSINESS: both active areas are listed");
 
         AreaView updated = updateArea(
-                context,
-                store,
-                tableArea,
-                "Main table area updated",
-                "TABLE-MAIN-UPDATED",
-                "TABLE_AREA",
-                "ENABLED");
+                context, store, tableArea, "Main table area updated", "TABLE-MAIN-UPDATED", "TABLE_AREA", "ENABLED");
         assertEquals("Main table area updated", updated.json().path("name").asText());
         assertEquals("TABLE_AREA", updated.json().path("areaType").asText());
 
         AreaView moved = moveArea(context, store, scanArea, "UP");
-        assertEquals("SCAN_AREA", moved.json().path("areaType").asText(), "BUSINESS: area order returns the moved area");
+        assertEquals(
+                "SCAN_AREA", moved.json().path("areaType").asText(), "BUSINESS: area order returns the moved area");
 
         AreaView currentUpdated = area(findItem(listAreas(context, store).path("items"), updated.ref()));
         AreaView disabled = transitionArea(context, store, currentUpdated, "DISABLED");
@@ -62,10 +57,12 @@ final class StoreServicePointAcceptanceScenarios {
         assertEquals(2, after.path("total").asInt(), "BUSINESS: disabled area remains in the active list");
 
         AreaView voided = transitionArea(context, store, disabled, "VOIDED");
-        assertEquals("VOIDED", voided.json().path("status").asText(),
+        assertEquals(
+                "VOIDED",
+                voided.json().path("status").asText(),
                 "BUSINESS: voiding an area returns the retained historical row");
-        assertEquals(1, listAreas(context, store).path("total").asInt(),
-                "BUSINESS: a voided area leaves the current list");
+        assertEquals(
+                1, listAreas(context, store).path("total").asInt(), "BUSINESS: a voided area leaves the current list");
     }
 
     @AcceptanceScenario(
@@ -76,37 +73,50 @@ final class StoreServicePointAcceptanceScenarios {
         StoreContext store = enabledStore(context);
         AreaView area = createArea(context, store, "TABLE_AREA", "Availability area", "AVAILABILITY");
         PointView enabledPoint = createTablePoint(context, store, area, "Available table", "AVAIL-1", 4, "HALL", true);
-        PointView disabledPoint = createTablePoint(context, store, area, "Disabled table", "AVAIL-2", 2, "BOOTH", false);
+        PointView disabledPoint =
+                createTablePoint(context, store, area, "Disabled table", "AVAIL-2", 2, "BOOTH", false);
         PointView pointDisabled = transitionPoint(context, store, disabledPoint, "DISABLED");
 
         AreaView areaDisabled = transitionArea(context, store, area, "DISABLED");
         JsonNode disabledPage = listPoints(context, store, area);
         JsonNode disabledEnabled = findItem(disabledPage.path("items"), enabledPoint.ref());
         JsonNode disabledChild = findItem(disabledPage.path("items"), pointDisabled.ref());
-        assertFalse(disabledEnabled.path("effectiveAvailable").asBoolean(true), "BUSINESS: disabled area disables descendants");
+        assertFalse(
+                disabledEnabled.path("effectiveAvailable").asBoolean(true),
+                "BUSINESS: disabled area disables descendants");
         assertFalse(disabledChild.path("effectiveAvailable").asBoolean(true), "BUSINESS: child remains unavailable");
-        assertEquals("ENABLED", disabledEnabled.path("status").asText(), "BUSINESS: parent disable does not rewrite point status");
+        assertEquals(
+                "ENABLED",
+                disabledEnabled.path("status").asText(),
+                "BUSINESS: parent disable does not rewrite point status");
         assertEquals("DISABLED", disabledChild.path("status").asText(), "BUSINESS: child status is retained");
 
         transitionArea(context, store, areaDisabled, "ENABLED");
         JsonNode restoredPage = listPoints(context, store, area);
-        assertTrue(findItem(restoredPage.path("items"), enabledPoint.ref()).path("effectiveAvailable").asBoolean(false),
+        assertTrue(
+                findItem(restoredPage.path("items"), enabledPoint.ref())
+                        .path("effectiveAvailable")
+                        .asBoolean(false),
                 "BUSINESS: re-enabling the area restores an enabled point");
-        assertFalse(findItem(restoredPage.path("items"), pointDisabled.ref()).path("effectiveAvailable").asBoolean(true),
+        assertFalse(
+                findItem(restoredPage.path("items"), pointDisabled.ref())
+                        .path("effectiveAvailable")
+                        .asBoolean(true),
                 "BUSINESS: re-enabling the area does not rewrite a disabled point");
 
         PointView voided = transitionPoint(context, store, pointDisabled, "VOIDED");
-        assertEquals("VOIDED", voided.json().path("status").asText(),
+        assertEquals(
+                "VOIDED",
+                voided.json().path("status").asText(),
                 "BUSINESS: voiding a point returns the retained historical row");
         JsonNode afterPointVoid = listPoints(context, store, area);
-        assertEquals(1, afterPointVoid.path("total").asInt(),
+        assertEquals(
+                1,
+                afterPointVoid.path("total").asInt(),
                 "BUSINESS: a voided point leaves the current list without losing the enabled point");
     }
 
-    @AcceptanceScenario(
-            id = "storeServicePointOrdering",
-            module = "ORG",
-            operation = "storeServicePointOrdering")
+    @AcceptanceScenario(id = "storeServicePointOrdering", module = "ORG", operation = "storeServicePointOrdering")
     void storeServicePointOrdering(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         StoreContext store = enabledStore(context);
         AreaView first = createArea(context, store, "TABLE_AREA", "Order first", "ORDER-1");
@@ -116,14 +126,20 @@ final class StoreServicePointAcceptanceScenarios {
         moveArea(context, store, middle, "UP");
         JsonNode areasAfterUp = listAreas(context, store);
         assertEquals(
-                List.of(middle.ref().toString(), first.ref().toString(), last.ref().toString()),
+                List.of(
+                        middle.ref().toString(),
+                        first.ref().toString(),
+                        last.ref().toString()),
                 refs(areasAfterUp, "areaRef"),
                 "BUSINESS: area UP swaps the moved row with its previous sibling");
         AreaView firstAfterUp = area(findItem(areasAfterUp.path("items"), first.ref()));
         moveArea(context, store, firstAfterUp, "DOWN");
         JsonNode areasAfterDown = listAreas(context, store);
         assertEquals(
-                List.of(middle.ref().toString(), last.ref().toString(), first.ref().toString()),
+                List.of(
+                        middle.ref().toString(),
+                        last.ref().toString(),
+                        first.ref().toString()),
                 refs(areasAfterDown, "areaRef"),
                 "BUSINESS: area DOWN swaps the moved row with its next sibling");
         AreaView tail = createArea(context, store, "TABLE_AREA", "Order tail", "ORDER-4");
@@ -131,16 +147,25 @@ final class StoreServicePointAcceptanceScenarios {
         AreaView movedMiddleDown = moveArea(context, store, middleAfterFirstDown, "DOWN");
         JsonNode areasAfterFirstRepeatedDown = listAreas(context, store);
         assertEquals(
-                List.of(last.ref().toString(), middle.ref().toString(), first.ref().toString(), tail.ref().toString()),
+                List.of(
+                        last.ref().toString(),
+                        middle.ref().toString(),
+                        first.ref().toString(),
+                        tail.ref().toString()),
                 refs(areasAfterFirstRepeatedDown, "areaRef"),
                 "BUSINESS: area DOWN remains usable after the same target previously moved UP");
         AreaView movedMiddleDownAgain = moveArea(context, store, movedMiddleDown, "DOWN");
         JsonNode areasAfterSecondRepeatedDown = listAreas(context, store);
         assertEquals(
-                List.of(last.ref().toString(), first.ref().toString(), middle.ref().toString(), tail.ref().toString()),
+                List.of(
+                        last.ref().toString(),
+                        first.ref().toString(),
+                        middle.ref().toString(),
+                        tail.ref().toString()),
                 refs(areasAfterSecondRepeatedDown, "areaRef"),
                 "BUSINESS: repeated area DOWN creates a new mutation instead of replaying the first request");
-        assertTrue(movedMiddleDownAgain.version() > movedMiddleDown.version(),
+        assertTrue(
+                movedMiddleDownAgain.version() > movedMiddleDown.version(),
                 "BUSINESS: area order mutation advances the target version");
 
         PointView point1 = createTablePoint(context, store, first, "Order point 1", "POINT-1", 2, "HALL", true);
@@ -149,14 +174,20 @@ final class StoreServicePointAcceptanceScenarios {
         PointView movedPoint3Up = movePoint(context, store, point3, "UP");
         JsonNode pointsAfterUp = listPoints(context, store, first);
         assertEquals(
-                List.of(point1.ref().toString(), point3.ref().toString(), point2.ref().toString()),
+                List.of(
+                        point1.ref().toString(),
+                        point3.ref().toString(),
+                        point2.ref().toString()),
                 refs(pointsAfterUp, "pointRef"),
                 "BUSINESS: point UP swaps the moved row with its previous sibling");
         PointView point1AfterUp = point(findItem(pointsAfterUp.path("items"), point1.ref()));
         movePoint(context, store, point1AfterUp, "DOWN");
         JsonNode pointsAfterDown = listPoints(context, store, first);
         assertEquals(
-                List.of(point3.ref().toString(), point1.ref().toString(), point2.ref().toString()),
+                List.of(
+                        point3.ref().toString(),
+                        point1.ref().toString(),
+                        point2.ref().toString()),
                 refs(pointsAfterDown, "pointRef"),
                 "BUSINESS: point DOWN swaps the moved row with its next sibling");
         PointView point4 = createTablePoint(context, store, first, "Order point 4", "POINT-4", 2, "HALL", true);
@@ -164,18 +195,28 @@ final class StoreServicePointAcceptanceScenarios {
         PointView movedPoint1Down = movePoint(context, store, point1AfterFirstDown, "DOWN");
         JsonNode pointsAfterFirstRepeatedDown = listPoints(context, store, first);
         assertEquals(
-                List.of(point3.ref().toString(), point2.ref().toString(), point1.ref().toString(), point4.ref().toString()),
+                List.of(
+                        point3.ref().toString(),
+                        point2.ref().toString(),
+                        point1.ref().toString(),
+                        point4.ref().toString()),
                 refs(pointsAfterFirstRepeatedDown, "pointRef"),
                 "BUSINESS: point DOWN remains usable after the same target previously moved DOWN through another state");
         PointView movedPoint1DownAgain = movePoint(context, store, movedPoint1Down, "DOWN");
         JsonNode pointsAfterSecondRepeatedDown = listPoints(context, store, first);
         assertEquals(
-                List.of(point3.ref().toString(), point2.ref().toString(), point4.ref().toString(), point1.ref().toString()),
+                List.of(
+                        point3.ref().toString(),
+                        point2.ref().toString(),
+                        point4.ref().toString(),
+                        point1.ref().toString()),
                 refs(pointsAfterSecondRepeatedDown, "pointRef"),
                 "BUSINESS: repeated point DOWN creates a new mutation instead of replaying the first request");
-        assertTrue(movedPoint1DownAgain.version() > movedPoint1Down.version(),
+        assertTrue(
+                movedPoint1DownAgain.version() > movedPoint1Down.version(),
                 "BUSINESS: point order mutation advances the target version");
-        assertEquals(4, pointsAfterSecondRepeatedDown.path("total").asInt(), "BUSINESS: all ordered points remain listed");
+        assertEquals(
+                4, pointsAfterSecondRepeatedDown.path("total").asInt(), "BUSINESS: all ordered points remain listed");
         assertNotNull(last, "BUSINESS: third area fixture is retained for the ordering boundary");
         assertTrue(movedPoint3Up.version() > point3.version(), "BUSINESS: point UP advances the moved target version");
     }
@@ -209,7 +250,10 @@ final class StoreServicePointAcceptanceScenarios {
         assertEquals(6, updated.json().path("seatCapacity").asInt(), "BUSINESS: table update is persisted");
         assertEquals("BOOTH", updated.json().path("tableShape").asText());
         assertFalse(updated.json().path("reservable").asBoolean(true));
-        assertEquals(scan.ref().toString(), scan.json().path("pointRef").asText(), "BUSINESS: scan point identity is stable");
+        assertEquals(
+                scan.ref().toString(),
+                scan.json().path("pointRef").asText(),
+                "BUSINESS: scan point identity is stable");
     }
 
     @AcceptanceScenario(
@@ -220,12 +264,15 @@ final class StoreServicePointAcceptanceScenarios {
         StoreContext store = enabledStore(context);
         AreaView tableArea = createArea(context, store, "TABLE_AREA", "Attribute table area", "ATTR-TABLE");
         AreaView scanArea = createArea(context, store, "SCAN_AREA", "Attribute scan area", "ATTR-SCAN");
-        PointView table = createTablePoint(context, store, tableArea, "Attribute table", "ATTR-T-1", 4, "PRIVATE_ROOM", true);
-        PointView optionalTable = createTablePoint(
-                context, store, tableArea, "Optional table", "ATTR-T-2", null, null, null);
+        PointView table =
+                createTablePoint(context, store, tableArea, "Attribute table", "ATTR-T-1", 4, "PRIVATE_ROOM", true);
+        PointView optionalTable =
+                createTablePoint(context, store, tableArea, "Optional table", "ATTR-T-2", null, null, null);
         PointView scan = createScanPoint(context, store, scanArea, "Attribute scan", "ATTR-S-1");
-        BackendAcceptanceTest.Response stagedScanImage = stageAsset(context, store, "scan.png", BackendAcceptanceTest.sha256(BackendAcceptanceTest.PNG));
-        UUID scanImageRef = UUID.fromString(stagedScanImage.json().path("assetRef").asText());
+        BackendAcceptanceTest.Response stagedScanImage =
+                stageAsset(context, store, "scan.png", BackendAcceptanceTest.sha256(BackendAcceptanceTest.PNG));
+        UUID scanImageRef =
+                UUID.fromString(stagedScanImage.json().path("assetRef").asText());
         String scanImageBindGrant = stagedScanImage.json().path("bindGrant").asText();
         table = updateTablePoint(context, store, table, 8, "OUTDOOR", true);
 
@@ -234,8 +281,8 @@ final class StoreServicePointAcceptanceScenarios {
         assertTrue(optionalReadback.path("tableShape").isNull(), "BUSINESS: table shape may be omitted");
         assertTrue(optionalReadback.path("reservable").isNull(), "BUSINESS: table reservability may be omitted");
 
-        Map<String, Object> clearTableAttributes = pointBody(
-                "Attribute table", "ATTR-T-1", "TABLE", "ENABLED", table.version());
+        Map<String, Object> clearTableAttributes =
+                pointBody("Attribute table", "ATTR-T-1", "TABLE", "ENABLED", table.version());
         clearTableAttributes.put("seatCapacity", null);
         clearTableAttributes.put("tableShape", null);
         clearTableAttributes.put("reservable", null);
@@ -263,10 +310,12 @@ final class StoreServicePointAcceptanceScenarios {
                 CLIENT_FAILURE);
         assertTrue(rejected.status() >= 400, "BUSINESS: scan point rejects table-only attributes");
         JsonNode readback = readPoint(context, store, scan.ref());
-        assertTrue(readback.path("seatCapacity").isNull(), "BUSINESS: rejected scan update does not store table capacity");
+        assertTrue(
+                readback.path("seatCapacity").isNull(), "BUSINESS: rejected scan update does not store table capacity");
         assertTrue(readback.path("tableShape").isNull(), "BUSINESS: rejected scan update does not store table shape");
         assertTrue(readback.path("reservable").isNull(), "BUSINESS: rejected scan update does not store reservable");
-        assertTrue(readback.path("imageAssetRef").isNull(), "BUSINESS: rejected scan update does not store a table image");
+        assertTrue(
+                readback.path("imageAssetRef").isNull(), "BUSINESS: rejected scan update does not store a table image");
     }
 
     @AcceptanceScenario(
@@ -282,11 +331,14 @@ final class StoreServicePointAcceptanceScenarios {
                         + store.session().contextVersion(),
                 store.session().cookie(),
                 OK);
-        assertEquals("SERVICE_POINT", definition.json().path("entityType").asText(),
+        assertEquals(
+                "SERVICE_POINT",
+                definition.json().path("entityType").asText(),
                 "BUSINESS: service-point extension host is exposed by the existing definition operation");
         AreaView area = createArea(context, store, "SCAN_AREA", "Extension area", "EXTENSION");
         PointView point = createScanPoint(context, store, area, "Extension point", "EXT-1");
-        assertTrue(readPoint(context, store, point.ref()).path("extensionValues").isObject(),
+        assertTrue(
+                readPoint(context, store, point.ref()).path("extensionValues").isObject(),
                 "BUSINESS: service-point readback always carries extension values");
     }
 
@@ -299,7 +351,8 @@ final class StoreServicePointAcceptanceScenarios {
         AreaView area = createArea(context, store, "TABLE_AREA", "Asset area", "ASSET");
         String digest = BackendAcceptanceTest.sha256(BackendAcceptanceTest.PNG);
         BackendAcceptanceTest.Response stagedForRelease = stageAsset(context, store, "discard.png", digest);
-        UUID discardedAsset = UUID.fromString(stagedForRelease.json().path("assetRef").asText());
+        UUID discardedAsset =
+                UUID.fromString(stagedForRelease.json().path("assetRef").asText());
         long discardedVersion = stagedForRelease.json().path("version").asLong();
         BackendAcceptanceTest.Response released = context.post(
                 OPERATIONS_STORE_SERVICE_POINT_ASSET_RELEASE,
@@ -315,16 +368,17 @@ final class StoreServicePointAcceptanceScenarios {
         String bindGrant = staged.json().path("bindGrant").asText();
         PointView point = createTablePointWithAsset(
                 context, store, area, "Asset table", "ASSET-1", 4, "HALL", true, assetRef, bindGrant);
-        assertEquals(assetRef.toString(), point.json().path("imageAssetRef").asText(),
+        assertEquals(
+                assetRef.toString(),
+                point.json().path("imageAssetRef").asText(),
                 "BUSINESS: point owner claims the staged image in the save transaction");
-        assertEquals(assetRef.toString(), readPoint(context, store, point.ref()).path("imageAssetRef").asText(),
+        assertEquals(
+                assetRef.toString(),
+                readPoint(context, store, point.ref()).path("imageAssetRef").asText(),
                 "BUSINESS: active image binding is readable from the owner");
     }
 
-    @AcceptanceScenario(
-            id = "storeServicePointAudit",
-            module = "AUDIT",
-            operation = "storeServicePointAudit")
+    @AcceptanceScenario(id = "storeServicePointAudit", module = "AUDIT", operation = "storeServicePointAudit")
     void storeServicePointAudit(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         StoreContext store = enabledStore(context);
         AreaView area = createArea(context, store, "TABLE_AREA", "Audit area", "AUDIT");
@@ -333,11 +387,14 @@ final class StoreServicePointAcceptanceScenarios {
         transitionPoint(context, store, point, "DISABLED");
         BackendAcceptanceTest.Response history = context.get(
                 OPERATIONS_AUDIT_HISTORY,
-                "/api/operations/audit-history?groupWorkspaceKey=" + store.fixture().groupWorkspaceKey()
-                        + "&entityType=STORE_SERVICE_POINT&entityId=" + point.ref() + "&page=1&pageSize=20",
+                "/api/operations/audit-history?groupWorkspaceKey="
+                        + store.fixture().groupWorkspaceKey() + "&entityType=STORE_SERVICE_POINT&entityId="
+                        + point.ref() + "&page=1&pageSize=20",
                 store.session().cookie(),
                 OK);
-        assertTrue(history.json().path("total").asLong() >= 3, "BUSINESS: point changes are available in operations audit history");
+        assertTrue(
+                history.json().path("total").asLong() >= 3,
+                "BUSINESS: point changes are available in operations audit history");
         assertTrue(history.json().path("items").isArray(), "BUSINESS: point audit readback returns history items");
     }
 
@@ -350,24 +407,33 @@ final class StoreServicePointAcceptanceScenarios {
         UUID channelRef = channels.acceptanceCreateStoreQrChannel(context, store.fixture(), store.session());
         JsonNode candidates = readQrCandidates(context, store);
         JsonNode candidate = findItem(candidates.path("items"), channelRef);
-        assertEquals("NOT_REQUIRED", candidate.path("bindingStatus").asText(), "BUSINESS: internal QR channel needs no binding");
+        assertEquals(
+                "NOT_REQUIRED",
+                candidate.path("bindingStatus").asText(),
+                "BUSINESS: internal QR channel needs no binding");
 
         JsonNode initial = readQrConfiguration(context, store);
         assertFalse(initial.path("enabled").asBoolean(true), "BUSINESS: QR singleton defaults disabled");
         assertTrue(initial.path("channelRef").isNull(), "BUSINESS: disabled QR singleton has no selected channel");
-        JsonNode enabled = updateQrConfiguration(context, store, true, channelRef, initial.path("version").asLong());
+        JsonNode enabled = updateQrConfiguration(
+                context, store, true, channelRef, initial.path("version").asLong());
         assertTrue(enabled.path("enabled").asBoolean(false), "BUSINESS: QR configuration can be enabled");
         assertEquals(channelRef.toString(), enabled.path("channelRef").asText());
-        assertEquals(channelRef.toString(), readQrConfiguration(context, store).path("channelRef").asText(),
+        assertEquals(
+                channelRef.toString(),
+                readQrConfiguration(context, store).path("channelRef").asText(),
                 "BUSINESS: QR selection is read back from the owner");
 
         JsonNode disabled = updateQrConfiguration(
                 context, store, false, channelRef, enabled.path("version").asLong());
-        assertFalse(disabled.path("enabled").asBoolean(true),
-                "BUSINESS: QR configuration can be switched off");
-        assertEquals(channelRef.toString(), disabled.path("channelRef").asText(),
+        assertFalse(disabled.path("enabled").asBoolean(true), "BUSINESS: QR configuration can be switched off");
+        assertEquals(
+                channelRef.toString(),
+                disabled.path("channelRef").asText(),
                 "BUSINESS: switching QR off preserves the selected channel");
-        assertEquals(channelRef.toString(), readQrConfiguration(context, store).path("channelRef").asText(),
+        assertEquals(
+                channelRef.toString(),
+                readQrConfiguration(context, store).path("channelRef").asText(),
                 "BUSINESS: owner readback retains the channel while QR is disabled");
     }
 
@@ -381,19 +447,19 @@ final class StoreServicePointAcceptanceScenarios {
         JsonNode page = readQrCandidates(context, store);
 
         assertEquals(1, page.path("items").size(), "BUSINESS: candidate owner returns exactly one eligible channel");
-        assertEquals(matrix.get(0).toString(), page.path("items").get(0).path("channelRef").asText(),
+        assertEquals(
+                matrix.get(0).toString(),
+                page.path("items").get(0).path("channelRef").asText(),
                 "BUSINESS: candidate owner keeps the exact four-dimension match");
         for (UUID rejected : matrix.subList(1, matrix.size())) {
-            assertTrue(page.toString().indexOf(rejected.toString()) < 0,
+            assertTrue(
+                    page.toString().indexOf(rejected.toString()) < 0,
                     "BUSINESS: candidate owner excludes an ineligible channel " + rejected);
         }
         assertTrue(page.path("nextCursor").isNull(), "BUSINESS: QR candidate read is bounded without a cursor");
     }
 
-    @AcceptanceScenario(
-            id = "storeQrChannelBoundedRead",
-            module = "BC",
-            operation = "storeQrChannelBoundedRead")
+    @AcceptanceScenario(id = "storeQrChannelBoundedRead", module = "BC", operation = "storeQrChannelBoundedRead")
     void storeQrChannelBoundedRead(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         StoreContext store = enabledStore(context, true);
         channels.acceptanceCreateStoreQrChannels(context, store.fixture(), store.session(), 100, "QR bounded");
@@ -408,26 +474,29 @@ final class StoreServicePointAcceptanceScenarios {
                 qrCandidatesPath(store.fixture()),
                 store.session().cookie(),
                 Set.of(422));
-        assertEquals("QR_CHANNEL_CANDIDATE_OVERFLOW", overflow.problemCode(),
+        assertEquals(
+                "QR_CHANNEL_CANDIDATE_OVERFLOW",
+                overflow.problemCode(),
                 "BUSINESS: 101 QR candidates fail with a typed overflow problem");
-        assertTrue(overflow.json().path("items").isMissingNode() || overflow.json().path("items").isNull(),
+        assertTrue(
+                overflow.json().path("items").isMissingNode()
+                        || overflow.json().path("items").isNull(),
                 "BUSINESS: overflow does not silently return a truncated candidate list");
     }
 
-    @AcceptanceScenario(
-            id = "storeQrUrlDerivation",
-            module = "BC",
-            operation = "storeQrUrlDerivation")
+    @AcceptanceScenario(id = "storeQrUrlDerivation", module = "BC", operation = "storeQrUrlDerivation")
     void storeQrUrlDerivation(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         StoreContext store = enabledStore(context, true);
         UUID channelRef = channels.acceptanceCreateStoreQrChannel(context, store.fixture(), store.session());
         JsonNode configuration = readQrConfiguration(context, store);
-        updateQrConfiguration(context, store, true, channelRef, configuration.path("version").asLong());
+        updateQrConfiguration(
+                context, store, true, channelRef, configuration.path("version").asLong());
         AreaView area = createArea(context, store, "SCAN_AREA", "QR area", "QR-URL");
         PointView point = createScanPoint(context, store, area, "QR point", "QR-URL-1");
         String qrUrl = readPoint(context, store, point.ref()).path("qrUrl").asText();
         assertTrue(qrUrl.startsWith("https://qr.example.test/order"), "BUSINESS: QR URL keeps the template base");
-        assertTrue(qrUrl.contains("groupWorkspaceKey=" + store.fixture().groupWorkspaceKey()),
+        assertTrue(
+                qrUrl.contains("groupWorkspaceKey=" + store.fixture().groupWorkspaceKey()),
                 "BUSINESS: QR URL includes the group workspace key");
         assertTrue(qrUrl.contains("servicePointRef=" + point.ref()), "BUSINESS: QR URL includes the service-point ref");
         assertTrue(qrUrl.endsWith("#entry"), "BUSINESS: QR URL keeps the fragment at the end");
@@ -441,12 +510,15 @@ final class StoreServicePointAcceptanceScenarios {
         StoreContext store = enabledStore(context, true);
         UUID channelRef = channels.acceptanceCreateStoreQrChannel(context, store.fixture(), store.session());
         JsonNode initial = readQrConfiguration(context, store);
-        updateQrConfiguration(context, store, true, channelRef, initial.path("version").asLong());
+        updateQrConfiguration(
+                context, store, true, channelRef, initial.path("version").asLong());
         AreaView area = createArea(context, store, "SCAN_AREA", "QR state area", "QR-STATE");
         PointView point = createScanPoint(context, store, area, "QR state point", "QR-STATE-1");
         PointView disabled = transitionPoint(context, store, point, "DISABLED");
-        assertFalse(disabled.json().path("effectiveAvailable").asBoolean(true), "BUSINESS: disabled point is unavailable");
-        assertFalse(disabled.json().path("qrUrl").isNull(),
+        assertFalse(
+                disabled.json().path("effectiveAvailable").asBoolean(true), "BUSINESS: disabled point is unavailable");
+        assertFalse(
+                disabled.json().path("qrUrl").isNull(),
                 "BUSINESS: QR generation remains independent from point lifecycle state");
     }
 
@@ -458,23 +530,33 @@ final class StoreServicePointAcceptanceScenarios {
         StoreContext store = enabledStore(context, true);
         UUID selectedChannel = channels.acceptanceCreateStoreQrChannel(context, store.fixture(), store.session());
         JsonNode initial = readQrConfiguration(context, store);
-        JsonNode enabled = updateQrConfiguration(context, store, true, selectedChannel, initial.path("version").asLong());
+        JsonNode enabled = updateQrConfiguration(
+                context, store, true, selectedChannel, initial.path("version").asLong());
 
-        BackendAcceptanceTest.Fixture foreignFixture = host.siblingStoreFixture(
-                store.fixture(), Set.of(CAPABILITY, "BC-BUSINESS-CHANNEL-STORE-EDIT"));
+        BackendAcceptanceTest.Fixture foreignFixture =
+                host.siblingStoreFixture(store.fixture(), Set.of(CAPABILITY, "BC-BUSINESS-CHANNEL-STORE-EDIT"));
         host.completeInvitation(context, foreignFixture);
-        BackendAcceptanceTest.Session foreignSession = selectStore(context, foreignFixture, host.login(context, foreignFixture));
+        BackendAcceptanceTest.Session foreignSession =
+                selectStore(context, foreignFixture, host.login(context, foreignFixture));
         UUID foreignChannel = channels.acceptanceCreateStoreQrChannel(context, foreignFixture, foreignSession);
 
         BackendAcceptanceTest.Response foreignRejected = context.patch(
                 OPERATIONS_STORE_QR_CONFIGURATION_UPDATE,
                 qrConfigurationPath(store.fixture()),
                 store.session().cookie(),
-                Map.of("enabled", true, "channelRef", foreignChannel, "expectedVersion", enabled.path("version").asLong()),
+                Map.of(
+                        "enabled",
+                        true,
+                        "channelRef",
+                        foreignChannel,
+                        "expectedVersion",
+                        enabled.path("version").asLong()),
                 idempotency(),
                 CLIENT_FAILURE);
         assertTrue(foreignRejected.status() >= 400, "BUSINESS: owner rejects a channel belonging to another store");
-        assertEquals(selectedChannel.toString(), readQrConfiguration(context, store).path("channelRef").asText(),
+        assertEquals(
+                selectedChannel.toString(),
+                readQrConfiguration(context, store).path("channelRef").asText(),
                 "BUSINESS: rejected foreign selection retains the existing QR configuration");
 
         channels.acceptanceDisableStoreQrChannel(context, store.fixture(), store.session(), selectedChannel);
@@ -482,12 +564,19 @@ final class StoreServicePointAcceptanceScenarios {
                 OPERATIONS_STORE_QR_CONFIGURATION_UPDATE,
                 qrConfigurationPath(store.fixture()),
                 store.session().cookie(),
-                Map.of("enabled", true, "channelRef", selectedChannel,
-                        "expectedVersion", readQrConfiguration(context, store).path("version").asLong()),
+                Map.of(
+                        "enabled",
+                        true,
+                        "channelRef",
+                        selectedChannel,
+                        "expectedVersion",
+                        readQrConfiguration(context, store).path("version").asLong()),
                 idempotency(),
                 CLIENT_FAILURE);
         assertTrue(statusRejected.status() >= 400, "BUSINESS: owner rechecks the selected channel status at save time");
-        assertEquals(selectedChannel.toString(), readQrConfiguration(context, store).path("channelRef").asText(),
+        assertEquals(
+                selectedChannel.toString(),
+                readQrConfiguration(context, store).path("channelRef").asText(),
                 "BUSINESS: a failed status recheck does not clear the stored selection");
     }
 
@@ -505,12 +594,10 @@ final class StoreServicePointAcceptanceScenarios {
                 host.storeUserFixture(store.fixture(), Set.of(CAPABILITY)))) {
             host.completeInvitation(context, userFixture);
             BackendAcceptanceTest.Session session = selectStore(context, userFixture, host.login(context, userFixture));
-            BackendAcceptanceTest.Response page = context.get(
-                    OPERATIONS_STORE_SERVICE_POINT_AREAS,
-                    areasPath(userFixture),
-                    session.cookie(),
-                    OK);
-            assertTrue(findItem(page.json().path("items"), area.ref()).isObject(),
+            BackendAcceptanceTest.Response page =
+                    context.get(OPERATIONS_STORE_SERVICE_POINT_AREAS, areasPath(userFixture), session.cookie(), OK);
+            assertTrue(
+                    findItem(page.json().path("items"), area.ref()).isObject(),
                     "BUSINESS: all four role levels read the selected store area");
         }
 
@@ -545,7 +632,9 @@ final class StoreServicePointAcceptanceScenarios {
                 Map.of("expectedAssetVersion", 1),
                 idempotency(),
                 CLIENT_FAILURE);
-        assertTrue(releaseRejected.status() >= 400, "BUSINESS: closed store gate rejects staged-image release before asset lookup");
+        assertTrue(
+                releaseRejected.status() >= 400,
+                "BUSINESS: closed store gate rejects staged-image release before asset lookup");
     }
 
     private StoreContext enabledStore(BackendAcceptanceTest.ScenarioContext context) throws Exception {
@@ -554,9 +643,8 @@ final class StoreServicePointAcceptanceScenarios {
 
     private StoreContext enabledStore(BackendAcceptanceTest.ScenarioContext context, boolean businessChannelCapability)
             throws Exception {
-        Set<String> capabilities = businessChannelCapability
-                ? Set.of(CAPABILITY, "BC-BUSINESS-CHANNEL-STORE-EDIT")
-                : Set.of(CAPABILITY);
+        Set<String> capabilities =
+                businessChannelCapability ? Set.of(CAPABILITY, "BC-BUSINESS-CHANNEL-STORE-EDIT") : Set.of(CAPABILITY);
         BackendAcceptanceTest.Fixture base = host.fixture("PROJECT", Set.of());
         BackendAcceptanceTest.Fixture fixture = host.storeServicePointFixture(base, capabilities);
         host.completeInvitation(context, fixture);
@@ -565,11 +653,7 @@ final class StoreServicePointAcceptanceScenarios {
     }
 
     private AreaView createArea(
-            BackendAcceptanceTest.ScenarioContext context,
-            StoreContext store,
-            String type,
-            String name,
-            String code)
+            BackendAcceptanceTest.ScenarioContext context, StoreContext store, String type, String name, String code)
             throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("name", name);
@@ -588,7 +672,7 @@ final class StoreServicePointAcceptanceScenarios {
     private AreaView updateArea(
             BackendAcceptanceTest.ScenarioContext context,
             StoreContext store,
-        AreaView area,
+            AreaView area,
             String name,
             String code,
             String type,
@@ -645,7 +729,8 @@ final class StoreServicePointAcceptanceScenarios {
             String shape,
             Boolean reservable)
             throws Exception {
-        return createPoint(context, store, area, pointBody(name, code, "TABLE", null, null, capacity, shape, reservable));
+        return createPoint(
+                context, store, area, pointBody(name, code, "TABLE", null, null, capacity, shape, reservable));
     }
 
     private PointView createTablePointWithAsset(
@@ -673,10 +758,7 @@ final class StoreServicePointAcceptanceScenarios {
     }
 
     private PointView createPoint(
-            BackendAcceptanceTest.ScenarioContext context,
-            StoreContext store,
-            AreaView area,
-            Map<String, Object> body)
+            BackendAcceptanceTest.ScenarioContext context, StoreContext store, AreaView area, Map<String, Object> body)
             throws Exception {
         BackendAcceptanceTest.Response response = context.post(
                 OPERATIONS_STORE_SERVICE_POINT_CREATE,
@@ -750,8 +832,8 @@ final class StoreServicePointAcceptanceScenarios {
                 .json();
     }
 
-    private JsonNode listPoints(
-            BackendAcceptanceTest.ScenarioContext context, StoreContext store, AreaView area) throws Exception {
+    private JsonNode listPoints(BackendAcceptanceTest.ScenarioContext context, StoreContext store, AreaView area)
+            throws Exception {
         return context.get(
                         OPERATIONS_STORE_SERVICE_POINTS,
                         areaPath(store.fixture(), area.ref()) + "/service-points",
@@ -760,8 +842,8 @@ final class StoreServicePointAcceptanceScenarios {
                 .json();
     }
 
-    private JsonNode readPoint(
-            BackendAcceptanceTest.ScenarioContext context, StoreContext store, UUID pointRef) throws Exception {
+    private JsonNode readPoint(BackendAcceptanceTest.ScenarioContext context, StoreContext store, UUID pointRef)
+            throws Exception {
         return context.get(
                         OPERATIONS_STORE_SERVICE_POINT,
                         pointPath(store.fixture(), pointRef),
@@ -784,7 +866,8 @@ final class StoreServicePointAcceptanceScenarios {
                 CREATED);
     }
 
-    private JsonNode readQrCandidates(BackendAcceptanceTest.ScenarioContext context, StoreContext store) throws Exception {
+    private JsonNode readQrCandidates(BackendAcceptanceTest.ScenarioContext context, StoreContext store)
+            throws Exception {
         return context.get(
                         OPERATIONS_STORE_QR_CHANNEL_CANDIDATES,
                         qrCandidatesPath(store.fixture()),
@@ -867,10 +950,16 @@ final class StoreServicePointAcceptanceScenarios {
                 OK);
         assertEquals(
                 fixture.storeId().toString(),
-                selected.json().path("scopeContext").path("store").path("dataNodeRef").asText(),
+                selected.json()
+                        .path("scopeContext")
+                        .path("store")
+                        .path("dataNodeRef")
+                        .asText(),
                 "BUSINESS: service-point fixture selects the intended store");
         return new BackendAcceptanceTest.Session(
-                session.cookie(), selected.json(), selected.json().path("contextVersion").asLong());
+                session.cookie(),
+                selected.json(),
+                selected.json().path("contextVersion").asLong());
     }
 
     private static String areasPath(BackendAcceptanceTest.Fixture fixture) {
@@ -908,11 +997,17 @@ final class StoreServicePointAcceptanceScenarios {
     }
 
     private static AreaView area(JsonNode json) {
-        return new AreaView(UUID.fromString(json.path("areaRef").asText()), json.path("version").asLong(), json);
+        return new AreaView(
+                UUID.fromString(json.path("areaRef").asText()),
+                json.path("version").asLong(),
+                json);
     }
 
     private static PointView point(JsonNode json) {
-        return new PointView(UUID.fromString(json.path("pointRef").asText()), json.path("version").asLong(), json);
+        return new PointView(
+                UUID.fromString(json.path("pointRef").asText()),
+                json.path("version").asLong(),
+                json);
     }
 
     private static JsonNode findItem(JsonNode items, UUID ref) {

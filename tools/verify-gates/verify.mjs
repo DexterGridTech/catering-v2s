@@ -54,7 +54,7 @@ const staticCommands = Object.freeze([
     'l2-locator-bindings-static',
     'node',
     ['--test', 'scripts/test/l2-locator-bindings.static.test.mjs'],
-    ['tests 7', 'pass 7'],
+    ['tests 8', 'pass 8'],
   ],
   ['runtime-environment-keys', 'scripts/check/runtime-environment-keys', [], ['R5_RUNTIME_ENVIRONMENT_KEYS=PASS']],
   ['lifecycle-vocabulary', 'scripts/check/lifecycle-vocabulary', [], ['R6_LIFECYCLE_VOCABULARY=PASS']],

@@ -47,7 +47,8 @@ public final class ExtensionFilterQuery {
         if (requestedRevision == null) {
             throw invalid(List.of(new InvalidReason(null, "DEFINITION_REVISION_REQUIRED", null)));
         }
-        ExtensionDefinitionReadback definition = definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, hostType);
+        ExtensionDefinitionReadback definition =
+                definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, hostType);
         if (definition.version() != requestedRevision) {
             throw new DefinitionRevisionStaleException(definition.version());
         }
@@ -103,7 +104,9 @@ public final class ExtensionFilterQuery {
                     reasons.add(new InvalidReason(fieldKey.asText(), "TYPE_INVALID", null));
                     continue;
                 }
-                if (!value.isTextual() || value.asText().isBlank() || value.asText().length() > MAX_VALUE_LENGTH) {
+                if (!value.isTextual()
+                        || value.asText().isBlank()
+                        || value.asText().length() > MAX_VALUE_LENGTH) {
                     reasons.add(new InvalidReason(fieldKey.asText(), "VALUE_INVALID", type.asText()));
                     continue;
                 }
@@ -132,8 +135,9 @@ public final class ExtensionFilterQuery {
 
     private static Prepared validateAndBuild(ExtensionDefinitionReadback definition, List<RawFilter> raw) {
         List<ExtensionDefinitionReadback.Field> fields = definition.fields();
-        var byKey = fields.stream().collect(java.util.stream.Collectors.toMap(
-                ExtensionDefinitionReadback.Field::fieldKey, value -> value, (left, right) -> left));
+        var byKey = fields.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        ExtensionDefinitionReadback.Field::fieldKey, value -> value, (left, right) -> left));
         List<InvalidReason> reasons = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         long searchableCount = fields.stream()
@@ -193,8 +197,7 @@ public final class ExtensionFilterQuery {
     private static BigDecimal parseNumber(String value) {
         try {
             BigDecimal parsed = new BigDecimal(value.trim());
-            if (!parsed.toString().equalsIgnoreCase("nan")
-                    && !parsed.toString().equalsIgnoreCase("infinity")) {
+            if (!parsed.toString().equalsIgnoreCase("nan") && !parsed.toString().equalsIgnoreCase("infinity")) {
                 return parsed;
             }
         } catch (NumberFormatException ignored) {
@@ -295,8 +298,7 @@ public final class ExtensionFilterQuery {
                         + ", '')) LIKE lower(?) ESCAPE '!'";
                 case "NUMBER" -> "jsonb_typeof(" + jsonValue + ") = 'number' AND " + jsonValue
                         + " = to_jsonb(?::numeric)";
-                case "DATE" -> "jsonb_typeof(" + jsonValue + ") = 'string' AND " + jsonValue
-                        + " = to_jsonb(?::text)";
+                case "DATE" -> "jsonb_typeof(" + jsonValue + ") = 'string' AND " + jsonValue + " = to_jsonb(?::text)";
                 case "BOOLEAN" -> "jsonb_typeof(" + jsonValue + ") = 'boolean' AND " + jsonValue
                         + " = to_jsonb(?::boolean)";
                 case "SELECT" -> jsonValue + " = to_jsonb(?::text)";

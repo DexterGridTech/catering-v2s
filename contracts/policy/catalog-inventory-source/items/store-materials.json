@@ -1,0 +1,533 @@
+{
+  "items": {
+    "materialPearl": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-PEARL-001",
+      "name": "牛排原切肉",
+      "shortName": "牛排原切肉",
+      "categoryKey": "MATERIAL",
+      "description": "牛排原切肉，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-PEARL",
+            "lowStockThreshold": 500,
+            "allowNegative": false,
+            "consumptionUnitRef": "g",
+            "consumptionUnitName": "克",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": true,
+            "countingUnitRef": "pack",
+            "countingUnitName": "包",
+            "countingToConsumptionQuantity": 1000
+          }
+        }
+      ],
+      "mediaAssetKey": "steakRaw"
+    },
+    "materialCoconutJelly": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-COCONUT-JELLY-001",
+      "name": "三文鱼柳",
+      "shortName": "三文鱼柳",
+      "categoryKey": "MATERIAL",
+      "description": "三文鱼柳，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-SALMON-FILLET",
+            "lowStockThreshold": 1500,
+            "allowNegative": false,
+            "consumptionUnitRef": "g",
+            "consumptionUnitName": "克",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "salmonRaw"
+    },
+    "materialGrassJelly": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-GRASS-JELLY-001",
+      "name": "意大利面",
+      "shortName": "意大利面",
+      "categoryKey": "MATERIAL",
+      "description": "意大利面，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-SPAGHETTI",
+            "lowStockThreshold": 200,
+            "allowNegative": true,
+            "consumptionUnitRef": "g",
+            "consumptionUnitName": "克",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "spaghetti"
+    },
+    "materialCup": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-CUP-001",
+      "name": "外卖餐盒",
+      "shortName": "外卖餐盒",
+      "categoryKey": "MATERIAL",
+      "description": "外卖餐盒，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-CUP",
+            "lowStockThreshold": 80,
+            "allowNegative": false,
+            "consumptionUnitRef": "piece",
+            "consumptionUnitName": "个",
+            "consumptionUnitPrecision": 0,
+            "countingUnitEnabled": true,
+            "countingUnitRef": "case",
+            "countingUnitName": "箱",
+            "countingToConsumptionQuantity": 200
+          }
+        }
+      ],
+      "mediaAssetKey": "takeawayBox"
+    },
+    "materialVanillaSyrup": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-VANILLA-SYRUP-001",
+      "name": "黑椒汁",
+      "shortName": "黑椒汁",
+      "categoryKey": "MATERIAL",
+      "description": "黑椒汁，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-VANILLA-SYRUP",
+            "lowStockThreshold": 1000,
+            "allowNegative": false,
+            "consumptionUnitRef": "ml",
+            "consumptionUnitName": "毫升",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": true,
+            "countingUnitRef": "bottle",
+            "countingUnitName": "瓶",
+            "countingToConsumptionQuantity": 1000
+          }
+        }
+      ],
+      "mediaAssetKey": "blackPepperSauce"
+    },
+    "materialChickenBreast": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-CHICKEN-BREAST-001",
+      "name": "鸡胸肉",
+      "shortName": "鸡胸肉",
+      "categoryKey": "MATERIAL",
+      "description": "鸡胸肉，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-CHICKEN-BREAST",
+            "lowStockThreshold": 1200,
+            "allowNegative": false,
+            "consumptionUnitRef": "g",
+            "consumptionUnitName": "克",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "chickenBreast"
+    },
+    "materialMixedLettuce": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-MIXED-LETTUCE-001",
+      "name": "混合生菜",
+      "shortName": "混合生菜",
+      "categoryKey": "MATERIAL",
+      "description": "混合生菜，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-MIXED-LETTUCE",
+            "lowStockThreshold": 800,
+            "allowNegative": false,
+            "consumptionUnitRef": "g",
+            "consumptionUnitName": "克",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "mixedLettuce"
+    },
+    "materialTomato": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-TOMATO-001",
+      "name": "番茄",
+      "shortName": "番茄",
+      "categoryKey": "MATERIAL",
+      "description": "番茄，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-TOMATO",
+            "lowStockThreshold": 1000,
+            "allowNegative": false,
+            "consumptionUnitRef": "g",
+            "consumptionUnitName": "克",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "tomato"
+    },
+    "materialMushroom": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-MUSHROOM-001",
+      "name": "蘑菇",
+      "shortName": "蘑菇",
+      "categoryKey": "MATERIAL",
+      "description": "蘑菇，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-MUSHROOM",
+            "lowStockThreshold": 600,
+            "allowNegative": false,
+            "consumptionUnitRef": "g",
+            "consumptionUnitName": "克",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "mushroom"
+    },
+    "materialMozzarella": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-MOZZARELLA-001",
+      "name": "马苏里拉芝士",
+      "shortName": "马苏里拉芝士",
+      "categoryKey": "MATERIAL",
+      "description": "马苏里拉芝士，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-MOZZARELLA",
+            "lowStockThreshold": 500,
+            "allowNegative": false,
+            "consumptionUnitRef": "g",
+            "consumptionUnitName": "克",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "mozzarella"
+    },
+    "materialPotato": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-POTATO-001",
+      "name": "土豆",
+      "shortName": "土豆",
+      "categoryKey": "MATERIAL",
+      "description": "土豆，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-POTATO",
+            "lowStockThreshold": 1500,
+            "allowNegative": false,
+            "consumptionUnitRef": "g",
+            "consumptionUnitName": "克",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "potato"
+    },
+    "materialBacon": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-BACON-001",
+      "name": "培根",
+      "shortName": "培根",
+      "categoryKey": "MATERIAL",
+      "description": "培根，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-BACON",
+            "lowStockThreshold": 500,
+            "allowNegative": false,
+            "consumptionUnitRef": "g",
+            "consumptionUnitName": "克",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "chickenBreast"
+    },
+    "materialEgg": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-EGG-001",
+      "name": "鸡蛋",
+      "shortName": "鸡蛋",
+      "categoryKey": "MATERIAL",
+      "description": "鸡蛋，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-EGG",
+            "lowStockThreshold": 60,
+            "allowNegative": false,
+            "consumptionUnitRef": "个",
+            "consumptionUnitName": "个",
+            "consumptionUnitPrecision": 0,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "mixedLettuce"
+    },
+    "materialCream": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-CREAM-001",
+      "name": "淡奶油",
+      "shortName": "淡奶油",
+      "categoryKey": "MATERIAL",
+      "description": "淡奶油，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-CREAM",
+            "lowStockThreshold": 1000,
+            "allowNegative": false,
+            "consumptionUnitRef": "ml",
+            "consumptionUnitName": "毫升",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "mushroom"
+    },
+    "materialPizzaDough": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-PIZZA-DOUGH-001",
+      "name": "披萨饼底",
+      "shortName": "披萨饼底",
+      "categoryKey": "MATERIAL",
+      "description": "披萨饼底，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-PIZZA-DOUGH",
+            "lowStockThreshold": 20,
+            "allowNegative": false,
+            "consumptionUnitRef": "个",
+            "consumptionUnitName": "个",
+            "consumptionUnitPrecision": 0,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "margheritaPizza"
+    },
+    "materialTomatoSauce": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-TOMATO-SAUCE-001",
+      "name": "番茄酱",
+      "shortName": "番茄酱",
+      "categoryKey": "MATERIAL",
+      "description": "番茄酱，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-TOMATO-SAUCE",
+            "lowStockThreshold": 1500,
+            "allowNegative": false,
+            "consumptionUnitRef": "ml",
+            "consumptionUnitName": "毫升",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "tomato"
+    },
+    "materialCoffeeBean": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-COFFEE-BEAN-001",
+      "name": "意式咖啡豆",
+      "shortName": "意式咖啡豆",
+      "categoryKey": "MATERIAL",
+      "description": "意式咖啡豆，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-COFFEE-BEAN",
+            "lowStockThreshold": 500,
+            "allowNegative": false,
+            "consumptionUnitRef": "g",
+            "consumptionUnitName": "克",
+            "consumptionUnitPrecision": 2,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "coffee"
+    },
+    "materialLemon": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-LEMON-001",
+      "name": "柠檬",
+      "shortName": "柠檬",
+      "categoryKey": "MATERIAL",
+      "description": "柠檬，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-LEMON",
+            "lowStockThreshold": 30,
+            "allowNegative": false,
+            "consumptionUnitRef": "个",
+            "consumptionUnitName": "个",
+            "consumptionUnitPrecision": 0,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "lemonade"
+    },
+    "materialCutlery": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-CUTLERY-001",
+      "name": "餐具包",
+      "shortName": "餐具包",
+      "categoryKey": "MATERIAL",
+      "description": "餐具包，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-CUTLERY",
+            "lowStockThreshold": 100,
+            "allowNegative": false,
+            "consumptionUnitRef": "套",
+            "consumptionUnitName": "套",
+            "consumptionUnitPrecision": 0,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "takeawayBox"
+    },
+    "materialTakeawayBag": {
+      "shapeKey": "MATERIAL",
+      "catalogItemCode": "MAT-TAKEAWAY-BAG-001",
+      "name": "外卖手提袋",
+      "shortName": "外卖手提袋",
+      "categoryKey": "MATERIAL",
+      "description": "外卖手提袋，用于西餐菜品库存和 BOM 扣料。",
+      "standardSalePriceCents": 0,
+      "inventoryBomRules": [
+        {
+          "nodeKey": "CATALOG_ITEM",
+          "nodeType": "CATALOG_ITEM",
+          "mode": "INDEPENDENT_STOCK",
+          "independentStock": {
+            "externalCode": "ERP-MAT-TAKEAWAY-BAG",
+            "lowStockThreshold": 80,
+            "allowNegative": false,
+            "consumptionUnitRef": "个",
+            "consumptionUnitName": "个",
+            "consumptionUnitPrecision": 0,
+            "countingUnitEnabled": false
+          }
+        }
+      ],
+      "mediaAssetKey": "packagingService"
+    }
+  }
+}

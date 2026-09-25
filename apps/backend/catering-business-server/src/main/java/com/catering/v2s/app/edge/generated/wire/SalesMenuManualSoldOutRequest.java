@@ -29,7 +29,7 @@ public record SalesMenuManualSoldOutRequest(
           return context.reportInputMismatch(SalesMenuManualSoldOutRequest.class, "property value is required");
         switch (property) {
           case "target" -> target = context.readValue(parser, SalesMenuManualSoldOutRequestTarget.class);
-          case "reason" -> reason = context.readValue(parser, String.class);
+          case "reason" -> reason = (parser.currentToken() == tools.jackson.core.JsonToken.VALUE_NULL ? null : context.readValue(parser, String.class));
           case "expectedVersion" -> expectedVersion = context.readValue(parser, Long.class);
           default -> {
             parser.skipChildren();
@@ -41,7 +41,7 @@ public record SalesMenuManualSoldOutRequest(
       if (token == null)
         return context.reportInputMismatch(SalesMenuManualSoldOutRequest.class, "object must end with END_OBJECT");
       if (target == null) return context.reportInputMismatch(SalesMenuManualSoldOutRequest.class, "missing required property target");
-      if (reason == null) return context.reportInputMismatch(SalesMenuManualSoldOutRequest.class, "missing required property reason");
+      if (!seen.contains("reason")) return context.reportInputMismatch(SalesMenuManualSoldOutRequest.class, "missing required property reason");
       if (expectedVersion == null) return context.reportInputMismatch(SalesMenuManualSoldOutRequest.class, "missing required property expectedVersion");
       return new SalesMenuManualSoldOutRequest(target, reason, expectedVersion);
     }

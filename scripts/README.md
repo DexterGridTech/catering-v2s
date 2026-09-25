@@ -1,6 +1,6 @@
 # catering-v2s 标准动作
 
-本目录是 v2s 仓内动作的唯一入口。R1 与 R2 已关闭并达到 `V2S_FOUNDATION_READY`；Dexter 已暂停 `R3-J02` implementation-facing design，其历史资产为 `PENDING_RECOVERY`，不得继续 handoff 或作为 implementation 输入。第一批、`DESIGN_GOVERNANCE_BATCH_1_5` 与 Batch 2 inventory 已由 Dexter 接受；R3-C01 的低保真线框已经 Dexter 接受。R3 全范围详设与实施计划已接受，且 R3 implementation 已授权：C-01 是唯一业务 Journey，整体覆盖 R3-TECH、契约、脚本、后端、数据库、双 app 边界、测试与证据。U01 Gate 0、U02 skeleton、U03 contract/codegen 与 U04 backend owner/migration 已完成，当前按 U05-U07 继续。后端保持并列的 `catering-business-server`（R3 当前唯一业务 deployable）与 `terminal-data-server`（未来 TDP 空占位）；后者在 R3 不提供 runtime、endpoint、database、migration、generated wire、seed 或业务行为。不得恢复 J02/C-02。旧 `R3-J01` 保留为历史 `NO_GO`，`R3-C02` 在 R3 的运营用户真实登录保持删除。
+本目录是 v2s 仓内动作的唯一入口。当前任务与授权只来自 Dexter 在会话中的明确指派；历史 review、plan、evidence 与 decision 不能替代当前授权。后端保持并列的 `catering-business-server`（当前唯一业务 deployable）与 `terminal-data-server`（未来 TDP 空占位）；后者不提供 runtime、endpoint、database、migration、generated wire、seed 或业务行为。
 
 获批 UI-bearing Journey 的交互设计先执行 `doc/decisions/2026-07-25-v2s-frontend-asset-carry-over-first.md`：逐屏盘点 all-v2 对应页并以带 `path@hash` 的静态摹本/截图为线框基线；仅当没有对应页才新画。未来实现才按 manifest 显式搬运页面、组件、shell/foundation，generated wire 始终按 v2s edge OpenAPI 重生成。本条不授权任何实现，也不允许 Heritage runtime/build fallback。
 
@@ -27,7 +27,6 @@ scripts/check/project-memory
 scripts/check/agent-lifecycle
 scripts/check/provider-free-context
 scripts/check/foundation-standard-actions
-scripts/check/roadmap-program-registry
 scripts/check/module-dependency-registry --require-empty
 scripts/check/handoff-debt
 scripts/check/heritage-registry
@@ -74,21 +73,14 @@ All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-b
 
 2026-08-14 起，唯一公共入口是
 `scripts/test/backend-acceptance --operation all`（也可用同一参数聚焦单个 operation）。性能校准只可使用
-`scripts/test/backend-acceptance --operation all --calibration`：它校验 238 个 operation 的 exact-set、正常样本与连接门，
+`scripts/test/backend-acceptance --operation all --calibration`：它校验 generated operation set 的 exact-set、正常样本与连接门，
 但不把未校准的固定 DB 上限当作已验收预算。普通 `all` 则无条件执行完整预算门；两种模式都在真实远端
 Testcontainers 中启动应用，经真实 HTTP 自动发现并串行运行全部已注册的手写 fixture/request/business
 assertion，逐条分开打印 `CONTRACT`、`BUSINESS` 和场景内信息性 `DB_OPERATIONS`；结果还明确标记
-`businessMode=REAL`，桩断言不得通过。当前场景覆盖 IAM、ORG、商业合同、asset、catalog、audit、extension、
-collaboration 与 business-channel 的权限、隔离、状态迁移、字段脱敏、读回和跨域业务规则；本批的绑定查询
-过滤/排序/分页、认证类型空值语义以及项目/门店经营渠道状态规则均由真实 HTTP 场景覆盖。原 196 个 provider 壳、
-共享 SPI 与 scenario registry 已下线删除，不再作为
-测试入口或覆盖依据。`BackendAcceptanceTest.java` 只保留唯一 Testcontainers/HTTP 入口与共享支撑；新增业务断言应按业务域修改
-`apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/IamAcceptanceScenarios.java`、
-`OrganizationAcceptanceScenarios.java`、`CommercialContractAcceptanceScenarios.java`、
-`AssetAcceptanceScenarios.java`、`CatalogAcceptanceScenarios.java`、`AuditAcceptanceScenarios.java`、
-`ExtensionAcceptanceScenarios.java`、`CollaborationAcceptanceScenarios.java` 或
-`BusinessChannelAcceptanceScenarios.java`，由
-`BackendAcceptanceScenarioCatalog` 自动发现。
+`businessMode=REAL`，桩断言不得通过。业务场景必须覆盖其所属业务域的权限、隔离、状态迁移、字段脱敏、读回与
+跨域业务规则；测试入口只保留唯一 Testcontainers/HTTP 入口与共享支撑。新增或修改业务断言必须写入上述 acceptance
+目录下对应业务域的 `*AcceptanceScenarios.java`，由 `BackendAcceptanceScenarioCatalog` 自动发现；不得在本入口文件
+冻结场景数量、业务域清单或场景文件清单。
 
 新增场景必须同时写真实 fixture、真实 HTTP request 和真实业务 oracle；不得只断言 response.ok、
 状态码或“不抛异常”。报告只把 `CONTRACT`、`BUSINESS` 和信息性 `DB_OPERATIONS` 分开列出，
@@ -98,7 +90,7 @@ collaboration 与 business-channel 的权限、隔离、状态迁移、字段脱
 旧 scenario-level PERFORMANCE verdict、accepted-baseline、known-uncovered、provider exact-set、
 lane/并行/心跳/work-stealing、scenario calibration 与 correctnessCases 继续退役。下一条业务
 scenario 只复制真实 fixture、HTTP request 与业务断言。Dexter 2026-08-22 恢复的 generated
-238-operation budget 由独立 run-level verifier 消费同一 HTTP completion events；不写进
+generated operation budget 由独立 run-level verifier 消费同一 HTTP completion events；不写进
 `@AcceptanceScenario`、不参与其 `CONTRACT`/`BUSINESS`，不复活旧 provider/性能 lane。
 
 Docker-backed Gradle `:test` tasks are never accepted from `FROM-CACHE`, `UP-TO-DATE`,
@@ -208,7 +200,7 @@ runtime 已经输出拓扑字段。
 
 ## 验证工作的通用规则
 
-R3–R6 及后续步骤遵循 `doc/decisions/2026-07-24-v2s-verification-governance.md`：机器门只处理可机械判定的事实，且必须驱动 production 并以真实 red mutation 证明会失败；业务语义留给 fresh 独立对抗审查和 Claude review，不做关键词式伪语义 checker。新门须同时满足“反复发生、纯机械、维护成本低于未来返工”三问；交付超过半小时审阅量先切小，`scripts/verify` 保持分钟级，变慢先砍最弱门。
+验证工作遵循 `doc/decisions/2026-07-24-v2s-verification-governance.md`：机器门只处理可机械判定的事实，且必须驱动 production 并以真实 red mutation 证明会失败；业务语义留给 fresh 独立对抗审查和 Claude review，不做关键词式伪语义 checker。新门须同时满足“反复发生、纯机械、维护成本低于未来返工”三问；交付超过半小时审阅量先切小，`scripts/verify` 保持分钟级，变慢先砍最弱门。
 
 ## 测试健康闭环
 
@@ -235,15 +227,11 @@ production gate 会拒绝缺少上述必要内容的 reviewer verdict 或作者 
 
 `CODEX_CLI_VERSION_CHANGED` 是重跑原生 hooks parser probe 的精确触发事实。触发后必须从 v2s 根执行一次 `codex exec --ephemeral --json --dangerously-bypass-hook-trust` 的只读入口 probe，扫描完整 event stream 是否出现 `failed to parse hooks config`，并记录 client version、命令、错误信号与退出码；客户端可能在 event 中报告解析失败但进程仍退出 `0`，禁止只看 exit code。`scripts/check/agent-lifecycle` 继续承担确定性 schema、命令与 red-fixture 门，不能代替客户端 probe。
 
-该触发器是 AI 控制面兼容性维护规则，不是生产化欠账；`HANDOFF.md` 继续只保存冻结的七项生产化欠账，不得为此扩成第二 Roadmap。
-
-## Roadmap
-
-只从 `doc/platform/roadmap-program-registry.json` 按显式 `programId` 解析。`PREPARED_NON_AUTHORITATIVE` 不得被当作 current owner；只有 `ACTIVE` 且 transfer receipt/current hash readback 全部通过时才可发现。
+该触发器是 AI 控制面兼容性维护规则，不是生产化欠账；`HANDOFF.md` 继续只保存冻结的生产化欠账。
 
 ## Runtime 与 Git
 
-- R1/R2 均未启动受管或非受管动态资源；R3 专项设计不改变该事实，R3/W1 未获实现授权前继续禁止；
+- 未经 Dexter 明确授权，不启动受管或非受管动态资源；
 - 若未来存在 `.runtime/agent-sessions/<sessionId>.json`，Stop 只检查该 session 与其显式 `managedRunIds`；
 - `start/restart` 未来必须迁移 schema 但不得 seed；`seed/reset` 始终独立；
 - 不执行 Git stage、commit、push；Git 归 Dexter。

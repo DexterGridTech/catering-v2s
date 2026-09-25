@@ -1,0 +1,3 @@
+{
+  "extends": "@catering-v2s/application-base-android/config/tsconfig.json"
+}

@@ -1,28 +1,26 @@
 package com.catering.v2s.salesmenu.application.persistence;
 
-import com.catering.v2s.salesmenu.application.SalesMenuReadModels;
 import static com.catering.v2s.salesmenu.application.SalesMenuReadModels.*;
+
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.salesmenu.api.SalesMenuReadback;
+import com.catering.v2s.salesmenu.application.SalesMenuReadModels;
 import com.catering.v2s.salesmenu.domain.SalesMenuAggregate;
+import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMediaMode;
 import com.catering.v2s.salesmenu.domain.SalesMenuListQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuMoveDirection;
-import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMediaMode;
 import com.catering.v2s.salesmenu.domain.SalesMenuSchedule;
-import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuScheduleKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuScope;
+import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionKind;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.time.LocalTime;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -56,8 +54,10 @@ public class SalesMenuPersistence {
 
     public boolean compareAndSetVersion(SalesMenuTarget target, long expectedVersion) {
         return update(
-                        SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_UPDATE_SALES_COLLECTION_VERSION_COLLECTION_REF
-                                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_REF_VERSION,
+                        SalesMenuCollectionPersistenceSql
+                                        .SALES_MENU_COLLECTION_PERSISTENCE_UPDATE_SALES_COLLECTION_VERSION_COLLECTION_REF
+                                + SalesMenuCollectionPersistenceSql
+                                        .SALES_MENU_COLLECTION_PERSISTENCE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_REF_VERSION,
                         target.salesMenuRef(),
                         target.scope().workspaceUuid(),
                         target.scope().groupWorkspaceKey(),
@@ -74,9 +74,12 @@ public class SalesMenuPersistence {
     public List<SalesMenuReadModels.ReceiptRow> readCommandReceipt(
             UUID workspaceUuid, String operationId, String idempotencyKey) {
         return query(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
                 SalesMenuReadModels::receiptRow,
                 workspaceUuid,
                 operationId,
@@ -95,9 +98,11 @@ public class SalesMenuPersistence {
             long createdAtEpochMillis) {
         return update(
                 SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_COMMAND_RECEIPT
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_OPERATION_ID_IDEMPOTENCY_KEY_REQUEST_HASH_STATUS
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_OPERATION_ID_IDEMPOTENCY_KEY_REQUEST_HASH_STATUS
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_VALUES_VALUES_JSONB
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_JOIN_CONDITION_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_JOIN_CONDITION_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
                 receiptRef,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -112,9 +117,12 @@ public class SalesMenuPersistence {
     public List<SalesMenuReadModels.ReceiptRow> readCommandReceiptForReplay(
             UUID workspaceUuid, String operationId, String idempotencyKey) {
         return query(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT_ALTERNATE_A
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN_ALTERNATE_A
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY_ALTERNATE_A,
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT_ALTERNATE_A
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN_ALTERNATE_A
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY_ALTERNATE_A,
                 SalesMenuReadModels::receiptRow,
                 workspaceUuid,
                 operationId,
@@ -140,9 +148,12 @@ public class SalesMenuPersistence {
             String idempotencyKey) {
         update(
                 SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_OPERATION_RECORD
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_STORE_REF_CHANNEL_REF_COLLECTION_REF_OPERATION_KIND
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_TARGET_DISPLAY_SNAPSHOT_RESULT_ACTOR_TYPE_ACTOR_ID
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_OCCURRED_AT_EPOCH_MILLIS_IDEMPOTENCY_KEY,
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_STORE_REF_CHANNEL_REF_COLLECTION_REF_OPERATION_KIND
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_TARGET_DISPLAY_SNAPSHOT_RESULT_ACTOR_TYPE_ACTOR_ID
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_OCCURRED_AT_EPOCH_MILLIS_IDEMPOTENCY_KEY,
                 recordRef,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -178,22 +189,32 @@ public class SalesMenuPersistence {
         }
         arguments.add(query.page().pageSize() + 1);
         return query(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_COLLECTION_REF_STORE_REF_NAME_ARCHIVED_AT_EPOCH_MILLIS
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SELECT_COLLECTION_REF_STORE_REF_NAME_ARCHIVED_AT_EPOCH_MILLIS
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_REVISION_DRAFT_REVISION
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_REVISION_PUBLISHED_REVISION
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_PUBLICATION
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SCHEDULE_KIND_SCHEDULE_START_LOCAL_TIME
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SCHEDULE_KIND_SCHEDULE_START_LOCAL_TIME
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SCHEDULE_END_LOCAL_TIME
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SALES_COLLECTION
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_JOIN_SALES_COLLECTION_VERSION_VERSION_REF_CURRENT_DRAFT_VERSION_REF
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SALES_COLLECTION_VERSION_LEFT_JOIN_SALES_MENU_SALES_C
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_JOIN_CONDITION_VERSION_REF_LATEST_PUBLISHED_VERSION_REF
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_JOIN_SALES_COLLECTION_VERSION_VERSION_REF_CURRENT_DRAFT_VERSION_REF
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SALES_COLLECTION_VERSION_LEFT_JOIN_SALES_MENU_SALES_C
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_JOIN_CONDITION_VERSION_REF_LATEST_PUBLISHED_VERSION_REF
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SALES_PUBLICATION_PUBLICATION
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_JOIN_CONDITION_PUBLICATION_PUBLISHED_VERSION_REF_VERSION_REF
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_CONDITION_PUBLICATION_COLLECTION_REF
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SALES_COLLECTION_ACTIVATION_LEFT_JOIN_SALES_MENU_SALES_C
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_JOIN_CONDITION_COLLECTION_REF_CHANNEL_REF
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_REF_NAME
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_JOIN_CONDITION_PUBLICATION_PUBLISHED_VERSION_REF_VERSION_REF
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_CONDITION_PUBLICATION_COLLECTION_REF
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SALES_COLLECTION_ACTIVATION_LEFT_JOIN_SALES_MENU_SALES_C
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_JOIN_CONDITION_COLLECTION_REF_CHANNEL_REF
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_REF_NAME
                         + frontier
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_ORDER_BY_NAME_COLLECTION_REF,
                 SalesMenuReadModels::menuListRow,
@@ -203,7 +224,8 @@ public class SalesMenuPersistence {
     public List<ActivationRow> readActivation(UUID menuRef, UUID channelRef) {
         return query(
                 SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_CHANNEL_REF_STATUS_VERSION
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_COLLECTION_ACTIVATION_FROM_SALES_MENU_SALES_COLLEC
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_COLLECTION_ACTIVATION_FROM_SALES_MENU_SALES_COLLEC
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_WHERE_COLLECTION_REF_CHANNEL_REF,
                 SalesMenuReadModels::activationRow,
                 menuRef,
@@ -222,7 +244,11 @@ public class SalesMenuPersistence {
     }
 
     public int attachDraftToCollection(UUID draftRef, UUID menuRef) {
-        return update(SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_UPDATE_SALES_COLLECTION_CURRENT_DRAFT_VERSION_REF_COLLECTION_REF, draftRef, menuRef);
+        return update(
+                SalesMenuDefinitionServiceSql
+                        .SALES_MENU_DEFINITION_SERVICE_UPDATE_SALES_COLLECTION_CURRENT_DRAFT_VERSION_REF_COLLECTION_REF,
+                draftRef,
+                menuRef);
     }
 
     public int initializeCollectionActivation(UUID menuRef, UUID channelRef, String status) {
@@ -235,19 +261,30 @@ public class SalesMenuPersistence {
     }
 
     public int renameCollection(String name, UUID menuRef) {
-        return update(SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_UPDATE_SALES_COLLECTION_NAME_COLLECTION_REF, name, menuRef);
+        return update(
+                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_UPDATE_SALES_COLLECTION_NAME_COLLECTION_REF,
+                name,
+                menuRef);
     }
 
     public int archiveCollection(long archivedAtEpochMillis, UUID menuRef) {
-        return update(SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_UPDATE_SALES_COLLECTION_ARCHIVED_AT_EPOCH_MILLIS_COLLECTION_REF, archivedAtEpochMillis, menuRef);
+        return update(
+                SalesMenuDefinitionServiceSql
+                        .SALES_MENU_DEFINITION_SERVICE_UPDATE_SALES_COLLECTION_ARCHIVED_AT_EPOCH_MILLIS_COLLECTION_REF,
+                archivedAtEpochMillis,
+                menuRef);
     }
 
     public int updateActivation(UUID menuRef, UUID channelRef, String status) {
         return update(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_COLLECTION_ACTIVATION_INSERT_INTO_SALES_MENU_SALES
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_COLLECTION_REF_CHANNEL_REF_STATUS_VERSION
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_VALUES_SET_COLLECTION_REF_CHANNEL_REF
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_STATUS_VERSION_SALES_COLLECTION_ACTIVATION,
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_COLLECTION_ACTIVATION_INSERT_INTO_SALES_MENU_SALES
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_COLLECTION_REF_CHANNEL_REF_STATUS_VERSION
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_VALUES_SET_COLLECTION_REF_CHANNEL_REF
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_STATUS_VERSION_SALES_COLLECTION_ACTIVATION,
                 menuRef,
                 channelRef,
                 status);
@@ -255,9 +292,11 @@ public class SalesMenuPersistence {
 
     public int updateSchedule(UUID versionRef, SalesMenuSchedule schedule) {
         return update(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_UPDATE_SALES_COLLECTION_VERSION_SCHEDULE_KIND
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_UPDATE_SALES_COLLECTION_VERSION_SCHEDULE_KIND
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SCHEDULE_START_LOCAL_TIME
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SCHEDULE_END_LOCAL_TIME_VERSION_REF,
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SCHEDULE_END_LOCAL_TIME_VERSION_REF,
                 schedule.kind().name(),
                 schedule.startLocalTime(),
                 schedule.endLocalTime(),
@@ -267,7 +306,8 @@ public class SalesMenuPersistence {
     public int copyCollection(UUID menuRef, SalesMenuScope scope, String name) {
         return update(
                 SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_COLLECTION_ALTERNATE_A
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_STORE_REF_NAME_VERSION_ALTERNATE_A,
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_STORE_REF_NAME_VERSION_ALTERNATE_A,
                 menuRef,
                 scope.workspaceUuid(),
                 scope.groupWorkspaceKey(),
@@ -276,19 +316,28 @@ public class SalesMenuPersistence {
     }
 
     public int attachCopiedDraft(UUID draftRef, UUID menuRef) {
-        return update(SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_UPDATE_SALES_COLLECTION_CURRENT_DRAFT_VERSION_REF_COLLECTION_REF_ALTERNATE_A, draftRef, menuRef);
+        return update(
+                SalesMenuDefinitionServiceSql
+                        .SALES_MENU_DEFINITION_SERVICE_UPDATE_SALES_COLLECTION_CURRENT_DRAFT_VERSION_REF_COLLECTION_REF_ALTERNATE_A,
+                draftRef,
+                menuRef);
     }
 
     public List<SectionOrderRow> readSectionsForCopy(UUID sourceVersion) {
         return query(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_SALES_VERSION_SECTION_SECTION_REF_NAME_DISPLAY_ORDER
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SELECT_SALES_VERSION_SECTION_SECTION_REF_NAME_DISPLAY_ORDER
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_WHERE_VERSION_REF_DISPLAY_ORDER,
                 SalesMenuReadModels::sectionOrderRow,
                 sourceVersion);
     }
 
     public int createCopiedSection(UUID sectionRef, UUID menuRef) {
-        return update(SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_SECTION_SECTION_REF_COLLECTION_REF, sectionRef, menuRef);
+        return update(
+                SalesMenuDefinitionServiceSql
+                        .SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_SECTION_SECTION_REF_COLLECTION_REF,
+                sectionRef,
+                menuRef);
     }
 
     public int copySectionVersion(UUID targetVersion, UUID sectionRef, UUID menuRef, SectionOrderRow row) {
@@ -305,27 +354,38 @@ public class SalesMenuPersistence {
 
     public List<ItemRow> readItemsForCopy(UUID sourceVersion) {
         return query(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_VERSION_REF_SALES_ITEM_REF_CATALOG_ITEM_REF_SECTION_REF
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SELECT_VERSION_REF_SALES_ITEM_REF_CATALOG_ITEM_REF_SECTION_REF
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_VERSION_ALTERNATE_A
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_RESOLVED_PRODUCT_SHAPE
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_RESOLVED_SALES_UNIT_NAME
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_LISTED_PRICE_CENTS_ORDERING_CONSTRAINTS_JSON
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_DISPLAY_MEDIA_MODE_PUBLISHED_PRIMARY_IMAGE_ASSET_REF
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_PUBLISHED_CATALOG_IMAGE_ASSET_REFS_TEXT
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_LISTED_PRICE_CENTS_ORDERING_CONSTRAINTS_JSON
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_DISPLAY_MEDIA_MODE_PUBLISHED_PRIMARY_IMAGE_ASSET_REF
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_PUBLISHED_CATALOG_IMAGE_ASSET_REFS_TEXT
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_CAN_MOVE_UP_CAN_MOVE_DOWN
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_FROM_SALES_MENU_SALES_VERSIO
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_FROM_SALES_MENU_SALES_VERSIO
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_JOIN_SALES_ITEM_SALES_ITEM_REF
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_WHERE_VERSION_REF_DISPLAY_ORDER_ALTERNATE_A,
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_WHERE_VERSION_REF_DISPLAY_ORDER_ALTERNATE_A,
                 SalesMenuReadModels::itemRow,
                 sourceVersion);
     }
 
     public int createCopiedItem(UUID itemRef, UUID menuRef, UUID catalogItemRef) {
-        return update(SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_ITEM_SALES_ITEM_REF_COLLECTION_REF_CATALOG_ITEM_REF, itemRef, menuRef, catalogItemRef);
+        return update(
+                SalesMenuDefinitionServiceSql
+                        .SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_ITEM_SALES_ITEM_REF_COLLECTION_REF_CATALOG_ITEM_REF,
+                itemRef,
+                menuRef,
+                catalogItemRef);
     }
 
-    public int copyItemVersion(UUID targetVersion, UUID itemRef, UUID sectionRef, UUID menuRef, long displayOrder,
-            ItemRow row) {
+    public int copyItemVersion(
+            UUID targetVersion, UUID itemRef, UUID sectionRef, UUID menuRef, long displayOrder, ItemRow row) {
         return update(
                 SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_DISPLAY_ORDER_ALTERNATE_A
@@ -347,7 +407,8 @@ public class SalesMenuPersistence {
 
     public int copySku(UUID targetVersion, UUID itemRef, SkuRow sku) {
         return update(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_SKU_VERSION_REF_SALES_ITEM_REF_SKU_REF
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_SKU_VERSION_REF_SALES_ITEM_REF_SKU_REF
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_LISTED_PRICE_CENTS
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_DISPLAY_ORDER_ALTERNATE_B,
                 targetVersion,
@@ -362,7 +423,8 @@ public class SalesMenuPersistence {
 
     public int copyOrderOption(UUID targetVersion, UUID itemRef, SalesMenuReadback.SalesMenuOrderOption option) {
         return update(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION_VERSION_REF_SALES_ITEM_REF
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION_VERSION_REF_SALES_ITEM_REF
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_DEFINITION_REF
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_MAX_SELECTION_COUNT_DISPLAY_ORDER,
                 targetVersion,
@@ -379,7 +441,8 @@ public class SalesMenuPersistence {
     public int copyOrderOptionValue(
             UUID targetVersion, UUID itemRef, UUID definitionRef, SalesMenuReadback.SalesMenuOrderOptionValue value) {
         return update(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION_VA
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION_VA
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_DEFINITION_REF_ALTERNATE_A
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_DEFAULT_VALUE_EXTRA_PRICE,
                 targetVersion,
@@ -394,7 +457,8 @@ public class SalesMenuPersistence {
 
     public int copyMedia(UUID targetVersion, UUID itemRef, UUID assetRef, int displayOrder) {
         return update(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_MEDIA_VERSION_REF_SALES_ITEM_REF
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_MEDIA_VERSION_REF_SALES_ITEM_REF
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_ASSET_REF_DISPLAY_ORDER,
                 targetVersion,
                 itemRef,
@@ -413,7 +477,8 @@ public class SalesMenuPersistence {
         return update(
                 SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_COLLECTION_VERSION
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SCHEDULE_KIND
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SOURCE_DRAFT_VERSION_REF_SOURCE_DRAFT_REVISION_VERSION,
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SOURCE_DRAFT_VERSION_REF_SOURCE_DRAFT_REVISION_VERSION,
                 versionRef,
                 menuRef,
                 kind.name(),
@@ -435,7 +500,8 @@ public class SalesMenuPersistence {
             String actorDisplaySnapshot,
             long occurredAtEpochMillis) {
         return update(
-                SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_PUBLICATION_PUBLICATION_REF_COLLECTION_REF
+                SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_PUBLICATION_PUBLICATION_REF_COLLECTION_REF
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_PUBLISHED_VERSION_REF
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_SOURCE_DRAFT_REVISION
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_OCCURRED_AT_EPOCH_MILLIS,
@@ -451,7 +517,8 @@ public class SalesMenuPersistence {
 
     public int setLatestPublishedVersion(UUID publishedVersionRef, UUID collectionRef) {
         return update(
-                SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_UPDATE_SALES_COLLECTION_LATEST_PUBLISHED_VERSION_REF
+                SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_UPDATE_SALES_COLLECTION_LATEST_PUBLISHED_VERSION_REF
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_WHERE_COLLECTION_REF,
                 publishedVersionRef,
                 collectionRef);
@@ -459,21 +526,32 @@ public class SalesMenuPersistence {
 
     public int removeUnpublishedChildManualStatuses(UUID collectionRef, UUID publishedVersionRef) {
         return update(
-                SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_DELETE_SALES_MANUAL_STATUS_CURRENT_CURRENT_STATUS
+                SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_DELETE_SALES_MANUAL_STATUS_CURRENT_CURRENT_STATUS
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_USING_SALES_ITEM_ITEM
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_WHERE_CURRENT_STATUS_SALES_ITEM_REF_ITEM
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_WHERE_CURRENT_STATUS_SALES_ITEM_REF_ITEM
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_CONDITION_ITEM_COLLECTION_REF
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_CONDITION_CURRENT_STATUS_TARGET_KIND_ITEM
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_CONDITION_CURRENT_STATUS_TARGET_KIND_ITEM
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_CONDITION_AND_NOT_EXISTS
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_SELECT_SALES_VERSION_ITEM_SKU_SKU
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_WHERE_SKU_VERSION_REF_SALES_ITEM_REF_CURRENT_STATUS
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_CONDITION_CURRENT_STATUS_TARGET_KIND_SKU_SKU_REF
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_CONDITION_AND_NOT_EXISTS_ALTERNATE_A
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_SELECT_SALES_VERSION_ITEM_ORDER_OPTION_VA_OPTION_VALUE
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_WHERE_OPTION_VALUE_VERSION_REF_SALES_ITEM_REF
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_SELECT_SALES_VERSION_ITEM_SKU_SKU
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_WHERE_SKU_VERSION_REF_SALES_ITEM_REF_CURRENT_STATUS
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_CONDITION_CURRENT_STATUS_TARGET_KIND_SKU_SKU_REF
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_CONDITION_AND_NOT_EXISTS_ALTERNATE_A
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_SELECT_SALES_VERSION_ITEM_ORDER_OPTION_VA_OPTION_VALUE
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_WHERE_OPTION_VALUE_VERSION_REF_SALES_ITEM_REF
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_CURRENT_STATUS_SALES_ITEM_REF
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_CONDITION_CURRENT_STATUS_TARGET_KIND_ORDER_OPTION_VALUE
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_CONDITION_OPTION_VALUE_DEFINITION_VALUE_REF_CURRENT_STATUS_TARGET_REF,
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_CONDITION_CURRENT_STATUS_TARGET_KIND_ORDER_OPTION_VALUE
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_CONDITION_OPTION_VALUE_DEFINITION_VALUE_REF_CURRENT_STATUS_TARGET_REF,
                 collectionRef,
                 publishedVersionRef,
                 publishedVersionRef);
@@ -483,8 +561,10 @@ public class SalesMenuPersistence {
         return update(
                 SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_VERSION_SECTION
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_DISPLAY_ORDER
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_SELECT_SECTION_REF_COLLECTION_REF_NAME_DISPLAY_ORDER
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_FROM_CLAUSE_SALES_VERSION_SECTION_FROM_SALES_MENU_SALES_VERSIO
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_SELECT_SECTION_REF_COLLECTION_REF_NAME_DISPLAY_ORDER
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_FROM_CLAUSE_SALES_VERSION_SECTION_FROM_SALES_MENU_SALES_VERSIO
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_WHERE_VERSION_REF,
                 targetVersionRef,
                 sourceVersionRef);
@@ -493,9 +573,11 @@ public class SalesMenuPersistence {
     public int insertPublishedOrderOption(
             UUID versionRef, UUID itemRef, SalesMenuReadback.SalesMenuOrderOption option) {
         return update(
-                SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION
+                SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_DEFINITION_REF
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_MAX_SELECTION_COUNT_DISPLAY_ORDER,
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_MAX_SELECTION_COUNT_DISPLAY_ORDER,
                 versionRef,
                 itemRef,
                 option.definitionRef(),
@@ -508,12 +590,10 @@ public class SalesMenuPersistence {
     }
 
     public int insertPublishedOrderOptionValue(
-            UUID versionRef,
-            UUID itemRef,
-            UUID definitionRef,
-            SalesMenuReadback.SalesMenuOrderOptionValue value) {
+            UUID versionRef, UUID itemRef, UUID definitionRef, SalesMenuReadback.SalesMenuOrderOptionValue value) {
         return update(
-                SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION_VA
+                SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION_VA
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_DEFINITION_REF_ALTERNATE_A
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_DEFAULT_VALUE_EXTRA_PRICE,
                 versionRef,
@@ -554,12 +634,14 @@ public class SalesMenuPersistence {
             arguments.add(item.publishedCatalogImageAssetRefsJson());
         }
         return update(
-                SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_VERSION_REF_SALES_ITEM_REF_SECTION_REF
+                SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_VERSION_REF_SALES_ITEM_REF_SECTION_REF
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_COLLECTION_REF
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_RESOLVED_PRODUCT_SHAPE
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_RESOLVED_SALES_UNIT_NAME
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_LISTED_PRICE_CENTS
-                        + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_PUBLISHED_PRIMARY_IMAGE_ASSET_REF
+                        + SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_PUBLISHED_PRIMARY_IMAGE_ASSET_REF
                         + values,
                 arguments.toArray());
     }
@@ -581,7 +663,8 @@ public class SalesMenuPersistence {
             arguments.add(sku.displayOrder());
         }
         return update(
-                SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_SKU_VERSION_REF_SALES_ITEM_REF_SKU_REF
+                SalesMenuPublicationServiceSql
+                                .SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_SKU_VERSION_REF_SALES_ITEM_REF_SKU_REF
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_LISTED_PRICE_CENTS_ALTERNATE_A
                         + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_DISPLAY_ORDER_ALTERNATE_A
                         + values,
@@ -609,8 +692,10 @@ public class SalesMenuPersistence {
 
     public List<UUID> readEnabledActivationChannels(UUID collectionRef) {
         return query(
-                        SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_SELECT_SALES_COLLECTION_ACTIVATION_CHANNEL_REF_COLLECTION_REF
-                                + SalesMenuPublicationServiceSql.SALES_MENU_PUBLICATION_SERVICE_CONDITION_STATUS_ENABLED_CHANNEL_REF,
+                        SalesMenuPublicationServiceSql
+                                        .SALES_MENU_PUBLICATION_SERVICE_SELECT_SALES_COLLECTION_ACTIVATION_CHANNEL_REF_COLLECTION_REF
+                                + SalesMenuPublicationServiceSql
+                                        .SALES_MENU_PUBLICATION_SERVICE_CONDITION_STATUS_ENABLED_CHANNEL_REF,
                         SalesMenuReadModels::uuidValueRow,
                         collectionRef)
                 .stream()
@@ -661,12 +746,15 @@ public class SalesMenuPersistence {
         arguments.addAll(itemRefs);
         return query(
                 SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_SALES_ITEM_REF
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_MIN_SELECTION_COUNT_MAX_SELECTION_COUNT_DISPLAY_ORDER
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_ORDER_OPTION_VERSION_REF
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_MIN_SELECTION_COUNT_MAX_SELECTION_COUNT_DISPLAY_ORDER
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_ORDER_OPTION_VERSION_REF
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_CONDITION_SALES_ITEM_REF
                         + placeholders
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_CLOSE_PAREN
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_ORDER_BY_SALES_ITEM_REF_DISPLAY_ORDER_DEFINITION_REF,
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_ORDER_BY_SALES_ITEM_REF_DISPLAY_ORDER_DEFINITION_REF,
                 SalesMenuReadModels::orderOptionGroupRow,
                 arguments.toArray());
     }
@@ -681,9 +769,12 @@ public class SalesMenuPersistence {
         arguments.addAll(itemRefs);
         return query(
                 SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_SALES_ITEM_REF_ALTERNATE_A
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_DEFAULT_VALUE_EXTRA_PRICE_ALTERNATE_A
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_ORDER_OPTION_VA_VERSION_REF
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_CONDITION_SALES_ITEM_REF_ALTERNATE_A
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_DEFAULT_VALUE_EXTRA_PRICE_ALTERNATE_A
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_ORDER_OPTION_VA_VERSION_REF
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_CONDITION_SALES_ITEM_REF_ALTERNATE_A
                         + placeholders
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_CLOSE_PAREN_ALTERNATE_A
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_ORDER_BY_SALES_ITEM_REF,
@@ -700,12 +791,15 @@ public class SalesMenuPersistence {
         arguments.add(versionRef);
         arguments.addAll(itemRefs);
         return query(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_SALES_ITEM_REF_SKU_REF_LISTED_PRICE_CENTS_RESOLVED_SKU_CODE
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SALES_VERSION_ITEM_SKU_DEFAULT_PRICE_CENTS_DISPLAY_ORDER
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SELECT_SALES_ITEM_REF_SKU_REF_LISTED_PRICE_CENTS_RESOLVED_SKU_CODE
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SALES_VERSION_ITEM_SKU_DEFAULT_PRICE_CENTS_DISPLAY_ORDER
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF
                         + placeholders
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_CLOSE_PAREN_ALTERNATE_B
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_ORDER_BY_SALES_ITEM_REF_DISPLAY_ORDER_SKU_REF,
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_ORDER_BY_SALES_ITEM_REF_DISPLAY_ORDER_SKU_REF,
                 SalesMenuReadModels::skuRow,
                 arguments.toArray());
     }
@@ -719,19 +813,24 @@ public class SalesMenuPersistence {
         arguments.add(versionRef);
         arguments.addAll(itemRefs);
         return query(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_SALES_ITEM_REF_ASSET_REF_DISPLAY_ORDER
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_MEDIA_VERSION_REF
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_CONDITION_SALES_ITEM_REF_ALTERNATE_B
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SELECT_SALES_ITEM_REF_ASSET_REF_DISPLAY_ORDER
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_MEDIA_VERSION_REF
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_CONDITION_SALES_ITEM_REF_ALTERNATE_B
                         + placeholders
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_CLOSE_PAREN_ALTERNATE_C
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_ORDER_BY_SALES_ITEM_REF_DISPLAY_ORDER_ASSET_REF,
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_ORDER_BY_SALES_ITEM_REF_DISPLAY_ORDER_ASSET_REF,
                 SalesMenuReadModels::mediaItemRow,
                 arguments.toArray());
     }
 
     public Optional<UUID> readDraftVersion(UUID menuRef) {
         return query(
-                        SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_SALES_COLLECTION_CURRENT_DRAFT_VERSION_REF
+                        SalesMenuDefinitionServiceSql
+                                        .SALES_MENU_DEFINITION_SERVICE_SELECT_SALES_COLLECTION_CURRENT_DRAFT_VERSION_REF
                                 + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_WHERE_COLLECTION_REF,
                         SalesMenuReadModels::uuidValueRow,
                         menuRef)
@@ -750,9 +849,12 @@ public class SalesMenuPersistence {
     public List<SalesMenuReadModels.ReceiptRow> readDefinitionCommandReceipt(
             UUID workspaceUuid, String operationId, String idempotencyKey) {
         return query(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
                 SalesMenuReadModels::receiptRow,
                 workspaceUuid,
                 operationId,
@@ -771,9 +873,11 @@ public class SalesMenuPersistence {
             long createdAtEpochMillis) {
         return update(
                 SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_INSERT_INTO_SALES_COMMAND_RECEIPT
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_OPERATION_ID_IDEMPOTENCY_KEY_REQUEST_HASH_STATUS
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_OPERATION_ID_IDEMPOTENCY_KEY_REQUEST_HASH_STATUS
                         + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_VALUES_VALUES_JSONB
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_JOIN_CONDITION_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_JOIN_CONDITION_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
                 receiptRef,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -788,9 +892,12 @@ public class SalesMenuPersistence {
     public List<SalesMenuReadModels.ReceiptRow> readDefinitionCommandReceiptForReplay(
             UUID workspaceUuid, String operationId, String idempotencyKey) {
         return query(
-                SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT_ALTERNATE_A
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN_ALTERNATE_A
-                        + SalesMenuDefinitionServiceSql.SALES_MENU_DEFINITION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY_ALTERNATE_A,
+                SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT_ALTERNATE_A
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN_ALTERNATE_A
+                        + SalesMenuDefinitionServiceSql
+                                .SALES_MENU_DEFINITION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY_ALTERNATE_A,
                 SalesMenuReadModels::receiptRow,
                 workspaceUuid,
                 operationId,
@@ -839,16 +946,20 @@ public class SalesMenuPersistence {
     }
 
     public int createSection(UUID sectionRef, UUID menuRef) {
-        return update(SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_INSERT_INTO_SALES_SECTION_SECTION_REF_COLLECTION_REF, sectionRef, menuRef);
+        return update(
+                SalesMenuSectionServiceSql
+                        .SALES_MENU_SECTION_SERVICE_INSERT_INTO_SALES_SECTION_SECTION_REF_COLLECTION_REF,
+                sectionRef,
+                menuRef);
     }
 
-    public int createSectionVersion(
-            UUID versionRef, UUID sectionRef, UUID menuRef, String name, UUID maxOrderVersion) {
+    public int createSectionVersion(UUID versionRef, UUID sectionRef, UUID menuRef, String name, UUID maxOrderVersion) {
         return update(
                 SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_INSERT_INTO_SALES_VERSION_SECTION
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_DISPLAY_ORDER
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_VALUES_DISPLAY_ORDER
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_FROM_CLAUSE_SALES_VERSION_SECTION_VERSION_REF,
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_FROM_CLAUSE_SALES_VERSION_SECTION_VERSION_REF,
                 versionRef,
                 sectionRef,
                 menuRef,
@@ -857,12 +968,18 @@ public class SalesMenuPersistence {
     }
 
     public int renameSection(UUID versionRef, UUID sectionRef, String name) {
-        return update(SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_UPDATE_SALES_VERSION_SECTION_NAME_VERSION_REF_SECTION_REF, name, versionRef, sectionRef);
+        return update(
+                SalesMenuSectionServiceSql
+                        .SALES_MENU_SECTION_SERVICE_UPDATE_SALES_VERSION_SECTION_NAME_VERSION_REF_SECTION_REF,
+                name,
+                versionRef,
+                sectionRef);
     }
 
     public boolean sectionHasItems(UUID versionRef, UUID sectionRef) {
         return !query(
-                        SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_SELECT_SALES_VERSION_ITEM_SELECT_1_FROM_SALES_MENU_SAL
+                        SalesMenuSectionServiceSql
+                                        .SALES_MENU_SECTION_SERVICE_SELECT_SALES_VERSION_ITEM_SELECT_1_FROM_SALES_MENU_SAL
                                 + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_WHERE_VERSION_REF_SECTION_REF,
                         SalesMenuReadModels::existsRow,
                         versionRef,
@@ -871,13 +988,19 @@ public class SalesMenuPersistence {
     }
 
     public int deleteSection(UUID versionRef, UUID sectionRef) {
-        return update(SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_DELETE_SALES_VERSION_SECTION_VERSION_REF_SECTION_REF, versionRef, sectionRef);
+        return update(
+                SalesMenuSectionServiceSql
+                        .SALES_MENU_SECTION_SERVICE_DELETE_SALES_VERSION_SECTION_VERSION_REF_SECTION_REF,
+                versionRef,
+                sectionRef);
     }
 
     public List<SectionCurrentRow> readCurrentSection(UUID menuRef, UUID versionRef, UUID sectionRef) {
         return query(
-                SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_SELECT_SALES_VERSION_SECTION_SECTION_REF_DISPLAY_ORDER
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_WHERE_COLLECTION_REF_VERSION_REF_SECTION_REF_ALTERNATE_A,
+                SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_SELECT_SALES_VERSION_SECTION_SECTION_REF_DISPLAY_ORDER
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_WHERE_COLLECTION_REF_VERSION_REF_SECTION_REF_ALTERNATE_A,
                 SalesMenuReadModels::sectionCurrentRow,
                 menuRef,
                 versionRef,
@@ -887,19 +1010,23 @@ public class SalesMenuPersistence {
     public List<SectionRow> readSections(UUID versionRef) {
         return query(
                 SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_SELECT_SECTION_REF_NAME_DISPLAY_ORDER
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_VERSION_REF
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_VERSION_REF
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_CONDITION_SECTION_REF_ITEM_COUNT
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_SALES_VERSION_SECTION_PREVIOUS
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_WHERE_PREVIOUS_VERSION_REF
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_OPEN_PAREN_PREVIOUS_DISPLAY_ORDER
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_OPEN_PAREN_PREVIOUS_DISPLAY_ORDER_ALTERNATE_A
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_OPEN_PAREN_PREVIOUS_DISPLAY_ORDER_ALTERNATE_A
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_PREVIOUS_SECTION_REF_CAN_MOVE_UP
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_SALES_VERSION_SECTION_NEXT_SECTION
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_WHERE_NEXT_SECTION_VERSION_REF
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_OPEN_PAREN_NEXT_SECTION_DISPLAY_ORDER
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_OPEN_PAREN_NEXT_SECTION_DISPLAY_ORDER_ALTERNATE_A
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_OPEN_PAREN_NEXT_SECTION_DISPLAY_ORDER_ALTERNATE_A
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_NEXT_SECTION_SECTION_REF_CAN_MOVE_DOWN
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_FROM_CLAUSE_SALES_VERSION_SECTION_VERSION_REF_ALTERNATE_A
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_FROM_CLAUSE_SALES_VERSION_SECTION_VERSION_REF_ALTERNATE_A
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_ORDER_BY_DISPLAY_ORDER_SECTION_REF,
                 SalesMenuReadModels::sectionRow,
                 versionRef,
@@ -908,7 +1035,8 @@ public class SalesMenuPersistence {
 
     public Optional<UUID> readSectionDraftVersion(UUID menuRef) {
         return query(
-                        SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_SELECT_SALES_COLLECTION_CURRENT_DRAFT_VERSION_REF
+                        SalesMenuSectionServiceSql
+                                        .SALES_MENU_SECTION_SERVICE_SELECT_SALES_COLLECTION_CURRENT_DRAFT_VERSION_REF
                                 + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_WHERE_COLLECTION_REF,
                         SalesMenuReadModels::uuidValueRow,
                         menuRef)
@@ -919,8 +1047,10 @@ public class SalesMenuPersistence {
 
     public Optional<UUID> readSectionPublishedVersion(UUID menuRef) {
         return query(
-                        SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_SELECT_SALES_COLLECTION_LATEST_PUBLISHED_VERSION_REF
-                                + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_WHERE_COLLECTION_REF_ALTERNATE_A,
+                        SalesMenuSectionServiceSql
+                                        .SALES_MENU_SECTION_SERVICE_SELECT_SALES_COLLECTION_LATEST_PUBLISHED_VERSION_REF
+                                + SalesMenuSectionServiceSql
+                                        .SALES_MENU_SECTION_SERVICE_WHERE_COLLECTION_REF_ALTERNATE_A,
                         SalesMenuReadModels::uuidValueRow,
                         menuRef)
                 .stream()
@@ -983,7 +1113,8 @@ public class SalesMenuPersistence {
         String tableName = table == OrderingTable.SECTION
                 ? SalesMenuSectionServiceSql.SALES_VERSION_SECTION_TABLE
                 : SalesMenuItemServiceSql.SALES_VERSION_ITEM_TABLE;
-        String sectionPredicate = sectionRef == null ? "" : SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_CONDITION_SECTION_REF;
+        String sectionPredicate =
+                sectionRef == null ? "" : SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_CONDITION_SECTION_REF;
         List<Object> arguments = new ArrayList<>(List.of(versionRef));
         if (sectionRef != null) arguments.add(sectionRef);
         return query(
@@ -1024,8 +1155,10 @@ public class SalesMenuPersistence {
 
     public boolean sectionExists(UUID menuRef, UUID versionRef, UUID sectionRef) {
         return !query(
-                        SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_SELECT_SALES_VERSION_SECTION_SELECT_1_FROM_SALES_MENU_SAL
-                                + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_WHERE_COLLECTION_REF_VERSION_REF_SECTION_REF,
+                        SalesMenuSectionServiceSql
+                                        .SALES_MENU_SECTION_SERVICE_SELECT_SALES_VERSION_SECTION_SELECT_1_FROM_SALES_MENU_SAL
+                                + SalesMenuSectionServiceSql
+                                        .SALES_MENU_SECTION_SERVICE_WHERE_COLLECTION_REF_VERSION_REF_SECTION_REF,
                         SalesMenuReadModels::existsRow,
                         menuRef,
                         versionRef,
@@ -1037,8 +1170,10 @@ public class SalesMenuPersistence {
             UUID workspaceUuid, String operationId, String idempotencyKey) {
         return query(
                 SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
                 SalesMenuReadModels::receiptRow,
                 workspaceUuid,
                 operationId,
@@ -1057,9 +1192,11 @@ public class SalesMenuPersistence {
             long createdAtEpochMillis) {
         return update(
                 SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_INSERT_INTO_SALES_COMMAND_RECEIPT
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_OPERATION_ID_IDEMPOTENCY_KEY_REQUEST_HASH_STATUS
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_OPERATION_ID_IDEMPOTENCY_KEY_REQUEST_HASH_STATUS
                         + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_VALUES_VALUES_JSONB
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_JOIN_CONDITION_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_JOIN_CONDITION_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
                 receiptRef,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -1074,9 +1211,12 @@ public class SalesMenuPersistence {
     public List<SalesMenuReadModels.ReceiptRow> readSectionCommandReceiptForReplay(
             UUID workspaceUuid, String operationId, String idempotencyKey) {
         return query(
-                SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT_ALTERNATE_A
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN_ALTERNATE_A
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY_ALTERNATE_A,
+                SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT_ALTERNATE_A
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN_ALTERNATE_A
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY_ALTERNATE_A,
                 SalesMenuReadModels::receiptRow,
                 workspaceUuid,
                 operationId,
@@ -1102,9 +1242,12 @@ public class SalesMenuPersistence {
             String idempotencyKey) {
         update(
                 SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_INSERT_INTO_SALES_OPERATION_RECORD
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_STORE_REF_CHANNEL_REF_COLLECTION_REF_OPERATION_KIND
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_TARGET_DISPLAY_SNAPSHOT_RESULT_ACTOR_TYPE_ACTOR_ID
-                        + SalesMenuSectionServiceSql.SALES_MENU_SECTION_SERVICE_OCCURRED_AT_EPOCH_MILLIS_IDEMPOTENCY_KEY,
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_STORE_REF_CHANNEL_REF_COLLECTION_REF_OPERATION_KIND
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_TARGET_DISPLAY_SNAPSHOT_RESULT_ACTOR_TYPE_ACTOR_ID
+                        + SalesMenuSectionServiceSql
+                                .SALES_MENU_SECTION_SERVICE_OCCURRED_AT_EPOCH_MILLIS_IDEMPOTENCY_KEY,
                 recordRef,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -1124,8 +1267,7 @@ public class SalesMenuPersistence {
     }
 
     public List<OperationRecordRow> readOperationRecordRows(
-            com.catering.v2s.salesmenu.domain.SalesMenuOperationQuery query,
-            OpaqueCollectionCursor.Position position) {
+            com.catering.v2s.salesmenu.domain.SalesMenuOperationQuery query, OpaqueCollectionCursor.Position position) {
         List<Object> arguments = new ArrayList<>(List.of(
                 query.menu().scope().workspaceUuid(),
                 query.menu().scope().groupWorkspaceKey(),
@@ -1141,8 +1283,10 @@ public class SalesMenuPersistence {
                 throw new IllegalArgumentException("occurredAt cursor is invalid", failure);
             }
             frontier.append(
-                    SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_CONDITION_OCCURRED_AT_EPOCH_MILLIS
-                            + SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_OPEN_PAREN_OCCURRED_AT_EPOCH_MILLIS_RECORD_REF);
+                    SalesMenuOperationRecordServiceSql
+                                    .SALES_MENU_OPERATION_RECORD_SERVICE_CONDITION_OCCURRED_AT_EPOCH_MILLIS
+                            + SalesMenuOperationRecordServiceSql
+                                    .SALES_MENU_OPERATION_RECORD_SERVICE_OPEN_PAREN_OCCURRED_AT_EPOCH_MILLIS_RECORD_REF);
             arguments.add(occurredAt);
             arguments.add(occurredAt);
             arguments.add(position.tieBreaker());
@@ -1152,11 +1296,15 @@ public class SalesMenuPersistence {
                 SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_SELECT_RECORD_REF
                         + SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_TARGET_KIND
                         + SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_TARGET_DISPLAY_SNAPSHOT
-                        + SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_FROM_CLAUSE_SALES_OPERATION_RECORD_FROM_SALES_MENU_SALES_OPERAT
-                        + SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_REF
-                        + SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_CONDITION_COLLECTION_REF_CHANNEL_REF
+                        + SalesMenuOperationRecordServiceSql
+                                .SALES_MENU_OPERATION_RECORD_SERVICE_FROM_CLAUSE_SALES_OPERATION_RECORD_FROM_SALES_MENU_SALES_OPERAT
+                        + SalesMenuOperationRecordServiceSql
+                                .SALES_MENU_OPERATION_RECORD_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_REF
+                        + SalesMenuOperationRecordServiceSql
+                                .SALES_MENU_OPERATION_RECORD_SERVICE_CONDITION_COLLECTION_REF_CHANNEL_REF
                         + frontier
-                        + SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_ORDER_BY_OCCURRED_AT_EPOCH_MILLIS_RECORD_REF,
+                        + SalesMenuOperationRecordServiceSql
+                                .SALES_MENU_OPERATION_RECORD_SERVICE_ORDER_BY_OCCURRED_AT_EPOCH_MILLIS_RECORD_REF,
                 SalesMenuReadModels::operationRecordRow,
                 arguments.toArray());
     }
@@ -1180,9 +1328,12 @@ public class SalesMenuPersistence {
             long occurredAtEpochMillis,
             String idempotencyKey) {
         return update(
-                SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_INSERT_INTO_SALES_OPERATION_RECORD
-                        + SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_STORE_REF_CHANNEL_REF_COLLECTION_REF_OPERATION_KIND
-                        + SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_TARGET_DISPLAY_SNAPSHOT_RESULT_FAILURE_CODE
+                SalesMenuOperationRecordServiceSql
+                                .SALES_MENU_OPERATION_RECORD_SERVICE_INSERT_INTO_SALES_OPERATION_RECORD
+                        + SalesMenuOperationRecordServiceSql
+                                .SALES_MENU_OPERATION_RECORD_SERVICE_STORE_REF_CHANNEL_REF_COLLECTION_REF_OPERATION_KIND
+                        + SalesMenuOperationRecordServiceSql
+                                .SALES_MENU_OPERATION_RECORD_SERVICE_TARGET_DISPLAY_SNAPSHOT_RESULT_FAILURE_CODE
                         + SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_ACTOR_TYPE
                         + SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_ACTOR_ID
                         + SalesMenuOperationRecordServiceSql.SALES_MENU_OPERATION_RECORD_SERVICE_VALUES,
@@ -1218,15 +1369,18 @@ public class SalesMenuPersistence {
             String actorDisplaySnapshot) {
         return update(
                 SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_INSERT_INTO_SALES_MANUAL_STATUS_CURRENT
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_TARGET_REF_STATE_REASON_CHANGED_AT_EPOCH_MILLIS
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_TARGET_REF_STATE_REASON_CHANGED_AT_EPOCH_MILLIS
                         + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_ACTOR_DISPLAY_SNAPSHOT_VERSION
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_JOIN_CONDITION_SALES_ITEM_REF_CHANNEL_REF_TARGET_KIND_TARGET_REF
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_JOIN_CONDITION_SALES_ITEM_REF_CHANNEL_REF_TARGET_KIND_TARGET_REF
                         + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_SET_DO_UPDATE_SET
                         + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_STATE_REASON
                         + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_CHANGED_AT_EPOCH_MILLIS
                         + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_ACTOR_TYPE_ACTOR_ID
                         + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_ACTOR_DISPLAY_SNAPSHOT
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_VERSION_SALES_MANUAL_STATUS_CURRENT,
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_VERSION_SALES_MANUAL_STATUS_CURRENT,
                 itemRef,
                 channelRef,
                 targetKind,
@@ -1253,8 +1407,10 @@ public class SalesMenuPersistence {
             long occurredAtEpochMillis) {
         return update(
                 SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_INSERT_INTO_SALES_MANUAL_STATUS_EVENT
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_TARGET_KIND_TARGET_REF_EVENT_KIND_REASON
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_ACTOR_DISPLAY_SNAPSHOT_OCCURRED_AT_EPOCH_MILLIS,
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_TARGET_KIND_TARGET_REF_EVENT_KIND_REASON
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_ACTOR_DISPLAY_SNAPSHOT_OCCURRED_AT_EPOCH_MILLIS,
                 eventRef,
                 itemRef,
                 channelRef,
@@ -1270,8 +1426,10 @@ public class SalesMenuPersistence {
 
     public List<String> readPublishedSkuName(UUID versionRef, UUID itemRef, UUID skuRef) {
         return query(
-                SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_SELECT_SALES_VERSION_ITEM_SKU_RESOLVED_SKU_NAME
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF_SKU_REF,
+                SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_SELECT_SALES_VERSION_ITEM_SKU_RESOLVED_SKU_NAME
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF_SKU_REF,
                 (result, ignored) -> result.getString("resolved_sku_name"),
                 versionRef,
                 itemRef,
@@ -1280,8 +1438,10 @@ public class SalesMenuPersistence {
 
     public List<String> readPublishedOptionValueName(UUID versionRef, UUID itemRef, UUID valueRef) {
         return query(
-                SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_SELECT_SALES_VERSION_ITEM_ORDER_OPTION_VA_RESOLVED_VALUE_NAME
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF_DEFINITION_VALUE_REF,
+                SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_SELECT_SALES_VERSION_ITEM_ORDER_OPTION_VA_RESOLVED_VALUE_NAME
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF_DEFINITION_VALUE_REF,
                 (result, ignored) -> result.getString("resolved_value_name"),
                 versionRef,
                 itemRef,
@@ -1291,9 +1451,12 @@ public class SalesMenuPersistence {
     public List<SalesMenuReadModels.ReceiptRow> readManualCommandReceipt(
             UUID workspaceUuid, String operationId, String idempotencyKey) {
         return query(
-                SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
+                SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
                 SalesMenuReadModels::receiptRow,
                 workspaceUuid,
                 operationId,
@@ -1312,9 +1475,11 @@ public class SalesMenuPersistence {
             long createdAtEpochMillis) {
         return update(
                 SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_INSERT_INTO_SALES_COMMAND_RECEIPT
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_OPERATION_ID_IDEMPOTENCY_KEY_REQUEST_HASH_STATUS
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_OPERATION_ID_IDEMPOTENCY_KEY_REQUEST_HASH_STATUS
                         + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_VALUES_VALUES_JSONB
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_JOIN_CONDITION_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_JOIN_CONDITION_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY,
                 receiptRef,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -1329,9 +1494,12 @@ public class SalesMenuPersistence {
     public List<SalesMenuReadModels.ReceiptRow> readManualCommandReceiptForReplay(
             UUID workspaceUuid, String operationId, String idempotencyKey) {
         return query(
-                SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT_ALTERNATE_A
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN_ALTERNATE_A
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY_ALTERNATE_A,
+                SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT_ALTERNATE_A
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN_ALTERNATE_A
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY_ALTERNATE_A,
                 SalesMenuReadModels::receiptRow,
                 workspaceUuid,
                 operationId,
@@ -1339,29 +1507,47 @@ public class SalesMenuPersistence {
     }
 
     public List<ItemRow> readManualItemRows(UUID versionRef, UUID sectionRef, UUID itemRef) {
-        String sql = SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_SELECT_VERSION_REF_SALES_ITEM_REF_CATALOG_ITEM_REF_SECTION_REF
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_DISPLAY_NAME_OVERRIDE
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_RESOLVED_PRODUCT_SHAPE
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_RESOLVED_SALES_UNIT_NAME
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_LISTED_PRICE_CENTS
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_ORDERING_CONSTRAINTS_JSON_TEXT_DISPLAY_MEDIA_MODE
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_PUBLISHED_PRIMARY_IMAGE_ASSET_REF
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_PUBLISHED_CATALOG_IMAGE_ASSET_REFS_TEXT
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_SALES_VERSION_ITEM_PREVIOUS
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_WHERE_PREVIOUS_VERSION_REF_SECTION_REF
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_OPEN_PAREN_PREVIOUS_DISPLAY_ORDER
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_OPEN_PAREN_PREVIOUS_DISPLAY_ORDER_ALTERNATE_A
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_PREVIOUS_SALES_ITEM_REF_CAN_MOVE_UP
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_SALES_VERSION_ITEM_NEXT_ITEM
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_WHERE_NEXT_ITEM_VERSION_REF_SECTION_REF
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_OPEN_PAREN_NEXT_ITEM_DISPLAY_ORDER
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_OPEN_PAREN_NEXT_ITEM_DISPLAY_ORDER_ALTERNATE_A
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_NEXT_ITEM_SALES_ITEM_REF_CAN_MOVE_DOWN
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_FROM_CLAUSE_SALES_ITEM_FROM_SALES_MENU_SALES_VERSIO
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_JOIN_CONDITION_SALES_ITEM_REF_VERSION_REF
-                + (sectionRef == null ? "" : SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_CONDITION_SECTION_REF)
-                + (itemRef == null ? "" : SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_CONDITION_SALES_ITEM_REF)
-                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_ORDER_BY_SECTION_REF_DISPLAY_ORDER_SALES_ITEM_REF;
+        String sql =
+                SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_SELECT_VERSION_REF_SALES_ITEM_REF_CATALOG_ITEM_REF_SECTION_REF
+                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_DISPLAY_NAME_OVERRIDE
+                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_RESOLVED_PRODUCT_SHAPE
+                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_RESOLVED_SALES_UNIT_NAME
+                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_LISTED_PRICE_CENTS
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_ORDERING_CONSTRAINTS_JSON_TEXT_DISPLAY_MEDIA_MODE
+                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_PUBLISHED_PRIMARY_IMAGE_ASSET_REF
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_PUBLISHED_CATALOG_IMAGE_ASSET_REFS_TEXT
+                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_SALES_VERSION_ITEM_PREVIOUS
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_WHERE_PREVIOUS_VERSION_REF_SECTION_REF
+                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_OPEN_PAREN_PREVIOUS_DISPLAY_ORDER
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_OPEN_PAREN_PREVIOUS_DISPLAY_ORDER_ALTERNATE_A
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_PREVIOUS_SALES_ITEM_REF_CAN_MOVE_UP
+                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_SALES_VERSION_ITEM_NEXT_ITEM
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_WHERE_NEXT_ITEM_VERSION_REF_SECTION_REF
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_OPEN_PAREN_NEXT_ITEM_DISPLAY_ORDER
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_OPEN_PAREN_NEXT_ITEM_DISPLAY_ORDER_ALTERNATE_A
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_NEXT_ITEM_SALES_ITEM_REF_CAN_MOVE_DOWN
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_FROM_CLAUSE_SALES_ITEM_FROM_SALES_MENU_SALES_VERSIO
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_JOIN_CONDITION_SALES_ITEM_REF_VERSION_REF
+                        + (sectionRef == null
+                                ? ""
+                                : SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_CONDITION_SECTION_REF)
+                        + (itemRef == null
+                                ? ""
+                                : SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_CONDITION_SALES_ITEM_REF)
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_ORDER_BY_SECTION_REF_DISPLAY_ORDER_SALES_ITEM_REF;
         List<Object> arguments = new ArrayList<>(List.of(versionRef));
         if (sectionRef != null) arguments.add(sectionRef);
         if (itemRef != null) arguments.add(itemRef);
@@ -1370,7 +1556,8 @@ public class SalesMenuPersistence {
 
     public Optional<UUID> readManualDraftVersion(UUID menuRef) {
         return query(
-                        SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_SELECT_SALES_COLLECTION_CURRENT_DRAFT_VERSION_REF
+                        SalesMenuManualSaleServiceSql
+                                        .SALES_MENU_MANUAL_SALE_SERVICE_SELECT_SALES_COLLECTION_CURRENT_DRAFT_VERSION_REF
                                 + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_WHERE_COLLECTION_REF,
                         SalesMenuReadModels::uuidValueRow,
                         menuRef)
@@ -1381,8 +1568,10 @@ public class SalesMenuPersistence {
 
     public Optional<UUID> readManualPublishedVersion(UUID menuRef) {
         return query(
-                        SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_SELECT_SALES_COLLECTION_LATEST_PUBLISHED_VERSION_REF
-                                + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_WHERE_COLLECTION_REF_ALTERNATE_A,
+                        SalesMenuManualSaleServiceSql
+                                        .SALES_MENU_MANUAL_SALE_SERVICE_SELECT_SALES_COLLECTION_LATEST_PUBLISHED_VERSION_REF
+                                + SalesMenuManualSaleServiceSql
+                                        .SALES_MENU_MANUAL_SALE_SERVICE_WHERE_COLLECTION_REF_ALTERNATE_A,
                         SalesMenuReadModels::uuidValueRow,
                         menuRef)
                 .stream()
@@ -1410,9 +1599,12 @@ public class SalesMenuPersistence {
             String idempotencyKey) {
         update(
                 SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_INSERT_INTO_SALES_OPERATION_RECORD
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_STORE_REF_CHANNEL_REF_COLLECTION_REF_OPERATION_KIND
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_TARGET_DISPLAY_SNAPSHOT_RESULT_ACTOR_TYPE_ACTOR_ID
-                        + SalesMenuManualSaleServiceSql.SALES_MENU_MANUAL_SALE_SERVICE_OCCURRED_AT_EPOCH_MILLIS_IDEMPOTENCY_KEY,
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_STORE_REF_CHANNEL_REF_COLLECTION_REF_OPERATION_KIND
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_TARGET_DISPLAY_SNAPSHOT_RESULT_ACTOR_TYPE_ACTOR_ID
+                        + SalesMenuManualSaleServiceSql
+                                .SALES_MENU_MANUAL_SALE_SERVICE_OCCURRED_AT_EPOCH_MILLIS_IDEMPOTENCY_KEY,
                 recordRef,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -1442,12 +1634,17 @@ public class SalesMenuPersistence {
             String orderingConstraintsJson,
             String displayMediaMode) {
         return update(
-                SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_UPDATE_SALES_VERSION_ITEM_DISPLAY_NAME_OVERRIDE_LISTED_PRICE_CENTS
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_RESOLVED_ITEM_NAME_RESOLVED_ITEM_CODE_RESOLVED_PRODUCT_SHAPE
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_RESOLVED_SALES_UNIT_REF_RESOLVED_SALES_UNIT_CODE
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_RESOLVED_SALES_UNIT_NAME_RESOLVED_SALES_UNIT_DIMENSION
+                SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_UPDATE_SALES_VERSION_ITEM_DISPLAY_NAME_OVERRIDE_LISTED_PRICE_CENTS
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_RESOLVED_ITEM_NAME_RESOLVED_ITEM_CODE_RESOLVED_PRODUCT_SHAPE
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_RESOLVED_SALES_UNIT_REF_RESOLVED_SALES_UNIT_CODE
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_RESOLVED_SALES_UNIT_NAME_RESOLVED_SALES_UNIT_DIMENSION
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_RESOLVED_SALES_UNIT_PRECISION
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_ALTERNATIVE_ORDERING_CONSTRAINTS_JSON_DISPLAY_MEDIA_MODE_VERSION
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_ALTERNATIVE_ORDERING_CONSTRAINTS_JSON_DISPLAY_MEDIA_MODE_VERSION
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF,
                 displayNameOverride,
                 listedPriceCents,
@@ -1461,12 +1658,17 @@ public class SalesMenuPersistence {
     }
 
     public int deleteDraftItemSkus(UUID versionRef, UUID itemRef) {
-        return update(SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_SKU_VERSION_REF_SALES_ITEM_REF, versionRef, itemRef);
+        return update(
+                SalesMenuItemServiceSql
+                        .SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_SKU_VERSION_REF_SALES_ITEM_REF,
+                versionRef,
+                itemRef);
     }
 
     public int insertDraftSku(UUID versionRef, UUID itemRef, SkuRow sku) {
         return update(
-                SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_SKU_VERSION_REF_SALES_ITEM_REF_SKU_REF
+                SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_SKU_VERSION_REF_SALES_ITEM_REF_SKU_REF
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_LISTED_PRICE_CENTS
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DISPLAY_ORDER,
                 versionRef,
@@ -1481,7 +1683,8 @@ public class SalesMenuPersistence {
 
     public int deleteDraftItemOrderOptionValues(UUID versionRef, UUID itemRef) {
         return update(
-                SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_ORDER_OPTION_VA_DELETE_FROM_SALES_MENU_SALES
+                SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_ORDER_OPTION_VA_DELETE_FROM_SALES_MENU_SALES
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF_ALTERNATE_A,
                 versionRef,
                 itemRef);
@@ -1496,11 +1699,18 @@ public class SalesMenuPersistence {
     }
 
     public int deleteDraftItemMedia(UUID versionRef, UUID itemRef) {
-        return update(SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_MEDIA_VERSION_REF_SALES_ITEM_REF, versionRef, itemRef);
+        return update(
+                SalesMenuItemServiceSql
+                        .SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_MEDIA_VERSION_REF_SALES_ITEM_REF,
+                versionRef,
+                itemRef);
     }
 
     public int deleteDraftItem(UUID versionRef, UUID itemRef) {
-        return update(SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_VERSION_REF_SALES_ITEM_REF, versionRef, itemRef);
+        return update(
+                SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_VERSION_REF_SALES_ITEM_REF,
+                versionRef,
+                itemRef);
     }
 
     public List<LongValueRow> readCurrentDraftItemVersionForAssetTarget(UUID menuRef, UUID itemRef) {
@@ -1534,7 +1744,11 @@ public class SalesMenuPersistence {
             arguments.add(collectionRef);
             arguments.add(catalogItemRefs.get(index));
         }
-        update(SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_ITEM_SALES_ITEM_REF_COLLECTION_REF_CATALOG_ITEM_REF + placeholders, arguments.toArray());
+        update(
+                SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_ITEM_SALES_ITEM_REF_COLLECTION_REF_CATALOG_ITEM_REF
+                        + placeholders,
+                arguments.toArray());
     }
 
     public void insertDraftVersionItemsBatch(
@@ -1559,14 +1773,18 @@ public class SalesMenuPersistence {
         arguments.add(collectionRef);
         arguments.add(SalesMenuDisplayMediaMode.INHERIT_CATALOG.name());
         update(
-                SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CTE_INPUT_SALES_ITEM_REF_RESOLVED_ITEM_NAME_RESOLVED_ITEM_CODE
+                SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_CTE_INPUT_SALES_ITEM_REF_RESOLVED_ITEM_NAME_RESOLVED_ITEM_CODE
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_OPEN_PAREN
                         + values
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CLOSE_PAREN_BASE_DISPLAY_ORDER_START_ORDER
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_VERSION_REF_SECTION_REF
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_VERSION_REF_SALES_ITEM_REF_SECTION_REF
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_VERSION_REF_SECTION_REF
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_VERSION_REF_SALES_ITEM_REF_SECTION_REF
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_COLLECTION_REF
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_ALTERNATIVE_ORDERING_CONSTRAINTS_JSON_DISPLAY_MEDIA_MODE_VERSION_ALTERNATE_A
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_ALTERNATIVE_ORDERING_CONSTRAINTS_JSON_DISPLAY_MEDIA_MODE_VERSION_ALTERNATE_A
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SELECT_INPUT_SALES_ITEM_REF_BASE_START_ORDER
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_INPUT
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_BASE_ORDINAL,
@@ -1574,11 +1792,7 @@ public class SalesMenuPersistence {
     }
 
     public List<OrderingTargetRow> findItemAdjacent(
-            UUID versionRef,
-            UUID targetRef,
-            SalesMenuMoveDirection direction,
-            UUID sectionRef,
-            long currentOrder) {
+            UUID versionRef, UUID targetRef, SalesMenuMoveDirection direction, UUID sectionRef, long currentOrder) {
         boolean movingUp = direction == SalesMenuMoveDirection.UP;
         String adjacencyPredicate = movingUp
                 ? SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_DISPLAY_ORDER
@@ -1617,7 +1831,8 @@ public class SalesMenuPersistence {
     }
 
     public long maxItemDisplayOrder(UUID versionRef, UUID sectionRef) {
-        String sectionPredicate = sectionRef == null ? "" : SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_SECTION_REF;
+        String sectionPredicate =
+                sectionRef == null ? "" : SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_SECTION_REF;
         List<Object> arguments = new ArrayList<>(List.of(versionRef));
         if (sectionRef != null) arguments.add(sectionRef);
         return query(
@@ -1648,19 +1863,23 @@ public class SalesMenuPersistence {
         List<Object> arguments = new ArrayList<>(List.of(versionRef, sectionRef));
         String frontier = "";
         if (afterDisplayOrder != null) {
-            frontier = SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_DISPLAY_ORDER_ALTERNATE_B + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_OPEN_PAREN_DISPLAY_ORDER_SALES_ITEM_REF;
+            frontier = SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_DISPLAY_ORDER_ALTERNATE_B
+                    + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_OPEN_PAREN_DISPLAY_ORDER_SALES_ITEM_REF;
             arguments.add(afterDisplayOrder);
             arguments.add(afterDisplayOrder);
             arguments.add(afterItemRef);
         }
         arguments.add(limit + 1);
         return query(
-                SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SELECT_VERSION_REF_SALES_ITEM_REF_CATALOG_ITEM_REF_SECTION_REF
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DISPLAY_NAME_OVERRIDE_RESOLVED_ITEM_NAME_RESOLVED_ITEM_CODE
+                SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_SELECT_VERSION_REF_SALES_ITEM_REF_CATALOG_ITEM_REF_SECTION_REF
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_DISPLAY_NAME_OVERRIDE_RESOLVED_ITEM_NAME_RESOLVED_ITEM_CODE
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_RESOLVED_PRODUCT_SHAPE
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_RESOLVED_SALES_UNIT_NAME
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_LISTED_PRICE_CENTS_ALTERNATE_A
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_ORDERING_CONSTRAINTS_JSON_TEXT_DISPLAY_MEDIA_MODE
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_ORDERING_CONSTRAINTS_JSON_TEXT_DISPLAY_MEDIA_MODE
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_PUBLISHED_PRIMARY_IMAGE_ASSET_REF
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_PUBLISHED_CATALOG_IMAGE_ASSET_REFS_TEXT
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SALES_VERSION_ITEM_PREVIOUS
@@ -1673,8 +1892,10 @@ public class SalesMenuPersistence {
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_OPEN_PAREN_NEXT_ITEM_DISPLAY_ORDER
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_OPEN_PAREN_NEXT_ITEM_DISPLAY_ORDER_ALTERNATE_A
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_NEXT_ITEM_SALES_ITEM_REF_CAN_MOVE_DOWN
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_ITEM_FROM_SALES_MENU_SALES_VERSIO
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_JOIN_CONDITION_SALES_ITEM_REF_VERSION_REF_SECTION_REF
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_ITEM_FROM_SALES_MENU_SALES_VERSIO
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_JOIN_CONDITION_SALES_ITEM_REF_VERSION_REF_SECTION_REF
                         + frontier
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_ORDER_BY_DISPLAY_ORDER_SALES_ITEM_REF,
                 SalesMenuReadModels::itemRow,
@@ -1687,29 +1908,43 @@ public class SalesMenuPersistence {
         if (sectionRef != null) arguments.add(sectionRef);
         if (itemRef != null) arguments.add(itemRef);
         return query(
-                SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SELECT_VERSION_REF_SALES_ITEM_REF_CATALOG_ITEM_REF_SECTION_REF_ALTERNATE_A
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DISPLAY_NAME_OVERRIDE_RESOLVED_ITEM_NAME_RESOLVED_ITEM_CODE_ALTERNATE_A
+                SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_SELECT_VERSION_REF_SALES_ITEM_REF_CATALOG_ITEM_REF_SECTION_REF_ALTERNATE_A
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_DISPLAY_NAME_OVERRIDE_RESOLVED_ITEM_NAME_RESOLVED_ITEM_CODE_ALTERNATE_A
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_RESOLVED_PRODUCT_SHAPE_ALTERNATE_A
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_RESOLVED_SALES_UNIT_NAME_ALTERNATE_A
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_LISTED_PRICE_CENTS_ALTERNATE_B
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_ORDERING_CONSTRAINTS_JSON_TEXT_DISPLAY_MEDIA_MODE_ALTERNATE_A
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_ORDERING_CONSTRAINTS_JSON_TEXT_DISPLAY_MEDIA_MODE_ALTERNATE_A
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_PUBLISHED_PRIMARY_IMAGE_ASSET_REF_ALTERNATE_A
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_PUBLISHED_CATALOG_IMAGE_ASSET_REFS_TEXT_ALTERNATE_A
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_PUBLISHED_CATALOG_IMAGE_ASSET_REFS_TEXT_ALTERNATE_A
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SALES_VERSION_ITEM_PREVIOUS_ALTERNATE_A
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_WHERE_PREVIOUS_VERSION_REF_SECTION_REF_ALTERNATE_A
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_WHERE_PREVIOUS_VERSION_REF_SECTION_REF_ALTERNATE_A
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_OPEN_PAREN_PREVIOUS_DISPLAY_ORDER_ALTERNATE_B
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_OPEN_PAREN_PREVIOUS_DISPLAY_ORDER_ALTERNATE_C
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_PREVIOUS_SALES_ITEM_REF_CAN_MOVE_UP_ALTERNATE_A
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_PREVIOUS_SALES_ITEM_REF_CAN_MOVE_UP_ALTERNATE_A
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SALES_VERSION_ITEM_NEXT_ITEM_ALTERNATE_A
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_WHERE_NEXT_ITEM_VERSION_REF_SECTION_REF_ALTERNATE_A
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_WHERE_NEXT_ITEM_VERSION_REF_SECTION_REF_ALTERNATE_A
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_OPEN_PAREN_NEXT_ITEM_DISPLAY_ORDER_ALTERNATE_B
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_OPEN_PAREN_NEXT_ITEM_DISPLAY_ORDER_ALTERNATE_C
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_NEXT_ITEM_SALES_ITEM_REF_CAN_MOVE_DOWN_ALTERNATE_A
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_ITEM_FROM_SALES_MENU_SALES_VERSIO_ALTERNATE_A
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_NEXT_ITEM_SALES_ITEM_REF_CAN_MOVE_DOWN_ALTERNATE_A
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_ITEM_FROM_SALES_MENU_SALES_VERSIO_ALTERNATE_A
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_JOIN_CONDITION_SALES_ITEM_REF_VERSION_REF
-                        + (sectionRef == null ? "" : SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_SECTION_REF_ALTERNATE_A)
-                        + (itemRef == null ? "" : SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_SALES_ITEM_REF_ALTERNATE_B)
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_ORDER_BY_SECTION_REF_DISPLAY_ORDER_SALES_ITEM_REF,
+                        + (sectionRef == null
+                                ? ""
+                                : SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_SECTION_REF_ALTERNATE_A)
+                        + (itemRef == null
+                                ? ""
+                                : SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_SALES_ITEM_REF_ALTERNATE_B)
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_ORDER_BY_SECTION_REF_DISPLAY_ORDER_SALES_ITEM_REF,
                 SalesMenuReadModels::itemRow,
                 arguments.toArray());
     }
@@ -1722,13 +1957,17 @@ public class SalesMenuPersistence {
         List<Object> arguments = new ArrayList<>(List.of(versionRef));
         arguments.addAll(itemRefs);
         return query(
-                SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SELECT_SALES_ITEM_REF_DEFINITION_REF_RESOLVED_DEFINITION_NAME_SELECTION_MODE
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_MIN_SELECTION_COUNT_MAX_SELECTION_COUNT_DISPLAY_ORDER
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_ORDER_OPTION_VERSION_REF
+                SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_SELECT_SALES_ITEM_REF_DEFINITION_REF_RESOLVED_DEFINITION_NAME_SELECTION_MODE
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_MIN_SELECTION_COUNT_MAX_SELECTION_COUNT_DISPLAY_ORDER
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_ORDER_OPTION_VERSION_REF
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_SALES_ITEM_REF_ALTERNATE_C
                         + placeholders
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CLOSE_PAREN
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_ORDER_BY_SALES_ITEM_REF_DISPLAY_ORDER_DEFINITION_REF,
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_ORDER_BY_SALES_ITEM_REF_DISPLAY_ORDER_DEFINITION_REF,
                 SalesMenuReadModels::orderOptionGroupRow,
                 arguments.toArray());
     }
@@ -1743,11 +1982,13 @@ public class SalesMenuPersistence {
         return query(
                 SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SELECT_SALES_ITEM_REF
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DEFAULT_VALUE_EXTRA_PRICE
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_ORDER_OPTION_VA_VERSION_REF
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_ORDER_OPTION_VA_VERSION_REF
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_SALES_ITEM_REF_ALTERNATE_D
                         + placeholders
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_A
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_ORDER_BY_SALES_ITEM_REF_DEFINITION_REF_DISPLAY_ORDER_DEFINITION_VALUE_REF,
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_ORDER_BY_SALES_ITEM_REF_DEFINITION_REF_DISPLAY_ORDER_DEFINITION_VALUE_REF,
                 SalesMenuReadModels::orderOptionValueRow,
                 arguments.toArray());
     }
@@ -1760,8 +2001,10 @@ public class SalesMenuPersistence {
         List<Object> arguments = new ArrayList<>(List.of(versionRef));
         arguments.addAll(itemRefs);
         return query(
-                SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SELECT_SALES_ITEM_REF_SKU_REF_LISTED_PRICE_CENTS_RESOLVED_SKU_CODE
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SALES_VERSION_ITEM_SKU_DEFAULT_PRICE_CENTS_DISPLAY_ORDER
+                SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_SELECT_SALES_ITEM_REF_SKU_REF_LISTED_PRICE_CENTS_RESOLVED_SKU_CODE
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_SALES_VERSION_ITEM_SKU_DEFAULT_PRICE_CENTS_DISPLAY_ORDER
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF_ALTERNATE_B
                         + placeholders
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_B
@@ -1779,11 +2022,13 @@ public class SalesMenuPersistence {
         arguments.addAll(itemRefs);
         return query(
                 SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SELECT_SALES_ITEM_REF_ASSET_REF_DISPLAY_ORDER
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_MEDIA_VERSION_REF
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_MEDIA_VERSION_REF
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_SALES_ITEM_REF_ALTERNATE_E
                         + placeholders
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_C
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_ORDER_BY_SALES_ITEM_REF_DISPLAY_ORDER_ASSET_REF,
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_ORDER_BY_SALES_ITEM_REF_DISPLAY_ORDER_ASSET_REF,
                 SalesMenuReadModels::mediaItemRow,
                 arguments.toArray());
     }
@@ -1798,7 +2043,8 @@ public class SalesMenuPersistence {
         return query(
                 SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SELECT_SALES_ITEM_REF_TARGET_KIND_TARGET_REF_STATE
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_ACTOR_DISPLAY_SNAPSHOT
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_MANUAL_STATUS_CURRENT_CHANNEL_REF
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_MANUAL_STATUS_CURRENT_CHANNEL_REF
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_CONDITION_SALES_ITEM_REF_ALTERNATE_F
                         + placeholders
                         + SalesMenuItemServiceSql.SQL_CLOSE_PAREN,
@@ -1808,7 +2054,8 @@ public class SalesMenuPersistence {
 
     public Optional<UUID> readLatestPublishedVersion(UUID menuRef) {
         return query(
-                        SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SELECT_SALES_COLLECTION_LATEST_PUBLISHED_VERSION_REF
+                        SalesMenuItemServiceSql
+                                        .SALES_MENU_ITEM_SERVICE_SELECT_SALES_COLLECTION_LATEST_PUBLISHED_VERSION_REF
                                 + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_WHERE_COLLECTION_REF_ALTERNATE_A,
                         SalesMenuReadModels::uuidValueRow,
                         menuRef)
@@ -1818,12 +2065,17 @@ public class SalesMenuPersistence {
     }
 
     public int deleteDraftItemMediaRows(UUID versionRef, UUID itemRef) {
-        return update(SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_MEDIA_VERSION_REF_SALES_ITEM_REF_ALTERNATE_A, versionRef, itemRef);
+        return update(
+                SalesMenuItemServiceSql
+                        .SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_MEDIA_VERSION_REF_SALES_ITEM_REF_ALTERNATE_A,
+                versionRef,
+                itemRef);
     }
 
     public int insertDraftItemMedia(UUID versionRef, UUID itemRef, UUID assetRef, int displayOrder) {
         return update(
-                SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_MEDIA_VERSION_REF_SALES_ITEM_REF
+                SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_MEDIA_VERSION_REF_SALES_ITEM_REF
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_ASSET_REF_DISPLAY_ORDER,
                 versionRef,
                 itemRef,
@@ -1834,8 +2086,10 @@ public class SalesMenuPersistence {
     public int insertDraftItemOrderOption(
             UUID versionRef, UUID itemRef, SalesMenuReadback.SalesMenuOrderOption option) {
         return update(
-                SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION_VERSION_REF_SALES_ITEM_REF
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DEFINITION_REF_RESOLVED_DEFINITION_NAME_SELECTION_MODE_REQUIRED
+                SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION_VERSION_REF_SALES_ITEM_REF
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_DEFINITION_REF_RESOLVED_DEFINITION_NAME_SELECTION_MODE_REQUIRED
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_MAX_SELECTION_COUNT_DISPLAY_ORDER,
                 versionRef,
                 itemRef,
@@ -1849,12 +2103,10 @@ public class SalesMenuPersistence {
     }
 
     public int insertDraftItemOrderOptionValue(
-            UUID versionRef,
-            UUID itemRef,
-            UUID definitionRef,
-            SalesMenuReadback.SalesMenuOrderOptionValue value) {
+            UUID versionRef, UUID itemRef, UUID definitionRef, SalesMenuReadback.SalesMenuOrderOptionValue value) {
         return update(
-                SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION_VA_VERSION_REF_SALES_ITEM_REF
+                SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION_VA_VERSION_REF_SALES_ITEM_REF
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DEFINITION_REF
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_DEFAULT_VALUE_EXTRA_PRICE_ALTERNATE_A,
                 versionRef,
@@ -1878,7 +2130,8 @@ public class SalesMenuPersistence {
         return query(
                 SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SELECT_SALES_VERSION_ITEM_CATALOG_ITEM_REF_ITEM_COUNT
                         + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_JOIN_SALES_ITEM_SALES_ITEM_REF
-                        + SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_WHERE_COLLECTION_REF_VERSION_REF_CATALOG_ITEM_REF
+                        + SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_WHERE_COLLECTION_REF_VERSION_REF_CATALOG_ITEM_REF
                         + placeholders
                         + SalesMenuItemServiceSql.COUNT_BY_ITEM_GROUP_SUFFIX,
                 SalesMenuReadModels::countByItemRow,
@@ -1887,7 +2140,8 @@ public class SalesMenuPersistence {
 
     public boolean draftItemExists(UUID versionRef, UUID itemRef) {
         return !query(
-                        SalesMenuItemServiceSql.SALES_MENU_ITEM_SERVICE_SELECT_SALES_VERSION_ITEM_VERSION_REF_SALES_ITEM_REF,
+                        SalesMenuItemServiceSql
+                                .SALES_MENU_ITEM_SERVICE_SELECT_SALES_VERSION_ITEM_VERSION_REF_SALES_ITEM_REF,
                         SalesMenuReadModels::existsRow,
                         versionRef,
                         itemRef)
@@ -1940,26 +2194,40 @@ public class SalesMenuPersistence {
     }
 
     public record DraftItemSeed(
-            UUID itemRef, String resolvedItemName, String resolvedItemCode, String resolvedProductShape, long ordinal) {}
+            UUID itemRef,
+            String resolvedItemName,
+            String resolvedItemCode,
+            String resolvedProductShape,
+            long ordinal) {}
 
     private Optional<SalesMenuAggregate> find(SalesMenuTarget target, boolean lock) {
-        String sql = SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_SELECT_COLLECTION_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_REF
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_ARCHIVED_AT_EPOCH_MILLIS
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_REVISION
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_DRAFT_START
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_PUBLICATION
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_SCHEDULE_KIND
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_SCHEDULE_END_LOCAL_TIME_PUBLISHED_END
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_FROM_CLAUSE_SALES_COLLECTION_FROM_SALES_MENU_SALES_COLLEC
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_JOIN_SALES_COLLECTION_VERSION
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_CONDITION_COLLECTION_REF
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_SALES_COLLECTION_VERSION
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_CONDITION_COLLECTION_REF_ALTERNATE_A
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_SALES_PUBLICATION_PUBLICATION
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_JOIN_CONDITION_PUBLICATION_PUBLISHED_VERSION_REF_VERSION_REF
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_CONDITION_PUBLICATION_COLLECTION_REF
-                + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_WHERE_COLLECTION_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_REF
-                + (lock ? SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_LOCK_SUFFIX : "");
+        String sql =
+                SalesMenuCollectionPersistenceSql
+                                .SALES_MENU_COLLECTION_PERSISTENCE_SELECT_COLLECTION_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_REF
+                        + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_ARCHIVED_AT_EPOCH_MILLIS
+                        + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_REVISION
+                        + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_DRAFT_START
+                        + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_PUBLICATION
+                        + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_SCHEDULE_KIND
+                        + SalesMenuCollectionPersistenceSql
+                                .SALES_MENU_COLLECTION_PERSISTENCE_SCHEDULE_END_LOCAL_TIME_PUBLISHED_END
+                        + SalesMenuCollectionPersistenceSql
+                                .SALES_MENU_COLLECTION_PERSISTENCE_FROM_CLAUSE_SALES_COLLECTION_FROM_SALES_MENU_SALES_COLLEC
+                        + SalesMenuCollectionPersistenceSql
+                                .SALES_MENU_COLLECTION_PERSISTENCE_JOIN_SALES_COLLECTION_VERSION
+                        + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_CONDITION_COLLECTION_REF
+                        + SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_PERSISTENCE_SALES_COLLECTION_VERSION
+                        + SalesMenuCollectionPersistenceSql
+                                .SALES_MENU_COLLECTION_PERSISTENCE_CONDITION_COLLECTION_REF_ALTERNATE_A
+                        + SalesMenuCollectionPersistenceSql
+                                .SALES_MENU_COLLECTION_PERSISTENCE_SALES_PUBLICATION_PUBLICATION
+                        + SalesMenuCollectionPersistenceSql
+                                .SALES_MENU_COLLECTION_PERSISTENCE_JOIN_CONDITION_PUBLICATION_PUBLISHED_VERSION_REF_VERSION_REF
+                        + SalesMenuCollectionPersistenceSql
+                                .SALES_MENU_COLLECTION_PERSISTENCE_CONDITION_PUBLICATION_COLLECTION_REF
+                        + SalesMenuCollectionPersistenceSql
+                                .SALES_MENU_COLLECTION_PERSISTENCE_WHERE_COLLECTION_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_REF
+                        + (lock ? SalesMenuCollectionPersistenceSql.SALES_MENU_COLLECTION_LOCK_SUFFIX : "");
         return query(
                         sql,
                         SalesMenuPersistence::aggregateRow,

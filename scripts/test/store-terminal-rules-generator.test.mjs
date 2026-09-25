@@ -92,7 +92,7 @@ test('store terminal rule source matches the independent function and scene matr
       QUEUE_CALL: {
         supportedDeviceTypeKeys: ['laptop', 'mobile'],
         maxPerTerminal: 1,
-        allowedRangeKeys: ['NONE'],
+        allowedRangeKeys: [],
         sceneKeys: ['QUEUE_NUMBER_TICKET'],
       },
     },
@@ -251,6 +251,8 @@ test('store terminal model matrix is independently frozen for V-29', () => {
     }
   }
   assert.equal(schema.$defs.keyArray.minItems, 1, 'required relationships must not be empty in the contract schema');
+  assert.equal(schema.$defs.rangeKeyArray.minItems, 0, 'QUEUE_CALL is the only valid empty range domain');
+  assert.deepEqual(rules.ranges.map(({key}) => key), ['TABLE_AREA', 'NO_TABLE', 'DELIVERY', 'PRODUCTION_TAG']);
   assert.deepEqual(
     rules.connectionMethods.map(({key}) => key),
     ['NETWORK', 'CLOUD', 'USB', 'BLUETOOTH', 'BUILT_IN'],

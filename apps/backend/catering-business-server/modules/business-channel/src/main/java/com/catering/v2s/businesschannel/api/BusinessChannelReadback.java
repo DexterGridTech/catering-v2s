@@ -47,8 +47,22 @@ public final class BusinessChannelReadback {
                 List<StatusDimension> statusDimensions,
                 List<StatusDimension> blockers,
                 long version) {
-            this(templateRef, projectRef, templateName, templateCode, accessKind, operatorKind, orderKind, dineInForm,
-                    providerCode, null, storeVisibilityScope, visibleStoreCount, status, statusDimensions, blockers,
+            this(
+                    templateRef,
+                    projectRef,
+                    templateName,
+                    templateCode,
+                    accessKind,
+                    operatorKind,
+                    orderKind,
+                    dineInForm,
+                    providerCode,
+                    null,
+                    storeVisibilityScope,
+                    visibleStoreCount,
+                    status,
+                    statusDimensions,
+                    blockers,
                     version);
         }
     }

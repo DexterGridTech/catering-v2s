@@ -1,38 +1,19 @@
 package com.catering.v2s.inventory.application;
 
-import com.catering.v2s.inventory.application.persistence.InventoryAvailabilityServiceSql;
-import com.catering.v2s.inventory.application.persistence.InventoryAvailabilityPersistence;
 import static com.catering.v2s.inventory.api.InventoryOwnerApi.*;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
-import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
-import com.catering.v2s.platform.command.CatalogAuthorizationScope;
-import com.catering.v2s.platform.command.CatalogTargetCapability;
-import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
-import com.catering.v2s.platform.command.WorkspaceExecutionContext;
-import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
-import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
+import com.catering.v2s.inventory.application.persistence.InventoryAvailabilityPersistence;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,13 +64,13 @@ public class InventoryAvailabilityService {
         Set<InventoryOwnerApi.InventoryTargetRef> requestedIdentities = normalizedInventoryTargetRefs(targetRefs);
         Map<InventoryAvailabilityPersistence.TargetIdentity, InventoryAvailabilityPersistence.TargetRow> targets =
                 persistence.readTargets(
-                dataNodeRef,
-                brandRef,
-                requestedIdentities.stream()
-                        .map(identity -> new InventoryAvailabilityPersistence.TargetIdentity(
-                                identity.itemRef(), identity.productSkuRef()))
-                        .toList(),
-                false);
+                        dataNodeRef,
+                        brandRef,
+                        requestedIdentities.stream()
+                                .map(identity -> new InventoryAvailabilityPersistence.TargetIdentity(
+                                        identity.itemRef(), identity.productSkuRef()))
+                                .toList(),
+                        false);
         return requestedIdentities.stream()
                 .map(identity -> salesMenuAvailabilityFact(
                         identity,
@@ -252,8 +233,4 @@ public class InventoryAvailabilityService {
         }
         return threshold.signum() > 0 && balance.compareTo(threshold) < 0 ? "LOW" : "OK";
     }
-
-
-
-
 }

@@ -13,10 +13,13 @@ import {
 import {operationsDetailDrawerTestIds} from '../../app/automation/operationsDetailDrawerTestIds';
 import {
   clickOperationsDetailAction,
+  matchGeneratedL2Operation,
+  matchGeneratedL2Path,
   openOperationsDetailActionMenu,
   selectOperationsDataScope,
   selectOperationsOption,
   type OperationsDataScopeTouch,
+  visibleModalDialogByTestId,
   visibleOperationsMenuTestId,
 } from './operationsL2';
 import {
@@ -302,13 +305,8 @@ const generatedOperations: GeneratedOperation[] = rawGeneratedOperations.map(ent
   path: entry.path.startsWith(generatedEdgePrefix) ? entry.path : `${generatedEdgePrefix}${entry.path}`,
 }));
 
-function operationTemplateRegExp(template: string): RegExp {
-  const escaped = template.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\{[^}]+\\\}/g, '[^/]+');
-  return new RegExp(`^${escaped}$`);
-}
-
 function generatedOperationForPath(pathname: string): GeneratedOperation | undefined {
-  return generatedOperations.find(entry => operationTemplateRegExp(entry.path).test(pathname));
+  return matchGeneratedL2Path(generatedOperations, pathname);
 }
 
 function isGeneratedApiPath(pathname: string): boolean {
@@ -319,9 +317,7 @@ function l2DiagnosticHeaders(request: Request): Record<string, string> {
   const runId = requiredEnvironment('R5_L2_RUN_ID');
   const secret = requiredEnvironment('R5_L2_SECRET');
   const pathname = new URL(request.url()).pathname;
-  const operation = generatedOperations.find(
-    entry => entry.method === request.method() && operationTemplateRegExp(entry.path).test(pathname),
-  );
+  const operation = matchGeneratedL2Operation(generatedOperations, request.method(), pathname);
   if (!operation)
     throw new Error(
       `CATALOG_INVENTORY_L2_OPERATION_METADATA_MISSING:${request.method()}:${new URL(request.url()).pathname}`,
@@ -377,9 +373,7 @@ function observeFixtureWholeSave(page: Page, boundary: 'COPY' | 'EDIT' | 'BATCH'
   page.on('response', response => {
     const request = response.request();
     const pathname = new URL(response.url()).pathname;
-    const operation = generatedOperations.find(
-      entry => entry.method === request.method() && operationTemplateRegExp(entry.path).test(pathname),
-    );
+    const operation = matchGeneratedL2Operation(generatedOperations, request.method(), pathname);
     if (operation?.operationId !== 'saveOperationsCatalogItem') return;
     writes.push(
       (async () => {
@@ -597,9 +591,7 @@ async function installOneShotCatalogApiFailure(
       return;
     }
     intercepted = true;
-    const operation = generatedOperations.find(
-      entry => entry.method === request.method() && operationTemplateRegExp(entry.path).test(pathname),
-    );
+    const operation = matchGeneratedL2Operation(generatedOperations, request.method(), pathname);
     if (operation) markExpectedCatalogFailure(operation.operationId);
     const diagnosticHeaders = l2DiagnosticHeaders(request);
     const completionId = `l2-intercept-${randomUUID()}`;
@@ -1391,14 +1383,6 @@ function visibleTestId(page: Page, testId: string): Locator {
   return page.getByTestId(testId).filter({visible: true});
 }
 
-function visibleModalDialogByTestId(page: Page, testId: string): Locator {
-  // Ant Design puts Modal's test id on the zero-layout root and the actual
-  // visible surface on its descendant role=dialog.  Filtering the root with
-  // visible=true would reject a genuinely open modal, so bind the assertion
-  // to the user-facing dialog while retaining the declared surface id.
-  return page.getByTestId(testId).getByRole('dialog').filter({visible: true});
-}
-
 async function searchCatalogByKeyword(page: Page, facts: OwnerCase, keyword: string): Promise<void> {
   await typeSequentially(await requireControl(page, 'CATALOG_LOCAL_SEARCH', facts), keyword);
   const filter = await visibleTestId(page, catalogTestIdControls.workbench.filterKeyword);
@@ -1831,9 +1815,10 @@ function generatedOperation(operationId: string): {method: string; path: string}
 
 function waitForGeneratedOperation(page: Page, operationId: string) {
   const operation = generatedOperation(operationId);
-  const matchesPath = operationTemplateRegExp(operation.path);
   return page.waitForResponse(
-    response => response.request().method() === operation.method && matchesPath.test(new URL(response.url()).pathname),
+    response =>
+      matchGeneratedL2Operation([operation], response.request().method(), new URL(response.url()).pathname) !==
+      undefined,
   );
 }
 
@@ -3053,9 +3038,7 @@ test.describe('商品库存域 · no-seed owner-HTTP browser controls (framework
           (async () => {
             const headers = await response.headers();
             const pathname = new URL(response.url()).pathname;
-            const operation = generatedOperations.find(
-              entry => entry.method === request.method() && operationTemplateRegExp(entry.path).test(pathname),
-            );
+            const operation = matchGeneratedL2Operation(generatedOperations, request.method(), pathname);
             if (!operation)
               throw new Error(`CATALOG_INVENTORY_L2_OPERATION_METADATA_MISSING:${request.method()}:${pathname}`);
             operationObservations.push({

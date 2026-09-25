@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "sales-menu-l2-script-admission",
+  "suite": "sales-menu",
+  "caseSetMode": "EXACT",
+  "caseIdsSource": {
+    "path": "contracts/policy/sales-menu-l2-activation-candidate.json",
+    "selector": "approvedCaseIds"
+  },
+  "controlPlaneFiles": [
+    "contracts/policy/sales-menu-l2-activation-candidate.json",
+    "contracts/policy/sales-menu-l2-case-blueprint.json",
+    "contracts/policy/sales-menu-l2-fixture.json",
+    "contracts/policy/sales-menu-l2-locator-bindings.json",
+    "contracts/policy/sales-menu-l2-scenarios.json",
+    "contracts/policy/sales-menu-l2-timing-budget.json",
+    "apps/frontend/operations-admin/src/tests/l2/sales-menu.spec.ts",
+    "apps/frontend/operations-admin/src/tests/l2/operationsL2.ts",
+    "apps/frontend/operations-admin/src/tests/l2/operationsL2.test.ts",
+    "scripts/generate/sales-menu-p1.mjs",
+    "scripts/test/browser-l2-runtime.mjs",
+    "scripts/test/browser-l2-runtime.test.mjs",
+    "scripts/test/sales-menu-l2-fixture.mjs",
+    "scripts/test/l2-suite-admission.mjs",
+    "scripts/test/l2-suite-admission.test.mjs",
+    "scripts/test/sales-menu-l2-admission.mjs",
+    "scripts/test/l2-locator-bindings.static.test.mjs",
+    "doc/plans/platform/2026-09-01-v2s-sales-menu-implementation-design-codex.md",
+    "doc/plans/platform/2026-09-01-v2s-sales-menu-implementation-plan-codex.md"
+  ],
+  "uiSourceDirectories": [
+    "apps/frontend/operations-admin/src/features/sales-menu"
+  ],
+  "designPath": "doc/plans/platform/2026-09-01-v2s-sales-menu-implementation-plan-codex.md",
+  "reviewRecordPath": "doc/review/platform/2026-09-25-v2s-l2-suite-admission-review-codex.md",
+  "requiredMarkers": {
+    "uiDesign": "UI_DESIGN_REVIEW=PASS",
+    "testId": "TESTID_REVIEW=PASS",
+    "scriptAdmission": "L2_SCRIPT_ADMISSION=PASS"
+  }
+}

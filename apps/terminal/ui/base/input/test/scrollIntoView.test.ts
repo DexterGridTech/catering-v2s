@@ -73,6 +73,21 @@ describe('scroll into the measured surface and viewport intersection', () => {
     })).toBe(12)
   })
 
+  it('uses the same half-unit tolerance for visibility and target calculation', () => {
+    const intersection = {top: 0, bottom: 100}
+    expect(isRectInsideVisibleVerticalIntersection(rect(-0.4, 20), intersection)).toBe(true)
+    expect(isRectInsideVisibleVerticalIntersection(rect(80.4, 20), intersection)).toBe(true)
+    expect(calculateScrollOffset({
+      inputRect: rect(180.4, 20),
+      viewportRect: rect(0, 200),
+      currentOffset: 100,
+      maxScroll: 1000,
+      surfaceHeight: 800,
+      keyboardHeight: 600,
+      presentationOffsetY: 0,
+    })).toBe(100)
+  })
+
   it('returns an empty intersection when the keyboard leaves no visible viewport', () => {
     const intersection = visibleVerticalIntersectionOf({
       viewportRect: rect(700, 80),

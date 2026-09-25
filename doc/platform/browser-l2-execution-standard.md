@@ -152,6 +152,20 @@ runner 还会再次校验同一 binding，任何运行期间的 repository drift
 run binding 必须同 runId、namespace、database、asset prefix，active case set 必须与 candidate 一字不差。
 任一条件不满足，runner 在浏览器 business 前失败。
 
+### 4.1 · 运行器入口准入与重跑纪律(Dexter 2026-09-25)
+
+上面的调用顺序只在执行者遵守时才有效。门店终端批跳过准入,L2 跑了 36 次只通过 1 次:同一「运行绑定不匹配」
+3 分钟内连续 3 次,运行期间改源码造成字节漂移 5 次。以下四条从纪律改为运行器入口检查:
+
+1. **准入**:运行器在 `readiness` 之前读取本批详设 §3a 的 `L2_SCRIPT_ADMISSION` 与独立复核记录;缺失、非 PASS,
+   或准入覆盖的 L2 控制面文件与 UI 目录在准入之后有改动,拒绝启动。运行器只核对准入存在且覆盖当前字节,不做语义判定。
+2. **不许无变更重跑**:上一轮同一 case 失败,且该 case 绑定的文件字节没有改动,拒绝启动,并提示先按
+   `playwright-results.json` 的错误与堆栈静态定位。
+3. **执行配置只在本 run 生成**:执行配置只能由运行器在同一 run 内调用唯一 P1 生成器产出;外部传入或历史留下的一律拒绝。
+4. **持有期间不改字节、同时只跑一个**:held run 期间不得改动 binding 范围内的文件;同一时间只允许一个受管运行。
+
+实现状态:以上检查由实施方在运行器中落地;落地之前,执行者按本节人工遵守,并在准入记录中写明。
+
 ## 5. 运行期进度、日志与 join 证据
 
 runner 必须在 stdout 与 `progress.jsonl` 同时输出：队列 ready、每个 case 的 START/COMPLETE、
@@ -196,6 +210,13 @@ readiness 在 held run 建立前失败时，也必须为本 run 持久化精确�
 run 的 `readiness-manifest.json`（仅限 `status=FAIL` 且 `cleanupStatus=FAIL`），按其已验证的 run binding、
 process identity、remote host 与凭据文件路径重建 cleanup state；不得接受其他 run、手工拼接的 namespace、
 端口或进程名推断。直到 cleanup PASS 前，不得创建新的同类 managed run。
+
+readiness、P1 finalize、browser run 与 recovery cleanup 共用 run-root lifecycle admission；任何阶段都不得
+与另一阶段或另一 run 并发持有远端 HTTP 端口或本机 Vite。新 readiness 不只读取共享 current-state 指针，
+还必须扫描 runtime root 下所有 run-scoped state，发现 `READY` 或 `CLEANUP_REQUIRED` 即 fail closed。cleanup
+除 state 中的 processIdentities 外，还必须读取该 run 目录由 managed spawn 写出的 identity 文件，并按
+`PID + start token + process group` 逐一核验后停止，覆盖刷新进程尚未回写 state 的失败窗口；不得按端口或
+进程名补偿清理。
 
 ## 7. 通过条件、失败纪律与可复用检查
 

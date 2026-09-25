@@ -221,12 +221,13 @@ public class BusinessEntityCommandRouter {
 
     private static String normalizeIncludingStore(String entityType) {
         String value = Objects.requireNonNullElse(entityType, "").toUpperCase(java.util.Locale.ROOT);
-        if (!BusinessEntityTypes.VALUES.contains(value)) throw new BusinessEntityService.OrganizationValidationException();
+        if (!BusinessEntityTypes.VALUES.contains(value))
+            throw new BusinessEntityService.OrganizationValidationException();
         return value;
     }
 
     private static final class SetHolder {
-        private static final java.util.Set<String> NON_STORE =
-                java.util.Set.of(BusinessEntityTypes.BRAND, BusinessEntityTypes.TENANT, BusinessEntityTypes.HEAD_COMPANY);
+        private static final java.util.Set<String> NON_STORE = java.util.Set.of(
+                BusinessEntityTypes.BRAND, BusinessEntityTypes.TENANT, BusinessEntityTypes.HEAD_COMPANY);
     }
 }

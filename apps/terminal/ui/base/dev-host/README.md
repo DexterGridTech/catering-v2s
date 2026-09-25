@@ -4,8 +4,8 @@
 
 本包是 TER UI integration 在 Expo Web 开发期使用的业务无关宿主。它负责把集成层注入的
 assembly、运行时状态读取器与 Web 平台端口接到一个可切换 laptop／mobile 视角、单屏／双屏的宿主页面；标题与状态摘要位于上方，三个宿主控制组在其下方独立居中一行；它不拥有
-业务 runtime、catalog、业务 state、业务命令或具体 part。`ui.base.test-support` 只保留包图
-元数据骨架，不再承载宿主实现。
+业务 runtime、catalog、业务 state、业务命令或具体 part。测试类型直接由
+`kernel.base.platform-ports` 提供，宿主包不承载测试支撑实现。
 
 ## 作用
 

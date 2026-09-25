@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -66,32 +66,43 @@ class OrganizationOverviewTaskReadServiceTest {
                         any(),
                         any()))
                 .thenReturn(new BusinessEntityService.BusinessEntityPage(List.of(), 0L, 1, 20));
-        OrganizationOverviewTaskReadService service = new OrganizationOverviewTaskReadService(
-                jdbc, null, entities, hierarchy, null);
+        OrganizationOverviewTaskReadService service =
+                new OrganizationOverviewTaskReadService(jdbc, null, entities, hierarchy, null);
 
         var hierarchyPage = service.platformOverviewTaskPage(
-                UUID.randomUUID(), "organization-test", "HIERARCHY", OrganizationOverviewTaskReadService.Query.empty(), 1, 20);
+                UUID.randomUUID(),
+                "organization-test",
+                "HIERARCHY",
+                OrganizationOverviewTaskReadService.Query.empty(),
+                1,
+                20);
         var businessEntityPage = service.platformOverviewTaskPage(
-                UUID.randomUUID(), "organization-test", "BUSINESS_ENTITY", OrganizationOverviewTaskReadService.Query.empty(), 1, 20);
+                UUID.randomUUID(),
+                "organization-test",
+                "BUSINESS_ENTITY",
+                OrganizationOverviewTaskReadService.Query.empty(),
+                1,
+                20);
 
         assertEquals(0L, hierarchyPage.metadata().total());
         assertEquals(0L, businessEntityPage.metadata().total());
         verify(hierarchy).page(any(UUID.class), anyString(), any(OrganizationHierarchyService.HierarchyQuery.class));
-        verify(entities).pageBusinessEntities(
-                any(UUID.class),
-                anyString(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                anyString(),
-                anyString(),
-                anyInt(),
-                anyInt(),
-                any(),
-                any());
+        verify(entities)
+                .pageBusinessEntities(
+                        any(UUID.class),
+                        anyString(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        anyString(),
+                        anyString(),
+                        anyInt(),
+                        anyInt(),
+                        any(),
+                        any());
     }
 
     @Test
@@ -163,8 +174,8 @@ class OrganizationOverviewTaskReadServiceTest {
                         1,
                         20,
                         4L));
-        OrganizationOverviewTaskReadService service = new OrganizationOverviewTaskReadService(
-                jdbc, null, entities, hierarchy, null);
+        OrganizationOverviewTaskReadService service =
+                new OrganizationOverviewTaskReadService(jdbc, null, entities, hierarchy, null);
         OrganizationOverviewTaskReadService.Query systemSource = new OrganizationOverviewTaskReadService.Query(
                 null,
                 null,
@@ -183,8 +194,8 @@ class OrganizationOverviewTaskReadServiceTest {
                 null,
                 null);
 
-        var hierarchyPage = service.platformOverviewTaskPage(
-                workspaceUuid, "organization-test", "HIERARCHY", systemSource, 1, 20);
+        var hierarchyPage =
+                service.platformOverviewTaskPage(workspaceUuid, "organization-test", "HIERARCHY", systemSource, 1, 20);
         var businessEntityPage = service.platformOverviewTaskPage(
                 workspaceUuid, "organization-test", "BUSINESS_ENTITY", systemSource, 1, 20);
 
@@ -266,7 +277,7 @@ class OrganizationOverviewTaskReadServiceTest {
                                 + "target.extension_values, target.project_id, target.project_code, "
                                 + "target.project_name, target.brand_id, target.brand_code, target.brand_name, "
                                 + "target.tenant_id, target.tenant_code, target.tenant_name, target.head_id, "
-                + "target.head_code, target.head_name, array_agg(ancestry.id")));
+                                + "target.head_code, target.head_name, array_agg(ancestry.id")));
     }
 
     @Test
@@ -287,10 +298,13 @@ class OrganizationOverviewTaskReadServiceTest {
 
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         verify(jdbc).query(sqlCaptor.capture(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class));
-        assertTrue(sqlCaptor.getValue().replaceAll("\\s+", " ").contains(
-                "target.extension_rule_revision, target.created_at_epoch_millis, target.updated_at_epoch_millis, "
-                        + "target.notes, target.extension_values, "
-                        + "target.project_id, target.project_code, target.project_name"));
+        assertTrue(sqlCaptor
+                .getValue()
+                .replaceAll("\\s+", " ")
+                .contains(
+                        "target.extension_rule_revision, target.created_at_epoch_millis, target.updated_at_epoch_millis, "
+                                + "target.notes, target.extension_values, "
+                                + "target.project_id, target.project_code, target.project_name"));
     }
 
     @Test

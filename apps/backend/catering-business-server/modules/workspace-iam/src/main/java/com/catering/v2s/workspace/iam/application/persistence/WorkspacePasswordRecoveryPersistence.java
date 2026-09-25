@@ -15,8 +15,10 @@ public class WorkspacePasswordRecoveryPersistence {
 
     public int supersedeAccountRecoveries(UUID accountId) {
         return jdbc.update(
-                WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OPERATIONS_PASSWORD_RECOVERY_STATUS_SUPERSEDED_VERSION
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_WHERE_ACCOUNT_ID_STATUS_PENDING_OTP_VERIFIED,
+                WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OPERATIONS_PASSWORD_RECOVERY_STATUS_SUPERSEDED_VERSION
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_WHERE_ACCOUNT_ID_STATUS_PENDING_OTP_VERIFIED,
                 accountId);
     }
 
@@ -29,9 +31,11 @@ public class WorkspacePasswordRecoveryPersistence {
             long expiresAt,
             long now) {
         return jdbc.update(
-                WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_INSERT_INTO_OPERATIONS_PASSWORD_RECOVERY
+                WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_INSERT_INTO_OPERATIONS_PASSWORD_RECOVERY
                         + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_ACCOUNT_ID
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_CREATED_AT_EPOCH_MILLIS
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_CREATED_AT_EPOCH_MILLIS
                         + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_VALUES_PENDING,
                 recoveryId,
                 workspaceUuid,
@@ -44,8 +48,10 @@ public class WorkspacePasswordRecoveryPersistence {
 
     public int supersedeActiveOtp(UUID recoveryId) {
         return jdbc.update(
-                WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OTP_GRANT_STATUS_SUPERSEDED_SUBJECT_REF
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_PURPOSE_OPERATIONS_PASSWORD_RECOVERY_STATUS_ACTIVE,
+                WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OTP_GRANT_STATUS_SUPERSEDED_SUBJECT_REF
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_PURPOSE_OPERATIONS_PASSWORD_RECOVERY_STATUS_ACTIVE,
                 recoveryId);
     }
 
@@ -57,9 +63,11 @@ public class WorkspacePasswordRecoveryPersistence {
             UUID recoveryId,
             long expiresAt) {
         return jdbc.update(
-                WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_INSERT_INTO_OTP_GRANT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PURPOSE
+                WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_INSERT_INTO_OTP_GRANT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PURPOSE
                         + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_TOKEN_HASH
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_OPERATIONS_PASSWORD_RECOVERY_ACTIVE,
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_OPERATIONS_PASSWORD_RECOVERY_ACTIVE,
                 otpId,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -70,9 +78,11 @@ public class WorkspacePasswordRecoveryPersistence {
 
     public int consumeOtp(long now, UUID recoveryId, String tokenHash) {
         return jdbc.update(
-                WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OTP_GRANT_STATUS_USED_USED_AT_EPOCH_MILLIS_SUBJECT_REF
+                WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OTP_GRANT_STATUS_USED_USED_AT_EPOCH_MILLIS_SUBJECT_REF
                         + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_PURPOSE
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_EXPIRES_AT_EPOCH_MILLIS,
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_EXPIRES_AT_EPOCH_MILLIS,
                 now,
                 recoveryId,
                 tokenHash,
@@ -81,17 +91,21 @@ public class WorkspacePasswordRecoveryPersistence {
 
     public int incrementOtpAttempt(UUID recoveryId) {
         return jdbc.update(
-                WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OTP_GRANT_ATTEMPT_COUNT_SUBJECT_REF
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_PURPOSE_OPERATIONS_PASSWORD_RECOVERY_STATUS_ACTIVE_ALTERNATE_A,
+                WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OTP_GRANT_ATTEMPT_COUNT_SUBJECT_REF
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_PURPOSE_OPERATIONS_PASSWORD_RECOVERY_STATUS_ACTIVE_ALTERNATE_A,
                 recoveryId);
     }
 
     public int markOtpVerified(String completionGrantHash, long grantExpiresAt, UUID recoveryId, long version) {
         return jdbc.update(
-                WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OPERATIONS_PASSWORD_RECOVERY_STATUS_OTP_VERIFIED
+                WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OPERATIONS_PASSWORD_RECOVERY_STATUS_OTP_VERIFIED
                         + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_COMPLETION_GRANT_HASH
                         + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_VERSION
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_WHERE_STATUS_PENDING_VERSION,
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_WHERE_STATUS_PENDING_VERSION,
                 completionGrantHash,
                 grantExpiresAt,
                 recoveryId,
@@ -110,17 +124,22 @@ public class WorkspacePasswordRecoveryPersistence {
 
     public int revokeSessions(long now, UUID accountId) {
         return jdbc.update(
-                WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_ACCOUNT_ID_STATUS_ACTIVE,
+                WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_ACCOUNT_ID_STATUS_ACTIVE,
                 now,
                 accountId);
     }
 
     public int completeRecovery(long now, UUID recoveryId, long version) {
         return jdbc.update(
-                WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OPERATIONS_PASSWORD_RECOVERY_STATUS_COMPLETED
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_COMPLETION_GRANT_HASH_ALTERNATE_A
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_COMPLETED_AT_EPOCH_MILLIS
+                WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OPERATIONS_PASSWORD_RECOVERY_STATUS_COMPLETED
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_COMPLETION_GRANT_HASH_ALTERNATE_A
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_COMPLETED_AT_EPOCH_MILLIS
                         + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_CONDITION
                         + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_VERSION_ALTERNATE_A,
                 now,
@@ -130,9 +149,12 @@ public class WorkspacePasswordRecoveryPersistence {
 
     public RecoveryRow activeRecovery(String flowTokenHash) {
         return jdbc.query(
-                WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ACCOUNT_ID_STATUS
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_COMPLETION_GRANT_HASH_ALTERNATE_B
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_OPERATIONS_PASSWORD_RECOVERY_FLOW_TOKEN_HASH,
+                WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ACCOUNT_ID_STATUS
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_COMPLETION_GRANT_HASH_ALTERNATE_B
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_OPERATIONS_PASSWORD_RECOVERY_FLOW_TOKEN_HASH,
                 statement -> statement.setString(1, flowTokenHash),
                 result -> result.next()
                         ? new RecoveryRow(
@@ -148,13 +170,13 @@ public class WorkspacePasswordRecoveryPersistence {
                         : null);
     }
 
-    public AccountRow matchingAccount(
-            UUID workspaceUuid, String groupWorkspaceKey, String loginName, String mobile) {
+    public AccountRow matchingAccount(UUID workspaceUuid, String groupWorkspaceKey, String loginName, String mobile) {
         return jdbc.query(
                 WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_SELECT_WORKSPACE_ACCOUNT
                         + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_WORKSPACE_UUID
                         + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_MOBILE_NORMALIZED
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_CONDITION_STATUS_ENABLED,
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_CONDITION_STATUS_ENABLED,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, groupWorkspaceKey);
@@ -172,8 +194,10 @@ public class WorkspacePasswordRecoveryPersistence {
 
     public AccountRow enabledAccount(UUID accountId, UUID workspaceUuid, String groupWorkspaceKey) {
         return jdbc.query(
-                WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_SELECT_WORKSPACE_ACCOUNT_ALTERNATE_A
-                        + WorkspacePasswordRecoveryServiceSql.WORKSPACE_PASSWORD_RECOVERY_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED,
+                WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_SELECT_WORKSPACE_ACCOUNT_ALTERNATE_A
+                        + WorkspacePasswordRecoveryServiceSql
+                                .WORKSPACE_PASSWORD_RECOVERY_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED,
                 statement -> {
                     statement.setObject(1, accountId);
                     statement.setObject(2, workspaceUuid);

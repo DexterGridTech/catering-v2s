@@ -16,7 +16,6 @@ import com.catering.v2s.app.edge.generated.wire.BusinessChannelUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelView;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingDeleteRequest;
-import com.catering.v2s.app.edge.generated.wire.OwnerBindingUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingView;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.platform.externalcollaboration.ExternalCollaborationWireMapper;

@@ -76,15 +76,16 @@ class BusinessChannelCommandReceiptServiceTest {
         assertEquals("response", first);
         assertEquals("response", replay);
         assertEquals(1, executions.get());
-        verify(persistence, times(1)).insert(
-                any(UUID.class),
-                eq(workspace),
-                eq("workspace-key"),
-                eq("receipt-replay-0001"),
-                eq("createOperationsBusinessChannel"),
-                eq(Sha256Hex.digest("request")),
-                eq("\"response\""),
-                anyLong());
+        verify(persistence, times(1))
+                .insert(
+                        any(UUID.class),
+                        eq(workspace),
+                        eq("workspace-key"),
+                        eq("receipt-replay-0001"),
+                        eq("createOperationsBusinessChannel"),
+                        eq(Sha256Hex.digest("request")),
+                        eq("\"response\""),
+                        anyLong());
     }
 
     @Test
@@ -118,15 +119,16 @@ class BusinessChannelCommandReceiptServiceTest {
                         () -> fail("idempotency conflict must reject before command execution")));
 
         assertEquals("IDEMPOTENCY_CONFLICT", problem.code());
-        verify(persistence, times(1)).insert(
-                any(UUID.class),
-                eq(workspace),
-                eq("workspace-key"),
-                eq("receipt-conflict-001"),
-                eq("createOperationsBusinessChannel"),
-                eq(Sha256Hex.digest("request-a")),
-                eq("\"stored-response\""),
-                anyLong());
+        verify(persistence, times(1))
+                .insert(
+                        any(UUID.class),
+                        eq(workspace),
+                        eq("workspace-key"),
+                        eq("receipt-conflict-001"),
+                        eq("createOperationsBusinessChannel"),
+                        eq(Sha256Hex.digest("request-a")),
+                        eq("\"stored-response\""),
+                        anyLong());
     }
 
     @Test
@@ -134,8 +136,8 @@ class BusinessChannelCommandReceiptServiceTest {
         BusinessChannelCommandReceiptPersistence persistence = mock(BusinessChannelCommandReceiptPersistence.class);
         when(persistence.find(any(UUID.class), anyString(), anyString()))
                 .thenReturn(Optional.empty())
-                .thenReturn(Optional.of(new BusinessChannelCommandReceiptPersistence.Receipt(
-                        Sha256Hex.digest("request"), "not-json")));
+                .thenReturn(Optional.of(
+                        new BusinessChannelCommandReceiptPersistence.Receipt(Sha256Hex.digest("request"), "not-json")));
 
         BusinessChannelCommandReceiptService receipts = new BusinessChannelCommandReceiptService(persistence, () -> 1L);
         UUID workspace = UUID.randomUUID();
@@ -160,15 +162,16 @@ class BusinessChannelCommandReceiptServiceTest {
                         () -> fail("corrupt replay must fail before command execution")));
 
         assertEquals("RECEIPT_CORRUPT", problem.code());
-        verify(persistence, times(1)).insert(
-                any(UUID.class),
-                eq(workspace),
-                eq("workspace-key"),
-                eq("receipt-corrupt-001"),
-                eq("createOperationsBusinessChannel"),
-                eq(Sha256Hex.digest("request")),
-                eq("\"fresh-response\""),
-                anyLong());
+        verify(persistence, times(1))
+                .insert(
+                        any(UUID.class),
+                        eq(workspace),
+                        eq("workspace-key"),
+                        eq("receipt-corrupt-001"),
+                        eq("createOperationsBusinessChannel"),
+                        eq(Sha256Hex.digest("request")),
+                        eq("\"fresh-response\""),
+                        anyLong());
     }
 
     @Test
@@ -176,8 +179,8 @@ class BusinessChannelCommandReceiptServiceTest {
         BusinessChannelCommandReceiptPersistence persistence = mock(BusinessChannelCommandReceiptPersistence.class);
         when(persistence.find(any(UUID.class), anyString(), anyString()))
                 .thenReturn(Optional.empty())
-                .thenReturn(Optional.of(new BusinessChannelCommandReceiptPersistence.Receipt(
-                        Sha256Hex.digest("request"), null)));
+                .thenReturn(Optional.of(
+                        new BusinessChannelCommandReceiptPersistence.Receipt(Sha256Hex.digest("request"), null)));
 
         BusinessChannelCommandReceiptService receipts = new BusinessChannelCommandReceiptService(persistence, () -> 1L);
         UUID workspace = UUID.randomUUID();

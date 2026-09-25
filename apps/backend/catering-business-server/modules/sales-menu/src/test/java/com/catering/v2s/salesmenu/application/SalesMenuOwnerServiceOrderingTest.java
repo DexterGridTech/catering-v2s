@@ -95,7 +95,8 @@ class SalesMenuOwnerServiceOrderingTest {
     private static Object target(SalesMenuRepository repository, String table) {
         TimeProvider time = () -> 1_788_000_000_000L;
         return SECTION_TABLE.equals(table)
-                ? new SalesMenuSectionService(new LegacySalesMenuPersistenceAdapter(repository), time, new ObjectMapper())
+                ? new SalesMenuSectionService(
+                        new LegacySalesMenuPersistenceAdapter(repository), time, new ObjectMapper())
                 : new SalesMenuItemService(new LegacySalesMenuPersistenceAdapter(repository), time, new ObjectMapper());
     }
 
@@ -128,11 +129,7 @@ class SalesMenuOwnerServiceOrderingTest {
     }
 
     private static void invokeMove(
-            Object service,
-            String table,
-            String refColumn,
-            UUID section,
-            SalesMenuMoveDirection direction)
+            Object service, String table, String refColumn, UUID section, SalesMenuMoveDirection direction)
             throws Exception {
         Class<?> targetType = service.getClass();
         Method move = null;

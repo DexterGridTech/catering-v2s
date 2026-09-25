@@ -1,9 +1,9 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAuditAuthorizationPersistence;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAuditAuthorizationPersistence;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -50,8 +50,8 @@ public class WorkspaceAuditAuthorizationService {
     @Transactional(readOnly = true)
     public void requireWorkspaceSubject(WorkspaceSessionReadback session, String entityType, UUID subjectId) {
         Assignment actor = requireCurrentAssignment(session);
-        List<WorkspaceAuditAuthorizationPersistence.SubjectTarget> rows = persistence.subjectTargets(
-                entityType, subjectId, session.workspaceUuid(), session.groupWorkspaceKey());
+        List<WorkspaceAuditAuthorizationPersistence.SubjectTarget> rows =
+                persistence.subjectTargets(entityType, subjectId, session.workspaceUuid(), session.groupWorkspaceKey());
         List<SubjectTarget> targets = rows.stream()
                 .map(row -> new SubjectTarget(row.targetType(), row.targetId()))
                 .toList();

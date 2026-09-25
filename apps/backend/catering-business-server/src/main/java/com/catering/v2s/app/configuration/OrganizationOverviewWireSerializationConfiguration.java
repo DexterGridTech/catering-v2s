@@ -4,14 +4,14 @@ import com.catering.v2s.app.edge.generated.wire.OrganizationOverviewItem;
 import com.catering.v2s.app.edge.generated.wire.OrganizationOverviewItemExtensionFieldsItem;
 import com.catering.v2s.app.edge.generated.wire.OrganizationOverviewPage;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import java.io.IOException;
 import java.util.List;
-import org.springframework.http.MediaType;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -49,15 +49,15 @@ public class OrganizationOverviewWireSerializationConfiguration implements WebMv
     }
 
     static void configure(JacksonJsonHttpMessageConverter converter) {
-        tools.jackson.databind.json.JsonMapper mapper = converter.getMapper().rebuild()
+        tools.jackson.databind.json.JsonMapper mapper = converter
+                .getMapper()
+                .rebuild()
                 .addMixIn(OrganizationOverviewItem.class, OmitNullFlatProjectionFields.class)
                 .build();
         converter.registerMappersForType(
-                OrganizationOverviewPage.class,
-                mappers -> mappers.put(MediaType.APPLICATION_JSON, mapper));
+                OrganizationOverviewPage.class, mappers -> mappers.put(MediaType.APPLICATION_JSON, mapper));
         converter.registerMappersForType(
-                OrganizationOverviewItem.class,
-                mappers -> mappers.put(MediaType.APPLICATION_JSON, mapper));
+                OrganizationOverviewItem.class, mappers -> mappers.put(MediaType.APPLICATION_JSON, mapper));
     }
 
     private abstract static class OmitNullFlatProjectionFields {

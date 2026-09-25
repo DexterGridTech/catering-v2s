@@ -246,4 +246,3 @@ class ProductionTagCopyConflictIntegrationTest {
                 List.of(TARGET_SCOPE));
     }
 }
-

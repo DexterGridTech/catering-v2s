@@ -1,6 +1,6 @@
 # catering-v2s HANDOFF
 
-本文件只登记当前架构明确推迟、且有客观激活事实的十项生产化欠账；它不是第二份 Roadmap，也不授权 R2/W1。触发事实成立后，必须在 v2s 新建 decision 与实施计划，不能把本表直接当作写入许可。
+本文件只登记当前架构明确推迟、且有客观激活事实的十项生产化欠账；它不提供当前任务授权。触发事实成立后，必须在 v2s 新建 decision 与实施计划，不能把本表直接当作写入许可。
 
 编码规范唯一正本入口：后台见 [`doc/platform/backend-coding-standard.md`](doc/platform/backend-coding-standard.md)，前端见 [`doc/platform/frontend-coding-standard.md`](doc/platform/frontend-coding-standard.md)。本文件只提供指针，不复制规范内容。
 
@@ -31,7 +31,7 @@
 
 ## B1 后台健壮性欠账记录
 
-本节是 B1 执行记录，不是新增 Roadmap，也不授权后续批次。它把当前仍存在的欠账与本批已关闭的历史欠账分开，避免把已修复事实冒充为现状。
+本节是 B1 执行记录，不授权后续批次。它把当前仍存在的欠账与本批已关闭的历史欠账分开，避免把已修复事实冒充为现状。
 
 | item | status | currentBoundary | activationOrEvidence |
 |---|---|---|---|
@@ -60,7 +60,7 @@ P3 当前字节复跑 `scripts/check/frontend-architecture` 时，商品与库�
 
 ## Test-health closed-loop deferred behavior coverage
 
-本节是测试健康闭环整改的范围交接，不是生产化欠账，也不授权下一 Roadmap step：
+本节是测试健康闭环整改的范围交接，不是生产化欠账，也不授权后续批次：
 
 - `COMPLEX_UI_BEHAVIOR`：`CatalogItemDrawer`、`StoreCreateDrawer` 等 AntD + RTK Query + Redux + router 业务组件没有被 `renderToStaticMarkup` 冒充行为覆盖。本次不引入 jsdom 或 L2；未来如需关闭，必须另有获批的真实行为证据。
 - `L2_UNCOVERED_SURFACES`：audit-history、platform-admin 的密码找回/改密、workspace-administration 的源码文本断言已按本包规则删除；本次不得据此宣称这些 UI 行为已由日常回归覆盖，缺口保留为未来行为验证范围。
@@ -68,7 +68,7 @@ P3 当前字节复跑 `scripts/check/frontend-architecture` 时，商品与库�
 
 ## Backend acceptance 未完成项
 
-- `BACKEND_ACCEPTANCE_NEXT_OPERATIONS`：当前已有 28 条 IAM、ORG、商业合同、asset 与 catalog 的真实 fixture、HTTP 请求与业务字段断言；原 196 个 provider 壳、共享 SPI 与 registry 已下线。下次扩覆盖时，按 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md` 在对应的 `*AcceptanceScenarios.java` 增加真实业务 oracle；DB 操作数只供人工观察，不设预算门。
+- `BACKEND_ACCEPTANCE_NEXT_OPERATIONS`：下次扩覆盖时，按 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md` 在 acceptance 目录下对应业务域的 `*AcceptanceScenarios.java` 增加真实 fixture、HTTP 请求与业务 oracle，由 `BackendAcceptanceScenarioCatalog` 自动发现；DB 操作数只供人工观察，不设预算门。
 
 ## 第二部分整改后续项
 

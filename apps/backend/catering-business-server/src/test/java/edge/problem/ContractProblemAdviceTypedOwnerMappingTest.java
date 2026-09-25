@@ -9,9 +9,9 @@ import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.contract.application.ContractCommandReceiptService;
 import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
+import com.catering.v2s.organization.api.StoreOperatingRuleGate;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationTaskPathService;
-import com.catering.v2s.organization.api.StoreOperatingRuleGate;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
@@ -141,15 +141,17 @@ class ContractProblemAdviceTypedOwnerMappingTest {
                 HttpStatus.FORBIDDEN,
                 "PLATFORM_COMMON_ACCESS_DENIED");
         assertProblem(
-                advice.storeTerminalUnavailable(new StoreTerminalOwnerService.TerminalStoreUnavailableException(), request),
+                advice.storeTerminalUnavailable(
+                        new StoreTerminalOwnerService.TerminalStoreUnavailableException(), request),
                 HttpStatus.FORBIDDEN,
-                "ORGANIZATION_STORE_STATUS_TRANSITION_INVALID");
+                "PLATFORM_COMMON_ACCESS_DENIED");
         assertProblem(
                 advice.storeTerminalConflict(new StoreTerminalOwnerService.TerminalVoidedImmutableException(), request),
                 HttpStatus.CONFLICT,
                 "STORE_TERMINAL_VOIDED_IMMUTABLE");
         assertProblem(
-                advice.storeTerminalConflict(new StoreTerminalOwnerService.TerminalStatusTransitionInvalidException(), request),
+                advice.storeTerminalConflict(
+                        new StoreTerminalOwnerService.TerminalStatusTransitionInvalidException(), request),
                 HttpStatus.CONFLICT,
                 "STORE_TERMINAL_STATUS_TRANSITION_INVALID");
         assertProblem(
@@ -169,8 +171,13 @@ class ContractProblemAdviceTypedOwnerMappingTest {
                 HttpStatus.UNPROCESSABLE_ENTITY,
                 "STORE_TERMINAL_RULE_INVALID");
         assertProblem(
+                advice.storeTerminalInvalid(new StoreTerminalOwnerService.InvalidTerminalInputException(), request),
+                HttpStatus.BAD_REQUEST,
+                "PLATFORM_COMMON_VALIDATION_FAILED");
+        assertProblem(
                 advice.storeTerminalResultUnknown(
-                        new StoreTerminalOwnerService.ReceiptCorruptException(new IllegalStateException("corrupt")), request),
+                        new StoreTerminalOwnerService.ReceiptCorruptException(new IllegalStateException("corrupt")),
+                        request),
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "PLATFORM_COMMON_RESULT_UNKNOWN");
         assertProblem(

@@ -1,9 +1,9 @@
 package com.catering.v2s.businesschannel.api;
 
-import com.catering.v2s.platform.foundation.contract.OwnerProblem;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.platform.foundation.contract.OwnerProblem;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;

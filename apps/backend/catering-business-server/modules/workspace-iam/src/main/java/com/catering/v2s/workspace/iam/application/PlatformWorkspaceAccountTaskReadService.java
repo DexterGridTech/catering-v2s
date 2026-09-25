@@ -1,10 +1,10 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.PlatformWorkspaceAccountTaskReadPersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import com.catering.v2s.workspace.iam.api.WorkspaceAccountReadback;
+import com.catering.v2s.workspace.iam.application.persistence.PlatformWorkspaceAccountTaskReadPersistence;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
@@ -90,12 +90,9 @@ public class PlatformWorkspaceAccountTaskReadService {
     }
 
     private List<WorkspaceUserService.User> users(
-            UUID workspaceUuid,
-            String key,
-            List<PlatformWorkspaceAccountTaskReadPersistence.Row> rows) {
-        List<PlatformWorkspaceAccountTaskReadPersistence.Row> actual = rows.stream()
-                .filter(value -> value.id() != null)
-                .toList();
+            UUID workspaceUuid, String key, List<PlatformWorkspaceAccountTaskReadPersistence.Row> rows) {
+        List<PlatformWorkspaceAccountTaskReadPersistence.Row> actual =
+                rows.stream().filter(value -> value.id() != null).toList();
         LinkedHashSet<OrganizationTaskPathLookup.TaskPathRef> refs = new LinkedHashSet<>();
         for (PlatformWorkspaceAccountTaskReadPersistence.Row row : actual)
             for (RawAssignment assignment : assignments(row))
@@ -186,8 +183,7 @@ public class PlatformWorkspaceAccountTaskReadService {
 
     private static String direction(String value) {
         String safe = value == null ? "ASC" : value;
-        if (!Set.of("ASC", "DESC").contains(safe))
-            throw new WorkspaceAccountService.AccountNotFoundException();
+        if (!Set.of("ASC", "DESC").contains(safe)) throw new WorkspaceAccountService.AccountNotFoundException();
         return safe;
     }
 
@@ -207,7 +203,8 @@ public class PlatformWorkspaceAccountTaskReadService {
                 .toList();
     }
 
-    private static List<WorkspaceUserService.Invitation> invitations(PlatformWorkspaceAccountTaskReadPersistence.Row row) {
+    private static List<WorkspaceUserService.Invitation> invitations(
+            PlatformWorkspaceAccountTaskReadPersistence.Row row) {
         return array(row.invitations()).stream()
                 .map(value -> new WorkspaceUserService.Invitation(
                         uuid(value, "id"),
@@ -217,7 +214,8 @@ public class PlatformWorkspaceAccountTaskReadService {
                 .toList();
     }
 
-    private static List<WorkspaceUserService.AuthenticationHistory> history(PlatformWorkspaceAccountTaskReadPersistence.Row row) {
+    private static List<WorkspaceUserService.AuthenticationHistory> history(
+            PlatformWorkspaceAccountTaskReadPersistence.Row row) {
         return array(row.history()).stream()
                 .map(value -> new WorkspaceUserService.AuthenticationHistory(
                         uuid(value, "id"), value.path("authenticatedAt").asLong()))

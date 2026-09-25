@@ -2,6 +2,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {describe, expect, it} from 'vitest';
 import type {StoreTerminalDetail} from '../../../app/api/generated/operations-edge';
 import {StoreTerminalDetail as StoreTerminalDetailView} from './StoreTerminalDetail';
+import {storeTerminalTestIds} from '../storeTerminalTestIds';
 
 const detail = {
   terminalRef: '11111111-1111-4111-8111-111111111111',
@@ -69,5 +70,13 @@ describe('store terminal detail render', () => {
     expect(markup).toContain('堂食');
     expect(markup).not.toContain('更新时间');
     expect(markup).not.toContain('版本');
+  });
+
+  it('hides all write entry points for a readonly role', () => {
+    const markup = renderToStaticMarkup(
+      <StoreTerminalDetailView value={detail} canEdit={false} onEdit={() => undefined} onStatus={() => undefined} />,
+    );
+    expect(markup).not.toContain(storeTerminalTestIds.edit);
+    expect(markup).not.toContain(storeTerminalTestIds.actionMenu);
   });
 });

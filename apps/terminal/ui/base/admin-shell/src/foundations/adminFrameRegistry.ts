@@ -56,45 +56,47 @@ export type AdminFrameFixture = Readonly<{
   readonly expandedUnitKeys?: readonly string[]
 }>
 
-const fixture = (
-  surfaceForm: AdminFrameFixture['surfaceForm'],
-  page: AdminFrameFixture['page'],
-  state: string,
-  expandedCategory?: AdminFrameFixture['expandedCategory'],
-  expandedUnitKeys?: readonly string[],
-): AdminFrameFixture => Object.freeze({surfaceForm, page, state, ...(expandedCategory === undefined ? {} : {expandedCategory}), ...(expandedUnitKeys === undefined ? {} : {expandedUnitKeys: Object.freeze([...expandedUnitKeys])})})
+type AdminFrameFixtureOptions = Readonly<{
+  readonly surfaceForm: AdminFrameFixture['surfaceForm']
+  readonly page: AdminFrameFixture['page']
+  readonly state: string
+  readonly expandedCategory?: AdminFrameFixture['expandedCategory']
+  readonly expandedUnitKeys?: readonly string[]
+}>
+
+const fixture = ({surfaceForm, page, state, expandedCategory, expandedUnitKeys}: AdminFrameFixtureOptions): AdminFrameFixture => Object.freeze({surfaceForm, page, state, ...(expandedCategory === undefined ? {} : {expandedCategory}), ...(expandedUnitKeys === undefined ? {} : {expandedUnitKeys: Object.freeze([...expandedUnitKeys])})})
 
 export const adminFrameFixtures = Object.freeze({
-  'panel.laptop.normal': fixture('laptop', 'panel', 'normal'),
-  'panel.mobile.normal': fixture('mobile', 'panel', 'normal'),
-  'panel.laptop.empty': fixture('laptop', 'panel', 'empty'),
-  'panel.mobile.empty': fixture('mobile', 'panel', 'empty'),
-  'panel.laptop.loading': fixture('laptop', 'panel', 'loading'),
-  'panel.mobile.loading': fixture('mobile', 'panel', 'loading'),
-  'panel.laptop.error': fixture('laptop', 'panel', 'error'),
-  'panel.mobile.error': fixture('mobile', 'panel', 'error'),
-  'ports.laptop.overview': fixture('laptop', 'ports', 'overview'),
-  'ports.mobile.overview': fixture('mobile', 'ports', 'overview'),
-  'ports.laptop.category-expanded': fixture('laptop', 'ports', 'category-expanded', 'logs', ['logger:info', 'logUpload:uploadLogsForDate']),
-  'ports.mobile.category-expanded': fixture('mobile', 'ports', 'category-expanded', 'logs', ['logger:info', 'logUpload:uploadLogsForDate']),
-  'runtime.laptop.single-surface': fixture('laptop', 'runtime', 'single-surface'),
-  'runtime.mobile.single-surface': fixture('mobile', 'runtime', 'single-surface'),
-  'runtime.laptop.dual-surface': fixture('laptop', 'runtime', 'dual-surface'),
-  'topology.laptop.unavailable': fixture('laptop', 'topology', 'unavailable'),
-  'topology.mobile.unavailable': fixture('mobile', 'topology', 'unavailable'),
-  'topology.laptop.role-choice': fixture('laptop', 'topology', 'role-choice'),
-  'topology.laptop.host-starting': fixture('laptop', 'topology', 'host-starting'),
-  'topology.laptop.host-ready': fixture('laptop', 'topology', 'host-ready'),
-  'topology.laptop.host-error': fixture('laptop', 'topology', 'host-error'),
-  'topology.laptop.pairing': fixture('laptop', 'topology', 'pairing'),
-  'topology.laptop.pair-error': fixture('laptop', 'topology', 'pair-error'),
-  'topology.laptop.master-paired-reachable': fixture('laptop', 'topology', 'master-paired-reachable'),
-  'topology.laptop.master-paired-reconnecting': fixture('laptop', 'topology', 'master-paired-reconnecting'),
-  'topology.laptop.unpairing-master': fixture('laptop', 'topology', 'unpairing-master'),
-  'topology.laptop.slave-paired-reachable': fixture('laptop', 'topology', 'slave-paired-reachable'),
-  'topology.laptop.slave-paired-reconnecting': fixture('laptop', 'topology', 'slave-paired-reconnecting'),
-  'topology.laptop.unpairing-slave': fixture('laptop', 'topology', 'unpairing-slave'),
-  'cross-tab.laptop.dual-physical': fixture('laptop', 'cross-tab', 'dual-physical'),
+  'panel.laptop.normal': fixture({surfaceForm: 'laptop', page: 'panel', state: 'normal'}),
+  'panel.mobile.normal': fixture({surfaceForm: 'mobile', page: 'panel', state: 'normal'}),
+  'panel.laptop.empty': fixture({surfaceForm: 'laptop', page: 'panel', state: 'empty'}),
+  'panel.mobile.empty': fixture({surfaceForm: 'mobile', page: 'panel', state: 'empty'}),
+  'panel.laptop.loading': fixture({surfaceForm: 'laptop', page: 'panel', state: 'loading'}),
+  'panel.mobile.loading': fixture({surfaceForm: 'mobile', page: 'panel', state: 'loading'}),
+  'panel.laptop.error': fixture({surfaceForm: 'laptop', page: 'panel', state: 'error'}),
+  'panel.mobile.error': fixture({surfaceForm: 'mobile', page: 'panel', state: 'error'}),
+  'ports.laptop.overview': fixture({surfaceForm: 'laptop', page: 'ports', state: 'overview'}),
+  'ports.mobile.overview': fixture({surfaceForm: 'mobile', page: 'ports', state: 'overview'}),
+  'ports.laptop.category-expanded': fixture({surfaceForm: 'laptop', page: 'ports', state: 'category-expanded', expandedCategory: 'logs', expandedUnitKeys: ['logger:info', 'logUpload:uploadLogsForDate']}),
+  'ports.mobile.category-expanded': fixture({surfaceForm: 'mobile', page: 'ports', state: 'category-expanded', expandedCategory: 'logs', expandedUnitKeys: ['logger:info', 'logUpload:uploadLogsForDate']}),
+  'runtime.laptop.single-surface': fixture({surfaceForm: 'laptop', page: 'runtime', state: 'single-surface'}),
+  'runtime.mobile.single-surface': fixture({surfaceForm: 'mobile', page: 'runtime', state: 'single-surface'}),
+  'runtime.laptop.dual-surface': fixture({surfaceForm: 'laptop', page: 'runtime', state: 'dual-surface'}),
+  'topology.laptop.unavailable': fixture({surfaceForm: 'laptop', page: 'topology', state: 'unavailable'}),
+  'topology.mobile.unavailable': fixture({surfaceForm: 'mobile', page: 'topology', state: 'unavailable'}),
+  'topology.laptop.role-choice': fixture({surfaceForm: 'laptop', page: 'topology', state: 'role-choice'}),
+  'topology.laptop.host-starting': fixture({surfaceForm: 'laptop', page: 'topology', state: 'host-starting'}),
+  'topology.laptop.host-ready': fixture({surfaceForm: 'laptop', page: 'topology', state: 'host-ready'}),
+  'topology.laptop.host-error': fixture({surfaceForm: 'laptop', page: 'topology', state: 'host-error'}),
+  'topology.laptop.pairing': fixture({surfaceForm: 'laptop', page: 'topology', state: 'pairing'}),
+  'topology.laptop.pair-error': fixture({surfaceForm: 'laptop', page: 'topology', state: 'pair-error'}),
+  'topology.laptop.master-paired-reachable': fixture({surfaceForm: 'laptop', page: 'topology', state: 'master-paired-reachable'}),
+  'topology.laptop.master-paired-reconnecting': fixture({surfaceForm: 'laptop', page: 'topology', state: 'master-paired-reconnecting'}),
+  'topology.laptop.unpairing-master': fixture({surfaceForm: 'laptop', page: 'topology', state: 'unpairing-master'}),
+  'topology.laptop.slave-paired-reachable': fixture({surfaceForm: 'laptop', page: 'topology', state: 'slave-paired-reachable'}),
+  'topology.laptop.slave-paired-reconnecting': fixture({surfaceForm: 'laptop', page: 'topology', state: 'slave-paired-reconnecting'}),
+  'topology.laptop.unpairing-slave': fixture({surfaceForm: 'laptop', page: 'topology', state: 'unpairing-slave'}),
+  'cross-tab.laptop.dual-physical': fixture({surfaceForm: 'laptop', page: 'cross-tab', state: 'dual-physical'}),
 })
 
 export type AdminFrameFixtureKey = keyof typeof adminFrameFixtures
@@ -345,15 +347,17 @@ const topologyPairedControls = (includeHostService: boolean) => Object.freeze([
   adminTestIds.topology.unpair,
 ])
 
-const definition = (
-  id: AdminFrameId,
-  name: string,
-  renderer: AdminFrameRendererKey,
-  fixture: AdminFrameFixtureKey,
-  controlTestIDs: readonly string[],
-  variants: readonly AdminFrameVariant[] = [],
-  bindingKind: AdminFrameBindingKind = 'production-renderer',
-): AdminFrameDefinition => Object.freeze({
+type AdminFrameDefinitionInput = Readonly<{
+  readonly id: AdminFrameId
+  readonly name: string
+  readonly renderer: AdminFrameRendererKey
+  readonly fixture: AdminFrameFixtureKey
+  readonly controlTestIDs: readonly string[]
+  readonly variants?: readonly AdminFrameVariant[]
+  readonly bindingKind?: AdminFrameBindingKind
+}>
+
+const definition = ({id, name, renderer, fixture, controlTestIDs, variants = [], bindingKind = 'production-renderer'}: AdminFrameDefinitionInput): AdminFrameDefinition => Object.freeze({
   id,
   name,
   renderer,
@@ -371,39 +375,39 @@ const variant = (id: string, controlTestIDs: readonly string[], mustNotTestIDs: 
 })
 
 export const adminFrameDefinitions: readonly AdminFrameDefinition[] = Object.freeze([
-  definition('IA-01', 'PANEL-L-NORMAL', 'AdminShellFrameLaptop', 'panel.laptop.normal', laptopPanelControls),
-  definition('IA-02', 'PANEL-M-NORMAL', 'AdminShellFrameMobile', 'panel.mobile.normal', mobilePanelControls),
-  definition('IA-03', 'PANEL-L-EMPTY', 'AdminPanelStateCardLaptop', 'panel.laptop.empty', [...laptopPanelControls, adminTestIds.panel.empty, `${adminTestIds.panel.empty}:reason`]),
-  definition('IA-04', 'PANEL-M-EMPTY', 'AdminPanelStateCardMobile', 'panel.mobile.empty', [...mobilePanelControls, adminTestIds.panel.empty, `${adminTestIds.panel.empty}:reason`]),
-  definition('IA-05', 'PANEL-L-LOADING', 'AdminPanelStateCardLaptop', 'panel.laptop.loading', [...laptopPanelControls, adminTestIds.panel.loading, `${adminTestIds.panel.loading}:content`, `${adminTestIds.panel.loading}:spinner`, `${adminTestIds.panel.loading}:skeleton`, `${adminTestIds.panel.loading}:message`]),
-  definition('IA-06', 'PANEL-M-LOADING', 'AdminPanelStateCardMobile', 'panel.mobile.loading', [...mobilePanelControls, adminTestIds.panel.loading, `${adminTestIds.panel.loading}:content`, `${adminTestIds.panel.loading}:spinner`, `${adminTestIds.panel.loading}:skeleton`, `${adminTestIds.panel.loading}:message`]),
-  definition('IA-07', 'PANEL-L-ERROR', 'AdminPanelStateCardLaptop', 'panel.laptop.error', [...laptopPanelControls, adminTestIds.panel.error, `${adminTestIds.panel.error}:content`, `${adminTestIds.panel.error}:reason`, adminTestIds.panel.retry]),
-  definition('IA-08', 'PANEL-M-ERROR', 'AdminPanelStateCardMobile', 'panel.mobile.error', [...mobilePanelControls, adminTestIds.panel.error, `${adminTestIds.panel.error}:content`, `${adminTestIds.panel.error}:reason`, adminTestIds.panel.retry]),
-  definition('IA-09', 'PORTS-L-OVERVIEW', 'PlatformPortsSectionLaptop', 'ports.laptop.overview', portsOverviewControls),
-  definition('IA-10', 'PORTS-M-OVERVIEW', 'PlatformPortsSectionMobile', 'ports.mobile.overview', portsMobileOverviewControls),
-  definition('IA-11', 'PORTS-L-CATEGORY-EXPANDED', 'PlatformPortsSectionLaptop', 'ports.laptop.category-expanded', [...portsOverviewControls, `${adminTestIds.ports.category('logs', 'row')}:content`, ...portsExpandedItemControls]),
-  definition('IA-12', 'PORTS-M-CATEGORY-EXPANDED', 'PlatformPortsSectionMobile', 'ports.mobile.category-expanded', [...portsMobileOverviewControls, `${adminTestIds.ports.category('logs', 'row')}:content`, ...portsExpandedItemControls]),
-  definition('IA-13', 'RUNTIME-L-SINGLE-SURFACE', 'RuntimeSectionLaptop', 'runtime.laptop.single-surface', runtimeLaptopControls),
-  definition('IA-14', 'RUNTIME-M-SINGLE-SURFACE', 'RuntimeSectionMobile', 'runtime.mobile.single-surface', runtimeMobileBaseControls, [
+  definition({id: 'IA-01', name: 'PANEL-L-NORMAL', renderer: 'AdminShellFrameLaptop', fixture: 'panel.laptop.normal', controlTestIDs: laptopPanelControls}),
+  definition({id: 'IA-02', name: 'PANEL-M-NORMAL', renderer: 'AdminShellFrameMobile', fixture: 'panel.mobile.normal', controlTestIDs: mobilePanelControls}),
+  definition({id: 'IA-03', name: 'PANEL-L-EMPTY', renderer: 'AdminPanelStateCardLaptop', fixture: 'panel.laptop.empty', controlTestIDs: [...laptopPanelControls, adminTestIds.panel.empty, `${adminTestIds.panel.empty}:reason`]}),
+  definition({id: 'IA-04', name: 'PANEL-M-EMPTY', renderer: 'AdminPanelStateCardMobile', fixture: 'panel.mobile.empty', controlTestIDs: [...mobilePanelControls, adminTestIds.panel.empty, `${adminTestIds.panel.empty}:reason`]}),
+  definition({id: 'IA-05', name: 'PANEL-L-LOADING', renderer: 'AdminPanelStateCardLaptop', fixture: 'panel.laptop.loading', controlTestIDs: [...laptopPanelControls, adminTestIds.panel.loading, `${adminTestIds.panel.loading}:content`, `${adminTestIds.panel.loading}:spinner`, `${adminTestIds.panel.loading}:skeleton`, `${adminTestIds.panel.loading}:message`]}),
+  definition({id: 'IA-06', name: 'PANEL-M-LOADING', renderer: 'AdminPanelStateCardMobile', fixture: 'panel.mobile.loading', controlTestIDs: [...mobilePanelControls, adminTestIds.panel.loading, `${adminTestIds.panel.loading}:content`, `${adminTestIds.panel.loading}:spinner`, `${adminTestIds.panel.loading}:skeleton`, `${adminTestIds.panel.loading}:message`]}),
+  definition({id: 'IA-07', name: 'PANEL-L-ERROR', renderer: 'AdminPanelStateCardLaptop', fixture: 'panel.laptop.error', controlTestIDs: [...laptopPanelControls, adminTestIds.panel.error, `${adminTestIds.panel.error}:content`, `${adminTestIds.panel.error}:reason`, adminTestIds.panel.retry]}),
+  definition({id: 'IA-08', name: 'PANEL-M-ERROR', renderer: 'AdminPanelStateCardMobile', fixture: 'panel.mobile.error', controlTestIDs: [...mobilePanelControls, adminTestIds.panel.error, `${adminTestIds.panel.error}:content`, `${adminTestIds.panel.error}:reason`, adminTestIds.panel.retry]}),
+  definition({id: 'IA-09', name: 'PORTS-L-OVERVIEW', renderer: 'PlatformPortsSectionLaptop', fixture: 'ports.laptop.overview', controlTestIDs: portsOverviewControls}),
+  definition({id: 'IA-10', name: 'PORTS-M-OVERVIEW', renderer: 'PlatformPortsSectionMobile', fixture: 'ports.mobile.overview', controlTestIDs: portsMobileOverviewControls}),
+  definition({id: 'IA-11', name: 'PORTS-L-CATEGORY-EXPANDED', renderer: 'PlatformPortsSectionLaptop', fixture: 'ports.laptop.category-expanded', controlTestIDs: [...portsOverviewControls, `${adminTestIds.ports.category('logs', 'row')}:content`, ...portsExpandedItemControls]}),
+  definition({id: 'IA-12', name: 'PORTS-M-CATEGORY-EXPANDED', renderer: 'PlatformPortsSectionMobile', fixture: 'ports.mobile.category-expanded', controlTestIDs: [...portsMobileOverviewControls, `${adminTestIds.ports.category('logs', 'row')}:content`, ...portsExpandedItemControls]}),
+  definition({id: 'IA-13', name: 'RUNTIME-L-SINGLE-SURFACE', renderer: 'RuntimeSectionLaptop', fixture: 'runtime.laptop.single-surface', controlTestIDs: runtimeLaptopControls}),
+  definition({id: 'IA-14', name: 'RUNTIME-M-SINGLE-SURFACE', renderer: 'RuntimeSectionMobile', fixture: 'runtime.mobile.single-surface', controlTestIDs: runtimeMobileBaseControls, variants: [
     variant('single-surface', runtimeMobileReadyControls, [adminTestIds.runtime.displayFactsError]),
     variant('display-facts-error', runtimeMobileErrorControls, [adminTestIds.runtime.surfaceMap, adminTestIds.runtime.mobileSingleSurfaceBoundary]),
-  ]),
-  definition('IA-15', 'RUNTIME-L-DUAL-SURFACE', 'RuntimeSectionLaptop', 'runtime.laptop.dual-surface', runtimeDualLaptopControls),
-  definition('IA-16', 'TOPOLOGY-L-UNAVAILABLE', 'TopologySectionLaptop', 'topology.laptop.unavailable', topologyUnavailableLaptopControls),
-  definition('IA-17', 'TOPOLOGY-M-UNAVAILABLE', 'TopologySectionMobile', 'topology.mobile.unavailable', topologyMobileControls),
-  definition('IA-18', 'TOPOLOGY-L-ROLE-CHOICE', 'TopologySectionLaptop', 'topology.laptop.role-choice', topologyRoleChoiceControls),
-  definition('IA-19', 'TOPOLOGY-L-HOST-STARTING', 'TopologySectionLaptop', 'topology.laptop.host-starting', topologyHostStartingControls),
-  definition('IA-20', 'TOPOLOGY-L-HOST-READY', 'TopologySectionLaptop', 'topology.laptop.host-ready', topologyHostReadyControls),
-  definition('IA-21', 'TOPOLOGY-L-HOST-ERROR', 'TopologySectionLaptop', 'topology.laptop.host-error', topologyHostErrorControls),
-  definition('IA-22', 'TOPOLOGY-L-PAIRING', 'TopologySectionLaptop', 'topology.laptop.pairing', topologyPairingControls),
-  definition('IA-23', 'TOPOLOGY-L-PAIR-ERROR', 'TopologySectionLaptop', 'topology.laptop.pair-error', topologyPairErrorControls),
-  definition('IA-24', 'TOPOLOGY-L-MASTER-PAIRED-REACHABLE', 'TopologySectionLaptop', 'topology.laptop.master-paired-reachable', topologyPairedControls(true)),
-  definition('IA-25', 'TOPOLOGY-L-MASTER-PAIRED-RECONNECTING', 'TopologySectionLaptop', 'topology.laptop.master-paired-reconnecting', topologyPairedControls(true)),
-  definition('IA-26', 'TOPOLOGY-L-UNPAIRING-MASTER', 'TopologySectionLaptop', 'topology.laptop.unpairing-master', topologyPairedControls(true)),
-  definition('IA-27', 'TOPOLOGY-L-SLAVE-PAIRED-REACHABLE', 'TopologySectionLaptop', 'topology.laptop.slave-paired-reachable', topologyPairedControls(false)),
-  definition('IA-28', 'TOPOLOGY-L-SLAVE-PAIRED-RECONNECTING', 'TopologySectionLaptop', 'topology.laptop.slave-paired-reconnecting', topologyPairedControls(false)),
-  definition('IA-29', 'TOPOLOGY-L-UNPAIRING-SLAVE', 'TopologySectionLaptop', 'topology.laptop.unpairing-slave', topologyPairedControls(false)),
-  definition('IA-32', 'CROSS-TAB-L-DUAL-PHYSICAL', 'CrossTabAudit', 'cross-tab.laptop.dual-physical', [...runtimeDualLaptopControls, adminTestIds.topology.pageGate, adminTestIds.topology.pageGateReason], [], 'artifact-only'),
+  ]}),
+  definition({id: 'IA-15', name: 'RUNTIME-L-DUAL-SURFACE', renderer: 'RuntimeSectionLaptop', fixture: 'runtime.laptop.dual-surface', controlTestIDs: runtimeDualLaptopControls}),
+  definition({id: 'IA-16', name: 'TOPOLOGY-L-UNAVAILABLE', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.unavailable', controlTestIDs: topologyUnavailableLaptopControls}),
+  definition({id: 'IA-17', name: 'TOPOLOGY-M-UNAVAILABLE', renderer: 'TopologySectionMobile', fixture: 'topology.mobile.unavailable', controlTestIDs: topologyMobileControls}),
+  definition({id: 'IA-18', name: 'TOPOLOGY-L-ROLE-CHOICE', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.role-choice', controlTestIDs: topologyRoleChoiceControls}),
+  definition({id: 'IA-19', name: 'TOPOLOGY-L-HOST-STARTING', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.host-starting', controlTestIDs: topologyHostStartingControls}),
+  definition({id: 'IA-20', name: 'TOPOLOGY-L-HOST-READY', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.host-ready', controlTestIDs: topologyHostReadyControls}),
+  definition({id: 'IA-21', name: 'TOPOLOGY-L-HOST-ERROR', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.host-error', controlTestIDs: topologyHostErrorControls}),
+  definition({id: 'IA-22', name: 'TOPOLOGY-L-PAIRING', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.pairing', controlTestIDs: topologyPairingControls}),
+  definition({id: 'IA-23', name: 'TOPOLOGY-L-PAIR-ERROR', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.pair-error', controlTestIDs: topologyPairErrorControls}),
+  definition({id: 'IA-24', name: 'TOPOLOGY-L-MASTER-PAIRED-REACHABLE', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.master-paired-reachable', controlTestIDs: topologyPairedControls(true)}),
+  definition({id: 'IA-25', name: 'TOPOLOGY-L-MASTER-PAIRED-RECONNECTING', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.master-paired-reconnecting', controlTestIDs: topologyPairedControls(true)}),
+  definition({id: 'IA-26', name: 'TOPOLOGY-L-UNPAIRING-MASTER', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.unpairing-master', controlTestIDs: topologyPairedControls(true)}),
+  definition({id: 'IA-27', name: 'TOPOLOGY-L-SLAVE-PAIRED-REACHABLE', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.slave-paired-reachable', controlTestIDs: topologyPairedControls(false)}),
+  definition({id: 'IA-28', name: 'TOPOLOGY-L-SLAVE-PAIRED-RECONNECTING', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.slave-paired-reconnecting', controlTestIDs: topologyPairedControls(false)}),
+  definition({id: 'IA-29', name: 'TOPOLOGY-L-UNPAIRING-SLAVE', renderer: 'TopologySectionLaptop', fixture: 'topology.laptop.unpairing-slave', controlTestIDs: topologyPairedControls(false)}),
+  definition({id: 'IA-32', name: 'CROSS-TAB-L-DUAL-PHYSICAL', renderer: 'CrossTabAudit', fixture: 'cross-tab.laptop.dual-physical', controlTestIDs: [...runtimeDualLaptopControls, adminTestIds.topology.pageGate, adminTestIds.topology.pageGateReason], bindingKind: 'artifact-only'}),
 ])
 
 export const adminFrameIds: readonly AdminFrameId[] = Object.freeze(adminFrameDefinitions.map(frame => frame.id))

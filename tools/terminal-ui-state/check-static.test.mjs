@@ -72,6 +72,19 @@ try {
   check = () => runUiStateStaticChecks({uiStatePackageRoot: fixtureRoot, skeletonGraphPath: fixtureGraph})
   assertVector(check())
 
+  const graphOriginal = fs.readFileSync(fixtureGraph, 'utf8')
+  const insertedGraphNode = "  'kernel.base.ui-state-next-test': {\n    batch: 2,\n    plannedKind: 'toolkit',\n    dependencies: [],\n    devDependencies: [],\n  },\n"
+  try {
+    const nextNodeAnchor = "  'ui.base.render': {"
+    assert.ok(graphOriginal.includes(nextNodeAnchor), 'graph insertion anchor must exist')
+    fs.writeFileSync(fixtureGraph, graphOriginal.replace(nextNodeAnchor, insertedGraphNode + nextNodeAnchor))
+    const report = check()
+    printVector('UI_STATE_GRAPH_ENTRY_NON_ADJACENT', report)
+    assertVector(report)
+  } finally {
+    fs.writeFileSync(fixtureGraph, graphOriginal)
+  }
+
   withMutation(
     'src/index.ts',
     source => `${source}\nexport const unexpectedUiStateExport = 1\n`,
@@ -135,7 +148,7 @@ try {
 
   withMutation(
     'src/dependencies.ts',
-    source => `${source}\nimport {moduleName as unexpected} from '@catering-v2s/kernel-base-workflow'\nvoid unexpected\n`,
+    source => `${source}\nimport {moduleName as unexpected} from '@catering-v2s/kernel-base-transport'\nvoid unexpected\n`,
     report => {
       printVector('UI_STATE_RED_UNDECLARED_IMPORT', report)
       assertVector(report, ['ui-state-package-boundary'])
@@ -250,14 +263,14 @@ try {
     },
   )
 
-  const graphOriginal = fs.readFileSync(fixtureGraph, 'utf8')
+  const graphOriginalForKindMutation = fs.readFileSync(fixtureGraph, 'utf8')
   try {
-    fs.writeFileSync(fixtureGraph, graphOriginal.replace("kind: 'owner'", "plannedKind: 'owner'"))
+    fs.writeFileSync(fixtureGraph, graphOriginalForKindMutation.replace("kind: 'owner'", "plannedKind: 'owner'"))
     const report = check()
     printVector('UI_STATE_RED_GRAPH_KIND', report)
     assertVector(report, ['ui-state-skeleton-graph'])
   } finally {
-    fs.writeFileSync(fixtureGraph, graphOriginal)
+    fs.writeFileSync(fixtureGraph, graphOriginalForKindMutation)
   }
 } finally {
   fs.rmSync(fixtureRoot, {recursive: true, force: true})

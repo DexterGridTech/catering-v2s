@@ -9,14 +9,14 @@
   "ownerFacts": {
     "scopeKind": "STORE",
     "terminalCreatedByReadiness": true,
-    "terminalConfiguration": "ORDERING_CASHIER_WITHOUT_PRINTERS"
+    "terminalConfiguration": "ORDERING_AND_KITCHEN_WITH_TWO_PRINTERS"
   },
   "caseFixtures": [
     {"caseId": "terminal-list-detail", "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE"},
     {"caseId": "terminal-create-basic", "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE"},
     {"caseId": "terminal-create-configuration", "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE"},
     {"caseId": "terminal-edit-configuration", "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE"},
-    {"caseId": "terminal-status-actions", "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE"},
-    {"caseId": "terminal-readonly-state", "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE"}
+    {"caseId": "terminal-readonly-state", "fixtureRef": "FIXTURE-STORE-TERMINAL-READONLY"},
+    {"caseId": "terminal-status-actions", "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE"}
   ]
 }

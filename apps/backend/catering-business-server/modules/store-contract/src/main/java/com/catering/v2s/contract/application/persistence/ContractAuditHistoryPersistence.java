@@ -1,11 +1,11 @@
 package com.catering.v2s.contract.application.persistence;
 
+import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditHistoryItem;
 import com.catering.v2s.audit.contract.AuditHistoryPage;
 import com.catering.v2s.audit.contract.AuditHistoryResultSetReader;
 import com.catering.v2s.audit.contract.AuditReadScope;
 import com.catering.v2s.audit.contract.AuditTarget;
-import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.organization.api.OrganizationVisibilityLookup.VisibleOrganizationFacts;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import java.sql.Array;
@@ -37,15 +37,18 @@ public class ContractAuditHistoryPersistence {
         if (!Boolean.TRUE.equals(exists))
             throw new com.catering.v2s.contract.application.ContractCommandService.ContractNotFoundException();
         long total = jdbc.queryForObject(
-                ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_SELECT_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_ENTITY_TYPE_STORE_CONTRACT_ENTITY_REF_TEXT,
+                ContractAuditHistoryServiceSql
+                                .CONTRACT_AUDIT_HISTORY_SERVICE_SELECT_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + ContractAuditHistoryServiceSql
+                                .CONTRACT_AUDIT_HISTORY_SERVICE_ENTITY_TYPE_STORE_CONTRACT_ENTITY_REF_TEXT,
                 Long.class,
                 scope.workspaceUuid(),
                 scope.groupWorkspaceKey(),
                 target.entityRef());
         List<AuditHistoryItem> items = jdbc.query(
                 ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_SELECT_OCCURRED_AT_EPOCH_MILLIS
-                        + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_AUDIT_EVENT_CHANGES_JSON_TEXT_WORKSPACE_UUID
+                        + ContractAuditHistoryServiceSql
+                                .CONTRACT_AUDIT_HISTORY_SERVICE_AUDIT_EVENT_CHANGES_JSON_TEXT_WORKSPACE_UUID
                         + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_A
                         + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_CONDITION_ENTITY_TYPE
                         + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_DESC_DIRECTION
@@ -86,12 +89,17 @@ public class ContractAuditHistoryPersistence {
     }
 
     public AuditHistoryPage readOperationsAuditProjection(
-            AuditReadScope scope, VisibleOrganizationFacts visibleFacts, AuditTarget target, UUID contractId,
-            long page, long pageSize) {
+            AuditReadScope scope,
+            VisibleOrganizationFacts visibleFacts,
+            AuditTarget target,
+            UUID contractId,
+            long page,
+            long pageSize) {
         AuditHistoryResultSetReader.AuthorizedProjection value = ReadBudgetComponent.measure(
                 ReadBudgetComponent.Component.PRIMARY_QUERY,
                 () -> jdbc.query(
-                        ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_CTE_LATERAL_STORE_ID_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_FOUND,
+                        ContractAuditHistoryServiceSql
+                                .CONTRACT_AUDIT_HISTORY_SERVICE_CTE_LATERAL_STORE_ID_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_FOUND,
                         statement -> {
                             statement.setObject(1, contractId);
                             statement.setObject(2, scope.workspaceUuid());

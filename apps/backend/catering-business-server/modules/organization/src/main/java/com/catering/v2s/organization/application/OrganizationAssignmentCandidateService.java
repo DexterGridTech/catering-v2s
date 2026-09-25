@@ -1,9 +1,9 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.OrganizationAssignmentCandidatePersistence;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationAssignmentCandidateLookup;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
+import com.catering.v2s.organization.application.persistence.OrganizationAssignmentCandidatePersistence;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,15 +46,9 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
                 yield List.of(new AssignmentCandidate(type, id, path.displayPath(), path.nodes()));
             }
             case ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> candidates(
-                    workspaceUuid,
-                    key,
-                    type,
-                    persistence.enabledOrganizationNodeIds(workspaceUuid, key, type));
+                    workspaceUuid, key, type, persistence.enabledOrganizationNodeIds(workspaceUuid, key, type));
             case ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE -> candidates(
-                    workspaceUuid,
-                    key,
-                    type,
-                    persistence.enabledEntityIds(workspaceUuid, key, type));
+                    workspaceUuid, key, type, persistence.enabledEntityIds(workspaceUuid, key, type));
             default -> throw new IllegalArgumentException("unsupported assignment candidate type");
         };
     }
@@ -133,9 +127,7 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
     }
 
     private List<AssignmentCandidate> assignmentCandidates(
-            UUID workspaceUuid,
-            String key,
-            List<OrganizationAssignmentCandidatePersistence.CandidateRow> rows) {
+            UUID workspaceUuid, String key, List<OrganizationAssignmentCandidatePersistence.CandidateRow> rows) {
         if (rows.isEmpty()) return List.of();
         List<OrganizationTaskPathLookup.TaskPathRef> refs = rows.stream()
                 .map(row ->
@@ -152,5 +144,4 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
                 })
                 .toList();
     }
-
 }

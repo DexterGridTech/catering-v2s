@@ -1,6 +1,5 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAccountPersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
@@ -9,6 +8,7 @@ import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.catering.v2s.workspace.iam.api.WorkspaceAccountReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog.UserManagementAction;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAccountPersistence;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;

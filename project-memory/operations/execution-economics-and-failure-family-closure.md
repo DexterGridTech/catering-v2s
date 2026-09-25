@@ -69,3 +69,13 @@ sourceRefs: ["doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-
 **凡能静态确定的,必须在第一次动态运行前全部确定完。**
 即使静态复核花两小时,也比再来 20 次"跑—失败—改—再跑"便宜。
 这条是本仓"先 focused 后 all""对账前移""denominator 冻结"等要求的共同经济学依据。
+
+## 2026-09-24 复发实测(门店终端批)
+
+上述条款早已写入本文、实施任务模板与 L2 规范,本批仍原样复发:L2 跑了 36 次只通过 1 次,且那次在旧字节上;
+同一失败族 3 分钟内连续 3 次;一个场景约 18 次失败;reset 之后 seed 在 49 毫秒内静态失败;仓内没有任何动态前准入记录。
+结论:**只写成文字的准入,在按下运行键的那一刻不起作用。** 自 2026-09-25 起,动态前准入以
+`doc/platform/implementation-task-template.md` 的「动态前整体准入」为唯一正本,并由 L2 运行器入口检查
+(`doc/platform/browser-l2-execution-standard.md` §4.1);状态报告必须写「当前字节上的最新运行」与「最后一次通过」两行。
+来源:`doc/review/platform/2026-09-25-v2s-store-terminal-delivery-retrospective-claude.md`。
+本次复发的工具化关闭点已落到同一族的三个入口：`scripts/test/browser-l2-runtime.mjs` 在 readiness/run 前强制校验准入摘要、独立复核记录与失败族，`scripts/dev/r5-complete-seed-executor.mjs --dry-run` 在父流程内验证终端后置计划并回传子阶段首败，`scripts/dev/r5-reset.mjs` 在任何受管停止或 DROP DATABASE 前强制通过父 dry-run；对应 focused red case 必须分别证明缺准入、准入 BLOCKED、准入后控制面变更、同一失败族无变更重跑和 dry-run 失败阻断 reset。该三入口是本次实测失败的门级根因修复，不新增重复 memory 条目。

@@ -138,8 +138,26 @@ export function validateFixtureSeedStages(fixture) {
   return Object.freeze({stageIds: [...stageIds], components: R5_FIXTURE_STAGE_COMPONENTS});
 }
 
+export function validateFixtureContractPhaseNames(fixture) {
+  const stable = fixture?.stableFixtures;
+  const stores = new Map(collection(stable?.organization?.stores, "organization.stores").map((store) => [store.key, store]));
+  const projects = new Map(collection(stable?.organization?.projects, "organization.projects").map((project) => [project.key, project]));
+  for (const contract of collection(stable?.contracts, "contracts")) {
+    if (typeof contract?.phaseNameSnapshot !== "string" || !contract.phaseNameSnapshot.trim()) {
+      throw new Error(`R5_SEED_FIXTURE_CONTRACT_PHASE_NAME_MISSING:${contract?.key ?? "UNKNOWN"}`);
+    }
+    const store = stores.get(contract.store);
+    const project = projects.get(store?.project);
+    if (!project || !collection(project.phases, `project.phases:${project.key}`).includes(contract.phaseNameSnapshot)) {
+      throw new Error(`R5_SEED_FIXTURE_CONTRACT_PHASE_NAME_INVALID:${contract?.key ?? "UNKNOWN"}`);
+    }
+  }
+  return Object.freeze({contractCount: collection(stable?.contracts, "contracts").length});
+}
+
 export function validateFixtureContract(fixture) {
   const counts = validateFixtureExpectedCounts(fixture);
   const stages = validateFixtureSeedStages(fixture);
-  return Object.freeze({...counts, ...stages});
+  const phaseNames = validateFixtureContractPhaseNames(fixture);
+  return Object.freeze({...counts, ...stages, ...phaseNames});
 }

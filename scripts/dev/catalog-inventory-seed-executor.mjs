@@ -14,6 +14,7 @@ import {buildSeedReport, loadGeneratedOperationRegistry, materializeGeneratedOpe
 import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents, validateManagedDiagnosticTransport} from "./managed-diagnostic-protocol.mjs";
 import {canonicalStartToken} from "./managed-process-tree.mjs";
 import {validateRemoteJavaControl} from "./r5-remote-java.mjs";
+import {createSeedHttpClient} from "./seed-http-client.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const fixturePath = path.join(root, "contracts/policy/catalog-inventory-fixture-catalog.json");
@@ -919,27 +920,34 @@ async function execute() {
   if (!/^http:\/\/127\.0\.0\.1:\d{4,5}$/.test(baseUrl)) fail("SEED_MANAGED_HTTP_ENDPOINT_INVALID");
   const cookies = (value) => value?.split(",").map((part) => part.split(";", 1)[0].trim()).filter(Boolean).join("; ") || null;
   const key = (stage) => `catalog-seed-${sha256(`${runId}:${stage}`).slice(0, 48)}`;
-  const request = async (stage, operationId, pathParameters = {}, options = {}) => {
-    const operation = resolveGeneratedOperationById(combined, operationId);
-    const pathname = materializeGeneratedOperationPath(operation, {pathParameters, queryParameters: options.queryParameters || {}});
-    const correlationId = `catalog-${randomUUID()}`;
-    const headers = {Accept: "application/json"};
-    if (options.cookie) headers.Cookie = options.cookie;
-    if (options.brandRef) headers["X-Workspace-Brand-Ref"] = options.brandRef;
-    Object.assign(headers, options.headers || {});
-    Object.assign(headers, buildManagedDiagnosticHeaders({manifest, credentials, operationId, routeTemplate: operation.path, correlationId}));
-    if (operation.method !== "GET") headers["Idempotency-Key"] = key(stage);
-    let body; if (options.form) body = options.form; else if (options.body !== undefined) { headers["Content-Type"] = "application/json"; body = JSON.stringify(options.body); }
-    const began = Date.now(); let response;
-    try { response = await fetch(`${baseUrl}${pathname}`, {method: operation.method, headers, body, signal: AbortSignal.timeout(30_000)}); }
-    catch (error) { firstFailure ??= `${stage}_NETWORK`; phase(stage, "FAIL", {operationId, status: 0, reason: compact(error.message)}); throw error; }
-    const text = await response.text(); let json = null; try { json = text ? JSON.parse(text) : null; } catch { }
-    const requestId = response.headers.get("x-request-id"); const accepted = (options.expected || [200]).includes(response.status);
-    calls.push({stageId: stage, managedDevRunId: manifest.runId, correlationId: response.headers.get("x-correlation-id") || correlationId, requestId, owner: operation.owner, consumerFace: operation.consumerFaces?.join(",") || null, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, durationMs: Date.now() - began, outcome: accepted ? "SUCCEEDED" : "FAILED"});
-    phase(stage, accepted ? "PASS" : "FAIL", {operationId, status: response.status, requestId, ...(accepted ? {} : {problemCode: json?.errorCode || json?.code || "UNCLASSIFIED"})});
-    if (!accepted) { firstFailure ??= `${stage}_HTTP_${response.status}`; const error = new Error(firstFailure); error.response = json; throw error; }
-    return {json, cookie: cookies(response.headers.get("set-cookie"))};
-  };
+  const request = createSeedHttpClient({
+    baseUrl,
+    resolveOperation: operationId => resolveGeneratedOperationById(combined, operationId),
+    materializeOperationPath: materializeGeneratedOperationPath,
+    buildDiagnosticHeaders: buildManagedDiagnosticHeaders,
+    manifest,
+    credentials,
+    calls,
+    correlationPrefix: "catalog",
+    timeoutMs: 30_000,
+    idempotencyKeyFor: stage => key(stage),
+    cookieFromHeaders: headers => cookies(headers.get("set-cookie")),
+    failureFactory: (code, details) => {
+      const error = new Error(code);
+      if (details.json !== undefined) error.response = details.json;
+      return error;
+    },
+    onFailure: code => { firstFailure ??= code; },
+    onPhase: (stage, status, details) => phase(stage, status, {
+      ...details,
+      status: details.httpStatus,
+    }),
+    decorateCall: (call, {operation}) => ({
+      managedDevRunId: manifest.runId,
+      owner: operation.owner,
+      consumerFace: operation.consumerFaces?.join(",") || null,
+    }),
+  }).request;
   const readCompleteCollection = async ({
     stage,
     operationId,

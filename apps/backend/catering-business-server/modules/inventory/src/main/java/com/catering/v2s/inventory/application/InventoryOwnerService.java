@@ -1,6 +1,5 @@
 package com.catering.v2s.inventory.application;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
@@ -14,6 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -88,7 +88,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             ObjectNode request,
             String requestId,
             String dataNodeType) {
-        return targetService.readTargetBusinessHistory(dataNodeRef, brandRef, targetRef, request, requestId, dataNodeType);
+        return targetService.readTargetBusinessHistory(
+                dataNodeRef, brandRef, targetRef, request, requestId, dataNodeType);
     }
 
     @Override
@@ -136,7 +137,17 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             UUID workspaceUuid,
             String groupWorkspaceKey,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        return commandRouter.write(operationId, dataNodeRef, brandRef, request, requestId, idempotencyKey, dataNodeType, workspaceUuid, groupWorkspaceKey, ownerScopeGrant);
+        return commandRouter.write(
+                operationId,
+                dataNodeRef,
+                brandRef,
+                request,
+                requestId,
+                idempotencyKey,
+                dataNodeType,
+                workspaceUuid,
+                groupWorkspaceKey,
+                ownerScopeGrant);
     }
 
     @Override
@@ -191,7 +202,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             UUID itemRef,
             UnitSnapshot itemBaseMeasureUnit,
             List<CatalogSkuBaseMeasureUnit> skuBaseMeasureUnits) {
-        lifecycleService.validateCatalogItemBaseMeasureUnitTransition(context, itemRef, itemBaseMeasureUnit, skuBaseMeasureUnits);
+        lifecycleService.validateCatalogItemBaseMeasureUnitTransition(
+                context, itemRef, itemBaseMeasureUnit, skuBaseMeasureUnits);
     }
 
     @Override
@@ -206,7 +218,17 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             String groupWorkspaceKey,
             String targetDataNodeType,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        return copyService.copy(sourceDataNodeRef, targetDataNodeRef, brandRef, request, requestId, idempotencyKey, workspaceUuid, groupWorkspaceKey, targetDataNodeType, ownerScopeGrant);
+        return copyService.copy(
+                sourceDataNodeRef,
+                targetDataNodeRef,
+                brandRef,
+                request,
+                requestId,
+                idempotencyKey,
+                workspaceUuid,
+                groupWorkspaceKey,
+                targetDataNodeType,
+                ownerScopeGrant);
     }
 
     @Override
@@ -225,7 +247,15 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             String groupWorkspaceKey,
             String targetDataNodeType,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        return copyService.preflightCopy(sourceDataNodeRef, targetDataNodeRef, brandRef, request, workspaceUuid, groupWorkspaceKey, targetDataNodeType, ownerScopeGrant);
+        return copyService.preflightCopy(
+                sourceDataNodeRef,
+                targetDataNodeRef,
+                brandRef,
+                request,
+                workspaceUuid,
+                groupWorkspaceKey,
+                targetDataNodeType,
+                ownerScopeGrant);
     }
 
     @Override
@@ -373,7 +403,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     @Override
     public JsonNode readCatalogInventoryConsumptionTargetCandidates(
             String scope, String brand, ObjectNode request, String requestId, String dataNodeType) {
-        return bomService.readCatalogInventoryConsumptionTargetCandidates(scope, brand, request, requestId, dataNodeType);
+        return bomService.readCatalogInventoryConsumptionTargetCandidates(
+                scope, brand, request, requestId, dataNodeType);
     }
 
     @Override
@@ -387,7 +418,16 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             String groupWorkspaceKey,
             String dataNodeType,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        return bomService.ensureCatalogInventoryTarget(scope, brand, request, requestId, idempotencyKey, workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
+        return bomService.ensureCatalogInventoryTarget(
+                scope,
+                brand,
+                request,
+                requestId,
+                idempotencyKey,
+                workspaceUuid,
+                groupWorkspaceKey,
+                dataNodeType,
+                ownerScopeGrant);
     }
 
     @Override
@@ -407,7 +447,16 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             String groupWorkspaceKey,
             String dataNodeType,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        return bomService.saveCatalogProductBom(scope, brand, request, requestId, idempotencyKey, workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
+        return bomService.saveCatalogProductBom(
+                scope,
+                brand,
+                request,
+                requestId,
+                idempotencyKey,
+                workspaceUuid,
+                groupWorkspaceKey,
+                dataNodeType,
+                ownerScopeGrant);
     }
 
     @Override

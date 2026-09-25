@@ -117,7 +117,12 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
     public WorkspaceAdministrationPage list(WorkspaceAdministrationPageRequest request) {
         WorkspaceAdministrationPersistence.PageResult result = persistence.page(request);
         return new WorkspaceAdministrationPage(
-                result.items(), request.page(), request.pageSize(), result.total(), request.sortKey(), request.sortDirection());
+                result.items(),
+                request.page(),
+                request.pageSize(),
+                result.total(),
+                request.sortKey(),
+                request.sortDirection());
     }
 
     @Transactional(readOnly = true)
@@ -222,15 +227,17 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
         if ("REPLACE".equals(resolvedIntent))
             assets.claim(
                     targetLogo, current.workspaceUuid(), current.groupWorkspaceKey(), requiredGrant(logoBindGrant));
-        WorkspaceAdministrationPersistence.UpdateResult updatedRow = persistence.updateDisplay(
-                name.trim(),
-                requiredName(name),
-                requiredTitle(operationsTitle, name),
-                optionalNotes(notes),
-                targetLogo == null ? null : targetLogo.toString(),
-                time.currentEpochMillis(),
-                requiredKey(key),
-                expectedVersion).orElseThrow(WorkspaceVersionConflictException::new);
+        WorkspaceAdministrationPersistence.UpdateResult updatedRow = persistence
+                .updateDisplay(
+                        name.trim(),
+                        requiredName(name),
+                        requiredTitle(operationsTitle, name),
+                        optionalNotes(notes),
+                        targetLogo == null ? null : targetLogo.toString(),
+                        time.currentEpochMillis(),
+                        requiredKey(key),
+                        expectedVersion)
+                .orElseThrow(WorkspaceVersionConflictException::new);
         if (previousLogoAssetRef != null && !previousLogoAssetRef.equals(targetLogo))
             assets.release(previousLogoAssetRef, current.workspaceUuid());
         WorkspaceAdministrationReadback updated = updatedRow.readback();
@@ -264,11 +271,7 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
             String key, String status, long expectedVersion, AuditActor actor) {
         if (!"ENABLED".equals(status) && !"DISABLED".equals(status)) throw new WorkspaceStatusInvalidException();
         long now = time.currentEpochMillis();
-        int changed = persistence.transitionStatus(
-                status,
-                now,
-                requiredKey(key),
-                expectedVersion);
+        int changed = persistence.transitionStatus(status, now, requiredKey(key), expectedVersion);
         if (changed == 0) throw new WorkspaceVersionConflictException();
         WorkspaceAdministrationReadback updated = require(key);
         audit(

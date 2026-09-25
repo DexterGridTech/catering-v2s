@@ -1,6 +1,6 @@
 {
   "generated": true,
-  "sourceSha256": "a2fa58ab2df72f0ce21352295f4f58a6ab06905a636cd6b5b0eedf57b8bdd292",
+  "sourceSha256": "4781c98eb12af0e83eeab190d99c2e0861a42fffbd78cffa5e63b06e771d092c",
   "components": {
     "schemas": {
       "StoreTerminalDeviceTypeKey": {
@@ -43,15 +43,13 @@
           "TABLE_AREA",
           "NO_TABLE",
           "DELIVERY",
-          "PRODUCTION_TAG",
-          "NONE"
+          "PRODUCTION_TAG"
         ],
         "x-enum-labels": {
           "TABLE_AREA": "桌台区",
           "NO_TABLE": "无桌台",
           "DELIVERY": "外卖",
-          "PRODUCTION_TAG": "生产标签",
-          "NONE": "无范围"
+          "PRODUCTION_TAG": "生产标签"
         }
       },
       "StoreTerminalSceneKey": {

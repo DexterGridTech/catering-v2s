@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
-import com.catering.v2s.catalog.application.CatalogProductionTagOwnerService;
 import com.catering.v2s.catalog.application.persistence.CatalogProductionTagOwnerPersistence;
 import com.catering.v2s.inventory.application.InventoryOwnerService;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
@@ -3288,11 +3287,9 @@ class CatalogCategoryOwnerIntegrationTest {
         RecordingJdbcTemplate recordingJdbc = new RecordingJdbcTemplate(dataSource());
         InventoryOwnerService recordingInventory =
                 new InventoryOwnerService(recordingJdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L);
-        CatalogProductionTagOwnerService recordingProduction =
-                new CatalogProductionTagOwnerService(
-                new CatalogProductionTagOwnerPersistence(
-                                recordingJdbc, (TimeProvider) () -> 1_785_000_000_000L),
-                        MAPPER);
+        CatalogProductionTagOwnerService recordingProduction = new CatalogProductionTagOwnerService(
+                new CatalogProductionTagOwnerPersistence(recordingJdbc, (TimeProvider) () -> 1_785_000_000_000L),
+                MAPPER);
         CatalogOwnerService recordingService = new CatalogOwnerService(
                 recordingJdbc,
                 MAPPER,
@@ -4897,9 +4894,9 @@ class CatalogCategoryOwnerIntegrationTest {
             JdbcTemplate taskJdbc = new JdbcTemplate(dataSource);
             InventoryOwnerService taskInventory =
                     new InventoryOwnerService(taskJdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L);
-            CatalogProductionTagOwnerService taskProduction =
-                new CatalogProductionTagOwnerService(
-                new CatalogProductionTagOwnerPersistence(taskJdbc, (TimeProvider) () -> 1_785_000_000_000L), MAPPER);
+            CatalogProductionTagOwnerService taskProduction = new CatalogProductionTagOwnerService(
+                    new CatalogProductionTagOwnerPersistence(taskJdbc, (TimeProvider) () -> 1_785_000_000_000L),
+                    MAPPER);
             CatalogOwnerService taskCatalog = new CatalogOwnerService(
                     taskJdbc,
                     MAPPER,

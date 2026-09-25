@@ -14,6 +14,7 @@ const POLICY_PATH = "contracts/policy/catalog-inventory-copy-policy.json";
 const FIXTURE_PATH = "contracts/policy/catalog-inventory-fixture-catalog.json";
 const FIXTURE_SCHEMA_PATH = "contracts/policy/catalog-inventory-fixture-catalog.schema.json";
 const MEDIA_CATALOG_PATH = "contracts/policy/catalog-inventory-media-assets.json";
+const CATALOG_SOURCE_DIR = "contracts/policy/catalog-inventory-source/items";
 const DESIGN_COVERAGE_PATH = "contracts/policy/catalog-inventory-design-byte-coverage.json";
 const REFERENCE_PATH_MATRIX = "contracts/policy/catalog-inventory-reference-path-matrix.json";
 const ASSERTION_PATH = "contracts/policy/catalog-inventory-assertion-matrix.json";
@@ -79,6 +80,32 @@ function hash(value) { return crypto.createHash("sha256").update(value).digest("
 function fileHash(rel) { return hash(fs.readFileSync(abs(rel))); }
 function fail(message) { throw new Error(message); }
 function exact(left, right) { return JSON.stringify([...left].sort()) === JSON.stringify([...right].sort()); }
+function catalogSourceFiles() {
+  const directory = abs(CATALOG_SOURCE_DIR);
+  expect(fs.existsSync(directory) && fs.statSync(directory).isDirectory(), "P1_CATALOG_SOURCE_DIRECTORY");
+  const files = fs.readdirSync(directory).filter((name) => name.endsWith(".json")).sort();
+  expect(files.length === 5, "P1_CATALOG_SOURCE_FILE_COUNT");
+  return files;
+}
+function validateCatalogSourceClosure(mediaCatalog) {
+  expect(mediaCatalog.sourceBindings?.catalogItemSourceDirectory === CATALOG_SOURCE_DIR, "P1_CATALOG_SOURCE_BINDING");
+  const files = catalogSourceFiles();
+  const codes = new Set();
+  let itemCount = 0;
+  for (const fileName of files) {
+    const document = JSON.parse(fs.readFileSync(path.join(abs(CATALOG_SOURCE_DIR), fileName), "utf8"));
+    expect(document && document.items && typeof document.items === "object" && !Array.isArray(document.items), "P1_CATALOG_SOURCE_DOCUMENT:" + fileName);
+    for (const [fixtureKey, item] of Object.entries(document.items)) {
+      itemCount += 1;
+      expect(fixtureKey && item?.catalogItemCode && !codes.has(item.catalogItemCode), "P1_CATALOG_SOURCE_CODE:" + fileName + ":" + fixtureKey);
+      expect(mediaCatalog.assets?.[item.mediaAssetKey], "P1_CATALOG_SOURCE_MEDIA_KEY:" + item.catalogItemCode);
+      codes.add(item.catalogItemCode);
+    }
+  }
+  expect(itemCount === 73, "P1_CATALOG_SOURCE_ITEM_COUNT");
+  expect(codes.size === itemCount, "P1_CATALOG_SOURCE_CODE_COUNT");
+  return {files, itemCount};
+}
 function expect(condition, message) { if (!condition) fail(message); }
 function cloneWithout(value, field) { const copy = JSON.parse(JSON.stringify(value)); delete copy[field]; return copy; }
 function digest(value, field) { return hash(JSON.stringify(cloneWithout(value, field), null, 2) + "\n"); }
@@ -631,6 +658,7 @@ function validate(root = ROOT) {
   const operationDesign = readJson(OPERATION_DESIGN_PATH);
   const openapi = readJson(OPENAPI_ROOT_PATH);
   assertL2LocatorBindingSourceGuard();
+  const catalogSourceClosure = validateCatalogSourceClosure(mediaCatalog);
 
   expect(shape.revision === REVISION, "P1_SHAPE_REVISION");
   expect(designCoverage.schemaVersion === 1 && designCoverage.kind === "catalog-inventory-design-byte-coverage", "P1_DESIGN_COVERAGE_POLICY_IDENTITY");
@@ -768,8 +796,8 @@ function validate(root = ROOT) {
   expect(fixtures.seedExecutionPlan.catalogCreate?.operationId === "createOperationsCatalogItem" && fixtures.seedExecutionPlan.catalogCreate.usesReturnedAssetRefs === true, "P1_SEED_REAL_CATALOG_CREATE");
   expect(fixtures.seedExecutionPlan.cleanup?.seed?.strategy === "PASS_PRESERVED_DEV_STATE" && fixtures.seedExecutionPlan.cleanup.seed.destructiveCleanupOwner === "r5-reset" && fixtures.seedExecutionPlan.cleanup.reset?.strategy === "MANAGED_RESET_RUN_SCOPED_REVERT" && fixtures.seedExecutionPlan.cleanup.reset.mediaPurgeRequired === true && fixtures.seedExecutionPlan.cleanup.reset.mediaNamespace === "run-scoped" && fixtures.seedExecutionPlan.cleanup.businessAndCleanupSeparate === true, "P1_RESET_MEDIA_CLEANUP");
   expect(fixtures.seedDatasets.every((entry) => entry.setupChannel === "P2_HTTP_OWNER_APIS" && entry.entities.mediaAssets?.length > 0 && entry.mediaAssetKeys?.length > 0), "P1_SEED_MEDIA_BINDINGS");
-  expect(Object.keys(mediaCatalog.assets || {}).length === 34 && mediaCatalog.sourceBindings?.v4MediaDirectory && mediaCatalog.sourceBindings?.v4AssetManifest && mediaCatalog.sourceBindings?.v4CatalogItemSources, "P1_V4_MEDIA_COVERAGE");
-  expect(mediaCatalog.coverage?.v4CatalogItemCount === 73 && mediaCatalog.coverage?.v4MediaAssetCount === 34 && mediaCatalog.coverage?.p1RepresentativeSeedDatasetCount === 5 && mediaCatalog.coverage?.fullCatalogParityRequiredInP2 === true && mediaCatalog.coverage?.reductionIsNotFinalSeedPolicy === true, "P1_V4_SEED_PARITY_COVERAGE");
+  expect(Object.keys(mediaCatalog.assets || {}).length === 34 && mediaCatalog.sourceBindings?.mediaDirectory && mediaCatalog.sourceBindings?.catalogItemSourceDirectory, "P1_CATALOG_MEDIA_COVERAGE");
+  expect(mediaCatalog.coverage?.catalogItemCount === 73 && mediaCatalog.coverage?.mediaAssetCount === 34 && mediaCatalog.coverage?.p1RepresentativeSeedDatasetCount === 5 && mediaCatalog.coverage?.fullCatalogParityRequiredInP2 === true && mediaCatalog.coverage?.reductionIsNotFinalSeedPolicy === true, "P1_CATALOG_SEED_PARITY_COVERAGE");
   for (const [assetKey, asset] of Object.entries(mediaCatalog.assets || {})) {
     const assetPath = "contracts/policy/catalog-inventory-p1-media/" + asset.fileName;
     expect(fs.existsSync(abs(assetPath)) && fileHash(assetPath) === asset.sha256, "P1_MEDIA_ASSET_HASH:" + assetKey);
@@ -863,7 +891,7 @@ function validate(root = ROOT) {
     expect(targeted.get(operationId).logicSteps.length >= 3 && targeted.get(operationId).logicSteps.some((step) => /ledger|balance|configuration|CAS/i.test(step.action)), "P1_INVENTORY_LOGIC_MISSING:" + operationId);
   }
 
-  return {shape, edge, placement, fixtures, apiScenarios, l2Scenarios, assertions, designByteCoverage};
+  return {shape, edge, placement, fixtures, apiScenarios, l2Scenarios, assertions, designByteCoverage, catalogSourceClosure};
 }
 
 function walk(directory) {
@@ -1023,6 +1051,7 @@ function writeEvidence() {
     SHAPE_PATH, READ_MODEL_PATH, EDGE_PATH, PLACEMENT_PATH, POLICY_PATH, FIXTURE_PATH,
     "contracts/policy/catalog-inventory-fixture-catalog.schema.json", ASSERTION_PATH, API_SCENARIO_PATH, L2_SCENARIO_PATH,
     "contracts/policy/catalog-inventory-media-assets.json", ...mediaFiles.map((fileName) => "contracts/policy/catalog-inventory-p1-media/" + fileName),
+    ...result.catalogSourceClosure.files.map((fileName) => CATALOG_SOURCE_DIR + "/" + fileName),
     OPENAPI_ROOT_PATH, "contracts/catalog/CatalogInventoryShapeManifest.java", GENERATED_EDGE_JAVA,
     "contracts/catalog/catalogInventoryShapeManifest.ts", GENERATED_EDGE_TS, "scripts/generate/catalog-inventory-p1.mjs", "tools/catalog-inventory-p1/cli.mjs"
   ];
@@ -1034,18 +1063,19 @@ function writeEvidence() {
       generation: "PASS", p1Checker: "PASS", redMutationSelfTest: "PASS", openapiReachability: "PASS", schemaShape: "PASS", designFieldCoverage: "PASS", closedFindingRegression: "PASS", typeConventions: "PASS", generatedDesignCoverage: "PASS", fixtureSchemaValidation: "PASS", caseDiscriminators: "PASS", seedRealAssetBindings: "PASS", fixtureScenarioExactSet: "PASS", shapeSurfaces: "PASS", codeLayout: "PASS",
       javaCompile: "PASS", typescriptSyntax: "PASS", standardsCoverage: "PASS", projectMemory: "PASS"
     },
-    denominators: {operations: result.edge.operations.length, shapes: result.shape.shapes.length, designModels: result.designByteCoverage.modelCount, designFieldPaths: result.designByteCoverage.fieldCount, closedFindingRows: result.designByteCoverage.closedFindingCount, typeConventions: result.designByteCoverage.typeConventionCount, apiScenarioDefinitions: result.apiScenarios.scenarioCount, apiCases: result.apiScenarios.caseCount, l2ScenarioDefinitions: result.l2Scenarios.scenarioCount, l2Cases: result.l2Scenarios.caseCount, iaIds: result.assertions.iaIdCount, seedDatasets: result.fixtures.seedDatasets.length, testDatasets: result.fixtures.testDatasets.length},
+    denominators: {operations: result.edge.operations.length, shapes: result.shape.shapes.length, designModels: result.designByteCoverage.modelCount, designFieldPaths: result.designByteCoverage.fieldCount, closedFindingRows: result.designByteCoverage.closedFindingCount, typeConventions: result.designByteCoverage.typeConventionCount, apiScenarioDefinitions: result.apiScenarios.scenarioCount, apiCases: result.apiScenarios.caseCount, l2ScenarioDefinitions: result.l2Scenarios.scenarioCount, l2Cases: result.l2Scenarios.caseCount, iaIds: result.assertions.iaIdCount, seedDatasets: result.fixtures.seedDatasets.length, testDatasets: result.fixtures.testDatasets.length, catalogSourceFiles: result.catalogSourceClosure.files.length, catalogSourceItems: result.catalogSourceClosure.itemCount},
     copyPolicy: {source: POLICY_PATH, selectedItemCount: result.fixtures ? readJson(POLICY_PATH).limits.selectedItemCount : null, closureItemCount: readJson(POLICY_PATH).limits.closureItemCount, consumersReadPolicy: true},
     artifacts: Object.fromEntries(paths.map((relativePath) => [relativePath, fileHash(relativePath)])),
     notes: [
       "P1 does not claim HTTP, DB, seed runtime or browser L2 PASS.",
-      "P1 copies all 34 v4 media assets; its 5 seed datasets and 8 bound media keys are representative definition graphs, not the final DEV seed denominator.",
+      "P1 copies all 34 catalog media assets; its 5 seed datasets and 8 bound media keys are representative definition graphs, not the final DEV seed denominator.",
       "P1 design-byte coverage is exact over 26 read models plus CatalogItemSaveRequest: nested field paths, required bits, formats, four voidAvailability sites and type conventions are checked against the approved matrix; structural schema PASS alone is not sufficient.",
       "The approved design-byte matrix is the single semantic denominator for this package; generated Java/TypeScript edge wire carries its policy hash and field digest for downstream byte reconciliation.",
-      "P2 full seed must preserve v4 business coverage of 73 catalog items and 34 media assets after adapting forbidden v4 structures to the v2s model; a smaller final seed is not accepted.",
+      "P2 full seed must preserve the catalog business coverage of 73 catalog items and 34 media assets after adapting the source structures to the v2s model; a smaller final seed is not accepted.",
       "Seed must upload real bytes through stageOperationsCatalogAsset multipart/form-data, create products through createOperationsCatalogItem using returned assetRefs, and never fall back to SQL.",
       "Any reset/run cleanup must purge the run-scoped media namespace and read back asset absence; business and cleanup statuses remain separate.",
-      "P2 and P3 must consume fixture catalog revision and digest without copying it."
+      "P2 and P3 must consume fixture catalog revision and digest without copying it.",
+      "The full catalog source denominator is the five-file local v2s source under contracts/policy/catalog-inventory-source/items; no external repository path is a runtime or seed input."
     ]
   };
   writeJson("doc/evidence/platform/2026-08-06-v2s-catalog-inventory-p1-implementation-evidence-codex.json", evidence);

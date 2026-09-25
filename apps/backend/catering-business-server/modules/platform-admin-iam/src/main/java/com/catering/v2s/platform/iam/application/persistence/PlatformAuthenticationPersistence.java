@@ -24,8 +24,7 @@ public class PlatformAuthenticationPersistence {
             String passwordHash,
             Long lockedUntilEpochMillis) {}
 
-    public record SessionRow(
-            UUID id, long version, UUID adminId, String displayName, long expiresAtEpochMillis) {}
+    public record SessionRow(UUID id, long version, UUID adminId, String displayName, long expiresAtEpochMillis) {}
 
     public record SessionCredential(UUID adminId, long version, String passwordHash) {}
 
@@ -66,12 +65,7 @@ public class PlatformAuthenticationPersistence {
     }
 
     public int insertLoginOtp(
-            UUID id,
-            UUID administratorId,
-            String mobileFingerprint,
-            String tokenHash,
-            long expiresAt,
-            long now) {
+            UUID id, UUID administratorId, String mobileFingerprint, String tokenHash, long expiresAt, long now) {
         return jdbc.update(
                 PlatformAuthenticationServiceSql.LOGIN_INSERT_OTP,
                 id,
@@ -176,7 +170,8 @@ public class PlatformAuthenticationPersistence {
     }
 
     public int updateRecoveryCredential(String passwordHash, long now, UUID administratorId) {
-        return jdbc.update(PlatformAuthenticationServiceSql.RECOVERY_UPDATE_CREDENTIAL, passwordHash, now, administratorId);
+        return jdbc.update(
+                PlatformAuthenticationServiceSql.RECOVERY_UPDATE_CREDENTIAL, passwordHash, now, administratorId);
     }
 
     public int revokeRecoverySessions(long now, UUID administratorId) {
@@ -195,10 +190,7 @@ public class PlatformAuthenticationPersistence {
     }
 
     public int recordLoginFailure(
-            long now,
-            int credentialFailureLimit,
-            long credentialLockUntil,
-            UUID administratorId) {
+            long now, int credentialFailureLimit, long credentialLockUntil, UUID administratorId) {
         return jdbc.update(
                 PlatformAuthenticationServiceSql.LOGIN_RECORD_FAILURE,
                 now,
@@ -246,7 +238,8 @@ public class PlatformAuthenticationPersistence {
     }
 
     public int updatePasswordCredential(String passwordHash, long now, UUID administratorId) {
-        return jdbc.update(PlatformAuthenticationServiceSql.PASSWORD_UPDATE_CREDENTIAL, passwordHash, now, administratorId);
+        return jdbc.update(
+                PlatformAuthenticationServiceSql.PASSWORD_UPDATE_CREDENTIAL, passwordHash, now, administratorId);
     }
 
     public int revokePasswordSessions(long now, UUID administratorId) {
@@ -254,16 +247,19 @@ public class PlatformAuthenticationPersistence {
     }
 
     public int updateAdministratorVersion(long now, UUID administratorId, long expectedVersion) {
-        return jdbc.update(PlatformAuthenticationServiceSql.RESET_UPDATE_ADMIN_VERSION, now, administratorId, expectedVersion);
+        return jdbc.update(
+                PlatformAuthenticationServiceSql.RESET_UPDATE_ADMIN_VERSION, now, administratorId, expectedVersion);
     }
 
     public int updateResetCredential(String passwordHash, long now, UUID administratorId) {
-        return jdbc.update(PlatformAuthenticationServiceSql.RESET_UPDATE_CREDENTIAL, passwordHash, now, administratorId);
+        return jdbc.update(
+                PlatformAuthenticationServiceSql.RESET_UPDATE_CREDENTIAL, passwordHash, now, administratorId);
     }
 
     public Long countAdministrators(String userName, String loginName, String status) {
         return jdbc.queryForObject(
-                PlatformAuthenticationServiceSql.ADMINISTRATOR_COUNT + PlatformAuthenticationServiceSql.ADMINISTRATOR_PAGE_WHERE,
+                PlatformAuthenticationServiceSql.ADMINISTRATOR_COUNT
+                        + PlatformAuthenticationServiceSql.ADMINISTRATOR_PAGE_WHERE,
                 Long.class,
                 pageFilterValues(userName, loginName, status));
     }
@@ -299,11 +295,7 @@ public class PlatformAuthenticationPersistence {
 
     public int updateAdministratorStatus(String targetStatus, long now, UUID id, long expectedVersion) {
         return jdbc.update(
-                PlatformAuthenticationServiceSql.ADMINISTRATOR_UPDATE_STATUS,
-                targetStatus,
-                now,
-                id,
-                expectedVersion);
+                PlatformAuthenticationServiceSql.ADMINISTRATOR_UPDATE_STATUS, targetStatus, now, id, expectedVersion);
     }
 
     public void lockBootstrapAdministratorTable() {
@@ -327,7 +319,8 @@ public class PlatformAuthenticationPersistence {
     }
 
     public int insertBootstrapCredential(UUID administratorId, String passwordHash, long now) {
-        return jdbc.update(PlatformAuthenticationServiceSql.BOOTSTRAP_INSERT_CREDENTIAL, administratorId, passwordHash, now);
+        return jdbc.update(
+                PlatformAuthenticationServiceSql.BOOTSTRAP_INSERT_CREDENTIAL, administratorId, passwordHash, now);
     }
 
     public int insertAdministrator(
@@ -351,7 +344,8 @@ public class PlatformAuthenticationPersistence {
     }
 
     public int insertAdministratorCredential(UUID administratorId, String passwordHash, long now) {
-        return jdbc.update(PlatformAuthenticationServiceSql.ADMINISTRATOR_INSERT_CREDENTIAL, administratorId, passwordHash, now);
+        return jdbc.update(
+                PlatformAuthenticationServiceSql.ADMINISTRATOR_INSERT_CREDENTIAL, administratorId, passwordHash, now);
     }
 
     public int updateAdministratorProfile(
@@ -381,16 +375,11 @@ public class PlatformAuthenticationPersistence {
     }
 
     public boolean isEnabledAdministrator(UUID id) {
-        return Boolean.TRUE.equals(jdbc.queryForObject(
-                PlatformAuthenticationServiceSql.ENABLED_ADMIN_EXISTS, Boolean.class, id));
+        return Boolean.TRUE.equals(
+                jdbc.queryForObject(PlatformAuthenticationServiceSql.ENABLED_ADMIN_EXISTS, Boolean.class, id));
     }
 
-    public int insertSession(
-            UUID sessionId,
-            UUID administratorId,
-            String tokenHash,
-            long expiresAt,
-            long now) {
+    public int insertSession(UUID sessionId, UUID administratorId, String tokenHash, long expiresAt, long now) {
         return jdbc.update(
                 PlatformAuthenticationServiceSql.SESSION_INSERT,
                 sessionId,
@@ -525,9 +514,7 @@ public class PlatformAuthenticationPersistence {
         return jdbc.query(
                 PlatformAuthenticationServiceSql.DEACTIVATION_FIND_GUARD,
                 statement -> statement.setObject(1, id),
-                result -> result.next()
-                        ? new AdminGuard(result.getBoolean(1), result.getString(2))
-                        : null);
+                result -> result.next() ? new AdminGuard(result.getBoolean(1), result.getString(2)) : null);
     }
 
     public Long countEnabledAdministrators() {
@@ -560,13 +547,14 @@ public class PlatformAuthenticationPersistence {
     }
 
     private static String administratorOrderBy(String sortKey, String sortDirection) {
-        String field = switch (sortKey) {
-            case "USER_NAME" -> PlatformAuthenticationServiceSql.ADMINISTRATOR_ORDER_USER_NAME;
-            case "LOGIN_NAME" -> PlatformAuthenticationServiceSql.ADMINISTRATOR_ORDER_LOGIN_NAME;
-            case "LAST_LOGIN_AT" -> PlatformAuthenticationServiceSql.ADMINISTRATOR_ORDER_LAST_LOGIN;
-            case "UPDATED_AT" -> PlatformAuthenticationServiceSql.ADMINISTRATOR_ORDER_UPDATED;
-            default -> throw new IllegalArgumentException("unsupported administrator sort key");
-        };
+        String field =
+                switch (sortKey) {
+                    case "USER_NAME" -> PlatformAuthenticationServiceSql.ADMINISTRATOR_ORDER_USER_NAME;
+                    case "LOGIN_NAME" -> PlatformAuthenticationServiceSql.ADMINISTRATOR_ORDER_LOGIN_NAME;
+                    case "LAST_LOGIN_AT" -> PlatformAuthenticationServiceSql.ADMINISTRATOR_ORDER_LAST_LOGIN;
+                    case "UPDATED_AT" -> PlatformAuthenticationServiceSql.ADMINISTRATOR_ORDER_UPDATED;
+                    default -> throw new IllegalArgumentException("unsupported administrator sort key");
+                };
         return field + ' ' + sortDirection + PlatformAuthenticationServiceSql.ADMINISTRATOR_ORDER_BY_STABLE_SUFFIX;
     }
 
@@ -579,7 +567,8 @@ public class PlatformAuthenticationPersistence {
                 result.getObject("locked_until_epoch_millis", Long.class));
     }
 
-    private static AdministratorRow administratorRow(java.sql.ResultSet result, int ignored) throws java.sql.SQLException {
+    private static AdministratorRow administratorRow(java.sql.ResultSet result, int ignored)
+            throws java.sql.SQLException {
         return new AdministratorRow(
                 result.getObject("id", UUID.class),
                 result.getString("login_name"),

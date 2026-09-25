@@ -8,7 +8,7 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [kernel.heritage-change](../project-memory/kernel/06-heritage-and-change.md)
 - [kernel.service-owner](../project-memory/kernel/02-service-shape-and-owner.md)
 - [kernel.transaction-data](../project-memory/kernel/03-transaction-data-and-dependencies.md)
-- [kernel.workspace-roadmap](../project-memory/kernel/01-workspace-and-roadmap.md)
+- [kernel.workspace-authorization](../project-memory/kernel/01-workspace-and-authorization.md)
 
 ## Routed memory
 - [decisions.confirmed-business-language-corpus](../project-memory/decisions/confirmed-business-language-corpus.md)
@@ -29,7 +29,6 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [operations.backend-readability-refactor](../project-memory/operations/backend-readability-refactor.md)
 - [operations.implementation-source-reread-discipline](../project-memory/operations/implementation-source-reread-discipline.md)
 - [operations.phase-retrospective-and-systemic-repair](../project-memory/operations/phase-retrospective-and-systemic-repair.md)
-- [operations.roadmap-control-transfer](../project-memory/operations/roadmap-control-transfer.md)
 - [operations.test-closed-loop](../project-memory/operations/test-closed-loop.md)
 - [operations.execution-economics-and-failure-family-closure](../project-memory/operations/execution-economics-and-failure-family-closure.md)
 - [operations.ui-testid-preflight-before-l2](../project-memory/operations/ui-testid-preflight-before-l2.md)

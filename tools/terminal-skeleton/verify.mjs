@@ -258,14 +258,14 @@ function runTurboDryRun(taskName) {
   debugLog('phase.finish', {phase: `turbo-dry-${taskName}`, outcome: 'PASS'});
 }
 
-function exportArtifactPaths(assemblyDirectory) {
-  return ['.expo', 'dist'].map(relativePath => path.join(assemblyDirectory, relativePath));
+function exportArtifactPaths(applicationDirectory) {
+  return ['.expo', 'dist'].map(relativePath => path.join(applicationDirectory, relativePath));
 }
 
 function cleanupExportArtifacts(paths) {
   for (const artifactPath of paths) fs.rmSync(artifactPath, {recursive: true, force: true});
   const remaining = paths.filter(artifactPath => fs.existsSync(artifactPath));
-  if (remaining.length) throw new Error(`assembly export cleanup left artifacts: ${remaining.join(', ')}`);
+  if (remaining.length) throw new Error(`application export cleanup left artifacts: ${remaining.join(', ')}`);
 }
 
 function main() {
@@ -287,24 +287,24 @@ function main() {
   } catch (error) {
     fail('test-markers', error instanceof Error ? error.message : String(error));
   }
-  const assemblyDirectory = path.join(repoRoot, 'apps/terminal/assembly/android/sample-terminal');
-  const exportArtifacts = exportArtifactPaths(assemblyDirectory);
+  const applicationDirectory = path.join(repoRoot, 'apps/terminal/application/android/sample-terminal');
+  const exportArtifacts = exportArtifactPaths(applicationDirectory);
   const preexistingArtifacts = exportArtifacts.filter(artifactPath => fs.existsSync(artifactPath));
   if (preexistingArtifacts.length) {
     debugLog('phase.finish', {
-      phase: 'assembly-export-preflight',
+      phase: 'application-export-preflight',
       outcome: 'FAIL',
       preexistingArtifacts,
     });
-    fail('assembly-export-preflight', `pre-existing artifacts=${preexistingArtifacts.join(', ')}`);
+    fail('application-export-preflight', `pre-existing artifacts=${preexistingArtifacts.join(', ')}`);
   }
-  debugLog('phase.finish', {phase: 'assembly-export-preflight', outcome: 'PASS'});
+  debugLog('phase.finish', {phase: 'application-export-preflight', outcome: 'PASS'});
 
-  debugLog('phase.start', {phase: 'assembly-export', cwd: assemblyDirectory});
+  debugLog('phase.start', {phase: 'application-export', cwd: applicationDirectory});
   let firstFailure;
   let cleanupFailure;
   try {
-    run('assembly-export', 'npx', ['expo', 'export', '--platform', 'android'], assemblyDirectory);
+    run('application-export', 'npx', ['expo', 'export', '--platform', 'android'], applicationDirectory);
   } catch (error) {
     firstFailure = error;
   } finally {
@@ -317,20 +317,20 @@ function main() {
   if (cleanupFailure) {
     console.error(`TERMINAL_VERIFY_CLEANUP=FAIL:${cleanupFailure instanceof Error ? cleanupFailure.message : String(cleanupFailure)}`);
     debugLog('phase.finish', {
-      phase: 'assembly-export-cleanup',
+      phase: 'application-export-cleanup',
       outcome: 'FAIL',
       error: cleanupFailure instanceof Error ? cleanupFailure.message : String(cleanupFailure),
     });
-    if (!firstFailure) firstFailure = new VerifyFailure('TERMINAL_VERIFY_FIRST_FAILURE:assembly-export-cleanup');
+    if (!firstFailure) firstFailure = new VerifyFailure('TERMINAL_VERIFY_FIRST_FAILURE:application-export-cleanup');
   } else {
     console.log('TERMINAL_VERIFY_CLEANUP=PASS');
-    debugLog('phase.finish', {phase: 'assembly-export-cleanup', outcome: 'PASS'});
+    debugLog('phase.finish', {phase: 'application-export-cleanup', outcome: 'PASS'});
   }
   if (firstFailure) {
     debugLog('verify.finish', {outcome: 'FAIL', error: firstFailure instanceof Error ? firstFailure.message : String(firstFailure)});
     throw firstFailure;
   }
-  debugLog('phase.finish', {phase: 'assembly-export', outcome: 'PASS'});
+  debugLog('phase.finish', {phase: 'application-export', outcome: 'PASS'});
   debugLog('verify.finish', {outcome: 'PASS'});
   console.log('TERMINAL_VERIFY=PASS');
 }

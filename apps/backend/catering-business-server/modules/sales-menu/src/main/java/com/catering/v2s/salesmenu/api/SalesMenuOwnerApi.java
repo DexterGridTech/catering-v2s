@@ -1,8 +1,8 @@
 package com.catering.v2s.salesmenu.api;
 
-import com.catering.v2s.platform.foundation.contract.OwnerProblem;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.platform.foundation.contract.OwnerProblem;
 import com.catering.v2s.salesmenu.domain.SalesMenuActivationStatus;
 import com.catering.v2s.salesmenu.domain.SalesMenuAssetTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuAssetTargetMode;

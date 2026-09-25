@@ -4,6 +4,9 @@
 - 由 `cs-writing-plans` / `cs-spec-to-plan` 引用。派活话术见 `doc/platform/implementation-task-template.md`。
 - **本模板是给作者填的表,不是给脚本判的门。** 价值全在"写详设时照着填",
   ⛔ 不得为它新建 compliance-control、分母台账或机器扫描(那一整套已退役)。
+- ⚠️ **唯一例外(Dexter 2026-09-25 裁定)**:§3a 的 `L2_SCRIPT_ADMISSION` 状态与独立复核记录由 L2 运行器在启动前读取,
+  缺失、未 PASS 或准入后控制面有改动即拒绝启动。运行器只核对准入是否存在且覆盖当前字节,不做语义判定;
+  其余各节仍只给作者填、给评审读。
 
 ## 收录尺度(新增维度前先过这三关)
 
@@ -60,7 +63,8 @@ IMPLEMENTATION_AUTHORITY=false
 | **RTK 数据读取与加载判定** (`currentData` / `isFetching`)   | 前端规范 §3-B                           |                            |                             |                |
 | **同一事实只有一个住址**(⛔ 不把服务端数据镜像进本地 state) | 前端规范 §3-E                           |                            |                             |                |
 | **失败可见且原因不得改写**                                  | 前端规范 §3-D · 后端规范 §2-B/§1-D      |                            |                             |                |
-| owner 错误到 HTTP 的映射与**注册处**                        |                                         |                            |                             |                |
+| owner 错误到 HTTP 的映射与**注册处**                        | 操作与错误码的登记源是边缘契约目录 `doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json`(`errorSetRef` 基础集合 ∪ `operationErrorAugmentations`)与处置目录 `2026-07-26-v2s-r5-error-code-disposition-catalog.json` 的 `v2sNativeCodes`;`contracts/openapi/paths` 是生成物,⛔ 不得手改 | 逐 operation 写出 `errorSetRef` 与增补清单,文中集合 = 两者之并 |                             |                |
+| **新 owner 的审计三件套**(owner 自有 `audit_event` 表与同事务写入适配器 · 审计读取路由 · 审计历史实体类型枚举) | `audit-model` 的 `AuditEventWriter`;先例 `store-contract` 的 `ContractAuditHistoryService` / `ContractAuditHistoryPersistence`;`audit-read` 的 `OperationsAuditTaskReadService`;`getOperationsEntityAuditHistory.entityType` 枚举 | acceptance 经 `/api/operations/audit-history` 读回本批实体的审计 | ⛔ 不写别的 owner 的审计表,不另造公共审计写入接口 |                |
 | 幂等键构成与重放语义                                        | 前端规范 §3-G(Dexter 2026-08-16 裁定)   |                            |                             |                |
 | **该用生成物的地方不得手搓字符串**                          | 后端规范 §2-D                           |                            |                             |                |
 | 日志落点与脱敏字段                                          | `AGENTS.md` 硬约束                      |                            |                             |                |
@@ -116,6 +120,16 @@ L2_SCRIPT_ADMISSION=BLOCKED | PASS
 Drawer 动作、动态行、分页及 native file/input 不能用外层 wrapper 代替。L2 binding 只能消费该常量源，spec
 不得用 role/label/placeholder/text/index/CSS/XPath 或散写 `data-testid` 补偿缺口。任一缺失或 UI 对账 OPEN，
 `L2_SCRIPT_ADMISSION` 必须保持 `BLOCKED`；先修 UI、完成 focused/static proof 和 fresh 独立复核，再允许脚本。
+
+**L2 控制面全集(强制)**：本节还必须列出本批将新增或修改的全部 L2 控制面文件——场景、blueprint、定位绑定、
+执行配置、fixture、时间预算、spec、P1 生成器——以及 case 分母。它们与 UI 源码一样是被设计、被复核的交付物。
+⛔ UI-bearing 批次缺本节控件分母表或缺该清单，设计评审即 NO-GO。
+
+**准入失效**：准入之后，上述任一文件或本批 UI 目录发生改动，`L2_SCRIPT_ADMISSION` 自动回到 `BLOCKED`，
+须重新复核后再运行；L2 运行器按此拒绝启动（见 `doc/platform/browser-l2-execution-standard.md` §4.1）。
+
+> 实证：2026-09-24 门店终端批的详设 §3a 只有一段文字、没有控件分母表，约 120 KB 的 L2 控制面在详设与计划中
+> 零提及；实施时 L2 跑了 36 次只通过 1 次。
 
 复合控件窄例外：仓内已有且组件 API 不暴露 option-level `data-*` 的复合控件（如 `Segmented`），可把 testId
 挂在可见 option label/anchor；但必须在分母注明 `COMPOSITE_OPTION_ANCHOR`、同一点击语义与 focused/static
@@ -196,6 +210,9 @@ proof。该例外不适用于可直接标记的 Button、MenuItem、Checkbox、R
 写“由哪条生成链派生”，不得手改。测试、fixture 与 seed 的旧断言或旧物化形状必须在同一变更内
 同步退休/改写；主程序已变而它们尚未对齐，实施即未完成，不得把失败留给动态验收。
 
+⚠️ **验证控制面也是变更事实**：L2 控制面文件、seed 执行器与父流程接线、seed 角色授权，都要各占一行，
+不得只列业务主程序。
+
 ## 9b · 变更定位
 
 凡指认「要改哪一处」,**用锚点不用行号**(charter §5-A):行号在前一步执行后就失效。
@@ -249,6 +266,21 @@ seed 夹具必须覆盖**本批新增/改变的每一个状态分支与边界值
 
 本节只**设计** seed,**不执行**。`reset`/`seed`/`start` 是独立、显式、破坏性动作,
 须另获授权并走受管入口。
+
+### 10b.6 执行前提、父流程与角色(新功能必填)
+
+- **前提**:seed 只在 reset 后的空库上运行;任何创建冲突一律失败,并在报告里写明需先 reset。
+  ⛔ 不设计「冲突后读详情比对、判断是不是重跑」一类分支(完整 seed 已声明 `resetRequiredBeforeRerun`)。
+- **试运行**:reset 之前,必须在当前字节上跑通完整 seed 的试运行(`r5-complete-seed-executor.mjs` 已有 dry-run);
+  试运行未通过不得执行 reset。
+- **父流程**:写明新 seed 步骤在父流程中的位置,计数进入哪些 `COUNT_KEYS` / `expectedCounts`,
+  以及父报告如何带出子步骤的首败原因。
+- **角色与操作人**:新增页面或写权限时,写明哪些 seed 角色获得页面与写权限、seed 执行器用哪个会话写入;
+  同步 `owner-command-seed-executor.mjs` 的 `GROUP_SEED_CAPABILITIES` 与 `r5-seed-plan.mjs` 的角色断言
+  (先例:门店桌台与二维码)。
+
+> 实证:2026-09-24 门店终端批的设计没有给 seed 操作人写权限;两次完整 seed 都在 reset 之后因静态计划失败,
+> 父报告没有子步骤的失败原因。
 
 ## 11 · 验收场景设计
 
@@ -319,6 +351,9 @@ seed 夹具必须覆盖**本批新增/改变的每一个状态分支与边界值
 §13b 在**整体测试之前**,三个维度(需求 ＋ 详设/IA ＋ 项目记忆规范);
 本节在**交给人评审之前**,只对 代码 ↔ 详设。前者守测试,后者守人。
 
+逐代码对账由 fresh 独立子 agent 执行,并显式检查两类:① 零调用者的新增代码;② 详设点名却未产出的文件。
+⛔ 按章节抽查不算逐代码。
+
 ### ⚠️ 本条对**详设写法**的反向要求
 
 被逐代码对账的是**本文**。⇒ 详设里每一条都必须写成**能与代码逐条比对**的形态:
@@ -347,4 +382,7 @@ seed 夹具必须覆盖**本批新增/改变的每一个状态分支与边界值
 | **阶段性三维对账**     | 每个 CP / 步骤完成即做,`OPEN` 已闭环;⛔ 无一步被推迟到最后                 |
 | **整体三维对账**       | 全部步骤完成后、**进入整体测试之前**逐条走完;⛔ 不是阶段对账的汇总         |
 | **逐代码与详设对账**   | 派生的**实施计划里写有**这一步(§13c);且本详设每条都是**可逐条比对**的形态,无「按既有形态处理」一类对不了账的写法 |
+| **§3a 准入表**         | UI-bearing 批次有控件分母表与 L2 控制面全集;缺即设计 NO-GO                    |
+| **新 owner 审计**       | §3「新 owner 的审计三件套」一行已填,或写 `N/A` 与理由                        |
+| **seed 执行前提**       | §10b.6 已写试运行、父流程位置、角色与操作人                                  |
 | 证据档位               | 编译 / 静态门 / 容器 / 浏览器,⛔ 低档不得说成高档                          |

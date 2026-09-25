@@ -1,23 +1,18 @@
 package com.catering.v2s.catalog.application;
 
-import com.catering.v2s.catalog.application.persistence.CatalogCopyServiceSql;
-import com.catering.v2s.catalog.application.persistence.CatalogCopyPersistence;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
-import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
 import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
+import com.catering.v2s.catalog.application.persistence.CatalogCopyPersistence;
+import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
-import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
-import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
-import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
 import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
-import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
-import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
+import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -25,26 +20,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
-
 
 /** Concrete Catalog copy owner for candidates, preflight, preparation, execution, receipts, and readback. */
 @Service
@@ -106,6 +95,7 @@ public class CatalogCopyService {
     private final CatalogSkuMediaFacts skuMediaFacts;
     private final CatalogItemReferenceFacts itemReferenceFacts;
     private final PlatformTransactionManager transactions;
+
     @Autowired
     public CatalogCopyService(
             CatalogCopyPersistence persistence,
@@ -158,29 +148,29 @@ public class CatalogCopyService {
                 transactions);
     }
 
-static List<String> validatedLocalCopySections(ArrayNode selectedSections) {
+    static List<String> validatedLocalCopySections(ArrayNode selectedSections) {
         return CatalogOwnerValueSupport.validatedLocalCopySections(selectedSections);
     }
 
-static Set<String> catalogAssetRefs(JsonNode sections) {
+    static Set<String> catalogAssetRefs(JsonNode sections) {
         return CatalogOwnerValueSupport.catalogAssetRefs(sections);
     }
 
-public JsonNode readLocalCopyCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
+    public JsonNode readLocalCopyCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         CatalogOwnerScopeSupport.requireScope(dataNodeRef, brandRef);
         return copyCandidates("getOperationsLocalCatalogCopyCandidates", dataNodeRef, brandRef, requestId, request);
     }
 
-public JsonNode readBrandCopyCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
+    public JsonNode readBrandCopyCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         CatalogOwnerScopeSupport.requireScope(dataNodeRef, brandRef);
         return copyCandidates("getOperationsBrandCatalogCopyCandidates", dataNodeRef, brandRef, requestId, request);
     }
 
-public JsonNode readShapeManifest(String requestId) {
+    public JsonNode readShapeManifest(String requestId) {
         return shapeManifest(requestId);
     }
 
-@Transactional
+    @Transactional
     public JsonNode copy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
         CatalogAuthorizationScope scope = requireTypedContext(context, "catalog");
@@ -206,7 +196,7 @@ public JsonNode readShapeManifest(String requestId) {
                 null);
     }
 
-@Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public JsonNode preflightCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request) {
         CatalogAuthorizationScope scope = requireTypedContext(context, "catalog");
         String sourceDataNodeRef = copySourceDataNodeRef(scope);
@@ -218,7 +208,7 @@ public JsonNode readShapeManifest(String requestId) {
         return copyPreflight(sourceDataNodeRef, targetDataNodeRef, scope.brandRef(), plan);
     }
 
-@Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public CatalogOwnerApi.CopyPreflightReadback preflightLocalCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.LocalCopyPreflightCommand command) {
@@ -235,7 +225,7 @@ public JsonNode readShapeManifest(String requestId) {
                 envelope.path("data").path("preflightDigest").asText(), canonicalLocalCopyJson(envelope));
     }
 
-@Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public CatalogOwnerApi.LocalCopyExecutionPreparation prepareLocalCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.LocalCopyPreflightCommand command) {
@@ -256,7 +246,7 @@ public JsonNode readShapeManifest(String requestId) {
                         envelope.path("data").path("preflightDigest").asText(), canonicalLocalCopyJson(envelope)));
     }
 
-@Transactional
+    @Transactional
     public CatalogOwnerApi.CopyExecutionReadback executeLocalCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.LocalCopyExecuteCommand command,
@@ -287,8 +277,7 @@ public JsonNode readShapeManifest(String requestId) {
                 null));
     }
 
-public CatalogOwnerApi.CopyExecutionReadback executeLocalCopy(
-
+    public CatalogOwnerApi.CopyExecutionReadback executeLocalCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.LocalCopyExecuteCommand command,
             String idempotencyKey,
@@ -309,7 +298,7 @@ public CatalogOwnerApi.CopyExecutionReadback executeLocalCopy(
                 prepared.plan()));
     }
 
-@Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public CatalogOwnerApi.CopyPreflightReadback preflightBrandCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.BrandCopyPreflightCommand command) {
@@ -321,7 +310,7 @@ public CatalogOwnerApi.CopyExecutionReadback executeLocalCopy(
                 envelope.path("data").path("preflightDigest").asText(), canonicalLocalCopyJson(envelope));
     }
 
-@Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public CatalogOwnerApi.BrandCopyExecutionPreparation prepareBrandCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.BrandCopyPreflightCommand command) {
@@ -348,7 +337,7 @@ public CatalogOwnerApi.CopyExecutionReadback executeLocalCopy(
                         envelope.path("data").path("preflightDigest").asText(), canonicalLocalCopyJson(envelope)));
     }
 
-@Transactional
+    @Transactional
     public CatalogOwnerApi.CopyExecutionReadback executeBrandCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.BrandCopyExecuteCommand command,
@@ -390,7 +379,7 @@ public CatalogOwnerApi.CopyExecutionReadback executeLocalCopy(
                 compatibility));
     }
 
-@Transactional
+    @Transactional
     public CatalogOwnerApi.CopyExecutionReadback executeBrandCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.BrandCopyExecuteCommand command,
@@ -423,19 +412,19 @@ public CatalogOwnerApi.CopyExecutionReadback executeLocalCopy(
                 compatibility));
     }
 
-static boolean expandsCatalogItemClosure(String referenceKind) {
+    static boolean expandsCatalogItemClosure(String referenceKind) {
         return Set.of("CATALOG_ITEM", "COMPOSITE_COMPONENT", "BOM_COMPONENT").contains(referenceKind);
     }
 
-static String copyReferenceObjectType(String referenceKind) {
+    static String copyReferenceObjectType(String referenceKind) {
         return CatalogOwnerValueSupport.copyReferenceObjectType(referenceKind);
     }
 
-static String skuStructureFingerprint(JsonNode sections) {
+    static String skuStructureFingerprint(JsonNode sections) {
         return CatalogOwnerValueSupport.skuStructureFingerprint(sections);
     }
 
-private static String firstText(JsonNode node, String... keys) {
+    private static String firstText(JsonNode node, String... keys) {
         if (node == null || node.isNull()) return null;
         for (String key : keys)
             if (node.path(key).isValueNode() && !node.path(key).asText().isBlank())
@@ -443,18 +432,18 @@ private static String firstText(JsonNode node, String... keys) {
         return null;
     }
 
-private static String nullableText(JsonNode object, String field) {
+    private static String nullableText(JsonNode object, String field) {
         return object.path(field).isNull() || object.path(field).isMissingNode()
                 ? null
                 : object.path(field).asText();
     }
 
-private static UUID nullableUuid(JsonNode object, String field) {
+    private static UUID nullableUuid(JsonNode object, String field) {
         String value = nullableText(object, field);
         return value == null || value.isBlank() ? null : UUID.fromString(value);
     }
 
-private void putNullableUnitSnapshot(ObjectNode target, String field, InventoryOwnerApi.UnitSnapshot snapshot) {
+    private void putNullableUnitSnapshot(ObjectNode target, String field, InventoryOwnerApi.UnitSnapshot snapshot) {
         if (snapshot == null) target.putNull(field);
         else target.set(field, mapper.valueToTree(snapshot));
     }
@@ -472,14 +461,14 @@ private void putNullableUnitSnapshot(ObjectNode target, String field, InventoryO
                 rows.getInt(precisionIndex));
     }
 
-private static InventoryOwnerApi.UnitSnapshot unitSnapshot(CatalogCopyPersistence.UnitSnapshotRow row) {
+    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(CatalogCopyPersistence.UnitSnapshotRow row) {
         return row == null
                 ? null
                 : new InventoryOwnerApi.UnitSnapshot(
                         row.ref(), row.code(), row.name(), row.unitDimension(), row.precision());
     }
 
-private void applyLocalCopyReferencePlan(ObjectNode request, String canonicalPlan) {
+    private void applyLocalCopyReferencePlan(ObjectNode request, String canonicalPlan) {
         if (canonicalPlan == null || canonicalPlan.isBlank()) return;
         try {
             JsonNode plan = mapper.readTree(canonicalPlan);
@@ -492,7 +481,7 @@ private void applyLocalCopyReferencePlan(ObjectNode request, String canonicalPla
         }
     }
 
-private ObjectNode localCopyRequest(CatalogOwnerApi.LocalCopyExecuteCommand command) {
+    private ObjectNode localCopyRequest(CatalogOwnerApi.LocalCopyExecuteCommand command) {
         ObjectNode request = mapper.createObjectNode()
                 .put("sourceItemCode", command.sourceItemCode())
                 .put("targetItemCode", command.targetItemCode())
@@ -509,13 +498,13 @@ private ObjectNode localCopyRequest(CatalogOwnerApi.LocalCopyExecuteCommand comm
         return request;
     }
 
-private ObjectNode brandCopyRequest(List<String> selectedItemCodes, String targetDataNodeRef) {
+    private ObjectNode brandCopyRequest(List<String> selectedItemCodes, String targetDataNodeRef) {
         ObjectNode request = mapper.createObjectNode().put("targetDataNodeRef", targetDataNodeRef);
         request.set("selectedItemCodes", mapper.valueToTree(selectedItemCodes));
         return request;
     }
 
-private CopyCompatibility mergePreparedReferenceMappings(CopyCompatibility prepared, ObjectNode request) {
+    private CopyCompatibility mergePreparedReferenceMappings(CopyCompatibility prepared, ObjectNode request) {
         Map<ReferenceKey, String> mapping = new LinkedHashMap<>(prepared.mapping());
         suppliedReferenceMappings(request).forEach((key, target) -> {
             String previous = mapping.putIfAbsent(key, target);
@@ -531,7 +520,7 @@ private CopyCompatibility mergePreparedReferenceMappings(CopyCompatibility prepa
                 prepared.targetUnits());
     }
 
-private String canonicalLocalCopyJson(JsonNode value) {
+    private String canonicalLocalCopyJson(JsonNode value) {
         try {
             return mapper.writeValueAsString(value);
         } catch (Exception failure) {
@@ -539,7 +528,7 @@ private String canonicalLocalCopyJson(JsonNode value) {
         }
     }
 
-/** Converts the owner result before it leaves this owner boundary. */
+    /** Converts the owner result before it leaves this owner boundary. */
     private CatalogOwnerApi.CopyExecutionReadback copyExecutionReadback(JsonNode result) {
         JsonNode data = requiredCopyData(result, "catalog");
         return new CatalogOwnerApi.CopyExecutionReadback(
@@ -552,21 +541,19 @@ private String canonicalLocalCopyJson(JsonNode value) {
                 copyOwnerReadbacks(data));
     }
 
-private JsonNode requiredCopyData(JsonNode result, String owner) {
+    private JsonNode requiredCopyData(JsonNode result, String owner) {
         JsonNode data = result == null ? null : result.path("data");
         if (data == null || !data.isObject()) throw copyReadbackProblem(owner, "data");
         return data;
     }
 
-private String requiredCopyText(JsonNode data, String field, String owner) {
+    private String requiredCopyText(JsonNode data, String field, String owner) {
         JsonNode value = data.path(field);
         if (!value.isTextual() || value.asText().isBlank()) throw copyReadbackProblem(owner, field);
         return value.asText();
-
-
     }
 
-private List<CatalogOwnerApi.CopyObjectReadback> copyObjects(JsonNode data, String field) {
+    private List<CatalogOwnerApi.CopyObjectReadback> copyObjects(JsonNode data, String field) {
         JsonNode values = data.path(field);
         if (!values.isArray()) throw copyReadbackProblem("catalog", field);
         List<CatalogOwnerApi.CopyObjectReadback> result = new ArrayList<>();
@@ -580,7 +567,7 @@ private List<CatalogOwnerApi.CopyObjectReadback> copyObjects(JsonNode data, Stri
         return List.copyOf(result);
     }
 
-private List<CatalogOwnerApi.CopySkippedReadback> copySkipped(JsonNode data) {
+    private List<CatalogOwnerApi.CopySkippedReadback> copySkipped(JsonNode data) {
         JsonNode values = data.path("skipped");
         if (!values.isArray()) throw copyReadbackProblem("catalog", "skipped");
         List<CatalogOwnerApi.CopySkippedReadback> result = new ArrayList<>();
@@ -596,7 +583,7 @@ private List<CatalogOwnerApi.CopySkippedReadback> copySkipped(JsonNode data) {
         return List.copyOf(result);
     }
 
-private List<CatalogOwnerApi.CopyReferenceMapping> copyReferenceMappings(JsonNode data, String field) {
+    private List<CatalogOwnerApi.CopyReferenceMapping> copyReferenceMappings(JsonNode data, String field) {
         JsonNode values = data.path(field);
         if (!values.isArray()) throw copyReadbackProblem("catalog", field);
         List<CatalogOwnerApi.CopyReferenceMapping> result = new ArrayList<>();
@@ -616,7 +603,7 @@ private List<CatalogOwnerApi.CopyReferenceMapping> copyReferenceMappings(JsonNod
         return List.copyOf(result);
     }
 
-private List<CatalogOwnerApi.CopyTargetVersion> copyTargetVersions(JsonNode data) {
+    private List<CatalogOwnerApi.CopyTargetVersion> copyTargetVersions(JsonNode data) {
         JsonNode values = data.path("targetVersions");
         if (!values.isArray()) throw copyReadbackProblem("catalog", "targetVersions");
         List<CatalogOwnerApi.CopyTargetVersion> result = new ArrayList<>();
@@ -631,7 +618,7 @@ private List<CatalogOwnerApi.CopyTargetVersion> copyTargetVersions(JsonNode data
         return List.copyOf(result);
     }
 
-private List<CatalogOwnerApi.CopyOwnerReadback> copyOwnerReadbacks(JsonNode data) {
+    private List<CatalogOwnerApi.CopyOwnerReadback> copyOwnerReadbacks(JsonNode data) {
         JsonNode values = data.path("ownerReadbacks");
         if (!values.isArray()) throw copyReadbackProblem("catalog", "ownerReadbacks");
         List<CatalogOwnerApi.CopyOwnerReadback> result = new ArrayList<>();
@@ -649,15 +636,15 @@ private List<CatalogOwnerApi.CopyOwnerReadback> copyOwnerReadbacks(JsonNode data
         return List.copyOf(result);
     }
 
-private String nullableCopyText(JsonNode value, String field) {
+    private String nullableCopyText(JsonNode value, String field) {
         return value.hasNonNull(field) ? value.path(field).asText() : null;
     }
 
-private CatalogOwnerApi.Problem copyReadbackProblem(String owner, String field) {
+    private CatalogOwnerApi.Problem copyReadbackProblem(String owner, String field) {
         return new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, owner + " copy readback is missing: " + field);
     }
 
-private JsonNode executeCopy(
+    private JsonNode executeCopy(
             String operationId,
             String sourceDataNodeRef,
             String targetDataNodeRef,
@@ -975,7 +962,7 @@ private JsonNode executeCopy(
         }
     }
 
-private JsonNode copyLocal(
+    private JsonNode copyLocal(
             WorkspaceExecutionContext<CatalogAuthorizationScope> commandContext,
             String operationId,
             String scope,
@@ -986,7 +973,7 @@ private JsonNode copyLocal(
         return copyLocal(commandContext, operationId, scope, brandRef, request, requestId, idempotencyKey, null);
     }
 
-private JsonNode copyLocal(
+    private JsonNode copyLocal(
             WorkspaceExecutionContext<CatalogAuthorizationScope> commandContext,
             String operationId,
             String scope,
@@ -1151,11 +1138,11 @@ private JsonNode copyLocal(
         }
     }
 
-private ObjectNode localCopyPreflight(String scope, String brandRef, ObjectNode request) {
+    private ObjectNode localCopyPreflight(String scope, String brandRef, ObjectNode request) {
         return localCopyPreflight(scope, brandRef, request, localCopyPlan(scope, brandRef, request));
     }
 
-private ObjectNode localCopyPreflight(String scope, String brandRef, ObjectNode request, LocalCopyPlan plan) {
+    private ObjectNode localCopyPreflight(String scope, String brandRef, ObjectNode request, LocalCopyPlan plan) {
         ItemRow source = plan.source();
         ItemRow target = plan.target();
         CompatibilityCheck compatibility = plan.compatibility();
@@ -1260,7 +1247,7 @@ private ObjectNode localCopyPreflight(String scope, String brandRef, ObjectNode 
         return data;
     }
 
-private ArrayNode localCompatibilityResults(String scope, String brandRef, LocalCopyPlan plan) {
+    private ArrayNode localCompatibilityResults(String scope, String brandRef, LocalCopyPlan plan) {
         ArrayNode results = mapper.createArrayNode();
         results.addObject()
                 .put("objectType", "CATALOG_ITEM")
@@ -1275,7 +1262,7 @@ private ArrayNode localCompatibilityResults(String scope, String brandRef, Local
         return results;
     }
 
-private LocalCopyPlan localCopyPlan(String scope, String brandRef, ObjectNode request) {
+    private LocalCopyPlan localCopyPlan(String scope, String brandRef, ObjectNode request) {
         String sourceCode = required(request, "sourceItemCode");
         String targetCode = required(request, "targetItemCode");
         if (sourceCode.equals(targetCode)) {
@@ -1328,7 +1315,7 @@ private LocalCopyPlan localCopyPlan(String scope, String brandRef, ObjectNode re
                 units);
     }
 
-/**
+    /**
      * Local copy is section-scoped. The old generic detail hydration loaded every relational family even when the
      * selected section could not consume it; that turned one copy closure into a fixed fan-out of owner reads. This
      * projection keeps the same ItemRow read shape for the selected facts while loading only the families required by
@@ -1422,10 +1409,8 @@ private LocalCopyPlan localCopyPlan(String scope, String brandRef, ObjectNode re
                     row.code(),
                     row.name(),
                     row.shortName(),
-
                     row.shapeKey(),
                     row.status(),
-
                     canonicalJson(sections),
                     row.version(),
                     row.updatedAt(),
@@ -1434,7 +1419,7 @@ private LocalCopyPlan localCopyPlan(String scope, String brandRef, ObjectNode re
         return List.copyOf(projected);
     }
 
-private ArrayNode localCopySkipped(ItemRow source, ArrayNode selectedSections) {
+    private ArrayNode localCopySkipped(ItemRow source, ArrayNode selectedSections) {
         JsonNode sourceSections = json(source.sectionsJson());
         ArrayNode skipped = mapper.createArrayNode();
         for (JsonNode selected : selectedSections) {
@@ -1452,7 +1437,7 @@ private ArrayNode localCopySkipped(ItemRow source, ArrayNode selectedSections) {
         return skipped;
     }
 
-/**
+    /**
      * A hydrated empty relationship is not source content and must never erase the target during a partial local copy.
      */
     private static boolean hasLocalCopySourceFacts(JsonNode sections, String... keys) {
@@ -1464,7 +1449,7 @@ private ArrayNode localCopySkipped(ItemRow source, ArrayNode selectedSections) {
         return false;
     }
 
-private static String sectionKey(String section) {
+    private static String sectionKey(String section) {
         return switch (section) {
             case "BASIC_INFO" -> "basicInfo";
             case "SKU_STRUCTURE" -> "skus";
@@ -1479,11 +1464,11 @@ private static String sectionKey(String section) {
         };
     }
 
-private String localCopyDigest(ItemRow source, ItemRow target, ArrayNode sections, List<UnitRow> units) {
+    private String localCopyDigest(ItemRow source, ItemRow target, ArrayNode sections, List<UnitRow> units) {
         return localCopyDigest(source, target, sections, units, target.version());
     }
 
-private String localCopyDigest(
+    private String localCopyDigest(
             ItemRow source, ItemRow target, ArrayNode sections, List<UnitRow> units, long targetVersion) {
         ArrayList<String> values = new ArrayList<>();
         sections.forEach(section -> values.add(section.asText()));
@@ -1498,7 +1483,7 @@ private String localCopyDigest(
                 + String.join(",", values));
     }
 
-/** A local copy owns new child identities; sharing a source SKU ref would make two items claim one fact. */
+    /** A local copy owns new child identities; sharing a source SKU ref would make two items claim one fact. */
     private ArrayNode clonedSkuFacts(ArrayNode sourceSkus) {
         ArrayNode copied = mapper.createArrayNode();
         if (sourceSkus == null) return copied;
@@ -1512,7 +1497,7 @@ private String localCopyDigest(
         return copied;
     }
 
-private Map<UUID, UUID> sourceToTargetSkuRefs(ItemRow source, ArrayNode targetSkus) {
+    private Map<UUID, UUID> sourceToTargetSkuRefs(ItemRow source, ArrayNode targetSkus) {
         Map<String, UUID> targetByCode = new LinkedHashMap<>();
         if (targetSkus != null)
             for (JsonNode sku : targetSkus) {
@@ -1530,7 +1515,7 @@ private Map<UUID, UUID> sourceToTargetSkuRefs(ItemRow source, ArrayNode targetSk
         return result;
     }
 
-/**
+    /**
      * A receipt can be read only after current owner facts are loaded; it can leave this owner only when its stored
      * post-command fingerprint still equals those facts. Older receipts without the marker fail closed.
      */
@@ -1547,7 +1532,7 @@ private Map<UUID, UUID> sourceToTargetSkuRefs(ItemRow source, ArrayNode targetSk
         return replay;
     }
 
-private void lockCatalogAssetRefs(JsonNode... sections) {
+    private void lockCatalogAssetRefs(JsonNode... sections) {
         LinkedHashSet<UUID> refs = new LinkedHashSet<>();
         for (JsonNode section : sections) {
             if (section == null) continue;
@@ -1561,7 +1546,7 @@ private void lockCatalogAssetRefs(JsonNode... sections) {
         assetReferenceLocks.lockCatalogReferences(refs);
     }
 
-private ObjectNode copyCandidates(
+    private ObjectNode copyCandidates(
             String operationId, String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
         ObjectNode data = mapper.createObjectNode();
         boolean brandCopy = "getOperationsBrandCatalogCopyCandidates".equals(operationId);
@@ -1589,8 +1574,7 @@ private ObjectNode copyCandidates(
                 cursor == null ? null : cursor.tieBreaker(),
                 pageSize);
         List<CopyPageRow> pageRows = persistenceRows.stream()
-                .map(row -> new CopyPageRow(
-                        row.item() == null ? null : itemRow(row.item()), row.total()))
+                .map(row -> new CopyPageRow(row.item() == null ? null : itemRow(row.item()), row.total()))
                 .toList();
         List<CopyPageRow> presentRows =
                 pageRows.stream().filter(row -> row.item() != null).toList();
@@ -1615,7 +1599,7 @@ private ObjectNode copyCandidates(
         return envelope(requestId, data);
     }
 
-private ObjectNode shapeManifest(String requestId) {
+    private ObjectNode shapeManifest(String requestId) {
         try {
             JsonNode manifest = mapper.readTree(CatalogInventoryShapeManifest.MANIFEST_JSON);
             ObjectNode data = mapper.createObjectNode();
@@ -1643,7 +1627,7 @@ private ObjectNode shapeManifest(String requestId) {
         }
     }
 
-private static InventoryOwnerApi.UnitSnapshot unitSnapshot(CatalogOwnerApi.UnitDefinitionReadback unit) {
+    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(CatalogOwnerApi.UnitDefinitionReadback unit) {
         return unit == null
                 ? null
                 : new InventoryOwnerApi.UnitSnapshot(
@@ -1654,17 +1638,17 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(CatalogOwnerApi.UnitD
                         unit.precision());
     }
 
-private void writeItemUnitSnapshots(
+    private void writeItemUnitSnapshots(
             UUID itemRef, CatalogOwnerApi.UnitDefinitionReadback sales, CatalogOwnerApi.UnitDefinitionReadback base) {
         writeItemUnitSnapshotsBatch(Collections.singletonList(itemUnitFactRow(itemRef, sales, base)));
     }
 
-private void writeItemUnitSnapshotsBatch(List<CatalogCopyPersistence.ItemUnitSnapshotRow> rows) {
+    private void writeItemUnitSnapshotsBatch(List<CatalogCopyPersistence.ItemUnitSnapshotRow> rows) {
         if (rows.isEmpty()) return;
         persistence.insertItemUnitSnapshots(rows);
     }
 
-private CatalogCopyPersistence.ItemUnitSnapshotRow itemUnitFactRow(
+    private CatalogCopyPersistence.ItemUnitSnapshotRow itemUnitFactRow(
             UUID itemRef, CatalogOwnerApi.UnitDefinitionReadback sales, CatalogOwnerApi.UnitDefinitionReadback base) {
         return new CatalogCopyPersistence.ItemUnitSnapshotRow(
                 sales == null ? null : sales.unitRef(),
@@ -1680,10 +1664,9 @@ private CatalogCopyPersistence.ItemUnitSnapshotRow itemUnitFactRow(
                 itemRef);
     }
 
-private void writeSkuUnitFacts(
+    private void writeSkuUnitFacts(
             UUID skuRef,
             CatalogOwnerApi.UnitDefinitionReadback salesOverride,
-
             CatalogOwnerApi.UnitDefinitionReadback baseOverride,
             CatalogOwnerApi.UnitDefinitionReadback sales,
             CatalogOwnerApi.UnitDefinitionReadback base) {
@@ -1693,12 +1676,12 @@ private void writeSkuUnitFacts(
         writeSkuUnitFactsBatch(rows);
     }
 
-private void writeSkuUnitFactsBatch(List<CatalogCopyPersistence.SkuUnitFactRow> rows) {
+    private void writeSkuUnitFactsBatch(List<CatalogCopyPersistence.SkuUnitFactRow> rows) {
         if (rows.isEmpty()) return;
         persistence.insertSkuUnitFacts(rows);
     }
 
-private CatalogCopyPersistence.SkuUnitFactRow skuUnitFactRow(
+    private CatalogCopyPersistence.SkuUnitFactRow skuUnitFactRow(
             UUID skuRef,
             CatalogOwnerApi.UnitDefinitionReadback salesOverride,
             CatalogOwnerApi.UnitDefinitionReadback baseOverride,
@@ -1719,7 +1702,7 @@ private CatalogCopyPersistence.SkuUnitFactRow skuUnitFactRow(
                 skuRef);
     }
 
-private void writeCopiedEffectiveUnitFacts(
+    private void writeCopiedEffectiveUnitFacts(
             String scope, String brand, UUID itemRef, ObjectNode sections, ArrayNode skus) {
         UUID itemSalesRef = nullableUuid(sections, "salesUnitRef");
         UUID itemBaseRef = nullableUuid(sections, "baseMeasureUnitRef");
@@ -1761,7 +1744,7 @@ private void writeCopiedEffectiveUnitFacts(
         }
     }
 
-private void writeCopiedEffectiveUnitFactsBatch(String scope, String brand, List<CopiedUnitInput> inputs) {
+    private void writeCopiedEffectiveUnitFactsBatch(String scope, String brand, List<CopiedUnitInput> inputs) {
         if (inputs == null || inputs.isEmpty()) return;
         Set<UUID> refs = new LinkedHashSet<>();
         Map<UUID, CopiedUnitRefs> factsByItem = new LinkedHashMap<>();
@@ -1850,7 +1833,7 @@ private void writeCopiedEffectiveUnitFactsBatch(String scope, String brand, List
         return changes;
     }
 
-private Map<UUID, InventoryOwnerApi.UnitSnapshot> unitSnapshotMappings(
+    private Map<UUID, InventoryOwnerApi.UnitSnapshot> unitSnapshotMappings(
             Map<ReferenceKey, String> mappings, List<UnitRow> units) {
         if (units == null || units.isEmpty()) return Map.of();
         Map<UUID, InventoryOwnerApi.UnitSnapshot> result = new LinkedHashMap<>();
@@ -1884,7 +1867,7 @@ private Map<UUID, InventoryOwnerApi.UnitSnapshot> unitSnapshotMappings(
         return Map.copyOf(result);
     }
 
-/**
+    /**
      * Cross-owner lifecycle judgement stays at Inventory's public API; catalog never reads inventory tables directly.
      */
     private void requireSkuRetirementUnreferenced(
@@ -1930,22 +1913,18 @@ private Map<UUID, InventoryOwnerApi.UnitSnapshot> unitSnapshotMappings(
                 skuRef,
                 values.stream()
                         .map(value -> new SkuInboundReference(
-                                value.componentRef(),
-                                value.ownerItemRef(),
-                                value.ownerCode(),
-                                value.ownerName()))
+                                value.componentRef(), value.ownerItemRef(), value.ownerCode(), value.ownerName()))
                         .toList()));
         return result;
     }
 
-/** The same transaction lock is intentionally duplicated in Inventory: foundation has no JDBC dependency. */
+    /** The same transaction lock is intentionally duplicated in Inventory: foundation has no JDBC dependency. */
     private void lockProductSkuRefs(Collection<UUID> refs) {
         if (refs == null || refs.isEmpty()) return;
         persistence.lockProductSkuRefs(refs);
     }
 
-
-/** Assigns server-owned SKU identities and normalizes the relation payload before the sole relational write. */
+    /** Assigns server-owned SKU identities and normalizes the relation payload before the sole relational write. */
     private ArrayNode normalizeSkuFacts(ObjectNode sections) {
         JsonNode submitted = sections.path("skus");
 
@@ -1997,7 +1976,7 @@ private Map<UUID, InventoryOwnerApi.UnitSnapshot> unitSnapshotMappings(
         return skus;
     }
 
-private ArrayNode categoryRefs(ObjectNode sections) {
+    private ArrayNode categoryRefs(ObjectNode sections) {
         JsonNode submitted = sections.path("categoryRefs");
         if (submitted.isMissingNode() || submitted.isNull()) {
             ArrayNode empty = mapper.createArrayNode();
@@ -2010,7 +1989,7 @@ private ArrayNode categoryRefs(ObjectNode sections) {
         return (ArrayNode) submitted;
     }
 
-private ArrayNode compositeGroups(ObjectNode sections) {
+    private ArrayNode compositeGroups(ObjectNode sections) {
         JsonNode submitted = sections.path("compositeGroups");
         if (submitted.isMissingNode() || submitted.isNull()) {
             ArrayNode empty = mapper.createArrayNode();
@@ -2022,7 +2001,7 @@ private ArrayNode compositeGroups(ObjectNode sections) {
         return (ArrayNode) submitted;
     }
 
-private String skuVariantCombinationDigest(ObjectNode sku) {
+    private String skuVariantCombinationDigest(ObjectNode sku) {
         List<String> values = new ArrayList<>();
         JsonNode refs = sku.path("attributeValueRefs");
         if (refs.isArray())
@@ -2036,11 +2015,11 @@ private String skuVariantCombinationDigest(ObjectNode sku) {
         return digest(String.join("|", values));
     }
 
-private CatalogOwnerApi.Problem categoryMoveProblem(String code, String message) {
+    private CatalogOwnerApi.Problem categoryMoveProblem(String code, String message) {
         return new CatalogOwnerApi.Problem(code, 422, message);
     }
 
-private CatalogOwnerApi.Problem categoryDepthExceededProblem() {
+    private CatalogOwnerApi.Problem categoryDepthExceededProblem() {
         return categoryMoveProblem(CATEGORY_DEPTH_ERROR_CODE, CATEGORY_DEPTH_EXCEEDED_MESSAGE);
     }
 
@@ -2048,7 +2027,7 @@ private CatalogOwnerApi.Problem categoryDepthExceededProblem() {
         persistence.lockCategoryHierarchy(scope, brand);
     }
 
-/**
+    /**
      * A brand-copy category may reuse a target row with the same code. Build the exact post-copy parent map under the
      * category hierarchy lock: reused rows keep their persisted parent and only absent rows take the mapped source
      * parent. Reject instead of inventing a flattening rule.
@@ -2072,7 +2051,7 @@ private CatalogOwnerApi.Problem categoryDepthExceededProblem() {
         }
     }
 
-private CatalogCopyPlan catalogCopyPlan(
+    private CatalogCopyPlan catalogCopyPlan(
             String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request) {
         requireScope(sourceDataNodeRef, brandRef);
         requireScope(targetDataNodeRef, brandRef);
@@ -2103,7 +2082,7 @@ private CatalogCopyPlan catalogCopyPlan(
                         sourceDataNodeRef, targetDataNodeRef, brandRef, selected, graph, sourceVersion, targetVersion));
     }
 
-/** Prepared execute must reject hard blocks before any target-side copy mutation begins. */
+    /** Prepared execute must reject hard blocks before any target-side copy mutation begins. */
     private void rejectPreparedBlockingCompatibility(ArrayNode compatibilityResults) {
         for (JsonNode row : compatibilityResults) {
             if (!"BLOCKED".equals(row.path("result").asText())) continue;
@@ -2116,11 +2095,11 @@ private CatalogCopyPlan catalogCopyPlan(
         }
     }
 
-private ObjectNode copyPreflight(String source, String target, String brandRef, CatalogCopyPlan plan) {
+    private ObjectNode copyPreflight(String source, String target, String brandRef, CatalogCopyPlan plan) {
         return copyPreflight(source, target, brandRef, plan, null);
     }
 
-private ObjectNode copyPreflight(
+    private ObjectNode copyPreflight(
             String source,
             String target,
             String brandRef,
@@ -2338,7 +2317,7 @@ private ObjectNode copyPreflight(
         return data;
     }
 
-private static int countRequiredCompatibilityRows(ArrayNode compatibility) {
+    private static int countRequiredCompatibilityRows(ArrayNode compatibility) {
         int count = 0;
         for (JsonNode row : compatibility) {
             if (!"BLOCKED".equals(row.path("result").asText())) count++;
@@ -2346,7 +2325,7 @@ private static int countRequiredCompatibilityRows(ArrayNode compatibility) {
         return count;
     }
 
-private static int countBlockedCompatibilityRows(ArrayNode compatibility) {
+    private static int countBlockedCompatibilityRows(ArrayNode compatibility) {
         int count = 0;
         for (JsonNode row : compatibility) {
             if ("BLOCKED".equals(row.path("result").asText())) count++;
@@ -2354,7 +2333,7 @@ private static int countBlockedCompatibilityRows(ArrayNode compatibility) {
         return count;
     }
 
-private UUID requiredUuidValue(JsonNode value, String path) {
+    private UUID requiredUuidValue(JsonNode value, String path) {
         if (value == null || value.isMissingNode() || value.isNull()) return null;
         if (!value.isTextual())
             throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, path + " must contain UUID refs");
@@ -2366,7 +2345,7 @@ private UUID requiredUuidValue(JsonNode value, String path) {
         }
     }
 
-private LinkedHashSet<String> itemReferenceRefs(JsonNode node) {
+    private LinkedHashSet<String> itemReferenceRefs(JsonNode node) {
         LinkedHashSet<String> refs = new LinkedHashSet<>();
         typedReferences(node).stream()
                 .filter(ref -> Set.of("CATALOG_ITEM", "COMPOSITE_COMPONENT", "BOM_COMPONENT")
@@ -2387,24 +2366,24 @@ private LinkedHashSet<String> itemReferenceRefs(JsonNode node) {
         return persistence.readProductionReferences(scope, brand, ids);
     }
 
-private ObjectNode envelope(String requestId, JsonNode data) {
+    private ObjectNode envelope(String requestId, JsonNode data) {
         return mapper.createObjectNode()
                 .put("revision", CatalogOwnerTypes.REVISION)
                 .put("requestId", requestId)
                 .set("data", data);
     }
 
-private void putNullableLong(ObjectNode target, String key, JsonNode value) {
+    private void putNullableLong(ObjectNode target, String key, JsonNode value) {
         if (value != null && value.isIntegralNumber()) target.put(key, value.asLong());
         else target.putNull(key);
     }
 
-private void putNullableLong(ObjectNode target, String key, Long value) {
+    private void putNullableLong(ObjectNode target, String key, Long value) {
         if (value == null) target.putNull(key);
         else target.put(key, value);
     }
 
-/** Relationship rows are the only persisted source; hydrated read shapes must never leak back into sections. */
+    /** Relationship rows are the only persisted source; hydrated read shapes must never leak back into sections. */
     private static void removeRelationalSectionFacts(ObjectNode sections) {
         for (String key : List.of(
                 "skus",
@@ -2431,7 +2410,7 @@ private void putNullableLong(ObjectNode target, String key, Long value) {
         sections.remove("missingPriceCount");
     }
 
-/** `shortName` is a catalog_item column, never a second JSON source of truth. */
+    /** `shortName` is a catalog_item column, never a second JSON source of truth. */
     private static String removeShortName(ObjectNode sections) {
         JsonNode shortName = sections.remove("shortName");
         if (shortName == null || shortName.isNull()) return null;
@@ -2441,12 +2420,12 @@ private void putNullableLong(ObjectNode target, String key, Long value) {
         return value.isEmpty() ? null : value;
     }
 
-private static void copyNullableText(ObjectNode target, JsonNode source, String field) {
+    private static void copyNullableText(ObjectNode target, JsonNode source, String field) {
         if (source.hasNonNull(field)) target.put(field, source.path(field).asText());
         else target.putNull(field);
     }
 
-/**
+    /**
      * Write paths retain submitted/hydrated axes so the fact owner assigns omitted orders exactly once by encounter
      * order. skuVariantDimensions() is a read projection: feeding it back into a write turns two omitted axis orders
      * into two explicit zeroes.
@@ -2458,7 +2437,7 @@ private static void copyNullableText(ObjectNode target, JsonNode source, String 
         return ((ArrayNode) node).deepCopy();
     }
 
-private ArrayNode compositeGroups(JsonNode node) {
+    private ArrayNode compositeGroups(JsonNode node) {
         ArrayNode result = mapper.createArrayNode();
         if (node == null || !node.isArray()) return result;
         node.forEach(group -> {
@@ -2496,7 +2475,7 @@ private ArrayNode compositeGroups(JsonNode node) {
         return result;
     }
 
-/** Post-write copy readback needs identity/version only; full hydration would recreate fan-out. */
+    /** Post-write copy readback needs identity/version only; full hydration would recreate fan-out. */
     private List<ItemRow> loadItemIdentityRows(String dataNodeRef, String brandRef, List<String> codes) {
         if (codes.isEmpty()) return List.of();
         return persistence.readItemIdentityRows(dataNodeRef, brandRef, codes).stream()
@@ -2504,7 +2483,7 @@ private ArrayNode compositeGroups(JsonNode node) {
                 .toList();
     }
 
-/**
+    /**
      * The brand-copy closure starts from every source item identity, but it does not need every relation family for
      * every item. Keep the identity scan separate so the closure can decide which set reads are actually needed.
      */
@@ -2514,7 +2493,7 @@ private ArrayNode compositeGroups(JsonNode node) {
                 .toList();
     }
 
-/**
+    /**
      * Brand copy needs the same owner facts as the old full hydrate, but probing eight empty relation families is pure
      * latency for ordinary items. One presence query chooses the set reads; it does not replace any fact read when a
      * family is present, and the resulting projection remains the established copy source of truth.
@@ -2616,7 +2595,7 @@ private ArrayNode compositeGroups(JsonNode node) {
                 orderOptionFacts.definitions());
     }
 
-private CopyFactPresence copyFactPresence(Collection<UUID> itemRefs) {
+    private CopyFactPresence copyFactPresence(Collection<UUID> itemRefs) {
         CatalogCopyPersistence.CopyFactPresenceRow row = persistence.readCopyFactPresence(itemRefs);
         return new CopyFactPresence(
                 row.skus(),
@@ -2629,7 +2608,7 @@ private CopyFactPresence copyFactPresence(Collection<UUID> itemRefs) {
                 row.references());
     }
 
-/**
+    /**
      * Copy compatibility only needs the catalog item identity/shape and SKU structure. Loading the full detail
      * projection here re-reads categories, BOMs, option configs, media, references and unit snapshots that the copy
      * closure already owns. Keep the SKU relation as the one additional set-read because catalog_item.sections does not
@@ -2663,7 +2642,7 @@ private CopyFactPresence copyFactPresence(Collection<UUID> itemRefs) {
                 rows.stream().mapToLong(ItemRow::version).max().orElse(0L));
     }
 
-/** Adds the typed identification/preparation projection without making it another persisted JSON authority. */
+    /** Adds the typed identification/preparation projection without making it another persisted JSON authority. */
     private void decoratePreparationFacts(
             UUID itemRef,
             ObjectNode sections,
@@ -2734,12 +2713,12 @@ private CopyFactPresence copyFactPresence(Collection<UUID> itemRefs) {
         }
     }
 
-private void setNullableJson(ObjectNode target, String field, JsonNode value) {
+    private void setNullableJson(ObjectNode target, String field, JsonNode value) {
         if (value == null || value.isNull()) target.putNull(field);
         else target.set(field, value.deepCopy());
     }
 
-private Map<UUID, ItemUnitRefs> itemUnitRefsByItemRefs(Collection<UUID> itemRefs) {
+    private Map<UUID, ItemUnitRefs> itemUnitRefsByItemRefs(Collection<UUID> itemRefs) {
         if (itemRefs == null || itemRefs.isEmpty()) return Map.of();
         Map<UUID, CatalogCopyPersistence.ItemUnitRefsRow> rows = persistence.readItemUnitRefs(itemRefs);
         Map<UUID, ItemUnitRefs> result = new LinkedHashMap<>();
@@ -2748,12 +2727,14 @@ private Map<UUID, ItemUnitRefs> itemUnitRefsByItemRefs(Collection<UUID> itemRefs
                 new ItemUnitRefs(
                         row.salesUnit() == null ? null : row.salesUnit().ref(),
                         unitSnapshot(row.salesUnit()),
-                        row.baseMeasureUnit() == null ? null : row.baseMeasureUnit().ref(),
+                        row.baseMeasureUnit() == null
+                                ? null
+                                : row.baseMeasureUnit().ref(),
                         unitSnapshot(row.baseMeasureUnit()))));
         return result;
     }
 
-/** Computes the catalog-owned portion of the approved typed closure in memory after set-based loads. */
+    /** Computes the catalog-owned portion of the approved typed closure in memory after set-based loads. */
     private CatalogClosure closureGraph(String dataNodeRef, String brandRef, List<String> selected) {
         CopyClosureFacts hydrated =
                 hydrateCopyClosureFacts(dataNodeRef, brandRef, loadAllItemIdentityRows(dataNodeRef, brandRef));
@@ -2861,7 +2842,7 @@ private Map<UUID, ItemUnitRefs> itemUnitRefsByItemRefs(Collection<UUID> itemRefs
                 List.copyOf(edges));
     }
 
-private Set<UUID> definitionRefs(List<ItemRow> rows, String sectionName) {
+    private Set<UUID> definitionRefs(List<ItemRow> rows, String sectionName) {
         Set<UUID> refs = new LinkedHashSet<>();
         for (ItemRow row : rows) {
             JsonNode section = json(row.sectionsJson()).path(sectionName);
@@ -2883,7 +2864,7 @@ private Set<UUID> definitionRefs(List<ItemRow> rows, String sectionName) {
         return Set.copyOf(refs);
     }
 
-private List<CategoryRow> loadCategories(String scope, String brand, List<String> categoryRefs) {
+    private List<CategoryRow> loadCategories(String scope, String brand, List<String> categoryRefs) {
         if (categoryRefs.isEmpty()) return List.of();
         List<UUID> refs = new ArrayList<>();
         for (String categoryRef : categoryRefs) {
@@ -2899,13 +2880,13 @@ private List<CategoryRow> loadCategories(String scope, String brand, List<String
                 .toList();
     }
 
-private Set<UUID> unitReferences(JsonNode node) {
+    private Set<UUID> unitReferences(JsonNode node) {
         LinkedHashSet<UUID> result = new LinkedHashSet<>();
         collectUnitReferences(node, null, result);
         return Set.copyOf(result);
     }
 
-private void collectUnitReferences(JsonNode node, String parentKey, Set<UUID> result) {
+    private void collectUnitReferences(JsonNode node, String parentKey, Set<UUID> result) {
         if (node == null || node.isNull()) return;
         if (node.isObject()) {
             node.fields().forEachRemaining(entry -> {
@@ -2940,7 +2921,7 @@ private void collectUnitReferences(JsonNode node, String parentKey, Set<UUID> re
         } else if (node.isArray()) node.forEach(value -> collectUnitReferences(value, parentKey, result));
     }
 
-private List<UnitRow> loadUnits(String scope, String brand, Collection<UUID> unitRefs) {
+    private List<UnitRow> loadUnits(String scope, String brand, Collection<UUID> unitRefs) {
         if (unitRefs == null || unitRefs.isEmpty()) return List.of();
         List<UUID> refs = new ArrayList<>(new LinkedHashSet<>(unitRefs));
         List<UnitRow> rows = persistence.readUnits(scope, brand, new LinkedHashSet<>(refs)).stream()
@@ -2955,7 +2936,7 @@ private List<UnitRow> loadUnits(String scope, String brand, Collection<UUID> uni
         return rows;
     }
 
-private List<DictionaryRow> loadDictionaries(String scope, String brand, List<TypedReference> references) {
+    private List<DictionaryRow> loadDictionaries(String scope, String brand, List<TypedReference> references) {
         if (references.isEmpty()) return List.of();
         List<UUID> refs = references.stream()
                 .filter(ref -> isDictionaryReference(ref.referenceKind()))
@@ -2969,7 +2950,6 @@ private List<DictionaryRow> loadDictionaries(String scope, String brand, List<Ty
         Set<UUID> requestedRefs = Set.copyOf(refs);
         return candidates.stream()
                 .filter(row -> requestedRefs.contains(row.ref())
-
                         ? references.stream()
                                 .anyMatch(ref -> ref.ref().equals(row.ref().toString())
                                         && dictionaryKindMatches(ref.referenceKind(), row.dictionaryKind()))
@@ -2979,7 +2959,7 @@ private List<DictionaryRow> loadDictionaries(String scope, String brand, List<Ty
                 .toList();
     }
 
-private static int parsePageSize(ObjectNode request, String key, int fallback) {
+    private static int parsePageSize(ObjectNode request, String key, int fallback) {
         try {
             return CollectionRequestSupport.pageSize(request, key, fallback);
         } catch (CollectionRequestSupport.InvalidRequestValue failure) {
@@ -2987,7 +2967,7 @@ private static int parsePageSize(ObjectNode request, String key, int fallback) {
         }
     }
 
-private static OpaqueCollectionCursor.Position decodeCollectionCursor(ObjectNode request, String queryIdentity) {
+    private static OpaqueCollectionCursor.Position decodeCollectionCursor(ObjectNode request, String queryIdentity) {
         try {
             return OpaqueCollectionCursor.decode(optional(request, "cursor"), queryIdentity);
         } catch (OpaqueCollectionCursor.InvalidCursor failure) {
@@ -2995,14 +2975,14 @@ private static OpaqueCollectionCursor.Position decodeCollectionCursor(ObjectNode
         }
     }
 
-private static String cursorIdentity(String operationId, String... parts) {
+    private static String cursorIdentity(String operationId, String... parts) {
         String[] components = new String[parts.length + 1];
         components[0] = operationId;
         System.arraycopy(parts, 0, components, 1, parts.length);
         return CanonicalCursorIdentity.encode(components);
     }
 
-private List<TypedReference> typedReferences(JsonNode node) {
+    private List<TypedReference> typedReferences(JsonNode node) {
         LinkedHashSet<TypedReference> result = new LinkedHashSet<>();
         addDeclaredArrayRefs(result, node.path("categoryRefs"), "CATEGORY");
         addDeclaredArrayRefs(result, node.path("tagRefs"), "TAG");
@@ -3031,21 +3011,21 @@ private List<TypedReference> typedReferences(JsonNode node) {
         return List.copyOf(result);
     }
 
-private void addDeclaredArrayRefs(LinkedHashSet<TypedReference> result, JsonNode values, String kind) {
+    private void addDeclaredArrayRefs(LinkedHashSet<TypedReference> result, JsonNode values, String kind) {
         if (values.isArray()) values.forEach(value -> addDeclaredRef(result, value, kind));
     }
 
-private void addDeclaredRef(LinkedHashSet<TypedReference> result, JsonNode value, String kind) {
+    private void addDeclaredRef(LinkedHashSet<TypedReference> result, JsonNode value, String kind) {
         if (value != null && value.isTextual() && !value.asText().isBlank())
             result.add(new TypedReference(kind, value.asText()));
     }
 
-private boolean isDictionaryReference(String kind) {
+    private boolean isDictionaryReference(String kind) {
         return Set.of("TAG", "SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE", "ORDER_OPTION_VALUE")
                 .contains(kind);
     }
 
-private boolean dictionaryKindMatches(String referenceKind, String dictionaryKind) {
+    private boolean dictionaryKindMatches(String referenceKind, String dictionaryKind) {
         return switch (referenceKind) {
             case "TAG", "SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE", "ORDER_OPTION_VALUE" -> referenceKind.equals(
                     dictionaryKind);
@@ -3053,13 +3033,13 @@ private boolean dictionaryKindMatches(String referenceKind, String dictionaryKin
         };
     }
 
-private ObjectNode receiptRequest(ObjectNode request, String brandRef) {
+    private ObjectNode receiptRequest(ObjectNode request, String brandRef) {
         ObjectNode scoped = request.deepCopy();
         scoped.put("receiptBrandRef", brandRef);
         return scoped;
     }
 
-private JsonNode replay(String dataNodeRef, String key, String operationId, ObjectNode request) {
+    private JsonNode replay(String dataNodeRef, String key, String operationId, ObjectNode request) {
         persistence.lockReceipt(dataNodeRef, key);
         List<CatalogCopyPersistence.ReceiptRow> rows = persistence.readReceipt(dataNodeRef, key);
         if (rows.isEmpty()) return null;
@@ -3069,26 +3049,20 @@ private JsonNode replay(String dataNodeRef, String key, String operationId, Obje
         return json(receipt.responseJson());
     }
 
-private void saveReceipt(String scope, String key, String op, ObjectNode request, JsonNode response) {
-        persistence.saveReceipt(
-                scope,
-                key,
-                op,
-                hash(request),
-                canonicalJson(response),
-                now());
+    private void saveReceipt(String scope, String key, String op, ObjectNode request, JsonNode response) {
+        persistence.saveReceipt(scope, key, op, hash(request), canonicalJson(response), now());
     }
 
-private long generation(String dataNodeRef, String brandRef) {
+    private long generation(String dataNodeRef, String brandRef) {
         return persistence.generation(dataNodeRef, brandRef);
     }
 
-private static void requireScope(String dataNodeRef, String brandRef) {
+    private static void requireScope(String dataNodeRef, String brandRef) {
         if (dataNodeRef == null || dataNodeRef.isBlank() || brandRef == null || brandRef.isBlank())
             throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "owner scope is required");
     }
 
-private static CatalogAuthorizationScope requireTypedContext(
+    private static CatalogAuthorizationScope requireTypedContext(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context, String expectedOwner) {
         if (context == null
                 || context.operationToken() == null
@@ -3116,7 +3090,7 @@ private static CatalogAuthorizationScope requireTypedContext(
         return scope;
     }
 
-private static String copySourceDataNodeRef(CatalogAuthorizationScope scope) {
+    private static String copySourceDataNodeRef(CatalogAuthorizationScope scope) {
         return switch (scope.copySourcePolicy()) {
             case TARGET_SCOPE -> scope.dataNodeId().toString();
             case ORGANIZATION_JUDGMENT -> {
@@ -3130,35 +3104,35 @@ private static String copySourceDataNodeRef(CatalogAuthorizationScope scope) {
         };
     }
 
-private static String required(ObjectNode request, String key) {
+    private static String required(ObjectNode request, String key) {
         String value = optional(request, key);
         if (value == null || value.isBlank())
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, key + " is required");
         return value;
     }
 
-private static String required(JsonNode request, String key) {
+    private static String required(JsonNode request, String key) {
         String value = request == null ? "" : request.path(key).asText("");
         if (value.isBlank()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, key + " is required");
         return value;
     }
 
-private static String optional(ObjectNode request, String key) {
+    private static String optional(ObjectNode request, String key) {
         return CollectionRequestSupport.optional(request, key);
-}
+    }
 
-private static long requiredLong(ObjectNode request, String key, long fallback) {
+    private static long requiredLong(ObjectNode request, String key, long fallback) {
         JsonNode value = request.get(key);
         if (value == null || !value.isIntegralNumber()) return fallback;
         return value.asLong();
     }
 
-private static long requiredLong(JsonNode request, String key, long fallback) {
+    private static long requiredLong(JsonNode request, String key, long fallback) {
         JsonNode value = request == null ? null : request.get(key);
         return value == null || !value.isIntegralNumber() ? fallback : value.asLong();
     }
 
-private String canonicalJson(JsonNode value) {
+    private String canonicalJson(JsonNode value) {
         try {
             return mapper.writeValueAsString(value == null ? mapper.createObjectNode() : value);
         } catch (Exception ex) {
@@ -3166,7 +3140,7 @@ private String canonicalJson(JsonNode value) {
         }
     }
 
-private JsonNode json(String value) {
+    private JsonNode json(String value) {
         if (value == null || value.isBlank()) {
             throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "catalog JSON fact is missing");
         }
@@ -3183,11 +3157,11 @@ private JsonNode json(String value) {
         }
     }
 
-private String hash(JsonNode value) {
+    private String hash(JsonNode value) {
         return digest(canonicalJson(value));
     }
 
-private static String digest(String value) {
+    private static String digest(String value) {
         try {
             return Sha256Hex.digest(value);
         } catch (Exception ex) {
@@ -3195,15 +3169,15 @@ private static String digest(String value) {
         }
     }
 
-private long now() {
+    private long now() {
         return time.currentEpochMillis();
     }
 
-private CatalogOwnerApi.Problem tooLarge(String code, int actual, int limit) {
+    private CatalogOwnerApi.Problem tooLarge(String code, int actual, int limit) {
         return new CatalogOwnerApi.Problem(code, 422, code + " actual=" + actual + " limit=" + limit);
     }
 
-private List<String> selectedCodes(ObjectNode request) {
+    private List<String> selectedCodes(ObjectNode request) {
         LinkedHashSet<String> result = new LinkedHashSet<>();
         JsonNode values = request.get("selectedItemCodes");
         if (values != null && values.isArray())
@@ -3216,7 +3190,7 @@ private List<String> selectedCodes(ObjectNode request) {
         return List.copyOf(result);
     }
 
-private Set<String> selectedSectionsElements(ArrayNode values) {
+    private Set<String> selectedSectionsElements(ArrayNode values) {
         Set<String> result = new java.util.HashSet<>();
         values.forEach(value -> {
             if (value.isTextual()) result.add(value.asText());
@@ -3224,11 +3198,11 @@ private Set<String> selectedSectionsElements(ArrayNode values) {
         return result;
     }
 
-private long scopeVersion(List<ItemRow> rows) {
+    private long scopeVersion(List<ItemRow> rows) {
         return rows.stream().mapToLong(ItemRow::version).max().orElse(0L);
     }
 
-private long scopeVersion(CatalogClosure graph) {
+    private long scopeVersion(CatalogClosure graph) {
         return graph.objects().stream().mapToLong(CatalogObject::version).max().orElse(0L);
     }
 
@@ -3237,14 +3211,15 @@ private long scopeVersion(CatalogClosure graph) {
         if (targetCode != null) {
             return persistence.targetItemVersion(target, brand, targetCode);
         }
-        return persistence.maxTargetItemVersion(target, brand, source.stream().map(ItemRow::code).toList());
+        return persistence.maxTargetItemVersion(
+                target, brand, source.stream().map(ItemRow::code).toList());
     }
 
-private long targetScopeVersion(String target, String brand, ObjectNode request, CatalogClosure graph) {
+    private long targetScopeVersion(String target, String brand, ObjectNode request, CatalogClosure graph) {
         return targetScopeVersions(target, brand, request, graph).maxVersion();
     }
 
-/**
+    /**
      * Loads the target facts used by one copy request. Item/SKU identity, active reference mappings and the version
      * projections are kept together so compatibility and the preflight payload consume the same read. The post-write
      * targetScopeVersion path remains a fresh readback and is intentionally not routed here.
@@ -3273,7 +3248,7 @@ private long targetScopeVersion(String target, String brand, ObjectNode request,
                         maxVersion, targetCategories.versions(), targetDictionaries.versions(), unitVersions));
     }
 
-/**
+    /**
      * Loads target versions afresh for the post-write readback. The copy-plan path uses TargetCopyFacts so these reads
      * remain outside the request-local preflight snapshot and cannot hide a target-side change after writes.
      */
@@ -3321,15 +3296,16 @@ private long targetScopeVersion(String target, String brand, ObjectNode request,
 
     private TargetCategoryFacts targetCategoryFacts(String target, String brand, List<CategoryRow> rows) {
         List<String> codes = rows.stream().map(CategoryRow::code).distinct().toList();
-        List<CatalogCopyPersistence.TargetCategoryRow> candidates = persistence.targetCategoryFacts(target, brand, codes);
+        List<CatalogCopyPersistence.TargetCategoryRow> candidates =
+                persistence.targetCategoryFacts(target, brand, codes);
         Map<String, UUID> refs = new LinkedHashMap<>();
         Map<String, Long> versions = new LinkedHashMap<>();
         for (CatalogCopyPersistence.TargetCategoryRow row : candidates) {
             versions.merge(row.code(), row.version(), Math::max);
-            if (row.status() != null && !"VOIDED".equals(row.status())
+            if (row.status() != null
+                    && !"VOIDED".equals(row.status())
                     && refs.putIfAbsent(row.code(), row.categoryRef()) != null)
-                throw new CatalogOwnerApi.Problem(
-                        "REFERENCE_MAPPING_UNRESOLVED", 422, "目标分类编码引用不唯一: " + row.code());
+                throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标分类编码引用不唯一: " + row.code());
         }
         return new TargetCategoryFacts(Map.copyOf(refs), Map.copyOf(versions));
     }
@@ -3350,7 +3326,8 @@ private long targetScopeVersion(String target, String brand, ObjectNode request,
         for (CatalogCopyPersistence.TargetDictionaryRow row : candidates) {
             DictionaryKey key = new DictionaryKey(row.dictionaryKind(), row.code());
             versions.merge(key, row.version(), Math::max);
-            if (row.status() != null && !"VOIDED".equals(row.status())
+            if (row.status() != null
+                    && !"VOIDED".equals(row.status())
                     && refs.putIfAbsent(key, row.entryRef()) != null) {
                 String failureMessage = "目标字典编码引用不唯一: " + key.code();
                 throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, failureMessage);
@@ -3359,7 +3336,7 @@ private long targetScopeVersion(String target, String brand, ObjectNode request,
         return new TargetDictionaryFacts(Map.copyOf(refs), Map.copyOf(versions));
     }
 
-private Object[] concatArgs(Class<?> ignored, String target, String brand, List<ItemRow> source) {
+    private Object[] concatArgs(Class<?> ignored, String target, String brand, List<ItemRow> source) {
         ArrayList<Object> args = new ArrayList<>();
         args.add(target);
         args.add(brand);
@@ -3367,7 +3344,7 @@ private Object[] concatArgs(Class<?> ignored, String target, String brand, List<
         return args.toArray();
     }
 
-private String copyDigest(
+    private String copyDigest(
             String source,
             String target,
             String brandRef,
@@ -3391,7 +3368,7 @@ private String copyDigest(
                 + attributeDefinitions + "|" + orderOptionDefinitions + "|" + sourceVersion + "|" + targetVersion);
     }
 
-/**
+    /**
      * The copy plan is keyed only by source opaque refs. A code may locate an equivalent target fact, but it never
      * becomes the relation identity or a rewrite key. On execute, the preflight plan is supplied back by the
      * coordinator and must agree with any target fact that already exists.
@@ -3458,7 +3435,6 @@ private String copyDigest(
                     canonicalTuple(
                             target,
                             brand,
-
                             row.objectType(),
                             row.code(),
                             row.name(),
@@ -3557,7 +3533,7 @@ private String copyDigest(
                 Map.copyOf(mapping), compatibilityResults, Map.copyOf(targetRows), Map.copyOf(targetUnits));
     }
 
-private ObjectNode compatibilityResult(
+    private ObjectNode compatibilityResult(
             String objectType,
             String compatibilityId,
             String result,
@@ -3580,20 +3556,19 @@ private ObjectNode compatibilityResult(
         for (CatalogCopyPersistence.UnitRow row : persistence.targetUnitsByCode(target, brand, codes)) {
             UnitRow mapped = unitRow(row);
             if (result.putIfAbsent(mapped.code(), mapped) != null)
-                throw new CatalogOwnerApi.Problem(
-                        "REFERENCE_MAPPING_UNRESOLVED", 422, "目标单位编码引用不唯一: " + mapped.code());
+                throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标单位编码引用不唯一: " + mapped.code());
         }
         return result;
     }
 
-private boolean sameUnitDefinition(UnitRow source, UnitRow target) {
+    private boolean sameUnitDefinition(UnitRow source, UnitRow target) {
         return source.code().equals(target.code())
                 && source.name().equals(target.name())
                 && source.unitDimension().equals(target.unitDimension())
                 && source.precision() == target.precision();
     }
 
-private static Map<UUID, UUID> uuidMappings(Map<ReferenceKey, String> mappings, String objectType) {
+    private static Map<UUID, UUID> uuidMappings(Map<ReferenceKey, String> mappings, String objectType) {
         Map<UUID, UUID> result = new LinkedHashMap<>();
         for (Map.Entry<ReferenceKey, String> entry : mappings.entrySet()) {
             if (!objectType.equals(entry.getKey().objectType())) continue;
@@ -3607,7 +3582,7 @@ private static Map<UUID, UUID> uuidMappings(Map<ReferenceKey, String> mappings, 
         return Map.copyOf(result);
     }
 
-private Map<ReferenceKey, String> suppliedReferenceMappings(ObjectNode request) {
+    private Map<ReferenceKey, String> suppliedReferenceMappings(ObjectNode request) {
         if (request == null || !request.path("referenceMappings").isArray()) return Map.of();
         Map<ReferenceKey, String> result = new LinkedHashMap<>();
         for (JsonNode value : request.path("referenceMappings")) {
@@ -3627,7 +3602,7 @@ private Map<ReferenceKey, String> suppliedReferenceMappings(ObjectNode request) 
         return Map.copyOf(result);
     }
 
-private String targetRefFor(ReferenceKey source, UUID existing, Map<ReferenceKey, String> supplied) {
+    private String targetRefFor(ReferenceKey source, UUID existing, Map<ReferenceKey, String> supplied) {
         String planned = supplied.get(source);
         if (existing != null) {
             if (planned != null && !existing.toString().equals(planned)) {
@@ -3642,7 +3617,7 @@ private String targetRefFor(ReferenceKey source, UUID existing, Map<ReferenceKey
         return planned == null ? UUID.randomUUID().toString() : planned;
     }
 
-private String opaqueCopyRef(JsonNode value, String key) {
+    private String opaqueCopyRef(JsonNode value, String key) {
         try {
             return UUID.fromString(value.path(key).asText("")).toString();
         } catch (IllegalArgumentException failure) {
@@ -3651,14 +3626,14 @@ private String opaqueCopyRef(JsonNode value, String key) {
         }
     }
 
-private List<JsonNode> rawSkuRows(JsonNode sections) {
+    private List<JsonNode> rawSkuRows(JsonNode sections) {
         if (sections == null || !sections.path("skus").isArray()) return List.of();
         List<JsonNode> rows = new ArrayList<>();
         sections.path("skus").forEach(rows::add);
         return rows;
     }
 
-private Map<String, UUID> skuRefsByCode(JsonNode sections) {
+    private Map<String, UUID> skuRefsByCode(JsonNode sections) {
         Map<String, UUID> result = new LinkedHashMap<>();
         for (JsonNode sku : rawSkuRows(sections)) {
             String code = firstText(sku, "skuCode", "code");
@@ -3674,7 +3649,7 @@ private Map<String, UUID> skuRefsByCode(JsonNode sections) {
         return result;
     }
 
-private CompatibilityCheck compatibilityCheck(
+    private CompatibilityCheck compatibilityCheck(
             ItemRow source, ItemRow existing, CatalogClosure graph, Map<ReferenceKey, String> mapping) {
         if (existing != null && !existing.shapeKey().equals(source.shapeKey()))
             return new CompatibilityCheck(
@@ -3709,7 +3684,7 @@ private CompatibilityCheck compatibilityCheck(
                 false);
     }
 
-private ObjectNode canonicalTuple(String ownerRef, String brandRef, String objectType, String... parts) {
+    private ObjectNode canonicalTuple(String ownerRef, String brandRef, String objectType, String... parts) {
         ObjectNode tuple = mapper.createObjectNode()
                 .put("ownerRef", ownerRef)
                 .put("brandRef", brandRef)
@@ -3719,7 +3694,7 @@ private ObjectNode canonicalTuple(String ownerRef, String brandRef, String objec
         return tuple;
     }
 
-private ObjectNode canonicalTuple(String ownerRef, String brandRef, String objectType, List<String> parts) {
+    private ObjectNode canonicalTuple(String ownerRef, String brandRef, String objectType, List<String> parts) {
         ObjectNode tuple = mapper.createObjectNode()
                 .put("ownerRef", ownerRef)
                 .put("brandRef", brandRef)
@@ -3729,14 +3704,13 @@ private ObjectNode canonicalTuple(String ownerRef, String brandRef, String objec
         return tuple;
     }
 
-private List<String> canonicalParts(DictionaryRow row, CatalogClosure graph) {
+    private List<String> canonicalParts(DictionaryRow row, CatalogClosure graph) {
         if ("SKU_ATTRIBUTE_VALUE".equals(row.dictionaryKind()) && row.parentEntryRef() != null) {
             DictionaryRow parent = graph.dictionaries().stream()
                     .filter(candidate -> row.parentEntryRef().equals(candidate.ref()))
                     .findFirst()
                     .orElse(null);
             if (parent == null)
-
                 throw new CatalogOwnerApi.Problem(
                         "REFERENCE_MAPPING_UNRESOLVED",
                         422,
@@ -3747,7 +3721,7 @@ private List<String> canonicalParts(DictionaryRow row, CatalogClosure graph) {
         return List.of(row.code());
     }
 
-/**
+    /**
      * Builds read labels from the scoped target fact where it exists; for a planned CREATE the copied source's
      * immutable code is the planned target label.
      */
@@ -3838,7 +3812,7 @@ private List<String> canonicalParts(DictionaryRow row, CatalogClosure graph) {
         return row;
     }
 
-private ObjectNode unitReferenceMappingRow(UnitRow source, UUID targetRef) {
+    private ObjectNode unitReferenceMappingRow(UnitRow source, UUID targetRef) {
         return mapper.createObjectNode()
                 .put("objectType", "CATALOG_UNIT")
                 .put("sourceRef", source.ref().toString())
@@ -3849,7 +3823,7 @@ private ObjectNode unitReferenceMappingRow(UnitRow source, UUID targetRef) {
                 .put("targetUnitPrecision", source.precision());
     }
 
-/**
+    /**
      * The production owner supplies this row during its scoped preflight. Catalog only carries it through after
      * validating the opaque pair.
      */
@@ -3879,11 +3853,11 @@ private ObjectNode unitReferenceMappingRow(UnitRow source, UUID targetRef) {
                 "production tag mapping must come from the production owner preflight");
     }
 
-private JsonNode rewriteReferences(JsonNode node, Map<ReferenceKey, String> mapping) {
+    private JsonNode rewriteReferences(JsonNode node, Map<ReferenceKey, String> mapping) {
         return rewriteReferences(node, mapping, null);
     }
 
-private JsonNode rewriteReferences(JsonNode node, Map<ReferenceKey, String> mapping, String parentKey) {
+    private JsonNode rewriteReferences(JsonNode node, Map<ReferenceKey, String> mapping, String parentKey) {
         if (node == null || node.isNull()) return mapper.nullNode();
         if (node.isObject()) {
             ObjectNode copy = mapper.createObjectNode();
@@ -3903,7 +3877,7 @@ private JsonNode rewriteReferences(JsonNode node, Map<ReferenceKey, String> mapp
         return node.deepCopy();
     }
 
-private JsonNode rewriteReferenceValue(JsonNode value, String kind, Map<ReferenceKey, String> mapping) {
+    private JsonNode rewriteReferenceValue(JsonNode value, String kind, Map<ReferenceKey, String> mapping) {
         if (value == null || value.isNull()) return mapper.nullNode();
         ReferenceKey key = value.isTextual() ? new ReferenceKey(copyReferenceObjectType(kind), value.asText()) : null;
         if (key != null && mapping.containsKey(key))
@@ -3917,7 +3891,7 @@ private JsonNode rewriteReferenceValue(JsonNode value, String kind, Map<Referenc
         return value.deepCopy();
     }
 
-/**
+    /**
      * Copy rewriting shares only the persisted matrix paths; labels and arbitrary `code` fields never rewrite a
      * relation.
      */
@@ -3950,7 +3924,7 @@ private JsonNode rewriteReferenceValue(JsonNode value, String kind, Map<Referenc
         };
     }
 
-private void assertNoOwnerReferenceLeak(
+    private void assertNoOwnerReferenceLeak(
             CatalogClosure graph, Map<ReferenceKey, String> mapping, String sourceScope) {
         for (ClosureEdge edge : graph.edges()) {
             if (Set.of("PRODUCTION_TAG", "STOCK_TARGET").contains(edge.referenceKind())) continue;
@@ -3968,7 +3942,7 @@ private void assertNoOwnerReferenceLeak(
                 throw new CatalogOwnerApi.Problem("OWNER_REFERENCE_LEAK", 422, "源 owner 引用不能进入目标图");
     }
 
-private void verifyTargetNoOwnerReferenceLeak(
+    private void verifyTargetNoOwnerReferenceLeak(
             String targetScope, String brand, CatalogClosure graph, String sourceScope) {
         List<String> codes = graph.items().stream().map(ItemRow::code).toList();
         for (ItemRow row : loadItemIdentityRows(targetScope, brand, codes))
@@ -3976,7 +3950,7 @@ private void verifyTargetNoOwnerReferenceLeak(
                 throw new CatalogOwnerApi.Problem("OWNER_REFERENCE_LEAK", 422, "目标图仍含源 owner 引用");
     }
 
-private boolean containsForbiddenOwnerReference(JsonNode node, String sourceScope) {
+    private boolean containsForbiddenOwnerReference(JsonNode node, String sourceScope) {
         if (node == null || node.isNull()) return false;
         if (node.isObject()) {
             var fields = node.fields();
@@ -3995,7 +3969,7 @@ private boolean containsForbiddenOwnerReference(JsonNode node, String sourceScop
         return false;
     }
 
-private String requiredMappedReference(Map<ReferenceKey, String> mapping, ReferenceKey key) {
+    private String requiredMappedReference(Map<ReferenceKey, String> mapping, ReferenceKey key) {
         String target = mapping.get(key);
         if (target == null || target.isBlank()) {
             throw new CatalogOwnerApi.Problem(
@@ -4007,7 +3981,7 @@ private String requiredMappedReference(Map<ReferenceKey, String> mapping, Refere
         return target;
     }
 
-private String optionValueCodeForRef(CatalogClosure graph, String ref) {
+    private String optionValueCodeForRef(CatalogClosure graph, String ref) {
         for (ItemRow item : graph.items()) {
             for (JsonNode sku : rawSkuRows(json(item.sectionsJson())))
                 if (sku.path("attributeValueRefs").isArray())
@@ -4019,11 +3993,11 @@ private String optionValueCodeForRef(CatalogClosure graph, String ref) {
         return null;
     }
 
-static String dictionaryObjectType(String dictionaryKind) {
+    static String dictionaryObjectType(String dictionaryKind) {
         return CatalogOwnerValueSupport.dictionaryObjectType(dictionaryKind);
-}
+    }
 
-private static ItemRow itemRow(CatalogCopyPersistence.ItemRow row) {
+    private static ItemRow itemRow(CatalogCopyPersistence.ItemRow row) {
         return new ItemRow(
                 row.ref(),
                 row.code(),
@@ -4037,7 +4011,7 @@ private static ItemRow itemRow(CatalogCopyPersistence.ItemRow row) {
                 row.sourceScopeRef());
     }
 
-private static CategoryRow categoryRow(CatalogCopyPersistence.CategoryRow row) {
+    private static CategoryRow categoryRow(CatalogCopyPersistence.CategoryRow row) {
         return new CategoryRow(
                 row.ref(),
                 row.code(),
@@ -4049,7 +4023,7 @@ private static CategoryRow categoryRow(CatalogCopyPersistence.CategoryRow row) {
                 row.displayOrder());
     }
 
-private static DictionaryRow dictionaryRow(CatalogCopyPersistence.DictionaryRow row) {
+    private static DictionaryRow dictionaryRow(CatalogCopyPersistence.DictionaryRow row) {
         return new DictionaryRow(
                 row.ref(),
                 row.dictionaryKind(),
@@ -4061,16 +4035,14 @@ private static DictionaryRow dictionaryRow(CatalogCopyPersistence.DictionaryRow 
                 row.version());
     }
 
-private static UnitRow unitRow(CatalogCopyPersistence.UnitRow row) {
+    private static UnitRow unitRow(CatalogCopyPersistence.UnitRow row) {
         return new UnitRow(
                 row.ref(), row.code(), row.name(), row.unitDimension(), row.precision(), row.status(), row.version());
     }
 
-private record ItemRow(
+    private record ItemRow(
             UUID ref,
-
             String code,
-
             String name,
             String shortName,
             String shapeKey,
@@ -4085,7 +4057,7 @@ private record ItemRow(
         }
     }
 
-private record CopyFactPresence(
+    private record CopyFactPresence(
             boolean skus,
             boolean categories,
             boolean composites,
@@ -4095,24 +4067,24 @@ private record CopyFactPresence(
             boolean images,
             boolean references) {}
 
-private record ItemUnitRefs(
+    private record ItemUnitRefs(
             UUID salesUnitRef,
             InventoryOwnerApi.UnitSnapshot salesUnitSnapshot,
             UUID baseMeasureUnitRef,
             InventoryOwnerApi.UnitSnapshot baseMeasureUnitSnapshot) {}
 
-private record CopiedUnitInput(UUID itemRef, ObjectNode sections, ArrayNode skus) {}
+    private record CopiedUnitInput(UUID itemRef, ObjectNode sections, ArrayNode skus) {}
 
-private record CopiedUnitRefs(
+    private record CopiedUnitRefs(
             UUID salesUnitRef,
             UUID baseMeasureUnitRef,
             Map<UUID, UUID> salesOverrides,
             Map<UUID, UUID> baseOverrides,
             ArrayNode skus) {}
 
-private record CopyPageRow(ItemRow item, long total) {}
+    private record CopyPageRow(ItemRow item, long total) {}
 
-private record CategoryRow(
+    private record CategoryRow(
             UUID ref,
             String code,
             String name,
@@ -4127,10 +4099,10 @@ private record CategoryRow(
         }
     }
 
-private record CopyCategory(
+    private record CopyCategory(
             UUID targetRef, String dataNodeRef, String brandRef, CategoryRow source, UUID targetParentRef) {}
 
-private record DictionaryRow(
+    private record DictionaryRow(
             UUID ref,
             String dictionaryKind,
             String code,
@@ -4145,7 +4117,7 @@ private record DictionaryRow(
         }
     }
 
-private record UnitRow(
+    private record UnitRow(
             UUID ref, String code, String name, String unitDimension, int precision, String status, long version)
             implements CatalogObject {
         public String objectType() {
@@ -4153,22 +4125,22 @@ private record UnitRow(
         }
     }
 
-private record CopyDictionary(
+    private record CopyDictionary(
             UUID targetRef, String dataNodeRef, String brandRef, DictionaryRow source, UUID targetParentRef) {}
 
-private record UnitCopy(UUID targetRef, String dataNodeRef, String brandRef, UnitRow source) {}
+    private record UnitCopy(UUID targetRef, String dataNodeRef, String brandRef, UnitRow source) {}
 
-private record TypedReference(String referenceKind, String ref) {}
+    private record TypedReference(String referenceKind, String ref) {}
 
-private record SkuInboundReference(UUID componentRef, UUID ownerItemRef, String ownerCode, String ownerName) {}
+    private record SkuInboundReference(UUID componentRef, UUID ownerItemRef, String ownerCode, String ownerName) {}
 
-private record ClosureEdge(String fromRef, String toRef, String referenceKind) {}
+    private record ClosureEdge(String fromRef, String toRef, String referenceKind) {}
 
-private record ReferenceKey(String objectType, String ref) {}
+    private record ReferenceKey(String objectType, String ref) {}
 
-private record DictionaryKey(String kind, String code) {}
+    private record DictionaryKey(String kind, String code) {}
 
-private interface CatalogObject {
+    private interface CatalogObject {
         String objectType();
 
         String code();
@@ -4178,7 +4150,7 @@ private interface CatalogObject {
         long version();
     }
 
-private record CatalogClosure(
+    private record CatalogClosure(
             List<ItemRow> items,
             List<CategoryRow> categories,
             List<DictionaryRow> dictionaries,
@@ -4200,7 +4172,7 @@ private record CatalogClosure(
         }
     }
 
-private record CopyClosureFacts(
+    private record CopyClosureFacts(
             List<ItemRow> items,
             Map<UUID, List<UUID>> orderOptionDefinitionRefsByItem,
             Map<UUID, CatalogItemDefinitionFacts.CopyAttributeDefinition> attributeDefinitions,
@@ -4210,7 +4182,7 @@ private record CopyClosureFacts(
         }
     }
 
-private record CatalogCopyPlan(
+    private record CatalogCopyPlan(
             List<String> selected,
             CatalogClosure graph,
             long sourceVersion,
@@ -4218,27 +4190,27 @@ private record CatalogCopyPlan(
             TargetCopyFacts targetCopyFacts,
             String digest) {}
 
-private record TargetItemFacts(Map<String, ItemRow> rows, long maxVersion) {
+    private record TargetItemFacts(Map<String, ItemRow> rows, long maxVersion) {
         private TargetItemFacts {
             rows = Map.copyOf(rows);
         }
     }
 
-private record TargetCategoryFacts(Map<String, UUID> refs, Map<String, Long> versions) {
+    private record TargetCategoryFacts(Map<String, UUID> refs, Map<String, Long> versions) {
         private TargetCategoryFacts {
             refs = Map.copyOf(refs);
             versions = Map.copyOf(versions);
         }
     }
 
-private record TargetDictionaryFacts(Map<DictionaryKey, UUID> refs, Map<DictionaryKey, Long> versions) {
+    private record TargetDictionaryFacts(Map<DictionaryKey, UUID> refs, Map<DictionaryKey, Long> versions) {
         private TargetDictionaryFacts {
             refs = Map.copyOf(refs);
             versions = Map.copyOf(versions);
         }
     }
 
-private record TargetCopyFacts(
+    private record TargetCopyFacts(
             Map<String, ItemRow> targetRows,
             Map<String, UUID> categoryRefs,
             Map<DictionaryKey, UUID> dictionaryRefs,
@@ -4252,7 +4224,7 @@ private record TargetCopyFacts(
         }
     }
 
-private record TargetScopeVersions(
+    private record TargetScopeVersions(
             long maxVersion,
             Map<String, Long> categoryVersions,
             Map<DictionaryKey, Long> dictionaryVersions,
@@ -4264,14 +4236,14 @@ private record TargetScopeVersions(
         }
     }
 
-private record PreparedLocalCopy(LocalCopyPlan plan, CatalogOwnerApi.CopyPreflightReadback readback)
+    private record PreparedLocalCopy(LocalCopyPlan plan, CatalogOwnerApi.CopyPreflightReadback readback)
             implements CatalogOwnerApi.LocalCopyExecutionPreparation {
         public CatalogOwnerApi.CopyPreflightReadback preflight() {
             return readback;
         }
     }
 
-private record PreparedBrandCopy(
+    private record PreparedBrandCopy(
             CatalogCopyPlan plan, CopyCompatibility compatibility, CatalogOwnerApi.CopyPreflightReadback readback)
             implements CatalogOwnerApi.BrandCopyExecutionPreparation {
         public CatalogOwnerApi.CopyPreflightReadback preflight() {
@@ -4279,7 +4251,7 @@ private record PreparedBrandCopy(
         }
     }
 
-private record PreparedCopyItem(
+    private record PreparedCopyItem(
             UUID targetRef,
             String dataNodeRef,
             String brandRef,
@@ -4293,7 +4265,7 @@ private record PreparedCopyItem(
             JsonNode images,
             CatalogItemReferenceFacts.CopyValues references) {}
 
-private record LocalCopyPlan(
+    private record LocalCopyPlan(
             ItemRow source,
             ItemRow target,
             ArrayNode selectedSections,
@@ -4301,15 +4273,14 @@ private record LocalCopyPlan(
             CompatibilityCheck compatibility,
             List<UnitRow> units) {}
 
-private record CopyCompatibility(
+    private record CopyCompatibility(
             Map<ReferenceKey, String> mapping,
             ArrayNode compatibilityResults,
             Map<String, ItemRow> targetRows,
             Map<String, UnitRow> targetUnits) {}
 
-private record CompatibilityCheck(
+    private record CompatibilityCheck(
             String result, String reason, String problemCode, String reasonCode, boolean blocking) {}
 
-private record Receipt(String operationId, String requestHash, JsonNode response) {}
-
+    private record Receipt(String operationId, String requestHash, JsonNode response) {}
 }

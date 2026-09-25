@@ -1,7 +1,7 @@
 package com.catering.v2s.organization.api;
 
-import java.util.UUID;
 import java.util.List;
+import java.util.UUID;
 
 /** Narrow cross-owner read used by organization when saving a store QR configuration. */
 public interface QrChannelEligibilityLookup {

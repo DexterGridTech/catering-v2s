@@ -1,10 +1,10 @@
 ---
 name: cs-spec-to-plan
-description: Derive a reviewable catering-v2s implementation plan from an approved spec and current Roadmap authority.
+description: Derive a reviewable catering-v2s implementation plan from an approved spec and Dexter's explicit session authority.
 ---
 # cs-spec-to-plan
 
-Confirm the explicit program and current Roadmap authorization first. Reopen applicable project-memory and Heritage sources, including `SOLUTION_REASONABLENESS_FIRST`, `UI_USER_TASK_VALIDATION` and `AMBIGUITY_REQUIRES_DEXTER`. Before decomposing implementation, state the business user's actual task, Dexter's stage/cost intent, at least one viable alternative and why the recommendation is better. For UI, prove each operation comes from an approved Journey, is logical in context and has no better path; attribute constraints to backend/owner/contract/document ambiguity rather than inheriting them silently, and ask Dexter when product semantics are ambiguous. Then produce implementation units with exact create/update/delete/retain paths, owner and transaction boundaries, failure behavior, evidence and red controls.
+Confirm Dexter's explicit session assignment first. Reopen applicable project-memory and Heritage sources, including `SOLUTION_REASONABLENESS_FIRST`, `UI_USER_TASK_VALIDATION` and `AMBIGUITY_REQUIRES_DEXTER`. Before decomposing implementation, state the business user's actual task, Dexter's stage/cost intent, at least one viable alternative and why the recommendation is better. For UI, prove each operation comes from an approved Journey, is logical in context and has no better path; attribute constraints to backend/owner/contract/document ambiguity rather than inheriting them silently, and ask Dexter when product semantics are ambiguous. Then produce implementation units with exact create/update/delete/retain paths, owner and transaction boundaries, failure behavior, evidence and red controls.
 
 The plan is incomplete unless it contains an explicit delivery step named `逐代码与详设对账`
 (line-by-line reconciliation of the produced code against the implementation-facing design),
@@ -17,6 +17,14 @@ project-memory standards) that runs before whole-scope testing, and neither subs
 other: that one gates testing, this one gates handing work to human review.
 Authority: Dexter 2026-09-06. Canonical wording lives in
 `doc/platform/implementation-task-template.md`.
+
+The plan is also incomplete unless, before its first browser L2, reset or seed step, it contains
+an explicit step named `动态前整体准入` whose exit conditions are: every CP's step-level
+reconciliation `MATCHED`; the whole-scope reconciliation `MATCHED`; the design's §3a control
+denominator table and full L2 control-plane file list present with `L2_SCRIPT_ADMISSION=PASS`
+after fresh independent review; and a complete-seed dry-run `PASS` on the current bytes before
+any reset. Authority: Dexter 2026-09-25, after the store-terminal batch ran browser L2 36 times
+with one pass. Canonical wording lives in `doc/platform/implementation-task-template.md`.
 
 Any new or modified backend HTTP operation is incomplete until the plan reads
 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md` and contains its
@@ -35,7 +43,7 @@ current decision and the active standard is replaced.
 Any TER (`apps/terminal`) plan is incomplete unless its dynamic verification follows `TR-16` in
 `doc/platform/terminal-coding-standard.md`: for every feature whose behavior under test does not depend on
 an `adapter/*` capability, schedule the `ui/integration` Expo Web verification of the current bytes before
-any `assembly` run on a VM or device, and name the shared scenario list whose side-by-side Web/device
+any `application` run on a VM or device, and name the shared scenario list whose side-by-side Web/device
 results prove both ends behave the same. A batch that touches an adapter somewhere still applies this
 order to its non-adapter parts. The rule, evidence form and counterexamples live only in `TR-16`.
 

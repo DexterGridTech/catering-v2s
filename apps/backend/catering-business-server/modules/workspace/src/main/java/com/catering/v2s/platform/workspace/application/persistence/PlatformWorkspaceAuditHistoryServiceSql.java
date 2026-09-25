@@ -2,7 +2,8 @@ package com.catering.v2s.platform.workspace.application.persistence;
 
 /** SQL text owned by PlatformWorkspaceAuditHistoryPersistence; B3 relocates text without changing execution. */
 public final class PlatformWorkspaceAuditHistoryServiceSql {
-    public static final String PAGE = """
+    public static final String PAGE =
+            """
             WITH target AS (
               SELECT id FROM platform_workspace.group_workspace WHERE group_workspace_key=? AND workspace_uuid=?
             ), events AS (

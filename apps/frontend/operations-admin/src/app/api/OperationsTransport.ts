@@ -25,6 +25,7 @@ import {
   abortOperationsRequests,
   operationsApi,
   operationsContentTabRefreshSignal,
+  operationsLogger,
   operationsRefreshSignal,
   registerOperationsUnauthorizedRecovery,
 } from './OperationsApi';
@@ -76,13 +77,39 @@ export function registerOperationsContextStaleRecovery(recovery: () => void | Pr
 }
 
 async function dispatchWire<Response>(operationId: string, request: object): Promise<Response> {
-  const endpoint = (operationsApi.endpoints as Record<string, unknown>)[operationId] as {
-    initiate: (arg: object, options?: WireInitiateOptions) => unknown;
-  };
+  const endpoint = (operationsApi.endpoints as Record<string, unknown>)[operationId] as
+    | {
+        initiate: (arg: object, options?: WireInitiateOptions) => unknown;
+      }
+    | undefined;
+  if (!endpoint || typeof endpoint.initiate !== 'function') {
+    operationsLogger.error({
+      event: 'frontend.request.dispatch_failed',
+      phase: 'request',
+      outcome: 'ERROR',
+      operationId,
+      errorCode: 'FRONTEND_ENDPOINT_MISSING',
+      diagnostic: {stage: 'endpoint_lookup'},
+    });
+    throw new Error(`FRONTEND_ENDPOINT_MISSING:${operationId}`);
+  }
   const method = 'method' in request && typeof request.method === 'string' ? request.method.toUpperCase() : 'POST';
-  const pending = operationsStore.dispatch(
-    endpoint.initiate(request, method === 'GET' ? {subscribe: false} : {track: false}) as never,
-  ) as PendingWireRequest;
+  let pending: PendingWireRequest;
+  try {
+    pending = operationsStore.dispatch(
+      endpoint.initiate(request, method === 'GET' ? {subscribe: false} : {track: false}) as never,
+    ) as PendingWireRequest;
+  } catch (error) {
+    operationsLogger.error({
+      event: 'frontend.request.dispatch_failed',
+      phase: 'request',
+      outcome: 'ERROR',
+      operationId,
+      errorCode: 'FRONTEND_DISPATCH_ERROR',
+      diagnostic: {stage: 'dispatch', errorName: error instanceof Error ? error.name : typeof error},
+    });
+    throw error;
+  }
   try {
     const response = (await pending.unwrap()) as Response;
     if ('method' in request && typeof request.method === 'string' && request.method.toUpperCase() !== 'GET')
@@ -90,6 +117,20 @@ async function dispatchWire<Response>(operationId: string, request: object): Pro
     return response;
   } catch (error) {
     const failure = problem(error);
+    operationsLogger.error({
+      event: 'frontend.request.unwrap_failed',
+      phase: 'request',
+      outcome: 'ERROR',
+      operationId,
+      errorCode: failure.errorCode,
+      status: failure.status,
+      diagnostic: {
+        stage: 'pending_unwrap',
+        method,
+        errorName: error instanceof Error ? error.name : typeof error,
+        hasData: typeof error === 'object' && error !== null && 'data' in error,
+      },
+    });
     if (failure.errorCode === 'PLATFORM_COMMON_CONTEXT_STALE') {
       try {
         await contextStaleRecovery?.();

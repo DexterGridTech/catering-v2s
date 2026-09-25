@@ -7,7 +7,13 @@ import {OPERATIONS_ADMIN_OPERATIONS} from '../../app/api/generated/operations-ed
 import {PUBLIC_OPERATIONS} from '../../app/api/generated/public-edge';
 import {businessChannelTemplateTestIds} from '../../app/automation/businessChannelTemplateTestIds';
 import {salesMenuTestIds} from '../../features/sales-menu/salesMenuTestIds';
-import {selectOperationsDataScope, selectOperationsOption, type OperationsDataScopeTouch} from './operationsL2';
+import {
+  matchGeneratedL2Operation,
+  matchGeneratedL2Path,
+  selectOperationsDataScope,
+  selectOperationsOption,
+  type OperationsDataScopeTouch,
+} from './operationsL2';
 import {assertSalesMenuL2NetworkClosure} from './sales-menu-network';
 
 type JsonObject = Record<string, unknown>;
@@ -294,20 +300,13 @@ function ownerFacts(row: SalesMenuCase): OwnerCase | undefined {
   return facts;
 }
 
-function operationTemplateRegExp(template: string): RegExp {
-  const escaped = template.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\{[^}]+\\\}/g, '[^/]+');
-  return new RegExp(`^${escaped}$`);
-}
-
 function generatedOperationForRequest(request: Request): GeneratedOperation | undefined {
   const pathname = new URL(request.url()).pathname;
-  return generatedOperations.find(
-    operation => operation.method === request.method() && operationTemplateRegExp(operation.path).test(pathname),
-  );
+  return matchGeneratedL2Operation(generatedOperations, request.method(), pathname);
 }
 
 function isGeneratedApiPath(pathname: string): boolean {
-  return generatedOperations.some(operation => operationTemplateRegExp(operation.path).test(pathname));
+  return matchGeneratedL2Path(generatedOperations, pathname) !== undefined;
 }
 
 function l2DiagnosticHeaders(request: Request): Record<string, string> {

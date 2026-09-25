@@ -305,15 +305,27 @@ final class BusinessChannelAcceptanceScenarios {
                 updateBody,
                 headers(),
                 Set.of(200));
-        assertEquals("https://qr.example.test/rule", updated.json().path("urlRule").asText(),
+        assertEquals(
+                "https://qr.example.test/rule",
+                updated.json().path("urlRule").asText(),
                 "BUSINESS: target QR template accepts and reads back its URL rule");
 
         enableProvider(context, fixture.fixture(), STORE_OWNED_DINE_IN_PROVIDER);
-        assertUrlRuleRejected(context, fixture, "URL rule external access mismatch", "EXTERNAL", "STORE", "DINE_IN", null,
+        assertUrlRuleRejected(
+                context,
+                fixture,
+                "URL rule external access mismatch",
+                "EXTERNAL",
+                "STORE",
+                "DINE_IN",
+                null,
                 STORE_OWNED_DINE_IN_PROVIDER);
-        assertUrlRuleRejected(context, fixture, "URL rule project operator mismatch", "INTERNAL", "PROJECT", "DINE_IN", "QR", null);
-        assertUrlRuleRejected(context, fixture, "URL rule order mismatch", "INTERNAL", "STORE", "GROUP_BUY", null, null);
-        assertUrlRuleRejected(context, fixture, "URL rule dine-in form mismatch", "INTERNAL", "STORE", "DINE_IN", "POS", null);
+        assertUrlRuleRejected(
+                context, fixture, "URL rule project operator mismatch", "INTERNAL", "PROJECT", "DINE_IN", "QR", null);
+        assertUrlRuleRejected(
+                context, fixture, "URL rule order mismatch", "INTERNAL", "STORE", "GROUP_BUY", null, null);
+        assertUrlRuleRejected(
+                context, fixture, "URL rule dine-in form mismatch", "INTERNAL", "STORE", "DINE_IN", "POS", null);
     }
 
     @AcceptanceScenario(
@@ -2433,7 +2445,8 @@ final class BusinessChannelAcceptanceScenarios {
             BackendAcceptanceTest.Fixture storeFixture,
             BackendAcceptanceTest.Session storeSession)
             throws Exception {
-        return acceptanceCreateStoreQrChannels(context, storeFixture, storeSession, 1, "Service point QR").get(0);
+        return acceptanceCreateStoreQrChannels(context, storeFixture, storeSession, 1, "Service point QR")
+                .get(0);
     }
 
     /** Creates real STORE-owned INTERNAL DINE_IN QR channels for bounded candidate-read acceptance. */
@@ -2499,24 +2512,56 @@ final class BusinessChannelAcceptanceScenarios {
         CreatedTemplate projectTemplate = createTemplate(
                 context, projectOwner, "QR project mismatch", "INTERNAL", "PROJECT", "DINE_IN", null, "QR");
         CreatedChannel projectChannel = createChannel(
-                context, projectOwner, projectTemplate.json().path("templateRef").asText(), "PROJECT",
-                projectFixture.projectId(), "QR project mismatch channel");
+                context,
+                projectOwner,
+                projectTemplate.json().path("templateRef").asText(),
+                "PROJECT",
+                projectFixture.projectId(),
+                "QR project mismatch channel");
         refs.add(projectChannel.channelRef());
 
         CreatedTemplate groupBuyTemplate = createTemplateWithVisibility(
-                context, projectOwner, "QR order mismatch", "INTERNAL", "STORE", "GROUP_BUY", null, null,
-                "TPL-QR-GROUP-" + UUID.randomUUID(), "ALL_PROJECT_STORES", List.of(), null);
+                context,
+                projectOwner,
+                "QR order mismatch",
+                "INTERNAL",
+                "STORE",
+                "GROUP_BUY",
+                null,
+                null,
+                "TPL-QR-GROUP-" + UUID.randomUUID(),
+                "ALL_PROJECT_STORES",
+                List.of(),
+                null);
         CreatedChannel groupBuyChannel = createChannel(
-                context, storeOwner, groupBuyTemplate.json().path("templateRef").asText(), "STORE",
-                storeFixture.storeId(), "QR order mismatch channel");
+                context,
+                storeOwner,
+                groupBuyTemplate.json().path("templateRef").asText(),
+                "STORE",
+                storeFixture.storeId(),
+                "QR order mismatch channel");
         refs.add(groupBuyChannel.channelRef());
 
         CreatedTemplate posTemplate = createTemplateWithVisibility(
-                context, projectOwner, "QR form mismatch", "INTERNAL", "STORE", "DINE_IN", null, "POS",
-                "TPL-QR-POS-" + UUID.randomUUID(), "ALL_PROJECT_STORES", List.of(), null);
+                context,
+                projectOwner,
+                "QR form mismatch",
+                "INTERNAL",
+                "STORE",
+                "DINE_IN",
+                null,
+                "POS",
+                "TPL-QR-POS-" + UUID.randomUUID(),
+                "ALL_PROJECT_STORES",
+                List.of(),
+                null);
         CreatedChannel posChannel = createChannel(
-                context, storeOwner, posTemplate.json().path("templateRef").asText(), "STORE",
-                storeFixture.storeId(), "QR form mismatch channel");
+                context,
+                storeOwner,
+                posTemplate.json().path("templateRef").asText(),
+                "STORE",
+                storeFixture.storeId(),
+                "QR form mismatch channel");
         refs.add(posChannel.channelRef());
 
         UUID disabledChannel = acceptanceCreateStoreQrChannel(context, storeFixture, storeSession);
@@ -2524,11 +2569,25 @@ final class BusinessChannelAcceptanceScenarios {
         refs.add(disabledChannel);
 
         CreatedTemplate disabledTemplate = createTemplateWithVisibility(
-                context, projectOwner, "QR disabled template", "INTERNAL", "STORE", "DINE_IN", null, "QR",
-                "TPL-QR-DISABLED-" + UUID.randomUUID(), "ALL_PROJECT_STORES", List.of(), null);
+                context,
+                projectOwner,
+                "QR disabled template",
+                "INTERNAL",
+                "STORE",
+                "DINE_IN",
+                null,
+                "QR",
+                "TPL-QR-DISABLED-" + UUID.randomUUID(),
+                "ALL_PROJECT_STORES",
+                List.of(),
+                null);
         CreatedChannel disabledTemplateChannel = createChannel(
-                context, storeOwner, disabledTemplate.json().path("templateRef").asText(), "STORE",
-                storeFixture.storeId(), "QR disabled template channel");
+                context,
+                storeOwner,
+                disabledTemplate.json().path("templateRef").asText(),
+                "STORE",
+                storeFixture.storeId(),
+                "QR disabled template channel");
         context.post(
                 TEMPLATE_STATUS,
                 templatePath(projectFixture, disabledTemplate.templateRef()) + "/status",
@@ -2547,19 +2606,22 @@ final class BusinessChannelAcceptanceScenarios {
             BackendAcceptanceTest.Session storeSession,
             UUID channelRef)
             throws Exception {
-        BackendAcceptanceTest.Response current = context.get(
-                CHANNEL_DETAIL,
-                channelPath(storeFixture, channelRef),
-                storeSession.cookie(),
-                Set.of(200));
+        BackendAcceptanceTest.Response current =
+                context.get(CHANNEL_DETAIL, channelPath(storeFixture, channelRef), storeSession.cookie(), Set.of(200));
         BackendAcceptanceTest.Response transitioned = context.post(
                 CHANNEL_STATUS,
                 channelPath(storeFixture, channelRef),
                 storeSession.cookie(),
-                Map.of("status", "DISABLED", "expectedVersion", current.json().path("version").asLong()),
+                Map.of(
+                        "status",
+                        "DISABLED",
+                        "expectedVersion",
+                        current.json().path("version").asLong()),
                 headers(),
                 Set.of(200));
-        assertEquals("DISABLED", transitioned.json().path("status").asText(),
+        assertEquals(
+                "DISABLED",
+                transitioned.json().path("status").asText(),
                 "BUSINESS: QR owner-recheck fixture disables the selected channel");
     }
 

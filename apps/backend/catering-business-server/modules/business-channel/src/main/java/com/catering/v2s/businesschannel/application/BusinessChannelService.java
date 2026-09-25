@@ -1,10 +1,5 @@
 package com.catering.v2s.businesschannel.application;
 
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence;
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence.ChannelProjection;
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence;
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence.TemplateCommandProjection;
-
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
@@ -15,6 +10,10 @@ import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi.DetachChan
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi.TransitionChannelStatusCommand;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi.UpdateChannelCommand;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence.ChannelProjection;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence.TemplateCommandProjection;
 import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
@@ -93,8 +92,8 @@ public class BusinessChannelService {
     }
 
     /**
-     * Compatibility constructor for focused tests and direct owner construction. Production wiring uses the
-     * aggregate services above.
+     * Compatibility constructor for focused tests and direct owner construction. Production wiring uses the aggregate
+     * services above.
      */
     public BusinessChannelService(
             JdbcTemplate jdbc,
@@ -142,13 +141,7 @@ public class BusinessChannelService {
                 BusinessChannelPolicy.DISABLED,
                 BusinessChannelPolicy.VOIDED);
         String normalizedSortKey = optionalEnum(
-                sortKey,
-                "sortKey",
-                "CHANNEL_NAME",
-                "CHANNEL_CODE",
-                "TEMPLATE_NAME",
-                "STATUS",
-                "BINDING_STATUS");
+                sortKey, "sortKey", "CHANNEL_NAME", "CHANNEL_CODE", "TEMPLATE_NAME", "STATUS", "BINDING_STATUS");
         // spotless:on
         String normalizedSortDirection = optionalEnum(sortDirection, "sortDirection", "ASC", "DESC");
         if (normalizedSortKey == null && normalizedSortDirection != null) {
@@ -177,23 +170,21 @@ public class BusinessChannelService {
                 rows.stream().map(BusinessChannelService::channel).toList(), null, rows.size());
     }
 
-
     @Transactional(readOnly = true)
     public BusinessChannelReadback.Channel readChannel(UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef) {
         requireScope(workspaceUuid, groupWorkspaceKey);
         return channel(readChannelRow(workspaceUuid, groupWorkspaceKey, channelRef));
     }
 
-
     @Transactional(readOnly = true)
     public BusinessChannelReadback.ChannelCommandContext readChannelCommandContext(
             UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef) {
         requireScope(workspaceUuid, groupWorkspaceKey);
         if (channelRef == null) throw problem("VALIDATION_ERROR", 422, "channelRef is required");
-        return channelPersistence.readChannelCommandContext(workspaceUuid, groupWorkspaceKey, channelRef)
+        return channelPersistence
+                .readChannelCommandContext(workspaceUuid, groupWorkspaceKey, channelRef)
                 .orElseThrow(() -> problem("NOT_FOUND", 404, "channel was not found in the workspace"));
     }
-
 
     @Transactional
     public BusinessChannelReadback.Channel createChannel(CreateChannelCommand command) {
@@ -288,14 +279,10 @@ public class BusinessChannelService {
                                     change("bindingRef", null, command.bindingRef()),
                                     change("status", null, initialStatus)));
                     StatusFacts facts = statusFacts(
-                            command.workspaceUuid(),
-                            command.groupWorkspaceKey(),
-                            List.of(created),
-                            collaborationTree);
+                            command.workspaceUuid(), command.groupWorkspaceKey(), List.of(created), collaborationTree);
                     return channel(channelRow(created, facts));
                 });
     }
-
 
     @Transactional
     public BusinessChannelReadback.Channel updateChannel(UpdateChannelCommand command) {
@@ -409,7 +396,6 @@ public class BusinessChannelService {
                 });
     }
 
-
     @Transactional
     public BusinessChannelReadback.Channel transitionChannelStatus(TransitionChannelStatusCommand command) {
         requireScope(command.workspaceUuid(), command.groupWorkspaceKey());
@@ -483,7 +469,6 @@ public class BusinessChannelService {
                 });
     }
 
-
     @Transactional
     public BusinessChannelReadback.Channel detachChannelBinding(
             DetachChannelBindingCommand command, long expectedVersion) {
@@ -539,22 +524,16 @@ public class BusinessChannelService {
                 });
     }
 
-
-
     private CollaborationReadback.ProviderProfile providerFor(
             String accessKind, String providerCode, UUID workspaceUuid, String groupWorkspaceKey) {
         if (!BusinessChannelPolicy.EXTERNAL.equals(accessKind)) return null;
         return collaborationCatalog.readProviderProfile(workspaceUuid, groupWorkspaceKey, providerCode);
     }
 
-
-
     private void validateTemplateProvider(
             TemplateCommandProjection template, UUID workspaceUuid, String groupWorkspaceKey) {
         validateTemplateProvider(template, workspaceUuid, groupWorkspaceKey, null);
     }
-
-
 
     private void validateTemplateProvider(
             TemplateCommandProjection template,
@@ -572,8 +551,6 @@ public class BusinessChannelService {
                         : providerFromTree(preloadedTree, template.providerCode()));
     }
 
-
-
     private static CollaborationReadback.ProviderProfile providerFromTree(
             CollaborationReadback.Tree tree, String providerCode) {
         if (tree == null || providerCode == null) return null;
@@ -583,8 +560,6 @@ public class BusinessChannelService {
                 .orElse(null);
     }
 
-
-
     private CollaborationReadback.OwnerBinding readBinding(
             UUID workspaceUuid, String groupWorkspaceKey, UUID bindingRef) {
         CollaborationReadback.OwnerBinding binding =
@@ -593,8 +568,6 @@ public class BusinessChannelService {
         return binding;
     }
 
-
-
     private static CollaborationReadback.OwnerBinding attachedBinding(
             UUID expectedBindingRef, CollaborationReadback.OwnerBinding binding) {
         if (binding == null || !Objects.equals(expectedBindingRef, binding.bindingRef())) {
@@ -602,8 +575,6 @@ public class BusinessChannelService {
         }
         return binding;
     }
-
-
 
     private void requireOperationsGrant(
             OperationsOwnerScopeGrant grant,
@@ -628,8 +599,6 @@ public class BusinessChannelService {
             throw problem("AUTHORIZATION_REQUIRED", 409, "operations owner grant does not match command context");
         }
     }
-
-
 
     private void requireOperationsGrantTargetEnvelope(
             OperationsOwnerScopeGrant grant,
@@ -660,8 +629,6 @@ public class BusinessChannelService {
                 requirementId);
     }
 
-
-
     private static ChannelRow channelAfterStatusTransition(ChannelRow current, String targetStatus) {
         return new ChannelRow(
                 current.channelRef(),
@@ -678,8 +645,6 @@ public class BusinessChannelService {
                 current.version() + 1);
     }
 
-
-
     private static ChannelRow channelAfterBindingDetach(ChannelRow current) {
         List<BusinessChannelReadback.StatusDimension> dimensions =
                 withBindingDimension(current.statusDimensions(), null, null);
@@ -694,13 +659,9 @@ public class BusinessChannelService {
                 "NOT_REQUIRED".equals(current.bindingStatus()) ? "NOT_REQUIRED" : "UNBOUND",
                 current.status(),
                 dimensions,
-                dimensions.stream()
-                        .filter(BusinessChannelService::isBlocker)
-                        .toList(),
+                dimensions.stream().filter(BusinessChannelService::isBlocker).toList(),
                 current.version() + 1);
     }
-
-
 
     private ChannelProjection insertChannelReturningProjection(
             BusinessChannelCommandApi.CreateChannelCommand command,
@@ -715,34 +676,28 @@ public class BusinessChannelService {
         }
     }
 
-
-
     private TemplateCommandProjection readTemplateCommandProjection(
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef, String channelCode) {
         if (templateRef == null) throw problem("VALIDATION_ERROR", 422, "templateRef is required");
-        return templatePersistence.readTemplateCommandProjection(
-                        workspaceUuid, groupWorkspaceKey, templateRef, channelCode)
+        return templatePersistence
+                .readTemplateCommandProjection(workspaceUuid, groupWorkspaceKey, templateRef, channelCode)
                 .orElseThrow(() -> problem("NOT_FOUND", 404, "template was not found in the workspace"));
     }
 
-
-
     private ChannelRow readChannelRow(UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef) {
         if (channelRef == null) throw problem("VALIDATION_ERROR", 422, "channelRef is required");
-        ChannelProjection projection = channelPersistence.readChannel(workspaceUuid, groupWorkspaceKey, channelRef, false)
+        ChannelProjection projection = channelPersistence
+                .readChannel(workspaceUuid, groupWorkspaceKey, channelRef, false)
                 .orElseThrow(() -> problem("NOT_FOUND", 404, "channel was not found in the workspace"));
         return channelRow(projection, statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection)));
     }
-
-
 
     private ChannelRow readChannelForUpdate(UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef) {
-        ChannelProjection projection = channelPersistence.readChannel(workspaceUuid, groupWorkspaceKey, channelRef, true)
+        ChannelProjection projection = channelPersistence
+                .readChannel(workspaceUuid, groupWorkspaceKey, channelRef, true)
                 .orElseThrow(() -> problem("NOT_FOUND", 404, "channel was not found in the workspace"));
         return channelRow(projection, statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection)));
     }
-
-
 
     private CommandChannelRow readCommandChannelRow(
             UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef, boolean forUpdate) {
@@ -753,14 +708,9 @@ public class BusinessChannelService {
         return new CommandChannelRow(channelRow(projection, facts), joinedTemplateRow(projection, facts));
     }
 
-
-
-    private StatusFacts statusFacts(
-            UUID workspaceUuid, String groupWorkspaceKey, List<ChannelProjection> channels) {
+    private StatusFacts statusFacts(UUID workspaceUuid, String groupWorkspaceKey, List<ChannelProjection> channels) {
         return statusFacts(workspaceUuid, groupWorkspaceKey, channels, null);
     }
-
-
 
     private StatusFacts statusFacts(
             UUID workspaceUuid,
@@ -800,13 +750,9 @@ public class BusinessChannelService {
         return new StatusFacts(workspaceStatus, ancestors, providers, externalSystems);
     }
 
-
-
     private static void addRef(Set<UUID> refs, UUID ref) {
         if (ref != null) refs.add(ref);
     }
-
-
 
     private ChannelRow channelRow(ChannelProjection projection, StatusFacts facts) {
         List<BusinessChannelReadback.StatusDimension> dimensions = new ArrayList<>();
@@ -850,9 +796,8 @@ public class BusinessChannelService {
         // spotless:on
         appendCollaborationDimensions(
                 dimensions, facts, projection.templateAccessKind(), projection.templateProviderCode());
-        List<BusinessChannelReadback.StatusDimension> blockers = dimensions.stream()
-                .filter(BusinessChannelService::isBlocker)
-                .toList();
+        List<BusinessChannelReadback.StatusDimension> blockers =
+                dimensions.stream().filter(BusinessChannelService::isBlocker).toList();
         return new ChannelRow(
                 projection.channelRef(),
                 projection.templateRef(),
@@ -868,14 +813,10 @@ public class BusinessChannelService {
                 projection.version());
     }
 
-
-
     private Map<UUID, List<BusinessChannelReadback.StatusDimension>> readOrganizationAncestors(
             UUID workspaceUuid, String groupWorkspaceKey, Set<UUID> nodeRefs) {
         return channelPersistence.readOrganizationAncestors(workspaceUuid, groupWorkspaceKey, nodeRefs);
     }
-
-
 
     private static void appendOrganizationAncestors(
             List<BusinessChannelReadback.StatusDimension> dimensions, StatusFacts facts, UUID nodeRef) {
@@ -884,8 +825,6 @@ public class BusinessChannelService {
             addDimension(dimensions, dimension.type(), dimension.ref(), dimension.status());
         }
     }
-
-
 
     private void appendCollaborationDimensions(
             List<BusinessChannelReadback.StatusDimension> dimensions,
@@ -922,16 +861,12 @@ public class BusinessChannelService {
         }
     }
 
-
-
     private static void addDimension(
             List<BusinessChannelReadback.StatusDimension> dimensions, String type, UUID ref, String status) {
         if (ref != null && status != null) {
             addDimension(dimensions, type, ref.toString(), status);
         }
     }
-
-
 
     private static void addDimension(
             List<BusinessChannelReadback.StatusDimension> dimensions, String type, String ref, String status) {
@@ -942,14 +877,10 @@ public class BusinessChannelService {
         if (!duplicate) dimensions.add(new BusinessChannelReadback.StatusDimension(type, ref, status));
     }
 
-
-
     private void addWorkspaceDimension(
             List<BusinessChannelReadback.StatusDimension> dimensions, String groupWorkspaceKey, StatusFacts facts) {
         addDimension(dimensions, "GROUP_WORKSPACE", groupWorkspaceKey, facts.workspaceStatus());
     }
-
-
 
     private static List<BusinessChannelReadback.StatusDimension> withBindingDimension(
             List<BusinessChannelReadback.StatusDimension> current, UUID bindingRef, String bindingStatus) {
@@ -960,14 +891,10 @@ public class BusinessChannelService {
         return List.copyOf(result);
     }
 
-
-
     private static boolean isBlocker(BusinessChannelReadback.StatusDimension dimension) {
         return !"COLLABORATION_BINDING".equals(dimension.type())
                 && !BusinessChannelPolicy.ENABLED.equals(dimension.status());
     }
-
-
 
     private TemplateRow joinedTemplateRow(ChannelProjection projection, StatusFacts facts) {
         UUID projectRef = projection.templateProjectRef();
@@ -975,9 +902,8 @@ public class BusinessChannelService {
         addDimension(dimensions, "ORGANIZATION_PROJECT", projectRef, projection.templateProjectStatus());
         addWorkspaceDimension(dimensions, projection.groupWorkspaceKey(), facts);
         appendOrganizationAncestors(dimensions, facts, projectRef);
-        List<BusinessChannelReadback.StatusDimension> blockers = dimensions.stream()
-                .filter(BusinessChannelService::isBlocker)
-                .toList();
+        List<BusinessChannelReadback.StatusDimension> blockers =
+                dimensions.stream().filter(BusinessChannelService::isBlocker).toList();
         return new TemplateRow(
                 projection.templateRef(),
                 projectRef,
@@ -995,6 +921,7 @@ public class BusinessChannelService {
                 blockers,
                 projection.templateVersion());
     }
+
     private static UUID parseUuid(String value, String field) {
         try {
             return UUID.fromString(value);
@@ -1003,32 +930,25 @@ public class BusinessChannelService {
         }
     }
 
-
-
     private void ensureChannelCodeAvailable(boolean channelCodeInUse) {
         if (channelCodeInUse) {
             throw problem("DUPLICATE_CODE", 409, "channelCode is already used in the group workspace");
         }
     }
+
     private static String optionalEnum(String value, String name, String... allowed) {
         if (value == null) return null;
         return BusinessChannelPolicy.requireEnum(value, name, allowed);
     }
-
-
 
     private static void requireScope(UUID workspaceUuid, String groupWorkspaceKey) {
         if (workspaceUuid == null) throw problem("VALIDATION_ERROR", 422, "workspaceUuid is required");
         BusinessChannelPolicy.required(groupWorkspaceKey, "groupWorkspaceKey", 120);
     }
 
-
-
     private static void requireVersion(long actual, long expected) {
         if (expected < 1 || actual != expected) throw problem("VERSION_CONFLICT", 409, "version has changed");
     }
-
-
 
     private static void requireMutable(String status) {
         if (BusinessChannelPolicy.VOIDED.equals(status)) {
@@ -1036,15 +956,11 @@ public class BusinessChannelService {
         }
     }
 
-
-
     private static void requireEnabledTemplate(String status) {
         if (!BusinessChannelPolicy.ENABLED.equals(status)) {
             throw problem("BUSINESS_SCOPE_EXCEEDED", 422, "new channels require an enabled template");
         }
     }
-
-
 
     private static BusinessChannelReadback.Template template(TemplateRow row) {
         return new BusinessChannelReadback.Template(
@@ -1065,8 +981,6 @@ public class BusinessChannelService {
                 row.version());
     }
 
-
-
     private static BusinessChannelReadback.Channel channel(ChannelRow row) {
         return new BusinessChannelReadback.Channel(
                 row.channelRef(),
@@ -1082,8 +996,6 @@ public class BusinessChannelService {
                 row.blockers(),
                 row.version());
     }
-
-
 
     private static ChannelRow channelRow(BusinessChannelReadback.Channel value) {
         if (value == null) throw problem("NOT_FOUND", 404, "channel was not found in the workspace");
@@ -1102,21 +1014,15 @@ public class BusinessChannelService {
                 value.version());
     }
 
-
-
     private static String bindingStatus(String accessKind, UUID bindingRef) {
         if (BusinessChannelPolicy.INTERNAL.equals(accessKind)) return "NOT_REQUIRED";
         return bindingRef == null ? "UNBOUND" : "BOUND";
     }
 
-
-
     private static AuditChange change(String field, Object before, Object after) {
         return AuditChange.forNullableScalar(
                 field, before == null ? null : before.toString(), after == null ? null : after.toString());
     }
-
-
 
     private void audit(
             UUID workspaceUuid,
@@ -1137,8 +1043,6 @@ public class BusinessChannelService {
                 time.currentEpochMillis());
     }
 
-
-
     private static String canonical(String operation, Object... values) {
         return operation + "\u001f"
                 + Arrays.stream(values)
@@ -1146,13 +1050,9 @@ public class BusinessChannelService {
                         .collect(Collectors.joining("\u001f"));
     }
 
-
-
     private static BusinessChannelCommandApi.Problem problem(String code, int status, String message) {
         return new BusinessChannelCommandApi.Problem(code, status, message);
     }
-
-
 
     private static BusinessChannelCommandApi.Problem problem(String code, int status, String message, Throwable cause) {
         return new BusinessChannelCommandApi.Problem(code, status, message, cause);

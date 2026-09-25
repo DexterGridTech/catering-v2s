@@ -21,9 +21,7 @@ public class PlatformWorkspaceInvitationTaskReadPersistence {
     }
 
     public PageResult page(
-            UUID workspaceUuid,
-            String key,
-            WorkspaceInvitationService.ManagementInvitationPageRequest request) {
+            UUID workspaceUuid, String key, WorkspaceInvitationService.ManagementInvitationPageRequest request) {
         Page safe = page(request);
         Predicate predicate = predicate(workspaceUuid, key, safe.criteria());
         List<Row> rows = jdbc.query(
@@ -37,29 +35,22 @@ public class PlatformWorkspaceInvitationTaskReadPersistence {
     }
 
     public List<Row> detail(UUID workspaceUuid, String key, UUID invitationId) {
-        return jdbc.query(
-                detailSql(),
-                this::row,
-                workspaceUuid,
-                key,
-                invitationId);
+        return jdbc.query(detailSql(), this::row, workspaceUuid, key, invitationId);
     }
 
     private static Page page(WorkspaceInvitationService.ManagementInvitationPageRequest request) {
-        if (request == null
-                || request.page() < 1
-                || request.pageSize() < 1
-                || request.pageSize() > 100)
+        if (request == null || request.page() < 1 || request.pageSize() < 1 || request.pageSize() > 100)
             throw new WorkspaceInvitationService.InvitationValidationException();
         String sort = request.sort() == null ? "CREATED_AT" : request.sort();
         String direction = request.direction() == null
                 ? PlatformWorkspaceInvitationTaskReadServiceSql.SORT_DIRECTION_DESC
                 : request.direction();
-        String order = switch (sort) {
-            case "CREATED_AT" -> PlatformWorkspaceInvitationTaskReadServiceSql.CREATED_AT_ORDER;
-            case "EXPIRES_AT" -> PlatformWorkspaceInvitationTaskReadServiceSql.EXPIRES_AT_ORDER;
-            default -> throw new WorkspaceInvitationService.InvitationValidationException();
-        };
+        String order =
+                switch (sort) {
+                    case "CREATED_AT" -> PlatformWorkspaceInvitationTaskReadServiceSql.CREATED_AT_ORDER;
+                    case "EXPIRES_AT" -> PlatformWorkspaceInvitationTaskReadServiceSql.EXPIRES_AT_ORDER;
+                    default -> throw new WorkspaceInvitationService.InvitationValidationException();
+                };
         if (!List.of(
                         PlatformWorkspaceInvitationTaskReadServiceSql.SORT_DIRECTION_ASC,
                         PlatformWorkspaceInvitationTaskReadServiceSql.SORT_DIRECTION_DESC)
@@ -135,39 +126,64 @@ public class PlatformWorkspaceInvitationTaskReadPersistence {
     }
 
     private static String pageSql(String order, String direction, String where) {
-        return (PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_CTE_FILTERED
+        return (PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_CTE_FILTERED
                 + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_STATUS
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_CONSENTED_AT_EPOCH_MILLIS
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_COMPLETED_AT_EPOCH_MILLIS
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_CONSENTED_AT_EPOCH_MILLIS
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_COMPLETED_AT_EPOCH_MILLIS
                 + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_TOTAL
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_FROM_CLAUSE_INVITATION_FROM_WORKSPACE_IAM_INVITATIO
-                + where + PlatformWorkspaceInvitationTaskReadServiceSql.PAGE_ORDER_PREFIX + order
-                + PlatformWorkspaceInvitationTaskReadServiceSql.SQL_SPACE + direction
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_VALUE_SEPARATOR_PAGE_TOTAL_TOTAL
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_PAGED_FILTERED_TOTAL
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_PAGED_ID_PAGED_MOBILE_NORMALIZED_PAGED_ISSUER_DISPLAY_NAME_SNAPSHOT_PAGED_STATUS_PAGED_EXPIRES_AT_EPOCH_MILLIS_CREATED_AT_EPOCH_MILLIS_PAGED_CONSENTED_AT_EPOCH_MILLIS_PAGED
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_COMPLETED_AT_EPOCH_MILLIS_PAGED_CANCELLED_AT_EPOCH_MILLIS_PAGED_INVITATION_TOKEN_PAGE_TOTAL_TOTAL_COALESCE_INTENTS_VALUE_LEFT_JOIN_PAGED_ON
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_FROM_CLAUSE_INVITATION_FROM_WORKSPACE_IAM_INVITATIO
+                + where
+                + PlatformWorkspaceInvitationTaskReadServiceSql.PAGE_ORDER_PREFIX
+                + order
+                + PlatformWorkspaceInvitationTaskReadServiceSql.SQL_SPACE
+                + direction
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_VALUE_SEPARATOR_PAGE_TOTAL_TOTAL
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_PAGED_FILTERED_TOTAL
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_PAGED_ID_PAGED_MOBILE_NORMALIZED_PAGED_ISSUER_DISPLAY_NAME_SNAPSHOT_PAGED_STATUS_PAGED_EXPIRES_AT_EPOCH_MILLIS_CREATED_AT_EPOCH_MILLIS_PAGED_CONSENTED_AT_EPOCH_MILLIS_PAGED
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_COMPLETED_AT_EPOCH_MILLIS_PAGED_CANCELLED_AT_EPOCH_MILLIS_PAGED_INVITATION_TOKEN_PAGE_TOTAL_TOTAL_COALESCE_INTENTS_VALUE_LEFT_JOIN_PAGED_ON
                 + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_LATERAL
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_ROLE_NAME_ROLE_NAME_TYPE
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_ORDER_BY_INTENT
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_WORKSPACE_ROLE
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_ROLE_INTENT_ROLE_ID_INVITATION_ID
-                + order + PlatformWorkspaceInvitationTaskReadServiceSql.SQL_SPACE + direction
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_ROLE_NAME_ROLE_NAME_TYPE
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_ORDER_BY_INTENT
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_WORKSPACE_ROLE
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_ROLE_INTENT_ROLE_ID_INVITATION_ID
+                + order
+                + PlatformWorkspaceInvitationTaskReadServiceSql.SQL_SPACE
+                + direction
                 + PlatformWorkspaceInvitationTaskReadServiceSql.PAGE_ORDER_SUFFIX);
     }
 
     private static String detailSql() {
         return PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_SELECT
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_MOBILE_NORMALIZED
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_I_CREATED_AT_EPOCH_MILLIS_I_CONSENTED_AT_EPOCH_MILLIS_I_COMPLETED_AT_EPOCH_MILLIS_I_CANCELLED_AT_EPOCH_MILLIS_I_INVITATION_TOKEN_TEXT_AS_INTENTS_FROM
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_LATERAL_ALTERNATE_A
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_INTENT_ROLE_ID_ROLE_NAME_ROLE
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_MOBILE_NORMALIZED
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_I_CREATED_AT_EPOCH_MILLIS_I_CONSENTED_AT_EPOCH_MILLIS_I_COMPLETED_AT_EPOCH_MILLIS_I_CANCELLED_AT_EPOCH_MILLIS_I_INVITATION_TOKEN_TEXT_AS_INTENTS_FROM
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_LATERAL_ALTERNATE_A
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_INTENT_ROLE_ID_ROLE_NAME_ROLE
                 + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_INTENT
                 + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_VALUE
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_FROM_CLAUSE_WORKSPACE_ROLE_INTENT_ROLE
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_ROLE_INTENT_ROLE_ID_INVITATION_ID_ALTERNATE_A
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_CONDITION
-                + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY;
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_FROM_CLAUSE_WORKSPACE_ROLE_INTENT_ROLE
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_ROLE_INTENT_ROLE_ID_INVITATION_ID_ALTERNATE_A
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_CONDITION
+                + PlatformWorkspaceInvitationTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY;
     }
 
     private Row row(ResultSet result, int ignored) throws SQLException {
@@ -207,6 +223,5 @@ public class PlatformWorkspaceInvitationTaskReadPersistence {
     private record Page(
             String order, String direction, WorkspaceInvitationService.ManagementInvitationPageRequest criteria) {}
 
-    public record PageResult(
-            List<Row> rows, WorkspaceInvitationService.ManagementInvitationPageRequest criteria) {}
+    public record PageResult(List<Row> rows, WorkspaceInvitationService.ManagementInvitationPageRequest criteria) {}
 }

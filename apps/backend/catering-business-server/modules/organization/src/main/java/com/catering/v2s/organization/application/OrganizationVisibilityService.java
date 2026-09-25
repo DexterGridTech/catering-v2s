@@ -1,9 +1,8 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.OrganizationVisibilityPersistence;
 import com.catering.v2s.organization.api.OrganizationVisibilityLookup;
+import com.catering.v2s.organization.application.persistence.OrganizationVisibilityPersistence;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,8 +28,7 @@ public class OrganizationVisibilityService implements OrganizationVisibilityLook
     @Transactional(readOnly = true)
     public boolean isVisibleDataNodeAllowed(
             UUID workspaceUuid, String key, String assignmentType, UUID assignmentNode, UUID visibleNode) {
-        return persistence.isVisibleDataNodeAllowed(
-                workspaceUuid, key, assignmentType, assignmentNode, visibleNode);
+        return persistence.isVisibleDataNodeAllowed(workspaceUuid, key, assignmentType, assignmentNode, visibleNode);
     }
 
     @Override
@@ -52,14 +50,7 @@ public class OrganizationVisibilityService implements OrganizationVisibilityLook
             UUID storeId,
             UUID headCompanyId) {
         return persistence.resolveSessionEntryFacts(
-                workspaceUuid,
-                key,
-                assignmentNodeType,
-                assignmentNodeId,
-                regionId,
-                projectId,
-                storeId,
-                headCompanyId);
+                workspaceUuid, key, assignmentNodeType, assignmentNodeId, regionId, projectId, storeId, headCompanyId);
     }
 
     @Override

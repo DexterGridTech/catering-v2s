@@ -1,11 +1,11 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.CommercialGroupCommandReceiptPersistence;
 import com.catering.v2s.organization.api.CommercialGroupReadback;
+import com.catering.v2s.organization.application.persistence.CommercialGroupCommandReceiptPersistence;
 import com.catering.v2s.platform.foundation.json.LegacyReceiptJson;
 import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
-import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Set;
@@ -50,22 +50,14 @@ public final class CommercialGroupCommandReceiptService {
                 throw new OrganizationHierarchyCommandReceiptService.OrganizationIdempotencyConflictException();
             CommercialGroupReadback replay = deserialize(existing.responseJson());
             if (LegacyReceiptJson.looksLikeLegacy(JSON, existing.responseJson())) {
-                persistence.replaceResponse(
-                        serialize(replay),
-                        workspaceUuid,
-                        key);
+                persistence.replaceResponse(serialize(replay), workspaceUuid, key);
             }
             return replay;
         }
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             CommercialGroupReadback result = command.get();
             persistence.insertSucceeded(
-                    workspaceUuid,
-                    key,
-                    result.id(),
-                    requestHash,
-                    serialize(result),
-                    time.currentEpochMillis());
+                    workspaceUuid, key, result.id(), requestHash, serialize(result), time.currentEpochMillis());
             return result;
         }
     }

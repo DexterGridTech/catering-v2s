@@ -23,16 +23,18 @@ public class BusinessChannelCommandReceiptPersistence {
 
     public Optional<Receipt> find(UUID workspaceUuid, String groupWorkspaceKey, String idempotencyKey) {
         return jdbc.query(
-                        BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_SELECT_COMMAND_RECEIPT_REQUEST_HASH_RESPONSE_JSON_TEXT
-                                + BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_IDEMPOTENCY_KEY,
-                        statement -> {
-                            statement.setObject(1, workspaceUuid);
-                            statement.setString(2, groupWorkspaceKey);
-                            statement.setString(3, idempotencyKey);
-                        },
-                        result -> result.next()
-                                ? Optional.of(new Receipt(result.getString(1), result.getString(2)))
-                                : Optional.empty());
+                BusinessChannelCommandReceiptServiceSql
+                                .BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_SELECT_COMMAND_RECEIPT_REQUEST_HASH_RESPONSE_JSON_TEXT
+                        + BusinessChannelCommandReceiptServiceSql
+                                .BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_IDEMPOTENCY_KEY,
+                statement -> {
+                    statement.setObject(1, workspaceUuid);
+                    statement.setString(2, groupWorkspaceKey);
+                    statement.setString(3, idempotencyKey);
+                },
+                result -> result.next()
+                        ? Optional.of(new Receipt(result.getString(1), result.getString(2)))
+                        : Optional.empty());
     }
 
     public void insert(
@@ -45,10 +47,13 @@ public class BusinessChannelCommandReceiptPersistence {
             String responseJson,
             long createdAtEpochMillis) {
         jdbc.update(
-                BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_INSERT_INTO_COMMAND_RECEIPT_INSERT_INTO_BUSINESS_CHANNEL
-                        + BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_OPEN_PAREN_RECEIPT_REF
+                BusinessChannelCommandReceiptServiceSql
+                                .BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_INSERT_INTO_COMMAND_RECEIPT_INSERT_INTO_BUSINESS_CHANNEL
+                        + BusinessChannelCommandReceiptServiceSql
+                                .BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_OPEN_PAREN_RECEIPT_REF
                         + BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_REQUEST_HASH
-                        + BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_VALUES_VALUES_JSONB,
+                        + BusinessChannelCommandReceiptServiceSql
+                                .BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_VALUES_VALUES_JSONB,
                 receiptRef,
                 workspaceUuid,
                 groupWorkspaceKey,

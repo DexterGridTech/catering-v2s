@@ -1,6 +1,5 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspaceUserPersistence;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationAssignmentCandidateLookup;
 import com.catering.v2s.organization.api.OrganizationEntityLookup;
@@ -12,6 +11,7 @@ import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog;
 import com.catering.v2s.workspace.iam.api.WorkspaceRoleReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceUserPersistence;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -530,17 +530,19 @@ public class WorkspaceUserService {
 
     private Map<UUID, Account> accounts(UUID workspaceUuid, String key, Set<UUID> ids) {
         Map<UUID, Account> result = new LinkedHashMap<>();
-        persistence.accounts(workspaceUuid, key, ids).forEach(value -> result.put(
-                value.id(),
-                new Account(
+        persistence
+                .accounts(workspaceUuid, key, ids)
+                .forEach(value -> result.put(
                         value.id(),
-                        value.displayName(),
-                        value.mobile(),
-                        value.loginName(),
-                        value.status(),
-                        value.version(),
-                        value.createdAt(),
-                        value.updatedAt())));
+                        new Account(
+                                value.id(),
+                                value.displayName(),
+                                value.mobile(),
+                                value.loginName(),
+                                value.status(),
+                                value.version(),
+                                value.createdAt(),
+                                value.updatedAt())));
         return Map.copyOf(result);
     }
 
@@ -566,8 +568,9 @@ public class WorkspaceUserService {
     /** One owner aggregate for page projection; never derive last login from invitations or audit. */
     private Map<UUID, Long> latestAuthenticationByAccount(UUID workspaceUuid, String key, Set<UUID> accountIds) {
         Map<UUID, Long> result = new LinkedHashMap<>();
-        persistence.latestAuthentication(workspaceUuid, key, accountIds).forEach(value -> result.put(
-                value.accountId(), value.authenticatedAt()));
+        persistence
+                .latestAuthentication(workspaceUuid, key, accountIds)
+                .forEach(value -> result.put(value.accountId(), value.authenticatedAt()));
         return Map.copyOf(result);
     }
 
@@ -575,8 +578,8 @@ public class WorkspaceUserService {
     private Map<UUID, List<AuthenticationHistory>> authenticationHistory(
             UUID workspaceUuid, String key, Set<UUID> accountIds) {
         Map<UUID, List<AuthenticationHistory>> result = new LinkedHashMap<>();
-        for (WorkspaceUserPersistence.AuthenticationHistoryRow value : persistence.authenticationHistory(
-                workspaceUuid, key, accountIds))
+        for (WorkspaceUserPersistence.AuthenticationHistoryRow value :
+                persistence.authenticationHistory(workspaceUuid, key, accountIds))
             result.computeIfAbsent(value.accountId(), ignored -> new ArrayList<>())
                     .add(new AuthenticationHistory(value.id(), value.authenticatedAt()));
         result.replaceAll((ignored, history) -> List.copyOf(history));
@@ -1082,5 +1085,4 @@ public class WorkspaceUserService {
     private record AuthenticationLatest(UUID accountId, long authenticatedAt) {}
 
     private record AssignmentTarget(String serviceNodeType, UUID serviceNodeId) {}
-
 }

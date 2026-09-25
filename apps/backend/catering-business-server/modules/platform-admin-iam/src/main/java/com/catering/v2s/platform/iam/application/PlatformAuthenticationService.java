@@ -108,8 +108,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         UUID administratorId = persistence.findEnabledAdministratorByMobile(normalizedMobile);
         String code = newOtp();
         long expiresAt = Math.addExact(now, OTP_TTL_MILLIS);
-        persistence.insertLoginOtp(
-                UUID.randomUUID(), administratorId, mobileFingerprint, hash(code), expiresAt, now);
+        persistence.insertLoginOtp(UUID.randomUUID(), administratorId, mobileFingerprint, hash(code), expiresAt, now);
         recordOtpAttempt("PLATFORM_LOGIN_SEND", attempt, OTP_SEND_LIMIT);
         return new OtpDispatch(expiresAt, debugCodeExposure ? code : null);
     }
@@ -172,13 +171,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         String code = newOtp();
         long expiresAt = Math.addExact(now, OTP_TTL_MILLIS);
         persistence.insertRecoveryOtp(
-                UUID.randomUUID(),
-                flow.platformAdminId(),
-                flow.id(),
-                mobileFingerprint,
-                hash(code),
-                expiresAt,
-                now);
+                UUID.randomUUID(), flow.platformAdminId(), flow.id(), mobileFingerprint, hash(code), expiresAt, now);
         recordOtpAttempt("PLATFORM_RECOVERY_SEND", attempt, OTP_SEND_LIMIT);
         return new OtpDispatch(expiresAt, debugCodeExposure ? code : null);
     }
@@ -275,7 +268,11 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         PlatformAuthenticationPersistence.SessionRow session = persistence.findActiveSession(hash(token), now);
         if (session == null) throw new SessionExpiredException();
         return new PlatformSessionReadback(
-                session.id(), session.version(), session.adminId(), session.displayName(), session.expiresAtEpochMillis());
+                session.id(),
+                session.version(),
+                session.adminId(),
+                session.displayName(),
+                session.expiresAtEpochMillis());
     }
 
     @Transactional
@@ -394,13 +391,14 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         } catch (ArithmeticException exception) {
             throw new InvalidAdministratorInputException(exception);
         }
-        List<PlatformAdminReadback> items = ReadBudgetComponent.measure(
-                ReadBudgetComponent.Component.PRIMARY_QUERY,
-                () -> persistence.readAdministratorsPage(
-                                userName, loginName, status, pageSize, offset, sortKey, sortDirection)
-                        .stream()
-                        .map(PlatformAuthenticationService::mapReadback)
-                        .toList());
+        List<PlatformAdminReadback> items =
+                ReadBudgetComponent.measure(
+                        ReadBudgetComponent.Component.PRIMARY_QUERY, () -> persistence
+                                .readAdministratorsPage(
+                                        userName, loginName, status, pageSize, offset, sortKey, sortDirection)
+                                .stream()
+                                .map(PlatformAuthenticationService::mapReadback)
+                                .toList());
         return new PlatformAdminPage(items, page, pageSize, total == null ? 0L : total, sortKey, sortDirection);
     }
 
@@ -432,8 +430,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         if ("DISABLED".equals(targetStatus)) requireDeactivationAllowed(id, actor);
         int changed = persistence.updateAdministratorStatus(targetStatus, now, id, expectedVersion);
         if (changed == 0) throw new PlatformAdminVersionConflictException();
-        if ("DISABLED".equals(targetStatus))
-            persistence.revokeRecoverySessions(now, id);
+        if ("DISABLED".equals(targetStatus)) persistence.revokeRecoverySessions(now, id);
         audit(
                 id,
                 "PLATFORM_ADMIN_STATUS_CHANGED",
@@ -526,8 +523,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
                     displayMobile,
                     displayMobile == null ? null : normalizedMobile(displayMobile),
                     now);
-            persistence.insertAdministratorCredential(
-                    id, passwordEncoder.encode(new String(initialPassword)), now);
+            persistence.insertAdministratorCredential(id, passwordEncoder.encode(new String(initialPassword)), now);
         } catch (org.springframework.dao.DuplicateKeyException exception) {
             throw new LoginNameConflictException(exception);
         }
@@ -598,7 +594,8 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
                 "PLATFORM_ADMIN_PROFILE_UPDATED",
                 now,
                 actor,
-                ADMIN_PROFILE_UPDATED.allow(List.of(AuditChange.forNullableScalar("displayName", null, displayName.trim()))));
+                ADMIN_PROFILE_UPDATED.allow(
+                        List.of(AuditChange.forNullableScalar("displayName", null, displayName.trim()))));
         return requireAdministrator(id);
     }
 
@@ -630,7 +627,8 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
                 "PLATFORM_ADMIN_PROFILE_UPDATED",
                 now,
                 AuditActor.system(),
-                ADMIN_PROFILE_UPDATED.allow(List.of(AuditChange.forNullableScalar("displayName", null, displayName.trim()))));
+                ADMIN_PROFILE_UPDATED.allow(
+                        List.of(AuditChange.forNullableScalar("displayName", null, displayName.trim()))));
         return requireAdministrator(id);
     }
 
@@ -783,8 +781,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         long startedAt = resetWindow ? now : current.windowStartedAtEpochMillis();
         int failures = resetWindow ? 1 : current.failedAttempts() + 1;
         Long lockedUntil = failures >= threshold ? now + lockMillis : null;
-        persistence.upsertOtpRateFailure(
-                purpose, dimension, fingerprint, startedAt, failures, lockedUntil, now);
+        persistence.upsertOtpRateFailure(purpose, dimension, fingerprint, startedAt, failures, lockedUntil, now);
     }
 
     private LoginAttempt beginLoginAttempt(String normalizedAccount, String sourceAddress) {
@@ -835,14 +832,12 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     private void recordRateFailure(
             String dimension, String fingerprint, int threshold, long windowMillis, long lockMillis) {
         long now = timeProvider.currentEpochMillis();
-        PlatformAuthenticationPersistence.RateBucket current =
-                persistence.readLoginRateFailure(dimension, fingerprint);
+        PlatformAuthenticationPersistence.RateBucket current = persistence.readLoginRateFailure(dimension, fingerprint);
         boolean resetWindow = current == null || now - current.windowStartedAtEpochMillis() >= windowMillis;
         long startedAt = resetWindow ? now : current.windowStartedAtEpochMillis();
         int failures = resetWindow ? 1 : current.failedAttempts() + 1;
         Long lockedUntil = failures >= threshold ? now + lockMillis : null;
-        persistence.upsertLoginRateFailure(
-                dimension, fingerprint, startedAt, failures, lockedUntil, now);
+        persistence.upsertLoginRateFailure(dimension, fingerprint, startedAt, failures, lockedUntil, now);
     }
 
     private void clearAccountFailures(LoginAttempt attempt) {

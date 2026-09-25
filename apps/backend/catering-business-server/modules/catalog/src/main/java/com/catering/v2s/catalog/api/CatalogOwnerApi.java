@@ -1,9 +1,9 @@
 package com.catering.v2s.catalog.api;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
-import com.catering.v2s.platform.foundation.contract.OwnerProblem;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.platform.foundation.contract.OwnerProblem;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;

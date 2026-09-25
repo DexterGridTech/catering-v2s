@@ -59,11 +59,25 @@ class SalesMenuCursorIdentityTest {
     @Test
     void filterAndModeDelimitersCannotCollide() {
         SalesMenuCursorIdentity filterWithDelimiter = new SalesMenuCursorIdentity(
-                "operation", new SalesMenuScope(WORKSPACE, "group-1", STORE), CHANNEL, MENU, VERSION, SECTION,
-                "DRAFT", "keyword|x", 20);
+                "operation",
+                new SalesMenuScope(WORKSPACE, "group-1", STORE),
+                CHANNEL,
+                MENU,
+                VERSION,
+                SECTION,
+                "DRAFT",
+                "keyword|x",
+                20);
         SalesMenuCursorIdentity modeWithDelimiter = new SalesMenuCursorIdentity(
-                "operation", new SalesMenuScope(WORKSPACE, "group-1", STORE), CHANNEL, MENU, VERSION, SECTION,
-                "DRAFT|keyword", "x", 20);
+                "operation",
+                new SalesMenuScope(WORKSPACE, "group-1", STORE),
+                CHANNEL,
+                MENU,
+                VERSION,
+                SECTION,
+                "DRAFT|keyword",
+                "x",
+                20);
         assertNotEquals(filterWithDelimiter.value(), modeWithDelimiter.value());
     }
 

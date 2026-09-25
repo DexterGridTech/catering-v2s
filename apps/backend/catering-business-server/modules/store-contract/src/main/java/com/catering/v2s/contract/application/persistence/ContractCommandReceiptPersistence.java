@@ -22,9 +22,12 @@ public class ContractCommandReceiptPersistence {
         // subsequent insert remain serialized without embedding the lock in SQL.
         AdvisoryLock.acquireHashTextPair(jdbc, workspaceUuid.toString(), key);
         return jdbc.query(
-                ContractCommandReceiptServiceSql.CONTRACT_COMMAND_RECEIPT_SERVICE_SELECT_RECEIPT_REQUEST_HASH_RESPONSE_JSON_TEXT
-                        + ContractCommandReceiptServiceSql.CONTRACT_COMMAND_RECEIPT_SERVICE_CONTRACT_COMMAND_RECEIPT_RECEIPT_WORKSPACE_UUID
-                        + ContractCommandReceiptServiceSql.CONTRACT_COMMAND_RECEIPT_SERVICE_CONDITION_RECEIPT_IDEMPOTENCY_KEY,
+                ContractCommandReceiptServiceSql
+                                .CONTRACT_COMMAND_RECEIPT_SERVICE_SELECT_RECEIPT_REQUEST_HASH_RESPONSE_JSON_TEXT
+                        + ContractCommandReceiptServiceSql
+                                .CONTRACT_COMMAND_RECEIPT_SERVICE_CONTRACT_COMMAND_RECEIPT_RECEIPT_WORKSPACE_UUID
+                        + ContractCommandReceiptServiceSql
+                                .CONTRACT_COMMAND_RECEIPT_SERVICE_CONDITION_RECEIPT_IDEMPOTENCY_KEY,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, key);
@@ -44,7 +47,8 @@ public class ContractCommandReceiptPersistence {
             long createdAtEpochMillis) {
         return jdbc.update(
                 ContractCommandReceiptServiceSql.CONTRACT_COMMAND_RECEIPT_SERVICE_INSERT_INTO_CONTRACT_COMMAND_RECEIPT
-                        + ContractCommandReceiptServiceSql.CONTRACT_COMMAND_RECEIPT_SERVICE_REQUEST_HASH_RESPONSE_JSON_CREATED_AT_EPOCH_MILLIS,
+                        + ContractCommandReceiptServiceSql
+                                .CONTRACT_COMMAND_RECEIPT_SERVICE_REQUEST_HASH_RESPONSE_JSON_CREATED_AT_EPOCH_MILLIS,
                 workspaceUuid,
                 key,
                 resultId,

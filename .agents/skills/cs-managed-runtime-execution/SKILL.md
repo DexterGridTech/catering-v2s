@@ -5,9 +5,26 @@ description: Safely classify and run authorized reset, DEV, seed, Testcontainers
 # cs-managed-runtime-execution
 
 Use this skill before any dynamic environment action or any proposal to change a runner. It
-does not grant authority. `AGENTS.md`, the active package, the current Roadmap authorization,
+does not grant authority. `AGENTS.md`, the active package, Dexter's explicit session assignment,
 the applicable plan, `scripts/README.md`, and routed project memory decide whether the action
 is permitted.
+
+## 0a. Entry checks before an expensive dynamic run
+
+These checks come first; they do not change the routine classification below.
+
+- **Implementation batches**: before the first browser L2, reset or seed for a batch's changes,
+  confirm the `动态前整体准入` records exist (canonical: `doc/platform/implementation-task-template.md`).
+  Missing records mean stop and complete them; never use the dynamic run to find what a static
+  review would have found. `backend-acceptance` stays independently invokable.
+- **Browser L2**: follow `doc/platform/browser-l2-execution-standard.md` §4.1. Admission must be
+  `PASS` and cover the current bytes; do not rerun a failed case whose bound bytes have not changed
+  (diagnose statically from `playwright-results.json` first); do not edit files inside the byte
+  binding while a run is held; run one managed run at a time.
+- **Reset followed by seed** (routine or batch): run the complete-seed dry-run on the current bytes
+  first; if it fails, do not reset.
+- **Status reports** state two lines: the latest run on the current bytes, and the last pass with
+  whether its bytes equal the current bytes.
 
 ## 0. Routine-command classification
 
@@ -82,7 +99,7 @@ plane from a loopback URL, an absent local tool, a historical runner, or an old 
 | `backend-acceptance` | The repository's single managed remote JVM/Docker backend acceptance runner, with catalog-discovered real business scenarios and separate CONTRACT/BUSINESS plus informational DB operations. | Local Docker/Colima probing, a local Docker fallback, response.ok-only checks, a split performance lane, or describing it as browser L2/UAT. |
 | Managed browser L2 | Remote Spring Boot beside remote PostgreSQL/object storage; local Web apps and local Playwright; local tunnel forwards only remote HTTP and asset ingress; one isolated remote database/asset namespace per run, remote Java identity/readiness/logs plus run-scoped manifest and both-side cleanup. | A PostgreSQL tunnel, local Spring fallback, persistent DEV data, a remote browser, a static/type result, or Testcontainers technical proof. |
 | UAT | Fully remote application and browser execution, and only under separate Dexter authorization. | Local DEV, local browser L2, or an unapproved deployment. |
-| TER `assembly` run on a VM or device | Only after the same source bytes passed the `ui/integration` Expo Web verification required by `TR-16` in `doc/platform/terminal-coding-standard.md`; rerun the same scenario list on the device and record Web/device results side by side. Behavior that depends on an `adapter/*` capability may be verified on the device directly. | Starting with the device for a non-adapter feature, treating vitest/jsdom as the Web verification, running different scenario lists on the two ends, or claiming parity from one side. |
+| TER `application` run on a VM or device | Only after the same source bytes passed the `ui/integration` Expo Web verification required by `TR-16` in `doc/platform/terminal-coding-standard.md`; rerun the same scenario list on the device and record Web/device results side by side. Behavior that depends on an `adapter/*` capability may be verified on the device directly. | Starting with the device for a non-adapter feature, treating vitest/jsdom as the Web verification, running different scenario lists on the two ends, or claiming parity from one side. |
 
 Record the expected topology before starting. For current DEV it must be:
 

@@ -1,7 +1,7 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAssignmentScopePersistence;
 import com.catering.v2s.organization.api.WorkspaceAssignmentScopeLookup;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAssignmentScopePersistence;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

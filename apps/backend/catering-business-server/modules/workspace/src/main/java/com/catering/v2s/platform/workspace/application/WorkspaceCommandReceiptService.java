@@ -1,8 +1,8 @@
 package com.catering.v2s.platform.workspace.application;
 
 import com.catering.v2s.platform.foundation.json.LegacyReceiptJson;
-import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.application.persistence.WorkspaceCommandReceiptPersistence;
@@ -33,7 +33,8 @@ public final class WorkspaceCommandReceiptService {
         String key = requiredKey(idempotencyKey);
         String requestHash = CommandReceiptSupport.requestHash(canonicalRequest);
         persistence.lock(groupWorkspaceKey, key);
-        WorkspaceCommandReceiptPersistence.Receipt existing = persistence.find(groupWorkspaceKey, key).orElse(null);
+        WorkspaceCommandReceiptPersistence.Receipt existing =
+                persistence.find(groupWorkspaceKey, key).orElse(null);
         if (existing != null) {
             if (!requestHash.equals(existing.requestHash())) throw new WorkspaceIdempotencyConflictException();
             WorkspaceAdministrationReadback replay = deserialize(existing.responseJson());

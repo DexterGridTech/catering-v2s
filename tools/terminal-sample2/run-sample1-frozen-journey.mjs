@@ -9,7 +9,7 @@ const packageName = 'com.anonymous.sampleterminal'
 const activity = `${packageName}/.MainActivity`
 const apk = path.join(
   repositoryRoot,
-  'apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk',
+  'apps/terminal/application/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk',
 )
 const defaultOutput = path.join(
   repositoryRoot,

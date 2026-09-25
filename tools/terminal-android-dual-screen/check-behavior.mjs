@@ -8,7 +8,7 @@ const sourcePath = path.join(
   repositoryRoot,
   'apps/terminal/adapter/android/dual-screen/android/src/main/java/com/catering/v2s/terminal/adapter/android/dualscreen/TerminalDualScreenActivityHandler.kt',
 );
-const gradleDirectory = path.join(repositoryRoot, 'apps/terminal/assembly/android/sample-terminal/android');
+const gradleDirectory = path.join(repositoryRoot, 'apps/terminal/application/android/sample-terminal/android');
 const sourceBeforeMutation = fs.readFileSync(sourcePath, 'utf8');
 
 function runGradle(label) {

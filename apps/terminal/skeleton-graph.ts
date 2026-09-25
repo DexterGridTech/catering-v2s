@@ -46,12 +46,6 @@ export const skeletonGraph = {
     dependencies: ['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.state', 'kernel.base.runtime'],
     devDependencies: [],
   },
-  'kernel.base.workflow': {
-    batch: 2,
-    plannedKind: 'owner',
-    dependencies: ['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.state', 'kernel.base.runtime'],
-    devDependencies: [],
-  },
   'kernel.base.ui-state': {
     batch: 1,
     kind: 'owner',
@@ -64,24 +58,13 @@ export const skeletonGraph = {
     ],
     devDependencies: [],
   },
-  'kernel.base.test-support': {
-    batch: 1,
-    plannedKind: 'toolkit',
-    dependencies: [],
-    devDependencies: [
-      'kernel.base.contracts',
-      'kernel.base.platform-ports',
-      'kernel.base.state',
-      'kernel.base.runtime',
-    ],
-  },
   'ui.base.render': {
     batch: 1,
     plannedKind: 'toolkit',
     dependencies: ['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.runtime', 'kernel.base.state', 'kernel.base.display-context', 'kernel.base.ui-state', 'ui.base.primitives'],
     devDependencies: [],
   },
-  'ui.base.console-assembly': {
+  'ui.base.integration-assembly': {
     batch: 2,
     plannedKind: 'toolkit',
     dependencies: [
@@ -103,16 +86,10 @@ export const skeletonGraph = {
     dependencies: ['kernel.base.contracts', 'kernel.base.runtime', 'kernel.base.state'],
     devDependencies: [],
   },
-  'ui.base.automation': {
-    batch: 1,
-    plannedKind: 'owner',
-    dependencies: ['kernel.base.platform-ports', 'kernel.base.runtime', 'kernel.base.ui-state'],
-    devDependencies: [],
-  },
   'ui.base.primitives': {
     batch: 1,
     plannedKind: 'toolkit',
-    dependencies: ['ui.base.automation'],
+    dependencies: [],
     devDependencies: [],
   },
   'ui.base.input': {
@@ -140,12 +117,6 @@ export const skeletonGraph = {
       'kernel.base.ui-state',
     ],
     devDependencies: [],
-  },
-  'ui.base.test-support': {
-    batch: 1,
-    plannedKind: 'toolkit',
-    dependencies: [],
-    devDependencies: ['kernel.base.platform-ports'],
   },
   'ui.base.dev-host': {
     batch: 1,
@@ -184,7 +155,7 @@ export const skeletonGraph = {
       'ui.base.primitives',
       'ui.base.feature-assembly',
     ],
-    devDependencies: ['ui.base.test-support'],
+    devDependencies: ['kernel.base.platform-ports'],
   },
   'ui.feature.sample-wallpaper-picker': {
     batch: 2,
@@ -198,7 +169,7 @@ export const skeletonGraph = {
       'ui.base.primitives',
       'ui.base.feature-assembly',
     ],
-    devDependencies: ['ui.base.test-support'],
+    devDependencies: ['kernel.base.platform-ports'],
   },
   'ui.feature.sample-member-desk': {
     batch: 2,
@@ -215,7 +186,7 @@ export const skeletonGraph = {
       'ui.base.input',
       'ui.base.feature-assembly',
     ],
-    devDependencies: ['ui.base.test-support'],
+    devDependencies: ['kernel.base.platform-ports'],
   },
   'ui.integration.sample-console': {
     batch: 1,
@@ -234,7 +205,7 @@ export const skeletonGraph = {
       'ui.feature.sample-member-desk',
       'ui.base.input',
       'ui.base.admin-shell',
-      'ui.base.console-assembly',
+      'ui.base.integration-assembly',
     ],
     devDependencies: ['ui.base.dev-host'],
   },
@@ -256,7 +227,7 @@ export const skeletonGraph = {
       'ui.base.primitives',
       'ui.feature.sample-staff-auth',
       'ui.feature.sample-wallpaper-picker',
-      'ui.base.console-assembly',
+      'ui.base.integration-assembly',
     ],
     devDependencies: ['ui.base.dev-host'],
   },
@@ -278,27 +249,31 @@ export const skeletonGraph = {
     dependencies: ['kernel.base.platform-ports'],
     devDependencies: [],
   },
-  'assembly.android.sample-terminal': {
+  'application.android.sample-terminal': {
     batch: 1,
     plannedKind: 'toolkit',
     dependencies: [
-      'assembly.base.android',
+      'application.base.android',
+      'ui.base.input',
+      'ui.base.primitives',
       'ui.base.render',
       'ui.integration.sample-console',
     ],
     devDependencies: [],
   },
-  'assembly.android.sample-wallpaper-terminal': {
+  'application.android.sample-wallpaper-terminal': {
     batch: 1,
     plannedKind: 'toolkit',
     dependencies: [
-      'assembly.base.android',
+      'application.base.android',
+      'ui.base.input',
+      'ui.base.primitives',
       'ui.base.render',
       'ui.integration.sample-wallpaper-console',
     ],
     devDependencies: [],
   },
-  'assembly.base.android': {
+  'application.base.android': {
     batch: 2,
     plannedKind: 'toolkit',
     dependencies: [

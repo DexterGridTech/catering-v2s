@@ -25,6 +25,19 @@ const expectedDatabaseFor = (namespace) => `catering_v2s_dev_${namespace.replace
 const pidAlive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 const processStartToken = (pid) => canonicalStartToken(spawnSync("ps", ["-o", "lstart=", "-p", String(pid)], {encoding: "utf8"}).stdout);
 
+function childFirstFailure(result) {
+  const text = `${result?.stderr ?? ""}\n${result?.stdout ?? ""}`;
+  return text.match(/(?:REASON|FIRST_FAILURE)=([A-Z0-9_:-]+)/)?.[1] ?? `EXIT_${result?.status ?? "UNKNOWN"}`;
+}
+
+export function assertSeedDryRunPass({executor = spawnSync} = {}) {
+  const result = executor(process.execPath, [path.join(root, "scripts/dev/r5-complete-seed-executor.mjs"), "--dry-run"], {cwd: root, encoding: "utf8", env: process.env});
+  if (result?.error || result?.status !== 0 || !String(result?.stdout ?? "").includes("R5_COMPLETE_SEED_DRY_RUN=PASS")) {
+    fail(`SEED_DRY_RUN_REQUIRED_BEFORE_RESET:${childFirstFailure(result)}`);
+  }
+  return Object.freeze({status: "PASS", outputDigest: sha256(result.stdout ?? "")});
+}
+
 export function validateResetTopology(resolved) {
   const namespace = resolved?.namespace;
   const targetDatabase = resolved?.expectedDatabase;
@@ -160,19 +173,25 @@ export function selfTest() {
   expect("TARGET_DATABASE_ALLOWLIST_INVALID", () => validateResetTopology({...valid, expectedDatabase: "postgres"}));
   expect("REMOTE_EXECUTION_FAILED", () => runRemoteReset({host: valid.environment.V2S_DEV_REMOTE_HOST, targetDatabase: valid.expectedDatabase, executor: () => ({status: 255, stdout: "", stderr: "redacted"})}));
   expect("POST_DROP_READBACK_FAILED", () => runRemoteReset({host: valid.environment.V2S_DEV_REMOTE_HOST, targetDatabase: valid.expectedDatabase, executor: () => ({status: 0, stdout: "R5_REMOTE_RESET_TERMINATE=PASS\\nR5_REMOTE_RESET_DROP=PASS\\nR5_REMOTE_RESET_READBACK_ABSENT=FAIL\\n"})}));
-  process.stdout.write("R5_DEV_RESET_SELF_TEST=PASS\nRED_HOST_HASH=PASS\nRED_PRODUCTION_HOST=PASS\nRED_ILLEGAL_DATABASE=PASS\nRED_REMOTE_EXECUTION=PASS\nRED_POST_DROP_READBACK=PASS\nCLEANUP=PASS\n");
+  expect("SEED_DRY_RUN_REQUIRED_BEFORE_RESET:STATIC_PLAN", () => assertSeedDryRunPass({executor: () => ({status: 2, stdout: "", stderr: "R5_COMPLETE_SEED_DRY_RUN=FAIL; FIRST_FAILURE=STATIC_PLAN"})}));
+  process.stdout.write("R5_DEV_RESET_SELF_TEST=PASS\nRED_HOST_HASH=PASS\nRED_PRODUCTION_HOST=PASS\nRED_ILLEGAL_DATABASE=PASS\nRED_REMOTE_EXECUTION=PASS\nRED_POST_DROP_READBACK=PASS\nRED_SEED_DRY_RUN=PASS\nCLEANUP=PASS\n");
 }
 
 function main() {
   if (process.argv.includes("--self-test")) return selfTest();
   const topology = resolveEnvironment();
   if (process.argv.includes("--dry-run")) {
-    process.stdout.write(`R5_DEV_RESET_DRY_RUN=PASS; DATABASE=${topology.targetDatabase}; MANAGEMENT=REMOTE_SSH_EXEC; FOLLOW_UP=scripts/dev/start\n`);
+    const seed = assertSeedDryRunPass();
+    process.stdout.write(`R5_DEV_RESET_DRY_RUN=PASS; DATABASE=${topology.targetDatabase}; MANAGEMENT=REMOTE_SSH_EXEC; SEED_DRY_RUN=PASS; SEED_DRY_RUN_DIGEST=${seed.outputDigest}; FOLLOW_UP=scripts/dev/start\n`);
     return;
   }
   if (process.env.R5_RESET_CONFIRMATION !== "EXPLICIT_R5_RESET") fail("EXPLICIT_R5_RESET_CONFIRMATION_REQUIRED");
   const run = createRun(topology);
   try {
+    const seed = assertSeedDryRunPass();
+    run.state.lastKnownGood = "SEED_DRY_RUN_PASS";
+    run.state.seedDryRunDigest = seed.outputDigest;
+    run.write(); run.event("SEED_DRY_RUN", "PASS", seed.outputDigest);
     if (verifyManagedDevOwnership(run)) stopOwnedManagedDev(run);
     runRemoteReset({...topology, namespace: topology.namespace});
     run.state.lastKnownGood = "REMOTE_DATABASE_ABSENT_READBACK";

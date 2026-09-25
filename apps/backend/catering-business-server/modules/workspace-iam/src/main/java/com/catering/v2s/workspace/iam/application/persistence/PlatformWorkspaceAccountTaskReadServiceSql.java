@@ -1,6 +1,9 @@
 package com.catering.v2s.workspace.iam.application.persistence;
 
-/** SQL text fragments owned by PlatformWorkspaceAccountTaskReadService; B3 relocates text only and does not change execution. */
+/**
+ * SQL text fragments owned by PlatformWorkspaceAccountTaskReadService; B3 relocates text only and does not change
+ * execution.
+ */
 public final class PlatformWorkspaceAccountTaskReadServiceSql {
     public static final String SORT_DIRECTION_ASC = "ASC";
     public static final String SORT_DIRECTION_DESC = "DESC";
@@ -13,7 +16,8 @@ public final class PlatformWorkspaceAccountTaskReadServiceSql {
     public static final String SQL_SPACE = " ";
     public static final String PAGE_TIE_BREAKER_SUFFIX = ", paged.id ASC";
     public static final String PLATFORM_WORKSPACE_ACCOUNT_TASK_READ_SERVICE_SET = "SET";
-    public static final String PLATFORM_WORKSPACE_ACCOUNT_TASK_READ_SERVICE_CTE_WORKSPACE_CREDENTIAL = """
+    public static final String PLATFORM_WORKSPACE_ACCOUNT_TASK_READ_SERVICE_CTE_WORKSPACE_CREDENTIAL =
+            """
             WITH filtered AS MATERIALIZED (
               SELECT a.id, a.display_name, a.mobile_normalized, a.login_name_normalized, a.status, a.version,
                      a.created_at_epoch_millis, a.updated_at_epoch_millis, login.last_login_at, COUNT(*) OVER () AS \
@@ -72,7 +76,8 @@ public final class PlatformWorkspaceAccountTaskReadServiceSql {
             ) credentials ON TRUE
             """;
     public static final String PLATFORM_WORKSPACE_ACCOUNT_TASK_READ_SERVICE_ORDER_BY = " ORDER BY ";
-    public static final String PLATFORM_WORKSPACE_ACCOUNT_TASK_READ_SERVICE_SELECT_WORKSPACE_CREDENTIAL = """
+    public static final String PLATFORM_WORKSPACE_ACCOUNT_TASK_READ_SERVICE_SELECT_WORKSPACE_CREDENTIAL =
+            """
             SELECT a.id, a.display_name, a.mobile_normalized, a.login_name_normalized, a.status, a.version,
                    a.created_at_epoch_millis, a.updated_at_epoch_millis, 1 AS total, login.last_login_at,
                    COALESCE(assignments.value, '[]'::jsonb)::text AS assignments,

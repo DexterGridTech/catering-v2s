@@ -33,6 +33,7 @@ final class TerminalConfigurationCodec {
         if (input == null || !input.isObject()) throw invalid();
         Set<UUID> priorPrinterRefs = refs(priorDocument == null ? null : priorDocument.path("printers"));
         Set<UUID> priorFunctionRefs = refs(priorDocument == null ? null : priorDocument.path("functions"));
+        Map<UUID, String> priorFunctionKeys = functionKeys(priorDocument == null ? null : priorDocument.path("functions"));
         Set<String> clientKeys = new HashSet<>();
         Map<String, UUID> printerClientRefs = new HashMap<>();
         List<Printer> printers = new ArrayList<>();
@@ -73,6 +74,9 @@ final class TerminalConfigurationCodec {
             ChildIdentity identity = identity(value, priorFunctionRefs, clientKeys);
             UUID ref = identity.ref() == null ? UUID.randomUUID() : identity.ref();
             String key = text(value, "functionKey");
+            if (identity.ref() != null && !key.equals(priorFunctionKeys.get(identity.ref()))) {
+                throw invalid();
+            }
             List<RangeSelection> ranges = readRanges(value.path("ranges"));
             ArrayNode rangesNode = normalizedFunctions
                     .addObject()
@@ -141,7 +145,7 @@ final class TerminalConfigurationCodec {
                 if (!priorRefs.contains(parsed)) throw invalid();
                 return new ChildIdentity(parsed, null);
             } catch (IllegalArgumentException malformedOrForeign) {
-                throw invalid();
+                throw invalid(malformedOrForeign);
             }
         }
         if (clientKey.isBlank() || !clientKeys.add(clientKey)) throw invalid();
@@ -160,7 +164,7 @@ final class TerminalConfigurationCodec {
         try {
             return UUID.fromString(ref);
         } catch (IllegalArgumentException malformed) {
-            throw invalid();
+            throw invalid(malformed);
         }
     }
 
@@ -171,8 +175,24 @@ final class TerminalConfigurationCodec {
             try {
                 result.add(UUID.fromString(text(value, "ref")));
             } catch (IllegalArgumentException invalid) {
-                throw invalid();
+                throw invalid(invalid);
             }
+        }
+        return result;
+    }
+
+    private Map<UUID, String> functionKeys(JsonNode values) {
+        if (values == null || !values.isArray()) return Map.of();
+        Map<UUID, String> result = new HashMap<>();
+        for (JsonNode value : values) {
+            UUID ref;
+            try {
+                ref = UUID.fromString(text(value, "ref"));
+            } catch (IllegalArgumentException invalid) {
+                throw invalid(invalid);
+            }
+            String key = text(value, "functionKey");
+            if (result.putIfAbsent(ref, key) != null) throw invalid();
         }
         return result;
     }
@@ -185,7 +205,7 @@ final class TerminalConfigurationCodec {
             try {
                 result.add(UUID.fromString(value.textValue()));
             } catch (IllegalArgumentException invalid) {
-                throw invalid();
+                throw invalid(invalid);
             }
         }
         return List.copyOf(result);
@@ -218,6 +238,10 @@ final class TerminalConfigurationCodec {
 
     private static IllegalArgumentException invalid() {
         return new IllegalArgumentException("terminal configuration is invalid");
+    }
+
+    private static IllegalArgumentException invalid(Throwable cause) {
+        return new IllegalArgumentException("terminal configuration is invalid", cause);
     }
 
     record Normalized(ObjectNode document, TerminalConfiguration configuration, Set<String> clientKeys) {

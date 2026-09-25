@@ -78,10 +78,7 @@ class ExtensionDefinitionServiceTest {
                 key);
         persistence = new ExtensionDefinitionPersistence(jdbc, (TimeProvider) () -> now);
         service = new ExtensionDefinitionService(
-                persistence,
-                new ExtensionCommandReceiptService(jdbc, () -> now),
-                actor -> {},
-                workspaceStatuses);
+                persistence, new ExtensionCommandReceiptService(jdbc, () -> now), actor -> {}, workspaceStatuses);
     }
 
     @Test
@@ -192,7 +189,8 @@ class ExtensionDefinitionServiceTest {
 
     @Test
     void doesNotReuseGeneratedKeyAfterItsFieldIsDeleted() {
-        String groupWorkspaceKey = "extension-history-" + UUID.randomUUID().toString().replace("-", "");
+        String groupWorkspaceKey =
+                "extension-history-" + UUID.randomUUID().toString().replace("-", "");
         UUID isolatedWorkspace = createWorkspace(groupWorkspaceKey);
         var first = service.replaceDraft(
                 isolatedWorkspace,
@@ -243,7 +241,8 @@ class ExtensionDefinitionServiceTest {
 
     @Test
     void concurrentInitialWritesHaveOneWinnerAndStaleUpdatesAffectNoRows() throws Exception {
-        String groupWorkspaceKey = "extension-cas-" + UUID.randomUUID().toString().replace("-", "");
+        String groupWorkspaceKey =
+                "extension-cas-" + UUID.randomUUID().toString().replace("-", "");
         UUID isolatedWorkspace = createWorkspace(groupWorkspaceKey);
         long now = 1_785_000_000_000L;
         CountDownLatch preStateReaders = new CountDownLatch(2);
@@ -269,18 +268,15 @@ class ExtensionDefinitionServiceTest {
             }
         };
         ExtensionDefinitionService racingService = new ExtensionDefinitionService(
-                racingPersistence,
-                new ExtensionCommandReceiptService(jdbc, () -> now),
-                actor -> {},
-                workspaceStatuses);
+                racingPersistence, new ExtensionCommandReceiptService(jdbc, () -> now), actor -> {}, workspaceStatuses);
         List<ExtensionDefinitionService.Field> fields = List.of(new ExtensionDefinitionService.Field(
                 "capacity", "Capacity", "NUMBER", false, List.of(), "ENABLED", 0, null));
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
-            Future<ExtensionDefinitionReadback> first = executor.submit(() -> racingService.replace(
-                    isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE, 0, fields));
-            Future<ExtensionDefinitionReadback> second = executor.submit(() -> racingService.replace(
-                    isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE, 0, fields));
+            Future<ExtensionDefinitionReadback> first = executor.submit(() ->
+                    racingService.replace(isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE, 0, fields));
+            Future<ExtensionDefinitionReadback> second = executor.submit(() ->
+                    racingService.replace(isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE, 0, fields));
             assertTrue(preStateReaders.await(10, TimeUnit.SECONDS));
             releaseWriters.countDown();
             int winners = 0;
@@ -309,12 +305,7 @@ class ExtensionDefinitionServiceTest {
         assertEquals(
                 0,
                 persistence.updateDefinition(
-                        isolatedWorkspace,
-                        groupWorkspaceKey,
-                        ExtensionHostTypes.STORE,
-                        "[]",
-                        2,
-                        0));
+                        isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE, "[]", 2, 0));
         var afterStaleUpdate =
                 persistence.findDefinition(isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE);
         assertEquals(1, afterStaleUpdate.revision());
@@ -393,8 +384,16 @@ class ExtensionDefinitionServiceTest {
                         ExtensionHostTypes.REGION,
                         0,
                         List.of(new ExtensionDefinitionService.Field(
-                                "regionLabel", "Region label", "TEXT", Boolean.FALSE, null, false,
-                                List.of(), "ENABLED", 0, null))));
+                                "regionLabel",
+                                "Region label",
+                                "TEXT",
+                                Boolean.FALSE,
+                                null,
+                                false,
+                                List.of(),
+                                "ENABLED",
+                                0,
+                                null))));
         assertThrows(
                 ExtensionDefinitionService.DefinitionInvalidException.class,
                 () -> service.replace(
@@ -403,8 +402,16 @@ class ExtensionDefinitionServiceTest {
                         ExtensionHostTypes.REGION,
                         0,
                         List.of(new ExtensionDefinitionService.Field(
-                                "regionLabel", "Region label", "TEXT", null, Boolean.FALSE, false,
-                                List.of(), "ENABLED", 0, null))));
+                                "regionLabel",
+                                "Region label",
+                                "TEXT",
+                                null,
+                                Boolean.FALSE,
+                                false,
+                                List.of(),
+                                "ENABLED",
+                                0,
+                                null))));
     }
 
     @Test

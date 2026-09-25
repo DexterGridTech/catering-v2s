@@ -6,16 +6,6 @@
 
 说明本轮交付单元、它为何需要评审，以及与此前结论的关系。
 
-若本轮是 implementation-facing 详设，标题前必须声明：
-
-```text
-REVIEW_KIND=IMPLEMENTATION_FACING_DESIGN
-DESIGN_GRANULARITY_MANIFEST=<repo-relative-json>
-ADVERSARIAL_REVIEW_REPORT=<repo-relative-json>
-```
-
-这两份材料必须先通过 `scripts/check/implementation-design-granularity`；否则不得创建本 handoff。
-
 ## 评审目标
 
 明确希望 Claude 独立确认的 architecture、contract、boundary、evidence 或代码问题；不要使用泛化的“请 review”。

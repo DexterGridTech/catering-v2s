@@ -137,9 +137,7 @@ class ProductionTagCopyPreflightIntegrationTest {
         ObjectNode request = requestWithRefs(sourceRef);
         JsonNode preflight = preflight(sourceScope, request);
         request.put("productionPreflightDigest", preflight.path("digest").asText());
-        jdbc.update(
-                "UPDATE catalog.production_tag_definition SET version=version+1 WHERE tag_ref=?",
-                sourceRef);
+        jdbc.update("UPDATE catalog.production_tag_definition SET version=version+1 WHERE tag_ref=?", sourceRef);
 
         CatalogProductionTagOwnerApi.Problem failure = assertThrows(
                 CatalogProductionTagOwnerApi.Problem.class,
@@ -207,4 +205,3 @@ class ProductionTagCopyPreflightIntegrationTest {
                 List.of(targetScope));
     }
 }
-

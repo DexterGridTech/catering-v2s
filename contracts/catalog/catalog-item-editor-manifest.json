@@ -10,10 +10,6 @@
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
       "sha256": "a532610f6635e3ac235d50e0b285ac0ad4f79fa0b7ce4dac21bf2c61ea512c7e"
-    },
-    "v4Manifest": {
-      "path": "../catering-server-v4/frontend/packages/generated-contracts/src/catalog-item-editor-manifest.ts",
-      "authority": "read-only baseline"
     }
   },
   "capabilityValues": [
@@ -600,7 +596,7 @@
       "evidenceRefs": [
         "CATALOG_V6",
         "CATALOG_V1",
-        "V4_MANIFEST"
+        "CATALOG_BASELINE"
       ]
     },
     {
@@ -627,7 +623,7 @@
       "evidenceRefs": [
         "CATALOG_V6",
         "CATALOG_V1",
-        "V4_MANIFEST"
+        "CATALOG_BASELINE"
       ]
     },
     {
@@ -654,7 +650,7 @@
       "evidenceRefs": [
         "CATALOG_V6",
         "CATALOG_V1",
-        "V4_MANIFEST"
+        "CATALOG_BASELINE"
       ]
     },
     {
@@ -682,7 +678,7 @@
       "evidenceRefs": [
         "CATALOG_V6",
         "CATALOG_V1",
-        "V4_MANIFEST"
+        "CATALOG_BASELINE"
       ]
     },
     {
@@ -709,7 +705,7 @@
       "evidenceRefs": [
         "CATALOG_V6",
         "CATALOG_V1",
-        "V4_MANIFEST"
+        "CATALOG_BASELINE"
       ]
     },
     {
@@ -736,7 +732,7 @@
       "evidenceRefs": [
         "CATALOG_V6",
         "CATALOG_V1",
-        "V4_MANIFEST"
+        "CATALOG_BASELINE"
       ]
     },
     {
@@ -763,7 +759,7 @@
       "evidenceRefs": [
         "CATALOG_V6",
         "CATALOG_V1",
-        "V4_MANIFEST"
+        "CATALOG_BASELINE"
       ]
     }
   ],
@@ -3308,5 +3304,5 @@
       "data"
     ]
   },
-  "manifestDigest": "61b5f3e38475762687a7143d7608a100eabde67d9e614fb8131789760671f61e"
+  "manifestDigest": "aef050c502fe258d421dac93e0bd013de1b58730cd1c6c17fa75268255dae6e8"
 }

@@ -74,8 +74,8 @@ class WorkspaceAdministrationServiceTest {
         assertEquals(updated, actual);
         verify(assets).claim(nextLogo, workspaceUuid, key, "asset-bind-grant-012345678901234567890123456789");
         verify(assets).release(previousLogo, workspaceUuid);
-        verify(persistence).updateDisplay(
-                "New Name", "new name", "New Title", "new notes", nextLogo.toString(), 101L, key, 4L);
+        verify(persistence)
+                .updateDisplay("New Name", "new name", "New Title", "new notes", nextLogo.toString(), 101L, key, 4L);
         verify(persistence)
                 .insertAudit(
                         any(UUID.class),
@@ -111,19 +111,20 @@ class WorkspaceAdministrationServiceTest {
         WorkspaceAdministrationPersistence persistence = mock(WorkspaceAdministrationPersistence.class);
         TimeProvider time = mock(TimeProvider.class);
         WorkspaceCommandReceiptService receipts = mock(WorkspaceCommandReceiptService.class);
-        WorkspaceAdministrationReadback updated = readback(
-                UUID.randomUUID(), "workspace-key", "Name", "Title", UUID.randomUUID(), "notes", 5);
+        WorkspaceAdministrationReadback updated =
+                readback(UUID.randomUUID(), "workspace-key", "Name", "Title", UUID.randomUUID(), "notes", 5);
         when(time.currentEpochMillis()).thenReturn(900L);
         when(receipts.execute(anyString(), anyString(), anyString(), any(Supplier.class)))
                 .thenAnswer(invocation -> ((Supplier<?>) invocation.getArgument(3)).get());
-        when(persistence.transitionStatus("DISABLED", 900L, "workspace-key", 4L)).thenReturn(1);
+        when(persistence.transitionStatus("DISABLED", 900L, "workspace-key", 4L))
+                .thenReturn(1);
         when(persistence.findByKey("workspace-key")).thenReturn(Optional.of(updated));
-        when(persistence.findLegacyId(updated.workspaceUuid(), updated.groupWorkspaceKey())).thenReturn(41L);
+        when(persistence.findLegacyId(updated.workspaceUuid(), updated.groupWorkspaceKey()))
+                .thenReturn(41L);
 
         WorkspaceAdministrationReadback actual = new WorkspaceAdministrationService(
                         persistence, time, null, receipts, null)
-                .transitionStatus(
-                        "workspace-key", "DISABLED", 4, "idempotency-key-1234", AuditActor.system());
+                .transitionStatus("workspace-key", "DISABLED", 4, "idempotency-key-1234", AuditActor.system());
 
         assertEquals(updated, actual);
         verify(persistence).transitionStatus("DISABLED", 900L, "workspace-key", 4L);

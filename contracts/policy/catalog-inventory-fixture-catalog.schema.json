@@ -614,15 +614,15 @@
           "properties": {
             "sourceDirectory": {
               "type": "string",
-              "description": "v4 catalog source directory"
+              "description": "v2s catalog source directory"
             },
             "expectedCatalogItemCount": {
               "type": "integer",
-              "description": "expected v4 catalog item count"
+              "description": "expected catalog item count"
             },
             "expectedMediaAssetCount": {
               "type": "integer",
-              "description": "expected v4 media asset count"
+              "description": "expected media asset count"
             },
             "requiredIn": {
               "type": "string",
@@ -1384,9 +1384,12 @@
           "description": "nullable standard sale price"
         },
         "standardSalePriceCents": {
-          "type": "integer",
+          "type": [
+            "integer",
+            "null"
+          ],
           "minimum": 0,
-          "description": "source fixture standard sale price in cents"
+          "description": "nullable standard sale price in cents"
         },
         "skuCodes": {
           "type": "array",

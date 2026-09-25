@@ -9,7 +9,7 @@ owners: ["all"]
 impacts: ["all"]
 triggers: ["all"]
 assertions: ["HERITAGE_READ_ONLY","NO_RUNTIME_FALLBACK","NEW_DECISION_FOR_DRIFT"]
-sourceRefs: ["doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"]
+sourceRefs: ["AGENTS.md"]
 ---
 # Heritage and change kernel
 

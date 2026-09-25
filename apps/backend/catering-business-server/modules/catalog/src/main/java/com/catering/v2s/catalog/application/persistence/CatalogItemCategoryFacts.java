@@ -1,6 +1,5 @@
 package com.catering.v2s.catalog.application.persistence;
 
-import com.catering.v2s.catalog.application.persistence.CatalogItemCategoryFactsSql;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -33,7 +32,9 @@ public class CatalogItemCategoryFacts {
         Map<UUID, ArrayNode> result = new LinkedHashMap<>();
         refs.forEach(ref -> result.put(ref, mapper.createArrayNode()));
         jdbc.query(
-                CatalogItemCategoryFactsSql.CATALOG_ITEM_CATEGORY_FACTS_SELECT_CATALOG_ITEM_CATEGORY_ITEM_REF_CATEGORY_REF + placeholders
+                CatalogItemCategoryFactsSql
+                                .CATALOG_ITEM_CATEGORY_FACTS_SELECT_CATALOG_ITEM_CATEGORY_ITEM_REF_CATEGORY_REF
+                        + placeholders
                         + CatalogItemCategoryFactsSql.CATALOG_ITEM_CATEGORY_FACTS_CLOSE_PAREN_ITEM_REF_CATEGORY_REF,
                 statement -> {
                     for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
@@ -63,11 +64,17 @@ public class CatalogItemCategoryFacts {
         });
         jdbc.query(
                 CatalogItemCategoryFactsSql.CATALOG_ITEM_CATEGORY_FACTS_SELECT_RELATION_ITEM_REF_CATEGORY_REF_CATEGORY
-                        + CatalogItemCategoryFactsSql.CATALOG_ITEM_CATEGORY_FACTS_FROM_CLAUSE_CATALOG_ITEM_CATEGORY_RELATION
-                        + CatalogItemCategoryFactsSql.CATALOG_ITEM_CATEGORY_FACTS_JOIN_CATALOG_CATEGORY_CATEGORY_CATEGORY_REF_RELATION
-                        + CatalogItemCategoryFactsSql.CATALOG_ITEM_CATEGORY_FACTS_CONDITION_CATEGORY_DATA_NODE_REF_BRAND_REF
-                        + CatalogItemCategoryFactsSql.CATALOG_ITEM_CATEGORY_FACTS_CONDITION_CATEGORY_STATUS_VOIDED_RELATION
-                        + placeholders + CatalogItemCategoryFactsSql.CATALOG_ITEM_CATEGORY_FACTS_CLOSE_PAREN_RELATION_ITEM_REF_CATEGORY_REF,
+                        + CatalogItemCategoryFactsSql
+                                .CATALOG_ITEM_CATEGORY_FACTS_FROM_CLAUSE_CATALOG_ITEM_CATEGORY_RELATION
+                        + CatalogItemCategoryFactsSql
+                                .CATALOG_ITEM_CATEGORY_FACTS_JOIN_CATALOG_CATEGORY_CATEGORY_CATEGORY_REF_RELATION
+                        + CatalogItemCategoryFactsSql
+                                .CATALOG_ITEM_CATEGORY_FACTS_CONDITION_CATEGORY_DATA_NODE_REF_BRAND_REF
+                        + CatalogItemCategoryFactsSql
+                                .CATALOG_ITEM_CATEGORY_FACTS_CONDITION_CATEGORY_STATUS_VOIDED_RELATION
+                        + placeholders
+                        + CatalogItemCategoryFactsSql
+                                .CATALOG_ITEM_CATEGORY_FACTS_CLOSE_PAREN_RELATION_ITEM_REF_CATEGORY_REF,
                 statement -> {
                     statement.setString(1, dataNodeRef);
                     statement.setString(2, brandRef);
@@ -94,10 +101,12 @@ public class CatalogItemCategoryFacts {
 
     public void replace(UUID itemRef, ArrayNode categoryRefs) {
         List<UUID> normalized = normalize(categoryRefs);
-        jdbc.update(CatalogItemCategoryFactsSql.CATALOG_ITEM_CATEGORY_FACTS_DELETE_CATALOG_ITEM_CATEGORY_ITEM_REF, itemRef);
+        jdbc.update(
+                CatalogItemCategoryFactsSql.CATALOG_ITEM_CATEGORY_FACTS_DELETE_CATALOG_ITEM_CATEGORY_ITEM_REF, itemRef);
         if (!normalized.isEmpty())
             jdbc.batchUpdate(
-                    CatalogItemCategoryFactsSql.CATALOG_ITEM_CATEGORY_FACTS_INSERT_INTO_CATALOG_ITEM_CATEGORY_ITEM_REF_CATEGORY_REF,
+                    CatalogItemCategoryFactsSql
+                            .CATALOG_ITEM_CATEGORY_FACTS_INSERT_INTO_CATALOG_ITEM_CATEGORY_ITEM_REF_CATEGORY_REF,
                     normalized.stream()
                             .map(categoryRef -> new Object[] {itemRef, categoryRef})
                             .toList());
@@ -112,7 +121,10 @@ public class CatalogItemCategoryFacts {
                     rows.add(new Object[] {entry.getKey(), categoryRef});
             }
         if (!rows.isEmpty())
-            jdbc.batchUpdate(CatalogItemCategoryFactsSql.CATALOG_ITEM_CATEGORY_FACTS_INSERT_INTO_CATALOG_ITEM_CATEGORY_ITEM_REF_CATEGORY_REF_ALTERNATE_A, rows);
+            jdbc.batchUpdate(
+                    CatalogItemCategoryFactsSql
+                            .CATALOG_ITEM_CATEGORY_FACTS_INSERT_INTO_CATALOG_ITEM_CATEGORY_ITEM_REF_CATEGORY_REF_ALTERNATE_A,
+                    rows);
     }
 
     private static List<UUID> normalize(ArrayNode categoryRefs) {

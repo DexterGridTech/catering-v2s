@@ -260,7 +260,7 @@ class TerminalConfigurationTest {
                                 "KITCHEN_PRINT",
                                 List.of(range("PRODUCTION_TAG", true, List.of())),
                                 List.of()),
-                        function(client("queue"), "QUEUE_CALL", List.of(range("NONE", false, List.of())), List.of())));
+                        function(client("queue"), "QUEUE_CALL", List.of(), List.of())));
         assertEquals(4, allAndSingletonScopes.functions().size());
 
         TerminalConfiguration selectedEntityScopes = TerminalConfiguration.create(
@@ -311,7 +311,7 @@ class TerminalConfigurationTest {
                                 List.of(range("DELIVERY", true, List.of())),
                                 List.of()))));
         assertRule(
-                TerminalConfiguration.Rule.RANGE_SELECTION_INVALID,
+                TerminalConfiguration.Rule.RANGE_NOT_ALLOWED,
                 () -> TerminalConfiguration.create(
                         "laptop",
                         List.of(),
@@ -321,7 +321,7 @@ class TerminalConfigurationTest {
                                 List.of(range("NONE", false, List.of(uuid(1)))),
                                 List.of()))));
         assertRule(
-                TerminalConfiguration.Rule.RANGE_SELECTION_INVALID,
+                TerminalConfiguration.Rule.RANGE_NOT_ALLOWED,
                 () -> TerminalConfiguration.create(
                         "laptop",
                         List.of(),

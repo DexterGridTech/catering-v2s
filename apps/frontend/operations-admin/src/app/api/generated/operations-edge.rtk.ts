@@ -42,17 +42,17 @@ function resolveSalesMenuTags<TagTypes extends OperationsAdminRtkTagType>(
   return tags;
 }
 
-export type StoreServicePointRtkTagDescriptor =
+export type WireRtkTagDescriptor =
   | {kind: "static"; id: string}
   | {kind: "requestPath"; prefix: string; path: string};
-function readStoreServicePointTagPath(value: unknown, path: readonly string[]): unknown {
+function readWireTagPath(value: unknown, path: readonly string[]): unknown {
   return path.reduce<unknown>((current, segment) => {
     if (current === null || typeof current !== "object") return undefined;
     return (current as Record<string, unknown>)[segment];
   }, value);
 }
-function resolveStoreServicePointTags<TagTypes extends OperationsAdminRtkTagType>(
-  descriptors: readonly StoreServicePointRtkTagDescriptor[],
+function resolveWireTags<TagTypes extends OperationsAdminRtkTagType>(
+  descriptors: readonly WireRtkTagDescriptor[],
   request: {pathParameters: object},
 ): Array<{type: Extract<TagTypes, "wire">; id: string}> {
   const tags: Array<{type: Extract<TagTypes, "wire">; id: string}> = [];
@@ -65,7 +65,7 @@ function resolveStoreServicePointTags<TagTypes extends OperationsAdminRtkTagType
   for (const descriptor of descriptors) {
     if (descriptor.kind === "static") add(descriptor.id);
     else {
-      const value = readStoreServicePointTagPath(request.pathParameters, descriptor.path.split("."));
+      const value = readWireTagPath(request.pathParameters, descriptor.path.split("."));
       if (typeof value === "string") add(descriptor.prefix + ":" + value);
     }
   }
@@ -1671,39 +1671,39 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     getOperationsStoreQrChannelCandidates: build.query<FaceOperationContracts["getOperationsStoreQrChannelCandidates"]["response"], FaceOperationRequest<"getOperationsStoreQrChannelCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-qr-channel-candidates"}] as const, request),
+      providesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-qr-channel-candidates"}] as const, request),
     }),
     getOperationsStoreQrConfiguration: build.query<FaceOperationContracts["getOperationsStoreQrConfiguration"]["response"], FaceOperationRequest<"getOperationsStoreQrConfiguration">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-qr"}] as const, request),
+      providesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-qr"}] as const, request),
     }),
     getOperationsStoreServicePoint: build.query<FaceOperationContracts["getOperationsStoreServicePoint"]["response"], FaceOperationRequest<"getOperationsStoreServicePoint">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-service-point-point","path":"servicePointRef"},{"kind":"static","id":"store-service-point-detail"}] as const, request),
+      providesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-service-point-point","path":"servicePointRef"},{"kind":"static","id":"store-service-point-detail"}] as const, request),
     }),
     getOperationsStoreServicePointAreas: build.query<FaceOperationContracts["getOperationsStoreServicePointAreas"]["response"], FaceOperationRequest<"getOperationsStoreServicePointAreas">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-areas"}] as const, request),
+      providesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-areas"}] as const, request),
     }),
     getOperationsStoreServicePoints: build.query<FaceOperationContracts["getOperationsStoreServicePoints"]["response"], FaceOperationRequest<"getOperationsStoreServicePoints">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-service-point-area","path":"areaRef"},{"kind":"static","id":"store-service-point-points"}] as const, request),
+      providesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-service-point-area","path":"areaRef"},{"kind":"static","id":"store-service-point-points"}] as const, request),
     }),
     getOperationsStoreTerminal: build.query<FaceOperationContracts["getOperationsStoreTerminal"]["response"], FaceOperationRequest<"getOperationsStoreTerminal">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-terminal-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-terminal-terminal","path":"terminalRef"},{"kind":"static","id":"store-terminal-detail"}] as const, request),
     }),
     getOperationsStoreTerminalAreaCandidates: build.query<FaceOperationContracts["getOperationsStoreTerminalAreaCandidates"]["response"], FaceOperationRequest<"getOperationsStoreTerminalAreaCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-terminal-store","path":"storeRef"},{"kind":"static","id":"store-terminal-area-candidates"}] as const, request),
     }),
     getOperationsStoreTerminals: build.query<FaceOperationContracts["getOperationsStoreTerminals"]["response"], FaceOperationRequest<"getOperationsStoreTerminals">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-terminal-store","path":"storeRef"},{"kind":"static","id":"store-terminal-list"}] as const, request),
     }),
     getOperationsStoreTerminalTagCandidates: build.query<FaceOperationContracts["getOperationsStoreTerminalTagCandidates"]["response"], FaceOperationRequest<"getOperationsStoreTerminalTagCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-terminal-store","path":"storeRef"},{"kind":"static","id":"store-terminal-tag-candidates"}] as const, request),
     }),
     getOperationsWorkspaceGroupInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceGroupInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceGroupInvitationCandidates">>({
       query: (request) => toWireRequest(request),
@@ -1815,47 +1815,47 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     patchOperationsStoreQrConfiguration: build.mutation<FaceOperationContracts["patchOperationsStoreQrConfiguration"]["response"], FaceOperationRequest<"patchOperationsStoreQrConfiguration">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-qr"}] as const, request),
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-qr"}] as const, request),
     }),
     patchOperationsStoreServicePoint: build.mutation<FaceOperationContracts["patchOperationsStoreServicePoint"]["response"], FaceOperationRequest<"patchOperationsStoreServicePoint">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-service-point-point","path":"servicePointRef"},{"kind":"static","id":"store-service-point-points"},{"kind":"static","id":"store-service-point-detail"}] as const, request),
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-service-point-point","path":"servicePointRef"},{"kind":"static","id":"store-service-point-points"},{"kind":"static","id":"store-service-point-detail"}] as const, request),
     }),
     patchOperationsStoreServicePointArea: build.mutation<FaceOperationContracts["patchOperationsStoreServicePointArea"]["response"], FaceOperationRequest<"patchOperationsStoreServicePointArea">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-areas"}] as const, request),
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-areas"}] as const, request),
     }),
     postOperationsStoreServicePoint: build.mutation<FaceOperationContracts["postOperationsStoreServicePoint"]["response"], FaceOperationRequest<"postOperationsStoreServicePoint">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-service-point-area","path":"areaRef"},{"kind":"static","id":"store-service-point-points"}] as const, request),
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-service-point-area","path":"areaRef"},{"kind":"static","id":"store-service-point-points"}] as const, request),
     }),
     postOperationsStoreServicePointArea: build.mutation<FaceOperationContracts["postOperationsStoreServicePointArea"]["response"], FaceOperationRequest<"postOperationsStoreServicePointArea">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-areas"}] as const, request),
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-areas"}] as const, request),
     }),
     postOperationsStoreServicePointAreaOrder: build.mutation<FaceOperationContracts["postOperationsStoreServicePointAreaOrder"]["response"], FaceOperationRequest<"postOperationsStoreServicePointAreaOrder">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-areas"}] as const, request),
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-areas"}] as const, request),
     }),
     postOperationsStoreServicePointAreaStatus: build.mutation<FaceOperationContracts["postOperationsStoreServicePointAreaStatus"]["response"], FaceOperationRequest<"postOperationsStoreServicePointAreaStatus">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-areas"},{"kind":"static","id":"store-service-point-points"}] as const, request),
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-areas"},{"kind":"static","id":"store-service-point-points"}] as const, request),
     }),
     postOperationsStoreServicePointOrder: build.mutation<FaceOperationContracts["postOperationsStoreServicePointOrder"]["response"], FaceOperationRequest<"postOperationsStoreServicePointOrder">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-points"}] as const, request),
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-points"}] as const, request),
     }),
     postOperationsStoreServicePointStatus: build.mutation<FaceOperationContracts["postOperationsStoreServicePointStatus"]["response"], FaceOperationRequest<"postOperationsStoreServicePointStatus">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-service-point-point","path":"servicePointRef"},{"kind":"static","id":"store-service-point-points"},{"kind":"static","id":"store-service-point-detail"}] as const, request),
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-service-point-point","path":"servicePointRef"},{"kind":"static","id":"store-service-point-points"},{"kind":"static","id":"store-service-point-detail"}] as const, request),
     }),
     postOperationsStoreTerminal: build.mutation<FaceOperationContracts["postOperationsStoreTerminal"]["response"], FaceOperationRequest<"postOperationsStoreTerminal">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([] as const, request),
     }),
     postOperationsStoreTerminalStatus: build.mutation<FaceOperationContracts["postOperationsStoreTerminalStatus"]["response"], FaceOperationRequest<"postOperationsStoreTerminalStatus">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([] as const, request),
     }),
     publishOperationsSalesMenu: build.mutation<FaceOperationContracts["publishOperationsSalesMenu"]["response"], FaceOperationRequest<"publishOperationsSalesMenu">>({
       query: (request) => toWireRequest(request),
@@ -1863,7 +1863,7 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     putOperationsStoreTerminal: build.mutation<FaceOperationContracts["putOperationsStoreTerminal"]["response"], FaceOperationRequest<"putOperationsStoreTerminal">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([] as const, request),
     }),
     reissueOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceGroupInvitation">>({
       query: (request) => toWireRequest(request),
@@ -1891,7 +1891,7 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     releaseStagedStoreServicePointImage: build.mutation<FaceOperationContracts["releaseStagedStoreServicePointImage"]["response"], FaceOperationRequest<"releaseStagedStoreServicePointImage">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([] as const, request),
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([] as const, request),
     }),
     removeOperationsOrganizationHeadCompanyBrandAuthorization: build.mutation<FaceOperationContracts["removeOperationsOrganizationHeadCompanyBrandAuthorization"]["response"], FaceOperationRequest<"removeOperationsOrganizationHeadCompanyBrandAuthorization">>({
       query: (request) => toWireRequest(request),
@@ -1955,7 +1955,7 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     stageStoreServicePointImage: build.mutation<FaceOperationContracts["stageStoreServicePointImage"]["response"], FaceOperationRequest<"stageStoreServicePointImage">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([] as const, request),
+      invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([] as const, request),
     }),
     transitionOperationsBusinessChannelStatus: build.mutation<FaceOperationContracts["transitionOperationsBusinessChannelStatus"]["response"], FaceOperationRequest<"transitionOperationsBusinessChannelStatus">>({
       query: (request) => toWireRequest(request),

@@ -23,7 +23,9 @@ public class TransitionOperationsProductionTagStatusOperation {
     private final CatalogOwnerApi catalog;
 
     public TransitionOperationsProductionTagStatusOperation(
-            CommandExecutionContextResolver contexts, CatalogProductionTagOwnerApi productionTags, CatalogOwnerApi catalog) {
+            CommandExecutionContextResolver contexts,
+            CatalogProductionTagOwnerApi productionTags,
+            CatalogOwnerApi catalog) {
         this.contexts = contexts;
         this.productionTags = productionTags;
         this.catalog = catalog;
@@ -84,8 +86,8 @@ public class TransitionOperationsProductionTagStatusOperation {
             String idempotencyKey) {}
 
     private static long requiredLong(Long value, String field) {
-        if (value == null) throw new CatalogProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, field + " is required");
+        if (value == null)
+            throw new CatalogProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, field + " is required");
         return value;
     }
 }
-

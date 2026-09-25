@@ -52,17 +52,7 @@ public class OperationsOrganizationTaskReadService {
             String direction,
             int page,
             int pageSize) {
-        return brands(
-                workspaceUuid,
-                groupWorkspaceKey,
-                queryText,
-                status,
-                sort,
-                direction,
-                page,
-                pageSize,
-                null,
-                null);
+        return brands(workspaceUuid, groupWorkspaceKey, queryText, status, sort, direction, page, pageSize, null, null);
     }
 
     @Transactional(readOnly = true)

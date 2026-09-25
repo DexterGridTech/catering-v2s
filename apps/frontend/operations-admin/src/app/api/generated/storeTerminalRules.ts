@@ -1,5 +1,5 @@
-// GENERATED FILE. DO NOT EDIT. sourceSha256=a2fa58ab2df72f0ce21352295f4f58a6ab06905a636cd6b5b0eedf57b8bdd292
-export const STORE_TERMINAL_RULES_SOURCE_SHA256 = "a2fa58ab2df72f0ce21352295f4f58a6ab06905a636cd6b5b0eedf57b8bdd292" as const;
+// GENERATED FILE. DO NOT EDIT. sourceSha256=4781c98eb12af0e83eeab190d99c2e0861a42fffbd78cffa5e63b06e771d092c
+export const STORE_TERMINAL_RULES_SOURCE_SHA256 = "4781c98eb12af0e83eeab190d99c2e0861a42fffbd78cffa5e63b06e771d092c" as const;
 
 export const STORE_TERMINAL_DEVICE_TYPES = [
   {
@@ -86,9 +86,7 @@ export const STORE_TERMINAL_FUNCTIONS = [
       "mobile"
     ],
     "maxPerTerminal": 1,
-    "allowedRangeKeys": [
-      "NONE"
-    ]
+    "allowedRangeKeys": []
   }
 ] as const;
 
@@ -108,10 +106,6 @@ export const STORE_TERMINAL_RANGES = [
   {
     "key": "PRODUCTION_TAG",
     "label": "生产标签"
-  },
-  {
-    "key": "NONE",
-    "label": "无范围"
   }
 ] as const;
 
@@ -595,6 +589,13 @@ export const STORE_TERMINAL_PRINTER_MODELS = [
     "evidenceUri": null
   }
 ] as const;
+
+export const STORE_TERMINAL_RANGE_KEYS = {
+  TABLE_AREA: "TABLE_AREA",
+  NO_TABLE: "NO_TABLE",
+  DELIVERY: "DELIVERY",
+  PRODUCTION_TAG: "PRODUCTION_TAG",
+} as const;
 
 export type StoreTerminalDeviceTypeKey = typeof STORE_TERMINAL_DEVICE_TYPES[number]['key'];
 export type StoreTerminalFunctionKey = typeof STORE_TERMINAL_FUNCTIONS[number]['key'];

@@ -6,7 +6,7 @@ import {moduleName as input} from '@catering-v2s/ui-base-input';
 import {moduleName as render} from '@catering-v2s/ui-base-render';
 import {moduleName as primitives} from '@catering-v2s/ui-base-primitives';
 import {moduleName as featureAssembly} from '@catering-v2s/ui-base-feature-assembly';
-import {moduleName as testSupport} from '@catering-v2s/ui-base-test-support';
+import {moduleName as platformPorts} from '@catering-v2s/kernel-base-platform-ports';
 
 export const dependencyModuleNames = [
   runtime,
@@ -18,5 +18,5 @@ export const dependencyModuleNames = [
   primitives,
   featureAssembly,
 ] as const;
-export const devDependencyModuleNames = [testSupport] as const;
+export const devDependencyModuleNames = [platformPorts] as const;
 export const runtimeModuleDependencyNames = [runtime, uiState, staffSession] as const;

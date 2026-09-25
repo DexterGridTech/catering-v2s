@@ -89,7 +89,8 @@ public final class OperationsStoreManagementController {
                 new TransitionOperationsOrganizationStoreStatusOperation(entities, overview, contracts, entities),
                 BackendPerformanceM1CommandExecutionBindings.forStoreManagement(
                         new CreateOperationsOrganizationStoreOperation(entities, overview, contracts, entities),
-                        new TransitionOperationsOrganizationStoreStatusOperation(entities, overview, contracts, entities),
+                        new TransitionOperationsOrganizationStoreStatusOperation(
+                                entities, overview, contracts, entities),
                         new UpdateOperationsOrganizationStoreOperation(entities, overview, contracts, entities)));
     }
 
@@ -210,12 +211,12 @@ public final class OperationsStoreManagementController {
         return new OrganizationStorePage(
                 metadata,
                 result.items().stream()
-                        .map(item ->
-                                StoreWireMapper.store(
-                                        requiredStore(stores, item.id()),
-                                        item,
-                                        statuses.get(item.id()),
-                                        requiredOperatingRules(operatingRules, item.id()).values()))
+                        .map(item -> StoreWireMapper.store(
+                                requiredStore(stores, item.id()),
+                                item,
+                                statuses.get(item.id()),
+                                requiredOperatingRules(operatingRules, item.id())
+                                        .values()))
                         .toList());
     }
 
@@ -263,7 +264,10 @@ public final class OperationsStoreManagementController {
                 grant,
                 ruleValues(body.operatingRuleSwitches())));
         return StoreWireMapper.store(
-                result.store(), result.organizationDetail(), result.contractDerivedStatus(), result.operatingRules().values());
+                result.store(),
+                result.organizationDetail(),
+                result.contractDerivedStatus(),
+                result.operatingRules().values());
     }
 
     @PostMapping("/{storeId}/status")
@@ -290,7 +294,10 @@ public final class OperationsStoreManagementController {
                         requireStatusTransitionCapability(
                                 session, "REQ_TRANSITION_OPERATIONS_ORGANIZATION_STORE_STATUS", projectPath)));
         return StoreWireMapper.store(
-                result.store(), result.organizationDetail(), result.contractDerivedStatus(), result.operatingRules().values());
+                result.store(),
+                result.organizationDetail(),
+                result.contractDerivedStatus(),
+                result.operatingRules().values());
     }
 
     private OrganizationStore store(

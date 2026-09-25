@@ -19,4 +19,3 @@ public final class CatalogProductionTagTaskReadService {
                 () -> owner.readTags(dataNodeRef, brandRef, request, requestId));
     }
 }
-

@@ -19,14 +19,22 @@ public class WorkspaceCapabilityScopePersistence {
     public WorkspaceAssignmentScopeLookup.AssignmentScope requireActiveAssignmentCapability(
             UUID assignmentId, UUID workspaceUuid, String groupWorkspaceKey, String capability) {
         return jdbc.query(
-                WorkspaceCapabilityScopeResolverSql.WORKSPACE_CAPABILITY_SCOPE_RESOLVER_SELECT_ASSIGNMENT_SERVICE_NODE_TYPE_SERVICE_NODE_ID
-                        + WorkspaceCapabilityScopeResolverSql.WORKSPACE_CAPABILITY_SCOPE_RESOLVER_ROLE_ASSIGNMENT_ASSIGNMENT
-                        + WorkspaceCapabilityScopeResolverSql.WORKSPACE_CAPABILITY_SCOPE_RESOLVER_JOIN_WORKSPACE_ROLE_ROLE_ASSIGNMENT_ROLE_ID
-                        + WorkspaceCapabilityScopeResolverSql.WORKSPACE_CAPABILITY_SCOPE_RESOLVER_WHERE_ASSIGNMENT_WORKSPACE_UUID
-                        + WorkspaceCapabilityScopeResolverSql.WORKSPACE_CAPABILITY_SCOPE_RESOLVER_CONDITION_ASSIGNMENT_GROUP_WORKSPACE_KEY_STATUS_ACTIVE
-                        + WorkspaceCapabilityScopeResolverSql.WORKSPACE_CAPABILITY_SCOPE_RESOLVER_CONDITION_ROLE_WORKSPACE_UUID_ASSIGNMENT
-                        + WorkspaceCapabilityScopeResolverSql.WORKSPACE_CAPABILITY_SCOPE_RESOLVER_CONDITION_ROLE_GROUP_WORKSPACE_KEY_ASSIGNMENT
-                        + WorkspaceCapabilityScopeResolverSql.WORKSPACE_CAPABILITY_SCOPE_RESOLVER_CONDITION_ROLE_STATUS_ENABLED_JSONB_EXISTS,
+                WorkspaceCapabilityScopeResolverSql
+                                .WORKSPACE_CAPABILITY_SCOPE_RESOLVER_SELECT_ASSIGNMENT_SERVICE_NODE_TYPE_SERVICE_NODE_ID
+                        + WorkspaceCapabilityScopeResolverSql
+                                .WORKSPACE_CAPABILITY_SCOPE_RESOLVER_ROLE_ASSIGNMENT_ASSIGNMENT
+                        + WorkspaceCapabilityScopeResolverSql
+                                .WORKSPACE_CAPABILITY_SCOPE_RESOLVER_JOIN_WORKSPACE_ROLE_ROLE_ASSIGNMENT_ROLE_ID
+                        + WorkspaceCapabilityScopeResolverSql
+                                .WORKSPACE_CAPABILITY_SCOPE_RESOLVER_WHERE_ASSIGNMENT_WORKSPACE_UUID
+                        + WorkspaceCapabilityScopeResolverSql
+                                .WORKSPACE_CAPABILITY_SCOPE_RESOLVER_CONDITION_ASSIGNMENT_GROUP_WORKSPACE_KEY_STATUS_ACTIVE
+                        + WorkspaceCapabilityScopeResolverSql
+                                .WORKSPACE_CAPABILITY_SCOPE_RESOLVER_CONDITION_ROLE_WORKSPACE_UUID_ASSIGNMENT
+                        + WorkspaceCapabilityScopeResolverSql
+                                .WORKSPACE_CAPABILITY_SCOPE_RESOLVER_CONDITION_ROLE_GROUP_WORKSPACE_KEY_ASSIGNMENT
+                        + WorkspaceCapabilityScopeResolverSql
+                                .WORKSPACE_CAPABILITY_SCOPE_RESOLVER_CONDITION_ROLE_STATUS_ENABLED_JSONB_EXISTS,
                 statement -> {
                     statement.setObject(1, assignmentId);
                     statement.setObject(2, workspaceUuid);

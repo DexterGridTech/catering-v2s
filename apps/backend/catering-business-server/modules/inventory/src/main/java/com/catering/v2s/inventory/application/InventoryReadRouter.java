@@ -28,18 +28,36 @@ public class InventoryReadRouter {
         InventoryTargetService.requireStoreDataNodeType(dataNodeType);
         InventoryTargetService.requireScope(dataNodeRef, brandRef);
         return switch (operationId) {
-            case "getOperationsInventoryTargets" -> target.readTargets(dataNodeRef, brandRef, request, requestId, dataNodeType);
+            case "getOperationsInventoryTargets" -> target.readTargets(
+                    dataNodeRef, brandRef, request, requestId, dataNodeType);
             case "getOperationsInventoryTarget" -> target.readTarget(
-                    dataNodeRef, brandRef, InventoryTargetService.required(request, "targetRef"), requestId, dataNodeType);
+                    dataNodeRef,
+                    brandRef,
+                    InventoryTargetService.required(request, "targetRef"),
+                    requestId,
+                    dataNodeType);
             case "getOperationsInventoryTargetChangeSummary" -> target.readTargetChangeSummary(
-                    dataNodeRef, brandRef, InventoryTargetService.required(request, "targetRef"),
-                    InventoryTargetService.optional(request, "period"), dataNodeType);
+                    dataNodeRef,
+                    brandRef,
+                    InventoryTargetService.required(request, "targetRef"),
+                    InventoryTargetService.optional(request, "period"),
+                    dataNodeType);
             case "getOperationsInventoryTargetBusinessHistory" -> target.readTargetBusinessHistory(
-                    dataNodeRef, brandRef, InventoryTargetService.required(request, "targetRef"), request, requestId, dataNodeType);
+                    dataNodeRef,
+                    brandRef,
+                    InventoryTargetService.required(request, "targetRef"),
+                    request,
+                    requestId,
+                    dataNodeType);
             case "getOperationsInventoryTargetConsumptionReferences" -> target.readTargetConsumptionReferences(
                     dataNodeRef, brandRef, InventoryTargetService.required(request, "targetRef"), request, requestId);
             case "getOperationsInventoryTargetLedger" -> target.readTargetLedger(
-                    dataNodeRef, brandRef, InventoryTargetService.required(request, "targetRef"), request, requestId, dataNodeType);
+                    dataNodeRef,
+                    brandRef,
+                    InventoryTargetService.required(request, "targetRef"),
+                    request,
+                    requestId,
+                    dataNodeType);
             case "getOperationsInventoryTargetDiagnostics" -> target.readTargetDiagnostics(
                     InventoryTargetService.required(request, "targetRef"), requestId);
             default -> throw new InventoryOwnerApi.Problem(

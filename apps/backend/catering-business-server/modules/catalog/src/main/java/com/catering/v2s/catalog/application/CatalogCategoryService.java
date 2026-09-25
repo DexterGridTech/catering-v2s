@@ -1,22 +1,22 @@
 package com.catering.v2s.catalog.application;
 
+import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.catalog.application.persistence.CatalogCategoryPersistence;
 import com.catering.v2s.catalog.application.persistence.CatalogCategoryPersistence.CategoryMoveDepths;
 import com.catering.v2s.catalog.application.persistence.CatalogCategoryPersistence.CategoryRow;
-import com.catering.v2s.catalog.api.CatalogOwnerApi;
-import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
-import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
-import java.util.UUID;
 import java.util.Set;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -54,9 +54,10 @@ public class CatalogCategoryService {
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.CategoryCreateCommand command,
             String idempotencyKey) {
-        CatalogAuthorizationScope scope = CatalogOwnerScopeSupport.typedCommandScope(
-                context, "createOperationsCatalogCategory");
-        ObjectNode request = mapper.createObjectNode().put("code", command.code()).put("name", command.name());
+        CatalogAuthorizationScope scope =
+                CatalogOwnerScopeSupport.typedCommandScope(context, "createOperationsCatalogCategory");
+        ObjectNode request =
+                mapper.createObjectNode().put("code", command.code()).put("name", command.name());
         putNullableUuid(request, "parentCategoryRef", command.parentCategoryRef());
         JsonNode result = executeCategoryWrite(
                 "createOperationsCatalogCategory",
@@ -82,11 +83,7 @@ public class CatalogCategoryService {
                 .put("name", command.name());
         try (var ownerCommand = OwnerOperationDiagnostics.beginCommand()) {
             return updateTypedCategory(
-                    dataNodeRef,
-                    scope.brandRef(),
-                    command,
-                    idempotencyKey,
-                    receiptRequest(request, scope.brandRef()));
+                    dataNodeRef, scope.brandRef(), command, idempotencyKey, receiptRequest(request, scope.brandRef()));
         }
     }
 
@@ -105,11 +102,7 @@ public class CatalogCategoryService {
         putNullableUuid(request, "parentCategoryRef", command.parentCategoryRef());
         try (var ownerCommand = OwnerOperationDiagnostics.beginCommand()) {
             return moveTypedCategory(
-                    dataNodeRef,
-                    scope.brandRef(),
-                    command,
-                    idempotencyKey,
-                    receiptRequest(request, scope.brandRef()));
+                    dataNodeRef, scope.brandRef(), command, idempotencyKey, receiptRequest(request, scope.brandRef()));
         }
     }
 
@@ -118,8 +111,8 @@ public class CatalogCategoryService {
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.CategoryStatusTransitionCommand command,
             String idempotencyKey) {
-        CatalogAuthorizationScope scope = CatalogOwnerScopeSupport.typedCommandScope(
-                context, "transitionOperationsCatalogCategoryStatus");
+        CatalogAuthorizationScope scope =
+                CatalogOwnerScopeSupport.typedCommandScope(context, "transitionOperationsCatalogCategoryStatus");
         ObjectNode request = mapper.createObjectNode()
                 .put("categoryRef", command.categoryRef().toString())
                 .put("expectedVersion", command.expectedVersion())
@@ -135,9 +128,7 @@ public class CatalogCategoryService {
     }
 
     JsonNode write(
-            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
-            ObjectNode request,
-            String idempotencyKey) {
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
         String operationId = context.operationToken().operationId();
         CatalogAuthorizationScope scope = CatalogOwnerScopeSupport.typedCommandScope(context, operationId);
         return executeCategoryWrite(
@@ -158,11 +149,7 @@ public class CatalogCategoryService {
         return categoryCommand(requestId, category(dataNodeRef, brandRef, categoryRef));
     }
 
-    private ObjectNode moveCategory(
-            String dataNodeRef,
-            String brandRef,
-            String requestId,
-            ObjectNode request) {
+    private ObjectNode moveCategory(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
         UUID categoryRef = requiredUuid(request, "categoryRef");
         long expected = requiredLong(request, "expectedVersion", -1);
         String action = required(request, "action");
@@ -244,7 +231,6 @@ public class CatalogCategoryService {
         }
     }
 
-
     private CategoryMoveDepths categoryMoveDepths(
             String scope, String brand, UUID parentCategoryRef, UUID movingCategoryRef) {
         return persistence.readMoveDepths(scope, brand, parentCategoryRef, movingCategoryRef);
@@ -318,8 +304,8 @@ public class CatalogCategoryService {
             }
         }
         if ("transitionOperationsCatalogCategoryStatus".equals(operationId)) {
-            CategoryRow current = lockCategoryIncludingVoided(
-                    dataNodeRef, brandRef, requiredUuid(request, "categoryRef"));
+            CategoryRow current =
+                    lockCategoryIncludingVoided(dataNodeRef, brandRef, requiredUuid(request, "categoryRef"));
             long expected = requiredLong(request, "expectedVersion", -1);
             if (expected >= 0 && current.version() != expected && current.version() != expected + 1L) {
                 throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "分类版本已变化");
@@ -332,16 +318,18 @@ public class CatalogCategoryService {
         }
         try (var ownerCommand =
                 com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics.beginCommand()) {
-            JsonNode result = switch (operationId) {
-                case "createOperationsCatalogCategory" -> createCategory(dataNodeRef, brandRef, requestId, request);
-                case "updateOperationsCatalogCategory" ->
-                        updateCategory(dataNodeRef, brandRef, requestId, request);
-                case "moveOperationsCatalogCategory" -> moveCategory(dataNodeRef, brandRef, requestId, request);
-                case "transitionOperationsCatalogCategoryStatus" ->
-                        transitionCategoryStatus(dataNodeRef, brandRef, requestId, request);
-                default -> throw new CatalogOwnerApi.Problem(
-                        "VALIDATION_ERROR", 422, "catalog category write operation is not registered");
-            };
+            JsonNode result =
+                    switch (operationId) {
+                        case "createOperationsCatalogCategory" -> createCategory(
+                                dataNodeRef, brandRef, requestId, request);
+                        case "updateOperationsCatalogCategory" -> updateCategory(
+                                dataNodeRef, brandRef, requestId, request);
+                        case "moveOperationsCatalogCategory" -> moveCategory(dataNodeRef, brandRef, requestId, request);
+                        case "transitionOperationsCatalogCategoryStatus" -> transitionCategoryStatus(
+                                dataNodeRef, brandRef, requestId, request);
+                        default -> throw new CatalogOwnerApi.Problem(
+                                "VALIDATION_ERROR", 422, "catalog category write operation is not registered");
+                    };
             if (!receiptKey.isEmpty()) saveReceipt(dataNodeRef, receiptKey, operationId, receiptRequest, result);
             return result;
         }
@@ -387,8 +375,8 @@ public class CatalogCategoryService {
         String name = required(receiptRequest, "name");
         String operation = "updateOperationsCatalogCategory";
         String requestHash = hash(receiptRequest);
-        CatalogCategoryPersistence.TypedCategoryUpdateRow row = persistence.executeTypedUpdate(
-                scope, brand, command, key, name, operation, requestHash);
+        CatalogCategoryPersistence.TypedCategoryUpdateRow row =
+                persistence.executeTypedUpdate(scope, brand, command, key, name, operation, requestHash);
         if (row.currentCategoryRef() == null) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
         if (row.currentVersion() != command.expectedVersion() && row.currentVersion() != command.expectedVersion() + 1L)
             throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "分类版本已变化");
@@ -419,8 +407,8 @@ public class CatalogCategoryService {
         String key = idempotencyKey == null ? "" : idempotencyKey.trim();
         String operation = "moveOperationsCatalogCategory";
         String requestHash = hash(receiptRequest);
-        CatalogCategoryPersistence.TypedCategoryMoveRow row = persistence.executeTypedMove(
-                scope, brand, command, key, operation, requestHash);
+        CatalogCategoryPersistence.TypedCategoryMoveRow row =
+                persistence.executeTypedMove(scope, brand, command, key, operation, requestHash);
         if (row.validationCode() != null) throw typedCategoryMoveProblem(row.validationCode());
         if (row.currentCategoryRef() == null) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
         if (row.currentVersion() != command.expectedVersion() && row.currentVersion() != command.expectedVersion() + 1L)
@@ -461,6 +449,7 @@ public class CatalogCategoryService {
     private CatalogOwnerApi.Problem moveBoundaryProblem() {
         return categoryMoveProblem("MOVE_BOUNDARY", CATEGORY_MOVE_BOUNDARY_MESSAGE);
     }
+
     private ObjectNode transitionCategoryStatus(
             String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
         UUID categoryRef = requiredUuid(request, "categoryRef");
@@ -481,9 +470,8 @@ public class CatalogCategoryService {
                         "REFERENCE_BLOCKS_VOID", 422, "分类或其子分类仍被商品引用，不能作废");
                 // spotless:on
         }
-        if (persistence.transitionStatus(
-                        dataNodeRef, brandRef, categoryRef, target, now(), expected)
-                != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "分类版本已变化");
+        if (persistence.transitionStatus(dataNodeRef, brandRef, categoryRef, target, now(), expected) != 1)
+            throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "分类版本已变化");
         return categoryCommand(requestId, categoryIncludingVoided(dataNodeRef, brandRef, categoryRef));
     }
 
@@ -492,10 +480,9 @@ public class CatalogCategoryService {
     }
 
     private CatalogOwnerApi.CategoryReadback categoryReadback(String scope, String brand, CategoryRow category) {
-        CatalogOwnerApi.CategoryDeletionAvailability deletionAvailability =
-                "VOIDED".equals(category.status())
-                        ? new CatalogOwnerApi.CategoryDeletionAvailability(false, 0, 0, List.of())
-                        : categoryDeletionAvailability(scope, brand, category.ref());
+        CatalogOwnerApi.CategoryDeletionAvailability deletionAvailability = "VOIDED".equals(category.status())
+                ? new CatalogOwnerApi.CategoryDeletionAvailability(false, 0, 0, List.of())
+                : categoryDeletionAvailability(scope, brand, category.ref());
         return new CatalogOwnerApi.CategoryReadback(
                 category.ref(),
                 category.code(),
@@ -705,7 +692,10 @@ public class CatalogCategoryService {
 
     private static UUID nullableUuid(JsonNode object, String field) {
         JsonNode value = object == null ? null : object.get(field);
-        if (value == null || value.isNull() || value.isMissingNode() || value.asText().isBlank()) return null;
+        if (value == null
+                || value.isNull()
+                || value.isMissingNode()
+                || value.asText().isBlank()) return null;
         try {
             return UUID.fromString(value.asText());
         } catch (IllegalArgumentException failure) {
@@ -721,5 +711,4 @@ public class CatalogCategoryService {
     private long now() {
         return time.currentEpochMillis();
     }
-
 }

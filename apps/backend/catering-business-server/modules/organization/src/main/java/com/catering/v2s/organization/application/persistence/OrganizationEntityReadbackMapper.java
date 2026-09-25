@@ -41,7 +41,9 @@ public final class OrganizationEntityReadbackMapper {
             JsonNode node = JSON.readTree(source);
             if (!node.isObject()) throw new SQLException("organization extension values are not an object");
             Map<String, String> values = new LinkedHashMap<>();
-            node.fields().forEachRemaining(entry -> values.put(entry.getKey(), entry.getValue().toString()));
+            node.fields()
+                    .forEachRemaining(
+                            entry -> values.put(entry.getKey(), entry.getValue().toString()));
             return Map.copyOf(values);
         } catch (java.io.IOException failure) {
             throw new SQLException("organization extension values are invalid", failure);

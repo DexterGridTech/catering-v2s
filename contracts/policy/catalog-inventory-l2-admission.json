@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-l2-script-admission",
+  "suite": "catalog-inventory",
+  "caseSetMode": "SUBSET_OF_SOURCE",
+  "caseIdsSource": {
+    "path": "contracts/policy/catalog-inventory-l2-activation-candidate.json",
+    "selector": "approvedCaseIds"
+  },
+  "controlPlaneFiles": [
+    "contracts/policy/catalog-inventory-fixture-catalog.json",
+    "contracts/policy/catalog-inventory-l2-activation-candidate.json",
+    "contracts/policy/catalog-inventory-l2-case-blueprint.json",
+    "contracts/policy/catalog-inventory-l2-locator-bindings.json",
+    "contracts/policy/catalog-inventory-l2-scenarios.json",
+    "contracts/policy/catalog-inventory-l2-timing-budget.json",
+    "apps/frontend/operations-admin/src/tests/l2/catalog-inventory.spec.ts",
+    "apps/frontend/operations-admin/src/tests/l2/operationsL2.ts",
+    "apps/frontend/operations-admin/src/tests/l2/operationsL2.test.ts",
+    "scripts/generate/catalog-inventory-p1.mjs",
+    "scripts/test/browser-l2-runtime.mjs",
+    "scripts/test/browser-l2-runtime.test.mjs",
+    "scripts/test/catalog-inventory-l2-fixture.mjs",
+    "scripts/test/l2-suite-admission.mjs",
+    "scripts/test/l2-suite-admission.test.mjs",
+    "scripts/test/catalog-inventory-l2-admission.mjs",
+    "scripts/test/l2-locator-bindings.static.test.mjs",
+    "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md"
+  ],
+  "uiSourceDirectories": [
+    "apps/frontend/operations-admin/src/features/catalog-management",
+    "apps/frontend/operations-admin/src/features/inventory-management"
+  ],
+  "designPath": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
+  "reviewRecordPath": "doc/review/platform/2026-09-25-v2s-l2-suite-admission-review-codex.md",
+  "requiredMarkers": {}
+}

@@ -5,9 +5,6 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "plannedDependencies": [
-    "@catering-v2s/ui-base-automation"
-  ],
   "scripts": {
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"

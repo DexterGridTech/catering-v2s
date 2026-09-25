@@ -26,7 +26,8 @@ public class BusinessTenantPersistence {
             String remark,
             long now) {
         return jdbc.update(
-                BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_INSERT_INTO_TENANT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
+                BusinessTenantServiceSql
+                                .BUSINESS_TENANT_SERVICE_INSERT_INTO_TENANT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
                         + BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_CREDIT_CODE_REMARK_STATUS_VERSION
                         + BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_VALUES_ENABLED,
                 id,
@@ -54,7 +55,8 @@ public class BusinessTenantPersistence {
             long expectedVersion) {
         return jdbc.update(
                 BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_UPDATE_TENANT_CODE_NAME_LEGAL_NAME_CREDIT_CODE
-                        + BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
+                        + BusinessTenantServiceSql
+                                .BUSINESS_TENANT_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
                 code,
                 name,
                 legalName,
@@ -68,15 +70,11 @@ public class BusinessTenantPersistence {
     }
 
     public int transitionStatus(
-            UUID id,
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            String status,
-            long now,
-            long expectedVersion) {
+            UUID id, UUID workspaceUuid, String groupWorkspaceKey, String status, long now, long expectedVersion) {
         return jdbc.update(
                 BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_UPDATE_TENANT_STATUS_VERSION_UPDATED_AT_EPOCH_MILLIS
-                        + BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
+                        + BusinessTenantServiceSql
+                                .BUSINESS_TENANT_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
                 status,
                 now,
                 id,
@@ -86,11 +84,7 @@ public class BusinessTenantPersistence {
     }
 
     public ConflictFlags findConflicts(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            UUID currentId,
-            String code,
-            String name) {
+            UUID workspaceUuid, String groupWorkspaceKey, UUID currentId, String code, String name) {
         String exclusion = currentId == null ? "" : BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_CONDITION_AND_ID;
         String sql = BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_SELECT_TENANT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                 + BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_CONDITION_STATUS_VOIDED_CODE
@@ -103,14 +97,7 @@ public class BusinessTenantPersistence {
         Object[] args = currentId == null
                 ? new Object[] {workspaceUuid, groupWorkspaceKey, code, workspaceUuid, groupWorkspaceKey, name}
                 : new Object[] {
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    code,
-                    currentId,
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    name,
-                    currentId
+                    workspaceUuid, groupWorkspaceKey, code, currentId, workspaceUuid, groupWorkspaceKey, name, currentId
                 };
         return jdbc.query(
                 sql,
@@ -124,11 +111,20 @@ public class BusinessTenantPersistence {
     }
 
     public int replaceExtensionValues(UUID id, String extensionValues, long extensionRuleRevision) {
-        return jdbc.update(BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_UPDATE_TENANT_EXTENSION_VALUES_EXTENSION_RULE_REVISION, extensionValues, extensionRuleRevision, id);
+        return jdbc.update(
+                BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_UPDATE_TENANT_EXTENSION_VALUES_EXTENSION_RULE_REVISION,
+                extensionValues,
+                extensionRuleRevision,
+                id);
     }
 
     public int replaceExtensionValuesWithoutDefinition(UUID id, String extensionValues) {
-        return jdbc.update(BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_UPDATE_TENANT_EXTENSION_VALUES_EXTENSION_RULE_REVISION_ALTERNATE_A, extensionValues, 0L, id);
+        return jdbc.update(
+                BusinessTenantServiceSql
+                        .BUSINESS_TENANT_SERVICE_UPDATE_TENANT_EXTENSION_VALUES_EXTENSION_RULE_REVISION_ALTERNATE_A,
+                extensionValues,
+                0L,
+                id);
     }
 
     public int audit(

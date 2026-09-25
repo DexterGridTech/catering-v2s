@@ -49,8 +49,7 @@ public final class QrChannelEligibilityService implements QrChannelEligibilityLo
                 storeRef.toString(),
                 MAX_CANDIDATES + 1);
         if (rows.size() > MAX_CANDIDATES) {
-            throw new BusinessChannelCommandApi.Problem(
-                    "QR_CHANNEL_CANDIDATE_OVERFLOW", 422, "二维码渠道候选超过系统支持的数量上限");
+            throw new BusinessChannelCommandApi.Problem("QR_CHANNEL_CANDIDATE_OVERFLOW", 422, "二维码渠道候选超过系统支持的数量上限");
         }
         return rows.stream().map(QrChannelEligibilityService::candidate).toList();
     }
@@ -79,15 +78,13 @@ public final class QrChannelEligibilityService implements QrChannelEligibilityLo
                 || !"ENABLED".equals(candidate.status())
                 || !"ENABLED".equals(candidate.templateStatus())
                 || !"NOT_REQUIRED".equals(candidate.bindingStatus())) {
-            throw new BusinessChannelCommandApi.Problem(
-                    "QR_CHANNEL_INELIGIBLE", 422, "所选门店渠道不满足二维码下单条件");
+            throw new BusinessChannelCommandApi.Problem("QR_CHANNEL_INELIGIBLE", 422, "所选门店渠道不满足二维码下单条件");
         }
         return candidate;
     }
 
     @Override
-    public String deriveUrl(
-            Candidate candidate, String groupWorkspaceKey, UUID servicePointRef) {
+    public String deriveUrl(Candidate candidate, String groupWorkspaceKey, UUID servicePointRef) {
         return candidate == null ? null : appendParameters(candidate.urlRule(), groupWorkspaceKey, servicePointRef);
     }
 
@@ -99,9 +96,7 @@ public final class QrChannelEligibilityService implements QrChannelEligibilityLo
                 row.channelName,
                 row.templateName,
                 row.channelStatus,
-                "INTERNAL".equals(row.accessKind)
-                        ? "NOT_REQUIRED"
-                        : row.bindingRef == null ? "UNBOUND" : "BOUND",
+                "INTERNAL".equals(row.accessKind) ? "NOT_REQUIRED" : row.bindingRef == null ? "UNBOUND" : "BOUND",
                 row.urlRule,
                 row.templateStatus,
                 row.accessKind,

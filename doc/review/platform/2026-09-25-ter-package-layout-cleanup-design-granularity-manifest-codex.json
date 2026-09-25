@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "TER_PACKAGE_LAYOUT_CLEANUP_2026-09-24",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "status": "READY_FOR_CLAUDE_REVIEW",
+  "roundFinalDecision": "SELF_DECIDED",
+  "implementationAuthority": false,
+  "sourceRequirements": "doc/plans/platform/2026-09-24-ter-package-layout-cleanup-formal-requirements-claude.md",
+  "sourceSolution": "doc/plans/platform/2026-09-24-ter-package-layout-cleanup-solution-claude.md",
+  "authorDesign": "doc/plans/platform/2026-09-25-ter-package-layout-cleanup-implementation-design-codex.md",
+  "authorPlan": "doc/plans/platform/2026-09-25-ter-package-layout-cleanup-implementation-plan-codex.md",
+  "requiredInputs": [
+    "AGENTS.md",
+    "PLATFORM-BLUEPRINT.md",
+    "doc/platform/terminal-coding-standard.md",
+    "doc/decisions/templates/implementation-design-template.md",
+    "doc/platform/implementation-task-template.md",
+    "doc/platform/claude-review-handoff-template.md",
+    "project-memory/index.md",
+    "project-memory/operations/terminal-coding-standard.md",
+    "project-memory/decisions/terminal-architecture-and-stack-rulings.md",
+    "project-memory/decisions/terminal-build-order-and-batches.md",
+    "project-memory/practices/ter-input-and-virtual-keyboard-usage.md",
+    "doc/review/platform/2026-09-24-ter-package-layout-cleanup-design-review-codex.md",
+    "doc/review/platform/2026-09-24-ter-package-layout-cleanup-design-review-v4-codex.md",
+    "doc/review/platform/2026-09-24-ter-package-layout-cleanup-design-review-intake-claude.md"
+  ],
+  "cpGates": [
+    {
+      "id": "CP-0",
+      "inputs": ["v5 PL-R00", "AC-0", "AC-6", "D-6", "current baseline command outputs"],
+      "outputs": ["ignored inventory", "baseline failure ledger", "root-cause repair file set", "three gates green"],
+      "gate": "typecheck + test + verify:static and all observed subgates exit 0",
+      "evidence": "doc/evidence/platform/2026-09-25-ter-package-layout-cleanup/cp-0/",
+      "openConditions": ["unclassified failure", "product/Journey behavior change", "missing root cause or focused proof"]
+    },
+    {
+      "id": "CP-1",
+      "inputs": ["PL-R03", "PL-R04", "AC-1", "AC-4", "AC-5", "AC-6", "D-3", "D-4"],
+      "outputs": ["four archive manifests", "offline package removal", "platform-ports consumer rewrites", "graph and fixture closure"],
+      "gate": "archive hashes restore; no old package node/import; gates and subgates green",
+      "evidence": "doc/evidence/platform/2026-09-25-ter-package-layout-cleanup/offline/",
+      "openConditions": ["archive mismatch", "old import remains", "unexpected external lock change"]
+    },
+    {
+      "id": "CP-2",
+      "inputs": ["PL-R02", "AC-2", "AC-7", "AC-8", "D-2"],
+      "outputs": ["integration-assembly package and symbol mapping", "consumer sync", "startup identity proof"],
+      "gate": "old console package identity absent; both startup owner/writer use ui.base.integration-assembly",
+      "evidence": "doc/evidence/platform/2026-09-25-ter-package-layout-cleanup/cp-2/",
+      "openConditions": ["legacy identity residual", "startup writer mismatch", "unapproved lock diff"]
+    },
+    {
+      "id": "CP-3",
+      "inputs": ["PL-R01", "AC-2", "AC-8", "AC-9", "AC-11", "D-1"],
+      "outputs": ["same-disk application tree move", "Kotlin and Expo module identity sync", "active source and memory classification"],
+      "gate": "active scan, allowed-diff snapshot and memory checks close; all static gates green",
+      "evidence": "doc/evidence/platform/2026-09-25-ter-package-layout-cleanup/cp-3/",
+      "openConditions": ["applicationId or persistent-key drift", "keystore/runtime loss", "unclassified assembly token"]
+    },
+    {
+      "id": "CP-4",
+      "inputs": ["AC-2", "AC-3", "AC-8", "AC-9", "AC-10", "AC-11", "AC-13", "TR-16", "TR-17"],
+      "outputs": ["red mutation ledger", "native proof", "Web-before-device matrix", "three-dimensional reconciliation", "code-to-design reconciliation"],
+      "gate": "final reconciliation has MATCHED only; TR-08 remains OPEN/OUT_OF_SCOPE",
+      "evidence": "doc/evidence/platform/2026-09-25-ter-package-layout-cleanup/cp-4/",
+      "openConditions": ["any OPEN reconciliation row", "Web not earlier than device", "cleanup not PASS", "visual claim beyond scope"]
+    }
+  ],
+  "notApplicableWithReason": [
+    "No new backend operation, HTTP path, database schema, seed or collection shape",
+    "No new UI-bearing Journey or IA; PrimitiveForm only relocates an existing host boundary",
+    "No new L2 control surface; AC-10 is runtime proof, not L2 scope",
+    "TR-08 is explicitly OPEN/OUT_OF_SCOPE, not a false PASS"
+  ],
+  "reviewRequiredFindings": [
+    "Are the exact CP file sets complete and consistent with v5 solution impact inventory?",
+    "Can AC-2 positive controls and AC-8 classification detect both missing scan inputs and allowed semantic assembly tokens?",
+    "Do CP-0 fixes preserve behavior, especially PrimitiveForm native/Web shape and darkMode removal?",
+    "Are AC-9 ExpoModulesPackageList, APK dex, keystore and certificate checks executable and fail closed?",
+    "Are AC-10 primary/secondary keys and startup JSON defined without inventing unchecked business key values?",
+    "Does the final reconciliation explicitly cover code, tests, README, exports, invariants, tools, scripts, docs, memory and archive records?",
+    "Does the plan preserve TR-08 OPEN and the §7.1 src/assembly exception?"
+  ]
+}

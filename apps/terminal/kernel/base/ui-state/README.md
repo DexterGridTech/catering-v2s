@@ -7,7 +7,7 @@
 | 层 | `kernel/base` |
 | kind | `owner`（最终拥有 UI 状态 slice 与命令） |
 | 依赖 | `contracts`、`platform-ports`、`state`、`runtime`、`display-context` |
-| 被谁依赖 | `ui/base/render`、`ui/base/automation`、`ui/base/admin-shell` 等 UI 包 |
+| 被谁依赖 | `ui/base/render`、`ui/base/admin-shell` 等 UI 包 |
 
 ## 1. 这个包是什么
 

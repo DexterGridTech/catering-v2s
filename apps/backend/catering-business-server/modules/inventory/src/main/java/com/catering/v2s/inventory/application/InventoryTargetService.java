@@ -1,16 +1,15 @@
 package com.catering.v2s.inventory.application;
 
-import com.catering.v2s.inventory.application.persistence.InventoryTargetPersistence;
 import static com.catering.v2s.inventory.api.InventoryOwnerApi.*;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
+import com.catering.v2s.inventory.application.persistence.InventoryTargetPersistence;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
-import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
-import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
+import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -20,15 +19,12 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -589,8 +585,8 @@ public class InventoryTargetService {
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         if (itemRefs.isEmpty()) return Map.of();
         Map<TargetIdentity, CatalogTargetDisplay> result = new LinkedHashMap<>();
-        for (InventoryTargetPersistence.CatalogTargetDisplay display
-                : persistence.readCatalogTargetDisplays(scope, brand, itemRefs)) {
+        for (InventoryTargetPersistence.CatalogTargetDisplay display :
+                persistence.readCatalogTargetDisplays(scope, brand, itemRefs)) {
             requireCatalogBusinessName(display.itemName(), "耗用对象缺少商品名称");
             result.putIfAbsent(
                     new TargetIdentity(display.itemRef(), null),
@@ -656,7 +652,8 @@ public class InventoryTargetService {
         List<UUID> catalogItemRefs = uuidArray(request.path("catalogItemRefs"), "catalogItemRefs");
         if (request.has("catalogItemRefs") && catalogItemRefs.isEmpty())
             return emptyTargetPage(requestId, scope, brand);
-        List<TargetPageRow> rows = persistence.readTargetPage(
+        List<TargetPageRow> rows = persistence
+                .readTargetPage(
                         scope,
                         brand,
                         keyword,
@@ -874,8 +871,8 @@ public class InventoryTargetService {
         Map<String, ObjectNode> summaries = new LinkedHashMap<>();
         ArrayNode recentChanges = mapper.createArrayNode();
         long now = time.currentEpochMillis();
-        for (InventoryTargetPersistence.CurrentLedgerFactRecord record
-                : persistence.readCurrentLedgerFacts(UUID.fromString(targetRef), now)) {
+        for (InventoryTargetPersistence.CurrentLedgerFactRecord record :
+                persistence.readCurrentLedgerFacts(UUID.fromString(targetRef), now)) {
             if ("SUMMARY".equals(record.rowKind())) {
                 BigDecimal increase = record.increase();
                 BigDecimal decrease = record.decrease();
@@ -931,8 +928,8 @@ public class InventoryTargetService {
         ObjectNode data = mapper.createObjectNode();
         ArrayNode entries = data.putArray("entries");
         long total = 0L;
-        for (InventoryTargetPersistence.HistoryRecord record
-                : persistence.readHistory(UUID.fromString(targetRef), pageSize, offset)) {
+        for (InventoryTargetPersistence.HistoryRecord record :
+                persistence.readHistory(UUID.fromString(targetRef), pageSize, offset)) {
             if (entries.size() <= pageSize) {
                 ObjectNode entry = entries.addObject()
                         .put("entryRef", record.entryRef().toString())
@@ -963,8 +960,8 @@ public class InventoryTargetService {
         // The reference zone is independently pageable; do not materialize the
         // whole BOM graph just to slice one target's page in Java.
         long total = 0L;
-        for (InventoryTargetPersistence.ReferenceRecord record
-                : persistence.readReferences(scope, brand, targetRef, pageSize, offset)) {
+        for (InventoryTargetPersistence.ReferenceRecord record :
+                persistence.readReferences(scope, brand, targetRef, pageSize, offset)) {
             if (entries.size() <= pageSize) {
                 ObjectNode entry = entries.addObject()
                         .put("sourceItemRef", record.sourceItemRef().toString())
@@ -994,8 +991,8 @@ public class InventoryTargetService {
         ObjectNode data = mapper.createObjectNode();
         ArrayNode entries = data.putArray("entries");
         long total = 0L;
-        for (InventoryTargetPersistence.LedgerRecord record
-                : persistence.readLedger(UUID.fromString(targetRef), pageSize, offset)) {
+        for (InventoryTargetPersistence.LedgerRecord record :
+                persistence.readLedger(UUID.fromString(targetRef), pageSize, offset)) {
             if (entries.size() <= pageSize) {
                 ObjectNode entry = entries.addObject()
                         .put("entryRef", record.entryRef().toString())
@@ -1208,9 +1205,8 @@ public class InventoryTargetService {
     private java.util.Map<UUID, ChangeSnapshot> loadChangeSnapshots(List<TargetRow> targets) {
         if (targets == null || targets.isEmpty()) return java.util.Map.of();
         Map<UUID, ChangeSnapshot> snapshots = new LinkedHashMap<>();
-        Map<UUID, InventoryTargetPersistence.ChangeSnapshotRecord> records =
-                persistence.readChangeSnapshots(
-                        targets.stream().map(TargetRow::ref).toList(), time.currentEpochMillis());
+        Map<UUID, InventoryTargetPersistence.ChangeSnapshotRecord> records = persistence.readChangeSnapshots(
+                targets.stream().map(TargetRow::ref).toList(), time.currentEpochMillis());
         records.forEach((ref, record) -> snapshots.put(
                 ref,
                 new ChangeSnapshot(
@@ -1323,8 +1319,8 @@ public class InventoryTargetService {
 
     private ArrayNode recentChanges(String targetRef) {
         ArrayNode entries = mapper.createArrayNode();
-        for (InventoryTargetPersistence.RecentChangeRecord record
-                : persistence.readRecentChangesForDetail(UUID.fromString(targetRef))) {
+        for (InventoryTargetPersistence.RecentChangeRecord record :
+                persistence.readRecentChangesForDetail(UUID.fromString(targetRef))) {
             entries.addObject()
                     .put("occurredAt", record.occurredAt())
                     .put("changeType", record.operationId())
@@ -1638,10 +1634,6 @@ public class InventoryTargetService {
         saveReceipt(scope, key, operation, request, response);
     }
 
-
-
-
-
     private record TargetRow(
             UUID ref,
             UUID itemRef,
@@ -1660,25 +1652,11 @@ public class InventoryTargetService {
             String inventoryMode,
             boolean componentEligible) {}
 
-
     private record CurrentLedgerFacts(Map<String, ObjectNode> summaries, ArrayNode recentChanges) {}
-
-
 
     private record TargetIdentity(UUID itemRef, UUID productSkuRef) {}
 
     private record CatalogTargetDisplay(String itemCode, String itemName, String skuCode, String skuName) {}
-
-
-
-
-
-
-
-
-
-
-
 
     private record TargetPageRow(
             TargetRow target,
@@ -1693,7 +1671,6 @@ public class InventoryTargetService {
 
     private record ChangeSnapshot(
             BigDecimal today, BigDecimal sevenDays, BigDecimal thirtyDays, String lastSource, Long lastAt) {}
-
 
     private record Receipt(String operation, String requestHash, JsonNode response) {}
 }

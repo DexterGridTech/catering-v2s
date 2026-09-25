@@ -17,8 +17,8 @@ import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -132,11 +132,7 @@ class CollaborationOwnerCallbackIntegrationTest {
         assertEquals(1L, countReceipt(command.idempotencyKey()));
 
         AuthorizationCallbackCommand conflict = new AuthorizationCallbackCommand(
-                bindingRef,
-                "mall-owner-002",
-                "authorization-ref-002",
-                "adapter-meituan",
-                command.idempotencyKey());
+                bindingRef, "mall-owner-002", "authorization-ref-002", "adapter-meituan", command.idempotencyKey());
         CollaborationCommandApi.Problem conflictFailure = assertThrows(
                 CollaborationCommandApi.Problem.class,
                 () -> inTransaction(() -> service.applyAuthorizationCallback(conflict)));
@@ -199,8 +195,8 @@ class CollaborationOwnerCallbackIntegrationTest {
                 null,
                 null,
                 null);
-        RevocationCallbackCommand invalidState =
-                new RevocationCallbackCommand(localOnlyBindingRef, "adapter-store-owned", "revocation-invalid-key-0001");
+        RevocationCallbackCommand invalidState = new RevocationCallbackCommand(
+                localOnlyBindingRef, "adapter-store-owned", "revocation-invalid-key-0001");
         Map<String, Object> beforeInvalid = readBinding(localOnlyBindingRef);
         CollaborationCommandApi.Problem invalidStateFailure = assertThrows(
                 CollaborationCommandApi.Problem.class,

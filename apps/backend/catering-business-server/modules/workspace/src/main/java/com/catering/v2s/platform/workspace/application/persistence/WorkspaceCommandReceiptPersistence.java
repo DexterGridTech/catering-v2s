@@ -33,8 +33,7 @@ public class WorkspaceCommandReceiptPersistence {
                 result -> result.next() ? mapReceipt(result) : null));
     }
 
-    public void upgradeLegacyResponse(
-            String groupWorkspaceKey, String idempotencyKey, String responseJson) {
+    public void upgradeLegacyResponse(String groupWorkspaceKey, String idempotencyKey, String responseJson) {
         jdbc.update(
                 WorkspaceCommandReceiptServiceSql.UPGRADE_LEGACY_RESPONSE,
                 responseJson,

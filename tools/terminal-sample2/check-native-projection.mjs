@@ -6,7 +6,7 @@ import {createRequire} from 'node:module'
 import {fileURLToPath} from 'node:url'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
-const nativeAppsRootRelative = 'apps/terminal/assembly/android'
+const nativeAppsRootRelative = 'apps/terminal/application/android'
 const requiredAppConfigFiles = Object.freeze([
   'App.tsx',
   'index.ts',
@@ -261,8 +261,8 @@ function assertAndroidIdentity(appDirectory, appJson, packageJson) {
   const androidPackage = expo.android?.package
   assertEqual(expo.name, appName, `${appName} app.json expo.name drifted`)
   assertEqual(expo.slug, appName, `${appName} app.json expo.slug drifted`)
-  assertEqual(packageJson.name, `@catering-v2s/assembly-android-${appName}`, `${appName} workspace package name drifted`)
-  assertValue(packageJson.dependencies?.['@catering-v2s/assembly-base-android'] === 'workspace:*', `${appName} must consume assembly-base-android through workspace dependency`)
+  assertEqual(packageJson.name, `@catering-v2s/application-android-${appName}`, `${appName} workspace package name drifted`)
+  assertValue(packageJson.dependencies?.['@catering-v2s/application-base-android'] === 'workspace:*', `${appName} must consume application-base-android through workspace dependency`)
   assertValue(typeof androidPackage === 'string' && androidPackage.length > 0, `${appName} app.json android.package is missing`)
 
   const gradlePath = path.join(appDirectory, 'android/app/build.gradle')
@@ -338,18 +338,12 @@ function normalizeMetro(source) {
   )
 }
 
-function normalizeTailwind(source, appName) {
-  let normalized = source.replace(
+function normalizeTailwind(source) {
+  const normalized = source.replace(
     /'\.\.\/\.\.\/\.\.\/ui\/integration\/[a-z0-9-]+\/src\/\*\*\/\*\.\{ts,tsx\}',/g,
     "'<INTEGRATION_SRC>',",
   )
-  const darkMode = "  darkMode: 'class',\n"
-  if (appName === 'sample-wallpaper-terminal') {
-    assertEqual(normalized.split(darkMode).length - 1, 1, `${appName} must have exactly the requirements-listed darkMode difference`)
-    normalized = normalized.replace(darkMode, '')
-  } else {
-    assertValue(!normalized.includes('darkMode'), `${appName} has an unallowed darkMode difference`)
-  }
+  assertValue(!normalized.includes('darkMode'), 'TER apps must not carry a darkMode difference')
   return normalized
 }
 
@@ -398,7 +392,7 @@ function assertClosedRootConfigs(apps) {
     )
   }
   assertEqual(normalizeMetro(readText(path.join(first.directory, 'metro.config.js'))), normalizeMetro(readText(path.join(second.directory, 'metro.config.js'))), 'metro.config.js differs outside integration global.css')
-  assertEqual(normalizeTailwind(readText(path.join(first.directory, 'tailwind.config.cjs')), path.basename(first.directory)), normalizeTailwind(readText(path.join(second.directory, 'tailwind.config.cjs')), path.basename(second.directory)), 'tailwind.config.cjs differs outside closed allowed values')
+  assertEqual(normalizeTailwind(readText(path.join(first.directory, 'tailwind.config.cjs'))), normalizeTailwind(readText(path.join(second.directory, 'tailwind.config.cjs'))), 'tailwind.config.cjs differs outside closed allowed values')
   assertEqual(normalizeNativewindEnv(readText(path.join(first.directory, 'nativewind-env.d.ts')), path.basename(first.directory)), normalizeNativewindEnv(readText(path.join(second.directory, 'nativewind-env.d.ts')), path.basename(second.directory)), 'nativewind-env.d.ts differs outside generator output')
 }
 

@@ -13,6 +13,8 @@ public final class InventoryAvailabilityServiceSql {
     public static final String IDENTITY_OR_JOINER = " OR ";
     public static final String IDENTITY_PREDICATE = "(item_ref=? AND product_sku_ref IS NOT DISTINCT FROM ?)";
     public static final String SQL_CLOSE_PAREN = ")";
-    public static final String INVENTORY_AVAILABILITY_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF = " FROM inventory.stock_target WHERE data_node_ref=? AND ";
-    public static final String INVENTORY_AVAILABILITY_SERVICE_BRAND_REF_DEFINITION_STATUS_ENABLED = "brand_ref=? AND definition_status='ENABLED' AND (";
+    public static final String INVENTORY_AVAILABILITY_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF =
+            " FROM inventory.stock_target WHERE data_node_ref=? AND ";
+    public static final String INVENTORY_AVAILABILITY_SERVICE_BRAND_REF_DEFINITION_STATUS_ENABLED =
+            "brand_ref=? AND definition_status='ENABLED' AND (";
 }

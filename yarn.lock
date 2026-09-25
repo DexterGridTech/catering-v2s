@@ -1258,11 +1258,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/assembly-android-sample-terminal@workspace:apps/terminal/assembly/android/sample-terminal":
+"@catering-v2s/application-android-sample-terminal@workspace:apps/terminal/application/android/sample-terminal":
   version: 0.0.0-use.local
-  resolution: "@catering-v2s/assembly-android-sample-terminal@workspace:apps/terminal/assembly/android/sample-terminal"
+  resolution: "@catering-v2s/application-android-sample-terminal@workspace:apps/terminal/application/android/sample-terminal"
   dependencies:
-    "@catering-v2s/assembly-base-android": "workspace:*"
+    "@catering-v2s/application-base-android": "workspace:*"
+    "@catering-v2s/ui-base-input": "workspace:*"
+    "@catering-v2s/ui-base-primitives": "workspace:*"
     "@catering-v2s/ui-base-render": "workspace:*"
     "@catering-v2s/ui-integration-sample-console": "workspace:*"
     "@types/react": "npm:~19.2.2"
@@ -1280,11 +1282,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/assembly-android-sample-wallpaper-terminal@workspace:apps/terminal/assembly/android/sample-wallpaper-terminal":
+"@catering-v2s/application-android-sample-wallpaper-terminal@workspace:apps/terminal/application/android/sample-wallpaper-terminal":
   version: 0.0.0-use.local
-  resolution: "@catering-v2s/assembly-android-sample-wallpaper-terminal@workspace:apps/terminal/assembly/android/sample-wallpaper-terminal"
+  resolution: "@catering-v2s/application-android-sample-wallpaper-terminal@workspace:apps/terminal/application/android/sample-wallpaper-terminal"
   dependencies:
-    "@catering-v2s/assembly-base-android": "workspace:*"
+    "@catering-v2s/application-base-android": "workspace:*"
+    "@catering-v2s/ui-base-input": "workspace:*"
+    "@catering-v2s/ui-base-primitives": "workspace:*"
     "@catering-v2s/ui-base-render": "workspace:*"
     "@catering-v2s/ui-integration-sample-wallpaper-console": "workspace:*"
     "@types/react": "npm:~19.2.2"
@@ -1302,9 +1306,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/assembly-base-android@workspace:*, @catering-v2s/assembly-base-android@workspace:apps/terminal/assembly/base/android":
+"@catering-v2s/application-base-android@workspace:*, @catering-v2s/application-base-android@workspace:apps/terminal/application/base/android":
   version: 0.0.0-use.local
-  resolution: "@catering-v2s/assembly-base-android@workspace:apps/terminal/assembly/base/android"
+  resolution: "@catering-v2s/application-base-android@workspace:apps/terminal/application/base/android"
   dependencies:
     "@catering-v2s/adapter-android-device": "workspace:*"
     "@catering-v2s/adapter-android-dual-screen": "workspace:*"
@@ -1386,18 +1390,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/kernel-base-test-support@workspace:apps/terminal/kernel/base/test-support":
-  version: 0.0.0-use.local
-  resolution: "@catering-v2s/kernel-base-test-support@workspace:apps/terminal/kernel/base/test-support"
-  dependencies:
-    "@catering-v2s/kernel-base-contracts": "workspace:*"
-    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
-    "@catering-v2s/kernel-base-runtime": "workspace:*"
-    "@catering-v2s/kernel-base-state": "workspace:*"
-    typescript: "npm:~6.0.3"
-  languageName: unknown
-  linkType: soft
-
 "@catering-v2s/kernel-base-topology@workspace:*, @catering-v2s/kernel-base-topology@workspace:apps/terminal/kernel/base/topology":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/kernel-base-topology@workspace:apps/terminal/kernel/base/topology"
@@ -1440,18 +1432,6 @@ __metadata:
     "@reduxjs/toolkit": "npm:2.12.0"
     typescript: "npm:~6.0.3"
     vitest: "npm:^4.1.10"
-  languageName: unknown
-  linkType: soft
-
-"@catering-v2s/kernel-base-workflow@workspace:apps/terminal/kernel/base/workflow":
-  version: 0.0.0-use.local
-  resolution: "@catering-v2s/kernel-base-workflow@workspace:apps/terminal/kernel/base/workflow"
-  dependencies:
-    "@catering-v2s/kernel-base-contracts": "workspace:*"
-    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
-    "@catering-v2s/kernel-base-runtime": "workspace:*"
-    "@catering-v2s/kernel-base-state": "workspace:*"
-    typescript: "npm:~6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -1586,47 +1566,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/ui-base-automation@workspace:apps/terminal/ui/base/automation":
-  version: 0.0.0-use.local
-  resolution: "@catering-v2s/ui-base-automation@workspace:apps/terminal/ui/base/automation"
-  dependencies:
-    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
-    "@catering-v2s/kernel-base-runtime": "workspace:*"
-    "@catering-v2s/kernel-base-ui-state": "workspace:*"
-    "@types/react": "npm:~19.2.2"
-    react: "npm:19.2.3"
-    react-native: "npm:0.86.3"
-    typescript: "npm:~6.0.3"
-  peerDependencies:
-    react: 19.2.3
-    react-native: 0.86.3
-  languageName: unknown
-  linkType: soft
-
-"@catering-v2s/ui-base-console-assembly@workspace:*, @catering-v2s/ui-base-console-assembly@workspace:apps/terminal/ui/base/console-assembly":
-  version: 0.0.0-use.local
-  resolution: "@catering-v2s/ui-base-console-assembly@workspace:apps/terminal/ui/base/console-assembly"
-  dependencies:
-    "@catering-v2s/kernel-base-contracts": "workspace:*"
-    "@catering-v2s/kernel-base-display-context": "workspace:*"
-    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
-    "@catering-v2s/kernel-base-runtime": "workspace:*"
-    "@catering-v2s/kernel-base-state": "workspace:*"
-    "@catering-v2s/kernel-base-ui-state": "workspace:*"
-    "@catering-v2s/ui-base-admin-shell": "workspace:*"
-    "@catering-v2s/ui-base-input": "workspace:*"
-    "@catering-v2s/ui-base-render": "workspace:*"
-    "@types/react": "npm:~19.2.2"
-    react: "npm:19.2.3"
-    react-native: "npm:0.86.3"
-    typescript: "npm:~6.0.3"
-    vitest: "npm:4.1.10"
-  peerDependencies:
-    react: 19.2.3
-    react-native: 0.86.3
-  languageName: unknown
-  linkType: soft
-
 "@catering-v2s/ui-base-dev-host@workspace:*, @catering-v2s/ui-base-dev-host@workspace:apps/terminal/ui/base/dev-host":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/ui-base-dev-host@workspace:apps/terminal/ui/base/dev-host"
@@ -1668,6 +1607,30 @@ __metadata:
     react: "npm:19.2.3"
     react-native: "npm:0.86.3"
     react-test-renderer: "npm:19.2.3"
+    typescript: "npm:~6.0.3"
+    vitest: "npm:4.1.10"
+  peerDependencies:
+    react: 19.2.3
+    react-native: 0.86.3
+  languageName: unknown
+  linkType: soft
+
+"@catering-v2s/ui-base-integration-assembly@workspace:*, @catering-v2s/ui-base-integration-assembly@workspace:apps/terminal/ui/base/integration-assembly":
+  version: 0.0.0-use.local
+  resolution: "@catering-v2s/ui-base-integration-assembly@workspace:apps/terminal/ui/base/integration-assembly"
+  dependencies:
+    "@catering-v2s/kernel-base-contracts": "workspace:*"
+    "@catering-v2s/kernel-base-display-context": "workspace:*"
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
+    "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*"
+    "@catering-v2s/kernel-base-ui-state": "workspace:*"
+    "@catering-v2s/ui-base-admin-shell": "workspace:*"
+    "@catering-v2s/ui-base-input": "workspace:*"
+    "@catering-v2s/ui-base-render": "workspace:*"
+    "@types/react": "npm:~19.2.2"
+    react: "npm:19.2.3"
+    react-native: "npm:0.86.3"
     typescript: "npm:~6.0.3"
     vitest: "npm:4.1.10"
   peerDependencies:
@@ -1722,20 +1685,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/ui-base-test-support@workspace:*, @catering-v2s/ui-base-test-support@workspace:apps/terminal/ui/base/test-support":
-  version: 0.0.0-use.local
-  resolution: "@catering-v2s/ui-base-test-support@workspace:apps/terminal/ui/base/test-support"
-  dependencies:
-    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
-    typescript: "npm:~6.0.3"
-  languageName: unknown
-  linkType: soft
-
 "@catering-v2s/ui-feature-sample-member-desk@workspace:*, @catering-v2s/ui-feature-sample-member-desk@workspace:apps/terminal/ui/feature/sample-member-desk":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/ui-feature-sample-member-desk@workspace:apps/terminal/ui/feature/sample-member-desk"
   dependencies:
     "@catering-v2s/kernel-base-display-context": "workspace:*"
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
     "@catering-v2s/kernel-base-topology": "workspace:*"
@@ -1746,7 +1701,6 @@ __metadata:
     "@catering-v2s/ui-base-input": "workspace:*"
     "@catering-v2s/ui-base-primitives": "workspace:*"
     "@catering-v2s/ui-base-render": "workspace:*"
-    "@catering-v2s/ui-base-test-support": "workspace:*"
     "@types/react": "npm:~19.2.2"
     react: "npm:19.2.3"
     react-native: "npm:0.86.3"
@@ -1763,6 +1717,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@catering-v2s/ui-feature-sample-staff-auth@workspace:apps/terminal/ui/feature/sample-staff-auth"
   dependencies:
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
@@ -1771,7 +1726,6 @@ __metadata:
     "@catering-v2s/ui-base-input": "workspace:*"
     "@catering-v2s/ui-base-primitives": "workspace:*"
     "@catering-v2s/ui-base-render": "workspace:*"
-    "@catering-v2s/ui-base-test-support": "workspace:*"
     "@types/react": "npm:~19.2.2"
     react: "npm:19.2.3"
     react-native: "npm:0.86.3"
@@ -1789,6 +1743,7 @@ __metadata:
   resolution: "@catering-v2s/ui-feature-sample-wallpaper-picker@workspace:apps/terminal/ui/feature/sample-wallpaper-picker"
   dependencies:
     "@catering-v2s/kernel-base-contracts": "workspace:*"
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
@@ -1796,7 +1751,6 @@ __metadata:
     "@catering-v2s/ui-base-feature-assembly": "workspace:*"
     "@catering-v2s/ui-base-primitives": "workspace:*"
     "@catering-v2s/ui-base-render": "workspace:*"
-    "@catering-v2s/ui-base-test-support": "workspace:*"
     "@types/node": "npm:^24.10.1"
     "@types/react": "npm:~19.2.2"
     react: "npm:19.2.3"
@@ -1824,9 +1778,9 @@ __metadata:
     "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*"
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
     "@catering-v2s/ui-base-admin-shell": "workspace:*"
-    "@catering-v2s/ui-base-console-assembly": "workspace:*"
     "@catering-v2s/ui-base-dev-host": "workspace:*"
     "@catering-v2s/ui-base-input": "workspace:*"
+    "@catering-v2s/ui-base-integration-assembly": "workspace:*"
     "@catering-v2s/ui-base-render": "workspace:*"
     "@catering-v2s/ui-feature-sample-member-desk": "workspace:*"
     "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*"
@@ -1865,9 +1819,9 @@ __metadata:
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
     "@catering-v2s/kernel-feature-sample-wallpaper": "workspace:*"
     "@catering-v2s/ui-base-admin-shell": "workspace:*"
-    "@catering-v2s/ui-base-console-assembly": "workspace:*"
     "@catering-v2s/ui-base-dev-host": "workspace:*"
     "@catering-v2s/ui-base-input": "workspace:*"
+    "@catering-v2s/ui-base-integration-assembly": "workspace:*"
     "@catering-v2s/ui-base-primitives": "workspace:*"
     "@catering-v2s/ui-base-render": "workspace:*"
     "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*"

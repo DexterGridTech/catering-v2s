@@ -1,81 +1,36 @@
 package com.catering.v2s.salesmenu.application;
 
-import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
+import static com.catering.v2s.salesmenu.application.SalesMenuReadModels.*;
+
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
-import com.catering.v2s.catalog.api.CatalogOwnerApi;
-import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationOwnerApi;
-import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
-import com.catering.v2s.platform.asset.api.SalesMenuAssetReadApi;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
-import com.catering.v2s.salesmenu.api.SalesMenuAssetCommandApi;
-import com.catering.v2s.salesmenu.api.SalesMenuCommandApi;
 import com.catering.v2s.salesmenu.api.SalesMenuOwnerApi;
 import com.catering.v2s.salesmenu.api.SalesMenuReadback;
-import com.catering.v2s.salesmenu.domain.SalesMenuActivationStatus;
-import com.catering.v2s.salesmenu.domain.SalesMenuAggregate;
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
 import com.catering.v2s.salesmenu.domain.SalesMenuAssetTarget;
-import com.catering.v2s.salesmenu.domain.SalesMenuAssetTargetMode;
-import com.catering.v2s.salesmenu.domain.SalesMenuCandidateQuery;
-import com.catering.v2s.salesmenu.domain.SalesMenuCommandReadbackStatus;
 import com.catering.v2s.salesmenu.domain.SalesMenuCursorIdentity;
-import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMedia;
-import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMediaMode;
-import com.catering.v2s.salesmenu.domain.SalesMenuItemPageQuery;
-import com.catering.v2s.salesmenu.domain.SalesMenuItemQuery;
-import com.catering.v2s.salesmenu.domain.SalesMenuListQuery;
-import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleState;
-import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTarget;
-import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTargetKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuMoveDirection;
 import com.catering.v2s.salesmenu.domain.SalesMenuOperationQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuOperationResult;
-import com.catering.v2s.salesmenu.domain.SalesMenuOrderingConstraints;
-import com.catering.v2s.salesmenu.domain.SalesMenuPublicationBlockerKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuSaleContent;
-import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentInput;
-import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuSalesUnit;
-import com.catering.v2s.salesmenu.domain.SalesMenuSchedule;
 import com.catering.v2s.salesmenu.domain.SalesMenuScope;
-import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOption;
-import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOptionValue;
 import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
-import com.catering.v2s.salesmenu.domain.SalesMenuVersionKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuVersionQuery;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.catering.v2s.salesmenu.application.SalesMenuReadModels.*;
-
 /** Owns the salesmenuoperationrecord sales-menu facts. */
-
 @Service
-
 public class SalesMenuOperationRecordService {
 
     private static final String CAPABILITY = "EDIT_STORE_SALES_MENU";
@@ -94,7 +49,6 @@ public class SalesMenuOperationRecordService {
     }
 
     @Autowired
-
     public SalesMenuOperationRecordService(
             SalesMenuPersistence persistence,
             TimeProvider time,
@@ -107,7 +61,6 @@ public class SalesMenuOperationRecordService {
         this.json = Objects.requireNonNull(json, "json");
         this.channels = channels;
         this.organization = organization;
-
     }
 
     public SalesMenuReadback.OperationRecordPage listOperationRecords(SalesMenuOperationQuery query) {
@@ -123,8 +76,7 @@ public class SalesMenuOperationRecordService {
                 null,
                 query.page().pageSize());
         OpaqueCollectionCursor.Position position = decodeCursor(query.page().cursor(), identity);
-        List<SalesMenuReadback.OperationRecord> records = persistence.readOperationRecordRows(query, position)
-                .stream()
+        List<SalesMenuReadback.OperationRecord> records = persistence.readOperationRecordRows(query, position).stream()
                 .map(row -> new SalesMenuReadback.OperationRecord(
                         row.recordRef(),
                         row.occurredAtEpochMillis(),
@@ -312,5 +264,4 @@ public class SalesMenuOperationRecordService {
                 result.getString("failure_code"),
                 result.getString("actor_display_snapshot"));
     }
-
 }

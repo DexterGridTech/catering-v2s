@@ -2,7 +2,6 @@ package com.catering.v2s.organization.application;
 
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionFilterQuery;
-import com.catering.v2s.organization.application.persistence.BusinessEntityTaskReadPersistence;
 import com.catering.v2s.organization.api.BusinessEntityTypes;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
@@ -10,8 +9,9 @@ import com.catering.v2s.organization.api.OrganizationNodeLookup;
 import com.catering.v2s.organization.api.OrganizationNodeTypes;
 import com.catering.v2s.organization.api.OrganizationOwnerApi;
 import com.catering.v2s.organization.api.StoreContractLookup.StoreContractContext;
-import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.organization.application.BusinessEntityService.*;
+import com.catering.v2s.organization.application.persistence.BusinessEntityTaskReadPersistence;
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
@@ -45,8 +45,7 @@ public class BusinessEntityTaskReadService {
         this.definitions = definitions;
     }
 
-    public BusinessEntityTaskReadService(
-            BusinessEntityTaskReadPersistence persistence, OrganizationNodeLookup nodes) {
+    public BusinessEntityTaskReadService(BusinessEntityTaskReadPersistence persistence, OrganizationNodeLookup nodes) {
         this(persistence, nodes, null);
     }
 
@@ -88,10 +87,13 @@ public class BusinessEntityTaskReadService {
         Map<UUID, List<OrganizationEntityReadback>> brandsByHeadCompanyId = new java.util.LinkedHashMap<>();
         ids.forEach(id -> brandsByHeadCompanyId.put(id, new ArrayList<>()));
         Set<UUID> foundHeadCompanyIds = new java.util.HashSet<>();
-        persistence.authorizedBrandsByHeadCompanyIds(workspaceUuid, groupWorkspaceKey, ids).forEach(row -> {
-            foundHeadCompanyIds.add(row.headCompanyId());
-            if (row.brand() != null) brandsByHeadCompanyId.get(row.headCompanyId()).add(row.brand());
-        });
+        persistence
+                .authorizedBrandsByHeadCompanyIds(workspaceUuid, groupWorkspaceKey, ids)
+                .forEach(row -> {
+                    foundHeadCompanyIds.add(row.headCompanyId());
+                    if (row.brand() != null)
+                        brandsByHeadCompanyId.get(row.headCompanyId()).add(row.brand());
+                });
         if (foundHeadCompanyIds.size() != ids.size()) throw new OrganizationNotFoundException();
         Map<UUID, List<OrganizationEntityReadback>> immutable = new java.util.LinkedHashMap<>();
         brandsByHeadCompanyId.forEach((headCompanyId, brands) -> immutable.put(headCompanyId, List.copyOf(brands)));
@@ -106,19 +108,23 @@ public class BusinessEntityTaskReadService {
                 .map(row -> new HeadCompanyBrandAuthorization(row.brandId(), row.authorizedAtEpochMillis()))
                 .toList();
     }
+
     @Transactional(readOnly = true)
     public boolean isEnterableStore(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
         return persistence.isEnterableStore(workspaceUuid, groupWorkspaceKey, storeId);
     }
+
     @Transactional(readOnly = true)
     public OrganizationOwnerApi.SalesMenuStoreJudgment requireSalesMenuStore(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
         if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank() || storeRef == null) {
             throw new OrganizationValidationException();
         }
-        return persistence.salesMenuStore(workspaceUuid, groupWorkspaceKey, storeRef)
+        return persistence
+                .salesMenuStore(workspaceUuid, groupWorkspaceKey, storeRef)
                 .orElseThrow(OrganizationNotFoundException::new);
     }
+
     @Transactional(readOnly = true)
     public CatalogScopeLookup.CatalogBrandJudgment resolveCatalogBrand(
             UUID workspaceUuid,
@@ -152,6 +158,7 @@ public class BusinessEntityTaskReadService {
         }
         throw new OrganizationValidationException();
     }
+
     @Transactional(readOnly = true)
     public void requireCatalogCopySource(
             UUID workspaceUuid,
@@ -164,6 +171,7 @@ public class BusinessEntityTaskReadService {
                 workspaceUuid, groupWorkspaceKey, targetDataNodeType, targetDataNodeId, brandRef);
         if (sourceDataNodeId == null || !approved.equals(sourceDataNodeId)) throw new OrganizationValidationException();
     }
+
     public UUID resolveCatalogCopySource(
             UUID workspaceUuid,
             String groupWorkspaceKey,
@@ -176,7 +184,8 @@ public class BusinessEntityTaskReadService {
                 || brandRef == null
                 || brandRef.isBlank()) throw new OrganizationValidationException();
         if (!ServiceNodeTypes.STORE.equals(targetDataNodeType)) throw new OrganizationValidationException();
-        UUID targetBrand = persistence.storeBrand(workspaceUuid, groupWorkspaceKey, targetDataNodeId)
+        UUID targetBrand = persistence
+                .storeBrand(workspaceUuid, groupWorkspaceKey, targetDataNodeId)
                 .orElseThrow(OrganizationNotFoundException::new);
         if (targetBrand == null || !targetBrand.toString().equals(brandRef))
             throw new OrganizationValidationException();
@@ -186,17 +195,20 @@ public class BusinessEntityTaskReadService {
         } catch (IllegalArgumentException ex) {
             throw new OrganizationValidationException(ex);
         }
-        UUID source = persistence.storeSource(workspaceUuid, groupWorkspaceKey, targetDataNodeId)
+        UUID source = persistence
+                .storeSource(workspaceUuid, groupWorkspaceKey, targetDataNodeId)
                 .orElseThrow(OrganizationValidationException::new);
         if (!persistence.sourceBrandAllowed(workspaceUuid, groupWorkspaceKey, source, brand))
             throw new OrganizationValidationException();
         return source;
     }
+
     @Transactional(readOnly = true)
     public boolean isEnterableEntity(UUID workspaceUuid, String groupWorkspaceKey, String entityType, UUID entityId) {
         String type = entityType(entityType);
         return persistence.isEnabled(type, workspaceUuid, groupWorkspaceKey, entityId);
     }
+
     @Transactional(readOnly = true)
     public String describeEntityPath(UUID workspaceUuid, String groupWorkspaceKey, String entityType, UUID entityId) {
         String type = Objects.requireNonNullElse(entityType, "").toUpperCase(Locale.ROOT);
@@ -213,11 +225,13 @@ public class BusinessEntityTaskReadService {
         }
         throw new OrganizationValidationException();
     }
+
     @Transactional(readOnly = true)
     public StoreContractContext requireStoreContractContext(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
         return requireStoreContractContext(workspaceUuid, groupWorkspaceKey, storeId, false);
     }
+
     @Transactional
     public StoreContractContext requireStoreContractContextForCreate(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
@@ -226,7 +240,8 @@ public class BusinessEntityTaskReadService {
 
     private StoreContractContext requireStoreContractContext(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeId, boolean lockStoreAndTenant) {
-        return persistence.storeContractContext(workspaceUuid, groupWorkspaceKey, storeId, lockStoreAndTenant)
+        return persistence
+                .storeContractContext(workspaceUuid, groupWorkspaceKey, storeId, lockStoreAndTenant)
                 .orElseThrow(OrganizationNotFoundException::new);
     }
 
@@ -234,7 +249,8 @@ public class BusinessEntityTaskReadService {
     public OrganizationEntityReadback requireEntity(
             String entityType, UUID workspaceUuid, String groupWorkspaceKey, UUID id) {
         String type = ServiceNodeTypes.STORE.equals(entityType) ? ServiceNodeTypes.STORE : entityType(entityType);
-        return persistence.findEntity(type, workspaceUuid, groupWorkspaceKey, id)
+        return persistence
+                .findEntity(type, workspaceUuid, groupWorkspaceKey, id)
                 .orElseThrow(OrganizationNotFoundException::new);
     }
 
@@ -253,7 +269,8 @@ public class BusinessEntityTaskReadService {
 
     /** Server-side project fact for an existing store write target; STORE is never a capability target. */
     public UUID requireStoreProjectId(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
-        return persistence.storeProjectId(workspaceUuid, groupWorkspaceKey, storeId)
+        return persistence
+                .storeProjectId(workspaceUuid, groupWorkspaceKey, storeId)
                 .orElseThrow(OrganizationNotFoundException::new);
     }
 
@@ -290,16 +307,7 @@ public class BusinessEntityTaskReadService {
             int page,
             int pageSize) {
         return pageBrands(
-                workspaceUuid,
-                groupWorkspaceKey,
-                queryText,
-                status,
-                sort,
-                direction,
-                page,
-                pageSize,
-                null,
-                null);
+                workspaceUuid, groupWorkspaceKey, queryText, status, sort, direction, page, pageSize, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -497,8 +505,8 @@ public class BusinessEntityTaskReadService {
             String extensionFilters,
             String definitionRevision) {
         String type = entityType == null ? null : entityType(entityType);
-        ExtensionFilterQuery.Prepared filters = prepareFilters(
-                workspaceUuid, groupWorkspaceKey, type, extensionFilters, definitionRevision);
+        ExtensionFilterQuery.Prepared filters =
+                prepareFilters(workspaceUuid, groupWorkspaceKey, type, extensionFilters, definitionRevision);
         try {
             BusinessEntityTaskReadPersistence.PageData values = persistence.pageBusinessEntities(
                     workspaceUuid,
@@ -535,25 +543,20 @@ public class BusinessEntityTaskReadService {
             return ExtensionFilterQuery.Prepared.empty();
         }
         if (entityType == null || definitions == null) {
-            throw new ExtensionFilterQuery.InvalidFilterException(List.of(
-                    new ExtensionFilterQuery.InvalidReason(entityType, "HOST_TYPE_REQUIRED", null)));
+            throw new ExtensionFilterQuery.InvalidFilterException(
+                    List.of(new ExtensionFilterQuery.InvalidReason(entityType, "HOST_TYPE_REQUIRED", null)));
         }
         return ExtensionFilterQuery.prepare(
-                definitions,
-                workspaceUuid,
-                groupWorkspaceKey,
-                entityType,
-                extensionFilters,
-                definitionRevision);
+                definitions, workspaceUuid, groupWorkspaceKey, entityType, extensionFilters, definitionRevision);
     }
 
     /** Canonical owner lookup when an app knows a business-entity id but not its subtype. */
     @Transactional(readOnly = true)
     public BusinessEntityPageItem requireBusinessEntity(UUID workspaceUuid, String groupWorkspaceKey, UUID entityId) {
-        List<BusinessEntityPageItem> values = persistence.findBusinessEntity(workspaceUuid, groupWorkspaceKey, entityId)
-                .stream()
-                .map(item -> new BusinessEntityPageItem(item.entityType(), item.entity()))
-                .toList();
+        List<BusinessEntityPageItem> values =
+                persistence.findBusinessEntity(workspaceUuid, groupWorkspaceKey, entityId).stream()
+                        .map(item -> new BusinessEntityPageItem(item.entityType(), item.entity()))
+                        .toList();
         if (values.isEmpty()) throw new OrganizationNotFoundException();
         return values.getFirst();
     }
@@ -570,8 +573,8 @@ public class BusinessEntityTaskReadService {
                 : requestedIds.stream().distinct().toList();
         if (ids.isEmpty()) return Map.of();
         String type = ServiceNodeTypes.STORE.equals(entityType) ? ServiceNodeTypes.STORE : entityType(entityType);
-        Map<UUID, OrganizationEntityReadback> values = persistence.findEntities(
-                type, workspaceUuid, groupWorkspaceKey, ids);
+        Map<UUID, OrganizationEntityReadback> values =
+                persistence.findEntities(type, workspaceUuid, groupWorkspaceKey, ids);
         if (values.size() != ids.size()) throw new OrganizationNotFoundException();
         return values;
     }
@@ -595,5 +598,4 @@ public class BusinessEntityTaskReadService {
         if (!ENTITY_TYPES.contains(type)) throw new OrganizationValidationException();
         return type;
     }
-
 }

@@ -90,28 +90,65 @@ const expectedStoreTerminalActionNodes = Object.freeze({
   STORE_SCOPE: 'SCOPE_TRIGGER',
   TERMINAL_PAGE: 'PAGE_ROOT',
   TERMINAL_LIST: 'CARD_LIST',
+  TERMINAL_LIST_RETRY: 'BUTTON',
   TERMINAL_LIST_ITEM: 'LIST_ITEM_BUTTON',
   TERMINAL_DETAIL: 'DETAIL_CARD',
+  TERMINAL_DETAIL_RETRY: 'BUTTON',
   TERMINAL_CREATE: 'BUTTON',
   TERMINAL_EDIT: 'BUTTON',
   TERMINAL_ACTION_MENU: 'BUTTON',
+  TERMINAL_PAGINATION: 'PAGINATION_CONTROL_GROUP',
+  TERMINAL_PAGINATION_NEXT: 'PAGINATION_BUTTON',
+  TERMINAL_PAGINATION_PREVIOUS: 'PAGINATION_BUTTON',
   TERMINAL_FORM: 'DRAWER',
+  TERMINAL_FORM_TAB_BASIC: 'TAB',
+  TERMINAL_FORM_TAB_FUNCTIONS: 'TAB',
   TERMINAL_NAME: 'INPUT',
   TERMINAL_DEVICE_TYPE: 'RADIO_GROUP',
-  TERMINAL_FORM_NEXT: 'BUTTON',
-  TERMINAL_FORM_BACK: 'BUTTON',
+  TERMINAL_DEVICE_TYPE_OPTION: 'RADIO_OPTION',
+  TERMINAL_ACTIVATION_CODE: 'INPUT',
+  TERMINAL_ACTIVATION_CODE_CLEAR: 'BUTTON',
   TERMINAL_FORM_CANCEL: 'BUTTON',
+  TERMINAL_FORM_SAVE: 'BUTTON',
   TERMINAL_DIRTY_GUARD_CONFIRM: 'BUTTON',
   TERMINAL_DIRTY_GUARD_CANCEL: 'BUTTON',
   TERMINAL_PRINTER_ADD: 'BUTTON',
-  TERMINAL_FUNCTION_ADD: 'BUTTON',
+  TERMINAL_PRINTER: 'CARD',
+  TERMINAL_PRINTER_NAME: 'INPUT',
+  TERMINAL_PRINTER_BRAND: 'SELECT_INPUT',
+  TERMINAL_PRINTER_MODEL: 'SELECT_INPUT',
+  TERMINAL_PRINTER_PAPER_SPEC: 'SELECT_INPUT',
+  TERMINAL_PRINTER_CONNECTION: 'SELECT_INPUT',
+  TERMINAL_PRINTER_PARAMETER: 'INPUT',
+  TERMINAL_PRINTER_REMOVE: 'BUTTON',
+  TERMINAL_PRINTER_REMOVE_CONFIRM: 'BUTTON',
+  TERMINAL_PRINTER_REMOVE_CANCEL: 'BUTTON',
+  TERMINAL_FUNCTION_LIST: 'CARD',
+  TERMINAL_FUNCTION_NAV: 'BUTTON',
+  TERMINAL_FUNCTION_ADD: 'SELECT_INPUT',
+  TERMINAL_FUNCTION: 'CARD',
+  TERMINAL_FUNCTION_REMOVE: 'BUTTON',
+  TERMINAL_FUNCTION_TYPE: 'TEXT',
+  TERMINAL_RANGE_GROUP: 'CHECKBOX_GROUP',
+  TERMINAL_RANGE_OPTION: 'CHECKBOX',
   TERMINAL_SCENE_PICKER: 'SCENE_PICKER',
+  TERMINAL_SCENE: 'CARD',
+  TERMINAL_SCENE_TOGGLE: 'CHECKBOX',
+  TERMINAL_SCENE_ORDER_TYPES: 'CHECKBOX_GROUP',
+  TERMINAL_SCENE_ORDER_TYPE: 'CHECKBOX',
+  TERMINAL_SCENE_PRINTERS: 'MULTI_SELECT',
   TERMINAL_AREA_CANDIDATES: 'MULTI_SELECT',
+  TERMINAL_AREA_CANDIDATES_RETRY: 'BUTTON',
   TERMINAL_TAG_CANDIDATES: 'MULTI_SELECT',
+  TERMINAL_TAG_CANDIDATES_RETRY: 'BUTTON',
   TERMINAL_STATUS_ACTION: 'MENU_ITEM',
   TERMINAL_STATUS_MODAL: 'MODAL',
+  TERMINAL_STATUS_CONFIRM: 'BUTTON',
   TERMINAL_STATUS_CANCEL: 'BUTTON',
+  TERMINAL_STATUS_PROBLEM: 'ALERT',
 });
+
+const expectedStoreTerminalControlKeys = Object.freeze(Object.keys(expectedStoreTerminalActionNodes).sort());
 
 const salesStoreScopeControlKeys = Object.freeze(['STORE_SCOPE_TRIGGER']);
 const salesProjectScopeControlKeys = Object.freeze(['STORE_SCOPE_TRIGGER']);
@@ -230,31 +267,80 @@ function assertStoreTerminalActionNodeSource(controlKey, binding) {
   const markers = {
     TERMINAL_PAGE: 'storeTerminalTestIds.page',
     TERMINAL_LIST: 'storeTerminalTestIds.list',
+    TERMINAL_LIST_RETRY: 'storeTerminalTestIds.listRetry',
     TERMINAL_LIST_ITEM: 'storeTerminalTestIds.listItem',
     TERMINAL_DETAIL: 'storeTerminalTestIds.detail',
+    TERMINAL_DETAIL_RETRY: 'storeTerminalTestIds.detailRetry',
     TERMINAL_CREATE: 'storeTerminalTestIds.create',
     TERMINAL_EDIT: 'storeTerminalTestIds.edit',
     TERMINAL_ACTION_MENU: 'storeTerminalTestIds.actionMenu',
+    TERMINAL_PAGINATION: 'storeTerminalTestIds.pagination',
+    TERMINAL_PAGINATION_NEXT: 'storeTerminalTestIds.pagination',
+    TERMINAL_PAGINATION_PREVIOUS: 'storeTerminalTestIds.pagination',
     TERMINAL_FORM: 'storeTerminalTestIds.formDrawer',
+    TERMINAL_FORM_TAB_BASIC: 'storeTerminalTestIds.formTab',
+    TERMINAL_FORM_TAB_FUNCTIONS: 'storeTerminalTestIds.formTab',
     TERMINAL_NAME: 'storeTerminalTestIds.name',
     TERMINAL_DEVICE_TYPE: 'storeTerminalTestIds.deviceType',
-    TERMINAL_FORM_NEXT: 'storeTerminalTestIds.formNext',
-    TERMINAL_FORM_BACK: 'storeTerminalTestIds.formBack',
+    TERMINAL_DEVICE_TYPE_OPTION: 'storeTerminalTestIds.deviceTypeOption',
+    TERMINAL_ACTIVATION_CODE: 'storeTerminalTestIds.activationCode',
+    TERMINAL_ACTIVATION_CODE_CLEAR: 'storeTerminalTestIds.activationCodeClear',
     TERMINAL_FORM_CANCEL: 'storeTerminalTestIds.formCancel',
+    TERMINAL_FORM_SAVE: 'storeTerminalTestIds.formSave',
     TERMINAL_DIRTY_GUARD_CONFIRM: 'storeTerminalTestIds.dirtyGuardConfirm',
     TERMINAL_DIRTY_GUARD_CANCEL: 'storeTerminalTestIds.dirtyGuardCancel',
     TERMINAL_PRINTER_ADD: 'storeTerminalTestIds.printerAdd',
+    TERMINAL_PRINTER: 'storeTerminalTestIds.printer',
+    TERMINAL_PRINTER_NAME: 'storeTerminalTestIds.printerName',
+    TERMINAL_PRINTER_BRAND: 'storeTerminalTestIds.printerBrand',
+    TERMINAL_PRINTER_MODEL: 'storeTerminalTestIds.printerModel',
+    TERMINAL_PRINTER_PAPER_SPEC: 'storeTerminalTestIds.printerPaperSpec',
+    TERMINAL_PRINTER_CONNECTION: 'storeTerminalTestIds.printerConnection',
+    TERMINAL_PRINTER_PARAMETER: 'storeTerminalTestIds.printerParameter',
+    TERMINAL_PRINTER_REMOVE: 'storeTerminalTestIds.printerRemove',
+    TERMINAL_PRINTER_REMOVE_CONFIRM: 'storeTerminalTestIds.printerRemoveConfirm',
+    TERMINAL_PRINTER_REMOVE_CANCEL: 'storeTerminalTestIds.printerRemoveCancel',
+    TERMINAL_FUNCTION_LIST: 'storeTerminalTestIds.functionList',
+    TERMINAL_FUNCTION_NAV: 'storeTerminalTestIds.functionNav',
     TERMINAL_FUNCTION_ADD: 'storeTerminalTestIds.functionAdd',
+    TERMINAL_FUNCTION: 'storeTerminalTestIds.function',
+    TERMINAL_FUNCTION_REMOVE: 'storeTerminalTestIds.functionRemove',
+    TERMINAL_FUNCTION_TYPE: 'storeTerminalTestIds.functionType',
+    TERMINAL_RANGE_GROUP: 'storeTerminalTestIds.rangeGroup',
+    TERMINAL_RANGE_OPTION: 'storeTerminalTestIds.rangeOption',
     TERMINAL_SCENE_PICKER: 'storeTerminalTestIds.scenePicker',
+    TERMINAL_SCENE: 'storeTerminalTestIds.scene',
+    TERMINAL_SCENE_TOGGLE: 'storeTerminalTestIds.sceneToggle',
+    TERMINAL_SCENE_ORDER_TYPES: 'storeTerminalTestIds.sceneOrderTypes',
+    TERMINAL_SCENE_ORDER_TYPE: 'storeTerminalTestIds.sceneOrderType',
+    TERMINAL_SCENE_PRINTERS: 'storeTerminalTestIds.scenePrinters',
     TERMINAL_AREA_CANDIDATES: 'storeTerminalTestIds.areaCandidates',
+    TERMINAL_AREA_CANDIDATES_RETRY: 'storeTerminalTestIds.areaCandidatesRetry',
     TERMINAL_TAG_CANDIDATES: 'storeTerminalTestIds.tagCandidates',
+    TERMINAL_TAG_CANDIDATES_RETRY: 'storeTerminalTestIds.tagCandidatesRetry',
     TERMINAL_STATUS_ACTION: 'storeTerminalTestIds.statusAction',
     TERMINAL_STATUS_MODAL: 'storeTerminalTestIds.statusModal',
+    TERMINAL_STATUS_CONFIRM: 'storeTerminalTestIds.statusConfirm',
     TERMINAL_STATUS_CANCEL: 'storeTerminalTestIds.statusCancel',
+    TERMINAL_STATUS_PROBLEM: 'storeTerminalTestIds.statusProblem',
   };
   const marker = markers[controlKey];
   assert.equal(typeof marker, 'string', `L2_STORE_TERMINAL_ACTION_NODE_RULE_MISSING:${controlKey}`);
   assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  if (controlKey === 'TERMINAL_STATUS_ACTION') {
+    assert.match(source, /AdminDetailActionLabel/u);
+    assert.match(source, /testIdValue=\{storeTerminalTestIds\.statusAction\(status\)\}/u);
+  }
+  if (controlKey === 'TERMINAL_DEVICE_TYPE_OPTION') {
+    assert.match(source, /<Radio/u);
+    assert.match(source, /storeTerminalTestIds\.deviceTypeOption\(value\.key\)/u);
+  }
+  if (controlKey === 'TERMINAL_SCENE_TOGGLE') {
+    assert.match(source, /<Checkbox/u);
+    assert.match(source, /storeTerminalTestIds\.sceneToggle\(functionIdentity, scene\.key\)/u);
+  }
+  if (controlKey === 'TERMINAL_PAGINATION_NEXT' || controlKey === 'TERMINAL_PAGINATION_PREVIOUS')
+    assert.match(source, /<CursorPagination/u);
 }
 
 function assertStoreTerminalInteractionBinding(controlKey, binding) {
@@ -283,7 +369,14 @@ test('catalog and sales L2 interaction bindings have one explicit action node an
   assert.equal(salesInteractions.length, 16);
   for (const [controlKey, binding] of [...catalogInteractions, ...salesInteractions])
     assertInteractionBinding(controlKey, binding);
-  assert.equal(storeTerminalInteractions.length, 24);
+  // The store-terminal binding contract now covers the complete interaction
+  // surface. Keep the key set explicit so a missing binding or an unreviewed
+  // new control cannot silently pass.
+  assert.equal(storeTerminalInteractions.length, expectedStoreTerminalControlKeys.length);
+  assert.deepEqual(
+    storeTerminalInteractions.map(([controlKey]) => controlKey).sort(),
+    expectedStoreTerminalControlKeys,
+  );
   for (const [controlKey, binding] of storeTerminalInteractions)
     assertStoreTerminalInteractionBinding(controlKey, binding);
 });
@@ -301,6 +394,22 @@ test('scope join keeps the phase and type, while cancellation stays outside the 
   ]);
   assert.equal(Object.hasOwn(salesBlueprint.bindings.controls, 'STORE_SCOPE_CANCEL'), false);
   assert.match(salesSpecSource, /SALES_MENU_L2_SCOPE_CANCEL_NOT_IN_ACTIVE_DENOMINATOR/);
+});
+
+function assertSelectEscapeGuard(source) {
+  assert.match(source, /const openDropdown = page\.locator\('\.ant-select-dropdown:not\(/u);
+  assert.match(source, /if \(!\(await openDropdown\.count\(\)\)\) return;/u);
+  assert.match(source, /await page\.keyboard\.press\('Escape'\)/u);
+  assert.match(source, /await expect\(openDropdown\)\.toHaveCount\(0\)/u);
+}
+
+test('shared select helper does not close a dirty Drawer after an already-closed option portal', () => {
+  assertSelectEscapeGuard(operationsScopeSource);
+  const mutated = operationsScopeSource.replaceAll(
+    'if (!(await openDropdown.count())) return;',
+    'if (await openDropdown.count()) return;',
+  );
+  assert.throws(() => assertSelectEscapeGuard(mutated));
 });
 
 test('the action-node proof is red under a real source mutation', () => {
@@ -349,8 +458,11 @@ test('active L2 cases keep shared page reads and declared controls in one denomi
     assert.ok(controls.includes('CATALOG_BATCH_SUBMIT'), `L2_CATALOG_BATCH_SUBMIT_CONTROL_MISSING:${caseId}`);
     assert.ok(controls.includes('CATALOG_BATCH_STATUS_CONFIRM'), `L2_CATALOG_BATCH_CONFIRM_CONTROL_MISSING:${caseId}`);
   }
-  assert.match(catalogSpecSource, /function visibleModalDialogByTestId\(/u);
+  assert.match(operationsScopeSource, /export function visibleModalDialogByTestId\(/u);
+  assert.match(operationsScopeSource, /ancestor-or-self::\*\[@role="dialog"\]\[1\]/u);
+  assert.match(operationsScopeSource, /\.\/\/\*\[@role="dialog"\]/u);
   assert.match(catalogSpecSource, /visibleModalDialogByTestId\(page, catalogTestIds\.static\.dictionaryCreateModal\)/u);
+  assert.match(storeTerminalSpecSource, /visibleModalDialogByTestId\(page, value\)/u);
   assert.match(catalogSpecSource, /assertCatalogL2NetworkClosure\(/u);
   assert.match(catalogSpecSource, /expectedFailureOperationIds/u);
 
@@ -405,10 +517,40 @@ test('active L2 cases keep shared page reads and declared controls in one denomi
   for (const caseId of storeTerminalCandidate.approvedCaseIds) {
     const row = storeTerminalCases.get(caseId);
     assert.ok(row, `L2_STORE_TERMINAL_ACTIVE_CASE_MISSING:${caseId}`);
+    assert.ok(
+      Array.isArray(row.parameter.actionControlKeys),
+      `L2_STORE_TERMINAL_ACTION_CONTROL_DENOMINATOR_MISSING:${caseId}`,
+    );
+    for (const actionControlKey of row.parameter.actionControlKeys) {
+      assert.ok(
+        row.parameter.controlKeys.includes(actionControlKey),
+        `L2_STORE_TERMINAL_ACTION_CONTROL_UNDECLARED:${caseId}:${actionControlKey}`,
+      );
+    }
+    assert.equal(
+      row.parameter.actionControlKeys.includes('TERMINAL_PAGE'),
+      false,
+      `L2_STORE_TERMINAL_PAGE_IS_NOT_ACTION:${caseId}`,
+    );
+    assert.equal(
+      row.parameter.actionControlKeys.includes('TERMINAL_LIST'),
+      false,
+      `L2_STORE_TERMINAL_LIST_IS_NOT_ACTION:${caseId}`,
+    );
+    assert.equal(
+      row.parameter.actionControlKeys.includes('TERMINAL_DETAIL'),
+      false,
+      `L2_STORE_TERMINAL_DETAIL_IS_NOT_ACTION:${caseId}`,
+    );
     for (const controlKey of row.parameter.controlKeys)
       assert.ok(
         storeTerminalBindings.controls[controlKey],
         `L2_STORE_TERMINAL_ACTIVE_CONTROL_UNBOUND:${caseId}:${controlKey}`,
+      );
+    for (const controlKey of row.parameter.absentControlKeys ?? [])
+      assert.ok(
+        storeTerminalBindings.controls[controlKey],
+        `L2_STORE_TERMINAL_ABSENT_CONTROL_UNBOUND:${caseId}:${controlKey}`,
       );
     assert.ok(row.parameter.controlKeys.includes('STORE_SCOPE'), `L2_STORE_TERMINAL_SCOPE_TOUCH_UNDECLARED:${caseId}`);
     assert.ok(row.parameter.controlKeys.includes('TERMINAL_PAGE'), `L2_STORE_TERMINAL_PAGE_TOUCH_UNDECLARED:${caseId}`);
@@ -479,8 +621,43 @@ test('active L2 scripts close the declared control/action denominator and keep c
     'STORE_TERMINAL_L2_FORBIDDEN_OPERATION',
     'STORE_TERMINAL_L2_UNDECLARED_OPERATION',
     'STORE_TERMINAL_L2_OPERATION_BUDGET_EXCEEDED',
+    'STORE_TERMINAL_L2_REQUIRED_OPERATION_ACTION_SCOPE_MISSING',
   ])
     assert.match(storeTerminalSpecSource, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  for (const marker of [
+    'async function functionIdentitiesFromList(page: Page, allowEmpty = false)',
+    'async function printerIdentitiesFromSection(page: Page, allowEmpty = false)',
+    'const identities = await functionIdentitiesFromList(page);',
+    'const identities = await printerIdentitiesFromSection(page);',
+  ])
+    assert.match(storeTerminalSpecSource, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  const stableIdentityGate = source => {
+    assert.match(source, /const identity = terminalFunctionIdentity\(currentFunction\);\s*requireTerminalIdentity\(identity, 'function'\)/u);
+    assert.match(source, /const printerIdentity = terminalPrinterIdentity\(currentPrinter\);\s*requireTerminalIdentity\(printerIdentity, 'printer'\)/u);
+    assert.doesNotMatch(source, /function-\$\{field\.key\}/u);
+    assert.doesNotMatch(source, /currentPrinter\?\.ref \?\? currentPrinter\?\.clientKey \?\? field\.key/u);
+  };
+  stableIdentityGate(storeTerminalDrawerSource);
+  assert.throws(
+    () =>
+      stableIdentityGate(
+        storeTerminalDrawerSource.replace("requireTerminalIdentity(identity, 'function')", 'identity'),
+      ),
+    /input did not match/u,
+  );
+  for (const marker of [
+    'function terminalDetailReads(runtime: Runtime, terminalRef: string)',
+    'async function waitForTerminalDetailRead(runtime: Runtime, terminalRef: string',
+    'entry.pathname.endsWith(suffix)',
+    'Math.max(1, detailReadCount)',
+    'listFailureBaseline = runtime.listReadFailureCount ?? 0',
+    'listFailureOccurred = (runtime.listReadFailureCount ?? 0) > listFailureBaseline',
+  ])
+    assert.match(
+      storeTerminalSpecSource,
+      new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+      `L2_STORE_TERMINAL_DETAIL_READ_GUARD_MISSING:${marker}`,
+    );
   const storeClosureMutation = storeTerminalSpecSource.replace('assertControls(runtime);', '');
   assert.doesNotMatch(storeClosureMutation, /assertControls\(runtime\)/u);
 

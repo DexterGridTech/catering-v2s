@@ -1,6 +1,5 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.HeadCompanyPersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
@@ -12,7 +11,6 @@ import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.api.BusinessEntityTypes;
-import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi;
 import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.HeadCompanyBrandAuthorizationCommand;
 import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.HeadCompanyBrandAuthorizationReadback;
 import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.HeadCompanyCommandReadback;
@@ -21,6 +19,7 @@ import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.Head
 import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.HeadCompanyUpdateCommand;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
+import com.catering.v2s.organization.application.persistence.HeadCompanyPersistence;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -67,7 +66,12 @@ public class HeadCompanyService {
             ExtensionDefinitionLookup definitions,
             BusinessEntityCommandReceiptService receipts,
             com.catering.v2s.organization.api.OrganizationNodeLookup nodes) {
-        this(new HeadCompanyPersistence(jdbc), time, definitions, receipts, new BusinessEntityTaskReadService(jdbc, nodes));
+        this(
+                new HeadCompanyPersistence(jdbc),
+                time,
+                definitions,
+                receipts,
+                new BusinessEntityTaskReadService(jdbc, nodes));
     }
 
     HeadCompanyService(
@@ -202,15 +206,7 @@ public class HeadCompanyService {
         ExtensionSubmission submission = submission(extensionValues);
         if (idempotencyKey == null)
             return createNow(
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    code,
-                    name,
-                    legalName,
-                    creditCode,
-                    remark,
-                    submission,
-                    safeActor);
+                    workspaceUuid, groupWorkspaceKey, code, name, legalName, creditCode, remark, submission, safeActor);
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
@@ -327,8 +323,7 @@ public class HeadCompanyService {
                 : requireHeadCompanyOwnerFact(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, id);
         AuditActor safeActor = actor == null ? AuditActor.system() : actor;
         if (idempotencyKey == null)
-            return transitionNow(
-                    workspaceUuid, groupWorkspaceKey, id, status, expectedVersion, safeActor, ownerFact);
+            return transitionNow(workspaceUuid, groupWorkspaceKey, id, status, expectedVersion, safeActor, ownerFact);
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
@@ -395,14 +390,11 @@ public class HeadCompanyService {
                 BusinessEntityValueSupport.canonical(
                         "addHeadCompanyBrandAuthorization", workspaceUuid, groupWorkspaceKey, headCompanyId, brandId),
                 () -> {
-                    reads.requireEntity(BusinessEntityTypes.HEAD_COMPANY, workspaceUuid, groupWorkspaceKey, headCompanyId);
+                    reads.requireEntity(
+                            BusinessEntityTypes.HEAD_COMPANY, workspaceUuid, groupWorkspaceKey, headCompanyId);
                     if (!enabled("brand", workspaceUuid, groupWorkspaceKey, brandId))
                         throw new BusinessEntityService.OrganizationValidationException();
-                    if (persistence.addBrandAuthorization(
-                                    headCompanyId,
-                                    brandId,
-                                    time.currentEpochMillis())
-                            == 1) {
+                    if (persistence.addBrandAuthorization(headCompanyId, brandId, time.currentEpochMillis()) == 1) {
                         audit(
                                 workspaceUuid,
                                 groupWorkspaceKey,
@@ -442,18 +434,21 @@ public class HeadCompanyService {
                 headCompanyId,
                 idempotencyKey,
                 BusinessEntityValueSupport.canonical(
-                        "removeHeadCompanyBrandAuthorization", workspaceUuid, groupWorkspaceKey, headCompanyId, brandId),
+                        "removeHeadCompanyBrandAuthorization",
+                        workspaceUuid,
+                        groupWorkspaceKey,
+                        headCompanyId,
+                        brandId),
                 () -> {
-                    reads.requireEntity(BusinessEntityTypes.HEAD_COMPANY, workspaceUuid, groupWorkspaceKey, headCompanyId);
+                    reads.requireEntity(
+                            BusinessEntityTypes.HEAD_COMPANY, workspaceUuid, groupWorkspaceKey, headCompanyId);
                     if (!authorized(headCompanyId, brandId))
                         throw new BusinessEntityService.HeadCompanyBrandAuthorizationNotFoundException();
                     if (hasStoreReference(workspaceUuid, groupWorkspaceKey, headCompanyId, brandId))
                         throw new BusinessEntityService.HeadCompanyBrandAuthorizationInUseException();
                     try {
-                        if (persistence.removeBrandAuthorization(
-                                        headCompanyId,
-                                        brandId)
-                                != 1) throw new BusinessEntityService.HeadCompanyBrandAuthorizationNotFoundException();
+                        if (persistence.removeBrandAuthorization(headCompanyId, brandId) != 1)
+                            throw new BusinessEntityService.HeadCompanyBrandAuthorizationNotFoundException();
                     } catch (DataIntegrityViolationException exception) {
                         throw new BusinessEntityService.HeadCompanyBrandAuthorizationInUseException(exception);
                     }
@@ -544,7 +539,8 @@ public class HeadCompanyService {
         ensureAvailable(workspaceUuid, groupWorkspaceKey, id, code, name);
         ExtensionValues extensions = extensionValuesForUpdate(workspaceUuid, groupWorkspaceKey, before, submission);
         long now = time.currentEpochMillis();
-        OrganizationEntityReadback updated = persistence.update(
+        OrganizationEntityReadback updated = persistence
+                .update(
                         id,
                         workspaceUuid,
                         groupWorkspaceKey,
@@ -618,7 +614,8 @@ public class HeadCompanyService {
 
     private void requireOwnerGrant(
             OperationsOwnerScopeGrant grant, UUID workspaceUuid, String groupWorkspaceKey, UUID headCompanyId) {
-        if (grant == null || !grant.matches(workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.HEAD_COMPANY, headCompanyId))
+        if (grant == null
+                || !grant.matches(workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.HEAD_COMPANY, headCompanyId))
             throw new BusinessEntityService.OrganizationAuthorizationException();
     }
 
@@ -630,7 +627,8 @@ public class HeadCompanyService {
             throw new BusinessEntityService.OrganizationAuthorizationException();
     }
 
-    private void ensureAvailable(UUID workspaceUuid, String groupWorkspaceKey, UUID currentId, String code, String name) {
+    private void ensureAvailable(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID currentId, String code, String name) {
         HeadCompanyPersistence.ConflictFlags conflicts = persistence.findConflicts(
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -648,13 +646,15 @@ public class HeadCompanyService {
                     definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.HEAD_COMPANY);
             if (!actual.isEmpty()) ExtensionDefinitionService.requireConsumableDefinition(definition);
             Map<String, ExtensionDefinitionReadback.Field> known = definition.fields().stream()
-                    .collect(java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, value -> value));
+                    .collect(java.util.stream.Collectors.toMap(
+                            ExtensionDefinitionReadback.Field::fieldKey, value -> value));
             if (actual.keySet().stream().anyMatch(field -> !known.containsKey(field))
-                    || actual.entrySet().stream().anyMatch(entry ->
-                            !"DISABLED".equals(known.get(entry.getKey()).status())
-                                    && !BusinessEntityValueSupport.isJsonNull(entry.getValue())
-                                    && !BusinessEntityValueSupport.validJsonValue(
-                                            known.get(entry.getKey()), entry.getValue())))
+                    || actual.entrySet().stream()
+                            .anyMatch(entry ->
+                                    !"DISABLED".equals(known.get(entry.getKey()).status())
+                                            && !BusinessEntityValueSupport.isJsonNull(entry.getValue())
+                                            && !BusinessEntityValueSupport.validJsonValue(
+                                                    known.get(entry.getKey()), entry.getValue())))
                 throw new BusinessEntityService.OrganizationValidationException();
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (!actual.isEmpty()) throw new BusinessEntityService.OrganizationValidationException(absent);
@@ -671,7 +671,8 @@ public class HeadCompanyService {
         String current = BusinessEntityValueSupport.extensionJson(before.extensionValues());
         ExtensionDefinitionReadback definition;
         try {
-            definition = definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.HEAD_COMPANY);
+            definition =
+                    definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.HEAD_COMPANY);
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (submission != null && !submission.fields().isEmpty())
                 throw new BusinessEntityService.OrganizationValidationException(absent);
@@ -685,10 +686,12 @@ public class HeadCompanyService {
         }
     }
 
-    private void replaceNewValues(UUID id, UUID workspaceUuid, String groupWorkspaceKey, ExtensionSubmission submission) {
+    private void replaceNewValues(
+            UUID id, UUID workspaceUuid, String groupWorkspaceKey, ExtensionSubmission submission) {
         ExtensionDefinitionReadback definition;
         try {
-            definition = definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.HEAD_COMPANY);
+            definition =
+                    definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.HEAD_COMPANY);
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (submission != null && !submission.fields().isEmpty())
                 throw new BusinessEntityService.OrganizationValidationException(absent);
@@ -703,12 +706,15 @@ public class HeadCompanyService {
     }
 
     private ExtensionSubmission submission(Map<String, String> values) {
-        return new ExtensionSubmission(values == null ? List.of() : values.entrySet().stream()
-                .map(entry -> BusinessEntityValueSupport.isJsonNull(entry.getValue())
-                        ? ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey())
-                        : new ExtensionSubmission.ExtensionFieldValue(
-                                entry.getKey(), entry.getValue(), ExtensionSubmission.Mode.SET))
-                .toList());
+        return new ExtensionSubmission(
+                values == null
+                        ? List.of()
+                        : values.entrySet().stream()
+                                .map(entry -> BusinessEntityValueSupport.isJsonNull(entry.getValue())
+                                        ? ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey())
+                                        : new ExtensionSubmission.ExtensionFieldValue(
+                                                entry.getKey(), entry.getValue(), ExtensionSubmission.Mode.SET))
+                                .toList());
     }
 
     private boolean enabled(String table, UUID workspaceUuid, String groupWorkspaceKey, UUID id) {
@@ -787,5 +793,4 @@ public class HeadCompanyService {
     }
 
     private record ExtensionValues(String json, long revision) {}
-
 }

@@ -1,5 +1,5 @@
 import {useRefreshVersion, useCursorCandidates, useCursorStack} from '@catering-v2s/admin-ui-foundation';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {operationsContentTabRefreshSignal, operationsRtk} from '../../../app/api/OperationsTransport';
 import type {
   StoreTerminalAreaCandidate,
@@ -28,6 +28,7 @@ export function useStoreTerminalReadModel({
   const storeWireRef = storeRef ? wireUuid(storeRef) : emptyUuid;
   const scopeReady = Boolean(storeRef);
   const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
+  const lastContentTabRefreshVersion = useRef<number | undefined>(undefined);
   const [areaQueryText, setAreaQueryText] = useState('');
   const [tagQueryText, setTagQueryText] = useState('');
   const terminalCursor = useCursorStack({resetKey: `${queryContext.groupWorkspaceKey}:${storeRef ?? ''}`});
@@ -64,7 +65,7 @@ export function useStoreTerminalReadModel({
   const areaCandidates = useCursorCandidates<StoreTerminalAreaCandidate>({
     queryText: areaQueryText,
     resetKey: `${queryContext.groupWorkspaceKey}:${storeRef ?? ''}:areas:${contentTabRefreshVersion}`,
-    pageSize: 50,
+    pageSize: STORE_TERMINAL_PAGE_SIZE,
     keyOf: item => String(item.areaRef),
   });
   const areaCandidateRequest = useMemo(
@@ -90,15 +91,16 @@ export function useStoreTerminalReadModel({
   const areaCandidatesQuery = operationsRtk.useGetOperationsStoreTerminalAreaCandidatesQuery(areaCandidateRequest, {
     skip: !editorOpen || !gateReady || !scopeReady,
   });
+  const acceptAreaCandidatePage = areaCandidates.acceptPage;
   useEffect(() => {
     const page = areaCandidatesQuery.currentData;
-    if (page) areaCandidates.acceptPage(page.items, {nextCursor: page.nextCursor, total: page.total});
-  }, [areaCandidates, areaCandidatesQuery.currentData]);
+    if (page) acceptAreaCandidatePage(page.items, {nextCursor: page.nextCursor, total: page.total});
+  }, [acceptAreaCandidatePage, areaCandidatesQuery.currentData]);
 
   const tagCandidates = useCursorCandidates<StoreTerminalTagCandidate>({
     queryText: tagQueryText,
     resetKey: `${queryContext.groupWorkspaceKey}:${storeRef ?? ''}:tags:${contentTabRefreshVersion}`,
-    pageSize: 50,
+    pageSize: STORE_TERMINAL_PAGE_SIZE,
     keyOf: item => String(item.tagRef),
   });
   const tagCandidateRequest = useMemo(
@@ -124,10 +126,11 @@ export function useStoreTerminalReadModel({
   const tagCandidatesQuery = operationsRtk.useGetOperationsStoreTerminalTagCandidatesQuery(tagCandidateRequest, {
     skip: !editorOpen || !gateReady || !scopeReady,
   });
+  const acceptTagCandidatePage = tagCandidates.acceptPage;
   useEffect(() => {
     const page = tagCandidatesQuery.currentData;
-    if (page) tagCandidates.acceptPage(page.items, {nextCursor: page.nextCursor, total: page.total});
-  }, [tagCandidates, tagCandidatesQuery.currentData]);
+    if (page) acceptTagCandidatePage(page.items, {nextCursor: page.nextCursor, total: page.total});
+  }, [acceptTagCandidatePage, tagCandidatesQuery.currentData]);
 
   const refetchTerminals = terminalsQuery.refetch;
   const refetchDetail = detailQuery.refetch;
@@ -135,7 +138,8 @@ export function useStoreTerminalReadModel({
   const refetchTagCandidates = tagCandidatesQuery.refetch;
 
   useEffect(() => {
-    if (contentTabRefreshVersion === 0) return;
+    if (contentTabRefreshVersion === 0 || contentTabRefreshVersion === lastContentTabRefreshVersion.current) return;
+    lastContentTabRefreshVersion.current = contentTabRefreshVersion;
     void refetchTerminals();
     if (selectedTerminalRef) void refetchDetail();
     if (editorOpen) {

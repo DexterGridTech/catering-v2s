@@ -34,6 +34,23 @@ test("DEV start gives Java the selected local asset ingress for browser public U
   assert.doesNotMatch(runnerSource, /CATERING_ASSET_PUBLIC_BASE_URL: `http:\/\/127\.0\.0\.1:\$\{env\.environment\.V2S_DEV_REMOTE_ASSET_PORT\}`/);
 });
 
+test("remote Java source sync excludes non-runtime repository payloads", () => {
+  const syncStart = runnerSource.indexOf("export async function syncRemoteSource");
+  const syncEnd = runnerSource.indexOf("const remoteEnvLine", syncStart);
+  assert.ok(syncStart >= 0 && syncEnd > syncStart);
+  const syncSource = runnerSource.slice(syncStart, syncEnd);
+  assert.match(syncSource, /'--exclude=\*\/node_modules'/);
+  assert.match(syncSource, /'--exclude=\*\/\.gradle'/);
+  assert.match(syncSource, /'--exclude=doc\/evidence'/);
+  assert.match(syncSource, /'--exclude=apps\/terminal'/);
+  assert.doesNotMatch(syncSource, /'--exclude=apps\/frontend'/);
+  assert.match(syncSource, /'--no-xattrs'/);
+  assert.match(syncSource, /'--no-fflags'/);
+  assert.match(syncSource, /'--no-acls'/);
+  assert.match(syncSource, /'--no-mac-metadata'/);
+  assert.match(syncSource, /COPYFILE_DISABLE: '1'/);
+});
+
 test("DEV stop retains remote-log evidence for already-stopped Java", () => {
   let missingAttempts = 0;
   const missing = collectStopDiagnostics({

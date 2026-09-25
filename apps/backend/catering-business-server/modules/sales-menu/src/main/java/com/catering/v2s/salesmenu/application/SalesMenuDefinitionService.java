@@ -1,61 +1,35 @@
 package com.catering.v2s.salesmenu.application;
 
-import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
+import static com.catering.v2s.salesmenu.application.SalesMenuReadModels.*;
+
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationOwnerApi;
-import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
-import com.catering.v2s.platform.asset.api.SalesMenuAssetReadApi;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
-import com.catering.v2s.salesmenu.api.SalesMenuAssetCommandApi;
-import com.catering.v2s.salesmenu.api.SalesMenuCommandApi;
 import com.catering.v2s.salesmenu.api.SalesMenuOwnerApi;
-import static com.catering.v2s.salesmenu.application.SalesMenuReadModels.*;
 import com.catering.v2s.salesmenu.api.SalesMenuReadback;
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
 import com.catering.v2s.salesmenu.domain.SalesMenuActivationStatus;
 import com.catering.v2s.salesmenu.domain.SalesMenuAggregate;
 import com.catering.v2s.salesmenu.domain.SalesMenuAssetTarget;
-import com.catering.v2s.salesmenu.domain.SalesMenuAssetTargetMode;
-import com.catering.v2s.salesmenu.domain.SalesMenuCandidateQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuCommandReadbackStatus;
 import com.catering.v2s.salesmenu.domain.SalesMenuCursorIdentity;
 import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMedia;
 import com.catering.v2s.salesmenu.domain.SalesMenuDisplayMediaMode;
-import com.catering.v2s.salesmenu.domain.SalesMenuItemPageQuery;
-import com.catering.v2s.salesmenu.domain.SalesMenuItemQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuListQuery;
-import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleState;
-import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTarget;
-import com.catering.v2s.salesmenu.domain.SalesMenuManualSaleTargetKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuMoveDirection;
-import com.catering.v2s.salesmenu.domain.SalesMenuOperationQuery;
 import com.catering.v2s.salesmenu.domain.SalesMenuOperationResult;
-import com.catering.v2s.salesmenu.domain.SalesMenuOrderingConstraints;
-import com.catering.v2s.salesmenu.domain.SalesMenuPublicationBlockerKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuSaleContent;
-import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentInput;
-import com.catering.v2s.salesmenu.domain.SalesMenuSaleContentKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuSalesUnit;
 import com.catering.v2s.salesmenu.domain.SalesMenuSchedule;
 import com.catering.v2s.salesmenu.domain.SalesMenuScope;
-import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOption;
-import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOptionValue;
 import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionKind;
-import com.catering.v2s.salesmenu.domain.SalesMenuVersionQuery;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Time;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -156,8 +130,7 @@ public class SalesMenuDefinitionService {
     public SalesMenuReadback.MenuDetail readMenu(SalesMenuTarget target, UUID channelRef) {
         requireOwnerRead(target.scope(), channelRef);
         var menu = requireMenu(target, false);
-        var activation = persistence.readActivation(target.salesMenuRef(), channelRef)
-                .stream()
+        var activation = persistence.readActivation(target.salesMenuRef(), channelRef).stream()
                 .findFirst()
                 .map(row -> new SalesMenuReadback.Activation(row.channelRef(), row.status(), row.version()))
                 .orElse(null);
@@ -249,7 +222,8 @@ public class SalesMenuDefinitionService {
     @Transactional(propagation = Propagation.REQUIRED)
     public SalesMenuReadback.Command archive(SalesMenuOwnerApi.ArchiveCommand command) {
         return mutate("archiveOperationsSalesMenu", command.context(), command, command.expectedVersion(), () -> {
-            persistence.archiveCollection(time.currentEpochMillis(), command.context().salesMenuRef());
+            persistence.archiveCollection(
+                    time.currentEpochMillis(), command.context().salesMenuRef());
             return SalesMenuCommandReadbackStatus.ARCHIVED;
         });
     }
@@ -264,7 +238,9 @@ public class SalesMenuDefinitionService {
                 command.channelRef(),
                 () -> {
                     persistence.updateActivation(
-                            command.context().salesMenuRef(), command.channelRef(), command.status().name());
+                            command.context().salesMenuRef(),
+                            command.channelRef(),
+                            command.status().name());
                     return SalesMenuCommandReadbackStatus.APPLIED;
                 });
     }
@@ -361,8 +337,7 @@ public class SalesMenuDefinitionService {
         persistence.lockCommandReceipt(context.scope().workspaceUuid(), operation, context.idempotencyKey());
         L locked = lock.get();
         ReceiptRow existing = persistence
-                .readDefinitionCommandReceipt(
-                        context.scope().workspaceUuid(), operation, context.idempotencyKey())
+                .readDefinitionCommandReceipt(context.scope().workspaceUuid(), operation, context.idempotencyKey())
                 .stream()
                 .findFirst()
                 .orElse(null);
@@ -443,12 +418,7 @@ public class SalesMenuDefinitionService {
             UUID item = UUID.randomUUID();
             persistence.createCopiedItem(item, target, row.catalogItemRef());
             persistence.copyItemVersion(
-                    targetVersion,
-                    item,
-                    sections.get(row.sectionRef()),
-                    target,
-                    row.displayOrder(),
-                    row);
+                    targetVersion, item, sections.get(row.sectionRef()), target, row.displayOrder(), row);
             for (var sku : sourceSkus.getOrDefault(row.salesItemRef(), List.of()))
                 persistence.copySku(targetVersion, item, sku);
             for (var option : sourceOrderOptions.getOrDefault(row.salesItemRef(), List.of())) {
@@ -477,9 +447,11 @@ public class SalesMenuDefinitionService {
         if (rows.isEmpty()) return Map.of();
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
-        List<OrderOptionGroupRow> groups = persistence.readOrderOptionGroups(rows.getFirst().versionRef(), itemRefs);
+        List<OrderOptionGroupRow> groups =
+                persistence.readOrderOptionGroups(rows.getFirst().versionRef(), itemRefs);
         if (groups.isEmpty()) return Map.of();
-        List<OrderOptionValueRow> values = persistence.readOrderOptionValues(rows.getFirst().versionRef(), itemRefs);
+        List<OrderOptionValueRow> values =
+                persistence.readOrderOptionValues(rows.getFirst().versionRef(), itemRefs);
         Map<OptionKey, List<OrderOptionValueRow>> valuesByGroup = new LinkedHashMap<>();
         values.forEach(value -> valuesByGroup
                 .computeIfAbsent(
@@ -518,9 +490,9 @@ public class SalesMenuDefinitionService {
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
         Map<UUID, List<SkuRow>> result = new LinkedHashMap<>();
-        persistence.readSkuRows(rows.getFirst().versionRef(), itemRefs)
-                .forEach(row -> result.computeIfAbsent(row.salesItemRef(), ignored -> new ArrayList<>())
-                        .add(row));
+        persistence.readSkuRows(rows.getFirst().versionRef(), itemRefs).forEach(row -> result.computeIfAbsent(
+                        row.salesItemRef(), ignored -> new ArrayList<>())
+                .add(row));
         result.replaceAll((ignored, values) -> List.copyOf(values));
         return Map.copyOf(result);
     }
@@ -530,9 +502,9 @@ public class SalesMenuDefinitionService {
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
         Map<UUID, List<UUID>> result = new HashMap<>();
-        persistence.readMediaItems(rows.getFirst().versionRef(), itemRefs)
-                .forEach(row -> result.computeIfAbsent(row.salesItemRef(), ignored -> new ArrayList<>())
-                        .add(row.assetRef()));
+        persistence.readMediaItems(rows.getFirst().versionRef(), itemRefs).forEach(row -> result.computeIfAbsent(
+                        row.salesItemRef(), ignored -> new ArrayList<>())
+                .add(row.assetRef()));
         result.replaceAll((ignored, refs) -> List.copyOf(refs));
         return Map.copyOf(result);
     }
@@ -547,15 +519,14 @@ public class SalesMenuDefinitionService {
     }
 
     private UUID draftVersion(UUID menu) {
-        return persistence.readDraftVersion(menu)
-                .stream()
+        return persistence.readDraftVersion(menu).stream()
                 .findFirst()
                 .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
     }
 
     private void advanceDraftRevision(UUID version) {
-        if (persistence.advanceDraftRevision(version)
-                != 1) throw problem("SALES_MENU_DRAFT_NOT_FOUND", 404, "销售菜单草稿不存在");
+        if (persistence.advanceDraftRevision(version) != 1)
+            throw problem("SALES_MENU_DRAFT_NOT_FOUND", 404, "销售菜单草稿不存在");
     }
 
     private OrganizationOwnerApi.SalesMenuStoreJudgment requireOwnerCommand(

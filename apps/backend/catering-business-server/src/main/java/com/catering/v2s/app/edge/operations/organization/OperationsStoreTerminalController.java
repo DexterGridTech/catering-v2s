@@ -106,8 +106,8 @@ public class OperationsStoreTerminalController {
             @PathVariable UUID storeRef,
             @PathVariable UUID terminalRef) {
         WorkspaceSessionReadback session = readSession(request, groupWorkspaceKey, storeRef);
-        StoreTerminalOwnerApi.TerminalDetail value = owner.readTerminalDetail(
-                session.workspaceUuid(), groupWorkspaceKey, storeRef, terminalRef);
+        StoreTerminalOwnerApi.TerminalDetail value =
+                owner.readTerminalDetail(session.workspaceUuid(), groupWorkspaceKey, storeRef, terminalRef);
         return detail(value);
     }
 
@@ -151,8 +151,8 @@ public class OperationsStoreTerminalController {
                 body,
                 StoreTerminalCreateRequest.class,
                 Set.of("name", "deviceType", "activationCode", "configuration"));
-        StoreTerminalOwnerApi.TerminalMutation value = m1Bindings.bindPostOperationsStoreTerminal(
-                new StoreTerminalOwnerApi.CreateCommand(
+        StoreTerminalOwnerApi.TerminalMutation value =
+                m1Bindings.bindPostOperationsStoreTerminal(new StoreTerminalOwnerApi.CreateCommand(
                         session.workspaceUuid(),
                         groupWorkspaceKey,
                         storeRef,
@@ -179,8 +179,8 @@ public class OperationsStoreTerminalController {
                 body,
                 StoreTerminalReplaceRequest.class,
                 Set.of("name", "deviceType", "configuration", "expectedVersion"));
-        StoreTerminalOwnerApi.TerminalMutation value = m1Bindings.bindPutOperationsStoreTerminal(
-                new StoreTerminalOwnerApi.ReplaceCommand(
+        StoreTerminalOwnerApi.TerminalMutation value =
+                m1Bindings.bindPutOperationsStoreTerminal(new StoreTerminalOwnerApi.ReplaceCommand(
                         session.workspaceUuid(),
                         groupWorkspaceKey,
                         storeRef,
@@ -204,12 +204,10 @@ public class OperationsStoreTerminalController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody tools.jackson.databind.JsonNode body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
-        StoreTerminalStatusRequest input = strictBody(
-                body,
-                StoreTerminalStatusRequest.class,
-                Set.of("status", "expectedVersion"));
-        StoreTerminalOwnerApi.TerminalMutation value = m1Bindings.bindPostOperationsStoreTerminalStatus(
-                new StoreTerminalOwnerApi.StatusCommand(
+        StoreTerminalStatusRequest input =
+                strictBody(body, StoreTerminalStatusRequest.class, Set.of("status", "expectedVersion"));
+        StoreTerminalOwnerApi.TerminalMutation value =
+                m1Bindings.bindPostOperationsStoreTerminalStatus(new StoreTerminalOwnerApi.StatusCommand(
                         session.workspaceUuid(),
                         groupWorkspaceKey,
                         storeRef,
@@ -246,14 +244,21 @@ public class OperationsStoreTerminalController {
 
     private static StoreTerminalPage page(StoreTerminalOwnerApi.TerminalPage value) {
         return new StoreTerminalPage(
-                value.items().stream().map(OperationsStoreTerminalController::summary).toList(),
+                value.items().stream()
+                        .map(OperationsStoreTerminalController::summary)
+                        .toList(),
                 json(value.nextCursor()),
                 value.total());
     }
 
     private static StoreTerminalSummary summary(StoreTerminalOwnerApi.TerminalSummary value) {
         return new StoreTerminalSummary(
-                value.terminalRef(), value.name(), value.deviceType(), status(value.status()), value.version(), value.updatedAt());
+                value.terminalRef(),
+                value.name(),
+                value.deviceType(),
+                status(value.status()),
+                value.version(),
+                value.updatedAt());
     }
 
     private static StoreTerminalDetail detail(StoreTerminalOwnerApi.TerminalDetail value) {
@@ -282,17 +287,23 @@ public class OperationsStoreTerminalController {
         return new StoreTerminalMutation(value.terminalRef(), value.version(), status(value.status()));
     }
 
-    private static StoreTerminalAreaCandidatePage areaCandidates(StoreTerminalOwnerApi.CandidatePage<StoreTerminalOwnerApi.AreaCandidate> value) {
+    private static StoreTerminalAreaCandidatePage areaCandidates(
+            StoreTerminalOwnerApi.CandidatePage<StoreTerminalOwnerApi.AreaCandidate> value) {
         return new StoreTerminalAreaCandidatePage(
-                value.items().stream().map(item -> new StoreTerminalAreaCandidate(item.areaRef(), item.name(), item.code())).toList(),
+                value.items().stream()
+                        .map(item -> new StoreTerminalAreaCandidate(item.areaRef(), item.name(), item.code()))
+                        .toList(),
                 json(value.nextCursor()),
                 value.total());
     }
 
-    private static StoreTerminalTagCandidatePage tagCandidates(StoreTerminalOwnerApi.CandidatePage<StoreTerminalOwnerApi.TagCandidate> value) {
+    private static StoreTerminalTagCandidatePage tagCandidates(
+            StoreTerminalOwnerApi.CandidatePage<StoreTerminalOwnerApi.TagCandidate> value) {
         return new StoreTerminalTagCandidatePage(
-                value.items().stream().map(item -> new StoreTerminalTagCandidate(
-                        item.tagRef(), item.name(), item.code(), status(item.status()))).toList(),
+                value.items().stream()
+                        .map(item -> new StoreTerminalTagCandidate(
+                                item.tagRef(), item.name(), item.code(), status(item.status())))
+                        .toList(),
                 json(value.nextCursor()),
                 value.total());
     }
@@ -311,7 +322,8 @@ public class OperationsStoreTerminalController {
 
     private static StoreTerminalConfiguration configuration(com.fasterxml.jackson.databind.JsonNode value) {
         try {
-            return WIRE_JSON.treeToValue(WIRE_JSON.readTree(value == null ? "{}" : value.toString()), StoreTerminalConfiguration.class);
+            return WIRE_JSON.treeToValue(
+                    WIRE_JSON.readTree(value == null ? "{}" : value.toString()), StoreTerminalConfiguration.class);
         } catch (Exception failure) {
             throw new IllegalStateException("owner returned invalid terminal configuration", failure);
         }
@@ -354,8 +366,8 @@ public class OperationsStoreTerminalController {
             ArrayNode scenes = node.putArray("scenes");
             for (StoreTerminalSceneSelection scene : requiredList(function.scenes(), "function.scenes")) {
                 if (scene == null) throw new InvalidEdgeRequestException("scene is required");
-                ObjectNode sceneNode = scenes.addObject()
-                        .put("sceneKey", requiredText(scene.sceneKey(), "scene.sceneKey"));
+                ObjectNode sceneNode =
+                        scenes.addObject().put("sceneKey", requiredText(scene.sceneKey(), "scene.sceneKey"));
                 ArrayNode orderTypes = sceneNode.putArray("orderTypes");
                 for (String orderType : requiredList(scene.orderTypes(), "scene.orderTypes"))
                     orderTypes.add(requiredText(orderType, "scene.orderType"));
@@ -363,7 +375,12 @@ public class OperationsStoreTerminalController {
                 for (StoreTerminalPrinterBinding binding : requiredList(scene.printers(), "scene.printers")) {
                     if (binding == null) throw new InvalidEdgeRequestException("printer binding is required");
                     ObjectNode bindingNode = bindings.addObject();
-                    childIdentity(bindingNode, binding.printerRef(), binding.printerClientKey(), "printerRef", "printerClientKey");
+                    childIdentity(
+                            bindingNode,
+                            binding.printerRef(),
+                            binding.printerClientKey(),
+                            "printerRef",
+                            "printerClientKey");
                 }
             }
         }
@@ -374,7 +391,8 @@ public class OperationsStoreTerminalController {
         childIdentity(node, ref, clientKey, "ref", "clientKey");
     }
 
-    private static void childIdentity(ObjectNode node, UUID ref, String clientKey, String refName, String clientKeyName) {
+    private static void childIdentity(
+            ObjectNode node, UUID ref, String clientKey, String refName, String clientKeyName) {
         if ((ref == null) == (clientKey == null || clientKey.isBlank()))
             throw new InvalidEdgeRequestException("child identity is invalid");
         if (ref != null) node.put(refName, ref.toString());

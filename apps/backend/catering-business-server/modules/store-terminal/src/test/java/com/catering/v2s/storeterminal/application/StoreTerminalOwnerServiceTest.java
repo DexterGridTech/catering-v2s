@@ -37,6 +37,7 @@ import com.catering.v2s.storeterminal.persistence.StoreTerminalOwnerPersistence;
 import com.catering.v2s.storeterminal.persistence.StoreTerminalOwnerPersistence.TerminalRow;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -140,6 +141,69 @@ class StoreTerminalOwnerServiceTest {
         Set<String> receiptFields = new java.util.HashSet<>();
         response.fieldNames().forEachRemaining(receiptFields::add);
         assertEquals(Set.of("terminalRef", "version", "status"), receiptFields);
+    }
+
+    @Test
+    void auditConfigurationSummaryUsesReferenceNamesAndGeneratedLabels() throws Exception {
+        OwnerHarness harness = ownerHarness(() -> "87654321");
+        when(harness.persistence()
+                        .insert(
+                                any(UUID.class),
+                                eq(WORKSPACE),
+                                eq(GROUP_KEY),
+                                eq(STORE),
+                                eq("带范围终端"),
+                                eq("带范围终端"),
+                                eq("laptop"),
+                                eq("00123456"),
+                                anyString(),
+                                anyLong()))
+                .thenReturn(true);
+        when(harness.servicePoints().readAreasByRefs(WORKSPACE, GROUP_KEY, STORE, List.of(AREA)))
+                .thenReturn(List.of(new StoreServicePointOwnerApi.AreaReference(
+                        AREA, STORE, "大厅桌台区", "TABLE-MAIN", "TABLE_AREA", "ENABLED")));
+        JsonNode configuration = harness.json()
+                .readTree(
+                        """
+                {
+                  "printers": [],
+                  "functions": [{
+                    "clientKey": "cashier",
+                    "functionKey": "ORDERING_CASHIER",
+                    "ranges": [{
+                      "key": "TABLE_AREA",
+                      "all": false,
+                      "refs": ["00000000-0000-0000-0000-000000000005"]
+                    }],
+                    "scenes": []
+                  }]
+                }
+                """);
+
+        harness.service()
+                .createTerminal(new CreateCommand(
+                        WORKSPACE,
+                        GROUP_KEY,
+                        STORE,
+                        "带范围终端",
+                        "laptop",
+                        ActivationCode.of("00123456"),
+                        configuration,
+                        "terminal-audit-summary-0001",
+                        AuditActor.system(),
+                        grant()));
+
+        ArgumentCaptor<AuditEvent> audit = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(harness.auditEvents()).write(audit.capture());
+        String summary = audit.getValue().changes().stream()
+                .filter(change -> change.fieldKey().equals("ranges"))
+                .map(AuditChange::afterValue)
+                .findFirst()
+                .orElseThrow();
+        assertTrue(summary.contains("大厅桌台区（TABLE-MAIN）"));
+        assertTrue(summary.contains("桌台区"));
+        assertFalse(summary.contains(AREA.toString()));
+        assertFalse(summary.contains("TABLE_AREA"));
     }
 
     @Test
@@ -326,16 +390,17 @@ class StoreTerminalOwnerServiceTest {
     @Test
     void invalidConfigurationIsMappedToTypedOwnerFailureBeforeWrite() throws Exception {
         OwnerHarness harness = ownerHarness(() -> "87654321");
-        JsonNode invalidConfiguration = harness.json().readTree("""
+        JsonNode invalidConfiguration = harness.json()
+                .readTree(
+                        """
                 {
                   "printers": [],
                   "functions": []
                 }
                 """);
 
-        assertThrows(
-                StoreTerminalOwnerService.InvalidTerminalRequestException.class,
-                () -> harness.service().createTerminal(new CreateCommand(
+        assertThrows(StoreTerminalOwnerService.InvalidTerminalRequestException.class, () -> harness.service()
+                .createTerminal(new CreateCommand(
                         WORKSPACE,
                         GROUP_KEY,
                         STORE,
@@ -348,7 +413,17 @@ class StoreTerminalOwnerServiceTest {
                         grant())));
 
         verify(harness.persistence(), never())
-                .insert(any(UUID.class), any(UUID.class), anyString(), any(UUID.class), anyString(), anyString(), anyString(), anyString(), anyString(), anyLong());
+                .insert(
+                        any(UUID.class),
+                        any(UUID.class),
+                        anyString(),
+                        any(UUID.class),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyLong());
         verify(harness.persistence(), never())
                 .insertReceipt(any(UUID.class), anyString(), anyString(), anyString(), anyString(), anyLong());
         verifyNoInteractions(harness.auditEvents());
@@ -357,7 +432,9 @@ class StoreTerminalOwnerServiceTest {
     @Test
     void invalidPrinterRuleIsMappedToTypedOwnerFailureBeforeWrite() throws Exception {
         OwnerHarness harness = ownerHarness(() -> "87654321");
-        JsonNode invalidConfiguration = harness.json().readTree("""
+        JsonNode invalidConfiguration = harness.json()
+                .readTree(
+                        """
                 {
                   "printers": [{
                     "clientKey": "printer-1",
@@ -376,9 +453,8 @@ class StoreTerminalOwnerServiceTest {
                 }
                 """);
 
-        assertThrows(
-                StoreTerminalOwnerService.InvalidTerminalRequestException.class,
-                () -> harness.service().createTerminal(new CreateCommand(
+        assertThrows(StoreTerminalOwnerService.InvalidTerminalRequestException.class, () -> harness.service()
+                .createTerminal(new CreateCommand(
                         WORKSPACE,
                         GROUP_KEY,
                         STORE,
@@ -391,7 +467,17 @@ class StoreTerminalOwnerServiceTest {
                         grant())));
 
         verify(harness.persistence(), never())
-                .insert(any(UUID.class), any(UUID.class), anyString(), any(UUID.class), anyString(), anyString(), anyString(), anyString(), anyString(), anyLong());
+                .insert(
+                        any(UUID.class),
+                        any(UUID.class),
+                        anyString(),
+                        any(UUID.class),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyLong());
         verify(harness.persistence(), never())
                 .insertReceipt(any(UUID.class), anyString(), anyString(), anyString(), anyString(), anyLong());
         verifyNoInteractions(harness.auditEvents());
@@ -550,6 +636,63 @@ class StoreTerminalOwnerServiceTest {
         assertFalse(responseJson.getValue().contains("01234567"));
         assertFalse(requestHash.getValue().contains("01234567"));
         verifyNoInteractions(catalogScopes);
+    }
+
+    @Test
+    void existingFunctionRefCannotChangeTypeAndDoesNotWrite() throws Exception {
+        OwnerHarness harness = ownerHarness(() -> "87654321");
+        when(harness.persistence().findReceipt(WORKSPACE, GROUP_KEY, "terminal-function-type-change-0001"))
+                .thenReturn(null);
+        when(harness.persistence().lock(WORKSPACE, GROUP_KEY, STORE, TERMINAL))
+                .thenReturn(new TerminalRow(
+                        TERMINAL,
+                        WORKSPACE,
+                        GROUP_KEY,
+                        STORE,
+                        "收银台",
+                        "收银台",
+                        "laptop",
+                        "ENABLED",
+                        1,
+                        "01234567",
+                        REPLACE_CONFIGURATION,
+                        NOW - 1,
+                        NOW - 1));
+
+        JsonNode changed = harness.json().readTree(REPLACE_CONFIGURATION);
+        ((ObjectNode) changed.path("functions").get(0)).put("functionKey", "KDS");
+
+        assertThrows(
+                StoreTerminalOwnerService.InvalidTerminalRequestException.class,
+                () -> harness.service()
+                        .replaceTerminal(new ReplaceCommand(
+                                WORKSPACE,
+                                GROUP_KEY,
+                                STORE,
+                                TERMINAL,
+                                "收银台",
+                                "laptop",
+                                changed,
+                                1,
+                                "terminal-function-type-change-0001",
+                                AuditActor.system(),
+                                grant())));
+
+        verify(harness.persistence(), never())
+                .replace(
+                        any(UUID.class),
+                        anyString(),
+                        any(UUID.class),
+                        any(UUID.class),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyLong(),
+                        anyLong());
+        verify(harness.persistence(), never())
+                .insertReceipt(any(UUID.class), anyString(), anyString(), anyString(), anyString(), anyLong());
+        verifyNoInteractions(harness.auditEvents());
     }
 
     private static OwnerHarness ownerHarness(ActivationCodeCandidateSource candidateSource) {

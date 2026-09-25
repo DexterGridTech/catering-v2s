@@ -15,7 +15,8 @@ public interface StoreServicePointAssetLifecycle {
             UUID assetRef,
             String bindGrant);
 
-    void releaseActive(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID servicePointRef, UUID assetRef);
+    void releaseActive(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID servicePointRef, UUID assetRef);
 
     record AssetClaim(UUID assetRef, String usage, String status, long version, long sizeBytes) {}
 }

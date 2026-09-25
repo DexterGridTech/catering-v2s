@@ -1,0 +1,271 @@
+{
+  "items": {
+    "servicePackagingFee": {
+      "shapeKey": "SERVICE",
+      "catalogItemCode": "FEE-PACKAGING-001",
+      "name": "打包服务费",
+      "shortName": "打包服务费",
+      "categoryKey": "SERVICE",
+      "salesUnitKey": "PIECE",
+      "description": "外卖和自提订单的打包服务费，用于服务/费用商品场景。",
+      "standardSalePriceCents": 200,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "packagingService"
+    },
+    "serviceCutleryFee": {
+      "shapeKey": "SERVICE",
+      "catalogItemCode": "FEE-CUTLERY-001",
+      "name": "餐具费",
+      "shortName": "餐具费",
+      "categoryKey": "SERVICE",
+      "salesUnitKey": "PIECE",
+      "description": "顾客选择额外餐具时收取。",
+      "standardSalePriceCents": 100,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "takeawayBox"
+    },
+    "serviceCorkageFee": {
+      "shapeKey": "SERVICE",
+      "catalogItemCode": "FEE-CORKAGE-001",
+      "name": "开瓶服务费",
+      "shortName": "开瓶服务费",
+      "categoryKey": "SERVICE",
+      "salesUnitKey": "PIECE",
+      "description": "晚餐堂食开瓶服务费。",
+      "standardSalePriceCents": 5800,
+      "inventoryBomRules": [],
+      "mediaAssetKey": "packagingService"
+    },
+    "benefitStoredValueCard": {
+      "shapeKey": "BENEFIT_SHELL",
+      "catalogItemCode": "BENEFIT-MEMBER-VOUCHER-001",
+      "name": "会员餐券",
+      "shortName": "会员餐券",
+      "categoryKey": "BENEFIT",
+      "salesUnitKey": "PIECE",
+      "description": "会员权益/券壳商品，用于验证权益商品不参与库存。",
+      "standardSalePriceCents": 10000,
+      "benefitTargetRef": "benefit-sales-target-member-voucher-001",
+      "inventoryBomRules": [],
+      "mediaAssetKey": "memberVoucher"
+    },
+    "sourceCompositeItem": {
+      "shapeKey": "COMPOSITE",
+      "catalogItemCode": "COMBO-KIDS-BREAKFAST-001",
+      "name": "儿童套餐",
+      "shortName": "儿童套餐",
+      "categoryKey": "COMBO",
+      "salesUnitKey": "SET",
+      "description": "儿童套餐，用于验证商品型套餐和菜单套餐场景。",
+      "standardSalePriceCents": 5800,
+      "compositeStructure": {
+        "enabled": true,
+        "componentGroups": [
+          {
+            "groupName": "主食",
+            "selectionRule": "FIXED",
+            "minSelections": 1,
+            "maxSelections": 1,
+            "components": [
+              {
+                "componentFixtureKey": "standardPearlMilk",
+                "quantity": 1,
+                "defaultSelected": true,
+                "standardExtraPriceCents": 0
+              }
+            ]
+          },
+          {
+            "groupName": "饮品选择",
+            "selectionRule": "SINGLE",
+            "minSelections": 1,
+            "maxSelections": 1,
+            "components": [
+              {
+                "componentFixtureKey": "bevLemonade",
+                "quantity": 1,
+                "defaultSelected": true,
+                "standardExtraPriceCents": 0
+              },
+              {
+                "componentFixtureKey": "bevAmericano",
+                "quantity": 1,
+                "defaultSelected": false,
+                "standardExtraPriceCents": 800
+              }
+            ]
+          }
+        ]
+      },
+      "inventoryBomRules": [],
+      "mediaAssetKey": "kidsCombo"
+    },
+    "compositeItem": {
+      "shapeKey": "COMPOSITE",
+      "catalogItemCode": "COMBO-WORKDAY-LUNCH-001",
+      "name": "工作日午餐套餐",
+      "shortName": "工作日午餐套餐",
+      "categoryKey": "COMBO",
+      "salesUnitKey": "SET",
+      "description": "工作日午餐套餐，用于验证商品型套餐和菜单套餐场景。",
+      "standardSalePriceCents": 9800,
+      "compositeStructure": {
+        "enabled": true,
+        "componentGroups": [
+          {
+            "groupName": "午餐主菜",
+            "selectionRule": "SINGLE",
+            "minSelections": 1,
+            "maxSelections": 1,
+            "components": [
+              {
+                "componentFixtureKey": "pastaTomato",
+                "quantity": 1,
+                "defaultSelected": true,
+                "standardExtraPriceCents": 0
+              },
+              {
+                "componentFixtureKey": "mainChicken",
+                "quantity": 1,
+                "defaultSelected": false,
+                "standardExtraPriceCents": 1200
+              }
+            ]
+          },
+          {
+            "groupName": "汤或沙拉",
+            "selectionRule": "SINGLE",
+            "minSelections": 1,
+            "maxSelections": 1,
+            "components": [
+              {
+                "componentFixtureKey": "soupMushroom",
+                "quantity": 1,
+                "defaultSelected": true,
+                "standardExtraPriceCents": 0
+              },
+              {
+                "componentFixtureKey": "sideMixedSalad",
+                "quantity": 1,
+                "defaultSelected": false,
+                "standardExtraPriceCents": 0
+              }
+            ]
+          }
+        ]
+      },
+      "inventoryBomRules": [],
+      "mediaAssetKey": "lunchCombo"
+    },
+    "comboDinnerForTwo": {
+      "shapeKey": "COMPOSITE",
+      "catalogItemCode": "COMBO-DINNER-FOR-TWO-001",
+      "name": "双人晚餐套餐",
+      "shortName": "双人晚餐套餐",
+      "categoryKey": "COMBO",
+      "salesUnitKey": "SET",
+      "description": "双人晚餐套餐，用于验证商品型套餐和菜单套餐场景。",
+      "standardSalePriceCents": 26800,
+      "compositeStructure": {
+        "enabled": true,
+        "componentGroups": [
+          {
+            "groupName": "双人主菜",
+            "selectionRule": "FIXED",
+            "minSelections": 2,
+            "maxSelections": 2,
+            "components": [
+              {
+                "componentFixtureKey": "skuManagedItem",
+                "componentSkuRef": "sku-steak-medium",
+                "quantity": 1,
+                "defaultSelected": true,
+                "standardExtraPriceCents": 0
+              },
+              {
+                "componentFixtureKey": "mainSalmon",
+                "quantity": 1,
+                "defaultSelected": true,
+                "standardExtraPriceCents": 0
+              }
+            ]
+          },
+          {
+            "groupName": "甜品",
+            "selectionRule": "SINGLE",
+            "minSelections": 1,
+            "maxSelections": 1,
+            "components": [
+              {
+                "componentFixtureKey": "dessertTiramisu",
+                "quantity": 1,
+                "defaultSelected": true,
+                "standardExtraPriceCents": 0
+              },
+              {
+                "componentFixtureKey": "dessertCheesecake",
+                "quantity": 1,
+                "defaultSelected": false,
+                "standardExtraPriceCents": 600
+              }
+            ]
+          }
+        ]
+      },
+      "inventoryBomRules": [],
+      "mediaAssetKey": "dinnerCombo"
+    },
+    "comboTakeoutFamily": {
+      "shapeKey": "COMPOSITE",
+      "catalogItemCode": "COMBO-TAKEOUT-FAMILY-001",
+      "name": "外卖家庭分享套餐",
+      "shortName": "外卖家庭分享套餐",
+      "categoryKey": "COMBO",
+      "salesUnitKey": "SET",
+      "description": "外卖家庭分享套餐，用于验证商品型套餐和菜单套餐场景。",
+      "standardSalePriceCents": 18800,
+      "compositeStructure": {
+        "enabled": true,
+        "componentGroups": [
+          {
+            "groupName": "分享主食",
+            "selectionRule": "FIXED",
+            "minSelections": 2,
+            "maxSelections": 2,
+            "components": [
+              {
+                "componentFixtureKey": "skuManagedCopyTarget",
+                "componentSkuRef": "sku-pizza-12",
+                "quantity": 1,
+                "defaultSelected": true,
+                "standardExtraPriceCents": 0
+              },
+              {
+                "componentFixtureKey": "pastaMushroom",
+                "quantity": 1,
+                "defaultSelected": true,
+                "standardExtraPriceCents": 0
+              }
+            ]
+          },
+          {
+            "groupName": "外卖包装",
+            "selectionRule": "FIXED",
+            "minSelections": 1,
+            "maxSelections": 1,
+            "components": [
+              {
+                "componentFixtureKey": "servicePackagingFee",
+                "quantity": 1,
+                "defaultSelected": true,
+                "standardExtraPriceCents": 0
+              }
+            ]
+          }
+        ]
+      },
+      "inventoryBomRules": [],
+      "mediaAssetKey": "dinnerCombo"
+    }
+  }
+}

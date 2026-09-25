@@ -1,8 +1,8 @@
 package com.catering.v2s.platform.foundation.persistence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -14,8 +14,12 @@ class CommandReceiptSupportTest {
     void hashesAndSerializesAtTheSharedBoundary() {
         String hash = CommandReceiptSupport.requestHash("{\"a\":1}");
         assertEquals("015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862", hash);
-        assertEquals("{\"value\":\"ok\"}", CommandReceiptSupport.serialize(mapper, new Value("ok"), "serialize failed"));
-        assertEquals("ok", CommandReceiptSupport.deserialize(mapper, "{\"value\":\"ok\"}", Value.class, "deserialize failed").value());
+        assertEquals(
+                "{\"value\":\"ok\"}", CommandReceiptSupport.serialize(mapper, new Value("ok"), "serialize failed"));
+        assertEquals(
+                "ok",
+                CommandReceiptSupport.deserialize(mapper, "{\"value\":\"ok\"}", Value.class, "deserialize failed")
+                        .value());
     }
 
     @Test

@@ -149,7 +149,7 @@ describe('store service point QR presentation boundary', () => {
       expect(start, operationId).toBeGreaterThanOrEqual(0);
       expect(end, operationId).toBeGreaterThan(start);
       const endpoint = operationsRtkSource.slice(start, end);
-      expect(endpoint, operationId).toContain('resolveStoreServicePointTags');
+      expect(endpoint, operationId).toContain('resolveWireTags');
       expect(endpoint, operationId).not.toContain('id: "LIST"');
     }
   });

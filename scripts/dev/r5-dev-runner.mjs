@@ -106,7 +106,32 @@ export async function syncRemoteSource(host, remoteRoot) {
     'mkdir -p "$root/workspace" "$root/results"',
     'chmod 700 "$root" "$root/workspace" "$root/results"',
   ].join('\n'));
-  const source = spawn('tar', ['--exclude=.git', '--exclude=.runtime', '--exclude=.gradle', '--exclude=.yarn', '--exclude=node_modules', '--exclude=build', '--exclude=*/build', '-C', root, '-czf', '-', '.'], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']});
+  const source = spawn(
+    'tar',
+    [
+      '--exclude=.git',
+      '--exclude=.runtime',
+      '--exclude=.gradle',
+      '--exclude=.yarn',
+      '--exclude=node_modules',
+      '--exclude=*/node_modules',
+      '--exclude=build',
+      '--exclude=*/build',
+      '--exclude=*/.gradle',
+      '--exclude=doc/evidence',
+      '--exclude=apps/terminal',
+      '--no-xattrs',
+      '--no-fflags',
+      '--no-acls',
+      '--no-mac-metadata',
+      '-C',
+      root,
+      '-czf',
+      '-',
+      '.',
+    ],
+    {cwd: root, stdio: ['ignore', 'pipe', 'pipe'], env: {...process.env, COPYFILE_DISABLE: '1'}},
+  );
   const upload = spawn('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', host, `tar -xzf - -C ${quote(`${remoteRoot}/workspace`)}`], {cwd: root, stdio: ['pipe', 'ignore', 'pipe']});
   let diagnostics = '';
   source.stderr.setEncoding('utf8').on('data', (chunk) => { diagnostics += chunk; });
@@ -237,7 +262,10 @@ export async function startRemoteJava(
     'chmod 600 "$env_file"',
     'printf \'%s\\n\' \'{"phase":"STARTING"}\' > "$phase_file"',
     'chmod 600 "$phase_file" "$log_file" 2>/dev/null || true',
-    '( cd "$workspace"; set -a; . "$env_file"; set +a; exec ./gradlew --no-daemon :apps:backend:catering-business-server:bootRun ) > "$log_file" 2>&1 < /dev/null &',
+    // The remote command is launched through a short-lived SSH shell.  Keep
+    // the exact managed process identity, but make the Spring/Gradle process
+    // immune to the SSH session closing after readiness has been reported.
+    '( cd "$workspace"; set -a; . "$env_file"; set +a; exec nohup ./gradlew --no-daemon :apps:backend:catering-business-server:bootRun ) > "$log_file" 2>&1 < /dev/null &',
     'pid=$!',
     'sleep 1',
     'test -r "/proc/$pid/stat"',
@@ -276,6 +304,7 @@ export function remoteJavaReadiness(host, control) {
   const output = remoteExec(host, [
     'set -euo pipefail',
     `root=${quote(control.remoteRoot)}`,
+    `http_port=${quote(String(control.httpPort))}`,
     `pid=${control.pid}`,
     `expected_pgid=${control.pgid}`,
     `expected_boot_id=${quote(control.bootId)}`,
@@ -289,9 +318,28 @@ export function remoteJavaReadiness(host, control) {
     'actual_command_sha256=$(printf "%s" "$actual_command_line" | sha256sum | awk \'{print $1}\')',
     'test "$actual_pgid" = "$expected_pgid" -a "$actual_boot_id" = "$expected_boot_id" -a "$actual_start_ticks" = "$expected_start_ticks" -a "$actual_command_sha256" = "$expected_command_sha256"',
     'if grep -Fq "Started CateringV2sApplication" "$root/results/business-server.log"; then ready=true; else ready=false; fi',
-    'printf \'%s\\n\' "{\\"pid\\":$pid,\\"pgid\\":$actual_pgid,\\"bootId\\":\\"$actual_boot_id\\",\\"processStartTicks\\":$actual_start_ticks,\\"commandSha256\\":\\"$actual_command_sha256\\",\\"remoteRoot\\":\\"$root\\",\\"readyMarkerSeen\\":$ready}"',
+    'if ss -ltnH "sport = :$http_port" | grep -q .; then listener=true; else listener=false; fi',
+    'printf \'%s\\n\' "{\\"pid\\":$pid,\\"pgid\\":$actual_pgid,\\"bootId\\":\\"$actual_boot_id\\",\\"processStartTicks\\":$actual_start_ticks,\\"commandSha256\\":\\"$actual_command_sha256\\",\\"remoteRoot\\":\\"$root\\",\\"readyMarkerSeen\\":$ready,\\"listenerReady\\":$listener}"',
   ].join('\n'));
   return JSON.parse(output.trim());
+}
+export function remoteJavaStartupFailure(host, control) {
+  validateRemoteJavaControl(control);
+  let output;
+  try {
+    output = remoteExec(host, [
+      'set -euo pipefail',
+      `root=${quote(control.remoteRoot)}`,
+      `pid=${control.pid}`,
+      `log_file=${quote(control.logPath)}`,
+      'test -r "$log_file"',
+      'if grep -Eq "APPLICATION FAILED TO START|BUILD FAILED|Web server failed to start" "$log_file"; then printf \'%s\\n\' APPLICATION_STARTUP_FAILED; elif ! test -r "/proc/$pid/stat"; then printf \'%s\\n\' REMOTE_PROCESS_EXITED; else printf \'%s\\n\' NONE; fi',
+    ].join('\n'));
+  } catch {
+    return null;
+  }
+  const marker = output.trim();
+  return marker === 'NONE' || marker === '' ? null : marker;
 }
 export async function stopRemoteJava(host, control) {
   validateRemoteJavaControl(control);
@@ -683,9 +731,13 @@ export async function waitForRemoteBusinessReady(host, control, progressPath) {
     let probeError = null;
     try { probe = remoteJavaReadiness(host, control); } catch (error) { probeError = safeFailure(error); }
     const identity = probe ? remoteIdentityMatches(control, probe) : false;
-    appendFileSync(progressPath, `${JSON.stringify({at: new Date().toISOString(), phase: 'REMOTE_BUSINESS_SERVER_READINESS_PROBE', attempt: attempts, pid: control.pid, identityValid: identity, readyMarkerSeen: probe?.readyMarkerSeen === true, error: probeError})}\n`, {mode: 0o600});
+    appendFileSync(progressPath, `${JSON.stringify({at: new Date().toISOString(), phase: 'REMOTE_BUSINESS_SERVER_READINESS_PROBE', attempt: attempts, pid: control.pid, identityValid: identity, readyMarkerSeen: probe?.readyMarkerSeen === true, listenerReady: probe?.listenerReady === true, error: probeError})}\n`, {mode: 0o600});
     if (probe && !identity) fail('REMOTE_BUSINESS_SERVER_IDENTITY_DRIFT');
-    if (probe?.readyMarkerSeen === true) return {attempts, readiness: 'REMOTE_JAVA_SPRING_BOOT_STARTED_AFTER_FLYWAY', progressPath, remoteIdentity: probe};
+    if (probeError) {
+      const startupFailure = remoteJavaStartupFailure(host, control);
+      if (startupFailure) fail(`REMOTE_BUSINESS_SERVER_STARTUP_FAILED:${startupFailure}`);
+    }
+    if (probe?.readyMarkerSeen === true && probe?.listenerReady === true) return {attempts, readiness: 'REMOTE_JAVA_SPRING_BOOT_STARTED_AFTER_FLYWAY', progressPath, remoteIdentity: probe};
     await delay(1_000);
   }
   fail('REMOTE_BUSINESS_SERVER_READINESS_TIMEOUT');

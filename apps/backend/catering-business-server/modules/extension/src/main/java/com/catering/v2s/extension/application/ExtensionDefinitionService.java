@@ -49,6 +49,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
     private final ExtensionCommandReceiptService receipts;
     private final PlatformGovernanceAuthorization platformAuthorization;
     private final WorkspaceStatusLookup workspaceStatuses;
+
     @Autowired
     public ExtensionDefinitionService(
             ExtensionDefinitionPersistence persistence,
@@ -225,11 +226,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             if (expectedVersion != 0) throw new DefinitionVersionConflictException();
             nextVersion = 1;
             try {
-                persistence.insertDefinition(
-                        workspaceUuid,
-                        groupWorkspaceKey,
-                        hostType,
-                        json(normalized));
+                persistence.insertDefinition(workspaceUuid, groupWorkspaceKey, hostType, json(normalized));
             } catch (DuplicateKeyException conflict) {
                 throw new DefinitionVersionConflictException(conflict);
             }
@@ -244,12 +241,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                 throw new DefinitionInvalidException();
             nextVersion = expectedVersion + 1;
             int updated = persistence.updateDefinition(
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    hostType,
-                    json(normalized),
-                    nextVersion,
-                    expectedVersion);
+                    workspaceUuid, groupWorkspaceKey, hostType, json(normalized), nextVersion, expectedVersion);
             if (updated != 1) throw new DefinitionVersionConflictException();
         }
         audit(workspaceUuid, groupWorkspaceKey, hostType, existing, nextVersion, beforeFields, normalized, actor);
@@ -416,12 +408,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                 .filter(change -> !Objects.equals(change.beforeValue(), change.afterValue()))
                 .toList();
         persistence.writeAudit(
-                workspaceUuid,
-                groupWorkspaceKey,
-                hostType,
-                hostType,
-                actor,
-                auditJson(policy.allow(changes)));
+                workspaceUuid, groupWorkspaceKey, hostType, hostType, actor, auditJson(policy.allow(changes)));
     }
 
     private static String summarize(List<?> fields) {

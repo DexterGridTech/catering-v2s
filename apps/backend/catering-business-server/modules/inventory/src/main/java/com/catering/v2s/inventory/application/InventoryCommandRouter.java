@@ -9,7 +9,6 @@ import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -77,18 +76,19 @@ public class InventoryCommandRouter {
         JsonNode replay = target.legacyReplay(dataNodeRef, key, operationId, receiptRequest);
         if (replay != null) return replay;
         try (var command = OwnerOperationDiagnostics.beginCommand()) {
-            JsonNode result = switch (operationId) {
-                case "countOperationsInventoryTarget" -> target.legacyAdjust(
-                        dataNodeRef, brandRef, requestId, request, "COUNT");
-                case "increaseOperationsInventoryTarget" -> target.legacyAdjust(
-                        dataNodeRef, brandRef, requestId, request, "INCREASE");
-                case "adjustOperationsInventoryTarget" -> target.legacyAdjust(
-                        dataNodeRef, brandRef, requestId, request, "ADJUST");
-                case "updateOperationsInventoryTargetConfiguration" -> target.legacyUpdateConfiguration(
-                        dataNodeRef, brandRef, requestId, request);
-                default -> throw new InventoryOwnerApi.Problem(
-                        "VALIDATION_ERROR", 422, "inventory write operation is not registered");
-            };
+            JsonNode result =
+                    switch (operationId) {
+                        case "countOperationsInventoryTarget" -> target.legacyAdjust(
+                                dataNodeRef, brandRef, requestId, request, "COUNT");
+                        case "increaseOperationsInventoryTarget" -> target.legacyAdjust(
+                                dataNodeRef, brandRef, requestId, request, "INCREASE");
+                        case "adjustOperationsInventoryTarget" -> target.legacyAdjust(
+                                dataNodeRef, brandRef, requestId, request, "ADJUST");
+                        case "updateOperationsInventoryTargetConfiguration" -> target.legacyUpdateConfiguration(
+                                dataNodeRef, brandRef, requestId, request);
+                        default -> throw new InventoryOwnerApi.Problem(
+                                "VALIDATION_ERROR", 422, "inventory write operation is not registered");
+                    };
             target.legacySaveReceipt(dataNodeRef, key, operationId, receiptRequest, result);
             return result;
         }

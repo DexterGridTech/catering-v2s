@@ -54,7 +54,9 @@ class OperationsOrganizationTaskReadServiceTest {
                         "NAME",
                         "ASC",
                         1,
-                        20))
+                        20,
+                        null,
+                        null))
                 .thenReturn(expected);
 
         assertSame(
@@ -70,7 +72,9 @@ class OperationsOrganizationTaskReadServiceTest {
                         "NAME",
                         "ASC",
                         1,
-                        20));
+                        20,
+                        null,
+                        null));
 
         verify(entities)
                 .pageEntities(
@@ -85,7 +89,9 @@ class OperationsOrganizationTaskReadServiceTest {
                         "NAME",
                         "ASC",
                         1,
-                        20);
+                        20,
+                        null,
+                        null);
     }
 
     @Test

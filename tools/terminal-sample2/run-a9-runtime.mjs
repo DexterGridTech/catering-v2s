@@ -4,7 +4,7 @@ import {spawn, spawnSync} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
-const assemblyRoot = path.join(repositoryRoot, 'apps/terminal/assembly/android/sample-wallpaper-terminal')
+const applicationRoot = path.join(repositoryRoot, 'apps/terminal/application/android/sample-wallpaper-terminal')
 const packageName = 'com.catering.v2s.terminal.samplewallpaper'
 const defaultSerial = process.env.TER_SAMPLE2_A9_SERIAL ?? 'emulator-5556'
 const defaultPort = Number(process.env.TER_SAMPLE2_A9_PORT ?? 8081)
@@ -74,7 +74,7 @@ const stopMetro = async state => {
 fs.mkdirSync(outputDirectory, {recursive: true})
 const mutations = [
   [
-    path.join(assemblyRoot, 'App.tsx'),
+    path.join(applicationRoot, 'App.tsx'),
     source => replaceExactly(
       source,
       'renderSurface={(assembly, nextDisplayIndex) => createSurfaceForDisplayIndex(assembly, nextDisplayIndex)}',
@@ -105,7 +105,7 @@ try {
     fs.writeFileSync(filePath, mutate(original))
   }
 
-  state.process = spawn('yarn', ['--cwd', assemblyRoot, 'start', '--port', String(port)], {
+  state.process = spawn('yarn', ['--cwd', applicationRoot, 'start', '--port', String(port)], {
     cwd: repositoryRoot,
     stdio: ['ignore', 'pipe', 'pipe'],
   })

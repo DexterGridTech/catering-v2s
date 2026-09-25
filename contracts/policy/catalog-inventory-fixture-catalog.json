@@ -7609,7 +7609,7 @@
       "compositeRelationRequirement": "ENABLED_TARGET_ITEM_AND_SKU"
     },
     "fullCatalogParity": {
-      "sourceDirectory": "../catering-server-v4/contracts/fixtures/formal-uat/complex-scenario/catalog/items",
+      "sourceDirectory": "contracts/policy/catalog-inventory-source/items",
       "expectedCatalogItemCount": 73,
       "expectedMediaAssetCount": 34,
       "requiredIn": "P4",
@@ -7659,5 +7659,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "1255a17242958a24b6a0c1736abb3685499d47d2e4ddb16c59865b9d36663d31"
+  "fixtureDigest": "f8d4c54e236c939bcb9717acca99e4c6eb7090b6d96ce73a9137086fbe103412"
 }

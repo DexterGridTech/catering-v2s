@@ -61,7 +61,8 @@ public class WorkspaceAdministrationPersistence {
                 request.status(),
                 request.pageSize(),
                 request.offset());
-        List<WorkspaceAdministrationReadback> items = rows.stream().map(PageRow::workspace).toList();
+        List<WorkspaceAdministrationReadback> items =
+                rows.stream().map(PageRow::workspace).toList();
         long total = rows.isEmpty() ? 0L : rows.getFirst().total();
         return new PageResult(items, total);
     }
@@ -106,8 +107,7 @@ public class WorkspaceAdministrationPersistence {
         return rows.stream().findFirst();
     }
 
-    public int transitionStatus(
-            String status, long now, String groupWorkspaceKey, long expectedVersion) {
+    public int transitionStatus(String status, long now, String groupWorkspaceKey, long expectedVersion) {
         return jdbc.update(
                 WorkspaceAdministrationServiceSql.TRANSITION_STATUS,
                 status,
@@ -119,10 +119,7 @@ public class WorkspaceAdministrationPersistence {
 
     public Long findLegacyId(UUID workspaceUuid, String groupWorkspaceKey) {
         return jdbc.queryForObject(
-                WorkspaceAdministrationServiceSql.LEGACY_ID,
-                Long.class,
-                workspaceUuid,
-                groupWorkspaceKey);
+                WorkspaceAdministrationServiceSql.LEGACY_ID, Long.class, workspaceUuid, groupWorkspaceKey);
     }
 
     public void insertAudit(
@@ -171,7 +168,9 @@ public class WorkspaceAdministrationPersistence {
                     case "UPDATED_AT" -> WorkspaceAdministrationServiceSql.WORKSPACE_UPDATED_AT_ORDER;
                     default -> throw new IllegalArgumentException("invalid workspace sort key");
                 };
-        return column + WorkspaceAdministrationServiceSql.SQL_SPACE + sortDirection
+        return column
+                + WorkspaceAdministrationServiceSql.SQL_SPACE
+                + sortDirection
                 + WorkspaceAdministrationServiceSql.ORDER_BY_STABLE_SUFFIX;
     }
 

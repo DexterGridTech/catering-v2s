@@ -10,7 +10,7 @@ const packageName = 'com.catering.v2s.terminal.samplewallpaper'
 const activity = `${packageName}/.MainActivity`
 const apk = path.join(
   repositoryRoot,
-  'apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk',
+  'apps/terminal/application/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk',
 )
 const defaultOutput = path.join(
   repositoryRoot,

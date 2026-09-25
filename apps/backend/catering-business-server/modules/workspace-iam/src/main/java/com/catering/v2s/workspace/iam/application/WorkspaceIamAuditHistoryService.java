@@ -1,10 +1,9 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspaceIamAuditHistoryPersistence;
 import com.catering.v2s.audit.contract.*;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceIamAuditHistoryPersistence;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -133,8 +132,8 @@ public class WorkspaceIamAuditHistoryService {
         if (page < 1 || pageSize < 1 || pageSize > 100)
             throw new IllegalArgumentException("unsupported workspace IAM audit target");
         long offset = Math.multiplyExact(page - 1, pageSize);
-        AuditHistoryResultSetReader.TargetProjection value = persistence.readPlatformProjection(
-                entityRef, scope, entityType, targetTable, pageSize, offset);
+        AuditHistoryResultSetReader.TargetProjection value =
+                persistence.readPlatformProjection(entityRef, scope, entityType, targetTable, pageSize, offset);
         if (!value.targetExists()) throw absent;
         return new AuditHistoryPage(value.items(), page, pageSize, value.total());
     }
@@ -152,11 +151,10 @@ public class WorkspaceIamAuditHistoryService {
                 || page < 1
                 || pageSize < 1
                 || pageSize > 100) throw new IllegalArgumentException("unsupported operations workspace audit target");
-        AuditHistoryResultSetReader.AuthorizedProjection value = persistence.readOperations(
-                facts, target, pageSize, (page - 1) * pageSize);
+        AuditHistoryResultSetReader.AuthorizedProjection value =
+                persistence.readOperations(facts, target, pageSize, (page - 1) * pageSize);
         if (!value.found()) throw absent(target.entityType());
         if (!value.authorized()) throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();
         return new AuditHistoryPage(value.items(), page, pageSize, value.total());
     }
-
 }

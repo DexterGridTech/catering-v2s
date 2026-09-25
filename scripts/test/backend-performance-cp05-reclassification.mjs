@@ -30,6 +30,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const EXPECTED_OPERATION_COUNT = BACKEND_PERFORMANCE_OPERATION_COUNTS.operations;
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 
+const requireThreeRunBaselineDecisionRef = value => {
+  if (typeof value !== 'string' || value.trim() === '') throw new Error('CP05_BASELINE_DECISION_REF_REQUIRED');
+  return value.trim();
+};
+
 const DEFAULT_REGISTRY_PATHS = Object.freeze([
   'apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json',
   'apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json',
@@ -464,10 +469,12 @@ const operationMetrics = ({
 export const reclassifyCurrentTree = ({
   repositoryRoot = root,
   runDirectories,
+  baselineDecisionRef,
   registryPaths = DEFAULT_REGISTRY_PATHS,
   controlledExceptionRecords = CONTROLLED_BUDGET_EXCEPTION_RECORDS,
 } = {}) => {
   if (!Array.isArray(runDirectories) || runDirectories.length !== 3) throw new Error('CP05_THREE_RUNS_REQUIRED');
+  const normalizedBaselineDecisionRef = requireThreeRunBaselineDecisionRef(baselineDecisionRef);
   const registry = loadPerformanceOperationRegistry({root: repositoryRoot, registryPaths});
   if (registry.length !== EXPECTED_OPERATION_COUNT) throw new Error(`CP05_REGISTRY_SIZE_INVALID:${registry.length}`);
   const runs = runDirectories.map(runDirectory => readRun({repositoryRoot, runDirectory, registry}));
@@ -563,7 +570,8 @@ export const reclassifyCurrentTree = ({
     categories,
     budget: {
       generated: false,
-      activation: 'NOT_YET_AUTHORIZED_BY_CP05;CP02_REQUIRES_REMEDIATED_SHAPE',
+      activation: 'AUTHORIZED_BY_THREE_RUN_BASELINE_DECISION',
+      baselineDecisionRef: normalizedBaselineDecisionRef,
       readyCount: budgetReady.length,
       blockedCount: budgetBlocked.length,
       adjustmentDiff: [],
@@ -722,17 +730,19 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToP
   try {
     const runDirectories = optionValues(process.argv.slice(2), '--run');
     const currentRunDirectory = optionValues(process.argv.slice(2), '--current-run')[0];
+    const baselineDecisionRef = optionValues(process.argv.slice(2), '--baseline-decision-ref')[0];
     const writeTarget = optionValues(process.argv.slice(2), '--write')[0];
     if (
       (runDirectories.length !== 3 && !currentRunDirectory) ||
       (runDirectories.length && currentRunDirectory) ||
+      (currentRunDirectory && baselineDecisionRef) ||
       writeTarget !== CP05_CALIBRATION_REPORT_PATH
     ) {
       throw new Error('CP05_RECLASSIFICATION_ARGUMENT_INVALID');
     }
     const report = currentRunDirectory
       ? reclassifyCurrentProgramResult({runDirectory: currentRunDirectory})
-      : reclassifyCurrentTree({runDirectories});
+      : reclassifyCurrentTree({runDirectories, baselineDecisionRef});
     const absoluteTarget = path.resolve(root, writeTarget);
     fs.mkdirSync(path.dirname(absoluteTarget), {recursive: true});
     fs.writeFileSync(absoluteTarget, `${JSON.stringify(report, null, 2)}\n`, {mode: 0o600});

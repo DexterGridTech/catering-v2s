@@ -1,6 +1,5 @@
 package com.catering.v2s.platform.asset.application;
 
-import com.catering.v2s.platform.asset.application.persistence.PlatformAssetPersistence;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.StoreServicePointAssetLifecycle;
 import com.catering.v2s.platform.asset.api.CatalogAssetCommandApi;
@@ -10,6 +9,7 @@ import com.catering.v2s.platform.asset.api.SalesMenuAssetReadApi;
 import com.catering.v2s.platform.asset.api.SalesMenuAssetTarget;
 import com.catering.v2s.platform.asset.api.SalesMenuAssetUsage;
 import com.catering.v2s.platform.asset.api.WorkspaceLogoAssetCommand;
+import com.catering.v2s.platform.asset.application.persistence.PlatformAssetPersistence;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
@@ -126,8 +126,7 @@ public class PlatformAssetService
             String expectedDigest) {
         if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank())
             throw new AssetInputInvalidException();
-        if (expectedDigest == null || !expectedDigest.matches("[a-f0-9]{64}"))
-            throw new AssetInputInvalidException();
+        if (expectedDigest == null || !expectedDigest.matches("[a-f0-9]{64}")) throw new AssetInputInvalidException();
         return stageContentResult(
                         "STORE_SERVICE_POINT_IMAGE",
                         contentType,
@@ -679,7 +678,11 @@ public class PlatformAssetService
                 persistence.activateCatalogAsset(assetRef, now, workspaceUuid, groupWorkspaceKey);
         if (activated == null) throw new AssetClaimRejectedException();
         return new AssetReadback(
-                activated.assetRef(), activated.usage(), activated.status(), activated.version(), activated.sizeBytes());
+                activated.assetRef(),
+                activated.usage(),
+                activated.status(),
+                activated.version(),
+                activated.sizeBytes());
     }
 
     @Override
@@ -702,10 +705,7 @@ public class PlatformAssetService
 
     @Transactional
     public AssetReadback releaseStagedStoreServicePointImage(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            UUID assetRef,
-            long expectedVersion) {
+            UUID workspaceUuid, String groupWorkspaceKey, UUID assetRef, long expectedVersion) {
         if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank() || assetRef == null)
             throw new AssetClaimRejectedException();
         AssetReadback current = require(assetRef);
@@ -745,20 +745,23 @@ public class PlatformAssetService
                 assetRef, servicePointRef, now, current.version(), workspaceUuid, groupWorkspaceKey);
         if (activated == null) throw new AssetClaimRejectedException();
         return new StoreServicePointAssetLifecycle.AssetClaim(
-                activated.assetRef(), activated.usage(), activated.status(), activated.version(), activated.sizeBytes());
+                activated.assetRef(),
+                activated.usage(),
+                activated.status(),
+                activated.version(),
+                activated.sizeBytes());
     }
 
     @Override
     @Transactional
     public void releaseActive(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            UUID storeRef,
-            UUID servicePointRef,
-            UUID assetRef) {
-        if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank()
-                || storeRef == null || servicePointRef == null || assetRef == null)
-            throw new AssetClaimRejectedException();
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID servicePointRef, UUID assetRef) {
+        if (workspaceUuid == null
+                || groupWorkspaceKey == null
+                || groupWorkspaceKey.isBlank()
+                || storeRef == null
+                || servicePointRef == null
+                || assetRef == null) throw new AssetClaimRejectedException();
         if (persistence.releaseActiveStoreServicePointImage(
                         time.currentEpochMillis(), assetRef, servicePointRef, workspaceUuid, groupWorkspaceKey)
                 != 1) throw new AssetClaimRejectedException();
@@ -1301,7 +1304,11 @@ public class PlatformAssetService
     }
 
     private static boolean sameCatalogContent(
-            PlatformAssetPersistence.ExistingAsset existing, String usage, String contentType, long sizeBytes, String sha256) {
+            PlatformAssetPersistence.ExistingAsset existing,
+            String usage,
+            String contentType,
+            long sizeBytes,
+            String sha256) {
         // Catalog images are referenceable by multiple business records and do not use the
         // one-time workspace-logo bind proof. Logo staging remains one asset/one live grant;
         // reusing it here would invalidate a concurrent caller's plaintext grant.
@@ -1498,7 +1505,12 @@ public class PlatformAssetService
     private SalesMenuAssetCommandApi.AssetMetadata activateSalesMenuAsset(
             UUID assetRef, SalesMenuAssetTarget target, long expectedVersion, long now) {
         SalesMenuAssetCommandApi.AssetMetadata activated = persistence.activateSalesMenuAsset(
-                assetRef, target.salesItemRef(), now, expectedVersion, target.workspaceUuid(), target.groupWorkspaceKey());
+                assetRef,
+                target.salesItemRef(),
+                now,
+                expectedVersion,
+                target.workspaceUuid(),
+                target.groupWorkspaceKey());
         if (activated == null) throw new AssetClaimRejectedException();
         return activated;
     }

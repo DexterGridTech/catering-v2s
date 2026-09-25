@@ -694,7 +694,7 @@ proof 可证明源码和渲染结构，真实打开菜单、点击菜单项、�
 | hook 依赖数组缺项         | `exhaustive-deps` 已设为 error,三处 fresh 跑 exit 0                                                                |
 | TS 逃逸                   | 1 个 `any`(测试)、3 个 `@ts-expect-error`(故意的负向断言)、**0 个 `@ts-ignore`/`eslint-disable`**                  |
 
-**`<StrictMode>` 缺失**归 `HANDOFF.md` 欠账(9 处 render 期写 ref 目前都幂等)。
+**`<StrictMode>` 缺失**归 `HANDOFF.md` 相关欠账（render 期写 ref 目前都幂等）。
 **`VITE_FRONTEND_LOG_SINK_URL` 未配置**同样归 `HANDOFF.md` —— 代码侧 WARN/ERROR 已无条件出网(`safeLogger.ts:117`)。
 
 ---

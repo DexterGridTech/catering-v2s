@@ -5,7 +5,7 @@ import {
 import {
   createStartupReadyActor as createSharedStartupReadyActor,
   type StartupReadyPayload,
-} from '@catering-v2s/ui-base-console-assembly'
+} from '@catering-v2s/ui-base-integration-assembly'
 import {runtimeModuleDependencyNames} from '../dependencies'
 import {createWallpaperConsolePlacementActor} from '../features/actors/actors'
 import {moduleKind, moduleName} from '../moduleName'

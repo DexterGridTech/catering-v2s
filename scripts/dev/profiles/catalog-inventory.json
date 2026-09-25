@@ -5,8 +5,8 @@
   "fixtureSchema": "contracts/policy/catalog-inventory-fixture-catalog.schema.json",
   "mediaCatalog": "contracts/policy/catalog-inventory-media-assets.json",
   "mediaDirectory": "contracts/policy/catalog-inventory-p1-media",
-  "v4CatalogSourceDirectory": "../catering-server-v4/contracts/fixtures/formal-uat/complex-scenario/catalog/items",
-  "parity": {"catalogItems": 73, "mediaAssets": 34, "source": "v4-formal-uat-complex-scenario"},
+  "catalogSourceDirectory": "contracts/policy/catalog-inventory-source/items",
+  "parity": {"catalogItems": 73, "mediaAssets": 34, "source": "v2s-local-catalog-source"},
   "salesMenuAvailability": {
     "scope": "STORE",
     "shapeKey": "STANDARD_SALE_COUNTED",

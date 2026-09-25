@@ -128,7 +128,6 @@
         "NO_DAEMON",
         "PROMPT_RECOMMENDS_ONLY",
         "MACHINE_OR_REVIEW_DESTINATION",
-        "PHASE_DUE_FAILS",
         "CLAUDE_ENTRY_INTENTIONAL",
         "RETIRED_COMPLIANCE_CONTROL_TRACEABILITY"
       ],
@@ -155,13 +154,8 @@
         },
         {
           "assertionKey": "MACHINE_OR_REVIEW_DESTINATION",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "## 8. R2：Fresh v2s-rooted 会话验收与 W0 正式关闭"
-        },
-        {
-          "assertionKey": "PHASE_DUE_FAILS",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "## 10. R4：W2——机器门、scripts/verify 与 red fixtures"
+          "path": "doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md",
+          "anchor": "## 替代口径"
         },
         {
           "assertionKey": "CLAUDE_ENTRY_INTENTIONAL",
@@ -170,9 +164,9 @@
         }
       ],
       "sourceRefs": [
+        "doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-        "doc/review/platform/2026-08-13-v2s-compliance-control-retirement-decision-claude.md",
-        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+        "doc/review/platform/2026-08-13-v2s-compliance-control-retirement-decision-claude.md"
       ]
     },
     {
@@ -860,9 +854,9 @@
           "anchor": "### H.2 本阶段明确不做"
         },
         {
-          "assertionKey": "NO_GIT_WRITE",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "## 2. 不可突破的全程红线"
+        "assertionKey": "NO_GIT_WRITE",
+        "path": "doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md",
+        "anchor": "## 替代口径"
         },
         {
           "assertionKey": "OBSERVABILITY_REQUIRED_FOR_ACCEPTANCE",
@@ -888,9 +882,9 @@
       "sourceRefs": [
         "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
         "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
+        "doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md",
         "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
-        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
       ]
     },
     {
@@ -925,22 +919,22 @@
       "assertionSources": [
         {
           "assertionKey": "HERITAGE_READ_ONLY",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "### 7.2 旧仓只读策略"
+          "path": "AGENTS.md",
+          "anchor": "## 不可突破的红线"
         },
         {
           "assertionKey": "NO_RUNTIME_FALLBACK",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "### 7.2 旧仓只读策略"
+          "path": "AGENTS.md",
+          "anchor": "## 不可突破的红线"
         },
         {
           "assertionKey": "NEW_DECISION_FOR_DRIFT",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "### 7.2 旧仓只读策略"
+          "path": "AGENTS.md",
+          "anchor": "## 不可突破的红线"
         }
       ],
       "sourceRefs": [
-        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+        "AGENTS.md"
       ]
     },
     {
@@ -1057,8 +1051,8 @@
       ]
     },
     {
-      "id": "kernel.workspace-roadmap",
-      "path": "project-memory/kernel/01-workspace-and-roadmap.md",
+      "id": "kernel.workspace-authorization",
+      "path": "project-memory/kernel/01-workspace-and-authorization.md",
       "layer": "kernel",
       "route": {
         "taskKinds": [
@@ -1081,36 +1075,35 @@
         ]
       },
       "requiredAssertions": [
-        "PROGRAM_SCOPED_CURRENT_ONLY",
-        "R1_ONLY",
-        "GIT_BY_DEXTER",
-        "NO_R2_W1"
+        "DEXTER_SESSION_AUTHORITY",
+        "EXPLICIT_EXPENSIVE_ACTION_AUTHORITY",
+        "BATCH_ATOMIC_DELIVERY",
+        "GIT_BY_DEXTER"
       ],
       "assertionSources": [
         {
-          "assertionKey": "PROGRAM_SCOPED_CURRENT_ONLY",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "## 0. Roadmap 身份与当前状态"
+          "assertionKey": "DEXTER_SESSION_AUTHORITY",
+          "path": "doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md",
+          "anchor": "## 替代口径"
         },
         {
-          "assertionKey": "R1_ONLY",
-          "path": "doc/decisions/2026-07-24-v2s-r1-authorization.md",
-          "anchor": "# catering-v2s Roadmap R1 实施授权"
+          "assertionKey": "EXPLICIT_EXPENSIVE_ACTION_AUTHORITY",
+          "path": "doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md",
+          "anchor": "## 替代口径"
+        },
+        {
+          "assertionKey": "BATCH_ATOMIC_DELIVERY",
+          "path": "doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md",
+          "anchor": "## 替代口径"
         },
         {
           "assertionKey": "GIT_BY_DEXTER",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "## 2. 不可突破的全程红线"
-        },
-        {
-          "assertionKey": "NO_R2_W1",
-          "path": "doc/decisions/2026-07-24-v2s-r1-authorization.md",
-          "anchor": "# catering-v2s Roadmap R1 实施授权"
+          "path": "doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md",
+          "anchor": "## 替代口径"
         }
       ],
       "sourceRefs": [
-        "doc/decisions/2026-07-24-v2s-r1-authorization.md",
-        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+        "doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md"
       ]
     },
     {
@@ -1969,62 +1962,6 @@
         "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
         "doc/review/platform/2026-07-25-v2s-all-v2-governance-disposition-ledger.md",
         "project-memory/operations/phase-retrospective-and-systemic-repair.md"
-      ]
-    },
-    {
-      "id": "operations.roadmap-control-transfer",
-      "path": "project-memory/operations/roadmap-control-transfer.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "review",
-          "memory-recall"
-        ],
-        "domains": [
-          "platform"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "product",
-          "platform"
-        ],
-        "impacts": [
-          "roadmap",
-          "governance",
-          "heritage"
-        ],
-        "triggers": [
-          "session-start",
-          "status-question",
-          "cutover"
-        ]
-      },
-      "requiredAssertions": [
-        "PREPARED_IS_NOT_ACTIVE",
-        "ONE_STATE_OWNER",
-        "SOURCE_NO_POST_PASS_WRITE"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "PREPARED_IS_NOT_ACTIVE",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "### 7.1 Roadmap 控制面移交协议"
-        },
-        {
-          "assertionKey": "ONE_STATE_OWNER",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "### 7.1 Roadmap 控制面移交协议"
-        },
-        {
-          "assertionKey": "SOURCE_NO_POST_PASS_WRITE",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "### 7.1 Roadmap 控制面移交协议"
-        }
-      ],
-      "sourceRefs": [
-        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
       ]
     },
     {
@@ -4860,7 +4797,7 @@
         {
           "assertionKey": "TERMINAL_WEB_FIRST_DEVICE_PARITY",
           "path": "doc/platform/terminal-coding-standard.md",
-          "anchor": "### `TR-16` · 不涉及 adapter 的功能，先过 integration 的 Expo Web，再上设备跑 assembly，两端表现必须一致"
+          "anchor": "### `TR-16` · 不涉及 adapter 的功能，先过 integration 的 Expo Web，再上设备跑 application，两端表现必须一致"
         },
         {
           "assertionKey": "TERMINAL_INPUT_VIRTUAL_KEYBOARD_USAGE",
@@ -4989,8 +4926,7 @@
           "frontend-platform"
         ],
         "impacts": [
-          "architecture",
-          "roadmap"
+          "architecture"
         ],
         "triggers": [
           "task-start",

@@ -51,5 +51,4 @@ class WorkspaceCommandReceiptServiceTest {
         verify(jdbc).queryForList(anyString(), any(Object[].class));
         verify(jdbc, never()).update(anyString(), any(Object[].class));
     }
-
 }

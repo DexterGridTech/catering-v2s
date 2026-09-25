@@ -1,10 +1,8 @@
 package com.catering.v2s.organization.application;
 
-import com.catering.v2s.organization.application.persistence.BusinessBrandPersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
-import com.catering.v2s.audit.contract.AuditEntityTypes;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
@@ -16,10 +14,10 @@ import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.Bran
 import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.BrandUpdateCommand;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
+import com.catering.v2s.organization.application.persistence.BusinessBrandPersistence;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -61,7 +59,12 @@ public class BusinessBrandService {
             ExtensionDefinitionLookup definitions,
             BusinessEntityCommandReceiptService receipts,
             com.catering.v2s.organization.api.OrganizationNodeLookup nodes) {
-        this(new BusinessBrandPersistence(jdbc), time, definitions, receipts, new BusinessEntityTaskReadService(jdbc, nodes));
+        this(
+                new BusinessBrandPersistence(jdbc),
+                time,
+                definitions,
+                receipts,
+                new BusinessEntityTaskReadService(jdbc, nodes));
     }
 
     BusinessBrandService(
@@ -75,10 +78,7 @@ public class BusinessBrandService {
 
     @Transactional
     public OrganizationEntityReadback createBrand(BrandCreateCommand command) {
-        requireGroupGrant(
-                command.ownerScopeGrant(),
-                command.workspaceUuid(),
-                command.groupWorkspaceKey());
+        requireGroupGrant(command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey());
         return receipts.execute(
                 command.workspaceUuid(),
                 command.idempotencyKey(),
@@ -107,10 +107,7 @@ public class BusinessBrandService {
 
     @Transactional
     public OrganizationEntityReadback updateBrand(BrandUpdateCommand command) {
-        requireGroupGrant(
-                command.ownerScopeGrant(),
-                command.workspaceUuid(),
-                command.groupWorkspaceKey());
+        requireGroupGrant(command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey());
         return receipts.execute(
                 command.workspaceUuid(),
                 command.idempotencyKey(),
@@ -143,10 +140,7 @@ public class BusinessBrandService {
 
     @Transactional
     public OrganizationEntityReadback transitionBrandStatus(BrandStatusCommand command) {
-        requireGroupGrant(
-                command.ownerScopeGrant(),
-                command.workspaceUuid(),
-                command.groupWorkspaceKey());
+        requireGroupGrant(command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey());
         return transitionEntityStatus(
                 BusinessEntityTypes.BRAND,
                 command.workspaceUuid(),
@@ -354,12 +348,15 @@ public class BusinessBrandService {
                 name,
                 alias,
                 remark,
-                new ExtensionSubmission(values == null ? List.of() : values.entrySet().stream()
-                        .map(entry -> BusinessEntityValueSupport.isJsonNull(entry.getValue())
-                                ? ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey())
-                                : new ExtensionSubmission.ExtensionFieldValue(
-                                        entry.getKey(), entry.getValue(), ExtensionSubmission.Mode.SET))
-                        .toList()),
+                new ExtensionSubmission(
+                        values == null
+                                ? List.of()
+                                : values.entrySet().stream()
+                                        .map(entry -> BusinessEntityValueSupport.isJsonNull(entry.getValue())
+                                                ? ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey())
+                                                : new ExtensionSubmission.ExtensionFieldValue(
+                                                        entry.getKey(), entry.getValue(), ExtensionSubmission.Mode.SET))
+                                        .toList()),
                 actor);
     }
 
@@ -374,7 +371,8 @@ public class BusinessBrandService {
             long expectedVersion,
             ExtensionSubmission submission,
             AuditActor actor) {
-        OrganizationEntityReadback before = reads.requireEntity(BusinessEntityTypes.BRAND, workspaceUuid, groupWorkspaceKey, id);
+        OrganizationEntityReadback before =
+                reads.requireEntity(BusinessEntityTypes.BRAND, workspaceUuid, groupWorkspaceKey, id);
         BusinessEntityValueSupport.requireMutable(before.status());
         ensureAvailable(workspaceUuid, groupWorkspaceKey, id, code, name);
         if (persistence.update(
@@ -425,14 +423,17 @@ public class BusinessBrandService {
                 code,
                 name,
                 alias,
-                    remark,
-                    expectedVersion,
-                    new ExtensionSubmission(values == null ? List.of() : values.entrySet().stream()
-                        .map(entry -> BusinessEntityValueSupport.isJsonNull(entry.getValue())
-                                ? ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey())
-                                : new ExtensionSubmission.ExtensionFieldValue(
-                                        entry.getKey(), entry.getValue(), ExtensionSubmission.Mode.SET))
-                        .toList()),
+                remark,
+                expectedVersion,
+                new ExtensionSubmission(
+                        values == null
+                                ? List.of()
+                                : values.entrySet().stream()
+                                        .map(entry -> BusinessEntityValueSupport.isJsonNull(entry.getValue())
+                                                ? ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey())
+                                                : new ExtensionSubmission.ExtensionFieldValue(
+                                                        entry.getKey(), entry.getValue(), ExtensionSubmission.Mode.SET))
+                                        .toList()),
                 actor);
     }
 
@@ -443,7 +444,8 @@ public class BusinessBrandService {
             String status,
             long expectedVersion,
             AuditActor actor) {
-        OrganizationEntityReadback before = reads.requireEntity(BusinessEntityTypes.BRAND, workspaceUuid, groupWorkspaceKey, id);
+        OrganizationEntityReadback before =
+                reads.requireEntity(BusinessEntityTypes.BRAND, workspaceUuid, groupWorkspaceKey, id);
         if (!VALID_STATUS.contains(status)
                 || "VOIDED".equals(before.status())
                 || persistence.transitionStatus(
@@ -467,7 +469,8 @@ public class BusinessBrandService {
         return updated;
     }
 
-    private void ensureAvailable(UUID workspaceUuid, String groupWorkspaceKey, UUID currentId, String code, String name) {
+    private void ensureAvailable(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID currentId, String code, String name) {
         BusinessBrandPersistence.ConflictFlags conflicts = persistence.findConflicts(
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -485,13 +488,15 @@ public class BusinessBrandService {
                     definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.BRAND);
             if (!actual.isEmpty()) ExtensionDefinitionService.requireConsumableDefinition(definition);
             Map<String, ExtensionDefinitionReadback.Field> known = definition.fields().stream()
-                    .collect(java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, value -> value));
+                    .collect(java.util.stream.Collectors.toMap(
+                            ExtensionDefinitionReadback.Field::fieldKey, value -> value));
             if (actual.keySet().stream().anyMatch(field -> !known.containsKey(field))
-                    || actual.entrySet().stream().anyMatch(entry ->
-                            !"DISABLED".equals(known.get(entry.getKey()).status())
-                                    && !BusinessEntityValueSupport.isJsonNull(entry.getValue())
-                                    && !BusinessEntityValueSupport.validJsonValue(
-                                            known.get(entry.getKey()), entry.getValue())))
+                    || actual.entrySet().stream()
+                            .anyMatch(entry ->
+                                    !"DISABLED".equals(known.get(entry.getKey()).status())
+                                            && !BusinessEntityValueSupport.isJsonNull(entry.getValue())
+                                            && !BusinessEntityValueSupport.validJsonValue(
+                                                    known.get(entry.getKey()), entry.getValue())))
                 throw new BusinessEntityService.OrganizationValidationException();
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (!actual.isEmpty()) throw new BusinessEntityService.OrganizationValidationException(absent);
@@ -544,11 +549,7 @@ public class BusinessBrandService {
 
     private void requireGroupGrant(OperationsOwnerScopeGrant grant, UUID workspaceUuid, String groupWorkspaceKey) {
         if (grant == null
-                || !grant.matches(
-                        workspaceUuid,
-                        groupWorkspaceKey,
-                        ServiceNodeTypes.GROUP,
-                        grant.targetId())
+                || !grant.matches(workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP, grant.targetId())
                 || grant.targetId() == null
                 || !Objects.equals(grant.targetType(), ServiceNodeTypes.GROUP))
             throw new BusinessEntityService.OrganizationAuthorizationException();

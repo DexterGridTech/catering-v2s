@@ -36,24 +36,24 @@
 
 review 文件仍须遵循 `doc/platform/claude-review-handoff-template.md` 并在交付前通过 `scripts/check/claude-review-handoff --file <review-request>`。任一项缺失时，只能报告“评审材料未就绪”，不得声称“已交给 Claude”。本要求的 routed memory anchor 是 `project-memory/operations/claude-review-handoff-standard.md`。
 
-先完整读取 `AGENTS.md`、`PLATFORM-BLUEPRINT.md`，再从
-`doc/platform/roadmap-program-registry.json` 解析显式程序的 Roadmap，读其**授权字段**。⚠️ Roadmap 已收窄为授权记录，不再有 `CURRENT_STEP`/`CURRENT_NEXT_ACTION`；当前任务以 Dexter 会话指派为准。
+先完整读取 `AGENTS.md`、`PLATFORM-BLUEPRINT.md`、`doc/platform/README.md` 与适用的项目记忆；当前任务与授权只来自 Dexter 在会话中的明确指派。
 
 Claude 在本仓承担独立 architecture、contract、boundary 与真实行为 review。评审必须：
 
-- 先从冻结输入和 current Roadmap 独立推导预期行为与自己会给出的方案，再读作者结论；
+- 先从冻结输入与 Dexter 的明确会话指派独立推导预期行为与自己会给出的方案，再读作者结论；
 - 逐项核验 owner、transaction、data、security、consumer、failure 与实际行为预期；
+- 设计评审先按 `doc/platform/review-standard.md` 动作 1-B 逐节对照四份模板，结论块写 `TEMPLATE_COVERAGE`；UI-bearing 批次必须核对详设 §3a 的控件分母表与 L2 控制面全集、§10b 的 seed 执行前提与角色；
 - 使用 `GO` / `NO-GO`，并报告 `M`（major）、`S`（significant）、`N`（note）数量；
-- 明确结论的授权边界；静态 review 不授权下一 Roadmap step、DEV 或数据操作。
-- TER（`apps/terminal`）的设计、实施与复盘评审，须按 `doc/platform/terminal-coding-standard.md` 的 `TR-16` 核对验证顺序：被测行为不涉及 adapter 的功能先过 `ui/integration` 的 Expo Web，再上设备跑 `assembly`，并有同一场景清单的两端对照；缺任一项即 finding。
+- 明确结论的授权边界；静态 review 不授权后续批次、DEV 或数据操作。
+- TER（`apps/terminal`）的设计、实施与复盘评审，须按 `doc/platform/terminal-coding-standard.md` 的 `TR-16` 核对验证顺序：被测行为不涉及 adapter 的功能先过 `ui/integration` 的 Expo Web，再上设备跑 `application`，并有同一场景清单的两端对照；缺任一项即 finding。
 
-每个 Roadmap 的 `R` 都是一次性完整交付单元：一次性完成该 R 的设计、一次性完成该 R 的实施，再对该 R 全范围一次性复核。不得把同一 R 按 Journey、模块、文件、App 或单项 gate 拆成独立 review；单项 gate 只能作为统一 R review 的内部证据。当前 R3 必须整体复核 R3-C01、R3-TECH、U01-U07、双 App、契约、数据库、测试与 evidence。
+Dexter 明确指派的每个交付批次都是一次性完整交付单元：一次性完成设计、一次性完成实施，再对该批次全范围一次性复核。不得把同一批次按 Journey、模块、文件、App 或单项 gate 拆成独立 review；单项 gate 只能作为统一批次 review 的内部证据。批次原子交付的替代决定见 `doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md`。
 
 ## 验证分工与效率红线（Dexter 已确认）
 
 保留的机器验证只包括编译、类型、既有测试、契约生成及真正验证行为的门；不得用关键词/字段匹配把语义伪装成 checker。业务语义、用户任务、方案取舍与 UI 合理性，必须通过 fresh 独立对抗审查。evidence/package/hash-chain 的台账、分母和交叉对账控制已退役，不得以其替代亲验。
 
-后台动态验收的唯一能力是 `backend-acceptance`。当前已实现并运行 80 条真实场景，覆盖 IAM、ORG、商业合同、asset 与 Catalog。它们以真实 HTTP、真实容器和手写 fixture/request/business assertion 产出分离的 `CONTRACT/BUSINESS`，另打印不设门的 DB 调用数。新增业务场景前必须先读主动规范 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md`；`BackendAcceptanceTest` 只保留唯一 Testcontainers/HTTP 入口与共享支撑，业务断言按 IAM、ORG、商业合同、asset、Catalog 分别扩展对应的 `*AcceptanceScenarios.java`；**总数不设上限**（Dexter 2026-08-27 裁定去除原 80 条上限）。原 196 个 provider 壳、共享 SPI 与 scenario registry 已下线删除，不再作为测试入口或覆盖目录。scenario 级的 PERFORMANCE/CLEANUP verdict、accepted-baseline、known-uncovered、自动精确分母、lane/并行/心跳/work-stealing、calibration 和 correctnessCases 均已退役。⚠️ **但 run 级的 operation budget verifier 仍在生效**（`scripts/test/r5-remote-testcontainers.mjs` 的 `assertPerformanceOperationBudgets` 与 `requireClosedPerformanceCount`，消费 `scripts/generate/backend-performance-budget.mjs` 的预算注册表），不要把"scenario 级已退役"读成"整套性能控制面已退役"。
+后台动态验收的唯一能力是 `backend-acceptance`。它以真实 HTTP、真实容器和手写 fixture/request/business assertion 产出分离的 `CONTRACT/BUSINESS`，另打印不设门的 DB 调用数。新增业务场景前必须先读主动规范 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md`；测试入口只保留唯一 Testcontainers/HTTP 入口与共享支撑，业务断言必须写在 acceptance 目录下对应业务域的 `*AcceptanceScenarios.java`，由 `BackendAcceptanceScenarioCatalog` 自动发现；入口文件不冻结场景数量、业务域清单或场景文件清单。scenario 级的 PERFORMANCE/CLEANUP verdict、accepted-baseline、known-uncovered、自动精确分母、lane/并行/心跳/work-stealing、calibration 和 correctnessCases 均已退役。⚠️ **但 run 级的 operation budget verifier 仍在生效**（`scripts/test/r5-remote-testcontainers.mjs` 的 `assertPerformanceOperationBudgets` 与 `requireClosedPerformanceCount`，消费 `scripts/generate/backend-performance-budget.mjs` 的预算注册表），不要把"scenario 级已退役"读成"整套性能控制面已退役"。
 
 评审时优先要求小批量、冻结即审；超过半小时难以核完的交付应先切小。`scripts/verify` 必须保持分钟级，变慢时先砍最弱门而不是接受变慢。方案是否该做及 severity 是否可接受仍由 Dexter 裁定。
 
@@ -71,7 +71,7 @@ Claude 在本仓承担独立 architecture、contract、boundary 与真实行为 
 
 任何 UI 设计或实施评审还必须逐项回答：该操作是否来自用户明确要求/批准 Journey；用户在此时这样操作是否合逻辑；是否有更短、更自然、更少选择的路径；不合理之处究竟来自后台接口限制、owner/contract 边界、旧文档模糊、历史实现惯性还是产品语义未裁决。不得从现有接口、表结构或旧页面反推用户任务。涉及产品/Journey/页面操作歧义时，列出候选理解与推荐项并向 Dexter 求证；未裁决前不得 GO。UI 不适用也必须明确写 `NOT_APPLICABLE` 和理由。
 
-后续任何 UI 功能实现必须优先对接 `libraries/frontend/admin-ui-foundation` 已提供的共享能力；禁止在 `apps/frontend/*` 重复实现相同的生命周期、Drawer surface、overlay lock、列表上下文、HTTP protocol、observability 或 automation primitive。两个 App 仍分别拥有 shell、router、store、baseApi、theme、generated API、业务 feature、业务文案与 Journey 行为。foundation 未覆盖的 App-local 能力必须在设计/评审中说明原因，并为实际接入补 focused test/evidence；当前 R3 仅保留 foundation 原样复制，不把未接入状态冒充业务闭环。
+后续任何 UI 功能实现必须优先对接 `libraries/frontend/admin-ui-foundation` 已提供的共享能力；禁止在 `apps/frontend/*` 重复实现相同的生命周期、Drawer surface、overlay lock、列表上下文、HTTP protocol、observability 或 automation primitive。两个 App 仍分别拥有 shell、router、store、baseApi、theme、generated API、业务 feature、业务文案与 Journey 行为。foundation 未覆盖的 App-local 能力必须在设计/评审中说明原因，并为实际接入补 focused test/evidence；foundation 仅复制但未接入时，不得把未接入状态冒充业务闭环。
 
 ## 亲验纪律（不可省略）
 
@@ -91,7 +91,7 @@ Claude 在本仓承担独立 architecture、contract、boundary 与真实行为 
 
 ## findings 处置
 
-findings 直接交 Codex 在既有批准边界内自主修复，不构成再授权门槛；只有涉及产品/Journey 语义、新业务范围、Roadmap/切流或外部协调时，才单独标注"需 Dexter 裁决"。
+findings 直接交 Codex 在既有批准边界内自主修复，不构成再授权门槛；只有涉及产品/Journey 语义、新业务范围、切流或外部协调时，才单独标注"需 Dexter 裁决"。
 
 Claude finding 是供 Codex 与 Dexter 复核的独立输入，不自动成为新权威。请在每条 finding 中区分仓内事实、外部事实、推论、产品判断与尚缺证据的假设，给出 owning source、适用条件和可能反例；外部漂移事实优先引用官方一手资料。修复建议要说明为什么不是更小方案，避免用评审制造过度设计。信息不足时明确写 `UNVERIFIED` 或 `DEXTER_DECISION`，不得用确定语气替代证据。
 
@@ -102,3 +102,7 @@ Claude finding 是供 Codex 与 Dexter 复核的独立输入，不自动成为�
 Claude review 是人为从 v2s 仓根发起的独立会话。当前未验证真实 Claude client hook 契约，因此不创建 `.claude/settings.json` 第二套 hook 配置；该差异显式登记为 `CLAUDE_ENTRY_INTENTIONAL`，评审必须人工证明上述入口链已回读。
 
 `contracts/policy/standards-coverage-matrix.json`、`scripts/check/standards-coverage`、manifest Part B/C/D、六类 package-exit source 分母、changed-path/incremental receipt set equality 与 `scripts/check/implementation-design-granularity` 均属于已退役的 compliance-control；Claude 不得将它们列为评审输入、finding 或 GO/NO-GO 条件。
+
+## 转达实施授权（强制，Dexter 2026-09-25）
+
+Claude 为 Dexter 起草、授权 Codex 进入实施且覆盖 L2、reset 或 seed 的话术时，必须单列各昂贵阶段的进入条件：以 `doc/platform/implementation-task-template.md` 的「动态前整体准入」为准（CP 对账、整体对账、§3a 准入、seed 试运行），并写明同一失败族第二次出现即停、代码未改不得重跑、持有运行期间不改源码、同一时间只跑一个受管运行；同时要求状态报告写「当前字节上的最新运行」与「最后一次通过」两行。不得只写“按项目规范执行”。实证：门店终端批授权只写了“按规范执行”，L2 跑了 36 次只通过 1 次。

@@ -117,8 +117,8 @@ class WorkspaceInvitationPublicFlowTest {
         OrganizationAssignmentCandidateService candidates =
                 new OrganizationAssignmentCandidateService(jdbc, groups, taskPaths);
         WorkspaceAssignmentScopeService assignments = new WorkspaceAssignmentScopeService(jdbc);
-        WorkspaceUserService user = new WorkspaceUserService(
-                jdbc, hierarchy, entities, roles, groups, candidates, assignments, taskPaths);
+        WorkspaceUserService user =
+                new WorkspaceUserService(jdbc, hierarchy, entities, roles, groups, candidates, assignments, taskPaths);
         ObjectProvider<DevFixedOtpIssuer> fixedOtpIssuer = Mockito.mock(ObjectProvider.class);
         invitations = new WorkspaceInvitationService(
                 jdbc,

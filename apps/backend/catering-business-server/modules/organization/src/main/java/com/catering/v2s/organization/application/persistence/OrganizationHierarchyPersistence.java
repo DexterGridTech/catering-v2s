@@ -62,10 +62,13 @@ public class OrganizationHierarchyPersistence {
 
     public List<OrganizationNodeReadback> listNodes(UUID workspaceUuid, String groupWorkspaceKey) {
         List<OrganizationNodeReadback> nodes = jdbc.query(
-                OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE
+                OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_VERSION
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_ORGANIZATION_NODE_EXTENSION_RULE_REVISION_WORKSPACE_UUID
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_REGION_PROJECT,
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_ORGANIZATION_NODE_EXTENSION_RULE_REVISION_WORKSPACE_UUID
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_REGION_PROJECT,
                 (result, row) -> node(result, List.of()),
                 workspaceUuid,
                 groupWorkspaceKey);
@@ -87,10 +90,11 @@ public class OrganizationHierarchyPersistence {
             String status,
             String nodeType,
             UUID projectId) {
-        Filter filter = filter(
-                workspaceUuid, groupWorkspaceKey, namePattern, codePattern, status, nodeType, projectId);
+        Filter filter = filter(workspaceUuid, groupWorkspaceKey, namePattern, codePattern, status, nodeType, projectId);
         return jdbc.queryForObject(
-                OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_ORGANIZATION_NODE_SELECT_COUNT_FROM_ORGANIZATI + filter.where(),
+                OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_SELECT_ORGANIZATION_NODE_SELECT_COUNT_FROM_ORGANIZATI
+                        + filter.where(),
                 Long.class,
                 filter.values().toArray());
     }
@@ -107,20 +111,22 @@ public class OrganizationHierarchyPersistence {
             String direction,
             int pageSize,
             int offset) {
-        Filter filter = filter(
-                workspaceUuid, groupWorkspaceKey, namePattern, codePattern, status, nodeType, projectId);
-        String order = switch (sort) {
-            case "NAME" -> OrganizationHierarchyServiceSql.HIERARCHY_ORDER_NAME;
-            case "CODE" -> OrganizationHierarchyServiceSql.HIERARCHY_ORDER_CODE;
-            default -> OrganizationHierarchyServiceSql.HIERARCHY_ORDER_UPDATED_AT;
-        };
+        Filter filter = filter(workspaceUuid, groupWorkspaceKey, namePattern, codePattern, status, nodeType, projectId);
+        String order =
+                switch (sort) {
+                    case "NAME" -> OrganizationHierarchyServiceSql.HIERARCHY_ORDER_NAME;
+                    case "CODE" -> OrganizationHierarchyServiceSql.HIERARCHY_ORDER_CODE;
+                    default -> OrganizationHierarchyServiceSql.HIERARCHY_ORDER_UPDATED_AT;
+                };
         List<Object> values = new ArrayList<>(filter.values());
         values.add(pageSize);
         values.add(offset);
         return jdbc.query(
-                OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE_ALTERNATE_A
+                OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE_ALTERNATE_A
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_VERSION_ALTERNATE_A
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_ORGANIZATION_NODE_EXTENSION_RULE_REVISION
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_ORGANIZATION_NODE_EXTENSION_RULE_REVISION
                         + filter.where()
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_ORDER_BY
                         + order
@@ -133,7 +139,8 @@ public class OrganizationHierarchyPersistence {
 
     public int updateProjectPhaseVersion(UUID projectId, long now, long expectedVersion) {
         return jdbc.update(
-                OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_UPDATE_ORGANIZATION_NODE_VERSION_UPDATED_AT_EPOCH_MILLIS
+                OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_UPDATE_ORGANIZATION_NODE_VERSION_UPDATED_AT_EPOCH_MILLIS
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_VERSION_ALTERNATE_B,
                 now,
                 projectId,
@@ -141,16 +148,13 @@ public class OrganizationHierarchyPersistence {
     }
 
     public int updateStatus(
-            UUID nodeId,
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            String status,
-            long now,
-            long expectedVersion) {
+            UUID nodeId, UUID workspaceUuid, String groupWorkspaceKey, String status, long now, long expectedVersion) {
         return jdbc.update(
                 OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_UPDATE_ORGANIZATION_NODE_STATUS_VERSION
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_VERSION,
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_VERSION,
                 status,
                 now,
                 nodeId,
@@ -172,10 +176,12 @@ public class OrganizationHierarchyPersistence {
             long expectedVersion) {
         return jdbc.update(
                 OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_UPDATE_ORGANIZATION_NODE_CODE_NAME_NOTES
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_EXTENSION_VALUES_EXTENSION_RULE_REVISION
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_EXTENSION_VALUES_EXTENSION_RULE_REVISION
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_WORKSPACE_UUID
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_VERSION_ALTERNATE_A,
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_VERSION_ALTERNATE_A,
                 code,
                 name,
                 notes,
@@ -191,16 +197,24 @@ public class OrganizationHierarchyPersistence {
     public OrganizationNodeReadback findNode(
             UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String requiredType) {
         return jdbc.query(
-                OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE_ALTERNATE_B
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_NOTES_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_EXTENSION_VALUES_TEXT_EXTENSION_RULE_REVISION_ARRAY_AGG
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_ORDER_BY_DISPLAY_ORDER_FILTER_PHASE_NAME_TEXT
+                OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE_ALTERNATE_B
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_NOTES_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_EXTENSION_VALUES_TEXT_EXTENSION_RULE_REVISION_ARRAY_AGG
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_ORDER_BY_DISPLAY_ORDER_FILTER_PHASE_NAME_TEXT
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_PHASE_NAMES
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_ALTERNATIVE_PROJECT_PHASE_NAME_ORGANIZATION_NODE
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_PROJECT_ID_NODE_TYPE_PROJECT_WORKSPACE_UUID
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_GROUP_WORKSPACE_KEY_WORKSPACE_UUID
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_ALTERNATIVE_PROJECT_PHASE_NAME_ORGANIZATION_NODE
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_PROJECT_ID_NODE_TYPE_PROJECT_WORKSPACE_UUID
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_GROUP_WORKSPACE_KEY_WORKSPACE_UUID
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_PARENT_ID
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_NODE_TYPE_CODE_NAME_NOTES_ALTERNATE_B
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_NODE_TYPE_CODE_NAME_NOTES_ALTERNATE_B
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_UPDATED_AT_EPOCH_MILLIS,
                 statement -> {
                     statement.setObject(1, nodeId);
@@ -209,10 +223,12 @@ public class OrganizationHierarchyPersistence {
                 },
                 result -> {
                     if (!result.next())
-                        throw new com.catering.v2s.organization.application.OrganizationHierarchyService.OrganizationNotFoundException();
+                        throw new com.catering.v2s.organization.application.OrganizationHierarchyService
+                                .OrganizationNotFoundException();
                     String actualType = result.getString("node_type");
                     if (requiredType != null && !requiredType.equals(actualType))
-                        throw new com.catering.v2s.organization.application.OrganizationHierarchyService.OrganizationValidationException();
+                        throw new com.catering.v2s.organization.application.OrganizationHierarchyService
+                                .OrganizationValidationException();
                     java.sql.Array phaseArray = result.getArray("phase_names");
                     Object[] phaseValues = phaseArray == null ? new Object[0] : (Object[]) phaseArray.getArray();
                     List<String> phases = new ArrayList<>(phaseValues.length);
@@ -238,7 +254,8 @@ public class OrganizationHierarchyPersistence {
 
     public boolean isEnterable(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId) {
         return jdbc.query(
-                OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_ORGANIZATION_NODE_STATUS_WORKSPACE_UUID
+                OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_SELECT_ORGANIZATION_NODE_STATUS_WORKSPACE_UUID
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, nodeId);
@@ -251,13 +268,19 @@ public class OrganizationHierarchyPersistence {
     public String describePath(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId) {
         return jdbc.query(
                 OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CTE_ANCESTRY
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_CODE_NAME_DEPTH
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_CODE_NAME_DEPTH
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_UNION_UNION_ALL
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_PARENT_PARENT_ID_CODE_NAME
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_PARENT_ID
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CLOSE_PAREN_ANCESTRY_STRING_AGG_CODE_NAME_DEPTH,
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_SELECT_PARENT_PARENT_ID_CODE_NAME
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_PARENT_ID
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_CLOSE_PAREN_ANCESTRY_STRING_AGG_CODE_NAME_DEPTH,
                 statement -> {
                     statement.setObject(1, nodeId);
                     statement.setObject(2, workspaceUuid);
@@ -267,7 +290,8 @@ public class OrganizationHierarchyPersistence {
                 },
                 result -> {
                     if (!result.next() || result.getString(1) == null)
-                        throw new com.catering.v2s.organization.application.OrganizationHierarchyService.OrganizationNotFoundException();
+                        throw new com.catering.v2s.organization.application.OrganizationHierarchyService
+                                .OrganizationNotFoundException();
                     return result.getString(1);
                 });
     }
@@ -275,7 +299,8 @@ public class OrganizationHierarchyPersistence {
     public Map<UUID, List<String>> readPhaseNames(List<UUID> projectIds) {
         if (projectIds.isEmpty()) return Map.of();
         return jdbc.query(
-                OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_PROJECT_PHASE_NAME_PROJECT_ID_PHASE_NAME_ALTERNATE_A
+                OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_SELECT_PROJECT_PHASE_NAME_PROJECT_ID_PHASE_NAME_ALTERNATE_A
                         + String.join(
                                 OrganizationHierarchyServiceSql.PLACEHOLDER_SEPARATOR,
                                 Collections.nCopies(
@@ -299,12 +324,12 @@ public class OrganizationHierarchyPersistence {
         if (nodeIds.isEmpty()) return Map.of();
         String sql = OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CTE_ANCESTRY_ALTERNATE_A
                 + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_NODE_TARGET_ID_PARENT_ID_CODE
-                + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_NODE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                + OrganizationHierarchyServiceSql
+                        .ORGANIZATION_HIERARCHY_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_NODE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                 + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_NODE
                 + String.join(
                         OrganizationHierarchyServiceSql.PLACEHOLDER_SEPARATOR,
-                        Collections.nCopies(
-                                nodeIds.size(), OrganizationHierarchyServiceSql.PARAMETER_PLACEHOLDER))
+                        Collections.nCopies(nodeIds.size(), OrganizationHierarchyServiceSql.PARAMETER_PLACEHOLDER))
                 + OrganizationHierarchyServiceSql.PATH_CTE_CLOSE_SUFFIX
                 + OrganizationHierarchyServiceSql.PATH_PARENT_SELECT
                 + OrganizationHierarchyServiceSql.PATH_PARENT_FROM
@@ -326,8 +351,10 @@ public class OrganizationHierarchyPersistence {
                     Map<UUID, List<HierarchyPathNode>> values = new LinkedHashMap<>();
                     while (result.next()) {
                         Object[] ids = (Object[]) result.getArray("path_ids").getArray();
-                        Object[] codes = (Object[]) result.getArray("path_codes").getArray();
-                        Object[] names = (Object[]) result.getArray("path_names").getArray();
+                        Object[] codes =
+                                (Object[]) result.getArray("path_codes").getArray();
+                        Object[] names =
+                                (Object[]) result.getArray("path_names").getArray();
                         List<HierarchyPathNode> path = new ArrayList<>();
                         for (int index = 0; index < ids.length; index++)
                             path.add(new HierarchyPathNode(
@@ -359,17 +386,19 @@ public class OrganizationHierarchyPersistence {
     }
 
     public int deletePhases(UUID projectId) {
-        return jdbc.update(OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_DELETE_PROJECT_PHASE_NAME_PROJECT_ID, projectId);
+        return jdbc.update(
+                OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_DELETE_PROJECT_PHASE_NAME_PROJECT_ID,
+                projectId);
     }
 
     public int[] insertPhases(UUID projectId, List<String> phases) {
         if (phases.isEmpty()) return new int[0];
         return jdbc.batchUpdate(
-                OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_INSERT_INTO_PROJECT_PHASE_NAME_PROJECT_ID_PHASE_NAME_DISPLAY_ORDER,
+                OrganizationHierarchyServiceSql
+                        .ORGANIZATION_HIERARCHY_SERVICE_INSERT_INTO_PROJECT_PHASE_NAME_PROJECT_ID_PHASE_NAME_DISPLAY_ORDER,
                 new BatchPreparedStatementSetter() {
                     @Override
-                    public void setValues(java.sql.PreparedStatement statement, int index)
-                            throws SQLException {
+                    public void setValues(java.sql.PreparedStatement statement, int index) throws SQLException {
                         statement.setObject(1, projectId);
                         statement.setString(2, phases.get(index));
                         statement.setInt(3, index);
@@ -401,8 +430,7 @@ public class OrganizationHierarchyPersistence {
                 result.getLong(14));
     }
 
-    private static OrganizationNodeReadback withPhases(
-            OrganizationNodeReadback node, List<String> phases) {
+    private static OrganizationNodeReadback withPhases(OrganizationNodeReadback node, List<String> phases) {
         return new OrganizationNodeReadback(
                 node.id(),
                 node.workspaceUuid(),
@@ -429,12 +457,16 @@ public class OrganizationHierarchyPersistence {
             String status,
             String nodeType,
             UUID projectId) {
-        String where = OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_TEXT_NAME_ILIKE_ESCAPE
-                + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_TEXT_CODE_ILIKE_ESCAPE
-                + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_TEXT_STATUS
-                + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_TEXT_NODE_TYPE
-                + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_AND_UUID_IS_NULL_OR_ID;
+        String where =
+                OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_CONDITION_TEXT_NAME_ILIKE_ESCAPE
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_CONDITION_TEXT_CODE_ILIKE_ESCAPE
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_TEXT_STATUS
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_TEXT_NODE_TYPE
+                        + OrganizationHierarchyServiceSql
+                                .ORGANIZATION_HIERARCHY_SERVICE_CONDITION_AND_UUID_IS_NULL_OR_ID;
         List<Object> values = new ArrayList<>();
         Collections.addAll(
                 values,

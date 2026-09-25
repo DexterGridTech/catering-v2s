@@ -50,6 +50,13 @@ function withMutation(filePath, mutate, assertion) {
   }
 }
 
+function withRedMutation(filePath, mutate, assertion, restoreLabel) {
+  withMutation(filePath, mutate, assertion)
+  const restored = runLayeringChecks({root: fixtureRoot})
+  assertVector(restored)
+  console.log(`${restoreLabel}=PASS`)
+}
+
 try {
   fs.mkdirSync(path.join(fixtureRoot, 'apps/terminal'), {recursive: true})
   const kernelFile = packageFixture(
@@ -291,8 +298,8 @@ try {
     },
   )
 
-  const assemblyBaseFile = packageFixture(
-    'apps/terminal/assembly/base/android',
+  const applicationBaseFile = packageFixture(
+    'apps/terminal/application/base/android',
     'export const baseProbe = 1\n',
   )
   const samePlatformAdapterFile = packageFixture(
@@ -303,6 +310,26 @@ try {
     'apps/terminal/adapter/electron/native-loading',
     'export const nativeLoadingProbe = 1\n',
   )
+  withRedMutation(
+    uiFile,
+    source => `${source}\nimport '@catering-v2s/application-base-android'\n`,
+    report => {
+      assertVector(report, ['p-5a-direction'])
+      assert.match(rule(report, 'p-5a-direction').error, /reverse dependency ui->application \(/)
+      console.log(`TERMINAL_LAYERING_RED_P5A_UI_APPLICATION=${rule(report, 'p-5a-direction').status}`)
+    },
+    'TERMINAL_LAYERING_RED_P5A_UI_APPLICATION_RESTORE',
+  )
+  withRedMutation(
+    adapterFile,
+    source => `${source}\nimport '@catering-v2s/application-base-android'\n`,
+    report => {
+      assertVector(report, ['p-5a-direction'])
+      assert.match(rule(report, 'p-5a-direction').error, /reverse dependency adapter->application \(/)
+      console.log(`TERMINAL_LAYERING_RED_P5A_ADAPTER_APPLICATION=${rule(report, 'p-5a-direction').status}`)
+    },
+    'TERMINAL_LAYERING_RED_P5A_ADAPTER_APPLICATION_RESTORE',
+  )
   const devHostRoot = path.dirname(path.dirname(devHostFile))
   const devHostPackageJson = path.join(devHostRoot, 'package.json')
   const devHostTsconfig = path.join(devHostRoot, 'tsconfig.json')
@@ -311,7 +338,7 @@ try {
   fs.writeFileSync(devHostRootConfig, 'module.exports = {}\n')
 
   withMutation(
-    assemblyBaseFile,
+    applicationBaseFile,
     source => `${source}\nimport '@catering-v2s/adapter-android-native-loading'\n`,
     report => {
       assertVector(report)
@@ -319,7 +346,7 @@ try {
     },
   )
   withMutation(
-    assemblyBaseFile,
+    applicationBaseFile,
     source => `${source}\nimport '@catering-v2s/adapter-electron-native-loading'\n`,
     report => {
       assertVector(report)

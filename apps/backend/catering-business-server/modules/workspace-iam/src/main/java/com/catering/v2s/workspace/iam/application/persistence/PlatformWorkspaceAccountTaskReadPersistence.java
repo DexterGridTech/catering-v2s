@@ -25,7 +25,8 @@ public class PlatformWorkspaceAccountTaskReadPersistence {
 
     public List<Row> detail(WorkspaceUserService.AccountDetailQuery query) {
         return jdbc.query(
-                PlatformWorkspaceAccountTaskReadServiceSql.PLATFORM_WORKSPACE_ACCOUNT_TASK_READ_SERVICE_SELECT_WORKSPACE_CREDENTIAL,
+                PlatformWorkspaceAccountTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_ACCOUNT_TASK_READ_SERVICE_SELECT_WORKSPACE_CREDENTIAL,
                 this::row,
                 query.workspaceUuid(),
                 query.groupWorkspaceKey(),
@@ -73,14 +74,16 @@ public class PlatformWorkspaceAccountTaskReadPersistence {
     }
 
     private static String pageSql(String order, String direction) {
-        return PlatformWorkspaceAccountTaskReadServiceSql.PLATFORM_WORKSPACE_ACCOUNT_TASK_READ_SERVICE_CTE_WORKSPACE_CREDENTIAL
+        return PlatformWorkspaceAccountTaskReadServiceSql
+                        .PLATFORM_WORKSPACE_ACCOUNT_TASK_READ_SERVICE_CTE_WORKSPACE_CREDENTIAL
                         .replace("__ORDER__", order)
                         .replace("__DIRECTION__", direction)
                 + PlatformWorkspaceAccountTaskReadServiceSql.PLATFORM_WORKSPACE_ACCOUNT_TASK_READ_SERVICE_ORDER_BY
                 + (PlatformWorkspaceAccountTaskReadServiceSql.LAST_LOGIN_ORDER.equals(order)
-                                ? PlatformWorkspaceAccountTaskReadServiceSql.PAGED_LAST_LOGIN_ORDER
-                                : PlatformWorkspaceAccountTaskReadServiceSql.PAGED_ORDER_PREFIX + order)
-                + PlatformWorkspaceAccountTaskReadServiceSql.SQL_SPACE + direction
+                        ? PlatformWorkspaceAccountTaskReadServiceSql.PAGED_LAST_LOGIN_ORDER
+                        : PlatformWorkspaceAccountTaskReadServiceSql.PAGED_ORDER_PREFIX + order)
+                + PlatformWorkspaceAccountTaskReadServiceSql.SQL_SPACE
+                + direction
                 + PlatformWorkspaceAccountTaskReadServiceSql.PAGE_TIE_BREAKER_SUFFIX;
     }
 

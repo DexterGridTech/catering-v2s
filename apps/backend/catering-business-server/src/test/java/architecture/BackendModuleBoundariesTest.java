@@ -15,8 +15,8 @@ import com.catering.v2s.app.edge.operations.session.OperationsDependsOnPlatformS
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.platform.session.PlatformDependsOnOperationsSessionFixture;
 import com.tngtech.archunit.core.domain.Dependency;
-import com.tngtech.archunit.core.domain.JavaCodeUnit;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaCodeUnit;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -129,19 +129,21 @@ class BackendModuleBoundariesTest {
                             // always inspect these parser entry points
                         } else if ("optional".equals(codeUnit.getName())
                                 && codeUnit.getRawParameterTypes().stream()
-                                        .noneMatch(type -> Set.of("ObjectNode", "JsonNode")
-                                                .contains(type.getSimpleName()))) {
+                                        .noneMatch(type ->
+                                                Set.of("ObjectNode", "JsonNode").contains(type.getSimpleName()))) {
                             continue;
                         } else if (!"optional".equals(codeUnit.getName())) {
                             continue;
                         }
                         boolean delegates = codeUnit.getMethodCallsFromSelf().stream()
-                                .anyMatch(call -> call.getTargetOwner().getFullName().equals(
-                                        "com.catering.v2s.platform.foundation.collection.CollectionRequestSupport"));
+                                .anyMatch(
+                                        call -> call.getTargetOwner()
+                                                .getFullName()
+                                                .equals(
+                                                        "com.catering.v2s.platform.foundation.collection.CollectionRequestSupport"));
                         if (!delegates) {
                             events.add(SimpleConditionEvent.violated(
-                                    codeUnit,
-                                    codeUnit.getFullName() + " must delegate to CollectionRequestSupport"));
+                                    codeUnit, codeUnit.getFullName() + " must delegate to CollectionRequestSupport"));
                         }
                     }
                 }

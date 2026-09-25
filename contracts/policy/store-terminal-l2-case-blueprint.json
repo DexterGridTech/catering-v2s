@@ -23,20 +23,25 @@
       "screenId": "TER-P01",
       "caseId": "terminal-list-detail",
       "surface": "list-detail",
-      "controlKeys": ["STORE_SCOPE", "TERMINAL_PAGE", "TERMINAL_LIST", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL"]
+      "controlKeys": ["STORE_SCOPE", "TERMINAL_PAGE", "TERMINAL_LIST", "TERMINAL_LIST_RETRY", "TERMINAL_PAGINATION", "TERMINAL_PAGINATION_NEXT", "TERMINAL_PAGINATION_PREVIOUS", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL_RETRY", "TERMINAL_DETAIL"]
     },
     {
       "screenId": "TER-C01",
       "caseId": "terminal-create-basic",
       "surface": "create-drawer-basic",
       "controlKeys": [
+        "STORE_SCOPE",
+        "TERMINAL_PAGE",
         "TERMINAL_CREATE",
         "TERMINAL_FORM",
         "TERMINAL_NAME",
         "TERMINAL_DEVICE_TYPE",
-        "TERMINAL_FORM_NEXT",
-        "TERMINAL_FORM_BACK",
+        "TERMINAL_DEVICE_TYPE_OPTION",
+        "TERMINAL_FORM_TAB_BASIC",
+        "TERMINAL_ACTIVATION_CODE",
+        "TERMINAL_ACTIVATION_CODE_CLEAR",
         "TERMINAL_FORM_CANCEL",
+        "TERMINAL_DIRTY_GUARD_CANCEL",
         "TERMINAL_DIRTY_GUARD_CONFIRM"
       ]
     },
@@ -45,35 +50,86 @@
       "caseId": "terminal-create-configuration",
       "surface": "create-drawer-configuration",
       "controlKeys": [
+        "STORE_SCOPE",
+        "TERMINAL_PAGE",
+        "TERMINAL_CREATE",
+        "TERMINAL_FORM",
+        "TERMINAL_NAME",
+        "TERMINAL_DEVICE_TYPE",
+        "TERMINAL_DEVICE_TYPE_OPTION",
+        "TERMINAL_FORM_TAB_BASIC",
+        "TERMINAL_FORM_TAB_FUNCTIONS",
         "TERMINAL_PRINTER_ADD",
+        "TERMINAL_PRINTER",
+        "TERMINAL_PRINTER_NAME",
+        "TERMINAL_PRINTER_BRAND",
+        "TERMINAL_PRINTER_MODEL",
+        "TERMINAL_PRINTER_PAPER_SPEC",
+        "TERMINAL_PRINTER_CONNECTION",
+        "TERMINAL_PRINTER_PARAMETER",
+        "TERMINAL_PRINTER_REMOVE",
+        "TERMINAL_PRINTER_REMOVE_CONFIRM",
+        "TERMINAL_PRINTER_REMOVE_CANCEL",
+        "TERMINAL_FUNCTION_LIST",
         "TERMINAL_FUNCTION_ADD",
+        "TERMINAL_FUNCTION_REMOVE",
+        "TERMINAL_FUNCTION_NAV",
+        "TERMINAL_FUNCTION",
+        "TERMINAL_FUNCTION_TYPE",
+        "TERMINAL_RANGE_GROUP",
+        "TERMINAL_RANGE_OPTION",
         "TERMINAL_SCENE_PICKER",
+        "TERMINAL_SCENE_TOGGLE",
+        "TERMINAL_SCENE",
+        "TERMINAL_SCENE_ORDER_TYPES",
+        "TERMINAL_SCENE_ORDER_TYPE",
+        "TERMINAL_SCENE_PRINTERS",
         "TERMINAL_AREA_CANDIDATES",
-        "TERMINAL_TAG_CANDIDATES"
+        "TERMINAL_AREA_CANDIDATES_RETRY",
+        "TERMINAL_TAG_CANDIDATES",
+        "TERMINAL_TAG_CANDIDATES_RETRY",
+        "TERMINAL_FORM_SAVE"
+      ],
+      "negativeFunctionAssertions": [
+        {"functionKey": "QUEUE_CALL", "label": "排队叫号", "absentControlKeys": ["TERMINAL_RANGE_GROUP"]},
+        {"functionKey": "KDS", "label": "KDS", "absentControlKeys": ["TERMINAL_SCENE_PICKER"]},
+        {"functionKey": "ORDER_CONFIRMATION", "label": "接单确认", "absentControlKeys": ["TERMINAL_SCENE_PICKER"]}
       ]
     },
     {
       "screenId": "TER-E01",
       "caseId": "terminal-edit-configuration",
       "surface": "edit-drawer",
-      "controlKeys": ["TERMINAL_LIST_ITEM", "TERMINAL_DETAIL", "TERMINAL_EDIT", "TERMINAL_FORM", "TERMINAL_FORM_CANCEL"]
+      "controlKeys": ["STORE_SCOPE", "TERMINAL_PAGE", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL", "TERMINAL_EDIT", "TERMINAL_FORM", "TERMINAL_FORM_TAB_BASIC", "TERMINAL_FORM_TAB_FUNCTIONS", "TERMINAL_PRINTER", "TERMINAL_PRINTER_NAME", "TERMINAL_PRINTER_BRAND", "TERMINAL_PRINTER_MODEL", "TERMINAL_PRINTER_PAPER_SPEC", "TERMINAL_PRINTER_CONNECTION", "TERMINAL_PRINTER_PARAMETER", "TERMINAL_FUNCTION_LIST", "TERMINAL_FUNCTION_NAV", "TERMINAL_FUNCTION", "TERMINAL_FUNCTION_TYPE", "TERMINAL_RANGE_GROUP", "TERMINAL_RANGE_OPTION", "TERMINAL_AREA_CANDIDATES", "TERMINAL_SCENE_PICKER", "TERMINAL_SCENE_TOGGLE", "TERMINAL_SCENE", "TERMINAL_SCENE_ORDER_TYPES", "TERMINAL_SCENE_ORDER_TYPE", "TERMINAL_SCENE_PRINTERS", "TERMINAL_FORM_SAVE"]
+    },
+    {
+      "screenId": "TER-M01",
+      "caseId": "terminal-readonly-state",
+      "surface": "readonly-detail",
+      "controlKeys": [
+        "STORE_SCOPE",
+        "TERMINAL_PAGE",
+        "TERMINAL_LIST",
+        "TERMINAL_LIST_ITEM",
+        "TERMINAL_DETAIL"
+      ]
     },
     {
       "screenId": "TER-A01",
       "caseId": "terminal-status-actions",
       "surface": "status-confirmation",
       "controlKeys": [
+        "STORE_SCOPE",
+        "TERMINAL_PAGE",
+        "TERMINAL_LIST_ITEM",
+        "TERMINAL_DETAIL",
         "TERMINAL_ACTION_MENU",
         "TERMINAL_STATUS_ACTION",
         "TERMINAL_STATUS_MODAL",
-        "TERMINAL_STATUS_CANCEL"
+        "TERMINAL_STATUS_PROBLEM",
+        "TERMINAL_STATUS_CANCEL",
+        "TERMINAL_STATUS_CONFIRM"
       ]
-    },
-    {
-      "screenId": "TER-M01",
-      "caseId": "terminal-readonly-state",
-      "surface": "readonly-detail",
-      "controlKeys": ["STORE_SCOPE", "TERMINAL_PAGE", "TERMINAL_LIST", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL"]
     }
   ]
 }

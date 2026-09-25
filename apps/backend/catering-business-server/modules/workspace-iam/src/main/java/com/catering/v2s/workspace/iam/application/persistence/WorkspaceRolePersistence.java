@@ -30,9 +30,11 @@ public class WorkspaceRolePersistence {
             String pageAccessKeysJson,
             String actionCapabilityKeysJson) {
         return jdbc.update(
-                WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_INSERT_INTO_WORKSPACE_ROLE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NAME
+                WorkspaceRoleServiceSql
+                                .WORKSPACE_ROLE_SERVICE_INSERT_INTO_WORKSPACE_ROLE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NAME
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_SERVICE_NODE_TYPE_DESCRIPTION_STATUS_VERSION
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_PAGE_ACCESS_KEYS_CAPABILITY_KEYS
+                        + WorkspaceRoleServiceSql
+                                .WORKSPACE_ROLE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_PAGE_ACCESS_KEYS_CAPABILITY_KEYS
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_ENABLED,
                 roleId,
                 workspaceUuid,
@@ -60,7 +62,8 @@ public class WorkspaceRolePersistence {
                 WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_UPDATE_WORKSPACE_ROLE_NAME_DESCRIPTION_PAGE_ACCESS_KEYS
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_CAPABILITY_KEYS_VERSION
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
+                        + WorkspaceRoleServiceSql
+                                .WORKSPACE_ROLE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
                 name,
                 description,
                 pageAccessKeysJson,
@@ -73,12 +76,7 @@ public class WorkspaceRolePersistence {
     }
 
     public int transitionStatus(
-            String status,
-            long now,
-            UUID roleId,
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            long expectedVersion) {
+            String status, long now, UUID roleId, UUID workspaceUuid, String groupWorkspaceKey, long expectedVersion) {
         return jdbc.update(
                 WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_UPDATE_WORKSPACE_ROLE_STATUS_VERSION
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID
@@ -104,27 +102,28 @@ public class WorkspaceRolePersistence {
         String orderBy = "NAME".equals(sort)
                 ? WorkspaceRoleServiceSql.ROLE_NAME_ORDER
                 : WorkspaceRoleServiceSql.ROLE_UPDATED_AT_ORDER;
-        String sql =
-                WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_CTE_FILTERED_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NAME
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_SERVICE_NODE_TYPE_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_PAGE_ACCESS_KEYS_CAPABILITY_KEYS_TOTAL
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_WORKSPACE_ROLE
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_WHERE
-                        + WorkspaceRoleServiceSql.ROLE_PAGE_WHERE
-                        + WorkspaceRoleServiceSql.ROLE_PAGE_ORDER_PREFIX
-                        + orderBy
-                        + WorkspaceRoleServiceSql.SQL_SPACE
-                        + direction
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_VALUE_SEPARATOR_PAGE_TOTAL_TOTAL
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_FROM_CLAUSE_PAGED_TOTAL_WORKSPACE_UUID
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_PAGED_GROUP_WORKSPACE_KEY_NAME_DESCRIPTION
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_PAGED_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_PAGED_UPDATED_AT_EPOCH_MILLIS_PAGE_ACCESS_KEYS_CAPABILITY_KEYS
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_PAGED_TOTAL
-                        + orderBy
-                        + WorkspaceRoleServiceSql.SQL_SPACE
-                        + direction
-                        + WorkspaceRoleServiceSql.ROLE_PAGE_ORDER_SUFFIX;
+        String sql = WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_CTE_FILTERED_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NAME
+                + WorkspaceRoleServiceSql
+                        .WORKSPACE_ROLE_SERVICE_SERVICE_NODE_TYPE_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS
+                + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_PAGE_ACCESS_KEYS_CAPABILITY_KEYS_TOTAL
+                + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_WORKSPACE_ROLE
+                + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_WHERE
+                + WorkspaceRoleServiceSql.ROLE_PAGE_WHERE
+                + WorkspaceRoleServiceSql.ROLE_PAGE_ORDER_PREFIX
+                + orderBy
+                + WorkspaceRoleServiceSql.SQL_SPACE
+                + direction
+                + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_VALUE_SEPARATOR_PAGE_TOTAL_TOTAL
+                + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_FROM_CLAUSE_PAGED_TOTAL_WORKSPACE_UUID
+                + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_PAGED_GROUP_WORKSPACE_KEY_NAME_DESCRIPTION
+                + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_PAGED_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS
+                + WorkspaceRoleServiceSql
+                        .WORKSPACE_ROLE_SERVICE_PAGED_UPDATED_AT_EPOCH_MILLIS_PAGE_ACCESS_KEYS_CAPABILITY_KEYS
+                + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_PAGED_TOTAL
+                + orderBy
+                + WorkspaceRoleServiceSql.SQL_SPACE
+                + direction
+                + WorkspaceRoleServiceSql.ROLE_PAGE_ORDER_SUFFIX;
         return jdbc.query(
                 sql,
                 statement -> {
@@ -152,10 +151,12 @@ public class WorkspaceRolePersistence {
 
     public RoleRow role(UUID workspaceUuid, String groupWorkspaceKey, UUID roleId) {
         return jdbc.query(
-                WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NAME_DESCRIPTION
+                WorkspaceRoleServiceSql
+                                .WORKSPACE_ROLE_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NAME_DESCRIPTION
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_VERSION
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_CAPABILITY_KEYS
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_FROM_CLAUSE_WORKSPACE_ROLE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
+                        + WorkspaceRoleServiceSql
+                                .WORKSPACE_ROLE_SERVICE_FROM_CLAUSE_WORKSPACE_ROLE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, roleId);
                     statement.setObject(2, workspaceUuid);
@@ -171,10 +172,12 @@ public class WorkspaceRolePersistence {
                 WorkspaceRoleServiceSql.PLACEHOLDER_SEPARATOR,
                 java.util.Collections.nCopies(ids.size(), WorkspaceRoleServiceSql.PARAMETER_PLACEHOLDER));
         return jdbc.query(
-                WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NAME_DESCRIPTION_ALTERNATE_A
+                WorkspaceRoleServiceSql
+                                .WORKSPACE_ROLE_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NAME_DESCRIPTION_ALTERNATE_A
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_VERSION_ALTERNATE_A
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_CAPABILITY_KEYS_ALTERNATE_A
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_FROM_CLAUSE_WORKSPACE_ROLE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A
+                        + WorkspaceRoleServiceSql
+                                .WORKSPACE_ROLE_SERVICE_FROM_CLAUSE_WORKSPACE_ROLE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_IN_LIST_PREFIX
                         + placeholders
                         + WorkspaceRoleServiceSql.SQL_CLOSE_PAREN,
@@ -198,9 +201,12 @@ public class WorkspaceRolePersistence {
             long now,
             String changesJson) {
         return jdbc.update(
-                WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
-                        + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_WORKSPACE_ROLE
+                WorkspaceRoleServiceSql
+                                .WORKSPACE_ROLE_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
+                        + WorkspaceRoleServiceSql
+                                .WORKSPACE_ROLE_SERVICE_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
+                        + WorkspaceRoleServiceSql
+                                .WORKSPACE_ROLE_SERVICE_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_WORKSPACE_ROLE
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_PARAMETER_PLACEHOLDER
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_CAST_AS_JSONB,
                 auditId,

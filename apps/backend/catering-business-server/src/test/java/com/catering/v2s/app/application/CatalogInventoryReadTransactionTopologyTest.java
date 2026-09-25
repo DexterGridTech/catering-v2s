@@ -1,7 +1,7 @@
 package com.catering.v2s.app.application;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -10,13 +10,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.catalog.application.CatalogInventoryCoordinator;
 import com.catering.v2s.catalog.application.CatalogOwnerService;
-import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.catalog.application.CatalogProductionTagOwnerService;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
-import com.catering.v2s.inventory.application.InventoryReadRouter;
 import com.catering.v2s.inventory.application.InventoryOwnerService;
+import com.catering.v2s.inventory.application.InventoryReadRouter;
 import com.catering.v2s.inventory.application.InventoryTargetService;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
@@ -35,11 +35,11 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.interceptor.TransactionAttribute;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
@@ -298,8 +298,8 @@ class CatalogInventoryReadTransactionTopologyTest {
         Connection connection = mock(Connection.class);
         when(dataSource.getConnection()).thenReturn(connection);
         when(connection.getAutoCommit()).thenReturn(true);
-        TransactionInterceptor transactions =
-                new TransactionInterceptor(new DataSourceTransactionManager(dataSource), new AnnotationTransactionAttributeSource());
+        TransactionInterceptor transactions = new TransactionInterceptor(
+                new DataSourceTransactionManager(dataSource), new AnnotationTransactionAttributeSource());
         ProxyFactory proxyFactory = new ProxyFactory(new InventoryReadRouter(target));
         proxyFactory.setProxyTargetClass(true);
         proxyFactory.addAdvice(transactions);
@@ -361,7 +361,8 @@ class CatalogInventoryReadTransactionTopologyTest {
     private static void assertTransaction(Class<?> type, String methodName, Class<?>... parameterTypes)
             throws Exception {
         Method method = type.getMethod(methodName, parameterTypes);
-        TransactionAttribute attribute = new AnnotationTransactionAttributeSource().getTransactionAttribute(method, type);
+        TransactionAttribute attribute =
+                new AnnotationTransactionAttributeSource().getTransactionAttribute(method, type);
         assertNotNull(attribute, type.getSimpleName() + "#" + methodName + " must declare a transaction");
         assertEquals(
                 TransactionDefinition.PROPAGATION_REQUIRED,

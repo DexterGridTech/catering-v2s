@@ -4,7 +4,7 @@ import {spawnSync} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
-const nativePackageRoot = path.join(repositoryRoot, 'apps/terminal/assembly/base/android')
+const nativePackageRoot = path.join(repositoryRoot, 'apps/terminal/application/base/android')
 const renderPackageRoot = path.join(repositoryRoot, 'apps/terminal/ui/base/render')
 const nativeSourcePath = path.join(nativePackageRoot, 'src/foundations/nativeLoadingCapability.ts')
 const readySourcePath = path.join(renderPackageRoot, 'src/components/ScreenReadyBoundary.tsx')

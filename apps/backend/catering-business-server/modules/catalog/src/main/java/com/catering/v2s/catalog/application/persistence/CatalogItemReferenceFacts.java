@@ -1,6 +1,5 @@
 package com.catering.v2s.catalog.application.persistence;
 
-import com.catering.v2s.catalog.application.persistence.CatalogItemReferenceFactsSql;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,7 +39,9 @@ public class CatalogItemReferenceFacts {
         Map<UUID, Map<String, JsonNode>> result = new LinkedHashMap<>();
         refs.forEach(ref -> result.put(ref, emptyKinds()));
         jdbc.query(
-                CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_SELECT_CATALOG_ITEM_REFERENCE_ITEM_REF_KIND_REF + placeholders
+                CatalogItemReferenceFactsSql
+                                .CATALOG_ITEM_REFERENCE_FACTS_SELECT_CATALOG_ITEM_REFERENCE_ITEM_REF_KIND_REF
+                        + placeholders
                         + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_CLOSE_PAREN_ITEM_REF_KIND_REF,
                 statement -> {
                     for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
@@ -69,7 +70,9 @@ public class CatalogItemReferenceFacts {
         if (productionTag != null) rows.add(new Object[] {itemRef, PRODUCTION_TAG, productionTag});
         addRows(rows, itemRef, CATALOG_TAG, normalize(tagRefs, "tagRefs"));
         if (rows.isEmpty()) {
-            jdbc.update(CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_DELETE_CATALOG_ITEM_REFERENCE_ITEM_REF, itemRef);
+            jdbc.update(
+                    CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_DELETE_CATALOG_ITEM_REFERENCE_ITEM_REF,
+                    itemRef);
             return;
         }
         // PostgreSQL evaluates data-modifying CTE branches against one snapshot.  A delete and an insert into this
@@ -77,8 +80,14 @@ public class CatalogItemReferenceFacts {
         // deleted by its sibling branch.  Keep replacement as its two required statements inside the caller's
         // transaction; correctness and rollback atomicity belong to that transaction, not to a false one-statement
         // optimization.
-        jdbc.update(CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_DELETE_CATALOG_ITEM_REFERENCE_ITEM_REF_ALTERNATE_A, itemRef);
-        jdbc.batchUpdate(CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_INSERT_INTO_CATALOG_ITEM_REFERENCE_ITEM_REF_KIND_REF, rows);
+        jdbc.update(
+                CatalogItemReferenceFactsSql
+                        .CATALOG_ITEM_REFERENCE_FACTS_DELETE_CATALOG_ITEM_REFERENCE_ITEM_REF_ALTERNATE_A,
+                itemRef);
+        jdbc.batchUpdate(
+                CatalogItemReferenceFactsSql
+                        .CATALOG_ITEM_REFERENCE_FACTS_INSERT_INTO_CATALOG_ITEM_REFERENCE_ITEM_REF_KIND_REF,
+                rows);
     }
 
     /** Inserts facts for freshly-created copy targets in one owner-local JDBC batch. */
@@ -91,14 +100,18 @@ public class CatalogItemReferenceFacts {
                 addRows(rows, entry.getKey(), CATALOG_TAG, normalize(values.tagRefs(), "tagRefs"));
             }
         if (!rows.isEmpty())
-            jdbc.batchUpdate(CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_INSERT_INTO_CATALOG_ITEM_REFERENCE_ITEM_REF_KIND_REF_ALTERNATE_A, rows);
+            jdbc.batchUpdate(
+                    CatalogItemReferenceFactsSql
+                            .CATALOG_ITEM_REFERENCE_FACTS_INSERT_INTO_CATALOG_ITEM_REFERENCE_ITEM_REF_KIND_REF_ALTERNATE_A,
+                    rows);
     }
 
     public boolean referenced(String dataNodeRef, String brandRef, String kind, UUID ref) {
         if (!KINDS.contains(kind)) return false;
         Boolean found = jdbc.queryForObject(
                 CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_SELECT_CATALOG_ITEM_RELATION_ITEM
-                        + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_JOIN_CONDITION_ITEM_ITEM_REF_RELATION_KIND
+                        + CatalogItemReferenceFactsSql
+                                .CATALOG_ITEM_REFERENCE_FACTS_JOIN_CONDITION_ITEM_ITEM_REF_RELATION_KIND
                         + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_ITEM_DATA_NODE_REF_BRAND_REF_STATUS,
                 Boolean.class,
                 kind,
@@ -123,7 +136,8 @@ public class CatalogItemReferenceFacts {
                 CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_SELECT_CATALOG_ITEM_RELATION_REF
                         + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_ITEM_ITEM_REF_RELATION_KIND
                         + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_ITEM_BRAND_REF_STATUS_VOIDED
-                        + placeholders + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_CLOSE_PAREN,
+                        + placeholders
+                        + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_CLOSE_PAREN,
                 (rows, row) -> rows.getObject(1, UUID.class),
                 arguments.toArray()));
     }

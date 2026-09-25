@@ -3,12 +3,14 @@ import {PrimitiveButton, PrimitiveHeading, PrimitiveInput, PrimitivePinInput} fr
 import {useSurfaceFocusBoundary, type SurfaceFocusBoundaryListener} from '@catering-v2s/ui-base-render'
 import {describe, expect, it, vi} from 'vitest'
 import {InputSurfaceFrame} from '../src/components/InputSurfaceFrame'
+import {InputKeyboard} from '../src/components/InputKeyboard'
+import {VirtualKeyboard} from '../src/components/VirtualKeyboard'
 import {useInputField} from '../src/hooks/useInputField'
 import {useInputSnapshot} from '../src/hooks/useInputSnapshot'
-import {useInputController, useInputKeyboardState} from '../src/contexts/context'
+import {useInputController, useInputKeyboardState, useInputPendingFocusCommit} from '../src/contexts/context'
 import type {InputController, InputFieldResult} from '../src/types/types'
 import {Animated, StyleSheet, TextInput, View} from 'react-native'
-import {useRef} from 'react'
+import {useRef, useState} from 'react'
 import {advanceAnimatedTimingsForTests, setAnimatedTimingAutoFinishForTests} from '../../../../../../tools/terminal-shared/react-native-vitest-entry'
 
 const TEST_FRAME = {width: 960, height: 540} as const
@@ -242,6 +244,11 @@ const ControllerProbe = ({onReady}: Readonly<{readonly onReady: (controller: Inp
   return null
 }
 
+const PendingFocusCommitProbe = ({onReady}: Readonly<{readonly onReady: (commit: (fieldId: string) => boolean) => void}>) => {
+  onReady(useInputPendingFocusCommit())
+  return null
+}
+
 const BoundaryProbe = ({onReady}: Readonly<{readonly onReady: (listener: SurfaceFocusBoundaryListener) => void}>) => {
   onReady(useSurfaceFocusBoundary())
   return null
@@ -280,6 +287,20 @@ const RenderCountingField = ({
 const StateProbe = ({onState}: Readonly<{readonly onState: (state: ReturnType<typeof useInputKeyboardState>) => void}>) => {
   onState(useInputKeyboardState())
   return <PrimitiveButton testID="sample:decision" onPress={() => undefined}>继续</PrimitiveButton>
+}
+
+const PassiveKeyboardHarness = () => {
+  const [revision, setRevision] = useState(0)
+  return (
+    <>
+      <InputKeyboard
+        snapshot={{fieldId: 'passive', layout: 'numeric', height: 246, frameWidth: 960, shift: false, hasNextField: false}}
+        interactive={false}
+        testIDSuffix={String(revision)}
+      />
+      <PrimitiveButton testID="sample:rerender-passive" onPress={() => { setRevision(value => value + 1) }}>重绘</PrimitiveButton>
+    </>
+  )
 }
 
 describe('input provider', () => {
@@ -555,6 +576,128 @@ describe('input provider', () => {
       setAnimatedTimingAutoFinishForTests(true)
       act(() => { renderer.unmount() })
     }
+  })
+
+  it('keeps frozen keyboard layer identities unique across rapid A-to-B-to-A-to-C retargets', () => {
+    let state: ReturnType<typeof useInputKeyboardState> | undefined
+    const duplicateKeyError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const renderer = mount(
+      <InputSurfaceFrame>
+        <StateProbe onState={value => { state = value }} />
+        <Field fieldId="rapid-a" testID="sample:rapid-a" layout="alpha" onReady={() => undefined} />
+        <Field fieldId="rapid-b" testID="sample:rapid-b" layout="full" onReady={() => undefined} />
+        <Field fieldId="rapid-c" testID="sample:rapid-c" layout="financial" onReady={() => undefined} />
+      </InputSurfaceFrame>,
+    )
+    const input = (testID: string) => renderer.root.findAllByType(TextInput).find(node => node.props.testID === testID)!
+    const requestFocus = (testID: string): void => {
+      const target = input(testID)
+      act(() => { target.props.onPressIn({stopPropagation: () => undefined}) })
+      act(() => { target.props.onFocus({nativeEvent: {}}) })
+    }
+    const assertLayerKeysUnique = (): void => {
+      const keys = keyboardPositionLayers(renderer).map(layer => layer.props.nativeID)
+      expect(keys.every(key => typeof key === 'string' && key.length > 0)).toBe(true)
+      expect(new Set(keys).size).toBe(keys.length)
+    }
+
+    try {
+      focusAndFinishKeyboard(renderer, input('sample:rapid-a'))
+      setAnimatedTimingAutoFinishForTests(false)
+
+      requestFocus('sample:rapid-b')
+      assertLayerKeysUnique()
+      measureKeyboardLayers(renderer)
+      act(() => { advanceAnimatedTimingsForTests(0.2) })
+      assertLayerKeysUnique()
+
+      requestFocus('sample:rapid-a')
+      assertLayerKeysUnique()
+      measureKeyboardLayers(renderer)
+      act(() => { advanceAnimatedTimingsForTests(0.2) })
+      assertLayerKeysUnique()
+
+      requestFocus('sample:rapid-c')
+      expect(state?.blockedFieldId).toBe('rapid-c')
+      assertLayerKeysUnique()
+      measureKeyboardLayers(renderer)
+      act(() => { advanceAnimatedTimingsForTests(1) })
+
+      assertLayerKeysUnique()
+      expect(keyboardPositionLayers(renderer)).toHaveLength(1)
+      expect(duplicateKeyError.mock.calls.filter(([message]) => /same key|duplicate key/i.test(String(message)))).toHaveLength(0)
+    } finally {
+      setAnimatedTimingAutoFinishForTests(true)
+      duplicateKeyError.mockRestore()
+      act(() => { renderer.unmount() })
+    }
+  })
+
+  it('does not restart an in-flight presentation when pending ownership commits in the same serial', () => {
+    let commitPendingFocus: ((fieldId: string) => boolean) | undefined
+    const resetSpy = vi.spyOn(Animated.Value.prototype, 'setValue')
+    const renderer = mount(
+      <InputSurfaceFrame>
+        <PendingFocusCommitProbe onReady={value => { commitPendingFocus = value }} />
+        <Field fieldId="same-serial" testID="sample:same-serial" onReady={() => undefined} />
+      </InputSurfaceFrame>,
+    )
+    const input = renderer.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:same-serial')!
+
+    try {
+      setAnimatedTimingAutoFinishForTests(false)
+      act(() => { input.props.onFocus({nativeEvent: {}}) })
+      measureKeyboardLayers(renderer)
+      resetSpy.mockClear()
+
+      act(() => { expect(commitPendingFocus?.('same-serial')).toBe(true) })
+      expect(resetSpy.mock.calls.filter(([value]) => value === 0)).toHaveLength(0)
+      act(() => { advanceAnimatedTimingsForTests(1) })
+    } finally {
+      setAnimatedTimingAutoFinishForTests(true)
+      resetSpy.mockRestore()
+      act(() => { renderer.unmount() })
+    }
+  })
+
+  it('keeps the incoming keyboard instance and passive handler stable across measurement', () => {
+    const renderer = mount(
+      <InputSurfaceFrame>
+        <Field fieldId="stable-layer" testID="sample:stable-layer" onReady={() => undefined} />
+      </InputSurfaceFrame>,
+    )
+    const input = renderer.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:stable-layer')!
+    const keyboardNode = () => renderer.root.findAllByType(VirtualKeyboard.type)[0]
+
+    try {
+      setAnimatedTimingAutoFinishForTests(false)
+      act(() => { input.props.onFocus({nativeEvent: {}}) })
+      const beforeMeasure = keyboardNode()
+      expect(beforeMeasure).toBeDefined()
+      measureKeyboardLayers(renderer)
+      const afterMeasure = keyboardNode()
+      expect(afterMeasure).toBe(beforeMeasure)
+      expect(afterMeasure?.props.onKey).toBe(beforeMeasure?.props.onKey)
+    } finally {
+      setAnimatedTimingAutoFinishForTests(true)
+      act(() => { renderer.unmount() })
+    }
+  })
+
+  it('uses one passive noop handler across parent rerenders', () => {
+    const renderer = mount(
+      <InputSurfaceFrame>
+        <PassiveKeyboardHarness />
+      </InputSurfaceFrame>,
+    )
+    const keyboardNode = () => renderer.root.findAllByType(VirtualKeyboard.type)[0]
+    const before = keyboardNode()
+    const beforeOnKey = before?.props.onKey
+    const rerender = renderer.root.findByProps({testID: 'sample:rerender-passive'})
+    act(() => { rerender.props.onPress() })
+    const after = keyboardNode()
+    expect(after?.props.onKey).toBe(beforeOnKey)
+    act(() => { renderer.unmount() })
   })
 
   it('cancels an in-flight handoff from its sampled geometry and removes the overlay only after exit', () => {
@@ -1004,7 +1147,7 @@ describe('input provider', () => {
     }
   })
 
-  it('does not clear a pending web input when surface click receives nativeEvent target', () => {
+  it('protects only the pending field from web surface dismissal', () => {
     const originalDocument = (globalThis as typeof globalThis & {readonly document?: unknown}).document
     Object.defineProperty(globalThis, 'document', {configurable: true, value: {}})
     let state: ReturnType<typeof useInputKeyboardState> | undefined
@@ -1021,11 +1164,15 @@ describe('input provider', () => {
       }>
       act(() => { input.props.onFocus?.() })
       expect(state?.blockedFieldId).toBe('web-pending-target')
-      act(() => { content.props.onClick?.({nativeEvent: {target: {closest: () => ({})}}}) })
+      const pendingTarget = {
+        getAttribute: (name: string) => name === 'data-testid' ? 'sample:web-pending-target' : null,
+        closest: (selector: string) => selector === 'input,textarea' ? pendingTarget : null,
+      }
+      act(() => { content.props.onClick?.({nativeEvent: {target: pendingTarget}}) })
       expect(state?.blockedFieldId).toBe('web-pending-target')
       expect(state?.owner).toBe('none')
       act(() => { content.props.onClick?.({nativeEvent: {target: {}}}) })
-      expect(state?.blockedFieldId).toBe('web-pending-target')
+      expect(state?.blockedFieldId).toBeNull()
       expect(state?.owner).toBe('none')
       act(() => { renderer.unmount() })
     } finally {

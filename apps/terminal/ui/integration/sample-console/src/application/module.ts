@@ -5,13 +5,13 @@ import {
 import {
   createStartupReadyActor as createSharedStartupReadyActor,
   type StartupReadyPayload,
-} from '@catering-v2s/ui-base-console-assembly'
+} from '@catering-v2s/ui-base-integration-assembly'
 import {runtimeModuleDependencyNames} from '../dependencies'
 import {moduleKind, moduleName} from '../moduleName'
 
 export type SampleConsoleReadyPayload = StartupReadyPayload
 
-/** The integration owns the startup-ready command; console-assembly owns completion writing. */
+/** The integration owns the startup-ready command; integration-assembly owns completion writing. */
 export const startupReadyCommand = defineCommand<SampleConsoleReadyPayload>(moduleName, {
   name: 'startup-ready',
   visibility: 'internal',

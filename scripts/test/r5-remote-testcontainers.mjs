@@ -1233,13 +1233,38 @@ const collectArtifacts = (remoteResults, directory) => {
 
 const testcontainersRemoteRootPattern = /^\/tmp\/r5-tc-[0-9]+-[0-9]+$/;
 const cleanupMarker = (output, name) => output.match(new RegExp(`(?:^|\\n)${name}=([^\\r\\n]+)`))?.[1]?.trim() ?? null;
-const cleanupRemoteWorkspaceScript = remoteRoot =>
-  script(
+const cleanupRemoteWorkspaceScript = (remoteRoot, baseline = null) => {
+  const baselineSetup =
+    baseline === null
+      ? [
+          'test -f "$before_container_ids_file" || { printf "REMOTE_CLEANUP_FAILURE=BEFORE_CONTAINER_IDS_MISSING\\n"; exit 65; }',
+          'test -f "$before_volume_ids_file" || { printf "REMOTE_CLEANUP_FAILURE=BEFORE_VOLUME_IDS_MISSING\\n"; exit 66; }',
+          'before_container_ids="$(cat "$before_container_ids_file")"',
+          'before_volume_ids="$(cat "$before_volume_ids_file")"',
+        ]
+      : [
+          `baseline_container_ids=${quote(baseline.containerIds.join('\\n'))}`,
+          `baseline_volume_ids=${quote(baseline.volumeIds.join('\\n'))}`,
+          'if test -f "$before_container_ids_file"; then before_container_ids="$(cat "$before_container_ids_file")"; else before_container_ids="$baseline_container_ids"; fi',
+          'if test -f "$before_volume_ids_file"; then before_volume_ids="$(cat "$before_volume_ids_file")"; else before_volume_ids="$baseline_volume_ids"; fi',
+        ];
+  return script(
     'set -uo pipefail',
     `root=${quote(remoteRoot)}`,
     'case "$root" in /tmp/r5-tc-[0-9]*-[0-9]*) ;; *) printf "REMOTE_CLEANUP_FAILURE=ROOT_IDENTITY_INVALID\\n"; exit 64 ;; esac',
+    'before_container_ids_file="$root/before-container-ids"',
+    'before_volume_ids_file="$root/before-volume-ids"',
+    ...baselineSetup,
     'if ! container_ids="$(docker ps -aq --filter label=org.testcontainers=true | sort)"; then printf "REMOTE_CLEANUP_FAILURE=CONTAINER_QUERY_FAILED\\n"; exit 70; fi',
     'if ! volume_ids="$(docker volume ls -q --filter label=org.testcontainers=true | sort)"; then printf "REMOTE_CLEANUP_FAILURE=VOLUME_QUERY_FAILED\\n"; exit 71; fi',
+    'owned_container_ids="$(comm -13 <(printf "%s\\n" "$before_container_ids" | sed "/^$/d" | sort) <(printf "%s\\n" "$container_ids"))"',
+    'owned_volume_ids="$(comm -13 <(printf "%s\\n" "$before_volume_ids" | sed "/^$/d" | sort) <(printf "%s\\n" "$volume_ids"))"',
+    'cleanup_status=0',
+    'if test -n "$owned_container_ids"; then while IFS= read -r container_id; do test -z "$container_id" || docker rm -f -- "$container_id" >/dev/null || cleanup_status=1; done <<< "$owned_container_ids"; fi',
+    'if test -n "$owned_volume_ids"; then while IFS= read -r volume_id; do test -z "$volume_id" || docker volume rm -- "$volume_id" >/dev/null || cleanup_status=1; done <<< "$owned_volume_ids"; fi',
+    'test "$cleanup_status" = 0 || { printf "REMOTE_CLEANUP_FAILURE=OWNED_RESOURCE_DELETE_FAILED\\n"; exit 72; }',
+    'if ! container_ids="$(docker ps -aq --filter label=org.testcontainers=true | sort)"; then printf "REMOTE_CLEANUP_FAILURE=CONTAINER_QUERY_FAILED_AFTER_DELETE\\n"; exit 70; fi',
+    'if ! volume_ids="$(docker volume ls -q --filter label=org.testcontainers=true | sort)"; then printf "REMOTE_CLEANUP_FAILURE=VOLUME_QUERY_FAILED_AFTER_DELETE\\n"; exit 71; fi',
     'container_count=0; test -z "$container_ids" || container_count="$(printf "%s\\n" "$container_ids" | wc -l | tr -d " ")"',
     'volume_count=0; test -z "$volume_ids" || volume_count="$(printf "%s\\n" "$volume_ids" | wc -l | tr -d " ")"',
     'active_process_count=0; active_process_pids=""',
@@ -1259,18 +1284,19 @@ const cleanupRemoteWorkspaceScript = remoteRoot =>
     'printf "REMOTE_ACTIVE_PROCESS_PIDS=%s\\n" "${active_process_pids%,}"',
     'printf "REMOTE_TESTCONTAINERS_CONTAINER_COUNT=%s\\n" "$container_count"',
     'printf "REMOTE_TESTCONTAINERS_VOLUME_COUNT=%s\\n" "$volume_count"',
-    'test "$container_count" = 0 || { printf "REMOTE_CLEANUP_FAILURE=CONTAINERS_REMAIN\\n"; exit 72; }',
-    'test "$volume_count" = 0 || { printf "REMOTE_CLEANUP_FAILURE=VOLUMES_REMAIN\\n"; exit 73; }',
-    'test "$active_process_count" = 0 || { printf "REMOTE_CLEANUP_FAILURE=REMOTE_PROCESSES_REMAIN\\n"; exit 74; }',
+    'test "$container_count" = 0 || { printf "REMOTE_CLEANUP_FAILURE=CONTAINERS_REMAIN\\n"; exit 73; }',
+    'test "$volume_count" = 0 || { printf "REMOTE_CLEANUP_FAILURE=VOLUMES_REMAIN\\n"; exit 74; }',
+    'test "$active_process_count" = 0 || { printf "REMOTE_CLEANUP_FAILURE=REMOTE_PROCESSES_REMAIN\\n"; exit 75; }',
     'if test ! -e "$root"; then printf "REMOTE_ROOT_ABSENT=true\\n"; exit 0; fi',
-    'if ! rm -rf -- "$root"; then printf "REMOTE_CLEANUP_FAILURE=ROOT_DELETE_FAILED\\n"; exit 75; fi',
-    'if test -e "$root"; then printf "REMOTE_CLEANUP_FAILURE=ROOT_READBACK_PRESENT\\n"; exit 76; fi',
+    'if ! rm -rf -- "$root"; then printf "REMOTE_CLEANUP_FAILURE=ROOT_DELETE_FAILED\\n"; exit 76; fi',
+    'if test -e "$root"; then printf "REMOTE_CLEANUP_FAILURE=ROOT_READBACK_PRESENT\\n"; exit 77; fi',
     'printf "REMOTE_ROOT_ABSENT=true\\n"',
   );
+};
 
-export function cleanupRemoteWorkspaceDetailed(remoteRoot, execute = remoteResult) {
+export function cleanupRemoteWorkspaceDetailed(remoteRoot, execute = remoteResult, baseline = null) {
   if (!testcontainersRemoteRootPattern.test(String(remoteRoot ?? ''))) throw new Error('REMOTE_TESTCONTAINERS_ROOT_IDENTITY_INVALID');
-  const result = execute(cleanupRemoteWorkspaceScript(remoteRoot));
+  const result = execute(cleanupRemoteWorkspaceScript(remoteRoot, baseline));
   const output = `${result?.stdout ?? ''}\n${result?.stderr ?? ''}`;
   return Object.freeze({
     status: result?.status === 0 && cleanupMarker(output, 'REMOTE_ROOT_ABSENT') === 'true' ? 'PASS' : 'FAIL',
@@ -1325,7 +1351,20 @@ export function recoverRemoteWorkspaceCleanup({manifestPath: sourceManifestPath,
   const manifest = validateCleanupRecoveryTarget(JSON.parse(readFileSync(sourcePath, 'utf8')), {expectedHost});
   const expectedPath = path.join(evidence, manifest.runId, 'run-manifest.json');
   if (sourcePath !== expectedPath) throw new Error('CLEANUP_RECOVERY_MANIFEST_PATH_RUN_ID_MISMATCH');
-  const cleanup = cleanupRemoteWorkspaceDetailed(manifest.remote.root);
+  const baseline = manifest.resourcePreflight;
+  if (
+    !baseline ||
+    !Array.isArray(baseline.containers) ||
+    !Array.isArray(baseline.volumes) ||
+    baseline.containers.some(value => typeof value !== 'string') ||
+    baseline.volumes.some(value => typeof value !== 'string')
+  ) {
+    throw new Error('CLEANUP_RECOVERY_RESOURCE_PREFLIGHT_MISSING');
+  }
+  const cleanup = cleanupRemoteWorkspaceDetailed(manifest.remote.root, remoteResult, {
+    containerIds: [...new Set(baseline.containers)].sort(),
+    volumeIds: [...new Set(baseline.volumes)].sort(),
+  });
   const recoveryPath = path.join(path.dirname(sourcePath), 'cleanup-recovery.json');
   const recovery = {
     schemaVersion: 1,

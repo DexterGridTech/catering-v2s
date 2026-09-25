@@ -1,6 +1,5 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.workspace.iam.application.persistence.WorkspaceRolePersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
@@ -11,6 +10,7 @@ import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog;
 import com.catering.v2s.workspace.iam.api.WorkspaceRoleReadback;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceRolePersistence;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -424,7 +424,8 @@ public class WorkspaceRoleService {
                 pageSize,
                 effectiveSort,
                 effectiveDirection);
-        List<WorkspaceRoleReadback> items = rows.items().stream().map(WorkspaceRoleService::readback).toList();
+        List<WorkspaceRoleReadback> items =
+                rows.items().stream().map(WorkspaceRoleService::readback).toList();
         return new Page(List.copyOf(items), page, pageSize, rows.total(), effectiveSort, effectiveDirection);
     }
 
@@ -525,7 +526,8 @@ public class WorkspaceRoleService {
         return List.of(
                         AuditChange.forNullableScalar("name", before.name(), after.name()),
                         AuditChange.forNullableScalar("description", before.description(), after.description()),
-                        AuditChange.forNullableScalar("pageAccessKeys", keys(before.pageAccessKeys()), keys(after.pageAccessKeys())),
+                        AuditChange.forNullableScalar(
+                                "pageAccessKeys", keys(before.pageAccessKeys()), keys(after.pageAccessKeys())),
                         AuditChange.forNullableScalar(
                                 "capabilityKeys",
                                 keys(before.actionCapabilityKeys()),

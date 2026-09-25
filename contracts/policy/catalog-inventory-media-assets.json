@@ -3,13 +3,12 @@
   "kind": "catalog-inventory-media-asset-catalog",
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "sourceBindings": {
-    "v4MediaDirectory": "../catering-server-v4/contracts/fixtures/formal-uat/media",
-    "v4AssetManifest": "../catering-server-v4/contracts/fixtures/formal-uat/complex-scenario/catalog/media/assets.json",
-    "v4CatalogItemSources": "../catering-server-v4/contracts/fixtures/formal-uat/complex-scenario/catalog/items"
+    "mediaDirectory": "contracts/policy/catalog-inventory-p1-media",
+    "catalogItemSourceDirectory": "contracts/policy/catalog-inventory-source/items"
   },
   "coverage": {
-    "v4CatalogItemCount": 73,
-    "v4MediaAssetCount": 34,
+    "catalogItemCount": 73,
+    "mediaAssetCount": 34,
     "p1RepresentativeSeedDatasetCount": 5,
     "p1RepresentativeSeedBoundMediaKeyCount": 8,
     "fullCatalogParityRequiredInP2": true,

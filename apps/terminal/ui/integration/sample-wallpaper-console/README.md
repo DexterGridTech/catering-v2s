@@ -9,7 +9,7 @@
 本包不拥有壁纸状态、图片 registry、通用 primitives、第二套背景层、第二套 catalog 或
 第二条打开路径；壁纸状态由 `kernel.feature.sample-wallpaper` 拥有，图片与 picker 由
 `ui.feature.sample-wallpaper-picker` 拥有，surface host 与 Android 形态由 adapter/assembly
-拥有。未来依赖它的 Android assembly 是 `assembly.android.sample-wallpaper-terminal`。
+拥有。未来依赖它的 Android application 包是 `application.android.sample-wallpaper-terminal`。
 
 ## 结构与公共面
 

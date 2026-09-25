@@ -9,6 +9,7 @@ import {PrimitiveIcon} from './PrimitiveIcon';
 import type {
   PrimitiveCheckboxProps,
   PrimitiveDropdownSelectProps,
+  PrimitiveFormProps,
   PrimitiveFormFieldProps,
   PrimitiveFormControlProps,
   PrimitiveInputProps,
@@ -186,6 +187,19 @@ export const PrimitiveDropdownSelect = ({
         </RnrView>
       ) : null}
     </RnrView>
+  );
+};
+
+/** Web-only form host; native rendering preserves the existing child tree. */
+export const PrimitiveForm = ({children, onSubmit}: PrimitiveFormProps): ReactNode => {
+  if (typeof document === 'undefined') return <>{children}</>;
+  return (
+    <form onSubmit={event => {
+      event.preventDefault();
+      onSubmit?.({preventDefault: () => event.preventDefault()});
+    }}>
+      {children}
+    </form>
   );
 };
 

@@ -91,8 +91,7 @@ class OrganizationOverviewQueryTest {
                 null,
                 null);
 
-        new OrganizationOverviewTaskReadService(jdbc)
-                .page(UUID.randomUUID(), "workspace-a", "STORE", query, 1, 20);
+        new OrganizationOverviewTaskReadService(jdbc).page(UUID.randomUUID(), "workspace-a", "STORE", query, 1, 20);
 
         assertTrue(jdbc.countSql.contains("AND 1=0"));
         assertTrue(jdbc.listSql.contains("AND 1=0"));
@@ -193,12 +192,7 @@ class OrganizationOverviewQueryTest {
         var service = new OrganizationOverviewTaskReadService(jdbc);
 
         service.platformOverviewTaskPage(
-                UUID.randomUUID(),
-                "workspace-a",
-                "STORE",
-                OrganizationOverviewTaskReadService.Query.empty(),
-                1,
-                20);
+                UUID.randomUUID(), "workspace-a", "STORE", OrganizationOverviewTaskReadService.Query.empty(), 1, 20);
 
         String sql = jdbc.listSql.replaceAll("\\s+", " ");
         assertTrue(sql.contains("ORDER BY s.updated_at_epoch_millis DESC, s.id DESC LIMIT ? OFFSET ?"));

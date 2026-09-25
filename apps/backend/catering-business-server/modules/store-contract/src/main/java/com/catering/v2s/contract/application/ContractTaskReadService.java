@@ -29,10 +29,7 @@ public class ContractTaskReadService
     }
 
     public ContractTaskReadService(JdbcTemplate jdbc, BusinessDateProvider businessDate) {
-        this(
-                new ContractTaskReadPersistence(jdbc),
-                new ContractDerivedStoreStatusPersistence(jdbc),
-                businessDate);
+        this(new ContractTaskReadPersistence(jdbc), new ContractDerivedStoreStatusPersistence(jdbc), businessDate);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -70,7 +67,9 @@ public class ContractTaskReadService
                 ? List.of()
                 : requestedStoreIds.stream().distinct().toList();
         if (storeIds.isEmpty()) return Map.of();
-        return derivedStatusPersistence.read(workspaceUuid, key, storeIds, businessDate.today()).statuses();
+        return derivedStatusPersistence
+                .read(workspaceUuid, key, storeIds, businessDate.today())
+                .statuses();
     }
 
     /** Explicit task-read lookup; platform workspace remains the owner of workspace state. */
@@ -169,15 +168,13 @@ public class ContractTaskReadService
     @Transactional(readOnly = true)
     public StoreContractView operationsTaskView(UUID workspaceUuid, String key, UUID contractId) {
         return ReadBudgetComponent.measure(
-                ReadBudgetComponent.Component.PRIMARY_QUERY,
-                () -> persistence.view(workspaceUuid, key, contractId));
+                ReadBudgetComponent.Component.PRIMARY_QUERY, () -> persistence.view(workspaceUuid, key, contractId));
     }
 
     @Transactional(readOnly = true)
     public StoreContractView platformOverviewTaskDetail(UUID workspaceUuid, String key, UUID contractId) {
         return ReadBudgetComponent.measure(
-                ReadBudgetComponent.Component.PRIMARY_QUERY,
-                () -> persistence.view(workspaceUuid, key, contractId));
+                ReadBudgetComponent.Component.PRIMARY_QUERY, () -> persistence.view(workspaceUuid, key, contractId));
     }
 
     private static OperationsStoreContractCommandApi.StoreContractTaskReadback taskReadback(StoreContractView value) {
@@ -328,21 +325,7 @@ public class ContractTaskReadService
 
         public static ContractListQuery empty() {
             return new ContractListQuery(
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    "UPDATED_AT",
-                    "DESC",
-                    1,
-                    50,
-                    null,
-                    null);
+                    null, null, null, null, null, null, null, null, null, "UPDATED_AT", "DESC", 1, 50, null, null);
         }
     }
 

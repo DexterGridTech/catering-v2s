@@ -31,7 +31,8 @@ public class HeadCompanyPersistence {
 
     public int removeBrandAuthorization(UUID headCompanyId, UUID brandId) {
         return jdbc.update(
-                HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_DELETE_HEAD_COMPANY_BRAND_AUTHORIZATION_DELETE_FROM_ORGANIZATION_HEA
+                HeadCompanyServiceSql
+                                .HEAD_COMPANY_SERVICE_DELETE_HEAD_COMPANY_BRAND_AUTHORIZATION_DELETE_FROM_ORGANIZATION_HEA
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_HEAD_COMPANY_ID_BRAND_ID,
                 headCompanyId,
                 brandId);
@@ -48,7 +49,8 @@ public class HeadCompanyPersistence {
             String remark,
             long now) {
         return jdbc.update(
-                HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_INSERT_INTO_HEAD_COMPANY_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
+                HeadCompanyServiceSql
+                                .HEAD_COMPANY_SERVICE_INSERT_INTO_HEAD_COMPANY_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_LEGAL_NAME_CREDIT_CODE_REMARK_STATUS
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_ENABLED,
                 id,
@@ -79,7 +81,8 @@ public class HeadCompanyPersistence {
         List<OrganizationEntityReadback> values = jdbc.query(
                 HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_UPDATE_HEAD_COMPANY_CODE_NAME_LEGAL_NAME_CREDIT_CODE
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_EXTENSION_VALUES_EXTENSION_RULE_REVISION_VERSION
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + HeadCompanyServiceSql
+                                .HEAD_COMPANY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_VERSION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CREDIT_CODE_VARCHAR_ALIAS_REMARK
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_EXTENSION_RULE_REVISION
@@ -103,12 +106,7 @@ public class HeadCompanyPersistence {
     }
 
     public int transitionStatus(
-            UUID id,
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            String status,
-            long now,
-            long expectedVersion) {
+            UUID id, UUID workspaceUuid, String groupWorkspaceKey, String status, long now, long expectedVersion) {
         return jdbc.update(
                 HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_UPDATE_HEAD_COMPANY_STATUS_VERSION
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID
@@ -122,11 +120,7 @@ public class HeadCompanyPersistence {
     }
 
     public ConflictFlags findConflicts(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            UUID currentId,
-            String code,
-            String name) {
+            UUID workspaceUuid, String groupWorkspaceKey, UUID currentId, String code, String name) {
         String exclusion = currentId == null ? "" : HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONDITION_AND_ID;
         String sql = HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_SELECT_HEAD_COMPANY_WORKSPACE_UUID
                 + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_GROUP_WORKSPACE_KEY_STATUS_VOIDED_CODE
@@ -138,14 +132,7 @@ public class HeadCompanyPersistence {
         Object[] args = currentId == null
                 ? new Object[] {workspaceUuid, groupWorkspaceKey, code, workspaceUuid, groupWorkspaceKey, name}
                 : new Object[] {
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    code,
-                    currentId,
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    name,
-                    currentId
+                    workspaceUuid, groupWorkspaceKey, code, currentId, workspaceUuid, groupWorkspaceKey, name, currentId
                 };
         return jdbc.query(
                 sql,
@@ -169,7 +156,8 @@ public class HeadCompanyPersistence {
 
     public boolean isBrandEnabled(UUID workspaceUuid, String groupWorkspaceKey, UUID brandId) {
         return jdbc.query(
-                HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_SELECT_ORGANIZATION_STATUS_ENABLED + "brand" + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
+                HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_SELECT_ORGANIZATION_STATUS_ENABLED + "brand"
+                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, brandId);
                     statement.setObject(2, workspaceUuid);
@@ -180,7 +168,8 @@ public class HeadCompanyPersistence {
 
     public boolean isBrandAuthorized(UUID headCompanyId, UUID brandId) {
         return !jdbc.query(
-                        HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_SELECT_HEAD_COMPANY_BRAND_AUTHORIZATION_HEAD_COMPANY_ID
+                        HeadCompanyServiceSql
+                                        .HEAD_COMPANY_SERVICE_SELECT_HEAD_COMPANY_BRAND_AUTHORIZATION_HEAD_COMPANY_ID
                                 + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_BRAND_ID,
                         (row, index) -> row.getInt(1),
                         headCompanyId,

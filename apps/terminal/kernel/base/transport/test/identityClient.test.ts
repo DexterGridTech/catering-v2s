@@ -4,6 +4,7 @@ import {createTopologyIdentityClient} from '../src/foundations/createTopologyIde
 const identity = JSON.stringify({
   type: 'identity',
   protocolVersion: 1,
+  moduleName: 'ui.integration.sample-console',
   nodeId: 'node-2',
   displayName: 'TER host',
   instanceMode: 'MASTER',

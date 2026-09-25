@@ -16,17 +16,23 @@ describe('safe logger sink', () => {
       outcome: 'ERROR',
       errorCode: 'PLATFORM_COMMON_RESULT_UNKNOWN',
       [blockedKey]: 'must-not-escape',
+      activationCode: 'must-not-escape',
+      activationcode: 'must-not-escape',
       diagnostic: {
         itemVersion: 1,
         menuVersion: 7,
         requestBody: 'must-not-escape',
+        activationCode: 'must-not-escape',
       },
     } as never);
 
     expect(sink).toHaveBeenCalledOnce();
     expect(sink.mock.calls[0][0]).toMatchObject({event: 'frontend.request.failed', level: 'ERROR'});
     expect(sink.mock.calls[0][0]).not.toHaveProperty(blockedKey);
+    expect(sink.mock.calls[0][0]).not.toHaveProperty('activationCode');
+    expect(sink.mock.calls[0][0]).not.toHaveProperty('activationcode');
     expect(sink.mock.calls[0][0]).toMatchObject({diagnostic: {itemVersion: 1, menuVersion: 7}});
     expect(sink.mock.calls[0][0].diagnostic).not.toHaveProperty('requestBody');
+    expect(sink.mock.calls[0][0].diagnostic).not.toHaveProperty('activationCode');
   });
 });

@@ -1,4 +1,5 @@
 import {forwardRef, useImperativeHandle, useRef} from 'react';
+import type {NativeScrollEvent, NativeSyntheticEvent} from 'react-native';
 import {RnrScrollView, type RnrScrollViewRef} from '../vendor/slots';
 import {baseLayout, baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
@@ -19,8 +20,13 @@ type ScrollViewWithNativeNodes = RnrScrollViewRef & Readonly<{
   ) => void;
 }>;
 
+const scrollVelocityYOf = (event: NativeSyntheticEvent<NativeScrollEvent>): number | null => {
+  const velocityY = event.nativeEvent.velocity?.y;
+  return typeof velocityY === 'number' && Number.isFinite(velocityY) ? velocityY : null;
+};
+
 export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, PrimitiveScrollViewProps>(
-  ({testID, children, layout = 'fill', contentPaddingBottom, onContentHeightChange, onLayout, onScrollOffsetChange}, ref) => {
+  ({testID, children, layout = 'fill', contentPaddingBottom, onContentHeightChange, onLayout, onScrollOffsetChange, onScrollEndDrag, onMomentumScrollEnd}, ref) => {
     const nativeScrollViewRef = useRef<RnrScrollViewRef>(null);
     useImperativeHandle(
       ref,
@@ -70,6 +76,19 @@ export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, Primiti
           onScrollOffsetChange === undefined
             ? undefined
             : event => onScrollOffsetChange(event.nativeEvent.contentOffset.y)
+        }
+        onScrollEndDrag={
+          onScrollEndDrag === undefined
+            ? undefined
+            : (event: NativeSyntheticEvent<NativeScrollEvent>) => onScrollEndDrag(
+              event.nativeEvent.contentOffset.y,
+              scrollVelocityYOf(event),
+            )
+        }
+        onMomentumScrollEnd={
+          onMomentumScrollEnd === undefined
+            ? undefined
+            : (event: NativeSyntheticEvent<NativeScrollEvent>) => onMomentumScrollEnd(event.nativeEvent.contentOffset.y)
         }
         scrollEventThrottle={16}
       >

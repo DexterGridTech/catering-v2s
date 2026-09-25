@@ -24,8 +24,7 @@ public class PlatformWorkspaceAuditHistoryPersistence {
     public record GroupWorkspaceProjection(
             boolean targetExists, String auditRef, List<AuditHistoryItem> items, long total) {}
 
-    public GroupWorkspaceProjection readGroupWorkspace(
-            AuditReadScope scope, String groupWorkspaceKey, long fetchSize) {
+    public GroupWorkspaceProjection readGroupWorkspace(AuditReadScope scope, String groupWorkspaceKey, long fetchSize) {
         return jdbc.query(
                 PlatformWorkspaceAuditHistoryServiceSql.PAGE,
                 statement -> {

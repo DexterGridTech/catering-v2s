@@ -26,7 +26,7 @@ class ResolvedBomTargetsTest {
 
         for (int index = 0; index < 7; index++) targets.requireResolved(submitted.get(index));
         InventoryOwnerApi.Problem failure =
-        assertThrows(InventoryOwnerApi.Problem.class, () -> targets.requireResolved(missing));
+                assertThrows(InventoryOwnerApi.Problem.class, () -> targets.requireResolved(missing));
         assertEquals("REFERENCE_MAPPING_UNRESOLVED", failure.code());
     }
 }

@@ -105,14 +105,13 @@ class CatalogAssetGlobalReferenceTest {
     @Test
     void batchGlobalReferenceJudgmentUsesOneCollectionQueryPerMediaOwner() {
         CountingJdbcTemplate counting = new CountingJdbcTemplate(dataSource);
-        CatalogOwnerService batchCatalog =
-                new CatalogOwnerService(
-                        counting,
-                        new ObjectMapper(),
-                        () -> 1_785_000_000_000L,
-                        assets,
-                        mock(CatalogProductionTagOwnerApi.class),
-                        null);
+        CatalogOwnerService batchCatalog = new CatalogOwnerService(
+                counting,
+                new ObjectMapper(),
+                () -> 1_785_000_000_000L,
+                assets,
+                mock(CatalogProductionTagOwnerApi.class),
+                null);
 
         assertEquals(
                 java.util.Set.of(SHARED_ASSET),
@@ -124,14 +123,13 @@ class CatalogAssetGlobalReferenceTest {
     @Test
     void assetReferenceReadbackUsesOneNarrowOwnerProjection() {
         CountingJdbcTemplate counting = new CountingJdbcTemplate(dataSource);
-        CatalogOwnerService narrowCatalog =
-                new CatalogOwnerService(
-                        counting,
-                        new ObjectMapper(),
-                        () -> 1_785_000_000_000L,
-                        assets,
-                        mock(CatalogProductionTagOwnerApi.class),
-                        null);
+        CatalogOwnerService narrowCatalog = new CatalogOwnerService(
+                counting,
+                new ObjectMapper(),
+                () -> 1_785_000_000_000L,
+                assets,
+                mock(CatalogProductionTagOwnerApi.class),
+                null);
 
         assertEquals(
                 List.of(UUID.fromString(SHARED_ASSET)),

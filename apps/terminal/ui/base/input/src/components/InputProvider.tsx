@@ -18,6 +18,36 @@ import type {
 } from '../types/types';
 import type {KeyboardStateBase} from '../hooks/inputProviderTypes';
 
+type EventTargetLike = Readonly<{
+  readonly parentElement?: unknown;
+  readonly parentNode?: unknown;
+  readonly testID?: unknown;
+  readonly getAttribute?: (name: string) => unknown;
+  readonly closest?: (selector: string) => unknown;
+}>;
+
+const eventTargetMatchesField = (field: InputFieldController, target: unknown): boolean => {
+  const inputNode = field.inputRef?.current;
+  const anchorNode = field.visibleAnchorRef.current;
+  let current: unknown = target;
+  for (let depth = 0; depth < 16 && current !== null && typeof current === 'object'; depth += 1) {
+    if (current === inputNode || current === anchorNode) return true;
+    const node = current as EventTargetLike;
+    const testID = node.testID ?? node.getAttribute?.('data-testid');
+    if (testID === field.testID) return true;
+    const inputAncestor = node.closest?.('input,textarea');
+    if (inputAncestor !== null && inputAncestor !== undefined && typeof inputAncestor === 'object') {
+      const inputNodeTestID = (inputAncestor as EventTargetLike).testID
+        ?? (inputAncestor as EventTargetLike).getAttribute?.('data-testid');
+      if (inputNodeTestID === field.testID) return true;
+    }
+    const next = node.parentElement ?? node.parentNode;
+    if (next === current) break;
+    current = next;
+  }
+  return false;
+};
+
 export type InputProviderProps = Readonly<{
   readonly frameMetrics: LocalFrameMetrics | null;
   readonly children?: ReactNode;
@@ -92,6 +122,10 @@ export const InputProvider = ({frameMetrics, children}: InputProviderProps) => {
     updateFieldConfig,
     captureInputSnapshot,
   } = fieldRegistry;
+  const isFieldEventTarget = useCallback((fieldId: string, target: unknown): boolean => {
+    const field = fieldsRef.current.get(fieldId);
+    return field !== undefined && eventTargetMatchesField(field, target);
+  }, [fieldsRef]);
 
   const focusController = useInputFocusController({
     fieldsRef,
@@ -147,6 +181,7 @@ export const InputProvider = ({frameMetrics, children}: InputProviderProps) => {
       handleBlur,
       blurField,
       dismissActiveField,
+      isFieldEventTarget,
       preflightFocusTarget,
       focusField,
       completeField,
@@ -164,6 +199,7 @@ export const InputProvider = ({frameMetrics, children}: InputProviderProps) => {
       handleBlur,
       handleFocus,
       handleKeyboardKey,
+      isFieldEventTarget,
       preflightFocusTarget,
       registerField,
       unregisterField,

@@ -11,9 +11,9 @@ import com.catering.v2s.app.edge.generated.wire.OrganizationOverviewStatus;
 import com.catering.v2s.app.edge.generated.wire.OrganizationOverviewType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
-import org.junit.jupiter.api.Test;
 
 class OrganizationOverviewWireSerializationConfigurationTest {
     @Test
@@ -35,12 +35,8 @@ class OrganizationOverviewWireSerializationConfigurationTest {
 
         tools.jackson.databind.node.ObjectNode raw = new tools.jackson.databind.ObjectMapper().createObjectNode();
         raw.put("brandLevel", "A");
-        OrganizationOverviewItem flat = item(
-                OrganizationOverviewCategory.BUSINESS_ENTITY,
-                OrganizationOverviewType.BRAND,
-                null,
-                raw,
-                4L);
+        OrganizationOverviewItem flat =
+                item(OrganizationOverviewCategory.BUSINESS_ENTITY, OrganizationOverviewType.BRAND, null, raw, 4L);
         String flatWire = mapper.writeValueAsString(flat);
 
         assertTrue(flatWire.contains("extensionValues"));
@@ -54,8 +50,7 @@ class OrganizationOverviewWireSerializationConfigurationTest {
         JacksonJsonHttpMessageConverter converter = new JacksonJsonHttpMessageConverter();
         OrganizationOverviewWireSerializationConfiguration.configure(converter);
 
-        var mapper = converter.getMappersForType(OrganizationOverviewItem.class)
-                .get(MediaType.APPLICATION_JSON);
+        var mapper = converter.getMappersForType(OrganizationOverviewItem.class).get(MediaType.APPLICATION_JSON);
         assertTrue(mapper.writeValueAsString(item(
                         OrganizationOverviewCategory.HIERARCHY,
                         OrganizationOverviewType.REGION,

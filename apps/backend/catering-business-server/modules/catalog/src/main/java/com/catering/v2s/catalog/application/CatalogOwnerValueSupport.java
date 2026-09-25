@@ -2,8 +2,8 @@ package com.catering.v2s.catalog.application;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
-import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
+import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -187,7 +187,8 @@ final class CatalogOwnerValueSupport {
     private static void collectAssetRefs(Set<String> refs, JsonNode values) {
         if (!values.isArray()) return;
         values.forEach(value -> {
-            String ref = value.isTextual() ? value.asText() : value.path("assetRef").asText("");
+            String ref =
+                    value.isTextual() ? value.asText() : value.path("assetRef").asText("");
             if (!ref.isBlank()) refs.add(ref);
         });
     }
@@ -204,7 +205,8 @@ final class CatalogOwnerValueSupport {
             ObjectNode snapshot = identity.putObject("snapshot");
             copyOptionalText(snapshot, sourceSnapshot, "name");
             copyOptionalText(snapshot, sourceSnapshot, "specification");
-            if (sourceSnapshot.path("price").isIntegralNumber()) snapshot.put("price", sourceSnapshot.path("price").asLong());
+            if (sourceSnapshot.path("price").isIntegralNumber())
+                snapshot.put("price", sourceSnapshot.path("price").asLong());
             else if (sourceSnapshot.has("price")) snapshot.putNull("price");
         }
         return identity;

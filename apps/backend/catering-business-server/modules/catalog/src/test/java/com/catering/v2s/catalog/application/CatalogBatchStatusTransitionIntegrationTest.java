@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
-import com.catering.v2s.catalog.application.CatalogProductionTagOwnerService;
 import com.catering.v2s.catalog.application.persistence.CatalogProductionTagOwnerPersistence;
 import com.catering.v2s.inventory.application.InventoryOwnerService;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
@@ -60,8 +59,7 @@ class CatalogBatchStatusTransitionIntegrationTest {
         jdbc = new JdbcTemplate(dataSource);
         InventoryOwnerService inventory =
                 new InventoryOwnerService(jdbc, JSON, (TimeProvider) () -> 1_785_000_000_000L);
-        CatalogProductionTagOwnerService production =
-                new CatalogProductionTagOwnerService(
+        CatalogProductionTagOwnerService production = new CatalogProductionTagOwnerService(
                 new CatalogProductionTagOwnerPersistence(jdbc, (TimeProvider) () -> 1_785_000_000_000L), JSON);
         catalog = new CatalogOwnerService(
                 jdbc,

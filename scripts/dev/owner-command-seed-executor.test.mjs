@@ -163,6 +163,13 @@ test('formal seed uses the declared logo bytes and rejects unsafe asset fixture 
   assert.throws(() => readSeedAssetFixtureBytes({contentFixture: 'fixtures/assets/not-found.png'}), code('SEED_ASSET_FIXTURE_MISSING'));
 });
 
+test('formal seed passes public invitation path parameters through the shared client options slot', async () => {
+  const source = await import('node:fs/promises').then((fs) => fs.readFile(new URL('./owner-command-seed-executor.mjs', import.meta.url), 'utf8'));
+  assert.match(source, /request\(`invitation-accept-\$\{plan\.invitationKey\}`, 'acceptPublicInvitation', \{pathParameters: publicInvitationPath\}\)/);
+  assert.match(source, /request\(`invitation-complete-\$\{plan\.invitationKey\}`, 'completePublicInvitation', \{pathParameters: publicInvitationPath\}\)/);
+  assert.doesNotMatch(source, /request\(`invitation-(?:accept|complete)-\$\{plan\.invitationKey\}`, '[^']+', publicInvitationPath\)/);
+});
+
 test('formal seed models the Runxin workspace, nine regions, and four named projects', async () => {
   const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
   const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(fixturePath, 'utf8')));
@@ -192,7 +199,7 @@ test('formal seed maps only a role to a node of the same owner type and preserve
 
 test('only generated owner operations may satisfy the executor input', async () => {
   const ids = ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract'];
-  const registry = [...ids, 'getOperationsStoreServicePointAreas', 'postOperationsStoreServicePointArea', 'postOperationsStoreServicePoint', 'postOperationsStoreServicePointStatus', 'postOperationsStoreServicePointAreaStatus', 'getOperationsStoreServicePoint', 'stageStoreServicePointImage', 'getOperationsStoreQrConfiguration'].map((operationId) => ({operationId}));
+  const registry = [...ids, 'getOperationsStoreServicePointAreas', 'postOperationsStoreServicePointArea', 'postOperationsStoreServicePoint', 'postOperationsStoreServicePointStatus', 'postOperationsStoreServicePointAreaStatus', 'getOperationsStoreServicePoint', 'stageStoreServicePointImage', 'getOperationsStoreQrConfiguration', 'getOperationsStoreTerminals', 'getOperationsStoreTerminal', 'getOperationsStoreTerminalAreaCandidates', 'getOperationsStoreTerminalTagCandidates', 'postOperationsStoreTerminal', 'putOperationsStoreTerminal', 'postOperationsStoreTerminalStatus'].map((operationId) => ({operationId}));
   const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url), 'utf8')));
   assert.equal(validateFormalSeedStaticInputs({fixture: actual, registry}).invitationPlan.length, 20);
   assert.throws(() => validateFormalSeedStaticInputs({fixture: actual, registry: registry.slice(1)}), code('SEED_OPERATION_REGISTRY_MISSING:platformPasswordLogin'));
@@ -272,6 +279,12 @@ test('owner-command idempotency keys remain within the public contract limit for
 test('formal seed source requires the hard-locked managed OTP readback', async () => {
   const source = await import('node:fs/promises').then((fs) => fs.readFile(new URL('./owner-command-seed-executor.mjs', import.meta.url), 'utf8'));
   assert.match(source, /manifest\.otpDebugExposure !== true/);
+});
+
+test('formal seed keeps role status idempotency in the HTTP header only', async () => {
+  const source = await import('node:fs/promises').then((fs) => fs.readFile(new URL('./owner-command-seed-executor.mjs', import.meta.url), 'utf8'));
+  assert.match(source, /'transitionWorkspaceRoleStatus'.*expectedVersion: requireValue\(current\?\.revision, 'SEED_ROLE_VERSION'\)\}\}\)/);
+  assert.doesNotMatch(source, /'transitionWorkspaceRoleStatus'.*idempotencyKey: '\$header'/);
 });
 
 test('formal seed rejects identity reuse for every non-enabled account state', async () => {

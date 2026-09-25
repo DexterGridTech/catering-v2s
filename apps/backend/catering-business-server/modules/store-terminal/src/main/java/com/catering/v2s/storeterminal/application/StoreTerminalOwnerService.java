@@ -30,6 +30,7 @@ import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.TerminalMutation
 import com.catering.v2s.storeterminal.domain.ActivationCode;
 import com.catering.v2s.storeterminal.domain.TerminalConfiguration;
 import com.catering.v2s.storeterminal.domain.TerminalConfiguration.RangeSelection;
+import com.catering.v2s.storeterminal.domain.generated.StoreTerminalRules;
 import com.catering.v2s.storeterminal.persistence.StoreTerminalOwnerPersistence;
 import com.catering.v2s.storeterminal.persistence.StoreTerminalOwnerPersistence.Receipt;
 import com.catering.v2s.storeterminal.persistence.StoreTerminalOwnerPersistence.TerminalRow;
@@ -109,7 +110,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
         try {
             return persistence.list(workspaceUuid, groupWorkspaceKey, storeRef, query, cursor, pageSize);
         } catch (OpaqueCollectionCursor.InvalidCursor invalid) {
-            throw new InvalidTerminalRequestException(invalid);
+            throw new InvalidTerminalInputException(invalid);
         }
     }
 
@@ -213,7 +214,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                     command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), List.of(normalizedName));
             TerminalConfigurationCodec.Normalized normalized =
                     normalizeConfiguration(deviceType, command.configuration(), null);
-            validateReferences(
+            ReferenceFacts referenceFacts = validateReferences(
                     command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), normalized, null);
             UUID terminalRef = UUID.randomUUID();
             long now = time.currentEpochMillis();
@@ -237,7 +238,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                     now,
                     CREATED,
                     "TERMINAL_CREATED",
-                    createChanges(name, deviceType, normalized.document()));
+                    createChanges(name, deviceType, normalized.document(), referenceFacts));
             persistence.insertReceipt(
                     command.workspaceUuid(), command.groupWorkspaceKey(), key, requestHash, receiptJson(mutation), now);
             Objects.requireNonNull(activationCode, "activationCode");
@@ -287,7 +288,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
             JsonNode previousDocument = parseConfiguration(before.configurationJson());
             TerminalConfigurationCodec.Normalized normalized =
                     normalizeConfiguration(deviceType, command.configuration(), previousDocument);
-            validateReferences(
+            ReferenceFacts referenceFacts = validateReferences(
                     command.workspaceUuid(),
                     command.groupWorkspaceKey(),
                     command.storeRef(),
@@ -322,7 +323,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                     now,
                     REPLACED,
                     "TERMINAL_REPLACED",
-                    replaceChanges(before, name, deviceType, previousDocument, normalized.document()));
+                    replaceChanges(before, name, deviceType, previousDocument, normalized.document(), referenceFacts));
             persistence.insertReceipt(
                     command.workspaceUuid(), command.groupWorkspaceKey(), key, requestHash, receiptJson(mutation), now);
             return mutation;
@@ -432,7 +433,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
         throw new ActivationCodeExhaustedException();
     }
 
-    private void validateReferences(
+    private ReferenceFacts validateReferences(
             UUID workspaceUuid,
             String groupKey,
             UUID storeRef,
@@ -445,24 +446,28 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                 normalized.configuration().functions()) {
             UUID functionRef = function.identity().ref();
             for (RangeSelection range : function.ranges()) {
-                if ("TABLE_AREA".equals(range.key())) areaRefs.addAll(range.refs());
-                if ("PRODUCTION_TAG".equals(range.key())) tagRefs.addAll(range.refs());
+                if (StoreTerminalRules.RANGE_TABLE_AREA.equals(range.key())) areaRefs.addAll(range.refs());
+                if (StoreTerminalRules.RANGE_PRODUCTION_TAG.equals(range.key())) tagRefs.addAll(range.refs());
             }
         }
 
+        Set<UUID> lookupAreaRefs = new HashSet<>(areaRefs);
+        lookupAreaRefs.addAll(rangeRefs(previousDocument, StoreTerminalRules.RANGE_TABLE_AREA));
         Map<UUID, StoreServicePointOwnerApi.AreaReference> areas = new HashMap<>();
-        if (!areaRefs.isEmpty()) {
+        if (!lookupAreaRefs.isEmpty()) {
             servicePoints
-                    .readAreasByRefs(workspaceUuid, groupKey, storeRef, List.copyOf(areaRefs))
+                    .readAreasByRefs(workspaceUuid, groupKey, storeRef, List.copyOf(lookupAreaRefs))
                     .forEach(value -> areas.put(value.areaRef(), value));
             if (!areas.keySet().containsAll(areaRefs)) throw new TerminalReferenceInvalidException();
         }
+        Set<UUID> lookupTagRefs = new HashSet<>(tagRefs);
+        lookupTagRefs.addAll(rangeRefs(previousDocument, StoreTerminalRules.RANGE_PRODUCTION_TAG));
         Map<UUID, CatalogProductionTagOwnerApi.ProductionTagReferenceReadback> tags = new HashMap<>();
-        if (!tagRefs.isEmpty()) {
+        if (!lookupTagRefs.isEmpty()) {
             String brandRef = catalogScopes.requireCatalogBrand(workspaceUuid, groupKey, "STORE", storeRef, null);
             productionTags
                     .readTagReferencesByRefs(
-                            storeRef.toString(), brandRef, List.copyOf(tagRefs), "store-terminal-reference-check")
+                            storeRef.toString(), brandRef, List.copyOf(lookupTagRefs), "store-terminal-reference-check")
                     .forEach(value -> tags.put(value.tagRef(), value));
             if (!tags.keySet().containsAll(tagRefs)) throw new TerminalReferenceInvalidException();
         }
@@ -474,13 +479,14 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                 Set<UUID> previouslySelected = oldRefs.getOrDefault(functionRef + ":" + range.key(), Set.of());
                 for (UUID ref : range.refs()) {
                     boolean existingSameAxis = previouslySelected.contains(ref);
-                    if ("TABLE_AREA".equals(range.key())) {
+                    if (StoreTerminalRules.RANGE_TABLE_AREA.equals(range.key())) {
                         var area = areas.get(ref);
                         if (!existingSameAxis
-                                && (!"TABLE_AREA".equals(area.areaType()) || !"ENABLED".equals(area.status()))) {
+                                && (!StoreTerminalRules.RANGE_TABLE_AREA.equals(area.areaType())
+                                        || !"ENABLED".equals(area.status()))) {
                             throw new TerminalReferenceInvalidException();
                         }
-                    } else if ("PRODUCTION_TAG".equals(range.key())) {
+                    } else if (StoreTerminalRules.RANGE_PRODUCTION_TAG.equals(range.key())) {
                         var tag = tags.get(ref);
                         if (!existingSameAxis && !"ENABLED".equals(tag.status())) {
                             throw new TerminalReferenceInvalidException();
@@ -489,6 +495,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                 }
             }
         }
+        return new ReferenceFacts(areas, tags);
     }
 
     private TerminalConfigurationCodec.Normalized normalizeConfiguration(
@@ -500,8 +507,9 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
         }
     }
 
-    private List<AuditChange> createChanges(String name, String deviceType, JsonNode document) {
-        Map<String, String> summaries = configurationSummaries(document);
+    private List<AuditChange> createChanges(
+            String name, String deviceType, JsonNode document, ReferenceFacts referenceFacts) {
+        Map<String, String> summaries = configurationSummaries(document, referenceFacts);
         List<AuditChange> changes = new ArrayList<>(List.of(
                 AuditChange.forNullableScalar("name", null, name),
                 AuditChange.forNullableScalar("deviceType", null, deviceType),
@@ -512,19 +520,24 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
     }
 
     private List<AuditChange> replaceChanges(
-            TerminalRow before, String name, String deviceType, JsonNode oldDocument, JsonNode newDocument) {
+            TerminalRow before,
+            String name,
+            String deviceType,
+            JsonNode oldDocument,
+            JsonNode newDocument,
+            ReferenceFacts referenceFacts) {
         List<AuditChange> changes = new ArrayList<>();
         addIfChanged(changes, "name", before.name(), name);
         addIfChanged(changes, "deviceType", before.deviceType(), deviceType);
-        Map<String, String> oldSummary = configurationSummaries(oldDocument);
-        Map<String, String> newSummary = configurationSummaries(newDocument);
+        Map<String, String> oldSummary = configurationSummaries(oldDocument, referenceFacts);
+        Map<String, String> newSummary = configurationSummaries(newDocument, referenceFacts);
         for (String field : List.of("printers", "functions", "ranges", "scenes")) {
             addIfChanged(changes, field, oldSummary.get(field), newSummary.get(field));
         }
         return REPLACED.allow(changes);
     }
 
-    private Map<String, String> configurationSummaries(JsonNode document) {
+    private Map<String, String> configurationSummaries(JsonNode document, ReferenceFacts referenceFacts) {
         Map<String, String> result = new LinkedHashMap<>();
         List<String> printers = new ArrayList<>();
         Map<String, String> printerNames = new HashMap<>();
@@ -535,12 +548,12 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                 String name = printer.path("name").asText("");
                 printerNames.put(ref, name);
                 printers.add(String.join(
-                        "/",
+                        " · ",
                         name,
-                        printer.path("brandKey").asText(""),
-                        printer.path("modelKey").asText(""),
-                        printer.path("paperSpecKey").asText(""),
-                        printer.path("connectionMethodKey").asText(""),
+                        printerBrandLabel(printer.path("brandKey").asText("")),
+                        printerModelLabel(printer.path("modelKey").asText("")),
+                        printerPaperLabel(printer.path("paperSpecKey").asText("")),
+                        printerConnectionLabel(printer.path("connectionMethodKey").asText("")),
                         printer.hasNonNull("connectionParameter") ? "参数已配置" : "无参数"));
             }
         }
@@ -552,13 +565,18 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
         if (functionNodes.isArray()) {
             for (JsonNode function : functionNodes) {
                 String functionKey = function.path("functionKey").asText("");
-                functions.add(functionKey);
+                String functionLabel = functionLabel(functionKey);
+                functions.add(functionLabel);
                 JsonNode rangeNodes = function.path("ranges");
                 if (rangeNodes.isArray())
                     for (JsonNode range : rangeNodes) {
                         List<String> refs = stringValues(range.path("refs"));
-                        ranges.add(functionKey + "/" + range.path("key").asText("") + ":"
-                                + (range.path("all").asBoolean(false) ? "全部" : jsonString(refs)));
+                        String rangeKey = range.path("key").asText("");
+                        String selection = range.path("all").asBoolean(false)
+                                ? "全部"
+                                : refs.stream().map(ref -> referenceLabel(rangeKey, ref, referenceFacts)).toList().stream()
+                                        .collect(java.util.stream.Collectors.joining("、"));
+                        ranges.add(functionLabel + " · " + rangeLabel(rangeKey) + "：" + selection);
                     }
                 JsonNode sceneNodes = function.path("scenes");
                 if (sceneNodes.isArray())
@@ -570,9 +588,12 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                                 names.add(printerNames.getOrDefault(
                                         binding.path("printerRef").asText(""), "未知打印机"));
                             }
-                        scenes.add(functionKey + "/" + scene.path("sceneKey").asText("") + ":orders="
-                                + jsonString(stringValues(scene.path("orderTypes"))) + ":printers="
-                                + jsonString(names));
+                        String sceneKey = scene.path("sceneKey").asText("");
+                        String orderLabels = stringValues(scene.path("orderTypes")).stream()
+                                .map(StoreTerminalOwnerService::orderTypeLabel)
+                                .collect(java.util.stream.Collectors.joining("、"));
+                        scenes.add(functionLabel + " · " + sceneLabel(functionKey, sceneKey)
+                                + "：订单类型=" + orderLabels + "；打印机=" + String.join("、", names));
                     }
             }
         }
@@ -580,6 +601,88 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
         result.put("ranges", jsonString(ranges));
         result.put("scenes", jsonString(scenes));
         return result;
+    }
+
+    private static String functionLabel(String key) {
+        return StoreTerminalRules.FUNCTION_RULES.stream()
+                .filter(value -> value.key().equals(key))
+                .map(StoreTerminalRules.FunctionRule::label)
+                .findFirst()
+                .orElse("未知功能");
+    }
+
+    private static String rangeLabel(String key) {
+        return StoreTerminalRules.RANGE_RULES.stream()
+                .filter(value -> value.key().equals(key))
+                .map(StoreTerminalRules.RangeRule::label)
+                .findFirst()
+                .orElse("未知范围");
+    }
+
+    private static String sceneLabel(String functionKey, String key) {
+        return StoreTerminalRules.scenesForFunction(functionKey).stream()
+                .filter(value -> value.key().equals(key))
+                .map(StoreTerminalRules.SceneRule::label)
+                .findFirst()
+                .orElse("未知打印场景");
+    }
+
+    private static String orderTypeLabel(String key) {
+        return StoreTerminalRules.ORDER_TYPES.stream()
+                .filter(value -> value.key().equals(key))
+                .map(StoreTerminalRules.OrderType::label)
+                .findFirst()
+                .orElse("未知订单类型");
+    }
+
+    private static String printerBrandLabel(String key) {
+        return StoreTerminalRules.PRINTER_BRANDS.stream()
+                .filter(value -> value.key().equals(key))
+                .map(StoreTerminalRules.PrinterBrand::label)
+                .findFirst()
+                .orElse("未知品牌");
+    }
+
+    private static String printerModelLabel(String key) {
+        return StoreTerminalRules.PRINTER_MODELS.stream()
+                .filter(value -> value.key().equals(key))
+                .map(StoreTerminalRules.PrinterModel::label)
+                .findFirst()
+                .orElse("未知型号");
+    }
+
+    private static String printerPaperLabel(String key) {
+        return StoreTerminalRules.PAPER_SPECS.stream()
+                .filter(value -> value.key().equals(key))
+                .map(StoreTerminalRules.PaperSpec::label)
+                .findFirst()
+                .orElse("未知纸规格");
+    }
+
+    private static String printerConnectionLabel(String key) {
+        return StoreTerminalRules.CONNECTION_METHODS.stream()
+                .filter(value -> value.key().equals(key))
+                .map(StoreTerminalRules.ConnectionMethod::label)
+                .findFirst()
+                .orElse("未知连接方式");
+    }
+
+    private static String referenceLabel(String rangeKey, String ref, ReferenceFacts referenceFacts) {
+        try {
+            UUID parsed = UUID.fromString(ref);
+            if (StoreTerminalRules.RANGE_TABLE_AREA.equals(rangeKey)) {
+                StoreServicePointOwnerApi.AreaReference area = referenceFacts.areas().get(parsed);
+                if (area != null) return area.name() + "（" + area.code() + "）";
+            }
+            if (StoreTerminalRules.RANGE_PRODUCTION_TAG.equals(rangeKey)) {
+                CatalogProductionTagOwnerApi.ProductionTagReferenceReadback tag = referenceFacts.tags().get(parsed);
+                if (tag != null) return tag.name() + "（" + tag.code() + "）";
+            }
+        } catch (IllegalArgumentException ignored) {
+            // The normalized owner document is validated before this method. A
+            // fixed label keeps a corrupt audit payload from exposing an opaque id.
+        }
+        return "引用已不存在";
     }
 
     private void appendAudit(
@@ -768,7 +871,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
         String normalized =
                 Normalizer.normalize(Objects.requireNonNullElse(value, "").trim(), Normalizer.Form.NFC);
         if (normalized.isEmpty() || normalized.codePointCount(0, normalized.length()) > 120)
-            throw new InvalidTerminalRequestException();
+            throw new InvalidTerminalInputException();
         return normalized;
     }
 
@@ -779,18 +882,18 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
     private static String requiredText(String value, int limit) {
         String normalized = Objects.requireNonNullElse(value, "").trim();
         if (normalized.isEmpty() || normalized.codePointCount(0, normalized.length()) > limit)
-            throw new InvalidTerminalRequestException();
+            throw new InvalidTerminalInputException();
         return normalized;
     }
 
     private static String idempotencyKey(String value) {
         String key = Objects.requireNonNullElse(value, "").trim();
-        if (key.length() < 16 || key.length() > 128) throw new InvalidTerminalRequestException();
+        if (key.length() < 16 || key.length() > 128) throw new InvalidTerminalInputException();
         return key;
     }
 
     private static String status(String value) {
-        if (!Set.of("ENABLED", "DISABLED", "VOIDED").contains(value)) throw new InvalidTerminalRequestException();
+        if (!Set.of("ENABLED", "DISABLED", "VOIDED").contains(value)) throw new InvalidTerminalInputException();
         return value;
     }
 
@@ -802,13 +905,13 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
     }
 
     private static void validatePageSize(int pageSize) {
-        if (pageSize < 1 || pageSize > 100) throw new InvalidTerminalRequestException();
+        if (pageSize < 1 || pageSize > 100) throw new InvalidTerminalInputException();
     }
 
     private TerminalDetail detail(TerminalRow row, UUID workspaceUuid, String groupWorkspaceKey) {
         JsonNode configuration = parseConfiguration(row.configurationJson());
-        List<UUID> areaRefs = rangeRefs(configuration, "TABLE_AREA");
-        List<UUID> tagRefs = rangeRefs(configuration, "PRODUCTION_TAG");
+        List<UUID> areaRefs = rangeRefs(configuration, StoreTerminalRules.RANGE_TABLE_AREA);
+        List<UUID> tagRefs = rangeRefs(configuration, StoreTerminalRules.RANGE_PRODUCTION_TAG);
         List<AreaReference> areas = areaRefs.isEmpty()
                 ? List.of()
                 : servicePoints.readAreasByRefs(workspaceUuid, groupWorkspaceKey, row.storeRef(), areaRefs).stream()
@@ -820,7 +923,8 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                 : productionTags
                         .readTagReferencesByRefs(
                                 row.storeRef().toString(),
-                                catalogScopes.requireCatalogBrand(workspaceUuid, groupWorkspaceKey, "STORE", row.storeRef(), null),
+                                catalogScopes.requireCatalogBrand(
+                                        workspaceUuid, groupWorkspaceKey, "STORE", row.storeRef(), null),
                                 tagRefs,
                                 "store-terminal-detail-read")
                         .stream()
@@ -843,6 +947,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
 
     private static List<UUID> rangeRefs(JsonNode document, String key) {
         Set<UUID> refs = new java.util.LinkedHashSet<>();
+        if (document == null || document.isNull()) return List.of();
         JsonNode functions = document.path("functions");
         if (!functions.isArray()) return List.of();
         for (JsonNode function : functions) {
@@ -883,6 +988,15 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
 
     private static void addIfChanged(List<AuditChange> changes, String field, String before, String after) {
         if (!Objects.equals(before, after)) changes.add(AuditChange.forNullableScalar(field, before, after));
+    }
+
+    private record ReferenceFacts(
+            Map<UUID, StoreServicePointOwnerApi.AreaReference> areas,
+            Map<UUID, CatalogProductionTagOwnerApi.ProductionTagReferenceReadback> tags) {
+        private ReferenceFacts {
+            areas = Map.copyOf(areas);
+            tags = Map.copyOf(tags);
+        }
     }
 
     private record ReceiptValue(UUID terminalRef, long version, String status) {
@@ -929,6 +1043,14 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
         public InvalidTerminalRequestException() {}
 
         public InvalidTerminalRequestException(Throwable cause) {
+            super(cause);
+        }
+    }
+
+    public static class InvalidTerminalInputException extends RuntimeException {
+        public InvalidTerminalInputException() {}
+
+        public InvalidTerminalInputException(Throwable cause) {
             super(cause);
         }
     }

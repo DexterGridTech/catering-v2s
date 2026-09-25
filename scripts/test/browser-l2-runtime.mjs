@@ -57,11 +57,24 @@ import {
   normalizeEdgePath,
   resolveGeneratedOperationById,
 } from './seed-report.mjs';
+import {generateStoreTerminalL2ExecutionProfile} from '../generate/store-terminal-l2-p1.mjs';
 import {buildManagedDiagnosticHeaders} from '../dev/managed-diagnostic-protocol.mjs';
+import {catalogInventoryL2AdmissionStrategy} from './catalog-inventory-l2-admission.mjs';
+import {salesMenuL2AdmissionStrategy} from './sales-menu-l2-admission.mjs';
+import {
+  storeTerminalL2AdmissionStrategy,
+} from './store-terminal-l2-admission.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const runtimeRoot = path.resolve(process.env.V2S_RUNTIME_DIR ?? DEFAULT_CREDENTIAL_RUNTIME);
 const evidenceRoot = path.join(runtimeRoot, 'evidence');
+const lifecycleAdmissionLockPath = path.join(runtimeRoot, 'lifecycle-admission.lock');
+const managedLocalProcessIdentityFileNames = Object.freeze([
+  'l2-remote-http-asset-tunnel.identity.json',
+  'platform-admin-vite.identity.json',
+  'operations-admin-vite.identity.json',
+]);
+const managedLocalProcessIdentityPattern = /^(?:l2-remote-http-asset-tunnel|platform-admin-vite|operations-admin-vite)(?:\.refresh-\d+)?\.identity\.json$/;
 const fixturePath = path.join(root, 'contracts/policy/catalog-inventory-fixture-catalog.json');
 const activationCandidatePath = path.join(root, 'contracts/policy/catalog-inventory-l2-activation-candidate.json');
 const executionPath = path.join(root, 'contracts/policy/catalog-inventory-l2-execution.json');
@@ -110,6 +123,7 @@ const L2_SUITE_CONFIGS = Object.freeze({
     bindingPath,
     timingPath,
     readinessKind: 'catalog-inventory-l2-readiness-manifest',
+    repositoryByteBindingKind: 'catalog-inventory-l2-repository-byte-binding',
     executionManifestKind: 'catalog-inventory-l2-execution-manifest',
     selectionKind: 'catalog-inventory-l2-selection-manifest',
     joinKind: 'catalog-inventory-l2-join-artifact',
@@ -123,6 +137,7 @@ const L2_SUITE_CONFIGS = Object.freeze({
     casesEnv: 'R5_L2_CATALOG_INVENTORY_CASES',
     bindingsEnv: 'R5_L2_CATALOG_INVENTORY_BINDINGS',
     executionEnv: 'R5_L2_CATALOG_INVENTORY_EXECUTION',
+    admissionStrategy: catalogInventoryL2AdmissionStrategy,
   }),
   'sales-menu': Object.freeze({
     suite: 'sales-menu',
@@ -133,6 +148,7 @@ const L2_SUITE_CONFIGS = Object.freeze({
     bindingPath: salesMenuBindingPath,
     timingPath: salesMenuTimingPath,
     readinessKind: 'sales-menu-l2-readiness-manifest',
+    repositoryByteBindingKind: 'sales-menu-l2-repository-byte-binding',
     executionManifestKind: 'sales-menu-l2-execution-manifest',
     selectionKind: 'sales-menu-l2-selection-manifest',
     joinKind: 'sales-menu-l2-join-artifact',
@@ -146,6 +162,7 @@ const L2_SUITE_CONFIGS = Object.freeze({
     casesEnv: 'R5_L2_SALES_MENU_CASES',
     bindingsEnv: 'R5_L2_SALES_MENU_BINDINGS',
     executionEnv: 'R5_L2_SALES_MENU_EXECUTION',
+    admissionStrategy: salesMenuL2AdmissionStrategy,
   }),
   'store-terminal': Object.freeze({
     suite: 'store-terminal',
@@ -156,6 +173,7 @@ const L2_SUITE_CONFIGS = Object.freeze({
     bindingPath: storeTerminalBindingPath,
     timingPath: storeTerminalTimingPath,
     readinessKind: 'store-terminal-l2-readiness-manifest',
+    repositoryByteBindingKind: 'store-terminal-l2-repository-byte-binding',
     executionManifestKind: 'store-terminal-l2-execution-manifest',
     selectionKind: 'store-terminal-l2-selection-manifest',
     joinKind: 'store-terminal-l2-join-artifact',
@@ -169,6 +187,7 @@ const L2_SUITE_CONFIGS = Object.freeze({
     casesEnv: 'R5_L2_STORE_TERMINAL_CASES',
     bindingsEnv: 'R5_L2_STORE_TERMINAL_BINDINGS',
     executionEnv: 'R5_L2_STORE_TERMINAL_EXECUTION',
+    admissionStrategy: storeTerminalL2AdmissionStrategy,
   }),
 });
 
@@ -176,6 +195,16 @@ function suiteConfig(suite = 'catalog-inventory') {
   const config = L2_SUITE_CONFIGS[suite];
   if (!config) fail('L2_SUITE_UNKNOWN', String(suite));
   return config;
+}
+
+function suiteAdmissionStrategy(suite = 'catalog-inventory') {
+  const strategy = suiteConfig(suite).admissionStrategy;
+  if (!strategy) fail('L2_SUITE_ADMISSION_STRATEGY_MISSING', suite);
+  return strategy;
+}
+
+function validateSuiteAdmission(suite = 'catalog-inventory') {
+  return suiteAdmissionStrategy(suite).validateAdmission();
 }
 
 export function catalogBootstrapCaseIdsForSuite(suite, activeExecutionCaseIds) {
@@ -379,8 +408,26 @@ function validateFrontendMode(value) {
   return mode;
 }
 
-function requestedFrontendMode() {
-  return validateFrontendMode(process.env.R5_L2_FRONTEND_MODE ?? 'dev');
+/**
+ * A managed browser-L2 run must use a static preview distribution. Vite dev
+ * mode can HMR-reload the app while Playwright is interacting with it; that
+ * unmounts the page and turns a runner/environment reload into a misleading
+ * business failure (for example, an open Drawer disappearing before submit).
+ * Keep the old mode validator for recovery-state compatibility, but fail
+ * closed before creating a new run when dev mode is requested.
+ */
+export function requirePreviewFrontendMode(value) {
+  const mode = validateFrontendMode(value);
+  if (mode !== 'preview') fail('L2_FRONTEND_MODE_HMR_UNSAFE', mode);
+  return mode;
+}
+
+export function requestedFrontendMode() {
+  return requirePreviewFrontendMode(process.env.R5_L2_FRONTEND_MODE ?? 'preview');
+}
+
+export function validateRefreshFrontendState(state) {
+  return requirePreviewFrontendMode(state?.frontendMode);
 }
 
 export function l2FixtureStageSuffix(value) {
@@ -671,8 +718,12 @@ function requireTargetedOwnerReadbackDescriptor(value, expectedMode, expectedOut
 function readJson(file) {
   try {
     return JSON.parse(readFileSync(file, 'utf8'));
-  } catch {
-    fail('L2_RUNTIME_JSON_INVALID', path.relative(root, file));
+  } catch (cause) {
+    const error = new Error(`L2_RUNTIME_JSON_INVALID:${path.relative(root, file)}`);
+    error.code = 'L2_RUNTIME_JSON_INVALID';
+    error.detailPath = path.relative(root, file);
+    error.cause = cause;
+    throw error;
   }
 }
 
@@ -729,8 +780,9 @@ function repositoryByteBindingDigest(descriptor) {
   return sha256(`${JSON.stringify(descriptor, null, 2)}\n`);
 }
 
-export function writeRepositoryByteBinding({runDirectory, identity} = {}) {
+export function writeRepositoryByteBinding({runDirectory, identity, suite = 'catalog-inventory'} = {}) {
   if (typeof runDirectory !== 'string' || !identity?.runId) fail('L2_SOURCE_BYTE_BINDING_INPUT_INVALID');
+  const config = suiteConfig(suite);
   const relativeFiles = repositoryByteBindingScopeFiles();
   if (relativeFiles.length === 0) fail('L2_SOURCE_BYTE_BINDING_FILE_SET_EMPTY');
   const files = relativeFiles.map(relative => {
@@ -740,7 +792,7 @@ export function writeRepositoryByteBinding({runDirectory, identity} = {}) {
   });
   const descriptor = {
     schemaVersion: 1,
-    kind: 'catalog-inventory-l2-repository-byte-binding',
+    kind: config.repositoryByteBindingKind,
     runId: identity.runId,
     scope: REPOSITORY_BYTE_BINDING_SCOPE,
     repositoryRoot: '.',
@@ -762,11 +814,12 @@ export function writeRepositoryByteBinding({runDirectory, identity} = {}) {
   });
 }
 
-export function validateRepositoryByteBinding(bindingPath, {expectedRunId} = {}) {
+export function validateRepositoryByteBinding(bindingPath, {expectedRunId, suite = 'catalog-inventory'} = {}) {
+  const config = suiteConfig(suite);
   const binding = readJson(bindingPath);
   if (
     binding?.schemaVersion !== 1 ||
-    binding.kind !== 'catalog-inventory-l2-repository-byte-binding' ||
+    binding.kind !== config.repositoryByteBindingKind ||
     binding.repositoryRoot !== '.' ||
     binding.scope !== REPOSITORY_BYTE_BINDING_SCOPE ||
     !Array.isArray(binding.includedDirectories) ||
@@ -859,6 +912,85 @@ function processGroup(pid) {
 
 function pidAlive(pid) {
   return spawnSync('kill', ['-0', String(pid)], {encoding: 'utf8'}).status === 0;
+}
+
+export function acquireLifecycleAdmission({suite = 'catalog-inventory', phase = 'UNKNOWN'} = {}) {
+  ensureDirectory(runtimeRoot);
+  const owner = {
+    pid: process.pid,
+    startToken: processStartToken(process.pid),
+    ownerToken: randomUUID(),
+    suite,
+    phase,
+    startedAt: now(),
+  };
+  const ownerPath = path.join(lifecycleAdmissionLockPath, 'owner.json');
+  try {
+    mkdirSync(lifecycleAdmissionLockPath, {mode: 0o700});
+    writeFileSync(ownerPath, `${JSON.stringify(owner)}\n`, {mode: 0o600});
+  } catch (error) {
+    if (error?.code !== 'EEXIST') throw error;
+    let prior;
+    try {
+      prior = JSON.parse(readFileSync(ownerPath, 'utf8'));
+    } catch {
+      fail('L2_RUNTIME_READINESS_LOCK_OWNER_UNAVAILABLE');
+    }
+    if (
+      Number.isInteger(prior?.pid) &&
+      typeof prior.startToken === 'string' &&
+      prior.startToken !== '' &&
+      pidAlive(prior.pid) &&
+      processStartToken(prior.pid) === prior.startToken
+    ) {
+      fail('L2_RUNTIME_LIFECYCLE_ALREADY_ACTIVE', `${prior.phase ?? 'UNKNOWN'}:${prior.pid}`);
+    }
+    fail('L2_RUNTIME_STALE_LIFECYCLE_LOCK_REQUIRES_EXPLICIT_DIAGNOSIS');
+  }
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    try {
+      const current = JSON.parse(readFileSync(ownerPath, 'utf8'));
+      if (current?.pid === owner.pid && current?.ownerToken === owner.ownerToken) {
+        rmSync(lifecycleAdmissionLockPath, {recursive: true, force: true});
+      }
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+  };
+}
+
+export function acquireReadinessAdmission({suite = 'catalog-inventory'} = {}) {
+  return acquireLifecycleAdmission({suite, phase: 'READINESS'});
+}
+
+export function heldRuntimeStatePaths(runtimeRootPath = runtimeRoot) {
+  const paths = new Set();
+  const currentPath = path.join(runtimeRootPath, 'current-runtime-state.json');
+  if (existsSync(currentPath)) paths.add(currentPath);
+  if (!existsSync(runtimeRootPath)) return [...paths];
+  for (const entry of readdirSync(runtimeRootPath, {withFileTypes: true})) {
+    if (!entry.isDirectory() || !L2_RUN_DIRECTORY_NAME_PATTERN.test(entry.name)) continue;
+    const statePath = path.join(runtimeRootPath, entry.name, 'runtime-state.json');
+    if (existsSync(statePath)) paths.add(statePath);
+  }
+  return [...paths];
+}
+
+export function assertNoHeldReadinessRun() {
+  for (const statePath of heldRuntimeStatePaths()) {
+    let state;
+    try {
+      state = readJson(statePath);
+    } catch {
+      fail('L2_RUNTIME_HELD_STATE_UNREADABLE', repositoryRelativePath(statePath));
+    }
+    if (state?.status === 'READY' || state?.status === 'CLEANUP_REQUIRED') {
+      fail('L2_RUNTIME_ACTIVE_RUN_REQUIRES_CLEANUP', state.identity?.runId ?? repositoryRelativePath(statePath));
+    }
+  }
 }
 
 function assertOwned(identity) {
@@ -1028,6 +1160,23 @@ function requireActivatedSuiteExecution(execution, candidate, suite = 'catalog-i
     fail('L2_EXECUTION_CANDIDATE_BINDING_INVALID');
   }
   return ids;
+}
+
+function executionProfilePathForState(state, suite = state?.suite ?? 'catalog-inventory') {
+  const config = suiteConfig(suite);
+  if (suite !== 'store-terminal') return config.executionPath;
+  if (typeof state?.runDirectory !== 'string' || state.runDirectory.length === 0) {
+    fail('L2_STORE_TERMINAL_EXECUTION_PROFILE_RUN_DIRECTORY_REQUIRED');
+  }
+  if (typeof state.executionProfilePath !== 'string' || state.executionProfilePath.length === 0) {
+    fail('L2_STORE_TERMINAL_EXECUTION_PROFILE_PATH_REQUIRED');
+  }
+  const runDirectory = path.resolve(state.runDirectory);
+  const executionProfilePath = path.resolve(state.executionProfilePath);
+  if (executionProfilePath !== runDirectory && !executionProfilePath.startsWith(`${runDirectory}${path.sep}`)) {
+    fail('L2_STORE_TERMINAL_EXECUTION_PROFILE_BINDING_MISMATCH');
+  }
+  return executionProfilePath;
 }
 
 function progressNumber(value, code) {
@@ -1423,6 +1572,7 @@ export function buildIncompleteExecutionManifest({
     readinessManifestPath: repositoryRelativePath(path.join(state.runDirectory, 'readiness-manifest.json')),
     sourceByteBindingPath:
       typeof state.sourceByteBindingPath === 'string' ? repositoryRelativePath(state.sourceByteBindingPath) : null,
+    admissionDigest: state.admissionDigest ?? null,
     cleanupManifestPath: cleanupManifestPath ? repositoryRelativePath(cleanupManifestPath) : null,
     retainedEvidence: {
       playwrightArtifactDirectory: repositoryRelativePath(playwrightArtifactDirectoryForRun(state.runDirectory)),
@@ -1713,7 +1863,8 @@ export function buildReadinessManifest({
   credentialsPath,
   ownerFixturePath,
   sourceByteBinding,
-  frontendMode = 'dev',
+  frontendMode = 'preview',
+  admission = null,
   status = 'PASS',
   firstFailure = null,
   lastKnownGood = 'CONTRACT_DENOMINATORS',
@@ -1809,6 +1960,21 @@ export function buildReadinessManifest({
     credentialsFile: publicPath(credentialsPath),
     ownerFixturePath: publicPath(ownerFixturePath),
     repositoryByteBinding: publicSourceByteBinding,
+    admission: admission
+      ? {
+          status: admission.status,
+          admissionDigest: admission.admissionDigest,
+          policyDigest: admission.policyDigest,
+          controlPlaneFiles: [...admission.controlPlaneFiles],
+          uiSourceDirectory: admission.uiSourceDirectory,
+          uiSourceDirectories: [...(admission.uiSourceDirectories ?? (admission.uiSourceDirectory ? [admission.uiSourceDirectory] : []))],
+          uiFileCount: admission.uiFileCount,
+          fileCount: admission.fileCount,
+          byteCount: admission.byteCount,
+          caseIds: [...admission.caseIds],
+          reviewRecordPath: admission.reviewRecordPath,
+        }
+      : null,
     firstFailure,
     lastKnownGood,
     brokenBoundary,
@@ -1869,6 +2035,7 @@ async function openTunnel(host, ports, logPath, remoteHttpPort) {
     logPath,
     command: ['ssh', '-N', host],
   };
+  privateWrite(path.join(path.dirname(logPath), 'l2-remote-http-asset-tunnel.identity.json'), identity);
   const deadline = Date.now() + 20_000;
   while (Date.now() < deadline) {
     assertOwned(identity);
@@ -2202,7 +2369,7 @@ async function startRemoteRuntime({identity, ports, host, credentials, runDirect
 }
 
 async function refreshLocalFrontendProcesses(state) {
-  const frontendMode = validateFrontendMode(state.frontendMode);
+  const frontendMode = validateRefreshFrontendState(state);
   const frontendNames = new Set(['platform-admin-vite', 'operations-admin-vite']);
   const frontends = (Array.isArray(state.processes) ? state.processes : []).filter(process =>
     frontendNames.has(process?.name),
@@ -4696,54 +4863,163 @@ async function bootstrapStoreTerminalFacts({identity, base}) {
   const request = base.client.request;
   const storeRef = String(base.org.storeRef);
   const workspaceKey = base.workspaceKey;
+  const fixture = readJson(storeTerminalFixturePath);
+  const scenarios = readJson(storeTerminalScenarioPath);
+  const scenarioRows = scenarios.scenarios?.flatMap(scenario => scenario.cases ?? []) ?? [];
+  const scenarioByCaseId = new Map(scenarioRows.map(row => [row.caseId, row]));
+  const fixtureByCaseId = new Map((fixture.caseFixtures ?? []).map(row => [row.caseId, row]));
+  const declaredCaseIds = [
+    'terminal-list-detail',
+    'terminal-create-basic',
+    'terminal-create-configuration',
+    'terminal-edit-configuration',
+    'terminal-readonly-state',
+    'terminal-status-actions',
+  ];
+  for (const caseId of declaredCaseIds) {
+    const scenario = scenarioByCaseId.get(caseId);
+    const fixtureRow = fixtureByCaseId.get(caseId);
+    if (!scenario || !fixtureRow || fixtureRow.fixtureRef !== scenario.fixtureRef) {
+      fail('L2_STORE_TERMINAL_FIXTURE_MAPPING_INVALID', caseId);
+    }
+  }
+  const primaryFixtureRef = scenarioByCaseId.get('terminal-status-actions').fixtureRef;
+  const readonlyFixtureRef = scenarioByCaseId.get('terminal-readonly-state').fixtureRef;
   const terminalName = `L2终端${sha256(identity.runId).slice(0, 8)}`;
-  const created = await request(
-    'store-terminal-base-create',
-    'postOperationsStoreTerminal',
-    {groupWorkspaceKey: workspaceKey, storeRef},
-    {
-      cookie: base.operationsCookie,
-      expected: [201],
-      body: {
-        name: terminalName,
-        deviceType: 'laptop',
-        configuration: {
-          printers: [],
-          functions: [
-            {
-              clientKey: 'l2-terminal-ordering',
-              functionKey: 'ORDERING_CASHIER',
-              ranges: [],
-              scenes: [],
-            },
-          ],
-        },
+  const terminalConfiguration = {
+    printers: [
+      {
+        clientKey: 'l2-printer-thermal',
+        name: 'L2热敏主机',
+        brandKey: 'GENERIC',
+        modelKey: 'GENERIC_THERMAL_80',
+        paperSpecKey: 'THERMAL_80',
+        connectionMethodKey: 'NETWORK',
+        connectionParameter: '10.20.0.20',
       },
-    },
-  );
-  const terminalRef = requiredObjectValue(created.json, ['terminalRef', 'ref', 'id'], 'L2_STORE_TERMINAL_REF_MISSING');
-  const detail = await request(
+      {
+        clientKey: 'l2-printer-label',
+        name: 'L2标签主机',
+        brandKey: 'GENERIC',
+        modelKey: 'GENERIC_LABEL_40_30',
+        paperSpecKey: 'LABEL_40_30',
+        connectionMethodKey: 'NETWORK',
+        connectionParameter: '10.20.0.21',
+      },
+    ],
+    functions: [
+      {
+        clientKey: 'l2-terminal-ordering',
+        functionKey: 'ORDERING_CASHIER',
+        ranges: [{key: 'TABLE_AREA', all: true, refs: []}],
+        scenes: [
+          {
+            sceneKey: 'TABLE_ORDER_TICKET',
+            orderTypes: ['DINE_IN'],
+            printers: [{printerClientKey: 'l2-printer-thermal'}],
+          },
+        ],
+      },
+      {
+        clientKey: 'l2-terminal-kitchen',
+        functionKey: 'KITCHEN_PRINT',
+        ranges: [{key: 'PRODUCTION_TAG', all: true, refs: []}],
+        scenes: [
+          {
+            sceneKey: 'LABEL_PREPARATION_TICKET',
+            orderTypes: ['DINE_IN'],
+            printers: [{printerClientKey: 'l2-printer-label'}],
+          },
+        ],
+      },
+    ],
+  };
+  const createAndReadTerminal = async (name, createStage, readStage) => {
+    const created = await request(
+      createStage,
+      'postOperationsStoreTerminal',
+      {groupWorkspaceKey: workspaceKey, storeRef},
+      {
+        cookie: base.operationsCookie,
+        expected: [201],
+        body: {name, deviceType: 'laptop', configuration: terminalConfiguration},
+      },
+    );
+    const terminalRef = requiredObjectValue(
+      created.json,
+      ['terminalRef', 'ref', 'id'],
+      'L2_STORE_TERMINAL_REF_MISSING',
+    );
+    const detail = await request(
+      readStage,
+      'getOperationsStoreTerminal',
+      {groupWorkspaceKey: workspaceKey, storeRef, terminalRef},
+      {cookie: base.operationsCookie, idempotency: false},
+    );
+    if (String(detail.json?.terminalRef ?? detail.json?.ref ?? '') !== String(terminalRef))
+      fail('L2_STORE_TERMINAL_READBACK_INVALID');
+    return {terminalRef: String(terminalRef), detail};
+  };
+  const primaryTerminal = await createAndReadTerminal(
+    terminalName,
+    'store-terminal-base-create',
     'store-terminal-base-readback',
-    'getOperationsStoreTerminal',
-    {groupWorkspaceKey: workspaceKey, storeRef, terminalRef},
-    {cookie: base.operationsCookie, idempotency: false},
   );
-  if (String(detail.json?.terminalRef ?? detail.json?.ref ?? '') !== String(terminalRef))
-    fail('L2_STORE_TERMINAL_READBACK_INVALID');
+  const readonlyTerminal = await createAndReadTerminal(
+    `${terminalName}-只读`,
+    'store-terminal-readonly-create',
+    'store-terminal-readonly-readback',
+  );
+  const terminalFacts = ({terminal, name, fixtureRef}) => {
+    const configuration = terminal.detail.json?.configuration ?? {};
+    const printers = Array.isArray(configuration.printers) ? configuration.printers : [];
+    const functions = Array.isArray(configuration.functions) ? configuration.functions : [];
+    const printerRefsByName = Object.fromEntries(
+      printers.map(printer => {
+        const ref = printer?.ref ?? printer?.printerRef ?? printer?.id;
+        if (typeof printer?.name !== 'string' || typeof ref !== 'string' || ref.length === 0)
+          fail('L2_STORE_TERMINAL_PRINTER_IDENTITY_READBACK_INVALID');
+        return [printer.name, ref];
+      }),
+    );
+    const functionRefsByKey = Object.fromEntries(
+      functions.map(entry => {
+        const ref = entry?.ref ?? entry?.functionRef ?? entry?.id;
+        if (typeof entry?.functionKey !== 'string' || typeof ref !== 'string' || ref.length === 0)
+          fail('L2_STORE_TERMINAL_FUNCTION_IDENTITY_READBACK_INVALID');
+        return [entry.functionKey, ref];
+      }),
+    );
+    return {
+      fixtureRef,
+      terminalRef: terminal.terminalRef,
+      terminalName: name,
+      terminalStatus: String(terminal.detail.json?.status ?? 'ENABLED'),
+      terminalVersion: Number(terminal.detail.json?.version ?? 1),
+      printerRefsByName,
+      functionRefsByKey,
+    };
+  };
+  const primaryFacts = terminalFacts({
+    terminal: primaryTerminal,
+    name: terminalName,
+    fixtureRef: primaryFixtureRef,
+  });
+  const readonlyFacts = terminalFacts({
+    terminal: readonlyTerminal,
+    name: `${terminalName}-只读`,
+    fixtureRef: readonlyFixtureRef,
+  });
   const ownerFacts = {
     ...base.ownerFacts,
-    terminalRef: String(terminalRef),
-    terminalName,
-    terminalStatus: String(detail.json?.status ?? 'ENABLED'),
-    terminalVersion: Number(detail.json?.version ?? 1),
+    terminalRef: String(primaryFacts.terminalRef),
+    terminalName: primaryFacts.terminalName,
+    terminalStatus: primaryFacts.terminalStatus,
+    terminalVersion: primaryFacts.terminalVersion,
     storeRef,
     workspaceKey,
-  };
-  const common = {
-    fixtureRef: 'FIXTURE-STORE-TERMINAL-BASE',
-    scope: ownerFacts.scope,
-    terminalRef: String(terminalRef),
-    terminalName,
+    printerRefsByName: primaryFacts.printerRefsByName,
+    functionRefsByKey: primaryFacts.functionRefsByKey,
   };
   const cases = Object.fromEntries(
     [
@@ -4751,9 +5027,35 @@ async function bootstrapStoreTerminalFacts({identity, base}) {
       'terminal-create-basic',
       'terminal-create-configuration',
       'terminal-edit-configuration',
-      'terminal-status-actions',
       'terminal-readonly-state',
-    ].map(caseId => [caseId, {...common, caseId}]),
+      'terminal-status-actions',
+    ].map(caseId =>
+      caseId === 'terminal-readonly-state'
+        ? [
+            caseId,
+            {
+              caseId,
+              fixtureRef: readonlyFacts.fixtureRef,
+              scope: ownerFacts.scope,
+              terminalRef: String(readonlyFacts.terminalRef),
+              terminalName: readonlyFacts.terminalName,
+              printerRefsByName: readonlyFacts.printerRefsByName,
+              functionRefsByKey: readonlyFacts.functionRefsByKey,
+            },
+          ]
+        : [
+            caseId,
+            {
+              caseId,
+              fixtureRef: primaryFacts.fixtureRef,
+              scope: ownerFacts.scope,
+              terminalRef: String(primaryFacts.terminalRef),
+              terminalName: primaryFacts.terminalName,
+              printerRefsByName: primaryFacts.printerRefsByName,
+              functionRefsByKey: primaryFacts.functionRefsByKey,
+            },
+          ],
+    ),
   );
   return {
     ...base,
@@ -6257,7 +6559,9 @@ function currentRuntimeStatePath() {
 }
 
 function errorCode(error) {
-  return compact(error?.code ?? error?.message ?? error ?? 'L2_RUNTIME_FAILED');
+  const code = error?.code ?? error?.message ?? error ?? 'L2_RUNTIME_FAILED';
+  if (error?.code === 'L2_RUNTIME_JSON_INVALID' && error?.detailPath) return compact(`${code}:${error.detailPath}`);
+  return compact(code);
 }
 
 export function parseFocusedCaseId(args = [], activeCaseIds = null) {
@@ -6352,6 +6656,69 @@ async function stopOwnedProcesses(processes = []) {
   return errors;
 }
 
+function readRunLocalProcessIdentities(runDirectory) {
+  const fileNames = readdirSync(runDirectory).filter(fileName => managedLocalProcessIdentityPattern.test(fileName));
+  return [...new Set([...managedLocalProcessIdentityFileNames, ...fileNames])]
+    .map(fileName => path.join(runDirectory, fileName))
+    .filter(existsSync)
+    .map(readJson);
+}
+
+async function stopOwnedRunProcesses(state) {
+  const identities = [
+    ...(Array.isArray(state.processes) ? state.processes : []),
+    ...readRunLocalProcessIdentities(state.runDirectory),
+  ];
+  const unique = new Map();
+  for (const identity of identities) {
+    const key = `${identity.name}:${identity.pid}:${identity.startToken}`;
+    unique.set(key, identity);
+  }
+  return stopOwnedProcesses([...unique.values()]);
+}
+
+/**
+ * Recover local processes from a readiness run that was interrupted before
+ * its runtime-state file could be persisted. The identity files are written
+ * by spawnManaged and are the only accepted input; arbitrary PIDs, ports, or
+ * process names are deliberately not supported.
+ */
+export async function recoverOwnedLocalProcesses(targetPath) {
+  const resolvedRunDirectory = path.resolve(String(targetPath ?? ''));
+  if (
+    path.dirname(resolvedRunDirectory) !== runtimeRoot ||
+    !L2_RUN_DIRECTORY_NAME_PATTERN.test(path.basename(resolvedRunDirectory))
+  ) {
+    fail('L2_RECOVERY_RUN_DIRECTORY_INVALID');
+  }
+  const identityFileNames = [
+    'l2-remote-http-asset-tunnel.identity.json',
+    'platform-admin-vite.identity.json',
+    'operations-admin-vite.identity.json',
+  ];
+  const identities = identityFileNames
+    .map(fileName => path.join(resolvedRunDirectory, fileName))
+    .filter(existsSync)
+    .map(readJson);
+  if (identities.length === 0) fail('L2_RECOVERY_IDENTITIES_MISSING');
+  const cleanupErrors = await stopOwnedProcesses(identities);
+  const recovery = {
+    schemaVersion: 1,
+    kind: 'l2-local-process-recovery',
+    runDirectory: repositoryRelativePath(resolvedRunDirectory),
+    identities: identities.map(({name, pid, pgid, startToken}) => ({name, pid, pgid, startToken})),
+    cleanup: cleanupErrors.length ? 'FAIL' : 'PASS',
+    cleanupErrors,
+    finishedAt: now(),
+  };
+  safePublicManifest(recovery);
+  privateWrite(path.join(resolvedRunDirectory, 'local-process-recovery.json'), recovery);
+  process.stdout.write(
+    `BROWSER_L2_LOCAL_PROCESS_RECOVERY=${cleanupErrors.length ? 'FAIL' : 'PASS'}; RUN_DIRECTORY=${recovery.runDirectory}; PROCESSES=${identities.length}\n`,
+  );
+  if (cleanupErrors.length) process.exitCode = 1;
+}
+
 async function cleanupOwnedL2Resources(state, credentials) {
   const errors = [];
   const artifactErrors = [];
@@ -6375,7 +6742,7 @@ async function cleanupOwnedL2Resources(state, credentials) {
       errors.push(`REMOTE_ROOT:${errorCode(error)}`);
     }
   }
-  errors.push(...(await stopOwnedProcesses(state.processes)));
+  errors.push(...(await stopOwnedRunProcesses(state)));
   try {
     errors.push(...(await cleanupRemote(state.remote.host, state.identity, credentials)));
   } catch (error) {
@@ -6533,18 +6900,23 @@ async function cleanupCommand(targetPath = currentRuntimeStatePath(), suite = 'c
   if (!isCurrentStateTarget && !isRunStateTarget && !isReadinessManifestTarget) {
     fail('L2_CLEANUP_TARGET_OUTSIDE_RUNTIME_ROOT');
   }
-  const state = isReadinessManifestTarget
-    ? buildReadinessFailureCleanupState({suite, manifestPath: resolvedTarget, manifest: readJson(resolvedTarget)})
-    : readJson(resolvedTarget);
-  if (state.kind !== config.stateKind || (state.status !== 'READY' && state.status !== 'CLEANUP_REQUIRED')) {
-    fail('L2_CLEANUP_STATE_NOT_READY');
+  const releaseLifecycleAdmission = acquireLifecycleAdmission({suite, phase: 'CLEANUP'});
+  try {
+    const state = isReadinessManifestTarget
+      ? buildReadinessFailureCleanupState({suite, manifestPath: resolvedTarget, manifest: readJson(resolvedTarget)})
+      : readJson(resolvedTarget);
+    if (state.kind !== config.stateKind || (state.status !== 'READY' && state.status !== 'CLEANUP_REQUIRED')) {
+      fail('L2_CLEANUP_STATE_NOT_READY');
+    }
+    validateNamespaceBinding(state.identity);
+    const result = await cleanupRuntimeState(state, {suite, reason: 'L2_RUNTIME_CLEANUP_RECOVERY'});
+    process.stdout.write(
+      `BROWSER_L2_CLEANUP=${result.cleanupErrors.length ? 'FAIL' : 'PASS'}; RUN_ID=${state.identity.runId}; BUSINESS=NOT_RUN; CLEANUP=${result.cleanupErrors.length ? 'FAIL' : 'PASS'}; MANIFEST=${result.cleanupManifestPath}\n`,
+    );
+    if (result.cleanupErrors.length) process.exitCode = 1;
+  } finally {
+    releaseLifecycleAdmission();
   }
-  validateNamespaceBinding(state.identity);
-  const result = await cleanupRuntimeState(state, {suite, reason: 'L2_RUNTIME_CLEANUP_RECOVERY'});
-  process.stdout.write(
-    `BROWSER_L2_CLEANUP=${result.cleanupErrors.length ? 'FAIL' : 'PASS'}; RUN_ID=${state.identity.runId}; BUSINESS=NOT_RUN; CLEANUP=${result.cleanupErrors.length ? 'FAIL' : 'PASS'}; MANIFEST=${result.cleanupManifestPath}\n`,
-  );
-  if (result.cleanupErrors.length) process.exitCode = 1;
 }
 
 function createPlaywrightEnvironment({state, credentials, suite = state.suite ?? 'catalog-inventory'}) {
@@ -6581,7 +6953,7 @@ function createPlaywrightEnvironment({state, credentials, suite = state.suite ??
     [config.ownerFixtureEnv]: state.ownerFixturePath,
     [config.casesEnv]: config.scenarioPath,
     [config.bindingsEnv]: config.bindingPath,
-    [config.executionEnv]: config.executionPath,
+    [config.executionEnv]: executionProfilePathForState(state, suite),
     R5_L2_CATALOG_INVENTORY_CASES: scenarioPath,
     R5_L2_CATALOG_INVENTORY_BINDINGS: bindingPath,
     R5_L2_CATALOG_INVENTORY_EXECUTION: executionPath,
@@ -6592,8 +6964,8 @@ function createPlaywrightEnvironment({state, credentials, suite = state.suite ??
     R5_L2_SALES_MENU_ACTIVATION_CANDIDATE: salesMenuActivationCandidatePath,
     R5_L2_STORE_TERMINAL_CASES: storeTerminalScenarioPath,
     R5_L2_STORE_TERMINAL_BINDINGS: storeTerminalBindingPath,
-    R5_L2_STORE_TERMINAL_EXECUTION: storeTerminalExecutionPath,
     R5_L2_STORE_TERMINAL_ACTIVATION_CANDIDATE: storeTerminalActivationCandidatePath,
+    R5_L2_STORE_TERMINAL_TIMING: storeTerminalTimingPath,
     R5_L2_TIMING_BUDGET_REPORT: state.timingReportPath,
     R5_L2_EXPECT_TIMEOUT_MS: String(expectTimeoutMs),
     R5_L2_PLAYWRIGHT_OUTPUT_DIR: playwrightArtifactDirectoryForRun(state.runDirectory),
@@ -6682,6 +7054,7 @@ function runPlaywright({
   focusedCaseId = null,
   onProcess,
   suite = state.suite ?? 'catalog-inventory',
+  admissionDigest = null,
 }) {
   const config = suiteConfig(suite);
   if (!Array.isArray(activeIds) || activeIds.length === 0) fail('L2_PLAYWRIGHT_ACTIVE_SET_REQUIRED');
@@ -6804,6 +7177,30 @@ function runPlaywright({
     let lastHeartbeat = startedAt;
     const heartbeat = setInterval(() => {
       emitCaseProgress();
+      if (!watchdogFailure && admissionDigest) {
+        try {
+          const currentAdmission = validateSuiteAdmission(suite);
+          if (currentAdmission.admissionDigest !== admissionDigest) {
+            watchdogFailure = 'L2_SCRIPT_ADMISSION_INVALIDATED_DURING_RUN';
+            appendJsonLine(path.join(state.runDirectory, 'heartbeat.jsonl'), {
+              at: now(),
+              phase: 'L2_SCRIPT_ADMISSION',
+              status: 'FAIL',
+              reason: watchdogFailure,
+            });
+            child.kill('SIGTERM');
+          }
+        } catch (error) {
+          watchdogFailure = `L2_SCRIPT_ADMISSION_INVALIDATED_DURING_RUN:${errorCode(error)}`;
+          appendJsonLine(path.join(state.runDirectory, 'heartbeat.jsonl'), {
+            at: now(),
+            phase: 'L2_SCRIPT_ADMISSION',
+            status: 'FAIL',
+            reason: watchdogFailure,
+          });
+          child.kill('SIGTERM');
+        }
+      }
       const active = activeCaseProgress;
       const elapsedCaseMs = active ? Date.now() - active.startedAtMs : 0;
       const budgetMs = active ? Number(timingByCase.get(active.caseId)?.timeoutMs ?? 0) : 0;
@@ -7388,6 +7785,14 @@ function buildL2JoinArtifact({
 async function readiness(suite = 'catalog-inventory') {
   const config = suiteConfig(suite);
   const frontendMode = requestedFrontendMode();
+  let admission = null;
+  try {
+    admission = validateSuiteAdmission(suite);
+  } catch (error) {
+    process.stderr.write(`BROWSER_L2_READINESS=REFUSED; SUITE=${suite}; FIRST_FAILURE=${errorCode(error)}; REASON=L2_SCRIPT_ADMISSION_REQUIRED\n`);
+    process.exitCode = 1;
+    return;
+  }
   ensureDirectory(runtimeRoot);
   const identity = makeRunIdentity();
   const trust = resolveTrustedRemoteHost(process.env);
@@ -7419,8 +7824,21 @@ async function readiness(suite = 'catalog-inventory') {
   let bootstrap;
   let ownerFixturePath = null;
   let sourceByteBinding = null;
+  let executionProfilePath = null;
   let firstFailure = null;
+  let interruptedSignal = null;
+  let releaseReadinessAdmission = null;
+  const handleSignal = signal => {
+    interruptedSignal ??= signal;
+  };
+  const throwIfInterrupted = () => {
+    if (interruptedSignal) fail(`L2_RUNTIME_INTERRUPTED_${interruptedSignal}`);
+  };
+  process.once('SIGINT', handleSignal);
+  process.once('SIGTERM', handleSignal);
   try {
+    releaseReadinessAdmission = acquireReadinessAdmission({suite});
+    assertNoHeldReadinessRun();
     validateNamespaceBinding(identity);
     remoteResourcePreflight(
       trust.host,
@@ -7442,7 +7860,9 @@ async function readiness(suite = 'catalog-inventory') {
       diagnostics,
       frontendMode,
     });
+    throwIfInterrupted();
     remoteBootstrapRoot(trust.host, identity.database, credentials.values.V2S_L2_PLATFORM_PASSWORD);
+    throwIfInterrupted();
     const catalogBootstrapCaseIds = catalogBootstrapCaseIdsForSuite(suite, activeExecutionCaseIds);
     bootstrap = await bootstrapOwnerFacts({
       identity,
@@ -7452,10 +7872,13 @@ async function readiness(suite = 'catalog-inventory') {
       diagnostics,
       activeIds: catalogBootstrapCaseIds,
     });
+    throwIfInterrupted();
     if (suite === 'sales-menu') {
       bootstrap = await bootstrapSalesMenuFacts({identity, base: bootstrap});
+      throwIfInterrupted();
     } else if (suite === 'store-terminal') {
       bootstrap = await bootstrapStoreTerminalFacts({identity, base: bootstrap});
+      throwIfInterrupted();
     }
     const ownerFixture = {
       schemaVersion: 1,
@@ -7473,8 +7896,8 @@ async function readiness(suite = 'catalog-inventory') {
     assertNoSensitiveLeak(ownerFixture, {secretValues: Object.values(credentials.values)});
     ownerFixturePath = path.join(runDirectory, `${suite}-owner-fixture.json`);
     privateWrite(ownerFixturePath, ownerFixture);
-    sourceByteBinding = writeRepositoryByteBinding({runDirectory, identity});
-    validateRepositoryByteBinding(sourceByteBinding.path, {expectedRunId: identity.runId});
+    sourceByteBinding = writeRepositoryByteBinding({runDirectory, identity, suite});
+    validateRepositoryByteBinding(sourceByteBinding.path, {expectedRunId: identity.runId, suite});
     const baseDenominators =
       suite === 'sales-menu'
         ? validateSalesMenuContractDenominators({execution: {enabledCaseIds: activeExecutionCaseIds}})
@@ -7507,6 +7930,7 @@ async function readiness(suite = 'catalog-inventory') {
       credentialsPath: created.paths.credentialsPath,
       ownerFixturePath,
       sourceByteBinding,
+      admission,
       frontendMode,
       status: 'PASS',
       firstFailure: null,
@@ -7520,6 +7944,27 @@ async function readiness(suite = 'catalog-inventory') {
     safePublicManifest(manifest, Object.values(credentials.values));
     const readinessPath = path.join(runDirectory, 'readiness-manifest.json');
     privateWrite(readinessPath, manifest);
+    if (suite === 'store-terminal') {
+      // The readiness manifest is the only runtime input to the authoritative
+      // P1 producer. Materialize the exact run binding under this run
+      // directory. The checked-in execution profile remains framework-only;
+      // a run must never mutate the repository's generated contract or leave
+      // a historical database/asset binding behind after cleanup.
+      executionProfilePath = path.join(runDirectory, `${suite}-execution-profile.json`);
+      generateStoreTerminalL2ExecutionProfile(readinessPath, executionProfilePath);
+      manifest.executionProfilePath = repositoryRelativePath(executionProfilePath);
+      sourceByteBinding = writeRepositoryByteBinding({runDirectory, identity, suite});
+      validateRepositoryByteBinding(sourceByteBinding.path, {expectedRunId: identity.runId, suite});
+      manifest.repositoryByteBinding = {
+        path: sourceByteBinding.relativePath,
+        bindingDigest: sourceByteBinding.bindingDigest,
+        fileCount: sourceByteBinding.fileCount,
+        byteCount: sourceByteBinding.byteCount,
+        scope: sourceByteBinding.scope,
+      };
+      safePublicManifest(manifest, Object.values(credentials.values));
+      privateWrite(readinessPath, manifest);
+    }
     const state = {
       schemaVersion: 1,
       kind: config.stateKind,
@@ -7528,6 +7973,7 @@ async function readiness(suite = 'catalog-inventory') {
       runDirectory,
       readinessManifestPath: readinessPath,
       ownerFixturePath,
+      executionProfilePath,
       sourceByteBindingPath: sourceByteBinding.path,
       credentialsPath: created.paths.credentialsPath,
       bindingPath: created.paths.bindingPath,
@@ -7551,6 +7997,9 @@ async function readiness(suite = 'catalog-inventory') {
       remoteDiagnostics: runtime.remoteDiagnostics,
       remoteLogPath: runtime.remoteLogPath,
       frontendMode,
+      admissionDigest: admission?.admissionDigest ?? null,
+      admissionPolicyDigest: admission?.policyDigest ?? null,
+      admissionControlPlaneFiles: admission?.controlPlaneFiles ?? [],
       diagnostics,
       processes,
       activeCaseIds: [...activeExecutionCaseIds],
@@ -7563,7 +8012,10 @@ async function readiness(suite = 'catalog-inventory') {
       `BROWSER_L2_READINESS=PASS; RUN_ID=${identity.runId}; ACTIVE_CASES=${activeExecutionCaseIds.length}; OWNER_ITEMS=${bootstrap.items.length}; MANIFEST=${readinessPath}\n`,
     );
   } catch (error) {
-    firstFailure = errorCode(error);
+    firstFailure = interruptedSignal ? `L2_RUNTIME_INTERRUPTED_${interruptedSignal}` : errorCode(error);
+    const failureDetail = compact(error?.message ?? error);
+    assertNoSensitiveLeak({failureDetail}, {secretValues: Object.values(credentials.values)});
+    privateWrite(path.join(runDirectory, 'failure-detail.txt'), failureDetail);
     const initialCleanupErrors = Array.isArray(error.cleanupErrors) ? [...error.cleanupErrors] : [];
     const initialArtifactErrors = Array.isArray(error.artifactErrors) ? [...error.artifactErrors] : [];
     const processes = runtime ? [runtime.tunnel, runtime.platform, runtime.operations] : [];
@@ -7588,6 +8040,7 @@ async function readiness(suite = 'catalog-inventory') {
       credentialsPath: created.paths.credentialsPath,
       ownerFixturePath,
       sourceByteBinding,
+      admission,
       frontendMode,
       status: 'FAIL',
       firstFailure,
@@ -7658,14 +8111,28 @@ async function readiness(suite = 'catalog-inventory') {
       `BROWSER_L2_READINESS=FAIL; FIRST_FAILURE=${firstFailure}; CLEANUP=${cleanup}; MANIFEST=${failurePath}\n`,
     );
     process.exitCode = 1;
+  } finally {
+    try {
+      releaseReadinessAdmission?.();
+    } catch {
+      // The readiness result already records the owning failure; do not mask it
+      // with a best-effort admission-lock release error.
+    }
+    process.removeListener('SIGINT', handleSignal);
+    process.removeListener('SIGTERM', handleSignal);
   }
 }
 
 async function finalizeRepositoryByteBinding(suite = 'catalog-inventory') {
   const config = suiteConfig(suite);
-  let state = readRuntimeState(suite);
+  let state;
+  let releaseLifecycleAdmission = null;
   let finalizeLastKnownGood = 'READINESS_HELD';
   try {
+    releaseLifecycleAdmission = acquireLifecycleAdmission({suite, phase: 'FINALIZE'});
+    state = readRuntimeState(suite);
+    const admission = validateSuiteAdmission(suite);
+    if (state.admissionDigest !== admission.admissionDigest) fail('L2_SCRIPT_ADMISSION_INVALIDATED');
     let readiness = readJson(state.readinessManifestPath);
     if (
       readiness.kind !== config.readinessKind ||
@@ -7679,7 +8146,7 @@ async function finalizeRepositoryByteBinding(suite = 'catalog-inventory') {
       fail('L2_RUNTIME_FINALIZE_READINESS_NOT_HELD');
     }
     const candidate = loadSuiteActivationCandidate(suite);
-    const execution = readJson(config.executionPath);
+    const execution = readJson(executionProfilePathForState(state, suite));
     const active = requireActivatedSuiteExecution(execution, candidate, suite);
     if (
       state.activeCaseIds?.length !== active.length ||
@@ -7694,13 +8161,28 @@ async function finalizeRepositoryByteBinding(suite = 'catalog-inventory') {
       binding?.database !== state.identity.database ||
       binding?.assetPrefix !== state.identity.assetPrefix
     ) {
-      fail('L2_RUNTIME_FINALIZE_EXECUTION_RUN_BINDING_MISMATCH');
+      fail(
+        'L2_RUNTIME_FINALIZE_EXECUTION_RUN_BINDING_MISMATCH',
+        JSON.stringify({
+          expected: {
+            runId: state.identity.runId,
+            namespace: state.identity.namespace,
+            database: state.identity.database,
+            assetPrefix: state.identity.assetPrefix,
+          },
+          actual: binding ?? null,
+        }),
+      );
     }
     state = await refreshLocalFrontendProcesses(state);
     finalizeLastKnownGood = 'FRONTEND_RUNTIME_REFRESHED';
     readiness = readJson(state.readinessManifestPath);
-    const sourceByteBinding = writeRepositoryByteBinding({runDirectory: state.runDirectory, identity: state.identity});
-    validateRepositoryByteBinding(sourceByteBinding.path, {expectedRunId: state.identity.runId});
+    const sourceByteBinding = writeRepositoryByteBinding({
+      runDirectory: state.runDirectory,
+      identity: state.identity,
+      suite,
+    });
+    validateRepositoryByteBinding(sourceByteBinding.path, {expectedRunId: state.identity.runId, suite});
     const finalizedManifest = {
       ...readiness,
       repositoryByteBinding: {
@@ -7720,6 +8202,13 @@ async function finalizeRepositoryByteBinding(suite = 'catalog-inventory') {
     );
   } catch (error) {
     const firstFailure = errorCode(error);
+    if (!state) {
+      process.stderr.write(
+        `BROWSER_L2_SOURCE_BYTE_BINDING_FINALIZE=FAIL; FIRST_FAILURE=${firstFailure}; CLEANUP=NOT_RUN\n`,
+      );
+      process.exitCode = 1;
+      return;
+    }
     let result;
     try {
       result = await cleanupRuntimeState(state, {
@@ -7766,14 +8255,23 @@ async function finalizeRepositoryByteBinding(suite = 'catalog-inventory') {
       `BROWSER_L2_SOURCE_BYTE_BINDING_FINALIZE=FAIL; FIRST_FAILURE=${firstFailure}; CLEANUP=${manifest.cleanup}; MANIFEST=${manifestPath}\n`,
     );
     process.exitCode = 1;
+  } finally {
+    try {
+      releaseLifecycleAdmission?.();
+    } catch {
+      // Keep the run result authoritative; a release error must not overwrite
+      // the first lifecycle or cleanup failure.
+    }
   }
 }
 
 async function runBrowserL2(suite = 'catalog-inventory', args = []) {
   const config = suiteConfig(suite);
-  const state = readRuntimeState(suite);
+  let state;
+  let releaseLifecycleAdmission = null;
   let credentials;
-  let active = Array.isArray(state.activeCaseIds) ? [...state.activeCaseIds] : [];
+  let active = [];
+  let admission = null;
   let focusedCaseId = null;
   let preflightLastKnownGood = 'RUNTIME_STATE_READ';
   let preflightComplete = false;
@@ -7784,6 +8282,8 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
     if (playwrightProcess?.pid) playwrightProcess.kill(signal);
   };
   try {
+    releaseLifecycleAdmission = acquireLifecycleAdmission({suite, phase: 'RUN'});
+    state = readRuntimeState(suite);
     credentials = readRunCredentials({
       runtimeRoot,
       credentialsPath: state.credentialsPath,
@@ -7796,10 +8296,13 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
     });
     preflightLastKnownGood = 'RUN_CREDENTIALS_VALIDATED';
     if (typeof state.sourceByteBindingPath !== 'string') fail('L2_RUNTIME_SOURCE_BYTE_BINDING_REQUIRED');
-    validateRepositoryByteBinding(state.sourceByteBindingPath, {expectedRunId: state.identity.runId});
+    validateRepositoryByteBinding(state.sourceByteBindingPath, {expectedRunId: state.identity.runId, suite});
     preflightLastKnownGood = 'SOURCE_BYTE_BINDING_VALIDATED';
+    admission = validateSuiteAdmission(suite);
+    if (state.admissionDigest !== admission.admissionDigest) fail('L2_SCRIPT_ADMISSION_INVALIDATED');
+    preflightLastKnownGood = 'L2_SCRIPT_ADMISSION_VALIDATED';
     const activationCandidate = loadSuiteActivationCandidate(suite);
-    const execution = readJson(config.executionPath);
+    const execution = readJson(executionProfilePathForState(state, suite));
     active = requireActivatedSuiteExecution(execution, activationCandidate, suite);
     preflightLastKnownGood = 'ACTIVATION_PROFILE_VALIDATED';
     const binding = execution.readiness?.runBinding;
@@ -7822,12 +8325,23 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
     focusedCaseId = parseFocusedCaseId(args, active);
     const executedCaseIds = focusedCaseId ? [focusedCaseId] : [...active];
     preflightLastKnownGood = focusedCaseId ? 'FOCUSED_CASE_VALIDATED' : preflightLastKnownGood;
+    suiteAdmissionStrategy(suite).assertFailureFamilyOpen({
+      runtimeRoot,
+      admissionDigest: admission.admissionDigest,
+      activeCaseIds: active,
+      focusedCaseId,
+    });
+    preflightLastKnownGood = 'FAILURE_FAMILY_RETRY_GATE_VALIDATED';
     if (!state.remoteJava || !state.remoteRoot || !state.remoteResources || !state.remoteDiagnostics) {
       fail('L2_REMOTE_BACKEND_STATE_REQUIRED');
     }
     validateRemoteJavaControl(state.remoteJava);
     const remoteReadiness = remoteJavaReadiness(state.remote.host, state.remoteJava);
-    if (!remoteIdentityMatches(state.remoteJava, remoteReadiness) || remoteReadiness.readyMarkerSeen !== true) {
+    if (
+      !remoteIdentityMatches(state.remoteJava, remoteReadiness) ||
+      remoteReadiness.readyMarkerSeen !== true ||
+      remoteReadiness.listenerReady !== true
+    ) {
       fail('L2_REMOTE_BACKEND_READINESS_INVALID');
     }
     preflightLastKnownGood = 'REMOTE_BACKEND_IDENTITY_AND_READINESS_VALIDATED';
@@ -7842,6 +8356,7 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
       activeIds: active,
       focusedCaseId,
       suite,
+      admissionDigest: admission?.admissionDigest ?? null,
       onProcess: childProcess => {
         playwrightProcess = childProcess;
       },
@@ -7861,7 +8376,7 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
     let sourceByteBindingAfterRunFailure = null;
     let accountingFailure = null;
     try {
-      validateRepositoryByteBinding(state.sourceByteBindingPath, {expectedRunId: state.identity.runId});
+      validateRepositoryByteBinding(state.sourceByteBindingPath, {expectedRunId: state.identity.runId, suite});
     } catch (error) {
       // This remains fail closed, but it is independent from a completed
       // browser case failure. Retain both facts rather than letting a later
@@ -8078,6 +8593,7 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
         remoteLogPath: state.remoteLogPath,
       }),
       firstFailure,
+      admissionDigest: state.admissionDigest ?? null,
       remoteArtifactFailure,
       sourceByteBindingAfterRunFailure,
       firstFailedCaseId: firstCaseFailure?.caseId ?? null,
@@ -8143,6 +8659,11 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
     const executionStatus = preflightComplete ? 'INCOMPLETE_FINALIZATION' : 'INCOMPLETE_PREFLIGHT';
     const lastKnownGood = preflightComplete ? 'PLAYWRIGHT_PROCESS_COMPLETED' : preflightLastKnownGood;
     const brokenBoundary = preflightComplete ? 'L2_RUNTIME_FINALIZATION' : 'L2_RUNTIME_PREFLIGHT';
+    if (!state) {
+      process.stderr.write(`BROWSER_L2=FAIL; FIRST_FAILURE=${firstFailure}; BUSINESS=NOT_RUN; CLEANUP=NOT_RUN\n`);
+      process.exitCode = 1;
+      return;
+    }
     let result;
     try {
       result = await cleanupRuntimeState(state, {
@@ -8191,6 +8712,12 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
     );
     process.exitCode = 1;
   } finally {
+    try {
+      releaseLifecycleAdmission?.();
+    } catch {
+      // Keep the run result authoritative; a release error must not overwrite
+      // the first lifecycle or cleanup failure.
+    }
     process.removeListener('SIGINT', handleSignal);
     process.removeListener('SIGTERM', handleSignal);
   }
@@ -8764,7 +9291,9 @@ export async function main() {
     process.exitCode = 2;
     return;
   }
-  const mode = args.find(arg => ['--self-test', 'readiness', 'finalize', 'run', 'cleanup'].includes(arg));
+  const mode = args.find(arg =>
+    ['--self-test', 'readiness', 'finalize', 'run', 'cleanup', 'recover-local'].includes(arg),
+  );
   const hasFocusedCaseArgument = args.some(arg => arg === '--case' || arg.startsWith('--case='));
   if (hasFocusedCaseArgument && mode !== 'run') {
     process.stderr.write('Usage: browser-l2 --suite <suite> run --case <generated-case-id>\n');
@@ -8781,8 +9310,9 @@ export async function main() {
   if (mode === 'finalize') return finalizeRepositoryByteBinding(suite);
   if (mode === 'run') return runBrowserL2(suite, args);
   if (mode === 'cleanup') return cleanupCommand(args[args.indexOf('cleanup') + 1], suite);
+  if (mode === 'recover-local') return recoverOwnedLocalProcesses(args[args.indexOf('recover-local') + 1]);
   process.stderr.write(
-    'Usage: browser-l2-runtime.mjs --self-test|readiness|finalize|run [--case <generated-case-id>]|cleanup [runtime-state.json|readiness-manifest.json]\n',
+    'Usage: browser-l2-runtime.mjs --self-test|readiness|finalize|run [--case <generated-case-id>]|cleanup [runtime-state.json|readiness-manifest.json]|recover-local <run-directory>\n',
   );
   process.exitCode = 2;
 }

@@ -26,23 +26,18 @@ class InventoryBomPersistenceTest {
         List<UUID> submitted = new ArrayList<>();
         for (int index = 0; index < 10; index++) submitted.add(UUID.randomUUID());
         Map<UUID, InventoryBomPersistence.ResolvedTargetFact> resolved = new LinkedHashMap<>();
-        submitted.forEach(ref -> resolved.put(
-                ref,
-                new InventoryBomPersistence.ResolvedTargetFact("ENABLED", true, UUID.randomUUID())));
+        submitted.forEach(ref ->
+                resolved.put(ref, new InventoryBomPersistence.ResolvedTargetFact("ENABLED", true, UUID.randomUUID())));
         String sql = ResolvedBomTargetsSql.RESOLVED_BOM_TARGETS_SELECT_TARGET_REF_DEFINITION_STATUS_COMPONENT_ELIGIBLE
                 + ResolvedBomTargetsSql.RESOLVED_BOM_TARGETS_STOCK_TARGET_CONSUMPTION_UNIT_REF
                 + ResolvedBomTargetsSql.RESOLVED_BOM_TARGETS_WHERE_DATA_NODE_REF_BRAND_REF_TARGET_REF;
-        when(jdbc.query(
-                        eq(sql),
-                        any(PreparedStatementSetter.class),
-                        any(ResultSetExtractor.class)))
+        when(jdbc.query(eq(sql), any(PreparedStatementSetter.class), any(ResultSetExtractor.class)))
                 .thenReturn(resolved);
 
         Map<UUID, InventoryBomPersistence.ResolvedTargetFact> actual =
                 new InventoryBomPersistence(jdbc).resolveBomTargets("scope", "brand", submitted);
 
         assertEquals(resolved, actual);
-        verify(jdbc, times(1))
-                .query(eq(sql), any(PreparedStatementSetter.class), any(ResultSetExtractor.class));
+        verify(jdbc, times(1)).query(eq(sql), any(PreparedStatementSetter.class), any(ResultSetExtractor.class));
     }
 }

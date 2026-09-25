@@ -19,8 +19,10 @@ public class WorkspacePasswordResetPersistence {
 
     public AccountRow account(UUID workspaceUuid, String groupWorkspaceKey, UUID accountId) {
         return jdbc.query(
-                WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_SELECT_WORKSPACE_ACCOUNT_LOGIN_NAME_NORMALIZED_STATUS_VERSION
-                        + WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
+                WorkspacePasswordResetServiceSql
+                                .WORKSPACE_PASSWORD_RESET_SERVICE_SELECT_WORKSPACE_ACCOUNT_LOGIN_NAME_NORMALIZED_STATUS_VERSION
+                        + WorkspacePasswordResetServiceSql
+                                .WORKSPACE_PASSWORD_RESET_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, accountId);
                     statement.setObject(2, workspaceUuid);
@@ -37,7 +39,8 @@ public class WorkspacePasswordResetPersistence {
 
     public int bumpAccountVersion(UUID accountId, long expectedVersion, long now) {
         return jdbc.update(
-                WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_UPDATE_WORKSPACE_ACCOUNT_VERSION_UPDATED_AT_EPOCH_MILLIS
+                WorkspacePasswordResetServiceSql
+                                .WORKSPACE_PASSWORD_RESET_SERVICE_UPDATE_WORKSPACE_ACCOUNT_VERSION_UPDATED_AT_EPOCH_MILLIS
                         + WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_VERSION,
                 now,
                 accountId,
@@ -46,7 +49,8 @@ public class WorkspacePasswordResetPersistence {
 
     public int updateCredential(UUID accountId, String passwordHash, long now) {
         return jdbc.update(
-                WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_UPDATE_WORKSPACE_CREDENTIAL_PASSWORD_HASH_CHANGED_AT_EPOCH_MILLIS
+                WorkspacePasswordResetServiceSql
+                                .WORKSPACE_PASSWORD_RESET_SERVICE_UPDATE_WORKSPACE_CREDENTIAL_PASSWORD_HASH_CHANGED_AT_EPOCH_MILLIS
                         + WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_FAILED_ATTEMPTS
                         + WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_VERSION_ACCOUNT_ID,
                 passwordHash,
@@ -56,23 +60,20 @@ public class WorkspacePasswordResetPersistence {
 
     public int revokeSessions(UUID accountId, long now) {
         return jdbc.update(
-                WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS
+                WorkspacePasswordResetServiceSql
+                                .WORKSPACE_PASSWORD_RESET_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS
                         + WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_ACCOUNT_ID_STATUS_ACTIVE,
                 now,
                 accountId);
     }
 
-    public int audit(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            UUID accountId,
-            AuditActor actor,
-            long now) {
+    public int audit(UUID workspaceUuid, String groupWorkspaceKey, UUID accountId, AuditActor actor, long now) {
         return jdbc.update(
                 WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_INSERT_INTO_AUDIT_EVENT
                         + WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_ENTITY_REF_TEXT
                         + WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_OCCURRED_AT_EPOCH_MILLIS
-                        + WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_WORKSPACE_ACCOUNT_CREDENTIAL_RESET,
+                        + WorkspacePasswordResetServiceSql
+                                .WORKSPACE_PASSWORD_RESET_SERVICE_WORKSPACE_ACCOUNT_CREDENTIAL_RESET,
                 UUID.randomUUID(),
                 workspaceUuid,
                 groupWorkspaceKey,

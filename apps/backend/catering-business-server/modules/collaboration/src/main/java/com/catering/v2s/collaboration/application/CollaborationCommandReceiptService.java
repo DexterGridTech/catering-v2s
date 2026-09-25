@@ -2,8 +2,8 @@ package com.catering.v2s.collaboration.application;
 
 import com.catering.v2s.collaboration.api.CollaborationCommandApi;
 import com.catering.v2s.collaboration.application.persistence.CollaborationCommandReceiptPersistence;
-import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
+import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
@@ -21,8 +21,7 @@ public final class CollaborationCommandReceiptService {
     private final TimeProvider time;
 
     @Autowired
-    public CollaborationCommandReceiptService(
-            CollaborationCommandReceiptPersistence persistence, TimeProvider time) {
+    public CollaborationCommandReceiptService(CollaborationCommandReceiptPersistence persistence, TimeProvider time) {
         this.persistence = persistence;
         this.time = time;
     }
@@ -89,8 +88,7 @@ public final class CollaborationCommandReceiptService {
 
     private static String write(Object value) {
         try {
-            return CommandReceiptSupport.serialize(
-                    JSON, value, "collaboration command readback is not writable");
+            return CommandReceiptSupport.serialize(JSON, value, "collaboration command readback is not writable");
         } catch (Exception failure) {
             throw problem("RECEIPT_CORRUPT", 500, "collaboration command readback is not writable", failure);
         }
@@ -103,5 +101,4 @@ public final class CollaborationCommandReceiptService {
     private static CollaborationCommandApi.Problem problem(String code, int status, String message, Throwable cause) {
         return new CollaborationCommandApi.Problem(code, status, message, cause);
     }
-
 }

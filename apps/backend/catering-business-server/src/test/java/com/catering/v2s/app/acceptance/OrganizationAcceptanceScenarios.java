@@ -215,10 +215,10 @@ final class OrganizationAcceptanceScenarios {
             module = "ORG",
             operation = "getOperationsOrganizationStoreOperatingRule")
     void storeOperatingRuleReadWriteAndAssignmentScope(BackendAcceptanceTest.ScenarioContext context) throws Exception {
-        BackendAcceptanceTest.Fixture projectFixture =
-                host.fixture("PROJECT", Set.of("BC-ORG-STORE-EDIT"));
+        BackendAcceptanceTest.Fixture projectFixture = host.fixture("PROJECT", Set.of("BC-ORG-STORE-EDIT"));
         host.completeInvitation(context, projectFixture);
-        BackendAcceptanceTest.Session projectSession = selectStore(context, projectFixture, host.login(context, projectFixture));
+        BackendAcceptanceTest.Session projectSession =
+                selectStore(context, projectFixture, host.login(context, projectFixture));
 
         BackendAcceptanceTest.Response projectRead = context.get(
                 OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE,
@@ -247,8 +247,8 @@ final class OrganizationAcceptanceScenarios {
         updateStoreBody.put("operatingRuleSwitches", parentClosedChildOpen);
         BackendAcceptanceTest.Response updated = context.patch(
                 OPERATIONS_ORGANIZATION_STORE_UPDATE,
-                "/api/operations/group-workspaces/" + projectFixture.groupWorkspaceKey()
-                        + "/organization/stores/" + projectFixture.storeId(),
+                "/api/operations/group-workspaces/" + projectFixture.groupWorkspaceKey() + "/organization/stores/"
+                        + projectFixture.storeId(),
                 projectSession.cookie(),
                 updateStoreBody,
                 Map.of("Idempotency-Key", "acceptance-store-operating-rule-" + UUID.randomUUID()),
@@ -272,7 +272,8 @@ final class OrganizationAcceptanceScenarios {
 
         BackendAcceptanceTest.Fixture storeFixture = host.storeUserFixture(projectFixture, Set.of());
         host.completeInvitation(context, storeFixture);
-        BackendAcceptanceTest.Session storeSession = selectStore(context, storeFixture, host.login(context, storeFixture));
+        BackendAcceptanceTest.Session storeSession =
+                selectStore(context, storeFixture, host.login(context, storeFixture));
         BackendAcceptanceTest.Response storeRead = context.get(
                 OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE,
                 "/api/operations/group-workspaces/" + storeFixture.groupWorkspaceKey()
@@ -302,14 +303,19 @@ final class OrganizationAcceptanceScenarios {
                 Set.of(200));
         assertEquals(
                 fixture.storeId().toString(),
-                selected.json().path("scopeContext").path("store").path("dataNodeRef").asText(),
+                selected.json()
+                        .path("scopeContext")
+                        .path("store")
+                        .path("dataNodeRef")
+                        .asText(),
                 "BUSINESS: operating-rule scenario selects the intended Store");
         return new BackendAcceptanceTest.Session(
-                session.cookie(), selected.json(), selected.json().path("contextVersion").asLong());
+                session.cookie(),
+                selected.json(),
+                selected.json().path("contextVersion").asLong());
     }
 
-    private static void assertOperatingRules(
-            JsonNode store, Map<String, Object> expected, String message) {
+    private static void assertOperatingRules(JsonNode store, Map<String, Object> expected, String message) {
         JsonNode values = store.path("operatingRuleSwitches");
         assertTrue(values.isObject(), message + ": values object");
         assertEquals(expected.size(), values.size(), message + ": complete value count");
@@ -527,11 +533,7 @@ final class OrganizationAcceptanceScenarios {
             operation = "getPlatformOrganizationOverviewPage")
     void platformOrganizationExtensionFilteredList(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         BackendAcceptanceTest.Fixture fixture = host.fixture(
-                "GROUP",
-                Set.of(
-                        "BC-ORG-BRAND-CREATE",
-                        "BC-ORG-TENANT-CREATE",
-                        "BC-ORG-HEAD-COMPANY-CREATE"));
+                "GROUP", Set.of("BC-ORG-BRAND-CREATE", "BC-ORG-TENANT-CREATE", "BC-ORG-HEAD-COMPANY-CREATE"));
         host.ensurePlatformAdministrator();
         BackendAcceptanceTest.Session platform = host.platformLogin(context);
         for (String hostType : List.of("BRAND", "TENANT", "HEAD_COMPANY", "STORE")) {
@@ -552,8 +554,7 @@ final class OrganizationAcceptanceScenarios {
             createOrganizationExtensionEntity(
                     context, fixture, operations, hostType, "C", "organizationFilter", "platform-non-match");
         }
-        BackendAcceptanceTest.Fixture projectFixture = host.projectUserFixture(
-                fixture, Set.of("BC-ORG-STORE-CREATE"));
+        BackendAcceptanceTest.Fixture projectFixture = host.projectUserFixture(fixture, Set.of("BC-ORG-STORE-CREATE"));
         host.completeInvitation(context, projectFixture);
         BackendAcceptanceTest.Session projectOperations = host.login(context, projectFixture);
         for (String suffix : List.of("A", "B")) {
@@ -597,8 +598,8 @@ final class OrganizationAcceptanceScenarios {
         BackendAcceptanceTest.Session operations = host.login(context, fixture);
         Response voided = context.post(
                 OPERATIONS_ORGANIZATION_NODE_STATUS,
-                "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey()
-                        + "/hierarchy/" + fixture.projectId() + "/status",
+                "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/hierarchy/" + fixture.projectId()
+                        + "/status",
                 operations.cookie(),
                 Map.of("targetStatus", "VOIDED", "expectedVersion", 1),
                 Set.of(200));
@@ -608,11 +609,11 @@ final class OrganizationAcceptanceScenarios {
         BackendAcceptanceTest.Session platform = host.platformLogin(context);
         Response hierarchy = context.get(
                 PLATFORM_ORGANIZATION_HIERARCHY,
-                "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey()
-                        + "/organization-overview/hierarchy",
+                "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey() + "/organization-overview/hierarchy",
                 platform.cookie(),
                 Set.of(200));
-        JsonNode project = findNodeById(hierarchy.json().path("regions"), fixture.projectId().toString());
+        JsonNode project = findNodeById(
+                hierarchy.json().path("regions"), fixture.projectId().toString());
         assertNotNull(project, "BUSINESS: platform hierarchy keeps the voided project");
         assertEquals("VOIDED", project.path("status").asText(), "BUSINESS: platform hierarchy preserves status");
     }
@@ -626,8 +627,10 @@ final class OrganizationAcceptanceScenarios {
         BackendAcceptanceTest.Fixture second = host.fixture("GROUP", Set.of("BC-ORG-BRAND-CREATE"));
         host.ensurePlatformAdministrator();
         BackendAcceptanceTest.Session platform = host.platformLogin(context);
-        replaceDefinition(context, first.groupWorkspaceKey(), platform.cookie(), "BRAND", typedFlatFieldsFor("scopeFilter"));
-        replaceDefinition(context, second.groupWorkspaceKey(), platform.cookie(), "BRAND", typedFlatFieldsFor("scopeFilter"));
+        replaceDefinition(
+                context, first.groupWorkspaceKey(), platform.cookie(), "BRAND", typedFlatFieldsFor("scopeFilter"));
+        replaceDefinition(
+                context, second.groupWorkspaceKey(), platform.cookie(), "BRAND", typedFlatFieldsFor("scopeFilter"));
         host.completeInvitation(context, first);
         host.completeInvitation(context, second);
         BackendAcceptanceTest.Session firstOperations = host.login(context, first);
@@ -644,9 +647,13 @@ final class OrganizationAcceptanceScenarios {
                         + "&definitionRevision=1&page=1&pageSize=10",
                 firstOperations.cookie(),
                 Set.of(200));
-        assertEquals(1, page.json().path("metadata").path("total").asInt(),
+        assertEquals(
+                1,
+                page.json().path("metadata").path("total").asInt(),
                 "BUSINESS: extension filtering cannot cross workspace scope");
-        assertEquals("ExtensionFilterBRANDA", page.json().path("items").get(0).path("name").asText(),
+        assertEquals(
+                "ExtensionFilterBRANDA",
+                page.json().path("items").get(0).path("name").asText(),
                 "BUSINESS: scoped extension result belongs to the requesting workspace");
     }
 
@@ -666,16 +673,10 @@ final class OrganizationAcceptanceScenarios {
                 + "&pageSize=1&extensionFilters="
                 + filterWire(typedFilterSpecs(fieldPrefix, "platform-match"))
                 + "&definitionRevision=1";
-        Response page = context.get(
-                PLATFORM_ORGANIZATION_OVERVIEW,
-                requestBase + "&page=1",
-                platform.cookie(),
-                Set.of(200));
-        Response secondPage = context.get(
-                PLATFORM_ORGANIZATION_OVERVIEW,
-                requestBase + "&page=2",
-                platform.cookie(),
-                Set.of(200));
+        Response page =
+                context.get(PLATFORM_ORGANIZATION_OVERVIEW, requestBase + "&page=1", platform.cookie(), Set.of(200));
+        Response secondPage =
+                context.get(PLATFORM_ORGANIZATION_OVERVIEW, requestBase + "&page=2", platform.cookie(), Set.of(200));
         assertPlatformOrganizationPage(page, 1, hostType, category, fieldPrefix);
         assertPlatformOrganizationPage(secondPage, 2, hostType, category, fieldPrefix);
         assertNotEquals(
@@ -702,8 +703,7 @@ final class OrganizationAcceptanceScenarios {
                 item.has("extensionFields"),
                 "BUSINESS: flat platform page does not expose the hierarchy extension field projection");
         assertTrue(
-                item.path("extensionValues").isObject(),
-                "BUSINESS: flat platform page exposes raw extension values");
+                item.path("extensionValues").isObject(), "BUSINESS: flat platform page exposes raw extension values");
         assertTrue(
                 item.has("extensionRuleRevision"),
                 "BUSINESS: flat platform page exposes the applied definition revision");
@@ -732,11 +732,7 @@ final class OrganizationAcceptanceScenarios {
         BackendAcceptanceTest.Session platform = host.platformLogin(context);
         String fieldKey = "organizationFilter";
         replaceDefinition(
-                context,
-                fixture.groupWorkspaceKey(),
-                platform.cookie(),
-                hostType,
-                typedFlatFieldsFor(fieldKey));
+                context, fixture.groupWorkspaceKey(), platform.cookie(), hostType, typedFlatFieldsFor(fieldKey));
         host.completeInvitation(context, fixture);
         BackendAcceptanceTest.Session operations = host.login(context, fixture);
         createOrganizationExtensionEntity(context, fixture, operations, hostType, "A", fieldKey, "match-value");
@@ -778,11 +774,16 @@ final class OrganizationAcceptanceScenarios {
                     "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/organization/brands",
                     operations.cookie(),
                     Map.of(
-                            "code", "acceptance-filter-" + normalizedHost + "-" + suffix.toLowerCase(),
-                            "name", name,
-                            "alias", "AFB" + suffix,
-                            "remark", "extension-filter",
-                            "extensionValues", extensionValues),
+                            "code",
+                            "acceptance-filter-" + normalizedHost + "-" + suffix.toLowerCase(),
+                            "name",
+                            name,
+                            "alias",
+                            "AFB" + suffix,
+                            "remark",
+                            "extension-filter",
+                            "extensionValues",
+                            extensionValues),
                     Set.of(201));
             return;
         }
@@ -792,12 +793,18 @@ final class OrganizationAcceptanceScenarios {
                     "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/organization/tenants",
                     operations.cookie(),
                     Map.of(
-                            "code", "acceptance-filter-" + normalizedHost + "-" + suffix.toLowerCase(),
-                            "name", name,
-                            "legalName", name + " Ltd",
-                            "unifiedSocialCreditCode", "91310000FILTERTENANT" + suffix,
-                            "remark", "extension-filter",
-                            "extensionValues", extensionValues),
+                            "code",
+                            "acceptance-filter-" + normalizedHost + "-" + suffix.toLowerCase(),
+                            "name",
+                            name,
+                            "legalName",
+                            name + " Ltd",
+                            "unifiedSocialCreditCode",
+                            "91310000FILTERTENANT" + suffix,
+                            "remark",
+                            "extension-filter",
+                            "extensionValues",
+                            extensionValues),
                     Set.of(201));
             return;
         }
@@ -807,12 +814,18 @@ final class OrganizationAcceptanceScenarios {
                     "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/organization/head-companies",
                     operations.cookie(),
                     Map.of(
-                            "code", "acceptance-filter-" + normalizedHost + "-" + suffix.toLowerCase(),
-                            "name", name,
-                            "legalName", name + " Ltd",
-                            "unifiedSocialCreditCode", "91310000FILTERHEAD" + suffix,
-                            "remark", "extension-filter",
-                            "extensionValues", extensionValues),
+                            "code",
+                            "acceptance-filter-" + normalizedHost + "-" + suffix.toLowerCase(),
+                            "name",
+                            name,
+                            "legalName",
+                            name + " Ltd",
+                            "unifiedSocialCreditCode",
+                            "91310000FILTERHEAD" + suffix,
+                            "remark",
+                            "extension-filter",
+                            "extensionValues",
+                            extensionValues),
                     Set.of(201));
             return;
         }
@@ -832,7 +845,8 @@ final class OrganizationAcceptanceScenarios {
                 Set.of(201));
     }
 
-    private static void assertOrganizationExtensionPage(Response page, int expectedPage, String fieldPrefix, String label) {
+    private static void assertOrganizationExtensionPage(
+            Response page, int expectedPage, String fieldPrefix, String label) {
         assertOrganizationExtensionPage(page, expectedPage, fieldPrefix, label, "match-value");
     }
 
@@ -841,7 +855,8 @@ final class OrganizationAcceptanceScenarios {
         JsonNode metadata = page.json().path("metadata");
         assertEquals(expectedPage, metadata.path("page").asInt(), "BUSINESS: " + label + " preserves page identity");
         assertEquals(1, metadata.path("pageSize").asInt(), "BUSINESS: " + label + " preserves page size");
-        assertEquals(2, metadata.path("total").asInt(), "BUSINESS: " + label + " totals the core and extension matches");
+        assertEquals(
+                2, metadata.path("total").asInt(), "BUSINESS: " + label + " totals the core and extension matches");
         assertEquals(1, page.json().path("items").size(), "BUSINESS: " + label + " returns one item per page");
         assertEquals(
                 1,
@@ -852,10 +867,18 @@ final class OrganizationAcceptanceScenarios {
                 expectedTextValue,
                 values.path(fieldPrefix + "Text").asText(),
                 "BUSINESS: " + label + " returns TEXT raw value");
-        assertEquals(12.5, values.path(fieldPrefix + "Number").asDouble(), "BUSINESS: " + label + " returns NUMBER raw value");
-        assertEquals("2026-09-15", values.path(fieldPrefix + "Date").asText(), "BUSINESS: " + label + " returns DATE raw value");
-        assertTrue(values.path(fieldPrefix + "Boolean").asBoolean(), "BUSINESS: " + label + " returns BOOLEAN raw value");
-        assertEquals("直营", values.path(fieldPrefix + "Select").asText(), "BUSINESS: " + label + " returns SELECT raw value");
+        assertEquals(
+                12.5,
+                values.path(fieldPrefix + "Number").asDouble(),
+                "BUSINESS: " + label + " returns NUMBER raw value");
+        assertEquals(
+                "2026-09-15",
+                values.path(fieldPrefix + "Date").asText(),
+                "BUSINESS: " + label + " returns DATE raw value");
+        assertTrue(
+                values.path(fieldPrefix + "Boolean").asBoolean(), "BUSINESS: " + label + " returns BOOLEAN raw value");
+        assertEquals(
+                "直营", values.path(fieldPrefix + "Select").asText(), "BUSINESS: " + label + " returns SELECT raw value");
     }
 
     @AcceptanceScenario(

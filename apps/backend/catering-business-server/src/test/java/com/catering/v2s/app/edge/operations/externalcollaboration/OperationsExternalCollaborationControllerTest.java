@@ -8,8 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.app.edge.generated.wire.ProviderProfileViewCatalogStatus;
-import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
+import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
@@ -118,8 +118,7 @@ class OperationsExternalCollaborationControllerTest {
         String secondCapability = "A\u001fB";
         when(sessions.requireWorkspaceRead(request, firstGroupKey)).thenReturn(session(firstGroupKey));
         when(sessions.requireWorkspaceRead(request, secondGroupKey)).thenReturn(session(secondGroupKey));
-        List<CollaborationReadback.ProviderProfile> providers =
-                List.of(provider("PROVIDER-A"), provider("PROVIDER-B"));
+        List<CollaborationReadback.ProviderProfile> providers = List.of(provider("PROVIDER-A"), provider("PROVIDER-B"));
         when(catalog.listEnabledProviderProfiles(WORKSPACE, firstGroupKey, firstCapability, "STORE"))
                 .thenReturn(providers);
         when(catalog.listEnabledProviderProfiles(WORKSPACE, secondGroupKey, secondCapability, "STORE"))

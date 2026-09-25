@@ -43,8 +43,10 @@ class BusinessEntityValueSupportTest {
                 DEFINITION,
                 new ExtensionSubmission(List.of(
                         ExtensionSubmission.ExtensionFieldValue.clear("enabled"),
-                        new ExtensionSubmission.ExtensionFieldValue("displayName", "\"\"", ExtensionSubmission.Mode.SET),
-                        new ExtensionSubmission.ExtensionFieldValue("creditLimit", "101.50", ExtensionSubmission.Mode.SET))));
+                        new ExtensionSubmission.ExtensionFieldValue(
+                                "displayName", "\"\"", ExtensionSubmission.Mode.SET),
+                        new ExtensionSubmission.ExtensionFieldValue(
+                                "creditLimit", "101.50", ExtensionSubmission.Mode.SET))));
 
         assertEquals(3, changes.size());
         assertEquals("显示名称", changes.get(0).fieldLabelSnapshot());
@@ -62,8 +64,8 @@ class BusinessEntityValueSupportTest {
                 null,
                 entity(Map.of("displayName", "\"新名称\"")),
                 DEFINITION,
-                new ExtensionSubmission(List.of(
-                        new ExtensionSubmission.ExtensionFieldValue("displayName", "\"新名称\"", ExtensionSubmission.Mode.SET))));
+                new ExtensionSubmission(List.of(new ExtensionSubmission.ExtensionFieldValue(
+                        "displayName", "\"新名称\"", ExtensionSubmission.Mode.SET))));
 
         assertEquals(1, changes.size());
         assertEquals(AuditValueState.MISSING, changes.get(0).beforeState());

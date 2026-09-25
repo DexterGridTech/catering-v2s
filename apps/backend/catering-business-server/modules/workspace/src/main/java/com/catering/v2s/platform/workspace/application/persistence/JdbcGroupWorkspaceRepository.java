@@ -38,9 +38,7 @@ public class JdbcGroupWorkspaceRepository implements GroupWorkspaceRepository {
     @Override
     public Optional<GroupWorkspaceDetail> detail(PlatformExecutionContext context, String groupWorkspaceKey) {
         List<GroupWorkspaceDetail> rows = jdbcTemplate.query(
-                JdbcGroupWorkspaceRepositorySql.DETAIL,
-                (resultSet, rowNum) -> mapDetail(resultSet),
-                groupWorkspaceKey);
+                JdbcGroupWorkspaceRepositorySql.DETAIL, (resultSet, rowNum) -> mapDetail(resultSet), groupWorkspaceKey);
         return rows.stream().findFirst();
     }
 

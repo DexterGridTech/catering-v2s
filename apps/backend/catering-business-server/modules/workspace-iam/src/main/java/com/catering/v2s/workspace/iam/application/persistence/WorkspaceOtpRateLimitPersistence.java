@@ -23,9 +23,11 @@ public class WorkspaceOtpRateLimitPersistence {
     public BucketRow bucket(UUID workspace, String key, String purpose, UUID subject) {
         return jdbc.query(
                 WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_SELECT_WINDOW_STARTED_AT_EPOCH_MILLIS
-                        + WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_FROM_CLAUSE_OTP_RATE_LIMIT_BUCKET
+                        + WorkspaceOtpRateLimitServiceSql
+                                .WORKSPACE_OTP_RATE_LIMIT_SERVICE_FROM_CLAUSE_OTP_RATE_LIMIT_BUCKET
                         + WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_CONDITION
-                        + WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_PURPOSE_SUBJECT_REF_ALTERNATE_A,
+                        + WorkspaceOtpRateLimitServiceSql
+                                .WORKSPACE_OTP_RATE_LIMIT_SERVICE_PURPOSE_SUBJECT_REF_ALTERNATE_A,
                 statement -> {
                     statement.setObject(1, workspace);
                     statement.setString(2, key);
@@ -34,10 +36,7 @@ public class WorkspaceOtpRateLimitPersistence {
                 },
                 result -> result.next()
                         ? new BucketRow(
-                                result.getLong(1),
-                                result.getInt(2),
-                                result.getInt(3),
-                                result.getObject(4, Long.class))
+                                result.getLong(1), result.getInt(2), result.getInt(3), result.getObject(4, Long.class))
                         : null);
     }
 
@@ -54,12 +53,16 @@ public class WorkspaceOtpRateLimitPersistence {
         jdbc.update(
                 WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_INSERT_INTO_OTP_RATE_LIMIT_BUCKET
                         + WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_SUBJECT_REF
-                        + WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_LOCKED_UNTIL_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
+                        + WorkspaceOtpRateLimitServiceSql
+                                .WORKSPACE_OTP_RATE_LIMIT_SERVICE_LOCKED_UNTIL_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
                         + WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_SET
-                        + WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_WINDOW_STARTED_AT_EPOCH_MILLIS
-                        + WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_SEND_COUNT_VERIFY_FAILED_ATTEMPTS
+                        + WorkspaceOtpRateLimitServiceSql
+                                .WORKSPACE_OTP_RATE_LIMIT_SERVICE_WINDOW_STARTED_AT_EPOCH_MILLIS
+                        + WorkspaceOtpRateLimitServiceSql
+                                .WORKSPACE_OTP_RATE_LIMIT_SERVICE_SEND_COUNT_VERIFY_FAILED_ATTEMPTS
                         + WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_LOCKED_UNTIL_EPOCH_MILLIS
-                        + WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS,
+                        + WorkspaceOtpRateLimitServiceSql
+                                .WORKSPACE_OTP_RATE_LIMIT_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS,
                 workspace,
                 key,
                 purpose,
@@ -73,7 +76,8 @@ public class WorkspaceOtpRateLimitPersistence {
 
     public void clear(UUID workspace, String key, String purpose, UUID subject) {
         jdbc.update(
-                WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_DELETE_OTP_RATE_LIMIT_BUCKET_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                WorkspaceOtpRateLimitServiceSql
+                                .WORKSPACE_OTP_RATE_LIMIT_SERVICE_DELETE_OTP_RATE_LIMIT_BUCKET_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_PURPOSE_SUBJECT_REF,
                 workspace,
                 key,
@@ -81,6 +85,5 @@ public class WorkspaceOtpRateLimitPersistence {
                 subject);
     }
 
-    public record BucketRow(
-            long windowStartedAt, int sendCount, int verifyFailedAttempts, Long lockedUntil) {}
+    public record BucketRow(long windowStartedAt, int sendCount, int verifyFailedAttempts, Long lockedUntil) {}
 }

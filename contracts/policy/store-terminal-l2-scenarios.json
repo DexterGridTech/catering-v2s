@@ -9,13 +9,26 @@
     "seedRuntimeInput": false,
     "reportInputs": []
   },
+  "serialFixtureOrder": {
+    "sharedFixtureRef": "FIXTURE-STORE-TERMINAL-BASE",
+    "destructiveCaseIds": ["terminal-status-actions"],
+    "dependentCaseIds": ["terminal-list-detail", "terminal-create-basic", "terminal-create-configuration", "terminal-edit-configuration"],
+    "isolatedCaseIds": ["terminal-readonly-state"],
+    "isolatedCasesMustPrecedeDestructiveCases": true,
+    "rule": "terminal-readonly-state uses a dedicated readiness terminal; terminal-status-actions may void the primary readiness terminal without changing case independence"
+  },
   "scenarioCount": 6,
   "caseCount": 6,
   "operationCoverage": [
+    {"operationId": "getOperationsWorkspaceLoginEntry", "owner": "workspace"},
+    {"operationId": "operationsWorkspacePasswordLogin", "owner": "workspace"},
     {"operationId": "getOperationsStoreTerminals", "owner": "store-terminal"},
     {"operationId": "getOperationsStoreTerminal", "owner": "store-terminal"},
     {"operationId": "getOperationsStoreTerminalAreaCandidates", "owner": "store-terminal"},
     {"operationId": "getOperationsStoreTerminalTagCandidates", "owner": "store-terminal"},
+    {"operationId": "postOperationsStoreTerminal", "owner": "store-terminal"},
+    {"operationId": "putOperationsStoreTerminal", "owner": "store-terminal"},
+    {"operationId": "postOperationsStoreTerminalStatus", "owner": "store-terminal"},
     {"operationId": "getOperationsWorkspaceSessionEntry", "owner": "workspace"}
   ],
   "scenarios": [
@@ -28,13 +41,16 @@
           "parameterization": "terminal-page-and-detail",
           "parameter": {
             "declaredActions": [{"actionId": "terminal-list-and-detail", "kind": "USER_JOURNEY"}],
-            "controlKeys": ["STORE_SCOPE", "TERMINAL_PAGE", "TERMINAL_LIST", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL"],
-            "operationIds": ["getOperationsStoreTerminals", "getOperationsStoreTerminal"],
+            "actionControlKeys": ["STORE_SCOPE", "TERMINAL_LIST_RETRY", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL_RETRY"],
+            "controlKeys": ["STORE_SCOPE", "TERMINAL_PAGE", "TERMINAL_LIST", "TERMINAL_LIST_RETRY", "TERMINAL_PAGINATION", "TERMINAL_PAGINATION_NEXT", "TERMINAL_PAGINATION_PREVIOUS", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL_RETRY", "TERMINAL_DETAIL"],
+            "operationIds": ["getOperationsWorkspaceLoginEntry", "operationsWorkspacePasswordLogin", "getOperationsStoreTerminals", "getOperationsStoreTerminal"],
             "network": {
-              "required": ["getOperationsStoreTerminals", "getOperationsStoreTerminal"],
+              "required": ["getOperationsWorkspaceLoginEntry", "operationsWorkspacePasswordLogin", "getOperationsStoreTerminals", "getOperationsStoreTerminal"],
               "forbidden": [],
               "backgroundAllowed": ["getOperationsWorkspaceSessionEntry"],
               "requests": [
+                {"operationId": "getOperationsWorkspaceLoginEntry", "maxRequestCount": 1},
+                {"operationId": "operationsWorkspacePasswordLogin", "maxRequestCount": 1},
                 {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 4},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
@@ -53,6 +69,7 @@
           "parameterization": "terminal-create-basic-and-cancel",
           "parameter": {
             "declaredActions": [{"actionId": "terminal-create-basic", "kind": "USER_JOURNEY"}],
+            "actionControlKeys": ["STORE_SCOPE", "TERMINAL_CREATE", "TERMINAL_DEVICE_TYPE_OPTION", "TERMINAL_FORM_TAB_BASIC", "TERMINAL_NAME", "TERMINAL_ACTIVATION_CODE", "TERMINAL_ACTIVATION_CODE_CLEAR", "TERMINAL_FORM_CANCEL", "TERMINAL_DIRTY_GUARD_CANCEL", "TERMINAL_DIRTY_GUARD_CONFIRM"],
             "controlKeys": [
               "STORE_SCOPE",
               "TERMINAL_PAGE",
@@ -60,28 +77,39 @@
               "TERMINAL_FORM",
               "TERMINAL_NAME",
               "TERMINAL_DEVICE_TYPE",
-              "TERMINAL_FORM_NEXT",
-              "TERMINAL_FORM_BACK",
+              "TERMINAL_DEVICE_TYPE_OPTION",
+              "TERMINAL_FORM_TAB_BASIC",
+              "TERMINAL_ACTIVATION_CODE",
+              "TERMINAL_ACTIVATION_CODE_CLEAR",
               "TERMINAL_FORM_CANCEL",
+              "TERMINAL_DIRTY_GUARD_CANCEL",
               "TERMINAL_DIRTY_GUARD_CONFIRM"
             ],
             "operationIds": [
-              "getOperationsStoreTerminals",
-              "getOperationsStoreTerminalAreaCandidates",
-              "getOperationsStoreTerminalTagCandidates"
+              "getOperationsWorkspaceLoginEntry",
+              "operationsWorkspacePasswordLogin",
+              "getOperationsStoreTerminals"
             ],
             "network": {
               "required": [
-                "getOperationsStoreTerminals",
+                "getOperationsWorkspaceLoginEntry",
+                "operationsWorkspacePasswordLogin",
+                "getOperationsStoreTerminals"
+              ],
+              "forbidden": ["postOperationsStoreTerminal"],
+              "backgroundAllowed": [
+                "getOperationsWorkspaceSessionEntry",
+                "getOperationsStoreTerminal",
                 "getOperationsStoreTerminalAreaCandidates",
                 "getOperationsStoreTerminalTagCandidates"
               ],
-              "forbidden": ["postOperationsStoreTerminal"],
-              "backgroundAllowed": ["getOperationsWorkspaceSessionEntry", "getOperationsStoreTerminal"],
               "requests": [
+                {"operationId": "getOperationsWorkspaceLoginEntry", "maxRequestCount": 1},
+                {"operationId": "operationsWorkspacePasswordLogin", "maxRequestCount": 1},
                 {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
-                {"operationId": "getOperationsStoreTerminalAreaCandidates", "maxRequestCount": 4},
-                {"operationId": "getOperationsStoreTerminalTagCandidates", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreTerminalAreaCandidates", "maxRequestCount": 6},
+                {"operationId": "getOperationsStoreTerminalTagCandidates", "maxRequestCount": 6},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
               ]
             }
@@ -98,38 +126,81 @@
           "parameterization": "terminal-printer-function-range-scene",
           "parameter": {
             "declaredActions": [{"actionId": "terminal-create-configuration", "kind": "USER_JOURNEY"}],
+            "actionControlKeys": ["STORE_SCOPE", "TERMINAL_CREATE", "TERMINAL_DEVICE_TYPE_OPTION", "TERMINAL_FORM_TAB_BASIC", "TERMINAL_FORM_TAB_FUNCTIONS", "TERMINAL_NAME", "TERMINAL_PRINTER_ADD", "TERMINAL_PRINTER_NAME", "TERMINAL_PRINTER_BRAND", "TERMINAL_PRINTER_MODEL", "TERMINAL_PRINTER_CONNECTION", "TERMINAL_PRINTER_PARAMETER", "TERMINAL_PRINTER_REMOVE", "TERMINAL_PRINTER_REMOVE_CANCEL", "TERMINAL_PRINTER_REMOVE_CONFIRM", "TERMINAL_FUNCTION_ADD", "TERMINAL_FUNCTION_NAV", "TERMINAL_FUNCTION_REMOVE", "TERMINAL_RANGE_OPTION", "TERMINAL_SCENE_TOGGLE", "TERMINAL_SCENE_ORDER_TYPE", "TERMINAL_SCENE_PRINTERS", "TERMINAL_TAG_CANDIDATES_RETRY", "TERMINAL_TAG_CANDIDATES", "TERMINAL_AREA_CANDIDATES_RETRY", "TERMINAL_AREA_CANDIDATES", "TERMINAL_FORM_SAVE"],
+            "negativeFunctionAssertions": [
+              {"functionKey": "QUEUE_CALL", "label": "排队叫号", "absentControlKeys": ["TERMINAL_RANGE_GROUP"]},
+              {"functionKey": "KDS", "label": "KDS", "absentControlKeys": ["TERMINAL_SCENE_PICKER"]},
+              {"functionKey": "ORDER_CONFIRMATION", "label": "接单确认", "absentControlKeys": ["TERMINAL_SCENE_PICKER"]}
+            ],
             "controlKeys": [
               "STORE_SCOPE",
               "TERMINAL_PAGE",
               "TERMINAL_CREATE",
               "TERMINAL_FORM",
-              "TERMINAL_FORM_NEXT",
+              "TERMINAL_NAME",
+              "TERMINAL_DEVICE_TYPE",
+              "TERMINAL_DEVICE_TYPE_OPTION",
+              "TERMINAL_FORM_TAB_BASIC",
+              "TERMINAL_FORM_TAB_FUNCTIONS",
               "TERMINAL_PRINTER_ADD",
+              "TERMINAL_PRINTER",
+              "TERMINAL_PRINTER_NAME",
+              "TERMINAL_PRINTER_BRAND",
+              "TERMINAL_PRINTER_MODEL",
+              "TERMINAL_PRINTER_PAPER_SPEC",
+              "TERMINAL_PRINTER_CONNECTION",
+              "TERMINAL_PRINTER_PARAMETER",
+              "TERMINAL_PRINTER_REMOVE",
+              "TERMINAL_PRINTER_REMOVE_CONFIRM",
+              "TERMINAL_PRINTER_REMOVE_CANCEL",
+              "TERMINAL_FUNCTION_LIST",
               "TERMINAL_FUNCTION_ADD",
+              "TERMINAL_FUNCTION_REMOVE",
+              "TERMINAL_FUNCTION_NAV",
+              "TERMINAL_FUNCTION",
+              "TERMINAL_FUNCTION_TYPE",
+              "TERMINAL_RANGE_GROUP",
+              "TERMINAL_RANGE_OPTION",
               "TERMINAL_SCENE_PICKER",
+              "TERMINAL_SCENE_TOGGLE",
+              "TERMINAL_SCENE",
+              "TERMINAL_SCENE_ORDER_TYPES",
+              "TERMINAL_SCENE_ORDER_TYPE",
+              "TERMINAL_SCENE_PRINTERS",
               "TERMINAL_AREA_CANDIDATES",
+              "TERMINAL_AREA_CANDIDATES_RETRY",
               "TERMINAL_TAG_CANDIDATES",
-              "TERMINAL_FORM_CANCEL",
-              "TERMINAL_DIRTY_GUARD_CONFIRM"
+              "TERMINAL_TAG_CANDIDATES_RETRY",
+              "TERMINAL_FORM_SAVE"
             ],
             "operationIds": [
+              "getOperationsWorkspaceLoginEntry",
+              "operationsWorkspacePasswordLogin",
               "getOperationsStoreTerminals",
               "getOperationsStoreTerminalAreaCandidates",
-              "getOperationsStoreTerminalTagCandidates"
+              "getOperationsStoreTerminalTagCandidates",
+              "postOperationsStoreTerminal"
             ],
             "network": {
               "required": [
+                "getOperationsWorkspaceLoginEntry",
+                "operationsWorkspacePasswordLogin",
                 "getOperationsStoreTerminals",
                 "getOperationsStoreTerminalAreaCandidates",
-                "getOperationsStoreTerminalTagCandidates"
+                "getOperationsStoreTerminalTagCandidates",
+                "postOperationsStoreTerminal"
               ],
-              "forbidden": ["postOperationsStoreTerminal"],
+              "forbidden": [],
               "backgroundAllowed": ["getOperationsWorkspaceSessionEntry", "getOperationsStoreTerminal"],
               "requests": [
+                {"operationId": "getOperationsWorkspaceLoginEntry", "maxRequestCount": 1},
+                {"operationId": "operationsWorkspacePasswordLogin", "maxRequestCount": 1},
                 {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreTerminalAreaCandidates", "maxRequestCount": 6},
                 {"operationId": "getOperationsStoreTerminalTagCandidates", "maxRequestCount": 6},
-                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
+                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4},
+                {"operationId": "postOperationsStoreTerminal", "maxRequestCount": 1}
               ]
             }
           }
@@ -145,6 +216,7 @@
           "parameterization": "terminal-edit-drawer",
           "parameter": {
             "declaredActions": [{"actionId": "terminal-edit-configuration", "kind": "USER_JOURNEY"}],
+            "actionControlKeys": ["STORE_SCOPE", "TERMINAL_LIST_ITEM", "TERMINAL_EDIT", "TERMINAL_FORM_TAB_BASIC", "TERMINAL_FORM_TAB_FUNCTIONS", "TERMINAL_PRINTER_NAME", "TERMINAL_PRINTER_BRAND", "TERMINAL_PRINTER_MODEL", "TERMINAL_PRINTER_CONNECTION", "TERMINAL_PRINTER_PARAMETER", "TERMINAL_FUNCTION_NAV", "TERMINAL_RANGE_OPTION", "TERMINAL_AREA_CANDIDATES", "TERMINAL_SCENE_TOGGLE", "TERMINAL_SCENE_ORDER_TYPE", "TERMINAL_SCENE_PRINTERS", "TERMINAL_FORM_SAVE"],
             "controlKeys": [
               "STORE_SCOPE",
               "TERMINAL_PAGE",
@@ -152,28 +224,94 @@
               "TERMINAL_DETAIL",
               "TERMINAL_EDIT",
               "TERMINAL_FORM",
-              "TERMINAL_FORM_CANCEL"
+              "TERMINAL_FORM_TAB_BASIC",
+              "TERMINAL_FORM_TAB_FUNCTIONS",
+              "TERMINAL_PRINTER",
+              "TERMINAL_PRINTER_NAME",
+              "TERMINAL_PRINTER_BRAND",
+              "TERMINAL_PRINTER_MODEL",
+              "TERMINAL_PRINTER_PAPER_SPEC",
+              "TERMINAL_PRINTER_CONNECTION",
+              "TERMINAL_PRINTER_PARAMETER",
+              "TERMINAL_FUNCTION_LIST",
+              "TERMINAL_FUNCTION_NAV",
+              "TERMINAL_FUNCTION",
+              "TERMINAL_FUNCTION_TYPE",
+              "TERMINAL_RANGE_GROUP",
+              "TERMINAL_RANGE_OPTION",
+              "TERMINAL_AREA_CANDIDATES",
+              "TERMINAL_SCENE_PICKER",
+              "TERMINAL_SCENE_TOGGLE",
+              "TERMINAL_SCENE",
+              "TERMINAL_SCENE_ORDER_TYPES",
+              "TERMINAL_SCENE_ORDER_TYPE",
+              "TERMINAL_SCENE_PRINTERS",
+              "TERMINAL_FORM_SAVE"
             ],
             "operationIds": [
+              "getOperationsWorkspaceLoginEntry",
+              "operationsWorkspacePasswordLogin",
               "getOperationsStoreTerminals",
               "getOperationsStoreTerminal",
               "getOperationsStoreTerminalAreaCandidates",
-              "getOperationsStoreTerminalTagCandidates"
+              "getOperationsStoreTerminalTagCandidates",
+              "putOperationsStoreTerminal"
             ],
             "network": {
               "required": [
+                "getOperationsWorkspaceLoginEntry",
+                "operationsWorkspacePasswordLogin",
                 "getOperationsStoreTerminals",
                 "getOperationsStoreTerminal",
                 "getOperationsStoreTerminalAreaCandidates",
+                "putOperationsStoreTerminal"
+              ],
+              "forbidden": [],
+              "backgroundAllowed": [
+                "getOperationsWorkspaceSessionEntry",
                 "getOperationsStoreTerminalTagCandidates"
               ],
-              "forbidden": ["putOperationsStoreTerminal"],
-              "backgroundAllowed": ["getOperationsWorkspaceSessionEntry"],
               "requests": [
+                {"operationId": "getOperationsWorkspaceLoginEntry", "maxRequestCount": 1},
+                {"operationId": "operationsWorkspacePasswordLogin", "maxRequestCount": 1},
                 {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
-                {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 6},
+                {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreTerminalAreaCandidates", "maxRequestCount": 4},
                 {"operationId": "getOperationsStoreTerminalTagCandidates", "maxRequestCount": 4},
+                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4},
+                {"operationId": "putOperationsStoreTerminal", "maxRequestCount": 1}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "TER-L2-M01",
+      "cases": [
+        {
+          "caseId": "terminal-readonly-state",
+          "fixtureRef": "FIXTURE-STORE-TERMINAL-READONLY",
+          "parameterization": "terminal-readonly-page",
+          "parameter": {
+            "declaredActions": [{"actionId": "terminal-readonly-state", "kind": "USER_JOURNEY"}],
+            "actionControlKeys": ["STORE_SCOPE", "TERMINAL_LIST_ITEM"],
+            "controlKeys": ["STORE_SCOPE", "TERMINAL_PAGE", "TERMINAL_LIST", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL"],
+            "absentControlKeys": ["TERMINAL_CREATE", "TERMINAL_EDIT", "TERMINAL_ACTION_MENU"],
+            "operationIds": ["getOperationsWorkspaceLoginEntry", "operationsWorkspacePasswordLogin", "getOperationsStoreTerminals", "getOperationsStoreTerminal"],
+            "network": {
+              "required": ["getOperationsWorkspaceLoginEntry", "operationsWorkspacePasswordLogin", "getOperationsStoreTerminals", "getOperationsStoreTerminal"],
+              "forbidden": [
+                "postOperationsStoreTerminal",
+                "putOperationsStoreTerminal",
+                "postOperationsStoreTerminalStatus"
+              ],
+              "backgroundAllowed": ["getOperationsWorkspaceSessionEntry"],
+              "requests": [
+                {"operationId": "getOperationsWorkspaceLoginEntry", "maxRequestCount": 1},
+                {"operationId": "operationsWorkspacePasswordLogin", "maxRequestCount": 1},
+                {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 4},
                 {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
               ]
             }
@@ -190,6 +328,7 @@
           "parameterization": "terminal-status-confirmation",
           "parameter": {
             "declaredActions": [{"actionId": "terminal-status-actions", "kind": "USER_JOURNEY"}],
+            "actionControlKeys": ["STORE_SCOPE", "TERMINAL_LIST_ITEM", "TERMINAL_ACTION_MENU", "TERMINAL_STATUS_ACTION", "TERMINAL_STATUS_CANCEL", "TERMINAL_STATUS_CONFIRM"],
             "controlKeys": [
               "STORE_SCOPE",
               "TERMINAL_PAGE",
@@ -198,46 +337,22 @@
               "TERMINAL_ACTION_MENU",
               "TERMINAL_STATUS_ACTION",
               "TERMINAL_STATUS_MODAL",
-              "TERMINAL_STATUS_CANCEL"
+              "TERMINAL_STATUS_PROBLEM",
+              "TERMINAL_STATUS_CANCEL",
+              "TERMINAL_STATUS_CONFIRM"
             ],
-            "operationIds": ["getOperationsStoreTerminals", "getOperationsStoreTerminal"],
+            "operationIds": ["getOperationsWorkspaceLoginEntry", "operationsWorkspacePasswordLogin", "getOperationsStoreTerminals", "getOperationsStoreTerminal", "postOperationsStoreTerminalStatus"],
             "network": {
-              "required": ["getOperationsStoreTerminals", "getOperationsStoreTerminal"],
-              "forbidden": ["postOperationsStoreTerminalStatus"],
+              "required": ["getOperationsWorkspaceLoginEntry", "operationsWorkspacePasswordLogin", "getOperationsStoreTerminals", "getOperationsStoreTerminal", "postOperationsStoreTerminalStatus"],
+              "forbidden": [],
               "backgroundAllowed": ["getOperationsWorkspaceSessionEntry"],
               "requests": [
-                {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
-                {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 6},
-                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "scenarioId": "TER-L2-M01",
-      "cases": [
-        {
-          "caseId": "terminal-readonly-state",
-          "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE",
-          "parameterization": "terminal-readonly-page",
-          "parameter": {
-            "declaredActions": [{"actionId": "terminal-readonly-state", "kind": "USER_JOURNEY"}],
-            "controlKeys": ["STORE_SCOPE", "TERMINAL_PAGE", "TERMINAL_LIST", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL"],
-            "operationIds": ["getOperationsStoreTerminals", "getOperationsStoreTerminal"],
-            "network": {
-              "required": ["getOperationsStoreTerminals", "getOperationsStoreTerminal"],
-              "forbidden": [
-                "postOperationsStoreTerminal",
-                "putOperationsStoreTerminal",
-                "postOperationsStoreTerminalStatus"
-              ],
-              "backgroundAllowed": ["getOperationsWorkspaceSessionEntry"],
-              "requests": [
-                {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
-                {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 4},
-                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
+                {"operationId": "getOperationsWorkspaceLoginEntry", "maxRequestCount": 1},
+                {"operationId": "operationsWorkspacePasswordLogin", "maxRequestCount": 1},
+                {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 5},
+                {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 7},
+                {"operationId": "postOperationsStoreTerminalStatus", "maxRequestCount": 4},
+                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 5}
               ]
             }
           }
