@@ -6,7 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,8 +25,178 @@ final class StoreTerminalAcceptanceScenarios {
 
     private final BackendAcceptanceTest host;
 
+    enum ConnectionRevocationAction {
+        DEVICE_CANCEL,
+        OPERATIONS_CANCEL,
+        TERMINAL_VOID,
+        SAME_DEVICE_REACTIVATION
+    }
+
+    enum ConnectionStatusOnlyChange {
+        TERMINAL_DISABLED,
+        GROUP_WORKSPACE_DISABLED,
+        STORE_VOIDED
+    }
+
+    record ConnectionFixture(
+            BackendAcceptanceTest.Fixture fixture,
+            BackendAcceptanceTest.Session session,
+            UUID terminalRef,
+            String activationCode,
+            String deviceId,
+            String credentialSecret,
+            long generation) {}
+
     StoreTerminalAcceptanceScenarios(BackendAcceptanceTest host) {
         this.host = host;
+    }
+
+    ConnectionFixture createConnectionContractFixture(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminalRef = create(context, store, "TDS connection contract", null);
+        String activationCode =
+                readDetail(context, store, terminalRef).path("activationCode").asText();
+        String deviceId = "tds-acceptance-device-" + UUID.randomUUID();
+        String credentialSecret = newCredentialSecret();
+        BackendAcceptanceTest.Response activated = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(store.fixture()),
+                null,
+                activationBody(activationCode, deviceId, credentialSecret),
+                Map.of(),
+                OK);
+        assertEquals(
+                terminalRef.toString(), activated.json().path("terminalRef").asText());
+        assertEquals(1, activated.json().path("bindingGeneration").asLong());
+        assertFalse(activated.raw().contains(credentialSecret), "CONTRACT SETUP: activation never returns its secret");
+        return new ConnectionFixture(
+                store.fixture(), store.session(), terminalRef, activationCode, deviceId, credentialSecret, 1);
+    }
+
+    ConnectionFixture reactivateConnectionContractFixture(
+            BackendAcceptanceTest.ScenarioContext context, ConnectionFixture fixture) throws Exception {
+        String nextSecret = newCredentialSecret();
+        BackendAcceptanceTest.Response reactivated = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(fixture.fixture()),
+                null,
+                activationBody(fixture.activationCode(), fixture.deviceId(), nextSecret),
+                Map.of(),
+                OK);
+        assertEquals(
+                fixture.terminalRef().toString(),
+                reactivated.json().path("terminalRef").asText());
+        assertEquals(
+                fixture.generation() + 1,
+                reactivated.json().path("bindingGeneration").asLong());
+        assertFalse(reactivated.raw().contains(nextSecret), "CONTRACT SETUP: reactivation never returns its secret");
+        return new ConnectionFixture(
+                fixture.fixture(),
+                fixture.session(),
+                fixture.terminalRef(),
+                fixture.activationCode(),
+                fixture.deviceId(),
+                nextSecret,
+                fixture.generation() + 1);
+    }
+
+    void performConnectionRevocation(
+            BackendAcceptanceTest.ScenarioContext context, ConnectionFixture fixture, ConnectionRevocationAction action)
+            throws Exception {
+        switch (action) {
+            case DEVICE_CANCEL -> {
+                BackendAcceptanceTest.Response cancelled = context.post(
+                        BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
+                        terminalActivationCancelPath(fixture.fixture(), fixture.terminalRef()),
+                        null,
+                        Map.of("deviceId", fixture.deviceId()),
+                        Map.of("Authorization", terminalCredential(fixture.generation(), fixture.credentialSecret())),
+                        OK);
+                assertEquals("CANCELLED", cancelled.json().path("outcome").asText());
+            }
+            case OPERATIONS_CANCEL -> {
+                BackendAcceptanceTest.Response cancelled = context.post(
+                        BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL,
+                        operationsTerminalActivationCancelPath(fixture.fixture(), fixture.terminalRef()),
+                        fixture.session().cookie(),
+                        Map.of("expectedBindingGeneration", fixture.generation()),
+                        Map.of("Idempotency-Key", "tds-acceptance-cancel-" + UUID.randomUUID()),
+                        OK);
+                assertEquals("CANCELLED", cancelled.json().path("outcome").asText());
+            }
+            case TERMINAL_VOID -> {
+                StoreContext store = new StoreContext(fixture.fixture(), fixture.session());
+                transitionTerminalStatus(context, store, fixture.terminalRef(), "DISABLED");
+                transitionTerminalStatus(context, store, fixture.terminalRef(), "VOIDED");
+            }
+            case SAME_DEVICE_REACTIVATION -> reactivateConnectionContractFixture(context, fixture);
+        }
+    }
+
+    void performConnectionStatusOnlyChange(
+            BackendAcceptanceTest.ScenarioContext context, ConnectionFixture fixture, ConnectionStatusOnlyChange change)
+            throws Exception {
+        switch (change) {
+            case TERMINAL_DISABLED -> transitionTerminalStatus(
+                    context, new StoreContext(fixture.fixture(), fixture.session()), fixture.terminalRef(), "DISABLED");
+            case GROUP_WORKSPACE_DISABLED -> {
+                host.ensurePlatformAdministrator();
+                BackendAcceptanceTest.Session platform = host.platformLogin(context);
+                String path =
+                        "/api/platform/group-workspaces/" + fixture.fixture().groupWorkspaceKey();
+                long version = context.get(
+                                BackendAcceptanceTest.PLATFORM_GROUP_WORKSPACE_DETAIL, path, platform.cookie(), OK)
+                        .json()
+                        .path("version")
+                        .asLong();
+                String idempotencyKey = "tds-acceptance-group-disable-" + UUID.randomUUID();
+                BackendAcceptanceTest.Response disabled = context.post(
+                        BackendAcceptanceTest.PLATFORM_GROUP_WORKSPACE_STATUS,
+                        path + "/status",
+                        platform.cookie(),
+                        Map.of(
+                                "targetStatus", "DISABLED",
+                                "expectedVersion", version,
+                                "idempotencyKey", idempotencyKey),
+                        Map.of("Idempotency-Key", idempotencyKey),
+                        OK);
+                assertEquals("DISABLED", disabled.json().path("status").asText());
+            }
+            case STORE_VOIDED -> {
+                BackendAcceptanceTest.Fixture statusActor =
+                        host.projectUserFixture(fixture.fixture(), Set.of("BC-ORG-STORE-EDIT", "BC-ORG-STORE-STATUS"));
+                host.completeInvitation(context, statusActor);
+                BackendAcceptanceTest.Session statusSession =
+                        selectStore(context, statusActor, host.login(context, statusActor));
+                String path =
+                        "/api/operations/group-workspaces/" + fixture.fixture().groupWorkspaceKey()
+                                + "/organization/stores/" + fixture.fixture().storeId() + "/status";
+                BackendAcceptanceTest.Response disabled = context.post(
+                        BackendAcceptanceTest.OPERATIONS_ORGANIZATION_STORE_STATUS,
+                        path,
+                        statusSession.cookie(),
+                        Map.of(
+                                "targetStatus",
+                                "DISABLED",
+                                "expectedVersion",
+                                host.organizationStoreVersion(fixture.fixture().storeId())),
+                        idempotency(),
+                        OK);
+                assertEquals("DISABLED", disabled.json().path("status").asText());
+                BackendAcceptanceTest.Response voided = context.post(
+                        BackendAcceptanceTest.OPERATIONS_ORGANIZATION_STORE_STATUS,
+                        path,
+                        statusSession.cookie(),
+                        Map.of(
+                                "targetStatus",
+                                "VOIDED",
+                                "expectedVersion",
+                                host.organizationStoreVersion(fixture.fixture().storeId())),
+                        idempotency(),
+                        OK);
+                assertEquals("VOIDED", voided.json().path("status").asText());
+            }
+        }
     }
 
     @AcceptanceScenario(
@@ -102,6 +275,484 @@ final class StoreTerminalAcceptanceScenarios {
                     .toString()
                     .contains("非法激活码"));
         }
+    }
+
+    @AcceptanceScenario(
+            id = "storeTerminalDeviceActivationProtocols",
+            module = "TERMINAL_BINDING",
+            operation = "storeTerminalDeviceActivationProtocols")
+    void storeTerminalDeviceActivationProtocols(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminalRef = create(context, store, "匿名激活终端", "59000001");
+        String activationCode =
+                readDetail(context, store, terminalRef).path("activationCode").asText();
+        String deviceId = "terminal-device-" + UUID.randomUUID();
+        String firstSecret = newCredentialSecret();
+
+        BackendAcceptanceTest.Response activated = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(store.fixture()),
+                null,
+                activationBody(activationCode, deviceId, firstSecret),
+                Map.of(),
+                OK);
+        assertEquals(
+                terminalRef.toString(), activated.json().path("terminalRef").asText());
+        assertEquals(
+                store.fixture().storeId().toString(),
+                activated.json().path("storeRef").asText());
+        assertEquals(
+                store.fixture().groupWorkspaceKey(),
+                activated.json().path("groupWorkspaceKey").asText());
+        assertEquals(1, activated.json().path("bindingGeneration").asLong());
+        assertTrue(activated.http().request().headers().firstValue("Cookie").isEmpty());
+        assertTrue(
+                activated.http().request().headers().firstValue("Authorization").isEmpty());
+        assertTrue(activated
+                .http()
+                .request()
+                .headers()
+                .firstValue("Idempotency-Key")
+                .isEmpty());
+        assertFalse(activated.raw().contains(firstSecret), "BUSINESS: anonymous activation never returns the secret");
+        assertTrue(activated.http().headers().allValues("set-cookie").isEmpty());
+        JsonNode activeDetail = readDetail(context, store, terminalRef);
+        assertEquals("ACTIVE", activeDetail.path("binding").path("status").asText());
+        assertEquals(1, activeDetail.path("binding").path("generation").asLong());
+
+        String invalidCredentialMarker = "INVALID_TERMINAL_CREDENTIAL_" + UUID.randomUUID();
+        BackendAcceptanceTest.Response invalidCredential = context.post(
+                BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
+                terminalActivationCancelPath(store.fixture(), terminalRef),
+                null,
+                Map.of("deviceId", deviceId),
+                Map.of("Authorization", terminalCredential(1, invalidCredentialMarker)),
+                CLIENT_FAILURE);
+        assertProblem(invalidCredential, "TERMINAL_BINDING_CREDENTIAL_INVALID");
+        assertFalse(invalidCredential.raw().contains(invalidCredentialMarker));
+        assertEquals(
+                "ACTIVE",
+                readDetail(context, store, terminalRef)
+                        .path("binding")
+                        .path("status")
+                        .asText());
+
+        BackendAcceptanceTest.Response deviceCancelled = context.post(
+                BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
+                terminalActivationCancelPath(store.fixture(), terminalRef),
+                null,
+                Map.of("deviceId", deviceId),
+                Map.of("Authorization", terminalCredential(1, firstSecret)),
+                OK);
+        assertEquals("CANCELLED", deviceCancelled.json().path("outcome").asText());
+        BackendAcceptanceTest.Response repeatDeviceCancel = context.post(
+                BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
+                terminalActivationCancelPath(store.fixture(), terminalRef),
+                null,
+                Map.of("deviceId", deviceId),
+                Map.of("Authorization", terminalCredential(1, firstSecret)),
+                OK);
+        assertEquals(
+                "ALREADY_CANCELLED", repeatDeviceCancel.json().path("outcome").asText());
+
+        String nextSecret = newCredentialSecret();
+        BackendAcceptanceTest.Response reactivated = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(store.fixture()),
+                null,
+                activationBody(activationCode, deviceId, nextSecret),
+                Map.of(),
+                OK);
+        assertEquals(2, reactivated.json().path("bindingGeneration").asLong());
+        assertFalse(reactivated.raw().contains(nextSecret), "BUSINESS: reactivation never returns the secret");
+
+        String idempotencyKey = "acceptance-terminal-cancel-" + UUID.randomUUID();
+        Map<String, String> headers = Map.of("Idempotency-Key", idempotencyKey);
+        String operationsPath = operationsTerminalActivationCancelPath(store.fixture(), terminalRef);
+        BackendAcceptanceTest.Response operationsCancelled = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL,
+                operationsPath,
+                store.session().cookie(),
+                Map.of("expectedBindingGeneration", 2),
+                headers,
+                OK);
+        assertEquals("CANCELLED", operationsCancelled.json().path("outcome").asText());
+        BackendAcceptanceTest.Response replayed = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL,
+                operationsPath,
+                store.session().cookie(),
+                Map.of("expectedBindingGeneration", 2),
+                headers,
+                OK);
+        assertEquals("CANCELLED", replayed.json().path("outcome").asText());
+        JsonNode inactiveDetail = readDetail(context, store, terminalRef);
+        assertEquals("INACTIVE", inactiveDetail.path("binding").path("status").asText());
+        assertTrue(inactiveDetail.path("binding").path("generation").isMissingNode());
+        BackendAcceptanceTest.Fixture readOnlyFixture = host.storeUserFixture(store.fixture(), Set.of());
+        host.completeInvitation(context, readOnlyFixture);
+        BackendAcceptanceTest.Session readOnlySession =
+                selectStore(context, readOnlyFixture, host.login(context, readOnlyFixture));
+        BackendAcceptanceTest.Response permissionDenied = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL,
+                operationsPath,
+                readOnlySession.cookie(),
+                Map.of("expectedBindingGeneration", 2),
+                idempotency(),
+                CLIENT_FAILURE);
+        assertEquals(403, permissionDenied.status());
+        assertProblem(permissionDenied, "PLATFORM_COMMON_ACCESS_DENIED");
+        assertEquals(4, terminalBindingAuditTotal(context, store, terminalRef));
+    }
+
+    @AcceptanceScenario(
+            id = "storeTerminalActivationBusinessPrecedence",
+            module = "TERMINAL_BINDING",
+            operation = "storeTerminalActivationBusinessPrecedence")
+    void storeTerminalActivationBusinessPrecedence(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminalRef = create(context, store, "激活业务判定终端", "59000002");
+        String activationCode =
+                readDetail(context, store, terminalRef).path("activationCode").asText();
+        String deviceId = "terminal-device-" + UUID.randomUUID();
+        String secret = newCredentialSecret();
+        String marker = "SECRET_SEARCH_MARKER_" + UUID.randomUUID();
+        Map<String, Object> malformedBody = activationBody(activationCode, deviceId, marker);
+        assertEquals(marker, malformedBody.get("credentialSecret"));
+        BackendAcceptanceTest.Response malformed = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(store.fixture()),
+                null,
+                malformedBody,
+                Map.of(),
+                CLIENT_FAILURE);
+        assertProblem(malformed, "PLATFORM_COMMON_VALIDATION_FAILED");
+        assertFalse(malformed.raw().contains(marker), "BUSINESS: malformed secret is not echoed");
+        assertEquals(
+                "INACTIVE",
+                readDetail(context, store, terminalRef)
+                        .path("binding")
+                        .path("status")
+                        .asText());
+        assertEquals(0, terminalBindingAuditTotal(context, store, terminalRef));
+
+        BackendAcceptanceTest.Response firstActivation = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(store.fixture()),
+                null,
+                activationBody(activationCode, deviceId, secret),
+                Map.of(),
+                OK);
+        assertEquals(1, firstActivation.json().path("bindingGeneration").asLong());
+
+        BackendAcceptanceTest.Fixture statusActor =
+                host.projectUserFixture(store.fixture(), Set.of("BC-ORG-STORE-EDIT", "BC-ORG-STORE-STATUS"));
+        host.completeInvitation(context, statusActor);
+        BackendAcceptanceTest.Session statusSession =
+                selectStore(context, statusActor, host.login(context, statusActor));
+        long storeVersion = host.organizationStoreVersion(store.fixture().storeId());
+        BackendAcceptanceTest.Response disabledStore = context.post(
+                BackendAcceptanceTest.OPERATIONS_ORGANIZATION_STORE_STATUS,
+                "/api/operations/group-workspaces/" + store.fixture().groupWorkspaceKey() + "/organization/stores/"
+                        + store.fixture().storeId() + "/status",
+                statusSession.cookie(),
+                Map.of("targetStatus", "DISABLED", "expectedVersion", storeVersion),
+                idempotency(),
+                OK);
+        assertEquals("DISABLED", disabledStore.json().path("status").asText());
+
+        BackendAcceptanceTest.Response differentDevice = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(store.fixture()),
+                null,
+                activationBody(activationCode, "another-device-" + UUID.randomUUID(), newCredentialSecret(), "mobile"),
+                Map.of(),
+                CLIENT_FAILURE);
+        assertProblem(differentDevice, "PLATFORM_COMMON_ACCESS_DENIED");
+        assertTrue(differentDevice.json().path("detail").asText().contains("门店已停用"));
+
+        BackendAcceptanceTest.Response sameOperationRetry = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(store.fixture()),
+                null,
+                activationBody(activationCode, deviceId, secret),
+                Map.of(),
+                OK);
+        assertEquals(1, sameOperationRetry.json().path("bindingGeneration").asLong());
+
+        String nextSecret = newCredentialSecret();
+        BackendAcceptanceTest.Response sameDeviceNewOperation = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(store.fixture()),
+                null,
+                activationBody(activationCode, deviceId, nextSecret),
+                Map.of(),
+                OK);
+        assertEquals(2, sameDeviceNewOperation.json().path("bindingGeneration").asLong());
+
+        long disabledStoreVersion =
+                host.organizationStoreVersion(store.fixture().storeId());
+        BackendAcceptanceTest.Response enabledStore = context.post(
+                BackendAcceptanceTest.OPERATIONS_ORGANIZATION_STORE_STATUS,
+                "/api/operations/group-workspaces/" + store.fixture().groupWorkspaceKey() + "/organization/stores/"
+                        + store.fixture().storeId() + "/status",
+                statusSession.cookie(),
+                Map.of("targetStatus", "ENABLED", "expectedVersion", disabledStoreVersion),
+                idempotency(),
+                OK);
+        assertEquals("ENABLED", enabledStore.json().path("status").asText());
+        JsonNode detail = readDetail(context, store, terminalRef);
+        assertEquals("ACTIVE", detail.path("binding").path("status").asText());
+        assertEquals(2, detail.path("binding").path("generation").asLong());
+        assertEquals(2, terminalBindingAuditTotal(context, store, terminalRef));
+    }
+
+    @AcceptanceScenario(
+            id = "storeTerminalActivationRejectionMatrix",
+            module = "TERMINAL_BINDING",
+            operation = "storeTerminalActivationRejectionMatrix")
+    void storeTerminalActivationRejectionMatrix(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID disabledTerminal = create(context, store, "激活拒绝终端停用", "59000101");
+        UUID voidedTerminal = create(context, store, "激活拒绝终端作废", "59000102");
+        UUID mismatchTerminal = create(context, store, "激活拒绝形态不匹配", "59000103");
+        UUID boundTerminal = create(context, store, "激活拒绝已绑定", "59000104");
+        UUID endedTerminal = create(context, store, "激活拒绝已结束代次", "59000105");
+        UUID storeTerminal = create(context, store, "激活拒绝门店作废", "59000106");
+
+        BackendAcceptanceTest.Response unknownCode = activationAttempt(
+                context,
+                store.fixture().groupWorkspaceKey(),
+                "99999999",
+                "matrix-unknown-device",
+                newCredentialSecret(),
+                "laptop",
+                CLIENT_FAILURE);
+        assertProblem(unknownCode, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
+        BackendAcceptanceTest.Response missingWorkspace = activationAttempt(
+                context,
+                "missing-group-workspace-" + UUID.randomUUID(),
+                "59000103",
+                "matrix-missing-workspace-device",
+                newCredentialSecret(),
+                "laptop",
+                CLIENT_FAILURE);
+        assertProblem(missingWorkspace, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
+        assertEquals(unknownCode.status(), missingWorkspace.status());
+        assertEquals(unknownCode.problemCode(), missingWorkspace.problemCode());
+        assertEquals(
+                unknownCode.json().path("detail").asText(),
+                missingWorkspace.json().path("detail").asText());
+
+        transitionTerminalStatus(context, store, disabledTerminal, "DISABLED");
+        assertActivationProblem(context, store, disabledTerminal, "59000101", "laptop", "STORE_TERMINAL_DISABLED");
+
+        transitionTerminalStatus(context, store, voidedTerminal, "DISABLED");
+        transitionTerminalStatus(context, store, voidedTerminal, "VOIDED");
+        assertActivationProblem(
+                context, store, voidedTerminal, "59000102", "laptop", "STORE_TERMINAL_VOIDED_IMMUTABLE");
+
+        assertActivationProblem(
+                context, store, mismatchTerminal, "59000103", "mobile", "STORE_TERMINAL_DEVICE_TYPE_MISMATCH");
+
+        String boundSecret = newCredentialSecret();
+        BackendAcceptanceTest.Response firstBound = activationAttempt(
+                context,
+                store.fixture().groupWorkspaceKey(),
+                "59000104",
+                "matrix-original-device",
+                boundSecret,
+                "laptop",
+                OK);
+        assertEquals(1, firstBound.json().path("bindingGeneration").asLong());
+        assertActivationProblem(context, store, boundTerminal, "59000104", "laptop", "TERMINAL_BINDING_ALREADY_BOUND");
+        assertEquals(
+                1,
+                readDetail(context, store, boundTerminal)
+                        .path("binding")
+                        .path("generation")
+                        .asLong());
+        long boundAuditTotal = terminalBindingAuditTotal(context, store, boundTerminal);
+        BackendAcceptanceTest.Response originalDeviceRetry = activationAttempt(
+                context,
+                store.fixture().groupWorkspaceKey(),
+                "59000104",
+                "matrix-original-device",
+                boundSecret,
+                "laptop",
+                OK);
+        assertEquals(1, originalDeviceRetry.json().path("bindingGeneration").asLong());
+        assertEquals(boundAuditTotal, terminalBindingAuditTotal(context, store, boundTerminal));
+
+        String endedSecret = newCredentialSecret();
+        BackendAcceptanceTest.Response firstEnded = activationAttempt(
+                context,
+                store.fixture().groupWorkspaceKey(),
+                "59000105",
+                "matrix-ended-device",
+                endedSecret,
+                "laptop",
+                OK);
+        BackendAcceptanceTest.Response cancelled = context.post(
+                BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
+                terminalActivationCancelPath(store.fixture(), endedTerminal),
+                null,
+                Map.of("deviceId", "matrix-ended-device"),
+                Map.of(
+                        "Authorization",
+                        terminalCredential(
+                                firstEnded.json().path("bindingGeneration").asLong(), endedSecret)),
+                OK);
+        assertEquals("CANCELLED", cancelled.json().path("outcome").asText());
+        long endedAuditTotal = terminalBindingAuditTotal(context, store, endedTerminal);
+        BackendAcceptanceTest.Response expired = activationAttempt(
+                context,
+                store.fixture().groupWorkspaceKey(),
+                "59000105",
+                "matrix-ended-device",
+                endedSecret,
+                "laptop",
+                CLIENT_FAILURE);
+        assertProblem(expired, "TERMINAL_BINDING_ACTIVATION_EXPIRED");
+        assertEquals(endedAuditTotal, terminalBindingAuditTotal(context, store, endedTerminal));
+
+        BackendAcceptanceTest.Fixture statusActor =
+                host.projectUserFixture(store.fixture(), Set.of("BC-ORG-STORE-EDIT", "BC-ORG-STORE-STATUS"));
+        host.completeInvitation(context, statusActor);
+        BackendAcceptanceTest.Session statusSession =
+                selectStore(context, statusActor, host.login(context, statusActor));
+        long storeVersion = host.organizationStoreVersion(store.fixture().storeId());
+        context.post(
+                BackendAcceptanceTest.OPERATIONS_ORGANIZATION_STORE_STATUS,
+                "/api/operations/group-workspaces/" + store.fixture().groupWorkspaceKey() + "/organization/stores/"
+                        + store.fixture().storeId() + "/status",
+                statusSession.cookie(),
+                Map.of("targetStatus", "VOIDED", "expectedVersion", storeVersion),
+                idempotency(),
+                OK);
+        long voidedStoreBindingsBefore = host.count(
+                "SELECT count(*) FROM terminal_binding.latest_binding "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=?",
+                store.fixture().workspaceUuid(),
+                store.fixture().groupWorkspaceKey(),
+                storeTerminal);
+        long voidedStoreAuditsBefore = host.count(
+                "SELECT count(*) FROM terminal_binding.audit_event "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? "
+                        + "AND entity_type='TERMINAL_BINDING' AND entity_ref_text=?",
+                store.fixture().workspaceUuid(),
+                store.fixture().groupWorkspaceKey(),
+                storeTerminal.toString());
+        assertEquals(0L, voidedStoreBindingsBefore, "BUSINESS: store-voided activation starts without a binding");
+        assertEquals(0L, voidedStoreAuditsBefore, "BUSINESS: store-voided activation starts without binding audit");
+        BackendAcceptanceTest.Response voidedStore = activationAttempt(
+                context,
+                store.fixture().groupWorkspaceKey(),
+                "59000106",
+                "matrix-store-voided-device",
+                newCredentialSecret(),
+                "mobile",
+                CLIENT_FAILURE);
+        assertProblem(voidedStore, "STORE_TERMINAL_STORE_VOIDED");
+        assertEquals(
+                voidedStoreBindingsBefore,
+                host.count(
+                        "SELECT count(*) FROM terminal_binding.latest_binding "
+                                + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=?",
+                        store.fixture().workspaceUuid(),
+                        store.fixture().groupWorkspaceKey(),
+                        storeTerminal),
+                "BUSINESS: rejected activation does not register a credential digest or binding");
+        assertEquals(
+                voidedStoreAuditsBefore,
+                host.count(
+                        "SELECT count(*) FROM terminal_binding.audit_event "
+                                + "WHERE workspace_uuid=? AND group_workspace_key=? "
+                                + "AND entity_type='TERMINAL_BINDING' AND entity_ref_text=?",
+                        store.fixture().workspaceUuid(),
+                        store.fixture().groupWorkspaceKey(),
+                        storeTerminal.toString()),
+                "BUSINESS: rejected activation does not write binding audit");
+
+        StoreContext disabledWorkspaceStore = enabledStore(context);
+        // spotless:off
+        UUID disabledWorkspaceTerminal = create(context, disabledWorkspaceStore, "集团停用时拒绝激活",
+            "59000201");
+        // spotless:on
+        String disabledWorkspaceCode = readDetail(context, disabledWorkspaceStore, disabledWorkspaceTerminal)
+                .path("activationCode")
+                .asText();
+        JsonNode workspaceTerminalBefore = readDetail(context, disabledWorkspaceStore, disabledWorkspaceTerminal);
+        long workspaceBindingAuditsBefore =
+                terminalBindingAuditTotal(context, disabledWorkspaceStore, disabledWorkspaceTerminal);
+        host.ensurePlatformAdministrator();
+        BackendAcceptanceTest.Session platform = host.platformLogin(context);
+        String groupWorkspacePath = "/api/platform/group-workspaces/"
+                + disabledWorkspaceStore.fixture().groupWorkspaceKey();
+        long groupWorkspaceVersion = context.get(
+                        BackendAcceptanceTest.PLATFORM_GROUP_WORKSPACE_DETAIL,
+                        groupWorkspacePath,
+                        platform.cookie(),
+                        OK)
+                .json()
+                .path("version")
+                .asLong();
+        String workspaceStatusKey = "activation-disable-group-" + UUID.randomUUID();
+        context.post(
+                BackendAcceptanceTest.PLATFORM_GROUP_WORKSPACE_STATUS,
+                groupWorkspacePath + "/status",
+                platform.cookie(),
+                Map.of(
+                        "targetStatus",
+                        "DISABLED",
+                        "expectedVersion",
+                        groupWorkspaceVersion,
+                        "idempotencyKey",
+                        workspaceStatusKey),
+                Map.of("Idempotency-Key", workspaceStatusKey),
+                OK);
+        BackendAcceptanceTest.Response disabledWorkspace = activationAttempt(
+                context,
+                disabledWorkspaceStore.fixture().groupWorkspaceKey(),
+                disabledWorkspaceCode,
+                "matrix-disabled-workspace-device",
+                newCredentialSecret(),
+                "laptop",
+                CLIENT_FAILURE);
+        assertProblem(disabledWorkspace, "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED");
+        long disabledWorkspaceVersion = context.get(
+                        BackendAcceptanceTest.PLATFORM_GROUP_WORKSPACE_DETAIL,
+                        groupWorkspacePath,
+                        platform.cookie(),
+                        OK)
+                .json()
+                .path("version")
+                .asLong();
+        String workspaceEnableKey = "activation-enable-group-" + UUID.randomUUID();
+        context.post(
+                BackendAcceptanceTest.PLATFORM_GROUP_WORKSPACE_STATUS,
+                groupWorkspacePath + "/status",
+                platform.cookie(),
+                Map.of(
+                        "targetStatus",
+                        "ENABLED",
+                        "expectedVersion",
+                        disabledWorkspaceVersion,
+                        "idempotencyKey",
+                        workspaceEnableKey),
+                Map.of("Idempotency-Key", workspaceEnableKey),
+                OK);
+        BackendAcceptanceTest.Session enabledWorkspaceSession = selectStore(
+                context, disabledWorkspaceStore.fixture(), host.login(context, disabledWorkspaceStore.fixture()));
+        StoreContext enabledWorkspaceStore =
+                new StoreContext(disabledWorkspaceStore.fixture(), enabledWorkspaceSession);
+        JsonNode workspaceTerminalAfter = readDetail(context, enabledWorkspaceStore, disabledWorkspaceTerminal);
+        assertEquals(
+                workspaceTerminalBefore.path("version").asLong(),
+                workspaceTerminalAfter.path("version").asLong());
+        assertEquals(workspaceTerminalBefore.path("binding"), workspaceTerminalAfter.path("binding"));
+        assertEquals(
+                workspaceBindingAuditsBefore,
+                terminalBindingAuditTotal(context, enabledWorkspaceStore, disabledWorkspaceTerminal));
     }
 
     @AcceptanceScenario(
@@ -407,34 +1058,40 @@ final class StoreTerminalAcceptanceScenarios {
 
         UUID laptopKds = create(context, store, "KDS 设备转换", "31000020", configurationFor("laptop", "KDS"));
         JsonNode before = readDetail(context, store, laptopKds);
+        Map<String, Object> attemptedDeviceTypeChange =
+                replaceBody("KDS 设备转换", before.path("version").asLong(), configurationFor("laptop", "KDS"));
+        attemptedDeviceTypeChange.put("deviceType", "mobile");
         BackendAcceptanceTest.Response rejectedDeviceChange = context.put(
                 BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
                 terminalPath(store.fixture(), laptopKds),
                 store.session().cookie(),
-                replaceBody("KDS 设备转换", before.path("version").asLong(), configurationFor("mobile", "KDS"), "mobile"),
+                attemptedDeviceTypeChange,
                 idempotency(),
                 CLIENT_FAILURE);
-        assertProblem(rejectedDeviceChange, "STORE_TERMINAL_RULE_INVALID");
+        assertProblem(rejectedDeviceChange, "PLATFORM_COMMON_VALIDATION_FAILED");
+        JsonNode afterRejectedDeviceChange = readDetail(context, store, laptopKds);
+        assertEquals("laptop", afterRejectedDeviceChange.path("deviceType").asText());
         assertEquals(
-                "laptop",
-                readDetail(context, store, laptopKds).path("deviceType").asText());
+                before.path("version").asLong(),
+                afterRejectedDeviceChange.path("version").asLong());
+        assertEquals(before.path("configuration"), afterRejectedDeviceChange.path("configuration"));
 
         BackendAcceptanceTest.Response removedUnsupportedFunction = context.put(
                 BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
                 terminalPath(store.fixture(), laptopKds),
                 store.session().cookie(),
                 replaceBody(
-                        "KDS 设备转换",
-                        before.path("version").asLong(),
-                        configurationFor("mobile", "ORDERING_CASHIER"),
-                        "mobile"),
+                        // spotless:off
+                        "KDS 设备转换", before.path("version").asLong(), configurationFor("laptop",
+                            "ORDERING_CASHIER")),
+                        // spotless:on
                 idempotency(),
                 OK);
         assertEquals(
                 laptopKds.toString(),
                 removedUnsupportedFunction.json().path("terminalRef").asText());
         assertEquals(
-                "mobile",
+                "laptop",
                 readDetail(context, store, laptopKds).path("deviceType").asText());
     }
 
@@ -529,7 +1186,8 @@ final class StoreTerminalAcceptanceScenarios {
                                 configurationWithFunctions("laptop", List.of(function.getKey()))),
                         idempotency(),
                         CREATED);
-                UUID terminal = UUID.fromString(response.json().path("terminalRef").asText());
+                UUID terminal =
+                        UUID.fromString(response.json().path("terminalRef").asText());
                 JsonNode detail = readDetail(context, store, terminal);
                 assertTrue(detail.at("/configuration/functions/0/ranges").isArray());
                 assertEquals(0, detail.at("/configuration/functions/0/ranges").size());
@@ -707,7 +1365,10 @@ final class StoreTerminalAcceptanceScenarios {
                         false,
                         List.of(area.ref().toString())));
         JsonNode before = readDetail(context, store, terminal);
-        AreaRef renamed = updateArea(context, setup, area, "历史引用桌台区改名", area.code(), "TABLE_AREA", "ENABLED");
+        // spotless:off
+        AreaRef renamed = updateArea(context, setup, area, "历史引用桌台区改名", area.code(), "TABLE_AREA",
+            "ENABLED");
+        // spotless:on
         transitionArea(context, setup, renamed, "DISABLED");
         transitionTag(context, setup, tag, "DISABLED");
         JsonNode retained = readDetail(context, store, terminal);
@@ -716,7 +1377,10 @@ final class StoreTerminalAcceptanceScenarios {
                 retained.at("/configuration/functions/0/ranges/0/refs"),
                 "BUSINESS: existing references remain writable after the referenced object is disabled");
 
-        AreaRef replacement = createArea(context, setup, "TABLE_AREA", "历史引用新桌台区", "TERMINAL-HISTORY-NEW");
+        // spotless:off
+        AreaRef replacement = createArea(context, setup, "TABLE_AREA", "历史引用新桌台区",
+            "TERMINAL-HISTORY-NEW");
+        // spotless:on
         BackendAcceptanceTest.Response added = context.put(
                 BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
                 terminalPath(store.fixture(), terminal),
@@ -1343,28 +2007,36 @@ final class StoreTerminalAcceptanceScenarios {
                 terminalsPath(readActor),
                 readSession.cookie(),
                 CLIENT_FAILURE);
-        assertEquals(404, page.status(), "BUSINESS: disabled store terminal page follows the store-page scope boundary");
+        assertEquals(
+                404, page.status(), "BUSINESS: disabled store terminal page follows the store-page scope boundary");
         assertProblem(page, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
         BackendAcceptanceTest.Response detail = context.get(
                 BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL,
                 terminalPath(readActor, terminal),
                 readSession.cookie(),
                 CLIENT_FAILURE);
-        assertEquals(404, detail.status(), "BUSINESS: disabled store terminal detail follows the store-page scope boundary");
+        assertEquals(
+                404, detail.status(), "BUSINESS: disabled store terminal detail follows the store-page scope boundary");
         assertProblem(detail, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
         BackendAcceptanceTest.Response candidates = context.get(
                 BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_AREA_CANDIDATES,
                 terminalsPath(readActor) + "/area-candidates?pageSize=20",
                 readSession.cookie(),
                 CLIENT_FAILURE);
-        assertEquals(404, candidates.status(), "BUSINESS: disabled store terminal area candidates follow the store-page scope boundary");
+        assertEquals(
+                404,
+                candidates.status(),
+                "BUSINESS: disabled store terminal area candidates follow the store-page scope boundary");
         assertProblem(candidates, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
         BackendAcceptanceTest.Response tagCandidates = context.get(
                 BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_TAG_CANDIDATES,
                 terminalsPath(readActor) + "/tag-candidates?pageSize=20",
                 readSession.cookie(),
                 CLIENT_FAILURE);
-        assertEquals(404, tagCandidates.status(), "BUSINESS: disabled store terminal tag candidates follow the store-page scope boundary");
+        assertEquals(
+                404,
+                tagCandidates.status(),
+                "BUSINESS: disabled store terminal tag candidates follow the store-page scope boundary");
         assertProblem(tagCandidates, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
     }
 
@@ -1436,7 +2108,10 @@ final class StoreTerminalAcceptanceScenarios {
     void storeTerminalSoftConstraintsAllowed(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         StoreContext store = enabledStore(context);
         UUID terminal = create(
-                context, store, "软约束样本", "31000026", configurationWithScene("ORDERING_CASHIER", "PRECHECK_TICKET"));
+                // spotless:off
+                context, store, "软约束样本", "31000026", configurationWithScene("ORDERING_CASHIER",
+                    "PRECHECK_TICKET"));
+                // spotless:on
         assertEquals("软约束样本", readDetail(context, store, terminal).path("name").asText());
     }
 
@@ -1664,6 +2339,76 @@ final class StoreTerminalAcceptanceScenarios {
                 .json();
     }
 
+    private long terminalBindingAuditTotal(
+            BackendAcceptanceTest.ScenarioContext context, StoreContext store, UUID terminalRef) throws Exception {
+        return context.get(
+                        BackendAcceptanceTest.OPERATIONS_AUDIT_HISTORY,
+                        "/api/operations/audit-history?groupWorkspaceKey="
+                                + store.fixture().groupWorkspaceKey() + "&entityType=TERMINAL_BINDING&entityId="
+                                + terminalRef + "&page=1&pageSize=20",
+                        store.session().cookie(),
+                        OK)
+                .json()
+                .path("total")
+                .asLong();
+    }
+
+    private void transitionTerminalStatus(
+            BackendAcceptanceTest.ScenarioContext context, StoreContext store, UUID terminalRef, String targetStatus)
+            throws Exception {
+        long version = readDetail(context, store, terminalRef).path("version").asLong();
+        context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_STATUS,
+                terminalPath(store.fixture(), terminalRef) + "/status",
+                store.session().cookie(),
+                Map.of("status", targetStatus, "expectedVersion", version),
+                idempotency(),
+                OK);
+    }
+
+    private void assertActivationProblem(
+            BackendAcceptanceTest.ScenarioContext context,
+            StoreContext store,
+            UUID terminalRef,
+            String activationCode,
+            String surfaceForm,
+            String expectedCode)
+            throws Exception {
+        JsonNode before = readDetail(context, store, terminalRef);
+        long auditBefore = terminalBindingAuditTotal(context, store, terminalRef);
+        BackendAcceptanceTest.Response response = activationAttempt(
+                context,
+                store.fixture().groupWorkspaceKey(),
+                activationCode,
+                "matrix-negative-device-" + UUID.randomUUID(),
+                newCredentialSecret(),
+                surfaceForm,
+                CLIENT_FAILURE);
+        assertProblem(response, expectedCode);
+        JsonNode after = readDetail(context, store, terminalRef);
+        assertEquals(before.path("version").asLong(), after.path("version").asLong());
+        assertEquals(before.path("binding"), after.path("binding"));
+        assertEquals(auditBefore, terminalBindingAuditTotal(context, store, terminalRef));
+    }
+
+    private BackendAcceptanceTest.Response activationAttempt(
+            BackendAcceptanceTest.ScenarioContext context,
+            String groupWorkspaceKey,
+            String activationCode,
+            String deviceId,
+            String secret,
+            String surfaceForm,
+            Set<Integer> expected)
+            throws Exception {
+        return context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(groupWorkspaceKey),
+                null,
+                activationBody(activationCode, deviceId, secret, surfaceForm),
+                Map.of(),
+                expected);
+    }
+
     private StoreContext enabledStore(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         BackendAcceptanceTest.Fixture base = host.fixture("PROJECT", Set.of());
         BackendAcceptanceTest.Fixture fixture =
@@ -1682,6 +2427,34 @@ final class StoreTerminalAcceptanceScenarios {
 
     private static Map<String, Object> createBody(String name, String activationCode) {
         return createBody(name, activationCode, configuration());
+    }
+
+    private static Map<String, Object> activationBody(String activationCode, String deviceId, String secret) {
+        return activationBody(activationCode, deviceId, secret, "laptop");
+    }
+
+    private static Map<String, Object> activationBody(
+            String activationCode, String deviceId, String secret, String surfaceForm) {
+        return Map.of(
+                "activationCode", activationCode,
+                "deviceId", deviceId,
+                "surfaceForm", surfaceForm,
+                "appVersion", "acceptance-test",
+                "credentialSecret", secret);
+    }
+
+    private static String newCredentialSecret() {
+        byte[] secret = new byte[32];
+        new SecureRandom().nextBytes(secret);
+        try {
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(secret);
+        } finally {
+            Arrays.fill(secret, (byte) 0);
+        }
+    }
+
+    private static String terminalCredential(long generation, String secret) {
+        return "Terminal " + generation + "." + secret;
     }
 
     private static Map<String, Object> createBody(
@@ -1712,14 +2485,10 @@ final class StoreTerminalAcceptanceScenarios {
 
     private static Map<String, Object> replaceBody(
             String name, long expectedVersion, Map<String, Object> configuration) {
-        return replaceBody(name, expectedVersion, configuration, "laptop");
-    }
-
-    private static Map<String, Object> replaceBody(
-            String name, long expectedVersion, Map<String, Object> configuration, String deviceType) {
-        Map<String, Object> body = new LinkedHashMap<>(createBody(name, null, configuration, deviceType));
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("name", name);
+        body.put("configuration", configuration);
         body.put("expectedVersion", expectedVersion);
-        body.remove("activationCode");
         return body;
     }
 
@@ -1883,7 +2652,10 @@ final class StoreTerminalAcceptanceScenarios {
             String parameter,
             String sceneKey) {
         Map<String, Object> value = new LinkedHashMap<>();
-        value.put("printers", List.of(printerWithRef(printerRef, "打印机一", brand, model, paper, connection, parameter)));
+        // spotless:off
+        value.put("printers", List.of(printerWithRef(printerRef, "打印机一", brand, model, paper, connection,
+            parameter)));
+        // spotless:on
         value.put(
                 "functions",
                 List.of(Map.of(
@@ -1905,7 +2677,10 @@ final class StoreTerminalAcceptanceScenarios {
         List<Map<String, Object>> printers = List.of(
                 printer("printer-1", "打印机一", "EPSON", "EPSON_TM_T88VII", "THERMAL_58", "NETWORK", "192.0.2.41"),
                 printer("printer-2", "打印机二", "EPSON", "EPSON_TM_T88VII", "THERMAL_58", "NETWORK", "192.0.2.42"),
-                printer("printer-3", "打印机三", "EPSON", "EPSON_TM_T88VII", "THERMAL_58", "NETWORK", "192.0.2.43"));
+                // spotless:off
+                printer("printer-3", "打印机三", "EPSON", "EPSON_TM_T88VII", "THERMAL_58", "NETWORK",
+                    "192.0.2.43"));
+                // spotless:on
         return configurationWithPrinterNodes(
                 printers,
                 null,
@@ -1957,7 +2732,10 @@ final class StoreTerminalAcceptanceScenarios {
                     parameter));
         }
         printers.add(printer(
-                "printer-new", "新增打印机", "GENERIC", "GENERIC_THERMAL_58", "THERMAL_58", "NETWORK", "192.0.2.99"));
+                // spotless:off
+                "printer-new", "新增打印机", "GENERIC", "GENERIC_THERMAL_58", "THERMAL_58", "NETWORK",
+                    "192.0.2.99"));
+                // spotless:on
         List<Map<String, Object>> bindings = new ArrayList<>();
         detail.at("/configuration/functions/0/scenes/0/printers").forEach(value -> {
             if (value.has("printerRef"))
@@ -2268,6 +3046,24 @@ final class StoreTerminalAcceptanceScenarios {
 
     private static String terminalPath(BackendAcceptanceTest.Fixture fixture, UUID terminalRef) {
         return terminalsPath(fixture) + "/" + terminalRef;
+    }
+
+    private static String terminalActivationPath(BackendAcceptanceTest.Fixture fixture) {
+        return terminalActivationPath(fixture.groupWorkspaceKey());
+    }
+
+    private static String terminalActivationPath(String groupWorkspaceKey) {
+        return "/api/terminal/group-workspaces/" + groupWorkspaceKey + "/activation";
+    }
+
+    private static String terminalActivationCancelPath(BackendAcceptanceTest.Fixture fixture, UUID terminalRef) {
+        return "/api/terminal/group-workspaces/" + fixture.groupWorkspaceKey() + "/terminals/" + terminalRef
+                + "/activation/cancel";
+    }
+
+    private static String operationsTerminalActivationCancelPath(
+            BackendAcceptanceTest.Fixture fixture, UUID terminalRef) {
+        return terminalsPath(fixture) + "/" + terminalRef + "/activation/cancel";
     }
 
     private record StoreContext(BackendAcceptanceTest.Fixture fixture, BackendAcceptanceTest.Session session) {}

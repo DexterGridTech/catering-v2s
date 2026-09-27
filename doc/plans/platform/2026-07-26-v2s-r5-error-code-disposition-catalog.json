@@ -7,12 +7,12 @@
   "implementationAuthority": false,
   "sources": [
     {
-      "path": "../catering-all-v2/contracts/openapi/components/platform-errors.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/platform-errors.schemas.yaml",
       "sha256": "808b55cea312f32bb39fcdbdaa2c93f223c819874ed1555d23b72926905cfedd",
       "codeCount": 83
     },
     {
-      "path": "contracts/openapi/components/problem.schemas.yaml",
+      "path": "contracts/openapi/components/problem.schemas.json",
       "sha256": "4d9970ac873bb26dce9c5aacb6e9de91a92a6074e11548a20f5e0dd714e5c2fb",
       "codeCount": 6
     }
@@ -209,7 +209,15 @@
     {"code": "STORE_TERMINAL_RULE_INVALID", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "STORE_TERMINAL_REFERENCE_INVALID", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "STORE_TERMINAL_STATUS_TRANSITION_INVALID", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "STORE_TERMINAL_VOIDED_IMMUTABLE", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"}
+    {"code": "STORE_TERMINAL_VOIDED_IMMUTABLE", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "STORE_TERMINAL_STORE_VOIDED", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "STORE_TERMINAL_DISABLED", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "STORE_TERMINAL_DEVICE_TYPE_MISMATCH", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "TERMINAL_BINDING_CREDENTIAL_INVALID", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "TERMINAL_BINDING_NOT_ACTIVE", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "TERMINAL_BINDING_CHANGED", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "TERMINAL_BINDING_ALREADY_BOUND", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "TERMINAL_BINDING_ACTIVATION_EXPIRED", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"}
   ],
   "closure": {
     "heritageSourceCodeCount": 83,
@@ -217,11 +225,11 @@
     "heritageSourceCodesOwnedByR3Compatibility": 1,
     "r3SourceCodeCount": 6,
     "r3DispositionCount": 6,
-    "v2sNativeCodeCount": 86,
+    "v2sNativeCodeCount": 94,
     "crossRegistryDuplicateCodeCount": 0,
     "heritageR3ActiveTargetCount": 78,
-    "v2sNativeActiveTargetCount": 86,
-    "totalActiveTargetCount": 164,
+    "v2sNativeActiveTargetCount": 94,
+    "totalActiveTargetCount": 172,
     "allowedDispositions": [
       "RETAIN",
       "RETAIN_R3_WIRE_COMPATIBILITY",

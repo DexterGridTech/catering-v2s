@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "kind": "generated-owner-operation-bindings",
+  "owner": "terminal-binding",
+  "operationCount": 3,
+  "readCount": 0,
+  "commandCount": 3,
+  "dispatchStrategy": "CLOSED_SWITCH",
+  "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
+  "dynamicDispatch": false,
+  "operations": [
+    {
+      "operationId": "cancelOperationsStoreTerminalActivation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.app.edge.operations.organization.OperationsStoreTerminalActivationCancellation",
+      "wireRequest": "OperationsTerminalActivationCancellationRequest",
+      "wireResponse": "OperationsTerminalActivationCancellationResult",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND",
+      "dispatchMethod": "cancelOperationsStoreTerminalActivation"
+    },
+    {
+      "operationId": "activateTerminal",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation",
+      "normalizedPath": "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation",
+      "face": "terminal",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.app.edge.terminal.ActivateTerminalOperation",
+      "wireRequest": "TerminalActivationRequest",
+      "wireResponse": "TerminalActivationResult",
+      "contextKind": "PUBLIC_PROTOCOL_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND",
+      "dispatchMethod": "activateTerminal"
+    },
+    {
+      "operationId": "cancelTerminalActivation",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel",
+      "normalizedPath": "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel",
+      "face": "terminal",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.terminalbinding.application.CancelTerminalActivationOperation",
+      "wireRequest": "TerminalActivationCancellationRequest",
+      "wireResponse": "TerminalActivationCancellationResult",
+      "contextKind": "TERMINAL_CREDENTIAL_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND",
+      "dispatchMethod": "cancelTerminalActivation"
+    }
+  ],
+  "commandContextGroups": {
+    "PUBLIC_PROTOCOL_CONTEXT": [
+      "activateTerminal"
+    ],
+    "TERMINAL_CREDENTIAL_CONTEXT": [
+      "cancelTerminalActivation"
+    ],
+    "WORKSPACE_EXECUTION_CONTEXT": [
+      "cancelOperationsStoreTerminalActivation"
+    ]
+  }
+}

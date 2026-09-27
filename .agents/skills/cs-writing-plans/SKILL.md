@@ -16,6 +16,12 @@ backend-acceptance scenario extension follows the active business-scenario stand
 invent or wait for a UI Journey. If a required prerequisite is pending, stop and return it to Dexter;
 do not invent a test account, seed data or an external dependency.
 
+When the design relies on third-party library or framework behavior, follow
+`doc/platform/third-party-library-usage-standard.md`: identify the dependency version resolved by the
+actual runtime/test classpath, consult official material for that version, and record the source,
+relied-on API semantics/limits, and a focused proof in the design. Never derive usage from memory,
+similar APIs, or documentation for another release.
+
 Do not create package-exit, hash-chain, receipt, P0/W0/P1, or six-category source-denominator artifacts for
 the retired compliance-control model. For a current backend-acceptance scenario extension, record the
 owning business source, the exact scenario file, the route identity, and the focused/full verification

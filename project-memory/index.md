@@ -88,3 +88,5 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [pitfalls.generated-output-and-static-gate-drift](../project-memory/pitfalls/generated-output-and-static-gate-drift.md)
 - [practices.detail-drawer-action-menu](../project-memory/practices/detail-drawer-action-menu.md)
 - [practices.ter-input-and-virtual-keyboard-usage](../project-memory/practices/ter-input-and-virtual-keyboard-usage.md)
+- [operations.claude-review-finding-intake](../project-memory/operations/claude-review-finding-intake.md)
+- [practices.third-party-library-official-source-verification](../project-memory/practices/third-party-library-official-source-verification.md)

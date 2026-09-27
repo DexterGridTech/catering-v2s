@@ -778,7 +778,10 @@ public class SalesMenuPublicationService {
     }
 
     private UUID draftVersion(UUID menu) {
-        return persistence.readDraftVersion(menu).orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
+        // spotless:off
+        return persistence.readDraftVersion(menu).orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404,
+            "销售菜单不存在"));
+        // spotless:on
     }
 
     private UUID publishedVersion(UUID menu) {

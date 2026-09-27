@@ -233,7 +233,7 @@ Dexter 的总原则见 D-9、D-10：约束分硬、软两种；功能支持哪�
 - R-C.2 这些都是**代码定义的闭集**：前端按仓内标准从 contract 得到字典，后端只存取值，**不新增词汇表接口**（`project-memory/decisions/owner-read-model-and-lifecycle-standard.md` 的 `FRONTEND_DICTIONARY_FOR_CODE_DEFINED_ENUMS`）。
 - R-C.3 登记的维护方式是修改 contract，**不提供后台维护页面**。依据是 D-10（「都是需要再contract中明确定义好的」）；D-1 的「可在contract中维护」原本只修饰标签尺寸。
 - R-C.4 将来修改登记使既有终端配置不再满足硬约束时（例如从某个场景的支持纸型里删掉 58 毫米），这次修改必须同时处置受影响的既有数据，不得让既有终端因此变得无法保存（本稿补充，§13）。
-- R-C.5 设备类型的取值必须与终端 App 已有的设备形态取值一致：`apps/terminal/kernel/base/contracts/src/types/display.ts` 第 1 行 `export type SurfaceForm = 'laptop' | 'mobile'`，与 D-1「台式（laptop）或手持（mobile）」吻合。本期终端 App 不消费本登记，两边统一到一个住址的工作留待终端接入时处理。
+- R-C.5 设备类型的取值必须与终端 App 已有的设备形态取值一致：`apps/terminal/kernel/base/contracts/src/types/display.ts` 第 1 行 `export type SurfaceForm = 'laptop' | 'mobile'`，与 D-1「台式（laptop）或手持（mobile）」吻合。本期终端 App 不消费本登记，两边统一到一个住址的工作留待终端接入时处理。**【由「终端激活与长连接」需求 R-1.2 承接：两侧取值集合不一致时 `scripts/verify` 失败】**
 - R-C.6 页面上只显示业务名称（台式、手持、结账单、热敏 80 毫米……），不显示内部取值（例如 `laptop`、`TABLE_AREA`）。这与业务语料 CIPG-01「内部枚举……均不得作为可见文案」同一口径。
 
 ### 4.2 H5 设备类型
@@ -845,12 +845,12 @@ V-21 增加无效状态操作与作废终端编辑的精确 problem code、详�
 
 ### 15.13 用户交互纠偏与无范围语义收口（Dexter 2026-09-25）
 
-触发：体验当前 `organization/store-terminals` 编辑抽屉后，Dexter 明确指出步骤指示器与同一页面内容重复，要求整体修改而不是继续维护伪步骤；同时确认功能类型一旦创建不能在原功能行内修改、没有打印场景的功能不显示打印场景区域、`无范围` 不应成为可选择的业务值。该记录是本轮详设的直接输入，不改变终端整聚合一次保存、终端设备类型可按 R-1.4 修改、场景逐条选择打印机等既有业务裁决。
+触发：体验当前 `organization/store-terminals` 编辑抽屉后，Dexter 明确指出步骤指示器与同一页面内容重复，要求整体修改而不是继续维护伪步骤；同时确认功能类型一旦创建不能在原功能行内修改、没有打印场景的功能不显示打印场景区域、`无范围` 不应成为可选择的业务值。该记录是本轮详设的直接输入，不改变终端整聚合一次保存、终端设备类型可按 R-1.4 修改、场景逐条选择打印机等既有业务裁决。**【其中「终端设备类型可按 R-1.4 修改」已被 D-36 取代】**
 
 改动位置与冻结口径：
 
 - IA/交互：移除 `Steps` 及“下一步/上一步”交互，改用同一编辑 Drawer 内两个普通 Tabs：`基本信息与打印机`、`功能与范围`。Tab 只是内容分组，不是分段提交或校验闸门；Drawer 内仍由 `useDrawerFormLifecycle` 统一持有 dirty/关闭确认，保存仍是一次整聚合提交。基本信息中的名称与设备类型同一行，打印机和其条件参数使用紧凑 section 布局。
-- 功能身份：新增功能时在“添加功能”入口选择 `functionKey`；功能行一旦带有既有 `ref`，其类型只读，不能在原行切换。需要换类型必须移除旧行后新增，后端按既有 `ref -> functionKey` 对比拒绝绕过 UI 的改写。终端 `deviceType` 仍按 R-1.4 保持可编辑，并在不兼容旧功能时保留原行、显示校验状态而不静默删除。
+- 功能身份：新增功能时在“添加功能”入口选择 `functionKey`；功能行一旦带有既有 `ref`，其类型只读，不能在原行切换。需要换类型必须移除旧行后新增，后端按既有 `ref -> functionKey` 对比拒绝绕过 UI 的改写。终端 `deviceType` 仍按 R-1.4 保持可编辑，并在不兼容旧功能时保留原行、显示校验状态而不静默删除。**【这一句已被 D-36 取代：终端创建后不能改设备类型；随「终端激活与长连接」需求落地】**
 - 范围与场景：从 `store-terminal-rules.json` 删除 `NONE` 范围；`QUEUE_CALL.allowedRangeKeys` 为空，排队叫号提交空范围数组，前端不渲染“无范围”选项或范围复选框。契约场景集合为空的功能不渲染“打印场景”标题、选择器或空提示；有场景的功能仍在所属功能内逐场景选择订单类型和无序打印机集合。
 - 连带载体：规则生成物、owner 聚合校验、前端 model/editor/testId/static/render、backend acceptance 的队列空范围与功能类型不可变场景、seed 正本及其读回、L2 blueprint/scenario/locator/admission 与动态准入记录必须同一批更新；任何旧 `NONE` 业务引用或旧 Steps 触点未处置均不得进入实施。
 

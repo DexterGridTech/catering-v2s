@@ -12,6 +12,14 @@ describe('operations/public Problem feedback contract', () => {
       expect(feedback.title).not.toMatch(/errorCode|Problem|异常码|请求失败/);
       expect(feedback.detail).not.toMatch(/errorCode|\bdetail\b|请根据错误码/);
     }
+    expect(OPERATIONS_PROBLEM_FEEDBACK.TERMINAL_BINDING_CHANGED).toEqual({
+      title: '终端绑定已变化',
+      detail: '请重新读取后再操作。',
+    });
+    expect(OPERATIONS_PROBLEM_FEEDBACK.TERMINAL_BINDING_NOT_ACTIVE).toEqual({
+      title: '终端当前未激活',
+      detail: '请刷新终端详情后再操作。',
+    });
   });
 
   it('normalizes structured and network failures without exposing contract diagnostics', () => {

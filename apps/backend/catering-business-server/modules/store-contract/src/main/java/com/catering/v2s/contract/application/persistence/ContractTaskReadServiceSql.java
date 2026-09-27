@@ -78,9 +78,8 @@ public final class ContractTaskReadServiceSql {
     public static final String CONTRACT_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_ID =
             " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.store_id=? ORDER BY ";
     public static final String CONTRACT_TASK_READ_SERVICE_CONTRACT_NO = "c.contract_no";
-    public static final String
-            CONTRACT_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_ID_ALTERNATE_A =
-                    " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.store_id=? AND ";
+    public static final String WHERE_WS_UUID_GRP_WS_ALT_A_001 =
+            " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.store_id=? AND ";
     public static final String CONTRACT_TASK_READ_SERVICE_SELECT_SELECT_COUNT = "SELECT COUNT(*)";
     public static final String CONTRACT_TASK_READ_SERVICE_ORDER_BY_CONTRACT_NO =
             " ORDER BY c.contract_no LIMIT ? OFFSET ?";

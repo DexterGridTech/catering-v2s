@@ -11,9 +11,8 @@ public final class CatalogItemMediaFactsSql {
     public static final String
             CATALOG_ITEM_MEDIA_FACTS_INSERT_INTO_CATALOG_ITEM_IMAGE_ITEM_REF_ASSET_REF_DISPLAY_ORDER =
                     "INSERT INTO catalog.catalog_item_image(item_ref,asset_ref,display_order) VALUES(?,?,?)";
-    public static final String
-            CATALOG_ITEM_MEDIA_FACTS_INSERT_INTO_CATALOG_ITEM_IMAGE_ITEM_REF_ASSET_REF_DISPLAY_ORDER_ALTERNATE_A =
-                    "INSERT INTO catalog.catalog_item_image(item_ref,asset_ref,display_order) VALUES(?,?,?)";
+    public static final String INSERT_INTO_CAT_ITEM_IMAGE_ALT_A_001 =
+            "INSERT INTO catalog.catalog_item_image(item_ref,asset_ref,display_order) VALUES(?,?,?)";
     public static final String CATALOG_ITEM_MEDIA_FACTS_CONDITION_ITEM_DATA_NODE_REF_BRAND_REF =
             " AND item.data_node_ref=? AND item.brand_ref=?";
     public static final String CATALOG_ITEM_MEDIA_FACTS_SELECT_CATALOG_ITEM_IMAGE_ITEM =

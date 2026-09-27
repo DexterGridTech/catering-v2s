@@ -29,8 +29,7 @@ public class InventoryCatalogLifecyclePersistence {
     public UnitLifecycleUsage readUnitLifecycleUsage(String dataNodeRef, String brandRef, UUID unitRef) {
         AdvisoryLock.acquire(jdbc, 0x554E4954, unitRef);
         List<UUID> targetRefs = jdbc.query(
-                InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF
+                InventoryCatalogLifecycleServiceSql.SELECT_STOCK_TARGET_REF_DATA_001
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_CONSUMPTION_UNIT_REF_COUNTING_UNIT_REF,
                 (result, row) -> result.getObject(1, UUID.class),
@@ -88,10 +87,8 @@ public class InventoryCatalogLifecyclePersistence {
     public int retireTargets(String dataNodeRef, String brandRef, InventoryOwnerApi.CatalogVoidSubject subject) {
         String ownerColumn = catalogVoidOwnerColumn(subject.kind());
         return jdbc.update(
-                InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_UPDATE_STOCK_TARGET_DEFINITION_STATUS_DISABLED_VERSION
-                        + InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_DATA_NODE_REF_BRAND_REF
+                InventoryCatalogLifecycleServiceSql.UPDATE_STOCK_TARGET_DEF_STATUS_002
+                        + InventoryCatalogLifecycleServiceSql.UPDATE_UPDATED_AT_EPOCH_MS_003
                         + ownerColumn
                         + InventoryCatalogLifecycleServiceSql.OWNER_ENABLED_PREDICATE_SUFFIX,
                 time.currentEpochMillis(),
@@ -105,8 +102,7 @@ public class InventoryCatalogLifecyclePersistence {
         return jdbc.update(
                 InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_UPDATE_STOCK_BOM_DEFINITION_STATUS_DISABLED_VERSION
-                        + InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_DATA_NODE_REF_BRAND_REF_ALTERNATE_A
+                        + InventoryCatalogLifecycleServiceSql.UPDATE_UPDATED_AT_EPOCH_MS_ALT_A_004
                         + ownerColumn
                         + InventoryCatalogLifecycleServiceSql.OWNER_ENABLED_PREDICATE_SUFFIX,
                 time.currentEpochMillis(),
@@ -131,8 +127,7 @@ public class InventoryCatalogLifecyclePersistence {
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_PRIOR_RECEIPT
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT
-                        + InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_FROM_CLAUSE_RECEIPT_LOCK_FROM_INVENTORY_COMMAND_RECEI
+                        + InventoryCatalogLifecycleServiceSql.FROM_CLAUSE_RECEIPT_LOCK_FROM_005
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_WHERE_DATA_NODE_REF_IDEMPOTENCY_KEY
                         + InventoryCatalogLifecycleServiceSql
@@ -176,13 +171,11 @@ public class InventoryCatalogLifecyclePersistence {
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_WHERE_BOM_DATA_NODE_REF_BRAND_REF_DEFINITION_STATUS
                         + InventoryCatalogLifecycleServiceSql.INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_BOM_ITEM_REF
-                        + InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_PRIOR_RECEIPT_AND_NOT_EXISTS_SELECT_1_FROM
+                        + InventoryCatalogLifecycleServiceSql.CONDITION_PRIOR_RECEIPT_AND_NOT_006
                         + InventoryCatalogLifecycleServiceSql.INVENTORY_CATALOG_LIFECYCLE_SERVICE_LOCK_OF_BOM
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_RETIRED_TARGETS
-                        + InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_UPDATE_STOCK_TARGET_TARGET_DEFINITION_STATUS_DISABLED
+                        + InventoryCatalogLifecycleServiceSql.UPDATE_STOCK_TARGET_DEF_STATUS_007
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_VERSION_TARGET_UPDATED_AT_EPOCH_MILLIS
                         + InventoryCatalogLifecycleServiceSql
@@ -194,8 +187,7 @@ public class InventoryCatalogLifecyclePersistence {
                         + inboundSql
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_ALTERNATE_A
-                        + InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_PRIOR_RECEIPT_AND_NOT_EXISTS_SELECT_1_FROM_ALTERNATE_A
+                        + InventoryCatalogLifecycleServiceSql.CONDITION_PRIOR_RECEIPT_AND_NOT_ALT_A_008
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_RETURNING_TARGET_TARGET_REF
                         + InventoryCatalogLifecycleServiceSql
@@ -213,8 +205,7 @@ public class InventoryCatalogLifecyclePersistence {
                         + inboundSql
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_ALTERNATE_B
-                        + InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_PRIOR_RECEIPT_AND_NOT_EXISTS_SELECT_1_FROM_ALTERNATE_B
+                        + InventoryCatalogLifecycleServiceSql.CONDITION_PRIOR_RECEIPT_AND_NOT_ALT_B_009
                         + InventoryCatalogLifecycleServiceSql.INVENTORY_CATALOG_LIFECYCLE_SERVICE_RETURNING_BOM_BOM_REF
                         + InventoryCatalogLifecycleServiceSql.INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_OUTCOME
                         + InventoryCatalogLifecycleServiceSql.INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT
@@ -258,8 +249,7 @@ public class InventoryCatalogLifecyclePersistence {
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_REMAINING_ACTIVE_OWNED_DEFINITION_
                         + InventoryCatalogLifecycleServiceSql.INVENTORY_CATALOG_LIFECYCLE_SERVICE_FROM_CLAUSE_OUTCOME
-                        + InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_PRIOR_RECEIPT_AND_NOT_EXISTS_SELECT_1_FROM_ALTERNATE_C
+                        + InventoryCatalogLifecycleServiceSql.CONDITION_PRIOR_RECEIPT_AND_NOT_ALT_C_010
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_WRITTEN_RECEIPT
                         + InventoryCatalogLifecycleServiceSql
@@ -381,8 +371,7 @@ public class InventoryCatalogLifecyclePersistence {
                         .INVENTORY_CATALOG_LIFECYCLE_SERVICE_BOM_OPTION_VALUE_REF_TARGET_REF_ITEM_CODE
                 + InventoryCatalogLifecycleServiceSql
                         .INVENTORY_CATALOG_LIFECYCLE_SERVICE_FROM_CLAUSE_INPUT_BOM_ALTERNATE_A
-                + InventoryCatalogLifecycleServiceSql
-                        .INVENTORY_CATALOG_LIFECYCLE_SERVICE_LATERAL_JSONB_ARRAY_ELEMENTS_JSONB_TYPEOF_BOM_ROWS_ALTERNATE_A
+                + InventoryCatalogLifecycleServiceSql.LATERAL_JSONB_ARRAY_ELEMENTS_JSONB_ALT_A_011
                 + InventoryCatalogLifecycleServiceSql
                         .INVENTORY_CATALOG_LIFECYCLE_SERVICE_THEN_BOM_ROWS_ENTRY_ALTERNATE_A
                 + InventoryCatalogLifecycleServiceSql
@@ -449,8 +438,7 @@ public class InventoryCatalogLifecyclePersistence {
     public void lockCatalogVoidSubjectRows(String scope, String brand, InventoryOwnerApi.CatalogVoidSubject subject) {
         String ownerColumn = catalogVoidOwnerColumn(subject.kind());
         jdbc.query(
-                InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF_ALTERNATE_A
+                InventoryCatalogLifecycleServiceSql.SELECT_STOCK_TARGET_REF_DATA_ALT_A_012
                         + ownerColumn
                         + InventoryCatalogLifecycleServiceSql.OWNER_TARGET_LOCK_SUFFIX,
                 (result, rowNumber) -> result.getObject(1, UUID.class),
@@ -467,8 +455,7 @@ public class InventoryCatalogLifecyclePersistence {
                 brand,
                 subject.ref());
         List<UUID> ownedTargetRefs = jdbc.query(
-                InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF_ALTERNATE_B
+                InventoryCatalogLifecycleServiceSql.SELECT_STOCK_TARGET_REF_DATA_ALT_B_013
                         + ownerColumn
                         + InventoryCatalogLifecycleServiceSql.OWNER_TARGET_ORDER_SUFFIX,
                 (result, rowNumber) -> result.getObject(1, UUID.class),
@@ -488,8 +475,7 @@ public class InventoryCatalogLifecyclePersistence {
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_LATERAL_BOM_BOM_REF_JSONB_ARRAY_ELEMENTS
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_CASE_JSONB_TYPEOF_BOM_ROWS_ENTRY
-                        + InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_WHERE_BOM_DATA_NODE_REF_BRAND_REF_DEFINITION_STATUS_ALTERNATE_A
+                        + InventoryCatalogLifecycleServiceSql.WHERE_BOM_DATA_NODE_REF_ALT_A_014
                         + InventoryCatalogLifecycleServiceSql
                                 .INVENTORY_CATALOG_LIFECYCLE_SERVICE_ENTRY_TARGET_REF_COMPONENT_TARGET_REF
                         + placeholders
@@ -524,8 +510,7 @@ public class InventoryCatalogLifecyclePersistence {
         AdvisoryLock.acquire(jdbc, "inventory-receipt", scope, key);
         return jdbc
                 .query(
-                        InventoryCatalogLifecycleServiceSql
-                                        .INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT
+                        InventoryCatalogLifecycleServiceSql.SELECT_CMD_RECEIPT_OP_ID_015
                                 + InventoryCatalogLifecycleServiceSql
                                         .INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_IDEMPOTENCY_KEY,
                         (r, n) -> new ReceiptRow(r.getString(1), r.getString(2), r.getString(3)),
@@ -539,8 +524,7 @@ public class InventoryCatalogLifecyclePersistence {
     public void saveReceipt(String scope, String key, String operation, String requestHash, String responseJson) {
         jdbc.update(
                 InventoryCatalogLifecycleServiceSql.INVENTORY_CATALOG_LIFECYCLE_SERVICE_INSERT_INTO
-                        + InventoryCatalogLifecycleServiceSql
-                                .INVENTORY_CATALOG_LIFECYCLE_SERVICE_INVENTORY_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID_REQUEST_HASH_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB,
+                        + InventoryCatalogLifecycleServiceSql.INV_CMD_RECEIPT_REF_DATA_016,
                 UUID.randomUUID(),
                 scope,
                 key,

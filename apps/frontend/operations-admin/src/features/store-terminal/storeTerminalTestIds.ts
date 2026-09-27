@@ -14,6 +14,7 @@ export const storeTerminalTestIds = {
   name: 'operations-store-terminal-name',
   deviceType: 'operations-store-terminal-device-type',
   deviceTypeOption: (deviceType: string) => `operations-store-terminal-device-type-${deviceType.toLowerCase()}`,
+  deviceTypeReadonly: 'operations-store-terminal-device-type-readonly',
   activationCode: 'operations-store-terminal-activation-code',
   activationCodeClear: 'operations-store-terminal-activation-code-clear',
   formSave: 'operations-store-terminal-form-save',

@@ -83,8 +83,7 @@ public class CatalogUnitDefinitionFacts {
         UUID ref = UUID.randomUUID();
         try {
             jdbc.update(
-                    CatalogUnitDefinitionFactsSql
-                                    .CATALOG_UNIT_DEFINITION_FACTS_INSERT_INTO_CATALOG_UNIT_DEFINITION_UNIT_REF_DATA_NODE_REF_BRAND_REF_CODE_NAME_DIMENSION_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
+                    CatalogUnitDefinitionFactsSql.INSERT_INTO_CAT_UNIT_DEF_006
                             + CatalogUnitDefinitionFactsSql.CATALOG_UNIT_DEFINITION_FACTS_VALUES_ENABLED,
                     ref,
                     scope,
@@ -124,8 +123,7 @@ public class CatalogUnitDefinitionFacts {
         int changed;
         try {
             changed = jdbc.update(
-                    CatalogUnitDefinitionFactsSql
-                                    .CATALOG_UNIT_DEFINITION_FACTS_UPDATE_CATALOG_UNIT_DEFINITION_SET_CODE_NAME_DIMENSION_PRECISION_VERSION_UPDATED_AT_EPOCH_MILLIS_DIMENSION_PRECISION_VERSION_UPDATED_AT_EPOCH_MILLIS
+                    CatalogUnitDefinitionFactsSql.UPDATE_CAT_UNIT_DEF_SET_007
                             + CatalogUnitDefinitionFactsSql.CATALOG_UNIT_DEFINITION_FACTS_WHERE_UNIT_REF_VERSION,
                     code,
                     command.name(),
@@ -157,8 +155,7 @@ public class CatalogUnitDefinitionFacts {
                     "REFERENCE_BLOCKS_VOID", 422, "单位定义仍被商品或库存事实引用，不能作废");
             // spotless:on
         if (jdbc.update(
-                        CatalogUnitDefinitionFactsSql
-                                        .CATALOG_UNIT_DEFINITION_FACTS_UPDATE_UNIT_DEFINITION_STATUS_VERSION_UPDATED_AT_EPOCH_MILLIS
+                        CatalogUnitDefinitionFactsSql.UPDATE_UNIT_DEF_STATUS_VER_001
                                 + CatalogUnitDefinitionFactsSql
                                         .CATALOG_UNIT_DEFINITION_FACTS_WHERE_UNIT_REF_VERSION_STATUS_VOIDED,
                         command.targetStatus(),
@@ -231,14 +228,12 @@ public class CatalogUnitDefinitionFacts {
         args.addAll(ordered);
         args.add(ordered.size());
         List<UnitRow> rows = jdbc.query(
-                CatalogUnitDefinitionFactsSql
-                                .CATALOG_UNIT_DEFINITION_FACTS_CTE_UNIT_LOCKS_PG_ADVISORY_XACT_LOCK_LOCK_KEY_ONE_LOCK_KEY_TWO
+                CatalogUnitDefinitionFactsSql.CTE_UNIT_LOCKS_PG_ADVISORY_002
                         + CatalogUnitDefinitionFactsSql.CATALOG_UNIT_DEFINITION_FACTS_FROM_CLAUSE_FROM_VALUES
                         + lockValues
                         + CatalogUnitDefinitionFactsSql
                                 .CATALOG_UNIT_DEFINITION_FACTS_CLOSE_PAREN_REQUESTED_LOCKS_LOCK_KEY_ONE_LOCK_KEY_TWO
-                        + CatalogUnitDefinitionFactsSql
-                                .CATALOG_UNIT_DEFINITION_FACTS_SELECT_UNIT_DEFINITION_UNIT_REF_CODE_NAME_DIMENSION_ALTERNATE_A
+                        + CatalogUnitDefinitionFactsSql.SELECT_UNIT_DEF_UNIT_REF_ALT_A_003
                         + CatalogUnitDefinitionFactsSql
                                 .CATALOG_UNIT_DEFINITION_FACTS_WHERE_DATA_NODE_REF_BRAND_REF_UNIT_REF
                         + placeholders
@@ -270,18 +265,14 @@ public class CatalogUnitDefinitionFacts {
 
     private UnitRow requireForChange(UUID ref) {
         List<UnitRow> rows = jdbc.query(
-                CatalogUnitDefinitionFactsSql
-                        .CATALOG_UNIT_DEFINITION_FACTS_SELECT_UNIT_REF_CODE_NAME_DIMENSION_PRECISION_STATUS_VERSION_FROM_CATALOG_UNIT_DEFINITION_WHERE_UNIT_REF,
-                (result, row) -> row(result),
-                ref);
+                CatalogUnitDefinitionFactsSql.SELECT_UNIT_REF_CODE_NAME_008, (result, row) -> row(result), ref);
         if (rows.isEmpty()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "单位定义不存在");
         return rows.getFirst();
     }
 
     private UnitRow require(String scope, String brand, UUID ref) {
         List<UnitRow> rows = jdbc.query(
-                CatalogUnitDefinitionFactsSql
-                                .CATALOG_UNIT_DEFINITION_FACTS_SELECT_UNIT_DEFINITION_UNIT_REF_CODE_NAME_DIMENSION_ALTERNATE_C
+                CatalogUnitDefinitionFactsSql.SELECT_UNIT_DEF_UNIT_REF_ALT_C_004
                         + CatalogUnitDefinitionFactsSql
                                 .CATALOG_UNIT_DEFINITION_FACTS_WHERE_DATA_NODE_REF_BRAND_REF_UNIT_REF_ALTERNATE_A,
                 (result, row) -> row(result),
@@ -296,10 +287,8 @@ public class CatalogUnitDefinitionFacts {
         return Boolean.TRUE.equals(jdbc.queryForObject(
                 CatalogUnitDefinitionFactsSql
                                 .CATALOG_UNIT_DEFINITION_FACTS_SELECT_CATALOG_ITEM_SALES_UNIT_REF_BASE_MEASURE_UNIT_REF
-                        + CatalogUnitDefinitionFactsSql
-                                .CATALOG_UNIT_DEFINITION_FACTS_OR_EXISTS_SELECT_FROM_CATALOG_CATALOG_SKU_WHERE_SALES_UNIT_OVERRIDE_REF_OR_BASE_MEASURE_UNIT_OVERRIDE_REF_WHERE_SALES_UNIT_OVERRIDE_REF_OR_BASE_MEASURE_UNIT_OVERRIDE_REF
-                        + CatalogUnitDefinitionFactsSql
-                                .CATALOG_UNIT_DEFINITION_FACTS_OR_EXISTS_SELECT_FROM_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_MATERIAL_WHERE_CONSUMPTION_UNIT_REF_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_MATERIAL_WHERE_CONSUMPTION_UNIT_REF,
+                        + CatalogUnitDefinitionFactsSql.OR_EXISTS_SELECT_FROM_CAT_009
+                        + CatalogUnitDefinitionFactsSql.OR_EXISTS_SELECT_FROM_CAT_010,
                 Boolean.class,
                 ref,
                 ref,
@@ -341,8 +330,7 @@ public class CatalogUnitDefinitionFacts {
                                 .CATALOG_UNIT_DEFINITION_FACTS_CLOSE_PAREN_CATALOG_SKU_BASE_MEASURE_UNIT_OVERRIDE_REF
                         + CatalogUnitDefinitionFactsSql.CATALOG_UNIT_DEFINITION_FACTS_BASE_MEASURE_UNIT_OVERRIDE_REF
                         + placeholders
-                        + CatalogUnitDefinitionFactsSql
-                                .CATALOG_UNIT_DEFINITION_FACTS_CLOSE_PAREN_CATALOG_ORDER_OPTION_DEFINITION_MA_CONSUMPTION_UNIT_REF
+                        + CatalogUnitDefinitionFactsSql.CLOSE_PAREN_CAT_ORD_OPT_005
                         + CatalogUnitDefinitionFactsSql.CATALOG_UNIT_DEFINITION_FACTS_WHERE_CONSUMPTION_UNIT_REF
                         + placeholders
                         + CatalogUnitDefinitionFactsSql.CATALOG_UNIT_DEFINITION_FACTS_CLOSE_PAREN_REFERENCED_REF,

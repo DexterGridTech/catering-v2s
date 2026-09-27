@@ -74,11 +74,7 @@ public class CatalogItemMediaFacts {
                 for (int order = 0; order < assets.size(); order++)
                     rows.add(new Object[] {entry.getKey(), assets.get(order), order});
             }
-        if (!rows.isEmpty())
-            jdbc.batchUpdate(
-                    CatalogItemMediaFactsSql
-                            .CATALOG_ITEM_MEDIA_FACTS_INSERT_INTO_CATALOG_ITEM_IMAGE_ITEM_REF_ASSET_REF_DISPLAY_ORDER_ALTERNATE_A,
-                    rows);
+        if (!rows.isEmpty()) jdbc.batchUpdate(CatalogItemMediaFactsSql.INSERT_INTO_CAT_ITEM_IMAGE_ALT_A_001, rows);
     }
 
     public boolean referenced(String dataNodeRef, String brandRef, UUID assetRef) {

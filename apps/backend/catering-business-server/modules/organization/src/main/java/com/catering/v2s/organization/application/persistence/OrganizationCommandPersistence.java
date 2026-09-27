@@ -48,8 +48,7 @@ public class OrganizationCommandPersistence {
     public void insertInitializationIdempotency(
             UUID workspaceUuid, String idempotencyKey, String groupWorkspaceKey, String requestFingerprint) {
         jdbc.update(
-                OrganizationCommandServiceSql
-                                .ORGANIZATION_COMMAND_SERVICE_INSERT_INTO_COMMERCIAL_GROUP_IDEMPOTENCY_WORKSPACE_UUID_IDEMPOTENCY_KEY
+                OrganizationCommandServiceSql.INSERT_INTO_COMMERCIAL_GRP_IDEMPOTENCY_001
                         + OrganizationCommandServiceSql
                                 .ORGANIZATION_COMMAND_SERVICE_GROUP_WORKSPACE_KEY_REQUEST_FINGERPRINT,
                 workspaceUuid,
@@ -201,8 +200,7 @@ public class OrganizationCommandPersistence {
 
     public NameCode findCommercialGroupNameCode(String groupWorkspaceKey, UUID commercialGroupRef) {
         return jdbc.query(
-                OrganizationCommandServiceSql
-                                .ORGANIZATION_COMMAND_SERVICE_SELECT_COMMERCIAL_GROUP_COMMERCIAL_GROUP_CODE_COMMERCIAL_GROUP_NAME
+                OrganizationCommandServiceSql.SELECT_COMMERCIAL_GRP_COMMERCIAL_GRP_002
                         + OrganizationCommandServiceSql
                                 .ORGANIZATION_COMMAND_SERVICE_COMMERCIAL_GROUP_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {

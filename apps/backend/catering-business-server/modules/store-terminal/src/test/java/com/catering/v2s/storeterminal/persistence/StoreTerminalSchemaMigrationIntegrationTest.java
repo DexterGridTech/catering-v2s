@@ -465,7 +465,6 @@ class StoreTerminalSchemaMigrationIntegrationTest {
                 store,
                 terminal,
                 "Rollback after",
-                "laptop",
                 new ObjectMapper().readTree(REPLACE_CONFIGURATION),
                 1,
                 idempotencyKey,

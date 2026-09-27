@@ -21,6 +21,7 @@ import {
   storeTerminalFunctionLabels,
   storeTerminalFunctionMaxInstances,
   storeTerminalRangeLabels,
+  type StoreTerminalConfigurationFormValues,
   type StoreTerminalFormValues,
   type StoreTerminalFunctionKey,
   type TerminalPrinterForm,
@@ -62,7 +63,7 @@ export function updateFunctionRange(
   index: number,
   patch: Partial<
     Pick<
-      StoreTerminalFormValues['functions'][number],
+      StoreTerminalConfigurationFormValues['functions'][number],
       'tableAreaAll' | 'tableAreaRefs' | 'productionTagAll' | 'productionTagRefs'
     >
   >,
@@ -388,13 +389,40 @@ function RangeEditor({
           )}
         </Form.Item>
       )}
-      {hasSelectableRanges && selected.some(
-        key =>
-          !new Set<string>([STORE_TERMINAL_RANGE_KEYS.TABLE_AREA, STORE_TERMINAL_RANGE_KEYS.PRODUCTION_TAG]).has(key),
-      ) && <Typography.Text type="secondary">已选择的其他范围按系统规则生效，无需再指定对象。</Typography.Text>}
+      {hasSelectableRanges &&
+        selected.some(
+          key =>
+            !new Set<string>([STORE_TERMINAL_RANGE_KEYS.TABLE_AREA, STORE_TERMINAL_RANGE_KEYS.PRODUCTION_TAG]).has(key),
+        ) && <Typography.Text type="secondary">已选择的其他范围按系统规则生效，无需再指定对象。</Typography.Text>}
     </Space>
   );
 }
+
+export type TerminalFunctionEditorProps = {
+  form: FormInstance<StoreTerminalFormValues>;
+  index: number;
+  deviceType: string;
+  areaCandidates: TerminalCandidateState<StoreTerminalAreaCandidate>;
+  tagCandidates: TerminalCandidateState<StoreTerminalTagCandidate>;
+  areasLoading: boolean;
+  tagsLoading: boolean;
+  areaQueryText: string;
+  tagQueryText: string;
+  onAreaQueryTextChange: (value: string) => void;
+  onTagQueryTextChange: (value: string) => void;
+  areaCandidateError?: unknown;
+  tagCandidateError?: unknown;
+  onRetryAreaCandidates: () => void;
+  onRetryTagCandidates: () => void;
+  areaReferences: readonly StoreTerminalAreaReference[];
+  tagReferences: readonly StoreTerminalTagReference[];
+  candidateCacheKey: string;
+  printerValues: readonly TerminalPrinterForm[];
+  functionOrdinal?: number;
+  functionIdentity: string;
+  onRemove: () => void;
+  onValuesChange: () => void;
+};
 
 export function TerminalFunctionEditor({
   form,
@@ -420,31 +448,7 @@ export function TerminalFunctionEditor({
   functionIdentity,
   onRemove,
   onValuesChange,
-}: {
-  form: FormInstance<StoreTerminalFormValues>;
-  index: number;
-  deviceType: string;
-  areaCandidates: TerminalCandidateState<StoreTerminalAreaCandidate>;
-  tagCandidates: TerminalCandidateState<StoreTerminalTagCandidate>;
-  areasLoading: boolean;
-  tagsLoading: boolean;
-  areaQueryText: string;
-  tagQueryText: string;
-  onAreaQueryTextChange: (value: string) => void;
-  onTagQueryTextChange: (value: string) => void;
-  areaCandidateError?: unknown;
-  tagCandidateError?: unknown;
-  onRetryAreaCandidates: () => void;
-  onRetryTagCandidates: () => void;
-  areaReferences: readonly StoreTerminalAreaReference[];
-  tagReferences: readonly StoreTerminalTagReference[];
-  candidateCacheKey: string;
-  printerValues: readonly TerminalPrinterForm[];
-  functionOrdinal?: number;
-  functionIdentity: string;
-  onRemove: () => void;
-  onValuesChange: () => void;
-}) {
+}: TerminalFunctionEditorProps) {
   const watchedFunctionKey = Form.useWatch(['functions', index, 'functionKey'], form) as string | undefined;
   // Form.List can mount this editor in the same render that adds the row. In
   // that render useWatch may not have observed the registered field yet;
@@ -531,7 +535,7 @@ export function TerminalFunctionEditor({
         </Typography.Text>
       </Form.Item>
       {!functionSupported && functionKey && (
-        <Alert type="warning" showIcon message="当前设备类型不支持此功能，请移除或更换设备类型后再保存。" />
+        <Alert type="warning" showIcon message="当前设备类型不支持此功能，请移除此功能后再保存。" />
       )}
       <RangeEditor
         form={form}
@@ -555,44 +559,53 @@ export function TerminalFunctionEditor({
         onAreaQueryTextChange={onAreaQueryTextChange}
         onTagQueryTextChange={onTagQueryTextChange}
       />
-      {scenes.length > 0 && <>
-      <Form.Item label="选择打印场景" {...testId(storeTerminalTestIds.scenePicker(functionIdentity))}>
-        <Space wrap>
-          {scenes.map(scene => (
-            <Form.Item key={scene.key} name={[index, 'scenes', scene.key, 'selected']} valuePropName="checked" noStyle>
-              <Checkbox {...testId(storeTerminalTestIds.sceneToggle(functionIdentity, scene.key))}>
-                {scene.label}
-              </Checkbox>
-            </Form.Item>
-          ))}
-        </Space>
-      </Form.Item>
-      <Form.Item
-        noStyle
-        shouldUpdate={(previous, next) => previous.functions?.[index]?.scenes !== next.functions?.[index]?.scenes}
-      >
-        {() => {
-          const currentScenes = form.getFieldValue(['functions', index, 'scenes']) as
-            Record<string, TerminalSceneForm> | undefined;
-          const selectedScenes = scenes.filter(scene => currentScenes?.[scene.key]?.selected === true);
-          return selectedScenes.length === 0 ? (
-            <Typography.Text type="secondary">未选择打印场景；如需配置订单类型和打印机，请先勾选场景。</Typography.Text>
-          ) : (
-            selectedScenes.map(scene => (
-              <TerminalSceneEditor
-                key={scene.key}
-                form={form}
-                index={index}
-                functionIdentity={functionIdentity}
-                scene={scene}
-                printerValues={printerValues}
-                showToggle={false}
-              />
-            ))
-          );
-        }}
-      </Form.Item>
-      </>}
+      {scenes.length > 0 && (
+        <>
+          <Form.Item label="选择打印场景" {...testId(storeTerminalTestIds.scenePicker(functionIdentity))}>
+            <Space wrap>
+              {scenes.map(scene => (
+                <Form.Item
+                  key={scene.key}
+                  name={[index, 'scenes', scene.key, 'selected']}
+                  valuePropName="checked"
+                  noStyle
+                >
+                  <Checkbox {...testId(storeTerminalTestIds.sceneToggle(functionIdentity, scene.key))}>
+                    {scene.label}
+                  </Checkbox>
+                </Form.Item>
+              ))}
+            </Space>
+          </Form.Item>
+          <Form.Item
+            noStyle
+            shouldUpdate={(previous, next) => previous.functions?.[index]?.scenes !== next.functions?.[index]?.scenes}
+          >
+            {() => {
+              const currentScenes = form.getFieldValue(['functions', index, 'scenes']) as
+                Record<string, TerminalSceneForm> | undefined;
+              const selectedScenes = scenes.filter(scene => currentScenes?.[scene.key]?.selected === true);
+              return selectedScenes.length === 0 ? (
+                <Typography.Text type="secondary">
+                  未选择打印场景；如需配置订单类型和打印机，请先勾选场景。
+                </Typography.Text>
+              ) : (
+                selectedScenes.map(scene => (
+                  <TerminalSceneEditor
+                    key={scene.key}
+                    form={form}
+                    index={index}
+                    functionIdentity={functionIdentity}
+                    scene={scene}
+                    printerValues={printerValues}
+                    showToggle={false}
+                  />
+                ))
+              );
+            }}
+          </Form.Item>
+        </>
+      )}
     </Card>
   );
 }

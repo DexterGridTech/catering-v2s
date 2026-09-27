@@ -1,0 +1,109 @@
+openapi: 3.0.3
+info: {title: Organization overview components, version: 0.1.0}
+components:
+  schemas:
+    OrganizationOverviewCategory:
+      type: string
+      enum: [HIERARCHY, BUSINESS_ENTITY, STORE]
+    OrganizationOverviewType:
+      type: string
+      enum: [GROUP, REGION, PROJECT, BRAND, TENANT, HEAD_COMPANY, STORE]
+    OrganizationOverviewStatus:
+      type: string
+      enum: [ENABLED, DISABLED]
+    OrganizationOverviewSource:
+      type: string
+      enum: [MANUAL, SYSTEM]
+    OrganizationOverviewSourceStatus:
+      type: string
+      enum: [AVAILABLE, UNAVAILABLE]
+    OrganizationOverviewSortKey:
+      type: string
+      enum: [NAME, CODE, UPDATED_AT]
+    OrganizationOverviewSortDirection:
+      type: string
+      enum: [ASC, DESC]
+    OrganizationOverviewReference:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, resolved]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        code: {type: string, minLength: 1, maxLength: 120}
+        name: {type: string, minLength: 1, maxLength: 160}
+        resolved: {type: boolean}
+    OrganizationOverviewFilterOption:
+      type: object
+      additionalProperties: false
+      required: [kind, id, code, name]
+      properties:
+        kind: {type: string, enum: [PROJECT, BRAND, TENANT]}
+        id: {type: string, minLength: 1, maxLength: 64}
+        code: {type: string, minLength: 1, maxLength: 120}
+        name: {type: string, minLength: 1, maxLength: 160}
+    OrganizationOverviewItem:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceKey, category, type, code, name, path, status, source, version, createdAt, updatedAt]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        category: {$ref: '#/components/schemas/OrganizationOverviewCategory'}
+        type: {$ref: '#/components/schemas/OrganizationOverviewType'}
+        code: {type: string, minLength: 1, maxLength: 120}
+        name: {type: string, minLength: 1, maxLength: 160}
+        path:
+          type: array
+          items: {$ref: '#/components/schemas/OrganizationOverviewReference'}
+          maxItems: 8
+        status: {$ref: '#/components/schemas/OrganizationOverviewStatus'}
+        source: {$ref: '#/components/schemas/OrganizationOverviewSource'}
+        version: {type: integer, format: int64, minimum: 0}
+        createdAt: {type: integer, format: int64, minimum: 0}
+        updatedAt: {type: integer, format: int64, minimum: 0}
+        notes: {type: string, nullable: true, maxLength: 2000}
+        project: {$ref: '#/components/schemas/OrganizationOverviewReference', nullable: true}
+        brand: {$ref: '#/components/schemas/OrganizationOverviewReference', nullable: true}
+        tenant: {$ref: '#/components/schemas/OrganizationOverviewReference', nullable: true}
+        headCompany: {$ref: '#/components/schemas/OrganizationOverviewReference', nullable: true}
+        unresolvedReferences:
+          type: array
+          items: {type: string, maxLength: 80}
+          maxItems: 16
+    OrganizationOverviewPageMetadata:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, category, page, pageSize, total, sort, direction]
+      properties:
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        category: {$ref: '#/components/schemas/OrganizationOverviewCategory'}
+        page: {type: integer, minimum: 1}
+        pageSize: {type: integer, minimum: 1, maximum: 100}
+        total: {type: integer, format: int64, minimum: 0}
+        sort: {$ref: '#/components/schemas/OrganizationOverviewSortKey'}
+        direction: {$ref: '#/components/schemas/OrganizationOverviewSortDirection'}
+    OrganizationOverviewPage:
+      type: object
+      additionalProperties: false
+      required: [metadata, items, itemsSourceStatus, itemsAsOf, itemsUnresolved, filterOptions, filterOptionsSourceStatus, filterOptionsAsOf, filterOptionsUnresolved]
+      properties:
+        metadata: {$ref: '#/components/schemas/OrganizationOverviewPageMetadata'}
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/OrganizationOverviewItem'}
+        itemsSourceStatus: {$ref: '#/components/schemas/OrganizationOverviewSourceStatus'}
+        itemsAsOf: {type: integer, format: int64, minimum: 0, nullable: true}
+        itemsUnresolved:
+          type: array
+          items: {type: string, maxLength: 160}
+          maxItems: 16
+        filterOptions:
+          type: array
+          items: {$ref: '#/components/schemas/OrganizationOverviewFilterOption'}
+          maxItems: 500
+        filterOptionsSourceStatus: {$ref: '#/components/schemas/OrganizationOverviewSourceStatus'}
+        filterOptionsAsOf: {type: integer, format: int64, minimum: 0, nullable: true}
+        filterOptionsUnresolved:
+          type: array
+          items: {type: string, maxLength: 160}
+          maxItems: 16

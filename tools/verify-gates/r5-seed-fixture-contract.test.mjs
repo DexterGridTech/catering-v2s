@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
-import {computeFixtureExpectedCounts, validateFixtureContract, validateFixtureContractPhaseNames, validateFixtureExpectedCounts, validateFixtureSeedStages} from './r5-fixture-contract.mjs';
+import {computeFixtureExpectedCounts, validateFixtureContract, validateFixtureContractPhaseNames, validateFixtureExpectedCounts, validateFixtureSeedStages} from '../../scripts/dev/r5-fixture-contract.mjs';
 
 const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
 const fixture = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
-const profilePath = new URL('./profiles/r5-full.json', import.meta.url);
+const profilePath = new URL('../../scripts/dev/profiles/r5-full.json', import.meta.url);
 const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
 
 test('r5-full profile delegates counts to the fixture contract', () => {
@@ -42,4 +42,11 @@ test('fixture contract rejects missing or cross-project contract phase names bef
   const invalidPhaseName = structuredClone(fixture);
   invalidPhaseName.stableFixtures.contracts[1].phaseNameSnapshot = '不存在的阶段';
   assert.throws(() => validateFixtureContractPhaseNames(invalidPhaseName), /R5_SEED_FIXTURE_CONTRACT_PHASE_NAME_INVALID:contract-current-b/);
+});
+
+test('seed fixture contract keeps TDP forbidden', () => {
+  const changed = structuredClone(fixture);
+  changed.profile.middleware.tdp = 'REQUIRED';
+  assert.throws(() => validateFixtureContract(changed), /R5_SEED_FIXTURE_TDP_MUST_BE_FORBIDDEN/);
+  process.stdout.write('R5_SEED_FIXTURE_TDP_FORBIDDEN_RED=PASS\n');
 });

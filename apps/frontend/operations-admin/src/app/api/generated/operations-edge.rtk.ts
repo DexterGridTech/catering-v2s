@@ -102,6 +102,14 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    cancelOperationsStoreTerminalActivation: (pathParameters: FaceOperationContracts["cancelOperationsStoreTerminalActivation"]["path"], options: FaceOperationOptions<"cancelOperationsStoreTerminalActivation">): FaceOperationRequest<"cancelOperationsStoreTerminalActivation"> => ({
+      operationId: "cancelOperationsStoreTerminalActivation",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     cancelOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["cancelOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"cancelOperationsWorkspaceGroupInvitation">): FaceOperationRequest<"cancelOperationsWorkspaceGroupInvitation"> => ({
       operationId: "cancelOperationsWorkspaceGroupInvitation",
       method: "POST",
@@ -1396,6 +1404,10 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     archiveOperationsSalesMenu: build.mutation<FaceOperationContracts["archiveOperationsSalesMenu"]["response"], FaceOperationRequest<"archiveOperationsSalesMenu">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"static","id":"sales-menu-list"}] as const, request),
+    }),
+    cancelOperationsStoreTerminalActivation: build.mutation<FaceOperationContracts["cancelOperationsStoreTerminalActivation"]["response"], FaceOperationRequest<"cancelOperationsStoreTerminalActivation">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     cancelOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["cancelOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"cancelOperationsWorkspaceGroupInvitation">>({
       query: (request) => toWireRequest(request),

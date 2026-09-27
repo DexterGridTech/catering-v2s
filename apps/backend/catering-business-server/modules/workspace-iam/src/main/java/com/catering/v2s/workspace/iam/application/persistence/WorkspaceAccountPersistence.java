@@ -51,8 +51,7 @@ public class WorkspaceAccountPersistence {
                         + WorkspaceAccountServiceSql
                                 .WORKSPACE_ACCOUNT_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_UPDATED
                         + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_WORKSPACE_ACCOUNT_STATUS_VERSION
-                        + WorkspaceAccountServiceSql
-                                .WORKSPACE_ACCOUNT_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + WorkspaceAccountServiceSql.UPDATE_UPDATED_AT_EPOCH_MS_001
                         + WorkspaceAccountServiceSql
                                 .WORKSPACE_ACCOUNT_SERVICE_CONDITION_VERSION_STATUS_VOIDED_WORKSPACE_UUID
                         + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED
@@ -81,8 +80,7 @@ public class WorkspaceAccountPersistence {
                         : null);
         if (transition != null && transition.updated() != null && !"ENABLED".equals(status)) {
             jdbc.update(
-                    WorkspaceAccountServiceSql
-                                    .WORKSPACE_ACCOUNT_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS
+                    WorkspaceAccountServiceSql.UPDATE_WS_SESSION_STATUS_REVOKED_002
                             + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_ACCOUNT_ID_STATUS_ACTIVE,
                     time.currentEpochMillis(),
                     accountId);
@@ -111,8 +109,7 @@ public class WorkspaceAccountPersistence {
 
     public void revokeAssignmentSessions(UUID accountId, UUID assignmentId) {
         jdbc.update(
-                WorkspaceAccountServiceSql
-                                .WORKSPACE_ACCOUNT_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS_ALTERNATE_A
+                WorkspaceAccountServiceSql.UPDATE_WS_SESSION_STATUS_REVOKED_ALT_A_003
                         + WorkspaceAccountServiceSql
                                 .WORKSPACE_ACCOUNT_SERVICE_ACCOUNT_ID_CURRENT_ASSIGNMENT_ID_STATUS_ACTIVE,
                 time.currentEpochMillis(),
@@ -137,8 +134,7 @@ public class WorkspaceAccountPersistence {
 
     public AssignmentTarget assignmentTarget(UUID workspaceUuid, String key, UUID assignmentId) {
         return jdbc.query(
-                WorkspaceAccountServiceSql
-                                .WORKSPACE_ACCOUNT_SERVICE_SELECT_ROLE_ASSIGNMENT_ACCOUNT_ID_SERVICE_NODE_TYPE_SERVICE_NODE_ID
+                WorkspaceAccountServiceSql.SELECT_ROLE_ASSIGN_ACCOUNT_ID_004
                         + WorkspaceAccountServiceSql
                                 .WORKSPACE_ACCOUNT_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
@@ -162,8 +158,7 @@ public class WorkspaceAccountPersistence {
             AuditChangePolicy policy,
             List<AuditChange> changes) {
         jdbc.update(
-                WorkspaceAccountServiceSql
-                                .WORKSPACE_ACCOUNT_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
+                WorkspaceAccountServiceSql.INSERT_INTO_AUDIT_EVENT_WS_005
                         + WorkspaceAccountServiceSql
                                 .WORKSPACE_ACCOUNT_SERVICE_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
                         + WorkspaceAccountServiceSql

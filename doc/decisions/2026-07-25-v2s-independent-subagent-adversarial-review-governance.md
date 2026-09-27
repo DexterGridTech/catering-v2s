@@ -34,7 +34,7 @@ reviewStatus: CLAUDE_GO_0M_0S_1N_RESOLVED
   每条 finding 写明依据的详设位置与对应实现位置；详设中找不到判据的问题按
   `doc/platform/review-standard.md` §2 记入 `DESIGN_GAPS`、交回设计侧，不得在审查里就地立标准。
   `NO-GO` 时修复后交新的 fresh 子 agent 复审，不由作者 `SELF_DECIDED` 收口。
-- 实施过程中「实施结果 ↔ 需求、详设」的对账（步骤级独立对账、整体三维对账、交付前逐代码与详设对账）
+- 实施过程中「实施结果 ↔ 需求、详设」的对账（CP 阶段级独立对账、整体三维对账、交付前逐代码与详设对账）
   不设轮次上限，`OPEN` 修复后交 fresh 子 agent 复查，直到 `MATCHED`。
 - Codex 与 Claude 之间经 Dexter 中转的 review 不设轮次上限，做几轮由 Dexter 决定。
 
@@ -92,10 +92,12 @@ project-memory 及 owning source、适用详设/设计约束和当前可复用�
 proof 后，作者必须用同一输入逐项回读实现与证据，确认用户任务、交互、owner、约束和
 复用判断没有漂移。
 
-独立 reviewer 的 prompt 与 checklist 必须包含每个变更点的前读和后读留痕；
-reviewer 必须以这些原文逐点核验，而不是用总览阅读、静态通过或后续 L2 推定一致。
-缺失任一变更点的双读、或以不相干的泛化准备取代它，必须作为 finding。该纪律只强化
-实施和 review 质量，不授权新范围，也不要求 prompt hook 查询或注入上下文。
+独立 reviewer 的 prompt 与 checklist 必须包含 CP 内每个变更点的前读和后读留痕；
+reviewer 在 CP 全部工作、focused proof 与必要修复结束后，以这些原文逐点核验整个 CP，
+而不是用总览阅读、静态通过或后续 L2 推定一致。逐点留痕是 CP 阶段审查的输入，不意味着
+每个变更点都要单独等待 reviewer 或形成新的三维对账关卡。缺失任一变更点的双读、或以
+不相干的泛化准备取代它，必须作为 finding。该纪律只强化实施和 review 质量，不授权新范围，
+也不要求 prompt hook 查询或注入上下文。
 
 ## 5. 2026-09-15 Dexter 补充裁决：重复失败后的主 agent 接管
 

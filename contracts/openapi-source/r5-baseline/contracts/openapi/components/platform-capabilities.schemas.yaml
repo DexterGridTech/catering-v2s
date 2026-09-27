@@ -1,0 +1,15 @@
+openapi: 3.0.3
+info:
+  title: Platform Capability Components
+  version: 0.1.0
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+paths: {}
+components:
+  schemas:
+    PlatformCapability:
+      type: string
+      enum:
+        - platform.admin.access
+        - platform.workspace.initialize

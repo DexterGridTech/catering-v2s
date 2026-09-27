@@ -103,12 +103,23 @@ export type TerminalPrinterForm = {
   connectionParameter?: string;
 };
 
-export type StoreTerminalFormValues = {
+export type StoreTerminalConfigurationFormValues = {
   name: string;
-  deviceType: string;
-  activationCode?: string;
   printers: TerminalPrinterForm[];
   functions: TerminalFunctionForm[];
+};
+
+export type StoreTerminalCreateFormValues = StoreTerminalConfigurationFormValues & {
+  deviceType: string;
+  activationCode?: string;
+};
+
+export type StoreTerminalEditFormValues = StoreTerminalConfigurationFormValues;
+
+/** Superset used only by shared Ant Design child editors; submit types stay create/edit specific. */
+export type StoreTerminalFormValues = StoreTerminalConfigurationFormValues & {
+  deviceType?: string;
+  activationCode?: string;
 };
 
 export function terminalFunctionIdentity(value: Pick<TerminalFunctionForm, 'ref' | 'clientKey'> | undefined) {
@@ -167,12 +178,19 @@ export function nextFunctionIdentityAfterRemoval(
   return identities[removedIndex + 1] ?? identities[removedIndex - 1];
 }
 
-export type StoreTerminalEditor = {
-  mode: 'create' | 'edit';
-  /** The selected store/workspace context that owns this draft. */
-  contextKey: string;
-  terminal?: StoreTerminalDetail;
-};
+export type StoreTerminalEditor =
+  | {
+      mode: 'create';
+      /** The selected store/workspace context that owns this draft. */
+      contextKey: string;
+      terminal?: never;
+    }
+  | {
+      mode: 'edit';
+      /** The selected store/workspace context that owns this draft. */
+      contextKey: string;
+      terminal: StoreTerminalDetail;
+    };
 
 export function newTerminalFunction(functionKey: StoreTerminalFunctionKey = 'ORDERING_CASHIER'): TerminalFunctionForm {
   return {
@@ -221,19 +239,24 @@ export function newTerminalPrinter(): TerminalPrinterForm {
   };
 }
 
-export function terminalFormValuesFromDetail(terminal?: StoreTerminalDetail): StoreTerminalFormValues {
+export function newTerminalCreateFormValues(): StoreTerminalCreateFormValues {
+  return {
+    ...terminalFormValuesFromDetail(),
+    deviceType: '',
+    activationCode: '',
+  };
+}
+
+export function terminalFormValuesFromDetail(terminal?: StoreTerminalDetail): StoreTerminalEditFormValues {
   if (!terminal) {
     return {
       name: '',
-      deviceType: '',
-      activationCode: '',
       printers: [],
       functions: [],
     };
   }
   return {
     name: terminal.name,
-    deviceType: terminal.deviceType,
     printers: terminal.configuration.printers.map(printer => ({
       ref: String(printer.ref),
       clientKey: `printer-existing-${printer.ref}`,
@@ -451,7 +474,7 @@ function comparablePrinter(printer: TerminalPrinterForm) {
   };
 }
 
-function comparableConfiguration(values: StoreTerminalFormValues) {
+function comparableConfiguration(values: StoreTerminalConfigurationFormValues) {
   const printers = compactValues<TerminalPrinterForm>(values.printers);
   const functions = compactValues<TerminalFunctionForm>(values.functions);
   const printerByKey = new Map(
@@ -503,10 +526,12 @@ function comparableConfiguration(values: StoreTerminalFormValues) {
 /** Compares a read-back aggregate without depending on newly assigned child refs. */
 export function terminalDraftMatchesFormValues(
   terminal: StoreTerminalDetail,
-  values: StoreTerminalFormValues,
+  values: StoreTerminalEditFormValues,
 ): boolean {
-  if (typeof values.name !== 'string' || typeof values.deviceType !== 'string') return false;
-  let readBack: StoreTerminalFormValues;
+  if (typeof values.name !== 'string' || !Array.isArray(values.printers) || !Array.isArray(values.functions)) {
+    return false;
+  }
+  let readBack: StoreTerminalEditFormValues;
   try {
     configurationInput(values);
     readBack = terminalFormValuesFromDetail(terminal);
@@ -515,7 +540,6 @@ export function terminalDraftMatchesFormValues(
   }
   return (
     terminal.name === values.name.trim() &&
-    terminal.deviceType === values.deviceType &&
     JSON.stringify(comparableConfiguration(readBack)) === JSON.stringify(comparableConfiguration(values))
   );
 }
@@ -633,7 +657,9 @@ function functionInputs(
   });
 }
 
-export function configurationInput(values: StoreTerminalFormValues): StoreTerminalConfigurationInput {
+export function configurationInput<TValues extends StoreTerminalConfigurationFormValues>(
+  values: TValues,
+): StoreTerminalConfigurationInput {
   const printers = strictRows<TerminalPrinterForm>(values.printers, 'STORE_TERMINAL_PRINTER_INPUT_INVALID', true);
   const functions = strictRows<TerminalFunctionForm>(values.functions, 'STORE_TERMINAL_FUNCTION_INPUT_INVALID');
   return {

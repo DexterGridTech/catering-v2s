@@ -2,9 +2,8 @@ package com.catering.v2s.workspace.iam.application.persistence;
 
 /** SQL text fragments owned by WorkspaceAuthenticationService; B3 relocates text only and does not change execution. */
 public final class WorkspaceAuthenticationServiceSql {
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_PASSWORD_HASH =
-                    "SELECT a.id, a.workspace_uuid, a.group_workspace_key, a.status, c.password_hash, ";
+    public static final String SELECT_WS_UUID_GRP_WS_001 =
+            "SELECT a.id, a.workspace_uuid, a.group_workspace_key, a.status, c.password_hash, ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_LOCKED_UNTIL_EPOCH_MILLIS =
             "c.locked_until_epoch_millis, c.password_change_required, a.display_name, gw.name, ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_WORKSPACE_ACCOUNT_OPERATIONS_TITLE_LOGO_ASSET_REF =
@@ -31,9 +30,8 @@ public final class WorkspaceAuthenticationServiceSql {
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_SUBJECT_REF =
             "subject_ref, status, expires_at_epoch_millis) VALUES (?, ?, ?, 'WORKSPACE_LOGIN', ?, ?, ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_ACTIVE = "'ACTIVE', ?)";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_UPDATE_OTP_GRANT_STATUS_USED_USED_AT_EPOCH_MILLIS_SUBJECT_REF =
-                    "UPDATE workspace_iam.otp_grant SET status='USED', used_at_epoch_millis=? WHERE subject_ref=? AND ";
+    public static final String UPDATE_OTP_GRANT_STATUS_USED_002 =
+            "UPDATE workspace_iam.otp_grant SET status='USED', used_at_epoch_millis=? WHERE subject_ref=? AND ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_PURPOSE_WORKSPACE_LOGIN_TOKEN_HASH_STATUS =
             "purpose='WORKSPACE_LOGIN' AND token_hash=? AND status='ACTIVE' AND ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_EXPIRES_AT_EPOCH_MILLIS = "expires_at_epoch_millis>?";
@@ -41,21 +39,18 @@ public final class WorkspaceAuthenticationServiceSql {
             "UPDATE workspace_iam.otp_grant SET attempt_count=attempt_count+1 WHERE subject_ref=? AND ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_PURPOSE_WORKSPACE_LOGIN_STATUS_ACTIVE_ALTERNATE_A =
             "purpose='WORKSPACE_LOGIN' AND status='ACTIVE'";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_UPDATE_WORKSPACE_SESSION_CURRENT_ASSIGNMENT_ID_SELECTED_REGION_ID =
-                    "UPDATE workspace_iam.workspace_session SET current_assignment_id=?, selected_region_id=?, ";
+    public static final String UPDATE_WS_SESSION_CUR_ASSIGN_003 =
+            "UPDATE workspace_iam.workspace_session SET current_assignment_id=?, selected_region_id=?, ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_SELECT_SELECTED_PROJECT_ID =
             "selected_project_id=?, selected_store_id=?, selected_head_company_id=?, ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_CONTEXT_VERSION_AUTHORIZATION_REVISION =
             "context_version=context_version+1, authorization_revision=authorization_revision+1 ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_WHERE_CONTEXT_VERSION =
             "WHERE id=? AND context_version=?";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_UPDATE_WORKSPACE_SESSION_SELECTED_REGION_ID_SELECTED_PROJECT_ID =
-                    "UPDATE workspace_iam.workspace_session SET selected_region_id=?, selected_project_id=?, ";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_SELECT_SELECTED_STORE_ID_SELECTED_HEAD_COMPANY_ID_CONTEXT_VERSION =
-                    "selected_store_id=?, selected_head_company_id=?, context_version=context_version+1, ";
+    public static final String UPDATE_WS_SESSION_SELECTED_REGION_004 =
+            "UPDATE workspace_iam.workspace_session SET selected_region_id=?, selected_project_id=?, ";
+    public static final String SELECT_SELECTED_STORE_ID_SELECTED_005 =
+            "selected_store_id=?, selected_head_company_id=?, context_version=context_version+1, ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_AUTHORIZATION_REVISION_CONTEXT_VERSION =
             "authorization_revision=authorization_revision+1 WHERE id=? AND context_version=?";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_SELECT_WORKSPACE_UUID =
@@ -67,11 +62,9 @@ public final class WorkspaceAuthenticationServiceSql {
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_CONTEXT_VERSION =
             "s.context_version, s.authorization_revision, a.display_name, ra.role_id, ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_SERVICE_NODE_TYPE = "ra.service_node_type, ";
-    public static final String WORKSPACE_AUTHENTICATION_SERVICE_SERVICE_NODE_ID_PAGE_ACCESS_KEYS_CAPABILITY_KEYS =
+    public static final String SVC_NODE_ID_PAGE_ACCESS_006 =
             "ra.service_node_id, r.page_access_keys, r.capability_keys ";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_FROM_CLAUSE_WORKSPACE_SESSION_FROM_WORKSPACE_IAM_WORKSPACE =
-                    "FROM workspace_iam.workspace_session s ";
+    public static final String FROM_CLAUSE_WS_SESSION_FROM_007 = "FROM workspace_iam.workspace_session s ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_JOIN_WORKSPACE_ACCOUNT_ACCOUNT_ID =
             "JOIN workspace_iam.workspace_account a ON a.id=s.account_id ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_JOIN_ROLE_ASSIGNMENT_CURRENT_ASSIGNMENT_ID =
@@ -85,31 +78,26 @@ public final class WorkspaceAuthenticationServiceSql {
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_WORKSPACE_UUID = "r.workspace_uuid=s.workspace_uuid ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_STATUS_ENABLED =
             "AND r.group_workspace_key=s.group_workspace_key AND r.status='ENABLED' ";
-    public static final String WORKSPACE_AUTHENTICATION_SERVICE_WHERE_TOKEN_HASH_STATUS_ACTIVE_EXPIRES_AT_EPOCH_MILLIS =
+    public static final String WHERE_TOKEN_HASH_STATUS_ACTIVE_008 =
             "WHERE s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_SELECT_ROLE_ASSIGNMENT_ROLE_ID_STATUS_ACTIVE =
             "SELECT role_id FROM workspace_iam.role_assignment WHERE id=? AND status='ACTIVE'";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS =
-                    "UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=?, ";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_SELECT_SELECTED_REGION_ID_SELECTED_PROJECT_ID_SELECTED_STORE_ID =
-                    "selected_region_id=NULL, selected_project_id=NULL, selected_store_id=NULL, ";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_SELECT_SELECTED_HEAD_COMPANY_ID_TOKEN_HASH_STATUS_ACTIVE =
-                    "selected_head_company_id=NULL WHERE token_hash=? AND status='ACTIVE'";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_SELECT_ACCOUNT_ID_CONTEXT_VERSION_PASSWORD_HASH_VERSION =
-                    "SELECT s.id, s.account_id, s.context_version, c.password_hash, c.version FROM ";
+    public static final String UPDATE_WS_SESSION_STATUS_REVOKED_009 =
+            "UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=?, ";
+    public static final String SELECT_SELECTED_REGION_ID_SELECTED_010 =
+            "selected_region_id=NULL, selected_project_id=NULL, selected_store_id=NULL, ";
+    public static final String SELECT_SELECTED_HEAD_COMPANY_ID_011 =
+            "selected_head_company_id=NULL WHERE token_hash=? AND status='ACTIVE'";
+    public static final String SELECT_ACCOUNT_ID_CONTEXT_VER_012 =
+            "SELECT s.id, s.account_id, s.context_version, c.password_hash, c.version FROM ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_WORKSPACE_CREDENTIAL_WORKSPACE_SESSION =
             "workspace_iam.workspace_session s JOIN workspace_iam.workspace_credential c ON ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_ACCOUNT_ID_TOKEN_HASH_STATUS_ACTIVE =
             "c.account_id=s.account_id WHERE s.token_hash=? AND s.status='ACTIVE' AND ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_EXPIRES_AT_EPOCH_MILLIS_ALTERNATE_A =
             "s.expires_at_epoch_millis>?";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_UPDATE_WORKSPACE_CREDENTIAL_PASSWORD_HASH_CHANGED_AT_EPOCH_MILLIS =
-                    "UPDATE workspace_iam.workspace_credential c SET password_hash=?, changed_at_epoch_millis=?, ";
+    public static final String UPDATE_WS_CREDENTIAL_PASSWORD_HASH_013 =
+            "UPDATE workspace_iam.workspace_credential c SET password_hash=?, changed_at_epoch_millis=?, ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_FAILED_ATTEMPTS =
             "failed_attempts=0, locked_until_epoch_millis=NULL, password_change_required=FALSE, ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_VERSION_ACCOUNT_ID =
@@ -118,18 +106,15 @@ public final class WorkspaceAuthenticationServiceSql {
             "workspace_iam.workspace_session s WHERE s.id=? AND s.status='ACTIVE' AND ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_EXPIRES_AT_EPOCH_MILLIS_ALTERNATE_B =
             "s.expires_at_epoch_millis>?)";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS_ALTERNATE_A =
-                    "UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=?, ";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_SELECT_SELECTED_REGION_ID_SELECTED_PROJECT_ID_SELECTED_STORE_ID_ALTERNATE_A =
-                    "selected_region_id=NULL, selected_project_id=NULL, selected_store_id=NULL, ";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_SELECT_SELECTED_HEAD_COMPANY_ID_ACCOUNT_ID_STATUS_ACTIVE =
-                    "selected_head_company_id=NULL WHERE account_id=? AND status='ACTIVE'";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_SELECT_ROLE_ASSIGNMENT_ROLE_ID_SERVICE_NODE_TYPE_SERVICE_NODE_ID =
-                    "SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM workspace_iam.role_assignment a ";
+    public static final String UPDATE_WS_SESSION_STATUS_REVOKED_ALT_A_014 =
+            "UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=?, ";
+    public static final String SELECT_SELECTED_REGION_ID_SELECTED_ALT_A_015 =
+            "selected_region_id=NULL, selected_project_id=NULL, selected_store_id=NULL, ";
+    public static final String SELECT_SELECTED_HEAD_COMPANY_ID_016 =
+            "selected_head_company_id=NULL WHERE account_id=? AND status='ACTIVE'";
+    public static final String SELECT_ROLE_ASSIGN_ROLE_ID_017 =
+            ("SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM work"
+                    + "space_iam.role_assignment a ");
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_JOIN_WORKSPACE_ROLE_ROLE_ID_ACCOUNT_ID =
             "JOIN workspace_iam.workspace_role r ON r.id=a.role_id WHERE a.account_id=? AND ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ACTIVE =
@@ -179,17 +164,16 @@ public final class WorkspaceAuthenticationServiceSql {
             "gw.workspace_uuid=s.workspace_uuid AND gw.group_workspace_key=s.group_workspace_key WHERE ";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_TOKEN_HASH_STATUS_ACTIVE_EXPIRES_AT_EPOCH_MILLIS =
             "s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_SELECT_ROLE_ASSIGNMENT_ROLE_ID_SERVICE_NODE_TYPE_SERVICE_NODE_ID_ALTERNATE_A =
-                    "SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM workspace_iam.role_assignment a ";
+    public static final String SELECT_ROLE_ASSIGN_ROLE_ID_ALT_A_018 =
+            ("SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM work"
+                    + "space_iam.role_assignment a ");
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_JOIN_WORKSPACE_ROLE_ROLE_ID_ACCOUNT_ID_ALTERNATE_A =
             "JOIN workspace_iam.workspace_role r ON r.id=a.role_id WHERE a.id=? AND a.account_id=? AND ";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ACTIVE_ALTERNATE_A =
-                    "a.workspace_uuid=? AND a.group_workspace_key=? AND a.status='ACTIVE' AND r.status='ENABLED'";
-    public static final String
-            WORKSPACE_AUTHENTICATION_SERVICE_SELECT_ROLE_ASSIGNMENT_ROLE_ID_SERVICE_NODE_TYPE_SERVICE_NODE_ID_ALTERNATE_B =
-                    "SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM workspace_iam.role_assignment a ";
+    public static final String WS_UUID_GRP_WS_KEY_ALT_A_019 =
+            "a.workspace_uuid=? AND a.group_workspace_key=? AND a.status='ACTIVE' AND r.status='ENABLED'";
+    public static final String SELECT_ROLE_ASSIGN_ROLE_ID_ALT_B_020 =
+            ("SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM work"
+                    + "space_iam.role_assignment a ");
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_JOIN_WORKSPACE_ROLE_ROLE_ID_ACCOUNT_ID_ALTERNATE_B =
             "JOIN workspace_iam.workspace_role r ON r.id=a.role_id WHERE a.account_id=? AND ";
 }

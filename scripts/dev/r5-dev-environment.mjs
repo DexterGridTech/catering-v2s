@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import {hostTrustEnvironment, resolveTrustedRemoteHost} from "./r5-remote-host-trust.mjs";
+import {loadTdsCapacityConfiguration} from "../env/tds-capacity-configuration.mjs";
 
 const requiredSecrets = [
   "V2S_SEED_PLATFORM_ROOT_PASSWORD",
@@ -21,7 +22,7 @@ function validPort(value, code) {
   if (!/^\d{4,5}$/.test(String(value ?? "")) || Number(value) < 1024 || Number(value) > 65535) fail(code);
   return String(value);
 }
-function effectiveEnvironment(env) {
+function effectiveEnvironment(env, tdsCapacity) {
   const namespace = env.V2S_DEV_NAMESPACE ?? "v2s-dev-r5-full";
   const hostTrust = hostTrustEnvironment(env);
   const expectedDatabase = `catering_v2s_dev_${namespace.replace(/^v2s-dev-/, "").replaceAll("-", "_")}`;
@@ -36,11 +37,15 @@ function effectiveEnvironment(env) {
     V2S_DEV_DATABASE_URL: env.V2S_DEV_DATABASE_URL ?? `jdbc:postgresql://127.0.0.1:5432/${expectedDatabase}`,
     V2S_DEV_REMOTE_HTTP_PORT: env.V2S_DEV_REMOTE_HTTP_PORT ?? "8080",
     V2S_DEV_REMOTE_ASSET_PORT: env.V2S_DEV_REMOTE_ASSET_PORT ?? "19000",
+    V2S_DEV_REMOTE_TDS_PORT: env.V2S_DEV_REMOTE_TDS_PORT ?? "18083",
     V2S_DEV_ASSET_ROOT: env.V2S_DEV_ASSET_ROOT ?? "s3://catering-v2s-r5-assets",
+    V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS: tdsCapacity.maxUnauthenticatedConnections,
+    V2S_TDS_MAX_TRACKED_SESSIONS: tdsCapacity.maxTrackedSessions,
   };
 }
 function validate(input, mode) {
-  const env = effectiveEnvironment(input);
+  const tdsCapacity = loadTdsCapacityConfiguration();
+  const env = effectiveEnvironment(input, tdsCapacity);
   const namespace = env.V2S_DEV_NAMESPACE;
   if (!/^v2s-dev-[a-z0-9-]{3,32}$/.test(namespace)) fail("R5_DEV_NAMESPACE_INVALID");
   if (env.V2S_DEV_PROFILE !== "r5-full") fail("R5_DEV_PROFILE_REQUIRED");
@@ -56,11 +61,24 @@ function validate(input, mode) {
   if (parsedDatabaseUrl.hostname === "127.0.0.1" && [25432, 25433, 25434, 25435].includes(Number(parsedDatabaseUrl.port))) fail("R5_DEV_LEGACY_POSTGRES_TUNNEL_FORBIDDEN");
   validPort(env.V2S_DEV_REMOTE_HTTP_PORT, "R5_DEV_REMOTE_HTTP_PORT_INVALID");
   validPort(env.V2S_DEV_REMOTE_ASSET_PORT, "R5_DEV_REMOTE_ASSET_PORT_INVALID");
-  if (env.V2S_DEV_REMOTE_HTTP_PORT === env.V2S_DEV_REMOTE_ASSET_PORT) fail("R5_DEV_REMOTE_PORT_COLLISION");
+  validPort(env.V2S_DEV_REMOTE_TDS_PORT, "R5_DEV_REMOTE_TDS_PORT_INVALID");
+  if (new Set([env.V2S_DEV_REMOTE_HTTP_PORT, env.V2S_DEV_REMOTE_ASSET_PORT, env.V2S_DEV_REMOTE_TDS_PORT]).size !== 3) fail("R5_DEV_REMOTE_PORT_COLLISION");
+  if (mode === "start") {
+    for (const key of ["V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS", "V2S_TDS_MAX_TRACKED_SESSIONS"]) {
+      const value = env[key];
+      if (!/^[1-9][0-9]{0,9}$/.test(String(value ?? "")) || Number(value) > 2147483647) fail(`R5_DEV_${key}_REQUIRED_OR_INVALID`);
+    }
+  }
   const assetRoot = env.V2S_DEV_ASSET_ROOT ?? "";
   if (!assetRoot || productionLike(assetRoot)) fail("R5_DEV_ASSET_ROOT_INVALID");
   if (mode === "seed" && requiredSecrets.some((name) => !env[name])) fail("R5_DEV_SEED_SECRET_MISSING");
-  return { environment: env, namespace, expectedDatabase, assetPrefix: `${assetRoot.replace(/\/$/, "")}/catering-v2s/dev/${namespace}/` };
+  return {
+    environment: env,
+    namespace,
+    expectedDatabase,
+    assetPrefix: `${assetRoot.replace(/\/$/, "")}/catering-v2s/dev/${namespace}/`,
+    tdsCapacity,
+  };
 }
 function main() {
   const [, , mode = "start", flag] = process.argv;
@@ -77,7 +95,7 @@ function main() {
   }
   const result = validate(process.env, mode === "check" ? "start" : mode);
   if (flag === "--json") {
-    process.stdout.write(`${JSON.stringify({namespace: result.namespace, expectedDatabase: result.expectedDatabase, assetPrefix: result.assetPrefix, environment: Object.fromEntries(Object.entries(result.environment).filter(([name]) => !requiredSecrets.includes(name)))})}\n`);
+    process.stdout.write(`${JSON.stringify({namespace: result.namespace, expectedDatabase: result.expectedDatabase, assetPrefix: result.assetPrefix, tdsCapacity: result.tdsCapacity, environment: Object.fromEntries(Object.entries(result.environment).filter(([name]) => !requiredSecrets.includes(name)))})}\n`);
     return;
   }
   process.stdout.write(`R5_DEV_ENVIRONMENT=PASS; MODE=${mode}; DATABASE=${result.expectedDatabase}; ASSET_PREFIX=${result.assetPrefix}\n`);

@@ -52,8 +52,7 @@ public class BusinessBrandPersistence {
             long expectedVersion) {
         return jdbc.update(
                 BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_UPDATE_BRAND_CODE_NAME_ALIAS_REMARK
-                        + BusinessBrandServiceSql
-                                .BUSINESS_BRAND_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
+                        + BusinessBrandServiceSql.UPDATE_UPDATED_AT_EPOCH_MS_001,
                 code,
                 name,
                 alias,

@@ -5,78 +5,73 @@
   "reviewCycleId": "R5-W3-DESIGN-20260725",
   "reviewTarget": "DESIGN",
   "implementationAuthority": false,
-  "source": {
-    "path": "../catering-all-v2/contracts/openapi/platform-admin-edge.openapi.yaml",
-    "sha256": "d8de7dff6d1c337118f16af65c1d57bf6343ead5a19fcb975eb8acf63eabc640",
-    "usage": "HERITAGE_READ_ONLY_ANALYSIS_NOT_RUNTIME_FALLBACK"
-  },
   "sources": [
     {
-      "path": "../catering-all-v2/contracts/openapi/platform-admin-edge.openapi.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/platform-admin-edge.openapi.yaml",
       "sha256": "d8de7dff6d1c337118f16af65c1d57bf6343ead5a19fcb975eb8acf63eabc640"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/platform-wire-model.openapi.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/platform-wire-model.openapi.yaml",
       "sha256": "f732dbf6a314fbffa6e731b8d5056b92dfeda1443fcd1951547694b0ea34a01f"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/business-entity.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/business-entity.schemas.yaml",
       "sha256": "f85e6909164452560bc75a53eb72de15500e810baea638679b59c89ed4622665"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/commercial-group.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/commercial-group.schemas.yaml",
       "sha256": "3a48dba1083a13f3d1c113d4ca6a58967878d4797e6ad9557779266d0d87b425"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/contract.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/contract.schemas.yaml",
       "sha256": "ef7805c6d1f81fa080f64badd43ef4674de7740d7b80bd9d759ac3ead441a230"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/extension.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/extension.schemas.yaml",
       "sha256": "29794ea3e82f34fb667902f01ccd8763b7c34d0d04585ec1e0ffb1c12984892f"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/organization-hierarchy.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/organization-hierarchy.schemas.yaml",
       "sha256": "fadc2f56e4327c126746ff8bf31335c8bfe84537285510b2c97a5e9de6b0cd8d"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/organization-overview.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/organization-overview.schemas.yaml",
       "sha256": "b994dd39dcfdda557ee5f04e462a1fbc2de0d4dc12d18a17ed64b7a61c3db406"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/platform-asset.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/platform-asset.schemas.yaml",
       "sha256": "9179451212f00bd7218b692b38be31168a43cdb2d595d040afdd29ea04f0eab8"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/platform-capabilities.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/platform-capabilities.schemas.yaml",
       "sha256": "64363611e04e7cc0548f5b20b60f6a5bfba9eb715af7e6b5a942da86acee2901"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/platform-errors.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/platform-errors.schemas.yaml",
       "sha256": "808b55cea312f32bb39fcdbdaa2c93f223c819874ed1555d23b72926905cfedd"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/platform-identity.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/platform-identity.schemas.yaml",
       "sha256": "7382a97ec132a1ec6965fba2fe36d8539bf250e6117d4d0f9ecc96022450ecff"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/platform-time.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/platform-time.schemas.yaml",
       "sha256": "231c9961f783e701032f926397eae4b0762c3a9c53039eb4c87be797e7b1378b"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/platform-workspace.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/platform-workspace.schemas.yaml",
       "sha256": "6ce40a92888d53a11212009778f8d98b055d130fd0e67969a0695b16e75b04b2"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/store-management.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/store-management.schemas.yaml",
       "sha256": "947c2048ef9b3272d401744a77852843b946913e0948681612040a7cc3a4452d"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/workspace-iam.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/workspace-iam.schemas.yaml",
       "sha256": "a94b8d09818387688dd5742da6ba5bf4388c1a3a18eb4f6001579565bbcc4566"
     },
     {
-      "path": "../catering-all-v2/contracts/openapi/components/workspace-session.schemas.yaml",
+      "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/workspace-session.schemas.yaml",
       "sha256": "29328e013a9169904b483f4925af84768d4c2e511608ba022ba9ea5631790d11"
     },
     {
@@ -97,7 +92,11 @@
     },
     {
       "path": "contracts/openapi-source/store-terminal.schemas.json",
-      "sha256": "da8a18deaea1b4fb00fd44b9998e75450b81001d28cc277bf490a0fbf1e999fa"
+      "sha256": "6b42829a1a227d3d576160be965c6bdffd5beba01d223b41557bcf5198cb966d"
+    },
+    {
+      "path": "contracts/openapi-source/terminal-binding.schemas.json",
+      "sha256": "fb44e9df20efc05eae13a387e97df2d07f99dd29e2e218c8772f81af3c156b7d"
     },
     {
       "path": "contracts/openapi-source/sales-menu.schemas.json",
@@ -110,11 +109,12 @@
   ],
   "denominator": {
     "scenarios": 34,
-    "operations": 235,
+    "operations": 238,
     "faces": {
       "platform-admin": 61,
-      "operations-admin": 162,
-      "public": 12
+      "operations-admin": 163,
+      "public": 12,
+      "terminal": 2
     },
     "owners": [
       "contract",
@@ -126,7 +126,8 @@
       "collaboration",
       "business-channel",
       "workspace-iam",
-      "sales-menu"
+      "sales-menu",
+      "terminal-binding"
     ]
   },
   "exactnessPolicy": {
@@ -274,6 +275,18 @@
     {
       "operationId": "completeOperationsPasswordRecovery",
       "reason": "P6 branded operations public access recovery"
+    },
+    {
+      "operationId": "activateTerminal",
+      "reason": "D-27 anonymous device activation; operation-secret digest recognizes retries without generic replay"
+    },
+    {
+      "operationId": "cancelTerminalActivation",
+      "reason": "D-27 terminal-credential authenticated device cancellation"
+    },
+    {
+      "operationId": "cancelOperationsStoreTerminalActivation",
+      "reason": "D-27 operations-admin cancellation scoped to the selected store"
     }
   ],
   "renamedOperations": [
@@ -397,6 +410,26 @@
       "PLATFORM_ASSET_NOT_FOUND",
       "PLATFORM_ASSET_NOT_ACTIVE",
       "PLATFORM_ASSET_USAGE_DENIED"
+    ],
+    "TERMINAL_ACTIVATION_COMMAND": [
+      "PLATFORM_COMMON_VALIDATION_FAILED",
+      "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+      "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+      "STORE_TERMINAL_STORE_VOIDED",
+      "PLATFORM_COMMON_ACCESS_DENIED",
+      "STORE_TERMINAL_VOIDED_IMMUTABLE",
+      "STORE_TERMINAL_DISABLED",
+      "STORE_TERMINAL_DEVICE_TYPE_MISMATCH",
+      "TERMINAL_BINDING_ALREADY_BOUND",
+      "TERMINAL_BINDING_ACTIVATION_EXPIRED",
+      "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+      "PLATFORM_COMMON_RESULT_UNKNOWN"
+    ],
+    "TERMINAL_DEVICE_CANCEL_COMMAND": [
+      "PLATFORM_COMMON_VALIDATION_FAILED",
+      "TERMINAL_BINDING_CREDENTIAL_INVALID",
+      "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+      "PLATFORM_COMMON_RESULT_UNKNOWN"
     ]
   },
   "operationErrorAugmentations": {
@@ -653,75 +686,407 @@
       "VERSION_CONFLICT",
       "VOIDED_RECORD_IMMUTABLE"
     ],
-    "createOperationsCatalogItem": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "saveOperationsCatalogItem": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "transitionOperationsCatalogItemStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "batchTransitionOperationsCatalogItemStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "createOperationsCatalogCategory": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "updateOperationsCatalogCategory": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "moveOperationsCatalogCategory": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "createOperationsCatalogDictionaryEntry": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "updateOperationsCatalogDictionaryEntry": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "reorderOperationsCatalogDictionaryEntry": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "transitionOperationsCatalogDictionaryEntryStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "createOperationsProductionTag": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "updateOperationsProductionTag": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "transitionOperationsProductionTagStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "executeOperationsLocalCatalogCopy": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "executeOperationsTemporaryCatalogItemPromotion": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "executeOperationsBrandCatalogCopy": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "countOperationsInventoryTarget": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "increaseOperationsInventoryTarget": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "adjustOperationsInventoryTarget": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "updateOperationsInventoryTargetConfiguration": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "stageOperationsCatalogAsset": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "releaseOperationsCatalogStagedAsset": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "createOperationsCatalogAttributeDefinition": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "updateOperationsCatalogAttributeDefinition": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "createOperationsCatalogOrderOptionDefinition": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "updateOperationsCatalogOrderOptionDefinition": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "createOperationsCatalogUnit": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "updateOperationsCatalogUnit": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "transitionOperationsCatalogAttributeDefinitionStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "transitionOperationsCatalogOrderOptionDefinitionStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "transitionOperationsCatalogUnitStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "transitionOperationsCatalogCategoryStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "getOperationsSalesMenus": ["SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CHANNEL_INELIGIBLE"],
-    "getOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CHANNEL_INELIGIBLE"],
-    "getOperationsSalesMenuDraftSections": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
-    "getOperationsSalesMenuDraftItems": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
-    "getOperationsSalesMenuDraftItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
-    "getOperationsSalesMenuPublishedSections": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
-    "getOperationsSalesMenuPublishedItems": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED"],
-    "getOperationsSalesMenuPublishedItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED"],
-    "getOperationsSalesMenuItemCandidates": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
-    "getOperationsSalesMenuPublicationPreview": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
-    "getOperationsSalesMenuOperationRecords": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
-    "createOperationsSalesMenu": ["SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "copyOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "renameOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "archiveOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "setOperationsSalesMenuActivation": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "updateOperationsSalesMenuSchedule": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_SCHEDULE_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "createOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "renameOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "deleteOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_SECTION_NOT_EMPTY", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "moveOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_MOVE_BOUNDARY", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "addOperationsSalesMenuItems": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "updateOperationsSalesMenuItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_SKU_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_SELECTION_INVALID", "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED", "SALES_MENU_PRICE_REQUIRED", "SALES_MENU_CONSTRAINT_INVALID", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_ASSET_LIFECYCLE_CONFLICT", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "deleteOperationsSalesMenuItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "moveOperationsSalesMenuItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_MOVE_BOUNDARY", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "stageOperationsSalesMenuAsset": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CAPABILITY_REQUIRED", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "releaseOperationsSalesMenuStagedAsset": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CAPABILITY_REQUIRED", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_ASSET_LIFECYCLE_CONFLICT", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "publishOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_STORE_DISABLED", "SALES_MENU_CHANNEL_DISABLED", "SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_DRAFT_INVALID", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_SKU_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_SELECTION_INVALID", "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED", "SALES_MENU_PRICE_REQUIRED", "SALES_MENU_SCHEDULE_INVALID", "SALES_MENU_CONSTRAINT_INVALID", "SALES_MENU_ASSET_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "setOperationsSalesMenuItemSoldOut": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED", "SALES_MENU_MANUAL_REASON_REQUIRED", "SALES_MENU_MANUAL_TARGET_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "restoreOperationsSalesMenuItemSale": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED", "SALES_MENU_MANUAL_TARGET_INVALID", "CONFIRMATION_REQUIRED", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "getOperationsStoreTerminals": ["PLATFORM_COMMON_VALIDATION_FAILED"],
-    "postOperationsStoreTerminal": ["STORE_TERMINAL_NAME_CONFLICT", "STORE_TERMINAL_ACTIVATION_CODE_CONFLICT", "STORE_TERMINAL_ACTIVATION_CODE_EXHAUSTED", "STORE_TERMINAL_RULE_INVALID", "STORE_TERMINAL_REFERENCE_INVALID"],
-    "putOperationsStoreTerminal": ["STORE_TERMINAL_NAME_CONFLICT", "STORE_TERMINAL_RULE_INVALID", "STORE_TERMINAL_REFERENCE_INVALID", "STORE_TERMINAL_VOIDED_IMMUTABLE"],
-    "postOperationsStoreTerminalStatus": ["STORE_TERMINAL_STATUS_TRANSITION_INVALID"],
-    "getOperationsStoreTerminalAreaCandidates": ["PLATFORM_COMMON_VALIDATION_FAILED"],
-    "getOperationsStoreTerminalTagCandidates": ["PLATFORM_COMMON_VALIDATION_FAILED"]
+    "createOperationsCatalogItem": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "saveOperationsCatalogItem": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "transitionOperationsCatalogItemStatus": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "batchTransitionOperationsCatalogItemStatus": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "createOperationsCatalogCategory": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "updateOperationsCatalogCategory": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "moveOperationsCatalogCategory": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "createOperationsCatalogDictionaryEntry": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "updateOperationsCatalogDictionaryEntry": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "reorderOperationsCatalogDictionaryEntry": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "transitionOperationsCatalogDictionaryEntryStatus": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "createOperationsProductionTag": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "updateOperationsProductionTag": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "transitionOperationsProductionTagStatus": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "executeOperationsLocalCatalogCopy": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "executeOperationsTemporaryCatalogItemPromotion": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "executeOperationsBrandCatalogCopy": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "countOperationsInventoryTarget": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "increaseOperationsInventoryTarget": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "adjustOperationsInventoryTarget": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "updateOperationsInventoryTargetConfiguration": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "stageOperationsCatalogAsset": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "releaseOperationsCatalogStagedAsset": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "createOperationsCatalogAttributeDefinition": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "updateOperationsCatalogAttributeDefinition": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "createOperationsCatalogOrderOptionDefinition": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "updateOperationsCatalogOrderOptionDefinition": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "createOperationsCatalogUnit": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "updateOperationsCatalogUnit": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "transitionOperationsCatalogAttributeDefinitionStatus": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "transitionOperationsCatalogOrderOptionDefinitionStatus": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "transitionOperationsCatalogUnitStatus": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "transitionOperationsCatalogCategoryStatus": [
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "getOperationsSalesMenus": [
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_CHANNEL_INELIGIBLE"
+    ],
+    "getOperationsSalesMenu": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_CHANNEL_INELIGIBLE"
+    ],
+    "getOperationsSalesMenuDraftSections": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_SCOPE_MISMATCH"
+    ],
+    "getOperationsSalesMenuDraftItems": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_SECTION_NOT_FOUND",
+      "SALES_MENU_SCOPE_MISMATCH"
+    ],
+    "getOperationsSalesMenuDraftItem": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_ITEM_NOT_FOUND",
+      "SALES_MENU_SCOPE_MISMATCH"
+    ],
+    "getOperationsSalesMenuPublishedSections": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_SCOPE_MISMATCH"
+    ],
+    "getOperationsSalesMenuPublishedItems": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_SECTION_NOT_FOUND",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_PUBLICATION_REQUIRED"
+    ],
+    "getOperationsSalesMenuPublishedItem": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_ITEM_NOT_FOUND",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_PUBLICATION_REQUIRED"
+    ],
+    "getOperationsSalesMenuItemCandidates": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_SCOPE_MISMATCH"
+    ],
+    "getOperationsSalesMenuPublicationPreview": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_SCOPE_MISMATCH"
+    ],
+    "getOperationsSalesMenuOperationRecords": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_SCOPE_MISMATCH"
+    ],
+    "createOperationsSalesMenu": [
+      "SALES_MENU_CHANNEL_INELIGIBLE",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "copyOperationsSalesMenu": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "renameOperationsSalesMenu": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "archiveOperationsSalesMenu": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "setOperationsSalesMenuActivation": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_CHANNEL_INELIGIBLE",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "updateOperationsSalesMenuSchedule": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_SCHEDULE_INVALID",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "createOperationsSalesMenuSection": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "renameOperationsSalesMenuSection": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_SECTION_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "deleteOperationsSalesMenuSection": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_SECTION_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_SECTION_NOT_EMPTY",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "moveOperationsSalesMenuSection": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_SECTION_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_MOVE_BOUNDARY",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "addOperationsSalesMenuItems": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_SECTION_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_ITEM_REFERENCE_INVALID",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "updateOperationsSalesMenuItem": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_ITEM_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_ITEM_REFERENCE_INVALID",
+      "SALES_MENU_SKU_REFERENCE_INVALID",
+      "SALES_MENU_ORDER_OPTION_REFERENCE_INVALID",
+      "SALES_MENU_ORDER_OPTION_SELECTION_INVALID",
+      "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED",
+      "SALES_MENU_PRICE_REQUIRED",
+      "SALES_MENU_CONSTRAINT_INVALID",
+      "SALES_MENU_ASSET_INVALID",
+      "SALES_MENU_ASSET_TARGET_MISMATCH",
+      "SALES_MENU_ASSET_LIFECYCLE_CONFLICT",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "deleteOperationsSalesMenuItem": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_ITEM_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "moveOperationsSalesMenuItem": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_ITEM_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_MOVE_BOUNDARY",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "stageOperationsSalesMenuAsset": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_ITEM_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_CAPABILITY_REQUIRED",
+      "SALES_MENU_ASSET_INVALID",
+      "SALES_MENU_ASSET_TARGET_MISMATCH",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "releaseOperationsSalesMenuStagedAsset": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_ITEM_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_CAPABILITY_REQUIRED",
+      "SALES_MENU_ASSET_INVALID",
+      "SALES_MENU_ASSET_TARGET_MISMATCH",
+      "SALES_MENU_ASSET_LIFECYCLE_CONFLICT",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "publishOperationsSalesMenu": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_STORE_DISABLED",
+      "SALES_MENU_CHANNEL_DISABLED",
+      "SALES_MENU_CHANNEL_INELIGIBLE",
+      "SALES_MENU_DRAFT_INVALID",
+      "SALES_MENU_ITEM_REFERENCE_INVALID",
+      "SALES_MENU_SKU_REFERENCE_INVALID",
+      "SALES_MENU_ORDER_OPTION_REFERENCE_INVALID",
+      "SALES_MENU_ORDER_OPTION_SELECTION_INVALID",
+      "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED",
+      "SALES_MENU_PRICE_REQUIRED",
+      "SALES_MENU_SCHEDULE_INVALID",
+      "SALES_MENU_CONSTRAINT_INVALID",
+      "SALES_MENU_ASSET_INVALID",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "setOperationsSalesMenuItemSoldOut": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_ITEM_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_PUBLICATION_REQUIRED",
+      "SALES_MENU_MANUAL_REASON_REQUIRED",
+      "SALES_MENU_MANUAL_TARGET_INVALID",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "restoreOperationsSalesMenuItemSale": [
+      "SALES_MENU_NOT_FOUND",
+      "SALES_ITEM_NOT_FOUND",
+      "SALES_MENU_ARCHIVED",
+      "SALES_MENU_SCOPE_MISMATCH",
+      "SALES_MENU_PUBLICATION_REQUIRED",
+      "SALES_MENU_MANUAL_TARGET_INVALID",
+      "CONFIRMATION_REQUIRED",
+      "SALES_MENU_VERSION_CONFLICT",
+      "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "SALES_MENU_RESULT_UNKNOWN",
+      "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+    ],
+    "getOperationsStoreTerminals": [
+      "PLATFORM_COMMON_VALIDATION_FAILED"
+    ],
+    "postOperationsStoreTerminal": [
+      "STORE_TERMINAL_NAME_CONFLICT",
+      "STORE_TERMINAL_ACTIVATION_CODE_CONFLICT",
+      "STORE_TERMINAL_ACTIVATION_CODE_EXHAUSTED",
+      "STORE_TERMINAL_RULE_INVALID",
+      "STORE_TERMINAL_REFERENCE_INVALID"
+    ],
+    "putOperationsStoreTerminal": [
+      "STORE_TERMINAL_NAME_CONFLICT",
+      "STORE_TERMINAL_RULE_INVALID",
+      "STORE_TERMINAL_REFERENCE_INVALID",
+      "STORE_TERMINAL_VOIDED_IMMUTABLE"
+    ],
+    "postOperationsStoreTerminalStatus": [
+      "STORE_TERMINAL_STATUS_TRANSITION_INVALID"
+    ],
+    "getOperationsStoreTerminalAreaCandidates": [
+      "PLATFORM_COMMON_VALIDATION_FAILED"
+    ],
+    "getOperationsStoreTerminalTagCandidates": [
+      "PLATFORM_COMMON_VALIDATION_FAILED"
+    ],
+    "cancelOperationsStoreTerminalActivation": [
+      "TERMINAL_BINDING_NOT_ACTIVE",
+      "TERMINAL_BINDING_CHANGED"
+    ]
   },
   "operationErrorSelectionRules": {
     "default": "operation errorSetRef plus operationErrorAugmentations[operationId]",
@@ -752,6 +1117,13 @@
     ],
     "decision": "REQUIRED_16_128",
     "reason": "these commands create session, OTP, grant, credential or terminal invitation/reset effects; safe retry must not duplicate those effects",
+    "operationOverrides": {
+      "activateTerminal": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE",
+        "retryRecognition": "R1.6_OPERATION_SECRET_DIGEST"
+      }
+    },
     "receiptSubject": "privacy-safe hash of purpose plus normalized public locator; never raw mobile, password, OTP, token, cookie or credential",
     "requestHash": "canonical request with every secret replaced by a purpose-bound one-way digest before persistence",
     "replay": "same key and same safe hash replays only the non-secret terminal readback; same key and different hash returns PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
@@ -9305,135 +9677,1957 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus",
       "face": "operations-admin",
       "owner": "sales-menu",
-      "scenarioIds": ["R5-SALES-MENU"],
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
       "pageKey": "OPERATIONS-SALES-MENU",
       "disposition": "SALES_MENU_IMPLEMENTATION",
       "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "storeRef"],
-      "queryParameters": [
-        {"name": "channelRef", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}},
-        {"name": "query", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 160}},
-        {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}},
-        {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
       ],
-      "requestSchema": "NoBody", "responseSchema": "SalesMenuPage", "successStatus": "200",
-      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenus"
+      "queryParameters": [
+        {
+          "name": "channelRef",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 160
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 20
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "SalesMenuPage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsSalesMenus"
     },
     {
       "operationId": "getOperationsSalesMenu",
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}",
-      "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"],
-      "queryParameters": [{"name": "channelRef", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}],
-      "requestSchema": "NoBody", "responseSchema": "SalesMenuDetail", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenu"
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "channelRef",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "SalesMenuDetail",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsSalesMenu"
     },
     {
-      "operationId": "getOperationsSalesMenuDraftSections", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "SalesMenuSectionList", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuDraftSections"
+      "operationId": "getOperationsSalesMenuDraftSections",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "SalesMenuSectionList",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsSalesMenuDraftSections"
     },
     {
-      "operationId": "getOperationsSalesMenuDraftItems", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesSectionRef"], "queryParameters": [{"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "SalesMenuItemPage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuDraftItems"
+      "operationId": "getOperationsSalesMenuDraftItems",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesSectionRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 20
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "SalesMenuItemPage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsSalesMenuDraftItems"
     },
     {
-      "operationId": "getOperationsSalesMenuDraftItem", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "SalesMenuDraftItemView", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuDraftItem"
+      "operationId": "getOperationsSalesMenuDraftItem",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesItemRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "SalesMenuDraftItemView",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsSalesMenuDraftItem"
     },
     {
-      "operationId": "getOperationsSalesMenuPublishedSections", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "SalesMenuPublishedSectionList", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuPublishedSections"
+      "operationId": "getOperationsSalesMenuPublishedSections",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "SalesMenuPublishedSectionList",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsSalesMenuPublishedSections"
     },
     {
-      "operationId": "getOperationsSalesMenuPublishedItems", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesSectionRef"], "queryParameters": [{"name": "channelRef", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}, {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "SalesMenuPublishedItemPage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuPublishedItems"
+      "operationId": "getOperationsSalesMenuPublishedItems",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesSectionRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "channelRef",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 20
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "SalesMenuPublishedItemPage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsSalesMenuPublishedItems"
     },
     {
-      "operationId": "getOperationsSalesMenuPublishedItem", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef"], "queryParameters": [{"name": "channelRef", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}], "requestSchema": "NoBody", "responseSchema": "SalesMenuPublishedItemView", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuPublishedItem"
+      "operationId": "getOperationsSalesMenuPublishedItem",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesItemRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "channelRef",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "SalesMenuPublishedItemView",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsSalesMenuPublishedItem"
     },
     {
-      "operationId": "getOperationsSalesMenuItemCandidates", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/item-candidates", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [{"name": "categoryRef", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}}, {"name": "query", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 160}}, {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "SalesMenuCandidatePage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuItemCandidates"
+      "operationId": "getOperationsSalesMenuItemCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/item-candidates",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "categoryRef",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 160
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 20
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "SalesMenuCandidatePage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsSalesMenuItemCandidates"
     },
     {
-      "operationId": "getOperationsSalesMenuPublicationPreview", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [{"name": "channelRef", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}], "requestSchema": "NoBody", "responseSchema": "SalesMenuPublicationPreview", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuPublicationPreview"
+      "operationId": "getOperationsSalesMenuPublicationPreview",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "channelRef",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "SalesMenuPublicationPreview",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsSalesMenuPublicationPreview"
     },
     {
-      "operationId": "getOperationsSalesMenuOperationRecords", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [{"name": "channelRef", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}, {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "SalesMenuOperationRecordPage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsSalesMenuOperationRecords"
+      "operationId": "getOperationsSalesMenuOperationRecords",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "channelRef",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 20
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "SalesMenuOperationRecordPage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsSalesMenuOperationRecords"
     },
     {
-      "operationId": "createOperationsSalesMenu", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "SalesMenuCreateRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.createOperationsSalesMenu"
+      "operationId": "createOperationsSalesMenu",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuCreateRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "201",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.createOperationsSalesMenu"
     },
     {
-      "operationId": "copyOperationsSalesMenu", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "SalesMenuCopyRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.copyOperationsSalesMenu"
+      "operationId": "copyOperationsSalesMenu",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuCopyRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "201",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.copyOperationsSalesMenu"
     },
     {
-      "operationId": "renameOperationsSalesMenu", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "SalesMenuRenameRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.renameOperationsSalesMenu"
+      "operationId": "renameOperationsSalesMenu",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuRenameRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.renameOperationsSalesMenu"
     },
     {
-      "operationId": "archiveOperationsSalesMenu", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "SalesMenuArchiveRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.archiveOperationsSalesMenu"
+      "operationId": "archiveOperationsSalesMenu",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuArchiveRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.archiveOperationsSalesMenu"
     },
     {
-      "operationId": "setOperationsSalesMenuActivation", "method": "PUT", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "channelRef"], "queryParameters": [], "requestSchema": "SalesMenuActivationRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.setOperationsSalesMenuActivation"
+      "operationId": "setOperationsSalesMenuActivation",
+      "method": "PUT",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "channelRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuActivationRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.setOperationsSalesMenuActivation"
     },
     {
-      "operationId": "updateOperationsSalesMenuSchedule", "method": "PUT", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "SalesMenuScheduleUpdateRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.updateOperationsSalesMenuSchedule"
+      "operationId": "updateOperationsSalesMenuSchedule",
+      "method": "PUT",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuScheduleUpdateRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.updateOperationsSalesMenuSchedule"
     },
     {
-      "operationId": "createOperationsSalesMenuSection", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "SalesMenuSectionCreateRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.createOperationsSalesMenuSection"
+      "operationId": "createOperationsSalesMenuSection",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuSectionCreateRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "201",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.createOperationsSalesMenuSection"
     },
     {
-      "operationId": "renameOperationsSalesMenuSection", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesSectionRef"], "queryParameters": [], "requestSchema": "SalesMenuSectionRenameRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.renameOperationsSalesMenuSection"
+      "operationId": "renameOperationsSalesMenuSection",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesSectionRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuSectionRenameRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.renameOperationsSalesMenuSection"
     },
     {
-      "operationId": "deleteOperationsSalesMenuSection", "method": "DELETE", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesSectionRef"], "queryParameters": [], "requestSchema": "SalesMenuDeleteRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.deleteOperationsSalesMenuSection"
+      "operationId": "deleteOperationsSalesMenuSection",
+      "method": "DELETE",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesSectionRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuDeleteRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.deleteOperationsSalesMenuSection"
     },
     {
-      "operationId": "moveOperationsSalesMenuSection", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesSectionRef"], "queryParameters": [], "requestSchema": "SalesMenuSectionMoveRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.moveOperationsSalesMenuSection"
+      "operationId": "moveOperationsSalesMenuSection",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesSectionRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuSectionMoveRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.moveOperationsSalesMenuSection"
     },
     {
-      "operationId": "addOperationsSalesMenuItems", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesSectionRef"], "queryParameters": [], "requestSchema": "SalesMenuItemsAddRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.addOperationsSalesMenuItems"
+      "operationId": "addOperationsSalesMenuItems",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesSectionRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuItemsAddRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "201",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.addOperationsSalesMenuItems"
     },
     {
-      "operationId": "updateOperationsSalesMenuItem", "method": "PUT", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef"], "queryParameters": [], "headerParameters": [{"name": "X-Sales-Menu-Asset-Bind-Grants", "in": "header", "required": false, "description": "JSON assetRef-to-bindGrant map for this save only. It is transient proof material, never sales-menu data or log content.", "schema": {"type": "string", "writeOnly": true}}], "requestSchema": "SalesMenuItemUpdateRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.updateOperationsSalesMenuItem"
+      "operationId": "updateOperationsSalesMenuItem",
+      "method": "PUT",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesItemRef"
+      ],
+      "queryParameters": [],
+      "headerParameters": [
+        {
+          "name": "X-Sales-Menu-Asset-Bind-Grants",
+          "in": "header",
+          "required": false,
+          "description": "JSON assetRef-to-bindGrant map for this save only. It is transient proof material, never sales-menu data or log content.",
+          "schema": {
+            "type": "string",
+            "writeOnly": true
+          }
+        }
+      ],
+      "requestSchema": "SalesMenuItemUpdateRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.updateOperationsSalesMenuItem"
     },
     {
-      "operationId": "deleteOperationsSalesMenuItem", "method": "DELETE", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef"], "queryParameters": [], "requestSchema": "SalesMenuDeleteRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.deleteOperationsSalesMenuItem"
+      "operationId": "deleteOperationsSalesMenuItem",
+      "method": "DELETE",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesItemRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuDeleteRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.deleteOperationsSalesMenuItem"
     },
     {
-      "operationId": "moveOperationsSalesMenuItem", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef"], "queryParameters": [], "requestSchema": "SalesMenuItemMoveRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.moveOperationsSalesMenuItem"
+      "operationId": "moveOperationsSalesMenuItem",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesItemRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuItemMoveRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.moveOperationsSalesMenuItem"
     },
     {
-      "operationId": "stageOperationsSalesMenuAsset", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef"], "queryParameters": [], "requestSchema": "SalesMenuAssetStageRequest", "responseSchema": "SalesMenuAssetStageReadback", "successStatus": "201", "requestContentType": "multipart/form-data", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.stageOperationsSalesMenuAsset"
+      "operationId": "stageOperationsSalesMenuAsset",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesItemRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuAssetStageRequest",
+      "responseSchema": "SalesMenuAssetStageReadback",
+      "successStatus": "201",
+      "requestContentType": "multipart/form-data",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.stageOperationsSalesMenuAsset"
     },
     {
-      "operationId": "releaseOperationsSalesMenuStagedAsset", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef", "assetRef"], "queryParameters": [], "requestSchema": "SalesMenuAssetReleaseRequest", "responseSchema": "SalesMenuAssetReleaseReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.releaseOperationsSalesMenuStagedAsset"
+      "operationId": "releaseOperationsSalesMenuStagedAsset",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesItemRef",
+        "assetRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuAssetReleaseRequest",
+      "responseSchema": "SalesMenuAssetReleaseReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.releaseOperationsSalesMenuStagedAsset"
     },
     {
-      "operationId": "publishOperationsSalesMenu", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef"], "queryParameters": [], "requestSchema": "SalesMenuPublishRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.publishOperationsSalesMenu"
+      "operationId": "publishOperationsSalesMenu",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuPublishRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "201",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.publishOperationsSalesMenu"
     },
     {
-      "operationId": "setOperationsSalesMenuItemSoldOut", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef", "channelRef"], "queryParameters": [], "requestSchema": "SalesMenuManualSoldOutRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.setOperationsSalesMenuItemSoldOut"
+      "operationId": "setOperationsSalesMenuItemSoldOut",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesItemRef",
+        "channelRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuManualSoldOutRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.setOperationsSalesMenuItemSoldOut"
     },
     {
-      "operationId": "restoreOperationsSalesMenuItemSale", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef", "channelRef"], "queryParameters": [], "requestSchema": "SalesMenuManualRestoreRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.restoreOperationsSalesMenuItemSale"},
-    {"operationId": "getOperationsStoreServicePointAreas", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [{"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "StoreServicePointAreaPage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreServicePointAreas"},
-    {"operationId": "getOperationsStoreServicePoints", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "areaRef"], "queryParameters": [{"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "StoreServicePointPage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreServicePoints"},
-    {"operationId": "getOperationsStoreQrConfiguration", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "StoreQrConfigurationView", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreQrConfiguration"},
-    {"operationId": "getOperationsStoreServicePoint", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "servicePointRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "StoreServicePointDetail", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreServicePoint"},
-    {"operationId": "postOperationsStoreServicePointArea", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "StoreServicePointAreaCreateRequest", "responseSchema": "StoreServicePointArea", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreServicePointArea"},
-    {"operationId": "patchOperationsStoreServicePointArea", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "areaRef"], "queryParameters": [], "requestSchema": "StoreServicePointAreaUpdateRequest", "responseSchema": "StoreServicePointArea", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.patchOperationsStoreServicePointArea"},
-    {"operationId": "postOperationsStoreServicePointAreaStatus", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/status", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "areaRef"], "queryParameters": [], "requestSchema": "StoreServicePointAreaStatusRequest", "responseSchema": "StoreServicePointArea", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreServicePointAreaStatus"},
-    {"operationId": "postOperationsStoreServicePointAreaOrder", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/order", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "areaRef"], "queryParameters": [], "requestSchema": "StoreServicePointAreaOrderRequest", "responseSchema": "StoreServicePointArea", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreServicePointAreaOrder"},
-    {"operationId": "postOperationsStoreServicePoint", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "areaRef"], "queryParameters": [], "requestSchema": "StoreServicePointCreateRequest", "responseSchema": "StoreServicePoint", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreServicePoint"},
-    {"operationId": "patchOperationsStoreServicePoint", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "servicePointRef"], "queryParameters": [], "requestSchema": "StoreServicePointUpdateRequest", "responseSchema": "StoreServicePoint", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.patchOperationsStoreServicePoint"},
-    {"operationId": "postOperationsStoreServicePointStatus", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/status", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "servicePointRef"], "queryParameters": [], "requestSchema": "StoreServicePointStatusRequest", "responseSchema": "StoreServicePoint", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreServicePointStatus"},
-    {"operationId": "postOperationsStoreServicePointOrder", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/order", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "servicePointRef"], "queryParameters": [], "requestSchema": "StoreServicePointOrderRequest", "responseSchema": "StoreServicePoint", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreServicePointOrder"},
-    {"operationId": "patchOperationsStoreQrConfiguration", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "StoreQrConfigurationUpdateRequest", "responseSchema": "StoreQrConfigurationView", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.patchOperationsStoreQrConfiguration"},
-    {"operationId": "getOperationsStoreQrChannelCandidates", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-channel-candidates", "face": "operations-admin", "owner": "business-channel", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "StoreQrChannelCandidatePage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreQrChannelCandidates"},
-    {"operationId": "stageStoreServicePointImage", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage", "face": "operations-admin", "owner": "platform-asset", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "StoreServicePointAssetStageRequest", "responseSchema": "StoreServicePointAssetStageReadback", "successStatus": "201", "requestContentType": "multipart/form-data", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.stageStoreServicePointImage"},
-    {"operationId": "releaseStagedStoreServicePointImage", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release", "face": "operations-admin", "owner": "platform-asset", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "assetRef"], "queryParameters": [], "requestSchema": "StoreServicePointAssetReleaseRequest", "responseSchema": "StoreServicePointAssetReleaseReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.releaseStagedStoreServicePointImage"},
-    {"operationId": "getOperationsStoreTerminals", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [{"name": "query", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 160}}, {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "StoreTerminalPage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreTerminals"},
-    {"operationId": "getOperationsStoreTerminal", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "terminalRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "StoreTerminalDetail", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreTerminal"},
-    {"operationId": "postOperationsStoreTerminal", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "StoreTerminalCreateRequest", "responseSchema": "StoreTerminalMutation", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreTerminal"},
-    {"operationId": "putOperationsStoreTerminal", "method": "PUT", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "terminalRef"], "queryParameters": [], "requestSchema": "StoreTerminalReplaceRequest", "responseSchema": "StoreTerminalMutation", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.putOperationsStoreTerminal"},
-    {"operationId": "postOperationsStoreTerminalStatus", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "terminalRef"], "queryParameters": [], "requestSchema": "StoreTerminalStatusRequest", "responseSchema": "StoreTerminalMutation", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreTerminalStatus"},
-    {"operationId": "getOperationsStoreTerminalAreaCandidates", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [{"name": "query", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 160}}, {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "StoreTerminalAreaCandidatePage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreTerminalAreaCandidates"},
-    {"operationId": "getOperationsStoreTerminalTagCandidates", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [{"name": "query", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 160}}, {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "StoreTerminalTagCandidatePage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreTerminalTagCandidates"}
+      "operationId": "restoreOperationsSalesMenuItemSale",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore",
+      "face": "operations-admin",
+      "owner": "sales-menu",
+      "scenarioIds": [
+        "R5-SALES-MENU"
+      ],
+      "pageKey": "OPERATIONS-SALES-MENU",
+      "disposition": "SALES_MENU_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "salesMenuRef",
+        "salesItemRef",
+        "channelRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "SalesMenuManualRestoreRequest",
+      "responseSchema": "SalesMenuCommandReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.restoreOperationsSalesMenuItemSale"
+    },
+    {
+      "operationId": "getOperationsStoreServicePointAreas",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 20
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "StoreServicePointAreaPage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsStoreServicePointAreas"
+    },
+    {
+      "operationId": "getOperationsStoreServicePoints",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "areaRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 20
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "StoreServicePointPage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsStoreServicePoints"
+    },
+    {
+      "operationId": "getOperationsStoreQrConfiguration",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "StoreQrConfigurationView",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsStoreQrConfiguration"
+    },
+    {
+      "operationId": "getOperationsStoreServicePoint",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "servicePointRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "StoreServicePointDetail",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsStoreServicePoint"
+    },
+    {
+      "operationId": "postOperationsStoreServicePointArea",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreServicePointAreaCreateRequest",
+      "responseSchema": "StoreServicePointArea",
+      "successStatus": "201",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.postOperationsStoreServicePointArea"
+    },
+    {
+      "operationId": "patchOperationsStoreServicePointArea",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "areaRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreServicePointAreaUpdateRequest",
+      "responseSchema": "StoreServicePointArea",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.patchOperationsStoreServicePointArea"
+    },
+    {
+      "operationId": "postOperationsStoreServicePointAreaStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/status",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "areaRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreServicePointAreaStatusRequest",
+      "responseSchema": "StoreServicePointArea",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.postOperationsStoreServicePointAreaStatus"
+    },
+    {
+      "operationId": "postOperationsStoreServicePointAreaOrder",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/order",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "areaRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreServicePointAreaOrderRequest",
+      "responseSchema": "StoreServicePointArea",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.postOperationsStoreServicePointAreaOrder"
+    },
+    {
+      "operationId": "postOperationsStoreServicePoint",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "areaRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreServicePointCreateRequest",
+      "responseSchema": "StoreServicePoint",
+      "successStatus": "201",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.postOperationsStoreServicePoint"
+    },
+    {
+      "operationId": "patchOperationsStoreServicePoint",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "servicePointRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreServicePointUpdateRequest",
+      "responseSchema": "StoreServicePoint",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.patchOperationsStoreServicePoint"
+    },
+    {
+      "operationId": "postOperationsStoreServicePointStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/status",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "servicePointRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreServicePointStatusRequest",
+      "responseSchema": "StoreServicePoint",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.postOperationsStoreServicePointStatus"
+    },
+    {
+      "operationId": "postOperationsStoreServicePointOrder",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/order",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "servicePointRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreServicePointOrderRequest",
+      "responseSchema": "StoreServicePoint",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.postOperationsStoreServicePointOrder"
+    },
+    {
+      "operationId": "patchOperationsStoreQrConfiguration",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreQrConfigurationUpdateRequest",
+      "responseSchema": "StoreQrConfigurationView",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.patchOperationsStoreQrConfiguration"
+    },
+    {
+      "operationId": "getOperationsStoreQrChannelCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-channel-candidates",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "StoreQrChannelCandidatePage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsStoreQrChannelCandidates"
+    },
+    {
+      "operationId": "stageStoreServicePointImage",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage",
+      "face": "operations-admin",
+      "owner": "platform-asset",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreServicePointAssetStageRequest",
+      "responseSchema": "StoreServicePointAssetStageReadback",
+      "successStatus": "201",
+      "requestContentType": "multipart/form-data",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.stageStoreServicePointImage"
+    },
+    {
+      "operationId": "releaseStagedStoreServicePointImage",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release",
+      "face": "operations-admin",
+      "owner": "platform-asset",
+      "scenarioIds": [
+        "R5-STORE-SERVICE-POINT-QR"
+      ],
+      "pageKey": "PG-STORE-SERVICE-POINT-QR",
+      "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "assetRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreServicePointAssetReleaseRequest",
+      "responseSchema": "StoreServicePointAssetReleaseReadback",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.releaseStagedStoreServicePointImage"
+    },
+    {
+      "operationId": "getOperationsStoreTerminals",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "scenarioIds": [
+        "R5-STORE-TERMINAL"
+      ],
+      "pageKey": "PG-STORE-TERMINALS",
+      "disposition": "STORE_TERMINAL_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "query",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 160
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 20
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "StoreTerminalPage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsStoreTerminals"
+    },
+    {
+      "operationId": "getOperationsStoreTerminal",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "scenarioIds": [
+        "R5-STORE-TERMINAL"
+      ],
+      "pageKey": "PG-STORE-TERMINALS",
+      "disposition": "STORE_TERMINAL_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "terminalRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "StoreTerminalDetail",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsStoreTerminal"
+    },
+    {
+      "operationId": "postOperationsStoreTerminal",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "scenarioIds": [
+        "R5-STORE-TERMINAL"
+      ],
+      "pageKey": "PG-STORE-TERMINALS",
+      "disposition": "STORE_TERMINAL_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreTerminalCreateRequest",
+      "responseSchema": "StoreTerminalMutation",
+      "successStatus": "201",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.postOperationsStoreTerminal"
+    },
+    {
+      "operationId": "putOperationsStoreTerminal",
+      "method": "PUT",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "scenarioIds": [
+        "R5-STORE-TERMINAL"
+      ],
+      "pageKey": "PG-STORE-TERMINALS",
+      "disposition": "STORE_TERMINAL_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "terminalRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreTerminalReplaceRequest",
+      "responseSchema": "StoreTerminalMutation",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.putOperationsStoreTerminal"
+    },
+    {
+      "operationId": "postOperationsStoreTerminalStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "scenarioIds": [
+        "R5-STORE-TERMINAL"
+      ],
+      "pageKey": "PG-STORE-TERMINALS",
+      "disposition": "STORE_TERMINAL_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "terminalRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "StoreTerminalStatusRequest",
+      "responseSchema": "StoreTerminalMutation",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.postOperationsStoreTerminalStatus"
+    },
+    {
+      "operationId": "getOperationsStoreTerminalAreaCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "scenarioIds": [
+        "R5-STORE-TERMINAL"
+      ],
+      "pageKey": "PG-STORE-TERMINALS",
+      "disposition": "STORE_TERMINAL_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "query",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 160
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 20
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "StoreTerminalAreaCandidatePage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsStoreTerminalAreaCandidates"
+    },
+    {
+      "operationId": "getOperationsStoreTerminalTagCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "scenarioIds": [
+        "R5-STORE-TERMINAL"
+      ],
+      "pageKey": "PG-STORE-TERMINALS",
+      "disposition": "STORE_TERMINAL_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "query",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 160
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 20
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "StoreTerminalTagCandidatePage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsStoreTerminalTagCandidates"
+    },
+    {
+      "operationId": "cancelOperationsStoreTerminalActivation",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel",
+      "face": "operations-admin",
+      "owner": "terminal-binding",
+      "scenarioIds": [
+        "R5-STORE-TERMINAL"
+      ],
+      "pageKey": "PG-STORE-TERMINALS",
+      "disposition": "TERMINAL_ACTIVATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeRef",
+        "terminalRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "OperationsTerminalActivationCancellationRequest",
+      "responseSchema": "OperationsTerminalActivationCancellationResult",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.cancelOperationsStoreTerminalActivation"
+    },
+    {
+      "operationId": "activateTerminal",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation",
+      "face": "terminal",
+      "owner": "terminal-binding",
+      "scenarioIds": [
+        "R5-STORE-TERMINAL"
+      ],
+      "pageKey": null,
+      "disposition": "TERMINAL_ACTIVATION_IMPLEMENTATION",
+      "security": "NONE",
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
+      "queryParameters": [],
+      "requestSchema": "TerminalActivationRequest",
+      "responseSchema": "TerminalActivationResult",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN",
+      "errorSetRef": "TERMINAL_ACTIVATION_COMMAND",
+      "focusedTestId": "edge.activateTerminal",
+      "authorizationMode": "NONE",
+      "safeRetryable": true
+    },
+    {
+      "operationId": "cancelTerminalActivation",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel",
+      "face": "terminal",
+      "owner": "terminal-binding",
+      "scenarioIds": [
+        "R5-STORE-TERMINAL"
+      ],
+      "pageKey": null,
+      "disposition": "TERMINAL_ACTIVATION_IMPLEMENTATION",
+      "security": "TERMINAL_CREDENTIAL",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "terminalRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "TerminalActivationCancellationRequest",
+      "responseSchema": "TerminalActivationCancellationResult",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN",
+      "errorSetRef": "TERMINAL_DEVICE_CANCEL_COMMAND",
+      "focusedTestId": "edge.cancelTerminalActivation",
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "safeRetryable": true
+    }
   ],
   "scenarioOperationCrosswalk": [
     {
@@ -11721,66 +13915,205 @@
     "ExtensionEntityType": {
       "ref": "ExtensionEntityType"
     },
-    "StoreServicePointAreaType": { "ref": "StoreServicePointAreaType" },
-    "StoreServicePointType": { "ref": "StoreServicePointType" },
-    "StoreServicePointStatus": { "ref": "StoreServicePointStatus" },
-    "StoreServicePointShape": { "ref": "StoreServicePointShape" },
-    "StoreServicePointOrderDirection": { "ref": "StoreServicePointOrderDirection" },
-    "StoreServicePointArea": { "ref": "StoreServicePointArea" },
-    "StoreServicePointAreaPage": { "ref": "StoreServicePointAreaPage" },
-    "StoreServicePointAreaCreateRequest": { "ref": "StoreServicePointAreaCreateRequest" },
-    "StoreServicePointAreaUpdateRequest": { "ref": "StoreServicePointAreaUpdateRequest" },
-    "StoreServicePointAreaStatusRequest": { "ref": "StoreServicePointAreaStatusRequest" },
-    "StoreServicePointAreaOrderRequest": { "ref": "StoreServicePointAreaOrderRequest" },
-    "StoreServicePoint": { "ref": "StoreServicePoint" },
-    "StoreServicePointPage": { "ref": "StoreServicePointPage" },
-    "StoreServicePointCreateRequest": { "ref": "StoreServicePointCreateRequest" },
-    "StoreServicePointUpdateRequest": { "ref": "StoreServicePointUpdateRequest" },
-    "StoreServicePointStatusRequest": { "ref": "StoreServicePointStatusRequest" },
-    "StoreServicePointOrderRequest": { "ref": "StoreServicePointOrderRequest" },
-    "StoreServicePointDetail": { "ref": "StoreServicePointDetail" },
-    "StoreQrConfigurationView": { "ref": "StoreQrConfigurationView" },
-    "StoreQrConfigurationUpdateRequest": { "ref": "StoreQrConfigurationUpdateRequest" },
-    "StoreQrChannelCandidate": { "ref": "StoreQrChannelCandidate" },
-    "StoreQrChannelCandidatePage": { "ref": "StoreQrChannelCandidatePage" },
-    "StoreServicePointAssetStageRequest": { "ref": "StoreServicePointAssetStageRequest" },
-    "StoreServicePointAssetStageReadback": { "ref": "StoreServicePointAssetStageReadback" },
-    "StoreServicePointAssetReleaseRequest": { "ref": "StoreServicePointAssetReleaseRequest" },
-    "StoreServicePointAssetReleaseReadback": { "ref": "StoreServicePointAssetReleaseReadback" },
-    "StoreTerminalStatus": { "ref": "StoreTerminalStatus" },
-    "StoreTerminalPrinterBinding": { "ref": "StoreTerminalPrinterBinding" },
-    "StoreTerminalPrinterInput": { "ref": "StoreTerminalPrinterInput" },
-    "StoreTerminalRangeSelection": { "ref": "StoreTerminalRangeSelection" },
-    "StoreTerminalSceneSelection": { "ref": "StoreTerminalSceneSelection" },
-    "StoreTerminalFunctionInput": { "ref": "StoreTerminalFunctionInput" },
-    "StoreTerminalConfigurationInput": { "ref": "StoreTerminalConfigurationInput" },
-    "StoreTerminalPrinter": { "ref": "StoreTerminalPrinter" },
-    "StoreTerminalRange": { "ref": "StoreTerminalRange" },
-    "StoreTerminalPrinterRef": { "ref": "StoreTerminalPrinterRef" },
-    "StoreTerminalScene": { "ref": "StoreTerminalScene" },
-    "StoreTerminalFunction": { "ref": "StoreTerminalFunction" },
-    "StoreTerminalConfiguration": { "ref": "StoreTerminalConfiguration" },
-    "StoreTerminalSummary": { "ref": "StoreTerminalSummary" },
-    "StoreTerminalPage": { "ref": "StoreTerminalPage" },
-    "StoreTerminalDetail": { "ref": "StoreTerminalDetail" },
-    "StoreTerminalAreaReference": { "ref": "StoreTerminalAreaReference" },
-    "StoreTerminalTagReference": { "ref": "StoreTerminalTagReference" },
-    "StoreTerminalAreaCandidate": { "ref": "StoreTerminalAreaCandidate" },
-    "StoreTerminalTagCandidate": { "ref": "StoreTerminalTagCandidate" },
-    "StoreTerminalAreaCandidatePage": { "ref": "StoreTerminalAreaCandidatePage" },
-    "StoreTerminalTagCandidatePage": { "ref": "StoreTerminalTagCandidatePage" },
-    "StoreTerminalCreateRequest": { "ref": "StoreTerminalCreateRequest" },
-    "StoreTerminalReplaceRequest": { "ref": "StoreTerminalReplaceRequest" },
-    "StoreTerminalStatusRequest": { "ref": "StoreTerminalStatusRequest" },
+    "StoreServicePointAreaType": {
+      "ref": "StoreServicePointAreaType"
+    },
+    "StoreServicePointType": {
+      "ref": "StoreServicePointType"
+    },
+    "StoreServicePointStatus": {
+      "ref": "StoreServicePointStatus"
+    },
+    "StoreServicePointShape": {
+      "ref": "StoreServicePointShape"
+    },
+    "StoreServicePointOrderDirection": {
+      "ref": "StoreServicePointOrderDirection"
+    },
+    "StoreServicePointArea": {
+      "ref": "StoreServicePointArea"
+    },
+    "StoreServicePointAreaPage": {
+      "ref": "StoreServicePointAreaPage"
+    },
+    "StoreServicePointAreaCreateRequest": {
+      "ref": "StoreServicePointAreaCreateRequest"
+    },
+    "StoreServicePointAreaUpdateRequest": {
+      "ref": "StoreServicePointAreaUpdateRequest"
+    },
+    "StoreServicePointAreaStatusRequest": {
+      "ref": "StoreServicePointAreaStatusRequest"
+    },
+    "StoreServicePointAreaOrderRequest": {
+      "ref": "StoreServicePointAreaOrderRequest"
+    },
+    "StoreServicePoint": {
+      "ref": "StoreServicePoint"
+    },
+    "StoreServicePointPage": {
+      "ref": "StoreServicePointPage"
+    },
+    "StoreServicePointCreateRequest": {
+      "ref": "StoreServicePointCreateRequest"
+    },
+    "StoreServicePointUpdateRequest": {
+      "ref": "StoreServicePointUpdateRequest"
+    },
+    "StoreServicePointStatusRequest": {
+      "ref": "StoreServicePointStatusRequest"
+    },
+    "StoreServicePointOrderRequest": {
+      "ref": "StoreServicePointOrderRequest"
+    },
+    "StoreServicePointDetail": {
+      "ref": "StoreServicePointDetail"
+    },
+    "StoreQrConfigurationView": {
+      "ref": "StoreQrConfigurationView"
+    },
+    "StoreQrConfigurationUpdateRequest": {
+      "ref": "StoreQrConfigurationUpdateRequest"
+    },
+    "StoreQrChannelCandidate": {
+      "ref": "StoreQrChannelCandidate"
+    },
+    "StoreQrChannelCandidatePage": {
+      "ref": "StoreQrChannelCandidatePage"
+    },
+    "StoreServicePointAssetStageRequest": {
+      "ref": "StoreServicePointAssetStageRequest"
+    },
+    "StoreServicePointAssetStageReadback": {
+      "ref": "StoreServicePointAssetStageReadback"
+    },
+    "StoreServicePointAssetReleaseRequest": {
+      "ref": "StoreServicePointAssetReleaseRequest"
+    },
+    "StoreServicePointAssetReleaseReadback": {
+      "ref": "StoreServicePointAssetReleaseReadback"
+    },
+    "StoreTerminalStatus": {
+      "ref": "StoreTerminalStatus"
+    },
+    "StoreTerminalBindingStatus": {
+      "ref": "StoreTerminalBindingStatus"
+    },
+    "StoreTerminalBinding": {
+      "ref": "StoreTerminalBinding"
+    },
+    "StoreTerminalPrinterBinding": {
+      "ref": "StoreTerminalPrinterBinding"
+    },
+    "StoreTerminalPrinterInput": {
+      "ref": "StoreTerminalPrinterInput"
+    },
+    "StoreTerminalRangeSelection": {
+      "ref": "StoreTerminalRangeSelection"
+    },
+    "StoreTerminalSceneSelection": {
+      "ref": "StoreTerminalSceneSelection"
+    },
+    "StoreTerminalFunctionInput": {
+      "ref": "StoreTerminalFunctionInput"
+    },
+    "StoreTerminalConfigurationInput": {
+      "ref": "StoreTerminalConfigurationInput"
+    },
+    "StoreTerminalPrinter": {
+      "ref": "StoreTerminalPrinter"
+    },
+    "StoreTerminalRange": {
+      "ref": "StoreTerminalRange"
+    },
+    "StoreTerminalPrinterRef": {
+      "ref": "StoreTerminalPrinterRef"
+    },
+    "StoreTerminalScene": {
+      "ref": "StoreTerminalScene"
+    },
+    "StoreTerminalFunction": {
+      "ref": "StoreTerminalFunction"
+    },
+    "StoreTerminalConfiguration": {
+      "ref": "StoreTerminalConfiguration"
+    },
+    "StoreTerminalSummary": {
+      "ref": "StoreTerminalSummary"
+    },
+    "StoreTerminalPage": {
+      "ref": "StoreTerminalPage"
+    },
+    "StoreTerminalDetail": {
+      "ref": "StoreTerminalDetail"
+    },
+    "StoreTerminalAreaReference": {
+      "ref": "StoreTerminalAreaReference"
+    },
+    "StoreTerminalTagReference": {
+      "ref": "StoreTerminalTagReference"
+    },
+    "StoreTerminalAreaCandidate": {
+      "ref": "StoreTerminalAreaCandidate"
+    },
+    "StoreTerminalTagCandidate": {
+      "ref": "StoreTerminalTagCandidate"
+    },
+    "StoreTerminalAreaCandidatePage": {
+      "ref": "StoreTerminalAreaCandidatePage"
+    },
+    "StoreTerminalTagCandidatePage": {
+      "ref": "StoreTerminalTagCandidatePage"
+    },
+    "StoreTerminalCreateRequest": {
+      "ref": "StoreTerminalCreateRequest"
+    },
+    "StoreTerminalReplaceRequest": {
+      "ref": "StoreTerminalReplaceRequest"
+    },
+    "StoreTerminalStatusRequest": {
+      "ref": "StoreTerminalStatusRequest"
+    },
     "StoreTerminalMutation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["terminalRef", "version", "status"],
+      "required": [
+        "terminalRef",
+        "version",
+        "status"
+      ],
       "properties": {
-        "terminalRef": { "type": "string", "format": "uuid" },
-        "version": { "type": "integer", "format": "int64", "minimum": 0 },
-        "status": { "ref": "StoreTerminalStatus" }
+        "terminalRef": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "version": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 0
+        },
+        "status": {
+          "ref": "StoreTerminalStatus"
+        }
       }
+    },
+    "TerminalActivationRequest": {
+      "ref": "TerminalActivationRequest"
+    },
+    "TerminalActivationResult": {
+      "ref": "TerminalActivationResult"
+    },
+    "TerminalActivationCancellationRequest": {
+      "ref": "TerminalActivationCancellationRequest"
+    },
+    "TerminalActivationCancellationResult": {
+      "ref": "TerminalActivationCancellationResult"
+    },
+    "OperationsTerminalActivationCancellationRequest": {
+      "ref": "OperationsTerminalActivationCancellationRequest"
+    },
+    "OperationsTerminalActivationCancellationResult": {
+      "ref": "OperationsTerminalActivationCancellationResult"
     },
     "GroupWorkspaceCreateRequest": {
       "ref": "GroupWorkspaceCreateRequest"
@@ -13837,56 +16170,148 @@
     "ExternalProviderCandidatePage": {
       "ref": "ExternalProviderCandidatePage"
     },
-    "SalesMenuSchedule": { "ref": "SalesMenuSchedule" },
-    "SalesMenuActivation": { "ref": "SalesMenuActivation" },
-    "SalesMenuSummary": { "ref": "SalesMenuSummary" },
-    "SalesMenuPage": { "ref": "SalesMenuPage" },
-    "SalesMenuDetail": { "ref": "SalesMenuDetail" },
-    "SalesMenuSectionView": { "ref": "SalesMenuSectionView" },
-    "SalesMenuSectionList": { "ref": "SalesMenuSectionList" },
-    "SalesMenuSkuPrice": { "ref": "SalesMenuSkuPrice" },
-    "SalesMenuSaleContent": { "ref": "SalesMenuSaleContent" },
-    "SalesMenuOrderingConstraints": { "ref": "SalesMenuOrderingConstraints" },
-    "SalesMenuDisplayMedia": { "ref": "SalesMenuDisplayMedia" },
-    "SalesMenuDraftItemView": { "ref": "SalesMenuDraftItemView" },
-    "SalesMenuItemPage": { "ref": "SalesMenuItemPage" },
-    "InventoryAvailabilityFact": { "ref": "InventoryAvailabilityFact" },
-    "ManualSaleStatusFact": { "ref": "ManualSaleStatusFact" },
-    "SalesMenuPublishedItemView": { "ref": "SalesMenuPublishedItemView" },
-    "SalesMenuPublishedSectionList": { "ref": "SalesMenuPublishedSectionList" },
-    "SalesMenuPublishedItemPage": { "ref": "SalesMenuPublishedItemPage" },
-    "SalesMenuItemCandidate": { "ref": "SalesMenuItemCandidate" },
-    "SalesMenuCandidatePage": { "ref": "SalesMenuCandidatePage" },
-    "SalesMenuPublicationBlocker": { "ref": "SalesMenuPublicationBlocker" },
-    "SalesMenuPublicationPreview": { "ref": "SalesMenuPublicationPreview" },
-    "SalesMenuOperationRecord": { "ref": "SalesMenuOperationRecord" },
-    "SalesMenuOperationRecordPage": { "ref": "SalesMenuOperationRecordPage" },
-    "SalesMenuAssetTargetReadback": { "ref": "SalesMenuAssetTargetReadback" },
-    "SalesMenuAssetStageRequest": { "ref": "SalesMenuAssetStageRequest" },
-    "SalesMenuAssetStageReadback": { "ref": "SalesMenuAssetStageReadback" },
-    "SalesMenuAssetReleaseRequest": { "ref": "SalesMenuAssetReleaseRequest" },
-    "SalesMenuAssetReleaseReadback": { "ref": "SalesMenuAssetReleaseReadback" },
-    "SalesMenuCreateRequest": { "ref": "SalesMenuCreateRequest" },
-    "SalesMenuCopyRequest": { "ref": "SalesMenuCopyRequest" },
-    "SalesMenuArchiveRequest": { "ref": "SalesMenuArchiveRequest" },
-    "SalesMenuRenameRequest": { "ref": "SalesMenuRenameRequest" },
-    "SalesMenuActivationRequest": { "ref": "SalesMenuActivationRequest" },
-    "SalesMenuScheduleUpdateRequest": { "ref": "SalesMenuScheduleUpdateRequest" },
-    "SalesMenuSectionCreateRequest": { "ref": "SalesMenuSectionCreateRequest" },
-    "SalesMenuSectionRenameRequest": { "ref": "SalesMenuSectionRenameRequest" },
-    "SalesMenuSectionMoveRequest": { "ref": "SalesMenuSectionMoveRequest" },
-    "SalesMenuDeleteRequest": { "ref": "SalesMenuDeleteRequest" },
-    "SalesMenuItemsAddRequest": { "ref": "SalesMenuItemsAddRequest" },
-    "SalesMenuItemUpdateRequest": { "ref": "SalesMenuItemUpdateRequest" },
-    "SalesMenuItemMoveRequest": { "ref": "SalesMenuItemMoveRequest" },
-    "SalesMenuPublishRequest": { "ref": "SalesMenuPublishRequest" },
-    "SalesMenuManualSoldOutRequest": { "ref": "SalesMenuManualSoldOutRequest" },
-    "SalesMenuManualRestoreRequest": { "ref": "SalesMenuManualRestoreRequest" },
-    "SalesMenuCommandReadback": { "ref": "SalesMenuCommandReadback" }
+    "SalesMenuSchedule": {
+      "ref": "SalesMenuSchedule"
+    },
+    "SalesMenuActivation": {
+      "ref": "SalesMenuActivation"
+    },
+    "SalesMenuSummary": {
+      "ref": "SalesMenuSummary"
+    },
+    "SalesMenuPage": {
+      "ref": "SalesMenuPage"
+    },
+    "SalesMenuDetail": {
+      "ref": "SalesMenuDetail"
+    },
+    "SalesMenuSectionView": {
+      "ref": "SalesMenuSectionView"
+    },
+    "SalesMenuSectionList": {
+      "ref": "SalesMenuSectionList"
+    },
+    "SalesMenuSkuPrice": {
+      "ref": "SalesMenuSkuPrice"
+    },
+    "SalesMenuSaleContent": {
+      "ref": "SalesMenuSaleContent"
+    },
+    "SalesMenuOrderingConstraints": {
+      "ref": "SalesMenuOrderingConstraints"
+    },
+    "SalesMenuDisplayMedia": {
+      "ref": "SalesMenuDisplayMedia"
+    },
+    "SalesMenuDraftItemView": {
+      "ref": "SalesMenuDraftItemView"
+    },
+    "SalesMenuItemPage": {
+      "ref": "SalesMenuItemPage"
+    },
+    "InventoryAvailabilityFact": {
+      "ref": "InventoryAvailabilityFact"
+    },
+    "ManualSaleStatusFact": {
+      "ref": "ManualSaleStatusFact"
+    },
+    "SalesMenuPublishedItemView": {
+      "ref": "SalesMenuPublishedItemView"
+    },
+    "SalesMenuPublishedSectionList": {
+      "ref": "SalesMenuPublishedSectionList"
+    },
+    "SalesMenuPublishedItemPage": {
+      "ref": "SalesMenuPublishedItemPage"
+    },
+    "SalesMenuItemCandidate": {
+      "ref": "SalesMenuItemCandidate"
+    },
+    "SalesMenuCandidatePage": {
+      "ref": "SalesMenuCandidatePage"
+    },
+    "SalesMenuPublicationBlocker": {
+      "ref": "SalesMenuPublicationBlocker"
+    },
+    "SalesMenuPublicationPreview": {
+      "ref": "SalesMenuPublicationPreview"
+    },
+    "SalesMenuOperationRecord": {
+      "ref": "SalesMenuOperationRecord"
+    },
+    "SalesMenuOperationRecordPage": {
+      "ref": "SalesMenuOperationRecordPage"
+    },
+    "SalesMenuAssetTargetReadback": {
+      "ref": "SalesMenuAssetTargetReadback"
+    },
+    "SalesMenuAssetStageRequest": {
+      "ref": "SalesMenuAssetStageRequest"
+    },
+    "SalesMenuAssetStageReadback": {
+      "ref": "SalesMenuAssetStageReadback"
+    },
+    "SalesMenuAssetReleaseRequest": {
+      "ref": "SalesMenuAssetReleaseRequest"
+    },
+    "SalesMenuAssetReleaseReadback": {
+      "ref": "SalesMenuAssetReleaseReadback"
+    },
+    "SalesMenuCreateRequest": {
+      "ref": "SalesMenuCreateRequest"
+    },
+    "SalesMenuCopyRequest": {
+      "ref": "SalesMenuCopyRequest"
+    },
+    "SalesMenuArchiveRequest": {
+      "ref": "SalesMenuArchiveRequest"
+    },
+    "SalesMenuRenameRequest": {
+      "ref": "SalesMenuRenameRequest"
+    },
+    "SalesMenuActivationRequest": {
+      "ref": "SalesMenuActivationRequest"
+    },
+    "SalesMenuScheduleUpdateRequest": {
+      "ref": "SalesMenuScheduleUpdateRequest"
+    },
+    "SalesMenuSectionCreateRequest": {
+      "ref": "SalesMenuSectionCreateRequest"
+    },
+    "SalesMenuSectionRenameRequest": {
+      "ref": "SalesMenuSectionRenameRequest"
+    },
+    "SalesMenuSectionMoveRequest": {
+      "ref": "SalesMenuSectionMoveRequest"
+    },
+    "SalesMenuDeleteRequest": {
+      "ref": "SalesMenuDeleteRequest"
+    },
+    "SalesMenuItemsAddRequest": {
+      "ref": "SalesMenuItemsAddRequest"
+    },
+    "SalesMenuItemUpdateRequest": {
+      "ref": "SalesMenuItemUpdateRequest"
+    },
+    "SalesMenuItemMoveRequest": {
+      "ref": "SalesMenuItemMoveRequest"
+    },
+    "SalesMenuPublishRequest": {
+      "ref": "SalesMenuPublishRequest"
+    },
+    "SalesMenuManualSoldOutRequest": {
+      "ref": "SalesMenuManualSoldOutRequest"
+    },
+    "SalesMenuManualRestoreRequest": {
+      "ref": "SalesMenuManualRestoreRequest"
+    },
+    "SalesMenuCommandReadback": {
+      "ref": "SalesMenuCommandReadback"
+    }
   },
   "componentReferenceClosure": {
     "baselineCount": 243,
-    "operationDirectReferenceCount": 147,
+    "operationDirectReferenceCount": 153,
     "directReferencesMissingFromBaseline": [],
     "supportingOnly": [
       "ExtensionEntityType",
@@ -14472,7 +16897,9 @@
           "ref": "OrganizationStoreOperatingRuleValues"
         }
       },
-      "requiredAdditions": ["operatingRuleSwitches"]
+      "requiredAdditions": [
+        "operatingRuleSwitches"
+      ]
     },
     "Brand": {
       "removeProperties": [
@@ -15383,11 +17810,13 @@
     "status": "MATERIALIZED",
     "pipeline": "R24_P3C",
     "sourceOperationCount": 148,
-    "operationCount": 235,
+    "operationCount": 238,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 162,
-      "public": 12
+      "operations-admin": 163,
+      "public": 12,
+      "terminal": 2
     }
-  }
+  },
+  "sourceDescription": "The inherited analysis source is recorded for provenance only; generation reads only the repository-owned paths in sources."
 }

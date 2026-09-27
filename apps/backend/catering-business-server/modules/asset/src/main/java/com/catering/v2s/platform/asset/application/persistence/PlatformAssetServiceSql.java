@@ -38,9 +38,8 @@ public final class PlatformAssetServiceSql {
     public static final String PLATFORM_ASSET_SERVICE_CONDITION = "AND ";
     public static final String PLATFORM_ASSET_SERVICE_EXPIRES_AT_EPOCH_MILLIS_GRANT_HASH =
             "g.expires_at_epoch_millis>=? AND g.grant_hash=?";
-    public static final String
-            PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ACTIVE =
-                    "UPDATE platform_asset.staged_asset SET workspace_uuid=?, group_workspace_key=?, status='ACTIVE', ";
+    public static final String UPDATE_STAGED_ASSET_WS_UUID_001 =
+            "UPDATE platform_asset.staged_asset SET workspace_uuid=?, group_workspace_key=?, status='ACTIVE', ";
     public static final String PLATFORM_ASSET_SERVICE_CLAIMED_BY_TYPE =
             "claimed_by_type='GROUP_WORKSPACE_LOGO', claimed_by_id=?, activated_at_epoch_millis=?, ";
     public static final String PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_STATUS_STAGED =
@@ -55,23 +54,20 @@ public final class PlatformAssetServiceSql {
             "a.group_workspace_key=? AND g.consumed_at_epoch_millis IS NULL AND ";
     public static final String PLATFORM_ASSET_SERVICE_EXPIRES_AT_EPOCH_MILLIS = "g.expires_at_epoch_millis>=? ";
     public static final String PLATFORM_ASSET_SERVICE_CONDITION_GRANT_HASH = "AND g.grant_hash=?";
-    public static final String
-            PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_ACTIVE_CLAIMED_BY_TYPE_CATALOG_ITEM_IMAGE =
-                    "UPDATE platform_asset.staged_asset SET status='ACTIVE', claimed_by_type='CATALOG_ITEM_IMAGE', ";
+    public static final String UPDATE_STAGED_ASSET_STATUS_ACTIVE_002 =
+            "UPDATE platform_asset.staged_asset SET status='ACTIVE', claimed_by_type='CATALOG_ITEM_IMAGE', ";
     public static final String PLATFORM_ASSET_SERVICE_CLAIMED_BY_ID_ACTIVATED_AT_EPOCH_MILLIS_VERSION_ASSET_REF =
             "claimed_by_id=?, activated_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND ";
     public static final String PLATFORM_ASSET_SERVICE_USAGE_CATALOG_ITEM_IMAGE_STATUS_STAGED_ALTERNATE_A =
             "usage='CATALOG_ITEM_IMAGE' AND status='STAGED' AND workspace_uuid=? AND ";
     public static final String PLATFORM_ASSET_SERVICE_GROUP_WORKSPACE_KEY_ASSET_REF_USAGE_STATUS =
             "group_workspace_key=? RETURNING asset_ref, usage, status, version, size_bytes";
-    public static final String
-            PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_RELEASED_RELEASED_AT_EPOCH_MILLIS_ALTERNATE_A =
-                    "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, ";
+    public static final String UPDATE_STAGED_ASSET_STATUS_RELEASED_ALT_A_003 =
+            "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, ";
     public static final String PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_CLAIMED_BY_ID_STATUS =
             "version=version+1 WHERE asset_ref=? AND claimed_by_id=? AND status='ACTIVE'";
-    public static final String
-            PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_RELEASED_RELEASED_AT_EPOCH_MILLIS_ALTERNATE_B =
-                    "UPDATE platform_asset.staged_asset a SET status='RELEASED', released_at_epoch_millis=?, ";
+    public static final String UPDATE_STAGED_ASSET_STATUS_RELEASED_ALT_B_004 =
+            "UPDATE platform_asset.staged_asset a SET status='RELEASED', released_at_epoch_millis=?, ";
     public static final String PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_STATUS_STAGED_ALTERNATE_A =
             "version=version+1 WHERE a.asset_ref=? AND a.status='STAGED' AND EXISTS (SELECT 1 FROM ";
     public static final String PLATFORM_ASSET_SERVICE_PLATFORM_ASSET_ASSET_BIND_GRANT_ASSET_REF =
@@ -83,23 +79,20 @@ public final class PlatformAssetServiceSql {
             "UPDATE platform_asset.asset_bind_grant SET consumed_at_epoch_millis=? WHERE asset_ref=? AND ";
     public static final String PLATFORM_ASSET_SERVICE_CONSUMED_AT_EPOCH_MILLIS_GRANT_HASH =
             "consumed_at_epoch_millis IS NULL AND grant_hash=?";
-    public static final String
-            PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_RELEASED_RELEASED_AT_EPOCH_MILLIS_ALTERNATE_C =
-                    "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, ";
+    public static final String UPDATE_STAGED_ASSET_STATUS_RELEASED_ALT_C_005 =
+            "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, ";
     public static final String PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_USAGE_CATALOG_ITEM_IMAGE =
             "version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='STAGED' AND ";
     public static final String PLATFORM_ASSET_SERVICE_VERSION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             "version=? AND workspace_uuid=? AND group_workspace_key=?";
-    public static final String
-            PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_RELEASED_RELEASED_AT_EPOCH_MILLIS_ALTERNATE_D =
-                    "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, ";
+    public static final String UPDATE_STAGED_ASSET_STATUS_RELEASED_ALT_D_006 =
+            "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, ";
     public static final String PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_USAGE_CATALOG_ITEM_IMAGE_ALTERNATE_A =
             "version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='ACTIVE' ";
     public static final String PLATFORM_ASSET_SERVICE_CONDITION_ALTERNATE_A = "AND ";
     public static final String PLATFORM_ASSET_SERVICE_VERSION_WORKSPACE_UUID = "version=? AND workspace_uuid=?";
-    public static final String
-            PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_RELEASED_RELEASED_AT_EPOCH_MILLIS_ALTERNATE_E =
-                    "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, ";
+    public static final String UPDATE_STAGED_ASSET_STATUS_RELEASED_ALT_E_007 =
+            "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, ";
     public static final String PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_USAGE_CATALOG_ITEM_IMAGE_ALTERNATE_B =
             "version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='ACTIVE' ";
     public static final String PLATFORM_ASSET_SERVICE_CONDITION_ALTERNATE_B = "AND ";
@@ -110,9 +103,8 @@ public final class PlatformAssetServiceSql {
     public static final String PLATFORM_ASSET_SERVICE_ASSET_REF = "asset_ref=?";
     public static final String PLATFORM_ASSET_SERVICE_SELECT_ASSET_REF_OBJECT_KEY_CONTENT_TYPE_SHA256 =
             "SELECT asset_ref, object_key, content_type, sha256, usage, status, version, size_bytes ";
-    public static final String
-            PLATFORM_ASSET_SERVICE_FROM_CLAUSE_STAGED_ASSET_USAGE_SALES_MENU_ITEM_IMAGE_STATUS_ACTIVE =
-                    "FROM platform_asset.staged_asset WHERE usage='SALES_MENU_ITEM_IMAGE' AND status='ACTIVE' ";
+    public static final String FROM_CLAUSE_STAGED_ASSET_USAGE_008 =
+            "FROM platform_asset.staged_asset WHERE usage='SALES_MENU_ITEM_IMAGE' AND status='ACTIVE' ";
     public static final String PLATFORM_ASSET_SERVICE_CONDITION_ASSET_REF = "AND asset_ref IN (";
     public static final String PLATFORM_ASSET_SERVICE_CLOSE_PAREN = ")";
     public static final String PLATFORM_ASSET_SERVICE_SELECT_STAGED_ASSET_ASSET_REF_USAGE_STATUS_VERSION_ALTERNATE_A =
@@ -142,9 +134,8 @@ public final class PlatformAssetServiceSql {
             "asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='RELEASED' AND workspace_uuid=? AND ";
     public static final String PLATFORM_ASSET_SERVICE_CONTENT_TYPE_SIZE_BYTES_SHA256 =
             "content_type=? AND size_bytes=? AND sha256=?";
-    public static final String
-            PLATFORM_ASSET_SERVICE_INSERT_INTO_ASSET_BIND_GRANT_ASSET_REF_GRANT_HASH_EXPIRES_AT_EPOCH_MILLIS =
-                    "INSERT INTO platform_asset.asset_bind_grant (asset_ref, grant_hash, expires_at_epoch_millis, ";
+    public static final String INSERT_INTO_ASSET_BIND_GRANT_009 =
+            "INSERT INTO platform_asset.asset_bind_grant (asset_ref, grant_hash, expires_at_epoch_millis, ";
     public static final String PLATFORM_ASSET_SERVICE_SET_CONSUMED_AT_EPOCH_MILLIS_ASSET_REF =
             "consumed_at_epoch_millis) VALUES (?, ?, ?, NULL) ON CONFLICT (asset_ref) DO UPDATE SET ";
     public static final String PLATFORM_ASSET_SERVICE_GRANT_HASH_EXPIRES_AT_EPOCH_MILLIS =
@@ -173,9 +164,7 @@ public final class PlatformAssetServiceSql {
             "t.sales_menu_ref AS target_sales_menu_ref, t.sales_item_ref AS target_sales_item_ref, ";
     public static final String PLATFORM_ASSET_SERVICE_USAGE =
             "t.usage AS target_usage, t.expected_draft_version AS target_expected_draft_version ";
-    public static final String
-            PLATFORM_ASSET_SERVICE_FROM_CLAUSE_STAGED_ASSET_FROM_PLATFORM_ASSET_STAGED_A_ALTERNATE_A =
-                    "FROM platform_asset.staged_asset a ";
+    public static final String FROM_CLAUSE_STAGED_ASSET_FROM_ALT_A_010 = "FROM platform_asset.staged_asset a ";
     public static final String PLATFORM_ASSET_SERVICE_JOIN_SALES_MENU_ASSET_TARGET_ASSET_REF =
             "JOIN platform_asset.sales_menu_asset_target t ON t.asset_ref=a.asset_ref ";
     public static final String PLATFORM_ASSET_SERVICE_WHERE_OF_ASSET_REF = "WHERE a.asset_ref=? FOR UPDATE OF a, t";
@@ -196,9 +185,8 @@ public final class PlatformAssetServiceSql {
     public static final String PLATFORM_ASSET_SERVICE_ASSET_REF_RECEIPT_IDEMPOTENCY_KEY =
             "asset ON asset.asset_ref=receipt.asset_ref WHERE receipt.idempotency_key=? AND ";
     public static final String PLATFORM_ASSET_SERVICE_RECEIPT_SCOPE_KEY = "receipt.scope_key=? FOR UPDATE";
-    public static final String
-            PLATFORM_ASSET_SERVICE_INSERT_INTO_ASSET_COMMAND_RECEIPT_SCOPE_KEY_IDEMPOTENCY_KEY_ASSET_REF =
-                    "INSERT INTO platform_asset.asset_command_receipt (scope_key, idempotency_key, asset_ref, ";
+    public static final String INSERT_INTO_ASSET_CMD_RECEIPT_011 =
+            "INSERT INTO platform_asset.asset_command_receipt (scope_key, idempotency_key, asset_ref, ";
     public static final String PLATFORM_ASSET_SERVICE_REQUEST_HASH_RESPONSE_JSON_CREATED_AT_EPOCH_MILLIS =
             "request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, ?, CAST(? AS ";
 
@@ -210,14 +198,12 @@ public final class PlatformAssetServiceSql {
             "platform_asset.asset_command_receipt.request_hash=EXCLUDED.request_hash AND ";
     public static final String PLATFORM_ASSET_SERVICE_PLATFORM_ASSET_ASSET_COMMAND_RECEIPT_ASSET_REF =
             "platform_asset.asset_command_receipt.asset_ref=EXCLUDED.asset_ref";
-    public static final String
-            PLATFORM_ASSET_SERVICE_INSERT_INTO_ASSET_COMMAND_RECEIPT_SCOPE_KEY_IDEMPOTENCY_KEY_ASSET_REF_ALTERNATE_A =
-                    "INSERT INTO platform_asset.asset_command_receipt (scope_key, idempotency_key, asset_ref, ";
+    public static final String INSERT_INTO_ASSET_CMD_RECEIPT_ALT_A_012 =
+            "INSERT INTO platform_asset.asset_command_receipt (scope_key, idempotency_key, asset_ref, ";
     public static final String PLATFORM_ASSET_SERVICE_REQUEST_HASH_RESPONSE_JSON_CREATED_AT_EPOCH_MILLIS_ALTERNATE_A =
             "request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, ?, CAST(? AS ";
     public static final String PLATFORM_ASSET_SERVICE_JSON_RESPONSE_CLOSE = "JSONB), ?)";
-    public static final String
-            PLATFORM_ASSET_SERVICE_JSONB_ON_CONFLICT_SCOPE_KEY_IDEMPOTENCY_KEY_DO_UPDATE_SET_ASSET_REF_EXCLUDED_SET_ASSET_REF_EXCLUDED_ASSET_REF =
-                    """
+    public static final String JSONB_ON_CONFLICT_SCOPE_KEY_013 =
+            """
     JSONB), ?) ON CONFLICT (scope_key, idempotency_key) DO UPDATE SET asset_ref=EXCLUDED.asset_ref,\s""";
 }

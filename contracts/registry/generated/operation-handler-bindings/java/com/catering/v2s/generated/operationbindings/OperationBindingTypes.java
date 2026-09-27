@@ -28,6 +28,10 @@ public final class OperationBindingTypes {
     private PublicProtocolCommandContext() {}
   }
 
+  public static final class TerminalCredentialCommandContext {
+    private TerminalCredentialCommandContext() {}
+  }
+
   public static final class Wire {
     public record AuditHistoryPage() {}
     public record Brand() {}
@@ -168,6 +172,8 @@ public final class OperationBindingTypes {
     public record OperationsPasswordRecoveryStartRequest() {}
     public record OperationsPasswordRecoveryStartResponse() {}
     public record OperationsPasswordRecoveryVerification() {}
+    public record OperationsTerminalActivationCancellationRequest() {}
+    public record OperationsTerminalActivationCancellationResult() {}
     public record OrganizationCandidatePage() {}
     public record OrganizationHierarchySnapshot() {}
     public record OrganizationHierarchyTree() {}
@@ -302,6 +308,10 @@ public final class OperationBindingTypes {
     public record TenantCreateRequest() {}
     public record TenantPage() {}
     public record TenantUpdateRequest() {}
+    public record TerminalActivationCancellationRequest() {}
+    public record TerminalActivationCancellationResult() {}
+    public record TerminalActivationRequest() {}
+    public record TerminalActivationResult() {}
     public record WorkspaceAccount() {}
     public record WorkspaceAccountPage() {}
     public record WorkspaceAccountStatusTransitionRequest() {}

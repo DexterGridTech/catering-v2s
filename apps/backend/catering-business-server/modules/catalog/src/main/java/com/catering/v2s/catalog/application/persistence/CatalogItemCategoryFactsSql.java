@@ -20,9 +20,8 @@ public final class CatalogItemCategoryFactsSql {
             "DELETE FROM catalog.catalog_item_category WHERE item_ref=?";
     public static final String CATALOG_ITEM_CATEGORY_FACTS_INSERT_INTO_CATALOG_ITEM_CATEGORY_ITEM_REF_CATEGORY_REF =
             "INSERT INTO catalog.catalog_item_category(item_ref,category_ref) VALUES(?,?)";
-    public static final String
-            CATALOG_ITEM_CATEGORY_FACTS_INSERT_INTO_CATALOG_ITEM_CATEGORY_ITEM_REF_CATEGORY_REF_ALTERNATE_A =
-                    "INSERT INTO catalog.catalog_item_category(item_ref,category_ref) VALUES(?,?)";
+    public static final String INSERT_INTO_CAT_ITEM_CATG_ALT_A_001 =
+            "INSERT INTO catalog.catalog_item_category(item_ref,category_ref) VALUES(?,?)";
     public static final String CATALOG_ITEM_CATEGORY_FACTS_CLOSE_PAREN_ITEM_REF_CATEGORY_REF =
             ") ORDER BY item_ref,category_ref";
     public static final String CATALOG_ITEM_CATEGORY_FACTS_CLOSE_PAREN_RELATION_ITEM_REF_CATEGORY_REF =

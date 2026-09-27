@@ -31,8 +31,7 @@ public class HeadCompanyPersistence {
 
     public int removeBrandAuthorization(UUID headCompanyId, UUID brandId) {
         return jdbc.update(
-                HeadCompanyServiceSql
-                                .HEAD_COMPANY_SERVICE_DELETE_HEAD_COMPANY_BRAND_AUTHORIZATION_DELETE_FROM_ORGANIZATION_HEA
+                HeadCompanyServiceSql.DELETE_HEAD_COMPANY_BRAND_AUTH_001
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_HEAD_COMPANY_ID_BRAND_ID,
                 headCompanyId,
                 brandId);
@@ -49,8 +48,7 @@ public class HeadCompanyPersistence {
             String remark,
             long now) {
         return jdbc.update(
-                HeadCompanyServiceSql
-                                .HEAD_COMPANY_SERVICE_INSERT_INTO_HEAD_COMPANY_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
+                HeadCompanyServiceSql.INSERT_INTO_HEAD_COMPANY_WS_002
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_LEGAL_NAME_CREDIT_CODE_REMARK_STATUS
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_ENABLED,
                 id,

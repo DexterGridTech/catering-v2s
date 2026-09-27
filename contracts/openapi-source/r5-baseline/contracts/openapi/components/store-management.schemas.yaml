@@ -1,0 +1,119 @@
+openapi: 3.0.3
+info: {title: Store management components, version: 0.1.0}
+paths: {}
+components:
+  schemas:
+    OrganizationStoreSource:
+      type: string
+      enum: [MANUAL, EXTERNAL_SYNC]
+    OrganizationStoreStatus:
+      type: string
+      enum: [ENABLED, DISABLED]
+    OrganizationStoreSortKey:
+      type: string
+      enum: [NAME, CODE, UPDATED_AT]
+    OrganizationStoreSortDirection:
+      type: string
+      enum: [ASC, DESC]
+    OrganizationStoreReference:
+      type: object
+      additionalProperties: false
+      required: [id, code, name]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        path: {type: string, nullable: true, maxLength: 512}
+    OrganizationStore:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceKey, code, name, project, brand, tenant, status, source, extensionValues, extensionRuleRevision, revision, createdAt, updatedAt]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        project: {$ref: '#/components/schemas/OrganizationStoreReference'}
+        brand: {$ref: '#/components/schemas/OrganizationStoreReference'}
+        tenant: {$ref: '#/components/schemas/OrganizationStoreReference'}
+        headCompany: {$ref: '#/components/schemas/OrganizationStoreReference', nullable: true}
+        notes: {type: string, nullable: true, maxLength: 2000}
+        source: {$ref: '#/components/schemas/OrganizationStoreSource'}
+        status: {$ref: '#/components/schemas/OrganizationStoreStatus'}
+        extensionValues: {type: object, additionalProperties: true}
+        extensionRuleRevision: {type: integer, format: int64, minimum: 0}
+        revision: {type: integer, format: int64, minimum: 0}
+        createdAt: {type: integer, format: int64, minimum: 0}
+        updatedAt: {type: integer, format: int64, minimum: 0}
+    OrganizationStorePageMetadata:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, dataScope, page, pageSize, total, sort, direction]
+      properties:
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        dataScope: {$ref: '#/components/schemas/OrganizationStoreDataScope'}
+        page: {type: integer, minimum: 1}
+        pageSize: {type: integer, minimum: 1, maximum: 100}
+        total: {type: integer, format: int64, minimum: 0}
+        sort: {$ref: '#/components/schemas/OrganizationStoreSortKey'}
+        direction: {$ref: '#/components/schemas/OrganizationStoreSortDirection'}
+    OrganizationStorePage:
+      type: object
+      additionalProperties: false
+      required: [metadata, items]
+      properties:
+        metadata: {$ref: '#/components/schemas/OrganizationStorePageMetadata'}
+        items: {type: array, items: {$ref: '#/components/schemas/OrganizationStore'}}
+    OrganizationStoreCandidatePage:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, dataScope, projects, brands, tenants, headCompanies]
+      properties:
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        dataScope: {$ref: '#/components/schemas/OrganizationStoreDataScope'}
+        projects: {type: array, items: {$ref: '#/components/schemas/OrganizationStoreReference'}}
+        brands: {type: array, items: {$ref: '#/components/schemas/OrganizationStoreReference'}}
+        tenants: {type: array, items: {$ref: '#/components/schemas/OrganizationStoreReference'}}
+        headCompanies: {type: array, items: {$ref: '#/components/schemas/OrganizationStoreReference'}}
+    OrganizationStoreDataScope:
+      type: object
+      additionalProperties: false
+      required: [nodeType, nodeRef, nodeName]
+      properties:
+        nodeType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        nodeRef: {type: string, minLength: 1, maxLength: 64}
+        nodeName: {type: string, minLength: 1, maxLength: 160}
+    OrganizationStoreCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [projectId, brandId, tenantId, code, name, expectedContextVersion]
+      properties:
+        projectId: {type: string, minLength: 1, maxLength: 64}
+        brandId: {type: string, minLength: 1, maxLength: 64}
+        tenantId: {type: string, minLength: 1, maxLength: 64}
+        headCompanyId: {type: string, nullable: true, maxLength: 64}
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        notes: {type: string, nullable: true, maxLength: 2000}
+        extensionValues: {type: object, additionalProperties: true}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    OrganizationStoreUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, extensionValues, extensionRuleRevision, expectedRevision, expectedContextVersion]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        headCompanyId: {type: string, nullable: true, maxLength: 64}
+        notes: {type: string, nullable: true, maxLength: 2000}
+        extensionValues: {type: object, additionalProperties: true}
+        extensionRuleRevision: {type: integer, format: int64, minimum: 0}
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    OrganizationStoreStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [targetStatus, expectedRevision, expectedContextVersion]
+      properties:
+        targetStatus: {$ref: '#/components/schemas/OrganizationStoreStatus'}
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}

@@ -31,7 +31,7 @@ const serialized = JSON.stringify(value);
 if (/\/Users\/|~\/|openmemory|semantic|daemon|index-service/i.test(serialized)) process.exit(2);
 NODE
 
-node - tools scripts/hooks <<'NODE'
+node - tools/project-memory scripts/hooks <<'NODE'
 const fs = require("node:fs");
 const path = require("node:path");
 const files = [];
@@ -45,7 +45,7 @@ function walk(candidate) {
   }
 }
 for (const candidate of process.argv.slice(2)) walk(candidate);
-const allowedDeterministicDependencies = new Set(["typescript"]);
+const allowedDeterministicDependencies = new Set();
 for (const file of files) {
   const text = fs.readFileSync(file, "utf8");
   const specs = text.split("\n").flatMap((line) => {

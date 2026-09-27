@@ -1,0 +1,130 @@
+openapi: 3.0.3
+info:
+  title: Platform Asset Components
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    PlatformAssetUsage:
+      type: string
+      enum: [GROUP_WORKSPACE_LOGO]
+    PlatformAssetStagingResult:
+      type: object
+      additionalProperties: false
+      required: [assetRef, bindGrant, expiresAt, contentType, sizeBytes, sha256]
+      properties:
+        assetRef:
+          type: string
+          minLength: 32
+          maxLength: 128
+        bindGrant:
+          type: string
+          minLength: 32
+          maxLength: 256
+        expiresAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        contentType:
+          type: string
+          enum: [image/png, image/jpeg, image/webp]
+        sizeBytes:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 5242880
+        sha256:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+    PlatformAssetClaimProofRequest:
+      description: Gateway-only conversion of a browser-held staging bind grant into an owner-to-owner claim proof.
+      type: object
+      additionalProperties: false
+      required: [assetRef, bindGrant, usage, workspaceKey]
+      properties:
+        assetRef:
+          type: string
+          minLength: 32
+          maxLength: 128
+        bindGrant:
+          type: string
+          minLength: 32
+          maxLength: 256
+        usage:
+          $ref: '#/components/schemas/PlatformAssetUsage'
+        workspaceKey:
+          type: string
+          minLength: 1
+          maxLength: 64
+    PlatformAssetClaimProof:
+      description: Short-lived typed asset-owner proof. It is accepted only by the asset binding consumer and never exposes the staging bind grant to another owner.
+      type: object
+      additionalProperties: false
+      required: [assetRef, usage, workspaceKey, proof, expiresAt]
+      properties:
+        assetRef:
+          type: string
+          minLength: 32
+          maxLength: 128
+        usage:
+          $ref: '#/components/schemas/PlatformAssetUsage'
+        workspaceKey:
+          type: string
+          minLength: 1
+          maxLength: 64
+        proof:
+          type: string
+          minLength: 32
+          maxLength: 256
+        expiresAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+    PlatformWorkspaceAssetBindingPayload:
+      type: object
+      additionalProperties: false
+      required: [assetRef, workspaceId, usage]
+      properties:
+        assetRef:
+          type: string
+          minLength: 32
+          maxLength: 128
+        workspaceId:
+          type: string
+          format: uuid
+        usage:
+          $ref: '#/components/schemas/PlatformAssetUsage'
+        claimProof:
+          type: string
+          nullable: true
+          minLength: 32
+          maxLength: 256
+    PlatformWorkspaceAssetBindingEventV1:
+      description: Durable platform-workspace to platform-asset binding command. The asset owner deduplicates eventId and owns the physical claim or release.
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, eventId, eventType, workspaceKey, aggregateId, revision, occurredAt, payloadHash, payload]
+      properties:
+        schemaVersion:
+          type: integer
+          enum: [1]
+        eventId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          enum: [PLATFORM_ASSET_CLAIM_REQUESTED, PLATFORM_ASSET_RELEASE_REQUESTED]
+        workspaceKey:
+          type: string
+          minLength: 1
+          maxLength: 64
+        aggregateId:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+        occurredAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        payloadHash:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        payload:
+          $ref: '#/components/schemas/PlatformWorkspaceAssetBindingPayload'

@@ -301,10 +301,10 @@ class OrganizationOverviewTaskReadServiceTest {
         assertTrue(sqlCaptor
                 .getValue()
                 .replaceAll("\\s+", " ")
-                .contains(
-                        "target.extension_rule_revision, target.created_at_epoch_millis, target.updated_at_epoch_millis, "
-                                + "target.notes, target.extension_values, "
-                                + "target.project_id, target.project_code, target.project_name"));
+                .contains(("target.extension_rule_revision, target.created_at_epoch_millis, target.u"
+                                + "pdated_at_epoch_millis, ")
+                        + "target.notes, target.extension_values, "
+                        + "target.project_id, target.project_code, target.project_name"));
     }
 
     @Test

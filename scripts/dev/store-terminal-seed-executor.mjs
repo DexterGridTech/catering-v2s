@@ -397,7 +397,7 @@ async function execute() {
   if (projectBefore.name !== "前台收银终端") fail("STORE_TERMINAL_SEED_PROJECT_READBACK_INVALID");
   const projectReplace = await request("project-terminal-edit", "putOperationsStoreTerminal", {groupWorkspaceKey: GROUP_WORKSPACE_KEY, storeRef: projectStoreRef, terminalRef: projectTerminal.terminalRef}, {
     cookie: groupCookie,
-    body: {name: projectBefore.name, deviceType: projectBefore.deviceType, configuration: replaceConfigurationFromDetail(projectBefore.configuration), expectedVersion: Number(projectBefore.version)},
+    body: {name: projectBefore.name, configuration: replaceConfigurationFromDetail(projectBefore.configuration), expectedVersion: Number(projectBefore.version)},
   });
   if (!Number.isFinite(Number(projectReplace.json?.version))) fail("STORE_TERMINAL_SEED_PROJECT_EDIT_READBACK_INVALID");
   const projectAfter = unwrap((await request("project-terminal-edit-readback", "getOperationsStoreTerminal", {groupWorkspaceKey: GROUP_WORKSPACE_KEY, storeRef: projectStoreRef, terminalRef: projectTerminal.terminalRef}, {cookie: groupCookie, idempotency: false})).json);
@@ -459,7 +459,6 @@ async function execute() {
     expected: [403],
     body: {
       name: storeReadOnlyDetail.name,
-      deviceType: storeReadOnlyDetail.deviceType,
       configuration: replaceConfigurationFromDetail(storeReadOnlyDetail.configuration),
       expectedVersion: storeReadOnlyBefore.version,
     },

@@ -62,8 +62,7 @@ public class OrganizationHierarchyPersistence {
 
     public List<OrganizationNodeReadback> listNodes(UUID workspaceUuid, String groupWorkspaceKey) {
         List<OrganizationNodeReadback> nodes = jdbc.query(
-                OrganizationHierarchyServiceSql
-                                .ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE
+                OrganizationHierarchyServiceSql.SELECT_WS_UUID_GRP_WS_001
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_VERSION
                         + OrganizationHierarchyServiceSql
                                 .ORGANIZATION_HIERARCHY_SERVICE_ORGANIZATION_NODE_EXTENSION_RULE_REVISION_WORKSPACE_UUID
@@ -122,8 +121,7 @@ public class OrganizationHierarchyPersistence {
         values.add(pageSize);
         values.add(offset);
         return jdbc.query(
-                OrganizationHierarchyServiceSql
-                                .ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE_ALTERNATE_A
+                OrganizationHierarchyServiceSql.SELECT_WS_UUID_GRP_WS_ALT_A_002
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_VERSION_ALTERNATE_A
                         + OrganizationHierarchyServiceSql
                                 .ORGANIZATION_HIERARCHY_SERVICE_ORGANIZATION_NODE_EXTENSION_RULE_REVISION
@@ -197,8 +195,7 @@ public class OrganizationHierarchyPersistence {
     public OrganizationNodeReadback findNode(
             UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String requiredType) {
         return jdbc.query(
-                OrganizationHierarchyServiceSql
-                                .ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE_ALTERNATE_B
+                OrganizationHierarchyServiceSql.SELECT_WS_UUID_GRP_WS_ALT_B_003
                         + OrganizationHierarchyServiceSql
                                 .ORGANIZATION_HIERARCHY_SERVICE_NOTES_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS
                         + OrganizationHierarchyServiceSql
@@ -299,8 +296,7 @@ public class OrganizationHierarchyPersistence {
     public Map<UUID, List<String>> readPhaseNames(List<UUID> projectIds) {
         if (projectIds.isEmpty()) return Map.of();
         return jdbc.query(
-                OrganizationHierarchyServiceSql
-                                .ORGANIZATION_HIERARCHY_SERVICE_SELECT_PROJECT_PHASE_NAME_PROJECT_ID_PHASE_NAME_ALTERNATE_A
+                OrganizationHierarchyServiceSql.SELECT_PROJECT_PHASE_NAME_PROJECT_ALT_A_004
                         + String.join(
                                 OrganizationHierarchyServiceSql.PLACEHOLDER_SEPARATOR,
                                 Collections.nCopies(
@@ -324,8 +320,7 @@ public class OrganizationHierarchyPersistence {
         if (nodeIds.isEmpty()) return Map.of();
         String sql = OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CTE_ANCESTRY_ALTERNATE_A
                 + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_NODE_TARGET_ID_PARENT_ID_CODE
-                + OrganizationHierarchyServiceSql
-                        .ORGANIZATION_HIERARCHY_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_NODE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                + OrganizationHierarchyServiceSql.ALT_ORG_NODE_WS_UUID_005
                 + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_NODE
                 + String.join(
                         OrganizationHierarchyServiceSql.PLACEHOLDER_SEPARATOR,
@@ -394,9 +389,7 @@ public class OrganizationHierarchyPersistence {
     public int[] insertPhases(UUID projectId, List<String> phases) {
         if (phases.isEmpty()) return new int[0];
         return jdbc.batchUpdate(
-                OrganizationHierarchyServiceSql
-                        .ORGANIZATION_HIERARCHY_SERVICE_INSERT_INTO_PROJECT_PHASE_NAME_PROJECT_ID_PHASE_NAME_DISPLAY_ORDER,
-                new BatchPreparedStatementSetter() {
+                OrganizationHierarchyServiceSql.INSERT_INTO_PROJECT_PHASE_NAME_006, new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(java.sql.PreparedStatement statement, int index) throws SQLException {
                         statement.setObject(1, projectId);

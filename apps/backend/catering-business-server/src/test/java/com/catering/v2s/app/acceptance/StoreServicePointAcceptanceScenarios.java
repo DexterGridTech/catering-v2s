@@ -201,7 +201,8 @@ final class StoreServicePointAcceptanceScenarios {
                         point1.ref().toString(),
                         point4.ref().toString()),
                 refs(pointsAfterFirstRepeatedDown, "pointRef"),
-                "BUSINESS: point DOWN remains usable after the same target previously moved DOWN through another state");
+                ("BUSINESS: point DOWN remains usable after the same target previously mov"
+                        + "ed DOWN through another state"));
         PointView movedPoint1DownAgain = movePoint(context, store, movedPoint1Down, "DOWN");
         JsonNode pointsAfterSecondRepeatedDown = listPoints(context, store, first);
         assertEquals(
@@ -327,7 +328,8 @@ final class StoreServicePointAcceptanceScenarios {
         BackendAcceptanceTest.Response definition = context.get(
                 OPERATIONS_ORGANIZATION_BUSINESS_ENTITY_EXTENSION_DEFINITION,
                 "/api/operations/group-workspaces/" + store.fixture().groupWorkspaceKey()
-                        + "/organization/business-entities/extension-definition?entityType=SERVICE_POINT&expectedContextVersion="
+                        + ("/organization/business-entities/extension-definition?entityType=SERVICE_"
+                                + "POINT&expectedContextVersion=")
                         + store.session().contextVersion(),
                 store.session().cookie(),
                 OK);

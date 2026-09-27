@@ -2,9 +2,9 @@ package com.catering.v2s.workspace.iam.application.persistence;
 
 /** SQL text fragments owned by WorkspaceOtpRateLimitService; B3 relocates text only and does not change execution. */
 public final class WorkspaceOtpRateLimitServiceSql {
-    public static final String
-            WORKSPACE_OTP_RATE_LIMIT_SERVICE_DELETE_OTP_RATE_LIMIT_BUCKET_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "DELETE FROM workspace_iam.otp_rate_limit_bucket WHERE workspace_uuid=? AND group_workspace_key=? AND ";
+    public static final String DELETE_OTP_RATE_LIMIT_BUCKET_001 =
+            ("DELETE FROM workspace_iam.otp_rate_limit_bucket WHERE workspace_uuid=? A"
+                    + "ND group_workspace_key=? AND ");
     public static final String WORKSPACE_OTP_RATE_LIMIT_SERVICE_PURPOSE_SUBJECT_REF = "purpose=? AND subject_ref=?";
     public static final String WORKSPACE_OTP_RATE_LIMIT_SERVICE_SELECT_WINDOW_STARTED_AT_EPOCH_MILLIS =
             "SELECT window_started_at_epoch_millis, send_count, verify_failed_attempts, locked_until_epoch_millis ";

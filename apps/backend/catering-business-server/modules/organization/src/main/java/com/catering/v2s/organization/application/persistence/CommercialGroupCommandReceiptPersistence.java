@@ -28,8 +28,7 @@ public class CommercialGroupCommandReceiptPersistence {
 
     public int replaceResponse(String responseJson, UUID workspaceUuid, String idempotencyKey) {
         return jdbc.update(
-                CommercialGroupCommandReceiptServiceSql
-                                .COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_UPDATE_COMMERCIAL_GROUP_COMMAND_RECEIPT_RESPONSE_JSON
+                CommercialGroupCommandReceiptServiceSql.UPDATE_COMMERCIAL_GRP_CMD_RECEIPT_001
                         + CommercialGroupCommandReceiptServiceSql
                                 .COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY_ALTERNATE_A,
                 responseJson,

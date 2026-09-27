@@ -15,7 +15,7 @@
     {
       "documentId": "heritage-registry",
       "path": "doc/heritage/registry.json",
-      "role": "READ_ONLY_SOURCE_REGISTRY"
+      "role": "READ_ONLY_LOCAL_FROZEN_ASSET_REGISTRY"
     }
   ]
 }

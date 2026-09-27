@@ -9,7 +9,7 @@ owners: ["all"]
 impacts: ["governance"]
 triggers: ["implementation","failure"]
 assertions: ["LOCATE_BY_ANCHOR_NOT_LINE"]
-sourceRefs: ["doc/platform/foundation-charter.md"]
+sourceRefs: ["doc/platform/foundation-charter.md","project-memory/pitfalls/line-number-as-anchor.md","tools/project-memory/cli.mjs"]
 ---
 
 # 用行号指认一个自己即将移动的目标
@@ -28,6 +28,7 @@ sourceRefs: ["doc/platform/foundation-charter.md"]
     步骤 2: 删除锚点 `ALTER TABLE x.y DISABLE ROW LEVEL SECURITY;` 所在整行
 ```
 
-- **锚点自身的两个坑**:①**不要带前导空白**(源码缩进 11 空格,写 12 就零命中);
-  ②锚点必须**在目标文件内唯一**,写之前数命中数。
+- **锚点自身的两个坑**:①普通源码定位时不要带前导空白(源码缩进 11 空格,写 12 就零命中);②锚点必须**在目标文件内唯一**,写之前数命中数。
+- **精确行锚点例外**:`project-memory/required-inventory.json` 的 `assertionSources[].anchor` 不是普通搜索锚点;`scripts/memory/build-index` 用 `sourceText.split("\n").includes(anchor)` 校验,必须从 owning source 复制完整原行并保留其缩进。不要手工重写签名或只给行内片段;若 owning source 原行也被改动,必须在同一改动中更新该 assertionSources.anchor;提交前逐条确认所有 anchor 仍是源文件的完整原行。
+- **sourceRefs 派生坑**:新增或删除 `assertionSources` 时,必须在 memory frontmatter 与 `required-inventory.json` 同步维护 `sourceRefs = sorted(unique(assertionSources[].path))`。只比较两份 `sourceRefs` 彼此相等不够,因为它们可能一起漏掉刚新增的门或测试来源。运行 `scripts/memory/build-index` 前先按该等式核验,再逐行核验所有精确 anchor。
 - **判别式**:前一步执行完之后,后面几步的定位还指向同一个东西吗?

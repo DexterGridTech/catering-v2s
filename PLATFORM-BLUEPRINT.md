@@ -6,6 +6,8 @@ v2s 从一个业务 deployable 起步：单进程模块化单体、单 PostgreSQ
 
 初始形态不包含 MQ、通用 outbox、TDP、内部 OpenAPI client、搜索平台或常态轮询。只有真实触发条件与新 decision 可以改变该边界。
 
+本批按已接受的 terminal service-shape decision 增加独立受管的单节点 `terminal-data-server` WebSocket transport runtime。它是辅助传输进程，不是业务 deployable 或 TDP；业务事实仍由唯一业务应用与 owner 模块管理，TDS 不运行 Flyway、不拥有业务写入，也不引入 MQ、通用 outbox 或 TDP。
+
 ## HTTP 与管理端
 
 OpenAPI extension `x-consumer-faces` 是 operation 暴露面的单一真相。`platform-admin` 与 `operations-admin` 是两个独立 consumer app，分别拥有 shell、registry、theme、route 和状态生命周期，不能合并为一个后台。
@@ -46,7 +48,7 @@ operations capability 只表达用户发起的写工作流，不得作为页面�
 
 模块 owner 独占事实写入与最终授权复核。Flyway 是唯一 schema history；DEV start/restart 只做 additive migration，绝不 seed。reset 和 seed 必须是单独、显式、可审计的破坏性动作。
 
-环境执行面固定为三类：**DEV、backend acceptance 与当前受管浏览器 L2** 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只启动两个管理端 Vite（browser L2 另由本机 Playwright 驱动），通过受管 tunnel 仅转发远端 Java HTTP 与资产端口；禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite/浏览器。browser L2 每次必须隔离远端数据库/资产命名空间，并分别证明远端 Java、本机 Vite/Playwright、HTTP/asset ingress 与两侧 cleanup。**后续 UAT** 仅在获得单独授权后全量远端部署、远端执行。远端 Testcontainers 只是 JVM 与 Docker 同平面的技术验证，不替代任一浏览器 L2 或 UAT。受管 runner 若尚未实现对应远端后端拓扑，必须 fail closed，不得继续旧本机 Java + PostgreSQL tunnel。
+环境执行面固定为三类：**DEV、backend acceptance 与当前受管浏览器 L2** 的 Spring/Java 后端以及本批单节点 TDS 均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只启动两个管理端 Vite（browser L2 另由本机 Playwright 驱动），通过受管 tunnel 仅转发远端 Java HTTP、浏览器所需资产与单一 TDS WebSocket 端口；禁止 PostgreSQL tunnel、本机 Java/TDS fallback、远端 Vite/浏览器。browser L2 每次必须隔离远端数据库/资产命名空间，并分别证明远端 Java/TDS、本机 Vite/Playwright、HTTP/asset/WebSocket ingress 与两侧 cleanup。**后续 UAT** 仅在获得单独授权后全量远端部署、远端执行。远端 Testcontainers 只是 JVM 与 Docker 同平面的技术验证，不替代任一浏览器 L2 或 UAT。受管 runner 若尚未实现对应远端后端拓扑，必须 fail closed，不得继续旧本机 Java + PostgreSQL tunnel。
 
 受管 Testcontainers/backend-acceptance 的运行授权隐含一条窄的 DEV 生命周期授权：若运行前受管 DEV 正在运行，先按其 manifest/identity 执行 `scripts/dev/stop`，stop cleanup PASS 后才跑测试；测试 business 与 cleanup 都 PASS 后，且仅在 `DEV_WAS_RUNNING=true` 时执行 `scripts/dev/start`，让 DEV 加载当前最新代码。原先没有 DEV 不补启动，测试失败不自动重启。该规则不扩张到 reset、seed、L2、UAT 或未知进程，start 仍不 seed；stop/test/start 三段证据分别判定。
 

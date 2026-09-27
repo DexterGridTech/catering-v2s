@@ -3,6 +3,7 @@ package com.catering.v2s.storeterminal.persistence;
 import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
+import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.TerminalBinding;
 import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.TerminalPage;
 import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.TerminalSummary;
 import java.sql.ResultSet;
@@ -20,16 +21,62 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class StoreTerminalOwnerPersistence {
     private static final RowMapper<TerminalRow> TERMINAL_ROW = StoreTerminalOwnerPersistence::terminalRow;
+    private static final RowMapper<TerminalDetailRow> TERMINAL_DETAIL_ROW =
+            StoreTerminalOwnerPersistence::terminalDetailRow;
     private final JdbcTemplate jdbc;
 
     public StoreTerminalOwnerPersistence(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 
+    public UUID findWorkspaceUuid(String groupKey) {
+        List<UUID> rows = jdbc.query(
+                "SELECT workspace_uuid FROM platform_workspace.group_workspace WHERE group_workspace_key=?",
+                (result, ignored) -> result.getObject("workspace_uuid", UUID.class),
+                groupKey);
+        return rows.isEmpty() ? null : rows.getFirst();
+    }
+
+    public TerminalRow lockByActivationCode(UUID workspaceUuid, String groupKey, String activationCode) {
+        List<TerminalRow> rows = jdbc.query(
+                "SELECT terminal_ref, workspace_uuid, group_workspace_key, store_ref, name, name_normalized, "
+                        + "device_type, status, version, activation_code, configuration::text AS configuration_json, "
+                        + "created_at_epoch_millis, updated_at_epoch_millis FROM store_terminal.terminal "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND activation_code=? FOR UPDATE",
+                TERMINAL_ROW,
+                workspaceUuid,
+                groupKey,
+                activationCode);
+        if (rows.size() > 1) throw new IllegalStateException("activation code uniqueness invariant violated");
+        return rows.isEmpty() ? null : rows.getFirst();
+    }
+
     public TerminalRow find(UUID workspaceUuid, String groupKey, UUID storeRef, UUID terminalRef) {
         List<TerminalRow> rows = jdbc.query(
                 StoreTerminalOwnerPersistenceSql.SELECT_DETAIL,
                 TERMINAL_ROW,
+                workspaceUuid,
+                groupKey,
+                storeRef,
+                terminalRef);
+        return rows.isEmpty() ? null : rows.getFirst();
+    }
+
+    public UUID findStoreRef(UUID workspaceUuid, String groupKey, UUID terminalRef) {
+        List<UUID> rows = jdbc.query(
+                StoreTerminalOwnerPersistenceSql.SELECT_TERMINAL_STORE,
+                (result, ignored) -> result.getObject("store_ref", UUID.class),
+                workspaceUuid,
+                groupKey,
+                terminalRef);
+        if (rows.size() > 1) throw new IllegalStateException("terminal identity is not unique in its workspace");
+        return rows.isEmpty() ? null : rows.getFirst();
+    }
+
+    public TerminalDetailRow findDetail(UUID workspaceUuid, String groupKey, UUID storeRef, UUID terminalRef) {
+        List<TerminalDetailRow> rows = jdbc.query(
+                StoreTerminalOwnerPersistenceSql.SELECT_DETAIL_WITH_BINDING,
+                TERMINAL_DETAIL_ROW,
                 workspaceUuid,
                 groupKey,
                 storeRef,
@@ -173,7 +220,6 @@ public class StoreTerminalOwnerPersistence {
             UUID terminalRef,
             String name,
             String nameNormalized,
-            String deviceType,
             String configurationJson,
             long expectedVersion,
             long now) {
@@ -181,7 +227,6 @@ public class StoreTerminalOwnerPersistence {
                 StoreTerminalOwnerPersistenceSql.REPLACE_TERMINAL,
                 name,
                 nameNormalized,
-                deviceType,
                 configurationJson,
                 now,
                 workspaceUuid,
@@ -221,6 +266,8 @@ public class StoreTerminalOwnerPersistence {
 
     public record Receipt(String requestHash, String responseJson) {}
 
+    public record TerminalDetailRow(TerminalRow terminal, TerminalBinding binding) {}
+
     public record TerminalRow(
             UUID terminalRef,
             UUID workspaceUuid,
@@ -234,7 +281,14 @@ public class StoreTerminalOwnerPersistence {
             String activationCode,
             String configurationJson,
             long createdAt,
-            long updatedAt) {}
+            long updatedAt) {
+        @Override
+        public String toString() {
+            return "TerminalRow[terminalRef=" + terminalRef + ", workspaceUuid=" + workspaceUuid
+                    + ", groupKey=" + groupKey + ", storeRef=" + storeRef + ", status=" + status
+                    + ", version=" + version + ", activationCode=redacted]";
+        }
+    }
 
     private static TerminalRow terminalRow(ResultSet result, int ignored) throws SQLException {
         return new TerminalRow(
@@ -251,6 +305,15 @@ public class StoreTerminalOwnerPersistence {
                 result.getString("configuration_json"),
                 result.getLong("created_at_epoch_millis"),
                 result.getLong("updated_at_epoch_millis"));
+    }
+
+    private static TerminalDetailRow terminalDetailRow(ResultSet result, int ignored) throws SQLException {
+        TerminalRow terminal = terminalRow(result, ignored);
+        String status = result.getString("binding_status");
+        TerminalBinding binding = "ACTIVE".equals(status)
+                ? TerminalBinding.active(result.getLong("binding_activated_at"), result.getLong("binding_generation"))
+                : TerminalBinding.inactive();
+        return new TerminalDetailRow(terminal, binding);
     }
 
     private static String containsPattern(String value) {

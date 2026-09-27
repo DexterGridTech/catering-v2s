@@ -30,8 +30,7 @@ public class WorkspaceRolePersistence {
             String pageAccessKeysJson,
             String actionCapabilityKeysJson) {
         return jdbc.update(
-                WorkspaceRoleServiceSql
-                                .WORKSPACE_ROLE_SERVICE_INSERT_INTO_WORKSPACE_ROLE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NAME
+                WorkspaceRoleServiceSql.INSERT_INTO_WS_ROLE_WS_001
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_SERVICE_NODE_TYPE_DESCRIPTION_STATUS_VERSION
                         + WorkspaceRoleServiceSql
                                 .WORKSPACE_ROLE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_PAGE_ACCESS_KEYS_CAPABILITY_KEYS
@@ -172,12 +171,10 @@ public class WorkspaceRolePersistence {
                 WorkspaceRoleServiceSql.PLACEHOLDER_SEPARATOR,
                 java.util.Collections.nCopies(ids.size(), WorkspaceRoleServiceSql.PARAMETER_PLACEHOLDER));
         return jdbc.query(
-                WorkspaceRoleServiceSql
-                                .WORKSPACE_ROLE_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NAME_DESCRIPTION_ALTERNATE_A
+                WorkspaceRoleServiceSql.SELECT_WS_UUID_GRP_WS_ALT_A_002
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_VERSION_ALTERNATE_A
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_CAPABILITY_KEYS_ALTERNATE_A
-                        + WorkspaceRoleServiceSql
-                                .WORKSPACE_ROLE_SERVICE_FROM_CLAUSE_WORKSPACE_ROLE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A
+                        + WorkspaceRoleServiceSql.FROM_CLAUSE_WS_ROLE_WS_ALT_A_003
                         + WorkspaceRoleServiceSql.WORKSPACE_ROLE_SERVICE_IN_LIST_PREFIX
                         + placeholders
                         + WorkspaceRoleServiceSql.SQL_CLOSE_PAREN,
@@ -201,8 +198,7 @@ public class WorkspaceRolePersistence {
             long now,
             String changesJson) {
         return jdbc.update(
-                WorkspaceRoleServiceSql
-                                .WORKSPACE_ROLE_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
+                WorkspaceRoleServiceSql.INSERT_INTO_AUDIT_EVENT_WS_004
                         + WorkspaceRoleServiceSql
                                 .WORKSPACE_ROLE_SERVICE_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
                         + WorkspaceRoleServiceSql

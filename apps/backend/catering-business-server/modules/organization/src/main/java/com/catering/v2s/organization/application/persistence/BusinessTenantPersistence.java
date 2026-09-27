@@ -55,8 +55,7 @@ public class BusinessTenantPersistence {
             long expectedVersion) {
         return jdbc.update(
                 BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_UPDATE_TENANT_CODE_NAME_LEGAL_NAME_CREDIT_CODE
-                        + BusinessTenantServiceSql
-                                .BUSINESS_TENANT_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
+                        + BusinessTenantServiceSql.UPDATE_UPDATED_AT_EPOCH_MS_001,
                 code,
                 name,
                 legalName,

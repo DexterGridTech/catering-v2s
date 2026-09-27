@@ -134,8 +134,7 @@ public class PlatformWorkspaceInvitationTaskReadPersistence {
                 + PlatformWorkspaceInvitationTaskReadServiceSql
                         .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_COMPLETED_AT_EPOCH_MILLIS
                 + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_TOTAL
-                + PlatformWorkspaceInvitationTaskReadServiceSql
-                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_FROM_CLAUSE_INVITATION_FROM_WORKSPACE_IAM_INVITATIO
+                + PlatformWorkspaceInvitationTaskReadServiceSql.FROM_CLAUSE_INVITE_FROM_WS_001
                 + where
                 + PlatformWorkspaceInvitationTaskReadServiceSql.PAGE_ORDER_PREFIX
                 + order
@@ -145,10 +144,8 @@ public class PlatformWorkspaceInvitationTaskReadPersistence {
                         .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_VALUE_SEPARATOR_PAGE_TOTAL_TOTAL
                 + PlatformWorkspaceInvitationTaskReadServiceSql
                         .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_PAGED_FILTERED_TOTAL
-                + PlatformWorkspaceInvitationTaskReadServiceSql
-                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_PAGED_ID_PAGED_MOBILE_NORMALIZED_PAGED_ISSUER_DISPLAY_NAME_SNAPSHOT_PAGED_STATUS_PAGED_EXPIRES_AT_EPOCH_MILLIS_CREATED_AT_EPOCH_MILLIS_PAGED_CONSENTED_AT_EPOCH_MILLIS_PAGED
-                + PlatformWorkspaceInvitationTaskReadServiceSql
-                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_COMPLETED_AT_EPOCH_MILLIS_PAGED_CANCELLED_AT_EPOCH_MILLIS_PAGED_INVITATION_TOKEN_PAGE_TOTAL_TOTAL_COALESCE_INTENTS_VALUE_LEFT_JOIN_PAGED_ON
+                + PlatformWorkspaceInvitationTaskReadServiceSql.PAGED_ID_PAGED_MOBILE_NORMALIZED_002
+                + PlatformWorkspaceInvitationTaskReadServiceSql.COMPLETED_AT_EPOCH_MS_PAGED_003
                 + PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_LATERAL
                 + PlatformWorkspaceInvitationTaskReadServiceSql
                         .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_ROLE_NAME_ROLE_NAME_TYPE
@@ -168,8 +165,7 @@ public class PlatformWorkspaceInvitationTaskReadPersistence {
         return PlatformWorkspaceInvitationTaskReadServiceSql.PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_SELECT
                 + PlatformWorkspaceInvitationTaskReadServiceSql
                         .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_MOBILE_NORMALIZED
-                + PlatformWorkspaceInvitationTaskReadServiceSql
-                        .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_I_CREATED_AT_EPOCH_MILLIS_I_CONSENTED_AT_EPOCH_MILLIS_I_COMPLETED_AT_EPOCH_MILLIS_I_CANCELLED_AT_EPOCH_MILLIS_I_INVITATION_TOKEN_TEXT_AS_INTENTS_FROM
+                + PlatformWorkspaceInvitationTaskReadServiceSql.I_CREATED_AT_EPOCH_MS_004
                 + PlatformWorkspaceInvitationTaskReadServiceSql
                         .PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_LATERAL_ALTERNATE_A
                 + PlatformWorkspaceInvitationTaskReadServiceSql

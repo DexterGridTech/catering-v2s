@@ -10,6 +10,213 @@ const acceptanceRoot = path.join(
   'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance',
 );
 const suitePath = path.join(acceptanceRoot, 'BackendAcceptanceTest.java');
+const tdsProcessPath = path.join(acceptanceRoot, 'TdsAcceptanceProcess.java');
+const repositoryPathsPath = path.join(acceptanceRoot, 'AcceptanceRepositoryPaths.java');
+const repositoryPathsTestPath = path.join(acceptanceRoot, 'AcceptanceRepositoryPathsTest.java');
+const terminalContractScenariosPath = path.join(acceptanceRoot, 'TerminalConnectionContractScenarios.java');
+const metricsConfigurationPath = path.join(acceptanceRoot, 'BackendAcceptanceMetricsConfiguration.java');
+const registrationGateBrokerPath = path.join(acceptanceRoot, 'TdsRegistrationGateBroker.java');
+const tdsWebSocketHandlerPath = path.join(
+  root,
+  'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketHandler.java',
+);
+const tdsSessionActorsPath = path.join(
+  root,
+  'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/session/TdsTerminalSessionActors.java',
+);
+const tdsWebSocketConnectionPath = path.join(
+  root,
+  'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketConnection.java',
+);
+const businessBuildPath = path.join(root, 'apps/backend/catering-business-server/build.gradle.kts');
+const businessDataConfigurationPath = path.join(
+  root,
+  'apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/BusinessDataConfiguration.java',
+);
+const backendRoot = path.join(root, 'apps/backend');
+
+export function assertNoTerminalDataServerDependencyInBusinessApp(source) {
+  const dependencyDeclaration =
+    /^\s*(?:api|implementation|compileOnly|runtimeOnly|testImplementation|testCompileOnly|testRuntimeOnly)\s*\(\s*project\(\s*["']:\s*apps\s*:\s*backend\s*:\s*terminal-data-server["']/m;
+  assert.doesNotMatch(source, dependencyDeclaration, 'BACKEND_ACCEPTANCE_TDS_ON_BUSINESS_TEST_RUNTIME_CLASSPATH');
+}
+
+function assertAcceptanceContainersStartBeforeDynamicProperties(source) {
+  const methodStart = source.indexOf('@DynamicPropertySource\n    static void applicationProperties');
+  const methodEnd = source.indexOf('private static Map<String, Supplier<?>> acceptancePropertySuppliers()', methodStart);
+  assert.notEqual(methodStart, -1, 'BACKEND_ACCEPTANCE_DYNAMIC_PROPERTY_SOURCE_MISSING');
+  assert.notEqual(methodEnd, -1, 'BACKEND_ACCEPTANCE_PROPERTY_SUPPLIER_BOUNDARY_MISSING');
+  const method = source.slice(methodStart, methodEnd);
+  const supplierRegistration = method.indexOf('acceptancePropertySuppliers()');
+  const postgresStart = method.indexOf('if (!POSTGRES.isRunning()) POSTGRES.start();');
+  const minioStart = method.indexOf('if (!MINIO.isRunning()) MINIO.start();');
+  assert.ok(
+    postgresStart >= 0 && postgresStart < supplierRegistration,
+    'BACKEND_ACCEPTANCE_POSTGRES_CONTAINER_START_ORDER_INVALID',
+  );
+  assert.ok(minioStart >= 0 && minioStart < supplierRegistration, 'BACKEND_ACCEPTANCE_MINIO_CONTAINER_START_ORDER_INVALID');
+}
+
+function productionJavaSources(directory, sources = []) {
+  for (const entry of readdirSync(directory, {withFileTypes: true})) {
+    const filePath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (!['.gradle', 'build', 'node_modules'].includes(entry.name)) productionJavaSources(filePath, sources);
+      continue;
+    }
+    if (entry.isFile() && entry.name.endsWith('.java') && filePath.includes(`${path.sep}src${path.sep}main${path.sep}java${path.sep}`)) {
+      sources.push({path: filePath, source: readFileSync(filePath, 'utf8')});
+    }
+  }
+  return sources;
+}
+
+function finalTransactionalSpringBeans(sources) {
+  return sources.flatMap(({path: filePath, source}) => {
+    const masked = maskJavaTrivia(source);
+    const type = masked.match(/^(?:public\s+)?final\s+class\s+(\w+)\b/m);
+    if (!type || !/@Transactional\b/.test(masked)) return [];
+    const annotationLines = masked
+      .slice(0, type.index)
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .slice(-10)
+      .join('\n');
+    if (!/@(?:Component|Service|Repository|Controller|RestController)\b/.test(annotationLines)) return [];
+    return [{path: filePath, className: type[1]}];
+  });
+}
+
+function assertTransactionalSpringBeansRemainProxyable(sources) {
+  const offenders = finalTransactionalSpringBeans(sources);
+  assert.deepEqual(
+    offenders,
+    [],
+    `BACKEND_TRANSACTIONAL_SPRING_COMPONENT_NOT_PROXYABLE:${offenders.map(({path: filePath, className}) => `${filePath}:${className}`).join(',')}`,
+  );
+}
+
+function assertSecondBusinessContextIsIsolatedFromAcceptanceTestConfiguration(source, metricsConfiguration) {
+  const builderStart = source.indexOf('secondBusinessContext = new SpringApplicationBuilder(');
+  assert.notEqual(builderStart, -1, 'BACKEND_ACCEPTANCE_SECOND_CONTEXT_BUILDER_MISSING');
+  const builderEnd = source.indexOf('.run();', builderStart);
+  assert.notEqual(builderEnd, -1, 'BACKEND_ACCEPTANCE_SECOND_CONTEXT_BUILDER_INCOMPLETE');
+  const builder = source.slice(builderStart, builderEnd);
+  assert.match(
+    builder,
+    /\.profiles\("backend-acceptance-secondary"\)/,
+    'BACKEND_ACCEPTANCE_SECOND_CONTEXT_PROFILE_MISSING',
+  );
+  assert.match(
+    metricsConfiguration,
+    /@Profile\("!backend-acceptance-secondary"\)\s+public class BackendAcceptanceMetricsConfiguration/,
+    'BACKEND_ACCEPTANCE_SECOND_CONTEXT_TEST_CONFIGURATION_LEAK',
+  );
+  assert.doesNotMatch(
+    builder,
+    /BackendAcceptanceMetricsConfiguration|BackendAcceptanceDatabaseMetricsSink|installMeasurementSink/,
+    'BACKEND_ACCEPTANCE_SECOND_CONTEXT_REPLACED_METRICS_SINK',
+  );
+}
+
+function assertCustomFlywayBeanHonorsStandardEnablement(suiteSource, configurationSource) {
+  const builderStart = suiteSource.indexOf('secondBusinessContext = new SpringApplicationBuilder(');
+  assert.notEqual(builderStart, -1, 'BACKEND_ACCEPTANCE_SECOND_CONTEXT_BUILDER_MISSING');
+  const builderEnd = suiteSource.indexOf('.run();', builderStart);
+  assert.notEqual(builderEnd, -1, 'BACKEND_ACCEPTANCE_SECOND_CONTEXT_BUILDER_INCOMPLETE');
+  assert.match(
+    suiteSource.slice(0, builderStart),
+    /properties\.put\("spring\.flyway\.enabled", false\);/,
+    'BACKEND_ACCEPTANCE_SECOND_CONTEXT_FLYWAY_DISABLE_MISSING',
+  );
+  assert.match(
+    configurationSource,
+    /@ConditionalOnProperty\(name = "spring\.flyway\.enabled", havingValue = "true", matchIfMissing = true\)\s+@Bean\(initMethod = "migrate"\)\s+public Flyway businessFlyway\(/,
+    'BACKEND_CUSTOM_FLYWAY_BEAN_IGNORES_STANDARD_ENABLEMENT',
+  );
+  assert.match(
+    suiteSource.slice(builderStart),
+    /getBeansOfType\(org\.flywaydb\.core\.Flyway\.class\)\s*\.isEmpty\(\)\s*,\s*"BACKEND_ACCEPTANCE_SECOND_CONTEXT_RAN_FLYWAY"/,
+    'BACKEND_ACCEPTANCE_SECOND_CONTEXT_FLYWAY_ABSENCE_ASSERTION_MISSING',
+  );
+}
+
+function assertAcceptanceRepositoryInputsUseExplicitRoot(buildSource, pathsSource, pathsTestSource, processSource, scenariosSource) {
+  assert.match(
+    buildSource,
+    /systemProperty\("v2s\.acceptance\.repository-root",\s*rootProject\.projectDir\.absolutePath\)/,
+    'BACKEND_ACCEPTANCE_REPOSITORY_ROOT_SYSTEM_PROPERTY_MISSING',
+  );
+  assert.match(
+    pathsSource,
+    /Path\.of\(configuredRoot\)\.toRealPath\(\)/,
+    'BACKEND_ACCEPTANCE_REPOSITORY_ROOT_NOT_EXPLICIT',
+  );
+  assert.match(
+    pathsSource,
+    /repositoryRoot\.resolve\(suppliedPath\)\.normalize\(\)/,
+    'BACKEND_ACCEPTANCE_REPOSITORY_INPUT_NOT_RESOLVED_FROM_ROOT',
+  );
+  assert.match(
+    pathsSource,
+    /candidate\.startsWith\(repositoryRoot\)/,
+    'BACKEND_ACCEPTANCE_REPOSITORY_INPUT_LEXICAL_ESCAPE_NOT_REJECTED',
+  );
+  assert.match(
+    pathsSource,
+    /Path resolved = candidate\.toRealPath\(\);[\s\S]*?resolved\.startsWith\(repositoryRoot\)/,
+    'BACKEND_ACCEPTANCE_REPOSITORY_INPUT_SYMLINK_ESCAPE_NOT_REJECTED',
+  );
+  assert.match(
+    processSource,
+    /AcceptanceRepositoryPaths\.resolveRegularFile\(\s*"scripts\/env\/tds-dev-capacity\.json"/,
+    'TDS_CAPACITY_CONFIG_NOT_RESOLVED_THROUGH_REPOSITORY_INPUT_GUARD',
+  );
+  assert.match(
+    scenariosSource,
+    /private static Path terminalWireClientScript\(\) throws IOException \{\s*return AcceptanceRepositoryPaths\.resolveRegularFile\(\s*"scripts\/test\/terminal-ws-wire-client\.mjs"/,
+    'TERMINAL_WIRE_CLIENT_SCRIPT_NOT_RESOLVED_THROUGH_REPOSITORY_INPUT_GUARD',
+  );
+  assert.match(
+    pathsTestSource,
+    /resolvesExplicitRootInputsAndRejectsTraversalAndSymlinkEscape/,
+    'BACKEND_ACCEPTANCE_REPOSITORY_INPUT_BEHAVIOR_TEST_MISSING',
+  );
+  assert.doesNotMatch(
+    scenariosSource,
+    /Path\.of\(System\.getProperty\("user\.dir"\),\s*"scripts\/test\/terminal-ws-wire-client\.mjs"\)/,
+    'TERMINAL_WIRE_CLIENT_MUST_NOT_USE_GRADLE_SUBPROJECT_WORKING_DIRECTORY',
+  );
+  assert.equal(
+    (scenariosSource.match(/Path script = terminalWireClientScript\(\);/g) ?? []).length,
+    4,
+    'TERMINAL_WIRE_CLIENT_REPOSITORY_PATH_CALLSITE_DENOMINATOR_MISMATCH',
+  );
+}
+
+function assertSecondWebServerContextUsesReturnedContext(source) {
+  const builderStart = source.indexOf('secondBusinessContext = new SpringApplicationBuilder(');
+  assert.notEqual(builderStart, -1, 'BACKEND_ACCEPTANCE_SECOND_CONTEXT_BUILDER_MISSING');
+  const portRead = source.indexOf('secondBusinessPort =', builderStart);
+  assert.notEqual(portRead, -1, 'BACKEND_ACCEPTANCE_SECOND_CONTEXT_PORT_READ_MISSING');
+  const startup = source.slice(builderStart, portRead);
+  assert.match(
+    startup,
+    /secondBusinessContext\s+instanceof\s+WebServerApplicationContext/,
+    'BACKEND_ACCEPTANCE_SECOND_CONTEXT_NOT_TYPE_CHECKED',
+  );
+  assert.match(
+    startup,
+    /WebServerApplicationContext\s+secondWebContext\s*=\s*\(WebServerApplicationContext\)\s*secondBusinessContext\s*;/,
+    'BACKEND_ACCEPTANCE_WEB_SERVER_CONTEXT_MUST_USE_RETURNED_CONTEXT',
+  );
+  assert.doesNotMatch(
+    startup,
+    /secondBusinessContext\.getBean\(WebServerApplicationContext\.class\)/,
+    'BACKEND_ACCEPTANCE_APPLICATION_CONTEXT_IS_NOT_A_BEAN',
+  );
+}
 
 function maskJavaTrivia(source) {
   const chars = source.split('');
@@ -187,6 +394,301 @@ function escapeRegExp(value) {
 
 test('backend acceptance discovers every real scenario file through a group or explicit host consumer', () => {
   validateAcceptanceStructure(root);
+});
+
+test('business application dependency declarations exclude the separately launched TDS project', () => {
+  const buildSource = readFileSync(businessBuildPath, 'utf8');
+  assertNoTerminalDataServerDependencyInBusinessApp(buildSource);
+  const mutated = buildSource.replace(
+    'testRuntimeOnly("org.junit.platform:junit-platform-launcher")',
+    'testRuntimeOnly(project(":apps:backend:terminal-data-server"))\n    testRuntimeOnly("org.junit.platform:junit-platform-launcher")',
+  );
+  assert.notEqual(mutated, buildSource, 'classpath red fixture anchor must exist');
+  assert.throws(
+    () => assertNoTerminalDataServerDependencyInBusinessApp(mutated),
+    /BACKEND_ACCEPTANCE_TDS_ON_BUSINESS_TEST_RUNTIME_CLASSPATH/,
+  );
+});
+
+test('acceptance containers start before Spring resolves mapped-port dynamic properties', () => {
+  const source = readFileSync(suitePath, 'utf8');
+  assertAcceptanceContainersStartBeforeDynamicProperties(source);
+  const postgresMutation = source.replace('if (!POSTGRES.isRunning()) POSTGRES.start();', '');
+  assert.notEqual(postgresMutation, source, 'PostgreSQL start-order red fixture anchor must exist');
+  assert.throws(
+    () => assertAcceptanceContainersStartBeforeDynamicProperties(postgresMutation),
+    /BACKEND_ACCEPTANCE_POSTGRES_CONTAINER_START_ORDER_INVALID/,
+  );
+  const minioMutation = source.replace('if (!MINIO.isRunning()) MINIO.start();', '');
+  assert.notEqual(minioMutation, source, 'MinIO start-order red fixture anchor must exist');
+  assert.throws(
+    () => assertAcceptanceContainersStartBeforeDynamicProperties(minioMutation),
+    /BACKEND_ACCEPTANCE_MINIO_CONTAINER_START_ORDER_INVALID/,
+  );
+});
+
+test('transactional Spring components remain proxyable', () => {
+  const sources = productionJavaSources(backendRoot);
+  assertTransactionalSpringBeansRemainProxyable(sources);
+  for (const {path: filePath, className} of [
+    {
+      path: path.join(root, 'apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/terminal/ActivateTerminalOperation.java'),
+      className: 'ActivateTerminalOperation',
+    },
+    {
+      path: path.join(root, 'apps/backend/catering-business-server/modules/terminal-binding/src/main/java/com/catering/v2s/terminalbinding/application/CancelTerminalActivationOperation.java'),
+      className: 'CancelTerminalActivationOperation',
+    },
+  ]) {
+    const source = readFileSync(filePath, 'utf8');
+    const mutation = source.replace(`public class ${className}`, `public final class ${className}`);
+    assert.notEqual(mutation, source, `${className} proxyability red fixture anchor must exist`);
+    const mutatedSources = sources.map(candidate =>
+      candidate.path === filePath ? {...candidate, source: mutation} : candidate,
+    );
+    assert.throws(
+      () => assertTransactionalSpringBeansRemainProxyable(mutatedSources),
+      /BACKEND_TRANSACTIONAL_SPRING_COMPONENT_NOT_PROXYABLE/,
+    );
+  }
+});
+
+test('second business web server port is read from its returned context instance', () => {
+  const source = readFileSync(suitePath, 'utf8');
+  assertSecondWebServerContextUsesReturnedContext(source);
+  const mutation = source.replace(
+    'WebServerApplicationContext secondWebContext = (WebServerApplicationContext) secondBusinessContext;',
+    'WebServerApplicationContext secondWebContext = secondBusinessContext.getBean(WebServerApplicationContext.class);',
+  );
+  assert.notEqual(mutation, source, 'second context lookup red fixture anchor must exist');
+  assert.throws(
+    () => assertSecondWebServerContextUsesReturnedContext(mutation),
+    /BACKEND_ACCEPTANCE_WEB_SERVER_CONTEXT_MUST_USE_RETURNED_CONTEXT/,
+  );
+});
+
+test('secondary business context excludes acceptance-only test configuration', () => {
+  const source = readFileSync(suitePath, 'utf8');
+  const metricsConfiguration = readFileSync(metricsConfigurationPath, 'utf8');
+  assertSecondBusinessContextIsIsolatedFromAcceptanceTestConfiguration(source, metricsConfiguration);
+  const mutated = source.replace(
+    '.web(WebApplicationType.SERVLET)\n                .run();',
+    '.web(WebApplicationType.SERVLET)\n                .sources(BackendAcceptanceMetricsConfiguration.class)\n                .run();',
+  );
+  assert.notEqual(mutated, source, 'second metrics sink red fixture anchor must exist');
+  assert.throws(
+    () => assertSecondBusinessContextIsIsolatedFromAcceptanceTestConfiguration(mutated, metricsConfiguration),
+    /BACKEND_ACCEPTANCE_SECOND_CONTEXT_REPLACED_METRICS_SINK/,
+  );
+  const profileMutation = source.replace('.profiles("backend-acceptance-secondary")\n', '');
+  assert.notEqual(profileMutation, source, 'secondary profile red fixture anchor must exist');
+  assert.throws(
+    () => assertSecondBusinessContextIsIsolatedFromAcceptanceTestConfiguration(profileMutation, metricsConfiguration),
+    /BACKEND_ACCEPTANCE_SECOND_CONTEXT_PROFILE_MISSING/,
+  );
+  const configurationMutation = metricsConfiguration.replace('@Profile("!backend-acceptance-secondary")\n', '');
+  assert.notEqual(configurationMutation, metricsConfiguration, 'test configuration profile red fixture anchor must exist');
+  assert.throws(
+    () => assertSecondBusinessContextIsIsolatedFromAcceptanceTestConfiguration(source, configurationMutation),
+    /BACKEND_ACCEPTANCE_SECOND_CONTEXT_TEST_CONFIGURATION_LEAK/,
+  );
+});
+
+test('custom Flyway bean honors the secondary context migration switch', () => {
+  const suite = readFileSync(suitePath, 'utf8');
+  const configuration = readFileSync(businessDataConfigurationPath, 'utf8');
+  assertCustomFlywayBeanHonorsStandardEnablement(suite, configuration);
+  const migrationSwitchMutation = suite.replace('properties.put("spring.flyway.enabled", false);\n', '');
+  assert.notEqual(migrationSwitchMutation, suite, 'secondary Flyway switch red fixture anchor must exist');
+  assert.throws(
+    () => assertCustomFlywayBeanHonorsStandardEnablement(migrationSwitchMutation, configuration),
+    /BACKEND_ACCEPTANCE_SECOND_CONTEXT_FLYWAY_DISABLE_MISSING/,
+  );
+  const beanConditionMutation = configuration.replace(
+    '@ConditionalOnProperty(name = "spring.flyway.enabled", havingValue = "true", matchIfMissing = true)\n',
+    '',
+  );
+  assert.notEqual(beanConditionMutation, configuration, 'custom Flyway condition red fixture anchor must exist');
+  assert.throws(
+    () => assertCustomFlywayBeanHonorsStandardEnablement(suite, beanConditionMutation),
+    /BACKEND_CUSTOM_FLYWAY_BEAN_IGNORES_STANDARD_ENABLEMENT/,
+  );
+});
+
+test('acceptance repository inputs resolve only beneath the explicit Gradle root', () => {
+  const buildSource = readFileSync(businessBuildPath, 'utf8');
+  const pathsSource = readFileSync(repositoryPathsPath, 'utf8');
+  const pathsTestSource = readFileSync(repositoryPathsTestPath, 'utf8');
+  const processSource = readFileSync(tdsProcessPath, 'utf8');
+  const scenariosSource = readFileSync(terminalContractScenariosPath, 'utf8');
+  assertAcceptanceRepositoryInputsUseExplicitRoot(buildSource, pathsSource, pathsTestSource, processSource, scenariosSource);
+
+  const buildMutation = buildSource.replace(
+    '    systemProperty("v2s.acceptance.repository-root", rootProject.projectDir.absolutePath)\n',
+    '',
+  );
+  assert.notEqual(buildMutation, buildSource, 'repository-root system-property red fixture anchor must exist');
+  assert.throws(
+    () => assertAcceptanceRepositoryInputsUseExplicitRoot(buildMutation, pathsSource, pathsTestSource, processSource, scenariosSource),
+    /BACKEND_ACCEPTANCE_REPOSITORY_ROOT_SYSTEM_PROPERTY_MISSING/,
+  );
+
+  const workingDirectoryMutation = pathsSource.replace(
+    'Path.of(configuredRoot).toRealPath()',
+    'Path.of(System.getProperty("user.dir")).toRealPath()',
+  );
+  assert.notEqual(workingDirectoryMutation, pathsSource, 'repository-root source red fixture anchor must exist');
+  assert.throws(
+    () => assertAcceptanceRepositoryInputsUseExplicitRoot(buildSource, workingDirectoryMutation, pathsTestSource, processSource, scenariosSource),
+    /BACKEND_ACCEPTANCE_REPOSITORY_ROOT_NOT_EXPLICIT/,
+  );
+
+  const callerMutation = scenariosSource.replaceAll(
+    'Path script = terminalWireClientScript();',
+    'Path script = Path.of(System.getProperty("user.dir"), "scripts/test/terminal-ws-wire-client.mjs");',
+  );
+  assert.notEqual(callerMutation, scenariosSource, 'terminal client path red fixture anchor must exist');
+  assert.throws(
+    () => assertAcceptanceRepositoryInputsUseExplicitRoot(buildSource, pathsSource, pathsTestSource, processSource, callerMutation),
+    /TERMINAL_WIRE_CLIENT_MUST_NOT_USE_GRADLE_SUBPROJECT_WORKING_DIRECTORY/,
+  );
+
+  const escapeMutation = pathsSource.replace(
+    'if (!resolved.startsWith(repositoryRoot)) throw new IllegalStateException(escapeFailure);',
+    '',
+  );
+  assert.notEqual(escapeMutation, pathsSource, 'repository path-boundary red fixture anchor must exist');
+  assert.throws(
+    () => assertAcceptanceRepositoryInputsUseExplicitRoot(buildSource, escapeMutation, pathsTestSource, processSource, scenariosSource),
+    /BACKEND_ACCEPTANCE_REPOSITORY_INPUT_SYMLINK_ESCAPE_NOT_REJECTED/,
+  );
+});
+
+test('registration-gate waits race client exit and retain credential-safe stage diagnostics', () => {
+  const brokerSource = readFileSync(registrationGateBrokerPath, 'utf8');
+  const scenariosSource = readFileSync(terminalContractScenariosPath, 'utf8');
+  const handlerSource = readFileSync(tdsWebSocketHandlerPath, 'utf8');
+  assert.match(
+    brokerSource,
+    /CompletableFuture\.anyOf\(observed,\s*competingCompletion\)/,
+    'TDS_REGISTRATION_GATE_MUST_RACE_OBSERVATION_WITH_CLIENT_EXIT',
+  );
+  assert.match(brokerSource, /TDS_REGISTRATION_GATE_CLIENT_EXITED_BEFORE_OBSERVED/);
+  assert.match(brokerSource, /TDS_REGISTRATION_GATE_OBSERVATION_DEADLINE_EXCEEDED/);
+  assert.equal(
+    (scenariosSource.match(/awaitRegistrationGateObservation\(/g) ?? []).length,
+    6,
+    'TDS_REGISTRATION_GATE_WAIT_CALLSITE_DENOMINATOR_MISMATCH',
+  );
+  assert.equal(
+    (scenariosSource.match(/\.awaitObserved\(/g) ?? []).length,
+    1,
+    'TDS_REGISTRATION_GATE_BROKER_WAIT_MUST_BE_CENTRALIZED',
+  );
+  assert.match(
+    scenariosSource,
+    /return gate\.awaitObserved\(timeout,\s*wireClient\.onExit\(\)\)/,
+    'TDS_REGISTRATION_GATE_CENTRAL_WAIT_MUST_RACE_CLIENT_EXIT',
+  );
+  for (const event of [
+    'event=tds_ws_first_frame_received',
+    'event=tds_ws_authentication_failed',
+    'event=tds_ws_credential_verification_completed',
+    'event=tds_ws_pre_registration_gate_entered',
+  ]) {
+    assert.ok(handlerSource.includes(event), `TDS_AUTH_DIAGNOSTIC_STAGE_MISSING:${event}`);
+  }
+  const diagnosticLines = handlerSource
+    .split('\n')
+    .filter(line => line.includes('event=tds_ws_first_frame_received')
+      || line.includes('event=tds_ws_authentication_failed')
+      || line.includes('event=tds_ws_credential_verification_completed')
+      || line.includes('event=tds_ws_pre_registration_gate_entered'))
+    .join('\n');
+  assert.doesNotMatch(
+    diagnosticLines,
+    /terminalCredential|payloadAsText|authenticate\.secret/i,
+    'TDS_AUTH_DIAGNOSTICS_MUST_NOT_INCLUDE_CREDENTIAL_OR_FRAME_CONTENT',
+  );
+  assert.match(handlerSource, /diagnostic\.stage\(\)/, 'TDS_AUTH_DIAGNOSTIC_STAGE_MUST_BE_EMITTED');
+  assert.match(
+    scenariosSource,
+    /"event=tds_ws_authentication_failed"/,
+    'TDS_GATE_FAILURE_SUMMARY_MUST_RETAIN_AUTHENTICATION_FAILURE_EVENT',
+  );
+});
+
+test('persistent wire-probe commands preserve child results across process-exit races', () => {
+  const source = readFileSync(terminalContractScenariosPath, 'utf8');
+  const probeStart = source.indexOf('private static final class SessionProbe {');
+  const probeEnd = source.indexOf('\n    private static JsonNode runWireClient', probeStart);
+  assert.ok(probeStart >= 0 && probeEnd > probeStart, 'BACKEND_ACCEPTANCE_SESSION_PROBE_BOUNDARY_MISSING');
+  const probe = source.slice(probeStart, probeEnd);
+  assert.match(probe, /void ping\(int sequence\)[\s\S]*?sendControlCommand\("PING"/);
+  assert.match(probe, /JsonNode finish\(Duration timeout\)[\s\S]*?sendControlCommand\("CLOSE"/);
+  assert.match(probe, /JsonNode awaitClose\(int code, String reason, Duration timeout\)[\s\S]*?sendControlCommand\("AWAIT_CLOSE"/);
+  assert.match(probe, /if \(!node\.isAlive\(\)\)[\s\S]*?CHILD_EXITED_BEFORE_WRITE/);
+  assert.match(probe, /CHILD_EXITED_DURING_WRITE/);
+  assert.ok(
+    probe.includes('"BACKEND_ACCEPTANCE_SESSION_PROBE stage=%s markerId=%s exitCode=%d resultStatus=%s '),
+    'BACKEND_ACCEPTANCE_SESSION_PROBE_RESULT_LOG_MISSING',
+  );
+  assert.ok(
+    probe.includes('"closeCode=%d closeReason=%s failureCategory=%s sessionIdPresent=%s%n"'),
+    'BACKEND_ACCEPTANCE_SESSION_PROBE_RESULT_FIELDS_MISSING',
+  );
+  assert.match(probe, /SAFE_TDS_CLOSE_REASONS\.contains\(closeReason\)/);
+});
+
+test('TDS records the correlated close outcome before persisting a session disconnect', () => {
+  const source = readFileSync(tdsSessionActorsPath, 'utf8');
+  const closeStart = source.indexOf('private void connectionClosed(String attemptId, TdsWebSocketConnection connection)');
+  const closeEnd = source.indexOf('\n        private void revoke(', closeStart);
+  assert.ok(closeStart >= 0 && closeEnd > closeStart, 'TDS_SESSION_CONNECTION_CLOSED_OWNER_MISSING');
+  const closeHandler = source.slice(closeStart, closeEnd);
+  assert.match(closeHandler, /event=tds_session_connection_closed/);
+  assert.match(closeHandler, /connectionId=\{\} sessionId=\{\} generation=\{\} closeReason=\{\}/);
+  assert.match(closeHandler, /queueDisconnect\(closed, closeReason\)/);
+  assert.doesNotMatch(closeHandler, /terminalCredential|deviceId|payload|groupWorkspaceKey/);
+});
+
+test('TDS logs the close request before sending the WebSocket close frame', () => {
+  const source = readFileSync(tdsWebSocketConnectionPath, 'utf8');
+  const closeStart = source.indexOf('private Mono<Void> closeAsync(TerminalConnectionProtocol.Close close)');
+  const closeEnd = source.indexOf('\n    public void finish()', closeStart);
+  assert.ok(closeStart >= 0 && closeEnd > closeStart, 'TDS_WEBSOCKET_CLOSE_OWNER_MISSING');
+  const closeMethod = source.slice(closeStart, closeEnd);
+  const diagnosticIndex = closeMethod.indexOf('event=tds_ws_close_started');
+  const socketCloseIndex = closeMethod.indexOf('session.close(new CloseStatus(close.code(), close.reason()))');
+  assert.ok(
+    diagnosticIndex >= 0 && socketCloseIndex > diagnosticIndex,
+    'TDS_WEBSOCKET_CLOSE_DIAGNOSTIC_ORDER_INVALID',
+  );
+  assert.match(closeMethod, /connectionId=\{\} sessionId=\{\} closeCode=\{\} closeReason=\{\}/);
+  assert.doesNotMatch(closeMethod, /terminalCredential|deviceId|payload|Authorization/);
+});
+
+test('TDS retains pooled WebSocket payloads across asynchronous handling and releases once', () => {
+  const handlerSource = readFileSync(tdsWebSocketHandlerPath, 'utf8');
+  assert.match(
+    handlerSource,
+    /WebSocketMessage message = indexed\.getT2\(\);\s+message\.retain\(\);/,
+    'TDS_WEBSOCKET_PAYLOAD_MUST_BE_RETAINED_BEFORE_ASYNC_HANDOFF',
+  );
+  const asyncFrameLog = handlerSource.match(
+    /int frameBytes = message\.getPayload\(\)\.readableByteCount\(\);\s+WebSocketMessage\.Type frameType = message\.getType\(\);\s+TdsAsyncLog\.enqueue\(\s*logScheduler,\s*\(\) -> LOGGER\.info\(([\s\S]*?)\)\);/,
+  );
+  assert.ok(
+    asyncFrameLog,
+    'TDS_WEBSOCKET_ASYNC_LOG_MUST_CAPTURE_SCALARS_NOT_POOLED_PAYLOAD',
+  );
+  assert.match(asyncFrameLog[1], /frameType,\s+frameBytes\s*$/);
+  assert.doesNotMatch(asyncFrameLog[1], /\bmessage\b|payload|readableByteCount/);
+  assert.match(
+    handlerSource,
+    /return handled\.doFinally\(ignored -> message\.release\(\)\);\s+\} catch \(RuntimeException \| Error setupFailure\) \{\s+message\.release\(\);/,
+    'TDS_WEBSOCKET_EXTRA_REFERENCE_MUST_RELEASE_ON_TERMINATION_OR_SETUP_FAILURE',
+  );
 });
 
 test('backend acceptance structure rejects an unregistered scenario group', () => {

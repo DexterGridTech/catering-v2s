@@ -8,6 +8,7 @@ public final class AuditEntityTypes {
     public static final String STORE_SERVICE_POINT = "STORE_SERVICE_POINT";
     public static final String STORE_QR_CONFIGURATION = "STORE_QR_CONFIGURATION";
     public static final String STORE_TERMINAL = "STORE_TERMINAL";
+    public static final String TERMINAL_BINDING = "TERMINAL_BINDING";
     public static final String REGION = "REGION";
     public static final String PROJECT = "PROJECT";
 

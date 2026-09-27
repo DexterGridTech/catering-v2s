@@ -4,6 +4,7 @@ import {describe, expect, it} from 'vitest';
 const pageSource = readFileSync(new URL('./StoreTerminalPage.tsx', import.meta.url), 'utf8');
 const detailSource = readFileSync(new URL('./StoreTerminalDetail.tsx', import.meta.url), 'utf8');
 const drawerSource = readFileSync(new URL('./StoreTerminalFormDrawer.tsx', import.meta.url), 'utf8');
+const deviceTypeFieldSource = readFileSync(new URL('./StoreTerminalDeviceTypeField.tsx', import.meta.url), 'utf8');
 const printerSource = readFileSync(new URL('./TerminalPrinterEditor.tsx', import.meta.url), 'utf8');
 const functionSource = readFileSync(new URL('./TerminalFunctionEditor.tsx', import.meta.url), 'utf8');
 const sceneSource = readFileSync(new URL('./TerminalSceneEditor.tsx', import.meta.url), 'utf8');
@@ -38,9 +39,11 @@ describe('store terminal L2 real action-node bindings', () => {
   });
 
   it('binds device type actions to each Radio and scene actions to each Checkbox', () => {
-    requireRealActionNode(drawerSource, '<Radio', 'storeTerminalTestIds.deviceTypeOption(value.key)');
+    requireRealActionNode(deviceTypeFieldSource, '<Radio', 'storeTerminalTestIds.deviceTypeOption(value.key)');
     requireRealActionNode(functionSource, '<Checkbox', 'storeTerminalTestIds.sceneToggle(functionIdentity, scene.key)');
-    const radioMutation = drawerSource.split('{...testId(storeTerminalTestIds.deviceTypeOption(value.key))}').join('');
+    const radioMutation = deviceTypeFieldSource
+      .split('{...testId(storeTerminalTestIds.deviceTypeOption(value.key))}')
+      .join('');
     const sceneMutation = functionSource.replace(
       '{...testId(storeTerminalTestIds.sceneToggle(functionIdentity, scene.key))}',
       '',
@@ -62,8 +65,8 @@ describe('store terminal L2 real action-node bindings', () => {
       'storeTerminalTestIds.listRetry',
       'storeTerminalTestIds.detailRetry',
       'storeTerminalTestIds.pagination',
-      'storeTerminalTestIds.formTab(\'basic\')',
-      'storeTerminalTestIds.formTab(\'functions\')',
+      "storeTerminalTestIds.formTab('basic')",
+      "storeTerminalTestIds.formTab('functions')",
       'storeTerminalTestIds.activationCode',
       'storeTerminalTestIds.activationCodeClear',
       'storeTerminalTestIds.printerAdd',

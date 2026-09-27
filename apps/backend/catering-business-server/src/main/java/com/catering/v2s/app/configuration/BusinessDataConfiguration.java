@@ -4,6 +4,7 @@ import com.catering.v2s.platform.foundation.persistence.CountingDataSource;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -24,6 +25,7 @@ public class BusinessDataConfiguration {
         };
     }
 
+    @ConditionalOnProperty(name = "spring.flyway.enabled", havingValue = "true", matchIfMissing = true)
     @Bean(initMethod = "migrate")
     public Flyway businessFlyway(DataSource dataSource) {
         return Flyway.configure()

@@ -10,7 +10,10 @@ import org.junit.jupiter.api.Test;
 class AuditEventTest {
     @Test
     void keepsStructuredTargetActorAndChangesBounded() {
-        AuditChange change = new AuditChange("name", "名称", AuditValueState.VALUE, "旧名称", AuditValueState.VALUE, "新名称");
+        // spotless:off
+        AuditChange change = new AuditChange("name", "名称", AuditValueState.VALUE, "旧名称",
+            AuditValueState.VALUE, "新名称");
+        // spotless:on
         AuditEvent event = new AuditEvent(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
@@ -39,5 +42,15 @@ class AuditEventTest {
                         "UPDATED",
                         -1L,
                         List.of()));
+    }
+
+    @Test
+    void terminalDeviceAuditActorHasNoIdAndUsesItsFixedDisplay() {
+        AuditActor actor = AuditActor.terminalDevice();
+
+        assertEquals("TERMINAL_DEVICE", actor.actorType());
+        assertEquals(null, actor.actorId());
+        assertEquals("终端设备", actor.displaySnapshot());
+        assertThrows(IllegalArgumentException.class, () -> new AuditActor("TERMINAL_DEVICE", null, "device"));
     }
 }

@@ -110,7 +110,10 @@ public class StorePersistence {
 
     public int insertDefaultQrConfiguration(UUID storeRef, UUID workspaceUuid, String groupWorkspaceKey, long now) {
         return jdbc.update(
-                "INSERT INTO organization.store_qr_configuration(store_ref, workspace_uuid, group_workspace_key, enabled, channel_ref, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?,?,?,FALSE,NULL,1,?,?) ON CONFLICT (store_ref) DO NOTHING",
+                ("INSERT INTO organization.store_qr_configuration(store_ref, workspace_uui"
+                        + "d, group_workspace_key, enabled, channel_ref, version, created_at_epoch_"
+                        + "millis, updated_at_epoch_millis) VALUES (?,?,?,FALSE,NULL,1,?,?) ON CONF"
+                        + "LICT (store_ref) DO NOTHING"),
                 storeRef,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -229,8 +232,7 @@ public class StorePersistence {
                 StoreServiceSql.STORE_SERVICE_SELECT_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE
                         + StoreServiceSql.STORE_SERVICE_VARCHAR_LEGAL_NAME_CREDIT_CODE_ALIAS
                         + StoreServiceSql.STORE_SERVICE_VARCHAR_REMARK_STORE_NOTES
-                        + StoreServiceSql
-                                .STORE_SERVICE_STORE_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_EXTENSION_VALUES_ALTERNATE_A
+                        + StoreServiceSql.STORE_CREATED_AT_EPOCH_MS_ALT_A_001
                         + StoreServiceSql.STORE_SERVICE_ORGANIZATION_NODE_PROJECT_ID_PROJECT
                         + StoreServiceSql.STORE_SERVICE_PROJECT_STORE_PROJECT_ID_WORKSPACE_UUID
                         + StoreServiceSql.STORE_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_STORE_NODE_TYPE
@@ -271,8 +273,7 @@ public class StorePersistence {
                                 .STORE_SERVICE_WHERE_HEAD_COMPANY_REQUEST_HEAD_COMPANY_ID_WORKSPACE_UUID_ALTERNATE_A
                         + StoreServiceSql.STORE_SERVICE_HEAD_COMPANY_GROUP_WORKSPACE_KEY_REQUEST_STATUS_ALTERNATE_A
                         + StoreServiceSql.STORE_SERVICE_HEAD_COMPANY_ENABLED_REQUEST_HEAD_COMPANY_ID_ALTERNATE_A
-                        + StoreServiceSql
-                                .STORE_SERVICE_ALTERNATIVE_HEAD_COMPANY_BRAND_AUTHORIZATION_HBA_HEAD_COMPANY_ID_REQUEST_ALTERNATE_A
+                        + StoreServiceSql.ALT_HEAD_COMPANY_BRAND_AUTH_ALT_A_002
                         + StoreServiceSql
                                 .STORE_SERVICE_CONDITION_REQUESTED_HBA_BRAND_ID_REQUEST_HEAD_COMPANY_AUTHORIZED,
                 statement -> {

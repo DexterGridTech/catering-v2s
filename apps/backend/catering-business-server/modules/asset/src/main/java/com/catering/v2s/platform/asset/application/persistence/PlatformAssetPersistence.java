@@ -198,7 +198,8 @@ public class PlatformAssetPersistence {
     public int releaseActiveStoreServicePointImage(
             long releasedAt, UUID assetRef, UUID servicePointRef, UUID workspaceUuid, String groupWorkspaceKey) {
         return jdbc.update(
-                "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, version=version+1 "
+                ("UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_ep"
+                                + "och_millis=?, version=version+1 ")
                         + "WHERE asset_ref=? AND usage='STORE_SERVICE_POINT_IMAGE' AND status='ACTIVE' "
                         + "AND claimed_by_type='STORE_SERVICE_POINT_IMAGE' AND claimed_by_id=? "
                         + "AND workspace_uuid=? AND group_workspace_key=?",
@@ -226,8 +227,7 @@ public class PlatformAssetPersistence {
 
     public int activateWorkspaceLogo(UUID workspaceUuid, String groupWorkspaceKey, long now, UUID assetRef) {
         return jdbc.update(
-                PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ACTIVE
+                PlatformAssetServiceSql.UPDATE_STAGED_ASSET_WS_UUID_001
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_CLAIMED_BY_TYPE
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_STATUS_STAGED,
                 workspaceUuid,
@@ -259,8 +259,7 @@ public class PlatformAssetPersistence {
 
     public AssetRow activateCatalogAsset(UUID assetRef, long now, UUID workspaceUuid, String groupWorkspaceKey) {
         return jdbc.query(
-                PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_ACTIVE_CLAIMED_BY_TYPE_CATALOG_ITEM_IMAGE
+                PlatformAssetServiceSql.UPDATE_STAGED_ASSET_STATUS_ACTIVE_002
                         + PlatformAssetServiceSql
                                 .PLATFORM_ASSET_SERVICE_CLAIMED_BY_ID_ACTIVATED_AT_EPOCH_MILLIS_VERSION_ASSET_REF
                         + PlatformAssetServiceSql
@@ -285,8 +284,7 @@ public class PlatformAssetPersistence {
 
     public int releaseActiveAsset(long releasedAt, UUID assetRef, UUID workspaceUuid) {
         return jdbc.update(
-                PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_RELEASED_RELEASED_AT_EPOCH_MILLIS_ALTERNATE_A
+                PlatformAssetServiceSql.UPDATE_STAGED_ASSET_STATUS_RELEASED_ALT_A_003
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_CLAIMED_BY_ID_STATUS,
                 releasedAt,
                 assetRef,
@@ -295,8 +293,7 @@ public class PlatformAssetPersistence {
 
     public int consumeStagedBindGrant(long now, UUID assetRef, String proof) {
         return jdbc.update(
-                PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_RELEASED_RELEASED_AT_EPOCH_MILLIS_ALTERNATE_B
+                PlatformAssetServiceSql.UPDATE_STAGED_ASSET_STATUS_RELEASED_ALT_B_004
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_STATUS_STAGED_ALTERNATE_A
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_PLATFORM_ASSET_ASSET_BIND_GRANT_ASSET_REF
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_CONSUMED_AT_EPOCH_MILLIS
@@ -320,8 +317,7 @@ public class PlatformAssetPersistence {
     public int releaseStagedCatalogAsset(
             long releasedAt, UUID assetRef, long expectedVersion, UUID workspaceUuid, String groupWorkspaceKey) {
         return jdbc.update(
-                PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_RELEASED_RELEASED_AT_EPOCH_MILLIS_ALTERNATE_C
+                PlatformAssetServiceSql.UPDATE_STAGED_ASSET_STATUS_RELEASED_ALT_C_005
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_USAGE_CATALOG_ITEM_IMAGE
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_VERSION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 releasedAt,
@@ -333,8 +329,7 @@ public class PlatformAssetPersistence {
 
     public int releaseActiveCatalogAsset(long releasedAt, UUID assetRef, long expectedVersion, UUID workspaceUuid) {
         return jdbc.update(
-                PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_RELEASED_RELEASED_AT_EPOCH_MILLIS_ALTERNATE_D
+                PlatformAssetServiceSql.UPDATE_STAGED_ASSET_STATUS_RELEASED_ALT_D_006
                         + PlatformAssetServiceSql
                                 .PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_USAGE_CATALOG_ITEM_IMAGE_ALTERNATE_A
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_CONDITION_ALTERNATE_A
@@ -347,8 +342,7 @@ public class PlatformAssetPersistence {
 
     public int releaseAuthorizedCatalogAsset(long releasedAt, UUID assetRef, long expectedVersion, UUID workspaceUuid) {
         return jdbc.update(
-                PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_RELEASED_RELEASED_AT_EPOCH_MILLIS_ALTERNATE_E
+                PlatformAssetServiceSql.UPDATE_STAGED_ASSET_STATUS_RELEASED_ALT_E_007
                         + PlatformAssetServiceSql
                                 .PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_USAGE_CATALOG_ITEM_IMAGE_ALTERNATE_B
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_CONDITION_ALTERNATE_B
@@ -386,8 +380,7 @@ public class PlatformAssetPersistence {
                 Collections.nCopies(ids.size(), PlatformAssetServiceSql.PARAMETER_PLACEHOLDER));
         return jdbc.query(
                 PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_SELECT_ASSET_REF_OBJECT_KEY_CONTENT_TYPE_SHA256
-                        + PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_FROM_CLAUSE_STAGED_ASSET_USAGE_SALES_MENU_ITEM_IMAGE_STATUS_ACTIVE
+                        + PlatformAssetServiceSql.FROM_CLAUSE_STAGED_ASSET_USAGE_008
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_CONDITION_ASSET_REF
                         + placeholders
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_CLOSE_PAREN,
@@ -524,8 +517,7 @@ public class PlatformAssetPersistence {
 
     public int upsertBindGrant(UUID assetRef, String grantHash, long expiresAt) {
         return jdbc.update(
-                PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_INSERT_INTO_ASSET_BIND_GRANT_ASSET_REF_GRANT_HASH_EXPIRES_AT_EPOCH_MILLIS
+                PlatformAssetServiceSql.INSERT_INTO_ASSET_BIND_GRANT_009
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_SET_CONSUMED_AT_EPOCH_MILLIS_ASSET_REF
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_GRANT_HASH_EXPIRES_AT_EPOCH_MILLIS
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_CONSUMED_AT_EPOCH_MILLIS_ALTERNATE_A,
@@ -571,8 +563,7 @@ public class PlatformAssetPersistence {
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_A
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_SALES_MENU_REF
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_USAGE
-                        + PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_FROM_CLAUSE_STAGED_ASSET_FROM_PLATFORM_ASSET_STAGED_A_ALTERNATE_A
+                        + PlatformAssetServiceSql.FROM_CLAUSE_STAGED_ASSET_FROM_ALT_A_010
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_JOIN_SALES_MENU_ASSET_TARGET_ASSET_REF
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_WHERE_OF_ASSET_REF,
                 statement -> statement.setObject(1, assetRef),
@@ -670,12 +661,10 @@ public class PlatformAssetPersistence {
             String responseJson,
             long now) {
         return jdbc.update(
-                PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_INSERT_INTO_ASSET_COMMAND_RECEIPT_SCOPE_KEY_IDEMPOTENCY_KEY_ASSET_REF
+                PlatformAssetServiceSql.INSERT_INTO_ASSET_CMD_RECEIPT_011
                         + PlatformAssetServiceSql
                                 .PLATFORM_ASSET_SERVICE_REQUEST_HASH_RESPONSE_JSON_CREATED_AT_EPOCH_MILLIS
-                        + PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_JSONB_ON_CONFLICT_SCOPE_KEY_IDEMPOTENCY_KEY_DO_UPDATE_SET_ASSET_REF_EXCLUDED_SET_ASSET_REF_EXCLUDED_ASSET_REF
+                        + PlatformAssetServiceSql.JSONB_ON_CONFLICT_SCOPE_KEY_013
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_REQUEST_HASH_RESPONSE_JSON
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_CREATED_AT_EPOCH_MILLIS
                         + PlatformAssetServiceSql
@@ -697,8 +686,7 @@ public class PlatformAssetPersistence {
             String responseJson,
             long now) {
         return jdbc.update(
-                PlatformAssetServiceSql
-                                .PLATFORM_ASSET_SERVICE_INSERT_INTO_ASSET_COMMAND_RECEIPT_SCOPE_KEY_IDEMPOTENCY_KEY_ASSET_REF_ALTERNATE_A
+                PlatformAssetServiceSql.INSERT_INTO_ASSET_CMD_RECEIPT_ALT_A_012
                         + PlatformAssetServiceSql
                                 .PLATFORM_ASSET_SERVICE_REQUEST_HASH_RESPONSE_JSON_CREATED_AT_EPOCH_MILLIS_ALTERNATE_A
                         + PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_JSON_RESPONSE_CLOSE,

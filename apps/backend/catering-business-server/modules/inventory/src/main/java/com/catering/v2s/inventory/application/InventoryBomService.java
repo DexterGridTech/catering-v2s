@@ -1916,16 +1916,28 @@ public class InventoryBomService {
             // itemRef because they have no SKU identity.
             SummaryKey key = new SummaryKey(summarySkuRef == null ? summaryItemRef : null, summarySkuRef);
             if (found.containsKey(key))
-                throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "同一商品或规格存在多个启用中的库存扣减定义");
+                // spotless:off
+                throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500,
+                    "同一商品或规格存在多个启用中的库存扣减定义");
+                // spotless:on
             if ("DIRECT".equals(record.factKind())) {
                 if (!"DIRECT".equals(record.inventoryMode()))
-                    throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存扣减方式与库存对象定义不一致");
+                    // spotless:off
+                    throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500,
+                        "库存扣减方式与库存对象定义不一致");
+                    // spotless:on
                 InventoryOwnerApi.UnitSnapshot snapshot = record.consumptionUnitSnapshot();
-                if (snapshot == null) throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "直接扣减对象的消费单位快照缺失");
+                // spotless:off
+                if (snapshot == null) throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500,
+                    "直接扣减对象的消费单位快照缺失");
+                // spotless:on
                 found.put(key, new InventorySummaryFacts("DIRECT", snapshot, null));
             } else if ("BOM".equals(record.factKind())) {
                 int lineCount = record.bomLineCount();
-                if (lineCount < 1) throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "启用中的用料扣减定义没有有效用料行");
+                // spotless:off
+                if (lineCount < 1) throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500,
+                    "启用中的用料扣减定义没有有效用料行");
+                // spotless:on
                 found.put(key, new InventorySummaryFacts("BOM", null, lineCount));
             } else {
                 throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存扣减事实类型无法识别");

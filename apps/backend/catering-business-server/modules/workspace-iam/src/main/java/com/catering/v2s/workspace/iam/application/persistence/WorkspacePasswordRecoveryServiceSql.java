@@ -4,9 +4,8 @@ package com.catering.v2s.workspace.iam.application.persistence;
  * SQL text fragments owned by WorkspacePasswordRecoveryService; B3 relocates text only and does not change execution.
  */
 public final class WorkspacePasswordRecoveryServiceSql {
-    public static final String
-            WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OPERATIONS_PASSWORD_RECOVERY_STATUS_SUPERSEDED_VERSION =
-                    "UPDATE workspace_iam.operations_password_recovery SET status='SUPERSEDED', version=version+1 ";
+    public static final String UPDATE_OPS_PASSWORD_RECOVERY_STATUS_001 =
+            "UPDATE workspace_iam.operations_password_recovery SET status='SUPERSEDED', version=version+1 ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_WHERE_ACCOUNT_ID_STATUS_PENDING_OTP_VERIFIED =
             "WHERE account_id=? AND status IN ('PENDING','OTP_VERIFIED')";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_INSERT_INTO_OPERATIONS_PASSWORD_RECOVERY =
@@ -21,28 +20,24 @@ public final class WorkspacePasswordRecoveryServiceSql {
             "UPDATE workspace_iam.otp_grant SET status='SUPERSEDED' WHERE subject_ref=? AND ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_PURPOSE_OPERATIONS_PASSWORD_RECOVERY_STATUS_ACTIVE =
             "purpose='OPERATIONS_PASSWORD_RECOVERY' AND status='ACTIVE'";
-    public static final String
-            WORKSPACE_PASSWORD_RECOVERY_SERVICE_INSERT_INTO_OTP_GRANT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PURPOSE =
-                    "INSERT INTO workspace_iam.otp_grant (id, workspace_uuid, group_workspace_key, purpose, ";
+    public static final String INSERT_INTO_OTP_GRANT_WS_002 =
+            "INSERT INTO workspace_iam.otp_grant (id, workspace_uuid, group_workspace_key, purpose, ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_TOKEN_HASH =
             "token_hash, subject_ref, status, expires_at_epoch_millis) VALUES (?, ?, ?, ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_OPERATIONS_PASSWORD_RECOVERY_ACTIVE =
             "'OPERATIONS_PASSWORD_RECOVERY', ?, ?, 'ACTIVE', ?)";
-    public static final String
-            WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OTP_GRANT_STATUS_USED_USED_AT_EPOCH_MILLIS_SUBJECT_REF =
-                    "UPDATE workspace_iam.otp_grant SET status='USED', used_at_epoch_millis=? WHERE subject_ref=? AND ";
+    public static final String UPDATE_OTP_GRANT_STATUS_USED_003 =
+            "UPDATE workspace_iam.otp_grant SET status='USED', used_at_epoch_millis=? WHERE subject_ref=? AND ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_PURPOSE =
             "purpose='OPERATIONS_PASSWORD_RECOVERY' AND token_hash=? AND status='ACTIVE' AND ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_EXPIRES_AT_EPOCH_MILLIS =
             "expires_at_epoch_millis>?";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OTP_GRANT_ATTEMPT_COUNT_SUBJECT_REF =
             "UPDATE workspace_iam.otp_grant SET attempt_count=attempt_count+1 WHERE subject_ref=? AND ";
-    public static final String
-            WORKSPACE_PASSWORD_RECOVERY_SERVICE_PURPOSE_OPERATIONS_PASSWORD_RECOVERY_STATUS_ACTIVE_ALTERNATE_A =
-                    "purpose='OPERATIONS_PASSWORD_RECOVERY' AND status='ACTIVE'";
-    public static final String
-            WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OPERATIONS_PASSWORD_RECOVERY_STATUS_OTP_VERIFIED =
-                    "UPDATE workspace_iam.operations_password_recovery SET status='OTP_VERIFIED', ";
+    public static final String PURPOSE_OPS_PASSWORD_RECOVERY_STATUS_ALT_A_004 =
+            "purpose='OPERATIONS_PASSWORD_RECOVERY' AND status='ACTIVE'";
+    public static final String UPDATE_OPS_PASSWORD_RECOVERY_STATUS_005 =
+            "UPDATE workspace_iam.operations_password_recovery SET status='OTP_VERIFIED', ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_COMPLETION_GRANT_HASH =
             "completion_grant_hash=?, completion_grant_expires_at_epoch_millis=?, ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_VERSION = "version=version+1 ";
@@ -54,23 +49,21 @@ public final class WorkspacePasswordRecoveryServiceSql {
             "failed_attempts=0, locked_until_epoch_millis=NULL, password_change_required=FALSE, ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_VERSION_ACCOUNT_ID =
             "version=version+1 WHERE account_id=?";
-    public static final String
-            WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS =
-                    "UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=? WHERE ";
+    public static final String UPDATE_WS_SESSION_STATUS_REVOKED_006 =
+            "UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=? WHERE ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_ACCOUNT_ID_STATUS_ACTIVE =
             "account_id=? AND status='ACTIVE'";
-    public static final String
-            WORKSPACE_PASSWORD_RECOVERY_SERVICE_UPDATE_OPERATIONS_PASSWORD_RECOVERY_STATUS_COMPLETED =
-                    "UPDATE workspace_iam.operations_password_recovery SET status='COMPLETED', ";
+    public static final String UPDATE_OPS_PASSWORD_RECOVERY_STATUS_007 =
+            "UPDATE workspace_iam.operations_password_recovery SET status='COMPLETED', ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_COMPLETION_GRANT_HASH_ALTERNATE_A =
             "completion_grant_hash=NULL, completion_grant_expires_at_epoch_millis=NULL, ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_COMPLETED_AT_EPOCH_MILLIS =
             "completed_at_epoch_millis=?, version=version+1 WHERE id=? AND status='OTP_VERIFIED' ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_CONDITION = "AND ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_VERSION_ALTERNATE_A = "version=?";
-    public static final String
-            WORKSPACE_PASSWORD_RECOVERY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ACCOUNT_ID_STATUS =
-                    "SELECT id, workspace_uuid, group_workspace_key, account_id, status, expires_at_epoch_millis, version, ";
+    public static final String SELECT_WS_UUID_GRP_WS_008 =
+            ("SELECT id, workspace_uuid, group_workspace_key, account_id, status, expi"
+                    + "res_at_epoch_millis, version, ");
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_COMPLETION_GRANT_HASH_ALTERNATE_B =
             "completion_grant_hash, completion_grant_expires_at_epoch_millis FROM ";
     public static final String WORKSPACE_PASSWORD_RECOVERY_SERVICE_OPERATIONS_PASSWORD_RECOVERY_FLOW_TOKEN_HASH =

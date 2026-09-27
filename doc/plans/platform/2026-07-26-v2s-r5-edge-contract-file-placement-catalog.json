@@ -98,7 +98,10 @@
     "putOperationsStoreTerminal": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
     "postOperationsStoreTerminalStatus": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
     "getOperationsStoreTerminalAreaCandidates": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
-    "getOperationsStoreTerminalTagCandidates": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"}
+    "getOperationsStoreTerminalTagCandidates": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
+    "cancelOperationsStoreTerminalActivation": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
+    "activateTerminal": {"capability": "activation", "pathFile": "paths/terminal/activation.paths.json"},
+    "cancelTerminalActivation": {"capability": "activation", "pathFile": "paths/terminal/activation.paths.json"}
   },
   "componentFamilyRules": [
     {"match": "^(NoBody|NoContent|Problem|EpochMillis|AuditHistory.*|AuditChange.*|AuditValueState|AuditEntity.*|AuditActor.*|AuditTarget.*)$", "family": "common"},
@@ -106,6 +109,7 @@
     {"match": "^(BusinessChannel.*|ExternalProviderCandidate.*)$", "family": "business-channel"},
     {"match": "^(SalesMenu.*|InventoryAvailabilityFact|ManualSaleStatusFact)$", "family": "sales-menu"},
     {"match": "^(StoreTerminal.*)$", "family": "store-terminal"},
+    {"match": "^(TerminalActivation|OperationsTerminalActivation).*$", "family": "terminal-binding"},
     {"match": "^(GroupWorkspace)", "family": "group-workspace"},
     {"match": "^(CommercialGroup)", "family": "commercial-group"},
     {"match": "^(PlatformAsset|BinaryAssetContent)", "family": "asset"},
@@ -125,6 +129,7 @@
     "business-channel": "business-channel",
     "sales-menu": "sales-menu",
     "store-terminal": "store-terminal",
+    "terminal-binding": "terminal-binding",
     "group-workspace": "platform-workspace",
     "commercial-group": "organization",
     "asset": "platform-asset",
@@ -213,19 +218,20 @@
   },
   "closure": {
     "sourceOperationCount": 148,
-    "plannedAdditionalOperationCount": 79,
-    "expectedResolvedOperationCount": 235,
+    "plannedAdditionalOperationCount": 82,
+    "expectedResolvedOperationCount": 238,
     "expectedUnresolvedOperationCount": 0,
     "expectedAmbiguousOperationCount": 0,
-    "sourceComponentCount": 289,
-    "expectedResolvedComponentCount": 288,
+    "sourceComponentCount": 295,
+    "expectedResolvedComponentCount": 294,
     "expectedExplicitNotCarriedComponentCount": 1,
     "expectedUnresolvedComponentCount": 0,
     "expectedAmbiguousComponentCount": 0,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 162,
-      "public": 12
+      "operations-admin": 163,
+      "public": 12,
+      "terminal": 2
     }
   }
 }

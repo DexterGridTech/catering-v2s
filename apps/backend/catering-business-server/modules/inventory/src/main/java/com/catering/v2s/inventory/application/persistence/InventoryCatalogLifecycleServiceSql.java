@@ -23,9 +23,8 @@ public final class InventoryCatalogLifecycleServiceSql {
     public static final String ACTIVE_BOM_COUNT_PREFIX =
             "(SELECT COUNT(*) FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND ";
     public static final String ACTIVE_BOM_COUNT_SUFFIX = "=? AND definition_status='ENABLED')";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF =
-                    "SELECT target_ref FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? ";
+    public static final String SELECT_STOCK_TARGET_REF_DATA_001 =
+            "SELECT target_ref FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_CONSUMPTION_UNIT_REF_COUNTING_UNIT_REF =
             "AND (consumption_unit_ref=? OR counting_unit_ref=?) FOR UPDATE";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_STOCK_LEDGER_LEDGER_CONSUMPTION_UNIT_REF =
@@ -46,17 +45,14 @@ public final class InventoryCatalogLifecycleServiceSql {
             "SELECT target_ref,product_sku_ref,consumption_unit_ref FROM inventory.stock_target ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_WHERE_DATA_NODE_REF_BRAND_REF_ITEM_REF =
             "WHERE data_node_ref=? AND brand_ref=? AND item_ref=? FOR UPDATE";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_UPDATE_STOCK_TARGET_DEFINITION_STATUS_DISABLED_VERSION =
-                    "UPDATE inventory.stock_target SET definition_status='DISABLED',version=version+1,";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_DATA_NODE_REF_BRAND_REF =
-                    "updated_at_epoch_millis=? WHERE data_node_ref=? AND brand_ref=? AND ";
+    public static final String UPDATE_STOCK_TARGET_DEF_STATUS_002 =
+            "UPDATE inventory.stock_target SET definition_status='DISABLED',version=version+1,";
+    public static final String UPDATE_UPDATED_AT_EPOCH_MS_003 =
+            "updated_at_epoch_millis=? WHERE data_node_ref=? AND brand_ref=? AND ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_UPDATE_STOCK_BOM_DEFINITION_STATUS_DISABLED_VERSION =
             "UPDATE inventory.stock_bom SET definition_status='DISABLED',version=version+1,";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_DATA_NODE_REF_BRAND_REF_ALTERNATE_A =
-                    "updated_at_epoch_millis=? WHERE data_node_ref=? AND brand_ref=? AND ";
+    public static final String UPDATE_UPDATED_AT_EPOCH_MS_ALT_A_004 =
+            "updated_at_epoch_millis=? WHERE data_node_ref=? AND brand_ref=? AND ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CTE_RECEIPT_LOCK =
             "WITH receipt_lock AS MATERIALIZED (";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_PG_ADVISORY_XACT_LOCK_HASHTEXT_TEXT =
@@ -65,9 +61,8 @@ public final class InventoryCatalogLifecycleServiceSql {
             "), prior_receipt AS MATERIALIZED (";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT =
             "SELECT operation_id,request_hash,response_json::text AS response ";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_FROM_CLAUSE_RECEIPT_LOCK_FROM_INVENTORY_COMMAND_RECEI =
-                    "FROM inventory.command_receipt CROSS JOIN receipt_lock ";
+    public static final String FROM_CLAUSE_RECEIPT_LOCK_FROM_005 =
+            "FROM inventory.command_receipt CROSS JOIN receipt_lock ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_WHERE_DATA_NODE_REF_IDEMPOTENCY_KEY =
             "WHERE data_node_ref=? AND idempotency_key=?";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_OWNED_TARGETS =
@@ -112,15 +107,12 @@ public final class InventoryCatalogLifecycleServiceSql {
             "WHERE bom.data_node_ref=? AND bom.brand_ref=? AND bom.definition_status='ENABLED' ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_BOM_ITEM_REF =
             "AND bom.item_ref IS DISTINCT FROM ? ";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_PRIOR_RECEIPT_AND_NOT_EXISTS_SELECT_1_FROM =
-                    "AND NOT EXISTS (SELECT 1 FROM prior_receipt) ";
+    public static final String CONDITION_PRIOR_RECEIPT_AND_NOT_006 = "AND NOT EXISTS (SELECT 1 FROM prior_receipt) ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_LOCK_OF_BOM = "FOR UPDATE OF bom";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_RETIRED_TARGETS =
             "), retired_targets AS (";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_UPDATE_STOCK_TARGET_TARGET_DEFINITION_STATUS_DISABLED =
-                    "UPDATE inventory.stock_target target SET definition_status='DISABLED',";
+    public static final String UPDATE_STOCK_TARGET_DEF_STATUS_007 =
+            "UPDATE inventory.stock_target target SET definition_status='DISABLED',";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_VERSION_TARGET_UPDATED_AT_EPOCH_MILLIS =
             "version=target.version+1,updated_at_epoch_millis=? ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_WHERE_OWNED_TARGETS_TARGET_TARGET_REF =
@@ -130,9 +122,8 @@ public final class InventoryCatalogLifecycleServiceSql {
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_AND_NOT_EXISTS_SELECT_1_FROM =
             "AND NOT EXISTS (SELECT 1 FROM ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_ALTERNATE_A = ") ";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_PRIOR_RECEIPT_AND_NOT_EXISTS_SELECT_1_FROM_ALTERNATE_A =
-                    "AND NOT EXISTS (SELECT 1 FROM prior_receipt) ";
+    public static final String CONDITION_PRIOR_RECEIPT_AND_NOT_ALT_A_008 =
+            "AND NOT EXISTS (SELECT 1 FROM prior_receipt) ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_RETURNING_TARGET_TARGET_REF =
             "RETURNING target.target_ref";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_RETIRED_BOMS = "), retired_boms AS (";
@@ -147,9 +138,8 @@ public final class InventoryCatalogLifecycleServiceSql {
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_AND_NOT_EXISTS_SELECT_1_FROM_ALTERNATE_A =
             "AND NOT EXISTS (SELECT 1 FROM ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_ALTERNATE_B = ") ";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_PRIOR_RECEIPT_AND_NOT_EXISTS_SELECT_1_FROM_ALTERNATE_B =
-                    "AND NOT EXISTS (SELECT 1 FROM prior_receipt) ";
+    public static final String CONDITION_PRIOR_RECEIPT_AND_NOT_ALT_B_009 =
+            "AND NOT EXISTS (SELECT 1 FROM prior_receipt) ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_RETURNING_BOM_BOM_REF = "RETURNING bom.bom_ref";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_OUTCOME = "), outcome AS (";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT = "SELECT ";
@@ -188,9 +178,8 @@ public final class InventoryCatalogLifecycleServiceSql {
             "'remainingActiveOwnedDefinitionCount',remaining_count) AS response ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_FROM_CLAUSE_OUTCOME =
             "FROM outcome WHERE inbound_count=0 AND inbound_resolvable AND remaining_count=0 ";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_PRIOR_RECEIPT_AND_NOT_EXISTS_SELECT_1_FROM_ALTERNATE_C =
-                    "AND NOT EXISTS (SELECT 1 FROM prior_receipt)";
+    public static final String CONDITION_PRIOR_RECEIPT_AND_NOT_ALT_C_010 =
+            "AND NOT EXISTS (SELECT 1 FROM prior_receipt)";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_WRITTEN_RECEIPT =
             "), written_receipt AS (";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_INSERT_INTO_COMMAND_RECEIPT =
@@ -242,9 +231,8 @@ public final class InventoryCatalogLifecycleServiceSql {
             "bom.option_value_ref,ot.target_ref,bom.item_code,source_item.name,ot.definition_status ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_FROM_CLAUSE_INPUT_BOM_ALTERNATE_A =
             "FROM inventory.stock_bom bom CROSS JOIN input ";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_LATERAL_JSONB_ARRAY_ELEMENTS_JSONB_TYPEOF_BOM_ROWS_ALTERNATE_A =
-                    "CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(bom.rows)='array' ";
+    public static final String LATERAL_JSONB_ARRAY_ELEMENTS_JSONB_ALT_A_011 =
+            "CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(bom.rows)='array' ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_THEN_BOM_ROWS_ENTRY_ALTERNATE_A =
             "THEN bom.rows ELSE '[]'::jsonb END) AS e(entry) ";
     public static final String
@@ -285,21 +273,18 @@ public final class InventoryCatalogLifecycleServiceSql {
             "inbound.item_code,inbound.name,inbound.definition_status FROM inbound ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_ORDER_BY_SUBJECT_REF_FACT_KIND_FACT_REF =
             "ORDER BY subject_ref,fact_kind,fact_ref";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF_ALTERNATE_A =
-                    "SELECT target_ref FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND ";
+    public static final String SELECT_STOCK_TARGET_REF_DATA_ALT_A_012 =
+            "SELECT target_ref FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF =
             "SELECT bom_ref FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND ";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF_ALTERNATE_B =
-                    "SELECT target_ref FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND ";
+    public static final String SELECT_STOCK_TARGET_REF_DATA_ALT_B_013 =
+            "SELECT target_ref FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_LATERAL_BOM_BOM_REF_JSONB_ARRAY_ELEMENTS =
             "SELECT bom.bom_ref FROM inventory.stock_bom bom CROSS JOIN LATERAL jsonb_array_elements(";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CASE_JSONB_TYPEOF_BOM_ROWS_ENTRY =
             "CASE WHEN jsonb_typeof(bom.rows)='array' THEN bom.rows ELSE '[]'::jsonb END) e(entry) ";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_WHERE_BOM_DATA_NODE_REF_BRAND_REF_DEFINITION_STATUS_ALTERNATE_A =
-                    "WHERE bom.data_node_ref=? AND bom.brand_ref=? AND bom.definition_status='ENABLED' AND ";
+    public static final String WHERE_BOM_DATA_NODE_REF_ALT_A_014 =
+            "WHERE bom.data_node_ref=? AND bom.brand_ref=? AND bom.definition_status='ENABLED' AND ";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_ENTRY_TARGET_REF_COMPONENT_TARGET_REF =
             "COALESCE(e.entry->>'targetRef',e.entry->>'componentTargetRef') IN (";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CLOSE_PAREN_ALTERNATE_E = ") ";
@@ -307,14 +292,15 @@ public final class InventoryCatalogLifecycleServiceSql {
             "ORDER BY bom.bom_ref FOR UPDATE";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_STOCK_TARGET_DATA_NODE_REF_BRAND_REF =
             "SELECT (SELECT COUNT(*) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND ";
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_SELECT_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT =
-                    "SELECT operation_id,request_hash,response_json::text FROM inventory.command_receipt WHERE data_node_ref=? ";
+    public static final String SELECT_CMD_RECEIPT_OP_ID_015 =
+            ("SELECT operation_id,request_hash,response_json::text FROM inventory.comm"
+                    + "and_receipt WHERE data_node_ref=? ");
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_CONDITION_IDEMPOTENCY_KEY = "AND idempotency_key=?";
     public static final String INVENTORY_CATALOG_LIFECYCLE_SERVICE_INSERT_INTO = "INSERT INTO ";
 
-    public static final String
-            INVENTORY_CATALOG_LIFECYCLE_SERVICE_INVENTORY_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID_REQUEST_HASH_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB =
-                    """
-    inventory.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_hash,response_json,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)""";
+    public static final String INV_CMD_RECEIPT_REF_DATA_016 =
+            """
+    inventory.command_receipt(receipt_ref,data_node_ref,idempotency_ke\
+    y,operation_id,request_hash,response_json,created_at_epoch_millis)\
+     VALUES(?,?,?,?,?,CAST(? AS JSONB),?)""";
 }

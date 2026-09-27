@@ -8,14 +8,15 @@
     "authorizationManifest": "contracts/registry/iam-org-governance-manifest.json"
   },
   "closure": {
-    "operations": 235,
+    "operations": 238,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 162,
-      "public": 12
+      "operations-admin": 163,
+      "public": 12,
+      "terminal": 2
     },
-    "componentBaseline": 304,
-    "componentFiles": 22,
+    "componentBaseline": 312,
+    "componentFiles": 23,
     "unreachable": [
       {
         "component": "BusinessEntitySource",
@@ -2843,6 +2844,42 @@
       "requestComponentFile": "components/common/empty.schemas.json",
       "responseComponentFile": "components/store-terminal/store-terminal.schemas.json",
       "errorSetRef": "AUTHZ_READ"
+    },
+    {
+      "operationId": "cancelOperationsStoreTerminalActivation",
+      "face": "operations-admin",
+      "owner": "terminal-binding",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel",
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json",
+      "requestComponentFile": "components/terminal-binding/terminal-binding.schemas.json",
+      "responseComponentFile": "components/terminal-binding/terminal-binding.schemas.json",
+      "errorSetRef": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "activateTerminal",
+      "face": "terminal",
+      "owner": "terminal-binding",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation",
+      "capability": "activation",
+      "pathFile": "paths/terminal/activation.paths.json",
+      "requestComponentFile": "components/terminal-binding/terminal-binding.schemas.json",
+      "responseComponentFile": "components/terminal-binding/terminal-binding.schemas.json",
+      "errorSetRef": "TERMINAL_ACTIVATION_COMMAND"
+    },
+    {
+      "operationId": "cancelTerminalActivation",
+      "face": "terminal",
+      "owner": "terminal-binding",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel",
+      "capability": "activation",
+      "pathFile": "paths/terminal/activation.paths.json",
+      "requestComponentFile": "components/terminal-binding/terminal-binding.schemas.json",
+      "responseComponentFile": "components/terminal-binding/terminal-binding.schemas.json",
+      "errorSetRef": "TERMINAL_DEVICE_CANCEL_COMMAND"
     }
   ],
   "requiredNestedReferenceChecks": [

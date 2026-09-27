@@ -210,10 +210,7 @@ public class ContractTaskReadPersistence {
             LocalDate today) {
         int safePage = Math.max(1, page);
         int safeSize = Math.min(100, Math.max(1, pageSize));
-        String where =
-                ContractTaskReadServiceSql
-                                .CONTRACT_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_ID_ALTERNATE_A
-                        + fixedStoreViewPredicate(state);
+        String where = ContractTaskReadServiceSql.WHERE_WS_UUID_GRP_WS_ALT_A_001 + fixedStoreViewPredicate(state);
         List<Object> values = fixedStoreViewParameters(workspaceUuid, key, storeId, state, today);
         long total = jdbc.queryForObject(
                 ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_SELECT_SELECT_COUNT + VIEW_FROM + where,

@@ -32,6 +32,8 @@
 多 history 会让「当前 schema 是什么」失去唯一答案。
 **违反后果**:一次跨模块写变成需要补偿逻辑的分布式问题,而当前阶段没有任何东西需要这个代价。
 
+已接受的 terminal service-shape decision 允许一个独立受管的单节点 `terminal-data-server` WebSocket transport runtime。它是辅助传输进程，不拥有业务 deployable、事实写入或 Flyway history，因此不改变上述三个业务底座不变量，也不是 TDP。
+
 ### 1-B · 模块 owner 主权
 
 `MODULE_OWNER_SOVEREIGNTY` · `COMMAND_REQUIRED_TRANSACTION` · `TASK_READ_JOIN` · `COORDINATOR_NO_ASSET`
@@ -253,6 +255,8 @@ SharedLock.acquire(jdbc, Namespace.PRODUCT_SKU, ref);
 
 **为什么**:它们是为「跨进程最终一致」准备的,而当前是一个进程一个库。
 引入后真正的问题(同一事务内的正确性)会被掩盖。
+
+本批唯一的异步通知例外是 terminal-binding 在同一数据库事务中发出的绑定撤销唤醒，由 TDS 使用 PostgreSQL `LISTEN/NOTIFY` 关闭相应会话。它不是通用 outbox、事件总线、持久队列或业务状态轮询；不得扩展到其他业务事件。
 
 ---
 

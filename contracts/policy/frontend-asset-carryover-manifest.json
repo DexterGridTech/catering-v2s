@@ -5,7 +5,6 @@
   "reviewCycleId": "R5-W3-DESIGN-20260725",
   "reviewTarget": "DESIGN",
   "implementationAuthority": false,
-  "heritageRoot": "../catering-all-v2",
   "targetRoot": ".",
   "policy": {
     "sourceUse": "READ_ONLY_HASH_BOUND_STATIC_BASELINE",
@@ -15,12 +14,21 @@
     "duplicateLocalMechanics": "FORBIDDEN_WHEN_FOUNDATION_PRIMITIVE_EXISTS",
     "wireframeConfirmation": "DEXTER_ACCEPTED_V2_BASELINE_NO_FURTHER_CONFIRMATION",
     "homeContent": "CARRY_ROUTE_AND_BOOTSTRAP_ONLY_NO_NEW_DASHBOARD",
-    "allowedSurfaceDispositions": ["ADAPT", "CARRY_ROUTE_BOOTSTRAP_ONLY"],
+    "allowedSurfaceDispositions": [
+      "ADAPT",
+      "CARRY_ROUTE_BOOTSTRAP_ONLY"
+    ],
     "plainCarry": "FORBIDDEN_BECAUSE_ALL_WIRE_IS_REGENERATED_AND_GROUP_WORKSPACE_KEY_CHANGES",
     "sourceInventory": {
       "enumeration": "find both app src roots -type f with suffix .ts or .tsx; sort by repo-relative path; aggregate bytes are '<path>\\t<sha256>\\n'",
-      "allTsTsx": {"count": 180, "sha256": "a9c6b190854bfb4fb5c70ded6664095d483e48a68a49e82d9406cec3650c8a3f"},
-      "runtime": {"count": 135, "sha256": "95f2d8b9bd020e6b1c61c129d742f180d41a0da4685f30cd6ebbc842badaa8a6"},
+      "allTsTsx": {
+        "count": 180,
+        "sha256": "a9c6b190854bfb4fb5c70ded6664095d483e48a68a49e82d9406cec3650c8a3f"
+      },
+      "runtime": {
+        "count": 135,
+        "sha256": "95f2d8b9bd020e6b1c61c129d742f180d41a0da4685f30cd6ebbc842badaa8a6"
+      },
       "handwrittenRuntime": {
         "count": 133,
         "sha256": "64d4165885cf5ef2acc6c52ee51c450ca15c5d7472afd10b771aa864982f637a"
@@ -177,7 +185,12 @@
       {
         "id": "PLATFORM_AUTH_FOUNDATION_ADAPT",
         "reason": "v2 PlatformLoginPage directly consumed no foundation primitive",
-        "required": ["platformHttpProtocol", "observedBaseQuery", "overlayLock", "testId"],
+        "required": [
+          "platformHttpProtocol",
+          "observedBaseQuery",
+          "overlayLock",
+          "testId"
+        ],
         "proof": "imports plus login/session/error/overlay L2; this is an explicit R5 adaptation, not claimed carry-over"
       }
     ]
@@ -185,56 +198,169 @@
   "foundationConsumptionBySurface": {
     "PLATFORM-AUTH": {
       "v2Consumed": [],
-      "r5Required": ["platformHttpProtocol", "observedBaseQuery", "overlayLock", "testId"]
+      "r5Required": [
+        "platformHttpProtocol",
+        "observedBaseQuery",
+        "overlayLock",
+        "testId"
+      ]
     },
     "PLATFORM-WORKSPACES": {
-      "v2Consumed": ["useDetailDrawer", "overlayLock"],
-      "r5Required": ["useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "contextScopedQueryArgs", "testId"]
+      "v2Consumed": [
+        "useDetailDrawer",
+        "overlayLock"
+      ],
+      "r5Required": [
+        "useDetailDrawer",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "contextScopedQueryArgs",
+        "testId"
+      ]
     },
     "PLATFORM-ADMIN-USERS": {
-      "v2Consumed": ["useDetailDrawer", "overlayLock"],
-      "r5Required": ["useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]
+      "v2Consumed": [
+        "useDetailDrawer",
+        "overlayLock"
+      ],
+      "r5Required": [
+        "useDetailDrawer",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
     },
     "PLATFORM-WORKSPACE-OVERVIEW": {
       "v2Consumed": [],
-      "r5Required": ["contextScopedQueryArgs", "useDetailDrawer", "testId"]
+      "r5Required": [
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "testId"
+      ]
     },
     "PLATFORM-ORGANIZATION-OVERVIEW": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"],
-      "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock", "contextScopedQueryArgs", "testId"]
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "overlayLock"
+      ],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "useDetailDrawer",
+        "overlayLock",
+        "contextScopedQueryArgs",
+        "testId"
+      ]
     },
     "PLATFORM-CONTRACT-OVERVIEW": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock"],
-      "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock", "contextScopedQueryArgs", "testId"]
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "useDetailDrawer",
+        "overlayLock"
+      ],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "useDetailDrawer",
+        "overlayLock",
+        "contextScopedQueryArgs",
+        "testId"
+      ]
     },
     "PLATFORM-ROLES": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock"],
-      "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "useDetailDrawer",
+        "overlayLock"
+      ],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "useDetailDrawer",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
     },
     "PLATFORM-WORKSPACE-ACCOUNTS": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock"],
-      "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "useDetailDrawer",
+        "overlayLock"
+      ],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "useDetailDrawer",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
     },
     "PLATFORM-EXTENSION-FIELDS": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"],
-      "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "overlayLock"
+      ],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "useDetailDrawer",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
     },
     "PLATFORM-PASSWORD": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"],
-      "r5Required": ["adminDrawerSurfaceProps", "useDrawerFormLifecycle", "overlayLock", "testId"]
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "overlayLock"
+      ],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
     },
     "OPERATIONS-AUTH": {
       "v2Consumed": [],
-      "r5Required": ["platformHttpProtocol", "observedBaseQuery", "overlayLock", "testId"]
+      "r5Required": [
+        "platformHttpProtocol",
+        "observedBaseQuery",
+        "overlayLock",
+        "testId"
+      ]
     },
-    "PUBLIC-INVITATION": {"v2Consumed": [], "r5Required": ["overlayLock", "platformHttpProtocol", "testId"]},
-    "PUBLIC-ACCESS-RECOVERY": {"v2Consumed": [], "r5Required": ["overlayLock", "platformHttpProtocol", "testId"]},
+    "PUBLIC-INVITATION": {
+      "v2Consumed": [],
+      "r5Required": [
+        "overlayLock",
+        "platformHttpProtocol",
+        "testId"
+      ]
+    },
+    "PUBLIC-ACCESS-RECOVERY": {
+      "v2Consumed": [],
+      "r5Required": [
+        "overlayLock",
+        "platformHttpProtocol",
+        "testId"
+      ]
+    },
     "OPERATIONS-SHELL": {
-      "v2Consumed": ["contextScopedQueryArgs", "overlayLock"],
-      "r5Required": ["contextScopedQueryArgs", "overlayLock", "observedBaseQuery", "testId"]
+      "v2Consumed": [
+        "contextScopedQueryArgs",
+        "overlayLock"
+      ],
+      "r5Required": [
+        "contextScopedQueryArgs",
+        "overlayLock",
+        "observedBaseQuery",
+        "testId"
+      ]
     },
     "OPERATIONS-ORG-STRUCTURE": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "overlayLock"],
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "overlayLock"
+      ],
       "r5Required": [
         "adminDrawerSurfaceProps",
         "contextScopedQueryArgs",
@@ -244,7 +370,12 @@
       ]
     },
     "OPERATIONS-BUSINESS-ENTITIES": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "overlayLock"
+      ],
       "r5Required": [
         "adminDrawerSurfaceProps",
         "contextScopedQueryArgs",
@@ -255,7 +386,12 @@
       ]
     },
     "OPERATIONS-STORES": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "overlayLock"
+      ],
       "r5Required": [
         "adminDrawerSurfaceProps",
         "contextScopedQueryArgs",
@@ -266,7 +402,12 @@
       ]
     },
     "OPERATIONS-CONTRACTS": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "overlayLock"
+      ],
       "r5Required": [
         "adminDrawerSurfaceProps",
         "contextScopedQueryArgs",
@@ -277,7 +418,12 @@
       ]
     },
     "OPERATIONS-USERS": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "overlayLock"
+      ],
       "r5Required": [
         "adminDrawerSurfaceProps",
         "contextScopedQueryArgs",
@@ -288,11 +434,25 @@
       ]
     },
     "OPERATIONS-STORE-PROFILE": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer"],
-      "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "testId"]
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer"
+      ],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "testId"
+      ]
     },
     "OPERATIONS-CATALOG-STORE-ITEMS": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "overlayLock"
+      ],
       "r5Required": [
         "adminDrawerSurfaceProps",
         "contextScopedQueryArgs",
@@ -303,11 +463,27 @@
       ]
     },
     "OPERATIONS-INVENTORY-STORE-STATUS": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
-      "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock", "testId"]
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "overlayLock"
+      ],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "overlayLock",
+        "testId"
+      ]
     },
     "OPERATIONS-CATALOG-BRAND-ITEMS": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "overlayLock"
+      ],
       "r5Required": [
         "adminDrawerSurfaceProps",
         "contextScopedQueryArgs",
@@ -318,10 +494,24 @@
       ]
     },
     "OPERATIONS-PASSWORD": {
-      "v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"],
-      "r5Required": ["adminDrawerSurfaceProps", "useDrawerFormLifecycle", "overlayLock", "testId"]
+      "v2Consumed": [
+        "adminDrawerSurfaceProps",
+        "overlayLock"
+      ],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
     },
-    "OPERATIONS-FIVE-HOME-BOOTSTRAPS": {"v2Consumed": [], "r5Required": ["contextScopedQueryArgs", "testId"]}
+    "OPERATIONS-FIVE-HOME-BOOTSTRAPS": {
+      "v2Consumed": [],
+      "r5Required": [
+        "contextScopedQueryArgs",
+        "testId"
+      ]
+    }
   },
   "notCarriedAssets": [
     {
@@ -388,43 +578,259 @@
     ]
   },
   "textAssertionsBySurface": {
-    "PLATFORM-AUTH": {"required": ["登录平台后台"], "forbidden": ["默认管理员", "root账号"]},
-    "PLATFORM-WORKSPACES": {"required": ["集团空间", "初始化商业集团"], "forbidden": ["商户空间", "默认集团"]},
-    "PLATFORM-ADMIN-USERS": {"required": ["平台管理员", "凭据恢复"], "forbidden": ["运营角色", "代设新密码"]},
-    "PLATFORM-WORKSPACE-OVERVIEW": {"required": ["集团空间概览"], "forbidden": ["投影诊断", "同步状态"]},
-    "PLATFORM-ORGANIZATION-OVERVIEW": {"required": ["组织概览"], "forbidden": ["组织诊断", "商户"]},
-    "PLATFORM-CONTRACT-OVERVIEW": {"required": ["合同概览", "货号名称"], "forbidden": ["合同诊断", "仅货号"]},
-    "PLATFORM-ROLES": {"required": ["页面准入", "可执行动作"], "forbidden": ["页面即权限", "候选角色接口"]},
-    "PLATFORM-WORKSPACE-ACCOUNTS": {
-      "required": ["账号详情", "撤销任职"],
-      "forbidden": ["直接新增任职", "直接编辑任职"]
+    "PLATFORM-AUTH": {
+      "required": [
+        "登录平台后台"
+      ],
+      "forbidden": [
+        "默认管理员",
+        "root账号"
+      ]
     },
-    "PLATFORM-EXTENSION-FIELDS": {"required": ["扩展字段"], "forbidden": ["商业集团扩展值", "项目扩展值"]},
-    "PLATFORM-PASSWORD": {"required": ["修改密码", "当前密码"], "forbidden": ["修改他人密码", "显示明文"]},
-    "OPERATIONS-AUTH": {"required": ["登录运营后台"], "forbidden": ["当前身份", "查看范围"]},
-    "PUBLIC-INVITATION": {"required": ["接受邀请", "手机验证"], "forbidden": ["直接新增任职", "默认密码"]},
-    "PUBLIC-ACCESS-RECOVERY": {"required": ["找回密码", "手机验证"], "forbidden": ["管理员代设", "显示验证码"]},
-    "OPERATIONS-SHELL": {"required": ["当前角色", "数据范围"], "forbidden": ["当前身份", "查看范围"]},
-    "OPERATIONS-ORG-STRUCTURE": {"required": ["商业集团", "大区", "项目"], "forbidden": ["总公司节点", "门店节点"]},
-    "OPERATIONS-BUSINESS-ENTITIES": {"required": ["品牌", "经营主体", "总公司"], "forbidden": ["商户", "外部同步"]},
-    "OPERATIONS-STORES": {"required": ["门店", "经营状态"], "forbidden": ["商户", "合同状态等于启停", "已停业"]},
-    "OPERATIONS-CONTRACTS": {"required": ["合同", "货号名称"], "forbidden": ["仅货号", "停用门店不可签约", "分期编码"]},
-    "OPERATIONS-USERS": {"required": ["邀请成员", "撤销任职"], "forbidden": ["直接新增任职", "直接编辑任职"]},
-    "OPERATIONS-STORE-PROFILE": {"required": ["门店资料", "合同"], "forbidden": ["编辑门店", "编辑合同", "已停业"]},
+    "PLATFORM-WORKSPACES": {
+      "required": [
+        "集团空间",
+        "初始化商业集团"
+      ],
+      "forbidden": [
+        "商户空间",
+        "默认集团"
+      ]
+    },
+    "PLATFORM-ADMIN-USERS": {
+      "required": [
+        "平台管理员",
+        "凭据恢复"
+      ],
+      "forbidden": [
+        "运营角色",
+        "代设新密码"
+      ]
+    },
+    "PLATFORM-WORKSPACE-OVERVIEW": {
+      "required": [
+        "集团空间概览"
+      ],
+      "forbidden": [
+        "投影诊断",
+        "同步状态"
+      ]
+    },
+    "PLATFORM-ORGANIZATION-OVERVIEW": {
+      "required": [
+        "组织概览"
+      ],
+      "forbidden": [
+        "组织诊断",
+        "商户"
+      ]
+    },
+    "PLATFORM-CONTRACT-OVERVIEW": {
+      "required": [
+        "合同概览",
+        "货号名称"
+      ],
+      "forbidden": [
+        "合同诊断",
+        "仅货号"
+      ]
+    },
+    "PLATFORM-ROLES": {
+      "required": [
+        "页面准入",
+        "可执行动作"
+      ],
+      "forbidden": [
+        "页面即权限",
+        "候选角色接口"
+      ]
+    },
+    "PLATFORM-WORKSPACE-ACCOUNTS": {
+      "required": [
+        "账号详情",
+        "撤销任职"
+      ],
+      "forbidden": [
+        "直接新增任职",
+        "直接编辑任职"
+      ]
+    },
+    "PLATFORM-EXTENSION-FIELDS": {
+      "required": [
+        "扩展字段"
+      ],
+      "forbidden": [
+        "商业集团扩展值",
+        "项目扩展值"
+      ]
+    },
+    "PLATFORM-PASSWORD": {
+      "required": [
+        "修改密码",
+        "当前密码"
+      ],
+      "forbidden": [
+        "修改他人密码",
+        "显示明文"
+      ]
+    },
+    "OPERATIONS-AUTH": {
+      "required": [
+        "登录运营后台"
+      ],
+      "forbidden": [
+        "当前身份",
+        "查看范围"
+      ]
+    },
+    "PUBLIC-INVITATION": {
+      "required": [
+        "接受邀请",
+        "手机验证"
+      ],
+      "forbidden": [
+        "直接新增任职",
+        "默认密码"
+      ]
+    },
+    "PUBLIC-ACCESS-RECOVERY": {
+      "required": [
+        "找回密码",
+        "手机验证"
+      ],
+      "forbidden": [
+        "管理员代设",
+        "显示验证码"
+      ]
+    },
+    "OPERATIONS-SHELL": {
+      "required": [
+        "当前角色",
+        "数据范围"
+      ],
+      "forbidden": [
+        "当前身份",
+        "查看范围"
+      ]
+    },
+    "OPERATIONS-ORG-STRUCTURE": {
+      "required": [
+        "商业集团",
+        "大区",
+        "项目"
+      ],
+      "forbidden": [
+        "总公司节点",
+        "门店节点"
+      ]
+    },
+    "OPERATIONS-BUSINESS-ENTITIES": {
+      "required": [
+        "品牌",
+        "经营主体",
+        "总公司"
+      ],
+      "forbidden": [
+        "商户",
+        "外部同步"
+      ]
+    },
+    "OPERATIONS-STORES": {
+      "required": [
+        "门店",
+        "经营状态"
+      ],
+      "forbidden": [
+        "商户",
+        "合同状态等于启停",
+        "已停业"
+      ]
+    },
+    "OPERATIONS-CONTRACTS": {
+      "required": [
+        "合同",
+        "货号名称"
+      ],
+      "forbidden": [
+        "仅货号",
+        "停用门店不可签约",
+        "分期编码"
+      ]
+    },
+    "OPERATIONS-USERS": {
+      "required": [
+        "邀请成员",
+        "撤销任职"
+      ],
+      "forbidden": [
+        "直接新增任职",
+        "直接编辑任职"
+      ]
+    },
+    "OPERATIONS-STORE-PROFILE": {
+      "required": [
+        "门店资料",
+        "合同"
+      ],
+      "forbidden": [
+        "编辑门店",
+        "编辑合同",
+        "已停业"
+      ]
+    },
     "OPERATIONS-CATALOG-STORE-ITEMS": {
-      "required": ["门店商品管理", "商品字典", "商品处理标签"],
-      "forbidden": ["菜单与渠道", "批量导入"]
+      "required": [
+        "门店商品管理",
+        "商品字典",
+        "商品处理标签"
+      ],
+      "forbidden": [
+        "菜单与渠道",
+        "批量导入"
+      ]
     },
     "OPERATIONS-INVENTORY-STORE-STATUS": {
-      "required": ["门店库存管理", "库存变化", "库存对象"],
-      "forbidden": ["库存现状导出", "销售消耗趋势"]
+      "required": [
+        "门店库存管理",
+        "库存变化",
+        "库存对象"
+      ],
+      "forbidden": [
+        "库存现状导出",
+        "销售消耗趋势"
+      ]
     },
     "OPERATIONS-CATALOG-BRAND-ITEMS": {
-      "required": ["品牌商品管理", "品牌切换", "复制预检"],
-      "forbidden": ["门店余额", "门店流水"]
+      "required": [
+        "品牌商品管理",
+        "品牌切换",
+        "复制预检"
+      ],
+      "forbidden": [
+        "门店余额",
+        "门店流水"
+      ]
     },
-    "OPERATIONS-PASSWORD": {"required": ["修改密码", "当前密码"], "forbidden": ["修改他人密码", "显示明文"]},
-    "OPERATIONS-FIVE-HOME-BOOTSTRAPS": {"required": ["当前角色"], "forbidden": ["经营指标", "新建业务", "诊断"]}
+    "OPERATIONS-PASSWORD": {
+      "required": [
+        "修改密码",
+        "当前密码"
+      ],
+      "forbidden": [
+        "修改他人密码",
+        "显示明文"
+      ]
+    },
+    "OPERATIONS-FIVE-HOME-BOOTSTRAPS": {
+      "required": [
+        "当前角色"
+      ],
+      "forbidden": [
+        "经营指标",
+        "新建业务",
+        "诊断"
+      ]
+    }
   },
   "pageDesignKeySurfaceCrosswalk": {
     "byPageDesignKey": {
@@ -464,18 +870,44 @@
       "HOME-STORE": "OPERATIONS-FIVE-HOME-BOOTSTRAPS"
     },
     "bySurface": {
-      "PLATFORM-WORKSPACES": ["PLATFORM-WORKSPACES"],
-      "PLATFORM-ADMIN-USERS": ["PLATFORM-ADMIN-USERS"],
-      "PLATFORM-WORKSPACE-OVERVIEW": ["PLATFORM-WORKSPACE-OVERVIEW"],
-      "PLATFORM-ORGANIZATION-OVERVIEW": ["PLATFORM-ORGANIZATION-OVERVIEW"],
-      "PLATFORM-CONTRACT-OVERVIEW": ["PLATFORM-CONTRACT-OVERVIEW"],
-      "PLATFORM-ROLES": ["PLATFORM-ROLES"],
-      "PLATFORM-WORKSPACE-ACCOUNTS": ["PLATFORM-WORKSPACE-ACCOUNTS"],
-      "PLATFORM-EXTENSION-FIELDS": ["PLATFORM-EXTENSION-FIELDS"],
-      "OPERATIONS-ORG-STRUCTURE": ["PG-ORG-STRUCTURE"],
-      "OPERATIONS-BUSINESS-ENTITIES": ["PG-ORG-BRAND", "PG-ORG-TENANT", "PG-ORG-HEAD-COMPANY"],
-      "OPERATIONS-STORES": ["PG-ORG-STORE-MANAGE"],
-      "OPERATIONS-CONTRACTS": ["PG-CONTRACT-STORE-MANAGE"],
+      "PLATFORM-WORKSPACES": [
+        "PLATFORM-WORKSPACES"
+      ],
+      "PLATFORM-ADMIN-USERS": [
+        "PLATFORM-ADMIN-USERS"
+      ],
+      "PLATFORM-WORKSPACE-OVERVIEW": [
+        "PLATFORM-WORKSPACE-OVERVIEW"
+      ],
+      "PLATFORM-ORGANIZATION-OVERVIEW": [
+        "PLATFORM-ORGANIZATION-OVERVIEW"
+      ],
+      "PLATFORM-CONTRACT-OVERVIEW": [
+        "PLATFORM-CONTRACT-OVERVIEW"
+      ],
+      "PLATFORM-ROLES": [
+        "PLATFORM-ROLES"
+      ],
+      "PLATFORM-WORKSPACE-ACCOUNTS": [
+        "PLATFORM-WORKSPACE-ACCOUNTS"
+      ],
+      "PLATFORM-EXTENSION-FIELDS": [
+        "PLATFORM-EXTENSION-FIELDS"
+      ],
+      "OPERATIONS-ORG-STRUCTURE": [
+        "PG-ORG-STRUCTURE"
+      ],
+      "OPERATIONS-BUSINESS-ENTITIES": [
+        "PG-ORG-BRAND",
+        "PG-ORG-TENANT",
+        "PG-ORG-HEAD-COMPANY"
+      ],
+      "OPERATIONS-STORES": [
+        "PG-ORG-STORE-MANAGE"
+      ],
+      "OPERATIONS-CONTRACTS": [
+        "PG-CONTRACT-STORE-MANAGE"
+      ],
       "OPERATIONS-USERS": [
         "PG-IAM-GROUP-USERS",
         "PG-IAM-REGION-USERS",
@@ -483,13 +915,27 @@
         "PG-IAM-HEAD-COMPANY-USERS",
         "PG-IAM-STORE-USERS"
       ],
-      "OPERATIONS-STORE-PROFILE": ["PG-STORE-PROFILE"],
-      "OPERATIONS-CATALOG-STORE-ITEMS": ["PG-CATALOG-STORE-ITEMS"],
-      "OPERATIONS-INVENTORY-STORE-STATUS": ["PG-INVENTORY-STORE-STATUS"],
-      "OPERATIONS-CATALOG-BRAND-ITEMS": ["PG-CATALOG-BRAND-ITEMS"],
-      "OPERATIONS-SALES-MENU": ["PG-SALES-MENU-STORE"],
-      "OPERATIONS-STORE-SERVICE-POINT-QR": ["PG-STORE-SERVICE-POINT-QR"],
-      "OPERATIONS-STORE-TERMINALS": ["PG-STORE-TERMINALS"],
+      "OPERATIONS-STORE-PROFILE": [
+        "PG-STORE-PROFILE"
+      ],
+      "OPERATIONS-CATALOG-STORE-ITEMS": [
+        "PG-CATALOG-STORE-ITEMS"
+      ],
+      "OPERATIONS-INVENTORY-STORE-STATUS": [
+        "PG-INVENTORY-STORE-STATUS"
+      ],
+      "OPERATIONS-CATALOG-BRAND-ITEMS": [
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "OPERATIONS-SALES-MENU": [
+        "PG-SALES-MENU-STORE"
+      ],
+      "OPERATIONS-STORE-SERVICE-POINT-QR": [
+        "PG-STORE-SERVICE-POINT-QR"
+      ],
+      "OPERATIONS-STORE-TERMINALS": [
+        "PG-STORE-TERMINALS"
+      ],
       "OPERATIONS-FIVE-HOME-BOOTSTRAPS": [
         "HOME-GROUP",
         "HOME-REGION",

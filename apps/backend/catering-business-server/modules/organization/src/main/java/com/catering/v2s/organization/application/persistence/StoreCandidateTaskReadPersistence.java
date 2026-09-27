@@ -191,8 +191,7 @@ public class StoreCandidateTaskReadPersistence {
                         projects.arguments());
             }
             case "BRAND" -> new CandidateSql(
-                    StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_SELECT_BRAND_CODE_NAME_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                    StoreCandidateTaskReadServiceSql.SELECT_BRAND_CODE_NAME_WS_001
                             + StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_CONDITION_STATUS_ENABLED,
                     List.of(workspaceUuid, key));
@@ -219,12 +218,10 @@ public class StoreCandidateTaskReadPersistence {
                                     + StoreCandidateTaskReadServiceSql.STORE_CANDIDATE_TASK_READ_SERVICE_WORKSPACE_UUID
                                     + StoreCandidateTaskReadServiceSql
                                             .STORE_CANDIDATE_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY
-                                    + StoreCandidateTaskReadServiceSql
-                                            .STORE_CANDIDATE_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED
+                                    + StoreCandidateTaskReadServiceSql.WHERE_WS_UUID_GRP_WS_002
                                     + StoreCandidateTaskReadServiceSql
                                             .STORE_CANDIDATE_TASK_READ_SERVICE_STATUS_ENABLED_BRAND_ID_TENANT_ID
-                                    + StoreCandidateTaskReadServiceSql
-                                            .STORE_CANDIDATE_TASK_READ_SERVICE_ALTERNATIVE_HEAD_COMPANY_BRAND_AUTHORIZATION_HEAD_COMPANY_ID
+                                    + StoreCandidateTaskReadServiceSql.ALT_HEAD_COMPANY_BRAND_AUTH_003
                                     + StoreCandidateTaskReadServiceSql
                                             .STORE_CANDIDATE_TASK_READ_SERVICE_CONDITION_BRAND_ID,
                             List.of(workspaceUuid, key, brandId, tenantId, brandId));
@@ -249,8 +246,7 @@ public class StoreCandidateTaskReadPersistence {
     private CandidateSql contractListCandidateSql(UUID workspaceUuid, String key, String subjectType, UUID projectId) {
         return switch (subjectType) {
             case ServiceNodeTypes.STORE -> new CandidateSql(
-                    StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_SELECT_STORE_CODE_NAME_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                    StoreCandidateTaskReadServiceSql.SELECT_STORE_CODE_NAME_WS_004
                             + StoreCandidateTaskReadServiceSql.STORE_CANDIDATE_TASK_READ_SERVICE_CONDITION_PROJECT_ID,
                     List.of(workspaceUuid, key, projectId, projectId));
             case "TENANT" -> new CandidateSql(
@@ -332,10 +328,8 @@ public class StoreCandidateTaskReadPersistence {
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_PROJECT_STATUS,
                     List.of(workspaceUuid, key));
             case ServiceNodeTypes.REGION -> new SqlPart(
-                    StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_SELECT_ORGANIZATION_NODE_WORKSPACE_UUID_ALTERNATE_A
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_PROJECT_STATUS_ALTERNATE_A
+                    StoreCandidateTaskReadServiceSql.SELECT_ORG_NODE_WS_UUID_ALT_A_005
+                            + StoreCandidateTaskReadServiceSql.GRP_WS_KEY_NODE_TYPE_ALT_A_006
                             + StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_CTE_ORGANIZATION_NODE_DESCENDANTS
                             + StoreCandidateTaskReadServiceSql
@@ -351,30 +345,22 @@ public class StoreCandidateTaskReadPersistence {
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_DESCENDANTS_CHILD_STATUS_ENABLED,
                     List.of(workspaceUuid, key, scope.targetId(), workspaceUuid, key, workspaceUuid, key));
             case ServiceNodeTypes.PROJECT -> new SqlPart(
-                    StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_SELECT_ORGANIZATION_NODE_WORKSPACE_UUID_ALTERNATE_B
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_PROJECT_STATUS_ALTERNATE_B,
+                    StoreCandidateTaskReadServiceSql.SELECT_ORG_NODE_WS_UUID_ALT_B_007
+                            + StoreCandidateTaskReadServiceSql.GRP_WS_KEY_NODE_TYPE_ALT_B_008,
                     List.of(workspaceUuid, key, scope.targetId()));
             case ServiceNodeTypes.STORE -> new SqlPart(
-                    StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_SELECT_ORGANIZATION_NODE_WORKSPACE_UUID_ALTERNATE_C
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_PROJECT_STATUS_ALTERNATE_C
+                    StoreCandidateTaskReadServiceSql.SELECT_ORG_NODE_WS_UUID_ALT_C_009
+                            + StoreCandidateTaskReadServiceSql.GRP_WS_KEY_NODE_TYPE_ALT_C_010
                             + StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_SELECT_STORE_PROJECT_ID_WORKSPACE_UUID
                             + StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_A,
                     List.of(workspaceUuid, key, scope.targetId(), workspaceUuid, key));
             case BusinessEntityTypes.HEAD_COMPANY -> new SqlPart(
-                    StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_SELECT_ORGANIZATION_NODE_WORKSPACE_UUID_ALTERNATE_D
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_PROJECT_STATUS_ALTERNATE_D
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_SELECT_STORE_PROJECT_ID_WORKSPACE_UUID_ALTERNATE_A
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_HEAD_COMPANY_ID_STATUS_ENABLED,
+                    StoreCandidateTaskReadServiceSql.SELECT_ORG_NODE_WS_UUID_ALT_D_011
+                            + StoreCandidateTaskReadServiceSql.GRP_WS_KEY_NODE_TYPE_ALT_D_012
+                            + StoreCandidateTaskReadServiceSql.SELECT_STORE_PROJECT_ID_WS_ALT_A_013
+                            + StoreCandidateTaskReadServiceSql.GRP_WS_KEY_HEAD_COMPANY_014,
                     List.of(workspaceUuid, key, workspaceUuid, key, scope.targetId()));
             default -> throw new BusinessEntityService.OrganizationNotFoundException();
         };
@@ -398,8 +384,7 @@ public class StoreCandidateTaskReadPersistence {
                                 .STORE_CANDIDATE_TASK_READ_SERVICE_STORE_PROJECT_ID_TENANT_CODE
                         + StoreCandidateTaskReadServiceSql
                                 .STORE_CANDIDATE_TASK_READ_SERVICE_ALTERNATIVE_STORE_TENANT_TENANT_ID
-                        + StoreCandidateTaskReadServiceSql
-                                .STORE_CANDIDATE_TASK_READ_SERVICE_STORE_WORKSPACE_UUID_TENANT_WORKSPACE_UUID_AND_STORE_GROUP_WORKSPACE_KEY_TENANT_GROUP_WORKSPACE_KEY_STORE_GROUP_WORKSPACE_KEY_TENANT_GROUP_WORKSPACE_KEY
+                        + StoreCandidateTaskReadServiceSql.STORE_WS_UUID_TENANT_WS_022
                         + StoreCandidateTaskReadServiceSql
                                 .STORE_CANDIDATE_TASK_READ_SERVICE_WHERE_TENANT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + StoreCandidateTaskReadServiceSql
@@ -427,40 +412,33 @@ public class StoreCandidateTaskReadPersistence {
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_COMMERCIAL_GROUP_COMMERCIAL_GROUP_CODE_CODE
                             + StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_COMMERCIAL_GROUP_COMMERCIAL_GROUP_NAME_NAME
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_FROM_CLAUSE_COMMERCIAL_GROUP_FROM_ORGANIZATION_COMMERCIAL
+                            + StoreCandidateTaskReadServiceSql.FROM_CLAUSE_COMMERCIAL_GRP_FROM_015
                             + StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_JOIN_GROUP_WORKSPACE_JOIN_PLATFORM_WORKSPACE_GROU
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_JOIN_CONDITION_GROUP_WORKSPACE_COMMERCIAL_GROUP_GROUP_WORKSPACE_ID
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_WHERE_GROUP_WORKSPACE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                            + StoreCandidateTaskReadServiceSql.JOIN_CONDITION_GRP_WS_COMMERCIAL_016
+                            + StoreCandidateTaskReadServiceSql.WHERE_GRP_WS_UUID_GRP_017
                             + StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_CONDITION_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY,
                     List.of(workspaceUuid, key, key));
             case REGION, PROJECT -> new CandidateSql(
                     StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_SELECT_ORGANIZATION_NODE_NODE_CODE_NAME
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_WHERE_NODE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NODE_TYPE
+                            + StoreCandidateTaskReadServiceSql.WHERE_NODE_WS_UUID_GRP_018
                             + StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_CONDITION_NODE_STATUS_ENABLED,
                     List.of(workspaceUuid, key, query.subjectType().name()));
             case HEAD_COMPANY -> new CandidateSql(
                     StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_SELECT_HEAD_COMPANY_CODE_NAME_ALTERNATE_A
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_FROM_CLAUSE_HEAD_COMPANY_FROM_ORGANIZATION_HEAD_COMPA
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_WHERE_HEAD_COMPANY_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                            + StoreCandidateTaskReadServiceSql.FROM_CLAUSE_HEAD_COMPANY_FROM_019
+                            + StoreCandidateTaskReadServiceSql.WHERE_HEAD_COMPANY_WS_UUID_020
                             + StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_CONDITION_HEAD_COMPANY_STATUS_ENABLED,
                     List.of(workspaceUuid, key));
             case STORE -> new CandidateSql(
                     StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_SELECT_STORE_CODE_NAME_ALTERNATE_C
-                            + StoreCandidateTaskReadServiceSql
-                                    .STORE_CANDIDATE_TASK_READ_SERVICE_WHERE_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS
+                            + StoreCandidateTaskReadServiceSql.WHERE_STORE_WS_UUID_GRP_021
                             + StoreCandidateTaskReadServiceSql
                                     .STORE_CANDIDATE_TASK_READ_SERVICE_CONDITION_STORE_PROJECT_ID,
                     nullableArguments(workspaceUuid, key, query.projectId(), query.projectId()));

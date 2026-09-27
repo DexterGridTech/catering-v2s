@@ -8,9 +8,8 @@ public final class SalesMenuManualSaleServiceSql {
             "target_ref,state,reason,changed_at_epoch_millis,actor_type,actor_id,";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_ACTOR_DISPLAY_SNAPSHOT_VERSION =
             "actor_display_snapshot,version) VALUES(?,?,?,?,?,?,?,?,?,?,1) ";
-    public static final String
-            SALES_MENU_MANUAL_SALE_SERVICE_JOIN_CONDITION_SALES_ITEM_REF_CHANNEL_REF_TARGET_KIND_TARGET_REF =
-                    "ON CONFLICT (sales_item_ref,channel_ref,target_kind,target_ref) ";
+    public static final String JOIN_CONDITION_SALES_ITEM_REF_001 =
+            "ON CONFLICT (sales_item_ref,channel_ref,target_kind,target_ref) ";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_SET_DO_UPDATE_SET = "DO UPDATE SET ";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_STATE_REASON =
             "state=EXCLUDED.state,reason=EXCLUDED.reason,";
@@ -32,16 +31,13 @@ public final class SalesMenuManualSaleServiceSql {
             "SELECT resolved_sku_name FROM sales_menu.sales_version_item_sku ";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF_SKU_REF =
             "WHERE version_ref=? AND sales_item_ref=? AND sku_ref=?";
-    public static final String
-            SALES_MENU_MANUAL_SALE_SERVICE_SELECT_SALES_VERSION_ITEM_ORDER_OPTION_VA_RESOLVED_VALUE_NAME =
-                    "SELECT resolved_value_name FROM sales_menu.sales_version_item_order_option_value ";
+    public static final String SELECT_SALES_VER_ITEM_ORD_002 =
+            "SELECT resolved_value_name FROM sales_menu.sales_version_item_order_option_value ";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF_DEFINITION_VALUE_REF =
             "WHERE version_ref=? AND sales_item_ref=? AND definition_value_ref=?";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT =
             "SELECT request_hash,status,response_json::text readback_json ";
-    public static final String
-            SALES_MENU_MANUAL_SALE_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN =
-                    "FROM sales_menu.sales_command_receipt ";
+    public static final String FROM_CLAUSE_SALES_CMD_RECEIPT_003 = "FROM sales_menu.sales_command_receipt ";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY =
             "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_INSERT_INTO_SALES_COMMAND_RECEIPT =
@@ -50,21 +46,15 @@ public final class SalesMenuManualSaleServiceSql {
             "operation_id,idempotency_key,request_hash,status,response_json,created_at_epoch_millis) ";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_VALUES_VALUES_JSONB =
             "VALUES(?,?,?,?,?,?,? ,?::jsonb,?) ";
-    public static final String
-            SALES_MENU_MANUAL_SALE_SERVICE_JOIN_CONDITION_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY =
-                    "ON CONFLICT (workspace_uuid,operation_id,idempotency_key) DO NOTHING";
-    public static final String
-            SALES_MENU_MANUAL_SALE_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT_ALTERNATE_A =
-                    "SELECT request_hash,status,response_json::text readback_json ";
-    public static final String
-            SALES_MENU_MANUAL_SALE_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN_ALTERNATE_A =
-                    "FROM sales_menu.sales_command_receipt ";
-    public static final String
-            SALES_MENU_MANUAL_SALE_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY_ALTERNATE_A =
-                    "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?";
-    public static final String
-            SALES_MENU_MANUAL_SALE_SERVICE_SELECT_VERSION_REF_SALES_ITEM_REF_CATALOG_ITEM_REF_SECTION_REF =
-                    "SELECT v.version_ref,i.sales_item_ref,i.catalog_item_ref,v.section_ref,v.display_order,v.version,";
+    public static final String JOIN_CONDITION_WS_UUID_OP_004 =
+            "ON CONFLICT (workspace_uuid,operation_id,idempotency_key) DO NOTHING";
+    public static final String SELECT_REQ_HASH_STATUS_READBACK_ALT_A_005 =
+            "SELECT request_hash,status,response_json::text readback_json ";
+    public static final String FROM_CLAUSE_SALES_CMD_RECEIPT_ALT_A_006 = "FROM sales_menu.sales_command_receipt ";
+    public static final String WHERE_WS_UUID_OP_ID_ALT_A_007 =
+            "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?";
+    public static final String SELECT_VER_REF_SALES_ITEM_008 =
+            "SELECT v.version_ref,i.sales_item_ref,i.catalog_item_ref,v.section_ref,v.display_order,v.version,";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_DISPLAY_NAME_OVERRIDE =
             "v.display_name_override,v.resolved_item_name,v.resolved_item_code,";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_RESOLVED_PRODUCT_SHAPE =
@@ -106,10 +96,10 @@ public final class SalesMenuManualSaleServiceSql {
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_CONDITION_SALES_ITEM_REF = " AND v.sales_item_ref=?";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_ORDER_BY_SECTION_REF_DISPLAY_ORDER_SALES_ITEM_REF =
             " ORDER BY v.section_ref,v.display_order,v.sales_item_ref";
-    public static final String SALES_MENU_MANUAL_SALE_SERVICE_SELECT_SALES_COLLECTION_CURRENT_DRAFT_VERSION_REF =
+    public static final String SELECT_SALES_COLLECTION_CUR_DRAFT_009 =
             "SELECT current_draft_version_ref FROM sales_menu.sales_collection ";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_WHERE_COLLECTION_REF = "WHERE collection_ref=?";
-    public static final String SALES_MENU_MANUAL_SALE_SERVICE_SELECT_SALES_COLLECTION_LATEST_PUBLISHED_VERSION_REF =
+    public static final String SELECT_SALES_COLLECTION_LATEST_PUBLISHED_010 =
             "SELECT latest_published_version_ref FROM sales_menu.sales_collection ";
     public static final String SALES_MENU_MANUAL_SALE_SERVICE_WHERE_COLLECTION_REF_ALTERNATE_A =
             "WHERE collection_ref=?";

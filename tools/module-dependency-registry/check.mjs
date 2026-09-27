@@ -408,12 +408,54 @@ function selfTest() {
   expectFail("task-read-extra-kind-field", extraField, "EDGE_SHAPE_INVALID");
   const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-module-source-root-"));
   try {
+    const ordersSource = path.join(sourceRoot, "apps/backend/catering-business-server/modules/orders/src/main/Orders.java");
     for (const module of edgeFixture().modules) {
       const source = path.join(sourceRoot, module.sourceRoot, "src/main", `${module.moduleKey}.java`);
       fs.mkdirSync(path.dirname(source), {recursive: true});
       fs.writeFileSync(source, `package fixture; class ${module.moduleKey === "orders" ? "Orders" : "Inventory"} {}\n`);
     }
     validateSourceFacts(sourceRoot, edgeFixture());
+
+    fs.writeFileSync(
+      ordersSource,
+      'package fixture; class Orders { String query = "SELECT id FROM inventory.inventory_item"; }\n',
+    );
+    try {
+      validateSourceFacts(sourceRoot, edgeFixture());
+      throw new Error("SELF_TEST_FALSE_GREEN:source-task-read-unregistered");
+    } catch (error) {
+      assert(
+        error.message.startsWith("SOURCE_TASK_READ_UNDECLARED"),
+        "SELF_TEST_WRONG_FAILURE",
+        `source-task-read-unregistered: ${error.message}`,
+      );
+      process.stdout.write("FIXTURE=source-task-read-unregistered; EXPECTED=FAIL; ACTUAL=FAIL\n");
+    }
+
+    const misownedTaskRead = edgeFixture();
+    misownedTaskRead.edges.push({
+      edgeId: "read-inventory-orders-wrong-owner",
+      edgeKind: "TASK_READ",
+      fromModule: "inventory",
+      toModule: "orders",
+      rationale: "Fixture declares the query under the wrong owner.",
+      queryId: "wrong-owner-query",
+      initiatingModule: "inventory",
+      referencedSchemaObject: "orders.order",
+    });
+    try {
+      validateSourceFacts(sourceRoot, misownedTaskRead);
+      throw new Error("SELF_TEST_FALSE_GREEN:source-task-read-misowned");
+    } catch (error) {
+      assert(
+        error.message.startsWith("SOURCE_TASK_READ_UNDECLARED"),
+        "SELF_TEST_WRONG_FAILURE",
+        `source-task-read-misowned: ${error.message}`,
+      );
+      process.stdout.write("FIXTURE=source-task-read-misowned; EXPECTED=FAIL; ACTUAL=FAIL\n");
+    }
+
+    fs.writeFileSync(ordersSource, "package fixture; class Orders {}\n");
     fs.rmSync(path.join(sourceRoot, "apps/backend/catering-business-server/modules/orders"), {recursive: true, force: true});
     try { validateSourceFacts(sourceRoot, edgeFixture()); throw new Error("SELF_TEST_FALSE_GREEN:module-source-root-missing"); }
     catch (error) { assert(error.message.startsWith("MODULE_SOURCE_ROOT_MISSING"), "SELF_TEST_WRONG_FAILURE", error.message); }

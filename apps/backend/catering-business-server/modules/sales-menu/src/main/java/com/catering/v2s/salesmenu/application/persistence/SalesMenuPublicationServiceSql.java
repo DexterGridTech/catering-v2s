@@ -7,9 +7,8 @@ public final class SalesMenuPublicationServiceSql {
     public static final String PUBLICATION_ITEM_VALUE_ROW = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?::jsonb,?,?,?::jsonb,1)";
     public static final String PUBLICATION_SKU_VALUE_ROW = "(?,?,?,?,?,?,?,?)";
     public static final String PUBLICATION_MEDIA_VALUE_ROW = "(?,?,?,?)";
-    public static final String
-            SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_PUBLICATION_PUBLICATION_REF_COLLECTION_REF =
-                    "INSERT INTO sales_menu.sales_publication(publication_ref,collection_ref,";
+    public static final String INSERT_INTO_SALES_PUBLICATION_REF_001 =
+            "INSERT INTO sales_menu.sales_publication(publication_ref,collection_ref,";
     public static final String SALES_MENU_PUBLICATION_SERVICE_PUBLISHED_VERSION_REF = "published_version_ref,";
     public static final String SALES_MENU_PUBLICATION_SERVICE_SOURCE_DRAFT_REVISION =
             "source_draft_revision,actor_type,actor_id,actor_display_snapshot,";
@@ -44,9 +43,8 @@ public final class SalesMenuPublicationServiceSql {
             "current_status.sales_item_ref ";
     public static final String SALES_MENU_PUBLICATION_SERVICE_CONDITION_CURRENT_STATUS_TARGET_KIND_ORDER_OPTION_VALUE =
             "AND current_status.target_kind='ORDER_OPTION_VALUE' ";
-    public static final String
-            SALES_MENU_PUBLICATION_SERVICE_CONDITION_OPTION_VALUE_DEFINITION_VALUE_REF_CURRENT_STATUS_TARGET_REF =
-                    "AND option_value.definition_value_ref=current_status.target_ref)";
+    public static final String CONDITION_OPT_VAL_DEF_VAL_002 =
+            "AND option_value.definition_value_ref=current_status.target_ref)";
     public static final String SALES_MENU_PUBLICATION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT =
             "SELECT request_hash,status,response_json::text readback_json ";
     public static final String
@@ -76,9 +74,7 @@ public final class SalesMenuPublicationServiceSql {
     public static final String SALES_MENU_PUBLICATION_SERVICE_DISPLAY_ORDER = "display_order) ";
     public static final String SALES_MENU_PUBLICATION_SERVICE_SELECT_SECTION_REF_COLLECTION_REF_NAME_DISPLAY_ORDER =
             "SELECT ?,section_ref,collection_ref,name,display_order ";
-    public static final String
-            SALES_MENU_PUBLICATION_SERVICE_FROM_CLAUSE_SALES_VERSION_SECTION_FROM_SALES_MENU_SALES_VERSIO =
-                    "FROM sales_menu.sales_version_section ";
+    public static final String FROM_CLAUSE_SALES_VER_SECTION_003 = "FROM sales_menu.sales_version_section ";
     public static final String SALES_MENU_PUBLICATION_SERVICE_WHERE_VERSION_REF = "WHERE version_ref=?";
     public static final String SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION =
             "INSERT INTO sales_menu.sales_version_item_order_option(version_ref,sales_item_ref,";
@@ -92,9 +88,8 @@ public final class SalesMenuPublicationServiceSql {
             "definition_ref,definition_value_ref,resolved_value_name,display_order,";
     public static final String SALES_MENU_PUBLICATION_SERVICE_DEFAULT_VALUE_EXTRA_PRICE =
             "default_value,extra_price) VALUES(?,?,?,?,?,?,?,?)";
-    public static final String
-            SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_VERSION_REF_SALES_ITEM_REF_SECTION_REF =
-                    "INSERT INTO sales_menu.sales_version_item(version_ref,sales_item_ref,section_ref,";
+    public static final String INSERT_INTO_SALES_VER_ITEM_004 =
+            "INSERT INTO sales_menu.sales_version_item(version_ref,sales_item_ref,section_ref,";
     public static final String SALES_MENU_PUBLICATION_SERVICE_COLLECTION_REF =
             "collection_ref,display_order,display_name_override,resolved_item_name,resolved_item_code,";
     public static final String SALES_MENU_PUBLICATION_SERVICE_RESOLVED_PRODUCT_SHAPE =
@@ -105,9 +100,8 @@ public final class SalesMenuPublicationServiceSql {
             "listed_price_cents,ordering_constraints_json,display_media_mode,";
     public static final String SALES_MENU_PUBLICATION_SERVICE_PUBLISHED_PRIMARY_IMAGE_ASSET_REF =
             "published_primary_image_asset_ref,published_catalog_image_asset_refs,version) VALUES ";
-    public static final String
-            SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_SKU_VERSION_REF_SALES_ITEM_REF_SKU_REF =
-                    "INSERT INTO sales_menu.sales_version_item_sku(version_ref,sales_item_ref,sku_ref,";
+    public static final String INSERT_INTO_SALES_VER_ITEM_005 =
+            "INSERT INTO sales_menu.sales_version_item_sku(version_ref,sales_item_ref,sku_ref,";
     public static final String SALES_MENU_PUBLICATION_SERVICE_LISTED_PRICE_CENTS_ALTERNATE_A =
             "listed_price_cents,resolved_sku_code,resolved_sku_name,default_price_cents,";
     public static final String SALES_MENU_PUBLICATION_SERVICE_DISPLAY_ORDER_ALTERNATE_A = "display_order) VALUES ";
@@ -190,9 +184,8 @@ public final class SalesMenuPublicationServiceSql {
             "SELECT latest_published_version_ref FROM sales_menu.sales_collection ";
     public static final String SALES_MENU_PUBLICATION_SERVICE_WHERE_COLLECTION_REF_ALTERNATE_B =
             "WHERE collection_ref=?";
-    public static final String
-            SALES_MENU_PUBLICATION_SERVICE_SELECT_SALES_COLLECTION_ACTIVATION_CHANNEL_REF_COLLECTION_REF =
-                    "SELECT channel_ref FROM sales_menu.sales_collection_activation WHERE collection_ref=? ";
+    public static final String SELECT_SALES_COLLECTION_ACTIVATION_CHANNEL_006 =
+            "SELECT channel_ref FROM sales_menu.sales_collection_activation WHERE collection_ref=? ";
     public static final String SALES_MENU_PUBLICATION_SERVICE_CONDITION_STATUS_ENABLED_CHANNEL_REF =
             "AND status='ENABLED' ORDER BY channel_ref";
     public static final String SALES_MENU_PUBLICATION_SERVICE_INSERT_INTO_SALES_OPERATION_RECORD =

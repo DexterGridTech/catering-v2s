@@ -2,20 +2,16 @@ package com.catering.v2s.businesschannel.application.persistence;
 
 /** SQL text owned by BusinessChannelQuerySupport; B3 relocates text without changing execution. */
 public final class BusinessChannelQuerySupportSql {
-    public static final String
-            BUSINESS_CHANNEL_QUERY_SUPPORT_JOIN_BUSINESS_CHANNEL_TEMPLATE_JOIN_BUSINESS_CHANNEL_BUSINE =
-                    "JOIN business_channel.business_channel_template t ";
+    public static final String JOIN_BIZ_CHANNEL_TEMPLATE_JOIN_001 =
+            "JOIN business_channel.business_channel_template t ";
     public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_JOIN_CONDITION_TEMPLATE_REF_WORKSPACE_UUID =
             "ON t.template_ref=c.template_ref AND t.workspace_uuid=c.workspace_uuid ";
     public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_GROUP_WORKSPACE_KEY =
             "AND t.group_workspace_key=c.group_workspace_key ";
-    public static final String
-            BUSINESS_CHANNEL_QUERY_SUPPORT_FROM_CLAUSE_BUSINESS_CHANNEL_FROM_BUSINESS_CHANNEL_BUSINE =
-                    "FROM business_channel.business_channel c ";
+    public static final String FROM_CLAUSE_BIZ_CHANNEL_FROM_002 = "FROM business_channel.business_channel c ";
     public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_FROM_CLAUSE_INSERTED_FROM_INSERTED_C = "FROM inserted c ";
-    public static final String
-            BUSINESS_CHANNEL_QUERY_SUPPORT_SELECT_CHANNEL_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF =
-                    "SELECT c.channel_ref, c.workspace_uuid, c.group_workspace_key, c.template_ref, ";
+    public static final String SELECT_CHANNEL_REF_WS_UUID_003 =
+            "SELECT c.channel_ref, c.workspace_uuid, c.group_workspace_key, c.template_ref, ";
     public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_TARGET_NODE_TYPE_TARGET_NODE_REF_CHANNEL_CODE =
             "c.target_node_type, c.target_node_ref, c.channel_code, ";
     public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CHANNEL_NAME =
@@ -46,9 +42,7 @@ public final class BusinessChannelQuerySupportSql {
             "target_brand.id AS target_brand_ref, target_brand.status AS target_brand_status, ";
     public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_BINDING_STATUS_BINDING_LIFECYCLE_STATUS_PROVIDER =
             "binding.status AS binding_lifecycle_status, provider.status AS provider_status ";
-    public static final String
-            BUSINESS_CHANNEL_QUERY_SUPPORT_FROM_CLAUSE_BUSINESS_CHANNEL_FROM_BUSINESS_CHANNEL_BUSINE_ALTERNATE_A =
-                    "FROM business_channel.business_channel c ";
+    public static final String FROM_CLAUSE_BIZ_CHANNEL_FROM_ALT_A_004 = "FROM business_channel.business_channel c ";
     public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_ORGANIZATION_NODE_TEMPLATE_PROJECT =
             "LEFT JOIN organization.organization_node template_project ";
     public static final String

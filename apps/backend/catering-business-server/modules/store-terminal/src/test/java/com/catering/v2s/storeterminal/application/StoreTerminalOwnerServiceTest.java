@@ -97,6 +97,84 @@ class StoreTerminalOwnerServiceTest {
             """;
 
     @Test
+    void cancellationTargetRechecksExactGrantContextStoreAndTerminalMembership() {
+        OwnerHarness harness = ownerHarness(() -> "87654321");
+        when(harness.persistence().findStoreRef(WORKSPACE, GROUP_KEY, TERMINAL)).thenReturn(STORE);
+
+        var target = harness.service()
+                .resolveOperationsActivationCancellationTarget(
+                        WORKSPACE, GROUP_KEY, STORE, TERMINAL, 7L, cancellationGrant(7L));
+
+        assertEquals(WORKSPACE, target.workspaceUuid());
+        assertEquals(GROUP_KEY, target.groupWorkspaceKey());
+        assertEquals(STORE, target.storeRef());
+        assertEquals(TERMINAL, target.terminalRef());
+        verify(harness.stores()).requireStoreContractContext(WORKSPACE, GROUP_KEY, STORE);
+        verify(harness.persistence()).findStoreRef(WORKSPACE, GROUP_KEY, TERMINAL);
+    }
+
+    @Test
+    void cancellationTargetRejectsWrongPurposeOrContextBeforeOwnerReads() {
+        OwnerHarness harness = ownerHarness(() -> "87654321");
+        OperationsOwnerScopeGrant wrongPurpose = new OperationsOwnerScopeGrant(
+                WORKSPACE,
+                GROUP_KEY,
+                "REQ_POST_OPERATIONS_STORE_TERMINAL",
+                "EDIT_STORE_TERMINAL",
+                "STORE",
+                STORE,
+                "GROUP",
+                UUID.randomUUID(),
+                List.of(),
+                7L);
+
+        assertThrows(StoreTerminalOwnerService.TerminalAuthorizationException.class, () -> harness.service()
+                .resolveOperationsActivationCancellationTarget(
+                        WORKSPACE, GROUP_KEY, STORE, TERMINAL, 7L, wrongPurpose));
+        assertThrows(StoreTerminalOwnerService.TerminalAuthorizationException.class, () -> harness.service()
+                .resolveOperationsActivationCancellationTarget(
+                        WORKSPACE, GROUP_KEY, STORE, TERMINAL, 8L, cancellationGrant(7L)));
+
+        verifyNoInteractions(harness.persistence(), harness.stores());
+    }
+
+    @Test
+    void cancellationTargetRejectsMissingAndCrossStoreTerminalsWithoutReturningTargetFacts() {
+        OwnerHarness missingHarness = ownerHarness(() -> "87654321");
+        assertThrows(StoreTerminalOwnerService.TerminalNotFoundException.class, () -> missingHarness
+                .service()
+                .resolveOperationsActivationCancellationTarget(
+                        WORKSPACE, GROUP_KEY, STORE, TERMINAL, 7L, cancellationGrant(7L)));
+        verify(missingHarness.persistence()).findStoreRef(WORKSPACE, GROUP_KEY, TERMINAL);
+
+        OwnerHarness crossStoreHarness = ownerHarness(() -> "87654321");
+        when(crossStoreHarness.persistence().findStoreRef(WORKSPACE, GROUP_KEY, TERMINAL))
+                .thenReturn(UUID.randomUUID());
+        assertThrows(StoreTerminalOwnerService.TerminalAuthorizationException.class, () -> crossStoreHarness
+                .service()
+                .resolveOperationsActivationCancellationTarget(
+                        WORKSPACE, GROUP_KEY, STORE, TERMINAL, 7L, cancellationGrant(7L)));
+        verify(crossStoreHarness.persistence()).findStoreRef(WORKSPACE, GROUP_KEY, TERMINAL);
+    }
+
+    @Test
+    void cancellationTargetRejectsDisabledOrVoidedStoreBeforeTerminalLookup() {
+        for (String storeStatus : List.of("DISABLED", "VOIDED")) {
+            OwnerHarness harness = ownerHarness(() -> "87654321");
+            when(harness.stores().requireStoreContractContext(WORKSPACE, GROUP_KEY, STORE))
+                    .thenReturn(new StoreContractLookup.StoreContractContext(
+                            STORE, UUID.randomUUID(), UUID.randomUUID(), storeStatus, "ENABLED", List.of()));
+
+            assertThrows(StoreTerminalOwnerService.TerminalStoreUnavailableException.class, () -> harness.service()
+                    .resolveOperationsActivationCancellationTarget(
+                            WORKSPACE, GROUP_KEY, STORE, TERMINAL, 7L, cancellationGrant(7L)));
+
+            verify(harness.stores()).requireStoreContractContext(WORKSPACE, GROUP_KEY, STORE);
+            verify(harness.persistence(), never()).findStoreRef(WORKSPACE, GROUP_KEY, TERMINAL);
+        }
+    }
+
+    @Test
     void manualCreateWritesOneAuditAndAReceiptWithoutActivationCode() throws Exception {
         OwnerHarness harness = ownerHarness(() -> {
             throw new AssertionError("manual activation code must not call the generator");
@@ -574,7 +652,6 @@ class StoreTerminalOwnerServiceTest {
                         eq(TERMINAL),
                         eq("收银台更新"),
                         eq("收银台更新"),
-                        eq("laptop"),
                         anyString(),
                         eq(1L),
                         eq(NOW)))
@@ -598,7 +675,6 @@ class StoreTerminalOwnerServiceTest {
                 STORE,
                 TERMINAL,
                 "收银台更新",
-                "laptop",
                 configuration,
                 1,
                 "terminal-replace-0001",
@@ -615,7 +691,6 @@ class StoreTerminalOwnerServiceTest {
                         eq(TERMINAL),
                         eq("收银台更新"),
                         eq("收银台更新"),
-                        eq("laptop"),
                         savedConfiguration.capture(),
                         eq(1L),
                         eq(NOW));
@@ -662,21 +737,18 @@ class StoreTerminalOwnerServiceTest {
         JsonNode changed = harness.json().readTree(REPLACE_CONFIGURATION);
         ((ObjectNode) changed.path("functions").get(0)).put("functionKey", "KDS");
 
-        assertThrows(
-                StoreTerminalOwnerService.InvalidTerminalRequestException.class,
-                () -> harness.service()
-                        .replaceTerminal(new ReplaceCommand(
-                                WORKSPACE,
-                                GROUP_KEY,
-                                STORE,
-                                TERMINAL,
-                                "收银台",
-                                "laptop",
-                                changed,
-                                1,
-                                "terminal-function-type-change-0001",
-                                AuditActor.system(),
-                                grant())));
+        assertThrows(StoreTerminalOwnerService.InvalidTerminalRequestException.class, () -> harness.service()
+                .replaceTerminal(new ReplaceCommand(
+                        WORKSPACE,
+                        GROUP_KEY,
+                        STORE,
+                        TERMINAL,
+                        "收银台",
+                        changed,
+                        1,
+                        "terminal-function-type-change-0001",
+                        AuditActor.system(),
+                        grant())));
 
         verify(harness.persistence(), never())
                 .replace(
@@ -684,7 +756,6 @@ class StoreTerminalOwnerServiceTest {
                         anyString(),
                         any(UUID.class),
                         any(UUID.class),
-                        anyString(),
                         anyString(),
                         anyString(),
                         anyString(),
@@ -753,6 +824,20 @@ class StoreTerminalOwnerServiceTest {
                 UUID.randomUUID(),
                 List.of(),
                 1L);
+    }
+
+    private static OperationsOwnerScopeGrant cancellationGrant(long contextVersion) {
+        return new OperationsOwnerScopeGrant(
+                WORKSPACE,
+                GROUP_KEY,
+                "REQ_CANCEL_OPERATIONS_STORE_TERMINAL_ACTIVATION",
+                "EDIT_STORE_TERMINAL",
+                "STORE",
+                STORE,
+                "GROUP",
+                UUID.randomUUID(),
+                List.of(),
+                contextVersion);
     }
 
     private record OwnerHarness(

@@ -7,29 +7,36 @@ import com.catering.v2s.audit.contract.AuditTarget;
 import com.catering.v2s.contract.application.ContractAuditHistoryService;
 import com.catering.v2s.organization.application.OrganizationAuditHistoryService;
 import com.catering.v2s.storeterminal.application.StoreTerminalAuditHistoryService;
+import com.catering.v2s.terminalbinding.api.TerminalBindingAuditReadApi;
+import com.catering.v2s.terminalbinding.api.TerminalBindingAuditReadException;
 import com.catering.v2s.workspace.iam.application.WorkspaceIamAuditHistoryService;
 import com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts;
 import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Closed operations-audit task reader with thirteen compile-time target branches. */
+/** Closed operations-audit task reader with fourteen compile-time target branches. */
 @Service
 public class OperationsAuditTaskReadService {
     private final WorkspaceIamAuditHistoryService workspaceIamAudit;
     private final OrganizationAuditHistoryService organizationAudit;
     private final ContractAuditHistoryService contractAudit;
     private final StoreTerminalAuditHistoryService storeTerminalAudit;
+    private final TerminalBindingAuditReadApi terminalBindingAudit;
 
     public OperationsAuditTaskReadService(
             WorkspaceIamAuditHistoryService workspaceIamAudit,
             OrganizationAuditHistoryService organizationAudit,
             ContractAuditHistoryService contractAudit,
-            StoreTerminalAuditHistoryService storeTerminalAudit) {
+            StoreTerminalAuditHistoryService storeTerminalAudit,
+            TerminalBindingAuditReadApi terminalBindingAudit) {
         this.workspaceIamAudit = Objects.requireNonNull(workspaceIamAudit, "workspaceIamAudit");
         this.organizationAudit = Objects.requireNonNull(organizationAudit, "organizationAudit");
         this.contractAudit = Objects.requireNonNull(contractAudit, "contractAudit");
         this.storeTerminalAudit = Objects.requireNonNull(storeTerminalAudit, "storeTerminalAudit");
+        this.terminalBindingAudit = Objects.requireNonNull(terminalBindingAudit, "terminalBindingAudit");
     }
 
     @Transactional(readOnly = true)
@@ -108,7 +115,29 @@ public class OperationsAuditTaskReadService {
                     scope, facts.visibleOrganizationFacts(), value.target(), value.page(), value.pageSize());
             case OperationsAuditQuery.StoreTerminal value -> storeTerminalAudit.readOperationsAuditProjection(
                     scope, facts.visibleOrganizationFacts(), value.target(), value.page(), value.pageSize());
+            case OperationsAuditQuery.TerminalBinding value -> readTerminalBindingAudit(facts, scope, value);
         };
+    }
+
+    private AuditHistoryPage readTerminalBindingAudit(
+            WorkspaceReadAuthorizationFacts facts, AuditReadScope scope, OperationsAuditQuery.TerminalBinding query) {
+        Set<UUID> visibleStoreRefs = facts.visibleOrganizationFacts().candidates().stream()
+                .filter(candidate -> "STORE".equals(candidate.dataNodeType()))
+                .map(candidate -> candidate.dataNodeId())
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        try {
+            return terminalBindingAudit.read(
+                    scope,
+                    visibleStoreRefs,
+                    UUID.fromString(query.target().entityRef()),
+                    query.page(),
+                    query.pageSize());
+        } catch (TerminalBindingAuditReadException failure) {
+            if (failure.kind() == TerminalBindingAuditReadException.Kind.NOT_FOUND) {
+                throw new StoreTerminalAuditHistoryService.TerminalNotFoundException(failure);
+            }
+            throw new StoreTerminalAuditHistoryService.TerminalAuthorizationException(failure);
+        }
     }
 
     /** Each variant fixes the wire entity type at compile time; no operation-id dispatch is used. */
@@ -125,7 +154,8 @@ public class OperationsAuditTaskReadService {
                     OperationsAuditQuery.StoreServicePoint,
                     OperationsAuditQuery.StoreQrConfiguration,
                     OperationsAuditQuery.StoreContract,
-                    OperationsAuditQuery.StoreTerminal {
+                    OperationsAuditQuery.StoreTerminal,
+                    OperationsAuditQuery.TerminalBinding {
         AuditTarget target();
 
         long page();
@@ -207,6 +237,12 @@ public class OperationsAuditTaskReadService {
         record StoreTerminal(AuditTarget target, long page, long pageSize) implements OperationsAuditQuery {
             public StoreTerminal {
                 type(target, AuditEntityTypes.STORE_TERMINAL);
+            }
+        }
+
+        record TerminalBinding(AuditTarget target, long page, long pageSize) implements OperationsAuditQuery {
+            public TerminalBinding {
+                type(target, AuditEntityTypes.TERMINAL_BINDING);
             }
         }
 

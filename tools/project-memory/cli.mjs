@@ -111,7 +111,7 @@ function loadValidated(root) {
       if (!existsSync(sourcePath)) fail(`missing owning source: ${source.path}`);
       const sourceText = readFileSync(sourcePath, "utf8");
       if (!sourceText.split("\n").includes(source.anchor)) {
-        fail(`missing literal owning heading: ${source.path}:${source.anchor}`);
+        fail(`assertion anchor must equal an exact source line including indentation: ${source.path}:${source.anchor}`);
       }
     }
     if (entry.layer === "kernel" && Buffer.byteLength(parsed.body, "utf8") > 4096) {

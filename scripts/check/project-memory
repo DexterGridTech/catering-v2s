@@ -51,6 +51,23 @@ if node tools/project-memory/cli.mjs build --root "$fixture_root" >/dev/null 2>&
 fi
 echo "PROJECT_MEMORY_RED_ASSERTION_OMISSION=PASS"
 
+node - "$fixture_root/project-memory/required-inventory.json" <<'NODE'
+const fs = require("node:fs");
+const path = process.argv[2];
+const value = JSON.parse(fs.readFileSync(path, "utf8"));
+const entry = value.entries.find((candidate) => candidate.path === "project-memory/decisions/distributed-topology-is-not-current.md");
+if (!entry || !entry.requiredAssertions.includes("NO_MQ_OUTBOX_TDP")) {
+  throw new Error("PROJECT_MEMORY_TDS_TDP_ASSERTION_FIXTURE_MISSING");
+}
+entry.requiredAssertions = entry.requiredAssertions.filter((assertion) => assertion !== "NO_MQ_OUTBOX_TDP");
+fs.writeFileSync(path, JSON.stringify(value, null, 2) + "\n");
+NODE
+if node tools/project-memory/cli.mjs build --root "$fixture_root" >/dev/null 2>&1; then
+  echo "PROJECT_MEMORY_RED_NO_MQ_OUTBOX_TDP_OMISSION=FAIL"
+  exit 2
+fi
+echo "PROJECT_MEMORY_RED_NO_MQ_OUTBOX_TDP_OMISSION=PASS"
+
 rm -rf "$fixture_root/project-memory"
 cp -R project-memory "$fixture_root/project-memory"
 node - "$fixture_root/project-memory/required-inventory.json" <<'NODE'

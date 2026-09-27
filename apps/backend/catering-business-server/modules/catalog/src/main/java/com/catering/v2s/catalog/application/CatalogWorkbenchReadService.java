@@ -1084,7 +1084,10 @@ public class CatalogWorkbenchReadService {
                     || tagCode == null
                     || tagCode.isBlank()
                     || tagName == null
-                    || tagName.isBlank()) throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品标签摘要读取失败");
+                    // spotless:off
+                    || tagName.isBlank()) throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500,
+                        "商品标签摘要读取失败");
+                    // spotless:on
             factsByItem
                     .computeIfAbsent(itemRef, ignored -> new ArrayList<>())
                     .add(new CatalogTagFact(tagRef, tagCode, tagName));

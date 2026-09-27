@@ -4,17 +4,53 @@ import {describe, expect, it} from 'vitest';
 const pageSource = readFileSync(new URL('./StoreTerminalPage.tsx', import.meta.url), 'utf8');
 const detailSource = readFileSync(new URL('./StoreTerminalDetail.tsx', import.meta.url), 'utf8');
 const drawerSource = readFileSync(new URL('./StoreTerminalFormDrawer.tsx', import.meta.url), 'utf8');
+const deviceTypeFieldSource = readFileSync(new URL('./StoreTerminalDeviceTypeField.tsx', import.meta.url), 'utf8');
+const createDrawerSource = readFileSync(new URL('./TerminalCreateDrawer.tsx', import.meta.url), 'utf8');
+const editDrawerSource = readFileSync(new URL('./TerminalEditDrawer.tsx', import.meta.url), 'utf8');
 const printerSource = readFileSync(new URL('./TerminalPrinterEditor.tsx', import.meta.url), 'utf8');
 const functionSource = readFileSync(new URL('./TerminalFunctionEditor.tsx', import.meta.url), 'utf8');
 const sceneSource = readFileSync(new URL('./TerminalSceneEditor.tsx', import.meta.url), 'utf8');
 const modelSource = readFileSync(new URL('../model/storeTerminalModel.ts', import.meta.url), 'utf8');
 const readModelSource = readFileSync(new URL('../model/useStoreTerminalReadModel.ts', import.meta.url), 'utf8');
 const commandsSource = readFileSync(new URL('../model/storeTerminalCommands.ts', import.meta.url), 'utf8');
-const source = [pageSource, detailSource, drawerSource, printerSource, functionSource, sceneSource, modelSource].join(
-  '\n',
-);
+const source = [
+  pageSource,
+  detailSource,
+  drawerSource,
+  deviceTypeFieldSource,
+  createDrawerSource,
+  editDrawerSource,
+  printerSource,
+  functionSource,
+  sceneSource,
+  modelSource,
+].join('\n');
 
 describe('store terminal IA static trace', () => {
+  it('does not suggest changing a readonly device type from the edit warning', () => {
+    expect(functionSource).toContain('当前设备类型不支持此功能，请移除此功能后再保存。');
+    expect(functionSource).not.toContain('更换设备类型');
+    expect(functionSource).not.toContain('修改设备类型');
+  });
+
+  it('keeps device type create-only and derives the edit display from the owner readback', () => {
+    expect(modelSource).toContain('export type StoreTerminalCreateFormValues');
+    expect(modelSource).toContain('export type StoreTerminalEditFormValues = StoreTerminalConfigurationFormValues;');
+    expect(modelSource).toContain('export function terminalFormValuesFromDetail(terminal?: StoreTerminalDetail)');
+    expect(pageSource).toContain('const createForm = Form.useForm<StoreTerminalCreateFormValues>()[0];');
+    expect(pageSource).toContain('const editForm = Form.useForm<StoreTerminalEditFormValues>()[0];');
+    expect(createDrawerSource).toContain("Form.useWatch('deviceType', props.form)");
+    expect(editDrawerSource).toContain("deviceType={editor?.terminal.deviceType ?? ''}");
+    expect(deviceTypeFieldSource).toContain('<Typography.Text {...testId(storeTerminalTestIds.deviceTypeReadonly)}>');
+    expect(deviceTypeFieldSource).toContain('<Form.Item name="deviceType"');
+    const replaceCommandSource = commandsSource
+      .split('export async function replaceStoreTerminal')[1]
+      ?.split('export async function changeStoreTerminalStatus')[0];
+    expect(replaceCommandSource).toContain('expectedVersion: terminal.version');
+    expect(replaceCommandSource).not.toContain('deviceType');
+    expect(commandsSource).toContain('body: idempotencyBody');
+  });
+
   it('keeps the approved main/detail surface and hides activation code from the list', () => {
     expect(pageSource).toContain('gridTemplateColumns');
     expect(pageSource).toContain('新建终端');
@@ -83,8 +119,8 @@ describe('store terminal IA static trace', () => {
     expect(functionSource).toContain('candidateCacheKey');
     expect(sceneSource).toContain('sceneOrderType');
     expect(drawerSource).toContain('form.scrollToField');
-    expect(drawerSource).toContain('deviceTypeOption');
-    expect(drawerSource).toContain('value.description');
+    expect(deviceTypeFieldSource).toContain('deviceTypeOption');
+    expect(deviceTypeFieldSource).toContain('value.description');
     expect(modelSource).toContain('storeTerminalDeviceTypeDescriptions');
     expect(pageSource).toContain('创建后，在这里查看详情');
     expect(detailSource).toContain('emptyDescription');
@@ -129,7 +165,7 @@ describe('store terminal IA static trace', () => {
   it('derives repeatable mutation keys and does not create a page-private recovery state machine', () => {
     expect(commandsSource).toContain('createContentIdempotencyKey');
     expect(commandsSource).toMatch(
-      /OPERATIONS_ADMIN_OPERATION_IDS\.putOperationsStoreTerminal,\s*\{\s*path,\s*body,\s*\}/,
+      /OPERATIONS_ADMIN_OPERATION_IDS\.putOperationsStoreTerminal,\s*\{\s*path,\s*body: idempotencyBody,\s*\}/,
     );
     expect(commandsSource).toMatch(/OPERATIONS_ADMIN_OPERATION_IDS\.postOperationsStoreTerminalStatus,\s*\{/);
     expect(pageSource).not.toContain('recoveryPending');
@@ -137,7 +173,8 @@ describe('store terminal IA static trace', () => {
     expect(pageSource).not.toContain('statusResultUnknown');
     expect(pageSource).not.toContain("errorCode: 'PLATFORM_COMMON");
     expect(pageSource).not.toContain("associatedId: 'frontend-");
-    expect(pageSource).toContain('onRetry: () => void form.submit()');
+    expect(pageSource).toContain('onRetry={() => void createForm.submit()}');
+    expect(pageSource).toContain('onRetry={() => void editForm.submit()}');
   });
 
   it('keeps every terminal collection request within the contract page-size bound', () => {
@@ -266,8 +303,8 @@ describe('store terminal IA static trace', () => {
   it('submits the preserved aggregate draft when only one function editor is mounted', () => {
     expect(drawerSource).toContain('const handleFinish = () => {');
     expect(drawerSource).toContain('handleStoreTerminalFormFinish(form, onFinish);');
-    expect(drawerSource).toContain('export function preservedTerminalFormValues(');
-    expect(drawerSource).toContain('export function handleStoreTerminalFormFinish(');
+    expect(drawerSource).toContain('export function preservedTerminalFormValues<');
+    expect(drawerSource).toContain('export function handleStoreTerminalFormFinish<');
     expect(drawerSource).toContain('onFinish={handleFinish}');
     expect(drawerSource).not.toContain('onFinish={onFinish}');
   });

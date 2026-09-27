@@ -25,6 +25,8 @@ public final class RuntimeEnvironmentKeys {
     public static final String V2S_PLATFORM_SESSION = "V2S_PLATFORM_SESSION";
     public static final String V2S_RUNTIME_DIR = "V2S_RUNTIME_DIR";
     public static final String V2S_RUNTIME_ENVIRONMENT = "V2S_RUNTIME_ENVIRONMENT";
+    public static final String V2S_TDS_MAX_TRACKED_SESSIONS = "V2S_TDS_MAX_TRACKED_SESSIONS";
+    public static final String V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS = "V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS";
     public static final String V2S_TESTCONTAINERS_EXECUTION_PLANE = "V2S_TESTCONTAINERS_EXECUTION_PLANE";
 
     public static final Set<String> CROSS_LAYER_KEYS = Set.of(
@@ -45,6 +47,8 @@ public final class RuntimeEnvironmentKeys {
             V2S_PLATFORM_SESSION,
             V2S_RUNTIME_DIR,
             V2S_RUNTIME_ENVIRONMENT,
+            V2S_TDS_MAX_TRACKED_SESSIONS,
+            V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS,
             V2S_TESTCONTAINERS_EXECUTION_PLANE);
 
     static {

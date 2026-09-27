@@ -14,6 +14,7 @@ shift 2
 calibration=false
 production_mutation=''
 extension_scale_proof=false
+topology_preflight=false
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --calibration)
@@ -40,6 +41,14 @@ while [[ "$#" -gt 0 ]]; do
       extension_scale_proof=true
       shift
       ;;
+    --topology-preflight)
+      [[ "$operation" != "all" && "$topology_preflight" == false ]] || {
+        printf '%s\n' 'BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT_ARGUMENT_INVALID' >&2
+        exit 2
+      }
+      topology_preflight=true
+      shift
+      ;;
     *)
       printf '%s\n' 'BACKEND_ACCEPTANCE_ARGUMENT_INVALID' >&2
       exit 2
@@ -47,19 +56,36 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 
+if [[ "$topology_preflight" == true && ( "$calibration" == true || "$extension_scale_proof" == true ) ]]; then
+  printf '%s\n' 'BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT_ARGUMENT_INVALID' >&2
+  exit 2
+fi
+
 if [[ -n "$production_mutation" ]]; then
-  [[ "$production_mutation" == 'extension-definition-second-field-status' ]] || {
+  [[ "$production_mutation" == 'extension-definition-second-field-status' || \
+     "$production_mutation" == 'tds-registration-pending-generation-check' ]] || {
     printf '%s\n' 'BACKEND_ACCEPTANCE_PRODUCTION_MUTATION_UNKNOWN' >&2
-    exit 2
-  }
-  [[ "$operation" == 'pagination.extension-definition-aggregate-closure' || "$operation" == 'extensionDefinitionAggregateClosure' ]] || {
-    printf '%s\n' 'BACKEND_ACCEPTANCE_PRODUCTION_MUTATION_OPERATION_INVALID' >&2
     exit 2
   }
   [[ "$calibration" == false ]] || {
     printf '%s\n' 'BACKEND_ACCEPTANCE_PRODUCTION_MUTATION_CALIBRATION_INVALID' >&2
     exit 2
   }
+  if [[ "$production_mutation" == 'extension-definition-second-field-status' ]]; then
+    [[ "$operation" == 'pagination.extension-definition-aggregate-closure' || "$operation" == 'extensionDefinitionAggregateClosure' ]] || {
+      printf '%s\n' 'BACKEND_ACCEPTANCE_PRODUCTION_MUTATION_OPERATION_INVALID' >&2
+      exit 2
+    }
+    [[ "$topology_preflight" == false ]] || {
+      printf '%s\n' 'BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT_ARGUMENT_INVALID' >&2
+      exit 2
+    }
+  else
+    [[ "$operation" == 'storeTerminalActivationBusinessPrecedence' && "$topology_preflight" == true ]] || {
+      printf '%s\n' 'BACKEND_ACCEPTANCE_PRODUCTION_MUTATION_OPERATION_INVALID' >&2
+      exit 2
+    }
+  fi
 fi
 
 if [[ "$extension_scale_proof" == true && "$calibration" == true ]]; then
@@ -68,6 +94,7 @@ if [[ "$extension_scale_proof" == true && "$calibration" == true ]]; then
 fi
 
 export V2S_BACKEND_ACCEPTANCE_OPERATION="$operation"
+export V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT="$topology_preflight"
 if [[ "$calibration" == true ]]; then
   export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=CALIBRATION
 fi

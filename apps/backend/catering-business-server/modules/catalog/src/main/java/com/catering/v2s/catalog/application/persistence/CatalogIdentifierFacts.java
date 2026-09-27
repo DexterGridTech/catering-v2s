@@ -60,8 +60,7 @@ public class CatalogIdentifierFacts {
                         + CatalogIdentifierFactsSql
                                 .CATALOG_IDENTIFIER_FACTS_PRODUCT_IDENTIFIER_NORMALIZED_VALUE_DISPLAY_ORDER_ITEM_REF
                         + placeholders
-                        + CatalogIdentifierFactsSql
-                                .CATALOG_IDENTIFIER_FACTS_CLOSE_PAREN_ITEM_REF_PRODUCT_SKU_REF_DISPLAY_ORDER_IDENTIFIER_REF,
+                        + CatalogIdentifierFactsSql.CLOSE_PAREN_ITEM_REF_PRODUCT_001,
                 statement -> bind(statement, refs),
                 rows -> {
                     while (rows.next()) {

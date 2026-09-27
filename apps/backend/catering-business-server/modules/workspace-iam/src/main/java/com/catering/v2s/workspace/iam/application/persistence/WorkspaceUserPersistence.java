@@ -85,8 +85,7 @@ public class WorkspaceUserPersistence {
     public List<AccountRow> accounts(UUID workspaceUuid, String groupWorkspaceKey, Set<UUID> accountIds) {
         if (accountIds.isEmpty()) return List.of();
         return jdbc.query(
-                WorkspaceUserServiceSql
-                                .WORKSPACE_USER_SERVICE_SELECT_DISPLAY_NAME_MOBILE_NORMALIZED_LOGIN_NAME_NORMALIZED_STATUS
+                WorkspaceUserServiceSql.SELECT_DISP_NAME_MOBILE_NORMALIZED_001
                         + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_WORKSPACE_ACCOUNT
                         + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + placeholders(accountIds.size())
@@ -163,8 +162,7 @@ public class WorkspaceUserPersistence {
     public List<MobileInvitationRow> invitations(UUID workspaceUuid, String groupWorkspaceKey, Set<String> mobiles) {
         if (mobiles.isEmpty()) return List.of();
         return jdbc.query(
-                WorkspaceUserServiceSql
-                                .WORKSPACE_USER_SERVICE_SELECT_INVITATION_MOBILE_NORMALIZED_STATUS_VERSION_EXPIRES_AT_EPOCH_MILLIS
+                WorkspaceUserServiceSql.SELECT_INVITE_MOBILE_NORMALIZED_STATUS_002
                         + WorkspaceUserServiceSql
                                 .WORKSPACE_USER_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED
                         + placeholders(mobiles.size())

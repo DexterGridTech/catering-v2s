@@ -2,6 +2,7 @@ package com.catering.v2s.app.acceptance;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,20 +44,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.web.server.context.WebServerApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.web.context.support.StandardServletEnvironment;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -67,6 +79,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, matches = "\\S+")
 @Execution(ExecutionMode.SAME_THREAD)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(classes = CateringV2sApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(BackendAcceptanceMetricsConfiguration.class)
 class BackendAcceptanceTest {
@@ -316,13 +329,15 @@ class BackendAcceptanceTest {
             "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}");
     static final RouteIdentity OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE = new RouteIdentity(
             "getOperationsOrganizationStoreOperatingRule",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches");
+            ("/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores"
+                    + "/{storeId}/operating-rule-switches"));
     static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_AREAS = new RouteIdentity(
             "getOperationsStoreServicePointAreas",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas");
     static final RouteIdentity OPERATIONS_STORE_SERVICE_POINTS = new RouteIdentity(
             "getOperationsStoreServicePoints",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points");
+            ("/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/s"
+                    + "ervice-point-areas/{areaRef}/service-points"));
     static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT = new RouteIdentity(
             "getOperationsStoreServicePoint",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}");
@@ -334,22 +349,27 @@ class BackendAcceptanceTest {
             "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}");
     static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_AREA_STATUS = new RouteIdentity(
             "postOperationsStoreServicePointAreaStatus",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/status");
+            ("/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/s"
+                    + "ervice-point-areas/{areaRef}/status"));
     static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_AREA_ORDER = new RouteIdentity(
             "postOperationsStoreServicePointAreaOrder",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/order");
+            ("/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/s"
+                    + "ervice-point-areas/{areaRef}/order"));
     static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_CREATE = new RouteIdentity(
             "postOperationsStoreServicePoint",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points");
+            ("/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/s"
+                    + "ervice-point-areas/{areaRef}/service-points"));
     static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_UPDATE = new RouteIdentity(
             "patchOperationsStoreServicePoint",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}");
     static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_STATUS = new RouteIdentity(
             "postOperationsStoreServicePointStatus",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/status");
+            ("/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/s"
+                    + "ervice-points/{servicePointRef}/status"));
     static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_ORDER = new RouteIdentity(
             "postOperationsStoreServicePointOrder",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/order");
+            ("/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/s"
+                    + "ervice-points/{servicePointRef}/order"));
     static final RouteIdentity OPERATIONS_STORE_QR_CONFIGURATION = new RouteIdentity(
             "getOperationsStoreQrConfiguration",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration");
@@ -364,7 +384,8 @@ class BackendAcceptanceTest {
             "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage");
     static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_ASSET_RELEASE = new RouteIdentity(
             "releaseStagedStoreServicePointImage",
-            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release");
+            ("/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/s"
+                    + "ervice-point-assets/stage/{assetRef}/release"));
     static final RouteIdentity OPERATIONS_STORE_TERMINALS = new RouteIdentity(
             "getOperationsStoreTerminals",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals");
@@ -386,6 +407,16 @@ class BackendAcceptanceTest {
     static final RouteIdentity OPERATIONS_STORE_TERMINAL_TAG_CANDIDATES = new RouteIdentity(
             "getOperationsStoreTerminalTagCandidates",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates");
+    static final RouteIdentity TERMINAL_ACTIVATION = new RouteIdentity(
+            "activateTerminal", "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation", true);
+    static final RouteIdentity TERMINAL_DEVICE_ACTIVATION_CANCEL = new RouteIdentity(
+            "cancelTerminalActivation",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel",
+            true);
+    static final RouteIdentity OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL = new RouteIdentity(
+            "cancelOperationsStoreTerminalActivation",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}"
+                    + "/activation/cancel");
     static final RouteIdentity OPERATIONS_ORGANIZATION_CANDIDATES = new RouteIdentity(
             "getOperationsOrganizationCandidates",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates");
@@ -553,6 +584,8 @@ class BackendAcceptanceTest {
             new RouteIdentity("getPlatformGroupWorkspaceDetail", "/api/platform/group-workspaces/{groupWorkspaceKey}");
     static final RouteIdentity PLATFORM_GROUP_WORKSPACE_UPDATE = new RouteIdentity(
             "updatePlatformGroupWorkspaceDisplay", "/api/platform/group-workspaces/{groupWorkspaceKey}");
+    static final RouteIdentity PLATFORM_GROUP_WORKSPACE_STATUS = new RouteIdentity(
+            "transitionPlatformGroupWorkspaceStatus", "/api/platform/group-workspaces/{groupWorkspaceKey}/status");
     static final RouteIdentity PLATFORM_AUDIT_HISTORY =
             new RouteIdentity("getPlatformEntityAuditHistory", "/api/platform/audit-history");
     static final RouteIdentity OPERATIONS_AUDIT_HISTORY =
@@ -649,24 +682,174 @@ class BackendAcceptanceTest {
     private BackendAcceptanceDatabaseMetricsSink metricsSink;
 
     @Autowired
+    private ConfigurableApplicationContext acceptanceApplicationContext;
+
+    @Autowired
     ObjectMapper mapper;
 
     @LocalServerPort
     private int port;
 
+    private ConfigurableApplicationContext secondBusinessContext;
+    private int secondBusinessPort;
+    private TdsAcceptanceProcess tdsAcceptanceProcess;
+    private boolean registrationRaceRedControlCaught;
+
+    @BeforeAll
+    void startSecondBusinessContextAndProveSharedTopology() throws Exception {
+        requireRemoteExecution();
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_TOPOLOGY stage=SECOND_BUSINESS_CONTEXT_START runId=%s%n",
+                requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_RUN_ID));
+
+        StandardServletEnvironment environment = new StandardServletEnvironment();
+        Map<String, Object> properties = new java.util.LinkedHashMap<>();
+        acceptancePropertySuppliers().forEach((name, value) -> properties.put(name, value.get()));
+        properties.put("spring.flyway.enabled", false);
+        properties.put("server.port", 0);
+        environment.getPropertySources().addFirst(new MapPropertySource("backendAcceptanceSecondContext", properties));
+        secondBusinessContext = new SpringApplicationBuilder(CateringV2sApplication.class)
+                .environment(environment)
+                .profiles("backend-acceptance-secondary")
+                .web(WebApplicationType.SERVLET)
+                .run();
+
+        assertTrue(
+                secondBusinessContext instanceof WebServerApplicationContext,
+                "BACKEND_ACCEPTANCE_SECOND_CONTEXT_NOT_WEB_SERVER");
+        WebServerApplicationContext secondWebContext = (WebServerApplicationContext) secondBusinessContext;
+        secondBusinessPort = secondWebContext.getWebServer().getPort();
+        assertTrue(port > 0, "BACKEND_ACCEPTANCE_PRIMARY_BUSINESS_PORT_MISSING");
+        assertTrue(secondBusinessPort > 0, "BACKEND_ACCEPTANCE_SECOND_BUSINESS_PORT_MISSING");
+        assertNotEquals(port, secondBusinessPort, "BACKEND_ACCEPTANCE_BUSINESS_PORTS_NOT_DISTINCT");
+        assertEquals(
+                1,
+                acceptanceApplicationContext
+                        .getBeansOfType(BackendAcceptanceDatabaseMetricsSink.class)
+                        .size(),
+                "BACKEND_ACCEPTANCE_PRIMARY_METRICS_SINK_COUNT_INVALID");
+        assertEquals(
+                1,
+                acceptanceApplicationContext
+                        .getBeansOfType(DatabaseOperationTracker.MeasurementSinkRegistration.class)
+                        .size(),
+                "BACKEND_ACCEPTANCE_PRIMARY_METRICS_REGISTRATION_COUNT_INVALID");
+        assertTrue(
+                secondBusinessContext
+                        .getBeansOfType(BackendAcceptanceDatabaseMetricsSink.class)
+                        .isEmpty(),
+                "BACKEND_ACCEPTANCE_SECOND_CONTEXT_INSTALLED_METRICS_SINK");
+        assertTrue(
+                secondBusinessContext
+                        .getBeansOfType(DatabaseOperationTracker.MeasurementSinkRegistration.class)
+                        .isEmpty(),
+                "BACKEND_ACCEPTANCE_SECOND_CONTEXT_REPLACED_METRICS_SINK");
+        assertTrue(
+                secondBusinessContext
+                        .getBeansOfType(org.flywaydb.core.Flyway.class)
+                        .isEmpty(),
+                "BACKEND_ACCEPTANCE_SECOND_CONTEXT_RAN_FLYWAY");
+
+        tdsAcceptanceProcess = TdsAcceptanceProcess.start(POSTGRES);
+        if ("true".equals(System.getenv("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT"))) {
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT stage=START runId=%s operation=%s%n",
+                    requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_RUN_ID),
+                    System.getenv(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION));
+            registrationRaceRedControlCaught = TerminalConnectionContractScenarios.topologyPreflightWithTenSecondOutage(
+                    this, tdsAcceptanceProcess, Boolean.getBoolean("v2s.acceptance.registration-race-red-control"));
+        }
+
+        Fixture sharedFixture = fixture("REGION", Set.of());
+        String path = publicInvitationPath(sharedFixture);
+        ScenarioContext primaryProbe = new ScenarioContext(null, "performance.normal-path", port);
+        ScenarioContext secondaryProbe = new ScenarioContext(null, "performance.normal-path", secondBusinessPort);
+        Response primaryResponse = primaryProbe.get(PUBLIC_INVITATION_VIEW, path, null, Set.of(200));
+        Response secondaryResponse = secondaryProbe.get(PUBLIC_INVITATION_VIEW, path, null, Set.of(200));
+        assertEquals(
+                "REGION", primaryResponse.json().path("targetOrganizationType").asText());
+        assertEquals(
+                "REGION",
+                secondaryResponse.json().path("targetOrganizationType").asText());
+        assertNotNull(metricsSink.snapshotFor(primaryProbe.correlationId));
+        assertNotNull(metricsSink.snapshotFor(secondaryProbe.correlationId));
+        assertEquals(1, metricsSink.observationCountFor(primaryProbe.correlationId));
+        assertEquals(1, metricsSink.observationCountFor(secondaryProbe.correlationId));
+        System.out.printf(
+                ("BACKEND_ACCEPTANCE_TOPOLOGY stage=BUSINESS_CONTEXTS status=PASS primaryP"
+                        + "ort=%d secondaryPort=%d sharedRead=PASS primarySinkObservations=1 second"
+                        + "arySinkObservations=1 secondContextSinkRegistrations=0 runId=%s%n"),
+                port,
+                secondBusinessPort,
+                requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_RUN_ID));
+    }
+
+    @AfterAll
+    void closeSecondBusinessContext() throws Exception {
+        try {
+            if (tdsAcceptanceProcess != null) tdsAcceptanceProcess.close();
+        } finally {
+            if (secondBusinessContext != null) secondBusinessContext.close();
+        }
+    }
+
+    @Test
+    void terminalConnectionTopologyContractProbe() throws Exception {
+        TerminalConnectionContractScenarios.topologyProbe(tdsAcceptanceProcess);
+    }
+
+    @Test
+    void registrationRaceRedControlMutationMustBeCaught() {
+        if (!Boolean.getBoolean("v2s.acceptance.registration-race-red-control")) return;
+        assertFalse(registrationRaceRedControlCaught, "TDS_REGISTRATION_RACE_PENDING_GENERATION_MUTATION_NOT_CAUGHT");
+    }
+
+    @TestFactory
+    Stream<DynamicTest> terminalConnectionRevocationRaceContracts() {
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
+        if (!"all".equals(selectedOperation)) return Stream.empty();
+        return TerminalConnectionContractScenarios.v10RevocationScenarios(this, tdsAcceptanceProcess);
+    }
+
+    @TestFactory
+    Stream<DynamicTest> terminalConnectionCompressionContracts() {
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
+        if (!"all".equals(selectedOperation)) return Stream.empty();
+        return TerminalConnectionContractScenarios.v14Scenarios(this, tdsAcceptanceProcess);
+    }
+
+    @TestFactory
+    Stream<DynamicTest> terminalConnectionDatabaseOutageContracts() {
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
+        if (!"all".equals(selectedOperation)) return Stream.empty();
+        return TerminalConnectionContractScenarios.v12DatabaseOutageScenarios(this, tdsAcceptanceProcess);
+    }
+
     @DynamicPropertySource
     static void applicationProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-        registry.add("platform.iam.rate-limit-hmac-secret", () -> PLATFORM_RATE_LIMIT_HMAC);
-        registry.add("workspace-iam.rate-limit-hmac-secret", () -> WORKSPACE_RATE_LIMIT_HMAC);
-        registry.add("catering.asset.object-storage.endpoint", BackendAcceptanceTest::objectStorageEndpoint);
-        registry.add("catering.asset.object-storage.access-key", () -> OBJECT_STORAGE_ACCESS_KEY);
-        registry.add("catering.asset.object-storage.secret-key", () -> OBJECT_STORAGE_SECRET_KEY);
-        registry.add("catering.asset.object-storage.bucket", () -> OBJECT_STORAGE_BUCKET);
-        registry.add("catering.asset.object-storage.object-prefix", () -> "acceptance/");
-        registry.add("catering.asset.public-base-url", BackendAcceptanceTest::objectStorageEndpoint);
+        // Spring may resolve the datasource and object-storage ports while it parses auto-configuration,
+        // before the JUnit Testcontainers extension reaches its before-all callback.
+        if (!POSTGRES.isRunning()) POSTGRES.start();
+        if (!MINIO.isRunning()) MINIO.start();
+        acceptancePropertySuppliers().forEach((name, value) -> registry.add(name, value::get));
+    }
+
+    private static Map<String, Supplier<?>> acceptancePropertySuppliers() {
+        return Map.ofEntries(
+                Map.entry("spring.datasource.url", POSTGRES::getJdbcUrl),
+                Map.entry("spring.datasource.username", POSTGRES::getUsername),
+                Map.entry("spring.datasource.password", POSTGRES::getPassword),
+                Map.entry("platform.iam.rate-limit-hmac-secret", () -> PLATFORM_RATE_LIMIT_HMAC),
+                Map.entry("workspace-iam.rate-limit-hmac-secret", () -> WORKSPACE_RATE_LIMIT_HMAC),
+                Map.entry("catering.asset.object-storage.endpoint", BackendAcceptanceTest::objectStorageEndpoint),
+                Map.entry("catering.asset.object-storage.access-key", () -> OBJECT_STORAGE_ACCESS_KEY),
+                Map.entry("catering.asset.object-storage.secret-key", () -> OBJECT_STORAGE_SECRET_KEY),
+                Map.entry("catering.asset.object-storage.bucket", () -> OBJECT_STORAGE_BUCKET),
+                Map.entry("catering.asset.object-storage.object-prefix", () -> "acceptance/"),
+                Map.entry("catering.asset.public-base-url", BackendAcceptanceTest::objectStorageEndpoint));
     }
 
     @TestFactory
@@ -1461,6 +1644,31 @@ class BackendAcceptanceTest {
         return jdbc.update(sql, args);
     }
 
+    boolean terminatePostgresBackend(int backendPid) {
+        assertTrue(backendPid > 1, "BACKEND_ACCEPTANCE_POSTGRES_BACKEND_PID_INVALID");
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT pg_terminate_backend(?)", Boolean.class, backendPid));
+    }
+
+    String postgresContainerId() {
+        String containerId = POSTGRES.getContainerId();
+        assertTrue(containerId != null && !containerId.isBlank(), "BACKEND_ACCEPTANCE_POSTGRES_CONTAINER_ID_MISSING");
+        return containerId;
+    }
+
+    void pausePostgresContainer() {
+        DockerClientFactory.instance()
+                .client()
+                .pauseContainerCmd(postgresContainerId())
+                .exec();
+    }
+
+    void unpausePostgresContainer() {
+        DockerClientFactory.instance()
+                .client()
+                .unpauseContainerCmd(postgresContainerId())
+                .exec();
+    }
+
     void insertInventoryBomFixture(
             UUID dataNodeRef,
             UUID brandRef,
@@ -1603,7 +1811,11 @@ class BackendAcceptanceTest {
         return "http://127.0.0.1:" + MINIO.getMappedPort(9000);
     }
 
-    record RouteIdentity(String operationId, String routeTemplate) {}
+    record RouteIdentity(String operationId, String routeTemplate, boolean idempotencyKeyForbidden) {
+        RouteIdentity(String operationId, String routeTemplate) {
+            this(operationId, routeTemplate, false);
+        }
+    }
 
     record Fixture(
             UUID workspaceUuid,
@@ -1631,6 +1843,7 @@ class BackendAcceptanceTest {
     final class ScenarioContext {
         private final AcceptanceScenario scenario;
         private final String measurementScenarioId;
+        private final int targetPort;
         private final String correlationId = "acceptance-" + UUID.randomUUID();
         private final HttpClient client = HttpClient.newBuilder().build();
         private boolean contractPass = true;
@@ -1643,7 +1856,12 @@ class BackendAcceptanceTest {
         }
 
         ScenarioContext(AcceptanceScenario scenario, String measurementScenarioId) {
+            this(scenario, measurementScenarioId, port);
+        }
+
+        ScenarioContext(AcceptanceScenario scenario, String measurementScenarioId, int targetPort) {
             this.scenario = scenario;
+            this.targetPort = targetPort;
             if (!Set.of("performance.normal-path", "performance.coverage-only").contains(measurementScenarioId)) {
                 throw new IllegalArgumentException("BACKEND_ACCEPTANCE_MEASUREMENT_SCENARIO_INVALID");
             }
@@ -1923,7 +2141,7 @@ class BackendAcceptanceTest {
             HttpRequest.BodyPublisher publisher = body.length == 0
                     ? HttpRequest.BodyPublishers.noBody()
                     : HttpRequest.BodyPublishers.ofByteArray(body);
-            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
+            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + targetPort + path))
                     .header("Accept", "application/json")
                     .header("X-Correlation-Id", correlationId)
                     .header(
@@ -1940,7 +2158,9 @@ class BackendAcceptanceTest {
             if (cookie != null) builder.header("Cookie", cookie);
             if (boundary != null) builder.header("Content-Type", "multipart/form-data; boundary=" + boundary);
             else if (body.length > 0) builder.header("Content-Type", "application/json");
-            if (!"GET".equals(method) && (headers == null || !headers.containsKey("Idempotency-Key")))
+            if (!"GET".equals(method)
+                    && !route.idempotencyKeyForbidden()
+                    && (headers == null || !headers.containsKey("Idempotency-Key")))
                 builder.header("Idempotency-Key", "ba-" + UUID.randomUUID());
             if (headers != null) headers.forEach(builder::header);
             HttpResponse<String> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString());

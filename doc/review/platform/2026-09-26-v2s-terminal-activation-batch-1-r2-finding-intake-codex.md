@@ -1,0 +1,36 @@
+# 终端激活与长连接 · 批次一详设 R2 finding intake
+
+## 结论边界
+
+Claude 的原始评审结论保持 `NO-GO M/S/N=2/5/8`。以下是主 agent 对 15 条 finding 的源码与规范 intake，并记录了文档处置；它不是新的独立 review verdict，也不把未运行的验证写成 PASS。当前仅有静态阅读、检索和文档编辑；构建、测试、`scripts/verify`、受管运行、DEV、Testcontainers、reset、seed、L2、UAT 和数据操作均未运行。
+
+Dexter 已裁决 R2-N2 的配置形态：`V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS` 是必填正整数配置，缺失或无效时 TDS 在 readiness 前启动失败。数值 N 仍须按部署主机容量测定；decision 仍为 `PROPOSED`，此轮没有取得接受 decision 的指示。
+
+状态用语：`CONFIRMED` 表示 finding 的根因在本仓规范/源码或所引上游材料中成立；“文档已处置”只说明对应设计/计划已有验收判据；实现、门接线和运行期 proof 仍按计划保持 OPEN。
+
+## Findings
+
+| Finding | Claude 原文位置与性质 | 主 agent 复核证据 | 影响与最小处置 / 当前剩余项 |
+|---|---|---|---|
+| R2-M1 | 原评审 §3.1，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:107-123`；仓内事实 | `tools/verify-gates/verify.mjs:19,22`、`scripts/generate/edge-codegen.mjs:295-300` 与 `scripts/generate/backend-performance-budget.mjs:414-416`；计划 §8；详设 §12.1 Q5/§12.3 | `CONFIRMED`。普通 `--validate-only` 在 CP-05 前预期于 `openapi-contracts` 首败；计划现在区分 identity-only 可证明项、CP-05 前延后的 budget fixtures、三份标定的进入条件及标定后补证。Q5 使用 `-i` 并收录 `Cp05`。剩余：实现期按指定顺序实跑并保存首败与标定 evidence。 |
+| R2-M2 | 原评审 §3.2，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:125-139`；仓内事实、外部事实与推论 | 详设 §1/§3/§12.2；decision §2；计划步骤 7；`apps/backend/catering-business-server/build.gradle.kts:5-6`；`apps/backend/catering-business-server/src/test/java/architecture/BackendModuleBoundariesTest.java:35,75-77`；Claude 原评审列出的 Boot、Spring 与 Reactor Netty pinned-source | `CONFIRMED`。选定独立受管 TDS 进程；设计规定独立 classpath、显式 `REACTIVE`、业务 ArchUnit 仅扫描业务输出、TDS 自己扫描 TDS、Node/undici 客户端隔离。剩余：运行期依赖报告、应用类型、隔离和清理 proof 均未执行。 |
+| R2-S1 | 原评审 §3.3，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:141-158`；仓内事实 | 详设 §12.1 Q15 当前六项命中：`tools/verify-gates/cli.mjs:636`、`tools/platform-boundary-gates/cli.mjs:84`、`scripts/generate/r5-edge-materialize.mjs:367`、`scripts/generate/edge-codegen.mjs:334,344`、`scripts/generate/edge-operation-projections.mjs:159`；ArchUnit `BackendModuleBoundariesTest.java:75-77` | `CONFIRMED`。详设列出六个位置，并要求四面闭集、第五面 fixture 及各自入口/模式/marker；投影 helper 的第五面 marker 定为 `R5_EDGE_OPERATION_PROJECTION_FACE_INVALID`，测试加入 `THCL-04-node-tests`。另把 `..app.edge.terminal..` 纳入 peer-edge isolation。剩余：门与红夹具尚未实现或运行；特别要验证 `contract-face` 与 route-registry 门不会因只对账已知面而放过未知面。 |
+| R2-S2 | 原评审 §3.4，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:160-176`；上游事实与推论 | 详设 §5/§12.3、V-S14；共享协议 `contracts/protocol/terminal-connection-protocol.json`；RFC 7692 §7.1 | `CONFIRMED`。选定 raw-Netty `TdsPmdOfferGate` 在 `HttpCodec` 后、`ReactiveBridge` 前规范化报价，三类报价都应答两项 no-context 参数；不改变 D-37 的压缩效果。V-S14 要逐类断言应答和压缩/解压行为。剩余：受支持版本的真实握手 proof 未运行。 |
+| R2-S3 | 原评审 §3.5，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:178-192`；上游事实 | 详设压缩 §5/§12.3、V-S14；共享协议资源 §compression/§close；Reactor Netty/Spring/Netty pinned-source 链接见原评审 §5 | `CONFIRMED`。移除依赖 WebFilter 改请求头的方案；共享协议区分 WebSocket opcode 控制帧与 JSON PING/PONG data message，不断言应用 data frame 保持不压缩；协商 PMCE 后压缩的首个 AUTHENTICATE 先解压验证，未协商 RSV1 或控制帧 RSV1 关闭 `1002/PROTOCOL_ERROR`；超限 `1009/MESSAGE_TOO_BIG`；加入 deflate-frame 单独/混合报价反例。剩余：raw-header 挂载、关闭映射与逐帧行为都待实现期证明。 |
+| R2-S4 | 原评审 §3.6，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:194-203`；仓内文本事实 | 详设 §5a、错误集与 `v2sNativeCodes`；`TERMINAL_BINDING_CREDENTIAL_DIGEST_CONFLICT` 不再出现在详设 | `CONFIRMED`。保留摘要唯一冲突映射到现有 `PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION`，不扩 R-1.4 的九项闭集，也不提出需求修正。剩余：实施契约/codegen 期间再验证闭集投影。 |
+| R2-S5 | 原评审 §3.7，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:205-219`；仓内事实与推论 | 详设 §3/§9/§12.2；decision §2；计划步骤 3/7 | `CONFIRMED`。列出 terminal-binding 的允许依赖闭集，明确 `ActivationCandidate` 属 terminal-binding API，TDS runtimeClasspath 排除 organization、extension、platform-admin-iam、store-terminal、catalog、asset、Flyway、seed、对象存储及 business app，并要求依赖图与红夹具。剩余：真实 Gradle graph 尚未生成。 |
+| R2-N1 | 原评审 §3 N-1，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:223-225`；上游事实/算法推论 | 详设 §0、§5、V-S14、§12 未决项；Netty 4.2.17 上游默认值与 zlib 内存公式 | `CONFIRMED`。预算列出四块 64 KiB 缓冲、约 256 KiB deflate 与约 39 KiB inflate，合计约 551 KiB；每连接 1 MiB 是硬 logical ceiling，余量也需 proof。分配器、TLS/socket/kernel 按主机测量并纳入 N。剩余：本仓运行 proof 尚未取得。 |
+| R2-N2 | 原评审 §3 N-2，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:226-228`；产品配置裁决 | Dexter 本轮回复；详设 §0/§12 未决项、decision §2、计划步骤 6 | `DEXTER_DECISION`（配置方式已裁定）。必填十进制正整数键、范围 1..2,147,483,647，缺失/格式错误/非正/超界在 readiness 前失败。N 本身保持 OPEN，按主机 RSS 预算、基线、每连接排除成本、文件描述符与 ingress 限制取安全最小值；数值须在首个受管 TDS 启动前记录。 |
+| R2-N3 | 原评审 §3 N-3，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:229-235`；仓内路径/锚点事实 | decision front matter 与 §6 anchor-local 替换项；`doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md` | `CONFIRMED`。decision 对 AGENTS/app-layout 的替换范围改成精确锚点；不再声称 AGENTS 行 83 已允许 WebSocket；Backend Acceptance Standard 在 decision 接受前保持 HTTP-only。剩余：decision `PROPOSED` 尚未由 Dexter 接受。 |
+| R2-N4 | 原评审 §3 N-4，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:236`；规范冲突 | 计划 §8 D-34 进入条件；`AGENTS.md` 与需求 D-34 | `CONFIRMED`。删除“separately authorized reset/seed”措辞，改为批次内重置/seed 的 D-34 进入前置条件；仍禁止进入未满足条件的操作。 |
+| R2-N5 | 原评审 §3 N-5，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:237`；文档一致性 | 详设 worker ownership 与计划步骤 6；二者列出 DB、log、identity、codec 四个具名 bounded schedulers | `CONFIRMED`。计划与详设同为四个具名调度器，不再概称一个 worker pool。 |
+| R2-N6 | 原评审 §3 N-6，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:238-243`；模板一致性 | 详设 §3a、§4、§10b.6、§12、§14；`doc/decisions/templates/implementation-design-template.md` | `CONFIRMED`。§3a 改为逐行九列；§4补齐 per-CP invariant/FORBID/RECALL；§10b.6 表述 D-34 条件；§12 有限未决表；§14 改为逐节 PRESENT/MISSING/N/A+理由。剩余：作者覆盖声明不是独立模板核验。 |
+| R2-N7 | 原评审 §3 N-7，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:242`；仓内文档事实 | IA `doc/plans/platform/2026-09-23-v2s-store-terminal-management-ia-codex.md:82`；交互文档 `doc/plans/platform/2026-09-23-v2s-store-terminal-management-ui-interaction-design-codex.md:402,411`；详设 §3a | `CONFIRMED`。IA 与交互工件现均声明不可聚焦只读文本节点 `TERMINAL_DEVICE_TYPE_READONLY`，不加入动作键。剩余：真实渲染/可聚焦性仍须 L2 admission 后证明。 |
+| R2-N8 | 原评审 §3 N-8，`doc/review/platform/2026-09-26-v2s-terminal-activation-batch-1-design-review-r2-claude.md:243`；仓内事实/控制流推论 | 详设 §5a `cancelOperationsStoreTerminalActivation` 与错误闭集；`apps/backend/catering-business-server/modules/store-terminal/src/main/java/com/catering/v2s/storeterminal/application/StoreTerminalOwnerService.java:856-860` | `CONFIRMED`。运营取消只保留 requireStore 先行的 `403 PLATFORM_COMMON_ACCESS_DENIED`，移除不可达的 `STORE_TERMINAL_STORE_VOIDED`。 |
+
+## 裁决与残留项
+
+- 本轮唯一新增的 Dexter 产品/配置裁决是 R2-N2，已由 Dexter 选择“必填键、无效启动失败”。无需再次询问该配置形态。
+- 部署数值 N 不是本轮产品选择；必须在任何受管 TDS 进程启动前按详设与计划的测量公式确定并记录。当前无 capacity measurement，因此 N 仍 OPEN。
+- decision 仍为 `PROPOSED`；本轮没有修改其状态。decision 接受前不开始实施，也不把 WebSocket 场景加入有效的 backend-acceptance CONTRACT 标准。
+- 所有门接线、fixture、dependency report、实际配置启动失败、压缩/关闭码行为、harness 生命周期、全量 acceptance 与 L2 仍是未来实施/验证项；本 intake 不代表这些 proof 已完成。

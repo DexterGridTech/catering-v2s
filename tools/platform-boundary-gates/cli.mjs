@@ -81,7 +81,7 @@ function validatePostGate0ContractFace(root) {
   const catalogPath = path.join(root, "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json");
   let catalog;
   try { catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8")); } catch (error) { fail("R5_CONTRACT_FACE_IMPLEMENTATION_CATALOG_INVALID", error.message); }
-  const faces = ["platform-admin", "operations-admin", "public"];
+  const faces = ["platform-admin", "operations-admin", "public", "terminal"];
   const catalogOperations = Array.isArray(catalog.operations) ? catalog.operations : [];
   const reportOperations = Array.isArray(report.operations) ? report.operations : [];
   const catalogOperationIds = catalogOperations.map((operation) => operation.operationId).sort();

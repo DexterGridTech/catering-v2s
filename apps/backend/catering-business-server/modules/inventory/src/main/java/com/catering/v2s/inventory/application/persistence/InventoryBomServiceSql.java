@@ -59,7 +59,7 @@ public final class InventoryBomServiceSql {
     public static final String INVENTORY_BOM_SERVICE_CONDITION_ITEM_REF_TARGET_REF =
             "AND item_ref=? ORDER BY target_ref FOR UPDATE";
     public static final String INVENTORY_BOM_SERVICE_SELECT = "SELECT";
-    public static final String INVENTORY_BOM_SERVICE_ITEM_REF_TARGET_REF_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE =
+    public static final String ITEM_REF_TARGET_REF_CONSUM_001 =
             " item_ref,target_ref,consumption_unit_ref,consumption_unit_code,";
     public static final String INVENTORY_BOM_SERVICE_CONSUMPTION_UNIT_NAME = " consumption_unit_name,";
     public static final String INVENTORY_BOM_SERVICE_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION =
@@ -71,9 +71,8 @@ public final class InventoryBomServiceSql {
     public static final String INVENTORY_BOM_SERVICE_ORDER_BY_ITEM_REF_TARGET_REF = "ORDER BY item_ref,target_ref";
     public static final String INVENTORY_BOM_SERVICE_DELETE_STOCK_BOM_DATA_NODE_REF_BRAND_REF_OPTION_VALUE_REF =
             "DELETE FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND option_value_ref IN (";
-    public static final String
-            INVENTORY_BOM_SERVICE_SELECT_PRODUCT_SKU_REF_OPTION_VALUE_REF_SKU_CODE_OPTION_VALUE_CODE =
-                    "SELECT product_sku_ref,option_value_ref,sku_code,option_value_code,version,rows::text FROM ";
+    public static final String SELECT_PRODUCT_SKU_REF_OPT_002 =
+            "SELECT product_sku_ref,option_value_ref,sku_code,option_value_code,version,rows::text FROM ";
     public static final String INVENTORY_BOM_SERVICE_STOCK_BOM_DATA_NODE_REF_BRAND_REF_ITEM_REF =
             "inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? ";
     public static final String INVENTORY_BOM_SERVICE_CONDITION_PRODUCT_SKU_REF_OPTION_VALUE_REF =
@@ -120,9 +119,8 @@ public final class InventoryBomServiceSql {
             "version=?,updated_at_epoch_millis=? ";
     public static final String INVENTORY_BOM_SERVICE_WHERE_TARGET_REF_DATA_NODE_REF_BRAND_REF_DEFINITION_STATUS =
             "WHERE target_ref=? AND data_node_ref=? AND brand_ref=? AND definition_status='ENABLED'";
-    public static final String
-            INVENTORY_BOM_SERVICE_INSERT_INTO_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF =
-                    "INSERT INTO inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,";
+    public static final String INSERT_INTO_STOCK_TARGET_REF_003 =
+            "INSERT INTO inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,";
     public static final String INVENTORY_BOM_SERVICE_ITEM_CODE_SKU_CODE_MEASURE_MODE_INVENTORY_MODE =
             "item_code,sku_code,measure_mode,inventory_mode,consumption_unit_ref,consumption_unit_code,";
     public static final String INVENTORY_BOM_SERVICE_CONSUMPTION_UNIT_NAME_ALTERNATE_A = "consumption_unit_name,";
@@ -141,9 +139,8 @@ public final class InventoryBomServiceSql {
             "UPDATE inventory.stock_bom SET rows=CAST(? AS JSONB),version=?,updated_at_epoch_millis=? ";
     public static final String INVENTORY_BOM_SERVICE_WHERE_BOM_REF_DATA_NODE_REF_BRAND_REF_DEFINITION_STATUS =
             "WHERE bom_ref=? AND data_node_ref=? AND brand_ref=? AND definition_status='ENABLED'";
-    public static final String
-            INVENTORY_BOM_SERVICE_INSERT_INTO_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_ALTERNATE_A =
-                    "INSERT INTO inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,";
+    public static final String INSERT_INTO_STOCK_BOM_REF_ALT_A_004 =
+            "INSERT INTO inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,";
     public static final String INVENTORY_BOM_SERVICE_OPTION_VALUE_REF_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE =
             "option_value_ref,item_code,sku_code,option_value_code,version,rows,definition_status,";
     public static final String INVENTORY_BOM_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_ALTERNATE_A =
@@ -185,12 +182,12 @@ public final class InventoryBomServiceSql {
     public static final String INVENTORY_BOM_SERVICE_CONDITION_ITEM_REF = "AND item_ref=? AND ";
     public static final String INVENTORY_BOM_SERVICE_PRODUCT_SKU_REF_OPTION_VALUE_REF =
             "product_sku_ref IS NULL AND option_value_ref=?";
-    public static final String INVENTORY_BOM_SERVICE_SELECT_STOCK_BOM_VERSION_ROWS_TEXT_DATA_NODE_REF_ALTERNATE_A =
+    public static final String SELECT_STOCK_BOM_VER_ROWS_ALT_A_005 =
             "SELECT version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? ";
     public static final String INVENTORY_BOM_SERVICE_CONDITION_ALTERNATE_A = "AND ";
     public static final String INVENTORY_BOM_SERVICE_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF =
             "item_ref=? AND product_sku_ref IS NULL AND option_value_ref IS NULL";
-    public static final String INVENTORY_BOM_SERVICE_SELECT_STOCK_BOM_VERSION_ROWS_TEXT_DATA_NODE_REF_ALTERNATE_B =
+    public static final String SELECT_STOCK_BOM_VER_ROWS_ALT_B_006 =
             "SELECT version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? ";
     public static final String INVENTORY_BOM_SERVICE_CONDITION_ALTERNATE_B = "AND ";
     public static final String INVENTORY_BOM_SERVICE_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ALTERNATE_A =
@@ -222,9 +219,8 @@ public final class InventoryBomServiceSql {
     public static final String INVENTORY_BOM_SERVICE_BRAND_REF = "brand_ref=? ";
     public static final String INVENTORY_BOM_SERVICE_CONDITION_TARGET_REF = "AND target_ref = ANY(?::uuid[])";
     public static final String INVENTORY_BOM_SERVICE_CTE_BOM_ROWS = "WITH bom_rows AS (";
-    public static final String
-            INVENTORY_BOM_SERVICE_SELECT_PRODUCT_SKU_REF_OPTION_VALUE_REF_SKU_CODE_OPTION_VALUE_CODE_ALTERNATE_A =
-                    "SELECT product_sku_ref,option_value_ref,sku_code,option_value_code,version,rows::text AS bom_rows ";
+    public static final String SELECT_PRODUCT_SKU_REF_OPT_ALT_A_007 =
+            ("SELECT product_sku_ref,option_value_ref,sku_code,option_value_code,versi" + "on,rows::text AS bom_rows ");
     public static final String
             INVENTORY_BOM_SERVICE_FROM_CLAUSE_STOCK_BOM_DATA_NODE_REF_BRAND_REF_ITEM_REF_ALTERNATE_A =
                     "FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? ";
@@ -315,7 +311,8 @@ public final class InventoryBomServiceSql {
     public static final String INVENTORY_BOM_SERVICE_SELECT_STOCK_TARGET_VERSION_DATA_NODE_REF_BRAND_REF =
             "SELECT COALESCE(MAX(version),0) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=?";
     public static final String INVENTORY_BOM_SERVICE_SELECT_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT =
-            "SELECT operation_id,request_hash,response_json::text FROM inventory.command_receipt WHERE data_node_ref=? ";
+            ("SELECT operation_id,request_hash,response_json::text FROM inventory.comm"
+                    + "and_receipt WHERE data_node_ref=? ");
     public static final String INVENTORY_BOM_SERVICE_CONDITION_IDEMPOTENCY_KEY = "AND idempotency_key=?";
     public static final String INVENTORY_BOM_SERVICE_INSERT_INTO_ALTERNATE_B = "INSERT INTO ";
 
@@ -332,40 +329,42 @@ public final class InventoryBomServiceSql {
     public static final String COMBINED_TARGET_BOM_TAIL =
             "UNION ALL SELECT 'BOM',NULL::uuid,NULL::uuid,NULL::uuid,NULL::text,NULL::text,NULL::text,"
                     + "NULL::numeric,NULL::text,NULL::bigint,NULL::bigint,NULL::uuid,NULL::text,NULL::text,NULL::text,"
-                    + "NULL::integer,NULL::uuid,NULL::text,NULL::text,NULL::text,NULL::integer,NULL::numeric,NULL::text,"
+                    + ("NULL::integer,NULL::uuid,NULL::text,NULL::text,NULL::text,NULL::integer,"
+                            + "NULL::numeric,NULL::text,")
                     + "NULL::text,NULL::boolean,bom_rows.product_sku_ref,bom_rows.option_value_ref,bom_rows.sku_code,"
                     + "bom_rows.option_value_code,bom_rows.version,bom_rows.bom_rows FROM bom_rows "
                     + ") AS combined ORDER BY (row_kind='TARGET') DESC,4 NULLS FIRST,28 NULLS FIRST,29 NULLS FIRST";
-    public static final String
-            INVENTORY_BOM_SERVICE_SELECT_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION =
-                    """
-    SELECT consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dimension,consumption_unit_precision\s""";
-    public static final String
-            INVENTORY_BOM_SERVICE_SELECT_COUNTING_UNIT_REF_COUNTING_UNIT_CODE_COUNTING_UNIT_NAME_COUNTING_UNIT_DIMENSION_COUNTING_UNIT_PRECISION_COUNTING_UNIT_DIMENSION_COUNTING_UNIT_PRECISION_COUNTING_UNIT_CONVERSION_FACTOR =
-                    """
-    SELECT counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,counting_unit_precision,counting_unit_conversion_factor\s""";
-    public static final String
-            INVENTORY_BOM_SERVICE_COUNTING_UNIT_CONVERSION_FACTOR_VERSION_UPDATED_AT_EPOCH_MILLIS_WHERE_DATA_NODE_REF_VERSION_UPDATED_AT_EPOCH_MILLIS_WHERE_DATA_NODE_REF =
-                    """
+    public static final String SELECT_CONSUM_UNIT_REF_CONSUM_008 =
+            """
+    SELECT consumption_unit_ref,consumption_unit_code,consumption_unit\
+    _name,consumption_unit_dimension,consumption_unit_precision\s""";
+    public static final String SELECT_COUNTING_UNIT_REF_COUNTING_009 =
+            """
+    SELECT counting_unit_ref,counting_unit_code,counting_unit_name,cou\
+    nting_unit_dimension,counting_unit_precision,counting_unit_convers\
+    ion_factor\s""";
+    public static final String COUNTING_UNIT_CONVERSION_FACTOR_VER_010 =
+            """
     counting_unit_conversion_factor=?,version=version+1,updated_at_epoch_millis=? WHERE data_node_ref=?\s""";
-    public static final String
-            INVENTORY_BOM_SERVICE_SKU_CODE_MEASURE_MODE_INVENTORY_MODE_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION =
-                    """
-    ,sku_code,measure_mode,inventory_mode,consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dimension,consumption_unit_precision,""";
-    public static final String
-            INVENTORY_BOM_SERVICE_INSERT_INTO_INVENTORY_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF =
-                    """
+    public static final String SKU_CODE_MEAS_MODE_INV_011 =
+            """
+    ,sku_code,measure_mode,inventory_mode,consumption_unit_ref,consump\
+    tion_unit_code,consumption_unit_name,consumption_unit_dimension,co\
+    nsumption_unit_precision,""";
+    public static final String INSERT_INTO_INV_STOCK_BOM_012 =
+            """
     INSERT INTO inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,option_value_ref,""";
-    public static final String
-            INVENTORY_BOM_SERVICE_INVENTORY_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE_VERSION_ROWS_UPDATED_AT_EPOCH_MILLIS =
-                    """
-    inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,option_value_ref,item_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis)\s""";
-    public static final String
-            INVENTORY_BOM_SERVICE_VERSION_EXCLUDED_VERSION_ROWS_EXCLUDED_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS =
-                    """
+    public static final String INV_STOCK_BOM_REF_DATA_013 =
+            """
+    inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,produ\
+    ct_sku_ref,option_value_ref,item_code,sku_code,option_value_code,v\
+    ersion,rows,updated_at_epoch_millis)\s""";
+    public static final String VER_EXCLUDED_VER_ROWS_EXCLUDED_014 =
+            """
     version=EXCLUDED.version,rows=EXCLUDED.rows,updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis""";
-    public static final String
-            INVENTORY_BOM_SERVICE_INVENTORY_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID_REQUEST_HASH_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB =
-                    """
-    inventory.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_hash,response_json,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)""";
+    public static final String INV_CMD_RECEIPT_REF_DATA_015 =
+            """
+    inventory.command_receipt(receipt_ref,data_node_ref,idempotency_ke\
+    y,operation_id,request_hash,response_json,created_at_epoch_millis)\
+     VALUES(?,?,?,?,?,CAST(? AS JSONB),?)""";
 }

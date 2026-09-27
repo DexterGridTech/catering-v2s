@@ -194,13 +194,10 @@ public class CatalogSkuFacts {
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS_ALTERNATE_A
                         + CatalogSkuFactsSql
                                 .CATALOG_SKU_FACTS_SKU_VARIANT_COMBINATION_DIGEST_SALES_UNIT_OVERRIDE_REF_ALTERNATE_A
-                        + CatalogSkuFactsSql
-                                .CATALOG_SKU_FACTS_SKU_BASE_MEASURE_UNIT_OVERRIDE_REF_SALES_UNIT_REF_SALES_UNIT_CODE_ALTERNATE_A
-                        + CatalogSkuFactsSql
-                                .CATALOG_SKU_FACTS_SKU_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_ALTERNATE_A
+                        + CatalogSkuFactsSql.SKU_BASE_MEAS_UNIT_OVERRIDE_ALT_A_001
+                        + CatalogSkuFactsSql.SKU_SALES_UNIT_NAME_SALES_ALT_A_002
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_ALTERNATE_A
-                        + CatalogSkuFactsSql
-                                .CATALOG_SKU_FACTS_SKU_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_ALTERNATE_A
+                        + CatalogSkuFactsSql.SKU_BASE_MEAS_UNIT_DIM_ALT_A_003
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_ATTRIBUTE_VALUE_ATTRIBUTE_REF_ATTRIBUTE_CODE_ALTERNATE_A
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VALUE_NAME_STATUS_AXIS_VALUE_ALTERNATE_A
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_EMPTY_LITERAL
@@ -388,8 +385,7 @@ public class CatalogSkuFacts {
         try {
             int[] changed = jdbc.batchUpdate(
                     CatalogSkuFactsSql.CATALOG_SKU_FACTS_INSERT_INTO
-                            + CatalogSkuFactsSql
-                                    .CATALOG_SKU_FACTS_CATALOG_CATALOG_SKU_PRODUCT_SKU_REF_ITEM_REF_SKU_CODE_SKU_NAME_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS_DISPLAY_ORDER_IS_DEFAULT_STATUS_DISPLAY_ORDER_VARIANT_COMBINATION_DIGEST
+                            + CatalogSkuFactsSql.CAT_SKU_PRODUCT_SKU_REF_005
                             + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SALES_UNIT_OVERRIDE_REF
                             + CatalogSkuFactsSql
                                     .CATALOG_SKU_FACTS_BASE_MEASURE_UNIT_OVERRIDE_REF_UPDATED_AT_EPOCH_MILLIS
@@ -473,8 +469,7 @@ public class CatalogSkuFacts {
         try {
             jdbc.batchUpdate(
                     CatalogSkuFactsSql.CATALOG_SKU_FACTS_INSERT_INTO_ALTERNATE_B
-                            + CatalogSkuFactsSql
-                                    .CATALOG_SKU_FACTS_CATALOG_CATALOG_SKU_PRODUCT_SKU_REF_ITEM_REF_SKU_CODE_SKU_NAME_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS_DISPLAY_ORDER_STATUS_DISPLAY_ORDER_VARIANT_COMBINATION_DIGEST_UPDATED_AT_EPOCH_MILLIS
+                            + CatalogSkuFactsSql.CAT_SKU_PRODUCT_SKU_REF_006
                             + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VALUES_ALTERNATE_A
                             + CatalogSkuFactsSql.CATALOG_SKU_FACTS_JOIN_CONDITION_PRODUCT_SKU_REF,
                     skuRows);
@@ -495,10 +490,7 @@ public class CatalogSkuFacts {
                     attributeRows);
         for (CopySku sku : parsed)
             jdbc.update(
-                    CatalogSkuFactsSql
-                                    .CATALOG_SKU_FACTS_UPDATE_CATALOG_SKU_SALES_UNIT_OVERRIDE_REF_BASE_MEASURE_UNIT_OVERRIDE_REF
-                            + CatalogSkuFactsSql
-                                    .CATALOG_SKU_FACTS_UPDATED_AT_EPOCH_MILLIS_WHERE_PRODUCT_SKU_REF_UPDATED_AT_EPOCH_MILLIS_WHERE_PRODUCT_SKU_REF,
+                    CatalogSkuFactsSql.UPDATE_CAT_SKU_SALES_UNIT_004 + CatalogSkuFactsSql.UPDATED_AT_EPOCH_MS_WHERE_007,
                     sku.salesUnitOverrideRef(),
                     sku.baseMeasureUnitOverrideRef(),
                     time.currentEpochMillis(),

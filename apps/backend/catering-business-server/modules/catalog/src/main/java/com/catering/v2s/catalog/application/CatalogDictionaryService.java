@@ -232,7 +232,10 @@ public class CatalogDictionaryService {
         ArrayNode entries = data.putArray("entries");
         UUID parentEntryRef = optionalUuid(request, "parentEntryRef");
         if (parentEntryRef != null && !"SKU_ATTRIBUTE_VALUE".equals(kind)) {
-            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "parentEntryRef 仅适用于 SKU_ATTRIBUTE_VALUE");
+            // spotless:off
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422,
+                "parentEntryRef 仅适用于 SKU_ATTRIBUTE_VALUE");
+            // spotless:on
         }
         String query = optional(request, "query");
         query = query == null ? "" : query.trim();
@@ -351,7 +354,10 @@ public class CatalogDictionaryService {
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "字典状态不合法");
         if ("VOIDED".equals(status)) {
             if (dictionaryReferenced(dataNodeRef, brandRef, kind, code)) {
-                throw new CatalogOwnerApi.Problem("REFERENCE_BLOCKS_VOID", 422, "字典条目仍被商品引用，不能作废");
+                // spotless:off
+                throw new CatalogOwnerApi.Problem("REFERENCE_BLOCKS_VOID", 422,
+                    "字典条目仍被商品引用，不能作废");
+                // spotless:on
             }
             requireInventoryDictionaryReferenceUnreferenced(commandContext, dataNodeRef, brandRef, kind, code);
         }
@@ -443,12 +449,18 @@ public class CatalogDictionaryService {
 
     private static void validateDictionaryOrder(List<DictionaryRow> current, List<String> orderedCodes) {
         if (orderedCodes.size() != current.size())
-            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "orderedCodes 必须完整覆盖当前字典且不能重复");
+            // spotless:off
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422,
+                "orderedCodes 必须完整覆盖当前字典且不能重复");
+            // spotless:on
         Set<String> currentCodes =
                 current.stream().map(DictionaryRow::code).collect(java.util.stream.Collectors.toSet());
         Set<String> submittedCodes = new java.util.HashSet<>(orderedCodes);
         if (submittedCodes.size() != orderedCodes.size() || !currentCodes.equals(submittedCodes))
-            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "orderedCodes 必须完整覆盖当前字典且不能重复");
+            // spotless:off
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422,
+                "orderedCodes 必须完整覆盖当前字典且不能重复");
+            // spotless:on
     }
 
     private DictionaryReferenceSnapshot dictionaryReferenceSnapshot(
@@ -476,7 +488,10 @@ public class CatalogDictionaryService {
         boolean requiresParent = "SKU_ATTRIBUTE_VALUE".equals(kind);
         if (requiresParent != (parentEntryRef != null)) {
             throw new CatalogOwnerApi.Problem(
-                    "VALIDATION_ERROR", 422, "SKU_ATTRIBUTE_VALUE 必须带 parentEntryRef，其他字典类型不得带父属性");
+                    // spotless:off
+                    "VALIDATION_ERROR", 422,
+                        ("SKU_ATTRIBUTE_VALUE 必须带 parentEntryRef，其他字典类型不得" + "带父属性"));
+                    // spotless:on
         }
         if (parentEntryRef == null) return;
         if (!persistence.validParent(parentEntryRef.toString(), scope, brand))

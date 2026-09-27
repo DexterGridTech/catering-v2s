@@ -9,6 +9,69 @@
           "VOIDED"
         ]
       },
+      "StoreTerminalBindingStatus": {
+        "type": "string",
+        "enum": [
+          "INACTIVE",
+          "ACTIVE"
+        ]
+      },
+      "StoreTerminalBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/StoreTerminalBindingStatus"
+          },
+          "activatedAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "status": {
+                "const": "INACTIVE"
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "activatedAt"
+                  ]
+                },
+                {
+                  "required": [
+                    "generation"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "required": [
+              "activatedAt",
+              "generation"
+            ],
+            "properties": {
+              "status": {
+                "const": "ACTIVE"
+              }
+            }
+          }
+        ]
+      },
       "StoreTerminalPrinterBinding": {
         "type": "object",
         "additionalProperties": false,
@@ -491,7 +554,8 @@
           "activationCode",
           "configuration",
           "areaReferences",
-          "tagReferences"
+          "tagReferences",
+          "binding"
         ],
         "properties": {
           "terminalRef": {
@@ -544,6 +608,9 @@
             "items": {
               "$ref": "#/components/schemas/StoreTerminalTagReference"
             }
+          },
+          "binding": {
+            "$ref": "#/components/schemas/StoreTerminalBinding"
           }
         }
       },
@@ -738,7 +805,6 @@
         "additionalProperties": false,
         "required": [
           "name",
-          "deviceType",
           "configuration",
           "expectedVersion"
         ],
@@ -747,11 +813,6 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 160
-          },
-          "deviceType": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 40
           },
           "configuration": {
             "$ref": "#/components/schemas/StoreTerminalConfigurationInput"

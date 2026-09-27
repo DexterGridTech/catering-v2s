@@ -12,13 +12,32 @@ const childOutputBudgetBytes = 32 * 1024 * 1024;
 // runs. It has no derived denominator, dependency digest, persistent execution artifact, or hook
 // contract: a check passes only when its current command actually passes.
 const staticCommands = Object.freeze([
+  ['project-memory', 'scripts/check/project-memory', [], ['PROJECT_MEMORY_RED_NO_MQ_OUTBOX_TDP_OMISSION=PASS', 'PROJECT_MEMORY_CHECK=PASS']],
+  ['backend-boundaries-self-test', 'scripts/check/backend-boundaries', ['--self-test'], ['R4_TDS_MQ_RED=PASS', 'R4_TDS_OUTBOX_RED=PASS', 'R4_TDS_APPROVED_RUNTIME_GREEN=PASS', 'R4_BACKEND_SELF_TEST=PASS']],
   ['logging-boundaries', 'scripts/check/logging-boundaries', [], ['R4_LOGGING_BOUNDARIES=PASS']],
   ['database-boundaries', 'scripts/check/database-boundaries', [], ['R4_DATABASE_BOUNDARIES=PASS']],
   ['query-boundaries', 'scripts/check/query-boundaries', [], ['R4_DATABASE_QUERY_BOUNDARIES=PASS']],
   ['backend-boundaries', 'scripts/check/backend-boundaries', [], ['R4_BACKEND_BOUNDARIES=PASS']],
-  ['frontend-architecture', 'scripts/check/frontend-architecture', [], ['R5_FRONTEND_ARCHITECTURE=PASS']],
+  ['seed-fixture-contract', 'node', ['--test', 'tools/verify-gates/r5-seed-fixture-contract.test.mjs'], ['R5_SEED_FIXTURE_TDP_FORBIDDEN_RED=PASS']],
+  [
+    'frontend-architecture',
+    'scripts/check/frontend-architecture',
+    [],
+    ['R5_FRONTEND_TERMINAL_FACE_RED=PASS', 'R5_FRONTEND_ARCHITECTURE=PASS'],
+  ],
   ['frontend-format', 'yarn', ['format:check'], ['All matched files use Prettier code style!']],
   ['name-code-density', 'node', ['scripts/check/name-code-density.mjs'], ['NAME_CODE_DENSITY=PASS']],
+  ['r5-edge-materialize-path-self-test', 'node', ['scripts/generate/r5-edge-materialize.mjs', '--self-test'], ['R5_EDGE_MATERIALIZE_SELF_TEST=PASS']],
+  ['heritage-registry', 'node', ['scripts/check/heritage-registry', '--self-test'], ['HERITAGE_REGISTRY_SELF_TEST=PASS', 'HERITAGE_REGISTRY=PASS']],
+  ['r5-edge-materialize', 'node', ['scripts/generate/r5-edge-materialize.mjs', '--check'], ['R5_EDGE_MATERIALIZE_CHECK=PASS']],
+  ['capability-invariants-self-test', 'node', ['tools/capability-invariants/cli.mjs', '--self-test'], ['CAPABILITY_INVARIANTS_SELF_TEST=PASS']],
+  ['capability-invariants', 'node', ['tools/capability-invariants/cli.mjs', 'check'], ['CAPABILITY_INVARIANTS=PASS', 'P3_A_OTP_RESPONSE_EXPOSURE=PASS']],
+  ['operation-handler-bindings-self-test', 'node', ['scripts/generate/operation-handler-bindings.mjs', '--self-test'], ['BP_U02_BINDING_SELF_TEST=PASS']],
+  ['operation-handler-bindings', 'node', ['scripts/generate/operation-handler-bindings.mjs', '--check'], ['BP_U02_BINDING_CHECK=PASS', 'CONTEXT_KIND_NEGATIVE=PASS']],
+  ['backend-performance-m1-command-bindings-self-test', 'node', ['scripts/generate/backend-performance-m1-command-execution-bindings.mjs', '--self-test'], ['RED_TERMINAL_OPERATION_EMITTER_MISSING=PASS', 'OPERATION_COMMAND_BINDING_RED_MUTATIONS=PASS']],
+  ['backend-performance-m1-command-bindings', 'node', ['scripts/generate/backend-performance-m1-command-execution-bindings.mjs', '--check'], ['OPERATION_COMMAND_BINDINGS=VALIDATED']],
+  ['security-boundaries-self-test', 'node', ['tools/verify-gates/cli.mjs', 'security', '--self-test'], ['R4_SECURITY_SELF_TEST=PASS']],
+  ['security-boundaries', 'scripts/check/security-boundaries', [], ['R5_SECURITY_BOUNDARIES=PASS']],
   ['openapi-contracts', 'scripts/check/openapi-contracts', [], ['R5_OPENAPI_CONTRACTS=PASS']],
   ['ui-wireframe-traceability', 'scripts/check/ui-wireframe-traceability', [], ['R4_UI_WIREFRAME_TRACEABILITY=PASS']],
   [
@@ -27,6 +46,7 @@ const staticCommands = Object.freeze([
     [],
     ['R4_BUSINESS_TERMINOLOGY_TRACEABILITY=PASS'],
   ],
+  ['code-layout-self-test', 'scripts/check/code-layout', ['--self-test'], ['CODE_LAYOUT_SELF_TEST=PASS', 'GREEN_FIXTURE_APPROVED_TDS_RUNTIME=PASS']],
   ['code-layout', 'scripts/check/code-layout', [], ['CODE_LAYOUT=PASS']],
   ['catalog-inventory-p1', 'node', ['tools/catalog-inventory-p1/cli.mjs'], ['CATALOG_INVENTORY_P1_CHECK=PASS']],
   ['sales-menu-contract', 'scripts/check/sales-menu-contract', [], ['SALES_MENU_CONTRACT=PASS']],
@@ -57,12 +77,60 @@ const staticCommands = Object.freeze([
     ['tests 8', 'pass 8'],
   ],
   ['runtime-environment-keys', 'scripts/check/runtime-environment-keys', [], ['R5_RUNTIME_ENVIRONMENT_KEYS=PASS']],
+  [
+    'runtime-environment-keys-self-test',
+    'node',
+    ['tools/verify-gates/cli.mjs', 'runtime-environment-keys', '--self-test'],
+    ['R5_RUNTIME_ENVIRONMENT_KEYS_SELF_TEST=PASS'],
+  ],
   ['lifecycle-vocabulary', 'scripts/check/lifecycle-vocabulary', [], ['R6_LIFECYCLE_VOCABULARY=PASS']],
   ['reuse-consistency', 'node', ['tools/verify-gates/cli.mjs', 'r11'], ['R11_REUSE_CONSISTENCY=PASS']],
+  ['module-dependency-registry-self-test', 'scripts/check/module-dependency-registry', ['--self-test'], ['MODULE_DEPENDENCY_REGISTRY_SELF_TEST=PASS', 'RED_MODULE_SOURCE_ROOT_MISSING=PASS', 'RED_MODULE_SOURCE_ROOT_EMPTY=PASS']],
+  ['module-dependency-registry', 'scripts/check/module-dependency-registry', [], ['MODULE_DEPENDENCY_REGISTRY=PASS']],
   [
     'backend-archunit',
     'gradle',
     [':apps:backend:catering-business-server:backendModuleBoundariesArchunitSelector', '--no-daemon'],
+    ['BUILD SUCCESSFUL'],
+  ],
+  [
+    'tds-constructor-assembly',
+    'gradle',
+    [
+      ':apps:backend:terminal-data-server:test',
+      '--tests',
+      'architecture.TdsModuleBoundariesTest',
+      '--tests',
+      'com.catering.v2s.terminaldataserver.protocol.TerminalConnectionProtocolTest',
+      '--tests',
+      'com.catering.v2s.terminaldataserver.websocket.TdsAuthenticationFailureDiagnosticsTest',
+      '--tests',
+      'com.catering.v2s.terminaldataserver.websocket.TdsWebSocketMessageOwnershipTest',
+      '--tests',
+      'com.catering.v2s.terminaldataserver.websocket.TdsWebSocketConnectionTest',
+      '--tests',
+      'com.catering.v2s.terminaldataserver.config.TdsRuntimeSettingsTest',
+      '--tests',
+      'com.catering.v2s.terminaldataserver.config.TdsBlockHoundTest',
+      '--no-daemon',
+    ],
+    ['BUILD SUCCESSFUL'],
+  ],
+  [
+    'tds-compression-focused',
+    'gradle',
+    [
+      ':apps:backend:terminal-data-server:test',
+      '--tests',
+      'com.catering.v2s.terminaldataserver.websocket.TdsPmdOfferGateTest',
+      '--tests',
+      'com.catering.v2s.terminaldataserver.websocket.TdsPmdMessageFilterProviderTest',
+      '--tests',
+      'com.catering.v2s.terminaldataserver.websocket.TdsReservedBitsGateTest',
+      '--tests',
+      'com.catering.v2s.terminaldataserver.websocket.TdsPmdAllocationTest',
+      '--no-daemon',
+    ],
     ['BUILD SUCCESSFUL'],
   ],
   ['backend-pmd-preserve-stack-trace', 'gradle', ['backendPmdPreserveStackTrace', '--no-daemon'], ['BUILD SUCCESSFUL']],
@@ -77,7 +145,6 @@ const staticCommands = Object.freeze([
 
 const runtimeCommands = [
   ['U01-face', 'scripts/check/contract-face', []],
-  ['U01-codegen', 'scripts/check/edge-codegen', []],
   ['U01-retirement', 'scripts/check/retirement', []],
   ['THCL-04-node-tests', 'node', ['scripts/test/test-health-entry-runner.mjs', '--node']],
   ['THCL-04-foundation-tests', 'yarn', ['--cwd', 'libraries/frontend/admin-ui-foundation', 'test']],
@@ -205,7 +272,12 @@ function spawnAndForward({root, command, args, spawnSyncImpl, env = process.env}
 
 function runStaticCommand({root, commandTuple, spawnSyncImpl}) {
   const [label, command, args, successMarkers] = commandTuple;
+  const startedAt = process.hrtime.bigint();
   const result = spawnAndForward({root, command, args, spawnSyncImpl});
+  if (label === 'r5-edge-materialize') {
+    const elapsedMs = Number((process.hrtime.bigint() - startedAt) / 1_000_000n);
+    process.stdout.write(`R5_VERIFY_STATIC_DURATION_MS:${label}=${elapsedMs}\n`);
+  }
   if (result?.error) fail(`R5_VERIFY_STATIC_SPAWN_FAILURE:${label}`);
   if (result?.status !== 0) fail(`R5_VERIFY_STATIC_FIRST_FAILURE:${label}`);
   const output = `${result?.stdout || ''}\n${result?.stderr || ''}`;

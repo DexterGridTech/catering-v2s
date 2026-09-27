@@ -63,10 +63,8 @@ context for a new attempt rather than a reason to conceal the fallback.
   时，`REVIEW_ROUND=N` 只作序号，不得写 `REVIEW_ROUND_LIMIT=2`、`ROUND_FINAL_DECISION=SELF_DECIDED`、
   「第二轮硬停止」或「不得召集第三轮」。
 - `IMPLEMENTATION_RECONCILIATION_NOT_ROUND_LIMITED`：实施过程中由子 agent 做的「实施结果 ↔ 需求、详设」
-  对账**不受两轮上限约束**，包括 `review-standard.md` 的实施步骤级独立对账、
-  `implementation-task-template.md` 的 6b 整体三维对账和交付前的逐代码与详设对账。结论只有 `MATCHED`
-  或逐项 `OPEN`；`OPEN` 时按同根范围修复，再交另一个 fresh 子 agent 复查，直到 `MATCHED` 才往下走。
-  不得以「两轮已满」为由停止复查，也不得带着 `OPEN` 进入下一步骤或交付。
+  对账**不受两轮上限约束**。实施阶段独立三维对账以实施计划列出的完整 CP 为单位：一个 CP 的所有工作项、编辑、focused proof 与必要修复完成后、进入下一 CP 前，fresh reviewer 对整个 CP 做一次三维对账；CP 内的文件、编辑、单个 focused proof 或修复不单独触发 reviewer 关卡。作者仍须逐点做源码和原文前后读回，CP reviewer 检查这些证据。没有 CP 标签时，只以计划明确列出的完整批准阶段为单位，不得把单个变更点、文件、测试或修复升级成阶段。`OPEN` 时按同根范围修复，再交另一个 fresh 子 agent 复查同一个 CP，直到 `MATCHED` 才能进入下一 CP。
+  此规则也包括 `implementation-task-template.md` 的 6b 整体三维对账和交付前的逐代码与详设对账；它们仍是各自独立的批次级交付门。不得以「两轮已满」为由停止复查，也不得带着 `OPEN` 进入下一 CP 或交付。
 - `IMPLEMENTATION_REVIEW_AGAINST_DESIGN_NOT_ROUND_LIMITED`：实施完成后对整批做的
   `REVIEW_TARGET=IMPLEMENTATION` 对抗 review **不受两轮上限约束**，但**必须依据详设文档**：每条 finding
   写明依据的详设位置和对应实现位置（即 `review-standard.md` 动作 2「与本批设计文档逐条对账」）；详设里

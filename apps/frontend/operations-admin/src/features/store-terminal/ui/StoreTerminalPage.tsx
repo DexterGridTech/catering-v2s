@@ -22,12 +22,14 @@ import type {OperationsPageProps} from '../../../app/routing/model';
 import {changeStoreTerminalStatus, createStoreTerminal, replaceStoreTerminal} from '../model/storeTerminalCommands';
 import {
   nextTerminalRefAfterVoid,
+  newTerminalCreateFormValues,
   resolveTerminalSelection,
   terminalFormValuesFromDetail,
   storeTerminalDeviceTypeLabels,
   storeTerminalStatusLabels,
+  type StoreTerminalCreateFormValues,
+  type StoreTerminalEditFormValues,
   type StoreTerminalEditor,
-  type StoreTerminalFormValues,
 } from '../model/storeTerminalModel';
 import {useStoreTerminalReadModel} from '../model/useStoreTerminalReadModel';
 import {storeTerminalTestIds} from '../storeTerminalTestIds';
@@ -42,6 +44,8 @@ type StatusMutationAttempt = {
   contextKey: string;
 };
 type LocalDrawerNotice = {title: string; detail: string};
+type TerminalMutationAttempt =
+  {mode: 'create'; values: StoreTerminalCreateFormValues} | {mode: 'edit'; values: StoreTerminalEditFormValues};
 
 function problemText(error: unknown, fallback: string) {
   return operationsProblemOf(error).detail || fallback;
@@ -74,7 +78,8 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
   const contentRef = useRef<HTMLDivElement>(null);
   const statusTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [contentWidth, setContentWidth] = useState<number>();
-  const form = Form.useForm<StoreTerminalFormValues>()[0];
+  const createForm = Form.useForm<StoreTerminalCreateFormValues>()[0];
+  const editForm = Form.useForm<StoreTerminalEditFormValues>()[0];
   const drawerLifecycle = useDrawerFormLifecycle({
     open: Boolean(editor),
     onOpenChange: next => {
@@ -166,15 +171,20 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
 
   useEffect(() => {
     if (!editor) {
-      form.resetFields();
+      createForm.resetFields();
+      editForm.resetFields();
       formEditorIdentity.current = undefined;
       return;
     }
     const identity = `${editor.mode}:${editor.terminal ? String(editor.terminal.terminalRef) : 'new'}`;
     if (formEditorIdentity.current === identity) return;
-    form.setFieldsValue(terminalFormValuesFromDetail(editor.terminal));
+    if (editor.mode === 'create') {
+      createForm.setFieldsValue(newTerminalCreateFormValues());
+    } else {
+      editForm.setFieldsValue(terminalFormValuesFromDetail(editor.terminal));
+    }
     formEditorIdentity.current = identity;
-  }, [editor, form]);
+  }, [createForm, editForm, editor]);
 
   useLayoutEffect(() => {
     const element = contentRef.current;
@@ -209,14 +219,14 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
     });
   };
 
-  const runMutation = async (values: StoreTerminalFormValues) => {
-    if (!queryContext.scopeRef || !editor || editor.contextKey !== contextKey) return;
+  const runMutation = async (attempt: TerminalMutationAttempt) => {
+    if (!queryContext.scopeRef || !editor || editor.contextKey !== contextKey || editor.mode !== attempt.mode) return;
     if (editorRequiresReopen || editorContextStale) return;
     setDrawerProblem(undefined);
     setDrawerNotice(undefined);
     drawerLifecycle.setSubmitting(true);
     const operationId =
-      editor.mode === 'create'
+      attempt.mode === 'create'
         ? OPERATIONS_ADMIN_OPERATION_IDS.postOperationsStoreTerminal
         : OPERATIONS_ADMIN_OPERATION_IDS.putOperationsStoreTerminal;
     operationsLogger.info({
@@ -225,18 +235,18 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
       outcome: 'STARTED',
       operationId,
       diagnostic: {
-        mode: editor.mode,
-        printerCount: values.printers.length,
-        functionCount: values.functions.length,
-        incompletePrinterRows: values.printers.filter(
+        mode: attempt.mode,
+        printerCount: attempt.values.printers.length,
+        functionCount: attempt.values.functions.length,
+        incompletePrinterRows: attempt.values.printers.filter(
           printer =>
             !printer || !printer.clientKey || !printer.name || !printer.modelKey || !printer.connectionMethodKey,
         ).length,
-        incompleteFunctionRows: values.functions.filter(
+        incompleteFunctionRows: attempt.values.functions.filter(
           fn => !fn || !fn.clientKey || !fn.functionKey || !fn.scenes || !Array.isArray(fn.selectedRangeKeys),
         ).length,
         functionRowShapes: JSON.stringify(
-          values.functions.map(fn => ({
+          attempt.values.functions.map(fn => ({
             present: Boolean(fn),
             hasClientKey: Boolean(fn?.clientKey),
             hasFunctionKey: Boolean(fn?.functionKey),
@@ -247,22 +257,19 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
       },
     });
     let succeeded = false;
-    const idempotencyKey = editor.mode === 'create' ? drawerLifecycle.getIdempotencyKey() : undefined;
     try {
-      const result =
-        editor.mode === 'create'
-          ? await createStoreTerminal(
-              {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: String(queryContext.scopeRef)},
-              values,
-              idempotencyKey as string,
-            )
-          : editor.terminal
-            ? await replaceStoreTerminal(
-                {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: String(queryContext.scopeRef)},
-                editor.terminal,
-                values,
-              )
-            : undefined;
+      const context = {
+        groupWorkspaceKey: queryContext.groupWorkspaceKey,
+        storeRef: String(queryContext.scopeRef),
+      };
+      let result: Pick<StoreTerminalDetail, 'terminalRef'> | undefined;
+      if (attempt.mode === 'create') {
+        if (editor.mode !== 'create') return;
+        result = await createStoreTerminal(context, attempt.values, drawerLifecycle.getIdempotencyKey());
+      } else {
+        if (editor.mode !== 'edit') return;
+        result = await replaceStoreTerminal(context, editor.terminal, attempt.values);
+      }
       if (!result) {
         drawerLifecycle.setSubmitting(false);
         operationsLogger.warn({
@@ -564,10 +571,8 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
     </div>
   );
 
-  const drawerProps = {
-    editor,
+  const drawerSharedProps = {
     onConfigurationOpen: openEditorConfiguration,
-    form,
     lifecycle: drawerLifecycle,
     areaCandidates: read.areaCandidates,
     tagCandidates: read.tagCandidates,
@@ -577,8 +582,6 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
     tagCandidateError: read.tagCandidatesQuery.error,
     onRetryAreaCandidates: () => void read.areaCandidatesQuery.refetch(),
     onRetryTagCandidates: () => void read.tagCandidatesQuery.refetch(),
-    onFinish: (values: StoreTerminalFormValues) => void runMutation(values),
-    onRetry: () => void form.submit(),
     problem: drawerProblem,
     notice: drawerNotice,
     onClearProblem: () => {
@@ -611,8 +614,20 @@ export function StoreTerminalPage({queryContext, actionCapabilityKeys}: Operatio
         {content}
       </Space>
 
-      <TerminalCreateDrawer {...drawerProps} />
-      <TerminalEditDrawer {...drawerProps} />
+      <TerminalCreateDrawer
+        {...drawerSharedProps}
+        editor={editor?.mode === 'create' ? editor : undefined}
+        form={createForm}
+        onFinish={values => void runMutation({mode: 'create', values})}
+        onRetry={() => void createForm.submit()}
+      />
+      <TerminalEditDrawer
+        {...drawerSharedProps}
+        editor={editor?.mode === 'edit' ? editor : undefined}
+        form={editForm}
+        onFinish={values => void runMutation({mode: 'edit', values})}
+        onRetry={() => void editForm.submit()}
+      />
 
       <StatusChangeConfirm
         open={Boolean(statusRequest)}

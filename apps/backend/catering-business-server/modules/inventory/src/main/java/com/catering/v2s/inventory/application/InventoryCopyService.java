@@ -1016,7 +1016,10 @@ public class InventoryCopyService {
             TargetRow row = targetRow(record);
             TargetIdentity identity = new TargetIdentity(row.itemRef(), row.productSkuRef());
             if (result.putIfAbsent(identity, row) != null)
-                throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
+                // spotless:off
+                throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422,
+                    "目标库存对象引用不唯一");
+                // spotless:on
         }
         return result;
     }
@@ -1147,7 +1150,10 @@ public class InventoryCopyService {
                 .values()) {
             TargetRow row = targetRow(record);
             if (resolved.putIfAbsent(row.ref(), row) != null)
-                throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
+                // spotless:off
+                throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422,
+                    "目标库存对象引用不唯一");
+                // spotless:on
         }
         return resolved;
     }

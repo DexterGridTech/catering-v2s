@@ -830,7 +830,8 @@
           "reason": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 240
+            "maxLength": 240,
+            "nullable": true
           },
           "changedAt": {
             "type": "integer",
@@ -1825,8 +1826,7 @@
           "reason": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 240,
-            "nullable": true
+            "maxLength": 240
           },
           "expectedVersion": {
             "type": "integer",

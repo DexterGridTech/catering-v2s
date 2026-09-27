@@ -11,6 +11,7 @@ import {
   modelOptionsForBrandAndConnection,
   nextFunctionIdentityAfterRemoval,
   nextTerminalRefAfterVoid,
+  newTerminalCreateFormValues,
   newTerminalFunction,
   newTerminalPrinter,
   normalizeTerminalFunctionForm,
@@ -276,8 +277,6 @@ describe('store terminal form model', () => {
     functionForm.scenes[scenes[1].key] = {selected: true, orderTypes: ['DINE_IN'], printerKeys: [second.clientKey]};
     const values: StoreTerminalFormValues = {
       name: '测试终端',
-      deviceType: 'laptop',
-      activationCode: '',
       printers: [first, second],
       functions: [functionForm],
     };
@@ -329,8 +328,6 @@ describe('store terminal form model', () => {
     expect(
       terminalDraftMatchesFormValues(terminal, {
         name: '稀疏比较终端',
-        deviceType: 'laptop',
-        activationCode: '',
         printers: [],
         functions: [functionForm],
       }),
@@ -544,6 +541,9 @@ describe('store terminal form model', () => {
       },
     } as never;
     const values = terminalFormValuesFromDetail(terminal);
+    expect(values).not.toHaveProperty('deviceType');
+    expect(values).not.toHaveProperty('activationCode');
+    expect(newTerminalCreateFormValues()).toMatchObject({deviceType: '', activationCode: ''});
     expect(terminalDraftMatchesFormValues(terminal, values)).toBe(true);
     expect(values.functions[0].clientKey).toBe('function-existing-33333333-3333-4333-8333-333333333333');
     expect(values.functions[0].scenes.TABLE_ORDER_TICKET.selected).toBe(true);
@@ -581,8 +581,6 @@ describe('store terminal form model', () => {
     expect(
       terminalDraftMatchesFormValues(terminal, {
         name: undefined,
-        deviceType: 'laptop',
-        activationCode: '',
         printers: [],
         functions: [],
       } as never),
@@ -590,9 +588,7 @@ describe('store terminal form model', () => {
     expect(
       terminalDraftMatchesFormValues(terminal, {
         name: '终端',
-        deviceType: undefined,
-        activationCode: '',
-        printers: [],
+        printers: undefined,
         functions: [],
       } as never),
     ).toBe(false);
@@ -600,8 +596,6 @@ describe('store terminal form model', () => {
     expect(
       terminalDraftMatchesFormValues(malformedTerminal as never, {
         name: '终端',
-        deviceType: 'laptop',
-        activationCode: '',
         printers: [],
         functions: [],
       }),

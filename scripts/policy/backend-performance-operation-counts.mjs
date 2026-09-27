@@ -6,7 +6,7 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 export const OPERATION_COUNT_SOURCE_PATH = "contracts/policy/backend-performance-operation-counts.json";
 
 const requiredCounts = Object.freeze(["operations", "reads", "commands"]);
-const requiredFaceCounts = Object.freeze(["operationsAdmin", "platformAdmin", "public"]);
+const requiredFaceCounts = Object.freeze(["operationsAdmin", "platformAdmin", "public", "terminal"]);
 const allowedRootKeys = Object.freeze(["schemaVersion", "kind", "status", "manual", ...requiredCounts, "commandsByFace"]);
 
 const fail = (code, detail = "") => {
@@ -55,6 +55,7 @@ const readSource = (root) => {
       operationsAdmin: source.commandsByFace.operationsAdmin,
       platformAdmin: source.commandsByFace.platformAdmin,
       public: source.commandsByFace.public,
+      terminal: source.commandsByFace.terminal,
     }),
   });
 };

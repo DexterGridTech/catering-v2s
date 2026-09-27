@@ -10,9 +10,9 @@ public final class WorkspaceIamAuditHistoryServiceSql {
             "SELECT EXISTS(SELECT 1 FROM workspace_iam.";
     public static final String WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_WHERE_TEXT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             " WHERE id::text=? AND workspace_uuid=? AND group_workspace_key=?)";
-    public static final String
-            WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_SELECT_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "SELECT count(*) FROM workspace_iam.audit_event WHERE workspace_uuid=? AND group_workspace_key=? AND ";
+    public static final String SELECT_AUDIT_EVENT_WS_UUID_001 =
+            ("SELECT count(*) FROM workspace_iam.audit_event WHERE workspace_uuid=? AN"
+                    + "D group_workspace_key=? AND ");
     public static final String WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_ENTITY_TYPE_ENTITY_REF_TEXT =
             "entity_type=? AND entity_ref_text=?";
     public static final String WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_SELECT_OCCURRED_AT_EPOCH_MILLIS =

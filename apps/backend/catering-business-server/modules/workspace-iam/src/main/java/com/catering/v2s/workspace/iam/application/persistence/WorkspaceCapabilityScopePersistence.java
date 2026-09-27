@@ -27,8 +27,7 @@ public class WorkspaceCapabilityScopePersistence {
                                 .WORKSPACE_CAPABILITY_SCOPE_RESOLVER_JOIN_WORKSPACE_ROLE_ROLE_ASSIGNMENT_ROLE_ID
                         + WorkspaceCapabilityScopeResolverSql
                                 .WORKSPACE_CAPABILITY_SCOPE_RESOLVER_WHERE_ASSIGNMENT_WORKSPACE_UUID
-                        + WorkspaceCapabilityScopeResolverSql
-                                .WORKSPACE_CAPABILITY_SCOPE_RESOLVER_CONDITION_ASSIGNMENT_GROUP_WORKSPACE_KEY_STATUS_ACTIVE
+                        + WorkspaceCapabilityScopeResolverSql.CONDITION_ASSIGN_GRP_WS_KEY_001
                         + WorkspaceCapabilityScopeResolverSql
                                 .WORKSPACE_CAPABILITY_SCOPE_RESOLVER_CONDITION_ROLE_WORKSPACE_UUID_ASSIGNMENT
                         + WorkspaceCapabilityScopeResolverSql

@@ -6,12 +6,10 @@ public final class CatalogSkuMediaFactsSql {
     public static final String PLACEHOLDER_SEPARATOR = ",";
     public static final String CATALOG_SKU_MEDIA_FACTS_DELETE_CATALOG_SKU_MEDIA_PRODUCT_SKU_REF =
             "DELETE FROM catalog.catalog_sku_media WHERE product_sku_ref IN (";
-    public static final String
-            CATALOG_SKU_MEDIA_FACTS_INSERT_INTO_CATALOG_SKU_MEDIA_PRODUCT_SKU_REF_ASSET_REF_DISPLAY_ORDER =
-                    "INSERT INTO catalog.catalog_sku_media(product_sku_ref,asset_ref,display_order) VALUES(?,?,?)";
-    public static final String
-            CATALOG_SKU_MEDIA_FACTS_INSERT_INTO_CATALOG_SKU_MEDIA_PRODUCT_SKU_REF_ASSET_REF_DISPLAY_ORDER_ALTERNATE_A =
-                    "INSERT INTO catalog.catalog_sku_media(product_sku_ref,asset_ref,display_order) VALUES(?,?,?)";
+    public static final String INSERT_INTO_CAT_SKU_MEDIA_001 =
+            "INSERT INTO catalog.catalog_sku_media(product_sku_ref,asset_ref,display_order) VALUES(?,?,?)";
+    public static final String INSERT_INTO_CAT_SKU_MEDIA_ALT_A_002 =
+            "INSERT INTO catalog.catalog_sku_media(product_sku_ref,asset_ref,display_order) VALUES(?,?,?)";
     public static final String CATALOG_SKU_MEDIA_FACTS_SELECT_CATALOG_SKU_MEDIA_PRODUCT_SKU_REF_ASSET_REF =
             "SELECT product_sku_ref,asset_ref FROM catalog.catalog_sku_media WHERE product_sku_ref IN (";
     public static final String CATALOG_SKU_MEDIA_FACTS_CONDITION_ITEM_DATA_NODE_REF_BRAND_REF =

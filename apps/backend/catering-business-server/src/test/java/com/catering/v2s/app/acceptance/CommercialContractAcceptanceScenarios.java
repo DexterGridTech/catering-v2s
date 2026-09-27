@@ -247,7 +247,10 @@ final class CommercialContractAcceptanceScenarios {
         assertTrue(
                 values.path(fieldPrefix + "Boolean").asBoolean(), "BUSINESS: " + label + " returns BOOLEAN raw value");
         assertEquals(
-                "直营", values.path(fieldPrefix + "Select").asText(), "BUSINESS: " + label + " returns SELECT raw value");
+                // spotless:off
+                "直营", values.path(fieldPrefix + "Select").asText(),
+                    "BUSINESS: " + label + " returns SELECT raw value");
+                // spotless:on
     }
 
     @AcceptanceScenario(

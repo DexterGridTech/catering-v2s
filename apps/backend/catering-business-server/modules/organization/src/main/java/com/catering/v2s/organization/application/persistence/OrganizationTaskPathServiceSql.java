@@ -11,9 +11,8 @@ public final class OrganizationTaskPathServiceSql {
             "organization.commercial_group WHERE group_workspace_key=?";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_CTE_GROUP_FACT_COMMERCIAL_GROUP_UUID_GROUP_ID =
             "WITH RECURSIVE group_fact AS (SELECT commercial_group_uuid AS group_id FROM";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_STORE_FACT =
-                    " organization.commercial_group WHERE group_workspace_key=?), store_fact AS (SELECT";
+    public static final String ALT_COMMERCIAL_GRP_WS_KEY_001 =
+            " organization.commercial_group WHERE group_workspace_key=?), store_fact AS (SELECT";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_STORE_PROJECT_ID_TENANT_ID_BRAND_ID =
             " store.project_id, store.tenant_id, store.brand_id, store.code, group_fact.group_id FROM";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_STORE_PROJECT =
@@ -76,9 +75,8 @@ public final class OrganizationTaskPathServiceSql {
             " project.group_workspace_key=store.group_workspace_key AND project.node_type='PROJECT' AND";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_GROUP_FACT_PROJECT_STATUS_ENABLED_STORE_ALTERNATE_A =
             " project.status='ENABLED' CROSS JOIN group_fact WHERE store.id IN (";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_CTE_GROUP_FACT_COMMERCIAL_GROUP_UUID_GROUP_ID_ALTERNATE_A =
-                    "WITH RECURSIVE group_fact AS (SELECT commercial_group_uuid AS group_id FROM";
+    public static final String CTE_GRP_FACT_COMMERCIAL_GRP_ALT_A_002 =
+            "WITH RECURSIVE group_fact AS (SELECT commercial_group_uuid AS group_id FROM";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_PARAMS =
             " organization.commercial_group WHERE group_workspace_key=?), params AS (SELECT ?::uuid AS";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_TEXT_GROUP_WORKSPACE_KEY_TARGET_ID =
@@ -96,9 +94,8 @@ public final class OrganizationTaskPathServiceSql {
             " node.id=params.target_id UNION ALL SELECT ancestry.target_id, parent.id, parent.parent_id,";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_PARENT_NODE_TYPE_CODE_NAME_ALTERNATE_A =
             " parent.node_type, parent.code, parent.name, ancestry.depth+1 FROM";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_ANCESTRY_ORGANIZATION_NODE_PARENT_PARENT_ID_ALTERNATE_A =
-                    " organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id";
+    public static final String ALT_ANCESTRY_ORG_NODE_PARENT_ALT_A_003 =
+            " organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_CROSS_JOIN = " CROSS JOIN";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_PARAMS_PARENT_WORKSPACE_UUID =
             " params WHERE parent.workspace_uuid=params.workspace_uuid AND";
@@ -124,12 +121,10 @@ public final class OrganizationTaskPathServiceSql {
             " AS group_id FROM ancestry CROSS JOIN params GROUP BY ancestry.target_id, params.group_id";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_CONDITION_STORE_STATUS_ENABLED =
             " AND store.status='ENABLED'";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_CTE_GROUP_FACT_COMMERCIAL_GROUP_UUID_GROUP_ID_ALTERNATE_B =
-                    "WITH group_fact AS (SELECT commercial_group_uuid AS group_id FROM";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_STORE_FACT_ALTERNATE_A =
-                    " organization.commercial_group WHERE group_workspace_key=?), store_fact AS (SELECT";
+    public static final String CTE_GRP_FACT_COMMERCIAL_GRP_ALT_B_004 =
+            "WITH group_fact AS (SELECT commercial_group_uuid AS group_id FROM";
+    public static final String ALT_COMMERCIAL_GRP_WS_KEY_ALT_A_005 =
+            " organization.commercial_group WHERE group_workspace_key=?), store_fact AS (SELECT";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_STORE_STORE_ID_PROJECT_ID_CODE =
             " store.id AS store_id, store.project_id, store.code AS store_code, store.name AS store_name,";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_PROJECT_PARENT_ID_REGION_ID_CODE =
@@ -256,9 +251,8 @@ public final class OrganizationTaskPathServiceSql {
     public static final String ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT_ALTERNATE_A =
             "WHEN target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL THEN ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_PATH_NODE_REFS = "node_paths.path_node_refs ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_A =
-                    "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN ";
+    public static final String WHEN_TARGET_ROWS_TARGET_TYPE_ALT_A_006 =
+            "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_TARGET_ROWS_HEAD_COMPANY_ID =
             "ARRAY[target_rows.head_company_id] ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_A =
@@ -275,9 +269,8 @@ public final class OrganizationTaskPathServiceSql {
             "WHEN target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL THEN ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_PATH_NODE_CODES =
             "node_paths.path_node_codes ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_B =
-                    "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN ";
+    public static final String WHEN_TARGET_ROWS_TARGET_TYPE_ALT_B_007 =
+            "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_CODE = "ARRAY[head_company.code] ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_B =
             "WHEN target_rows.target_type='STORE' AND target_rows.store_id IS NOT NULL AND node_paths.target_id ";
@@ -292,9 +285,8 @@ public final class OrganizationTaskPathServiceSql {
             "WHEN target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL THEN ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_PATH_NODE_NAMES =
             "node_paths.path_node_names ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_C =
-                    "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN ";
+    public static final String WHEN_TARGET_ROWS_TARGET_TYPE_ALT_C_008 =
+            "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_NAME = "ARRAY[head_company.name] ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_C =
             "WHEN target_rows.target_type='STORE' AND target_rows.store_id IS NOT NULL AND node_paths.target_id ";
@@ -308,9 +300,8 @@ public final class OrganizationTaskPathServiceSql {
             "WHEN target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL THEN ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_PATH_NODE_TYPES =
             "node_paths.path_node_types ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_D =
-                    "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN ";
+    public static final String WHEN_TARGET_ROWS_TARGET_TYPE_ALT_D_009 =
+            "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY = "ARRAY['HEAD_COMPANY'] ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_D =
             "WHEN target_rows.target_type='STORE' AND target_rows.store_id IS NOT NULL AND node_paths.target_id ";
@@ -324,9 +315,8 @@ public final class OrganizationTaskPathServiceSql {
     public static final String ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_REGION_PROJECT_ALTERNATE_E =
             "WHEN target_rows.target_type IN ('REGION','PROJECT') AND node_paths.target_id IS NOT NULL THEN ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_NODE_PATHS_DISPLAY_PATH = "node_paths.display_path ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_HEAD_COMPANY_HEAD_COMPANY_ID_ALTERNATE_E =
-                    "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN ";
+    public static final String WHEN_TARGET_ROWS_TARGET_TYPE_ALT_E_010 =
+            "WHEN target_rows.target_type='HEAD_COMPANY' AND target_rows.head_company_id IS NOT NULL THEN ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_CODE_NAME =
             "head_company.code || ' ' || head_company.name ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_WHEN_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID_ALTERNATE_E =
@@ -355,16 +345,14 @@ public final class OrganizationTaskPathServiceSql {
     public static final String ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_TARGET_ROWS_TARGET_TYPE_STORE_STORE_ID =
             "OR (target_rows.target_type='STORE' AND target_rows.store_id IS NOT NULL AND node_paths.target_id ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_IS_NOT_NULL = "IS NOT NULL)";
-    public static final String ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_NODE_TYPE_CODE_NAME =
+    public static final String SELECT_ORG_NODE_PARENT_ID_011 =
             "SELECT id, parent_id, node_type, code, name FROM organization.organization_node WHERE ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED =
             "workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND id IN (";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_NODE_TYPE_CODE_NAME_ALTERNATE_A =
-                    "SELECT id, parent_id, node_type, code, name FROM organization.organization_node WHERE ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_A =
-                    "workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND id IN (";
+    public static final String SELECT_ORG_NODE_PARENT_ID_ALT_A_012 =
+            "SELECT id, parent_id, node_type, code, name FROM organization.organization_node WHERE ";
+    public static final String WS_UUID_GRP_WS_KEY_ALT_A_013 =
+            "workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND id IN (";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_CTE_COMMERCIAL_GROUP_GROUP_ROOT_COMMERCIAL_GROUP_UUID =
             "WITH group_root AS (SELECT commercial_group_uuid FROM organization.commercial_group WHERE ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_GROUP_WORKSPACE_KEY =
@@ -375,9 +363,8 @@ public final class OrganizationTaskPathServiceSql {
             "authorization_fact.authorized_at_epoch_millis FROM ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_HEAD_COMPANY_GROUP_ROOT_COMPANY =
             "group_root CROSS JOIN organization.head_company company JOIN ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_ALTERNATIVE_HEAD_COMPANY_BRAND_AUTHORIZATION_AUTHORIZATION_FACT =
-                    "organization.head_company_brand_authorization authorization_fact ON ";
+    public static final String ALT_HEAD_COMPANY_BRAND_AUTH_014 =
+            "organization.head_company_brand_authorization authorization_fact ON ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_BRAND_AUTHORIZATION_FACT_HEAD_COMPANY_ID_COMPANY =
             "authorization_fact.head_company_id=company.id JOIN organization.brand brand ON ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_BRAND_AUTHORIZATION_FACT_BRAND_ID_COMPANY =
@@ -394,17 +381,14 @@ public final class OrganizationTaskPathServiceSql {
             "FROM organization.store s JOIN organization.organization_node p ON p.id=s.project_id ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             "AND p.workspace_uuid=s.workspace_uuid AND p.group_workspace_key=s.group_workspace_key ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_CONDITION_ORGANIZATION_NODE_NODE_TYPE_PROJECT_STATUS_ENABLED =
-                    "AND p.node_type='PROJECT' AND p.status='ENABLED' JOIN organization.organization_node r ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_JOIN_CONDITION_PARENT_ID_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "ON r.id=p.parent_id AND r.workspace_uuid=p.workspace_uuid AND r.group_workspace_key=";
+    public static final String CONDITION_ORG_NODE_TYPE_PROJECT_015 =
+            "AND p.node_type='PROJECT' AND p.status='ENABLED' JOIN organization.organization_node r ";
+    public static final String JOIN_CONDITION_PARENT_ID_WS_016 =
+            "ON r.id=p.parent_id AND r.workspace_uuid=p.workspace_uuid AND r.group_workspace_key=";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_REGION_STATUS =
             "p.group_workspace_key AND r.node_type='REGION' AND r.status='ENABLED' WHERE s.id=? AND ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_B =
-                    "s.workspace_uuid=? AND s.group_workspace_key=? AND s.status='ENABLED'";
+    public static final String WS_UUID_GRP_WS_KEY_ALT_B_017 =
+            "s.workspace_uuid=? AND s.group_workspace_key=? AND s.status='ENABLED'";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_SELECT_GROUP_ROOT_COMMERCIAL_GROUP_UUID_STORE_PROJECT_ID =
             "SELECT group_root.commercial_group_uuid, store.id, store.project_id, store.code, store.name, ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_REGION_PROJECT_CODE_NAME =
@@ -420,13 +404,11 @@ public final class OrganizationTaskPathServiceSql {
             "project ON project.id=store.project_id AND project.workspace_uuid=store.workspace_uuid AND ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_STORE_NODE_TYPE_ALTERNATE_C =
             "project.group_workspace_key=store.group_workspace_key AND project.node_type='PROJECT' AND ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_ORGANIZATION_NODE_PROJECT_STATUS_ENABLED_REGION_ALTERNATE_A =
-                    "project.status='ENABLED' JOIN organization.organization_node region ON ";
+    public static final String ORG_NODE_PROJECT_STATUS_ENABLED_ALT_A_018 =
+            "project.status='ENABLED' JOIN organization.organization_node region ON ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_REGION_PROJECT_PARENT_ID = "region.id=project.parent_id ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_CONDITION_REGION_WORKSPACE_UUID_PROJECT_GROUP_WORKSPACE_KEY =
-                    "AND region.workspace_uuid=project.workspace_uuid AND region.group_workspace_key=";
+    public static final String CONDITION_REGION_WS_UUID_PROJECT_019 =
+            "AND region.workspace_uuid=project.workspace_uuid AND region.group_workspace_key=";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_REGION_NODE_TYPE =
             "project.group_workspace_key AND region.node_type='REGION' AND region.status='ENABLED' WHERE ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_GROUP_ROOT_GROUP_WORKSPACE_KEY_STORE_WORKSPACE_UUID =
@@ -437,9 +419,9 @@ public final class OrganizationTaskPathServiceSql {
             "SELECT id, project_id, code, name FROM organization.store WHERE workspace_uuid=? AND ";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_A = "group_workspace_key=?";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_CONDITION_AND_ID_IN = " AND id IN (";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_SELECT_HEAD_COMPANY_CODE_NAME_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "SELECT id, code, name FROM organization.head_company WHERE workspace_uuid=? AND group_workspace_key=?";
+    public static final String SELECT_HEAD_COMPANY_CODE_NAME_020 =
+            ("SELECT id, code, name FROM organization.head_company WHERE workspace_uui"
+                    + "d=? AND group_workspace_key=?");
     public static final String ORGANIZATION_TASK_PATH_SERVICE_CONDITION_AND_ID_IN_ALTERNATE_A = " AND id IN (";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_CTE_ANCESTRY = "WITH RECURSIVE ancestry AS (";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_SELECT_NODE_TARGET_ID_PARENT_ID_NODE_TYPE =
@@ -479,19 +461,17 @@ public final class OrganizationTaskPathServiceSql {
     public static final String ORGANIZATION_TASK_PATH_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED =
             " WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND id IN (";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_CONDITION_STATUS_ENABLED = " AND status='ENABLED'";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_NODE_TYPE_CODE_NAME_ALTERNATE_B =
-                    "SELECT id, parent_id, node_type, code, name FROM organization.organization_node WHERE id=? AND ";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_C =
-                    "workspace_uuid=? AND group_workspace_key=? AND status='ENABLED'";
+    public static final String SELECT_ORG_NODE_PARENT_ID_ALT_B_021 =
+            "SELECT id, parent_id, node_type, code, name FROM organization.organization_node WHERE id=? AND ";
+    public static final String WS_UUID_GRP_WS_KEY_ALT_C_022 =
+            "workspace_uuid=? AND group_workspace_key=? AND status='ENABLED'";
     public static final String ORGANIZATION_TASK_PATH_SERVICE_SELECT_ORGANIZATION_CODE_NAME =
             "SELECT id, code, name FROM organization.";
-    public static final String
-            ORGANIZATION_TASK_PATH_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_A =
-                    " WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND status='ENABLED'";
+    public static final String WHERE_WS_UUID_GRP_WS_ALT_A_023 =
+            " WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND status='ENABLED'";
     public static final String STORE_FACT_SELECT_SUFFIX =
-            ") SELECT store_id, project_id, store_code, store_name, region_id, project_code, project_name, region_code, region_name, group_id FROM store_fact";
+            (") SELECT store_id, project_id, store_code, store_name, region_id, projec"
+                    + "t_code, project_name, region_code, region_name, group_id FROM store_fact");
     public static final String STORE_MEMBERSHIP_SCOPE_SUFFIX =
             ") AND store.workspace_uuid=? AND store.group_workspace_key=?";
     public static final String ENABLED_STATUS_FILTER_PREFIX = " AND ";

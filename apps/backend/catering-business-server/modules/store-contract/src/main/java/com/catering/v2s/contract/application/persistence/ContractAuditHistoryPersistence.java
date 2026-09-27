@@ -98,8 +98,7 @@ public class ContractAuditHistoryPersistence {
         AuditHistoryResultSetReader.AuthorizedProjection value = ReadBudgetComponent.measure(
                 ReadBudgetComponent.Component.PRIMARY_QUERY,
                 () -> jdbc.query(
-                        ContractAuditHistoryServiceSql
-                                .CONTRACT_AUDIT_HISTORY_SERVICE_CTE_LATERAL_STORE_ID_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_FOUND,
+                        ContractAuditHistoryServiceSql.CTE_LATERAL_STORE_ID_WS_001,
                         statement -> {
                             statement.setObject(1, contractId);
                             statement.setObject(2, scope.workspaceUuid());

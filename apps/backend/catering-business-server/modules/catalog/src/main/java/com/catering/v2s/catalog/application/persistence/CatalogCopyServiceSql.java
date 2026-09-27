@@ -79,9 +79,8 @@ public final class CatalogCopyServiceSql {
     public static final String CATALOG_COPY_SERVICE_WHERE_PRODUCT_SKU_REF = " WHERE product_sku_ref=?";
     public static final String CATALOG_COPY_SERVICE_INSERT_INTO_UNIT_DEFINITION_UNIT_REF_DATA_NODE_REF_BRAND_REF_CODE =
             "INSERT INTO catalog.unit_definition(unit_ref,data_node_ref,brand_ref,code,name,dimension,precision";
-    public static final String
-            CATALOG_COPY_SERVICE_VALUE_SEPARATOR_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS =
-                    ",status,version,created_at_epoch_millis,updated_at_epoch_millis) ";
+    public static final String VAL_SEP_STATUS_VER_CREATED_001 =
+            ",status,version,created_at_epoch_millis,updated_at_epoch_millis) ";
     public static final String CATALOG_COPY_SERVICE_VALUES_DATA_NODE_REF_BRAND_REF_CODE =
             "VALUES(?,?,?,?,?,?,?, ?,1,?,?) ON CONFLICT(data_node_ref,brand_ref,code) ";
     public static final String CATALOG_COPY_SERVICE_WHERE_STATUS_VOIDED_ALTERNATE_A =
@@ -107,9 +106,8 @@ public final class CatalogCopyServiceSql {
             "AND owner_item.item_ref <> target_sku.item_ref ORDER BY ";
     public static final String CATALOG_COPY_SERVICE_COMPONENT_PRODUCT_SKU_REF_OWNER_ITEM_CODE =
             "component.product_sku_ref,owner_item.code,component.composite_component_ref";
-    public static final String
-            CATALOG_COPY_SERVICE_SELECT_CATALOG_CATEGORY_CATEGORY_REF_PARENT_CATEGORY_REF_DATA_NODE_REF =
-                    "SELECT category_ref,parent_category_ref FROM catalog.catalog_category WHERE data_node_ref=? ";
+    public static final String SELECT_CAT_CATG_REF_PARENT_002 =
+            "SELECT category_ref,parent_category_ref FROM catalog.catalog_category WHERE data_node_ref=? ";
     public static final String CATALOG_COPY_SERVICE_CONDITION_BRAND_REF_STATUS_VOIDED =
             "AND brand_ref=? AND status <> 'VOIDED' FOR UPDATE";
     public static final String CATALOG_COPY_SERVICE_SELECT_CATALOG_ITEM_ITEM_REF_CODE_DATA_NODE_REF_BRAND_REF =
@@ -250,48 +248,47 @@ public final class CatalogCopyServiceSql {
     public static final String CATALOG_COPY_SERVICE_CLOSE_PAREN_CODE_UNIT_REF_ALTERNATE_A = ") ORDER BY code,unit_ref";
     public static final String DICTIONARY_KEY_PREDICATE = "(dictionary_kind=? AND code=?)";
     public static final String SQL_OR_JOINER = " OR ";
-    public static final String
-            CATALOG_COPY_SERVICE_STATUS_DISPLAY_ORDER_VERSION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_DISPLAY_ORDER_VERSION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS =
-                    """
+    public static final String STATUS_DISP_ORD_VER_CREATED_003 =
+            """
     status,display_order,version,created_at_epoch_millis,updated_at_epoch_millis)\s""";
-    public static final String
-            CATALOG_COPY_SERVICE_ENTRY_REF_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE_NAME_STATUS_PARENT_ENTRY_REF_CODE_NAME_STATUS_PARENT_ENTRY_REF =
-                    """
+    public static final String ENTRY_REF_DATA_NODE_REF_004 =
+            """
     (entry_ref,data_node_ref,brand_ref,dictionary_kind,code,name,status,parent_entry_ref""";
-    public static final String
-            CATALOG_COPY_SERVICE_UPDATE_CATALOG_CATALOG_ITEM_SET_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION =
-                    """
-    UPDATE catalog.catalog_item SET sales_unit_ref=?,sales_unit_code=?,sales_unit_name=?,sales_unit_dimension=?,sales_unit_precision=?,""";
-    public static final String
-            CATALOG_COPY_SERVICE_BASE_MEASURE_UNIT_REF_BASE_MEASURE_UNIT_CODE_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_WHERE_BASE_MEASURE_UNIT_PRECISION_WHERE_ITEM_REF =
-                    """
-    base_measure_unit_ref=?,base_measure_unit_code=?,base_measure_unit_name=?,base_measure_unit_dimension=?,base_measure_unit_precision=? WHERE item_ref=?""";
-    public static final String
-            CATALOG_COPY_SERVICE_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION =
-                    """
+    public static final String UPDATE_CAT_ITEM_SET_SALES_005 =
+            """
+    UPDATE catalog.catalog_item SET sales_unit_ref=?,sales_unit_code=?\
+    ,sales_unit_name=?,sales_unit_dimension=?,sales_unit_precision=?,""";
+    public static final String BASE_MEAS_UNIT_REF_BASE_006 =
+            """
+    base_measure_unit_ref=?,base_measure_unit_code=?,base_measure_unit\
+    _name=?,base_measure_unit_dimension=?,base_measure_unit_precision=\
+    ? WHERE item_ref=?""";
+    public static final String SALES_UNIT_REF_SALES_UNIT_007 =
+            """
     \ssales_unit_ref=?,sales_unit_code=?,sales_unit_name=?,sales_unit_dimension=?,sales_unit_precision=?,""";
-    public static final String
-            CATALOG_COPY_SERVICE_SELECT_ITEM_REF_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION =
-                    """
+    public static final String SELECT_ITEM_REF_SALES_UNIT_008 =
+            """
     SELECT item_ref,sales_unit_ref,sales_unit_code,sales_unit_name,sales_unit_dimension,sales_unit_precision,""";
-    public static final String
-            CATALOG_COPY_SERVICE_BASE_MEASURE_UNIT_REF_BASE_MEASURE_UNIT_CODE_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION =
-                    """
-    base_measure_unit_ref,base_measure_unit_code,base_measure_unit_name,base_measure_unit_dimension,base_measure_unit_precision\s""";
-    public static final String
-            CATALOG_COPY_SERVICE_ENTRY_REF_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE_NAME_STATUS_PARENT_ENTRY_REF_DISPLAY_ORDER_VERSION_AND_BRAND_REF_AND_STATUS =
-                    """
-    entry_ref,data_node_ref,brand_ref,dictionary_kind,code,name,status,parent_entry_ref,display_order,version FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND status <>\s""";
-    public static final String
-            CATALOG_COPY_SERVICE_PARENT_ENTRY_REF_PARENT_DATA_NODE_REF_PARENT_BRAND_REF_PARENT_DICTIONARY_KIND_PARENT_CODE_PARENT_DISPLAY_ORDER_PARENT_VERSION =
-                    """
-    parent.entry_ref,parent.data_node_ref,parent.brand_ref,parent.dictionary_kind,parent.code,parent.name,parent.status,parent.parent_entry_ref,parent.display_order,parent.version\s""";
-    public static final String
-            CATALOG_COPY_SERVICE_CATEGORY_CATEGORY_REF_CATEGORY_CODE_CATEGORY_NAME_CATEGORY_PARENT_CODE_CATEGORY_PARENT_CATEGORY_REF_VERSION_CATEGORY_DISPLAY_ORDER_FROM =
-                    """
-    category.category_ref,category.code,category.name,category.parent_code,category.parent_category_ref,category.status,category.version,category.display_order FROM\s""";
-    public static final String
-            CATALOG_COPY_SERVICE_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB_VALUES_CAST_AS_JSONB =
-                    """
+    public static final String BASE_MEAS_UNIT_REF_BASE_009 =
+            """
+    base_measure_unit_ref,base_measure_unit_code,base_measure_unit_nam\
+    e,base_measure_unit_dimension,base_measure_unit_precision\s""";
+    public static final String ENTRY_REF_DATA_NODE_REF_010 =
+            """
+    entry_ref,data_node_ref,brand_ref,dictionary_kind,code,name,status\
+    ,parent_entry_ref,display_order,version FROM catalog.dictionary_en\
+    try WHERE data_node_ref=? AND brand_ref=? AND status <>\s""";
+    public static final String PARENT_ENTRY_REF_PARENT_DATA_011 =
+            """
+    parent.entry_ref,parent.data_node_ref,parent.brand_ref,parent.dict\
+    ionary_kind,parent.code,parent.name,parent.status,parent.parent_en\
+    try_ref,parent.display_order,parent.version\s""";
+    public static final String CATG_REF_CATG_CODE_CATG_012 =
+            """
+    category.category_ref,category.code,category.name,category.parent_\
+    code,category.parent_category_ref,category.status,category.version\
+    ,category.display_order FROM\s""";
+    public static final String RESP_CREATED_AT_EPOCH_MS_013 =
+            """
     response_json,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)""";
 }

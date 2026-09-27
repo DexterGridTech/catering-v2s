@@ -28,7 +28,10 @@ class OrganizationAuditEventWriterTest {
                 AuditActor.system(),
                 "UPDATED",
                 10L,
-                List.of(new AuditChange("name", "名称", AuditValueState.VALUE, "旧", AuditValueState.VALUE, "新"))));
+                // spotless:off
+                List.of(new AuditChange("name", "名称", AuditValueState.VALUE, "旧", AuditValueState.VALUE,
+                    "新"))));
+                // spotless:on
 
         assertTrue(jdbc.sql.startsWith("INSERT INTO organization.audit_event"));
         assertEquals(eventId, jdbc.arguments[0]);
@@ -40,7 +43,9 @@ class OrganizationAuditEventWriterTest {
         assertEquals("UPDATED", jdbc.arguments[8]);
         assertEquals(10L, jdbc.arguments[9]);
         assertEquals(
-                "[{\"fieldKey\":\"name\",\"fieldLabelSnapshot\":\"名称\",\"beforeState\":\"VALUE\",\"beforeValue\":\"旧\",\"afterState\":\"VALUE\",\"afterValue\":\"新\"}]",
+                ("[{\"fieldKey\":\"name\",\"fieldLabelSnapshot\":\"名称\",\"beforeState"
+                        + "\":\"VALUE\",\"beforeValue\":\"旧\",\"afterState\":\"VALUE\",\"afterVal"
+                        + "ue\":\"新\"}]"),
                 jdbc.arguments[10]);
     }
 

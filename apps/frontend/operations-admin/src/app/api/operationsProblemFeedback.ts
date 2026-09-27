@@ -155,6 +155,8 @@ export const OPERATIONS_PROBLEM_FEEDBACK: Record<OperationsProblemCode, ProblemF
     detail: '当前终端状态不支持此操作，请刷新终端详情后重试。',
   },
   STORE_TERMINAL_VOIDED_IMMUTABLE: {title: '终端已作废', detail: '已作废终端不能继续编辑或变更状态。'},
+  TERMINAL_BINDING_CHANGED: {title: '终端绑定已变化', detail: '请重新读取后再操作。'},
+  TERMINAL_BINDING_NOT_ACTIVE: {title: '终端当前未激活', detail: '请刷新终端详情后再操作。'},
   VERSION_CONFLICT: {title: '资料已被更新', detail: '请查看最新资料后再试。'},
   VOIDED_RECORD_IMMUTABLE: {title: '对象已作废', detail: '该对象已作废，不能继续修改。'},
   WORKSPACE_IAM_ACCOUNT_DISABLED: {title: '账号已停用', detail: '当前账号无法继续操作，请联系管理员。'},

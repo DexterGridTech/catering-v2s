@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":apps:backend:catering-business-server:modules:extension"))
     implementation(project(":apps:backend:catering-business-server:modules:store-contract"))
     implementation(project(":apps:backend:catering-business-server:modules:store-terminal"))
+    implementation(project(":apps:backend:catering-business-server:modules:terminal-binding"))
     implementation("org.springframework.boot:spring-boot-starter-jdbc:4.1.0")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("org.mockito:mockito-core:5.17.0")

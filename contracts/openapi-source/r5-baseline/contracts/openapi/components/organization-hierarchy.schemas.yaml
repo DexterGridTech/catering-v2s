@@ -1,0 +1,175 @@
+openapi: 3.0.3
+info: {title: Organization hierarchy components, version: 0.1.0}
+paths: {}
+components:
+  schemas:
+    OrganizationNodeType:
+      type: string
+      enum: [GROUP, REGION, PROJECT]
+    OrganizationNodeStatus:
+      type: string
+      enum: [ENABLED, DISABLED]
+    OrganizationProjectPhase:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+    OrganizationNode:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceKey, nodeType, parentId, code, name, status, phases, revision, createdAt, updatedAt]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        nodeType: {$ref: '#/components/schemas/OrganizationNodeType'}
+        parentId: {type: string, nullable: true, maxLength: 64}
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        notes: {type: string, nullable: true, maxLength: 2000}
+        status: {$ref: '#/components/schemas/OrganizationNodeStatus'}
+        phases:
+          type: array
+          items: {$ref: '#/components/schemas/OrganizationProjectPhase'}
+        revision: {type: integer, format: int64, minimum: 0}
+        createdAt: {type: integer, format: int64}
+        updatedAt: {type: integer, format: int64}
+    OrganizationHierarchySnapshot:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, commercialGroup, items]
+      properties:
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        commercialGroup: {$ref: './commercial-group.schemas.yaml#/components/schemas/CommercialGroupRoot'}
+        items:
+          type: array
+          description: Authorized REGION and PROJECT nodes only; the group is represented exactly once by commercialGroup.
+          items: {$ref: '#/components/schemas/OrganizationNode'}
+    OrganizationDataNode:
+      type: object
+      additionalProperties: false
+      required: [dataNodeType, dataNodeRef, dataNodeName, regionRef, projectRef, storeRef]
+      properties:
+        dataNodeType: {type: string, enum: [REGION, PROJECT, STORE]}
+        dataNodeRef: {type: string, minLength: 1, maxLength: 64}
+        dataNodeName: {type: string, minLength: 1, maxLength: 120}
+        regionRef: {type: string, nullable: true, maxLength: 64}
+        projectRef: {type: string, nullable: true, maxLength: 64}
+        storeRef: {type: string, nullable: true, maxLength: 64}
+    OrganizationDataNodeSnapshot:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, items]
+      properties:
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        items:
+          type: array
+          description: Full enabled REGION, PROJECT and STORE facts for trusted session-context range validation; this is not the organization tree endpoint.
+          items: {$ref: '#/components/schemas/OrganizationDataNode'}
+    OrganizationInvitationTarget:
+      type: object
+      additionalProperties: false
+      required: [organizationType, organizationRef, path, regionRef, projectRef, storeRef]
+      properties:
+        organizationType: {type: string, enum: [GROUP, REGION, PROJECT, STORE]}
+        organizationRef: {type: string, minLength: 1, maxLength: 64}
+        path: {type: string, minLength: 1, maxLength: 240}
+        regionRef: {type: string, nullable: true, maxLength: 64}
+        projectRef: {type: string, nullable: true, maxLength: 64}
+        storeRef: {type: string, nullable: true, maxLength: 64}
+    OrganizationInvitationTargetPage:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, items]
+      properties:
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        items: {type: array, items: {$ref: '#/components/schemas/OrganizationInvitationTarget'}}
+    OrganizationNodeCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name]
+      properties:
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        notes: {type: string, nullable: true, maxLength: 2000}
+    OrganizationProjectCreateRequest:
+      allOf:
+        - {$ref: '#/components/schemas/OrganizationNodeCreateRequest'}
+        - type: object
+          properties:
+            phases: {type: array, items: {$ref: '#/components/schemas/OrganizationProjectPhase'}}
+    OrganizationNodeUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name, parentId, phases, expectedRevision]
+      properties:
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        parentId: {type: string, nullable: true, maxLength: 64}
+        phases: {type: array, items: {$ref: '#/components/schemas/OrganizationProjectPhase'}}
+        notes: {type: string, nullable: true, maxLength: 2000}
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+    OrganizationNodeStatusTransitionRequest:
+      type: object
+      additionalProperties: false
+      required: [targetStatus, expectedRevision]
+      properties:
+        targetStatus: {$ref: '#/components/schemas/OrganizationNodeStatus'}
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+    OrganizationHierarchyCommandEnvelope:
+      type: object
+      additionalProperties: false
+      required: [audience, operation, pageDesignKey, expectedContextVersion, accountId, roleNodeType, roleNodeRef, actionKeys, issuedAt, expiresAt, payloadDigest, signature]
+      properties:
+        audience: {type: string, enum: [organization-hierarchy]}
+        operation: {type: string, enum: [READ, CREATE_REGION, CREATE_PROJECT, UPDATE_NODE, TRANSITION_STATUS]}
+        pageDesignKey: {type: string, enum: [PG-ORG-STRUCTURE]}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+        accountId: {type: string, minLength: 1, maxLength: 64}
+        roleNodeType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        roleNodeRef: {type: string, minLength: 1, maxLength: 64}
+        capabilityKey: {type: string, minLength: 1, maxLength: 120}
+        actionKeys:
+          type: array
+          minItems: 0
+          maxItems: 34
+          uniqueItems: true
+          items: {type: string, minLength: 1, maxLength: 120}
+        issuedAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        expiresAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        payloadDigest: {type: string, pattern: '^[a-f0-9]{64}$'}
+        signature: {type: string, pattern: '^[a-f0-9]{64}$'}
+    OrganizationHierarchyReadCommand:
+      type: object
+      additionalProperties: false
+      required: [envelope]
+      properties:
+        envelope: {$ref: '#/components/schemas/OrganizationHierarchyCommandEnvelope'}
+    OrganizationHierarchyCreateRegionCommand:
+      type: object
+      additionalProperties: false
+      required: [request, envelope]
+      properties:
+        request: {$ref: '#/components/schemas/OrganizationNodeCreateRequest'}
+        envelope: {$ref: '#/components/schemas/OrganizationHierarchyCommandEnvelope'}
+    OrganizationHierarchyCreateProjectCommand:
+      type: object
+      additionalProperties: false
+      required: [request, envelope]
+      properties:
+        request: {$ref: '#/components/schemas/OrganizationProjectCreateRequest'}
+        envelope: {$ref: '#/components/schemas/OrganizationHierarchyCommandEnvelope'}
+    OrganizationHierarchyUpdateNodeCommand:
+      type: object
+      additionalProperties: false
+      required: [request, envelope]
+      properties:
+        request: {$ref: '#/components/schemas/OrganizationNodeUpdateRequest'}
+        envelope: {$ref: '#/components/schemas/OrganizationHierarchyCommandEnvelope'}
+    OrganizationHierarchyTransitionStatusCommand:
+      type: object
+      additionalProperties: false
+      required: [request, envelope]
+      properties:
+        request: {$ref: '#/components/schemas/OrganizationNodeStatusTransitionRequest'}
+        envelope: {$ref: '#/components/schemas/OrganizationHierarchyCommandEnvelope'}

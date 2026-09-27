@@ -17,8 +17,7 @@ public class WorkspaceLoginRateLimitPersistence {
 
     public void clearAccount(String key, String accountFingerprint) {
         jdbc.update(
-                WorkspaceLoginRateLimitServiceSql
-                                .WORKSPACE_LOGIN_RATE_LIMIT_SERVICE_DELETE_WORKSPACE_LOGIN_RATE_LIMIT_BUCKET_GROUP_WORKSPACE_KEY
+                WorkspaceLoginRateLimitServiceSql.DELETE_WS_LOGIN_RATE_LIMIT_001
                         + WorkspaceLoginRateLimitServiceSql
                                 .WORKSPACE_LOGIN_RATE_LIMIT_SERVICE_DIMENSION_ACCOUNT_FINGERPRINT,
                 key,
@@ -45,8 +44,7 @@ public class WorkspaceLoginRateLimitPersistence {
 
     public BucketRow bucket(String key, String dimension, String fingerprint) {
         return jdbc.query(
-                WorkspaceLoginRateLimitServiceSql
-                                .WORKSPACE_LOGIN_RATE_LIMIT_SERVICE_SELECT_WINDOW_STARTED_AT_EPOCH_MILLIS_FAILED_ATTEMPTS
+                WorkspaceLoginRateLimitServiceSql.SELECT_WINDOW_STARTED_AT_EPOCH_002
                         + WorkspaceLoginRateLimitServiceSql
                                 .WORKSPACE_LOGIN_RATE_LIMIT_SERVICE_WORKSPACE_LOGIN_RATE_LIMIT_BUCKET
                         + WorkspaceLoginRateLimitServiceSql.WORKSPACE_LOGIN_RATE_LIMIT_SERVICE_CONDITION

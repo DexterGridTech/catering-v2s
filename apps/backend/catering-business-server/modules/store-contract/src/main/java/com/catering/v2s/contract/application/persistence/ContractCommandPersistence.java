@@ -42,8 +42,7 @@ public class ContractCommandPersistence {
             long createdAtEpochMillis,
             long updatedAtEpochMillis) {
         return jdbc.update(
-                ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_INSERT_INTO_STORE_CONTRACT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CONTRACT_NO
+                ContractCommandServiceSql.INSERT_INTO_STORE_CONTRACT_WS_001
                         + ContractCommandServiceSql
                                 .CONTRACT_COMMAND_SERVICE_STORE_ID_TENANT_ID_EFFECTIVE_FROM_EFFECTIVE_TO
                         + ContractCommandServiceSql
@@ -81,8 +80,7 @@ public class ContractCommandPersistence {
             String key,
             long expectedVersion) {
         return jdbc.update(
-                ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_UPDATE_STORE_CONTRACT_EFFECTIVE_FROM_EFFECTIVE_TO_PHASE_NAME_SNAPSHOT
+                ContractCommandServiceSql.UPDATE_STORE_CONTRACT_EFFECTIVE_FROM_002
                         + ContractCommandServiceSql
                                 .CONTRACT_COMMAND_SERVICE_NOTES_ITEMS_JSON_VERSION_UPDATED_AT_EPOCH_MILLIS
                         + ContractCommandServiceSql
@@ -115,13 +113,11 @@ public class ContractCommandPersistence {
             long createdAtEpochMillis,
             long updatedAtEpochMillis) {
         return jdbc.update(
-                ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_INSERT_INTO_STORE_CONTRACT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CONTRACT_NO_ALTERNATE_A
+                ContractCommandServiceSql.INSERT_INTO_STORE_CONTRACT_WS_ALT_A_003
                         + ContractCommandServiceSql
                                 .CONTRACT_COMMAND_SERVICE_STORE_ID_TENANT_ID_EFFECTIVE_FROM_EFFECTIVE_TO_ALTERNATE_A
                         + ContractCommandServiceSql.CONTRACT_COMMAND_SERVICE_ITEMS_JSON
-                        + ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_ALTERNATE_A
+                        + ContractCommandServiceSql.STATUS_VER_CREATED_AT_EPOCH_ALT_A_004
                         + ContractCommandServiceSql.CONTRACT_COMMAND_SERVICE_PARAMETER_PLACEHOLDER_ALTERNATE_A
                         + ContractCommandServiceSql.CONTRACT_COMMAND_SERVICE_PARAMETER_PLACEHOLDER_ACTIVE_ALTERNATE_A,
                 id,
@@ -151,12 +147,10 @@ public class ContractCommandPersistence {
             String key,
             long expectedVersion) {
         return jdbc.update(
-                ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_UPDATE_STORE_CONTRACT_EFFECTIVE_FROM_EFFECTIVE_TO_PHASE_NAME_SNAPSHOT_ALTERNATE_A
+                ContractCommandServiceSql.UPDATE_STORE_CONTRACT_EFFECTIVE_FROM_ALT_A_005
                         + ContractCommandServiceSql
                                 .CONTRACT_COMMAND_SERVICE_NOTES_ITEMS_JSON_VERSION_UPDATED_AT_EPOCH_MILLIS_ALTERNATE_A
-                        + ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ACTIVE_ALTERNATE_A
+                        + ContractCommandServiceSql.WHERE_WS_UUID_GRP_WS_ALT_A_006
                         + ContractCommandServiceSql.CONTRACT_COMMAND_SERVICE_VERSION_ALTERNATE_A,
                 effectiveFrom,
                 effectiveTo,
@@ -178,8 +172,7 @@ public class ContractCommandPersistence {
             String key,
             long expectedVersion) {
         return jdbc.update(
-                ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_UPDATE_STORE_CONTRACT_STATUS_INVALID_INVALIDATED_AT_EPOCH_MILLIS
+                ContractCommandServiceSql.UPDATE_STORE_CONTRACT_STATUS_INVALID_007
                         + ContractCommandServiceSql
                                 .CONTRACT_COMMAND_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID
                         + ContractCommandServiceSql.CONTRACT_COMMAND_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ACTIVE_VERSION,
@@ -212,8 +205,7 @@ public class ContractCommandPersistence {
 
     public ContractState requireState(UUID workspaceUuid, String key, UUID contractId) {
         return jdbc.query(
-                ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CONTRACT_NO_STORE_ID_ALTERNATE_A
+                ContractCommandServiceSql.SELECT_WS_UUID_GRP_WS_ALT_A_008
                         + ContractCommandServiceSql
                                 .CONTRACT_COMMAND_SERVICE_EFFECTIVE_TO_PHASE_NAME_SNAPSHOT_NOTES_STATUS_ALTERNATE_A
                         + ContractCommandServiceSql
@@ -232,8 +224,7 @@ public class ContractCommandPersistence {
 
     public List<StoreContractReadback> list(UUID workspaceUuid, String key) {
         return jdbc.query(
-                ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CONTRACT_NO_STORE_ID_ALTERNATE_B
+                ContractCommandServiceSql.SELECT_WS_UUID_GRP_WS_ALT_B_009
                         + ContractCommandServiceSql
                                 .CONTRACT_COMMAND_SERVICE_EFFECTIVE_TO_PHASE_NAME_SNAPSHOT_NOTES_STATUS_ALTERNATE_B
                         + ContractCommandServiceSql
@@ -266,8 +257,7 @@ public class ContractCommandPersistence {
 
     public int updateExtensionValues(UUID contractId, String valuesJson, long extensionRuleRevision) {
         return jdbc.update(
-                ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_UPDATE_STORE_CONTRACT_EXTENSION_VALUES_EXTENSION_RULE_REVISION_ALTERNATE_A
+                ContractCommandServiceSql.UPDATE_STORE_CONTRACT_EXTENSION_VALUES_ALT_A_010
                         + ContractCommandServiceSql.CONTRACT_COMMAND_SERVICE_ID,
                 valuesJson,
                 extensionRuleRevision,
@@ -287,8 +277,7 @@ public class ContractCommandPersistence {
 
     public int clearSubmittedExtensionValues(UUID contractId, String currentJson) {
         return jdbc.update(
-                ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_UPDATE_STORE_CONTRACT_EXTENSION_VALUES_EXTENSION_RULE_REVISION_ALTERNATE_B
+                ContractCommandServiceSql.UPDATE_STORE_CONTRACT_EXTENSION_VALUES_ALT_B_011
                         + ContractCommandServiceSql.CONTRACT_COMMAND_SERVICE_WHERE_WHERE_ID_ALTERNATE_A,
                 currentJson,
                 0L,
@@ -297,8 +286,7 @@ public class ContractCommandPersistence {
 
     public int updateSubmittedExtensionValues(UUID contractId, String valuesJson, long extensionRuleRevision) {
         return jdbc.update(
-                ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_UPDATE_STORE_CONTRACT_EXTENSION_VALUES_EXTENSION_RULE_REVISION_ALTERNATE_C
+                ContractCommandServiceSql.UPDATE_STORE_CONTRACT_EXTENSION_VALUES_ALT_C_012
                         + ContractCommandServiceSql.CONTRACT_COMMAND_SERVICE_ID_ALTERNATE_A,
                 valuesJson,
                 extensionRuleRevision,
@@ -317,8 +305,7 @@ public class ContractCommandPersistence {
             long occurredAtEpochMillis,
             String changesJson) {
         return jdbc.update(
-                ContractCommandServiceSql
-                                .CONTRACT_COMMAND_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
+                ContractCommandServiceSql.INSERT_INTO_AUDIT_EVENT_WS_013
                         + ContractCommandServiceSql
                                 .CONTRACT_COMMAND_SERVICE_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
                         + ContractCommandServiceSql

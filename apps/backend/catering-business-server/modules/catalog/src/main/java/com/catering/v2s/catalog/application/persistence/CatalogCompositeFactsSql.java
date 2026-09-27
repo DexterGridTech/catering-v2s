@@ -14,9 +14,8 @@ public final class CatalogCompositeFactsSql {
     public static final String CATALOG_COMPOSITE_FACTS_CATALOG_ITEM_COMPONENT_COMPOSITE_GROUP_REF_GROUP_ROW =
             "component.composite_group_ref=group_row.composite_group_ref LEFT JOIN catalog.catalog_item ";
     public static final String CATALOG_COMPOSITE_FACTS_ITEM = "item ";
-    public static final String
-            CATALOG_COMPOSITE_FACTS_JOIN_CONDITION_CATALOG_SKU_ITEM_ITEM_REF_COMPONENT_COMPONENT_ITEM_REF =
-                    "ON item.item_ref=component.component_item_ref LEFT JOIN catalog.catalog_sku sku ON ";
+    public static final String JOIN_CONDITION_CAT_SKU_ITEM_001 =
+            "ON item.item_ref=component.component_item_ref LEFT JOIN catalog.catalog_sku sku ON ";
     public static final String CATALOG_COMPOSITE_FACTS_SKU_ITEM_REF_COMPONENT_COMPONENT_ITEM_REF =
             "sku.item_ref=component.component_item_ref AND sku.product_sku_ref=component.product_sku_ref ";
     public static final String CATALOG_COMPOSITE_FACTS_WHERE_GROUP_ROW_ITEM_REF = "WHERE group_row.item_ref IN (";
@@ -24,8 +23,7 @@ public final class CatalogCompositeFactsSql {
             "UPDATE catalog.catalog_composite_group SET display_order=display_order+1000000 WHERE item_ref=?";
     public static final String CATALOG_COMPOSITE_FACTS_INSERT_INTO = "INSERT INTO ";
 
-    public static final String CATALOG_COMPOSITE_FACTS_UPDATE_CATALOG_COMPOSITE_GROUP_UPDATE_CATALOG_CATALOG_COMPO =
-            "UPDATE catalog.catalog_composite_group SET ";
+    public static final String UPDATE_CAT_COMP_GRP_UPDATE_002 = "UPDATE catalog.catalog_composite_group SET ";
     public static final String CATALOG_COMPOSITE_FACTS_GROUP_NAME_SELECTION_RULE_MIN_SELECTIONS_MAX_SELECTIONS =
             "group_name=?,selection_rule=?,min_selections=?,max_selections=?,display_order=? ";
     public static final String CATALOG_COMPOSITE_FACTS_WHERE = "WHERE ";
@@ -48,8 +46,7 @@ public final class CatalogCompositeFactsSql {
 
     public static final String CATALOG_COMPOSITE_FACTS_CLOSE_PAREN = ") ";
     public static final String CATALOG_COMPOSITE_FACTS_VALUES_ALTERNATE_A = "VALUES(?,?,?,?,?,?,?,?,?,?)";
-    public static final String CATALOG_COMPOSITE_FACTS_UPDATE_CATALOG_COMPOSITE_COMPONENT_UPDATE_CATALOG_CATALOG_COMPO =
-            "UPDATE catalog.catalog_composite_component SET ";
+    public static final String UPDATE_CAT_COMP_COMPNT_UPDATE_003 = "UPDATE catalog.catalog_composite_component SET ";
     public static final String CATALOG_COMPOSITE_FACTS_COMPONENT_ITEM_REF_PRODUCT_SKU_REF_QUANTITY_UNIT =
             "component_item_ref=?,product_sku_ref=?,quantity=?,unit=?,is_default=?,extra_price=?,";
 
@@ -66,40 +63,47 @@ public final class CatalogCompositeFactsSql {
 
     public static final String CATALOG_COMPOSITE_FACTS_CATALOG_COMPOSITE_COMPONENT_ALTERNATE_B =
             "status,display_order FROM catalog.catalog_composite_component WHERE composite_group_ref=?";
-    public static final String
-            CATALOG_COMPOSITE_FACTS_GROUP_ROW_ITEM_REF_GROUP_ROW_COMPOSITE_GROUP_REF_GROUP_ROW_GROUP_CODE_GROUP_ROW_GROUP_NAME_GROUP_ROW_SELECTION_RULE_COMPONENT_ITEM_REF_COMPONENT_PRODUCT_SKU_REF_COMPONENT =
-                    """
-    group_row.item_ref,group_row.composite_group_ref,group_row.group_code,group_row.group_name,group_row.selection_rule,group_row.min_selections,group_row.max_selections,group_row.display_order,component.composite_component_ref,component.component_item_ref,component.product_sku_ref,component""";
-    public static final String
-            CATALOG_COMPOSITE_FACTS_QUANTITY_COMPONENT_UNIT_COMPONENT_IS_DEFAULT_COMPONENT_EXTRA_PRICE_COMPONENT_STATUS_COMPONENT_SKU_SKU_CODE_SKU_SKU_NAME =
-                    """
-    .quantity,component.unit,component.is_default,component.extra_price,component.status,component.display_order,item.code,item.name,sku.sku_code,sku.sku_name\s""";
-    public static final String
-            CATALOG_COMPOSITE_FACTS_CATALOG_CATALOG_COMPOSITE_GROUP_COMPOSITE_GROUP_REF_ITEM_REF_GROUP_CODE_GROUP_NAME_SELECTION_RULE_MIN_SELECTIONS_MAX_SELECTIONS_DISPLAY_ORDER_MIN_SELECTIONS_MAX_SELECTIONS_DISPLAY_ORDER_VALUES =
-                    """
-    catalog.catalog_composite_group(composite_group_ref,item_ref,group_code,group_name,selection_rule,min_selections,max_selections,display_order) VALUES(?,?,?,?,?,?,?,?)""";
-    public static final String
-            CATALOG_COMPOSITE_FACTS_CATALOG_CATALOG_COMPOSITE_GROUP_COMPOSITE_GROUP_REF_ITEM_REF_GROUP_CODE_GROUP_NAME_SELECTION_RULE_MIN_SELECTIONS_MAX_SELECTIONS_DISPLAY_ORDER_MIN_SELECTIONS_MAX_SELECTIONS_DISPLAY_ORDER_VALUES_ALTERNATE_A =
-                    """
-    catalog.catalog_composite_group(composite_group_ref,item_ref,group_code,group_name,selection_rule,min_selections,max_selections,display_order) VALUES(?,?,?,?,?,?,?,?)""";
-    public static final String
-            CATALOG_COMPOSITE_FACTS_CATALOG_CATALOG_COMPOSITE_COMPONENT_COMPOSITE_COMPONENT_REF_COMPOSITE_GROUP_REF_COMPONENT_ITEM_REF_PRODUCT_SKU_REF_QUANTITY_UNIT_IS_DEFAULT_EXTRA_PRICE_IS_DEFAULT_EXTRA_PRICE_STATUS_DISPLAY_ORDER =
-                    """
-    catalog.catalog_composite_component(composite_component_ref,composite_group_ref,component_item_ref,product_sku_ref,quantity,unit,is_default,extra_price,status,display_order)\s""";
-    public static final String
-            CATALOG_COMPOSITE_FACTS_COMPOSITE_GROUP_REF_GROUP_CODE_GROUP_NAME_SELECTION_RULE_MIN_SELECTIONS_MAX_SELECTIONS_DISPLAY_ORDER_FROM_CATALOG_CATALOG_COMPOSITE_GROUP_CATALOG_CATALOG_COMPOSITE_GROUP_WHERE_ITEM_REF =
-                    """
-    composite_group_ref,group_code,group_name,selection_rule,min_selections,max_selections,display_order FROM catalog.catalog_composite_group WHERE item_ref=?""";
-    public static final String
-            CATALOG_COMPOSITE_FACTS_COMPOSITE_COMPONENT_REF_COMPONENT_ITEM_REF_PRODUCT_SKU_REF_QUANTITY_UNIT_IS_DEFAULT_EXTRA_PRICE_QUANTITY_UNIT_IS_DEFAULT_EXTRA_PRICE =
-                    """
+    public static final String GRP_ROW_ITEM_REF_GRP_004 =
+            """
+    group_row.item_ref,group_row.composite_group_ref,group_row.group_c\
+    ode,group_row.group_name,group_row.selection_rule,group_row.min_se\
+    lections,group_row.max_selections,group_row.display_order,componen\
+    t.composite_component_ref,component.component_item_ref,component.p\
+    roduct_sku_ref,component""";
+    public static final String QUANTITY_COMPNT_UNIT_COMPNT_IS_005 =
+            """
+    .quantity,component.unit,component.is_default,component.extra_pric\
+    e,component.status,component.display_order,item.code,item.name,sku\
+    .sku_code,sku.sku_name\s""";
+    public static final String CAT_COMP_GRP_COMP_GRP_006 =
+            """
+    catalog.catalog_composite_group(composite_group_ref,item_ref,group\
+    _code,group_name,selection_rule,min_selections,max_selections,disp\
+    lay_order) VALUES(?,?,?,?,?,?,?,?)""";
+    public static final String CAT_COMP_GRP_COMP_GRP_ALT_A_007 =
+            """
+    catalog.catalog_composite_group(composite_group_ref,item_ref,group\
+    _code,group_name,selection_rule,min_selections,max_selections,disp\
+    lay_order) VALUES(?,?,?,?,?,?,?,?)""";
+    public static final String CAT_COMP_COMPNT_COMP_COMPNT_008 =
+            """
+    catalog.catalog_composite_component(composite_component_ref,compos\
+    ite_group_ref,component_item_ref,product_sku_ref,quantity,unit,is_\
+    default,extra_price,status,display_order)\s""";
+    public static final String COMP_GRP_REF_GRP_CODE_009 =
+            """
+    composite_group_ref,group_code,group_name,selection_rule,min_selec\
+    tions,max_selections,display_order FROM catalog.catalog_composite_\
+    group WHERE item_ref=?""";
+    public static final String COMP_COMPNT_REF_COMPNT_ITEM_010 =
+            """
     composite_component_ref,component_item_ref,product_sku_ref,quantity,unit,is_default,extra_price,""";
-    public static final String
-            CATALOG_COMPOSITE_FACTS_CATALOG_CATALOG_COMPOSITE_COMPONENT_COMPOSITE_COMPONENT_REF_COMPOSITE_GROUP_REF_COMPONENT_ITEM_REF_PRODUCT_SKU_REF_QUANTITY_UNIT_IS_DEFAULT_EXTRA_PRICE_IS_DEFAULT_EXTRA_PRICE_STATUS_DISPLAY_ORDER_ALTERNATE_A =
-                    """
-    catalog.catalog_composite_component(composite_component_ref,composite_group_ref,component_item_ref,product_sku_ref,quantity,unit,is_default,extra_price,status,display_order""";
-    public static final String
-            CATALOG_COMPOSITE_FACTS_STATUS_DISPLAY_ORDER_WHERE_COMPOSITE_COMPONENT_REF_STATUS_DISPLAY_ORDER_WHERE_COMPOSITE_COMPONENT_REF =
-                    """
+    public static final String CAT_COMP_COMPNT_COMP_COMPNT_ALT_A_011 =
+            """
+    catalog.catalog_composite_component(composite_component_ref,compos\
+    ite_group_ref,component_item_ref,product_sku_ref,quantity,unit,is_\
+    default,extra_price,status,display_order""";
+    public static final String STATUS_DISP_ORD_WHERE_COMP_012 =
+            """
     status=?,display_order=? WHERE composite_component_ref=?""";
 }

@@ -24,8 +24,7 @@ public class WorkspaceCommandAuthorizationPersistence {
                                 .WORKSPACE_COMMAND_AUTHORIZATION_SERVICE_JOIN_WORKSPACE_ROLE_ROLE_ASSIGNMENT_ROLE_ID
                         + WorkspaceCommandAuthorizationServiceSql
                                 .WORKSPACE_COMMAND_AUTHORIZATION_SERVICE_WHERE_ASSIGNMENT_WORKSPACE_UUID
-                        + WorkspaceCommandAuthorizationServiceSql
-                                .WORKSPACE_COMMAND_AUTHORIZATION_SERVICE_CONDITION_ASSIGNMENT_GROUP_WORKSPACE_KEY_STATUS_ACTIVE
+                        + WorkspaceCommandAuthorizationServiceSql.CONDITION_ASSIGN_GRP_WS_KEY_001
                         + WorkspaceCommandAuthorizationServiceSql
                                 .WORKSPACE_COMMAND_AUTHORIZATION_SERVICE_CONDITION_ROLE_WORKSPACE_UUID_ASSIGNMENT
                         + WorkspaceCommandAuthorizationServiceSql

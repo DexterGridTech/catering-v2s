@@ -8,9 +8,9 @@ public final class OrganizationAuditHistoryServiceSql {
             "SELECT EXISTS(SELECT 1 FROM organization.";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_WHERE_TEXT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             " WHERE id::text=? AND workspace_uuid=? AND group_workspace_key=?)";
-    public static final String
-            ORGANIZATION_AUDIT_HISTORY_SERVICE_SELECT_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "SELECT count(*) FROM organization.audit_event WHERE workspace_uuid=? AND group_workspace_key=? AND ";
+    public static final String SELECT_AUDIT_EVENT_WS_UUID_001 =
+            ("SELECT count(*) FROM organization.audit_event WHERE workspace_uuid=? AND"
+                    + " group_workspace_key=? AND ");
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_ENTITY_TYPE_ENTITY_REF_TEXT =
             "entity_type=? AND entity_ref_text=?";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_SELECT_OCCURRED_AT_EPOCH_MILLIS =
@@ -52,20 +52,18 @@ public final class OrganizationAuditHistoryServiceSql {
             "commercial_group.commercial_group_uuid::text=? AND workspace.workspace_uuid=? AND ";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY =
             "commercial_group.group_workspace_key=?";
-    public static final String
-            ORGANIZATION_AUDIT_HISTORY_SERVICE_SELECT_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A =
-                    "SELECT count(*) FROM organization.audit_event WHERE workspace_uuid=? AND group_workspace_key=? AND ";
-    public static final String
-            ORGANIZATION_AUDIT_HISTORY_SERVICE_OPEN_PAREN_ENTITY_TYPE_GROUP_WORKSPACE_ENTITY_REF_TEXT =
-                    "((entity_type='GROUP_WORKSPACE' AND entity_ref_text=? AND ";
+    public static final String SELECT_AUDIT_EVENT_WS_UUID_ALT_A_002 =
+            ("SELECT count(*) FROM organization.audit_event WHERE workspace_uuid=? AND"
+                    + " group_workspace_key=? AND ");
+    public static final String OPEN_PAREN_ENTITY_TYPE_GRP_003 =
+            "((entity_type='GROUP_WORKSPACE' AND entity_ref_text=? AND ";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_ACTION =
             "action='COMMERCIAL_GROUP_INITIALIZED') OR (entity_type='COMMERCIAL_GROUP' AND ";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_ENTITY_REF_TEXT = "entity_ref_text=?))";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_SELECT_OCCURRED_AT_EPOCH_MILLIS_ALTERNATE_A =
             "SELECT id, occurred_at_epoch_millis, actor_display_snapshot, action, entity_type, entity_ref_text, ";
-    public static final String
-            ORGANIZATION_AUDIT_HISTORY_SERVICE_AUDIT_EVENT_CHANGES_JSON_TEXT_WORKSPACE_UUID_ALTERNATE_A =
-                    "changes_json::text FROM organization.audit_event WHERE workspace_uuid=? AND ";
+    public static final String AUDIT_EVENT_CHANGES_JSON_TEXT_ALT_A_004 =
+            "changes_json::text FROM organization.audit_event WHERE workspace_uuid=? AND ";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_GROUP_WORKSPACE_KEY =
             "group_workspace_key=? AND ((entity_type='GROUP_WORKSPACE' AND entity_ref_text=? AND ";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_ACTION_ALTERNATE_A =
@@ -85,9 +83,9 @@ public final class OrganizationAuditHistoryServiceSql {
             "commercial_group.commercial_group_uuid=? AND commercial_group.group_workspace_key=?";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_SELECT_NODE_TEXT_INITIALIZATION_REF =
             "SELECT node.id, NULL::text AS initialization_ref, FALSE AS ";
-    public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_GROUP_ONLY_NODE_SCOPE_HEAD_COMPANY_SCOPE_STORE_SCOPE =
+    public static final String GRP_ONLY_NODE_SCOPE_HEAD_005 =
             "group_only, TRUE AS node_scope, FALSE AS head_company_scope, FALSE AS store_scope FROM ";
-    public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_NODE_WORKSPACE_UUID =
+    public static final String ALT_ORG_NODE_WS_UUID_006 =
             "organization.organization_node node WHERE node.id=? AND node.workspace_uuid=? AND ";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_NODE_GROUP_WORKSPACE_KEY =
             "node.group_workspace_key=?";
@@ -107,12 +105,10 @@ public final class OrganizationAuditHistoryServiceSql {
             "tenant.id=? AND tenant.workspace_uuid=? AND tenant.group_workspace_key=?";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_SELECT_HEAD_COMPANY_TEXT_INITIALIZATION_REF =
             "SELECT head_company.id, NULL::text AS initialization_ref, FALSE AS ";
-    public static final String
-            ORGANIZATION_AUDIT_HISTORY_SERVICE_GROUP_ONLY_NODE_SCOPE_HEAD_COMPANY_SCOPE_STORE_SCOPE_ALTERNATE_A =
-                    "group_only, FALSE AS node_scope, TRUE AS head_company_scope, FALSE AS store_scope ";
-    public static final String
-            ORGANIZATION_AUDIT_HISTORY_SERVICE_FROM_CLAUSE_HEAD_COMPANY_FROM_ORGANIZATION_HEAD_COMPA =
-                    "FROM organization.head_company head_company WHERE head_company.id=? AND ";
+    public static final String GRP_ONLY_NODE_SCOPE_HEAD_ALT_A_007 =
+            "group_only, FALSE AS node_scope, TRUE AS head_company_scope, FALSE AS store_scope ";
+    public static final String FROM_CLAUSE_HEAD_COMPANY_FROM_008 =
+            "FROM organization.head_company head_company WHERE head_company.id=? AND ";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_HEAD_COMPANY_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             "head_company.workspace_uuid=? AND head_company.group_workspace_key=?";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_SELECT_STORE_TEXT_INITIALIZATION_REF_GROUP_ONLY =
@@ -142,12 +138,10 @@ public final class OrganizationAuditHistoryServiceSql {
             "organization.audit_event event CROSS JOIN auth_scope WHERE auth_scope.found AND ";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_AUTH_SCOPE_AUTHORIZED_EVENT_WORKSPACE_UUID =
             "auth_scope.authorized AND event.workspace_uuid=? AND event.group_workspace_key=? AND ";
-    public static final String
-            ORGANIZATION_AUDIT_HISTORY_SERVICE_OPEN_PAREN_COMMERCIAL_GROUP_EVENT_ENTITY_TYPE_ENTITY_REF_TEXT =
-                    "((?='COMMERCIAL_GROUP' AND ((event.entity_type='COMMERCIAL_GROUP' AND event.entity_ref_text=?) ";
-    public static final String
-            ORGANIZATION_AUDIT_HISTORY_SERVICE_ALTERNATIVE_EVENT_ENTITY_TYPE_GROUP_WORKSPACE_ENTITY_REF_TEXT =
-                    "OR (event.entity_type='GROUP_WORKSPACE' AND event.entity_ref_text=auth_scope.initialization_ref ";
+    public static final String OPEN_PAREN_COMMERCIAL_GRP_EVENT_009 =
+            "((?='COMMERCIAL_GROUP' AND ((event.entity_type='COMMERCIAL_GROUP' AND event.entity_ref_text=?) ";
+    public static final String ALT_EVENT_ENTITY_TYPE_GRP_010 =
+            "OR (event.entity_type='GROUP_WORKSPACE' AND event.entity_ref_text=auth_scope.initialization_ref ";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_CONDITION_EVENT =
             "AND event.action='COMMERCIAL_GROUP_INITIALIZED'))) OR (?<>'COMMERCIAL_GROUP' AND ";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_AUDIT_ROWS =

@@ -9,12 +9,9 @@ public final class OrganizationHierarchyCommandReceiptServiceSql {
             "SELECT request_hash, response_json::text FROM organization.organization_command_receipt WHERE ";
     public static final String ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY =
             "workspace_uuid=? AND idempotency_key=?";
-    public static final String
-            ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_UPDATE_ORGANIZATION_COMMAND_RECEIPT_RESPONSE_JSON =
-                    "UPDATE organization.organization_command_receipt SET response_json=?::jsonb WHERE ";
-    public static final String
-            ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY_ALTERNATE_A =
-                    "workspace_uuid=? AND idempotency_key=?";
+    public static final String UPDATE_ORG_CMD_RECEIPT_RESP_001 =
+            "UPDATE organization.organization_command_receipt SET response_json=?::jsonb WHERE ";
+    public static final String WS_UUID_IDEMPOTENCY_KEY_ALT_A_002 = "workspace_uuid=? AND idempotency_key=?";
     public static final String ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_INSERT_INTO_ORGANIZATION_COMMAND_RECEIPT =
             "INSERT INTO organization.organization_command_receipt (workspace_uuid, idempotency_key, ";
     public static final String ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_ENTITY_ID =

@@ -633,7 +633,7 @@ function generatedRouteOperations(base = root) {
     fail('R5_ROUTE_REGISTRY_CLOSURE_DRIFT');
   }
   const faceCounts = Object.fromEntries(
-    ['platform-admin', 'operations-admin', 'public'].map(face => [
+    ['platform-admin', 'operations-admin', 'public', 'terminal'].map(face => [
       face,
       operations.filter(operation => Array.isArray(operation.consumerFaces) && operation.consumerFaces.includes(face))
         .length,
@@ -664,14 +664,97 @@ function generatedCatalogInventoryRouteOperations(base = root) {
   }));
 }
 
-function mappingPath(annotation) {
-  const match = annotation.match(/\(\s*"([^"]*)"\s*\)/);
-  return match ? match[1] : '';
+function mappingPaths(annotationArguments, file, annotationName) {
+  const args = (annotationArguments || '').trim();
+  if (!args) return [''];
+
+  const aliases = [...args.matchAll(/(?:^|,)\s*(?:value|path)\s*=/g)];
+  if (aliases.length > 1) fail('R5_SECURITY_CONTROLLER_MAPPING_PATH_ALIAS_DUPLICATE', `${file}:${annotationName}`);
+
+  const arrayExpression = String.raw`\{\s*(?:"(?:\\.|[^"\\])*"(?:\s*,\s*"(?:\\.|[^"\\])*")*)?\s*\}`;
+  const literalExpression = String.raw`"(?:\\.|[^"\\])*"`;
+  const supportedExpression = `(?:${literalExpression}|${arrayExpression})`;
+  let expression;
+  if (aliases.length === 1) {
+    const pathAttribute = new RegExp(String.raw`(?:^|,)\s*(?:value|path)\s*=\s*(${supportedExpression})`, 's');
+    expression = args.match(pathAttribute)?.[1];
+    if (!expression) fail('R5_SECURITY_CONTROLLER_MAPPING_PATH_UNSUPPORTED', `${file}:${annotationName}`);
+  } else {
+    const positionalPath = new RegExp(String.raw`^\s*(${supportedExpression})(?:\s*,|$)`, 's');
+    expression = args.match(positionalPath)?.[1];
+    if (!expression) {
+      // Request-mapping annotations may constrain headers/media types without a path.
+      // A bare positional expression is a path and must not silently become the root.
+      if (/^[A-Za-z_$][\w$]*\s*=/.test(args)) return [''];
+      fail('R5_SECURITY_CONTROLLER_MAPPING_ARGUMENT_UNSUPPORTED', `${file}:${annotationName}`);
+    }
+  }
+
+  const trimmedExpression = expression.trim();
+  if (trimmedExpression.startsWith('"')) {
+    try {
+      return [JSON.parse(trimmedExpression)];
+    } catch {
+      fail('R5_SECURITY_CONTROLLER_MAPPING_PATH_UNSUPPORTED', `${file}:${annotationName}`);
+    }
+  }
+  const inner = trimmedExpression.slice(1, -1);
+  const literals = [...inner.matchAll(/"(?:\\.|[^"\\])*"/g)];
+  const residue = inner.replace(/"(?:\\.|[^"\\])*"/g, '').replace(/[\s,]/g, '');
+  if (literals.length === 0 || residue !== '') {
+    fail('R5_SECURITY_CONTROLLER_MAPPING_PATH_UNSUPPORTED', `${file}:${annotationName}`);
+  }
+  try {
+    return literals.map(([literal]) => JSON.parse(literal));
+  } catch {
+    fail('R5_SECURITY_CONTROLLER_MAPPING_PATH_UNSUPPORTED', `${file}:${annotationName}`);
+  }
 }
 
 function joinRoute(prefix, suffix) {
   const joined = `${prefix || ''}/${suffix || ''}`.replace(/\/+/g, '/');
   return joined === '/' ? joined : joined.replace(/\/$/, '');
+}
+
+function matchingDelimiter(source, openingIndex, opening, closing, file, marker) {
+  let depth = 0;
+  for (let index = openingIndex; index < source.length; index += 1) {
+    if (source[index] === opening) depth += 1;
+    else if (source[index] === closing) {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+  fail(marker, file);
+}
+
+function skipJavaAnnotations(source, startIndex, file) {
+  let cursor = startIndex;
+  while (cursor < source.length) {
+    while (/\s/.test(source[cursor] || '')) cursor += 1;
+    if (source[cursor] !== '@') return cursor;
+    cursor += 1;
+    const nameStart = cursor;
+    while (/[A-Za-z0-9_$.]/.test(source[cursor] || '')) cursor += 1;
+    if (cursor === nameStart) fail('R5_SECURITY_CONTROLLER_ANNOTATION_INVALID', file);
+    while (/\s/.test(source[cursor] || '')) cursor += 1;
+    if (source[cursor] === '(') {
+      cursor = matchingDelimiter(source, cursor, '(', ')', file, 'R5_SECURITY_CONTROLLER_ANNOTATION_UNCLOSED') + 1;
+    }
+  }
+  return cursor;
+}
+
+function mappedMethodSource(source, annotationStart, annotationEnd, file) {
+  const masked = maskJavaTrivia(source);
+  const signatureStart = skipJavaAnnotations(masked, annotationEnd, file);
+  const parameterStart = masked.indexOf('(', signatureStart);
+  if (parameterStart < 0) fail('R5_SECURITY_CONTROLLER_METHOD_SIGNATURE_MISSING', file);
+  const parameterEnd = matchingDelimiter(masked, parameterStart, '(', ')', file, 'R5_SECURITY_CONTROLLER_METHOD_PARAMETERS_UNCLOSED');
+  const bodyStart = masked.indexOf('{', parameterEnd + 1);
+  if (bodyStart < 0) fail('R5_SECURITY_CONTROLLER_METHOD_BODY_MISSING', file);
+  const bodyEnd = matchingDelimiter(masked, bodyStart, '{', '}', file, 'R5_SECURITY_CONTROLLER_METHOD_BODY_UNCLOSED');
+  return source.slice(annotationStart, bodyEnd + 1);
 }
 
 function controllerRoutes(base = root) {
@@ -680,29 +763,80 @@ function controllerRoutes(base = root) {
   );
   return files.flatMap(file => {
     const source = read(file, base);
-    const classMapping = source.match(/@RequestMapping\s*\(\s*"([^"]*)"\s*\)/);
+    const classMapping = source.match(/@RequestMapping\s*(?:\(([\s\S]*?)\))?/);
     if (!classMapping) fail('R5_SECURITY_CONTROLLER_CLASS_MAPPING_MISSING', file);
-    const prefix = classMapping[1];
+    const prefixes = mappingPaths(classMapping[1], file, 'RequestMapping');
     const routes = [];
-    const pattern = /@(Get|Post|Put|Patch|Delete)Mapping(?:\s*\(\s*"([^"]*)"\s*\))?/g;
+    const pattern = /@(Get|Post|Put|Patch|Delete)Mapping(?:\s*\(([\s\S]*?)\))?/g;
     for (const match of source.matchAll(pattern)) {
-      routes.push({
-        method: match[1].toUpperCase(),
-        path: joinRoute(prefix, match[2] || ''),
-        file,
-        source,
-      });
+      const suffixes = mappingPaths(match[2], file, `${match[1]}Mapping`);
+      const methodSource = mappedMethodSource(source, match.index, match.index + match[0].length, file);
+      for (const prefix of prefixes) {
+        for (const suffix of suffixes) {
+          routes.push({
+            method: match[1].toUpperCase(),
+            path: joinRoute(prefix, suffix),
+            file,
+            source: methodSource,
+            controllerSource: source,
+          });
+        }
+      }
     }
     if (routes.length === 0) fail('R5_SECURITY_CONTROLLER_METHOD_MAPPING_MISSING', file);
     return routes;
   });
 }
 
-function expectedResolver(face) {
-  if (face === 'platform-admin') return 'PlatformSessionResolver';
-  if (face === 'operations-admin') return 'OperationsSessionResolver';
-  if (face === 'public') return undefined;
-  fail('R5_SECURITY_UNKNOWN_FACE', face);
+function expectedResolver(securityMode, operationId) {
+  if (securityMode === 'NONE') return undefined;
+  if (securityMode === 'PLATFORM_SESSION_COOKIE') return 'PlatformSessionResolver';
+  if (securityMode === 'OPERATIONS_SESSION_COOKIE') return 'OperationsSessionResolver';
+  // The terminal credential authenticator is the operation that parses the
+  // terminal Authorization header and delegates digest verification to the owner.
+  // TERMINAL_CREDENTIAL_AUTHENTICATOR is the generated resolver ID, not a Java class.
+  if (securityMode === 'TERMINAL_CREDENTIAL' && operationId === 'cancelTerminalActivation') return 'CancelTerminalActivationOperation';
+  fail('R5_SECURITY_UNKNOWN_AUTHORIZATION_MODE', `${operationId}:${securityMode}`);
+}
+
+function routeUsesExpectedResolver(route, resolver, base) {
+  const field = route.controllerSource.match(new RegExp(`\\bprivate\\s+final\\s+${resolver}\\s+([A-Za-z_$][\\w$]*)\\s*;`))?.[1];
+  if (field && (resolver !== 'CancelTerminalActivationOperation' || new RegExp(`\\b${field}\\.execute\\s*\\(`).test(route.source))) return true;
+  if (resolver !== 'OperationsSessionResolver') return false;
+
+  const supportFields = [...route.controllerSource.matchAll(/\bprivate\s+final\s+([A-Za-z_$][\w$]*Support)\s+([A-Za-z_$][\w$]*)\s*;/g)];
+  for (const [, supportType, supportField] of supportFields) {
+    const calls = [...route.controllerSource.matchAll(new RegExp(`\\b${supportField}\\.(readSession|commandSession)\\s*\\(`, 'g'))];
+    if (calls.length === 0) continue;
+
+    const supportPath = path.posix.join(path.posix.dirname(route.file), `${supportType}.java`);
+    if (!exists(supportPath, base)) continue;
+    const supportSource = read(supportPath, base);
+    const resolverField = supportSource.match(/\bprivate\s+final\s+OperationsSessionResolver\s+([A-Za-z_$][\w$]*)\s*;/)?.[1];
+    if (!resolverField) continue;
+
+    const delegatesEverySessionCall = calls.every(([, method]) => {
+      const resolverMethod = method === 'readSession' ? 'requireWorkspaceRead' : 'requireWorkspaceCommand';
+      const declaration = new RegExp(
+        `\\b${method}\\s*\\([^)]*\\)\\s*\\{\\s*return\\s+${resolverField}\\.${resolverMethod}\\s*\\(`,
+        's',
+      );
+      return declaration.test(supportSource);
+    });
+    if (delegatesEverySessionCall) return true;
+  }
+  return false;
+}
+
+function routeUsesSessionResolver(route) {
+  const methodSource = maskJavaTrivia(route.source);
+  if (/\b(?:PlatformSessionResolver|OperationsSessionResolver)\b/.test(methodSource)) return true;
+  const resolverFields = [...route.controllerSource.matchAll(/\bprivate\s+final\s+(?:PlatformSessionResolver|OperationsSessionResolver)\s+([A-Za-z_$][\w$]*)\s*;/g)];
+  for (const [, field] of resolverFields) {
+    if (new RegExp(`\\b${field}\\s*\\.`).test(methodSource)) return true;
+  }
+  const supportFields = [...route.controllerSource.matchAll(/\bprivate\s+final\s+([A-Za-z_$][\w$]*Support)\s+([A-Za-z_$][\w$]*)\s*;/g)];
+  return supportFields.some(([, , field]) => new RegExp(`\\b${field}\\.(?:readSession|commandSession)\\s*\\(`).test(methodSource));
 }
 
 function security(base = root) {
@@ -717,6 +851,8 @@ function security(base = root) {
   )
     fail('R4_SECURITY_EDGE_CONTEXT_MISSING');
   const expected = generatedRouteOperations(base);
+  const sourceCatalog = JSON.parse(read('doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json', base));
+  const sourceOperations = new Map(sourceCatalog.operations.map(operation => [operation.operationId, operation]));
   const routeIndex = new Map();
   for (const route of controllerRoutes(base)) {
     const key = `${route.method} ${route.path}`;
@@ -727,12 +863,15 @@ function security(base = root) {
     if (!Array.isArray(operation.consumerFaces) || operation.consumerFaces.length !== 1)
       fail('R5_SECURITY_FACE_CARDINALITY_INVALID', operation.operationId);
     const face = operation.consumerFaces[0];
+    const sourceOperation = sourceOperations.get(operation.operationId);
+    if (!sourceOperation || sourceOperation.face !== face || sourceOperation.method !== operation.method || sourceOperation.path !== operation.path)
+      fail('R5_SECURITY_SOURCE_OPERATION_DRIFT', operation.operationId);
     const route = routeIndex.get(`${operation.method} ${operation.path}`);
     if (!route) fail('R5_SECURITY_CONTROLLER_ROUTE_MISSING', operation.operationId);
-    const resolver = expectedResolver(face);
-    if (resolver && !new RegExp(`\\b${resolver}\\b`).test(route.source))
+    const resolver = expectedResolver(sourceOperation.security, operation.operationId);
+    if (resolver && !routeUsesExpectedResolver(route, resolver, base))
       fail('R5_SECURITY_FACE_RESOLVER_MISSING', operation.operationId);
-    if (!resolver && /(?:PlatformSessionResolver|OperationsSessionResolver)/.test(route.source))
+    if (!resolver && routeUsesSessionResolver(route))
       fail('R5_SECURITY_PUBLIC_EDGE_RESOLVER_FORBIDDEN', operation.operationId);
     if (/getCookies\(/.test(route.source)) fail('R5_SECURITY_CONTROLLER_COOKIE_BYPASS', operation.operationId);
     if (/@CookieValue\b/.test(route.source)) fail('R5_SECURITY_CONTROLLER_RAW_COOKIE_INGRESS', operation.operationId);
@@ -745,11 +884,15 @@ function security(base = root) {
     'apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java',
     base,
   );
-  if (
-    !/value\.startsWith\(objectPrefix\)/.test(assetStorage) ||
-    /catering-v2s\/dev/.test(assetStorage) ||
-    !/objects\.ownsObjectKey\(objectKey\)/.test(assetService)
-  )
+  const configuredObjectPrefix = assetStorage.includes('@Value("${catering.asset.object-storage.object-prefix}") String objectPrefix');
+  const validatedObjectPrefix = assetStorage.includes('value.contains("//")') && assetStorage.includes('value.contains("..")');
+  const guardedObjectKey = assetStorage.includes('private String validKey(String value)')
+    && assetStorage.includes('!value.startsWith(objectPrefix)')
+    && assetStorage.includes('matches("static/[a-f0-9]{64}');
+  const guardedStorageSinks = (assetStorage.match(/\bvalidKey\(objectKey\)/g) || []).length === 4;
+  const serviceUsesStoragePort = assetService.includes('objects.objectKey("static/" + digest + suffix(contentType))');
+  if (!configuredObjectPrefix || !validatedObjectPrefix || !guardedObjectKey || !guardedStorageSinks
+    || /catering-v2s\/dev/.test(assetStorage) || !serviceUsesStoragePort)
     fail('R5_SECURITY_ASSET_PREFIX_NOT_CONFIGURED');
   assertMatch(
     'apps/frontend/operations-admin/src/main.tsx',
@@ -921,10 +1064,30 @@ function frontend(base = root) {
       fail('R5_FRONTEND_GENERATED_SLICE_INVALID', file);
     }
   });
-  const registryOperations = generatedRouteOperations(base)
+  const frontendGeneratedFaces = new Set(['platform-admin', 'operations-admin', 'public']);
+  const allRegistryOperations = generatedRouteOperations(base)
     .concat(generatedCatalogInventoryRouteOperations(base))
     .map(({operationId, method, path: route, consumerFaces}) => ({operationId, method, path: route, consumerFaces}));
+  const registryOperations = allRegistryOperations.filter(operation =>
+    operation.consumerFaces.some(face => frontendGeneratedFaces.has(face)),
+  );
   assertOperationsEqual(registryOperations, generated, 'R5_FRONTEND_GENERATED_FACE_DRIFT');
+  const terminalOnlyOperation = allRegistryOperations.find(operation =>
+    operation.consumerFaces.length > 0 && operation.consumerFaces.every(face => face === 'terminal'),
+  );
+  if (!terminalOnlyOperation) fail('R5_FRONTEND_TERMINAL_FACE_RED_FIXTURE_MISSING');
+  let terminalLeakRed = false;
+  try {
+    assertOperationsEqual(
+      registryOperations,
+      [...generated, terminalOnlyOperation],
+      'R5_FRONTEND_GENERATED_FACE_DRIFT',
+    );
+  } catch (error) {
+    terminalLeakRed = String(error).includes('R5_FRONTEND_GENERATED_FACE_DRIFT');
+  }
+  if (!terminalLeakRed) fail('R5_FRONTEND_TERMINAL_FACE_RED_NOT_DETECTED');
+  process.stdout.write('R5_FRONTEND_TERMINAL_FACE_RED=PASS\n');
   assertNoOperationIdLiterals(
     handwrittenFrontendSources,
     generated.map(({operationId}) => operationId),
@@ -1054,7 +1217,6 @@ function backend(base = root) {
     'R4_ARCHUNIT_TEST_MISSING',
     base,
   );
-  if (exists('apps/backend/terminal-data-server/src', base)) fail('R4_TDP_PLACEHOLDER_SOURCE_PRESENT');
   const registry = JSON.parse(read('contracts/policy/module-dependency-registry.json', base));
   if (!Array.isArray(registry.modules) || !Array.isArray(registry.edges)) fail('R4_MODULE_REGISTRY_INVALID');
   const workspaceService = read(
@@ -1112,6 +1274,16 @@ function backend(base = root) {
       sourceFiles(`${appRoot}/src/main`, base),
       new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
       'R4_BACKEND_FORBIDDEN_RUNTIME',
+      base,
+    );
+  const tdsProductionSources = sourceFiles('apps/backend/terminal-data-server/src/main', base).filter(file =>
+    file.endsWith('.java'),
+  );
+  for (const token of ['org.apache.kafka', 'outbox'])
+    assertNoJavaMatch(
+      tdsProductionSources,
+      new RegExp(token.replaceAll('.', '\\.'), 'i'),
+      'R4_TDS_FORBIDDEN_MQ_OR_OUTBOX',
       base,
     );
   process.stdout.write('R4_BACKEND_BOUNDARIES=PASS\n');
@@ -1369,8 +1541,12 @@ function runtimeEnvironmentKeys(base = root) {
   const policyPath = 'contracts/policy/runtime-environment-keys.json';
   const javaPath =
     'apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/runtime/RuntimeEnvironmentKeys.java';
+  const tdsSettingsPath = 'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsSettingsConfiguration.java';
+  const tdsPropertiesPath = 'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsRuntimeProperties.java';
   assertFile(policyPath, 'R5_RUNTIME_ENVIRONMENT_KEYS_POLICY_MISSING', base);
   assertFile(javaPath, 'R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_SOURCE_MISSING', base);
+  assertFile(tdsSettingsPath, 'R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_MISSING', base);
+  assertFile(tdsPropertiesPath, 'R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_MISSING', base);
   let policy;
   try {
     policy = JSON.parse(read(policyPath, base));
@@ -1382,7 +1558,7 @@ function runtimeEnvironmentKeys(base = root) {
     policy?.schemaVersion !== 1 ||
     policy?.kind !== 'runtime-environment-keys' ||
     !Array.isArray(keys) ||
-    keys.length !== 18 ||
+    keys.length !== 20 ||
     new Set(keys).size !== keys.length ||
     keys.some(key => typeof key !== 'string' || !/^V2S_[A-Z0-9_]+$/.test(key))
   ) {
@@ -1396,13 +1572,31 @@ function runtimeEnvironmentKeys(base = root) {
   const javaValues = new Set(javaDeclarations.map(match => match[2]));
   const keySet = new Set(keys);
   if (
-    javaDeclarations.length !== 18 ||
-    javaNames.size !== 18 ||
-    javaValues.size !== 18 ||
+    javaDeclarations.length !== 20 ||
+    javaNames.size !== 20 ||
+    javaValues.size !== 20 ||
     [...javaNames].some(name => !keySet.has(name)) ||
     [...javaValues].some(value => !keySet.has(value))
   ) {
     fail('R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_CLOSURE', javaPath);
+  }
+  const tdsSettingsSource = read(tdsSettingsPath, base);
+  const tdsPropertiesSource = read(tdsPropertiesPath, base);
+  const tdsPropertiesClosed =
+    /@ConfigurationProperties\s*\(\s*"v2s\.tds"\s*\)/.test(tdsPropertiesSource) &&
+    /public\s+record\s+TdsRuntimeProperties\s*\(/.test(tdsPropertiesSource) &&
+    /\bString\s+maxUnauthenticatedConnections\b/.test(tdsPropertiesSource) &&
+    /\bString\s+maxTrackedSessions\b/.test(tdsPropertiesSource);
+  const tdsSettingsClosed =
+    /@EnableConfigurationProperties\s*\(\s*TdsRuntimeProperties\.class\s*\)/.test(tdsSettingsSource) &&
+    /TdsRuntimeSettings\.from\s*\(\s*properties\.maxUnauthenticatedConnections\(\)\s*,\s*properties\.maxTrackedSessions\(\)/.test(
+      tdsSettingsSource,
+    );
+  if (!tdsPropertiesClosed || !tdsSettingsClosed) {
+    const missingKey = !/\bString\s+maxUnauthenticatedConnections\b/.test(tdsPropertiesSource)
+      ? 'V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS'
+      : 'V2S_TDS_MAX_TRACKED_SESSIONS';
+    fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE', missingKey);
   }
   const scriptFiles = [...sourceFiles('scripts', base), ...sourceFiles('tools', base)].filter(file =>
     /\.(?:mjs|js|sh|ts|tsx)$/.test(file),
@@ -1856,6 +2050,36 @@ function selfTest(action) {
         workspaceController,
         read(workspaceController, scratch).replaceAll('PlatformSessionResolverRemoved', 'PlatformSessionResolver'),
       );
+      const salesMenuSupport = `${appRoot}/src/main/java/com/catering/v2s/app/edge/operations/salesmenu/SalesMenuEdgeSupport.java`;
+      const originalSalesMenuSupport = read(salesMenuSupport, scratch);
+      const resolverField = 'private final OperationsSessionResolver sessions;';
+      if (!originalSalesMenuSupport.includes(resolverField)) fail('R4_SECURITY_SUPPORT_RESOLVER_SELF_TEST_FIXTURE_MISSING');
+      write(salesMenuSupport, originalSalesMenuSupport.replace(resolverField, 'private final Object sessions;'));
+      let delegatedResolverRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        delegatedResolverRed = String(error).includes('R5_SECURITY_FACE_RESOLVER_MISSING');
+      }
+      if (!delegatedResolverRed) fail('R5_SECURITY_SUPPORT_RESOLVER_SELF_TEST_NOT_DETECTED');
+      write(salesMenuSupport, originalSalesMenuSupport);
+      const platformAuthController = `${appRoot}/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java`;
+      const originalPlatformAuthController = read(platformAuthController, scratch);
+      const loginValidation = '        key(idempotencyKey);';
+      if (!originalPlatformAuthController.includes(loginValidation)) fail('R4_SECURITY_ANONYMOUS_ROUTE_SELF_TEST_FIXTURE_MISSING');
+      write(
+        platformAuthController,
+        originalPlatformAuthController.replace(loginValidation, `        sessionResolver.token(context);\n${loginValidation}`),
+      );
+      let anonymousRouteRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        anonymousRouteRed = String(error).includes('R5_SECURITY_PUBLIC_EDGE_RESOLVER_FORBIDDEN')
+          && String(error).includes('platformPasswordLogin');
+      }
+      if (!anonymousRouteRed) fail('R5_SECURITY_ANONYMOUS_ROUTE_RESOLVER_SELF_TEST_NOT_DETECTED');
+      write(platformAuthController, originalPlatformAuthController);
       write(
         workspaceController,
         read(workspaceController, scratch).replace(
@@ -1880,9 +2104,11 @@ function selfTest(action) {
       const assetStorage =
         'apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/MinioAssetObjectStorage.java';
       const assetStorageOriginal = read(assetStorage, scratch);
+      const validKeyPrefixNeedle = '|| !value.startsWith(objectPrefix)';
+      if (!assetStorageOriginal.includes(validKeyPrefixNeedle)) fail('R4_SECURITY_ASSET_PREFIX_SELF_TEST_FIXTURE_MISSING');
       write(
         assetStorage,
-        assetStorageOriginal.replace('value.startsWith(objectPrefix)', 'value.startsWith("catering-v2s/dev/")'),
+        assetStorageOriginal.replace(validKeyPrefixNeedle, '|| !value.startsWith("catering-v2s/dev/")'),
       );
       let assetPrefixRed = false;
       try {
@@ -2580,6 +2806,32 @@ final class R4BudgetIncompleteSelectStarSql {
             'R4_BACKEND_WRITE_PATH_' + label + '_GREEN=PASS\n',
         );
       }
+      const tdsRuntimeFixtures = [
+        [
+          'MQ',
+          'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/R4TdsMqMutation.java',
+          'package com.catering.v2s.terminaldataserver;\nimport org.apache.kafka.clients.producer.KafkaProducer;\nfinal class R4TdsMqMutation { KafkaProducer<String, String> producer; }\n',
+        ],
+        [
+          'OUTBOX',
+          'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/R4TdsOutboxMutation.java',
+          'package com.catering.v2s.terminaldataserver;\nfinal class R4TdsOutboxMutation { String outboxTable = "terminal_outbox"; }\n',
+        ],
+      ];
+      for (const [label, relative, content] of tdsRuntimeFixtures) {
+        write(relative, content);
+        let detected = false;
+        try {
+          actions[action](scratch);
+        } catch (error) {
+          detected = String(error).includes('R4_TDS_FORBIDDEN_MQ_OR_OUTBOX');
+        }
+        fs.rmSync(path.join(scratch, relative));
+        if (!detected) fail('R4_TDS_' + label + '_SELF_TEST_NOT_DETECTED');
+        process.stdout.write('R4_TDS_' + label + '_RED=PASS\n');
+      }
+      actions[action](scratch);
+      process.stdout.write('R4_TDS_APPROVED_RUNTIME_GREEN=PASS\n');
       write(
         'apps/backend/catering-business-server/build.gradle.kts',
         'dependencies { implementation("org.projectlombok:lombok") }\n',
@@ -2699,6 +2951,18 @@ final class R4BudgetIncompleteSelectStarSql {
       return;
     } else if (action === 'runtime-environment-keys') {
       const policy = JSON.parse(read('contracts/policy/runtime-environment-keys.json', scratch));
+      const policyPath = 'contracts/policy/runtime-environment-keys.json';
+      const policyOriginal = read(policyPath, scratch);
+      write(policyPath, `${JSON.stringify({...policy, crossLayerKeys: policy.crossLayerKeys.slice(1)}, null, 2)}\n`);
+      let policyRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        policyRed = String(error).includes('R5_RUNTIME_ENVIRONMENT_KEYS_POLICY_INVALID');
+      }
+      if (!policyRed) fail('R5_RUNTIME_ENVIRONMENT_KEYS_POLICY_SELF_TEST_NOT_DETECTED');
+      write(policyPath, policyOriginal);
+
       const javaPath =
         'apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/runtime/RuntimeEnvironmentKeys.java';
       const javaOriginal = read(javaPath, scratch);
@@ -2712,6 +2976,31 @@ final class R4BudgetIncompleteSelectStarSql {
       }
       if (!javaRed) fail('R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_SELF_TEST_NOT_DETECTED');
       write(javaPath, javaOriginal);
+
+      const tdsPropertiesPath =
+        'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsRuntimeProperties.java';
+      const tdsPropertiesOriginal = read(tdsPropertiesPath, scratch);
+      const trackedProperty = /\bString\s+maxTrackedSessions\b/g;
+      const trackedPropertyMatches = [...tdsPropertiesOriginal.matchAll(trackedProperty)];
+      if (trackedPropertyMatches.length !== 1) {
+        fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_SELF_TEST_MUTATION_TARGET_INVALID');
+      }
+      const tdsPropertiesMutated = tdsPropertiesOriginal.replace(
+        trackedProperty,
+        'String maxTrackedSessionsMutated',
+      );
+      if (tdsPropertiesMutated === tdsPropertiesOriginal) {
+        fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_SELF_TEST_MUTATION_NOT_APPLIED');
+      }
+      write(tdsPropertiesPath, tdsPropertiesMutated);
+      let tdsConfigRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        tdsConfigRed = String(error).includes('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE');
+      }
+      if (!tdsConfigRed) fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_SELF_TEST_NOT_DETECTED');
+      write(tdsPropertiesPath, tdsPropertiesOriginal);
 
       const changedScripts = [];
       for (const file of [...sourceFiles('scripts', scratch), ...sourceFiles('tools', scratch)].filter(entry =>
@@ -2736,7 +3025,7 @@ final class R4BudgetIncompleteSelectStarSql {
       actions[action](scratch);
       fs.rmSync(path.join(scratch, singleSided));
       process.stdout.write(
-        'R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_RED=PASS\nR5_RUNTIME_ENVIRONMENT_KEYS_SCRIPT_RED=PASS\nR5_RUNTIME_ENVIRONMENT_KEYS_SINGLE_SIDED_NEGATIVE=PASS\n',
+        'R5_RUNTIME_ENVIRONMENT_KEYS_POLICY_RED=PASS\nR5_RUNTIME_ENVIRONMENT_KEYS_JAVA_RED=PASS\nR5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_RED=PASS\nR5_RUNTIME_ENVIRONMENT_KEYS_SCRIPT_RED=PASS\nR5_RUNTIME_ENVIRONMENT_KEYS_SINGLE_SIDED_NEGATIVE=PASS\nR5_RUNTIME_ENVIRONMENT_KEYS_SELF_TEST=PASS\n',
       );
       return;
     } else if (action === 'r11') {

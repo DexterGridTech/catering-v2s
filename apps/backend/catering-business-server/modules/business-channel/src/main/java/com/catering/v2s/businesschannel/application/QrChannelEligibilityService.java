@@ -49,7 +49,10 @@ public final class QrChannelEligibilityService implements QrChannelEligibilityLo
                 storeRef.toString(),
                 MAX_CANDIDATES + 1);
         if (rows.size() > MAX_CANDIDATES) {
-            throw new BusinessChannelCommandApi.Problem("QR_CHANNEL_CANDIDATE_OVERFLOW", 422, "二维码渠道候选超过系统支持的数量上限");
+            // spotless:off
+            throw new BusinessChannelCommandApi.Problem("QR_CHANNEL_CANDIDATE_OVERFLOW", 422,
+                "二维码渠道候选超过系统支持的数量上限");
+            // spotless:on
         }
         return rows.stream().map(QrChannelEligibilityService::candidate).toList();
     }
@@ -78,7 +81,10 @@ public final class QrChannelEligibilityService implements QrChannelEligibilityLo
                 || !"ENABLED".equals(candidate.status())
                 || !"ENABLED".equals(candidate.templateStatus())
                 || !"NOT_REQUIRED".equals(candidate.bindingStatus())) {
-            throw new BusinessChannelCommandApi.Problem("QR_CHANNEL_INELIGIBLE", 422, "所选门店渠道不满足二维码下单条件");
+            // spotless:off
+            throw new BusinessChannelCommandApi.Problem("QR_CHANNEL_INELIGIBLE", 422,
+                "所选门店渠道不满足二维码下单条件");
+            // spotless:on
         }
         return candidate;
     }

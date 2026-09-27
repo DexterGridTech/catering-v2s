@@ -23,6 +23,21 @@ test('admission control plane includes the shared locator proof while runtime pr
     false,
     'L2_ADMISSION_RUNTIME_PROFILE_MUST_BE_RUN_SCOPED',
   );
+  assert.equal(policy.controlPlaneFiles.length, 36, 'L2_ADMISSION_CONTROL_PLANE_COUNT_MUST_MATCH_CP06');
+  for (const path of [
+    'doc/plans/platform/2026-09-25-v2s-terminal-activation-and-connection-requirements-claude.md',
+    'doc/plans/platform/2026-09-26-v2s-terminal-activation-and-connection-implementation-design-codex.md',
+    'doc/plans/platform/2026-09-26-v2s-terminal-activation-and-connection-implementation-plan-codex.md',
+    'apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDeviceTypeField.tsx',
+    'apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalEditDrawer.tsx',
+  ]) {
+    assert.ok(policy.controlPlaneFiles.includes(path), `L2_ADMISSION_TERMINAL_ACTIVATION_INPUT_MISSING:${path}`);
+  }
+  assert.equal(
+    policy.designPath,
+    'doc/plans/platform/2026-09-26-v2s-terminal-activation-and-connection-implementation-design-codex.md',
+    'L2_ADMISSION_DESIGN_PATH_MUST_BIND_CURRENT_BATCH',
+  );
 });
 
 test('admission red examples reject missing, blocked, and stale records', () => {

@@ -231,19 +231,16 @@ public final class OrganizationOverviewTaskReadServiceSql {
             "WITH target AS (SELECT id, 'BRAND'::text AS entity_type, code, name, NULL::text AS legal_name, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TEXT_CREDIT_CODE_ALIAS_REMARK =
             "NULL::text AS credit_code, alias, remark AS notes, status, version, created_at_epoch_millis, ";
-    public static final String
-            ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_UPDATE_BRAND_UPDATED_AT_EPOCH_MILLIS_EXTENSION_VALUES_TEXT =
-                    "updated_at_epoch_millis, extension_values::text AS extension_values FROM organization.brand ";
-    public static final String
-            ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TENANT_CODE =
-                    "WHERE workspace_uuid=? AND group_workspace_key=? AND id=? UNION ALL SELECT id, 'TENANT', code, ";
+    public static final String UPDATE_BRAND_UPDATED_AT_EPOCH_001 =
+            "updated_at_epoch_millis, extension_values::text AS extension_values FROM organization.brand ";
+    public static final String WHERE_WS_UUID_GRP_WS_002 =
+            "WHERE workspace_uuid=? AND group_workspace_key=? AND id=? UNION ALL SELECT id, 'TENANT', code, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_NAME_LEGAL_NAME_CREDIT_CODE_REMARK =
             "name, legal_name, credit_code, NULL, remark, status, version, created_at_epoch_millis, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_UPDATE_TENANT =
             "updated_at_epoch_millis, extension_values::text FROM organization.tenant WHERE workspace_uuid=? ";
-    public static final String
-            ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_HEAD_COMPANY_CODE_NAME =
-                    "AND group_workspace_key=? AND id=? UNION ALL SELECT id, 'HEAD_COMPANY', code, name, legal_name, ";
+    public static final String CONDITION_GRP_WS_KEY_HEAD_003 =
+            "AND group_workspace_key=? AND id=? UNION ALL SELECT id, 'HEAD_COMPANY', code, name, legal_name, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CREDIT_CODE_REMARK_STATUS_VERSION =
             "credit_code, NULL, remark, status, version, created_at_epoch_millis, updated_at_epoch_millis, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_HEAD_COMPANY =
@@ -268,16 +265,14 @@ public final class OrganizationOverviewTaskReadServiceSql {
             "organization.store s JOIN organization.organization_node p ON p.id=s.project_id JOIN ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_TENANT_BRAND_BRAND_ID_TENANT_ID =
             "organization.brand b ON b.id=s.brand_id JOIN organization.tenant t ON t.id=s.tenant_id LEFT ";
-    public static final String
-            ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_JOIN_HEAD_COMPANY_HEAD_COMPANY_ID_WORKSPACE_UUID =
-                    "JOIN organization.head_company h ON h.id=s.head_company_id WHERE s.workspace_uuid=? AND ";
+    public static final String JOIN_HEAD_COMPANY_HEAD_COMPANY_004 =
+            "JOIN organization.head_company h ON h.id=s.head_company_id WHERE s.workspace_uuid=? AND ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_ANCESTRY_TARGET_PROJECT_ID =
             "s.group_workspace_key=? AND s.id=?), ancestry AS (SELECT target.project_id AS target_id, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_NODE_PARENT_ID_CODE_NAME =
             "node.id, node.parent_id, node.code, node.name, 0 AS depth FROM target JOIN ";
-    public static final String
-            ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_NODE_TARGET_PROJECT_ID =
-                    "organization.organization_node node ON node.id=target.project_id UNION ALL SELECT ";
+    public static final String ALT_ORG_NODE_TARGET_PROJECT_005 =
+            "organization.organization_node node ON node.id=target.project_id UNION ALL SELECT ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ANCESTRY_TARGET_ID_PARENT_PARENT_ID =
             "ancestry.target_id, parent.id, parent.parent_id, parent.code, parent.name, ancestry.depth+1 ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_PARENT_ID =
@@ -286,9 +281,8 @@ public final class OrganizationOverviewTaskReadServiceSql {
             "parent.workspace_uuid=? AND parent.group_workspace_key=?) ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_SELECT_TARGET_CODE_NAME =
             "SELECT target.id, target.code, target.name, ";
-    public static final String
-            ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS_ALTERNATE_A =
-                    "target.status, target.version, target.created_at_epoch_millis, target.updated_at_epoch_millis, ";
+    public static final String TARGET_STATUS_VER_CREATED_AT_ALT_A_006 =
+            "target.status, target.version, target.created_at_epoch_millis, target.updated_at_epoch_millis, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_NOTES_EXTENSION_VALUES_PROJECT_ID =
             "target.notes, target.extension_values, target.project_id, target.project_code, target.project_name, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_BRAND_ID_BRAND_CODE_BRAND_NAME =
@@ -307,12 +301,10 @@ public final class OrganizationOverviewTaskReadServiceSql {
             "target.created_at_epoch_millis, target.updated_at_epoch_millis, target.notes, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_EXTENSION_VALUES_PROJECT_ID_PROJECT_CODE =
             "target.extension_values, target.project_id, target.project_code, target.project_name, ";
-    public static final String
-            ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_BRAND_ID_BRAND_CODE_BRAND_NAME_ALTERNATE_A =
-                    "target.brand_id, target.brand_code, target.brand_name, target.tenant_id, target.tenant_code, ";
-    public static final String
-            ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_TENANT_NAME_HEAD_ID_HEAD_CODE_ALTERNATE_A =
-                    "target.tenant_name, target.head_id, target.head_code, target.head_name";
+    public static final String TARGET_BRAND_ID_BRAND_CODE_ALT_A_007 =
+            "target.brand_id, target.brand_code, target.brand_name, target.tenant_id, target.tenant_code, ";
+    public static final String TARGET_TENANT_NAME_HEAD_ID_ALT_A_008 =
+            "target.tenant_name, target.head_id, target.head_code, target.head_name";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_SELECT_COMMERCIAL_GROUP =
             "SELECT commercial_group.commercial_group_code, commercial_group.commercial_group_name, node.id, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_NODE_PARENT_ID_NODE_TYPE_CODE =
@@ -329,12 +321,10 @@ public final class OrganizationOverviewTaskReadServiceSql {
             "node.group_workspace_key=? AND node.node_type IN ('REGION','PROJECT') ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_LATERAL =
             "LEFT JOIN LATERAL (SELECT array_agg(phase_name ORDER BY display_order) AS phase_names FROM ";
-    public static final String
-            ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_PROJECT_PHASE_NAME_PROJECT_ID_NODE_PHASES =
-                    "organization.project_phase_name WHERE project_id=node.id) phases ON true ";
-    public static final String
-            ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_WHERE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_NODE_NODE_TYPE =
-                    "WHERE commercial_group.group_workspace_key=? ORDER BY node.node_type, node.code, node.id";
+    public static final String ALT_PROJECT_PHASE_NAME_PROJECT_009 =
+            "organization.project_phase_name WHERE project_id=node.id) phases ON true ";
+    public static final String WHERE_COMMERCIAL_GRP_WS_KEY_010 =
+            "WHERE commercial_group.group_workspace_key=? ORDER BY node.node_type, node.code, node.id";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONDITION_PROJECT_ID_BRAND_ID =
             " AND (?::uuid IS NULL OR s.project_id=?) AND (?::uuid IS NULL OR s.brand_id=?) AND (?::uuid IS NULL ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_TENANT_ID_HEAD_COMPANY_ID =
@@ -361,7 +351,8 @@ public final class OrganizationOverviewTaskReadServiceSql {
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_SELECT_TARGET_CODE_NAME_STATUS =
             "SELECT target.id, target.code, target.name, target.status, target.version, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_ALTERNATE_C =
-            "target.extension_rule_revision, target.created_at_epoch_millis, target.updated_at_epoch_millis, target.notes, target.extension_values, ";
+            ("target.extension_rule_revision, target.created_at_epoch_millis, target.u"
+                    + "pdated_at_epoch_millis, target.notes, target.extension_values, ");
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_PROJECT_ID_PROJECT_CODE_PROJECT_NAME =
             "target.project_id, target.project_code, target.project_name, target.brand_id, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_BRAND_CODE_BRAND_NAME_TENANT_ID =
@@ -372,7 +363,7 @@ public final class OrganizationOverviewTaskReadServiceSql {
             "paths.path_names FROM target JOIN paths ON paths.target_id=target.project_id";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_SELECT_SELECT_COUNT = "SELECT count(*)";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_FROM_CLAUSE = " FROM";
-    public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONDITION_PROJECT_ID_BRAND_ID_ALTERNATE_A =
+    public static final String CONDITION_PROJECT_ID_BRAND_ID_ALT_A_011 =
             " AND (?::uuid IS NULL OR s.project_id=?) AND (?::uuid IS NULL OR s.brand_id=?) AND ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_OPEN_PAREN_TENANT_ID_HEAD_COMPANY_ID =
             "(?::uuid IS NULL OR s.tenant_id=?) AND (?::uuid IS NULL OR s.head_company_id=?)";
@@ -404,9 +395,8 @@ public final class OrganizationOverviewTaskReadServiceSql {
             "node_type='PROJECT' UNION ALL SELECT 'BRAND', id, code, name FROM organization.brand WHERE ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TENANT_CODE =
             "workspace_uuid=? AND group_workspace_key=? UNION ALL SELECT 'TENANT', id, code, name FROM ";
-    public static final String
-            ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_TENANT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "organization.tenant WHERE workspace_uuid=? AND group_workspace_key=? UNION ALL SELECT ";
+    public static final String ALT_TENANT_WS_UUID_GRP_012 =
+            "organization.tenant WHERE workspace_uuid=? AND group_workspace_key=? UNION ALL SELECT ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_HEAD_COMPANY_CODE_NAME_WORKSPACE_UUID =
             "'HEAD_COMPANY', id, code, name FROM organization.head_company WHERE workspace_uuid=? AND ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_OPTIONS_KIND_CODE =
@@ -414,16 +404,16 @@ public final class OrganizationOverviewTaskReadServiceSql {
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_SELECT_CODE_NAME_STATUS_VERSION =
             "SELECT s.id, s.code, s.name, s.status, s.version, s.created_at_epoch_millis, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_UPDATED_AT_EPOCH_MILLIS_NOTES_PROJECT_ID_CODE =
-            "s.updated_at_epoch_millis, s.extension_rule_revision, s.extension_values::text, s.notes, p.id AS project_id, p.code AS project_code, p.name AS ";
+            ("s.updated_at_epoch_millis, s.extension_rule_revision, s.extension_values"
+                    + "::text, s.notes, p.id AS project_id, p.code AS project_code, p.name AS ");
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_PROJECT_NAME = "project_name, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_BRAND_ID_CODE_BRAND_CODE_NAME_ALTERNATE_A =
             "b.id AS brand_id, b.code AS brand_code, b.name AS brand_name, t.id AS tenant_id, t.code AS ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TENANT_CODE = "tenant_code, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_NAME_TENANT_NAME_HEAD_ID_CODE_ALTERNATE_A =
             "t.name AS tenant_name, h.id AS head_id, h.code AS head_code, h.name AS head_name FROM ";
-    public static final String
-            ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_STORE_PROJECT_ID_ALTERNATE_A =
-                    "organization.store s JOIN organization.organization_node p ON p.id=s.project_id JOIN ";
+    public static final String ALT_ORG_NODE_STORE_PROJECT_ALT_A_013 =
+            "organization.store s JOIN organization.organization_node p ON p.id=s.project_id JOIN ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_BRAND = "organization.brand ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TENANT_BRAND_ID_TENANT_ID =
             "b ON b.id=s.brand_id JOIN organization.tenant t ON t.id=s.tenant_id LEFT JOIN ";

@@ -53,13 +53,14 @@ public final class CatalogCategoryServiceSql {
             "WHERE child.data_node_ref=? AND child.brand_ref=? ";
     public static final String CATALOG_CATEGORY_SERVICE_CONDITION_SUBTREE_CHILD_STATUS_VOIDED_DEPTH =
             "AND child.status <> 'VOIDED') SELECT COALESCE(MAX(depth),0) FROM subtree";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_UPDATE_CATALOG_CATEGORY_DISPLAY_ORDER_VERSION_UPDATED_AT_EPOCH_MILLIS =
-                    "UPDATE catalog.catalog_category SET display_order=?,version=version+1,updated_at_epoch_millis=? WHERE ";
+    public static final String UPDATE_CAT_CATG_DISP_ORD_001 =
+            ("UPDATE catalog.catalog_category SET display_order=?,version=version+1,up"
+                    + "dated_at_epoch_millis=? WHERE ");
     public static final String CATALOG_CATEGORY_SERVICE_CATEGORY_REF_ALTERNATE_B = "category_ref=?";
     public static final String
             CATALOG_CATEGORY_SERVICE_UPDATE_CATALOG_CATEGORY_DISPLAY_ORDER_VERSION_UPDATED_AT_EPOCH_MILLIS_ALTERNATE_A =
-                    "UPDATE catalog.catalog_category SET display_order=?,version=version+1,updated_at_epoch_millis=? WHERE ";
+                    ("UPDATE catalog.catalog_category SET display_order=?,version=version+1,up"
+                            + "dated_at_epoch_millis=? WHERE ");
 
     public static final String CATALOG_CATEGORY_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE =
             "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM ";
@@ -98,7 +99,8 @@ public final class CatalogCategoryServiceSql {
             "brand_ref=? AND category_ref=? AND status <> 'VOIDED' FOR UPDATE), prior_receipt AS MATERIALIZED ";
     public static final String
             CATALOG_CATEGORY_SERVICE_OPEN_PAREN_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT =
-                    "(SELECT operation_id,request_hash,response_json::text AS response FROM catalog.command_receipt CROSS ";
+                    ("(SELECT operation_id,request_hash,response_json::text AS response FROM c"
+                            + "atalog.command_receipt CROSS ");
     public static final String
             CATALOG_CATEGORY_SERVICE_JOIN_RECEIPT_LOCK_DATA_NODE_REF_IDEMPOTENCY_KEY_UPDATED_CATEGORY =
                     "JOIN receipt_lock WHERE data_node_ref=? AND idempotency_key=?), updated_category AS (UPDATE ";
@@ -198,9 +200,8 @@ public final class CatalogCategoryServiceSql {
             "current_category AS MATERIALIZED (SELECT category.* FROM locked_categories category ";
     public static final String CATALOG_CATEGORY_SERVICE_JOIN_MOVE_INPUT_INPUT_CATEGORY_REF_CATEGORY_PRIOR_RECEIPT =
             "JOIN move_input input ON input.category_ref=category.category_ref), prior_receipt AS MATERIALIZED ";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_OPEN_PAREN_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT_ALTERNATE_A =
-                    "(SELECT operation_id,request_hash,response_json::text AS response FROM catalog.command_receipt ";
+    public static final String OPEN_PAREN_CMD_RECEIPT_OP_ALT_A_002 =
+            "(SELECT operation_id,request_hash,response_json::text AS response FROM catalog.command_receipt ";
     public static final String CATALOG_CATEGORY_SERVICE_RECEIPT_LOCK_DATA_NODE_REF_IDEMPOTENCY_KEY_REQUESTED_PARENT =
             "CROSS JOIN receipt_lock WHERE data_node_ref=? AND idempotency_key=?), requested_parent AS ";
     public static final String CATALOG_CATEGORY_SERVICE_MOVE_INPUT_CATEGORY_INPUT =
@@ -229,9 +230,9 @@ public final class CatalogCategoryServiceSql {
             "sibling.display_order,sibling.code) AS previous_display_order,LEAD(sibling.category_ref) OVER ";
     public static final String CATALOG_CATEGORY_SERVICE_OPEN_PAREN_SIBLING_DISPLAY_ORDER_CODE_NEXT_REF =
             "(ORDER BY sibling.display_order,sibling.code) AS next_ref,LEAD(sibling.display_order) OVER ";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_OPEN_PAREN_LOCKED_CATEGORIES_SIBLING_DISPLAY_ORDER_CODE_NEXT_DISPLAY_ORDER =
-                    "(ORDER BY sibling.display_order,sibling.code) AS next_display_order FROM locked_categories sibling ";
+    public static final String OPEN_PAREN_LOCKED_CATEGORIES_SIBLING_003 =
+            ("(ORDER BY sibling.display_order,sibling.code) AS next_display_order FROM"
+                    + " locked_categories sibling ");
     public static final String CATALOG_CATEGORY_SERVICE_CURRENT_CATEGORY_CURRENT_SIBLING_PARENT_CATEGORY_REF =
             "CROSS JOIN current_category current WHERE sibling.parent_category_ref IS NOT DISTINCT FROM ";
     public static final String CATALOG_CATEGORY_SERVICE_SIBLINGS_CURRENT_PARENT_CATEGORY_REF_CURRENT_SIBLING_SIBLING =
@@ -281,9 +282,9 @@ public final class CatalogCategoryServiceSql {
             "'MOVE_BOUNDARY' END AS validation_code FROM move_input input LEFT JOIN current_category current ON ";
     public static final String CATALOG_CATEGORY_SERVICE_CURRENT_SIBLING_UPDATED_CATEGORIES =
             "TRUE LEFT JOIN requested_parent ON TRUE LEFT JOIN current_sibling ON TRUE), updated_categories AS ";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_OPEN_PAREN_CATALOG_CATEGORY_CATEGORY_PARENT_CATEGORY_REF_PLAN_ACTION =
-                    "(UPDATE catalog.catalog_category category SET parent_category_ref=CASE WHEN plan.action='REPARENT' ";
+    public static final String OPEN_PAREN_CAT_CATG_PARENT_004 =
+            ("(UPDATE catalog.catalog_category category SET parent_category_ref=CASE W"
+                    + "HEN plan.action='REPARENT' ");
     public static final String CATALOG_CATEGORY_SERVICE_CONDITION_CATEGORY_CATEGORY_REF_PLAN_CURRENT_CATEGORY_REF =
             "AND category.category_ref=plan.current_category_ref THEN plan.requested_parent_ref ELSE ";
     public static final String CATALOG_CATEGORY_SERVICE_CATEGORY_PARENT_CATEGORY_REF_DISPLAY_ORDER_PLAN =
@@ -302,18 +303,17 @@ public final class CatalogCategoryServiceSql {
             "THEN plan.next_display_order WHEN plan.action='DOWN' AND category.category_ref=plan.next_ref THEN ";
     public static final String CATALOG_CATEGORY_SERVICE_PLAN_CURRENT_DISPLAY_ORDER_CATEGORY_DISPLAY_ORDER =
             "plan.current_display_order ELSE category.display_order END,version=category.version+1,";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_UPDATE_MOVE_PLAN_UPDATED_AT_EPOCH_MILLIS_PLAN_UPDATED_AT_VALIDATION_CODE =
-                    "updated_at_epoch_millis=plan.updated_at FROM move_plan plan WHERE plan.validation_code IS NULL ";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_CONDITION_PRIOR_RECEIPT_CATEGORY_CATEGORY_REF_PLAN_CURRENT_CATEGORY_REF =
-                    "AND NOT EXISTS (SELECT 1 FROM prior_receipt) AND (category.category_ref=plan.current_category_ref ";
+    public static final String UPDATE_MOVE_PLAN_UPDATED_AT_005 =
+            "updated_at_epoch_millis=plan.updated_at FROM move_plan plan WHERE plan.validation_code IS NULL ";
+    public static final String CONDITION_PRIOR_RECEIPT_CATG_REF_006 =
+            ("AND NOT EXISTS (SELECT 1 FROM prior_receipt) AND (category.category_ref=" + "plan.current_category_ref ");
     public static final String CATALOG_CATEGORY_SERVICE_ALTERNATIVE_CATEGORY_CATEGORY_REF_PLAN_PREVIOUS_REF =
             "OR category.category_ref=plan.previous_ref OR category.category_ref=plan.next_ref) RETURNING ";
     public static final String CATALOG_CATEGORY_SERVICE_CATEGORY_CATEGORY_REF_CODE_NAME =
             "category.category_ref,category.code,category.name,category.status,category.parent_category_ref,";
     public static final String CATALOG_CATEGORY_SERVICE_UPDATED_CATEGORIES =
-            "category.version,category.display_order), updated_current AS MATERIALIZED (SELECT category.* FROM updated_categories ";
+            ("category.version,category.display_order), updated_current AS MATERIALIZE"
+                    + "D (SELECT category.* FROM updated_categories ");
     public static final String CATALOG_CATEGORY_SERVICE_EMPTY_LITERAL = "";
     public static final String CATALOG_CATEGORY_SERVICE_MOVE_PLAN_CATEGORY_PLAN_CATEGORY_REF_CURRENT_CATEGORY_REF =
             "category JOIN move_plan plan ON category.category_ref=plan.current_category_ref), ";
@@ -385,18 +385,15 @@ public final class CatalogCategoryServiceSql {
             "WHERE data_node_ref=? AND brand_ref=? AND category_ref=? ";
     public static final String CATALOG_CATEGORY_SERVICE_CONDITION_VERSION_STATUS_VOIDED =
             "AND version=? AND status <> 'VOIDED'";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_CTE_ANCESTORS_CATEGORY_REF_PARENT_CATEGORY_REF_DEPTH_ALTERNATE_A =
-                    "WITH RECURSIVE ancestors(category_ref,parent_category_ref,depth) AS (";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_SELECT_CATALOG_CATEGORY_CATEGORY_REF_PARENT_CATEGORY_REF_ALTERNATE_A =
-                    "SELECT category_ref,parent_category_ref,1 FROM catalog.catalog_category ";
+    public static final String CTE_ANCESTORS_CATG_REF_PARENT_ALT_A_007 =
+            "WITH RECURSIVE ancestors(category_ref,parent_category_ref,depth) AS (";
+    public static final String SELECT_CAT_CATG_REF_PARENT_ALT_A_008 =
+            "SELECT category_ref,parent_category_ref,1 FROM catalog.catalog_category ";
     public static final String CATALOG_CATEGORY_SERVICE_WHERE_DATA_NODE_REF_ALTERNATE_A = "WHERE data_node_ref=? ";
     public static final String CATALOG_CATEGORY_SERVICE_CONDITION_BRAND_REF_CATEGORY_REF_STATUS_VOIDED_ALTERNATE_A =
             "AND brand_ref=? AND category_ref=? AND status <> 'VOIDED' UNION ALL ";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_SELECT_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF_ANCESTORS_ALTERNATE_A =
-                    "SELECT parent.category_ref,parent.parent_category_ref,ancestors.depth+1 ";
+    public static final String SELECT_PARENT_CATG_REF_PARENT_ALT_A_009 =
+            "SELECT parent.category_ref,parent.parent_category_ref,ancestors.depth+1 ";
     public static final String CATALOG_CATEGORY_SERVICE_FROM_CLAUSE_CATALOG_CATEGORY_PARENT =
             "FROM catalog.catalog_category parent ";
     public static final String CATALOG_CATEGORY_SERVICE_JOIN_ANCESTORS_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF =
@@ -407,21 +404,18 @@ public final class CatalogCategoryServiceSql {
             "SELECT COALESCE(MAX(depth),0) FROM ancestors";
     public static final String CATALOG_CATEGORY_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE_ALTERNATE_B =
             "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM ";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_ALTERNATE_A =
-                    "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref=? AND ";
+    public static final String CAT_CATG_DATA_NODE_REF_ALT_A_010 =
+            "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref=? AND ";
     public static final String CATALOG_CATEGORY_SERVICE_STATUS_VOIDED = "status <> 'VOIDED'";
     public static final String CATALOG_CATEGORY_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE_ALTERNATE_C =
             "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM ";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_ALTERNATE_B =
-                    "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref=? AND ";
+    public static final String CAT_CATG_DATA_NODE_REF_ALT_B_011 =
+            "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref=? AND ";
     public static final String CATALOG_CATEGORY_SERVICE_STATUS_VOIDED_ALTERNATE_A = "status <> 'VOIDED' FOR UPDATE";
     public static final String CATALOG_CATEGORY_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE_ALTERNATE_D =
             "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM ";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_ALTERNATE_C =
-                    "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref=?";
+    public static final String CAT_CATG_DATA_NODE_REF_ALT_C_012 =
+            "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref=?";
     public static final String CATALOG_CATEGORY_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE_ALTERNATE_E =
             "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM ";
     public static final String CATALOG_CATEGORY_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF =
@@ -480,8 +474,9 @@ public final class CatalogCategoryServiceSql {
     public static final String CATALOG_CATEGORY_SERVICE_CLOSE_PAREN_STATUS_VOIDED_CATEGORY_REF =
             ") AND status <> 'VOIDED' ORDER BY category_ref FOR UPDATE";
     public static final String CATALOG_CATEGORY_SERVICE_CLOSE_PAREN_ITEM_CODE = ") ORDER BY item.code";
-    public static final String
-            CATALOG_CATEGORY_SERVICE_CATEGORY_REF_DATA_NODE_REF_BRAND_REF_CODE_NAME_PARENT_CATEGORY_REF_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_VALUES =
-                    """
-    (category_ref,data_node_ref,brand_ref,code,name,parent_category_ref,display_order,created_at_epoch_millis,updated_at_epoch_millis) VALUES (?,?,?,?,?,?,?,?,?)""";
+    public static final String CATG_REF_DATA_NODE_REF_013 =
+            """
+    (category_ref,data_node_ref,brand_ref,code,name,parent_category_re\
+    f,display_order,created_at_epoch_millis,updated_at_epoch_millis) V\
+    ALUES (?,?,?,?,?,?,?,?,?)""";
 }

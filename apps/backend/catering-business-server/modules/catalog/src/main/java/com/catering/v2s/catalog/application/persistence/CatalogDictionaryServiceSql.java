@@ -19,17 +19,14 @@ public final class CatalogDictionaryServiceSql {
     public static final String CATALOG_DICTIONARY_SERVICE_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE =
             "data_node_ref=? AND brand_ref=? AND dictionary_kind=? AND code=? AND version=? AND ";
     public static final String CATALOG_DICTIONARY_SERVICE_STATUS_VOIDED = "status <> 'VOIDED'";
-    public static final String
-            CATALOG_DICTIONARY_SERVICE_UPDATE_DICTIONARY_ENTRY_DISPLAY_ORDER_VERSION_UPDATED_AT_EPOCH_MILLIS =
-                    "UPDATE catalog.dictionary_entry SET display_order=?,version=version+1,updated_at_epoch_millis=? ";
+    public static final String UPDATE_DICTIONARY_ENTRY_DISP_ORD_001 =
+            "UPDATE catalog.dictionary_entry SET display_order=?,version=version+1,updated_at_epoch_millis=? ";
     public static final String CATALOG_DICTIONARY_SERVICE_WHERE_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE =
             "WHERE data_node_ref=? AND brand_ref=? AND dictionary_kind=? AND code=?";
-    public static final String
-            CATALOG_DICTIONARY_SERVICE_UPDATE_DICTIONARY_ENTRY_STATUS_VERSION_UPDATED_AT_EPOCH_MILLIS =
-                    "UPDATE catalog.dictionary_entry SET status=?,version=version+1,updated_at_epoch_millis=? ";
-    public static final String
-            CATALOG_DICTIONARY_SERVICE_WHERE_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE_ALTERNATE_A =
-                    "WHERE data_node_ref=? AND brand_ref=? AND dictionary_kind=? AND code=? AND ";
+    public static final String UPDATE_DICTIONARY_ENTRY_STATUS_VER_002 =
+            "UPDATE catalog.dictionary_entry SET status=?,version=version+1,updated_at_epoch_millis=? ";
+    public static final String WHERE_DATA_NODE_REF_BRAND_ALT_A_003 =
+            "WHERE data_node_ref=? AND brand_ref=? AND dictionary_kind=? AND code=? AND ";
     public static final String CATALOG_DICTIONARY_SERVICE_VERSION_STATUS_VOIDED = "version=? AND status <> 'VOIDED'";
     public static final String CATALOG_DICTIONARY_SERVICE_WHERE_DISPLAY_ORDER_ENTRY_REF =
             " WHERE display_order > ? OR (display_order = ? AND entry_ref > ?)";
@@ -82,17 +79,16 @@ public final class CatalogDictionaryServiceSql {
             "SELECT EXISTS (SELECT 1 FROM catalog.dictionary_entry WHERE entry_ref=? AND data_node_ref=? AND ";
     public static final String CATALOG_DICTIONARY_SERVICE_BRAND_REF_DICTIONARY_KIND_SKU_ATTRIBUTE =
             "brand_ref=? AND dictionary_kind='SKU_ATTRIBUTE')";
-    public static final String
-            CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_NAME_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND =
-                    "SELECT name FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND dictionary_kind=? ";
+    public static final String SELECT_DICTIONARY_ENTRY_NAME_DATA_004 =
+            ("SELECT name FROM catalog.dictionary_entry WHERE data_node_ref=? AND bran"
+                    + "d_ref=? AND dictionary_kind=? ");
     public static final String CATALOG_DICTIONARY_SERVICE_CONDITION_CODE = "AND code=?";
     public static final String CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_STATUS_DATA_NODE_REF_BRAND_REF =
             "SELECT status FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND ";
     public static final String CATALOG_DICTIONARY_SERVICE_DICTIONARY_KIND_CODE_ALTERNATE_A =
             "dictionary_kind=? AND code=?";
-    public static final String
-            CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_PARENT_ENTRY_REF_DATA_NODE_REF_BRAND_REF =
-                    "SELECT parent_entry_ref FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND ";
+    public static final String SELECT_DICTIONARY_ENTRY_PARENT_ENTRY_005 =
+            "SELECT parent_entry_ref FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND ";
     public static final String CATALOG_DICTIONARY_SERVICE_DICTIONARY_KIND_CODE_ALTERNATE_B =
             "dictionary_kind=? AND code=?";
     public static final String CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_ENTRY_REF_DATA_NODE_REF_BRAND_REF =
@@ -101,13 +97,13 @@ public final class CatalogDictionaryServiceSql {
             "dictionary_kind=? AND code=?";
     public static final String CATALOG_DICTIONARY_SERVICE_SELECT_CATALOG_ITEM_VERSION_DATA_NODE_REF_BRAND_REF =
             "SELECT COALESCE(MAX(version),0) FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=?";
-    public static final String
-            CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_VERSION_DATA_NODE_REF_BRAND_REF_ALTERNATE_A =
-                    "SELECT COALESCE(MAX(version),0) FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? ";
+    public static final String SELECT_DICTIONARY_ENTRY_VER_DATA_ALT_A_006 =
+            ("SELECT COALESCE(MAX(version),0) FROM catalog.dictionary_entry WHERE data"
+                    + "_node_ref=? AND brand_ref=? ");
     public static final String CATALOG_DICTIONARY_SERVICE_CONDITION_DICTIONARY_KIND = "AND dictionary_kind=?";
-    public static final String
-            CATALOG_DICTIONARY_SERVICE_SELECT_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT =
-                    "SELECT operation_id,request_hash,response_json::text FROM catalog.command_receipt WHERE data_node_ref=? ";
+    public static final String SELECT_CMD_RECEIPT_OP_ID_007 =
+            ("SELECT operation_id,request_hash,response_json::text FROM catalog.comman"
+                    + "d_receipt WHERE data_node_ref=? ");
     public static final String CATALOG_DICTIONARY_SERVICE_CONDITION_IDEMPOTENCY_KEY = "AND idempotency_key=?";
     public static final String CATALOG_DICTIONARY_SERVICE_INSERT_INTO_COMMAND_RECEIPT =
             "INSERT INTO catalog.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_hash,";
@@ -115,8 +111,9 @@ public final class CatalogDictionaryServiceSql {
             "response_json,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)";
     public static final String CATALOG_DICTIONARY_SERVICE_IN_LIST_PREFIX = " IN (";
     public static final String CATALOG_DICTIONARY_SERVICE_CLOSE_PAREN = ")";
-    public static final String
-            CATALOG_DICTIONARY_SERVICE_ENTRY_REF_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE_NAME_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_VALUES =
-                    """
-    (entry_ref,data_node_ref,brand_ref,dictionary_kind,code,name,parent_entry_ref,display_order,created_at_epoch_millis,updated_at_epoch_millis) VALUES (?,?,?,?,?,?,?,?,?,?)""";
+    public static final String ENTRY_REF_DATA_NODE_REF_008 =
+            """
+    (entry_ref,data_node_ref,brand_ref,dictionary_kind,code,name,paren\
+    t_entry_ref,display_order,created_at_epoch_millis,updated_at_epoch\
+    _millis) VALUES (?,?,?,?,?,?,?,?,?,?)""";
 }

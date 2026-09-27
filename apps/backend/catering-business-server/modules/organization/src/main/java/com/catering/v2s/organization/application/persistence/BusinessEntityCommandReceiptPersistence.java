@@ -15,10 +15,8 @@ public class BusinessEntityCommandReceiptPersistence {
 
     public int markSucceeded(UUID entityId, String responseJson, UUID workspaceUuid, String idempotencyKey) {
         return jdbc.update(
-                BusinessEntityCommandReceiptServiceSql
-                                .BUSINESS_ENTITY_COMMAND_RECEIPT_SERVICE_UPDATE_ORGANIZATION_COMMAND_RECEIPT_ENTITY_ID_RESPONSE_JSON_ALTERNATE_A
-                        + BusinessEntityCommandReceiptServiceSql
-                                .BUSINESS_ENTITY_COMMAND_RECEIPT_SERVICE_STATE_SUCCEEDED_WORKSPACE_UUID_IDEMPOTENCY_KEY_ALTERNATE_A,
+                BusinessEntityCommandReceiptServiceSql.UPDATE_ORG_CMD_RECEIPT_ENTITY_ALT_A_002
+                        + BusinessEntityCommandReceiptServiceSql.STATE_SUCCEEDED_WS_UUID_IDEMPOTENCY_ALT_A_003,
                 entityId,
                 responseJson,
                 workspaceUuid,
@@ -27,8 +25,7 @@ public class BusinessEntityCommandReceiptPersistence {
 
     public int markAuthorizationSucceeded(UUID headCompanyId, UUID workspaceUuid, String idempotencyKey) {
         return jdbc.update(
-                BusinessEntityCommandReceiptServiceSql
-                                .BUSINESS_ENTITY_COMMAND_RECEIPT_SERVICE_UPDATE_ORGANIZATION_COMMAND_RECEIPT_ENTITY_ID_RESPONSE_JSON
+                BusinessEntityCommandReceiptServiceSql.UPDATE_ORG_CMD_RECEIPT_ENTITY_001
                         + BusinessEntityCommandReceiptServiceSql
                                 .BUSINESS_ENTITY_COMMAND_RECEIPT_SERVICE_STATE_SUCCEEDED_WORKSPACE_UUID_IDEMPOTENCY_KEY,
                 headCompanyId,

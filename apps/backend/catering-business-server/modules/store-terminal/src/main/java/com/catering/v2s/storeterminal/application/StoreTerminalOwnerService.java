@@ -17,10 +17,12 @@ import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi;
+import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.ActivationCandidate;
 import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.AreaCandidate;
 import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.AreaReference;
 import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.CandidatePage;
 import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.CreateCommand;
+import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.OperationsActivationCancellationTarget;
 import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.ReplaceCommand;
 import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.StatusCommand;
 import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.TagCandidate;
@@ -49,6 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,7 +92,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
             TimeProvider time,
             ActivationCodeCandidateSource codeCandidates,
             ObjectMapper json,
-            AuditEventWriter auditEvents) {
+            @Qualifier("storeTerminalAuditEventWriter") AuditEventWriter auditEvents) {
         this.persistence = Objects.requireNonNull(persistence, "persistence");
         this.stores = Objects.requireNonNull(stores, "stores");
         this.servicePoints = Objects.requireNonNull(servicePoints, "servicePoints");
@@ -119,9 +122,54 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
     public TerminalDetail readTerminalDetail(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID terminalRef) {
         requireStore(workspaceUuid, groupWorkspaceKey, storeRef);
-        TerminalRow row = persistence.find(workspaceUuid, groupWorkspaceKey, storeRef, terminalRef);
+        var row = persistence.findDetail(workspaceUuid, groupWorkspaceKey, storeRef, terminalRef);
         if (row == null) throw new TerminalNotFoundException();
-        return detail(row, workspaceUuid, groupWorkspaceKey);
+        return detail(row.terminal(), row.binding(), workspaceUuid, groupWorkspaceKey);
+    }
+
+    @Override
+    @Transactional
+    public ActivationCandidate lockActivationCandidate(
+            String groupWorkspaceKey, ActivationCode activationCode, String surfaceForm) {
+        Objects.requireNonNull(groupWorkspaceKey, "groupWorkspaceKey");
+        Objects.requireNonNull(activationCode, "activationCode");
+        if (!"laptop".equals(surfaceForm) && !"mobile".equals(surfaceForm)) throw new InvalidTerminalInputException();
+        UUID workspaceUuid = persistence.findWorkspaceUuid(groupWorkspaceKey);
+        if (workspaceUuid == null) return null;
+        TerminalRow terminal =
+                persistence.lockByActivationCode(workspaceUuid, groupWorkspaceKey, activationCode.value());
+        if (terminal == null) {
+            return new ActivationCandidate(
+                    workspaceUuid, groupWorkspaceKey, surfaceForm, false, null, null, null, null);
+        }
+        return new ActivationCandidate(
+                workspaceUuid,
+                groupWorkspaceKey,
+                surfaceForm,
+                true,
+                terminal.storeRef(),
+                terminal.terminalRef(),
+                terminal.status(),
+                terminal.deviceType());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OperationsActivationCancellationTarget resolveOperationsActivationCancellationTarget(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID storeRef,
+            UUID terminalRef,
+            long contextVersion,
+            OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireOperationsActivationCancellationGrant(
+                ownerScopeGrant, workspaceUuid, groupWorkspaceKey, storeRef, contextVersion);
+        requireStore(workspaceUuid, groupWorkspaceKey, storeRef);
+        UUID actualStoreRef = persistence.findStoreRef(workspaceUuid, groupWorkspaceKey, terminalRef);
+        if (actualStoreRef == null) throw new TerminalNotFoundException();
+        if (!storeRef.equals(actualStoreRef)) throw new TerminalAuthorizationException();
+        return new OperationsActivationCancellationTarget(
+                workspaceUuid, groupWorkspaceKey, actualStoreRef, terminalRef);
     }
 
     @Override
@@ -257,7 +305,6 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                 requireStore(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
         String name = requiredName(command.name());
         String normalizedName = normalizeName(name);
-        String deviceType = requiredText(command.deviceType(), 32);
         String key = idempotencyKey(command.idempotencyKey());
         String requestHash = requestHash(
                 "replace",
@@ -265,7 +312,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                 command.groupWorkspaceKey(),
                 command.storeRef(),
                 name,
-                deviceType,
+                null,
                 null,
                 command.configuration(),
                 command.terminalRef(),
@@ -287,7 +334,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                     List.of(oldNormalizedName, normalizedName));
             JsonNode previousDocument = parseConfiguration(before.configurationJson());
             TerminalConfigurationCodec.Normalized normalized =
-                    normalizeConfiguration(deviceType, command.configuration(), previousDocument);
+                    normalizeConfiguration(before.deviceType(), command.configuration(), previousDocument);
             ReferenceFacts referenceFacts = validateReferences(
                     command.workspaceUuid(),
                     command.groupWorkspaceKey(),
@@ -303,7 +350,6 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                                 command.terminalRef(),
                                 name,
                                 normalizedName,
-                                deviceType,
                                 normalized.document().toString(),
                                 command.expectedVersion(),
                                 now)
@@ -323,7 +369,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                     now,
                     REPLACED,
                     "TERMINAL_REPLACED",
-                    replaceChanges(before, name, deviceType, previousDocument, normalized.document(), referenceFacts));
+                    replaceChanges(before, name, previousDocument, normalized.document(), referenceFacts));
             persistence.insertReceipt(
                     command.workspaceUuid(), command.groupWorkspaceKey(), key, requestHash, receiptJson(mutation), now);
             return mutation;
@@ -522,13 +568,11 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
     private List<AuditChange> replaceChanges(
             TerminalRow before,
             String name,
-            String deviceType,
             JsonNode oldDocument,
             JsonNode newDocument,
             ReferenceFacts referenceFacts) {
         List<AuditChange> changes = new ArrayList<>();
         addIfChanged(changes, "name", before.name(), name);
-        addIfChanged(changes, "deviceType", before.deviceType(), deviceType);
         Map<String, String> oldSummary = configurationSummaries(oldDocument, referenceFacts);
         Map<String, String> newSummary = configurationSummaries(newDocument, referenceFacts);
         for (String field : List.of("printers", "functions", "ranges", "scenes")) {
@@ -553,7 +597,8 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                         printerBrandLabel(printer.path("brandKey").asText("")),
                         printerModelLabel(printer.path("modelKey").asText("")),
                         printerPaperLabel(printer.path("paperSpecKey").asText("")),
-                        printerConnectionLabel(printer.path("connectionMethodKey").asText("")),
+                        printerConnectionLabel(
+                                printer.path("connectionMethodKey").asText("")),
                         printer.hasNonNull("connectionParameter") ? "参数已配置" : "无参数"));
             }
         }
@@ -574,7 +619,10 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                         String rangeKey = range.path("key").asText("");
                         String selection = range.path("all").asBoolean(false)
                                 ? "全部"
-                                : refs.stream().map(ref -> referenceLabel(rangeKey, ref, referenceFacts)).toList().stream()
+                                : refs.stream()
+                                        .map(ref -> referenceLabel(rangeKey, ref, referenceFacts))
+                                        .toList()
+                                        .stream()
                                         .collect(java.util.stream.Collectors.joining("、"));
                         ranges.add(functionLabel + " · " + rangeLabel(rangeKey) + "：" + selection);
                     }
@@ -592,8 +640,11 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                         String orderLabels = stringValues(scene.path("orderTypes")).stream()
                                 .map(StoreTerminalOwnerService::orderTypeLabel)
                                 .collect(java.util.stream.Collectors.joining("、"));
-                        scenes.add(functionLabel + " · " + sceneLabel(functionKey, sceneKey)
-                                + "：订单类型=" + orderLabels + "；打印机=" + String.join("、", names));
+                        // spotless:off
+                        scenes.add(functionLabel + " · " + sceneLabel(functionKey,
+                            sceneKey) + "：订单类型=" + orderLabels
+                        // spotless:on
+                                + "；打印机=" + String.join("、", names));
                     }
             }
         }
@@ -671,11 +722,13 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
         try {
             UUID parsed = UUID.fromString(ref);
             if (StoreTerminalRules.RANGE_TABLE_AREA.equals(rangeKey)) {
-                StoreServicePointOwnerApi.AreaReference area = referenceFacts.areas().get(parsed);
+                StoreServicePointOwnerApi.AreaReference area =
+                        referenceFacts.areas().get(parsed);
                 if (area != null) return area.name() + "（" + area.code() + "）";
             }
             if (StoreTerminalRules.RANGE_PRODUCTION_TAG.equals(rangeKey)) {
-                CatalogProductionTagOwnerApi.ProductionTagReferenceReadback tag = referenceFacts.tags().get(parsed);
+                CatalogProductionTagOwnerApi.ProductionTagReferenceReadback tag =
+                        referenceFacts.tags().get(parsed);
                 if (tag != null) return tag.name() + "（" + tag.code() + "）";
             }
         } catch (IllegalArgumentException ignored) {
@@ -867,6 +920,21 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
         }
     }
 
+    private static void requireOperationsActivationCancellationGrant(
+            OperationsOwnerScopeGrant grant, UUID workspaceUuid, String groupKey, UUID storeRef, long contextVersion) {
+        if (grant == null
+                || !grant.matchesRequirementAndCapability(
+                        workspaceUuid,
+                        groupKey,
+                        "STORE",
+                        storeRef,
+                        "REQ_CANCEL_OPERATIONS_STORE_TERMINAL_ACTIVATION",
+                        EDIT_CAPABILITY)
+                || !grant.matchesExpectedContextVersion(contextVersion)) {
+            throw new TerminalAuthorizationException();
+        }
+    }
+
     private static String requiredName(String value) {
         String normalized =
                 Normalizer.normalize(Objects.requireNonNullElse(value, "").trim(), Normalizer.Form.NFC);
@@ -908,7 +976,11 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
         if (pageSize < 1 || pageSize > 100) throw new InvalidTerminalInputException();
     }
 
-    private TerminalDetail detail(TerminalRow row, UUID workspaceUuid, String groupWorkspaceKey) {
+    private TerminalDetail detail(
+            TerminalRow row,
+            com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.TerminalBinding binding,
+            UUID workspaceUuid,
+            String groupWorkspaceKey) {
         JsonNode configuration = parseConfiguration(row.configurationJson());
         List<UUID> areaRefs = rangeRefs(configuration, StoreTerminalRules.RANGE_TABLE_AREA);
         List<UUID> tagRefs = rangeRefs(configuration, StoreTerminalRules.RANGE_PRODUCTION_TAG);
@@ -942,7 +1014,8 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
                 row.activationCode(),
                 configuration,
                 areas,
-                tags);
+                tags,
+                binding);
     }
 
     private static List<UUID> rangeRefs(JsonNode document, String key) {

@@ -72,6 +72,7 @@ dependencies {
     implementation(project(":apps:backend:catering-business-server:modules:business-channel"))
     implementation(project(":apps:backend:catering-business-server:modules:sales-menu"))
     implementation(project(":apps:backend:catering-business-server:modules:store-terminal"))
+    implementation(project(":apps:backend:catering-business-server:modules:terminal-binding"))
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -86,6 +87,97 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter:1.21.4")
     testImplementation("org.testcontainers:postgresql:1.21.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+val terminalDataServerProject = rootProject.project(":apps:backend:terminal-data-server")
+val terminalDataServerBootJar = rootProject.file("apps/backend/terminal-data-server/build/libs/terminal-data-server.jar")
+val backendAcceptanceClasspathReport =
+    layout.buildDirectory.file("reports/backend-acceptance/runtime-classpaths.txt")
+val verifyBackendAcceptanceRuntimeClasspaths = tasks.register("verifyBackendAcceptanceRuntimeClasspaths") {
+    group = "verification"
+    description = "Verifies isolated business acceptance and TDS runtime dependency graphs."
+    dependsOn(":apps:backend:terminal-data-server:bootJar")
+    inputs.files(configurations.named("testRuntimeClasspath"))
+    outputs.file(backendAcceptanceClasspathReport)
+    doLast {
+        val businessClasspath = configurations.getByName("testRuntimeClasspath")
+        val tdsClasspath = terminalDataServerProject.configurations.getByName("runtimeClasspath")
+        val businessArtifacts = businessClasspath.resolvedConfiguration.resolvedArtifacts
+            .map { artifact ->
+                val id = artifact.moduleVersion.id
+                "${id.group}:${artifact.name}:${id.version}"
+            }
+            .toSortedSet()
+        val tdsArtifacts = tdsClasspath.resolvedConfiguration.resolvedArtifacts
+            .map { artifact ->
+                val id = artifact.moduleVersion.id
+                "${id.group}:${artifact.name}:${id.version}"
+            }
+            .toSortedSet()
+        val businessComponents = businessClasspath.incoming.resolutionResult.allComponents
+            .map { it.id.displayName }
+        check(businessArtifacts.any { it.startsWith("org.springframework.boot:spring-boot:") && it.endsWith(":4.1.0") }) {
+            "BUSINESS_ACCEPTANCE_SPRING_BOOT_VERSION_MISMATCH:4.1.0"
+        }
+        check(businessComponents.none { it.contains(":apps:backend:terminal-data-server") }) {
+            "BACKEND_ACCEPTANCE_TDS_ON_BUSINESS_TEST_RUNTIME_CLASSPATH"
+        }
+        val prohibitedTdsArtifacts = listOf(
+            "catering-business-server",
+            "platform-admin-iam",
+            "organization",
+            "extension",
+            "catalog",
+            "asset",
+            "store-terminal",
+            "flyway-core",
+            "flyway-database-postgresql",
+            "minio",
+        )
+        val prohibited = tdsArtifacts.filter { artifact ->
+            val coordinates = artifact.split(':')
+            coordinates.getOrNull(0) == "software.amazon.awssdk" ||
+                prohibitedTdsArtifacts.any { it in coordinates }
+        }
+        check(prohibited.isEmpty()) {
+            "TDS_RUNTIME_PROHIBITED_ARTIFACT:${prohibited.joinToString(",")}" 
+        }
+        fun requireVersion(module: String, version: String) {
+            check(tdsArtifacts.any { it.startsWith("$module:") && it.endsWith(":$version") }) {
+                "TDS_RUNTIME_VERSION_MISMATCH:$module:$version"
+            }
+        }
+        requireVersion("org.springframework.boot:spring-boot", "4.1.0")
+        requireVersion("io.projectreactor.netty:reactor-netty-http", "1.3.7")
+        requireVersion("io.projectreactor:reactor-core", "3.8.7")
+        check(tdsArtifacts.filter { it.startsWith("io.netty:") }.all { it.endsWith(":4.2.18.Final") }) {
+            "TDS_RUNTIME_NETTY_VERSION_MISMATCH"
+        }
+        check(terminalDataServerBootJar.isFile) { "TDS_BOOT_JAR_MISSING" }
+        val report = buildString {
+            appendLine("schemaVersion=1")
+            appendLine("businessTestRuntimeClasspath=${businessArtifacts.joinToString(",")}")
+            appendLine("tdsRuntimeClasspath=${tdsArtifacts.joinToString(",")}")
+            appendLine("tdsBootJar=${terminalDataServerBootJar.absolutePath}")
+        }
+        val reportFile = backendAcceptanceClasspathReport.get().asFile
+        reportFile.parentFile.mkdirs()
+        reportFile.writeText(report)
+        println("BACKEND_ACCEPTANCE_CLASSPATH_REPORT=${reportFile.absolutePath}")
+        println("BACKEND_ACCEPTANCE_BUSINESS_TEST_RUNTIME_ARTIFACTS=${businessArtifacts.size}")
+        println("BACKEND_ACCEPTANCE_TDS_RUNTIME_ARTIFACTS=${tdsArtifacts.size}")
+    }
+}
+
+tasks.named<Test>("test") {
+    dependsOn(verifyBackendAcceptanceRuntimeClasspaths)
+    systemProperty("v2s.acceptance.repository-root", rootProject.projectDir.absolutePath)
+    systemProperty("v2s.acceptance.runtime-classpath-report", backendAcceptanceClasspathReport.get().asFile.absolutePath)
+    systemProperty("v2s.acceptance.tds-boot-jar", terminalDataServerBootJar.absolutePath)
+    systemProperty(
+        "v2s.acceptance.registration-race-red-control",
+        providers.gradleProperty("v2s.acceptance.registration-race-red-control").getOrElse("false"),
+    )
 }
 
 // The architecture selector is a static Java test surface, while the app-level

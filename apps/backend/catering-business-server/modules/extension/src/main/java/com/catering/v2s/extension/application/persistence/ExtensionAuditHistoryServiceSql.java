@@ -14,9 +14,8 @@ public final class ExtensionAuditHistoryServiceSql {
     public static final String EXTENSION_AUDIT_HISTORY_SERVICE_AUDIT_EVENT_CHANGES_JSON_TEXT_WORKSPACE_UUID =
             "changes_json::text FROM extension.audit_event WHERE workspace_uuid=? AND ";
     public static final String EXTENSION_AUDIT_HISTORY_SERVICE_GROUP_WORKSPACE_KEY = "group_workspace_key=? ";
-    public static final String
-            EXTENSION_AUDIT_HISTORY_SERVICE_CONDITION_ENTITY_TYPE_EXTENSION_DEFINITION_ENTITY_REF_TEXT =
-                    "AND entity_type='EXTENSION_DEFINITION' AND entity_ref_text=? ORDER BY ";
+    public static final String CONDITION_ENTITY_TYPE_EXTENSION_DEF_001 =
+            "AND entity_type='EXTENSION_DEFINITION' AND entity_ref_text=? ORDER BY ";
     public static final String EXTENSION_AUDIT_HISTORY_SERVICE_OCCURRED_AT_EPOCH_MILLIS = "occurred_at_epoch_millis ";
     public static final String EXTENSION_AUDIT_HISTORY_SERVICE_DESC_DIRECTION_DESC_ID_DESC_LIMIT_OFFSET =
             "DESC, id DESC LIMIT ? OFFSET ?";

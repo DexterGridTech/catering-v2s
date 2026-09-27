@@ -3,7 +3,7 @@
   "kind": "generated-operation-authorization-catalog",
   "generatedFrom": "contracts/registry/iam-org-governance-manifest.json",
   "closure": {
-    "mutatingOperations": 169
+    "mutatingOperations": 171
   },
   "requirements": [
     {
@@ -894,6 +894,27 @@
     },
     {
       "operationIdentity": {
+        "operationId": "cancelOperationsStoreTerminalActivation",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel",
+        "consumerFace": "operations-admin",
+        "ownerModule": "terminal-binding"
+      },
+      "requirementId": "REQ_CANCEL_OPERATIONS_STORE_TERMINAL_ACTIVATION",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "STORE": "EDIT_STORE_TERMINAL"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "terminal-binding",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_BINDING",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_BINDING_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CANCEL_OPERATIONS_STORE_TERMINAL_ACTIVATION"
+    },
+    {
+      "operationIdentity": {
         "operationId": "cancelOperationsWorkspaceGroupInvitation",
         "method": "POST",
         "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
@@ -986,6 +1007,25 @@
       "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_CANCEL_OPERATIONS_WORKSPACE_STORE_INVITATION"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "cancelTerminalActivation",
+        "method": "POST",
+        "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel",
+        "consumerFace": "terminal",
+        "ownerModule": "terminal-binding"
+      },
+      "requirementId": "REQ_CANCEL_TERMINAL_ACTIVATION",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {},
+      "unsupportedResourceTypeDecision": null,
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "resolverId": "TERMINAL_CREDENTIAL_AUTHENTICATOR",
+      "ownerModule": "terminal-binding",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_BINDING",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_BINDING_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CANCEL_TERMINAL_ACTIVATION"
     },
     {
       "operationIdentity": {

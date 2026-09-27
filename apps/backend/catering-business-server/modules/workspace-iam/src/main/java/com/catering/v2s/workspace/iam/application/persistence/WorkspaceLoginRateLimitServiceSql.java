@@ -2,18 +2,16 @@ package com.catering.v2s.workspace.iam.application.persistence;
 
 /** SQL text fragments owned by WorkspaceLoginRateLimitService; B3 relocates text only and does not change execution. */
 public final class WorkspaceLoginRateLimitServiceSql {
-    public static final String
-            WORKSPACE_LOGIN_RATE_LIMIT_SERVICE_DELETE_WORKSPACE_LOGIN_RATE_LIMIT_BUCKET_GROUP_WORKSPACE_KEY =
-                    "DELETE FROM workspace_iam.workspace_login_rate_limit_bucket WHERE group_workspace_key=? AND ";
+    public static final String DELETE_WS_LOGIN_RATE_LIMIT_001 =
+            "DELETE FROM workspace_iam.workspace_login_rate_limit_bucket WHERE group_workspace_key=? AND ";
     public static final String WORKSPACE_LOGIN_RATE_LIMIT_SERVICE_DIMENSION_ACCOUNT_FINGERPRINT =
             "dimension='ACCOUNT' AND fingerprint=?";
     public static final String WORKSPACE_LOGIN_RATE_LIMIT_SERVICE_SELECT_WORKSPACE_LOGIN_RATE_LIMIT_BUCKET =
             "SELECT locked_until_epoch_millis FROM workspace_iam.workspace_login_rate_limit_bucket WHERE ";
     public static final String WORKSPACE_LOGIN_RATE_LIMIT_SERVICE_GROUP_WORKSPACE_KEY_DIMENSION_FINGERPRINT =
             "group_workspace_key=? AND dimension=? AND fingerprint=?";
-    public static final String
-            WORKSPACE_LOGIN_RATE_LIMIT_SERVICE_SELECT_WINDOW_STARTED_AT_EPOCH_MILLIS_FAILED_ATTEMPTS =
-                    "SELECT window_started_at_epoch_millis, failed_attempts FROM ";
+    public static final String SELECT_WINDOW_STARTED_AT_EPOCH_002 =
+            "SELECT window_started_at_epoch_millis, failed_attempts FROM ";
     public static final String WORKSPACE_LOGIN_RATE_LIMIT_SERVICE_WORKSPACE_LOGIN_RATE_LIMIT_BUCKET =
             "workspace_iam.workspace_login_rate_limit_bucket WHERE group_workspace_key=? AND dimension=? ";
     public static final String WORKSPACE_LOGIN_RATE_LIMIT_SERVICE_CONDITION = "AND ";

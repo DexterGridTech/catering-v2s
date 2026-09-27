@@ -1,0 +1,130 @@
+{
+  "protocolVersion": 1,
+  "endpoint": {
+    "method": "GET",
+    "path": "/tdp/{groupWorkspaceKey}/ws"
+  },
+  "encoding": "UTF-8 JSON text messages",
+  "messages": [
+    {
+      "type": "AUTHENTICATE",
+      "direction": "device_to_tds",
+      "firstMessage": true,
+      "maxUtf8Bytes": 65536,
+      "fields": {
+        "terminalRef": {"type": "string", "grammar": "R-4.1 terminal route identity"},
+        "terminalCredential": {"type": "string", "format": "canonical-positive-generation.canonical-unpadded-base64url-32-byte-secret"},
+        "deviceId": {"type": "string", "minUtf8Bytes": 1, "maxUtf8Bytes": 128},
+        "appVersion": {"type": "string", "minUtf8Bytes": 1, "maxUtf8Bytes": 64}
+      },
+      "maxSerializedUtf8Bytes": 65536,
+      "additionalFields": false
+    },
+    {
+      "type": "SESSION_READY",
+      "direction": "tds_to_device",
+      "fields": {
+        "sessionId": {"type": "string", "minUtf8Bytes": 1, "maxUtf8Bytes": 128},
+        "nodeId": {"type": "string", "minUtf8Bytes": 1, "maxUtf8Bytes": 128},
+        "serverTime": {"type": "string", "format": "RFC3339-UTC"},
+        "heartbeatIntervalMs": {"type": "integer", "minimum": 1000},
+        "heartbeatTimeoutMs": {"type": "integer", "minimumFormula": "2 * heartbeatIntervalMs"}
+      },
+      "additionalFields": false
+    },
+    {
+      "type": "PING",
+      "direction": "device_to_tds",
+      "fields": {
+        "seq": {"type": "integer", "minimum": 1, "maximum": 9007199254740991, "perSession": "strictly increasing"},
+        "clientTs": {"type": "string", "format": "RFC3339-UTC"},
+        "lastRttMs": {"type": "number", "minimum": 0, "initialValue": 0}
+      },
+      "additionalFields": false
+    },
+    {
+      "type": "PONG",
+      "direction": "tds_to_device",
+      "fields": {
+        "seq": {"type": "integer", "sameAs": "accepted PING.seq"},
+        "serverTs": {"type": "string", "format": "RFC3339-UTC"}
+      },
+      "additionalFields": false
+    }
+  ],
+  "close": {
+    "application": {
+      "code": 4000,
+      "reasons": [
+        "ACTIVATION_CANCELLED",
+        "CREDENTIAL_INVALID",
+        "GROUP_WORKSPACE_DISABLED",
+        "TERMINAL_DISABLED",
+        "SESSION_REPLACED",
+        "REDIRECT_TO_NEXT_NODE",
+        "NODE_BUSY",
+        "AUTHENTICATION_TIMEOUT",
+        "HEARTBEAT_TIMEOUT",
+        "SERVER_ERROR",
+        "NETWORK_ERROR",
+        "UNKNOWN"
+      ]
+    },
+    "standardExceptions": [
+      {
+        "code": 1002,
+        "reason": "PROTOCOL_ERROR",
+        "when": [
+          "data frame RSV1 is set without negotiated permessage-deflate",
+          "RSV1 is set on a WebSocket control frame",
+          "WebSocket framing or negotiated extension state is invalid"
+        ]
+      },
+      {
+        "code": 1009,
+        "reason": "MESSAGE_TOO_BIG",
+        "when": [
+          "frame payload exceeds 65536 bytes",
+          "permessage-deflate output exceeds 65536 bytes during decompression",
+          "complete decompressed message, including fragments, exceeds 65536 bytes"
+        ]
+      }
+    ],
+    "unknownApplicationMessage": "4000/UNKNOWN"
+  },
+  "compression": {
+    "extension": "permessage-deflate",
+    "rfc": 7692,
+    "enabledOnlyWhenClientOffers": true,
+    "unsupportedExtensions": ["deflate-frame"],
+    "contextTakeover": "none_in_both_directions",
+    "requiredServerResponseParameters": [
+      "client_no_context_takeover",
+      "server_no_context_takeover"
+    ],
+    "acceptedOfferClasses": [
+      "bare permessage-deflate",
+      "permessage-deflate with client_max_window_bits",
+      "permessage-deflate already carrying both no-context-takeover parameters"
+    ],
+    "offerHandling": {
+      "acceptedOfferResponse": "include both requiredServerResponseParameters",
+      "offerWithoutPermessageDeflate": "no extension response",
+      "malformedOrDuplicatePermessageDeflateParameters": "no extension response",
+      "deflateFrameOnly": "no extension response",
+      "deflateFrameTogetherWithPermessageDeflate": "accept permessage-deflate only"
+    },
+    "rsv1": {
+      "negotiatedDataFrame": "decompress before application-message validation, including the first AUTHENTICATE message",
+      "unnegotiatedDataFrame": "close 1002/PROTOCOL_ERROR before application processing",
+      "controlFrame": "RSV1 must be zero; otherwise close 1002/PROTOCOL_ERROR",
+      "dataMessagesMayBePlain": true
+    },
+    "limits": {
+      "maxFramePayloadBytes": 65536,
+      "maxDecompressedMessageBytes": 65536,
+      "maxCompleteDecompressedMessageBytes": 65536,
+      "overflowClose": "1009/MESSAGE_TOO_BIG"
+    }
+  }
+}

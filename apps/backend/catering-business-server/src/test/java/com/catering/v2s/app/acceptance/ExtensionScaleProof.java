@@ -193,7 +193,8 @@ final class ExtensionScaleProof {
                             "perKeyExpressionIndexesAdded", false,
                             "runtimeDdl", false,
                             "reason",
-                                    "measure the accepted JSONB persistence shape before considering one generic additive index"));
+                                    ("measure the accepted JSONB persistence shape before considering one gene"
+                                            + "ric additive index")));
             evidence.put("status", "PASS");
             writeEvidence(mapper, evidencePath, evidence);
         } catch (Throwable failure) {
@@ -240,7 +241,8 @@ final class ExtensionScaleProof {
                 "INSERT INTO organization.head_company (id, workspace_uuid, group_workspace_key, code, name, "
                         + "legal_name, credit_code, status, version, created_at_epoch_millis, updated_at_epoch_millis, "
                         + "remark, extension_values, extension_rule_revision) VALUES (?, ?, ?, 'scale-head-company', "
-                        + "'Scale Head Company', 'Scale Head Company Ltd', '91310000SCALEHEAD', 'ENABLED', 1, ?, ?, NULL, "
+                        + ("'Scale Head Company', 'Scale Head Company Ltd', '91310000SCALEHEAD', 'EN"
+                                + "ABLED', 1, ?, ?, NULL, ")
                         + "'{}'::jsonb, 0)",
                 id,
                 fixture.workspaceUuid(),
@@ -253,11 +255,14 @@ final class ExtensionScaleProof {
         UUID id =
                 UUID.nameUUIDFromBytes((SCALE_PREFIX + ":contract").getBytes(java.nio.charset.StandardCharsets.UTF_8));
         jdbc.update(
-                "INSERT INTO contract.store_contract (id, workspace_uuid, group_workspace_key, contract_no, store_id, tenant_id, "
+                ("INSERT INTO contract.store_contract (id, workspace_uuid, group_workspace"
+                                + "_key, contract_no, store_id, tenant_id, ")
                         + "effective_from, effective_to, phase_name_snapshot, notes, items_json, extension_values, "
-                        + "extension_rule_revision, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, "
+                        + ("extension_rule_revision, status, version, created_at_epoch_millis, updat"
+                                + "ed_at_epoch_millis) VALUES (?, ?, ?, ")
                         + "'scale-base-contract', ?, ?, DATE '2026-01-01', NULL, 'Opening', 'Scale Base Contract', "
-                        + "'[ {\"code\": \"scale-item\", \"name\": \"Scale Item\" } ]'::jsonb, '{}'::jsonb, 0, 'ACTIVE', 1, ?, ?)",
+                        + ("'[ {\"code\": \"scale-item\", \"name\": \"Scale Item\" } ]'::jsonb, '{}'"
+                                + "::jsonb, 0, 'ACTIVE', 1, ?, ?)"),
                 id,
                 fixture.workspaceUuid(),
                 fixture.groupWorkspaceKey(),
@@ -278,9 +283,11 @@ final class ExtensionScaleProof {
                         "e.workspace_uuid=? AND e.group_workspace_key=?",
                         List.of(fixture.workspaceUuid(), fixture.groupWorkspaceKey()),
                         "INSERT INTO organization.brand (id, workspace_uuid, group_workspace_key, code, name, status, "
-                                + "version, created_at_epoch_millis, updated_at_epoch_millis, alias, remark, extension_values, "
+                                + ("version, created_at_epoch_millis, updated_at_epoch_millis, alias, remark"
+                                        + ", extension_values, ")
                                 + "extension_rule_revision) SELECT md5(? || ':brand:' || gs::text)::uuid, ?, ?, "
-                                + "'scale-brand-' || gs::text, 'Scale Brand ' || gs::text, 'ENABLED', 1, ?, ?, NULL, NULL, "
+                                + ("'scale-brand-' || gs::text, 'Scale Brand ' || gs::text, 'ENABLED', 1, ?,"
+                                        + " ?, NULL, NULL, ")
                                 + json + ", 0 FROM generate_series(1, "
                                 + GENERATED_ROWS
                                 + ") AS gs",
@@ -291,10 +298,14 @@ final class ExtensionScaleProof {
                         "organization.tenant e",
                         "e.workspace_uuid=? AND e.group_workspace_key=?",
                         List.of(fixture.workspaceUuid(), fixture.groupWorkspaceKey()),
-                        "INSERT INTO organization.tenant (id, workspace_uuid, group_workspace_key, code, name, legal_name, "
-                                + "credit_code, status, version, created_at_epoch_millis, updated_at_epoch_millis, remark, "
-                                + "extension_values, extension_rule_revision) SELECT md5(? || ':tenant:' || gs::text)::uuid, ?, ?, "
-                                + "'scale-tenant-' || gs::text, 'Scale Tenant ' || gs::text, 'Scale Tenant ' || gs::text || ' Ltd', "
+                        ("INSERT INTO organization.tenant (id, workspace_uuid, group_workspace_key"
+                                        + ", code, name, legal_name, ")
+                                + ("credit_code, status, version, created_at_epoch_millis, updated_at_epoch_"
+                                        + "millis, remark, ")
+                                + ("extension_values, extension_rule_revision) SELECT md5(? || ':tenant:' ||"
+                                        + " gs::text)::uuid, ?, ?, ")
+                                + ("'scale-tenant-' || gs::text, 'Scale Tenant ' || gs::text, 'Scale Tenant "
+                                        + "' || gs::text || ' Ltd', ")
                                 + "'91310000SCALE' || lpad(gs::text, 6, '0'), 'ENABLED', 1, ?, ?, NULL, "
                                 + json + ", 0 FROM generate_series(1, "
                                 + GENERATED_ROWS
@@ -307,9 +318,12 @@ final class ExtensionScaleProof {
                         "e.workspace_uuid=? AND e.group_workspace_key=?",
                         List.of(fixture.workspaceUuid(), fixture.groupWorkspaceKey()),
                         "INSERT INTO organization.head_company (id, workspace_uuid, group_workspace_key, code, name, "
-                                + "legal_name, credit_code, status, version, created_at_epoch_millis, updated_at_epoch_millis, "
-                                + "remark, extension_values, extension_rule_revision) SELECT md5(? || ':head:' || gs::text)::uuid, ?, ?, "
-                                + "'scale-head-' || gs::text, 'Scale Head ' || gs::text, 'Scale Head ' || gs::text || ' Ltd', "
+                                + ("legal_name, credit_code, status, version, created_at_epoch_millis, updat"
+                                        + "ed_at_epoch_millis, ")
+                                + ("remark, extension_values, extension_rule_revision) SELECT md5(? || ':hea"
+                                        + "d:' || gs::text)::uuid, ?, ?, ")
+                                + ("'scale-head-' || gs::text, 'Scale Head ' || gs::text, 'Scale Head ' || g"
+                                        + "s::text || ' Ltd', ")
                                 + "'91310000SCALEH' || lpad(gs::text, 6, '0'), 'ENABLED', 1, ?, ?, NULL, "
                                 + json + ", 0 FROM generate_series(1, "
                                 + GENERATED_ROWS
@@ -321,11 +335,15 @@ final class ExtensionScaleProof {
                         "organization.store e",
                         "e.workspace_uuid=? AND e.group_workspace_key=? AND e.project_id=?",
                         List.of(fixture.workspaceUuid(), fixture.groupWorkspaceKey(), fixture.projectId()),
-                        "INSERT INTO organization.store (id, workspace_uuid, group_workspace_key, project_id, tenant_id, brand_id, "
-                                + "head_company_id, code, name, status, version, created_at_epoch_millis, updated_at_epoch_millis, "
-                                + "notes, extension_values, extension_rule_revision) SELECT md5(? || ':store:' || gs::text)::uuid, ?, ?, ?, "
+                        ("INSERT INTO organization.store (id, workspace_uuid, group_workspace_key,"
+                                        + " project_id, tenant_id, brand_id, ")
+                                + ("head_company_id, code, name, status, version, created_at_epoch_millis, u"
+                                        + "pdated_at_epoch_millis, ")
+                                + ("notes, extension_values, extension_rule_revision) SELECT md5(? || ':stor"
+                                        + "e:' || gs::text)::uuid, ?, ?, ?, ")
                                 + "md5(? || ':tenant:' || gs::text)::uuid, md5(? || ':brand:' || gs::text)::uuid, "
-                                + "md5(? || ':head:' || gs::text)::uuid, 'scale-store-' || gs::text, 'Scale Store ' || gs::text, 'ENABLED', 1, ?, ?, NULL, "
+                                + ("md5(? || ':head:' || gs::text)::uuid, 'scale-store-' || gs::text, 'Scale"
+                                        + " Store ' || gs::text, 'ENABLED', 1, ?, ?, NULL, ")
                                 + json + ", 0 FROM generate_series(1, "
                                 + GENERATED_ROWS
                                 + ") AS gs",
@@ -345,12 +363,17 @@ final class ExtensionScaleProof {
                         "contract.store_contract e JOIN organization.store s ON s.id=e.store_id",
                         "e.workspace_uuid=? AND e.group_workspace_key=? AND s.project_id=?",
                         List.of(fixture.workspaceUuid(), fixture.groupWorkspaceKey(), fixture.projectId()),
-                        "INSERT INTO contract.store_contract (id, workspace_uuid, group_workspace_key, contract_no, store_id, tenant_id, "
-                                + "effective_from, effective_to, phase_name_snapshot, notes, items_json, extension_values, "
-                                + "extension_rule_revision, status, version, created_at_epoch_millis, updated_at_epoch_millis) SELECT "
+                        ("INSERT INTO contract.store_contract (id, workspace_uuid, group_workspace"
+                                        + "_key, contract_no, store_id, tenant_id, ")
+                                + ("effective_from, effective_to, phase_name_snapshot, notes, items_json, ex"
+                                        + "tension_values, ")
+                                + ("extension_rule_revision, status, version, created_at_epoch_millis, updat"
+                                        + "ed_at_epoch_millis) SELECT ")
                                 + "md5(? || ':contract:' || gs::text)::uuid, ?, ?, 'scale-contract-' || gs::text, "
-                                + "md5(? || ':store:' || gs::text)::uuid, md5(? || ':tenant:' || gs::text)::uuid, DATE '2026-01-01', NULL, "
-                                + "'Opening', 'Scale Contract', '[{\"code\":\"scale-item\",\"name\":\"Scale Item\"}]'::jsonb, "
+                                + ("md5(? || ':store:' || gs::text)::uuid, md5(? || ':tenant:' || gs::text):"
+                                        + ":uuid, DATE '2026-01-01', NULL, ")
+                                + ("'Opening', 'Scale Contract', '[{\"code\":\"scale-item\",\"name\":\"Scale"
+                                        + " Item\"}]'::jsonb, ")
                                 + json + ", 0, 'ACTIVE', 1, ?, ? FROM generate_series(1, "
                                 + GENERATED_ROWS
                                 + ") AS gs",
@@ -396,64 +419,75 @@ final class ExtensionScaleProof {
 
     private static List<OwnerOperation> ownerOperations(BackendAcceptanceTest.Fixture fixture) {
         List<OwnerOperation> result = new ArrayList<>();
-        result.add(
-                businessOperation(
-                        fixture,
-                        "getOperationsOrganizationBrands",
-                        "BRAND",
-                        true,
-                        "BusinessEntityTaskReadPersistence#pageBusinessEntities",
-                        "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/persistence/BusinessEntityTaskReadPersistence.java:369-473"));
-        result.add(
-                businessOperation(
-                        fixture,
-                        "getOperationsOrganizationTenants",
-                        "TENANT",
-                        false,
-                        "BusinessEntityTaskReadPersistence#pageBusinessEntities",
-                        "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/persistence/BusinessEntityTaskReadPersistence.java:369-473"));
-        result.add(
-                businessOperation(
-                        fixture,
-                        "getOperationsOrganizationHeadCompanies",
-                        "HEAD_COMPANY",
-                        false,
-                        "BusinessEntityTaskReadPersistence#pageBusinessEntities",
-                        "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/persistence/BusinessEntityTaskReadPersistence.java:369-473"));
+        result.add(businessOperation(
+                fixture,
+                "getOperationsOrganizationBrands",
+                "BRAND",
+                true,
+                "BusinessEntityTaskReadPersistence#pageBusinessEntities",
+                ("apps/backend/catering-business-server/modules/organization/src/main/java"
+                        + "/com/catering/v2s/organization/application/persistence/BusinessEntityTas"
+                        + "kReadPersistence.java:369-473")));
+        result.add(businessOperation(
+                fixture,
+                "getOperationsOrganizationTenants",
+                "TENANT",
+                false,
+                "BusinessEntityTaskReadPersistence#pageBusinessEntities",
+                ("apps/backend/catering-business-server/modules/organization/src/main/java"
+                        + "/com/catering/v2s/organization/application/persistence/BusinessEntityTas"
+                        + "kReadPersistence.java:369-473")));
+        result.add(businessOperation(
+                fixture,
+                "getOperationsOrganizationHeadCompanies",
+                "HEAD_COMPANY",
+                false,
+                "BusinessEntityTaskReadPersistence#pageBusinessEntities",
+                ("apps/backend/catering-business-server/modules/organization/src/main/java"
+                        + "/com/catering/v2s/organization/application/persistence/BusinessEntityTas"
+                        + "kReadPersistence.java:369-473")));
         for (String hostType : List.of("BRAND", "TENANT", "HEAD_COMPANY")) {
-            result.add(
-                    businessOperation(
-                            fixture,
-                            "getPlatformOrganizationOverviewPage",
-                            hostType,
-                            false,
-                            "OrganizationOverviewTaskReadPersistence#page -> BusinessEntityTaskReadPersistence#pageBusinessEntities",
-                            "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/persistence/OrganizationOverviewTaskReadPersistence.java:78-101; apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/persistence/BusinessEntityTaskReadPersistence.java:369-473"));
+            result.add(businessOperation(
+                    fixture,
+                    "getPlatformOrganizationOverviewPage",
+                    hostType,
+                    false,
+                    ("OrganizationOverviewTaskReadPersistence#page -> BusinessEntityTaskReadPe"
+                            + "rsistence#pageBusinessEntities"),
+                    ("apps/backend/catering-business-server/modules/organization/src/main/java"
+                            + "/com/catering/v2s/organization/application/persistence/OrganizationOverv"
+                            + "iewTaskReadPersistence.java:78-101; apps/backend/catering-business-serve"
+                            + "r/modules/organization/src/main/java/com/catering/v2s/organization/appli"
+                            + "cation/persistence/BusinessEntityTaskReadPersistence.java:369-473")));
         }
-        result.add(
-                storeOperation(
-                        fixture,
-                        "getOperationsOrganizationStores",
-                        "OrganizationOverviewTaskReadPersistence#storePage",
-                        "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/persistence/OrganizationOverviewTaskReadPersistence.java:521-566"));
-        result.add(
-                storeOperation(
-                        fixture,
-                        "getPlatformOrganizationOverviewPage",
-                        "OrganizationOverviewTaskReadPersistence#platformOverviewTaskPage -> page -> storePage",
-                        "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/persistence/OrganizationOverviewTaskReadPersistence.java:78-166,521-566"));
-        result.add(
-                contractOperation(
-                        fixture,
-                        "getOperationsContracts",
-                        "ContractTaskReadPersistence#list",
-                        "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/persistence/ContractTaskReadPersistence.java:212-300"));
-        result.add(
-                contractOperation(
-                        fixture,
-                        "getPlatformContractOverviewPage",
-                        "ContractTaskReadPersistence#taskPage -> list",
-                        "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/persistence/ContractTaskReadPersistence.java:212-305"));
+        result.add(storeOperation(
+                fixture,
+                "getOperationsOrganizationStores",
+                "OrganizationOverviewTaskReadPersistence#storePage",
+                ("apps/backend/catering-business-server/modules/organization/src/main/java"
+                        + "/com/catering/v2s/organization/application/persistence/OrganizationOverv"
+                        + "iewTaskReadPersistence.java:521-566")));
+        result.add(storeOperation(
+                fixture,
+                "getPlatformOrganizationOverviewPage",
+                "OrganizationOverviewTaskReadPersistence#platformOverviewTaskPage -> page -> storePage",
+                ("apps/backend/catering-business-server/modules/organization/src/main/java"
+                        + "/com/catering/v2s/organization/application/persistence/OrganizationOverv"
+                        + "iewTaskReadPersistence.java:78-166,521-566")));
+        result.add(contractOperation(
+                fixture,
+                "getOperationsContracts",
+                "ContractTaskReadPersistence#list",
+                ("apps/backend/catering-business-server/modules/store-contract/src/main/ja"
+                        + "va/com/catering/v2s/contract/application/persistence/ContractTaskReadPer"
+                        + "sistence.java:212-300")));
+        result.add(contractOperation(
+                fixture,
+                "getPlatformContractOverviewPage",
+                "ContractTaskReadPersistence#taskPage -> list",
+                ("apps/backend/catering-business-server/modules/store-contract/src/main/ja"
+                        + "va/com/catering/v2s/contract/application/persistence/ContractTaskReadPer"
+                        + "sistence.java:212-305")));
         return List.copyOf(result);
     }
 
@@ -519,8 +553,7 @@ final class ExtensionScaleProof {
                 + OrganizationOverviewTaskReadServiceSql
                         .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_TENANT_ID_HEAD_COMPANY_ID;
         String countWhere = base
-                + OrganizationOverviewTaskReadServiceSql
-                        .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONDITION_PROJECT_ID_BRAND_ID_ALTERNATE_A
+                + OrganizationOverviewTaskReadServiceSql.CONDITION_PROJECT_ID_BRAND_ID_ALT_A_011
                 + OrganizationOverviewTaskReadServiceSql
                         .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_OPEN_PAREN_TENANT_ID_HEAD_COMPANY_ID;
         return new OwnerOperation(
@@ -605,8 +638,7 @@ final class ExtensionScaleProof {
     }
 
     private static String businessEntityRowsSql() {
-        return BusinessEntityTaskReadServiceSql
-                        .BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME_ALTERNATE_D
+        return BusinessEntityTaskReadServiceSql.SELECT_WS_UUID_GRP_WS_ALT_D_015
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CREDIT_CODE_ALIAS_REMARK_VARCHAR
                 + BusinessEntityTaskReadServiceSql
                         .BUSINESS_ENTITY_TASK_READ_SERVICE_CREATED_AT_EPOCH_MILLIS_EXTENSION_VALUES
@@ -641,8 +673,7 @@ final class ExtensionScaleProof {
                 + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TENANT_CODE
                 + OrganizationOverviewTaskReadServiceSql
                         .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_NAME_TENANT_NAME_HEAD_ID_CODE_ALTERNATE_A
-                + OrganizationOverviewTaskReadServiceSql
-                        .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_STORE_PROJECT_ID_ALTERNATE_A
+                + OrganizationOverviewTaskReadServiceSql.ALT_ORG_NODE_STORE_PROJECT_ALT_A_013
                 + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_BRAND
                 + OrganizationOverviewTaskReadServiceSql
                         .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TENANT_BRAND_ID_TENANT_ID
@@ -937,9 +968,12 @@ final class ExtensionScaleProof {
     private static List<String> extensionIndexes(JdbcTemplate jdbc, TableSpec table) {
         String[] parts = table.qualifiedTable().split("\\.", 2);
         List<String> values = jdbc.queryForList(
-                "SELECT indexname FROM pg_indexes WHERE schemaname=? AND tablename=? AND indexdef ILIKE '%extension_values%' "
+                ("SELECT indexname FROM pg_indexes WHERE schemaname=? AND tablename=? AND "
+                                + "indexdef ILIKE '%extension_values%' ")
                         + "ORDER BY indexname",
-                String.class, parts[0], parts[1]);
+                String.class,
+                parts[0],
+                parts[1]);
         assertTrue(values.isEmpty(), "BUSINESS: no extension_values index is added by scale proof");
         return List.copyOf(values);
     }

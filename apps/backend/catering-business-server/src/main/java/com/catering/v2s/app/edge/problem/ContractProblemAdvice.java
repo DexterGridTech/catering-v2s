@@ -3,7 +3,10 @@ package com.catering.v2s.app.edge.problem;
 import com.catering.v2s.app.edge.diagnostic.HttpRequestMetricsInterceptor;
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticRequestState;
 import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
+import com.catering.v2s.app.edge.operations.organization.OperationsTerminalActivationProblem;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import com.catering.v2s.app.edge.terminal.TerminalActivationProblem;
+import com.catering.v2s.app.edge.terminal.TerminalDeviceCredentialProblem;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
@@ -36,6 +39,8 @@ import com.catering.v2s.storeterminal.application.StoreTerminalAuditHistoryServi
 import com.catering.v2s.storeterminal.application.StoreTerminalOwnerService;
 import com.catering.v2s.storeterminal.domain.PrinterSpecification;
 import com.catering.v2s.storeterminal.domain.TerminalConfiguration;
+import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi;
+import com.catering.v2s.terminalbinding.application.TerminalBindingOwnerService;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceAccountService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAssignmentScopeService;
@@ -376,7 +381,10 @@ public final class ContractProblemAdvice {
         details.put("currentDefinitionRevision", exception.currentRevision());
         details.put("retryable", true);
         return problem(
-                HttpStatus.CONFLICT, "EXTENSION_DEFINITION_REVISION_STALE", "扩展字段定义已更新，请重新读取后再筛选", request, details);
+                // spotless:off
+                HttpStatus.CONFLICT, "EXTENSION_DEFINITION_REVISION_STALE",
+                    "扩展字段定义已更新，请重新读取后再筛选", request, details);
+                // spotless:on
     }
 
     @ExceptionHandler(ExtensionFilterQuery.InvalidFilterException.class)
@@ -391,7 +399,10 @@ public final class ContractProblemAdvice {
         }
         ObjectNode details = DETAILS_JSON.createObjectNode();
         details.set("invalidFields", reasons);
-        return problem(HttpStatus.BAD_REQUEST, "EXTENSION_FILTER_INVALID", "扩展字段筛选条件不符合当前字段定义", request, details);
+        // spotless:off
+        return problem(HttpStatus.BAD_REQUEST, "EXTENSION_FILTER_INVALID",
+            "扩展字段筛选条件不符合当前字段定义", request, details);
+        // spotless:on
     }
 
     @ExceptionHandler(PlatformAuthenticationService.LoginNameConflictException.class)
@@ -672,7 +683,8 @@ public final class ContractProblemAdvice {
         StoreTerminalAuditHistoryService.TerminalAuthorizationException.class,
         BusinessEntityService.OrganizationAuthorizationException.class,
         OrganizationHierarchyService.OrganizationAuthorizationException.class,
-        StoreTerminalOwnerService.TerminalAuthorizationException.class
+        StoreTerminalOwnerService.TerminalAuthorizationException.class,
+        TerminalBindingOwnerService.TerminalOperationsAuthorizationException.class
     })
     ResponseEntity<Problem> accessDenied(RuntimeException exception, HttpServletRequest request) {
         return problem(
@@ -686,7 +698,37 @@ public final class ContractProblemAdvice {
     @ExceptionHandler(StoreTerminalOwnerService.TerminalStoreUnavailableException.class)
     ResponseEntity<Problem> storeTerminalUnavailable(
             StoreTerminalOwnerService.TerminalStoreUnavailableException exception, HttpServletRequest request) {
-        return problem(HttpStatus.FORBIDDEN, "PLATFORM_COMMON_ACCESS_DENIED", "当前主体无权执行该操作", request);
+        // spotless:off
+        return problem(HttpStatus.FORBIDDEN, "PLATFORM_COMMON_ACCESS_DENIED", "当前主体无权执行该操作",
+            request);
+        // spotless:on
+    }
+
+    @ExceptionHandler(TerminalActivationProblem.class)
+    ResponseEntity<Problem> terminalActivation(TerminalActivationProblem exception, HttpServletRequest request) {
+        return problem(exception.status(), exception.code(), exception.detail(), request);
+    }
+
+    @ExceptionHandler(OperationsTerminalActivationProblem.class)
+    ResponseEntity<Problem> operationsTerminalActivation(
+            OperationsTerminalActivationProblem exception, HttpServletRequest request) {
+        return problem(exception.status(), exception.code(), exception.detail(), request);
+    }
+
+    @ExceptionHandler(TerminalDeviceCredentialProblem.class)
+    ResponseEntity<Problem> terminalCredentialInvalid(
+            TerminalDeviceCredentialProblem exception, HttpServletRequest request) {
+        return problem(HttpStatus.FORBIDDEN, "TERMINAL_BINDING_CREDENTIAL_INVALID", "终端凭证无效", request);
+    }
+
+    @ExceptionHandler(TerminalBindingOwnerApi.OwnerInvariantViolationException.class)
+    ResponseEntity<Problem> terminalBindingOwnerInvariant(
+            TerminalBindingOwnerApi.OwnerInvariantViolationException exception, HttpServletRequest request) {
+        return problem(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+                "终端绑定状态不一致，暂时无法完成操作",
+                request);
     }
 
     @ExceptionHandler({
@@ -717,7 +759,10 @@ public final class ContractProblemAdvice {
                                                                 StoreTerminalOwnerService.IdempotencyConflictException
                                                         ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
                                                         : "PLATFORM_COMMON_VERSION_CONFLICT";
-        return problem(HttpStatus.CONFLICT, code, "终端操作与当前 owner 状态冲突，请重新读取后再操作", request);
+        // spotless:off
+        return problem(HttpStatus.CONFLICT, code,
+            "终端操作与当前 owner 状态冲突，请重新读取后再操作", request);
+        // spotless:on
     }
 
     @ExceptionHandler({
@@ -730,7 +775,7 @@ public final class ContractProblemAdvice {
                 ? "STORE_TERMINAL_REFERENCE_INVALID"
                 : exception instanceof StoreTerminalOwnerService.InvalidTerminalInputException
                         ? "PLATFORM_COMMON_VALIDATION_FAILED"
-                : "STORE_TERMINAL_RULE_INVALID";
+                        : "STORE_TERMINAL_RULE_INVALID";
         String validationReason = safeValidationReason(rootCause(exception));
         log.atWarn()
                 .addKeyValue("event", "STORE_TERMINAL_TYPED_INVALID_REQUEST")
@@ -750,7 +795,7 @@ public final class ContractProblemAdvice {
                         ? "终端关联资料不可用，请刷新后重试"
                         : exception instanceof StoreTerminalOwnerService.InvalidTerminalInputException
                                 ? "请求参数不合法，请检查后重试"
-                        : "终端配置不符合当前规则，请检查后重试",
+                                : "终端配置不符合当前规则，请检查后重试",
                 request);
     }
 

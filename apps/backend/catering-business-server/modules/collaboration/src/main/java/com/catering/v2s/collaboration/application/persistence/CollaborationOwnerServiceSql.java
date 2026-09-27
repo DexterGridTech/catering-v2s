@@ -2,19 +2,16 @@ package com.catering.v2s.collaboration.application.persistence;
 
 /** SQL text fragments owned by CollaborationOwnerPersistence. */
 public final class CollaborationOwnerServiceSql {
-    public static final String
-            COLLABORATION_OWNER_SERVICE_SELECT_EXTERNAL_SYSTEM_ENABLEMENT_KIND_EXTERNAL_SYSTEM_CODE_CODE =
-                    "SELECT 'EXTERNAL_SYSTEM' AS enablement_kind, external_system_code AS code, status, version ";
+    public static final String SELECT_EXTERNAL_SYSTEM_ENABLEMENT_KIND_001 =
+            "SELECT 'EXTERNAL_SYSTEM' AS enablement_kind, external_system_code AS code, status, version ";
     public static final String COLLABORATION_OWNER_SERVICE_FROM_CLAUSE_EXTERNAL_SYSTEM_ENABLEMENT_WORKSPACE_UUID =
             "FROM collaboration.external_system_enablement WHERE workspace_uuid=? ";
-    public static final String
-            COLLABORATION_OWNER_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_PROVIDER_PROFILE_ENABLEMENT_KIND =
-                    "AND group_workspace_key=? UNION ALL SELECT 'PROVIDER_PROFILE' AS enablement_kind, ";
+    public static final String CONDITION_GRP_WS_KEY_PROV_002 =
+            "AND group_workspace_key=? UNION ALL SELECT 'PROVIDER_PROFILE' AS enablement_kind, ";
     public static final String COLLABORATION_OWNER_SERVICE_PROVIDER_CODE_CODE_STATUS_VERSION =
             "provider_code AS code, status, version ";
-    public static final String
-            COLLABORATION_OWNER_SERVICE_FROM_CLAUSE_PROVIDER_PROFILE_ENABLEMENT_FROM_COLLABORATION_PROVIDER_ =
-                    "FROM collaboration.provider_profile_enablement ";
+    public static final String FROM_CLAUSE_PROV_PROFILE_ENABLEMENT_003 =
+            "FROM collaboration.provider_profile_enablement ";
     public static final String COLLABORATION_OWNER_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             "WHERE workspace_uuid=? AND group_workspace_key=?";
     public static final String COLLABORATION_OWNER_SERVICE_CTE_OWNER_BINDINGS = "WITH RECURSIVE owner_bindings AS (";
@@ -74,9 +71,8 @@ public final class CollaborationOwnerServiceSql {
     public static final String COLLABORATION_OWNER_SERVICE_CONDITION_PARENT_GROUP_WORKSPACE_KEY =
             "AND parent.group_workspace_key=?";
     public static final String COLLABORATION_OWNER_SERVICE_CLOSE_PAREN_NODE_PATHS = "), node_paths AS (";
-    public static final String
-            COLLABORATION_OWNER_SERVICE_SELECT_TARGET_NODE_TYPE_TARGET_NODE_REF_JSONB_AGG_JSONB_BUILD_OBJECT =
-                    "SELECT target_node_type, target_node_ref, jsonb_agg(jsonb_build_object('ref', id, 'code', code, ";
+    public static final String SELECT_TARGET_NODE_TYPE_TARGET_004 =
+            "SELECT target_node_type, target_node_ref, jsonb_agg(jsonb_build_object('ref', id, 'code', code, ";
     public static final String COLLABORATION_OWNER_SERVICE_NAME_NODE_TYPE_PATH_NODE_TYPE_DEPTH =
             "'name', name, 'nodeType', path_node_type) ORDER BY depth DESC) AS node_path ";
     public static final String COLLABORATION_OWNER_SERVICE_FROM_CLAUSE_ANCESTRY_TARGET_NODE_TYPE_TARGET_NODE_REF =
@@ -156,23 +152,20 @@ public final class CollaborationOwnerServiceSql {
     public static final String COLLABORATION_OWNER_SERVICE_NODE_PATH_TEXT = "COALESCE(node_path.node_path::text, '')) ";
     public static final String COLLABORATION_OWNER_SERVICE_ILIKE_ESCAPE = "ILIKE ? ESCAPE E'\\\\') ORDER BY ";
     public static final String COLLABORATION_OWNER_SERVICE_LIMIT_LIMIT_OFFSET = " LIMIT ? OFFSET ?";
-    public static final String
-            COLLABORATION_OWNER_SERVICE_SELECT_BINDING_REF_EXTERNAL_SYSTEM_CODE_PROVIDER_CODE_CAPABILITY_CLASS =
-                    "SELECT binding_ref, external_system_code, provider_code, capability_class, ";
+    public static final String SELECT_BINDING_REF_EXTERNAL_SYSTEM_005 =
+            "SELECT binding_ref, external_system_code, provider_code, capability_class, ";
     public static final String COLLABORATION_OWNER_SERVICE_NODE_TYPE_NODE_REF = "node_type, node_ref, ";
     public static final String COLLABORATION_OWNER_SERVICE_BINDING_DISPLAY_NAME =
             "binding_display_name, external_owner_id, authorization_ref, status, ";
     public static final String COLLABORATION_OWNER_SERVICE_UNBIND_REQUESTED_AT_EPOCH_MILLIS =
             "unbind_requested_at_epoch_millis, external_revoked_at_epoch_millis, ";
-    public static final String
-            COLLABORATION_OWNER_SERVICE_DELETE_DELETED_AT_EPOCH_MILLIS_VERSION_CREATED_AT_EPOCH_MILLIS =
-                    "deleted_at_epoch_millis, version, created_at_epoch_millis, ";
-    public static final String COLLABORATION_OWNER_SERVICE_STATUS_CHANGED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS =
+    public static final String DELETE_DELETED_AT_EPOCH_MS_006 =
+            "deleted_at_epoch_millis, version, created_at_epoch_millis, ";
+    public static final String STATUS_CHANGED_AT_EPOCH_MS_007 =
             "status_changed_at_epoch_millis, updated_at_epoch_millis ";
-    public static final String
-            COLLABORATION_OWNER_SERVICE_FROM_CLAUSE_OWNER_BINDING_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "FROM collaboration.owner_binding WHERE workspace_uuid=? AND group_workspace_key=? ";
-    public static final String COLLABORATION_OWNER_SERVICE_CONDITION_PROVIDER_CODE_NODE_TYPE_NODE_REF_BINDING_REF =
+    public static final String FROM_CLAUSE_OWNER_BINDING_WS_008 =
+            "FROM collaboration.owner_binding WHERE workspace_uuid=? AND group_workspace_key=? ";
+    public static final String CONDITION_PROV_CODE_NODE_TYPE_009 =
             "AND provider_code=? AND node_type=? AND node_ref=? ORDER BY binding_ref";
     public static final String COLLABORATION_OWNER_SERVICE_INSERT_INTO = "INSERT INTO ";
     public static final String COLLABORATION_OWNER_SERVICE_VALUE_SEPARATOR_STATUS =
@@ -182,9 +175,8 @@ public final class CollaborationOwnerServiceSql {
             " SET status=?, version=version+1, updated_at_epoch_millis=? ";
     public static final String COLLABORATION_OWNER_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A =
             "WHERE workspace_uuid=? AND group_workspace_key=? AND ";
-    public static final String
-            COLLABORATION_OWNER_SERVICE_INSERT_INTO_OWNER_BINDING_BINDING_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "INSERT INTO collaboration.owner_binding (binding_ref, workspace_uuid, group_workspace_key, ";
+    public static final String INSERT_INTO_OWNER_BINDING_REF_010 =
+            "INSERT INTO collaboration.owner_binding (binding_ref, workspace_uuid, group_workspace_key, ";
     public static final String COLLABORATION_OWNER_SERVICE_EXTERNAL_SYSTEM_CODE =
             "external_system_code, provider_code, capability_class, node_type, node_ref, ";
     public static final String COLLABORATION_OWNER_SERVICE_BINDING_DISPLAY_NAME_ALTERNATE_A =
@@ -197,35 +189,31 @@ public final class CollaborationOwnerServiceSql {
             "UPDATE collaboration.owner_binding SET binding_display_name=?, external_owner_id=?, ";
     public static final String COLLABORATION_OWNER_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS_BINDING_REF =
             "version=version+1, updated_at_epoch_millis=? WHERE binding_ref=? ";
-    public static final String COLLABORATION_OWNER_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION_STATUS =
+    public static final String CONDITION_WS_UUID_GRP_WS_011 =
             "AND workspace_uuid=? AND group_workspace_key=? AND version=? AND status<>?";
     public static final String COLLABORATION_OWNER_SERVICE_UPDATE_OWNER_BINDING_STATUS_DELETED_AT_EPOCH_MILLIS =
             "UPDATE collaboration.owner_binding SET status=?, deleted_at_epoch_millis=?, ";
     public static final String COLLABORATION_OWNER_SERVICE_STATUS_CHANGED_AT_EPOCH_MILLIS =
             "status_changed_at_epoch_millis=?, version=version+1, updated_at_epoch_millis=? ";
     public static final String COLLABORATION_OWNER_SERVICE_WHERE_BINDING_REF = "WHERE binding_ref=? ";
-    public static final String
-            COLLABORATION_OWNER_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION_STATUS_ALTERNATE_A =
-                    "AND workspace_uuid=? AND group_workspace_key=? AND version=? AND status<>? RETURNING ";
-    public static final String
-            COLLABORATION_OWNER_SERVICE_UPDATE_OWNER_BINDING_EXTERNAL_OWNER_ID_AUTHORIZATION_REF_STATUS =
-                    "UPDATE collaboration.owner_binding SET external_owner_id=?, authorization_ref=?, status=?, ";
+    public static final String CONDITION_WS_UUID_GRP_WS_ALT_A_012 =
+            "AND workspace_uuid=? AND group_workspace_key=? AND version=? AND status<>? RETURNING ";
+    public static final String UPDATE_OWNER_BINDING_EXTERNAL_OWNER_013 =
+            "UPDATE collaboration.owner_binding SET external_owner_id=?, authorization_ref=?, status=?, ";
     public static final String COLLABORATION_OWNER_SERVICE_STATUS_CHANGED_AT_EPOCH_MILLIS_ALTERNATE_A =
             "status_changed_at_epoch_millis=?, version=version+1, updated_at_epoch_millis=? ";
     public static final String COLLABORATION_OWNER_SERVICE_WHERE_BINDING_REF_VERSION =
             "WHERE binding_ref=? AND version=?";
-    public static final String
-            COLLABORATION_OWNER_SERVICE_UPDATE_OWNER_BINDING_EXTERNAL_REVOKED_AT_EPOCH_MILLIS_STATUS =
-                    "UPDATE collaboration.owner_binding SET external_revoked_at_epoch_millis=?, status=?, ";
+    public static final String UPDATE_OWNER_BINDING_EXTERNAL_REVOKED_014 =
+            "UPDATE collaboration.owner_binding SET external_revoked_at_epoch_millis=?, status=?, ";
     public static final String COLLABORATION_OWNER_SERVICE_STATUS_CHANGED_AT_EPOCH_MILLIS_ALTERNATE_B =
             "status_changed_at_epoch_millis=?, version=version+1, updated_at_epoch_millis=? ";
     public static final String COLLABORATION_OWNER_SERVICE_WHERE_BINDING_REF_VERSION_ALTERNATE_A =
             "WHERE binding_ref=? AND version=?";
     public static final String COLLABORATION_OWNER_SERVICE_WHERE_BINDING_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             "WHERE binding_ref=? AND workspace_uuid=? AND group_workspace_key=?";
-    public static final String
-            COLLABORATION_OWNER_SERVICE_WHERE_BINDING_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A =
-                    "WHERE binding_ref=? AND workspace_uuid=? AND group_workspace_key=? FOR UPDATE";
+    public static final String WHERE_BINDING_REF_WS_UUID_ALT_A_015 =
+            "WHERE binding_ref=? AND workspace_uuid=? AND group_workspace_key=? FOR UPDATE";
     public static final String COLLABORATION_OWNER_SERVICE_WHERE_BINDING_REF_ALTERNATE_A = "WHERE binding_ref=?";
     public static final String COLLABORATION_OWNER_SERVICE_FROM_CLAUSE_OWNER_BINDING_FROM_COLLABORATION_OWNER_BIN =
             " FROM collaboration.owner_binding ";
@@ -236,8 +224,7 @@ public final class CollaborationOwnerServiceSql {
             "SELECT status, version FROM ";
     public static final String COLLABORATION_OWNER_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_C =
             " WHERE workspace_uuid=? AND group_workspace_key=? AND ";
-    public static final String COLLABORATION_OWNER_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_D =
-            " WHERE workspace_uuid=? AND group_workspace_key=?";
+    public static final String WHERE_WS_UUID_GRP_WS_ALT_D_016 = " WHERE workspace_uuid=? AND group_workspace_key=?";
     public static final String COLLABORATION_OWNER_SERVICE_CTE_TARGET = "WITH RECURSIVE target AS (";
     public static final String COLLABORATION_OWNER_SERVICE_SELECT_TEXT_TARGET_TYPE_TARGET_ID_WORKSPACE_UUID =
             "SELECT ?::text AS target_type, ?::uuid AS target_id, ?::uuid AS workspace_uuid, ";
@@ -269,9 +256,8 @@ public final class CollaborationOwnerServiceSql {
             "project.parent_id, project.node_type, project.code, project.name, 0 AS depth ";
     public static final String COLLABORATION_OWNER_SERVICE_FROM_CLAUSE_ORGANIZATION_NODE_PROJECT =
             "FROM store_target JOIN target ON TRUE JOIN organization.organization_node project ";
-    public static final String
-            COLLABORATION_OWNER_SERVICE_JOIN_CONDITION_PROJECT_STORE_TARGET_PROJECT_ID_WORKSPACE_UUID =
-                    "ON project.id=store_target.project_id AND project.workspace_uuid=target.workspace_uuid ";
+    public static final String JOIN_CONDITION_PROJECT_STORE_TARGET_017 =
+            "ON project.id=store_target.project_id AND project.workspace_uuid=target.workspace_uuid ";
     public static final String COLLABORATION_OWNER_SERVICE_CONDITION_PROJECT_GROUP_WORKSPACE_KEY_TARGET =
             "AND project.group_workspace_key=target.group_workspace_key";
     public static final String COLLABORATION_OWNER_SERVICE_CLOSE_PAREN_ANCESTRY = "), ancestry AS (";
@@ -373,9 +359,8 @@ public final class CollaborationOwnerServiceSql {
     public static final String COLLABORATION_OWNER_SERVICE_EMPTY_LITERAL = " ";
     public static final String COLLABORATION_OWNER_SERVICE_BINDING_BINDING_REF = " NULLS LAST, binding.binding_ref ASC";
 
-    public static final String
-            COLLABORATION_OWNER_SERVICE_INSERT_INTO_AUDIT_EVENT_EVENT_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "INSERT INTO collaboration.audit_event (event_ref, workspace_uuid, group_workspace_key, ";
+    public static final String INSERT_INTO_AUDIT_EVENT_REF_018 =
+            "INSERT INTO collaboration.audit_event (event_ref, workspace_uuid, group_workspace_key, ";
     public static final String COLLABORATION_OWNER_SERVICE_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT_ENTITY_TYPE =
             "actor_type, actor_id, actor_display_snapshot, entity_type, entity_ref, action, ";
     public static final String COLLABORATION_OWNER_SERVICE_CHANGES_JSON_OCCURRED_AT_EPOCH_MILLIS =

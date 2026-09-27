@@ -72,12 +72,15 @@ const APPROVED = [
   },
   {
     id: "RUNTIME_DB_ROLE_ISOLATION",
-    currentBoundary: "单 runtime DB role，可访问多 owner schema",
-    deferredReason: "solo+AI 单 deployable 暂不拆 credential",
-    risk: "单凭据扩大 schema blast radius",
+    currentBoundary: "业务 runtime 与独立 TDS runtime 的数据库凭据及 schema 范围尚须安全审查，不推定共享或隔离已完成",
+    deferredReason: "本批获准的 TDS 进程不豁免 schema-scoped runtime credential 要求",
+    risk: "凭据权限扩大业务与终端认证的数据库 blast radius",
     activationTrigger: "SECURITY_REVIEW_REQUIRES_SCHEMA_SCOPED_RUNTIME_CREDENTIALS",
-    futureAcceptanceEvidence: "schema-scoped credential design、权限矩阵、跨 schema command/read/FK 回归",
-    decisionSource: [{"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "## 11. HANDOFF 初始生产化欠账"}],
+    futureAcceptanceEvidence: "分别列明两个 runtime 的 credential、schema/SQL 权限矩阵，并证明跨 schema command/read/FK 边界",
+    decisionSource: [
+      {"path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md", "anchor": "## 11. HANDOFF 初始生产化欠账"},
+      {"path": "doc/decisions/2026-09-26-v2s-terminal-activation-service-shape.md", "anchor": "### 6.2 Governance source cross-reference and exact local disposition"},
+    ],
   },
   {
     id: "DIAGNOSTIC_RETENTION_POLICY",
@@ -107,6 +110,7 @@ const APPROVED = [
     decisionSource: [{"path": "doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md", "anchor": "## D1 ｜常驻可观测性架构"}],
   },
 ];
+const APPROVED_IDS = new Set(APPROVED.map(({id}) => id));
 
 function assert(condition, code, details = "") {
   if (!condition) throw new Error(`${code}${details ? `: ${details}` : ""}`);
@@ -114,8 +118,20 @@ function assert(condition, code, details = "") {
 
 function parseTable(markdown) {
   const lines = markdown.split(/\r?\n/);
-  const headerIndex = lines.findIndex((line) => line.trim() === `| ${COLUMNS.join(" | ")} |`);
-  assert(headerIndex >= 0, "HANDOFF_HEADER_MISSING");
+  const headerIndexes = lines.flatMap((line, index) =>
+    line.trim() === `| ${COLUMNS.join(" | ")} |` ? [index] : [],
+  );
+  const canonicalHeaderIndexes = headerIndexes.filter((index) => {
+    for (const line of lines.slice(index + 2)) {
+      if (!line.startsWith("|")) break;
+      const firstSeparator = line.indexOf("|", 1);
+      if (firstSeparator < 0) continue;
+      if (APPROVED_IDS.has(line.slice(1, firstSeparator).trim())) return true;
+    }
+    return false;
+  });
+  assert(canonicalHeaderIndexes.length === 1, "HANDOFF_CANONICAL_TABLE_COUNT_INVALID");
+  const [headerIndex] = canonicalHeaderIndexes;
   assert(/^\|(?:---\|){6}---\|$/.test(lines[headerIndex + 1].replaceAll(" ", "")), "HANDOFF_SEPARATOR_INVALID");
   const rows = [];
   for (const line of lines.slice(headerIndex + 2)) {
@@ -188,6 +204,28 @@ function expectFail(name, mutate, expectedCode, {verifySources = false} = {}) {
 function selfTest() {
   validateRows(clone(APPROVED), {verifySources: true, compareApproved: true});
   process.stdout.write("FIXTURE=ten-approved-rows; EXPECTED=PASS; ACTUAL=PASS\n");
+  const renderTable = (rows) => [
+    `| ${COLUMNS.join(" | ")} |`,
+    `|${COLUMNS.map(() => "---").join("|")}|`,
+    ...rows.map((row) => `| ${COLUMNS.map((column) =>
+      column === "decisionSource" ? JSON.stringify(row[column]) : row[column],
+    ).join(" | ")} |`),
+  ].join("\n");
+  const unrelatedSupplement = renderTable([{
+    id: "TER_TOPOLOGY_PAIRING_TRUST",
+    currentBoundary: "separate supplementary record",
+    deferredReason: "separately maintained",
+    risk: "not a canonical debt row",
+    activationTrigger: "TOPOLOGY_AUTHENTICATION_AUTHORIZED",
+    futureAcceptanceEvidence: "separate evidence",
+    decisionSource: "free-text source reference",
+  }]);
+  const canonicalTable = renderTable(APPROVED);
+  assert(
+    JSON.stringify(parseTable(`${unrelatedSupplement}\n\n${canonicalTable}`)) === JSON.stringify(APPROVED),
+    "HANDOFF_CANONICAL_TABLE_SELECTION_FAILED",
+  );
+  process.stdout.write("FIXTURE=preceding-supplementary-table; EXPECTED=PASS; ACTUAL=PASS\n");
   expectFail("vague-trigger", (rows) => { rows[0].activationTrigger = "WHEN_NEEDED"; }, "HANDOFF_APPROVED_DENOMINATOR_MISMATCH");
   expectFail("compound-trigger", (rows) => { rows[0].activationTrigger = "CI_PROVIDER_SELECTED_AND_ENABLED"; }, "HANDOFF_TRIGGER_COMPOUND_FORBIDDEN");
   expectFail("missing-threshold-trigger", (rows) => { rows[0].activationTrigger = "TEAM_GT_N"; }, "HANDOFF_APPROVED_DENOMINATOR_MISMATCH");

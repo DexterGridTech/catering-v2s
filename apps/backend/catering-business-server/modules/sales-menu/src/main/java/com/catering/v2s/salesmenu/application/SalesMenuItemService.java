@@ -621,7 +621,10 @@ public class SalesMenuItemService {
                 .findFirst()
                 .orElseThrow(() -> problem("MOVE_NOT_ALLOWED", 409, "已到排序边界"));
         long temp = persistence.maxItemDisplayOrder(version, section);
-        if (persistence.setItemDisplayOrder(version, ref, temp) != 1) throw problem("TARGET_NOT_FOUND", 404, "排序目标不存在");
+        // spotless:off
+        if (persistence.setItemDisplayOrder(version, ref, temp) != 1) throw problem("TARGET_NOT_FOUND", 404,
+            "排序目标不存在");
+        // spotless:on
         if (persistence.setItemDisplayOrder(version, other.ref(), currentOrder) != 1)
             throw problem("TARGET_NOT_FOUND", 404, "排序目标不存在");
         if (persistence.setItemDisplayOrder(version, ref, other.displayOrder()) != 1)
@@ -1227,7 +1230,10 @@ public class SalesMenuItemService {
     }
 
     private UUID draftVersion(UUID menu) {
-        return persistence.readDraftVersion(menu).orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
+        // spotless:off
+        return persistence.readDraftVersion(menu).orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404,
+            "销售菜单不存在"));
+        // spotless:on
     }
 
     private void advanceDraftRevision(UUID version) {
@@ -1629,11 +1635,17 @@ public class SalesMenuItemService {
     }
 
     private void requireSection(UUID menu, UUID version, UUID section) {
-        if (!persistence.sectionExists(menu, version, section)) throw problem("SECTION_NOT_FOUND", 404, "分组不存在");
+        // spotless:off
+        if (!persistence.sectionExists(menu, version, section)) throw problem("SECTION_NOT_FOUND", 404,
+            "分组不存在");
+        // spotless:on
     }
 
     private void requireItem(UUID version, UUID item) {
-        if (!persistence.draftItemExists(version, item)) throw problem("SALES_ITEM_NOT_FOUND", 404, "销售菜单商品不存在");
+        // spotless:off
+        if (!persistence.draftItemExists(version, item)) throw problem("SALES_ITEM_NOT_FOUND", 404,
+            "销售菜单商品不存在");
+        // spotless:on
     }
 
     private MoveCurrentRow requireItemMoveCurrent(UUID version, UUID item) {

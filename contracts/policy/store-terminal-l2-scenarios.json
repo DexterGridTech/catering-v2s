@@ -225,6 +225,7 @@
               "TERMINAL_EDIT",
               "TERMINAL_FORM",
               "TERMINAL_FORM_TAB_BASIC",
+              "TERMINAL_DEVICE_TYPE_READONLY",
               "TERMINAL_FORM_TAB_FUNCTIONS",
               "TERMINAL_PRINTER",
               "TERMINAL_PRINTER_NAME",

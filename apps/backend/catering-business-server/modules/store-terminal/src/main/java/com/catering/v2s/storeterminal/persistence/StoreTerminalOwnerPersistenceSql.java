@@ -11,7 +11,30 @@ public final class StoreTerminalOwnerPersistenceSql {
         WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND terminal_ref=?
         """;
 
+    public static final String SELECT_DETAIL_WITH_BINDING =
+            """
+        SELECT terminal.terminal_ref, terminal.workspace_uuid, terminal.group_workspace_key, terminal.store_ref,
+               terminal.name, terminal.name_normalized, terminal.device_type, terminal.status, terminal.version,
+               terminal.activation_code, terminal.configuration::text AS configuration_json,
+               terminal.created_at_epoch_millis, terminal.updated_at_epoch_millis,
+               CASE WHEN binding.binding_status='ACTIVE' THEN 'ACTIVE' ELSE 'INACTIVE' END AS binding_status,
+               CASE WHEN binding.binding_status='ACTIVE' THEN binding.activated_at_epoch_millis END
+                    AS binding_activated_at,
+               CASE WHEN binding.binding_status='ACTIVE' THEN binding.generation END AS binding_generation
+        FROM store_terminal.terminal terminal
+        LEFT JOIN terminal_binding.latest_binding binding
+          ON binding.workspace_uuid=terminal.workspace_uuid
+         AND binding.group_workspace_key=terminal.group_workspace_key
+         AND binding.terminal_ref=terminal.terminal_ref
+        WHERE terminal.workspace_uuid=? AND terminal.group_workspace_key=?
+          AND terminal.store_ref=? AND terminal.terminal_ref=?
+        """;
+
     public static final String SELECT_DETAIL_FOR_UPDATE = SELECT_DETAIL + " FOR UPDATE";
+
+    public static final String SELECT_TERMINAL_STORE =
+            "SELECT store_ref FROM store_terminal.terminal WHERE workspace_uuid=? AND group_workspace_key=? "
+                    + "AND terminal_ref=?";
 
     public static final String INSERT_TERMINAL =
             """
@@ -26,7 +49,7 @@ public final class StoreTerminalOwnerPersistenceSql {
     public static final String REPLACE_TERMINAL =
             """
         UPDATE store_terminal.terminal
-        SET name=?, name_normalized=?, device_type=?, configuration=?::jsonb, version=version+1,
+        SET name=?, name_normalized=?, configuration=?::jsonb, version=version+1,
             updated_at_epoch_millis=?
         WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND terminal_ref=?
           AND status <> 'VOIDED' AND version=?

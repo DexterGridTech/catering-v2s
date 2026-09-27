@@ -48,8 +48,7 @@ public class ExtensionAuditHistoryPersistence {
                         + ExtensionAuditHistoryServiceSql
                                 .EXTENSION_AUDIT_HISTORY_SERVICE_AUDIT_EVENT_CHANGES_JSON_TEXT_WORKSPACE_UUID
                         + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_GROUP_WORKSPACE_KEY
-                        + ExtensionAuditHistoryServiceSql
-                                .EXTENSION_AUDIT_HISTORY_SERVICE_CONDITION_ENTITY_TYPE_EXTENSION_DEFINITION_ENTITY_REF_TEXT
+                        + ExtensionAuditHistoryServiceSql.CONDITION_ENTITY_TYPE_EXTENSION_DEF_001
                         + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_OCCURRED_AT_EPOCH_MILLIS
                         + ExtensionAuditHistoryServiceSql
                                 .EXTENSION_AUDIT_HISTORY_SERVICE_DESC_DIRECTION_DESC_ID_DESC_LIMIT_OFFSET,

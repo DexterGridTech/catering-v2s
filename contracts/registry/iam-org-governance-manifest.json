@@ -11,7 +11,8 @@
   "authorizationModes": [
     "AUTHENTICATED_WORKSPACE",
     "AUTHENTICATED_PLATFORM_SUPER_ADMIN",
-    "PUBLIC_PROTOCOL"
+    "PUBLIC_PROTOCOL",
+    "TERMINAL_CREDENTIAL"
   ],
   "resolvers": [
     {
@@ -134,6 +135,27 @@
         "clientCapabilityLiteral"
       ],
       "authenticatedWorkspaceSessionForbidden": true
+    },
+    {
+      "resolverId": "TERMINAL_CREDENTIAL_AUTHENTICATOR",
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "inputs": [
+        "parsedTerminalCredential",
+        "deviceId",
+        "serverResolvedTerminalBinding"
+      ],
+      "outputs": [
+        "ALLOW",
+        "DENY",
+        "terminalBindingIdentity"
+      ],
+      "clientDerivedInputsForbidden": [
+        "pageDesignKey",
+        "actionKey",
+        "URL",
+        "clientCapabilityLiteral"
+      ],
+      "authenticatedWorkspaceSessionForbidden": true
     }
   ],
   "ownerRechecks": [
@@ -234,6 +256,13 @@
       "requiredInOwnerCommand": true,
       "transactionRequirement": "REQUIRED",
       "crossOwnerWritesUsePublicCommandApi": true
+    },
+    {
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_BINDING",
+      "ownerModule": "terminal-binding",
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
     }
   ],
   "typedProblemMappings": [
@@ -331,6 +360,13 @@
     {
       "typedProblemMappingId": "PROBLEM_STORE_TERMINAL_TYPED_OWNER_EXCEPTION",
       "ownerModule": "store-terminal",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    },
+    {
+      "typedProblemMappingId": "PROBLEM_TERMINAL_BINDING_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "terminal-binding",
       "typedProblemOnly": true,
       "noTestCodeInResponse": true,
       "unmappedExceptionFails": true
@@ -3624,6 +3660,29 @@
       "ownerRecheckId": "OWNER_RECHECK_STORE_TERMINAL",
       "typedProblemMappingId": "PROBLEM_STORE_TERMINAL_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_POST_OPERATIONS_STORE_TERMINAL_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CANCEL_TERMINAL_ACTIVATION",
+      "operationIdentity": {"operationId": "cancelTerminalActivation", "method": "POST", "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel", "consumerFace": "terminal", "ownerModule": "terminal-binding"},
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "resolverId": "TERMINAL_CREDENTIAL_AUTHENTICATOR",
+      "ownerModule": "terminal-binding",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_BINDING",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_BINDING_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CANCEL_TERMINAL_ACTIVATION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CANCEL_OPERATIONS_STORE_TERMINAL_ACTIVATION",
+      "operationIdentity": {"operationId": "cancelOperationsStoreTerminalActivation", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel", "consumerFace": "operations-admin", "ownerModule": "terminal-binding"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_TERMINAL"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "terminal-binding",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_BINDING",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_BINDING_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CANCEL_OPERATIONS_STORE_TERMINAL_ACTIVATION",
       "noClientDerivedAuthorization": true
     }
   ]

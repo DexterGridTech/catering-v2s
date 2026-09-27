@@ -6,6 +6,11 @@ description: Derive a reviewable catering-v2s implementation plan from an approv
 
 Confirm Dexter's explicit session assignment first. Reopen applicable project-memory and Heritage sources, including `SOLUTION_REASONABLENESS_FIRST`, `UI_USER_TASK_VALIDATION` and `AMBIGUITY_REQUIRES_DEXTER`. Before decomposing implementation, state the business user's actual task, Dexter's stage/cost intent, at least one viable alternative and why the recommendation is better. For UI, prove each operation comes from an approved Journey, is logical in context and has no better path; attribute constraints to backend/owner/contract/document ambiguity rather than inheriting them silently, and ask Dexter when product semantics are ambiguous. Then produce implementation units with exact create/update/delete/retain paths, owner and transaction boundaries, failure behavior, evidence and red controls.
 
+For each implementation unit that relies on third-party library or framework APIs or behavior, use
+`doc/platform/third-party-library-usage-standard.md` and carry the resolved dependency version,
+version-matched official source, verified behavior/limits, and focused proof into the unit. Do not
+write steps from memory or infer an API from a similar method or release.
+
 The plan is incomplete unless it contains an explicit delivery step named `逐代码与详设对账`
 (line-by-line reconciliation of the produced code against the implementation-facing design),
 stating its scope, executor, criteria and result form. Scope is every changed line, not a sample.

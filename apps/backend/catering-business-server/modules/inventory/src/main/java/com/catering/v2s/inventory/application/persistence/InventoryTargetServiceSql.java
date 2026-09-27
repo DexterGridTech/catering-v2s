@@ -67,9 +67,8 @@ public final class InventoryTargetServiceSql {
     public static final String INVENTORY_TARGET_SERVICE_STOCK_LEDGER_DELTA_TARGET_REF =
             "-delta ELSE 0 END),0), COUNT(*) FROM inventory.stock_ledger WHERE target_ref=? AND ";
     public static final String INVENTORY_TARGET_SERVICE_OCCURRED_AT_EPOCH_MILLIS = "occurred_at_epoch_millis>=?";
-    public static final String
-            INVENTORY_TARGET_SERVICE_SELECT_STOCK_LEDGER_OPERATION_ID_DELTA_OCCURRED_AT_EPOCH_MILLIS_TARGET_REF =
-                    "SELECT operation_id,delta,occurred_at_epoch_millis FROM inventory.stock_ledger WHERE target_ref=? ";
+    public static final String SELECT_STOCK_LEDGER_OP_ID_001 =
+            ("SELECT operation_id,delta,occurred_at_epoch_millis FROM inventory.stock_" + "ledger WHERE target_ref=? ");
     public static final String INVENTORY_TARGET_SERVICE_ORDER_BY_OCCURRED_AT_EPOCH_MILLIS =
             "ORDER BY occurred_at_epoch_millis DESC LIMIT 20";
     public static final String INVENTORY_TARGET_SERVICE_SELECT_ITEM_ITEM_REF_CODE_NAME =
@@ -231,15 +230,13 @@ public final class InventoryTargetServiceSql {
     public static final String INVENTORY_TARGET_SERVICE_STOCK_LEDGER_ENTRY_REF_TARGET_REF_OPERATION_ID_ALTERNATE_A =
             "inventory.stock_ledger(entry_ref,target_ref,operation_id,delta,balance_before,balance_after,";
 
-    public static final String
-            INVENTORY_TARGET_SERVICE_JOIN_CONDITION_ON_CODE_NOTE_OCCURRED_AT_EPOCH_MILLIS_CONSUMPTION_UNIT_REF_ALTERNATE_A =
-                    "on_code,note,occurred_at_epoch_millis,consumption_unit_ref,consumption_unit_code,";
+    public static final String JOIN_CONDITION_ON_CODE_NOTE_ALT_A_002 =
+            "on_code,note,occurred_at_epoch_millis,consumption_unit_ref,consumption_unit_code,";
     public static final String INVENTORY_TARGET_SERVICE_CONSUMPTION_UNIT_NAME =
             "consumption_unit_name,consumption_unit_dimension,consumption_unit_precision) VALUES(?,?,";
     public static final String INVENTORY_TARGET_SERVICE_PARAMETER_PLACEHOLDER = "?,?,?,?,?,?,?,?,?,?,?,?)";
-    public static final String
-            INVENTORY_TARGET_SERVICE_UPDATE_STOCK_TARGET_BALANCE_VERSION_UPDATED_AT_EPOCH_MILLIS_ALTERNATE_A =
-                    "UPDATE inventory.stock_target SET balance=?,version=version+1,updated_at_epoch_millis=? WHERE ";
+    public static final String UPDATE_STOCK_TARGET_BALANCE_VER_ALT_A_003 =
+            "UPDATE inventory.stock_target SET balance=?,version=version+1,updated_at_epoch_millis=? WHERE ";
     public static final String INVENTORY_TARGET_SERVICE_TARGET_REF_VERSION_ALTERNATE_A = "target_ref=? AND version=?";
     public static final String INVENTORY_TARGET_SERVICE_UPDATE_STOCK_TARGET_CONFIGURATION_ALTERNATE_A =
             "UPDATE inventory.stock_target SET configuration=CAST(? AS JSONB),";
@@ -280,76 +277,76 @@ public final class InventoryTargetServiceSql {
             "FROM selected s LEFT JOIN aggregate a ON a.target_ref=s.target_ref LEFT JOIN latest ON ";
     public static final String INVENTORY_TARGET_SERVICE_LATEST_TARGET_REF =
             "latest.target_ref=s.target_ref AND latest.row_number=1";
-    public static final String
-            INVENTORY_TARGET_SERVICE_SELECT_STOCK_LEDGER_OPERATION_ID_DELTA_OCCURRED_AT_EPOCH_MILLIS_TARGET_REF_ALTERNATE_A =
-                    "SELECT operation_id,delta,occurred_at_epoch_millis FROM inventory.stock_ledger WHERE target_ref=? ";
+    public static final String SELECT_STOCK_LEDGER_OP_ID_ALT_A_004 =
+            ("SELECT operation_id,delta,occurred_at_epoch_millis FROM inventory.stock_" + "ledger WHERE target_ref=? ");
     public static final String INVENTORY_TARGET_SERVICE_ORDER_BY_OCCURRED_AT_EPOCH_MILLIS_ALTERNATE_A =
             "ORDER BY occurred_at_epoch_millis DESC LIMIT 20";
     public static final String INVENTORY_TARGET_SERVICE_SELECT_STOCK_TARGET_VERSION_DATA_NODE_REF_BRAND_REF =
             "SELECT COALESCE(MAX(version),0) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=?";
     public static final String INVENTORY_TARGET_SERVICE_SELECT_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT =
-            "SELECT operation_id,request_hash,response_json::text FROM inventory.command_receipt WHERE data_node_ref=? ";
+            ("SELECT operation_id,request_hash,response_json::text FROM inventory.comm"
+                    + "and_receipt WHERE data_node_ref=? ");
     public static final String INVENTORY_TARGET_SERVICE_CONDITION_IDEMPOTENCY_KEY = "AND idempotency_key=?";
     public static final String INVENTORY_TARGET_SERVICE_INSERT_INTO_ALTERNATE_B = "INSERT INTO ";
 
-    public static final String
-            INVENTORY_TARGET_SERVICE_COUNTING_UNIT_PRECISION_COUNTING_UNIT_CONVERSION_FACTOR_VERSION_UPDATED_AT_EPOCH_MILLIS_WHERE_DATA_NODE_REF_AND_UPDATED_AT_EPOCH_MILLIS_WHERE_DATA_NODE_REF_AND =
-                    """
-    counting_unit_precision=?,counting_unit_conversion_factor=?,version=version+1,updated_at_epoch_millis=? WHERE data_node_ref=? AND\s""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_SELECT_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION =
-                    """
-    SELECT consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dimension,consumption_unit_precision\s""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_REASON_CODE_NOTE_OCCURRED_AT_EPOCH_MILLIS_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_VALUES =
-                    """
-    reason_code,note,occurred_at_epoch_millis,consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dimension,consumption_unit_precision) VALUES(?,?,?,?,?""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_P_TARGET_REF_P_ITEM_REF_P_PRODUCT_SKU_REF_P_ITEM_CODE_P_SKU_CODE_UNKNOWN_COUNT_A_VIEW_COUNT_FROM =
-                    """
-    p.target_ref,p.item_ref,p.product_sku_ref,p.item_code,p.sku_code,p.measure_mode,p.balance,p.configuration,p.version,p.updated_at_epoch_millis,p.stock_state,a.all_count,a.attention_count,a.low_count,a.out_count,a.negative_count,a.unknown_count,a.view_count FROM\s""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_ENTRY_REF_OPERATION_ID_DELTA_BALANCE_BEFORE_BALANCE_AFTER_REASON_CODE_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION =
-                    """
-    entry_ref,operation_id,delta,balance_before,balance_after,reason_code,occurred_at_epoch_millis,consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dimension,""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_CONSUMPTION_UNIT_PRECISION_COUNT_OVER_CONSUMPTION_UNIT_PRECISION_COUNT_OVER =
-                    """
+    public static final String COUNTING_UNIT_PREC_COUNTING_UNIT_005 =
+            """
+    counting_unit_precision=?,counting_unit_conversion_factor=?,versio\
+    n=version+1,updated_at_epoch_millis=? WHERE data_node_ref=? AND\s""";
+    public static final String SELECT_CONSUM_UNIT_REF_CONSUM_006 =
+            """
+    SELECT consumption_unit_ref,consumption_unit_code,consumption_unit\
+    _name,consumption_unit_dimension,consumption_unit_precision\s""";
+    public static final String REASON_CODE_NOTE_OCCURRED_AT_007 =
+            """
+    reason_code,note,occurred_at_epoch_millis,consumption_unit_ref,con\
+    sumption_unit_code,consumption_unit_name,consumption_unit_dimensio\
+    n,consumption_unit_precision) VALUES(?,?,?,?,?""";
+    public static final String P_TARGET_REF_P_ITEM_008 =
+            """
+    p.target_ref,p.item_ref,p.product_sku_ref,p.item_code,p.sku_code,p\
+    .measure_mode,p.balance,p.configuration,p.version,p.updated_at_epo\
+    ch_millis,p.stock_state,a.all_count,a.attention_count,a.low_count,\
+    a.out_count,a.negative_count,a.unknown_count,a.view_count FROM\s""";
+    public static final String ENTRY_REF_OP_ID_DELTA_009 =
+            """
+    entry_ref,operation_id,delta,balance_before,balance_after,reason_c\
+    ode,occurred_at_epoch_millis,consumption_unit_ref,consumption_unit\
+    _code,consumption_unit_name,consumption_unit_dimension,""";
+    public static final String CONSUM_UNIT_PREC_COUNT_OVER_010 =
+            """
     consumption_unit_precision,COUNT(*) OVER()\s""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_ENTRY_TIMING_AS_TIMING_ORD_COUNT_OVER_AS_TOTAL_COUNT_OVER_AS_TOTAL =
-                    """
+    public static final String ENTRY_TIMING_AS_TIMING_ORD_011 =
+            """
     entry->>'timing' AS timing,ord,COUNT(*) OVER() AS total\s""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION =
-                    """
+    public static final String CONSUM_UNIT_CODE_CONSUM_UNIT_012 =
+            """
     consumption_unit_code,consumption_unit_name,consumption_unit_dimension,consumption_unit_precision,""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_ENTRY_REF_OPERATION_ID_DELTA_BALANCE_BEFORE_BALANCE_AFTER_REASON_CODE_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_ALTERNATE_A =
-                    """
-    entry_ref,operation_id,delta,balance_before,balance_after,reason_code,occurred_at_epoch_millis,consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dimension,""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_CONSUMPTION_UNIT_PRECISION_COUNT_OVER_CONSUMPTION_UNIT_PRECISION_COUNT_OVER_ALTERNATE_A =
-                    """
+    public static final String ENTRY_REF_OP_ID_DELTA_ALT_A_013 =
+            """
+    entry_ref,operation_id,delta,balance_before,balance_after,reason_c\
+    ode,occurred_at_epoch_millis,consumption_unit_ref,consumption_unit\
+    _code,consumption_unit_name,consumption_unit_dimension,""";
+    public static final String CONSUM_UNIT_PREC_COUNT_OVER_ALT_A_014 =
+            """
     consumption_unit_precision,COUNT(*) OVER()\s""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_REASON_CODE_NOTE_OCCURRED_AT_EPOCH_MILLIS_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_NOTE_OCCURRED_AT_EPOCH_MILLIS_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE =
-                    """
+    public static final String REASON_CODE_NOTE_OCCURRED_AT_015 =
+            """
     reason_code,note,occurred_at_epoch_millis,consumption_unit_ref,consumption_unit_code,""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_COUNTING_UNIT_REF_COUNTING_UNIT_CODE_COUNTING_UNIT_NAME_COUNTING_UNIT_DIMENSION_COUNTING_UNIT_REF_COUNTING_UNIT_CODE_COUNTING_UNIT_NAME_COUNTING_UNIT_DIMENSION =
-                    """
+    public static final String COUNTING_UNIT_REF_COUNTING_UNIT_016 =
+            """
     counting_unit_ref=?,counting_unit_code=?,counting_unit_name=?,counting_unit_dimension=?,""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_COUNTING_UNIT_PRECISION_COUNTING_UNIT_CONVERSION_FACTOR_VERSION_UPDATED_AT_EPOCH_MILLIS_WHERE_DATA_NODE_REF_AND_UPDATED_AT_EPOCH_MILLIS_WHERE_DATA_NODE_REF_AND_ALTERNATE_A =
-                    """
-    counting_unit_precision=?,counting_unit_conversion_factor=?,version=version+1,updated_at_epoch_millis=? WHERE data_node_ref=? AND\s""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_S_TARGET_REF_A_TODAY_CHANGE_A_SEVEN_DAY_CHANGE_A_THIRTY_DAY_CHANGE_LATEST_OPERATION_ID_LATEST_OPERATION_ID_LATEST_OCCURRED_AT_EPOCH_MILLIS =
-                    """
-    s.target_ref,a.today_change,a.seven_day_change,a.thirty_day_change,latest.operation_id,latest.occurred_at_epoch_millis\s""";
-    public static final String
-            INVENTORY_TARGET_SERVICE_INVENTORY_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID_REQUEST_HASH_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB =
-                    """
-    inventory.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_hash,response_json,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)""";
+    public static final String COUNTING_UNIT_PREC_COUNTING_UNIT_ALT_A_017 =
+            """
+    counting_unit_precision=?,counting_unit_conversion_factor=?,versio\
+    n=version+1,updated_at_epoch_millis=? WHERE data_node_ref=? AND\s""";
+    public static final String S_TARGET_REF_A_TODAY_018 =
+            """
+    s.target_ref,a.today_change,a.seven_day_change,a.thirty_day_change\
+    ,latest.operation_id,latest.occurred_at_epoch_millis\s""";
+    public static final String INV_CMD_RECEIPT_REF_DATA_019 =
+            """
+    inventory.command_receipt(receipt_ref,data_node_ref,idempotency_ke\
+    y,operation_id,request_hash,response_json,created_at_epoch_millis)\
+     VALUES(?,?,?,?,?,CAST(? AS JSONB),?)""";
 }

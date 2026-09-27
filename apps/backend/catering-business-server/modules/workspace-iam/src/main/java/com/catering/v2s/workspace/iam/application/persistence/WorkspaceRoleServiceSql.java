@@ -10,9 +10,8 @@ public final class WorkspaceRoleServiceSql {
     public static final String SORT_DIRECTION_DESC = "DESC";
     public static final String SQL_SPACE = " ";
     public static final String SQL_CLOSE_PAREN = ")";
-    public static final String
-            WORKSPACE_ROLE_SERVICE_INSERT_INTO_WORKSPACE_ROLE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NAME =
-                    "INSERT INTO workspace_iam.workspace_role (id, workspace_uuid, group_workspace_key, name, ";
+    public static final String INSERT_INTO_WS_ROLE_WS_001 =
+            "INSERT INTO workspace_iam.workspace_role (id, workspace_uuid, group_workspace_key, name, ";
     public static final String WORKSPACE_ROLE_SERVICE_SERVICE_NODE_TYPE_DESCRIPTION_STATUS_VERSION =
             "service_node_type, description, status, version, created_at_epoch_millis, ";
     public static final String WORKSPACE_ROLE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_PAGE_ACCESS_KEYS_CAPABILITY_KEYS =
@@ -59,19 +58,16 @@ public final class WorkspaceRoleServiceSql {
     public static final String WORKSPACE_ROLE_SERVICE_CAPABILITY_KEYS = "capability_keys ";
     public static final String WORKSPACE_ROLE_SERVICE_FROM_CLAUSE_WORKSPACE_ROLE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             "FROM workspace_iam.workspace_role WHERE id=? AND workspace_uuid=? AND group_workspace_key=?";
-    public static final String
-            WORKSPACE_ROLE_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NAME_DESCRIPTION_ALTERNATE_A =
-                    "SELECT id, workspace_uuid, group_workspace_key, name, description, service_node_type, status, ";
+    public static final String SELECT_WS_UUID_GRP_WS_ALT_A_002 =
+            "SELECT id, workspace_uuid, group_workspace_key, name, description, service_node_type, status, ";
     public static final String WORKSPACE_ROLE_SERVICE_VERSION_ALTERNATE_A =
             "version, created_at_epoch_millis, updated_at_epoch_millis, page_access_keys, ";
     public static final String WORKSPACE_ROLE_SERVICE_CAPABILITY_KEYS_ALTERNATE_A = "capability_keys ";
-    public static final String
-            WORKSPACE_ROLE_SERVICE_FROM_CLAUSE_WORKSPACE_ROLE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A =
-                    "FROM workspace_iam.workspace_role WHERE workspace_uuid=? AND group_workspace_key=? AND id ";
+    public static final String FROM_CLAUSE_WS_ROLE_WS_ALT_A_003 =
+            "FROM workspace_iam.workspace_role WHERE workspace_uuid=? AND group_workspace_key=? AND id ";
     public static final String WORKSPACE_ROLE_SERVICE_IN_LIST_PREFIX = "IN (";
-    public static final String
-            WORKSPACE_ROLE_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE =
-                    "INSERT INTO workspace_iam.audit_event (id, workspace_uuid, group_workspace_key, entity_type, ";
+    public static final String INSERT_INTO_AUDIT_EVENT_WS_004 =
+            "INSERT INTO workspace_iam.audit_event (id, workspace_uuid, group_workspace_key, entity_type, ";
     public static final String WORKSPACE_ROLE_SERVICE_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT =
             "entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, ";
     public static final String WORKSPACE_ROLE_SERVICE_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_WORKSPACE_ROLE =

@@ -19,9 +19,7 @@ public final class PlatformWorkspaceInvitationTaskReadServiceSql {
     public static final String PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_COMPLETED_AT_EPOCH_MILLIS =
             "i.completed_at_epoch_millis, i.cancelled_at_epoch_millis, i.invitation_token, COUNT(*) OVER () AS ";
     public static final String PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_TOTAL = "total ";
-    public static final String
-            PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_FROM_CLAUSE_INVITATION_FROM_WORKSPACE_IAM_INVITATIO =
-                    "FROM workspace_iam.invitation i WHERE ";
+    public static final String FROM_CLAUSE_INVITE_FROM_WS_001 = "FROM workspace_iam.invitation i WHERE ";
     public static final String PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_VALUE_SEPARATOR_PAGE_TOTAL_TOTAL =
             ", id ASC LIMIT ? OFFSET ?), page_total AS (SELECT COALESCE(MAX(total), (SELECT COUNT(*) FROM ";
     public static final String PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_PAGED_FILTERED_TOTAL =
@@ -71,16 +69,20 @@ public final class PlatformWorkspaceInvitationTaskReadServiceSql {
     public static final String PAGE_ORDER_PREFIX = "), paged AS (SELECT * FROM filtered ORDER BY ";
     public static final String PAGE_ORDER_SUFFIX = ", paged.id ASC";
     public static final String CLAUSE_JOINER = " AND ";
-    public static final String
-            PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_PAGED_ID_PAGED_MOBILE_NORMALIZED_PAGED_ISSUER_DISPLAY_NAME_SNAPSHOT_PAGED_STATUS_PAGED_EXPIRES_AT_EPOCH_MILLIS_CREATED_AT_EPOCH_MILLIS_PAGED_CONSENTED_AT_EPOCH_MILLIS_PAGED =
-                    """
-    paged.id,paged.mobile_normalized,paged.issuer_display_name_snapshot,paged.status,paged.expires_at_epoch_millis,paged.version,paged.created_at_epoch_millis,paged.consented_at_epoch_millis,paged""";
-    public static final String
-            PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_COMPLETED_AT_EPOCH_MILLIS_PAGED_CANCELLED_AT_EPOCH_MILLIS_PAGED_INVITATION_TOKEN_PAGE_TOTAL_TOTAL_COALESCE_INTENTS_VALUE_LEFT_JOIN_PAGED_ON =
-                    """
-    .completed_at_epoch_millis,paged.cancelled_at_epoch_millis,paged.invitation_token,page_total.total,COALESCE(intents.value, '[]'::jsonb)::text AS intents FROM page_total LEFT JOIN paged ON\s""";
-    public static final String
-            PLATFORM_WORKSPACE_INVITATION_TASK_READ_SERVICE_I_CREATED_AT_EPOCH_MILLIS_I_CONSENTED_AT_EPOCH_MILLIS_I_COMPLETED_AT_EPOCH_MILLIS_I_CANCELLED_AT_EPOCH_MILLIS_I_INVITATION_TOKEN_TEXT_AS_INTENTS_FROM =
-                    """
-    ,i.created_at_epoch_millis,i.consented_at_epoch_millis,i.completed_at_epoch_millis,i.cancelled_at_epoch_millis,i.invitation_token,1 AS total,COALESCE(intents.value, '[]'::jsonb)::text AS intents FROM\s""";
+    public static final String PAGED_ID_PAGED_MOBILE_NORMALIZED_002 =
+            """
+    paged.id,paged.mobile_normalized,paged.issuer_display_name_snapsho\
+    t,paged.status,paged.expires_at_epoch_millis,paged.version,paged.c\
+    reated_at_epoch_millis,paged.consented_at_epoch_millis,paged""";
+    public static final String COMPLETED_AT_EPOCH_MS_PAGED_003 =
+            """
+    .completed_at_epoch_millis,paged.cancelled_at_epoch_millis,paged.i\
+    nvitation_token,page_total.total,COALESCE(intents.value, '[]'::jso\
+    nb)::text AS intents FROM page_total LEFT JOIN paged ON\s""";
+    public static final String I_CREATED_AT_EPOCH_MS_004 =
+            """
+    ,i.created_at_epoch_millis,i.consented_at_epoch_millis,i.completed\
+    _at_epoch_millis,i.cancelled_at_epoch_millis,i.invitation_token,1 \
+    AS total,COALESCE(intents.value, '[]'::jsonb)::text AS intents FRO\
+    M\s""";
 }

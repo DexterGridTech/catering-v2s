@@ -19,6 +19,11 @@ test('store-terminal L2 P1 keeps blueprint, scenario, action and locator contrac
   const scenarios = readJson('contracts/policy/store-terminal-l2-scenarios.json');
   const bindings = readJson('contracts/policy/store-terminal-l2-locator-bindings.json');
   assert.doesNotThrow(() => validateCaseContracts(blueprint, scenarios, bindings));
+  const editCase = scenarios.scenarios.flatMap(scenario => scenario.cases).find(item => item.caseId === 'terminal-edit-configuration');
+  assert.ok(editCase.parameter.controlKeys.includes('TERMINAL_DEVICE_TYPE_READONLY'));
+  assert.equal(editCase.parameter.actionControlKeys.includes('TERMINAL_DEVICE_TYPE_READONLY'), false);
+  assert.equal(bindings.controls.TERMINAL_DEVICE_TYPE_READONLY.actualActionNode, 'TEXT');
+  assert.equal(bindings.controls.TERMINAL_DEVICE_TYPE_READONLY.interaction, 'readonly-observation');
 });
 
 test('store-terminal L2 P1 red mutation rejects a control order drift', () => {

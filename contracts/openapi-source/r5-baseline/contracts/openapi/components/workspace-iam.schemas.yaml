@@ -1,0 +1,684 @@
+openapi: 3.0.3
+info:
+  title: Workspace IAM Role Wire Components
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    WorkspaceOrganizationType:
+      type: string
+      enum: [GROUP, REGION, PROJECT, HEAD_COMPANY, STORE]
+    WorkspaceRoleStatus:
+      type: string
+      enum: [ENABLED, DISABLED]
+    WorkspaceBusinessCapability:
+      type: string
+      enum:
+        - BC-ORG-GROUP-EDIT
+        - BC-ORG-GROUP-STATUS
+        - BC-ORG-REGION-CREATE
+        - BC-ORG-REGION-EDIT
+        - BC-ORG-REGION-STATUS
+        - BC-ORG-PROJECT-CREATE
+        - BC-ORG-PROJECT-EDIT
+        - BC-ORG-PROJECT-STATUS
+        - BC-ORG-BRAND-CREATE
+        - BC-ORG-BRAND-EDIT
+        - BC-ORG-BRAND-STATUS
+        - BC-ORG-TENANT-CREATE
+        - BC-ORG-TENANT-EDIT
+        - BC-ORG-TENANT-STATUS
+        - BC-ORG-HEAD-COMPANY-CREATE
+        - BC-ORG-HEAD-COMPANY-EDIT
+        - BC-ORG-HEAD-COMPANY-STATUS
+        - BC-ORG-HEAD-COMPANY-BRAND
+        - BC-ORG-STORE-CREATE
+        - BC-ORG-STORE-EDIT
+        - BC-ORG-STORE-STATUS
+        - BC-IAM-GROUP-ROLE-REVOKE
+        - BC-IAM-REGION-ROLE-REVOKE
+        - BC-IAM-PROJECT-ROLE-REVOKE
+        - BC-IAM-HEAD-COMPANY-ROLE-REVOKE
+        - BC-IAM-STORE-ROLE-REVOKE
+        - BC-IAM-GROUP-INVITE
+        - BC-IAM-REGION-INVITE
+        - BC-IAM-PROJECT-INVITE
+        - BC-IAM-HEAD-COMPANY-INVITE
+        - BC-IAM-STORE-INVITE
+        - BC-CONTRACT-CREATE
+        - BC-CONTRACT-EDIT
+        - BC-CONTRACT-INVALIDATE
+    WorkspaceRole:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceKey, name, organizationType, capabilityKeys, pageAccessKeys, status, revision, createdAt, updatedAt]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        description: {type: string, nullable: true, maxLength: 500}
+        organizationType: {$ref: '#/components/schemas/WorkspaceOrganizationType'}
+        capabilityKeys:
+          type: array
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/WorkspaceBusinessCapability'}
+        pageAccessKeys:
+          type: array
+          uniqueItems: true
+          items: {type: string, minLength: 1, maxLength: 80}
+        status: {$ref: '#/components/schemas/WorkspaceRoleStatus'}
+        revision: {type: integer, format: int64, minimum: 0}
+        createdAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        updatedAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+    WorkspaceRolePage:
+      type: object
+      additionalProperties: false
+      required: [items, page, pageSize, total, capabilityCatalog, pageAccessCatalog]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/WorkspaceRole'}
+        page: {type: integer, minimum: 1}
+        pageSize: {type: integer, minimum: 1, maximum: 100}
+        total: {type: integer, format: int64, minimum: 0}
+        capabilityCatalog:
+          type: array
+          items: {$ref: '#/components/schemas/WorkspaceBusinessCapabilityOption'}
+        pageAccessCatalog:
+          type: array
+          items: {$ref: '#/components/schemas/WorkspaceRolePageAccessOption'}
+    WorkspaceRoleCandidateCatalog:
+      type: object
+      description: Complete enabled business-role snapshot for platform authorization forms; this is not a pageable role list.
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/WorkspaceRole'}
+    WorkspaceBusinessCapabilityOption:
+      type: object
+      additionalProperties: false
+      required: [key, actionGroupKey, actionGroupLabel, actionGroupOrder, label, description, organizationTypes]
+      properties:
+        key: {$ref: '#/components/schemas/WorkspaceBusinessCapability'}
+        actionGroupKey: {type: string, minLength: 1, maxLength: 80}
+        actionGroupLabel: {type: string, minLength: 1, maxLength: 120}
+        actionGroupOrder: {type: integer, format: int32, minimum: 0}
+        label: {type: string, minLength: 1, maxLength: 120}
+        description: {type: string, minLength: 1, maxLength: 500}
+        organizationTypes:
+          type: array
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/WorkspaceOrganizationType'}
+    WorkspaceRoleCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, organizationType, capabilityKeys, pageAccessKeys]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        description: {type: string, nullable: true, maxLength: 500}
+        organizationType: {$ref: '#/components/schemas/WorkspaceOrganizationType'}
+        capabilityKeys:
+          type: array
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/WorkspaceBusinessCapability'}
+        pageAccessKeys:
+          type: array
+          uniqueItems: true
+          items: {type: string, minLength: 1, maxLength: 80}
+    WorkspaceRoleUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, status, capabilityKeys, pageAccessKeys, expectedRevision]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        description: {type: string, nullable: true, maxLength: 500}
+        status: {$ref: '#/components/schemas/WorkspaceRoleStatus'}
+        capabilityKeys:
+          type: array
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/WorkspaceBusinessCapability'}
+        pageAccessKeys:
+          type: array
+          uniqueItems: true
+          items: {type: string, minLength: 1, maxLength: 80}
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+    WorkspaceRoleStatusTransitionRequest:
+      type: object
+      additionalProperties: false
+      required: [targetStatus, expectedRevision]
+      properties:
+        targetStatus: {$ref: '#/components/schemas/WorkspaceRoleStatus'}
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+    WorkspaceRolePageAccessOption:
+      type: object
+      additionalProperties: false
+      required: [pageDesignKey, title, menuGroup, menuOrder, requiredDataNodeType, eligibleOrganizationTypes]
+      properties:
+        pageDesignKey: {type: string, minLength: 1, maxLength: 80}
+        title: {type: string, minLength: 1, maxLength: 120}
+        menuGroup: {type: string, minLength: 1, maxLength: 120}
+        menuOrder: {type: integer, format: int32, minimum: 0}
+        requiredDataNodeType: {type: string, enum: [NONE, REGION, PROJECT, STORE]}
+        eligibleOrganizationTypes: {type: array, items: {$ref: '#/components/schemas/WorkspaceOrganizationType'}}
+    WorkspacePageEntryGuardRequest:
+      type: object
+      additionalProperties: false
+      required: [pageDesignKey]
+      properties:
+        pageDesignKey: {type: string, minLength: 1, maxLength: 80}
+    WorkspacePageEntryGuardInternalRequest:
+      type: object
+      additionalProperties: false
+      required: [pageDesignKey, sessionToken]
+      properties:
+        pageDesignKey: {type: string, minLength: 1, maxLength: 80}
+        sessionToken: {type: string, minLength: 16, maxLength: 256}
+    WorkspacePageEntryGuard:
+      type: object
+      additionalProperties: false
+      required: [pageDesignKey, roleId, granted, reasonCode]
+      properties:
+        pageDesignKey: {type: string, minLength: 1, maxLength: 80}
+        roleId: {type: string, minLength: 1, maxLength: 64}
+        granted: {type: boolean}
+        reasonCode:
+          type: string
+          enum: [PAGE_GRANTED, PAGE_NOT_GRANTED, PAGE_CATALOG_MISMATCH, ROLE_NOT_FOUND, ROLE_DISABLED]
+        organizationType:
+          type: string
+          enum: [GROUP, REGION, PROJECT, HEAD_COMPANY, STORE]
+          nullable: true
+    WorkspaceInvitationStatus:
+      type: string
+      enum: [ACTIVE, CANCELLED, EXPIRED, COMPLETED]
+    WorkspaceInvitationSortKey:
+      type: string
+      enum: [CREATED_AT, EXPIRES_AT]
+    WorkspaceAccountStatus:
+      type: string
+      enum: [ENABLED, DISABLED]
+    WorkspaceCredentialStatus:
+      type: string
+      enum: [SET, RESET_PENDING]
+    WorkspaceAccountAssignment:
+      type: object
+      additionalProperties: false
+      required: [id, organizationType, organizationPath, roleName, status, source]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        organizationType: {$ref: '#/components/schemas/WorkspaceOrganizationType'}
+        organizationPath: {type: string, minLength: 1, maxLength: 240}
+        roleName: {type: string, minLength: 1, maxLength: 120}
+        status: {type: string, enum: [ACTIVE, REVOKED]}
+        source: {type: string, enum: [INVITATION, ADMINISTRATION]}
+    WorkspaceAccountInvitationHistory:
+      type: object
+      additionalProperties: false
+      required: [invitationId, status, generation, expiresAt]
+      properties:
+        invitationId: {type: string, minLength: 1, maxLength: 64}
+        status: {$ref: '#/components/schemas/WorkspaceInvitationStatus'}
+        generation: {type: integer, format: int32, minimum: 1}
+        expiresAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+    WorkspaceAccount:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceKey, displayName, maskedMobile, loginName, status, credentialStatus, activeAssignmentCount, assignments, invitationHistory, createdAt, updatedAt, revision]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        displayName: {type: string, minLength: 1, maxLength: 120}
+        maskedMobile: {type: string, minLength: 1, maxLength: 32}
+        loginName: {type: string, minLength: 1, maxLength: 120}
+        status: {$ref: '#/components/schemas/WorkspaceAccountStatus'}
+        credentialStatus: {$ref: '#/components/schemas/WorkspaceCredentialStatus'}
+        activeAssignmentCount: {type: integer, format: int32, minimum: 0}
+        lastLoginAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis', nullable: true}
+        createdAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        updatedAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        revision: {type: integer, format: int64, minimum: 0}
+        assignments: {type: array, items: {$ref: '#/components/schemas/WorkspaceAccountAssignment'}}
+        invitationHistory: {type: array, items: {$ref: '#/components/schemas/WorkspaceAccountInvitationHistory'}}
+    WorkspaceAccountPage:
+      type: object
+      additionalProperties: false
+      required: [items, page, pageSize, total]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/WorkspaceAccount'}}
+        page: {type: integer, minimum: 1}
+        pageSize: {type: integer, minimum: 1, maximum: 100}
+        total: {type: integer, format: int64, minimum: 0}
+    WorkspaceAccountStatusTransitionRequest:
+      type: object
+      additionalProperties: false
+      required: [targetStatus, expectedRevision]
+      properties:
+        targetStatus: {$ref: '#/components/schemas/WorkspaceAccountStatus'}
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+    WorkspaceCredentialResetRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision]
+      properties:
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+    WorkspaceCredentialResetResult:
+      type: object
+      additionalProperties: false
+      required: [accountId, loginName, status, credentialStatus, generation, expiresAt, deliveryStatus, revision]
+      properties:
+        accountId: {type: string, minLength: 1, maxLength: 64}
+        loginName: {type: string, minLength: 1, maxLength: 120}
+        status: {$ref: '#/components/schemas/WorkspaceAccountStatus'}
+        credentialStatus: {$ref: '#/components/schemas/WorkspaceCredentialStatus'}
+        generation: {type: integer, format: int32, minimum: 1}
+        expiresAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        deliveryStatus: {type: string, enum: [QUEUED, SENT, UNAVAILABLE]}
+        revision: {type: integer, format: int64, minimum: 0}
+    WorkspacePasswordResetOtpSendRequest:
+      type: object
+      additionalProperties: false
+      required: [mobile]
+      properties:
+        mobile: {type: string, minLength: 6, maxLength: 32, pattern: '^\+?[0-9][0-9 -]{5,30}$'}
+    WorkspacePasswordResetOtpSendResponse:
+      type: object
+      additionalProperties: false
+      required: [expiresAt]
+      properties:
+        expiresAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        testCode: {type: string, nullable: true, minLength: 4, maxLength: 8}
+    WorkspacePasswordResetOtpVerifyRequest:
+      type: object
+      additionalProperties: false
+      required: [mobile, code]
+      properties:
+        mobile: {type: string, minLength: 6, maxLength: 32, pattern: '^\+?[0-9][0-9 -]{5,30}$'}
+        code: {type: string, minLength: 4, maxLength: 8}
+    WorkspacePasswordResetReadiness:
+      type: object
+      additionalProperties: false
+      required: [passwordResetGrant, loginName, nextStep]
+      properties:
+        passwordResetGrant: {type: string, minLength: 16, maxLength: 128}
+        loginName: {type: string, minLength: 1, maxLength: 120}
+        nextStep: {type: string, enum: [SET_PASSWORD]}
+    WorkspacePasswordResetCompleteRequest:
+      type: object
+      additionalProperties: false
+      required: [passwordResetGrant, password]
+      properties:
+        passwordResetGrant: {type: string, minLength: 16, maxLength: 128}
+        password: {type: string, minLength: 8, maxLength: 128}
+    WorkspacePasswordResetCompletion:
+      type: object
+      additionalProperties: false
+      required: [status, loginName, message, loginPath, sessionsRevoked]
+      properties:
+        status: {type: string, enum: [COMPLETED]}
+        loginName: {type: string, minLength: 1, maxLength: 120}
+        message: {type: string, minLength: 1, maxLength: 120}
+        loginPath: {type: string, minLength: 1, maxLength: 120}
+        sessionsRevoked: {type: boolean}
+    WorkspaceMembershipAssignment:
+      type: object
+      additionalProperties: false
+      required: [id, accountId, roleId, roleName, organizationType, organizationPath, status, source, revision, createdAt, updatedAt]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        accountId: {type: string, minLength: 1, maxLength: 64}
+        roleId: {type: string, minLength: 1, maxLength: 64}
+        roleName: {type: string, minLength: 1, maxLength: 120}
+        organizationType: {$ref: '#/components/schemas/WorkspaceOrganizationType'}
+        organizationPath: {type: string, minLength: 1, maxLength: 240}
+        status: {type: string, enum: [ACTIVE, REVOKED]}
+        source: {type: string, enum: [INVITATION, ADMINISTRATION]}
+        revision: {type: integer, format: int64, minimum: 0}
+        createdAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        updatedAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+    WorkspaceMember:
+      type: object
+      additionalProperties: false
+      required: [accountId, displayName, maskedMobile, loginName, status, credentialStatus, activeAssignmentCount, assignments, invitationHistory, createdAt, revision]
+      properties:
+        accountId: {type: string, minLength: 1, maxLength: 64}
+        displayName: {type: string, minLength: 1, maxLength: 120}
+        maskedMobile: {type: string, minLength: 1, maxLength: 32}
+        loginName: {type: string, minLength: 1, maxLength: 120}
+        status: {$ref: '#/components/schemas/WorkspaceAccountStatus'}
+        credentialStatus: {$ref: '#/components/schemas/WorkspaceCredentialStatus'}
+        activeAssignmentCount: {type: integer, format: int32, minimum: 0}
+        lastLoginAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis', nullable: true}
+        createdAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        assignments: {type: array, items: {$ref: '#/components/schemas/WorkspaceMembershipAssignment'}}
+        invitationHistory: {type: array, items: {$ref: '#/components/schemas/WorkspaceAccountInvitationHistory'}}
+        revision: {type: integer, format: int64, minimum: 0}
+    WorkspaceMembershipPage:
+      type: object
+      additionalProperties: false
+      required: [items, page, pageSize, total, targetOrganizationType, contextVersion]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/WorkspaceMember'}}
+        page: {type: integer, minimum: 1}
+        pageSize: {type: integer, minimum: 1, maximum: 100}
+        total: {type: integer, format: int64, minimum: 0}
+        targetOrganizationType: {$ref: '#/components/schemas/WorkspaceOrganizationType'}
+        scopeRef: {type: string, nullable: true, maxLength: 240}
+        scopeName: {type: string, nullable: true, maxLength: 240}
+        contextVersion: {type: integer, format: int64, minimum: 0}
+    WorkspaceMembershipQueryRequest:
+      type: object
+      additionalProperties: false
+      required: [pageDesignKey, expectedContextVersion]
+      properties:
+        pageDesignKey: {type: string, minLength: 1, maxLength: 80}
+        scopeRef: {type: string, nullable: true, maxLength: 240}
+        userName: {type: string, nullable: true, maxLength: 120}
+        mobile: {type: string, nullable: true, maxLength: 32}
+        roleQuery: {type: string, nullable: true, maxLength: 120}
+        status: {$ref: '#/components/schemas/WorkspaceAccountStatus'}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+        page: {type: integer, minimum: 1, default: 1}
+        pageSize: {type: integer, minimum: 1, maximum: 100, default: 20}
+    WorkspaceMembershipOwnerQueryRequest:
+      allOf:
+        - $ref: '#/components/schemas/WorkspaceMembershipQueryRequest'
+        - type: object
+          required: [sessionToken]
+          properties:
+            sessionToken: {type: string, minLength: 16, maxLength: 256}
+    WorkspaceMembershipOwnerAccountRequest:
+      type: object
+      additionalProperties: false
+      required: [sessionToken, pageDesignKey, expectedContextVersion]
+      properties:
+        sessionToken: {type: string, minLength: 16, maxLength: 256}
+        pageDesignKey: {type: string, minLength: 1, maxLength: 80}
+        scopeRef: {type: string, nullable: true, maxLength: 240}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    WorkspaceMembershipRevokeRequest:
+      type: object
+      additionalProperties: false
+      required: [pageDesignKey, expectedContextVersion, expectedRevision]
+      properties:
+        pageDesignKey: {type: string, minLength: 1, maxLength: 80}
+        scopeRef: {type: string, nullable: true, maxLength: 240}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+    WorkspaceMembershipOwnerRevokeRequest:
+      allOf:
+        - $ref: '#/components/schemas/WorkspaceMembershipRevokeRequest'
+        - type: object
+          required: [sessionToken]
+          properties:
+            sessionToken: {type: string, minLength: 16, maxLength: 256}
+    WorkspaceMembershipRevokeResult:
+      type: object
+      additionalProperties: false
+      required: [revokedAssignmentId, accountRetained, member, contextVersion, sessionEntryRequired]
+      properties:
+        revokedAssignmentId: {type: string, minLength: 1, maxLength: 64}
+        accountRetained: {type: boolean}
+        member: {$ref: '#/components/schemas/WorkspaceMember'}
+        contextVersion: {type: integer, format: int64, minimum: 0}
+        sessionEntryRequired: {type: boolean}
+        sessionEntry: {$ref: './workspace-session.schemas.yaml#/components/schemas/WorkspaceSessionEntry', nullable: true}
+    WorkspaceInvitation:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceKey, maskedMobile, targetOrganizationType, targetOrganizationPath, roleNames, status, generation, expiresAt, revision, createdAt, invitationPageUrl]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        maskedMobile: {type: string, minLength: 1, maxLength: 32}
+        targetOrganizationType: {$ref: '#/components/schemas/WorkspaceOrganizationType'}
+        targetOrganizationPath: {type: string, minLength: 1, maxLength: 240}
+        roleNames: {type: array, minItems: 1, items: {type: string, minLength: 1, maxLength: 120}}
+        status: {$ref: '#/components/schemas/WorkspaceInvitationStatus'}
+        generation: {type: integer, format: int32, minimum: 1}
+        expiresAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        revision: {type: integer, format: int64, minimum: 0}
+        createdAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        consentedAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis', nullable: true}
+        completedAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis', nullable: true}
+        cancelledAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis', nullable: true}
+        invitationPageUrl: {type: string, format: uri}
+    WorkspaceInvitationPage:
+      type: object
+      additionalProperties: false
+      required: [items, page, pageSize, total, criteria]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/WorkspaceInvitation'}}
+        page: {type: integer, minimum: 1}
+        pageSize: {type: integer, minimum: 1, maximum: 100}
+        total: {type: integer, format: int64, minimum: 0}
+        criteria: {$ref: '#/components/schemas/WorkspaceInvitationCriteria'}
+    WorkspaceInvitationCriteria:
+      type: object
+      additionalProperties: false
+      required: [sort, direction]
+      properties:
+        mobile: {type: string, nullable: true, minLength: 1, maxLength: 32}
+        organizationQuery: {type: string, nullable: true, minLength: 1, maxLength: 240}
+        roleQuery: {type: string, nullable: true, minLength: 1, maxLength: 120}
+        status: {$ref: '#/components/schemas/WorkspaceInvitationStatus', nullable: true}
+        expiresFrom: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis', nullable: true}
+        expiresTo: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis', nullable: true}
+        sort: {$ref: '#/components/schemas/WorkspaceInvitationSortKey'}
+        direction: {$ref: './platform-workspace.schemas.yaml#/components/schemas/SortDirection'}
+    WorkspaceInvitationOrganizationCandidate:
+      type: object
+      additionalProperties: false
+      required: [organizationType, organizationRef, path]
+      properties:
+        organizationType: {$ref: '#/components/schemas/WorkspaceOrganizationType'}
+        organizationRef: {type: string, minLength: 1, maxLength: 64}
+        path: {type: string, minLength: 1, maxLength: 240}
+    WorkspaceInvitationCandidatePage:
+      type: object
+      additionalProperties: false
+      required: [organizations, roles]
+      properties:
+        organizations: {type: array, items: {$ref: '#/components/schemas/WorkspaceInvitationOrganizationCandidate'}}
+        roles: {type: array, items: {$ref: '#/components/schemas/WorkspaceRole'}}
+    WorkspaceInvitationCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [mobile, targetOrganizationType, targetOrganizationRef, roleIds]
+      properties:
+        mobile: {type: string, minLength: 6, maxLength: 32, pattern: '^\+?[0-9][0-9 -]{5,30}$'}
+        targetOrganizationType: {$ref: '#/components/schemas/WorkspaceOrganizationType'}
+        targetOrganizationRef: {type: string, minLength: 1, maxLength: 64}
+        roleIds: {type: array, minItems: 1, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 64}}
+    WorkspaceInvitationReissueRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision]
+      properties:
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+    WorkspaceInvitationCancelRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision]
+      properties:
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+    WorkspaceOperationsInvitationQueryRequest:
+      type: object
+      additionalProperties: false
+      required: [pageDesignKey, expectedContextVersion]
+      properties:
+        pageDesignKey: {type: string, enum: [PG-IAM-GROUP-USERS, PG-IAM-REGION-USERS, PG-IAM-PROJECT-USERS, PG-IAM-HEAD-COMPANY-USERS, PG-IAM-STORE-USERS]}
+        scopeRef: {type: string, nullable: true, maxLength: 240}
+        mobile: {type: string, nullable: true, maxLength: 32}
+        organizationQuery: {type: string, nullable: true, maxLength: 240}
+        roleQuery: {type: string, nullable: true, maxLength: 120}
+        status: {$ref: '#/components/schemas/WorkspaceInvitationStatus'}
+        expiresFrom: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis', nullable: true}
+        expiresTo: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis', nullable: true}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+        page: {type: integer, minimum: 1, default: 1}
+        pageSize: {type: integer, minimum: 1, maximum: 100, default: 20}
+    WorkspaceOperationsInvitationOwnerQueryRequest:
+      allOf:
+        - $ref: '#/components/schemas/WorkspaceOperationsInvitationQueryRequest'
+        - type: object
+          required: [sessionToken]
+          properties:
+            sessionToken: {type: string, minLength: 16, maxLength: 256}
+    WorkspaceOperationsInvitationCandidatesRequest:
+      type: object
+      additionalProperties: false
+      required: [pageDesignKey, expectedContextVersion]
+      properties:
+        pageDesignKey: {type: string, enum: [PG-IAM-GROUP-USERS, PG-IAM-REGION-USERS, PG-IAM-PROJECT-USERS, PG-IAM-HEAD-COMPANY-USERS, PG-IAM-STORE-USERS]}
+        scopeRef: {type: string, nullable: true, maxLength: 240}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    WorkspaceOperationsInvitationOwnerCandidatesRequest:
+      allOf:
+        - $ref: '#/components/schemas/WorkspaceOperationsInvitationCandidatesRequest'
+        - type: object
+          required: [sessionToken]
+          properties:
+            sessionToken: {type: string, minLength: 16, maxLength: 256}
+    WorkspaceOperationsInvitationCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [pageDesignKey, expectedContextVersion, mobile, targetOrganizationType, targetOrganizationPath, roleIds, idempotencyKey]
+      properties:
+        pageDesignKey: {type: string, enum: [PG-IAM-GROUP-USERS, PG-IAM-REGION-USERS, PG-IAM-PROJECT-USERS, PG-IAM-HEAD-COMPANY-USERS, PG-IAM-STORE-USERS]}
+        scopeRef: {type: string, nullable: true, maxLength: 240}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+        mobile: {type: string, minLength: 6, maxLength: 32, pattern: '^\+?[0-9][0-9 -]{5,30}$'}
+        targetOrganizationType: {$ref: '#/components/schemas/WorkspaceOrganizationType'}
+        targetOrganizationPath: {type: string, minLength: 1, maxLength: 240}
+        roleIds: {type: array, minItems: 1, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 64}}
+        idempotencyKey: {type: string, minLength: 16, maxLength: 128}
+    WorkspaceOperationsInvitationOwnerCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/WorkspaceOperationsInvitationCreateRequest'
+        - type: object
+          required: [sessionToken]
+          properties:
+            sessionToken: {type: string, minLength: 16, maxLength: 256}
+    WorkspaceOperationsInvitationActionRequest:
+      type: object
+      additionalProperties: false
+      required: [pageDesignKey, expectedContextVersion, expectedRevision, idempotencyKey]
+      properties:
+        pageDesignKey: {type: string, enum: [PG-IAM-GROUP-USERS, PG-IAM-REGION-USERS, PG-IAM-PROJECT-USERS, PG-IAM-HEAD-COMPANY-USERS, PG-IAM-STORE-USERS]}
+        scopeRef: {type: string, nullable: true, maxLength: 240}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+        idempotencyKey: {type: string, minLength: 16, maxLength: 128}
+    WorkspaceOperationsInvitationOwnerActionRequest:
+      allOf:
+        - $ref: '#/components/schemas/WorkspaceOperationsInvitationActionRequest'
+        - type: object
+          required: [sessionToken]
+          properties:
+            sessionToken: {type: string, minLength: 16, maxLength: 256}
+    PublicInvitationView:
+      type: object
+      additionalProperties: false
+      required: [invitationId, workspaceKey, targetOrganizationType, targetOrganizationPath, roleNames, maskedMobile, status, expiresAt]
+      properties:
+        invitationId: {type: string, minLength: 1, maxLength: 64}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        operationsTitle: {type: string, minLength: 1, maxLength: 120}
+        targetOrganizationType: {$ref: '#/components/schemas/WorkspaceOrganizationType'}
+        targetOrganizationPath: {type: string, minLength: 1, maxLength: 240}
+        roleNames: {type: array, minItems: 1, items: {type: string, minLength: 1, maxLength: 120}}
+        maskedMobile: {type: string, minLength: 1, maxLength: 32}
+        status: {$ref: '#/components/schemas/WorkspaceInvitationStatus'}
+        expiresAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+    PublicInvitationAcceptIntent:
+      type: object
+      additionalProperties: false
+      required: [nextStep]
+      properties:
+        nextStep: {type: string, enum: [VERIFY_MOBILE]}
+    PublicInvitationOtpSendRequest:
+      type: object
+      additionalProperties: false
+      required: [mobile]
+      properties:
+        mobile: {type: string, minLength: 6, maxLength: 32, pattern: '^\+?[0-9][0-9 -]{5,30}$'}
+    PublicInvitationOtpSendResponse:
+      type: object
+      additionalProperties: false
+      required: [verificationId, expiresAt]
+      properties:
+        verificationId: {type: string, minLength: 16, maxLength: 128}
+        expiresAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        testCode: {type: string, nullable: true, minLength: 4, maxLength: 8}
+    PublicInvitationOtpVerifyRequest:
+      type: object
+      additionalProperties: false
+      required: [mobile, code]
+      properties:
+        mobile: {type: string, minLength: 6, maxLength: 32, pattern: '^\+?[0-9][0-9 -]{5,30}$'}
+        code: {type: string, minLength: 4, maxLength: 8}
+    PublicInvitationReadiness:
+      type: object
+      additionalProperties: false
+      required: [verificationGrant, accountExists, userNameReady, loginNameReady, passwordReady, nextStep]
+      properties:
+        verificationGrant: {type: string, minLength: 16, maxLength: 128}
+        accountExists: {type: boolean}
+        userNameReady: {type: boolean}
+        loginNameReady: {type: boolean}
+        passwordReady: {type: boolean}
+        nextStep: {type: string, enum: [COMPLETE_CREDENTIALS, FINALIZE]}
+    PublicInvitationCredentialRequest:
+      type: object
+      additionalProperties: false
+      required: [verificationGrant, userName, loginName, password]
+      properties:
+        verificationGrant: {type: string, minLength: 16, maxLength: 128}
+        userName: {type: string, minLength: 1, maxLength: 120}
+        loginName: {type: string, minLength: 3, maxLength: 120}
+        password: {type: string, minLength: 8, maxLength: 128}
+    PublicInvitationCredentialResponse:
+      type: object
+      additionalProperties: false
+      required: [verificationGrant, accountExists, userNameReady, loginNameReady, passwordReady, nextStep]
+      properties:
+        verificationGrant: {type: string, minLength: 16, maxLength: 128}
+        accountExists: {type: boolean}
+        userNameReady: {type: boolean}
+        loginNameReady: {type: boolean}
+        passwordReady: {type: boolean}
+        nextStep: {type: string, enum: [COMPLETE_CREDENTIALS, FINALIZE]}
+    PublicInvitationCompletion:
+      type: object
+      additionalProperties: false
+      required: [invitationId, status, message, loginPath]
+      properties:
+        invitationId: {type: string, minLength: 1, maxLength: 64}
+        status: {type: string, enum: [COMPLETED]}
+        message: {type: string, minLength: 1, maxLength: 120}
+        loginPath: {type: string, minLength: 1, maxLength: 120}
+    WorkspaceCurrentPasswordChangeRequest:
+      type: object
+      additionalProperties: false
+      required: [currentPassword, newPassword, expectedSessionVersion]
+      properties:
+        currentPassword: {type: string, minLength: 1, maxLength: 128, writeOnly: true}
+        newPassword: {type: string, minLength: 8, maxLength: 128, writeOnly: true}
+        expectedSessionVersion: {type: integer, format: int64, minimum: 0}
+    WorkspaceCurrentPasswordChangeResult:
+      type: object
+      additionalProperties: false
+      required: [status, sessionsRevoked, reauthenticationRequired]
+      properties:
+        status: {type: string, enum: [COMPLETED]}
+        sessionsRevoked: {type: boolean}
+        reauthenticationRequired: {type: boolean}
+    WorkspaceCurrentPasswordChangeInternalRequest:
+      type: object
+      additionalProperties: false
+      required: [sessionToken, request]
+      properties:
+        sessionToken: {type: string, minLength: 16, maxLength: 256, writeOnly: true}
+        request: {$ref: '#/components/schemas/WorkspaceCurrentPasswordChangeRequest'}

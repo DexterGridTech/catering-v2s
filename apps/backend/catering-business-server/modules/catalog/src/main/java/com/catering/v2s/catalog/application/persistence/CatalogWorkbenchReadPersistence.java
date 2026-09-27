@@ -289,8 +289,7 @@ public class CatalogWorkbenchReadPersistence {
                                 .CATALOG_WORKBENCH_READ_SERVICE_SELECT_ITEM_REF_CODE_NAME_SHAPE_KEY_ALTERNATE_A
                         + CatalogWorkbenchReadServiceSql
                                 .CATALOG_WORKBENCH_READ_SERVICE_NULLIF_SECTIONS_STANDARD_SALE_PRICE_BIGINT_ALTERNATE_A
-                        + CatalogWorkbenchReadServiceSql
-                                .CATALOG_WORKBENCH_READ_SERVICE_FROM_CLAUSE_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_ALTERNATE_A
+                        + CatalogWorkbenchReadServiceSql.FROM_CLAUSE_CAT_ITEM_DATA_ALT_A_001
                         + CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_CONDITION_ITEM_REF
                         + placeholders
                         + CatalogWorkbenchReadServiceSql
@@ -344,8 +343,7 @@ public class CatalogWorkbenchReadPersistence {
                         + CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_ITEM_NAME
                         + CatalogWorkbenchReadServiceSql
                                 .CATALOG_WORKBENCH_READ_SERVICE_FROM_CLAUSE_CATALOG_ITEM_CATEGORY_SUBTREE_RELATION
-                        + CatalogWorkbenchReadServiceSql
-                                .CATALOG_WORKBENCH_READ_SERVICE_JOIN_CONDITION_CATALOG_ITEM_RELATION_CATEGORY_REF_SUBTREE_ITEM
+                        + CatalogWorkbenchReadServiceSql.JOIN_CONDITION_CAT_ITEM_RELATION_002
                         + CatalogWorkbenchReadServiceSql
                                 .CATALOG_WORKBENCH_READ_SERVICE_JOIN_CONDITION_ITEM_ITEM_REF_RELATION_DATA_NODE_REF
                         + CatalogWorkbenchReadServiceSql
@@ -445,17 +443,14 @@ public class CatalogWorkbenchReadPersistence {
         return jdbc.query(
                 CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_SELECT_SHAPE_KEY_VERSION
                         + CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_FILTER
-                        + CatalogWorkbenchReadServiceSql
-                                .CATALOG_WORKBENCH_READ_SERVICE_COALESCE_SECTIONS_SOURCE_SECTIONS_SOURCETYPE_SECTIONS_OWNERSHIPSOURCE_EXTERNAL_ORDER_TEMPORARY_SOURCETYPE_SECTIONS_OWNERSHIPSOURCE_EXTERNAL_ORDER_TEMPORARY
+                        + CatalogWorkbenchReadServiceSql.COALESCE_SECTIONS_SRC_SECTIONS_SOURCETYPE_009
                         + CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_FILTER_STATUS_DISABLED
                         + CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_FILTER_UPDATED_AT_EPOCH_MILLIS
                         + CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_FILTER_ALTERNATE_A
-                        + CatalogWorkbenchReadServiceSql
-                                .CATALOG_WORKBENCH_READ_SERVICE_COALESCE_SECTIONS_SOURCE_SECTIONS_SOURCETYPE_SECTIONS_OWNERSHIPSOURCE_AUTO_SYNC_COUNT_FILTER_NOT_EXISTS_SELECT_FROM
+                        + CatalogWorkbenchReadServiceSql.COALESCE_SECTIONS_SRC_SECTIONS_SOURCETYPE_010
                         + CatalogWorkbenchReadServiceSql
                                 .CATALOG_WORKBENCH_READ_SERVICE_CATALOG_ITEM_CATEGORY_RELATION_ITEM_REF_CATALOG_ITEM
-                        + CatalogWorkbenchReadServiceSql
-                                .CATALOG_WORKBENCH_READ_SERVICE_FROM_CLAUSE_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_STATUS_VOIDED
+                        + CatalogWorkbenchReadServiceSql.FROM_CLAUSE_CAT_ITEM_DATA_003
                         + CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_GROUP_BY_SHAPE_KEY,
                 new Object[] {recentlyUpdatedSince, dataNodeRef, brandRef},
                 (result, row) -> new NavigationShapeRow(
@@ -635,13 +630,11 @@ public class CatalogWorkbenchReadPersistence {
     public List<PageItemRow> readItemPage(ItemPageQuery query) {
         StringBuilder sql = new StringBuilder(
                 CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_CTE_CATEGORY_SCOPE_CATEGORY_REF
-                        + CatalogWorkbenchReadServiceSql
-                                .CATALOG_WORKBENCH_READ_SERVICE_SELECT_CATALOG_CATEGORY_CATEGORY_REF_DATA_NODE_REF_BRAND_REF
+                        + CatalogWorkbenchReadServiceSql.SELECT_CAT_CATG_REF_DATA_004
                         + CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_CATEGORY_REF_TEXT_STATUS_VOIDED
                         + CatalogWorkbenchReadServiceSql
                                 .CATALOG_WORKBENCH_READ_SERVICE_UNION_CATEGORY_SCOPE_CHILD_CATEGORY_REF_PARENT
-                        + CatalogWorkbenchReadServiceSql
-                                .CATALOG_WORKBENCH_READ_SERVICE_JOIN_CONDITION_CHILD_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF
+                        + CatalogWorkbenchReadServiceSql.JOIN_CONDITION_CHILD_PARENT_CATG_005
                         + CatalogWorkbenchReadServiceSql
                                 .CATALOG_WORKBENCH_READ_SERVICE_WHERE_CHILD_DATA_NODE_REF_BRAND_REF_STATUS_ALTERNATE_A
                         + CatalogWorkbenchReadServiceSql
@@ -653,8 +646,7 @@ public class CatalogWorkbenchReadPersistence {
                         + CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_SALES_UNIT_REF
                         + CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_SALES_UNIT_PRECISION
                         + CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_BASE_MEASURE_UNIT_NAME
-                        + CatalogWorkbenchReadServiceSql
-                                .CATALOG_WORKBENCH_READ_SERVICE_FROM_CLAUSE_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_ALTERNATE_B);
+                        + CatalogWorkbenchReadServiceSql.FROM_CLAUSE_CAT_ITEM_DATA_ALT_B_006);
         List<Object> args = new ArrayList<>();
         args.add(query.dataNodeRef());
         args.add(query.brandRef());
@@ -713,11 +705,9 @@ public class CatalogWorkbenchReadPersistence {
             args.add(query.tagRef());
         }
         if (query.productionTagRef() != null) {
-            sql.append(
-                    CatalogWorkbenchReadServiceSql
-                                    .CATALOG_WORKBENCH_READ_SERVICE_CONDITION_CATALOG_ITEM_REFERENCE_RELATION_ALTERNATE_A
-                            + CatalogWorkbenchReadServiceSql
-                                    .CATALOG_WORKBENCH_READ_SERVICE_WHERE_RELATION_ITEM_REF_KIND_REF_ALTERNATE_A);
+            sql.append(CatalogWorkbenchReadServiceSql.CONDITION_CAT_ITEM_REF_RELATION_ALT_A_007
+                    + CatalogWorkbenchReadServiceSql
+                            .CATALOG_WORKBENCH_READ_SERVICE_WHERE_RELATION_ITEM_REF_KIND_REF_ALTERNATE_A);
             args.add(CatalogItemReferenceFacts.PRODUCTION_TAG);
             args.add(query.productionTagRef());
         }
@@ -749,11 +739,9 @@ public class CatalogWorkbenchReadPersistence {
                         CatalogWorkbenchReadServiceSql
                                 .CATALOG_WORKBENCH_READ_SERVICE_CONDITION_SOURCE_SCOPE_REF_ALTERNATE_A);
                 case "AUTO_SYNC" -> sql.append(CatalogWorkbenchReadServiceSql.SMART_VIEW_AUTO_SYNC);
-                case "TEMPORARY" -> sql.append(
-                        CatalogWorkbenchReadServiceSql
-                                        .CATALOG_WORKBENCH_READ_SERVICE_CONDITION_SECTIONS_SOURCE_SOURCE_TYPE_OWNERSHIP_SOURCE
-                                + CatalogWorkbenchReadServiceSql
-                                        .CATALOG_WORKBENCH_READ_SERVICE_TEMPORARY_EXTERNAL_ORDER_TEMPORARY);
+                case "TEMPORARY" -> sql.append(CatalogWorkbenchReadServiceSql.CONDITION_SECTIONS_SRC_TYPE_OWNERSHIP_008
+                        + CatalogWorkbenchReadServiceSql
+                                .CATALOG_WORKBENCH_READ_SERVICE_TEMPORARY_EXTERNAL_ORDER_TEMPORARY);
                 default -> throw new IllegalArgumentException("source is not supported");
             }
         }
@@ -904,10 +892,8 @@ public class CatalogWorkbenchReadPersistence {
                 CatalogWorkbenchReadServiceSql.PLACEHOLDER_SEPARATOR,
                 Collections.nCopies(refs.size(), CatalogWorkbenchReadServiceSql.PARAMETER_PLACEHOLDER));
         return jdbc.query(
-                CatalogWorkbenchReadServiceSql
-                                .CATALOG_WORKBENCH_READ_SERVICE_SELECT_ITEM_REF_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION
-                        + CatalogWorkbenchReadServiceSql
-                                .CATALOG_WORKBENCH_READ_SERVICE_BASE_MEASURE_UNIT_REF_BASE_MEASURE_UNIT_CODE_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION
+                CatalogWorkbenchReadServiceSql.SELECT_ITEM_REF_SALES_UNIT_011
+                        + CatalogWorkbenchReadServiceSql.BASE_MEAS_UNIT_REF_BASE_012
                         + CatalogWorkbenchReadServiceSql
                                 .CATALOG_WORKBENCH_READ_SERVICE_FROM_CLAUSE_CATALOG_ITEM_ITEM_REF
                         + placeholders

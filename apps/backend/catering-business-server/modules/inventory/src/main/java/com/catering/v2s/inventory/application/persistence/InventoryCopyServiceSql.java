@@ -22,9 +22,8 @@ public final class InventoryCopyServiceSql {
             "FROM inventory.stock_target WHERE target_ref=?";
     public static final String INVENTORY_COPY_SERVICE_INSERT_INTO = "INSERT INTO ";
 
-    public static final String
-            INVENTORY_COPY_SERVICE_VALUE_SEPARATOR_SKU_CODE_MEASURE_MODE_INVENTORY_MODE_CONSUMPTION_UNIT_REF =
-                    ",sku_code,measure_mode,inventory_mode,consumption_unit_ref,consumption_unit_code,";
+    public static final String VAL_SEP_SKU_CODE_MEAS_001 =
+            ",sku_code,measure_mode,inventory_mode,consumption_unit_ref,consumption_unit_code,";
     public static final String INVENTORY_COPY_SERVICE_CONSUMPTION_UNIT_NAME =
             "consumption_unit_name,consumption_unit_dimension,consumption_unit_precision,";
     public static final String INVENTORY_COPY_SERVICE_COUNTING_UNIT_REF =
@@ -124,32 +123,33 @@ public final class InventoryCopyServiceSql {
     public static final String INVENTORY_COPY_SERVICE_SELECT_STOCK_TARGET_VERSION_DATA_NODE_REF_BRAND_REF =
             "SELECT COALESCE(MAX(version),0) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=?";
     public static final String INVENTORY_COPY_SERVICE_SELECT_COMMAND_RECEIPT_OPERATION_ID_REQUEST_HASH_RESPONSE_TEXT =
-            "SELECT operation_id,request_hash,response_json::text FROM inventory.command_receipt WHERE data_node_ref=? ";
+            ("SELECT operation_id,request_hash,response_json::text FROM inventory.comm"
+                    + "and_receipt WHERE data_node_ref=? ");
     public static final String INVENTORY_COPY_SERVICE_CONDITION_IDEMPOTENCY_KEY = "AND idempotency_key=?";
     public static final String INVENTORY_COPY_SERVICE_INSERT_INTO_ALTERNATE_B = "INSERT INTO ";
 
-    public static final String
-            INVENTORY_COPY_SERVICE_SELECT_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION =
-                    """
-    SELECT consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dimension,consumption_unit_precision\s""";
-    public static final String
-            INVENTORY_COPY_SERVICE_INVENTORY_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_ITEM_CODE_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_ITEM_CODE =
-                    """
+    public static final String SELECT_CONSUM_UNIT_REF_CONSUM_002 =
+            """
+    SELECT consumption_unit_ref,consumption_unit_code,consumption_unit\
+    _name,consumption_unit_dimension,consumption_unit_precision\s""";
+    public static final String INV_STOCK_TARGET_REF_DATA_003 =
+            """
     inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code""";
-    public static final String
-            INVENTORY_COPY_SERVICE_INVENTORY_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE_VERSION_ROWS_UPDATED_AT_EPOCH_MILLIS =
-                    """
-    inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,option_value_ref,item_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis)\s""";
-    public static final String
-            INVENTORY_COPY_SERVICE_VERSION_EXCLUDED_VERSION_ROWS_EXCLUDED_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS =
-                    """
+    public static final String INV_STOCK_BOM_REF_DATA_004 =
+            """
+    inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,produ\
+    ct_sku_ref,option_value_ref,item_code,sku_code,option_value_code,v\
+    ersion,rows,updated_at_epoch_millis)\s""";
+    public static final String VER_EXCLUDED_VER_ROWS_EXCLUDED_005 =
+            """
     version=EXCLUDED.version,rows=EXCLUDED.rows,updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis""";
-    public static final String
-            INVENTORY_COPY_SERVICE_S_TARGET_REF_A_TODAY_CHANGE_A_SEVEN_DAY_CHANGE_A_THIRTY_DAY_CHANGE_LATEST_OPERATION_ID_LATEST_OPERATION_ID_LATEST_OCCURRED_AT_EPOCH_MILLIS =
-                    """
-    s.target_ref,a.today_change,a.seven_day_change,a.thirty_day_change,latest.operation_id,latest.occurred_at_epoch_millis\s""";
-    public static final String
-            INVENTORY_COPY_SERVICE_INVENTORY_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID_REQUEST_HASH_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB =
-                    """
-    inventory.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_hash,response_json,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)""";
+    public static final String S_TARGET_REF_A_TODAY_006 =
+            """
+    s.target_ref,a.today_change,a.seven_day_change,a.thirty_day_change\
+    ,latest.operation_id,latest.occurred_at_epoch_millis\s""";
+    public static final String INV_CMD_RECEIPT_REF_DATA_007 =
+            """
+    inventory.command_receipt(receipt_ref,data_node_ref,idempotency_ke\
+    y,operation_id,request_hash,response_json,created_at_epoch_millis)\
+     VALUES(?,?,?,?,?,CAST(? AS JSONB),?)""";
 }

@@ -33,7 +33,8 @@ final class TerminalConfigurationCodec {
         if (input == null || !input.isObject()) throw invalid();
         Set<UUID> priorPrinterRefs = refs(priorDocument == null ? null : priorDocument.path("printers"));
         Set<UUID> priorFunctionRefs = refs(priorDocument == null ? null : priorDocument.path("functions"));
-        Map<UUID, String> priorFunctionKeys = functionKeys(priorDocument == null ? null : priorDocument.path("functions"));
+        Map<UUID, String> priorFunctionKeys =
+                functionKeys(priorDocument == null ? null : priorDocument.path("functions"));
         Set<String> clientKeys = new HashSet<>();
         Map<String, UUID> printerClientRefs = new HashMap<>();
         List<Printer> printers = new ArrayList<>();

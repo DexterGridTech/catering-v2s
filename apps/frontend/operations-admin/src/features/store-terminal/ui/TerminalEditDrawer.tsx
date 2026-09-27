@@ -1,9 +1,22 @@
-import type {ComponentProps} from 'react';
-import {StoreTerminalFormDrawer} from './StoreTerminalFormDrawer';
+import type {FormInstance} from 'antd';
+import type {StoreTerminalEditFormValues, StoreTerminalFormValues} from '../model/storeTerminalModel';
+import {StoreTerminalFormDrawer, type StoreTerminalFormDrawerProps} from './StoreTerminalFormDrawer';
 
-type TerminalEditDrawerProps = ComponentProps<typeof StoreTerminalFormDrawer>;
+type TerminalEditDrawerProps = Omit<
+  StoreTerminalFormDrawerProps<StoreTerminalEditFormValues>,
+  'mode' | 'deviceType' | 'form'
+> & {form: FormInstance<StoreTerminalEditFormValues>};
 
 /** Edit surface starts at the complete-rule step and never exposes activation-code input. */
 export function TerminalEditDrawer(props: TerminalEditDrawerProps) {
-  return <StoreTerminalFormDrawer {...props} editor={props.editor?.mode === 'edit' ? props.editor : undefined} />;
+  const editor = props.editor?.mode === 'edit' ? props.editor : undefined;
+  return (
+    <StoreTerminalFormDrawer
+      {...props}
+      form={props.form as unknown as FormInstance<StoreTerminalFormValues>}
+      mode="edit"
+      deviceType={editor?.terminal.deviceType ?? ''}
+      editor={editor}
+    />
+  );
 }

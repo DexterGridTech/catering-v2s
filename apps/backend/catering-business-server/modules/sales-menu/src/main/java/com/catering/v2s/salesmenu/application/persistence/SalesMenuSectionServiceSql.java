@@ -22,17 +22,14 @@ public final class SalesMenuSectionServiceSql {
             "FROM sales_menu.sales_version_section WHERE version_ref=?),0))";
     public static final String SALES_MENU_SECTION_SERVICE_UPDATE_SALES_VERSION_SECTION_NAME_VERSION_REF_SECTION_REF =
             "UPDATE sales_menu.sales_version_section SET name=? WHERE version_ref=? AND section_ref=?";
-    public static final String SALES_MENU_SECTION_SERVICE_SELECT_SALES_VERSION_ITEM_SELECT_1_FROM_SALES_MENU_SAL =
-            "SELECT 1 FROM sales_menu.sales_version_item ";
+    public static final String SELECT_SALES_VER_ITEM_SELECT_001 = "SELECT 1 FROM sales_menu.sales_version_item ";
     public static final String SALES_MENU_SECTION_SERVICE_WHERE_VERSION_REF_SECTION_REF =
             "WHERE version_ref=? AND section_ref=? LIMIT 1";
     public static final String SALES_MENU_SECTION_SERVICE_DELETE_SALES_VERSION_SECTION_VERSION_REF_SECTION_REF =
             "DELETE FROM sales_menu.sales_version_section WHERE version_ref=? AND section_ref=?";
     public static final String SALES_MENU_SECTION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT =
             "SELECT request_hash,status,response_json::text readback_json ";
-    public static final String
-            SALES_MENU_SECTION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN =
-                    "FROM sales_menu.sales_command_receipt ";
+    public static final String FROM_CLAUSE_SALES_CMD_RECEIPT_002 = "FROM sales_menu.sales_command_receipt ";
     public static final String SALES_MENU_SECTION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY =
             "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?";
     public static final String SALES_MENU_SECTION_SERVICE_INSERT_INTO_SALES_COMMAND_RECEIPT =
@@ -44,12 +41,9 @@ public final class SalesMenuSectionServiceSql {
             "ON CONFLICT (workspace_uuid,operation_id,idempotency_key) DO NOTHING";
     public static final String SALES_MENU_SECTION_SERVICE_SELECT_REQUEST_HASH_STATUS_READBACK_JSON_TEXT_ALTERNATE_A =
             "SELECT request_hash,status,response_json::text readback_json ";
-    public static final String
-            SALES_MENU_SECTION_SERVICE_FROM_CLAUSE_SALES_COMMAND_RECEIPT_FROM_SALES_MENU_SALES_COMMAN_ALTERNATE_A =
-                    "FROM sales_menu.sales_command_receipt ";
-    public static final String
-            SALES_MENU_SECTION_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY_ALTERNATE_A =
-                    "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?";
+    public static final String FROM_CLAUSE_SALES_CMD_RECEIPT_ALT_A_003 = "FROM sales_menu.sales_command_receipt ";
+    public static final String WHERE_WS_UUID_OP_ID_ALT_A_004 =
+            "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?";
     public static final String SALES_MENU_SECTION_SERVICE_CONDITION_DISPLAY_ORDER =
             " AND (display_order < ? OR (display_order = ? AND ";
     public static final String SALES_MENU_SECTION_SERVICE_CONDITION_DISPLAY_ORDER_ALTERNATE_A =
@@ -108,8 +102,7 @@ public final class SalesMenuSectionServiceSql {
     public static final String SALES_MENU_SECTION_SERVICE_SELECT_SALES_COLLECTION_LATEST_PUBLISHED_VERSION_REF =
             "SELECT latest_published_version_ref FROM sales_menu.sales_collection ";
     public static final String SALES_MENU_SECTION_SERVICE_WHERE_COLLECTION_REF_ALTERNATE_A = "WHERE collection_ref=?";
-    public static final String SALES_MENU_SECTION_SERVICE_SELECT_SALES_VERSION_SECTION_SELECT_1_FROM_SALES_MENU_SAL =
-            "SELECT 1 FROM sales_menu.sales_version_section ";
+    public static final String SELECT_SALES_VER_SECTION_SELECT_005 = "SELECT 1 FROM sales_menu.sales_version_section ";
     public static final String SALES_MENU_SECTION_SERVICE_WHERE_COLLECTION_REF_VERSION_REF_SECTION_REF =
             "WHERE collection_ref=? AND version_ref=? AND section_ref=?";
     public static final String SALES_MENU_SECTION_SERVICE_SELECT_SALES_VERSION_SECTION_SECTION_REF_DISPLAY_ORDER =

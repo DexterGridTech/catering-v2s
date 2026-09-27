@@ -45,8 +45,7 @@ public class OrganizationGroupWorkspaceInitializationPersistence {
     public Optional<CommercialGroupReadback> initializationFact(String groupWorkspaceKey) {
         if (groupWorkspaceKey == null || groupWorkspaceKey.isBlank()) return Optional.empty();
         return jdbc.query(
-                OrganizationGroupWorkspaceInitializationTaskReadServiceSql
-                                .ORGANIZATION_GROUP_WORKSPACE_INITIALIZATION_TASK_READ_SERVICE_SELECT_COMMERCIAL_GROUP_UUID
+                OrganizationGroupWorkspaceInitializationTaskReadServiceSql.SELECT_COMMERCIAL_GRP_UUID_001
                         + OrganizationGroupWorkspaceInitializationTaskReadServiceSql
                                 .ORGANIZATION_GROUP_WORKSPACE_INITIALIZATION_TASK_READ_SERVICE_AUDIT_COLUMNS_PREFIX
                         + OrganizationGroupWorkspaceInitializationTaskReadServiceSql

@@ -8,8 +8,8 @@ consumerFaces: ["all"]
 owners: ["platform","backend","frontend-platform"]
 impacts: ["evidence","governance","runtime"]
 triggers: ["implementation","failure","review"]
-assertions: ["RUN_COUNT_NOT_RUN_COST_DOMINATES","FAILURE_FAMILY_CLOSED_BEFORE_NEXT","AUTHORIZED_FAILURE_DRIVES_REPAIR_AND_CONTINUATION","GOAL_HAS_NO_TOKEN_BUDGET_OR_EARLY_STOP","BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY","PASS_WITHOUT_REVIEWED_FIXTURE_DENOMINATOR_IS_NOT_COMPLETION","RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN","NATIVE_SEMANTIC_PROP_MUST_BE_PLATFORM_SUPPORTED"]
-sourceRefs: ["doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md","project-memory/operations/execution-economics-and-failure-family-closure.md"]
+assertions: ["RUN_COUNT_NOT_RUN_COST_DOMINATES","FAILURE_FAMILY_CLOSED_BEFORE_NEXT","AUTHORIZED_FAILURE_DRIVES_REPAIR_AND_CONTINUATION","GOAL_HAS_NO_TOKEN_BUDGET_OR_EARLY_STOP","BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY","PASS_WITHOUT_REVIEWED_FIXTURE_DENOMINATOR_IS_NOT_COMPLETION","RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN","NATIVE_SEMANTIC_PROP_MUST_BE_PLATFORM_SUPPORTED","AGGREGATE_GATE_FAILURE_FAMILY_CLOSURE"]
+sourceRefs: ["build.gradle.kts","doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md","project-memory/operations/execution-economics-and-failure-family-closure.md","tools/verify-gates/verify.mjs"]
 ---
 # 执行经济学与失败族关闭
 
@@ -28,6 +28,10 @@ sourceRefs: ["doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-
   这里的“停止业务推进”只冻结当前失败族之后的业务场景，**不停止实施 task 或 active goal**；
   主 agent 必须保留 first failure，重开日志、owning source 与 broken boundary，做最小根因修复，
   先用同一 focused proof 关闭该族，再继续剩余授权范围。该规则是阶段准入条件，不是遇败即停的建议。
+
+### AGGREGATE_GATE_FAILURE_FAMILY_CLOSURE
+
+- `AGGREGATE_GATE_FAILURE_FAMILY_CLOSURE`: A top-level static gate may invoke several subordinate tasks and report only one outer label. Before retrying that gate after a failure, inspect the gate definition, its full task graph and every diagnostic currently available; enumerate the finite child checks and repair all findings already exposed across their complete input scope. Do not treat a repaired first child as proof that the aggregate failure family is closed. For `spotlessCheck`, inspect both the UTF-8 line-limit task and the formatter's complete generated diff; for each modified source, compare against the formatter output, and scan the full applicable Java source set for byte-length violations before rerunning `scripts/verify`. In this task the outer `backend-spotless-check` label first surfaced `backendJavaUtf8LineLimit`, then `spotlessJavaCheck`; the early retries fixed one visible line at a time. The minimal prevention is this rule plus the named child tasks already invoked by `scripts/verify`; no second formatter or parallel aggregate gate is needed.
 
 - `AUTHORIZED_FAILURE_DRIVES_REPAIR_AND_CONTINUATION`:**在授权范围内，失败必须驱动修复与继续。**
   一次测试、构建或动态运行失败本身不是 task/goal 的完成条件，也不是停止理由；它必须先被保留为证据，

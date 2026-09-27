@@ -9,34 +9,27 @@ public final class OrganizationAssignmentCandidateServiceSql {
             "SELECT id FROM organization.organization_node WHERE workspace_uuid=? AND ";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_STATUS_ENABLED =
             "group_workspace_key=? AND node_type=? AND status='ENABLED' ORDER BY code";
-    public static final String
-            ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_ORGANIZATION_SELECT_ID_FROM_ORGANIZATION =
-                    "SELECT id FROM organization.";
-    public static final String
-            ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED =
-                    " WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' ";
+    public static final String SELECT_ORG_SELECT_ID_FROM_001 = "SELECT id FROM organization.";
+    public static final String WHERE_WS_UUID_GRP_WS_002 =
+            " WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' ";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ORDER_BY_CODE = "ORDER BY code";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_COMMERCIAL_GROUP_UUID =
             "SELECT commercial_group_uuid, commercial_group_code || ' ' || commercial_group_name, count(*) ";
-    public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_COMMERCIAL_GROUP_OVER_FROM_ORGANIZATION_COMME =
-            "OVER() FROM organization.commercial_group ";
-    public static final String
-            ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_GROUP_WORKSPACE_KEY_COMMERCIAL_GROUP_UUID =
-                    "WHERE group_workspace_key=? AND (?::uuid IS NULL OR commercial_group_uuid=?) ";
+    public static final String COMMERCIAL_GRP_OVER_FROM_ORG_003 = "OVER() FROM organization.commercial_group ";
+    public static final String WHERE_GRP_WS_KEY_COMMERCIAL_004 =
+            "WHERE group_workspace_key=? AND (?::uuid IS NULL OR commercial_group_uuid=?) ";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_COMMERCIAL_GROUP_UUID =
             "AND (?::uuid IS NULL OR commercial_group_uuid=?) ";
-    public static final String
-            ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_TEXT_COMMERCIAL_GROUP_CODE_ILIKE_ESCAPE =
-                    "AND (?::text IS NULL OR commercial_group_code ILIKE ? ESCAPE '!' OR ";
+    public static final String CONDITION_TEXT_COMMERCIAL_GRP_CODE_005 =
+            "AND (?::text IS NULL OR commercial_group_code ILIKE ? ESCAPE '!' OR ";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_COMMERCIAL_GROUP_NAME_ILIKE_ESCAPE =
             "commercial_group_name ILIKE ? ESCAPE '!') ";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ORDER_BY_COMMERCIAL_GROUP_CODE =
             "ORDER BY commercial_group_code LIMIT ? OFFSET ?";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_HEAD_COMPANY_CODE_NAME =
             "SELECT id, code || ' ' || name, count(*) OVER() FROM organization.head_company ";
-    public static final String
-            ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_A =
-                    "WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND (?::uuid IS ";
+    public static final String WHERE_WS_UUID_GRP_WS_ALT_A_006 =
+            "WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND (?::uuid IS ";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_NULL_OR_ID = "NULL OR id=?) ";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_AND_UUID_IS_NULL_OR_ID =
             "AND (?::uuid IS NULL OR id=?) ";
@@ -48,9 +41,8 @@ public final class OrganizationAssignmentCandidateServiceSql {
             "WITH RECURSIVE candidates AS (";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_CODE_NAME =
             "SELECT id, parent_id, code, name FROM organization.organization_node ";
-    public static final String
-            ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NODE_TYPE_STATUS =
-                    "WHERE workspace_uuid=? AND group_workspace_key=? AND node_type=? AND status='ENABLED' ";
+    public static final String WHERE_WS_UUID_GRP_WS_007 =
+            "WHERE workspace_uuid=? AND group_workspace_key=? AND node_type=? AND status='ENABLED' ";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_TEXT_CODE_ILIKE =
             "AND (?::uuid IS NULL OR id=?) AND (?::uuid IS NULL OR id=?) AND (?::text IS NULL OR code ILIKE ? ";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ESCAPE_NAME_ILIKE =
@@ -110,19 +102,20 @@ public final class OrganizationAssignmentCandidateServiceSql {
     public static final String
             ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_PARENT_ID_ALTERNATE_A =
                     "FROM organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id ";
-    public static final String
-            ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A =
-                    "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=?";
+    public static final String WHERE_PARENT_WS_UUID_GRP_ALT_A_008 =
+            "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=?";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CLOSE_PAREN_PATHS_ALTERNATE_A =
             "), paths AS (";
     public static final String
             ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_TARGET_ID_STRING_AGG_NAME_CODE_ALTERNATE_A =
-                    "SELECT target_id, string_agg(name || ' ' || code, ' / ' ORDER BY depth DESC) AS project_path FROM ";
+                    ("SELECT target_id, string_agg(name || ' ' || code, ' / ' ORDER BY depth D"
+                            + "ESC) AS project_path FROM ");
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ANCESTRY_TARGET_ID_ALTERNATE_A =
             "ancestry GROUP BY target_id";
     public static final String
             ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CLOSE_PAREN_CANDIDATES_PATHS_PROJECT_PATH_NAME =
-                    ") SELECT candidates.id, paths.project_path || ' / ' || candidates.name || ' ' || candidates.code, ";
+                    (") SELECT candidates.id, paths.project_path || ' / ' || candidates.name |"
+                            + "| ' ' || candidates.code, ");
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_COUNT_OVER = "count(*) OVER() ";
     public static final String ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_FROM_CLAUSE_PATHS_TARGET_ID_CODE =
             "FROM candidates JOIN paths ON paths.target_id=candidates.id ORDER BY candidates.code LIMIT ? OFFSET ";

@@ -6,7 +6,7 @@ public final class OrganizationVisibilityServiceSql {
             "SELECT EXISTS(SELECT 1 FROM organization.organization_node WHERE id=? AND workspace_uuid=? AND ";
     public static final String ORGANIZATION_VISIBILITY_SERVICE_STORE_GROUP_WORKSPACE_KEY_STATUS_ENABLED =
             "group_workspace_key=? AND status='ENABLED') OR EXISTS(SELECT 1 FROM organization.store ";
-    public static final String ORGANIZATION_VISIBILITY_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED =
+    public static final String WHERE_WS_UUID_GRP_WS_001 =
             "WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND status='ENABLED')";
     public static final String ORGANIZATION_VISIBILITY_SERVICE_SELECT_STORE_PROJECT_ID_WORKSPACE_UUID =
             "SELECT EXISTS(SELECT 1 FROM organization.store WHERE id=? AND project_id=? AND workspace_uuid=? ";
@@ -21,9 +21,8 @@ public final class OrganizationVisibilityServiceSql {
     public static final String ORGANIZATION_VISIBILITY_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_PARENT_ID =
             "workspace_uuid=? AND group_workspace_key=? UNION ALL SELECT parent.id, parent.parent_id ";
     public static final String ORGANIZATION_VISIBILITY_SERVICE_FROM_CLAUSE = "FROM ";
-    public static final String
-            ORGANIZATION_VISIBILITY_SERVICE_ALTERNATIVE_ANCESTRY_ORGANIZATION_NODE_PARENT_CHILD_PARENT_ID =
-                    "organization.organization_node parent JOIN ancestry child ON child.parent_id=parent.id) ";
+    public static final String ALT_ANCESTRY_ORG_NODE_PARENT_002 =
+            "organization.organization_node parent JOIN ancestry child ON child.parent_id=parent.id) ";
     public static final String ORGANIZATION_VISIBILITY_SERVICE_SELECT = "SELECT ";
     public static final String ORGANIZATION_VISIBILITY_SERVICE_ANCESTRY_EXISTS_SELECT_1_FROM_ANCESTR =
             "EXISTS(SELECT 1 FROM ancestry WHERE id=?)";
@@ -35,13 +34,12 @@ public final class OrganizationVisibilityServiceSql {
             "SELECT id, code, name, project_id, head_company_id, status FROM organization.store WHERE ";
     public static final String ORGANIZATION_VISIBILITY_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE =
             "workspace_uuid=? AND group_workspace_key=? ORDER BY code";
-    public static final String ORGANIZATION_VISIBILITY_SERVICE_SELECT_HEAD_COMPANY_CODE_NAME_WORKSPACE_UUID =
+    public static final String SELECT_HEAD_COMPANY_CODE_NAME_003 =
             "SELECT id, code, name FROM organization.head_company WHERE workspace_uuid=? AND ";
     public static final String ORGANIZATION_VISIBILITY_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED_CODE =
             "group_workspace_key=? AND status='ENABLED' ORDER BY code";
-    public static final String
-            ORGANIZATION_VISIBILITY_SERVICE_SELECT_ORGANIZATION_NODE_NODE_TYPE_CODE_NAME_PARENT_ID_ALTERNATE_A =
-                    "SELECT id, node_type, code, name, parent_id, status FROM organization.organization_node WHERE ";
+    public static final String SELECT_ORG_NODE_TYPE_CODE_ALT_A_004 =
+            "SELECT id, node_type, code, name, parent_id, status FROM organization.organization_node WHERE ";
     public static final String ORGANIZATION_VISIBILITY_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             "workspace_uuid=? AND group_workspace_key=?";
 }

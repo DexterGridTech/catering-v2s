@@ -24,6 +24,9 @@
 做成关键词匹配就会变成"门全绿而功能是坏的"。本文后面的 `2.5` 是 2026-09-11 增补的 owner
 可读性整改 review 规则,不把上下文判定伪装成新的机器门。
 
+第三方库 API 与运行行为的版本核验由跨项目规范
+[`third-party-library-usage-standard.md`](third-party-library-usage-standard.md) 统一定义；本文只保留该规则的指针。
+
 ---
 
 ## 1 · 能变成门的十类
@@ -60,11 +63,15 @@
 
 ### 1-I · 格式
 
-**规则**:排除生成物后,**>120 字符的行归零**。
+**规则**:排除格式器不拥有的生成物后,**UTF-8 字节数 >120 的物理行归零**。
 
 **工具**:Spotless + palantir-java-format。
 
-**排除范围**:`app/edge/generated/wire/` 下的签入生成文件、`build/generated/sources/**`。
+**Spotless 排除范围**:`app/edge/generated/wire/` 下的签入生成文件、`build/generated/sources/**`、
+`WorkspaceAuthorizationCatalog.java`、`WorkspaceCapabilityRequirementCatalog.java` 与
+`organization/domain/generated/StoreOperatingRuleCatalog.java`。最后三个文件由各自生成器拥有。
+`backendJavaUtf8LineLimit` 保留对两个 Workspace catalog 的既有排除，并继续扫描
+`StoreOperatingRuleCatalog.java`；该文件必须由其生成器输出不超过 120 UTF-8 字节的行。
 
 **门**:`spotlessCheck`
 
@@ -414,11 +421,11 @@ business oracle 以及写入后的权威 readback;只出现方法名/类名、�
 
 **为什么**:结构重构最难回溯的是事务、幂等、锁、部分失败、跨 owner 和 readback 的行为变化,而不是类是否能编译。
 
-### `R-READ-06` · 每一步都要同输入双读和独立对账
+### `R-READ-06` · 每个 CP 同输入双读，CP 阶段结束独立对账
 
-**规则**:每个 CP 写入前重开需求、详设、六维 memory、规范和 owning source;focused proof 后用同一组原文逐项回读,
-并在进入下一 CP 前由 fresh 独立 reviewer 做需求、详设/IA、项目记忆三维对账。结果只能是 `MATCHED` 或 `OPEN`;
-`OPEN` 必须根因修复并复查,不能积压到全量测试或最终 review。
+**规则**:CP 内每个实际变更点写入前重开对应需求、详设、六维 memory、规范和 owning source;focused proof 后用同一组原文逐项回读。
+独立 reviewer 在整个 CP 的实现、修复和 focused proof 全部完成后、进入下一 CP 前,对完整 CP 做需求、详设/IA、项目记忆三维对账。CP 内的文件、子任务、单个测试或修复不单独触发三维对账。结果只能是 `MATCHED` 或 `OPEN`;
+`OPEN` 必须根因修复并由另一 fresh reviewer 复查同一个 CP,不能积压到全量测试或最终 review。
 
 **反例**:只在任务开始时读一次设计,或把“编译/全量 acceptance 绿”当作前一步的逐条语义对账和下一步准入。
 

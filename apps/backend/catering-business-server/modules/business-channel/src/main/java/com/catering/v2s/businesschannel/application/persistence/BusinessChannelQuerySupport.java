@@ -13,13 +13,10 @@ final class BusinessChannelQuerySupport {
     private BusinessChannelQuerySupport() {}
 
     static String channelSelect(String suffix) {
-        return channelProjection(
-                        BusinessChannelQuerySupportSql
-                                        .BUSINESS_CHANNEL_QUERY_SUPPORT_JOIN_BUSINESS_CHANNEL_TEMPLATE_JOIN_BUSINESS_CHANNEL_BUSINE
-                                + BusinessChannelQuerySupportSql
-                                        .BUSINESS_CHANNEL_QUERY_SUPPORT_JOIN_CONDITION_TEMPLATE_REF_WORKSPACE_UUID
-                                + BusinessChannelQuerySupportSql
-                                        .BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_GROUP_WORKSPACE_KEY)
+        return channelProjection(BusinessChannelQuerySupportSql.JOIN_BIZ_CHANNEL_TEMPLATE_JOIN_001
+                        + BusinessChannelQuerySupportSql
+                                .BUSINESS_CHANNEL_QUERY_SUPPORT_JOIN_CONDITION_TEMPLATE_REF_WORKSPACE_UUID
+                        + BusinessChannelQuerySupportSql.BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_GROUP_WORKSPACE_KEY)
                 + suffix;
     }
 
@@ -30,15 +27,13 @@ final class BusinessChannelQuerySupport {
     static String insertedChannelProjection() {
         return channelSelect("")
                 .replace(
-                        BusinessChannelQuerySupportSql
-                                .BUSINESS_CHANNEL_QUERY_SUPPORT_FROM_CLAUSE_BUSINESS_CHANNEL_FROM_BUSINESS_CHANNEL_BUSINE,
+                        BusinessChannelQuerySupportSql.FROM_CLAUSE_BIZ_CHANNEL_FROM_002,
                         BusinessChannelQuerySupportSql
                                 .BUSINESS_CHANNEL_QUERY_SUPPORT_FROM_CLAUSE_INSERTED_FROM_INSERTED_C);
     }
 
     static String channelProjection(String templateJoin) {
-        return BusinessChannelQuerySupportSql
-                        .BUSINESS_CHANNEL_QUERY_SUPPORT_SELECT_CHANNEL_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF
+        return BusinessChannelQuerySupportSql.SELECT_CHANNEL_REF_WS_UUID_003
                 + BusinessChannelQuerySupportSql
                         .BUSINESS_CHANNEL_QUERY_SUPPORT_TARGET_NODE_TYPE_TARGET_NODE_REF_CHANNEL_CODE
                 + BusinessChannelQuerySupportSql.BUSINESS_CHANNEL_QUERY_SUPPORT_CHANNEL_NAME
@@ -61,8 +56,7 @@ final class BusinessChannelQuerySupport {
                         .BUSINESS_CHANNEL_QUERY_SUPPORT_TARGET_BRAND_TARGET_BRAND_REF_STATUS_TARGET_BRAND_STATUS
                 + BusinessChannelQuerySupportSql
                         .BUSINESS_CHANNEL_QUERY_SUPPORT_BINDING_STATUS_BINDING_LIFECYCLE_STATUS_PROVIDER
-                + BusinessChannelQuerySupportSql
-                        .BUSINESS_CHANNEL_QUERY_SUPPORT_FROM_CLAUSE_BUSINESS_CHANNEL_FROM_BUSINESS_CHANNEL_BUSINE_ALTERNATE_A
+                + BusinessChannelQuerySupportSql.FROM_CLAUSE_BIZ_CHANNEL_FROM_ALT_A_004
                 + templateJoin
                 + BusinessChannelQuerySupportSql.BUSINESS_CHANNEL_QUERY_SUPPORT_ORGANIZATION_NODE_TEMPLATE_PROJECT
                 + BusinessChannelQuerySupportSql

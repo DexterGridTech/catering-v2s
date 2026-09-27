@@ -42,8 +42,7 @@ public class WorkspaceIamAuditHistoryPersistence {
 
     public long countEvents(AuditReadScope scope, AuditTarget target) {
         return jdbc.queryForObject(
-                WorkspaceIamAuditHistoryServiceSql
-                                .WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_SELECT_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                WorkspaceIamAuditHistoryServiceSql.SELECT_AUDIT_EVENT_WS_UUID_001
                         + WorkspaceIamAuditHistoryServiceSql
                                 .WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_ENTITY_TYPE_ENTITY_REF_TEXT,
                 Long.class,

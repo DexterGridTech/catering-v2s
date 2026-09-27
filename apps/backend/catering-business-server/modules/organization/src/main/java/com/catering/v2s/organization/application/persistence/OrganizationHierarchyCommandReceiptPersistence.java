@@ -28,10 +28,8 @@ public class OrganizationHierarchyCommandReceiptPersistence {
 
     public int replaceResponse(String responseJson, UUID workspaceUuid, String idempotencyKey) {
         return jdbc.update(
-                OrganizationHierarchyCommandReceiptServiceSql
-                                .ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_UPDATE_ORGANIZATION_COMMAND_RECEIPT_RESPONSE_JSON
-                        + OrganizationHierarchyCommandReceiptServiceSql
-                                .ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY_ALTERNATE_A,
+                OrganizationHierarchyCommandReceiptServiceSql.UPDATE_ORG_CMD_RECEIPT_RESP_001
+                        + OrganizationHierarchyCommandReceiptServiceSql.WS_UUID_IDEMPOTENCY_KEY_ALT_A_002,
                 responseJson,
                 workspaceUuid,
                 idempotencyKey);

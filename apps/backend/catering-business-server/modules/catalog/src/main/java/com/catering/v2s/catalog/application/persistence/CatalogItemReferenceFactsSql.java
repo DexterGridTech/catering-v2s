@@ -12,9 +12,8 @@ public final class CatalogItemReferenceFactsSql {
             "DELETE FROM catalog.catalog_item_reference WHERE item_ref=?";
     public static final String CATALOG_ITEM_REFERENCE_FACTS_INSERT_INTO_CATALOG_ITEM_REFERENCE_ITEM_REF_KIND_REF =
             "INSERT INTO catalog.catalog_item_reference(item_ref,kind,ref) VALUES(?,?,?)";
-    public static final String
-            CATALOG_ITEM_REFERENCE_FACTS_INSERT_INTO_CATALOG_ITEM_REFERENCE_ITEM_REF_KIND_REF_ALTERNATE_A =
-                    "INSERT INTO catalog.catalog_item_reference(item_ref,kind,ref) VALUES(?,?,?)";
+    public static final String INSERT_INTO_CAT_ITEM_REF_ALT_A_001 =
+            "INSERT INTO catalog.catalog_item_reference(item_ref,kind,ref) VALUES(?,?,?)";
     public static final String CATALOG_ITEM_REFERENCE_FACTS_SELECT_CATALOG_ITEM_RELATION_ITEM =
             "SELECT EXISTS (SELECT 1 FROM catalog.catalog_item_reference relation JOIN catalog.catalog_item item ";
     public static final String CATALOG_ITEM_REFERENCE_FACTS_JOIN_CONDITION_ITEM_ITEM_REF_RELATION_KIND =

@@ -11,10 +11,11 @@
 5. `scripts/README.md`：仓内标准动作和可复验命令；
 6. `doc/platform/browser-l2-execution-standard.md`：受管浏览器 L2 的唯一项目级执行、证据与调用规范；
 7. 当前批准的 decision、plan、contract 与 review：具体 Journey、实施范围和验收依据。
+8. `doc/platform/third-party-library-usage-standard.md`：设计或实现依赖第三方库 API/行为时的官方资料、版本与验证要求。
 
 `standards-coverage`、manifest/hash/package traceability 已退役，不作为会话、设计、实施或
 评审入口；仍须亲验当前原始材料和真实源码。
 
 `catering-all-v2` 及其他旧仓只作为 Heritage 只读来源；不得作为 runtime/build fallback，
 也不得把旧仓状态复制为本仓当前状态。当前交付保持一个业务 deployable、一个 PostgreSQL
-数据库、两个独立 admin app；未来 TDP placeholder、未批准 Journey 不得被实现或作为验收依据。
+数据库、两个独立 admin app。已接受的 terminal service-shape decision 另准许本批的单节点 TDS WebSocket transport runtime；它是辅助进程，不是第二业务 deployable 或 TDP。未批准 Journey 和 TDP placeholder 不得被实现或作为验收依据。

@@ -8,9 +8,7 @@ public final class CatalogDefinitionFactsSql {
     public static final String CATALOG_DEFINITION_FACTS_CTE_BOUNDED_DEFINITION = "WITH bounded_definition AS (";
     public static final String CATALOG_DEFINITION_FACTS_SELECT_ATTRIBUTE_DEFINITION_REF_CODE_NAME_STATUS =
             "SELECT attribute_definition_ref,code,name,status,value_type,version ";
-    public static final String
-            CATALOG_DEFINITION_FACTS_FROM_CLAUSE_CATALOG_ATTRIBUTE_DEFINITION_FROM_CATALOG_CATALOG_ATTRIBU =
-                    "FROM catalog.catalog_attribute_definition ";
+    public static final String FROM_CLAUSE_CAT_ATTR_DEF_001 = "FROM catalog.catalog_attribute_definition ";
     public static final String CATALOG_DEFINITION_FACTS_WHERE_DATA_NODE_REF_BRAND_REF =
             "WHERE data_node_ref=? AND brand_ref=?";
     public static final String CATALOG_DEFINITION_FACTS_EMPTY_LITERAL = " ";
@@ -52,7 +50,8 @@ public final class CatalogDefinitionFactsSql {
             "INSERT INTO catalog.catalog_order_option_definition(order_option_definition_ref,data_node_ref,";
     public static final String
             CATALOG_DEFINITION_FACTS_UPDATE_CATALOG_ORDER_OPTION_DEFINITION_NAME_SELECTION_MODE_VERSION_UPDAT =
-                    "UPDATE catalog.catalog_order_option_definition SET name=?,selection_mode=?,version=version+1,updat";
+                    ("UPDATE catalog.catalog_order_option_definition SET name=?,selection_mode"
+                            + "=?,version=version+1,updat");
 
     public static final String CATALOG_DEFINITION_FACTS_CONDITION_VERSION_STATUS_VOIDED =
             "AND version=? AND status <> 'VOIDED'";
@@ -93,19 +92,16 @@ public final class CatalogDefinitionFactsSql {
     public static final String CATALOG_DEFINITION_FACTS_INSERT_INTO_CATALOG_ORDER_OPTION_DEFINITION_MA =
             "INSERT INTO catalog.catalog_order_option_definition_material(order_option_definition_mater";
 
-    public static final String
-            CATALOG_DEFINITION_FACTS_DELETE_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_DELETE_FROM_CATALOG_CATALOG_ =
-                    "DELETE FROM catalog.catalog_item_order_option_value_override WHERE ";
+    public static final String DELETE_CAT_ITEM_ORD_OPT_002 =
+            "DELETE FROM catalog.catalog_item_order_option_value_override WHERE ";
     public static final String CATALOG_DEFINITION_FACTS_ALTERNATIVE_ORDER_OPTION_DEFINITION_VALUE_REF_ALTERNATE_A =
             "order_option_definition_value_ref=?";
-    public static final String
-            CATALOG_DEFINITION_FACTS_DELETE_CATALOG_ORDER_OPTION_DEFINITION_MA_DELETE_FROM_CATALOG_CATALOG_ =
-                    "DELETE FROM catalog.catalog_order_option_definition_material WHERE ";
+    public static final String DELETE_CAT_ORD_OPT_DEF_003 =
+            "DELETE FROM catalog.catalog_order_option_definition_material WHERE ";
     public static final String CATALOG_DEFINITION_FACTS_ALTERNATIVE_ORDER_OPTION_DEFINITION_VALUE_REF_ALTERNATE_B =
             "order_option_definition_value_ref=?";
-    public static final String
-            CATALOG_DEFINITION_FACTS_DELETE_CATALOG_ORDER_OPTION_DEFINITION_VA_DELETE_FROM_CATALOG_CATALOG_ =
-                    "DELETE FROM catalog.catalog_order_option_definition_value WHERE ";
+    public static final String DELETE_CAT_ORD_OPT_DEF_004 =
+            "DELETE FROM catalog.catalog_order_option_definition_value WHERE ";
     public static final String CATALOG_DEFINITION_FACTS_ALTERNATIVE_ORDER_OPTION_DEFINITION_VALUE_REF_ALTERNATE_C =
             "order_option_definition_value_ref=?";
     public static final String CATALOG_DEFINITION_FACTS_SELECT_CATALOG_ATTRIBUTE_DEFINITIO_ALTERNATE_A =
@@ -113,15 +109,14 @@ public final class CatalogDefinitionFactsSql {
     public static final String CATALOG_DEFINITION_FACTS_SELECT_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ATTRIBUTE_DEFINITION =
             "SELECT EXISTS (SELECT 1 FROM catalog.catalog_item_attribute_assignment WHERE attribute_definition_";
 
-    public static final String
-            CATALOG_DEFINITION_FACTS_SELECT_CATALOG_ITEM_ORDER_OPTION_CONFIG_SELECT_EXISTS_SELECT_1_FROM_ =
-                    "SELECT EXISTS (SELECT 1 FROM catalog.catalog_item_order_option_config ";
+    public static final String SELECT_CAT_ITEM_ORD_OPT_005 =
+            "SELECT EXISTS (SELECT 1 FROM catalog.catalog_item_order_option_config ";
     public static final String CATALOG_DEFINITION_FACTS_WHERE_ORDER_OPTION_DEFINITION_REF =
             "WHERE order_option_definition_ref=?)";
-    public static final String CATALOG_DEFINITION_FACTS_UPDATE_CATALOG_ATTRIBUTE_DEFINITION_STATUS_VERSION =
+    public static final String UPDATE_CAT_ATTR_DEF_STATUS_006 =
             "UPDATE catalog.catalog_attribute_definition SET status=?,version=version+1,";
     public static final String CATALOG_DEFINITION_FACTS_UPDATE_UPDATED_AT_EPOCH_MILLIS = "updated_at_epoch_millis=? ";
-    public static final String CATALOG_DEFINITION_FACTS_WHERE_ATTRIBUTE_DEFINITION_REF_VERSION_STATUS_VOIDED =
+    public static final String WHERE_ATTR_DEF_REF_VER_007 =
             "WHERE attribute_definition_ref=? AND version=? AND status <> 'VOIDED'";
     public static final String CATALOG_DEFINITION_FACTS_SELECT_ATTRIBUTE_DEFINITION_REF_CODE_NAME_STATUS_ALTERNATE_A =
             "SELECT attribute_definition_ref,code,name,status,value_type,version ";
@@ -129,18 +124,16 @@ public final class CatalogDefinitionFactsSql {
             CATALOG_DEFINITION_FACTS_FROM_CLAUSE_CATALOG_ATTRIBUTE_DEFINI_FROM_CATALOG_CATALOG_ATTRIBU =
                     "FROM catalog.catalog_attribute_defini";
 
-    public static final String
-            CATALOG_DEFINITION_FACTS_SELECT_ORDER_OPTION_DEFINITION_REF_CODE_NAME_STATUS_ALTERNATE_A =
-                    "SELECT order_option_definition_ref,code,name,status,selection_mode,version ";
+    public static final String SELECT_ORD_OPT_DEF_REF_ALT_A_008 =
+            "SELECT order_option_definition_ref,code,name,status,selection_mode,version ";
     public static final String
             CATALOG_DEFINITION_FACTS_FROM_CLAUSE_CATALOG_ORDER_OPT_FROM_CATALOG_CATALOG_ORDER_O_ALTERNATE_A =
                     "FROM catalog.catalog_order_opt";
 
-    public static final String CATALOG_DEFINITION_FACTS_UPDATE_CATALOG_ORDER_OPTION_DEFINITION_STATUS_VERSION =
+    public static final String UPDATE_CAT_ORD_OPT_DEF_009 =
             "UPDATE catalog.catalog_order_option_definition SET status=?,version=version+1,";
-    public static final String CATALOG_DEFINITION_FACTS_UPDATE_UPDATED_AT_EPOCH_MILLIS_ALTERNATE_A =
-            "updated_at_epoch_millis=? ";
-    public static final String CATALOG_DEFINITION_FACTS_WHERE_ORDER_OPTION_DEFINITION_REF_VERSION_STATUS_VOIDED =
+    public static final String UPDATE_UPDATED_AT_EPOCH_MS_ALT_A_010 = "updated_at_epoch_millis=? ";
+    public static final String WHERE_ORD_OPT_DEF_REF_011 =
             "WHERE order_option_definition_ref=? AND version=? AND status <> 'VOIDED'";
     public static final String CATALOG_DEFINITION_FACTS_SELECT_CATALOG_ORDER_OPTION_ALTERNATE_A =
             "SELECT order_option_definition_value_ref,code,name,display_order FROM catalog.catalog_order_option";
@@ -163,7 +156,7 @@ public final class CatalogDefinitionFactsSql {
     public static final String CATALOG_DEFINITION_FACTS_CLOSE_PAREN_ORDER_BY = ") ORDER BY ";
     public static final String CATALOG_DEFINITION_FACTS_MATERIAL_ALTERNATE_A =
             "material.order_option_definition_value_ref,material.order_option_definition_material_ref";
-    public static final String CATALOG_DEFINITION_FACTS_ORDER_OPTION_DEFINITION_REF_DATA_NODE_REF_BRAND_REF_CODE =
+    public static final String ORD_OPT_DEF_REF_DATA_012 =
             "f,order_option_definition_ref,data_node_ref,brand_ref,code,name,display_order)";
     public static final String CATALOG_DEFINITION_FACTS_VALUES = " VALUES(";
     public static final String CATALOG_DEFINITION_FACTS_PARAMETER_PLACEHOLDER = "?,?,?,?,?,?,?)";
@@ -171,62 +164,60 @@ public final class CatalogDefinitionFactsSql {
             "n_option WHERE attribute_definition_ref=? ORDER BY display_order,";
     public static final String CATALOG_DEFINITION_FACTS_ATTRIBUTE_DEFINITION_OPTION_REF_ALTERNATE_A =
             "attribute_definition_option_ref";
-    public static final String
-            CATALOG_DEFINITION_FACTS_DEFINITION_VALUE_ORDER_OPTION_DEFINITION_REF_DISPLAY_ORDER_ALTERNATE_A =
-                    "_definition_value WHERE order_option_definition_ref=? ORDER BY display_order,";
+    public static final String DEF_VAL_ORD_OPT_DEF_ALT_A_013 =
+            "_definition_value WHERE order_option_definition_ref=? ORDER BY display_order,";
     public static final String CATALOG_DEFINITION_FACTS_ALTERNATIVE_ORDER_OPTION_DEFI_ALTERNATE_A = "order_option_defi";
 
-    public static final String
-            CATALOG_DEFINITION_FACTS_UPDATE_CATALOG_CATALOG_ATTRIBUTE_DEFINITION_SET_CODE_NAME_VERSION_UPDATED_AT_EPOCH_MILLIS_WHERE_ATTRIBUTE_DEFINITION_REF_VERSION_AND_STATUS_VOIDED =
-                    """
-    UPDATE catalog.catalog_attribute_definition SET code=?,name=?,version=version+1,updated_at_epoch_millis=? WHERE attribute_definition_ref=? AND version=? AND status <> 'VOIDED'""";
-    public static final String
-            CATALOG_DEFINITION_FACTS_FROM_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_FROM_CATALOG_CATALOG_ORDER_OPTION_DEFINITION =
-                    """
+    public static final String UPDATE_CAT_ATTR_DEF_SET_014 =
+            """
+    UPDATE catalog.catalog_attribute_definition SET code=?,name=?,vers\
+    ion=version+1,updated_at_epoch_millis=? WHERE attribute_definition\
+    _ref=? AND version=? AND status <> 'VOIDED'""";
+    public static final String FROM_CAT_ORD_OPT_DEF_015 = """
     FROM catalog.catalog_order_option_definition\s""";
-    public static final String
-            CATALOG_DEFINITION_FACTS_ORDER_BY_NAME_CODE_ORDER_OPTION_DEFINITION_REF_LIMIT_NAME_CODE_ORDER_OPTION_DEFINITION_REF_LIMIT =
-                    """
+    public static final String ORD_BY_NAME_CODE_ORD_016 =
+            """
     \sORDER BY name,code,order_option_definition_ref LIMIT ?""";
-    public static final String
-            CATALOG_DEFINITION_FACTS_UPDATE_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_SET_NAME_SELECTION_MODE_UPDATED_AT_EPOCH_MILLIS_WHERE_ORDER_OPTION_DEFINITION_REF =
-                    """
-    UPDATE catalog.catalog_order_option_definition SET name=?,selection_mode=?,version=version+1,updated_at_epoch_millis=? WHERE order_option_definition_ref=?\s""";
+    public static final String UPDATE_CAT_ORD_OPT_DEF_017 =
+            """
+    UPDATE catalog.catalog_order_option_definition SET name=?,selectio\
+    n_mode=?,version=version+1,updated_at_epoch_millis=? WHERE order_o\
+    ption_definition_ref=?\s""";
     public static final String CATALOG_DEFINITION_FACTS_ORDER_OPTION_DEFINITION_VALUE_REF =
             """
     order_option_definition_value_ref""";
-    public static final String
-            CATALOG_DEFINITION_FACTS_INSERT_INTO_CATALOG_CATALOG_ATTRIBUTE_DEFINITION_OPTION_ATTRIBUTE_DEFINITION_OPTION_REF_ATTRIBUTE_DEFINITION_REF_NAME_DISPLAY_ORDER_VALUES_ATTRIBUTE_DEFINITION_REF_NAME_DISPLAY_ORDER_VALUES =
-                    """
-    INSERT INTO catalog.catalog_attribute_definition_option(attribute_definition_option_ref,attribute_definition_ref,name,display_order) VALUES(?,?,?,?)""";
-    public static final String
-            CATALOG_DEFINITION_FACTS_UPDATE_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_VALUE_SET_NAME_DISPLAY_ORDER_WHERE_ORDER_OPTION_DEFINITION_VALUE_REF_NAME_DISPLAY_ORDER_WHERE_ORDER_OPTION_DEFINITION_VALUE_REF =
-                    """
-    UPDATE catalog.catalog_order_option_definition_value SET name=?,display_order=? WHERE order_option_definition_value_ref=?""";
-    public static final String
-            CATALOG_DEFINITION_FACTS_DELETE_FROM_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_MATERIAL_WHERE_ORDER_OPTION_DEFINITION_VALUE_REF_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_MATERIAL_WHERE_ORDER_OPTION_DEFINITION_VALUE_REF =
-                    """
+    public static final String INSERT_INTO_CAT_ATTR_DEF_018 =
+            """
+    INSERT INTO catalog.catalog_attribute_definition_option(attribute_\
+    definition_option_ref,attribute_definition_ref,name,display_order)\
+     VALUES(?,?,?,?)""";
+    public static final String UPDATE_CAT_ORD_OPT_DEF_019 =
+            """
+    UPDATE catalog.catalog_order_option_definition_value SET name=?,di\
+    splay_order=? WHERE order_option_definition_value_ref=?""";
+    public static final String DELETE_FROM_CAT_ORD_OPT_020 =
+            """
     DELETE FROM catalog.catalog_order_option_definition_material WHERE order_option_definition_value_ref=?""";
-    public static final String
-            CATALOG_DEFINITION_FACTS_INSERT_INTO_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_MATERIAL_ORDER_OPTION_DEFINITION_MATERIAL_REF_ORDER_OPTION_DEFINITION_VALUE_REF_MATERIAL_ITEM_REF_STOCK_TARGET_REF =
-                    """
-    INSERT INTO catalog.catalog_order_option_definition_material(order_option_definition_material_ref,order_option_definition_value_ref,material_item_ref,stock_target_ref,""";
-    public static final String
-            CATALOG_DEFINITION_FACTS_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_VALUES_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_VALUES =
-                    """
-    consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dimension,consumption_unit_precision) VALUES(?,?,?,?,?,?,?,?,?)""";
-    public static final String
-            CATALOG_DEFINITION_FACTS_SELECT_EXISTS_SELECT_FROM_CATALOG_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_WHERE_ATTRIBUTE_DEFINITION_REF_CATALOG_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_WHERE_ATTRIBUTE_DEFINITION_REF =
-                    """
+    public static final String INSERT_INTO_CAT_ORD_OPT_021 =
+            """
+    INSERT INTO catalog.catalog_order_option_definition_material(order\
+    _option_definition_material_ref,order_option_definition_value_ref,\
+    material_item_ref,stock_target_ref,""";
+    public static final String CONSUM_UNIT_REF_CONSUM_UNIT_022 =
+            """
+    consumption_unit_ref,consumption_unit_code,consumption_unit_name,c\
+    onsumption_unit_dimension,consumption_unit_precision) VALUES(?,?,?\
+    ,?,?,?,?,?,?)""";
+    public static final String SELECT_EXISTS_SELECT_FROM_CAT_023 =
+            """
     SELECT EXISTS (SELECT 1 FROM catalog.catalog_item_attribute_assignment WHERE attribute_definition_ref=?)""";
-    public static final String
-            CATALOG_DEFINITION_FACTS_FROM_CATALOG_CATALOG_ATTRIBUTE_DEFINITION_WHERE_DATA_NODE_REF_AND_BRAND_REF_AND_ATTRIBUTE_DEFINITION_REF_AND_BRAND_REF_AND_ATTRIBUTE_DEFINITION_REF =
-                    """
+    public static final String FROM_CAT_ATTR_DEF_WHERE_024 =
+            """
     FROM catalog.catalog_attribute_definition WHERE data_node_ref=? AND brand_ref=? AND attribute_definition_ref=?""";
-    public static final String
-            CATALOG_DEFINITION_FACTS_FROM_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_WHERE_DATA_NODE_REF_AND_BRAND_REF_AND_ORDER_OPTION_DEFINITION_REF_AND_BRAND_REF_AND_ORDER_OPTION_DEFINITION_REF =
-                    """
-    FROM catalog.catalog_order_option_definition WHERE data_node_ref=? AND brand_ref=? AND order_option_definition_ref=?""";
+    public static final String FROM_CAT_ORD_OPT_DEF_025 =
+            """
+    FROM catalog.catalog_order_option_definition WHERE data_node_ref=?\
+     AND brand_ref=? AND order_option_definition_ref=?""";
     public static final String CATALOG_DEFINITION_FACTS_ORDER_OPTION_DEFINITION_VALUE_REF_ALTERNATE_A =
             """
     order_option_definition_value_ref""";

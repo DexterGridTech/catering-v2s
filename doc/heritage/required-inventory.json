@@ -1,264 +1,161 @@
 {
   "schemaVersion": 1,
-  "kind": "heritage-required-inventory",
-  "repositories": [
+  "kind": "local-frozen-asset-inventory",
+  "entries": [
     {
-      "repositoryId": "catering-all-v2",
-      "relation": "../catering-all-v2",
-      "role": "READ_ONLY_HERITAGE",
-      "selectedAssetPolicy": "EXPLICIT_FROZEN_SELECTED_ASSETS",
-      "writeBack": false,
-      "runtimeFallback": false,
-      "buildFallback": false,
-      "selectedAssets": [
-        {
-          "sourcePath": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
-          "targetPath": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
-          "expectedSha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "service shape"
-        },
-        {
-          "sourcePath": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "targetPath": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "expectedSha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "carryover"
-        },
-        {
-          "sourcePath": "doc/plans/platform/2026-07-24-v2s-architecture-action-plan.md",
-          "targetPath": "doc/plans/platform/2026-07-24-v2s-architecture-action-plan.md",
-          "expectedSha256": "fda7be83444fe1d598f85322c3190a72609e0028e9f4138b9e46bb93c1c8f603",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "W0 1-7"
-        },
-        {
-          "sourcePath": "doc/plans/platform/2026-07-24-v2s-architecture-grilling-working-notes.md",
-          "targetPath": "doc/plans/platform/2026-07-24-v2s-architecture-grilling-working-notes.md",
-          "expectedSha256": "e7bf78e4d61f68a55f580ed6b039574b6a0bd95e23a53155f2e6e1cc064a0e9a",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "decision trace"
-        },
-        {
-          "sourcePath": "doc/handoffs/2026-07-24-v2s-w0-continuation-handoff.md",
-          "targetPath": "doc/handoffs/2026-07-24-v2s-w0-continuation-handoff.md",
-          "expectedSha256": "c94afa29234b8e13ae96034091e6cbe7d517852418c997998f635696e20caeba",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "R1 boundary"
-        },
-        {
-          "sourcePath": "doc/review/platform/2026-07-24-v2s-service-shape-codex-self-review.md",
-          "targetPath": "doc/review/platform/2026-07-24-v2s-service-shape-codex-self-review.md",
-          "expectedSha256": "85282177165d35d729a77a931503e1622bf47a4ab306b86df3acee3f992d1980",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "service author review"
-        },
-        {
-          "sourcePath": "doc/review/platform/2026-07-24-v2s-service-shape-claude-review.md",
-          "targetPath": "doc/review/platform/2026-07-24-v2s-service-shape-claude-review.md",
-          "expectedSha256": "3247083500608faaca5123876cce11d1662b39741c62609c5da445b4b121c995",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "service independent review"
-        },
-        {
-          "sourcePath": "doc/review/platform/2026-07-24-v2s-service-shape-claude-review-resolution.md",
-          "targetPath": "doc/review/platform/2026-07-24-v2s-service-shape-claude-review-resolution.md",
-          "expectedSha256": "3049593ee3e93a835bbc12fbb395dfd9aa8314449d7a8f995924fe440405b3b8",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "service findings resolution"
-        },
-        {
-          "sourcePath": "doc/review/platform/2026-07-24-v2s-carryover-manifest-codex-review.md",
-          "targetPath": "doc/review/platform/2026-07-24-v2s-carryover-manifest-codex-review.md",
-          "expectedSha256": "bd0dac82b19e19b66cbd065cf71095029921c453728cceac2d451a54aecfd658",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "manifest GO"
-        },
-        {
-          "sourcePath": "doc/review/platform/2026-07-24-v2s-execution-roadmap-codex-self-review.md",
-          "targetPath": "doc/review/platform/2026-07-24-v2s-execution-roadmap-codex-self-review.md",
-          "expectedSha256": "a75caa245c402e81b5bda631c54d6b4df684e267d4267c604923bbe936a9da8c",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "Roadmap author review"
-        },
-        {
-          "sourcePath": "doc/review/platform/2026-07-24-v2s-execution-roadmap-review-claude.md",
-          "targetPath": "doc/review/platform/2026-07-24-v2s-execution-roadmap-review-claude.md",
-          "expectedSha256": "afee508e19563fd2b4b81b99c9db3785b737f6d33cbf0d6bd6dff7305fea5882",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "Roadmap independent review"
-        },
-        {
-          "sourcePath": "doc/review/platform/2026-07-24-v2s-execution-roadmap-review-resolution.md",
-          "targetPath": "doc/review/platform/2026-07-24-v2s-execution-roadmap-review-resolution.md",
-          "expectedSha256": "aae89e1bafcd77a5acc3a0cc1a86623238d8175bebe928fed6add3ad5697a489",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "Roadmap findings resolution"
-        },
-        {
-          "sourcePath": "doc/decisions/2026-07-24-v2s-execution-roadmap-r0-acceptance.md",
-          "targetPath": "doc/decisions/2026-07-24-v2s-execution-roadmap-r0-acceptance.md",
-          "expectedSha256": "3f917b783b7861dc56fd4307f4a6bd3c826e07baaec6ae2b8ea7ae69c6db45a2",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "Dexter R0 acceptance"
-        },
-        {
-          "sourcePath": "project-memory/decisions/admin-component-selection-precedence.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-component-selection-precedence.md",
-          "expectedSha256": "deba6b02065b004f0b0e2bce4adeb5ffd5753a8bf0b0bfc267b63256668d9fe0",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "admin component selection"
-        },
-        {
-          "sourcePath": "project-memory/decisions/business-entity-list-detail-action-standard.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/business-entity-list-detail-action-standard.md",
-          "expectedSha256": "3d036edb2b3ea4ef5f96ccca464669a5f1f309f4c4ca448aba5cddd92d92fe4d",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "business entity list detail action"
-        },
-        {
-          "sourcePath": "doc/platform/admin-ui-interaction-and-ant-design-usage-standard.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/doc/platform/admin-ui-interaction-and-ant-design-usage-standard.md",
-          "expectedSha256": "25e3ec016b39801147219b726ddc9162f266af0e9b60cb4ecead7ebdaf8f731e",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "admin UI interaction and Ant Design usage"
-        },
-        {
-          "sourcePath": "project-memory/decisions/admin-consumer-chrome-rules.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-consumer-chrome-rules.md",
-          "expectedSha256": "98bb944a029e41caa84b95517bf021c0e4809e1725c5ad532e84e685131ddd1f",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "admin consumer chrome"
-        },
-        {
-          "sourcePath": "project-memory/decisions/admin-drawer-form-lifecycle-and-feedback-standard.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-drawer-form-lifecycle-and-feedback-standard.md",
-          "expectedSha256": "0154be1d75078d6996d3a6edbaf3c1f6457a96e0760875296762dfea06bf435f",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "admin drawer form lifecycle"
-        },
-        {
-          "sourcePath": "project-memory/decisions/admin-frontend-implementation-standard.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-frontend-implementation-standard.md",
-          "expectedSha256": "12afa79feb6369995e2744897bff8cbfe5cfbfdf7ff63985d8abea0b73c7c7dd",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "admin frontend implementation"
-        },
-        {
-          "sourcePath": "project-memory/decisions/admin-frontend-runtime-architecture-must-not-follow-journey-ids.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-frontend-runtime-architecture-must-not-follow-journey-ids.md",
-          "expectedSha256": "7db367e97931fe2f1292e620e8364f667ed9663a5fbb1e09f6d48a03448f41c6",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "admin frontend runtime architecture"
-        },
-        {
-          "sourcePath": "project-memory/decisions/admin-page-catalog-navigation-and-access-owner-boundary.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-page-catalog-navigation-and-access-owner-boundary.md",
-          "expectedSha256": "2604180320cbdc473e80da5b056867e05c1a8e720658df0dc1ca39b5d1ca983b",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "admin page catalog and owner boundary"
-        },
-        {
-          "sourcePath": "project-memory/decisions/admin-routing-and-tab-query-state-must-follow-v4-style.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-routing-and-tab-query-state-must-follow-v4-style.md",
-          "expectedSha256": "4dfb2aa61d27944bf721a2dae1825dec8fb85e138ce612e0a5eb58f48aa93912",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "admin routing and tab query state"
-        },
-        {
-          "sourcePath": "project-memory/decisions/platform-admin-menu-tabs-and-workspace-context.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/platform-admin-menu-tabs-and-workspace-context.md",
-          "expectedSha256": "fc5585aa0ce198614b0f5223edf88dd458eeef91796d6b3fc3732dec6d9d12af",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "platform admin menu tabs and workspace context"
-        },
-        {
-          "sourcePath": "project-memory/decisions/runtime-source-organization-must-not-follow-journey-ids.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/runtime-source-organization-must-not-follow-journey-ids.md",
-          "expectedSha256": "f88855cc3583026ad6edf7afb3e729c46705ea5f30fa7d635acd6784db9c236a",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "runtime source organization"
-        },
-        {
-          "sourcePath": "project-memory/decisions/business-user-facing-language-standard.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/business-user-facing-language-standard.md",
-          "expectedSha256": "087b537d57c1839315f886bc9e3bb294ed10ed719b53b590e39cadfa9374b6bb",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "business user facing language"
-        },
-        {
-          "sourcePath": "scripts/check/ui-wireframe-traceability",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/scripts/check/ui-wireframe-traceability",
-          "expectedSha256": "173c7d5e9b036dd38da71e0cd53965d52639a02ea8dbd67c071fd314c6608e5d",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "R4 ui wireframe traceability heritage reference"
-        },
-        {
-          "sourcePath": "scripts/check/business-terminology-traceability",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/scripts/check/business-terminology-traceability",
-          "expectedSha256": "93e7ccb66e70627b4d3aeec4dcc21a1a12b2ae44eb0f3bccc6797b6e91a43053",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "R4 business terminology traceability heritage reference"
-        },
-        {
-          "sourcePath": "project-memory/decisions/logging-and-debugging-foundation-standard.md",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
-          "expectedSha256": "597a87741247b7abf600486087539d614f501e7b53ff031a635f387213b2e03b",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "complete log first and debugging standard"
-        },
-        {
-          "sourcePath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
-          "expectedSha256": "0af9be8c884de227c28b875f4e41626f6a20d932b43e4ab6064289e7cbfe63dc",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "C-01 list screen carry-over baseline"
-        },
-        {
-          "sourcePath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.tsx",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.tsx",
-          "expectedSha256": "f573ca9c02e3fc80cd35ee5e6e9b43933fa7579d87a79ac3c2a09a683e24852a",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "C-01 detail screen carry-over baseline"
-        },
-        {
-          "sourcePath": "apps/frontend/platform-admin/src/features/workspace-management/ui/CommercialGroupInitializationDrawer.tsx",
-          "targetPath": "doc/heritage/frozen/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-management/ui/CommercialGroupInitializationDrawer.tsx",
-          "expectedSha256": "3b40a5fdfe5cdcfa90bbc7f80944485acd9e47772893e77bf2d39ec32da85c6c",
-          "disposition": "COPIED_FROZEN",
-          "owningAssertion": "C-01 commercial group initialization carry-over baseline"
-        }
-      ]
+      "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+      "expectedSha256": "ebc8cc3affe6446979359194a64a50df9a693dc32cef0e97687caaee31ecd568",
+      "owningAssertion": "service shape"
     },
     {
-      "repositoryId": "catering-all-v1",
-      "relation": "../catering-all-v1",
-      "role": "READ_ONLY_HERITAGE",
-      "selectedAssetPolicy": "EXPLICIT_FUTURE_REF_ONLY",
-      "writeBack": false,
-      "runtimeFallback": false,
-      "buildFallback": false,
-      "selectedAssets": []
+      "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+      "expectedSha256": "84037f1c81ae17ce51ee488723f5e230b4fe3f76c16e690c58c96606793e6c69",
+      "owningAssertion": "carryover"
     },
     {
-      "repositoryId": "catering-server-v4",
-      "relation": "../catering-server-v4",
-      "role": "READ_ONLY_HERITAGE",
-      "selectedAssetPolicy": "EXPLICIT_FUTURE_REF_ONLY",
-      "writeBack": false,
-      "runtimeFallback": false,
-      "buildFallback": false,
-      "selectedAssets": []
+      "path": "doc/plans/platform/2026-07-24-v2s-architecture-action-plan.md",
+      "expectedSha256": "fda7be83444fe1d598f85322c3190a72609e0028e9f4138b9e46bb93c1c8f603",
+      "owningAssertion": "W0 1-7"
     },
     {
-      "repositoryId": "requirement-doc-v6",
-      "relation": "../requirement-doc",
-      "role": "READ_ONLY_HERITAGE",
-      "selectedAssetPolicy": "EXPLICIT_FUTURE_REF_ONLY",
-      "writeBack": false,
-      "runtimeFallback": false,
-      "buildFallback": false,
-      "selectedAssets": []
+      "path": "doc/plans/platform/2026-07-24-v2s-architecture-grilling-working-notes.md",
+      "expectedSha256": "e7bf78e4d61f68a55f580ed6b039574b6a0bd95e23a53155f2e6e1cc064a0e9a",
+      "owningAssertion": "decision trace"
+    },
+    {
+      "path": "doc/handoffs/2026-07-24-v2s-w0-continuation-handoff.md",
+      "expectedSha256": "c94afa29234b8e13ae96034091e6cbe7d517852418c997998f635696e20caeba",
+      "owningAssertion": "R1 boundary"
+    },
+    {
+      "path": "doc/review/platform/2026-07-24-v2s-service-shape-codex-self-review.md",
+      "expectedSha256": "85282177165d35d729a77a931503e1622bf47a4ab306b86df3acee3f992d1980",
+      "owningAssertion": "service author review"
+    },
+    {
+      "path": "doc/review/platform/2026-07-24-v2s-service-shape-claude-review.md",
+      "expectedSha256": "3247083500608faaca5123876cce11d1662b39741c62609c5da445b4b121c995",
+      "owningAssertion": "service independent review"
+    },
+    {
+      "path": "doc/review/platform/2026-07-24-v2s-service-shape-claude-review-resolution.md",
+      "expectedSha256": "3049593ee3e93a835bbc12fbb395dfd9aa8314449d7a8f995924fe440405b3b8",
+      "owningAssertion": "service findings resolution"
+    },
+    {
+      "path": "doc/review/platform/2026-07-24-v2s-carryover-manifest-codex-review.md",
+      "expectedSha256": "bd0dac82b19e19b66cbd065cf71095029921c453728cceac2d451a54aecfd658",
+      "owningAssertion": "manifest GO"
+    },
+    {
+      "path": "doc/review/platform/2026-07-24-v2s-execution-roadmap-codex-self-review.md",
+      "expectedSha256": "a75caa245c402e81b5bda631c54d6b4df684e267d4267c604923bbe936a9da8c",
+      "owningAssertion": "Roadmap author review"
+    },
+    {
+      "path": "doc/review/platform/2026-07-24-v2s-execution-roadmap-review-claude.md",
+      "expectedSha256": "afee508e19563fd2b4b81b99c9db3785b737f6d33cbf0d6bd6dff7305fea5882",
+      "owningAssertion": "Roadmap independent review"
+    },
+    {
+      "path": "doc/review/platform/2026-07-24-v2s-execution-roadmap-review-resolution.md",
+      "expectedSha256": "aae89e1bafcd77a5acc3a0cc1a86623238d8175bebe928fed6add3ad5697a489",
+      "owningAssertion": "Roadmap findings resolution"
+    },
+    {
+      "path": "doc/decisions/2026-07-24-v2s-execution-roadmap-r0-acceptance.md",
+      "expectedSha256": "3f917b783b7861dc56fd4307f4a6bd3c826e07baaec6ae2b8ea7ae69c6db45a2",
+      "owningAssertion": "Dexter R0 acceptance"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-component-selection-precedence.md",
+      "expectedSha256": "deba6b02065b004f0b0e2bce4adeb5ffd5753a8bf0b0bfc267b63256668d9fe0",
+      "owningAssertion": "admin component selection"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/business-entity-list-detail-action-standard.md",
+      "expectedSha256": "3d036edb2b3ea4ef5f96ccca464669a5f1f309f4c4ca448aba5cddd92d92fe4d",
+      "owningAssertion": "business entity list detail action"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/doc/platform/admin-ui-interaction-and-ant-design-usage-standard.md",
+      "expectedSha256": "25e3ec016b39801147219b726ddc9162f266af0e9b60cb4ecead7ebdaf8f731e",
+      "owningAssertion": "admin UI interaction and Ant Design usage"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-consumer-chrome-rules.md",
+      "expectedSha256": "98bb944a029e41caa84b95517bf021c0e4809e1725c5ad532e84e685131ddd1f",
+      "owningAssertion": "admin consumer chrome"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-drawer-form-lifecycle-and-feedback-standard.md",
+      "expectedSha256": "0154be1d75078d6996d3a6edbaf3c1f6457a96e0760875296762dfea06bf435f",
+      "owningAssertion": "admin drawer form lifecycle"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-frontend-implementation-standard.md",
+      "expectedSha256": "12afa79feb6369995e2744897bff8cbfe5cfbfdf7ff63985d8abea0b73c7c7dd",
+      "owningAssertion": "admin frontend implementation"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-frontend-runtime-architecture-must-not-follow-journey-ids.md",
+      "expectedSha256": "7db367e97931fe2f1292e620e8364f667ed9663a5fbb1e09f6d48a03448f41c6",
+      "owningAssertion": "admin frontend runtime architecture"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-page-catalog-navigation-and-access-owner-boundary.md",
+      "expectedSha256": "2604180320cbdc473e80da5b056867e05c1a8e720658df0dc1ca39b5d1ca983b",
+      "owningAssertion": "admin page catalog and owner boundary"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/admin-routing-and-tab-query-state-must-follow-v4-style.md",
+      "expectedSha256": "4dfb2aa61d27944bf721a2dae1825dec8fb85e138ce612e0a5eb58f48aa93912",
+      "owningAssertion": "admin routing and tab query state"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/platform-admin-menu-tabs-and-workspace-context.md",
+      "expectedSha256": "fc5585aa0ce198614b0f5223edf88dd458eeef91796d6b3fc3732dec6d9d12af",
+      "owningAssertion": "platform admin menu tabs and workspace context"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/runtime-source-organization-must-not-follow-journey-ids.md",
+      "expectedSha256": "f88855cc3583026ad6edf7afb3e729c46705ea5f30fa7d635acd6784db9c236a",
+      "owningAssertion": "runtime source organization"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/business-user-facing-language-standard.md",
+      "expectedSha256": "087b537d57c1839315f886bc9e3bb294ed10ed719b53b590e39cadfa9374b6bb",
+      "owningAssertion": "business user facing language"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/scripts/check/ui-wireframe-traceability",
+      "expectedSha256": "173c7d5e9b036dd38da71e0cd53965d52639a02ea8dbd67c071fd314c6608e5d",
+      "owningAssertion": "R4 ui wireframe traceability heritage reference"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/scripts/check/business-terminology-traceability",
+      "expectedSha256": "93e7ccb66e70627b4d3aeec4dcc21a1a12b2ae44eb0f3bccc6797b6e91a43053",
+      "owningAssertion": "R4 business terminology traceability heritage reference"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
+      "expectedSha256": "597a87741247b7abf600486087539d614f501e7b53ff031a635f387213b2e03b",
+      "owningAssertion": "complete log first and debugging standard"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx",
+      "expectedSha256": "0af9be8c884de227c28b875f4e41626f6a20d932b43e4ab6064289e7cbfe63dc",
+      "owningAssertion": "C-01 list screen carry-over baseline"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceDetailDrawer.tsx",
+      "expectedSha256": "f573ca9c02e3fc80cd35ee5e6e9b43933fa7579d87a79ac3c2a09a683e24852a",
+      "owningAssertion": "C-01 detail screen carry-over baseline"
+    },
+    {
+      "path": "doc/heritage/frozen/catering-all-v2/apps/frontend/platform-admin/src/features/workspace-management/ui/CommercialGroupInitializationDrawer.tsx",
+      "expectedSha256": "3b40a5fdfe5cdcfa90bbc7f80944485acd9e47772893e77bf2d39ec32da85c6c",
+      "owningAssertion": "C-01 commercial group initialization carry-over baseline"
     }
   ]
 }

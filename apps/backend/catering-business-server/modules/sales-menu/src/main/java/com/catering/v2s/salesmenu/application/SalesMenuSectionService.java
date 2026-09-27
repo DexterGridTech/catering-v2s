@@ -436,7 +436,10 @@ public class SalesMenuSectionService {
     }
 
     private void requireSection(UUID menu, UUID version, UUID section) {
-        if (!persistence.sectionExists(menu, version, section)) throw problem("SECTION_NOT_FOUND", 404, "分组不存在");
+        // spotless:off
+        if (!persistence.sectionExists(menu, version, section)) throw problem("SECTION_NOT_FOUND", 404,
+            "分组不存在");
+        // spotless:on
     }
 
     private MoveCurrentRow requireSectionMoveCurrent(UUID menu, UUID version, UUID section) {

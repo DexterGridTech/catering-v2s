@@ -15,6 +15,10 @@ IMPLEMENTATION_AUTHORITY=true（Dexter 2026-09-24 授权；2026-09-25 交互纠�
 
 本文件记录线框背后的读写、级联、规模、刷新与可证伪观察。可见形态和文案的唯一归属在同名交互工件 §4；本文件不另画一套相冲突的线框。2026-09-25 用户体验纠偏已写入需求正本 §15.13，并覆盖本文此前把 Drawer 描述成“步骤”的旧措辞：当前有效形态是同一 Drawer 内两个普通 Tabs，不是 Steps，不存在“下一步/上一步”提交流程。页面路线提案为运营管理后台当前集团空间下的 `routeSegment=organization/store-terminals`（不带门店 ref）；准确 page key/route 由后续详设冻结，不能让 URL 代替已确认的全局门店选择。
 
+## D-18 覆盖（批次一，2026-09-26）
+
+门店终端需求 D-36 已标明原 R-1.4「设备类型可以修改」由《终端激活与长连接》D-18 取代。终端创建后设备类型不可修改，本批次一实施。本文其余新建态仍可用 Radio 选择设备类型；已有终端的 `TER-E01` 必须从 owner 当前详情只读展示设备类型，不提供选择器、禁用选择器或解释性提示；更新请求契约不含 `deviceType`，携带该遗留字段的请求由 controller `strictBody` 按未知字段拒绝，owner 不执行更新，终端配置与版本不变；不另建 owner 专属错误码。以下 TER-E01 旧表述均按本覆盖修订。此 delta 归《终端激活与长连接》批次一，不属于旧 CP-07。
+
 ## 1. 六个 IA-ID 的可见与不可见维度
 
 ### TER-P01 · 左终端列表＋右所选详情
@@ -48,7 +52,7 @@ IMPLEMENTATION_AUTHORITY=true（Dexter 2026-09-24 授权；2026-09-25 交互纠�
 - `stateAndPermission`：[backend-acceptance] 仅有页面访问而无“编辑门店终端”的身份，即使直发创建命令也被拒；仅门店 A 授权不能为门店 B 创建；停用门店不提供本入口。
 - `navigationAndRefresh`：[组件 focused] 切换 Tab 只改变内容分组，不刷新业务列表或详情；取消退出，若已输入则统一 dirty guard；切回 Tab 保留本次选择。
 - `collectionShapeAndScale`：设备字典为 `Bounded`，精确两值 `台式/手持`，上界来自需求 §4.2；不能借当前页数量推断业务上界。
-- `dataSourceAndCascade`：[静态＋focused] 设备类型来源是单一 contract 生成字典；选择手持后，`TER-C02` 只能新增四种支持功能；若从“基本信息与打印机”Tab 改设备类型，先保留用户输入并标出冲突，不自动删功能。
+- `dataSourceAndCascade`：[静态＋focused] 设备类型来源是单一 contract 生成字典；选择手持后，`TER-C02` 只能新增四种支持功能；新建草稿期间可调整设备类型；已有终端的 `TER-E01` 只读展示 owner 当前详情中的设备类型，任何修改请求改变它都必须被拒绝。
 - `forbiddenUI`：[静态源码] 不得出现 Steps、“下一步/上一步”、终端在线测试、按业态套模板或“新建成功”反馈；Tab 不能产生单独持久化动作。
 
 ### TER-C02 · 新建 Drawer：功能与范围 Tab
@@ -73,17 +77,17 @@ IMPLEMENTATION_AUTHORITY=true（Dexter 2026-09-24 授权；2026-09-25 交互纠�
 - `businessTask`：修改既有终端的完整规则，同时维持终端、厨打、打印机和激活码的身份。
 - `actorAndScenario`：有写权限的运营管理员，已在右侧核对目标终端。
 - `entryAndSurface`：`TER-P01` 右侧详情头部“编辑”打开单独编辑 Drawer，标题“对象名 · 编辑终端”。
-- `controlType`：同 `TER-C02` 两个普通 Tab；“基本信息与打印机”在前、“功能与范围”在后，从 owner latest detail 初始化；所属功能下每条场景仍有自己的订单类型和打印机多选；既有功能类型只读，设备类型可改，旧失效引用带文字状态；底部“取消/保存终端”。激活码不做 Form 控件，仅由页面详情展示。
-- `validationAndError`：改设备类型时保留不兼容功能并在所属功能原位标错，允许同次保存中移除它们；旧失效引用可原样保留但不可当新候选；品牌改变后旧型号不得残留；连接方式切换不保留旧条件参数；改纸型若场景仍不相容则原位失败，不自动清；版本冲突与结果未知保留输入并提供核对。
-- `accessibilityAndTestId`：当前功能/场景、旧引用状态均有文本；抽屉关闭三路径同一 lifecycle，错误后焦点到首错；动态身份稳定，姓名与顺序变动不使输入失焦。
+- `controlType`：同 `TER-C02` 两个普通 Tab；“基本信息与打印机”在前、“功能与范围”在后，从 owner latest detail 初始化；所属功能下每条场景仍有自己的订单类型和打印机多选；既有功能类型只读，设备类型只读展示且不是 Form 控件，旧失效引用带文字状态；底部“取消/保存终端”。激活码不做 Form 控件，仅由页面详情展示。
+- `validationAndError`：不接受设备类型变更；更新请求契约不含 `deviceType`，旧请求若仍携带该字段，由 controller 的 `strictBody` 按未知字段拒绝，owner 不执行更新且终端配置、版本不变；不另建 owner 专属错误码。旧失效引用可原样保留但不可当新候选；品牌改变后旧型号不得残留；连接方式切换不保留旧条件参数；改纸型若场景仍不相容则原位失败，不自动清；版本冲突与结果未知保留输入并提供核对。
+- `accessibilityAndTestId`：当前功能/场景、旧引用状态均有文本；设备类型只读 Typography.Text 节点使用 TERMINAL_DEVICE_TYPE_READONLY 稳定 testId，文本本身不可聚焦且不是动作控件；抽屉关闭三路径同一 lifecycle，错误后焦点到首错；动态身份稳定，姓名与顺序变动不使输入失焦。
 - `emptyLoadingErrorStates`：详情读取失败不可打开带空表单的编辑；旧引用 task-read 失败时不伪造“已作废”，显示读取失败并保留原始标识待重试；候选空/失败与 `TER-C02` 一致。
 - `containerBehaviorUnderLoad`：静态形态与交互工件 `TER-E01.CONTAINER_LAYOUT` 相同。无人工上限的厨打和打印机只延长 Drawer 正文唯一纵向滚动；Tab 和页脚固定，长旧引用名称换行/可读全称；当前功能/场景归属明确，按钮不出视口。
 - `interactionConsistency`：对照 `doc/platform/frontend-coding-standard.md` §3-K-1..§3-K-10；逐项同 `TER-C02` 并追加 §3-K-2 的对象名前置标题、§3-K-4 的版本冲突与结果未知恢复；§3-K-10 不适用编辑 Drawer。实施前逐控件对照交互工件 §7。
 - `stateAndPermission`：[backend-acceptance] 停用终端可改；作废终端不可改；门店停用不可改；无写权限、跨店、跨集团空间写入均拒绝；两个用同一版本并发保存只有一个成功。前端按钮不能替代最终校验。
 - `navigationAndRefresh`：[focused] 编辑成功后同一 ref 留在列表选中态并只重读其详情及受影响列表；不把创建时的默认状态覆盖旧状态；失败保留整个 Draft；Shell 刷新当前内容 Tab 不覆盖未提交 Drawer。
 - `collectionShapeAndScale`：既有终端也是 `Detail 聚合`，无人工上限；候选 `Cursor`，固定字典 `Bounded` 的上界与 `TER-C02` 相同；必须构造多个厨打、同场景多台同等地位打印机回读，不能只测一个实例。
-- `dataSourceAndCascade`：[静态＋acceptance] 最新 detail 提供现存 refs/version；organization 按 ref 返回旧桌台区当前状态/类型，catalog 按 ref 返回旧标签状态；更改当前厨打只改其范围和所指向场景；更改该厨打的某个场景打印机不改同厨打其他场景或其他厨打；激活码在任何编辑请求中不存在。
-- `forbiddenUI`：[静态＋focused] 不得把已作废旧引用默默移出，不得把它塞回新增候选；设备类型切换不自动删除功能，纸型切换不静默解绑；不得再生成/编辑/遮罩激活码；无逐段保存或第二个 dirty guard。
+- `dataSourceAndCascade`：[静态＋acceptance] 最新 detail 提供现存 refs/version 与只读设备类型；organization 按 ref 返回旧桌台区当前状态/类型，catalog 按 ref 返回旧标签状态；更改当前厨打只改其范围和所指向场景；更改该厨打的某个场景打印机不改同厨打其他场景或其他厨打；激活码与设备类型在任何编辑请求中都不存在。
+- `forbiddenUI`：[静态＋focused] 不得把已作废旧引用默默移出，不得把它塞回新增候选；设备类型在编辑态只读，不得有可修改或禁用选择器；纸型切换不静默解绑；不得再生成/编辑/遮罩激活码；无逐段保存或第二个 dirty guard。
 
 ### TER-A01 · 状态动作菜单
 

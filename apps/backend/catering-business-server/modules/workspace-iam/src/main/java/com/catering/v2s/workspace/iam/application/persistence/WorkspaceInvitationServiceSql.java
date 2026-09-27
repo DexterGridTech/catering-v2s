@@ -10,40 +10,36 @@ public final class WorkspaceInvitationServiceSql {
     public static final String PLACEHOLDER_SEPARATOR = ",";
     public static final String SQL_CLOSE_PAREN = ")";
     public static final String SQL_SPACE = " ";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_INSERT_INTO_INVITATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TOKEN_HASH =
-                    "INSERT INTO workspace_iam.invitation (id, workspace_uuid, group_workspace_key, token_hash, ";
+    public static final String INSERT_INTO_INVITE_WS_UUID_001 =
+            "INSERT INTO workspace_iam.invitation (id, workspace_uuid, group_workspace_key, token_hash, ";
     public static final String WORKSPACE_INVITATION_SERVICE_INVITATION_TOKEN =
             "invitation_token, mobile_normalized, issuer_display_name_snapshot, status, ";
     public static final String WORKSPACE_INVITATION_SERVICE_EXPIRES_AT_EPOCH_MILLIS_VERSION_CREATED_AT_EPOCH_MILLIS =
             "expires_at_epoch_millis, version, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ";
     public static final String WORKSPACE_INVITATION_SERVICE_PENDING = "'PENDING', ?, 1, ?)";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_INSERT_INTO_INVITATION_ASSIGNMENT_INTENT_INVITATION_ID_ROLE_ID =
-                    "INSERT INTO workspace_iam.invitation_assignment_intent (invitation_id, role_id, ";
+    public static final String INSERT_INTO_INVITE_ASSIGN_INTENT_002 =
+            "INSERT INTO workspace_iam.invitation_assignment_intent (invitation_id, role_id, ";
     public static final String WORKSPACE_INVITATION_SERVICE_SERVICE_NODE_TYPE_SERVICE_NODE_ID =
             "service_node_type, service_node_id) VALUES (?, ?, ?, ?)";
     public static final String WORKSPACE_INVITATION_SERVICE_SELECT_INVITATION_SELECT_COUNT_FROM_WORKSPACE_ =
             "SELECT COUNT(*) FROM workspace_iam.invitation i WHERE ";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_SELECT_MOBILE_NORMALIZED_STATUS_EXPIRES_AT_EPOCH_MILLIS_VERSION =
-                    "SELECT i.id, i.mobile_normalized, i.status, i.expires_at_epoch_millis, i.version, ";
+    public static final String SELECT_MOBILE_NORMALIZED_STATUS_EXPIRES_003 =
+            "SELECT i.id, i.mobile_normalized, i.status, i.expires_at_epoch_millis, i.version, ";
     public static final String WORKSPACE_INVITATION_SERVICE_CREATED_AT_EPOCH_MILLIS =
             "i.created_at_epoch_millis, i.consented_at_epoch_millis, i.completed_at_epoch_millis, ";
     public static final String WORKSPACE_INVITATION_SERVICE_INVITATION_CANCELLED_AT_EPOCH_MILLIS_INVITATION_TOKEN =
             "i.cancelled_at_epoch_millis, i.invitation_token FROM workspace_iam.invitation i WHERE ";
     public static final String WORKSPACE_INVITATION_SERVICE_ORDER_BY_ORDER_BY_I = " ORDER BY i.";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_UPDATE_INVITATION_STATUS_CANCELLED_CANCELLED_AT_EPOCH_MILLIS =
-                    "UPDATE workspace_iam.invitation SET status='CANCELLED', cancelled_at_epoch_millis=?, ";
+    public static final String UPDATE_INVITE_STATUS_CANCELLED_AT_004 =
+            "UPDATE workspace_iam.invitation SET status='CANCELLED', cancelled_at_epoch_millis=?, ";
     public static final String WORKSPACE_INVITATION_SERVICE_VERSION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             "version=version+1 WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND ";
     public static final String WORKSPACE_INVITATION_SERVICE_STATUS = "status ";
     public static final String WORKSPACE_INVITATION_SERVICE_PENDING_MOBILE_VERIFIED_VERSION =
             "IN ('PENDING','MOBILE_VERIFIED') AND version=?";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED_STATUS =
-                    "SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, status, expires_at_epoch_millis, ";
+    public static final String SELECT_WS_UUID_GRP_WS_005 =
+            ("SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, statu"
+                    + "s, expires_at_epoch_millis, ");
     public static final String WORKSPACE_INVITATION_SERVICE_INVITATION_VERSION_WORKSPACE_UUID =
             "version FROM workspace_iam.invitation WHERE id=? AND workspace_uuid=? AND ";
     public static final String WORKSPACE_INVITATION_SERVICE_GROUP_WORKSPACE_KEY = "group_workspace_key=?";
@@ -67,9 +63,8 @@ public final class WorkspaceInvitationServiceSql {
             "SELECT role_id, service_node_type, service_node_id FROM workspace_iam.invitation_assignment_intent ";
     public static final String WORKSPACE_INVITATION_SERVICE_WHERE_INVITATION_ID_SERVICE_NODE_TYPE_SERVICE_NODE_ID =
             "WHERE invitation_id=? ORDER BY service_node_type, service_node_id";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_UPDATE_OTP_GRANT_STATUS_USED_USED_AT_EPOCH_MILLIS_SUBJECT_REF =
-                    "UPDATE workspace_iam.otp_grant SET status='USED', used_at_epoch_millis=? WHERE subject_ref=? AND ";
+    public static final String UPDATE_OTP_GRANT_STATUS_USED_006 =
+            "UPDATE workspace_iam.otp_grant SET status='USED', used_at_epoch_millis=? WHERE subject_ref=? AND ";
     public static final String WORKSPACE_INVITATION_SERVICE_PURPOSE_INVITATION_MOBILE_VERIFY_TOKEN_HASH_STATUS =
             "purpose='INVITATION_MOBILE_VERIFY' AND token_hash=? AND status='ACTIVE' AND ";
     public static final String WORKSPACE_INVITATION_SERVICE_EXPIRES_AT_EPOCH_MILLIS = "expires_at_epoch_millis>?";
@@ -90,9 +85,8 @@ public final class WorkspaceInvitationServiceSql {
 
     public static final String WORKSPACE_INVITATION_SERVICE_VERSION_INVITATION_PUBLIC_PROGRESS =
             "version=workspace_iam.invitation_public_progress.version+1";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_UPDATE_INVITATION_PUBLIC_PROGRESS_LOGIN_NAME_NORMALIZED_DISPLAY_NAME =
-                    "UPDATE workspace_iam.invitation_public_progress SET login_name_normalized=?, display_name=?, ";
+    public static final String UPDATE_INVITE_PUBLIC_PROGRESS_LOGIN_007 =
+            "UPDATE workspace_iam.invitation_public_progress SET login_name_normalized=?, display_name=?, ";
     public static final String WORKSPACE_INVITATION_SERVICE_PASSWORD_HASH_CREDENTIAL_READY_AT_EPOCH_MILLIS_VERSION =
             "password_hash=?, credential_ready_at_epoch_millis=?, version=version+1 WHERE ";
     public static final String WORKSPACE_INVITATION_SERVICE_INVITATION_ID = "invitation_id=?";
@@ -104,14 +98,14 @@ public final class WorkspaceInvitationServiceSql {
             "UPDATE workspace_iam.invitation_public_progress SET completion_account_id=?, ";
     public static final String WORKSPACE_INVITATION_SERVICE_COMPLETED_AT_EPOCH_MILLIS_VERSION_INVITATION_ID =
             "completed_at_epoch_millis=?, version=version+1 WHERE invitation_id=?";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED_STATUS_ALTERNATE_A =
-                    "SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, status, expires_at_epoch_millis, ";
+    public static final String SELECT_WS_UUID_GRP_WS_ALT_A_008 =
+            ("SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, statu"
+                    + "s, expires_at_epoch_millis, ");
     public static final String WORKSPACE_INVITATION_SERVICE_INVITATION_VERSION =
             "version FROM workspace_iam.invitation WHERE id=?";
     public static final String WORKSPACE_INVITATION_SERVICE_UPDATE_OTP_GRANT_STATUS_SUPERSEDED_SUBJECT_REF =
             "UPDATE workspace_iam.otp_grant SET status='SUPERSEDED' WHERE subject_ref=? AND ";
-    public static final String WORKSPACE_INVITATION_SERVICE_PURPOSE_INVITATION_MOBILE_VERIFY_STATUS_ACTIVE_ALTERNATE_A =
+    public static final String PURPOSE_INVITE_MOBILE_VERIFY_STATUS_ALT_A_009 =
             "purpose='INVITATION_MOBILE_VERIFY' AND status='ACTIVE'";
     public static final String WORKSPACE_INVITATION_SERVICE_INSERT_INTO_OTP_GRANT =
             "INSERT INTO workspace_iam.otp_grant (id, workspace_uuid, group_workspace_key, purpose, token_hash, ";
@@ -130,18 +124,16 @@ public final class WorkspaceInvitationServiceSql {
     public static final String WORKSPACE_INVITATION_SERVICE_SELECT_INVITATION_ASSIGNMENT_INTENT_ALTERNATE_B =
             "SELECT role_id, service_node_type, service_node_id FROM workspace_iam.invitation_assignment_intent ";
     public static final String WORKSPACE_INVITATION_SERVICE_WHERE_INVITATION_ID_ALTERNATE_A = "WHERE invitation_id=?";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_INSERT_INTO_WORKSPACE_ACCOUNT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, ";
+    public static final String INSERT_INTO_WS_ACCOUNT_WS_010 =
+            "INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, ";
     public static final String WORKSPACE_INVITATION_SERVICE_MOBILE_NORMALIZED =
             "mobile_normalized, login_name_normalized, display_name, status, version, ";
     public static final String WORKSPACE_INVITATION_SERVICE_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_ENABLED =
             "created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, 'ENABLED', ";
     public static final String WORKSPACE_INVITATION_SERVICE_1 = "1, ";
     public static final String WORKSPACE_INVITATION_SERVICE_PARAMETER_PLACEHOLDER_ALTERNATE_A = "?, ?)";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_INSERT_INTO_WORKSPACE_CREDENTIAL_ACCOUNT_ID_PASSWORD_HASH_ALGORITHM =
-                    "INSERT INTO workspace_iam.workspace_credential (account_id, password_hash, algorithm, ";
+    public static final String INSERT_INTO_WS_CREDENTIAL_ACCOUNT_011 =
+            "INSERT INTO workspace_iam.workspace_credential (account_id, password_hash, algorithm, ";
     public static final String WORKSPACE_INVITATION_SERVICE_CHANGED_AT_EPOCH_MILLIS_VERSION_BCRYPT =
             "changed_at_epoch_millis, version) VALUES (?, ?, 'bcrypt', ?, 1)";
     public static final String WORKSPACE_INVITATION_SERVICE_INSERT_INTO_ROLE_ASSIGNMENT =
@@ -152,9 +144,8 @@ public final class WorkspaceInvitationServiceSql {
             "created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ";
     public static final String WORKSPACE_INVITATION_SERVICE_ACTIVE = "'ACTIVE', ";
     public static final String WORKSPACE_INVITATION_SERVICE_1_ALTERNATE_A = "1, ?, ?)";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_UPDATE_INVITATION_STATUS_COMPLETED_COMPLETED_AT_EPOCH_MILLIS =
-                    "UPDATE workspace_iam.invitation SET status='COMPLETED', completed_at_epoch_millis=?, ";
+    public static final String UPDATE_INVITE_STATUS_COMPLETED_AT_012 =
+            "UPDATE workspace_iam.invitation SET status='COMPLETED', completed_at_epoch_millis=?, ";
     public static final String WORKSPACE_INVITATION_SERVICE_VERSION_STATUS_COMPLETING =
             "version=version+1 WHERE id=? AND status='COMPLETING'";
     public static final String WORKSPACE_INVITATION_SERVICE_SELECT_INTENT_INVITATION_ID_ROLE_ID_SERVICE_NODE_TYPE =
@@ -165,9 +156,8 @@ public final class WorkspaceInvitationServiceSql {
             "workspace_iam.workspace_role role ON role.id=intent.role_id WHERE intent.invitation_id IN (";
     public static final String WORKSPACE_INVITATION_SERVICE_SELECT_INVITATION_ISSUER_DISPLAY_NAME_SNAPSHOT =
             "SELECT id, issuer_display_name_snapshot FROM workspace_iam.invitation WHERE id IN (";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE =
-                    "INSERT INTO workspace_iam.audit_event (id, workspace_uuid, group_workspace_key, entity_type, ";
+    public static final String INSERT_INTO_AUDIT_EVENT_WS_013 =
+            "INSERT INTO workspace_iam.audit_event (id, workspace_uuid, group_workspace_key, entity_type, ";
     public static final String WORKSPACE_INVITATION_SERVICE_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT =
             "entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, ";
     public static final String WORKSPACE_INVITATION_SERVICE_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_WORKSPACE_INVITATION =
@@ -175,27 +165,25 @@ public final class WorkspaceInvitationServiceSql {
     public static final String WORKSPACE_INVITATION_SERVICE_PARAMETER_PLACEHOLDER_ALTERNATE_B = "?, ?, ";
     public static final String WORKSPACE_INVITATION_SERVICE_PARAMETER_PLACEHOLDER_CAST_AS_JSONB =
             "?, CAST(? AS JSONB))";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED_STATUS_ALTERNATE_B =
-                    "SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, status, expires_at_epoch_millis, ";
+    public static final String SELECT_WS_UUID_GRP_WS_ALT_B_014 =
+            ("SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, statu"
+                    + "s, expires_at_epoch_millis, ");
 
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_SELECT_MOBILE_NORMALIZED_STATUS_EXPIRES_AT_EPOCH_MILLIS_VERSION_ALTERNATE_A =
-                    "SELECT id, mobile_normalized, status, expires_at_epoch_millis, version, ";
+    public static final String SELECT_MOBILE_NORMALIZED_015 =
+            "SELECT id, mobile_normalized, status, expires_at_epoch_millis, version, ";
     public static final String WORKSPACE_INVITATION_SERVICE_CREATED_AT_EPOCH_MILLIS_ALTERNATE_A =
             "created_at_epoch_millis, consented_at_epoch_millis, completed_at_epoch_millis, ";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_INVITATION_CANCELLED_AT_EPOCH_MILLIS_INVITATION_TOKEN_ALTERNATE_A =
-                    "cancelled_at_epoch_millis, invitation_token FROM workspace_iam.invitation ";
+    public static final String INVITE_CANCELLED_AT_EPOCH_MS_ALT_A_016 =
+            "cancelled_at_epoch_millis, invitation_token FROM workspace_iam.invitation ";
     public static final String WORKSPACE_INVITATION_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             "WHERE id=? AND workspace_uuid=? AND group_workspace_key=?";
     public static final String WORKSPACE_INVITATION_SERVICE_SELECT_WORKSPACE_ACCOUNT_STATUS_WORKSPACE_UUID =
             "SELECT id, status FROM workspace_iam.workspace_account WHERE workspace_uuid=? AND ";
     public static final String WORKSPACE_INVITATION_SERVICE_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED =
             "group_workspace_key=? AND mobile_normalized=?";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_SELECT_WORKSPACE_ROLE_NAME_SERVICE_NODE_TYPE_STATUS_WORKSPACE_UUID =
-                    "SELECT id, name, service_node_type, status FROM workspace_iam.workspace_role WHERE workspace_uuid=? ";
+    public static final String SELECT_WS_ROLE_NAME_SVC_017 =
+            ("SELECT id, name, service_node_type, status FROM workspace_iam.workspace_"
+                    + "role WHERE workspace_uuid=? ");
     public static final String WORKSPACE_INVITATION_SERVICE_CONDITION_GROUP_WORKSPACE_KEY =
             "AND group_workspace_key=? AND id IN (";
     public static final String WORKSPACE_INVITATION_SERVICE_SELECT_INVITATION_PUBLIC_PROGRESS_INVITATION_ID =
@@ -208,9 +196,9 @@ public final class WorkspaceInvitationServiceSql {
             "SELECT login_name_normalized, display_name, password_hash, completion_account_id FROM ";
     public static final String WORKSPACE_INVITATION_SERVICE_INVITATION_PUBLIC_PROGRESS_INVITATION_ID =
             "workspace_iam.invitation_public_progress WHERE invitation_id=?";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED_STATUS_ALTERNATE_C =
-                    "SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, status, expires_at_epoch_millis, ";
+    public static final String SELECT_WS_UUID_GRP_WS_ALT_C_018 =
+            ("SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, statu"
+                    + "s, expires_at_epoch_millis, ");
     public static final String WORKSPACE_INVITATION_SERVICE_INVITATION_VERSION_TOKEN_HASH =
             "version FROM workspace_iam.invitation WHERE token_hash=?";
     public static final String MANAGEMENT_PAGE_ORDER_SUFFIX = ", i.id ASC LIMIT ? OFFSET ?";
@@ -235,8 +223,7 @@ public final class WorkspaceInvitationServiceSql {
             ") ORDER BY intent.invitation_id, intent.service_node_type, intent.service_node_id, role.name";
     public static final String ENABLED_ROLE_LOCK_SUFFIX = ") FOR UPDATE";
     public static final String CLAUSE_JOINER = " AND ";
-    public static final String
-            WORKSPACE_INVITATION_SERVICE_VERIFICATION_GRANT_EXPIRES_AT_EPOCH_MILLIS_EXCLUDED_VERIFICATION_GRANT_EXPIRES_AT_EPOCH_MILLIS_EXCLUDED_VERIFICATION_GRANT_EXPIRES_AT_EPOCH_MILLIS =
-                    """
+    public static final String VERIFICATION_GRANT_EXPIRES_AT_EPOCH_019 =
+            """
     verification_grant_expires_at_epoch_millis=EXCLUDED.verification_grant_expires_at_epoch_millis,\s""";
 }

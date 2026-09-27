@@ -17,7 +17,6 @@ const nodeTestFiles = Object.freeze([
   'scripts/dev/external-collaboration-business-channel-seed-executor.test.mjs',
   'scripts/dev/r5-dev-command-wrapper.test.mjs',
   'scripts/dev/r5-complete-seed-executor.test.mjs',
-  'scripts/dev/r5-fixture-contract.test.mjs',
   'scripts/dev/managed-diagnostic-protocol.test.mjs',
   'scripts/dev/owner-command-seed-executor.test.mjs',
   'scripts/dev/r5-otp-debug-exposure.test.mjs',
@@ -46,6 +45,7 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/catalog-p3-model-migration.test.mjs',
   'scripts/test/catalog-inventory-seed-identity.test.mjs',
   'scripts/test/extension-field-contract-structure.test.mjs',
+  'scripts/test/edge-operation-projections.test.mjs',
   'scripts/test/frontend-idempotency-boundary.test.mjs',
   'scripts/test/frontend-transport-cache-lifecycle.test.mjs',
   'scripts/test/managed-run-summary.test.mjs',
@@ -56,6 +56,7 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/standards-enforcement-execution-catalog.test.mjs',
   'scripts/test/standards-enforcement-verify.test.mjs',
   'scripts/test/ter-virtual-keyboard-android.test.mjs',
+  'scripts/test/terminal-ws-wire-client.test.mjs',
 ]);
 
 const sorted = values => [...values].sort((left, right) => left.localeCompare(right));

@@ -1,0 +1,466 @@
+openapi: 3.0.3
+info: {title: Business entity components, version: 0.1.0}
+paths: {}
+components:
+  schemas:
+    BusinessEntityStatus:
+      type: string
+      enum: [ENABLED, DISABLED]
+    BusinessEntitySource:
+      type: string
+      enum: [MANUAL, EXTERNAL_SYNC]
+    BusinessEntitySortKey:
+      type: string
+      enum: [NAME, CODE, UPDATED_AT]
+    BusinessEntitySortDirection:
+      type: string
+      enum: [ASC, DESC]
+    BusinessEntityBrandSummary:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, status]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        status: {$ref: '#/components/schemas/BusinessEntityStatus'}
+    BusinessEntityPageMetadata:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, page, pageSize, total, sort, direction]
+      properties:
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        page: {type: integer, minimum: 1}
+        pageSize: {type: integer, minimum: 1, maximum: 100}
+        total: {type: integer, format: int64, minimum: 0}
+        sort: {$ref: '#/components/schemas/BusinessEntitySortKey'}
+        direction: {$ref: '#/components/schemas/BusinessEntitySortDirection'}
+    Brand:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceKey, code, name, extensionValues, extensionRuleRevision, status, source, revision, createdAt, updatedAt]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        alias: {type: string, nullable: true, maxLength: 120}
+        remark: {type: string, nullable: true, maxLength: 2000}
+        externalCode: {type: string, nullable: true, maxLength: 120}
+        extensionValues: {type: object, additionalProperties: true}
+        extensionRuleRevision: {type: integer, format: int64, minimum: 0}
+        status: {$ref: '#/components/schemas/BusinessEntityStatus'}
+        source: {$ref: '#/components/schemas/BusinessEntitySource'}
+        revision: {type: integer, format: int64, minimum: 0}
+        createdAt: {type: integer, format: int64, minimum: 0}
+        updatedAt: {type: integer, format: int64, minimum: 0}
+    Tenant:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceKey, code, name, legalName, unifiedSocialCreditCode, extensionValues, extensionRuleRevision, status, source, revision, createdAt, updatedAt]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        legalName: {type: string, minLength: 1, maxLength: 200}
+        unifiedSocialCreditCode: {type: string, minLength: 1, maxLength: 32}
+        remark: {type: string, nullable: true, maxLength: 2000}
+        externalCode: {type: string, nullable: true, maxLength: 120}
+        legalExternalCode: {type: string, nullable: true, maxLength: 120}
+        extensionValues: {type: object, additionalProperties: true}
+        extensionRuleRevision: {type: integer, format: int64, minimum: 0}
+        status: {$ref: '#/components/schemas/BusinessEntityStatus'}
+        source: {$ref: '#/components/schemas/BusinessEntitySource'}
+        revision: {type: integer, format: int64, minimum: 0}
+        createdAt: {type: integer, format: int64, minimum: 0}
+        updatedAt: {type: integer, format: int64, minimum: 0}
+    HeadCompany:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceKey, code, name, legalName, unifiedSocialCreditCode, authorizedBrands, extensionValues, extensionRuleRevision, status, source, revision, createdAt, updatedAt]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        legalName: {type: string, minLength: 1, maxLength: 200}
+        unifiedSocialCreditCode: {type: string, minLength: 1, maxLength: 32}
+        remark: {type: string, nullable: true, maxLength: 2000}
+        externalCode: {type: string, nullable: true, maxLength: 120}
+        legalExternalCode: {type: string, nullable: true, maxLength: 120}
+        authorizedBrands: {type: array, items: {$ref: '#/components/schemas/BusinessEntityBrandSummary'}}
+        extensionValues: {type: object, additionalProperties: true}
+        extensionRuleRevision: {type: integer, format: int64, minimum: 0}
+        status: {$ref: '#/components/schemas/BusinessEntityStatus'}
+        source: {$ref: '#/components/schemas/BusinessEntitySource'}
+        revision: {type: integer, format: int64, minimum: 0}
+        createdAt: {type: integer, format: int64, minimum: 0}
+        updatedAt: {type: integer, format: int64, minimum: 0}
+    BrandPage:
+      type: object
+      additionalProperties: false
+      required: [metadata, items]
+      properties:
+        metadata: {$ref: '#/components/schemas/BusinessEntityPageMetadata'}
+        items: {type: array, items: {$ref: '#/components/schemas/Brand'}}
+    TenantPage:
+      type: object
+      additionalProperties: false
+      required: [metadata, items]
+      properties:
+        metadata: {$ref: '#/components/schemas/BusinessEntityPageMetadata'}
+        items: {type: array, items: {$ref: '#/components/schemas/Tenant'}}
+    HeadCompanyPage:
+      type: object
+      additionalProperties: false
+      required: [metadata, items]
+      properties:
+        metadata: {$ref: '#/components/schemas/BusinessEntityPageMetadata'}
+        items: {type: array, items: {$ref: '#/components/schemas/HeadCompany'}}
+    BrandCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name, expectedContextVersion]
+      properties:
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        alias: {type: string, nullable: true, maxLength: 120}
+        remark: {type: string, nullable: true, maxLength: 2000}
+        extensionValues: {type: object, nullable: true, additionalProperties: true}
+        expectedExtensionRuleRevision: {type: integer, format: int64, nullable: true, minimum: 0}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    BrandUpdateRequest:
+      allOf:
+        - {$ref: '#/components/schemas/BrandCreateRequest'}
+        - type: object
+          required: [expectedRevision, expectedContextVersion]
+          properties:
+            expectedRevision: {type: integer, format: int64, minimum: 0}
+    TenantCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name, legalName, unifiedSocialCreditCode, expectedContextVersion]
+      properties:
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        legalName: {type: string, minLength: 1, maxLength: 200}
+        unifiedSocialCreditCode: {type: string, minLength: 1, maxLength: 32}
+        remark: {type: string, nullable: true, maxLength: 2000}
+        extensionValues: {type: object, nullable: true, additionalProperties: true}
+        expectedExtensionRuleRevision: {type: integer, format: int64, nullable: true, minimum: 0}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    TenantUpdateRequest:
+      allOf:
+        - {$ref: '#/components/schemas/TenantCreateRequest'}
+        - type: object
+          required: [expectedRevision, expectedContextVersion]
+          properties:
+            expectedRevision: {type: integer, format: int64, minimum: 0}
+    HeadCompanyCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name, legalName, unifiedSocialCreditCode, expectedContextVersion]
+      properties:
+        code: {type: string, minLength: 1, maxLength: 64}
+        name: {type: string, minLength: 1, maxLength: 120}
+        legalName: {type: string, minLength: 1, maxLength: 200}
+        unifiedSocialCreditCode: {type: string, minLength: 1, maxLength: 32}
+        remark: {type: string, nullable: true, maxLength: 2000}
+        extensionValues: {type: object, nullable: true, additionalProperties: true}
+        expectedExtensionRuleRevision: {type: integer, format: int64, nullable: true, minimum: 0}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    HeadCompanyUpdateRequest:
+      allOf:
+        - {$ref: '#/components/schemas/HeadCompanyCreateRequest'}
+        - type: object
+          required: [expectedRevision, expectedContextVersion]
+          properties:
+            expectedRevision: {type: integer, format: int64, minimum: 0}
+    BusinessEntityStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [targetStatus, expectedRevision, expectedContextVersion]
+      properties:
+        targetStatus: {$ref: '#/components/schemas/BusinessEntityStatus'}
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    HeadCompanyBrandAuthorizationRequest:
+      type: object
+      additionalProperties: false
+      required: [brandIds, expectedRevision, expectedContextVersion]
+      properties:
+        brandIds: {type: array, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 64}}
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    HeadCompanyBrandAuthorizationResult:
+      type: object
+      additionalProperties: false
+      required: [headCompany, affectedStoreCount]
+      properties:
+        headCompany: {$ref: '#/components/schemas/HeadCompany'}
+        affectedStoreCount: {type: integer, format: int64, minimum: 0}
+    WorkspaceBusinessActionAuthorizationRequest:
+      type: object
+      additionalProperties: false
+      required: [sessionToken, pageDesignKey, capabilityKey, expectedContextVersion, targetType, targetRef, expectedTopologyRevision]
+      properties:
+        sessionToken: {type: string, minLength: 16, maxLength: 256}
+        pageDesignKey: {type: string, minLength: 1, maxLength: 80}
+        capabilityKey: {type: string, minLength: 1, maxLength: 120}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+        targetType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        targetRef: {type: string, minLength: 1, maxLength: 64}
+        expectedTopologyRevision: {type: integer, format: int64, minimum: 0}
+    WorkspaceBusinessActionAuthorization:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, pageDesignKey, capabilityKey, contextVersion, topologyRevision]
+      properties:
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        pageDesignKey: {type: string, minLength: 1, maxLength: 80}
+        capabilityKey: {type: string, minLength: 1, maxLength: 120}
+        contextVersion: {type: integer, format: int64, minimum: 0}
+        topologyRevision: {type: integer, format: int64, minimum: 0}
+    OwnerCommandAuthorizationProofRequest:
+      description: >-
+        Gateway-only request for a short-lived, operation-bound authorization proof. A page grant is deliberately
+        absent: page entry controls reads, while the command owner authorizes writes from the capability and role-node ancestry.
+      type: object
+      additionalProperties: false
+      required: [sessionToken, capability, operationId, targetType, targetRef, expectedContextVersion]
+      properties:
+        sessionToken: {type: string, minLength: 16, maxLength: 256}
+        capability: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceBusinessCapability'}
+        operationId: {type: string, minLength: 1, maxLength: 120}
+        targetType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        targetRef: {type: string, minLength: 1, maxLength: 64}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    OwnerCommandAuthorizationProof:
+      description: >-
+        A workspace-IAM-issued, Ed25519-signed proof for exactly one owner command. The fourteen claims are stable
+        cross-owner truth; keyId and signature are envelope verification material and are not authorization claims.
+      type: object
+      additionalProperties: false
+      required: [proofId, workspaceKey, accountId, roleAssignmentRef, roleNodeType, roleNodeRef, capability,
+        contextVersion, authorizationRevision, operationId, targetType, targetRef, issuedAt, expiresAt, keyId, signature]
+      properties:
+        proofId: {type: string, format: uuid}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        accountId: {type: string, format: uuid}
+        roleAssignmentRef: {type: string, minLength: 1, maxLength: 64}
+        roleNodeType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        roleNodeRef: {type: string, minLength: 1, maxLength: 64}
+        capability: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceBusinessCapability'}
+        contextVersion: {type: integer, format: int64, minimum: 0}
+        authorizationRevision: {type: integer, format: int64, minimum: 0}
+        operationId: {type: string, minLength: 1, maxLength: 120}
+        targetType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        targetRef: {type: string, minLength: 1, maxLength: 64}
+        issuedAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        expiresAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+        keyId: {type: string, minLength: 1, maxLength: 120}
+        signature: {type: string, minLength: 1, maxLength: 1024}
+    WorkspaceAuthorizationProjectionAssignment:
+      description: >-
+        Workspace-IAM-owned command-authorization fact. Consumers use it only to reject a proof whose
+        assignment is no longer active or whose role-node fact differs; it never grants access by itself.
+      type: object
+      additionalProperties: false
+      required: [roleAssignmentRef, roleNodeType, roleNodeRef, status]
+      properties:
+        roleAssignmentRef: {type: string, minLength: 1, maxLength: 64}
+        roleNodeType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        roleNodeRef: {type: string, minLength: 1, maxLength: 64}
+        status: {type: string, enum: [ACTIVE, REVOKED]}
+    WorkspaceAuthorizationProjectionEventV1:
+      description: >-
+        Workspace-IAM-owned, workspace-scoped authorization projection. It carries the monotonic
+        authorization revision, proof acceptance epoch and active assignment facts needed by command owners
+        to fail closed without a synchronous workspace-IAM read.
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, eventId, eventType, workspaceKey, previousRevision, revision,
+        proofAcceptanceEpoch, occurredAt, assignments]
+      properties:
+        schemaVersion: {type: integer, minimum: 1, maximum: 1}
+        eventId: {type: string, format: uuid}
+        eventType: {type: string, enum: [WORKSPACE_AUTHORIZATION_PROJECTION_CHANGED]}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        previousRevision: {type: integer, format: int64, minimum: 0}
+        revision: {type: integer, format: int64, minimum: 1}
+        proofAcceptanceEpoch: {type: integer, format: int64, minimum: 1}
+        occurredAt: {type: integer, format: int64, minimum: 0}
+        assignments:
+          type: array
+          maxItems: 100000
+          items: {$ref: '#/components/schemas/WorkspaceAuthorizationProjectionAssignment'}
+    WorkspaceAuthorizationProjectionRepairRequestedV1:
+      description: >-
+        Durable command-owner-to-workspace-IAM repair request for a gapped authorization projection.
+        It never permits a synchronous authorization fallback.
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, eventId, eventType, workspaceKey, appliedRevision, occurredAt]
+      properties:
+        schemaVersion: {type: integer, minimum: 1, maximum: 1}
+        eventId: {type: string, format: uuid}
+        eventType: {type: string, enum: [WORKSPACE_AUTHORIZATION_PROJECTION_REPAIR_REQUESTED]}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        appliedRevision: {type: integer, format: int64, minimum: 0}
+        occurredAt: {type: integer, format: int64, minimum: 0}
+    WorkspaceOrganizationAuthorizationClosureEntry:
+      type: object
+      additionalProperties: false
+      required: [ancestorType, ancestorRef, descendantType, descendantRef, depth]
+      properties:
+        ancestorType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        ancestorRef: {type: string, minLength: 1, maxLength: 64}
+        descendantType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        descendantRef: {type: string, minLength: 1, maxLength: 64}
+        depth: {type: integer, minimum: 0, maximum: 8}
+    WorkspaceOrganizationAuthorizationNode:
+      type: object
+      additionalProperties: false
+      required: [nodeType, nodeRef, nodeName, displayPath, status]
+      properties:
+        nodeType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        nodeRef: {type: string, minLength: 1, maxLength: 64}
+        nodeName: {type: string, minLength: 1, maxLength: 160}
+        displayPath: {type: string, minLength: 1, maxLength: 640}
+        status: {type: string, enum: [ENABLED, DISABLED]}
+    OrganizationAuthorizationNodeKey:
+      type: object
+      additionalProperties: false
+      required: [nodeType, nodeRef]
+      properties:
+        nodeType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        nodeRef: {type: string, minLength: 1, maxLength: 64}
+    OrganizationAuthorizationClosureKey:
+      type: object
+      additionalProperties: false
+      required: [ancestorType, ancestorRef, descendantType, descendantRef]
+      properties:
+        ancestorType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        ancestorRef: {type: string, minLength: 1, maxLength: 64}
+        descendantType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        descendantRef: {type: string, minLength: 1, maxLength: 64}
+    OrganizationAuthorizationProjectionEventV1:
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, eventId, eventType, workspaceKey, previousRevision, revision, mode, occurredAt, nodeUpserts, nodeDeletes, closureUpserts, closureDeletes]
+      properties:
+        schemaVersion: {type: integer, minimum: 1, maximum: 1}
+        eventId: {type: string, format: uuid}
+        eventType: {type: string, enum: [ORGANIZATION_AUTHORIZATION_PROJECTION_CHANGED]}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        previousRevision: {type: integer, format: int64, minimum: 0}
+        revision: {type: integer, format: int64, minimum: 1}
+        mode: {type: string, enum: [DELTA, SNAPSHOT]}
+        occurredAt: {type: integer, format: int64, minimum: 0}
+        nodeUpserts:
+          type: array
+          maxItems: 10000
+          items: {$ref: '#/components/schemas/WorkspaceOrganizationAuthorizationNode'}
+        nodeDeletes:
+          type: array
+          maxItems: 10000
+          items: {$ref: '#/components/schemas/OrganizationAuthorizationNodeKey'}
+        closureUpserts:
+          type: array
+          maxItems: 20000
+          items: {$ref: '#/components/schemas/WorkspaceOrganizationAuthorizationClosureEntry'}
+        closureDeletes:
+          type: array
+          maxItems: 20000
+          items: {$ref: '#/components/schemas/OrganizationAuthorizationClosureKey'}
+    OrganizationAuthorizationProjectionRepairRequestedV1:
+      description: >-
+        Durable consumer-to-owner repair request. It identifies a workspace and the locally applied
+        revision only; it carries no authorization fact and must never trigger a synchronous owner read.
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, eventId, eventType, workspaceKey, appliedRevision, occurredAt]
+      properties:
+        schemaVersion: {type: integer, minimum: 1, maximum: 1}
+        eventId: {type: string, format: uuid}
+        eventType: {type: string, enum: [ORGANIZATION_AUTHORIZATION_PROJECTION_REPAIR_REQUESTED]}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        appliedRevision: {type: integer, format: int64, minimum: 0}
+        occurredAt: {type: integer, format: int64, minimum: 0}
+    OrganizationContractReference:
+      type: object
+      additionalProperties: false
+      required: [id, code, name]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 64}
+        code: {type: string, minLength: 1, maxLength: 80}
+        name: {type: string, minLength: 1, maxLength: 160}
+    OrganizationContractReferenceProject:
+      type: object
+      additionalProperties: false
+      required: [group, region, project, status, phases]
+      properties:
+        group: {$ref: '#/components/schemas/OrganizationContractReference'}
+        region: {$ref: '#/components/schemas/OrganizationContractReference'}
+        project: {$ref: '#/components/schemas/OrganizationContractReference'}
+        status: {type: string, enum: [ENABLED, DISABLED]}
+        phases:
+          type: array
+          maxItems: 200
+          items: {type: string, minLength: 1, maxLength: 120}
+    OrganizationContractReferenceStore:
+      type: object
+      additionalProperties: false
+      required: [store, project, tenant, status]
+      properties:
+        store: {$ref: '#/components/schemas/OrganizationContractReference'}
+        project: {$ref: '#/components/schemas/OrganizationContractReference'}
+        tenant: {$ref: '#/components/schemas/OrganizationContractReference'}
+        status: {type: string, enum: [ENABLED, DISABLED]}
+    OrganizationContractReferenceProjectionEventV1:
+      description: >-
+        Organization-owned, workspace-scoped contract reference projection. It is not an authorization
+        projection. Consumers apply it locally and fail closed on unknown, stale or gapped revisions.
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, eventId, eventType, workspaceKey, previousRevision, revision, mode, occurredAt, projectUpserts, projectDeletes, storeUpserts, storeDeletes]
+      properties:
+        schemaVersion: {type: integer, minimum: 1, maximum: 1}
+        eventId: {type: string, format: uuid}
+        eventType: {type: string, enum: [ORGANIZATION_CONTRACT_REFERENCE_PROJECTION_CHANGED]}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        previousRevision: {type: integer, format: int64, minimum: 0}
+        revision: {type: integer, format: int64, minimum: 1}
+        mode: {type: string, enum: [DELTA, SNAPSHOT]}
+        occurredAt: {type: integer, format: int64, minimum: 0}
+        projectUpserts:
+          type: array
+          maxItems: 10000
+          items: {$ref: '#/components/schemas/OrganizationContractReferenceProject'}
+        projectDeletes:
+          type: array
+          maxItems: 10000
+          items: {type: string, minLength: 1, maxLength: 64}
+        storeUpserts:
+          type: array
+          maxItems: 10000
+          items: {$ref: '#/components/schemas/OrganizationContractReferenceStore'}
+        storeDeletes:
+          type: array
+          maxItems: 10000
+          items: {type: string, minLength: 1, maxLength: 64}
+    OrganizationContractReferenceProjectionRepairRequestedV1:
+      description: >-
+        Durable Contract consumer-to-Organization owner repair request for the non-authorizing
+        contract-reference projection. It never authorizes a synchronous owner read.
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, eventId, eventType, workspaceKey, appliedRevision, occurredAt]
+      properties:
+        schemaVersion: {type: integer, minimum: 1, maximum: 1}
+        eventId: {type: string, format: uuid}
+        eventType: {type: string, enum: [ORGANIZATION_CONTRACT_REFERENCE_PROJECTION_REPAIR_REQUESTED]}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        appliedRevision: {type: integer, format: int64, minimum: 0}
+        occurredAt: {type: integer, format: int64, minimum: 0}

@@ -82,15 +82,12 @@ public class CollaborationOwnerPersistence {
 
     public List<EnablementSnapshot> readTree(UUID workspaceUuid, String groupWorkspaceKey) {
         return jdbc.query(
-                CollaborationOwnerServiceSql
-                                .COLLABORATION_OWNER_SERVICE_SELECT_EXTERNAL_SYSTEM_ENABLEMENT_KIND_EXTERNAL_SYSTEM_CODE_CODE
+                CollaborationOwnerServiceSql.SELECT_EXTERNAL_SYSTEM_ENABLEMENT_KIND_001
                         + CollaborationOwnerServiceSql
                                 .COLLABORATION_OWNER_SERVICE_FROM_CLAUSE_EXTERNAL_SYSTEM_ENABLEMENT_WORKSPACE_UUID
-                        + CollaborationOwnerServiceSql
-                                .COLLABORATION_OWNER_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_PROVIDER_PROFILE_ENABLEMENT_KIND
+                        + CollaborationOwnerServiceSql.CONDITION_GRP_WS_KEY_PROV_002
                         + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_PROVIDER_CODE_CODE_STATUS_VERSION
-                        + CollaborationOwnerServiceSql
-                                .COLLABORATION_OWNER_SERVICE_FROM_CLAUSE_PROVIDER_PROFILE_ENABLEMENT_FROM_COLLABORATION_PROVIDER_
+                        + CollaborationOwnerServiceSql.FROM_CLAUSE_PROV_PROFILE_ENABLEMENT_003
                         + CollaborationOwnerServiceSql
                                 .COLLABORATION_OWNER_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
@@ -148,8 +145,7 @@ public class CollaborationOwnerPersistence {
                                 + CollaborationOwnerServiceSql
                                         .COLLABORATION_OWNER_SERVICE_VALUE_SEPARATOR_STATUS_VERSION
                                 + kind.table
-                                + CollaborationOwnerServiceSql
-                                        .COLLABORATION_OWNER_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_D,
+                                + CollaborationOwnerServiceSql.WHERE_WS_UUID_GRP_WS_ALT_D_016,
                         statement -> {
                             statement.setObject(1, workspaceUuid);
                             statement.setString(2, groupWorkspaceKey);
@@ -224,9 +220,7 @@ public class CollaborationOwnerPersistence {
 
     public BindingRow readBindingForUpdate(UUID workspaceUuid, String groupWorkspaceKey, UUID bindingRef) {
         return jdbc.query(
-                bindingSelect(
-                        CollaborationOwnerServiceSql
-                                .COLLABORATION_OWNER_SERVICE_WHERE_BINDING_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A),
+                bindingSelect(CollaborationOwnerServiceSql.WHERE_BINDING_REF_WS_UUID_ALT_A_015),
                 statement -> {
                     statement.setObject(1, bindingRef);
                     statement.setObject(2, workspaceUuid);
@@ -293,8 +287,7 @@ public class CollaborationOwnerPersistence {
                 + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_JOIN_ANCESTRY_PARENT_ID_PARENT_WORKSPACE_UUID
                 + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_CONDITION_PARENT_GROUP_WORKSPACE_KEY
                 + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_CLOSE_PAREN_NODE_PATHS
-                + CollaborationOwnerServiceSql
-                        .COLLABORATION_OWNER_SERVICE_SELECT_TARGET_NODE_TYPE_TARGET_NODE_REF_JSONB_AGG_JSONB_BUILD_OBJECT
+                + CollaborationOwnerServiceSql.SELECT_TARGET_NODE_TYPE_TARGET_004
                 + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_NAME_NODE_TYPE_PATH_NODE_TYPE_DEPTH
                 + CollaborationOwnerServiceSql
                         .COLLABORATION_OWNER_SERVICE_FROM_CLAUSE_ANCESTRY_TARGET_NODE_TYPE_TARGET_NODE_REF
@@ -408,20 +401,15 @@ public class CollaborationOwnerPersistence {
             UUID workspaceUuid, String groupWorkspaceKey, String providerCode, String nodeType, String nodeRef) {
         return jdbc
                 .query(
-                        CollaborationOwnerServiceSql
-                                        .COLLABORATION_OWNER_SERVICE_SELECT_BINDING_REF_EXTERNAL_SYSTEM_CODE_PROVIDER_CODE_CAPABILITY_CLASS
+                        CollaborationOwnerServiceSql.SELECT_BINDING_REF_EXTERNAL_SYSTEM_005
                                 + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_NODE_TYPE_NODE_REF
                                 + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_BINDING_DISPLAY_NAME
                                 + CollaborationOwnerServiceSql
                                         .COLLABORATION_OWNER_SERVICE_UNBIND_REQUESTED_AT_EPOCH_MILLIS
-                                + CollaborationOwnerServiceSql
-                                        .COLLABORATION_OWNER_SERVICE_DELETE_DELETED_AT_EPOCH_MILLIS_VERSION_CREATED_AT_EPOCH_MILLIS
-                                + CollaborationOwnerServiceSql
-                                        .COLLABORATION_OWNER_SERVICE_STATUS_CHANGED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
-                                + CollaborationOwnerServiceSql
-                                        .COLLABORATION_OWNER_SERVICE_FROM_CLAUSE_OWNER_BINDING_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                                + CollaborationOwnerServiceSql
-                                        .COLLABORATION_OWNER_SERVICE_CONDITION_PROVIDER_CODE_NODE_TYPE_NODE_REF_BINDING_REF,
+                                + CollaborationOwnerServiceSql.DELETE_DELETED_AT_EPOCH_MS_006
+                                + CollaborationOwnerServiceSql.STATUS_CHANGED_AT_EPOCH_MS_007
+                                + CollaborationOwnerServiceSql.FROM_CLAUSE_OWNER_BINDING_WS_008
+                                + CollaborationOwnerServiceSql.CONDITION_PROV_CODE_NODE_TYPE_009,
                         statement -> {
                             statement.setObject(1, workspaceUuid);
                             statement.setString(2, groupWorkspaceKey);
@@ -448,8 +436,7 @@ public class CollaborationOwnerPersistence {
         UUID bindingRef = UUID.randomUUID();
         long now = time.currentEpochMillis();
         return jdbc.query(
-                CollaborationOwnerServiceSql
-                                .COLLABORATION_OWNER_SERVICE_INSERT_INTO_OWNER_BINDING_BINDING_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                CollaborationOwnerServiceSql.INSERT_INTO_OWNER_BINDING_REF_010
                         + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_EXTERNAL_SYSTEM_CODE
                         + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_BINDING_DISPLAY_NAME_ALTERNATE_A
                         + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_CREATED_AT_EPOCH_MILLIS
@@ -486,8 +473,7 @@ public class CollaborationOwnerPersistence {
                                 .COLLABORATION_OWNER_SERVICE_UPDATE_OWNER_BINDING_BINDING_DISPLAY_NAME_EXTERNAL_OWNER_ID
                         + CollaborationOwnerServiceSql
                                 .COLLABORATION_OWNER_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS_BINDING_REF
-                        + CollaborationOwnerServiceSql
-                                .COLLABORATION_OWNER_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION_STATUS,
+                        + CollaborationOwnerServiceSql.CONDITION_WS_UUID_GRP_WS_011,
                 bindingDisplayName,
                 externalOwnerId,
                 time.currentEpochMillis(),
@@ -506,8 +492,7 @@ public class CollaborationOwnerPersistence {
                                 .COLLABORATION_OWNER_SERVICE_UPDATE_OWNER_BINDING_STATUS_DELETED_AT_EPOCH_MILLIS
                         + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_STATUS_CHANGED_AT_EPOCH_MILLIS
                         + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_WHERE_BINDING_REF
-                        + CollaborationOwnerServiceSql
-                                .COLLABORATION_OWNER_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION_STATUS_ALTERNATE_A
+                        + CollaborationOwnerServiceSql.CONDITION_WS_UUID_GRP_WS_ALT_A_012
                         + bindingColumns(),
                 statement -> {
                     statement.setString(1, "DELETED");
@@ -527,8 +512,7 @@ public class CollaborationOwnerPersistence {
             UUID bindingRef, String externalOwnerId, String authorizationReference, long expectedVersion) {
         long now = time.currentEpochMillis();
         return jdbc.update(
-                CollaborationOwnerServiceSql
-                                .COLLABORATION_OWNER_SERVICE_UPDATE_OWNER_BINDING_EXTERNAL_OWNER_ID_AUTHORIZATION_REF_STATUS
+                CollaborationOwnerServiceSql.UPDATE_OWNER_BINDING_EXTERNAL_OWNER_013
                         + CollaborationOwnerServiceSql
                                 .COLLABORATION_OWNER_SERVICE_STATUS_CHANGED_AT_EPOCH_MILLIS_ALTERNATE_A
                         + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_WHERE_BINDING_REF_VERSION,
@@ -544,8 +528,7 @@ public class CollaborationOwnerPersistence {
     public int applyRevocation(UUID bindingRef, long expectedVersion) {
         long now = time.currentEpochMillis();
         return jdbc.update(
-                CollaborationOwnerServiceSql
-                                .COLLABORATION_OWNER_SERVICE_UPDATE_OWNER_BINDING_EXTERNAL_REVOKED_AT_EPOCH_MILLIS_STATUS
+                CollaborationOwnerServiceSql.UPDATE_OWNER_BINDING_EXTERNAL_REVOKED_014
                         + CollaborationOwnerServiceSql
                                 .COLLABORATION_OWNER_SERVICE_STATUS_CHANGED_AT_EPOCH_MILLIS_ALTERNATE_B
                         + CollaborationOwnerServiceSql
@@ -587,8 +570,7 @@ public class CollaborationOwnerPersistence {
                                 .COLLABORATION_OWNER_SERVICE_UNION_STORE_TARGET_TARGET_TYPE_TARGET_ID_PROJECT
                         + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_PROJECT_PARENT_ID_NODE_TYPE_CODE
                         + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_FROM_CLAUSE_ORGANIZATION_NODE_PROJECT
-                        + CollaborationOwnerServiceSql
-                                .COLLABORATION_OWNER_SERVICE_JOIN_CONDITION_PROJECT_STORE_TARGET_PROJECT_ID_WORKSPACE_UUID
+                        + CollaborationOwnerServiceSql.JOIN_CONDITION_PROJECT_STORE_TARGET_017
                         + CollaborationOwnerServiceSql
                                 .COLLABORATION_OWNER_SERVICE_CONDITION_PROJECT_GROUP_WORKSPACE_KEY_TARGET
                         + CollaborationOwnerServiceSql.COLLABORATION_OWNER_SERVICE_CLOSE_PAREN_ANCESTRY
@@ -656,8 +638,7 @@ public class CollaborationOwnerPersistence {
 
     public void writeAudit(AuditRecord record) {
         jdbc.update(
-                CollaborationOwnerServiceSql
-                                .COLLABORATION_OWNER_SERVICE_INSERT_INTO_AUDIT_EVENT_EVENT_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                CollaborationOwnerServiceSql.INSERT_INTO_AUDIT_EVENT_REF_018
                         + CollaborationOwnerServiceSql
                                 .COLLABORATION_OWNER_SERVICE_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT_ENTITY_TYPE
                         + CollaborationOwnerServiceSql

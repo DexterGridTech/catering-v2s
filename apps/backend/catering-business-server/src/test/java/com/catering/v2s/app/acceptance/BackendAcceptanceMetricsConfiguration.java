@@ -9,9 +9,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 
 /** Wires the existing production interceptor snapshot into this focused HTTP test. */
 @TestConfiguration(proxyBeanMethods = false)
+@Profile("!backend-acceptance-secondary")
 public class BackendAcceptanceMetricsConfiguration {
     @Bean
     BackendAcceptanceDatabaseMetricsSink backendAcceptanceDatabaseMetricsSink() {

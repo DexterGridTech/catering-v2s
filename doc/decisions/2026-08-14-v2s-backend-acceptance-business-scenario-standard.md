@@ -12,13 +12,13 @@
 ## 1. 当前能力边界
 
 `backend-acceptance` 是后台统一测试的唯一能力。它在真实远端 Testcontainers 中启动真实
-业务应用，通过真实 HTTP 串行执行当前已实现的业务场景。当前场景覆盖 IAM、ORG、商业合同、asset
+业务应用，并按获批拓扑启动单独管理的真实 TDS 进程；业务场景通过真实 HTTP 串行执行，TDS 传输场景通过真实 WebSocket 执行 CONTRACT 检查。当前业务场景覆盖 IAM、ORG、商业合同、asset
 与 Catalog；Catalog 组已完成其全部真实场景验证并计入当前能力。后续按业务价值逐条扩展，
 **场景总数不设上限**(Dexter 2026-08-27 裁定去除原 80 条上限)。
 
 一次场景结果必须分开表达：
 
-- `CONTRACT`：真实 HTTP 调用、状态码和通用响应/Problem 形状是否符合预期；
+- `CONTRACT`：真实 HTTP 调用的状态码和通用响应/Problem 形状，以及真实 TDS WebSocket 握手、协商扩展、帧/关闭码和协议形状；WebSocket CONTRACT 不冒充业务语义断言；
 - `BUSINESS`：手写的、面向当前 operation 业务语义的真值断言是否通过；
 - `DB_OPERATIONS`：生产 interceptor 统计的数据库调用数；在单条业务 scenario 内仍只作信息项，
   不参与 `CONTRACT`/`BUSINESS` verdict。Dexter 2026-08-22 另行恢复的是**独立 run-level operation
@@ -36,7 +36,7 @@
 
 `apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceTest.java`
 
-该类负责 JUnit/Testcontainers 生命周期、真实 HTTP 上下文、共享 fixture/helper、DB 计数和结果
+该类负责 JUnit/Testcontainers 生命周期、两份真实业务 HTTP 上下文、单独 TDS 进程的受管起停、共享 fixture/helper、DB 计数和结果
 写入；不得继续向其中堆积业务 scenario 方法。
 
 业务 scenario 按 owner 业务域放在以下当前 catalog 已登记的 domain group 中：
@@ -50,11 +50,15 @@
 - `ExtensionAcceptanceScenarios.java`
 - `CollaborationAcceptanceScenarios.java`（本批新增）
 - `BusinessChannelAcceptanceScenarios.java`（本批新增）
+- `StoreTerminalAcceptanceScenarios.java`（terminal-binding 业务场景）
 
-`BackendAcceptanceScenarioCatalog` 显式持有已验证的 domain group，通过 `@AcceptanceScenario`
+`BackendAcceptanceScenarioCatalog` 显式持有已验证的 business domain group，通过 `@AcceptanceScenario`
 发现方法并按稳定 ID 排序。新增 scenario 必须放入正确的 domain group，使用唯一的
 `module.operation` ID，并让 catalog 自动发现；不得新增 provider 壳、共享 SPI、JSON registry、
 按接口数量生成的目录或中央巨型 workload。
+
+TDS/WebSocket CONTRACT 场景由同一 acceptance 入口驱动独立 TDS 进程，不加入 business domain catalog、不增加业务断言，也不把 transport 协议知识写进 `BackendAcceptanceTest.java`；逐项断言由设计列出的 TDS CONTRACT producer 持有。
+TDS wire CONTRACT 的 Java 执行器位于 `TerminalConnectionContractScenarios.java`，由受管 `backend-acceptance` execution plan 按 scenario id 选择；它只输出 `CONTRACT`，不属于 generated operation identity、业务场景计数或 DB budget projection。
 
 ## 3. 每条真实业务场景必须写什么
 
@@ -76,6 +80,8 @@ password、token、cookie、Authorization、手机号、登录名和 raw payload
 每条场景的 route identity 使用入口类中已有的 operationId/routeTemplate 常量，避免手写路径
 漂移。共享 helper 只有在确实跨 domain 复用时才加入入口类；只服务一个业务域的 fixture 或
 oracle 保留在对应 domain group，防止业务知识重新集中化。
+
+本规范允许真实 HTTP CONTRACT 与独立 TDS 进程上的 WebSocket CONTRACT。`BackendAcceptanceTest.java` 仍是唯一共享生命周期入口；新增 TDS 进程须独立记录 classpath、identity、端口、日志、readiness 与 cleanup。终端绑定、激活、取消激活和审计的业务场景仍只属于 store-terminal 业务 owner group，TDS/WebSocket CONTRACT 不得把业务断言集中到入口类或 transport 测试中。
 
 ## 4. 新增场景的固定步骤
 

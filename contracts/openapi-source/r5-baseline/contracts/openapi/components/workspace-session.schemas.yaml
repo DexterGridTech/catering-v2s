@@ -1,0 +1,203 @@
+openapi: 3.0.3
+info:
+  title: Workspace Session Components
+  version: 0.1.0
+paths: {}
+components:
+  schemas:
+    WorkspaceLoginEntry:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, workspaceName, operationsTitle, status, sessionState]
+      properties:
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        workspaceName: {type: string, minLength: 1, maxLength: 120}
+        operationsTitle: {type: string, minLength: 1, maxLength: 120}
+        logoAssetRef: {type: string, nullable: true, maxLength: 128}
+        status: {$ref: './platform-workspace.schemas.yaml#/components/schemas/GroupWorkspaceStatus'}
+        sessionState:
+          type: string
+          enum: [NONE, AUTHENTICATED]
+    WorkspacePasswordLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [loginName, password]
+      properties:
+        loginName: {type: string, minLength: 1, maxLength: 120}
+        password: {type: string, minLength: 1, maxLength: 200}
+    WorkspacePasswordLoginInternalRequest:
+      type: object
+      additionalProperties: false
+      required: [loginName, password, sourceAddress]
+      properties:
+        loginName: {type: string, minLength: 1, maxLength: 120}
+        password: {type: string, minLength: 1, maxLength: 200}
+        sourceAddress:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Internal-only canonical login source resolved by the gateway from the peer socket or a configured trusted proxy chain.
+    WorkspaceOtpSendRequest:
+      type: object
+      additionalProperties: false
+      required: [mobile]
+      properties:
+        mobile: {type: string, minLength: 6, maxLength: 32, pattern: '^\+?[0-9][0-9 -]{5,30}$'}
+    WorkspaceOtpSendResponse:
+      type: object
+      additionalProperties: false
+      required: [expiresAt]
+      properties:
+        expiresAt: {type: integer, format: int64, minimum: 0}
+        testCode: {type: string, nullable: true, minLength: 6, maxLength: 6}
+    WorkspaceOtpVerifyRequest:
+      type: object
+      additionalProperties: false
+      required: [mobile, code]
+      properties:
+        mobile: {type: string, minLength: 6, maxLength: 32, pattern: '^\+?[0-9][0-9 -]{5,30}$'}
+        code: {type: string, minLength: 6, maxLength: 6, pattern: '^[0-9]{6}$'}
+    WorkspaceSessionTokenRequest:
+      type: object
+      additionalProperties: false
+      required: [sessionToken]
+      properties:
+        sessionToken: {type: string, minLength: 16, maxLength: 256}
+    WorkspaceIdentityCandidate:
+      type: object
+      additionalProperties: false
+      required: [roleAssignmentRef, roleId, roleName, roleNodeRef, roleNodeType, roleNodeName, homePageDesignKey, pageDesignKeys, navigation]
+      properties:
+        roleAssignmentRef: {type: string, minLength: 1, maxLength: 64, description: Stable current operations-role assignment reference; never infer it from roleId.}
+        roleId: {type: string, minLength: 1, maxLength: 64}
+        roleName: {type: string, minLength: 1, maxLength: 120}
+        roleNodeRef: {type: string, minLength: 1, maxLength: 240}
+        roleNodeType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        roleNodeName: {type: string, minLength: 1, maxLength: 240}
+        homePageDesignKey: {type: string, minLength: 1, maxLength: 120}
+        pageDesignKeys: {type: array, items: {type: string, minLength: 1, maxLength: 80}}
+        navigation:
+          type: array
+          items: {$ref: '#/components/schemas/WorkspacePageNavigationItem'}
+    WorkspacePageNavigationItem:
+      type: object
+      additionalProperties: false
+      required: [pageDesignKey, title, menuGroup, menuOrder, kind, pageAccessManaged, requiredDataNodeType]
+      properties:
+        pageDesignKey: {type: string, minLength: 1, maxLength: 80}
+        title: {type: string, minLength: 1, maxLength: 120}
+        menuGroup: {type: string, minLength: 1, maxLength: 120}
+        menuOrder: {type: integer, format: int32, minimum: 0}
+        kind: {type: string, enum: [ROLE_HOME, BUSINESS]}
+        pageAccessManaged: {type: boolean}
+        requiredDataNodeType: {type: string, enum: [NONE, REGION, PROJECT, STORE]}
+    WorkspaceDataNodeCandidate:
+      type: object
+      additionalProperties: false
+      required: [dataNodeType, dataNodeRef, dataNodeName, ancestorPath]
+      properties:
+        dataNodeType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        dataNodeRef: {type: string, minLength: 1, maxLength: 240}
+        dataNodeName: {type: string, minLength: 1, maxLength: 240}
+        ancestorPath:
+          type: array
+          minItems: 1
+          items: {type: string, minLength: 1, maxLength: 240}
+        regionRef: {type: string, nullable: true, maxLength: 64}
+        projectRef: {type: string, nullable: true, maxLength: 64}
+        storeRef: {type: string, nullable: true, maxLength: 64}
+    WorkspaceSelectedDataNode:
+      allOf:
+        - $ref: '#/components/schemas/WorkspaceDataNodeCandidate'
+        - type: object
+          required: [contextVersion]
+          properties:
+            contextVersion: {type: integer, format: int64, minimum: 0}
+    WorkspaceSelectedIdentity:
+      allOf:
+        - $ref: '#/components/schemas/WorkspaceIdentityCandidate'
+        - type: object
+          required: [contextVersion]
+          properties:
+            contextVersion: {type: integer, format: int64, minimum: 0}
+    WorkspaceSessionEntry:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, accountId, displayName, contextVersion, mode, outcome, candidates, actionGrants]
+      properties:
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        accountId: {type: string, minLength: 1, maxLength: 64}
+        displayName: {type: string, minLength: 1, maxLength: 120}
+        contextVersion: {type: integer, format: int64, minimum: 0}
+        mode:
+          type: string
+          enum: [DIRECT, SELECT, EMPTY]
+        outcome:
+          type: string
+          description: Owner-confirmed authenticated-entry outcome. Consumers must branch only on this value and must not infer a role home or scope transition.
+          enum: [HOME, SELECT_IDENTITY, SELECT_SCOPE, EMPTY_WORKBENCH]
+        candidates:
+          type: array
+          items: {$ref: '#/components/schemas/WorkspaceIdentityCandidate'}
+        actionGrants:
+          type: array
+          description: Owner-confirmed action grants for the selected operations role assignment and contextVersion. They control action-surface presentation only; command owners re-authorize against current facts.
+          items: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceBusinessCapability'}
+        dataNodeCandidates:
+          type: array
+          items: {$ref: '#/components/schemas/WorkspaceDataNodeCandidate'}
+        selected:
+          type: object
+          nullable: true
+          allOf: [{$ref: '#/components/schemas/WorkspaceSelectedIdentity'}]
+        selectedDataNode: {$ref: '#/components/schemas/WorkspaceSelectedDataNode'}
+    WorkspaceSelectContextRequest:
+      type: object
+      additionalProperties: false
+      required: [roleAssignmentRef, expectedContextVersion]
+      properties:
+        roleAssignmentRef: {type: string, minLength: 1, maxLength: 64}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    WorkspaceSelectDataNodeRequest:
+      type: object
+      additionalProperties: false
+      required: [dataNodeRef, dataNodeType, expectedContextVersion]
+      properties:
+        dataNodeRef: {type: string, minLength: 1, maxLength: 240}
+        dataNodeType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    WorkspaceSessionDataNodeRequest:
+      type: object
+      additionalProperties: false
+      required: [sessionToken, dataNodeRef, dataNodeType, expectedContextVersion]
+      properties:
+        sessionToken: {type: string, minLength: 16, maxLength: 256}
+        dataNodeRef: {type: string, minLength: 1, maxLength: 240}
+        dataNodeType: {$ref: './workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    WorkspaceSessionContextRequest:
+      type: object
+      additionalProperties: false
+      required: [sessionToken, roleAssignmentRef, expectedContextVersion]
+      properties:
+        sessionToken: {type: string, minLength: 16, maxLength: 256}
+        roleAssignmentRef: {type: string, minLength: 1, maxLength: 64}
+        expectedContextVersion: {type: integer, format: int64, minimum: 0}
+    WorkspaceSessionIssueResult:
+      type: object
+      additionalProperties: false
+      required: [sessionToken, session, expiresAt]
+      properties:
+        sessionToken: {type: string, minLength: 16, maxLength: 256}
+        session: {$ref: '#/components/schemas/WorkspaceSessionEntry'}
+        expiresAt: {type: integer, format: int64, minimum: 0}
+    WorkspaceSessionPrincipal:
+      type: object
+      additionalProperties: false
+      required: [sessionId, workspaceKey, accountId, displayName, contextVersion]
+      properties:
+        sessionId: {type: string, minLength: 1, maxLength: 64}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        accountId: {type: string, minLength: 1, maxLength: 64}
+        displayName: {type: string, minLength: 1, maxLength: 120}
+        contextVersion: {type: integer, format: int64, minimum: 0}

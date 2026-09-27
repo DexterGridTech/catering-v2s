@@ -37,18 +37,15 @@ public class CatalogCompositeFacts {
         refs.forEach(ref -> result.put(ref, mapper.createArrayNode()));
         jdbc.query(
                 CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_SELECT
-                        + CatalogCompositeFactsSql
-                                .CATALOG_COMPOSITE_FACTS_GROUP_ROW_ITEM_REF_GROUP_ROW_COMPOSITE_GROUP_REF_GROUP_ROW_GROUP_CODE_GROUP_ROW_GROUP_NAME_GROUP_ROW_SELECTION_RULE_COMPONENT_ITEM_REF_COMPONENT_PRODUCT_SKU_REF_COMPONENT
-                        + CatalogCompositeFactsSql
-                                .CATALOG_COMPOSITE_FACTS_QUANTITY_COMPONENT_UNIT_COMPONENT_IS_DEFAULT_COMPONENT_EXTRA_PRICE_COMPONENT_STATUS_COMPONENT_SKU_SKU_CODE_SKU_SKU_NAME
+                        + CatalogCompositeFactsSql.GRP_ROW_ITEM_REF_GRP_004
+                        + CatalogCompositeFactsSql.QUANTITY_COMPNT_UNIT_COMPNT_IS_005
                         + CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_FROM_CLAUSE_CATALOG_COMPOSITE_GROUP_GROUP_ROW
                         + CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_JOIN
                         + CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_CATALOG_COMPOSITE_COMPONENT_COMPONENT
                         + CatalogCompositeFactsSql
                                 .CATALOG_COMPOSITE_FACTS_CATALOG_ITEM_COMPONENT_COMPOSITE_GROUP_REF_GROUP_ROW
                         + CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_ITEM
-                        + CatalogCompositeFactsSql
-                                .CATALOG_COMPOSITE_FACTS_JOIN_CONDITION_CATALOG_SKU_ITEM_ITEM_REF_COMPONENT_COMPONENT_ITEM_REF
+                        + CatalogCompositeFactsSql.JOIN_CONDITION_CAT_SKU_ITEM_001
                         + CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_SKU_ITEM_REF_COMPONENT_COMPONENT_ITEM_REF
                         + CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_WHERE_GROUP_ROW_ITEM_REF
                         + placeholders
@@ -135,8 +132,7 @@ public class CatalogCompositeFacts {
             if (current == null) {
                 jdbc.update(
                         CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_INSERT_INTO
-                                + CatalogCompositeFactsSql
-                                        .CATALOG_COMPOSITE_FACTS_CATALOG_CATALOG_COMPOSITE_GROUP_COMPOSITE_GROUP_REF_ITEM_REF_GROUP_CODE_GROUP_NAME_SELECTION_RULE_MIN_SELECTIONS_MAX_SELECTIONS_DISPLAY_ORDER_MIN_SELECTIONS_MAX_SELECTIONS_DISPLAY_ORDER_VALUES,
+                                + CatalogCompositeFactsSql.CAT_COMP_GRP_COMP_GRP_006,
                         groupRef,
                         itemRef,
                         group.code(),
@@ -147,8 +143,7 @@ public class CatalogCompositeFacts {
                         group.displayOrder());
             } else if (groupOrderChanges || !current.matches(group)) {
                 jdbc.update(
-                        CatalogCompositeFactsSql
-                                        .CATALOG_COMPOSITE_FACTS_UPDATE_CATALOG_COMPOSITE_GROUP_UPDATE_CATALOG_CATALOG_COMPO
+                        CatalogCompositeFactsSql.UPDATE_CAT_COMP_GRP_UPDATE_002
                                 + CatalogCompositeFactsSql
                                         .CATALOG_COMPOSITE_FACTS_GROUP_NAME_SELECTION_RULE_MIN_SELECTIONS_MAX_SELECTIONS
                                 + CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_WHERE
@@ -216,14 +211,12 @@ public class CatalogCompositeFacts {
         }
         jdbc.batchUpdate(
                 CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_INSERT_INTO_ALTERNATE_A
-                        + CatalogCompositeFactsSql
-                                .CATALOG_COMPOSITE_FACTS_CATALOG_CATALOG_COMPOSITE_GROUP_COMPOSITE_GROUP_REF_ITEM_REF_GROUP_CODE_GROUP_NAME_SELECTION_RULE_MIN_SELECTIONS_MAX_SELECTIONS_DISPLAY_ORDER_MIN_SELECTIONS_MAX_SELECTIONS_DISPLAY_ORDER_VALUES_ALTERNATE_A,
+                        + CatalogCompositeFactsSql.CAT_COMP_GRP_COMP_GRP_ALT_A_007,
                 groupRows);
         if (!componentRows.isEmpty())
             jdbc.batchUpdate(
                     CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_INSERT_INTO_ALTERNATE_B
-                            + CatalogCompositeFactsSql
-                                    .CATALOG_COMPOSITE_FACTS_CATALOG_CATALOG_COMPOSITE_COMPONENT_COMPOSITE_COMPONENT_REF_COMPOSITE_GROUP_REF_COMPONENT_ITEM_REF_PRODUCT_SKU_REF_QUANTITY_UNIT_IS_DEFAULT_EXTRA_PRICE_IS_DEFAULT_EXTRA_PRICE_STATUS_DISPLAY_ORDER
+                            + CatalogCompositeFactsSql.CAT_COMP_COMPNT_COMP_COMPNT_008
                             + CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_VALUES,
                     componentRows);
     }
@@ -231,8 +224,7 @@ public class CatalogCompositeFacts {
     private Map<String, ExistingGroup> existingGroups(UUID itemRef) {
         return jdbc.query(
                 CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_SELECT_ALTERNATE_A
-                        + CatalogCompositeFactsSql
-                                .CATALOG_COMPOSITE_FACTS_COMPOSITE_GROUP_REF_GROUP_CODE_GROUP_NAME_SELECTION_RULE_MIN_SELECTIONS_MAX_SELECTIONS_DISPLAY_ORDER_FROM_CATALOG_CATALOG_COMPOSITE_GROUP_CATALOG_CATALOG_COMPOSITE_GROUP_WHERE_ITEM_REF,
+                        + CatalogCompositeFactsSql.COMP_GRP_REF_GRP_CODE_009,
                 rows -> {
                     Map<String, ExistingGroup> groups = new LinkedHashMap<>();
                     while (rows.next())
@@ -253,8 +245,7 @@ public class CatalogCompositeFacts {
     private void replaceComponents(UUID groupRef, List<Component> components) {
         Map<Integer, ExistingComponent> existing = jdbc.query(
                 CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_SELECT_ALTERNATE_B
-                        + CatalogCompositeFactsSql
-                                .CATALOG_COMPOSITE_FACTS_COMPOSITE_COMPONENT_REF_COMPONENT_ITEM_REF_PRODUCT_SKU_REF_QUANTITY_UNIT_IS_DEFAULT_EXTRA_PRICE_QUANTITY_UNIT_IS_DEFAULT_EXTRA_PRICE
+                        + CatalogCompositeFactsSql.COMP_COMPNT_REF_COMPNT_ITEM_010
                         + CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_CATALOG_COMPOSITE_COMPONENT_ALTERNATE_B,
                 rows -> {
                     Map<Integer, ExistingComponent> values = new LinkedHashMap<>();
@@ -289,8 +280,7 @@ public class CatalogCompositeFacts {
             if (current == null) {
                 jdbc.update(
                         CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_INSERT_INTO_ALTERNATE_C
-                                + CatalogCompositeFactsSql
-                                        .CATALOG_COMPOSITE_FACTS_CATALOG_CATALOG_COMPOSITE_COMPONENT_COMPOSITE_COMPONENT_REF_COMPOSITE_GROUP_REF_COMPONENT_ITEM_REF_PRODUCT_SKU_REF_QUANTITY_UNIT_IS_DEFAULT_EXTRA_PRICE_IS_DEFAULT_EXTRA_PRICE_STATUS_DISPLAY_ORDER_ALTERNATE_A
+                                + CatalogCompositeFactsSql.CAT_COMP_COMPNT_COMP_COMPNT_ALT_A_011
                                 + CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_CLOSE_PAREN
                                 + CatalogCompositeFactsSql.CATALOG_COMPOSITE_FACTS_VALUES_ALTERNATE_A,
                         UUID.randomUUID(),
@@ -305,12 +295,10 @@ public class CatalogCompositeFacts {
                         component.displayOrder());
             } else if (orderChanges || !current.matches(component)) {
                 jdbc.update(
-                        CatalogCompositeFactsSql
-                                        .CATALOG_COMPOSITE_FACTS_UPDATE_CATALOG_COMPOSITE_COMPONENT_UPDATE_CATALOG_CATALOG_COMPO
+                        CatalogCompositeFactsSql.UPDATE_CAT_COMP_COMPNT_UPDATE_003
                                 + CatalogCompositeFactsSql
                                         .CATALOG_COMPOSITE_FACTS_COMPONENT_ITEM_REF_PRODUCT_SKU_REF_QUANTITY_UNIT
-                                + CatalogCompositeFactsSql
-                                        .CATALOG_COMPOSITE_FACTS_STATUS_DISPLAY_ORDER_WHERE_COMPOSITE_COMPONENT_REF_STATUS_DISPLAY_ORDER_WHERE_COMPOSITE_COMPONENT_REF,
+                                + CatalogCompositeFactsSql.STATUS_DISP_ORD_WHERE_COMP_012,
                         component.itemRef(),
                         component.productSkuRef(),
                         component.quantity(),

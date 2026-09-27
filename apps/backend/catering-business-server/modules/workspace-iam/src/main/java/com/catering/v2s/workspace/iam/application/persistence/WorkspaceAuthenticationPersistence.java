@@ -19,8 +19,7 @@ public class WorkspaceAuthenticationPersistence {
 
     public AccountRow accountByLogin(String groupWorkspaceKey, String normalizedLoginName) {
         return jdbc.query(
-                WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_PASSWORD_HASH
+                WorkspaceAuthenticationServiceSql.SELECT_WS_UUID_GRP_WS_001
                         + WorkspaceAuthenticationServiceSql.WORKSPACE_AUTHENTICATION_SERVICE_LOCKED_UNTIL_EPOCH_MILLIS
                         + WorkspaceAuthenticationServiceSql
                                 .WORKSPACE_AUTHENTICATION_SERVICE_WORKSPACE_ACCOUNT_OPERATIONS_TITLE_LOGO_ASSET_REF
@@ -74,8 +73,7 @@ public class WorkspaceAuthenticationPersistence {
 
     public int consumeLoginOtp(long now, UUID accountId, String tokenHash) {
         return jdbc.update(
-                WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_UPDATE_OTP_GRANT_STATUS_USED_USED_AT_EPOCH_MILLIS_SUBJECT_REF
+                WorkspaceAuthenticationServiceSql.UPDATE_OTP_GRANT_STATUS_USED_002
                         + WorkspaceAuthenticationServiceSql
                                 .WORKSPACE_AUTHENTICATION_SERVICE_PURPOSE_WORKSPACE_LOGIN_TOKEN_HASH_STATUS
                         + WorkspaceAuthenticationServiceSql.WORKSPACE_AUTHENTICATION_SERVICE_EXPIRES_AT_EPOCH_MILLIS,
@@ -103,8 +101,7 @@ public class WorkspaceAuthenticationPersistence {
             UUID headCompanyId,
             long expectedContextVersion) {
         return jdbc.update(
-                WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_UPDATE_WORKSPACE_SESSION_CURRENT_ASSIGNMENT_ID_SELECTED_REGION_ID
+                WorkspaceAuthenticationServiceSql.UPDATE_WS_SESSION_CUR_ASSIGN_003
                         + WorkspaceAuthenticationServiceSql.WORKSPACE_AUTHENTICATION_SERVICE_SELECT_SELECTED_PROJECT_ID
                         + WorkspaceAuthenticationServiceSql
                                 .WORKSPACE_AUTHENTICATION_SERVICE_CONTEXT_VERSION_AUTHORIZATION_REVISION
@@ -126,10 +123,8 @@ public class WorkspaceAuthenticationPersistence {
             UUID headCompanyId,
             long expectedContextVersion) {
         return jdbc.update(
-                WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_UPDATE_WORKSPACE_SESSION_SELECTED_REGION_ID_SELECTED_PROJECT_ID
-                        + WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_SELECT_SELECTED_STORE_ID_SELECTED_HEAD_COMPANY_ID_CONTEXT_VERSION
+                WorkspaceAuthenticationServiceSql.UPDATE_WS_SESSION_SELECTED_REGION_004
+                        + WorkspaceAuthenticationServiceSql.SELECT_SELECTED_STORE_ID_SELECTED_005
                         + WorkspaceAuthenticationServiceSql
                                 .WORKSPACE_AUTHENTICATION_SERVICE_AUTHORIZATION_REVISION_CONTEXT_VERSION,
                 regionId,
@@ -150,10 +145,8 @@ public class WorkspaceAuthenticationPersistence {
                                         .WORKSPACE_AUTHENTICATION_SERVICE_SELECTED_HEAD_COMPANY_ID
                                 + WorkspaceAuthenticationServiceSql.WORKSPACE_AUTHENTICATION_SERVICE_CONTEXT_VERSION
                                 + WorkspaceAuthenticationServiceSql.WORKSPACE_AUTHENTICATION_SERVICE_SERVICE_NODE_TYPE
-                                + WorkspaceAuthenticationServiceSql
-                                        .WORKSPACE_AUTHENTICATION_SERVICE_SERVICE_NODE_ID_PAGE_ACCESS_KEYS_CAPABILITY_KEYS
-                                + WorkspaceAuthenticationServiceSql
-                                        .WORKSPACE_AUTHENTICATION_SERVICE_FROM_CLAUSE_WORKSPACE_SESSION_FROM_WORKSPACE_IAM_WORKSPACE
+                                + WorkspaceAuthenticationServiceSql.SVC_NODE_ID_PAGE_ACCESS_006
+                                + WorkspaceAuthenticationServiceSql.FROM_CLAUSE_WS_SESSION_FROM_007
                                 + WorkspaceAuthenticationServiceSql
                                         .WORKSPACE_AUTHENTICATION_SERVICE_JOIN_WORKSPACE_ACCOUNT_ACCOUNT_ID
                                 + WorkspaceAuthenticationServiceSql
@@ -167,8 +160,7 @@ public class WorkspaceAuthenticationPersistence {
                                 + WorkspaceAuthenticationServiceSql.WORKSPACE_AUTHENTICATION_SERVICE_WORKSPACE_UUID
                                 + WorkspaceAuthenticationServiceSql
                                         .WORKSPACE_AUTHENTICATION_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_STATUS_ENABLED
-                                + WorkspaceAuthenticationServiceSql
-                                        .WORKSPACE_AUTHENTICATION_SERVICE_WHERE_TOKEN_HASH_STATUS_ACTIVE_EXPIRES_AT_EPOCH_MILLIS,
+                                + WorkspaceAuthenticationServiceSql.WHERE_TOKEN_HASH_STATUS_ACTIVE_008,
                         statement -> {
                             statement.setString(1, tokenHash);
                             statement.setLong(2, now);
@@ -186,20 +178,16 @@ public class WorkspaceAuthenticationPersistence {
 
     public int logout(String tokenHash, long now) {
         return jdbc.update(
-                WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS
-                        + WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_SELECT_SELECTED_REGION_ID_SELECTED_PROJECT_ID_SELECTED_STORE_ID
-                        + WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_SELECT_SELECTED_HEAD_COMPANY_ID_TOKEN_HASH_STATUS_ACTIVE,
+                WorkspaceAuthenticationServiceSql.UPDATE_WS_SESSION_STATUS_REVOKED_009
+                        + WorkspaceAuthenticationServiceSql.SELECT_SELECTED_REGION_ID_SELECTED_010
+                        + WorkspaceAuthenticationServiceSql.SELECT_SELECTED_HEAD_COMPANY_ID_011,
                 now,
                 tokenHash);
     }
 
     public SessionCredentialRow sessionCredential(String tokenHash, long now) {
         return jdbc.query(
-                WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_SELECT_ACCOUNT_ID_CONTEXT_VERSION_PASSWORD_HASH_VERSION
+                WorkspaceAuthenticationServiceSql.SELECT_ACCOUNT_ID_CONTEXT_VER_012
                         + WorkspaceAuthenticationServiceSql
                                 .WORKSPACE_AUTHENTICATION_SERVICE_WORKSPACE_CREDENTIAL_WORKSPACE_SESSION
                         + WorkspaceAuthenticationServiceSql
@@ -222,8 +210,7 @@ public class WorkspaceAuthenticationPersistence {
 
     public int updateCredential(UUID accountId, String passwordHash, long now, long credentialVersion, UUID sessionId) {
         return jdbc.update(
-                WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_UPDATE_WORKSPACE_CREDENTIAL_PASSWORD_HASH_CHANGED_AT_EPOCH_MILLIS
+                WorkspaceAuthenticationServiceSql.UPDATE_WS_CREDENTIAL_PASSWORD_HASH_013
                         + WorkspaceAuthenticationServiceSql.WORKSPACE_AUTHENTICATION_SERVICE_FAILED_ATTEMPTS
                         + WorkspaceAuthenticationServiceSql.WORKSPACE_AUTHENTICATION_SERVICE_VERSION_ACCOUNT_ID
                         + WorkspaceAuthenticationServiceSql
@@ -240,20 +227,16 @@ public class WorkspaceAuthenticationPersistence {
 
     public int revokeAccountSessions(UUID accountId, long now) {
         return jdbc.update(
-                WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS_ALTERNATE_A
-                        + WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_SELECT_SELECTED_REGION_ID_SELECTED_PROJECT_ID_SELECTED_STORE_ID_ALTERNATE_A
-                        + WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_SELECT_SELECTED_HEAD_COMPANY_ID_ACCOUNT_ID_STATUS_ACTIVE,
+                WorkspaceAuthenticationServiceSql.UPDATE_WS_SESSION_STATUS_REVOKED_ALT_A_014
+                        + WorkspaceAuthenticationServiceSql.SELECT_SELECTED_REGION_ID_SELECTED_ALT_A_015
+                        + WorkspaceAuthenticationServiceSql.SELECT_SELECTED_HEAD_COMPANY_ID_016,
                 now,
                 accountId);
     }
 
     public List<AssignmentRow> activeAssignments(UUID accountId, UUID workspaceUuid, String groupWorkspaceKey) {
         return jdbc.query(
-                WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_SELECT_ROLE_ASSIGNMENT_ROLE_ID_SERVICE_NODE_TYPE_SERVICE_NODE_ID
+                WorkspaceAuthenticationServiceSql.SELECT_ROLE_ASSIGN_ROLE_ID_017
                         + WorkspaceAuthenticationServiceSql
                                 .WORKSPACE_AUTHENTICATION_SERVICE_JOIN_WORKSPACE_ROLE_ROLE_ID_ACCOUNT_ID
                         + WorkspaceAuthenticationServiceSql
@@ -361,12 +344,10 @@ public class WorkspaceAuthenticationPersistence {
 
     public AssignmentRow assignment(UUID assignmentId, UUID accountId, UUID workspaceUuid, String groupWorkspaceKey) {
         return jdbc.query(
-                WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_SELECT_ROLE_ASSIGNMENT_ROLE_ID_SERVICE_NODE_TYPE_SERVICE_NODE_ID_ALTERNATE_A
+                WorkspaceAuthenticationServiceSql.SELECT_ROLE_ASSIGN_ROLE_ID_ALT_A_018
                         + WorkspaceAuthenticationServiceSql
                                 .WORKSPACE_AUTHENTICATION_SERVICE_JOIN_WORKSPACE_ROLE_ROLE_ID_ACCOUNT_ID_ALTERNATE_A
-                        + WorkspaceAuthenticationServiceSql
-                                .WORKSPACE_AUTHENTICATION_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ACTIVE_ALTERNATE_A,
+                        + WorkspaceAuthenticationServiceSql.WS_UUID_GRP_WS_KEY_ALT_A_019,
                 statement -> {
                     statement.setObject(1, assignmentId);
                     statement.setObject(2, accountId);

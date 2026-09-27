@@ -35,11 +35,9 @@ public class OrganizationAssignmentCandidatePersistence {
                     default -> throw new IllegalArgumentException("unsupported assignment candidate type");
                 };
         return jdbc.query(
-                OrganizationAssignmentCandidateServiceSql
-                                .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_ORGANIZATION_SELECT_ID_FROM_ORGANIZATION
+                OrganizationAssignmentCandidateServiceSql.SELECT_ORG_SELECT_ID_FROM_001
                         + table
-                        + OrganizationAssignmentCandidateServiceSql
-                                .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED
+                        + OrganizationAssignmentCandidateServiceSql.WHERE_WS_UUID_GRP_WS_002
                         + OrganizationAssignmentCandidateServiceSql
                                 .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ORDER_BY_CODE,
                 (row, index) -> row.getObject(1, UUID.class),
@@ -64,14 +62,11 @@ public class OrganizationAssignmentCandidatePersistence {
             case GROUP -> jdbc.query(
                     OrganizationAssignmentCandidateServiceSql
                                     .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_COMMERCIAL_GROUP_UUID
-                            + OrganizationAssignmentCandidateServiceSql
-                                    .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_COMMERCIAL_GROUP_OVER_FROM_ORGANIZATION_COMME
-                            + OrganizationAssignmentCandidateServiceSql
-                                    .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_GROUP_WORKSPACE_KEY_COMMERCIAL_GROUP_UUID
+                            + OrganizationAssignmentCandidateServiceSql.COMMERCIAL_GRP_OVER_FROM_ORG_003
+                            + OrganizationAssignmentCandidateServiceSql.WHERE_GRP_WS_KEY_COMMERCIAL_004
                             + OrganizationAssignmentCandidateServiceSql
                                     .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_COMMERCIAL_GROUP_UUID
-                            + OrganizationAssignmentCandidateServiceSql
-                                    .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_TEXT_COMMERCIAL_GROUP_CODE_ILIKE_ESCAPE
+                            + OrganizationAssignmentCandidateServiceSql.CONDITION_TEXT_COMMERCIAL_GRP_CODE_005
                             + OrganizationAssignmentCandidateServiceSql
                                     .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_COMMERCIAL_GROUP_NAME_ILIKE_ESCAPE
                             + OrganizationAssignmentCandidateServiceSql
@@ -109,8 +104,7 @@ public class OrganizationAssignmentCandidatePersistence {
             case HEAD_COMPANY -> jdbc.query(
                     OrganizationAssignmentCandidateServiceSql
                                     .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_HEAD_COMPANY_CODE_NAME
-                            + OrganizationAssignmentCandidateServiceSql
-                                    .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_A
+                            + OrganizationAssignmentCandidateServiceSql.WHERE_WS_UUID_GRP_WS_ALT_A_006
                             + OrganizationAssignmentCandidateServiceSql
                                     .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_NULL_OR_ID
                             + OrganizationAssignmentCandidateServiceSql
@@ -161,8 +155,7 @@ public class OrganizationAssignmentCandidatePersistence {
         return OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CTE_CANDIDATES
                 + OrganizationAssignmentCandidateServiceSql
                         .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_CODE_NAME
-                + OrganizationAssignmentCandidateServiceSql
-                        .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NODE_TYPE_STATUS
+                + OrganizationAssignmentCandidateServiceSql.WHERE_WS_UUID_GRP_WS_007
                 + OrganizationAssignmentCandidateServiceSql
                         .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_TEXT_CODE_ILIKE
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ESCAPE_NAME_ILIKE
@@ -218,8 +211,7 @@ public class OrganizationAssignmentCandidatePersistence {
                         .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ANCESTRY_DEPTH_ALTERNATE_A
                 + OrganizationAssignmentCandidateServiceSql
                         .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_PARENT_ID_ALTERNATE_A
-                + OrganizationAssignmentCandidateServiceSql
-                        .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A
+                + OrganizationAssignmentCandidateServiceSql.WHERE_PARENT_WS_UUID_GRP_ALT_A_008
                 + OrganizationAssignmentCandidateServiceSql
                         .ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CLOSE_PAREN_PATHS_ALTERNATE_A
                 + OrganizationAssignmentCandidateServiceSql

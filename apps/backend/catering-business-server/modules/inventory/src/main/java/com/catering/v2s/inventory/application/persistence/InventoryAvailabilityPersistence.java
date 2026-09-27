@@ -87,7 +87,10 @@ public class InventoryAvailabilityPersistence {
                         TargetRow row = targetRow(resultSet, unitSnapshot(resultSet, 11));
                         TargetIdentity identity = new TargetIdentity(row.itemRef(), row.productSkuRef());
                         if (result.putIfAbsent(identity, row) != null)
-                            throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
+                            // spotless:off
+                            throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422,
+                                "目标库存对象引用不唯一");
+                            // spotless:on
                     }
                     return result;
                 });
@@ -122,7 +125,10 @@ public class InventoryAvailabilityPersistence {
     private static InventoryOwnerApi.UnitSnapshot requiredUnitSnapshot(ResultSet result, int firstColumn)
             throws SQLException {
         InventoryOwnerApi.UnitSnapshot snapshot = unitSnapshot(result, firstColumn);
-        if (snapshot == null) throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "单位快照不完整");
+        // spotless:off
+        if (snapshot == null) throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422,
+            "单位快照不完整");
+        // spotless:on
         return snapshot;
     }
 

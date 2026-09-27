@@ -2,6 +2,10 @@ SKILL_USED=cs-writing-plans@72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a2
 
 # 门店终端管理 · 实施计划（CP-07 设计纠偏后按 Dexter 授权实施）
 
+## 批次一 D-18 覆盖（2026-09-26）
+
+本计划和 CP-07 是此前门店终端交互纠偏的历史计划单元；它们不承载《终端激活与长连接》D-18 的实施。D-18 的设备类型不可变属于该需求批次一，当前详设与计划见 `doc/plans/platform/2026-09-26-v2s-terminal-activation-and-connection-implementation-design-codex.md` 与同名 `implementation-plan-codex.md`。同步后的验收语义是：新建仍可选择设备类型；更新请求契约不含 `deviceType`，旧请求若仍携带该字段，由 controller 的 `strictBody` 按未知字段拒绝，owner 不执行更新且终端配置、版本不变；不另建 owner 专属错误码。其他不改变类型的编辑照常验证。D-18 不属于 CP-07；本覆盖不授予任何实现或动态验证权限，且不撤销 CP-07 对无关纠偏内容的历史记录。
+
 ## 0. 范围、事实与交付门
 
 来源：需求正本 `2026-09-23-v2s-store-terminal-management-requirements-claude.md` 的 D-28 至 D-35、§4.9、V-29，以及已确认 IA、交互工件和详设。业务语义直接以需求正本为唯一来源，本计划不另立裁决桥。Dexter 已授权按 R2 修订后立即实施，并授权契约/生成、迁移、构建、全部测试、backend-acceptance、Browser L2、reset、DEV、seed；UAT、部署、真机激活/打印与 TDP 不在范围。所有未来结果在实际执行前均标记 NOT_RUN，不冒称 PASS。
@@ -26,10 +30,10 @@ SKILL_USED=cs-writing-plans@72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a2
 | CP-01 合同单源 | contracts/catalog/store-terminal-rules.json/.schema.json；scripts/generate/store-terminal-rules.mjs；Draft 2020-12 schema 实际验证；生成 Java、TS、OpenAPI；生成登记与 --check；D-35 的 3 具体＋9 通用型号、每型号纸规格与允许连接方式及厂商来源一并冻结；schema 绑定五种连接方式与参数语义（NETWORK→ipAddress/IPV4、CLOUD→deviceId/IDENTIFIER、USB/BLUETOOTH→deviceIdentifier/IDENTIFIER、BUILT_IN→null）。官方规格已区分 Epson 标称卷纸宽、Zebra 介质宽与可打印宽，ZD411D 60 mm 只表示介质宽 | 完整 6×2、17×7、12×7 型号×纸规格手写矩阵（每型号行固定连接方式）；独立 12×5 型号×连接方式集合做 60 格逐关系检查并由 owner focused 验证；schema 空闭集/错引用/错误关系 red mutation，五种连接方式各有语义错配 red mutation（NETWORK 改成合法 IDENTIFIER 形状仍必须失败）；品牌不匹配/未登记型号/内置型号配网口/通用型号配设备内置四类 HTTP 负例；Java/TS/OpenAPI hash 一致。型号×介质规格按 CP-01 来源证据冻结；矩阵变化同步 V-29 并在本 CP 重跑 | 需求 H/R-C、D-35/V-29、已确认 IA、合同生成规范逐点 MATCHED |
 | CP-02 owner/DB | settings.gradle.kts、app/module build；modules/store-terminal/api/application/domain/persistence；organization StoreServicePointOwnerApi 与同源 persistence 的 readAreasByRefs/searchTerminalAreaCandidates；三表 Flyway migration（terminal、command_receipt、store_terminal.audit_event）；owner `StoreTerminalAuditEventWriter`；lifecycle 主数据登记、全仓迁移矩阵与 cleanup 清单 | 手填与自动两路共用精确 activation 唯一目标；三表共享 REQUIRED 事务、审计后提交前故障全回滚；create/replace/status 各恰一事件；手填重复不换码、receipt 仅 ref/version/status 且 hash 不含码；状态/unique/lifecycle 与 12×5 型号×连接矩阵 | 需求 R1–8、详设 §4/§10、owner-read-model/coding standard §1-L/§1-M |
 | CP-03 edge/权限/审计读取 | contracts `getOperationsEntityAuditHistory.entityType` 单源及生成物（STORE_TERMINAL 与三个既有漏登值）；operation-handler-bindings、M1 三个真实消费者 adapter、admin-catalog、edge/generated route/grants/RTK；`AuditEntityTypes`、owner policies、audit-read variant/build/controller dispatch；角色 seed | 七个真实 HTTP operation 均经授权；三写经过 controller→generated M1 binding→owner-specific operation adapter→StoreTerminalOwnerApi；V-25 真实 HTTP：签发事实无码、摘要差异、状态事件、VOIDED 仍可读、门店可见性 403/缺 ref 404；审计写不得落 organization 表；终端页不新增历史入口 | 需求 R8/9、详设 §5/7/V-25、权限与审计标准 |
-| CP-04 六屏 | feature 的 Page、read model、commands、Create/Edit Drawer、Printer/Function/Scene editor、testIds、pageRegistry；foundation 对接 | 逐 IA-ID 控件位置/样式/行为、创建激活码选填/清空/重复原位错而编辑无此字段、中文字典全值、范围候选、三种 close、版本冲突、迟到详情不闪码、同功能两场景各自打印机 | IA 六屏＋frontend 3-K＋详设 §3a/4 |
+| CP-04 六屏 | feature 的 Page、read model、commands、Create/Edit Drawer、Printer/Function/Scene editor、testIds、pageRegistry；foundation 对接；D-18 仅作为批次一覆盖：新建设备类型可选，编辑为只读文本且无提示 | 逐 IA-ID 控件位置/样式/行为、创建激活码选填/清空/重复原位错而编辑无此字段、编辑态设备类型只读且请求不可变（V-U1）、中文字典全值、范围候选、三种 close、版本冲突、迟到详情不闪码、同功能两场景各自打印机 | IA 六屏＋frontend 3-K＋详设 §3a/4；D-18 归终端激活批次一 |
 | CP-05 全测试/seed | HTTP acceptance 登记 V-1..25、V-28、V-29；V-26/27 归非 HTTP 专项且不登记 catalog；fixture 正本八台、post-step、validators/executors、脚本及 tests；静态门 | V-1..29、12×7 手写型号矩阵、seed 8 样例 readback、缺省可选属性、红变异、全量 acceptance；检查运行日志与 cleanup | 需求所有 V、详设 §10b/11、backend-acceptance 标准 |
 | CP-06 全批收口 | 整体三维对账、以实际变更文件为分母纳入 CP-05 决策/报告/36 个目录库存输出的逐代码对详设、完整动态顺序/证据 | P9 仅 MATCHED/OPEN；任何 OPEN 停；business 与 cleanup 都 PASS 才称动态完成 | 全需求、IA、规范复核；独立 implementation review 另行 |
-| CP-07 交互与范围语义纠偏 | 需求 §15.13、IA/交互、详设 §16、本计划；规则正本/生成物；`TerminalConfigurationCodec`；Form/Function/Printer/Scene/model/testId/static/render；acceptance/seed/L2 控制面 | generator check/red mutation；owner/HTTP Queue 空范围与既有 function ref 换类型负例；前端 focused/render/static/type；L2 C02 真实新增 `QUEUE_CALL`/`KDS` 并断言范围组与无场景选择器缺席，再跑受影响 case→六场景；seed dry-run/readback（仅当实际 seed 载体变更） | 设计自审后 fresh 三维对账；CP-07 结束再做全批整体对账；任何 OPEN 停 |
+| CP-07 交互与范围语义纠偏（历史单元；不含 D-18） | 需求 §15.13、IA/交互、详设 §16、本计划；规则正本/生成物；`TerminalConfigurationCodec`；Form/Function/Printer/Scene/model/testId/static/render；acceptance/seed/L2 控制面 | generator check/red mutation；owner/HTTP Queue 空范围与既有 function ref 换类型负例；前端 focused/render/static/type；L2 C02 真实新增 `QUEUE_CALL`/`KDS` 并断言范围组与无场景选择器缺席，再跑受影响 case→六场景；seed dry-run/readback（仅当实际 seed 载体变更） | 设计自审后 fresh 三维对账；CP-07 结束再做全批整体对账；任何 OPEN 停 |
 
 CP-01 型号来源不足或冲突、CP-02 PostgreSQL 唯一冲突不能在原事务恢复或自有审计不能与终端/回执原子提交、CP-03 审计读取越权/错误或任一 HTTP 响应泄漏码、CP-04 foundation 能力被重造、CP-05 seed 阶段或测试分母不闭合，均须停对应 CP 报告，不用临时兼容层绕过。动态执行当前已授权，但仍须使用受管入口与资源预检，并遵守各验证前置门。
 
@@ -46,7 +50,7 @@ CP-01 型号来源不足或冲突、CP-02 PostgreSQL 唯一冲突不能在原事
 | 需求子项 | 代码落点 | 验证/seed 连带 |
 |---|---|---|
 | R-C.1, R-C.2, R-C.3, R-C.4, R-C.5, R-C.6 | 单源合同/生成；修改登记须有既有数据处置；deviceType 与终端 SurfaceForm 同值但本期不接入终端 App；UI 中文 | G 全闭集、删除/重命名红变异；F 每值中文；S 型号/功能样例；V-26 由 G/source review、V-27 由 F/render 承载，均不登记 HTTP acceptance catalog |
-| R-1.1, R-1.2, R-1.3, R-1.4, R-1.5 | terminal store/name/device/code；未作废名称唯一、设备改型整体验证 | O DB unique/改型；T V-1/14/21；S 同店/跨店、台式/手持 |
+| R-1.1, R-1.2, R-1.3, R-1.4（原设备类型可改已被 D-36/D-18 取代）, R-1.5 | terminal store/name/device/code；未作废名称唯一；D-18 使创建后 deviceType 不可变 | O/T 批次一验证未激活与已激活终端改类型均拒绝且配置/version 不变、未改类型的其他修改成功（V-B12）；门店终端原“改设备类型成功”用例改为拒绝断言；S 同店/跨店、台式/手持 |
 | R-2.1, R-2.2, R-2.3, R-2.4, R-2.5 | function stable ref、单例与多厨打、范围/场景随功能删除 | O/T V-2/3/22/23；F 多实例隔离；S 两厨打/零打印机 |
 | R-3.1, R-3.2, R-3.3, R-3.4, R-3.5 | TABLE_AREA “全部/指定”互斥、跨 owner 旧引用按 ref、候选不看经营开关 | O/T V-5/6/7/8/20；F 同框多选/空候选/旧状态；S 全部/指定/历史区 |
 | R-3.6, R-3.7, R-3.8, R-3.9, R-3.10, R-3.11 | 无桌台/外卖轴、生产标签全部/指定、旧标签状态 | O/T V-4/5/6/7/8；F 功能各自范围；S 厨打标签与排队号票；R-3.10 运行路由不在本批，T 仅证存储语义 |

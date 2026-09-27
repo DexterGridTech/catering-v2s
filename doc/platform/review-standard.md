@@ -135,13 +135,13 @@ PY
 
 **不一致 ⇒ finding。IA 没写 ⇒ 记为设计侧缺口(见 §2),⛔ 不得因"文档没写"就放行。**
 
-### 实施步骤级独立对账 · 在下一步骤前完成
+### CP 阶段级独立对账 · 在下一 CP 前完成
 
-长任务的每一个已批准实施步骤（通常是一个 CP）结束后，主 agent 必须在开始下一步骤前，交由 fresh `INDEPENDENT_SUBAGENT` 执行本节的步骤级对账。主 agent 可以设计和实施，但不得对自己刚完成的步骤作出对账结论。
+独立三维对账的单位是实施计划明确列出的一个完整 CP 阶段。CP 内部的工作项、文件修改、单个 focused proof 或修复都不是新的独立对账关卡。主 agent 完成该 CP 内的全部实现、修复和 focused proof 后、开始下一 CP 前，必须交由 fresh `INDEPENDENT_SUBAGENT` 对整个 CP 对账。没有 CP 划分的任务，仅以计划明确列出的完整批准阶段为单位；不得从单个改动点自行拆出 review 阶段。主 agent 可以设计和实施，但不得对自己刚完成的 CP 作出对账结论。
 
-步骤 reviewer 必须从当前步骤的 RECALL、IA/交互工件/implementation-facing 详设、owning source、当前实现和 focused proof 提取事实，再以证伪为目标逐条比较：行为、形态、动作、关系、位置、用户可见文案、限制、状态/控制、失败/恢复、可访问性/焦点、数据来源/失效边界。输出只能是当前步骤的 `MATCHED` 或逐项 `OPEN`，并指向精确 source/design 位置；不得用“整体看起来一致”、静态通过或后续 L2 代替。
+CP reviewer 必须从该 CP 的 RECALL、IA/交互工件/implementation-facing 详设、owning source、实现、focused proof 及各改动点的前后读回中提取事实，再以证伪为目标逐条比较：行为、形态、动作、关系、位置、用户可见文案、限制、状态/控制、失败/恢复、可访问性/焦点、数据来源/失效边界。输出只能是该 CP 的 `MATCHED` 或逐项 `OPEN`，并指向精确 source/design 位置；不得用“整体看起来一致”、静态通过或后续 L2 代替。CP 内单个改动点的前后读回和 focused proof 仍须完成，但不各自启动 fresh reviewer。
 
-`OPEN` 时，主 agent 必须先按同根范围修复，再由另一 fresh 独立子 agent 复查后才能开始下一步骤。该步骤级对账是实施过程的质量闸，不是整批 `REVIEW_TARGET=IMPLEMENTATION` verdict：不写 `GO`/`NO-GO`，本身不设轮次上限，也不能替代最后的整批独立 review。
+`OPEN` 时，主 agent 必须先按同根范围修复，再由另一 fresh 独立子 agent 对同一个完整 CP 复查后才能开始下一 CP。CP 阶段级对账是实施过程的质量闸，不是整批 `REVIEW_TARGET=IMPLEMENTATION` verdict：不写 `GO`/`NO-GO`，本身不设轮次上限，也不能替代最后的整批独立 review。
 
 ### 动作 3 · 同族全集扫描
 

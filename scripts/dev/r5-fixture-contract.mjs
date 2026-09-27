@@ -156,6 +156,9 @@ export function validateFixtureContractPhaseNames(fixture) {
 }
 
 export function validateFixtureContract(fixture) {
+  if (fixture?.profile?.middleware?.tdp !== "FORBIDDEN") {
+    throw new Error("R5_SEED_FIXTURE_TDP_MUST_BE_FORBIDDEN");
+  }
   const counts = validateFixtureExpectedCounts(fixture);
   const stages = validateFixtureSeedStages(fixture);
   const phaseNames = validateFixtureContractPhaseNames(fixture);

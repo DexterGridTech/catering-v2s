@@ -6,11 +6,18 @@
 export {
   cleanupRemoteJavaRoot,
   collectRemoteLog,
+  collectRemoteTdsLog,
+  assertRemotePortsAvailable,
   remoteHttpPortPreflight,
   remoteJavaReadiness,
+  remoteTdsReadiness,
+  probeLocalTdsWebSocket,
   remoteResourcePreflight,
   startRemoteJava,
+  startRemoteTds,
   stopRemoteJava,
+  stopRemoteTds,
   syncRemoteSource,
+  waitForRemoteTdsReady,
   waitForRemoteBusinessReady,
 } from './r5-dev-runner.mjs';

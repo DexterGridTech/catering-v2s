@@ -27,24 +27,24 @@ public class InventoryCopyPersistence {
     public InventoryOwnerApi.UnitSnapshot readConsumptionUnitSnapshot(UUID targetRef) {
         return jdbc
                 .query(
-                        InventoryCopyServiceSql
-                                        .INVENTORY_COPY_SERVICE_SELECT_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION
+                        InventoryCopyServiceSql.SELECT_CONSUM_UNIT_REF_CONSUM_002
                                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_STOCK_TARGET_TARGET_REF,
                         (result, rowNumber) -> requiredUnitSnapshot(result, 1),
                         targetRef)
                 .stream()
                 .findFirst()
                 .orElseThrow(() ->
-                        new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "库存对象必须保存有效消耗单位快照"));
+                        // spotless:off
+                        new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422,
+                            "库存对象必须保存有效消耗单位快照"));
+                        // spotless:on
     }
 
     public int[] copyCatalogItems(List<TargetWrite> rows) {
         return jdbc.batchUpdate(
                 InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INSERT_INTO
-                        + InventoryCopyServiceSql
-                                .INVENTORY_COPY_SERVICE_INVENTORY_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_ITEM_CODE_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_ITEM_CODE
-                        + InventoryCopyServiceSql
-                                .INVENTORY_COPY_SERVICE_VALUE_SEPARATOR_SKU_CODE_MEASURE_MODE_INVENTORY_MODE_CONSUMPTION_UNIT_REF
+                        + InventoryCopyServiceSql.INV_STOCK_TARGET_REF_DATA_003
+                        + InventoryCopyServiceSql.VAL_SEP_SKU_CODE_MEAS_001
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONSUMPTION_UNIT_NAME
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_COUNTING_UNIT_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_COUNTING_UNIT_PRECISION
@@ -82,16 +82,14 @@ public class InventoryCopyPersistence {
     public int[] copyCatalogSkus(List<BomWrite> rows) {
         return jdbc.batchUpdate(
                 InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INSERT_INTO_ALTERNATE_A
-                        + InventoryCopyServiceSql
-                                .INVENTORY_COPY_SERVICE_INVENTORY_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE_VERSION_ROWS_UPDATED_AT_EPOCH_MILLIS
+                        + InventoryCopyServiceSql.INV_STOCK_BOM_REF_DATA_004
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_VALUES_VALUES_CAST_AS_JSONB_ON_CONF
                         + InventoryCopyServiceSql
                                 .INVENTORY_COPY_SERVICE_OPEN_PAREN_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_OPTION_VALUE_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_DEFINITION_STATUS_ENABLED
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SET_DO_UPDATE_SET
-                        + InventoryCopyServiceSql
-                                .INVENTORY_COPY_SERVICE_VERSION_EXCLUDED_VERSION_ROWS_EXCLUDED_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS,
+                        + InventoryCopyServiceSql.VER_EXCLUDED_VER_ROWS_EXCLUDED_005,
                 new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(java.sql.PreparedStatement statement, int index) throws SQLException {
@@ -170,7 +168,10 @@ public class InventoryCopyPersistence {
                         TargetRecord row = targetRecord(result, 1, requireCompleteConsumptionUnit);
                         TargetIdentity identity = new TargetIdentity(row.itemRef(), row.productSkuRef());
                         if (rows.putIfAbsent(identity, row) != null)
-                            throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
+                            // spotless:off
+                            throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422,
+                                "目标库存对象引用不唯一");
+                            // spotless:on
                     }
                     return rows;
                 });
@@ -224,7 +225,10 @@ public class InventoryCopyPersistence {
                     while (result.next()) {
                         TargetRecord row = targetRecord(result, 1, requireCompleteConsumptionUnit);
                         if (rows.putIfAbsent(row.ref(), row) != null)
-                            throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
+                            // spotless:off
+                            throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422,
+                                "目标库存对象引用不唯一");
+                            // spotless:on
                     }
                     return rows;
                 });
@@ -332,8 +336,7 @@ public class InventoryCopyPersistence {
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_ROW_NUMBER_WINDOW_FUNCTION
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_SELECTED_TARGET_REF
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_ALTERNATE_A
-                + InventoryCopyServiceSql
-                        .INVENTORY_COPY_SERVICE_S_TARGET_REF_A_TODAY_CHANGE_A_SEVEN_DAY_CHANGE_A_THIRTY_DAY_CHANGE_LATEST_OPERATION_ID_LATEST_OPERATION_ID_LATEST_OCCURRED_AT_EPOCH_MILLIS
+                + InventoryCopyServiceSql.S_TARGET_REF_A_TODAY_006
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_LATEST_TARGET_REF
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_LATEST_TARGET_REF;
         List<Object> args = new ArrayList<>(targetRefs);
@@ -385,8 +388,7 @@ public class InventoryCopyPersistence {
             long createdAt) {
         return jdbc.update(
                 InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INSERT_INTO_ALTERNATE_B
-                        + InventoryCopyServiceSql
-                                .INVENTORY_COPY_SERVICE_INVENTORY_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID_REQUEST_HASH_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB,
+                        + InventoryCopyServiceSql.INV_CMD_RECEIPT_REF_DATA_007,
                 receiptRef,
                 scope,
                 key,
@@ -441,7 +443,10 @@ public class InventoryCopyPersistence {
     private static InventoryOwnerApi.UnitSnapshot requiredUnitSnapshot(ResultSet result, int firstColumn)
             throws SQLException {
         InventoryOwnerApi.UnitSnapshot snapshot = unitSnapshot(result, firstColumn);
-        if (snapshot == null) throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "单位快照不完整");
+        // spotless:off
+        if (snapshot == null) throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422,
+            "单位快照不完整");
+        // spotless:on
         return snapshot;
     }
 

@@ -112,17 +112,14 @@ public final class CatalogSkuFactsSql {
             " sku.standard_sale_price, sku.is_default, sku.status, sku.version, sku.display_order,";
     public static final String CATALOG_SKU_FACTS_SKU_VARIANT_COMBINATION_DIGEST_SALES_UNIT_OVERRIDE_REF_ALTERNATE_A =
             " sku.variant_combination_digest, sku.sales_unit_override_ref,";
-    public static final String
-            CATALOG_SKU_FACTS_SKU_BASE_MEASURE_UNIT_OVERRIDE_REF_SALES_UNIT_REF_SALES_UNIT_CODE_ALTERNATE_A =
-                    " sku.base_measure_unit_override_ref, sku.sales_unit_ref, sku.sales_unit_code,";
-    public static final String
-            CATALOG_SKU_FACTS_SKU_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_ALTERNATE_A =
-                    " sku.sales_unit_name, sku.sales_unit_dimension, sku.sales_unit_precision,";
+    public static final String SKU_BASE_MEAS_UNIT_OVERRIDE_ALT_A_001 =
+            " sku.base_measure_unit_override_ref, sku.sales_unit_ref, sku.sales_unit_code,";
+    public static final String SKU_SALES_UNIT_NAME_SALES_ALT_A_002 =
+            " sku.sales_unit_name, sku.sales_unit_dimension, sku.sales_unit_precision,";
     public static final String CATALOG_SKU_FACTS_SKU_ALTERNATE_A =
             " sku.base_measure_unit_ref, sku.base_measure_unit_code, sku.base_measure_unit_name,";
-    public static final String
-            CATALOG_SKU_FACTS_SKU_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_ALTERNATE_A =
-                    " sku.base_measure_unit_dimension, sku.base_measure_unit_precision,";
+    public static final String SKU_BASE_MEAS_UNIT_DIM_ALT_A_003 =
+            " sku.base_measure_unit_dimension, sku.base_measure_unit_precision,";
     public static final String CATALOG_SKU_FACTS_ATTRIBUTE_VALUE_ATTRIBUTE_REF_ATTRIBUTE_CODE_ALTERNATE_A =
             " attribute_value.attribute_ref, attribute.code, attribute.name, value.entry_ref, value.code,";
     public static final String CATALOG_SKU_FACTS_VALUE_NAME_STATUS_AXIS_VALUE_ALTERNATE_A =
@@ -225,9 +222,8 @@ public final class CatalogSkuFactsSql {
     public static final String CATALOG_SKU_FACTS_CATALOG_SKU_ATTRIBUTE_VALUE_ALTERNATE_A =
             "catalog.catalog_sku_attribute_value(product_sku_ref,attribute_ref,attribute_value_ref) ";
     public static final String CATALOG_SKU_FACTS_VALUES_ALTERNATE_B = "VALUES(?,?,?)";
-    public static final String
-            CATALOG_SKU_FACTS_UPDATE_CATALOG_SKU_SALES_UNIT_OVERRIDE_REF_BASE_MEASURE_UNIT_OVERRIDE_REF =
-                    "UPDATE catalog.catalog_sku SET sales_unit_override_ref=?,base_measure_unit_override_ref=?,";
+    public static final String UPDATE_CAT_SKU_SALES_UNIT_004 =
+            "UPDATE catalog.catalog_sku SET sales_unit_override_ref=?,base_measure_unit_override_ref=?,";
     public static final String CATALOG_SKU_FACTS_UPDATE_UPDATED_AT_EPOCH_MILLIS_WHER = "updated_at_epoch_millis=? WHER";
 
     public static final String CATALOG_SKU_FACTS_SKU_PREPARATION_OVERRIDE_TEXT = "sku.preparation_override::text";
@@ -239,16 +235,17 @@ public final class CatalogSkuFactsSql {
     public static final String CATALOG_SKU_FACTS_AXIS_VALUE_DISPLAY_ORDER_ATTRIBUTE_CODE_ALTERNATE_A =
             "COALESCE(axis_value.display_order,0), attribute.code, value.code";
     public static final String CATALOG_SKU_FACTS_CLOSE_PAREN_ALTERNATE_A = ")";
-    public static final String
-            CATALOG_SKU_FACTS_CATALOG_CATALOG_SKU_PRODUCT_SKU_REF_ITEM_REF_SKU_CODE_SKU_NAME_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS_DISPLAY_ORDER_IS_DEFAULT_STATUS_DISPLAY_ORDER_VARIANT_COMBINATION_DIGEST =
-                    """
-    catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,standard_sale_price,is_default,status,display_order,variant_combination_digest,""";
-    public static final String
-            CATALOG_SKU_FACTS_CATALOG_CATALOG_SKU_PRODUCT_SKU_REF_ITEM_REF_SKU_CODE_SKU_NAME_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS_DISPLAY_ORDER_STATUS_DISPLAY_ORDER_VARIANT_COMBINATION_DIGEST_UPDATED_AT_EPOCH_MILLIS =
-                    """
-    catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,standard_sale_price,is_default,status,display_order,variant_combination_digest,updated_at_epoch_millis)\s""";
-    public static final String
-            CATALOG_SKU_FACTS_UPDATED_AT_EPOCH_MILLIS_WHERE_PRODUCT_SKU_REF_UPDATED_AT_EPOCH_MILLIS_WHERE_PRODUCT_SKU_REF =
-                    """
+    public static final String CAT_SKU_PRODUCT_SKU_REF_005 =
+            """
+    catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,sta\
+    ndard_sale_price,is_default,status,display_order,variant_combinati\
+    on_digest,""";
+    public static final String CAT_SKU_PRODUCT_SKU_REF_006 =
+            """
+    catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,sta\
+    ndard_sale_price,is_default,status,display_order,variant_combinati\
+    on_digest,updated_at_epoch_millis)\s""";
+    public static final String UPDATED_AT_EPOCH_MS_WHERE_007 =
+            """
     updated_at_epoch_millis=? WHERE product_sku_ref=?""";
 }

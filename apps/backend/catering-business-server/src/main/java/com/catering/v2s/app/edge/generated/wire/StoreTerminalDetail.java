@@ -13,5 +13,6 @@ public record StoreTerminalDetail(
     @com.fasterxml.jackson.annotation.JsonProperty(value = "activationCode", required = true) String activationCode,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "configuration", required = true) StoreTerminalConfiguration configuration,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "areaReferences", required = true) java.util.List<StoreTerminalAreaReference> areaReferences,
-    @com.fasterxml.jackson.annotation.JsonProperty(value = "tagReferences", required = true) java.util.List<StoreTerminalTagReference> tagReferences
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "tagReferences", required = true) java.util.List<StoreTerminalTagReference> tagReferences,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "binding", required = true) StoreTerminalBinding binding
 ) {}

@@ -35,8 +35,7 @@ public class InventoryTargetPersistence {
         return jdbc.update(
                 InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_UPDATE_STOCK_TARGET_CONFIGURATION
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_COUNTING_UNIT_REF
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_COUNTING_UNIT_PRECISION_COUNTING_UNIT_CONVERSION_FACTOR_VERSION_UPDATED_AT_EPOCH_MILLIS_WHERE_DATA_NODE_REF_AND_UPDATED_AT_EPOCH_MILLIS_WHERE_DATA_NODE_REF_AND
+                        + InventoryTargetServiceSql.COUNTING_UNIT_PREC_COUNTING_UNIT_005
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_BRAND_REF
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_CONDITION_TARGET_REF_VERSION,
                 configuration,
@@ -56,8 +55,7 @@ public class InventoryTargetPersistence {
     public InventoryOwnerApi.UnitSnapshot readConsumptionUnitSnapshot(UUID targetRef) {
         return jdbc
                 .query(
-                        InventoryTargetServiceSql
-                                        .INVENTORY_TARGET_SERVICE_SELECT_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION
+                        InventoryTargetServiceSql.SELECT_CONSUM_UNIT_REF_CONSUM_006
                                 + InventoryTargetServiceSql
                                         .INVENTORY_TARGET_SERVICE_FROM_CLAUSE_STOCK_TARGET_TARGET_REF,
                         (result, rowNumber) -> requiredUnitSnapshot(result, 1),
@@ -65,7 +63,10 @@ public class InventoryTargetPersistence {
                 .stream()
                 .findFirst()
                 .orElseThrow(() ->
-                        new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "库存对象必须保存有效消耗单位快照"));
+                        // spotless:off
+                        new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422,
+                            "库存对象必须保存有效消耗单位快照"));
+                        // spotless:on
     }
 
     public int insertLedgerEntry(
@@ -83,8 +84,7 @@ public class InventoryTargetPersistence {
                 InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_INSERT_INTO
                         + InventoryTargetServiceSql
                                 .INVENTORY_TARGET_SERVICE_STOCK_LEDGER_ENTRY_REF_TARGET_REF_OPERATION_ID
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_REASON_CODE_NOTE_OCCURRED_AT_EPOCH_MILLIS_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_VALUES
+                        + InventoryTargetServiceSql.REASON_CODE_NOTE_OCCURRED_AT_007
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_VALUE_SEPARATOR,
                 entryRef,
                 targetRef,
@@ -129,8 +129,7 @@ public class InventoryTargetPersistence {
 
     public List<RecentChangeRecord> readRecentChanges(UUID targetRef) {
         return jdbc.query(
-                InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_SELECT_STOCK_LEDGER_OPERATION_ID_DELTA_OCCURRED_AT_EPOCH_MILLIS_TARGET_REF
+                InventoryTargetServiceSql.SELECT_STOCK_LEDGER_OP_ID_001
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_ORDER_BY_OCCURRED_AT_EPOCH_MILLIS,
                 statement -> statement.setObject(1, targetRef),
                 (result, rowNumber) ->
@@ -236,8 +235,7 @@ public class InventoryTargetPersistence {
                 .append(InventoryTargetServiceSql.CLASSIFIED_VIEW_AND_PAGED_PREFIX)
                 .append(viewPredicate)
                 .append(InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_ORDER_BY_ITEM_CODE_SKU_CODE_TARGET_REF
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_P_TARGET_REF_P_ITEM_REF_P_PRODUCT_SKU_REF_P_ITEM_CODE_P_SKU_CODE_UNKNOWN_COUNT_A_VIEW_COUNT_FROM
+                        + InventoryTargetServiceSql.P_TARGET_REF_P_ITEM_008
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_PAGED_AGGREGATE_ITEM_CODE_SKU_CODE
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_TARGET_REF);
         args.add(offset);
@@ -350,10 +348,8 @@ public class InventoryTargetPersistence {
     public List<HistoryRecord> readHistory(UUID targetRef, int limit, long offset) {
         return jdbc.query(
                 InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_SELECT
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_ENTRY_REF_OPERATION_ID_DELTA_BALANCE_BEFORE_BALANCE_AFTER_REASON_CODE_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_CONSUMPTION_UNIT_PRECISION_COUNT_OVER_CONSUMPTION_UNIT_PRECISION_COUNT_OVER
+                        + InventoryTargetServiceSql.ENTRY_REF_OP_ID_DELTA_009
+                        + InventoryTargetServiceSql.CONSUM_UNIT_PREC_COUNT_OVER_010
                         + InventoryTargetServiceSql
                                 .INVENTORY_TARGET_SERVICE_FROM_CLAUSE_STOCK_LEDGER_TARGET_REF_OPERATION_ID_INCREASE
                         + InventoryTargetServiceSql
@@ -391,8 +387,7 @@ public class InventoryTargetPersistence {
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_ENTRY
                         + InventoryTargetServiceSql
                                 .INVENTORY_TARGET_SERVICE_OPEN_PAREN_ENTRY_CONSUMPTION_UNIT_SNAPSHOT_PRECISION_INTEGER
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_ENTRY_TIMING_AS_TIMING_ORD_COUNT_OVER_AS_TOTAL_COUNT_OVER_AS_TOTAL
+                        + InventoryTargetServiceSql.ENTRY_TIMING_AS_TIMING_ORD_011
                         + InventoryTargetServiceSql
                                 .INVENTORY_TARGET_SERVICE_FROM_CLAUSE_STOCK_BOM_FROM_INVENTORY_STOCK_BOM_SB
                         + InventoryTargetServiceSql
@@ -410,8 +405,7 @@ public class InventoryTargetPersistence {
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_CLOSE_PAREN
                         + InventoryTargetServiceSql
                                 .INVENTORY_TARGET_SERVICE_ITEM_REF_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION
+                        + InventoryTargetServiceSql.CONSUM_UNIT_CODE_CONSUM_UNIT_012
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_TIMING_TOTAL
                         + InventoryTargetServiceSql
                                 .INVENTORY_TARGET_SERVICE_FROM_CLAUSE_EXPANDED_ITEM_CODE_SKU_CODE_ORD,
@@ -438,10 +432,8 @@ public class InventoryTargetPersistence {
     public List<LedgerRecord> readLedger(UUID targetRef, int limit, long offset) {
         return jdbc.query(
                 InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_SELECT_ALTERNATE_A
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_ENTRY_REF_OPERATION_ID_DELTA_BALANCE_BEFORE_BALANCE_AFTER_REASON_CODE_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_ALTERNATE_A
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_CONSUMPTION_UNIT_PRECISION_COUNT_OVER_CONSUMPTION_UNIT_PRECISION_COUNT_OVER_ALTERNATE_A
+                        + InventoryTargetServiceSql.ENTRY_REF_OP_ID_DELTA_ALT_A_013
+                        + InventoryTargetServiceSql.CONSUM_UNIT_PREC_COUNT_OVER_ALT_A_014
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_FROM_CLAUSE_STOCK_LEDGER_TARGET_REF
                         + InventoryTargetServiceSql
                                 .INVENTORY_TARGET_SERVICE_ORDER_BY_OCCURRED_AT_EPOCH_MILLIS_ENTRY_REF_ALTERNATE_A,
@@ -477,8 +469,7 @@ public class InventoryTargetPersistence {
                 InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_INSERT_INTO_ALTERNATE_A
                         + InventoryTargetServiceSql
                                 .INVENTORY_TARGET_SERVICE_STOCK_LEDGER_ENTRY_REF_TARGET_REF_OPERATION_ID_ALTERNATE_A
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_REASON_CODE_NOTE_OCCURRED_AT_EPOCH_MILLIS_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_NOTE_OCCURRED_AT_EPOCH_MILLIS_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE
+                        + InventoryTargetServiceSql.REASON_CODE_NOTE_OCCURRED_AT_015
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_CONSUMPTION_UNIT_NAME
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_PARAMETER_PLACEHOLDER,
                 entryRef,
@@ -499,8 +490,7 @@ public class InventoryTargetPersistence {
 
     public int updateAdjustmentBalance(UUID targetRef, long expectedVersion, BigDecimal after, long updatedAt) {
         return jdbc.update(
-                InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_UPDATE_STOCK_TARGET_BALANCE_VERSION_UPDATED_AT_EPOCH_MILLIS_ALTERNATE_A
+                InventoryTargetServiceSql.UPDATE_STOCK_TARGET_BALANCE_VER_ALT_A_003
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_TARGET_REF_VERSION_ALTERNATE_A,
                 after,
                 updatedAt,
@@ -519,10 +509,8 @@ public class InventoryTargetPersistence {
             long updatedAt) {
         return jdbc.update(
                 InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_UPDATE_STOCK_TARGET_CONFIGURATION_ALTERNATE_A
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_COUNTING_UNIT_REF_COUNTING_UNIT_CODE_COUNTING_UNIT_NAME_COUNTING_UNIT_DIMENSION_COUNTING_UNIT_REF_COUNTING_UNIT_CODE_COUNTING_UNIT_NAME_COUNTING_UNIT_DIMENSION
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_COUNTING_UNIT_PRECISION_COUNTING_UNIT_CONVERSION_FACTOR_VERSION_UPDATED_AT_EPOCH_MILLIS_WHERE_DATA_NODE_REF_AND_UPDATED_AT_EPOCH_MILLIS_WHERE_DATA_NODE_REF_AND_ALTERNATE_A
+                        + InventoryTargetServiceSql.COUNTING_UNIT_REF_COUNTING_UNIT_016
+                        + InventoryTargetServiceSql.COUNTING_UNIT_PREC_COUNTING_UNIT_ALT_A_017
                         + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_BRAND_REF_TARGET_REF_VERSION,
                 configuration,
                 countingUnit == null ? null : countingUnit.unitRef(),
@@ -578,8 +566,7 @@ public class InventoryTargetPersistence {
                 + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_ALTERNATE_A
                 + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_FROM_CLAUSE_SELECTED_TARGET_REF
                 + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_SELECT_ALTERNATE_B
-                + InventoryTargetServiceSql
-                        .INVENTORY_TARGET_SERVICE_S_TARGET_REF_A_TODAY_CHANGE_A_SEVEN_DAY_CHANGE_A_THIRTY_DAY_CHANGE_LATEST_OPERATION_ID_LATEST_OPERATION_ID_LATEST_OCCURRED_AT_EPOCH_MILLIS
+                + InventoryTargetServiceSql.S_TARGET_REF_A_TODAY_018
                 + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_FROM_CLAUSE_LATEST_TARGET_REF
                 + InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_LATEST_TARGET_REF;
         List<Object> args = new ArrayList<>(targetRefs);
@@ -603,8 +590,7 @@ public class InventoryTargetPersistence {
 
     public List<RecentChangeRecord> readRecentChangesForDetail(UUID targetRef) {
         return jdbc.query(
-                InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_SELECT_STOCK_LEDGER_OPERATION_ID_DELTA_OCCURRED_AT_EPOCH_MILLIS_TARGET_REF_ALTERNATE_A
+                InventoryTargetServiceSql.SELECT_STOCK_LEDGER_OP_ID_ALT_A_004
                         + InventoryTargetServiceSql
                                 .INVENTORY_TARGET_SERVICE_ORDER_BY_OCCURRED_AT_EPOCH_MILLIS_ALTERNATE_A,
                 statement -> statement.setObject(1, targetRef),
@@ -642,8 +628,7 @@ public class InventoryTargetPersistence {
             long createdAt) {
         return jdbc.update(
                 InventoryTargetServiceSql.INVENTORY_TARGET_SERVICE_INSERT_INTO_ALTERNATE_B
-                        + InventoryTargetServiceSql
-                                .INVENTORY_TARGET_SERVICE_INVENTORY_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID_REQUEST_HASH_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB,
+                        + InventoryTargetServiceSql.INV_CMD_RECEIPT_REF_DATA_019,
                 receiptRef,
                 scope,
                 key,
@@ -700,7 +685,10 @@ public class InventoryTargetPersistence {
     private static InventoryOwnerApi.UnitSnapshot requiredUnitSnapshot(ResultSet result, int firstColumn)
             throws SQLException {
         InventoryOwnerApi.UnitSnapshot snapshot = unitSnapshot(result, firstColumn);
-        if (snapshot == null) throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "单位快照不完整");
+        // spotless:off
+        if (snapshot == null) throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422,
+            "单位快照不完整");
+        // spotless:on
         return snapshot;
     }
 

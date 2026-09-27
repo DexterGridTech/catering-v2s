@@ -13,7 +13,8 @@ public final class PlatformAuthenticationServiceSql {
                     + "'PLATFORM_LOGIN', ?, ?, ?, 'ACTIVE', ?, ?)";
     public static final String LOGIN_FIND_OTP =
             "SELECT platform_admin_id FROM platform_iam.platform_otp_grant WHERE purpose='PLATFORM_LOGIN' AND "
-                    + "mobile_fingerprint=? AND token_hash=? AND status='ACTIVE' AND expires_at_epoch_millis>? FOR UPDATE";
+                    + ("mobile_fingerprint=? AND token_hash=? AND status='ACTIVE' AND expires_at"
+                            + "_epoch_millis>? FOR UPDATE");
     public static final String LOGIN_CONSUME_OTP =
             "UPDATE platform_iam.platform_otp_grant SET status='USED', used_at_epoch_millis=? "
                     + "WHERE purpose='PLATFORM_LOGIN' AND mobile_fingerprint=? AND token_hash=? AND status='ACTIVE'";

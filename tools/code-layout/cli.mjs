@@ -76,35 +76,6 @@ function isSourceTreePath(relativePath) {
   return /^(?:apps|libraries)\/.*\/src(?:\/|$)/.test(relativePath);
 }
 
-function validateTdpPlaceholder(root, reasons) {
-  const placeholder = path.join(root, "apps/backend/terminal-data-server");
-  if (!isDirectory(placeholder)) return;
-
-  const allowedFiles = new Set([
-    "apps/backend/terminal-data-server/README.md",
-    "apps/backend/terminal-data-server/build.gradle.kts",
-  ]);
-  const visit = (directory) => {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-      if (["build", ".gradle", "dist", "node_modules"].includes(entry.name)) continue;
-      const absolute = path.join(directory, entry.name);
-      if (entry.isDirectory()) visit(absolute);
-      else if (!allowedFiles.has(rel(root, absolute))) {
-        reasons.push(`TDP_PLACEHOLDER_UNEXPECTED_FILE:${rel(root, absolute)}`);
-      }
-    }
-  };
-  visit(placeholder);
-
-  const buildFile = path.join(placeholder, "build.gradle.kts");
-  if (fs.existsSync(buildFile)) {
-    const buildText = fs.readFileSync(buildFile, "utf8");
-    if (/\bdependencies\s*\{|project\s*\(/.test(buildText)) {
-      reasons.push("TDP_PLACEHOLDER_DEPENDENCY_EDGE:apps/backend/terminal-data-server/build.gradle.kts");
-    }
-  }
-}
-
 function validateBackendJavaPackagePaths(root, reasons) {
   const backend = path.join(root, "apps/backend/catering-business-server");
   let count = 0;
@@ -129,7 +100,6 @@ function validate(root) {
       reasons.push(`REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:${entry.name}`);
     }
   }
-  validateTdpPlaceholder(root, reasons);
   validateBackendJavaPackagePaths(root, reasons);
   const appSources = [
     "apps/backend/catering-business-server/src",
@@ -271,16 +241,18 @@ function selfTest() {
     fs.rmSync(emptyRoot, { recursive: true, force: true });
   }
 
-  const tdpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-code-layout-"));
+  const tdsRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-code-layout-"));
   try {
-    expectFailure(tdpRoot, (fixture) => {
-      fs.mkdirSync(path.join(fixture, "apps/backend/terminal-data-server/src/main"), { recursive: true });
-      fs.writeFileSync(path.join(fixture, "apps/backend/terminal-data-server/README.md"), "placeholder\n");
-      fs.writeFileSync(path.join(fixture, "apps/backend/terminal-data-server/build.gradle.kts"), "plugins { java }\n");
-      fs.writeFileSync(path.join(fixture, "apps/backend/terminal-data-server/src/main/Future.java"), "class Future {}\n");
-    }, "TDP_PLACEHOLDER_UNEXPECTED_FILE:apps/backend/terminal-data-server/src/main/Future.java");
+    const tdsSource =
+      "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/ApprovedTdsRuntime.java";
+    fs.mkdirSync(path.dirname(path.join(tdsRoot, tdsSource)), { recursive: true });
+    fs.writeFileSync(
+      path.join(tdsRoot, tdsSource),
+      "package com.catering.v2s.terminaldataserver;\nfinal class R4ApprovedTdsRuntime {}\n",
+    );
+    if (!validate(tdsRoot).includes("CODE_LAYOUT=PASS")) fail("APPROVED_TDS_RUNTIME_NOT_ACCEPTED");
   } finally {
-    fs.rmSync(tdpRoot, { recursive: true, force: true });
+    fs.rmSync(tdsRoot, { recursive: true, force: true });
   }
 
   const backendRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-code-layout-"));
@@ -315,7 +287,7 @@ function selfTest() {
     "RED_FIXTURE_REPOSITORY_ROOT_ALLOWLIST=PASS",
     "RED_FIXTURE_PRODUCTION_RED_FIXTURE=PASS",
     "RED_FIXTURE_EMPTY_SOURCE_DIRECTORY=PASS",
-    "RED_FIXTURE_TDP_PLACEHOLDER_BOUNDARY=PASS",
+    "GREEN_FIXTURE_APPROVED_TDS_RUNTIME=PASS",
     "RED_FIXTURE_BACKEND_APP_ROOT_ALLOWLIST=PASS",
     "",
   ].join("\n"));

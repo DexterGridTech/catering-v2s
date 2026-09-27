@@ -2,6 +2,10 @@ SKILL_USED=cs-writing-plans@72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a2
 
 # 门店终端管理 · 实现向详设
 
+## 批次一 D-18 覆盖（2026-09-26）
+
+本文件中 CP-07 是此前用户体验纠偏的历史设计单元；它不承载《终端激活与长连接》D-18 的实施。D-18 的设备类型不可变属于该需求批次一，当前详设与计划见 `doc/plans/platform/2026-09-26-v2s-terminal-activation-and-connection-implementation-design-codex.md` 与同名 `implementation-plan-codex.md`。为保持门店终端工件一致，本文相关 UI 与测试条款仅作同步：新建态仍可选设备类型；编辑态从 owner 当前详情只读显示设备类型，不提供可编辑/禁用选择器或解释性提示。更新请求契约不含 `deviceType`；旧请求若仍携带该字段，由 controller 的 `strictBody` 按未知字段拒绝，owner 不执行更新且终端配置、版本不变；不另建 owner 专属错误码。该 overlay 不授权本文件 CP-07 或任何实现。
+
 ## 0. 输入、授权与口径
 
 DATE=2026-09-25；设计复核=Claude R2 NO-GO（M/S/N=0/3/5），既有 finding 已按逐项处置表修订；CP-07 已完成第二轮独立复核后的作者收口，状态=DESIGN_DELTA_SELF_REVIEW_READY_FOR_IMPLEMENTATION；实施授权=true；动态验证授权=true；Browser L2/reset/DEV/seed 授权=true；UAT/部署授权=false。实施期性能基线采用 `doc/decisions/2026-09-25-v2s-store-terminal-cp05-baseline-293.md` 的 `DEXTER-2026-09-25-V2S-STORE-TERMINAL-CP05-BASELINE-293`，报告闭集为 293、三次最大值规则；三次报告缺 `baselineDecisionRef` 时机器拒绝消费，当前不重建不可恢复的 286 报告。
@@ -438,7 +442,7 @@ V-29 的手写纸规格期望矩阵固定如下，所有其余型号×纸规格�
 | 主题 | 生效规则 | 不能被误读成 |
 |---|---|---|
 | Drawer 结构 | `Tabs(items=[基本信息与打印机, 功能与范围])`；默认第一个；`destroyOnHidden=false`/Form preserve 保持同一草稿；每个 Tab 用 `section` 表达内容分区；抽屉正文全宽唯一滚动 | 不是 `Steps`，不是两次保存，不是 Tab 间清空草稿 |
-| 基本信息 | 名称与设备类型同一行；激活码仅新建且仍可选填；打印机 section 在功能 Tab 之前，卡片用紧凑网格/`Space.Compact` | 不把终端 `deviceType` 改成不可变；R-1.4 仍允许改设备类型，兼容性由 owner 判定 |
+| 基本信息 | 名称与设备类型同一行；新建态设备类型可选，编辑态设备类型是只读文本；激活码仅新建且仍可选填；打印机 section 在功能 Tab 之前，卡片用紧凑网格/`Space.Compact` | D-18/R-8.4：更新请求契约不含 `deviceType`；携带该遗留字段的请求由 controller `strictBody` 按未知字段拒绝，owner 不执行更新，终端配置与版本不变；不另建 owner 专属错误码；界面不显示选择器、禁用选择器或解释性提示 |
 | 功能类型 | 添加新功能时选择 `functionKey`；已有 `ref` 的功能行显示只读标签，不能提供 Select；删除后可从添加入口建立另一类型；后端 `TerminalConfigurationCodec.normalize` 对 prior `ref -> functionKey` 做 fail-closed 比较 | 不以 UI 隐藏作为唯一安全边界；不允许通过 HTTP 手写请求换类型 |
 | 范围 | contract 不再有 `NONE`；`QUEUE_CALL.allowedRangeKeys=[]`，其 request 为 `ranges:[]`；有范围的功能仍用一个可多选框，“全部”与具体 refs 互斥 | 不增加“无范围” Checkbox/Option；不把空数组转成 `NONE` |
 | 场景 | `scenesForFunction(functionKey).length===0` 时不渲染 Divider、scene picker、空选择提示或场景卡；长度大于 0 时每条场景仍独立选订单类型和同等打印机集合 | 不把功能级打印机选择重新引入；不因未选任何场景而隐藏“有场景”的选择器 |
@@ -452,12 +456,12 @@ V-29 的手写纸规格期望矩阵固定如下，所有其余型号×纸规格�
 | 规则生成 | `scripts/generate/store-terminal-rules.mjs`、`scripts/test/store-terminal-rules-generator.test.mjs` | 生成器继续负责 Java/TS/OpenAPI；测试冻结 Queue 空数组、无 NONE、场景/范围交叉闭集和真实 red mutation |
 | 生成物 | `apps/backend/catering-business-server/modules/store-terminal/src/main/java/com/catering/v2s/storeterminal/domain/generated/StoreTerminalRules.java`、`apps/frontend/operations-admin/src/app/api/generated/storeTerminalRules.ts`、`contracts/openapi/components/store-terminal/store-terminal-rules.generated.json` | 只由 generator 写出；`--check` 与编译/类型检查验证无漂移 |
 | owner 聚合 | `apps/backend/catering-business-server/modules/store-terminal/src/main/java/com/catering/v2s/storeterminal/application/TerminalConfigurationCodec.java`、`apps/backend/catering-business-server/modules/store-terminal/src/main/java/com/catering/v2s/storeterminal/domain/TerminalConfiguration.java`、`apps/backend/catering-business-server/modules/store-terminal/src/main/java/com/catering/v2s/storeterminal/application/StoreTerminalOwnerService.java` | prior configuration 建 `functionRef -> functionKey` 映射；既有 ref 的 key 变化抛现有规则无效异常；create 的 clientKey 不受此约束；空 ranges 继续合法，NONE 不再可被 contract/owner 接受 |
-| owner focused/HTTP | `apps/backend/catering-business-server/modules/store-terminal/src/test/java/com/catering/v2s/storeterminal/application/StoreTerminalOwnerServiceTest.java`、`apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/StoreTerminalAcceptanceScenarios.java` | 新增既有 ref 换 functionKey 的无写入负例；Queue 空范围成功读回；有场景/无场景和设备类型兼容各有正负例；错误仍为 `STORE_TERMINAL_RULE_INVALID` |
-| 前端表单 | `apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx` | 去掉 `Steps`、step/section 滚动状态、下一步/上一步；使用普通 `Tabs`；全宽 section；name/device 同排；错误定位切换 Tab 而非滚动到 Step |
+| owner focused/HTTP | `apps/backend/catering-business-server/modules/store-terminal/src/test/java/com/catering/v2s/storeterminal/application/StoreTerminalOwnerServiceTest.java`、`apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/StoreTerminalAcceptanceScenarios.java` | 新增既有 ref 换 functionKey 的无写入负例；Queue 空范围成功读回；按创建时设备类型验证功能兼容；D-18 遗留 `deviceType` 字段由 controller `strictBody` 拒绝，owner 不执行更新且配置/version 不变（V-B12）；不新增 owner 专属错误码 |
+| 前端表单 | `apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx` | 去掉 `Steps`、step/section 滚动状态、下一步/上一步；使用普通 `Tabs`；全宽 section；名称与设备类型同排，新建可选、编辑只读文本；错误定位切换 Tab 而非滚动到 Step；V-U1 覆盖编辑只读和新建仍可选 |
 | 前端功能/范围/场景 | `apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx`、`apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalSceneEditor.tsx`、`apps/frontend/operations-admin/src/features/store-terminal/model/storeTerminalModel.ts` | 功能既有行类型只读；删除无效的原行换类型逻辑/测试；allowed 为空不渲染范围选择；scenes 为空不渲染任何打印场景区；场景 printer 关系保持逐场景 |
 | 前端打印机与触点 | `apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalPrinterEditor.tsx`、`apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts`、`apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalL2ActionNodes.static.test.ts`、`apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts` | 保留已有级联与 `Space.Compact`，将 card section 收紧；删除 Steps/sectionNav/next/back 触点，新增两个 Tab 触点与只读 function type 观察触点；红 mutation 必须能抓回旧 Steps/可变 Select |
 | L2 控制面 | `contracts/policy/store-terminal-l2-case-blueprint.json`、`store-terminal-l2-scenarios.json`、`store-terminal-l2-locator-bindings.json`、`store-terminal-l2-admission.json`、`store-terminal-l2-fixture.json`、`store-terminal-l2-timing-budget.json`、`scripts/generate/store-terminal-l2-p1.mjs`、`apps/frontend/operations-admin/src/tests/l2/store-terminal.spec.ts` 及相应静态测试 | 将旧 sectionNav/next/back 绑定改为两个 Tab；增加 C02 的真实负向断言：`QUEUE_CALL` 无 `TERMINAL_RANGE_GROUP`，`KDS` 与 `ORDER_CONFIRMATION` 保留 contract range group 但无 `TERMINAL_SCENE_PICKER`；既有 function type 只观察不操作；改动后 admission 失效，fresh 复核前不得运行 |
-| seed/验收连带 | `doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json`、`scripts/dev/store-terminal-seed-executor.mjs` 及 test、`scripts/dev/r5-complete-seed-executor.mjs` 相关校验、`StoreTerminalAcceptanceScenarios.java` | 所有 Queue 样本移除 NONE，改为 `ranges:[]`；八台读回仍逐台核配置；seed plan/dry-run 分母随实际变更核对，不新增第二 data source；V-23/V-29 等不受影响的矩阵需明确 N/A_WITH_REASON |
+| seed/验收连带 | `doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json`、`scripts/dev/store-terminal-seed-executor.mjs` 及 test、`scripts/dev/r5-complete-seed-executor.mjs` 相关校验、`StoreTerminalAcceptanceScenarios.java` | 所有 Queue 样本移除 NONE，改为 `ranges:[]`；D-18 后修改请求不再携带可变 deviceType，历史“改设备类型成功”验收改为拒绝/不变断言由批次一实施；八台读回仍逐台核配置；seed plan/dry-run 分母随实际变更核对，不新增第二 data source；V-23/V-29 等不受影响的矩阵需明确 N/A_WITH_REASON |
 
 ### 16.4 关闭条件、闭包等级与动态顺序
 

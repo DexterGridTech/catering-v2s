@@ -472,7 +472,10 @@ final class ExtensionAcceptanceScenarios {
                 filterField(prefix + "Number", "数值", "NUMBER", List.of(), 1, true, true, "ENABLED"),
                 filterField(prefix + "Date", "日期", "DATE", List.of(), 2, true, true, "ENABLED"),
                 filterField(prefix + "Boolean", "布尔", "BOOLEAN", List.of(), 3, true, true, "ENABLED"),
-                filterField(prefix + "Select", "来源", "SELECT", List.of("直营", "联营"), 4, true, true, "ENABLED"),
+                // spotless:off
+                filterField(prefix + "Select", "来源", "SELECT", List.of("直营", "联营"), 4, true, true,
+                    "ENABLED"),
+                // spotless:on
                 filterField(prefix + "Disabled", "禁用字段", "TEXT", List.of(), 5, false, false, "DISABLED"));
     }
 
@@ -547,7 +550,10 @@ final class ExtensionAcceptanceScenarios {
 
     private static List<Map<String, Object>> fields(String hostType, String suffix) {
         List<Map<String, Object>> fields = new ArrayList<>();
-        fields.add(field(hostType, hostType.toLowerCase() + "Area", "面积-" + suffix, "NUMBER", List.of(), 0, "ENABLED"));
+        // spotless:off
+        fields.add(field(hostType, hostType.toLowerCase() + "Area", "面积-" + suffix, "NUMBER", List.of(), 0,
+            "ENABLED"));
+        // spotless:on
         String kindKey = hostType.toLowerCase() + "Kind";
         String kindLabel = "类型-" + suffix;
         List<String> kindOptions = List.of("PRIMARY", "SECONDARY");

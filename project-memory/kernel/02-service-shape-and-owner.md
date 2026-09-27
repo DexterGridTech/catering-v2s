@@ -16,3 +16,5 @@ sourceRefs: ["doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-se
 - `ONE_BUSINESS_DEPLOYABLE`: 初始只有一个业务 deployable。
 - `MODULE_OWNER_SOVEREIGNTY`: 每个模块独占自己的事实、表与命令语义。
 - `COORDINATOR_NO_ASSET`: coordinator 只编排，不拥有、复制或直接修改参与模块的业务资产。
+
+`terminal-data-server` 的单节点 WebSocket transport runtime 是本批已接受的辅助进程（见 `doc/decisions/2026-09-26-v2s-terminal-activation-service-shape.md`），不是第二个业务 deployable；业务事实和迁移仍由唯一业务应用及其 owner 管理。

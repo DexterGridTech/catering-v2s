@@ -39,9 +39,8 @@ public final class ContractAuditHistoryServiceSql {
           ORDER BY occurred_at_epoch_millis DESC, id DESC LIMIT ? OFFSET ?
         ) page ON TRUE
         """;
-    public static final String
-            CONTRACT_AUDIT_HISTORY_SERVICE_CTE_LATERAL_STORE_ID_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_FOUND =
-                    """
+    public static final String CTE_LATERAL_STORE_ID_WS_001 =
+            """
         WITH target AS (SELECT contract.id, contract.store_id FROM contract.store_contract contract WHERE \
         contract.id=? AND contract.workspace_uuid=? AND contract.group_workspace_key=?),
         auth_scope AS (SELECT target.id IS NOT NULL AS found, target.store_id=ANY(?) AS authorized FROM (VALUES (1)) \

@@ -39,9 +39,8 @@ public final class BusinessChannelTemplateServiceSql {
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_TEMPLATE_REF_STORE_REF =
             "WHERE v.template_ref=t.template_ref AND v.store_ref=?)))";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_TEMPLATE_REF = " AND template_ref > ?";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_BUSINESS_CHANNEL_TEMPLATE_SELECT_COUNT_FROM_BUSINESS_C =
-                    "SELECT count(*) FROM business_channel.business_channel_template t";
+    public static final String SELECT_BIZ_CHANNEL_TEMPLATE_SELECT_001 =
+            "SELECT count(*) FROM business_channel.business_channel_template t";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_ORDER_BY_ALTERNATE_A = " ORDER BY ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_LIMIT_ALTERNATE_A = " LIMIT ?";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_TEMPLATE_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
@@ -50,7 +49,7 @@ public final class BusinessChannelTemplateServiceSql {
             "AND t.project_ref=? AND t.operator_kind='STORE' ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_STORE_REF_WORKSPACE_UUID =
             "AND s.id=v.store_ref AND s.workspace_uuid=t.workspace_uuid ";
-    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_PROJECT_ID_PROJECT_REF =
+    public static final String CONDITION_GRP_WS_KEY_PROJECT_002 =
             "AND s.group_workspace_key=t.group_workspace_key AND s.project_id=t.project_ref";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_STATUS_VOIDED = " AND s.status <> 'VOIDED'";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_CODE =
@@ -68,14 +67,12 @@ public final class BusinessChannelTemplateServiceSql {
             "SELECT v.store_ref, s.code AS store_code, s.name AS store_name, s.status AS store_status";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_ORDER_BY_CODE_STORE_REF =
             " ORDER BY COALESCE(s.code,''), v.store_ref LIMIT ?";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_BUSINESS_CHANNEL_TEMPLATE_TEMPLATE_REF_PROJECT_REF =
-                    "SELECT template_ref, project_ref FROM business_channel.business_channel_template ";
-    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF =
+    public static final String SELECT_BIZ_CHANNEL_TEMPLATE_REF_003 =
+            "SELECT template_ref, project_ref FROM business_channel.business_channel_template ";
+    public static final String WHERE_WS_UUID_GRP_WS_004 =
             "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=?";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_INSERT_INTO_BUSINESS_CHANNEL_TEMPLATE_INSERT_INTO_BUSINESS_CHANNEL =
-                    "INSERT INTO business_channel.business_channel_template ";
+    public static final String INSERT_INTO_BIZ_CHANNEL_TEMPLATE_005 =
+            "INSERT INTO business_channel.business_channel_template ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_OPEN_PAREN_TEMPLATE_REF =
             "(template_ref, workspace_uuid, group_workspace_key, project_ref, templat";
 
@@ -93,20 +90,17 @@ public final class BusinessChannelTemplateServiceSql {
             "version=version+1, updated_at_epoch_millis=? WHERE template_ref=? ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION =
             "AND workspace_uuid=? AND group_workspace_key=? AND version=?";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_ALTERNATE_A =
-                    "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=?";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_ALTERNATE_B =
-                    "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=? FOR UPDATE";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_ALTERNATE_C =
-                    "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=? FOR UPDATE";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_PROJECT_REF =
-                    "SELECT t.workspace_uuid, t.group_workspace_key, t.template_ref, t.project_ref, t.template_name, ";
+    public static final String WHERE_WS_UUID_GRP_WS_ALT_A_006 =
+            "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=?";
+    public static final String WHERE_WS_UUID_GRP_WS_ALT_B_007 =
+            "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=? FOR UPDATE";
+    public static final String WHERE_WS_UUID_GRP_WS_ALT_C_008 =
+            "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=? FOR UPDATE";
+    public static final String SELECT_WS_UUID_GRP_WS_009 =
+            "SELECT t.workspace_uuid, t.group_workspace_key, t.template_ref, t.project_ref, t.template_name, ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_TEMPLATE_CODE_ACCESS_KIND_OPERATOR_KIND_ORDER_KIND =
-            "t.template_code, t.access_kind, t.operator_kind, t.order_kind, t.dine_in_form, t.provider_code, t.url_rule, ";
+            ("t.template_code, t.access_kind, t.operator_kind, t.order_kind, t.dine_in"
+                    + "_form, t.provider_code, t.url_rule, ");
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_STORE_VISIBILITY_SCOPE_STATUS_VERSION =
             "t.store_visibility_scope, t.status, t.version, (SELECT count(*) FROM ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_BUSINESS_CHANNEL_TEMPLATE_STORE_VI =
@@ -123,7 +117,7 @@ public final class BusinessChannelTemplateServiceSql {
             "WHERE v.template_ref=t.template_ref AND visible_store.status <> 'VOIDED') AS visible_store_count, ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_ARRAY_AGG_STORE_REF =
             "COALESCE((SELECT array_agg(v.store_ref ORDER BY v.store_ref) FROM ";
-    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_BUSINESS_CHANNEL_TEMPLATE_STORE_VI_ALTERNATE_A =
+    public static final String BIZ_CHANNEL_TEMPLATE_STORE_VI_ALT_A_010 =
             "business_channel.business_channel_template_store_visibility v ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_TEMPLATE_REF_VISIBLE_STORE_REFS =
             "WHERE v.template_ref=t.template_ref), ARRAY[]::uuid[]) AS visible_store_refs, ";
@@ -133,15 +127,12 @@ public final class BusinessChannelTemplateServiceSql {
             "WHERE project.id=t.project_ref AND project.workspace_uuid=t.workspace_uuid ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_PROJECT_GROUP_WORKSPACE_KEY_PROJECT_STATUS =
             "AND project.group_workspace_key=t.group_workspace_key) AS project_status ";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_FROM_CLAUSE_BUSINESS_CHANNEL_TEMPLATE_FROM_BUSINESS_CHANNEL_BUSINE =
-                    "FROM business_channel.business_channel_template t ";
+    public static final String FROM_CLAUSE_BIZ_CHANNEL_TEMPLATE_011 =
+            "FROM business_channel.business_channel_template t ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CTE_ANCESTRY = "WITH RECURSIVE ancestry AS (";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_SOURCE_REF_PARENT_ID_NODE_TYPE_STATUS =
             "SELECT id AS source_ref, id, parent_id, node_type, status, 0 AS depth ";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_FROM_CLAUSE_ORGANIZATION_NODE_FROM_ORGANIZATION_ORGANIZATI =
-                    "FROM organization.organization_node ";
+    public static final String FROM_CLAUSE_ORG_NODE_FROM_012 = "FROM organization.organization_node ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WHERE_ID_IN = "WHERE id IN (";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CLOSE_PAREN_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             ") AND workspace_uuid=? AND group_workspace_key=? ";
@@ -155,13 +146,11 @@ public final class BusinessChannelTemplateServiceSql {
             "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=? ) ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_ANCESTRY_SOURCE_REF_NODE_TYPE_STATUS_DEPTH =
             "SELECT source_ref, node_type, id, status FROM ancestry ORDER BY source_ref, depth DESC";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_BUSINESS_CHANNEL_TEMPLATE_PROJECT_REF_OPERATOR_KIND =
-                    "SELECT project_ref, operator_kind FROM business_channel.business_channel_template ";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_ALTERNATE_D =
-                    "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=?";
-    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_BUSINESS_CHANNEL_TEMPLATE_STORE_VI_ALTERNATE_A =
+    public static final String SELECT_BIZ_CHANNEL_TEMPLATE_PROJECT_013 =
+            "SELECT project_ref, operator_kind FROM business_channel.business_channel_template ";
+    public static final String WHERE_WS_UUID_GRP_WS_ALT_D_014 =
+            "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=?";
+    public static final String SELECT_BIZ_CHANNEL_TEMPLATE_STORE_ALT_A_015 =
             "SELECT count(*) FROM business_channel.business_channel_template_store_visibility ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_TEMPLATE_REF_STORE_REF_ALTERNATE_A =
             "WHERE template_ref=? AND store_ref=?";
@@ -178,9 +167,8 @@ public final class BusinessChannelTemplateServiceSql {
             "target_template AS (SELECT ?::uuid AS template_ref UNION SELECT template_ref FROM deleted), ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_INSERT_BUSINESS_CHANNEL_TEMPLATE_STORE_VI_INSERTED =
             "inserted AS (INSERT INTO business_channel.business_channel_template_store_visibility ";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_OPEN_PAREN_TEMPLATE_REF_STORE_REF_TARGET_TEMPLATE_RELATION_ROWS =
-                    "(template_ref, store_ref) SELECT target_template.template_ref, relation_rows.store_ref ";
+    public static final String OPEN_PAREN_TEMPLATE_REF_STORE_016 =
+            "(template_ref, store_ref) SELECT target_template.template_ref, relation_rows.store_ref ";
     public static final String
             BUSINESS_CHANNEL_TEMPLATE_SERVICE_FROM_CLAUSE_TARGET_TEMPLATE_FROM_TARGET_TEMPLATE_CROSS_J =
                     "FROM target_template CROSS JOIN (";
@@ -199,14 +187,14 @@ public final class BusinessChannelTemplateServiceSql {
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_GROUP_WORKSPACE_KEY =
             "AND t.group_workspace_key=? AND t.version=? AND relation_write.inserted_count >= 0 ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_RETURNING_RETURNING_T = "RETURNING t.*) ";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_UPDATED_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF =
-                    "SELECT updated.workspace_uuid, updated.group_workspace_key, updated.template_ref, ";
+    public static final String SELECT_UPDATED_WS_UUID_GRP_017 =
+            "SELECT updated.workspace_uuid, updated.group_workspace_key, updated.template_ref, ";
     public static final String
             BUSINESS_CHANNEL_TEMPLATE_SERVICE_UPDATE_UPDATED_PROJECT_REF_TEMPLATE_NAME_TEMPLATE_CODE =
                     "updated.project_ref, updated.template_name, updated.template_code, updated.access_kind, ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_UPDATE_UPDATED_OPERATOR_KIND_ORDER_KIND_DINE_IN_FORM =
-            "updated.operator_kind, updated.order_kind, updated.dine_in_form, updated.provider_code, updated.url_rule, ";
+            ("updated.operator_kind, updated.order_kind, updated.dine_in_form, updated"
+                    + ".provider_code, updated.url_rule, ");
     public static final String
             BUSINESS_CHANNEL_TEMPLATE_SERVICE_UPDATE_INSERTED_UPDATED_STORE_VISIBILITY_SCOPE_STATUS_VERSION =
                     "updated.store_visibility_scope, updated.status, updated.version, (SELECT count(*) FROM inserted ";
@@ -242,8 +230,7 @@ public final class BusinessChannelTemplateServiceSql {
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION = " AND (";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_PARAMETER_PLACEHOLDER = " ? OR (";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_TEMPLATE_REF = " = ? AND template_ref > ?))";
-    public static final String
-            BUSINESS_CHANNEL_TEMPLATE_SERVICE_TEMPLATE_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PROJECT_REF_TEMPLATE_NAME_TEMPLATE_CODE_GROUP_WORKSPACE_KEY_PROJECT_REF_TEMPLATE_NAME_TEMPLATE_CODE =
-                    """
+    public static final String TEMPLATE_REF_WS_UUID_GRP_018 =
+            """
     (template_ref, workspace_uuid, group_workspace_key, project_ref, template_name, template_code,\s""";
 }

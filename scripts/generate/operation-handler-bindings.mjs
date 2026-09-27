@@ -29,6 +29,7 @@ function expectedCounts(root = ROOT) {
     operationsAdminCommands: operationCounts.commandsByFace.operationsAdmin,
     platformAdminCommands: operationCounts.commandsByFace.platformAdmin,
     publicCommands: operationCounts.commandsByFace.public,
+    terminalCommands: operationCounts.commandsByFace.terminal,
   });
 }
 const CONTEXT_KINDS = new Set([
@@ -37,6 +38,7 @@ const CONTEXT_KINDS = new Set([
   "WORKSPACE_PROTOCOL_CONTEXT",
   "PLATFORM_COMMAND_CONTEXT",
   "PUBLIC_PROTOCOL_CONTEXT",
+  "TERMINAL_CREDENTIAL_CONTEXT",
 ]);
 const COPY_ROLES = new Set(["NONE", "COPY_SOURCE", "COPY_TARGET"]);
 const MODES = new Set(["READ", "COMMAND"]);
@@ -47,6 +49,7 @@ const COMMAND_CONTEXTS = new Set([
   "WORKSPACE_PROTOCOL_CONTEXT",
   "PLATFORM_COMMAND_CONTEXT",
   "PUBLIC_PROTOCOL_CONTEXT",
+  "TERMINAL_CREDENTIAL_CONTEXT",
 ]);
 const OWNER_NAMESPACES = Object.freeze({
   "workspace-iam": "workspace.iam",
@@ -63,6 +66,7 @@ const OWNER_NAMESPACES = Object.freeze({
   "business-channel": "business.channel",
   "sales-menu": "salesmenu",
   "store-terminal": "storeterminal",
+  "terminal-binding": "terminalbinding",
 });
 // Only the app-owned operation adapters physically moved during the split-package
 // repair use application.operations.  Owner reads/protocols in the same namespace
@@ -337,6 +341,12 @@ function routeOperations(root) {
 function expectedAdapter(operation) {
   const namespace = OWNER_NAMESPACES[operation.owner];
   if (!namespace) fail("BP_U02_OWNER_UNKNOWN", operation.owner);
+  if (operation.operationId === "activateTerminal") {
+    return "com.catering.v2s.app.edge.terminal.ActivateTerminalOperation";
+  }
+  if (operation.operationId === "cancelOperationsStoreTerminalActivation") {
+    return "com.catering.v2s.app.edge.operations.organization.OperationsStoreTerminalActivationCancellation";
+  }
   if (operation.operationId === "stageOperationsCatalogAsset") {
     return "com.catering.v2s.platform.asset.application.operations.StageOperationsCatalogAssetMultipartOperation";
   }
@@ -417,6 +427,16 @@ function validateBindingContract(root, binding, routes = routeOperations(root)) 
     if (route.face === "operations-admin" && isCommand && !["WORKSPACE_EXECUTION_CONTEXT", "WORKSPACE_PROTOCOL_CONTEXT"].includes(row.contextKind)) {
       fail("BP_U02_BINDING_OPERATIONS_CONTEXT_DRIFT", row.operationId);
     }
+    if (route.face === "terminal" && isCommand) {
+      const expectedTerminalContext = row.operationId === "cancelTerminalActivation"
+        ? "TERMINAL_CREDENTIAL_CONTEXT"
+        : row.operationId === "activateTerminal"
+          ? "PUBLIC_PROTOCOL_CONTEXT"
+          : undefined;
+      if (!expectedTerminalContext || row.contextKind !== expectedTerminalContext) {
+        fail("BP_U02_BINDING_TERMINAL_CONTEXT_DRIFT", `${row.operationId}:${row.contextKind}:${expectedTerminalContext || "UNKNOWN"}`);
+      }
+    }
     const expectedContextKind = CONTEXT_KIND_BY_OPERATION[row.operationId];
     if (expectedContextKind && row.contextKind !== expectedContextKind) {
       fail("BP_U02_BINDING_OPERATION_CONTEXT_DRIFT", `${row.operationId}:${row.contextKind}:${expectedContextKind}`);
@@ -440,8 +460,9 @@ function validateBindingContract(root, binding, routes = routeOperations(root)) 
     operationsAdminCommands: rows.filter((row) => row.face === "operations-admin" && row.mode === "COMMAND").length,
     platformAdminCommands: rows.filter((row) => row.face === "platform-admin" && row.mode === "COMMAND").length,
     publicCommands: rows.filter((row) => row.face === "public" && row.mode === "COMMAND").length,
+    terminalCommands: rows.filter((row) => row.face === "terminal" && row.mode === "COMMAND").length,
   };
-  if (counts.operationsAdminCommands !== countsSource.operationsAdminCommands || counts.platformAdminCommands !== countsSource.platformAdminCommands || counts.publicCommands !== countsSource.publicCommands) {
+  if (counts.operationsAdminCommands !== countsSource.operationsAdminCommands || counts.platformAdminCommands !== countsSource.platformAdminCommands || counts.publicCommands !== countsSource.publicCommands || counts.terminalCommands !== countsSource.terminalCommands) {
     fail("BP_U02_COMMAND_FACE_DENOMINATOR_DRIFT", JSON.stringify(counts));
   }
   if (JSON.stringify(binding.contextCounts) !== JSON.stringify(Object.fromEntries([...CONTEXT_KINDS].sort().map((kind) => [kind, rows.filter((row) => row.contextKind === kind).length])))) {
@@ -519,6 +540,7 @@ function contextTypeRef(contextKind) {
   if (contextKind === "WORKSPACE_PROTOCOL_CONTEXT") return "OperationBindingTypes.WorkspaceProtocolContext";
   if (contextKind === "PLATFORM_COMMAND_CONTEXT") return "OperationBindingTypes.PlatformCommandContext";
   if (contextKind === "PUBLIC_PROTOCOL_CONTEXT") return "OperationBindingTypes.PublicProtocolCommandContext";
+  if (contextKind === "TERMINAL_CREDENTIAL_CONTEXT") return "OperationBindingTypes.TerminalCredentialCommandContext";
   fail("BP_U02_JAVA_CONTEXT_TYPE_INVALID", contextKind);
 }
 
@@ -553,6 +575,10 @@ public final class OperationBindingTypes {
 
   public static final class PublicProtocolCommandContext {
     private PublicProtocolCommandContext() {}
+  }
+
+  public static final class TerminalCredentialCommandContext {
+    private TerminalCredentialCommandContext() {}
   }
 
   public static final class Wire {
@@ -1039,7 +1065,7 @@ function selfTest(root = ROOT) {
   } finally {
     fs.rmSync(staleDeletionScratch, { recursive: true, force: true });
   }
-  for (const field of ["operationsAdmin", "platformAdmin", "public"]) {
+  for (const field of ["operationsAdmin", "platformAdmin", "public", "terminal"]) {
     mutateAndExpect(root, (scratch) => {
       mutateCountSource(scratch, (value) => {
         value.commandsByFace[field] -= 1;

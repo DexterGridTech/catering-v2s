@@ -8,9 +8,8 @@ public final class OrganizationCommandServiceSql {
             "commercial_group_name FROM organization.commercial_group_idempotency WHERE ";
     public static final String ORGANIZATION_COMMAND_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY =
             "workspace_uuid = ? AND idempotency_key = ?";
-    public static final String
-            ORGANIZATION_COMMAND_SERVICE_INSERT_INTO_COMMERCIAL_GROUP_IDEMPOTENCY_WORKSPACE_UUID_IDEMPOTENCY_KEY =
-                    "INSERT INTO organization.commercial_group_idempotency (workspace_uuid, idempotency_key, ";
+    public static final String INSERT_INTO_COMMERCIAL_GRP_IDEMPOTENCY_001 =
+            "INSERT INTO organization.commercial_group_idempotency (workspace_uuid, idempotency_key, ";
     public static final String ORGANIZATION_COMMAND_SERVICE_GROUP_WORKSPACE_KEY_REQUEST_FINGERPRINT =
             "group_workspace_key, request_fingerprint) VALUES (?, ?, ?, ?)";
     public static final String ORGANIZATION_COMMAND_SERVICE_INSERT_INTO_COMMERCIAL_GROUP =
@@ -54,9 +53,8 @@ public final class OrganizationCommandServiceSql {
     public static final String ORGANIZATION_COMMAND_SERVICE_SELECT_COMMERCIAL_GROUP_COMMERCIAL_GROUP_UUID =
             "SELECT EXISTS(SELECT 1 FROM organization.commercial_group WHERE commercial_group_uuid=? AND ";
     public static final String ORGANIZATION_COMMAND_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_A = "group_workspace_key=?)";
-    public static final String
-            ORGANIZATION_COMMAND_SERVICE_SELECT_COMMERCIAL_GROUP_COMMERCIAL_GROUP_CODE_COMMERCIAL_GROUP_NAME =
-                    "SELECT commercial_group_code, commercial_group_name FROM organization.commercial_group WHERE ";
+    public static final String SELECT_COMMERCIAL_GRP_COMMERCIAL_GRP_002 =
+            "SELECT commercial_group_code, commercial_group_name FROM organization.commercial_group WHERE ";
     public static final String ORGANIZATION_COMMAND_SERVICE_COMMERCIAL_GROUP_UUID_GROUP_WORKSPACE_KEY =
             "commercial_group_uuid=? AND group_workspace_key=?";
     public static final String ORGANIZATION_COMMAND_SERVICE_SELECT_COMMERCIAL_GROUP_UUID_ALTERNATE_A =

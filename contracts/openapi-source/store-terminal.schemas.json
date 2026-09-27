@@ -5,6 +5,30 @@
         "type": "string",
         "enum": ["ENABLED", "DISABLED", "VOIDED"]
       },
+      "StoreTerminalBindingStatus": {
+        "type": "string",
+        "enum": ["INACTIVE", "ACTIVE"]
+      },
+      "StoreTerminalBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status"],
+        "properties": {
+          "status": {"$ref": "#/components/schemas/StoreTerminalBindingStatus"},
+          "activatedAt": {"type": "integer", "format": "int64", "minimum": 0},
+          "generation": {"type": "integer", "format": "int64", "minimum": 1}
+        },
+        "oneOf": [
+          {
+            "properties": {"status": {"const": "INACTIVE"}},
+            "not": {"anyOf": [{"required": ["activatedAt"]}, {"required": ["generation"]}]}
+          },
+          {
+            "required": ["activatedAt", "generation"],
+            "properties": {"status": {"const": "ACTIVE"}}
+          }
+        ]
+      },
       "StoreTerminalPrinterBinding": {
         "type": "object",
         "additionalProperties": false,
@@ -190,7 +214,7 @@
       "StoreTerminalDetail": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["terminalRef", "storeRef", "name", "deviceType", "status", "version", "createdAt", "updatedAt", "activationCode", "configuration", "areaReferences", "tagReferences"],
+        "required": ["terminalRef", "storeRef", "name", "deviceType", "status", "version", "createdAt", "updatedAt", "activationCode", "configuration", "areaReferences", "tagReferences", "binding"],
         "properties": {
           "terminalRef": {"type": "string", "format": "uuid"},
           "storeRef": {"type": "string", "format": "uuid"},
@@ -203,7 +227,8 @@
           "activationCode": {"type": "string", "pattern": "^[0-9]{8}$"},
           "configuration": {"$ref": "#/components/schemas/StoreTerminalConfiguration"},
           "areaReferences": {"type": "array", "items": {"$ref": "#/components/schemas/StoreTerminalAreaReference"}},
-          "tagReferences": {"type": "array", "items": {"$ref": "#/components/schemas/StoreTerminalTagReference"}}
+          "tagReferences": {"type": "array", "items": {"$ref": "#/components/schemas/StoreTerminalTagReference"}},
+          "binding": {"$ref": "#/components/schemas/StoreTerminalBinding"}
         }
       },
       "StoreTerminalAreaCandidate": {
@@ -261,10 +286,9 @@
       "StoreTerminalReplaceRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "deviceType", "configuration", "expectedVersion"],
+        "required": ["name", "configuration", "expectedVersion"],
         "properties": {
           "name": {"type": "string", "minLength": 1, "maxLength": 160},
-          "deviceType": {"type": "string", "minLength": 1, "maxLength": 40},
           "configuration": {"$ref": "#/components/schemas/StoreTerminalConfigurationInput"},
           "expectedVersion": {"type": "integer", "format": "int64", "minimum": 0}
         }

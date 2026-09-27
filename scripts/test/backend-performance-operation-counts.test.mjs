@@ -41,6 +41,7 @@ test("manual operation count source exposes all six denominator values", () => {
       operationsAdmin: source.commandsByFace.operationsAdmin,
       platformAdmin: source.commandsByFace.platformAdmin,
       public: source.commandsByFace.public,
+      terminal: source.commandsByFace.terminal,
     },
   });
 });
@@ -68,7 +69,7 @@ test("manual operation count source reads each denominator field from the source
 });
 
 test("manual operation count source rejects mismatched command face totals", () => {
-  for (const field of ["operationsAdmin", "platformAdmin", "public"]) {
+  for (const field of ["operationsAdmin", "platformAdmin", "public", "terminal"]) {
     assert.throws(
       () => withScratchSource((source) => { source.commandsByFace[field] -= 1; }),
       /OPERATION_COUNT_SOURCE_FACE_SUM_INVALID/,

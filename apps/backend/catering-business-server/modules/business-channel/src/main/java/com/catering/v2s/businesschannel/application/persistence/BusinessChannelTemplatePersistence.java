@@ -154,9 +154,7 @@ public class BusinessChannelTemplatePersistence {
             }
         }
         long total = count(
-                BusinessChannelTemplateServiceSql
-                                .BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_BUSINESS_CHANNEL_TEMPLATE_SELECT_COUNT_FROM_BUSINESS_C
-                        + countPredicate,
+                BusinessChannelTemplateServiceSql.SELECT_BIZ_CHANNEL_TEMPLATE_SELECT_001 + countPredicate,
                 countArguments);
         List<TemplateProjection> rows = query(
                 templateSelect(predicate
@@ -184,8 +182,7 @@ public class BusinessChannelTemplatePersistence {
                                 .BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_PROJECT_REF_OPERATOR_KIND_STORE
                         + BusinessChannelTemplateServiceSql
                                 .BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_STORE_REF_WORKSPACE_UUID
-                        + BusinessChannelTemplateServiceSql
-                                .BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_PROJECT_ID_PROJECT_REF);
+                        + BusinessChannelTemplateServiceSql.CONDITION_GRP_WS_KEY_PROJECT_002);
         if ("NON_VOIDED".equals(storeStatusFilter))
             predicate.append(
                     BusinessChannelTemplateServiceSql.BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_STATUS_VOIDED);
@@ -227,10 +224,8 @@ public class BusinessChannelTemplatePersistence {
     public Optional<BusinessChannelReadback.TemplateCommandContext> readTemplateCommandContext(
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
         return jdbc.query(
-                BusinessChannelTemplateServiceSql
-                                .BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_BUSINESS_CHANNEL_TEMPLATE_TEMPLATE_REF_PROJECT_REF
-                        + BusinessChannelTemplateServiceSql
-                                .BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF,
+                BusinessChannelTemplateServiceSql.SELECT_BIZ_CHANNEL_TEMPLATE_REF_003
+                        + BusinessChannelTemplateServiceSql.WHERE_WS_UUID_GRP_WS_004,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, groupWorkspaceKey);
@@ -298,10 +293,8 @@ public class BusinessChannelTemplatePersistence {
             long now) {
         try {
             jdbc.update(
-                    BusinessChannelTemplateServiceSql
-                                    .BUSINESS_CHANNEL_TEMPLATE_SERVICE_INSERT_INTO_BUSINESS_CHANNEL_TEMPLATE_INSERT_INTO_BUSINESS_CHANNEL
-                            + BusinessChannelTemplateServiceSql
-                                    .BUSINESS_CHANNEL_TEMPLATE_SERVICE_TEMPLATE_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PROJECT_REF_TEMPLATE_NAME_TEMPLATE_CODE_GROUP_WORKSPACE_KEY_PROJECT_REF_TEMPLATE_NAME_TEMPLATE_CODE
+                    BusinessChannelTemplateServiceSql.INSERT_INTO_BIZ_CHANNEL_TEMPLATE_005
+                            + BusinessChannelTemplateServiceSql.TEMPLATE_REF_WS_UUID_GRP_018
                             + BusinessChannelTemplateServiceSql
                                     .BUSINESS_CHANNEL_TEMPLATE_SERVICE_ACCESS_KIND_OPERATOR_KIND_ORDER_KIND_DINE_IN_FORM
                             + BusinessChannelTemplateServiceSql
@@ -354,9 +347,7 @@ public class BusinessChannelTemplatePersistence {
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef, boolean forUpdate) {
         if (forUpdate) {
             return jdbc.query(
-                    templateSelect(
-                            BusinessChannelTemplateServiceSql
-                                    .BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_ALTERNATE_B),
+                    templateSelect(BusinessChannelTemplateServiceSql.WHERE_WS_UUID_GRP_WS_ALT_B_007),
                     statement -> {
                         statement.setObject(1, workspaceUuid);
                         statement.setString(2, groupWorkspaceKey);
@@ -367,10 +358,8 @@ public class BusinessChannelTemplatePersistence {
         return query(
                         templateSelect(
                                 forUpdate
-                                        ? BusinessChannelTemplateServiceSql
-                                                .BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_ALTERNATE_B
-                                        : BusinessChannelTemplateServiceSql
-                                                .BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_ALTERNATE_A),
+                                        ? BusinessChannelTemplateServiceSql.WHERE_WS_UUID_GRP_WS_ALT_B_007
+                                        : BusinessChannelTemplateServiceSql.WHERE_WS_UUID_GRP_WS_ALT_A_006),
                         List.of(workspaceUuid, groupWorkspaceKey, templateRef))
                 .stream()
                 .findFirst();
@@ -379,9 +368,7 @@ public class BusinessChannelTemplatePersistence {
     public Optional<TemplateUpdateProjection> readTemplateForUpdate(
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
         return jdbc.query(
-                templateSelectForUpdate(
-                        BusinessChannelTemplateServiceSql
-                                .BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_ALTERNATE_C),
+                templateSelectForUpdate(BusinessChannelTemplateServiceSql.WHERE_WS_UUID_GRP_WS_ALT_C_008),
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, groupWorkspaceKey);
@@ -396,10 +383,8 @@ public class BusinessChannelTemplatePersistence {
     public Optional<VisibleStoreTemplate> verifyVisibleStoreTemplate(
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
         return jdbc.query(
-                BusinessChannelTemplateServiceSql
-                                .BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_BUSINESS_CHANNEL_TEMPLATE_PROJECT_REF_OPERATOR_KIND
-                        + BusinessChannelTemplateServiceSql
-                                .BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_ALTERNATE_D,
+                BusinessChannelTemplateServiceSql.SELECT_BIZ_CHANNEL_TEMPLATE_PROJECT_013
+                        + BusinessChannelTemplateServiceSql.WHERE_WS_UUID_GRP_WS_ALT_D_014,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, groupWorkspaceKey);
@@ -413,8 +398,7 @@ public class BusinessChannelTemplatePersistence {
 
     public boolean visibleStoreRelationExists(UUID templateRef, UUID storeRef) {
         return count(
-                        BusinessChannelTemplateServiceSql
-                                        .BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_BUSINESS_CHANNEL_TEMPLATE_STORE_VI_ALTERNATE_A
+                        BusinessChannelTemplateServiceSql.SELECT_BIZ_CHANNEL_TEMPLATE_STORE_ALT_A_015
                                 + BusinessChannelTemplateServiceSql
                                         .BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_TEMPLATE_REF_STORE_REF_ALTERNATE_A,
                         List.of(templateRef, storeRef))
@@ -446,8 +430,7 @@ public class BusinessChannelTemplatePersistence {
                         .BUSINESS_CHANNEL_TEMPLATE_SERVICE_DELETED_TARGET_TEMPLATE_TEMPLATE_REF
                 + BusinessChannelTemplateServiceSql
                         .BUSINESS_CHANNEL_TEMPLATE_SERVICE_INSERT_BUSINESS_CHANNEL_TEMPLATE_STORE_VI_INSERTED
-                + BusinessChannelTemplateServiceSql
-                        .BUSINESS_CHANNEL_TEMPLATE_SERVICE_OPEN_PAREN_TEMPLATE_REF_STORE_REF_TARGET_TEMPLATE_RELATION_ROWS
+                + BusinessChannelTemplateServiceSql.OPEN_PAREN_TEMPLATE_REF_STORE_016
                 + BusinessChannelTemplateServiceSql
                         .BUSINESS_CHANNEL_TEMPLATE_SERVICE_FROM_CLAUSE_TARGET_TEMPLATE_FROM_TARGET_TEMPLATE_CROSS_J
                 + relationRows
@@ -462,8 +445,7 @@ public class BusinessChannelTemplatePersistence {
                         .BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_TEMPLATE_REF_TARGET_TEMPLATE_WORKSPACE_UUID
                 + BusinessChannelTemplateServiceSql.BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_GROUP_WORKSPACE_KEY
                 + BusinessChannelTemplateServiceSql.BUSINESS_CHANNEL_TEMPLATE_SERVICE_RETURNING_RETURNING_T
-                + BusinessChannelTemplateServiceSql
-                        .BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_UPDATED_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF
+                + BusinessChannelTemplateServiceSql.SELECT_UPDATED_WS_UUID_GRP_017
                 + BusinessChannelTemplateServiceSql
                         .BUSINESS_CHANNEL_TEMPLATE_SERVICE_UPDATE_UPDATED_PROJECT_REF_TEMPLATE_NAME_TEMPLATE_CODE
                 + BusinessChannelTemplateServiceSql
@@ -535,8 +517,7 @@ public class BusinessChannelTemplatePersistence {
                 BusinessChannelTemplateServiceSql.BUSINESS_CHANNEL_TEMPLATE_SERVICE_CTE_ANCESTRY
                         + BusinessChannelTemplateServiceSql
                                 .BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_SOURCE_REF_PARENT_ID_NODE_TYPE_STATUS
-                        + BusinessChannelTemplateServiceSql
-                                .BUSINESS_CHANNEL_TEMPLATE_SERVICE_FROM_CLAUSE_ORGANIZATION_NODE_FROM_ORGANIZATION_ORGANIZATI
+                        + BusinessChannelTemplateServiceSql.FROM_CLAUSE_ORG_NODE_FROM_012
                         + BusinessChannelTemplateServiceSql.BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WHERE_ID_IN
                         + placeholders
                         + BusinessChannelTemplateServiceSql
@@ -642,8 +623,7 @@ public class BusinessChannelTemplatePersistence {
     }
 
     private static String templateSelect(String suffix, boolean includeVisibleStoreRefs) {
-        return BusinessChannelTemplateServiceSql
-                        .BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_PROJECT_REF
+        return BusinessChannelTemplateServiceSql.SELECT_WS_UUID_GRP_WS_009
                 + BusinessChannelTemplateServiceSql
                         .BUSINESS_CHANNEL_TEMPLATE_SERVICE_TEMPLATE_CODE_ACCESS_KIND_OPERATOR_KIND_ORDER_KIND
                 + BusinessChannelTemplateServiceSql
@@ -660,8 +640,7 @@ public class BusinessChannelTemplatePersistence {
                         .BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_TEMPLATE_REF_VISIBLE_STORE_STATUS_VOIDED
                 + (includeVisibleStoreRefs
                         ? BusinessChannelTemplateServiceSql.BUSINESS_CHANNEL_TEMPLATE_SERVICE_ARRAY_AGG_STORE_REF
-                                + BusinessChannelTemplateServiceSql
-                                        .BUSINESS_CHANNEL_TEMPLATE_SERVICE_BUSINESS_CHANNEL_TEMPLATE_STORE_VI_ALTERNATE_A
+                                + BusinessChannelTemplateServiceSql.BIZ_CHANNEL_TEMPLATE_STORE_VI_ALT_A_010
                                 + BusinessChannelTemplateServiceSql
                                         .BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_TEMPLATE_REF_VISIBLE_STORE_REFS
                         : "")
@@ -671,8 +650,7 @@ public class BusinessChannelTemplatePersistence {
                         .BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_PROJECT_PROJECT_REF_WORKSPACE_UUID
                 + BusinessChannelTemplateServiceSql
                         .BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_PROJECT_GROUP_WORKSPACE_KEY_PROJECT_STATUS
-                + BusinessChannelTemplateServiceSql
-                        .BUSINESS_CHANNEL_TEMPLATE_SERVICE_FROM_CLAUSE_BUSINESS_CHANNEL_TEMPLATE_FROM_BUSINESS_CHANNEL_BUSINE
+                + BusinessChannelTemplateServiceSql.FROM_CLAUSE_BIZ_CHANNEL_TEMPLATE_011
                 + suffix;
     }
 

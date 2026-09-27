@@ -1,0 +1,520 @@
+openapi: 3.0.3
+info:
+  title: Platform Wire Model
+  version: 0.1.0
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: /
+paths: {}
+components:
+  schemas:
+    EpochMillis:
+      $ref: './components/platform-time.schemas.yaml#/components/schemas/EpochMillis'
+    LoginRequest:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/LoginRequest'
+    PlatformPasswordLoginInternalRequest:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformPasswordLoginInternalRequest'
+    PlatformSessionView:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformSessionView'
+    InternalSessionIssueResult:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/InternalSessionIssueResult'
+    InternalSessionPrincipal:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/InternalSessionPrincipal'
+    InternalSessionTokenRequest:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/InternalSessionTokenRequest'
+    PlatformAdminStatus:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminStatus'
+    PlatformAdminCredentialStatus:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminCredentialStatus'
+    PlatformAdminSortKey:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminSortKey'
+    PlatformAdminListItem:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminListItem'
+    PlatformAdminPage:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminPage'
+    PlatformAdminDetail:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminDetail'
+    PlatformAdminCreateRequest:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminCreateRequest'
+    PlatformAdminProfileUpdateRequest:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminProfileUpdateRequest'
+    PlatformAdminStatusTransitionRequest:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminStatusTransitionRequest'
+    PlatformAdminCredentialResetRequest:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminCredentialResetRequest'
+    PlatformCapability:
+      $ref: './components/platform-capabilities.schemas.yaml#/components/schemas/PlatformCapability'
+    PlatformErrorCode:
+      $ref: './components/platform-errors.schemas.yaml#/components/schemas/PlatformErrorCode'
+    PlatformProblem:
+      $ref: './components/platform-errors.schemas.yaml#/components/schemas/PlatformProblem'
+    GroupWorkspacePage:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/GroupWorkspacePage'
+    GroupWorkspaceListItem:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/GroupWorkspaceListItem'
+    GroupWorkspaceStatus:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/GroupWorkspaceStatus'
+    GroupWorkspaceSortKey:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/GroupWorkspaceSortKey'
+    SortDirection:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/SortDirection'
+    PlatformAssetUsage:
+      $ref: './components/platform-asset.schemas.yaml#/components/schemas/PlatformAssetUsage'
+    PlatformAssetStagingResult:
+      $ref: './components/platform-asset.schemas.yaml#/components/schemas/PlatformAssetStagingResult'
+    PlatformAssetClaimProofRequest:
+      $ref: './components/platform-asset.schemas.yaml#/components/schemas/PlatformAssetClaimProofRequest'
+    PlatformAssetClaimProof:
+      $ref: './components/platform-asset.schemas.yaml#/components/schemas/PlatformAssetClaimProof'
+    PlatformWorkspaceAssetBindingPayload:
+      $ref: './components/platform-asset.schemas.yaml#/components/schemas/PlatformWorkspaceAssetBindingPayload'
+    PlatformWorkspaceAssetBindingEventV1:
+      $ref: './components/platform-asset.schemas.yaml#/components/schemas/PlatformWorkspaceAssetBindingEventV1'
+    GroupWorkspaceCreateRequest:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/GroupWorkspaceCreateRequest'
+    GroupWorkspaceCreateResult:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/GroupWorkspaceCreateResult'
+    GroupWorkspaceDetail:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/GroupWorkspaceDetail'
+    GroupWorkspaceLogoIntent:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/GroupWorkspaceLogoIntent'
+    GroupWorkspaceDisplayUpdateRequest:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/GroupWorkspaceDisplayUpdateRequest'
+    GroupWorkspaceStatusTransitionRequest:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/GroupWorkspaceStatusTransitionRequest'
+    PlatformAdminActorEnvelope:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminActorEnvelope'
+    PlatformAdminPageQueryRequest:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminPageQueryRequest'
+    PlatformAdminPageQueryCommand:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminPageQueryCommand'
+    PlatformAdminDetailReadCommand:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminDetailReadCommand'
+    PlatformAdminCreateCommand:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminCreateCommand'
+    PlatformAdminProfileUpdateCommand:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminProfileUpdateCommand'
+    PlatformAdminStatusTransitionCommand:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminStatusTransitionCommand'
+    PlatformAdminCredentialResetCommand:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformAdminCredentialResetCommand'
+    PlatformCurrentPasswordChangeRequest:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformCurrentPasswordChangeRequest'
+    PlatformCurrentPasswordChangeResult:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/PlatformCurrentPasswordChangeResult'
+    InternalPlatformCurrentPasswordChangeRequest:
+      $ref: './components/platform-identity.schemas.yaml#/components/schemas/InternalPlatformCurrentPasswordChangeRequest'
+    PlatformWorkspaceActorEnvelope:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/PlatformWorkspaceActorEnvelope'
+    PlatformWorkspaceCreateCommand:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/PlatformWorkspaceCreateCommand'
+    PlatformWorkspaceDisplayUpdateCommand:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/PlatformWorkspaceDisplayUpdateCommand'
+    PlatformWorkspaceStatusCommand:
+      $ref: './components/platform-workspace.schemas.yaml#/components/schemas/PlatformWorkspaceStatusCommand'
+    CommercialGroupRoot:
+      $ref: './components/commercial-group.schemas.yaml#/components/schemas/CommercialGroupRoot'
+    CommercialGroupRootSummary:
+      $ref: './components/commercial-group.schemas.yaml#/components/schemas/CommercialGroupRootSummary'
+    CommercialGroupInitializeRequest:
+      $ref: './components/commercial-group.schemas.yaml#/components/schemas/CommercialGroupInitializeRequest'
+    CommercialGroupInitializeCommand:
+      $ref: './components/commercial-group.schemas.yaml#/components/schemas/CommercialGroupInitializeCommand'
+    OrganizationCommercialGroupActorEnvelope:
+      $ref: './components/commercial-group.schemas.yaml#/components/schemas/OrganizationCommercialGroupActorEnvelope'
+    OrganizationNodeType:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationNodeType'
+    OrganizationNodeStatus:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationNodeStatus'
+    OrganizationProjectPhase:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationProjectPhase'
+    OrganizationNode:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationNode'
+    OrganizationHierarchySnapshot:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationHierarchySnapshot'
+    OrganizationDataNode:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationDataNode'
+    OrganizationDataNodeSnapshot:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationDataNodeSnapshot'
+    OrganizationInvitationTarget:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationInvitationTarget'
+    OrganizationInvitationTargetPage:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationInvitationTargetPage'
+    OrganizationNodeCreateRequest:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationNodeCreateRequest'
+    OrganizationProjectCreateRequest:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationProjectCreateRequest'
+    OrganizationNodeUpdateRequest:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationNodeUpdateRequest'
+    OrganizationNodeStatusTransitionRequest:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationNodeStatusTransitionRequest'
+    OrganizationHierarchyCommandEnvelope:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationHierarchyCommandEnvelope'
+    OrganizationHierarchyReadCommand:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationHierarchyReadCommand'
+    OrganizationHierarchyCreateRegionCommand:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationHierarchyCreateRegionCommand'
+    OrganizationHierarchyCreateProjectCommand:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationHierarchyCreateProjectCommand'
+    OrganizationHierarchyUpdateNodeCommand:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationHierarchyUpdateNodeCommand'
+    OrganizationHierarchyTransitionStatusCommand:
+      $ref: './components/organization-hierarchy.schemas.yaml#/components/schemas/OrganizationHierarchyTransitionStatusCommand'
+    OrganizationStoreSource:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStoreSource'
+    OrganizationStoreStatus:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStoreStatus'
+    OrganizationStoreSortKey:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStoreSortKey'
+    OrganizationStoreSortDirection:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStoreSortDirection'
+    OrganizationStoreReference:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStoreReference'
+    StoreContractSource:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractSource'
+    StoreContractStatus:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractStatus'
+    StoreContractSortKey:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractSortKey'
+    StoreContractSortDirection:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractSortDirection'
+    StoreContractReference:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractReference'
+    StoreContractStoreCandidate:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractStoreCandidate'
+    StoreContractCandidatePage:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractCandidatePage'
+    StoreContractCandidatePageMetadata:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractCandidatePageMetadata'
+    StoreContract:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContract'
+    StoreContractPageMetadata:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractPageMetadata'
+    StoreContractPage:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractPage'
+    ContractOverviewResolutionStatus:
+      $ref: './components/contract.schemas.yaml#/components/schemas/ContractOverviewResolutionStatus'
+    ContractOverviewReference:
+      $ref: './components/contract.schemas.yaml#/components/schemas/ContractOverviewReference'
+    ContractOverviewItem:
+      $ref: './components/contract.schemas.yaml#/components/schemas/ContractOverviewItem'
+    ContractOverviewPageMetadata:
+      $ref: './components/contract.schemas.yaml#/components/schemas/ContractOverviewPageMetadata'
+    ContractOverviewPage:
+      $ref: './components/contract.schemas.yaml#/components/schemas/ContractOverviewPage'
+    StoreContractCreateRequest:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractCreateRequest'
+    StoreContractUpdateRequest:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractUpdateRequest'
+    StoreContractInvalidateRequest:
+      $ref: './components/contract.schemas.yaml#/components/schemas/StoreContractInvalidateRequest'
+    OrganizationStore:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStore'
+    OrganizationStorePageMetadata:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStorePageMetadata'
+    OrganizationStoreDataScope:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStoreDataScope'
+    OrganizationStorePage:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStorePage'
+    OrganizationStoreCandidatePage:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStoreCandidatePage'
+    OrganizationStoreCreateRequest:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStoreCreateRequest'
+    OrganizationStoreUpdateRequest:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStoreUpdateRequest'
+    OrganizationStoreStatusRequest:
+      $ref: './components/store-management.schemas.yaml#/components/schemas/OrganizationStoreStatusRequest'
+    OrganizationOverviewCategory:
+      $ref: './components/organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewCategory'
+    OrganizationOverviewType:
+      $ref: './components/organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewType'
+    OrganizationOverviewStatus:
+      $ref: './components/organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewStatus'
+    OrganizationOverviewSource:
+      $ref: './components/organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewSource'
+    OrganizationOverviewSortKey:
+      $ref: './components/organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewSortKey'
+    OrganizationOverviewSortDirection:
+      $ref: './components/organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewSortDirection'
+    OrganizationOverviewReference:
+      $ref: './components/organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewReference'
+    OrganizationOverviewFilterOption:
+      $ref: './components/organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewFilterOption'
+    OrganizationOverviewItem:
+      $ref: './components/organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewItem'
+    OrganizationOverviewPageMetadata:
+      $ref: './components/organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewPageMetadata'
+    OrganizationOverviewPage:
+      $ref: './components/organization-overview.schemas.yaml#/components/schemas/OrganizationOverviewPage'
+    BusinessEntityStatus:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/BusinessEntityStatus'
+    BusinessEntitySource:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/BusinessEntitySource'
+    BusinessEntitySortKey:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/BusinessEntitySortKey'
+    BusinessEntitySortDirection:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/BusinessEntitySortDirection'
+    BusinessEntityBrandSummary:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/BusinessEntityBrandSummary'
+    BusinessEntityPageMetadata:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/BusinessEntityPageMetadata'
+    Brand:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/Brand'
+    Tenant:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/Tenant'
+    HeadCompany:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/HeadCompany'
+    BrandPage:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/BrandPage'
+    TenantPage:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/TenantPage'
+    HeadCompanyPage:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/HeadCompanyPage'
+    BrandCreateRequest:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/BrandCreateRequest'
+    BrandUpdateRequest:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/BrandUpdateRequest'
+    TenantCreateRequest:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/TenantCreateRequest'
+    TenantUpdateRequest:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/TenantUpdateRequest'
+    HeadCompanyCreateRequest:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/HeadCompanyCreateRequest'
+    HeadCompanyUpdateRequest:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/HeadCompanyUpdateRequest'
+    BusinessEntityStatusRequest:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/BusinessEntityStatusRequest'
+    HeadCompanyBrandAuthorizationRequest:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/HeadCompanyBrandAuthorizationRequest'
+    HeadCompanyBrandAuthorizationResult:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/HeadCompanyBrandAuthorizationResult'
+    WorkspaceBusinessActionAuthorizationRequest:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/WorkspaceBusinessActionAuthorizationRequest'
+    WorkspaceBusinessActionAuthorization:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/WorkspaceBusinessActionAuthorization'
+    OwnerCommandAuthorizationProofRequest:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/OwnerCommandAuthorizationProofRequest'
+    OwnerCommandAuthorizationProof:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/OwnerCommandAuthorizationProof'
+    WorkspaceAuthorizationProjectionAssignment:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/WorkspaceAuthorizationProjectionAssignment'
+    WorkspaceAuthorizationProjectionEventV1:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/WorkspaceAuthorizationProjectionEventV1'
+    WorkspaceAuthorizationProjectionRepairRequestedV1:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/WorkspaceAuthorizationProjectionRepairRequestedV1'
+    WorkspaceOrganizationAuthorizationClosureEntry:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/WorkspaceOrganizationAuthorizationClosureEntry'
+    WorkspaceOrganizationAuthorizationNode:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/WorkspaceOrganizationAuthorizationNode'
+    OrganizationAuthorizationNodeKey:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/OrganizationAuthorizationNodeKey'
+    OrganizationAuthorizationClosureKey:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/OrganizationAuthorizationClosureKey'
+    OrganizationAuthorizationProjectionEventV1:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/OrganizationAuthorizationProjectionEventV1'
+    OrganizationAuthorizationProjectionRepairRequestedV1:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/OrganizationAuthorizationProjectionRepairRequestedV1'
+    OrganizationContractReference:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/OrganizationContractReference'
+    OrganizationContractReferenceProject:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/OrganizationContractReferenceProject'
+    OrganizationContractReferenceStore:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/OrganizationContractReferenceStore'
+    OrganizationContractReferenceProjectionEventV1:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/OrganizationContractReferenceProjectionEventV1'
+    OrganizationContractReferenceProjectionRepairRequestedV1:
+      $ref: './components/business-entity.schemas.yaml#/components/schemas/OrganizationContractReferenceProjectionRepairRequestedV1'
+    WorkspaceOrganizationType:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceOrganizationType'
+    WorkspaceRoleStatus:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceRoleStatus'
+    WorkspaceBusinessCapability:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceBusinessCapability'
+    WorkspaceRole:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceRole'
+    WorkspaceRolePage:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceRolePage'
+    WorkspaceRoleCandidateCatalog:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceRoleCandidateCatalog'
+    WorkspaceBusinessCapabilityOption:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceBusinessCapabilityOption'
+    WorkspaceRoleCreateRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceRoleCreateRequest'
+    WorkspaceRoleUpdateRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceRoleUpdateRequest'
+    WorkspaceRoleStatusTransitionRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceRoleStatusTransitionRequest'
+    WorkspaceRolePageAccessOption:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceRolePageAccessOption'
+    WorkspacePageNavigationItem:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspacePageNavigationItem'
+    WorkspacePageEntryGuardRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspacePageEntryGuardRequest'
+    WorkspacePageEntryGuardInternalRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspacePageEntryGuardInternalRequest'
+    WorkspacePageEntryGuard:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspacePageEntryGuard'
+    WorkspaceInvitationStatus:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceInvitationStatus'
+    WorkspaceInvitationSortKey:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceInvitationSortKey'
+    WorkspaceAccountStatus:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceAccountStatus'
+    WorkspaceCredentialStatus:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceCredentialStatus'
+    WorkspaceAccountAssignment:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceAccountAssignment'
+    WorkspaceAccountInvitationHistory:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceAccountInvitationHistory'
+    WorkspaceAccount:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceAccount'
+    WorkspaceAccountPage:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceAccountPage'
+    WorkspaceAccountStatusTransitionRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceAccountStatusTransitionRequest'
+    WorkspaceCredentialResetRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceCredentialResetRequest'
+    WorkspaceCredentialResetResult:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceCredentialResetResult'
+    WorkspacePasswordResetOtpSendRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspacePasswordResetOtpSendRequest'
+    WorkspacePasswordResetOtpSendResponse:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspacePasswordResetOtpSendResponse'
+    WorkspacePasswordResetOtpVerifyRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspacePasswordResetOtpVerifyRequest'
+    WorkspacePasswordResetReadiness:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspacePasswordResetReadiness'
+    WorkspacePasswordResetCompleteRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspacePasswordResetCompleteRequest'
+    WorkspacePasswordResetCompletion:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspacePasswordResetCompletion'
+    WorkspaceCurrentPasswordChangeRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceCurrentPasswordChangeRequest'
+    WorkspaceCurrentPasswordChangeResult:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceCurrentPasswordChangeResult'
+    WorkspaceCurrentPasswordChangeInternalRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceCurrentPasswordChangeInternalRequest'
+    WorkspaceMembershipAssignment:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceMembershipAssignment'
+    WorkspaceMember:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceMember'
+    WorkspaceMembershipPage:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceMembershipPage'
+    WorkspaceMembershipQueryRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceMembershipQueryRequest'
+    WorkspaceMembershipOwnerQueryRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceMembershipOwnerQueryRequest'
+    WorkspaceMembershipOwnerAccountRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceMembershipOwnerAccountRequest'
+    WorkspaceMembershipRevokeRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceMembershipRevokeRequest'
+    WorkspaceMembershipOwnerRevokeRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceMembershipOwnerRevokeRequest'
+    WorkspaceMembershipRevokeResult:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceMembershipRevokeResult'
+    WorkspaceLoginEntry:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceLoginEntry'
+    WorkspacePasswordLoginRequest:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspacePasswordLoginRequest'
+    WorkspacePasswordLoginInternalRequest:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspacePasswordLoginInternalRequest'
+    WorkspaceOtpSendRequest:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceOtpSendRequest'
+    WorkspaceOtpSendResponse:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceOtpSendResponse'
+    WorkspaceOtpVerifyRequest:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceOtpVerifyRequest'
+    WorkspaceSessionTokenRequest:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceSessionTokenRequest'
+    WorkspaceIdentityCandidate:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceIdentityCandidate'
+    WorkspaceDataNodeCandidate:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceDataNodeCandidate'
+    WorkspaceSelectedDataNode:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceSelectedDataNode'
+    WorkspaceSelectedIdentity:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceSelectedIdentity'
+    WorkspaceSessionEntry:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceSessionEntry'
+    WorkspaceSelectContextRequest:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceSelectContextRequest'
+    WorkspaceSelectDataNodeRequest:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceSelectDataNodeRequest'
+    WorkspaceSessionContextRequest:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceSessionContextRequest'
+    WorkspaceSessionDataNodeRequest:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceSessionDataNodeRequest'
+    WorkspaceSessionIssueResult:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceSessionIssueResult'
+    WorkspaceSessionPrincipal:
+      $ref: './components/workspace-session.schemas.yaml#/components/schemas/WorkspaceSessionPrincipal'
+    WorkspaceInvitation:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceInvitation'
+    WorkspaceInvitationPage:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceInvitationPage'
+    WorkspaceInvitationCriteria:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceInvitationCriteria'
+    WorkspaceInvitationOrganizationCandidate:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceInvitationOrganizationCandidate'
+    WorkspaceInvitationCandidatePage:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceInvitationCandidatePage'
+    WorkspaceInvitationCreateRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceInvitationCreateRequest'
+    WorkspaceInvitationReissueRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceInvitationReissueRequest'
+    WorkspaceInvitationCancelRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceInvitationCancelRequest'
+    WorkspaceOperationsInvitationQueryRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceOperationsInvitationQueryRequest'
+    WorkspaceOperationsInvitationOwnerQueryRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceOperationsInvitationOwnerQueryRequest'
+    WorkspaceOperationsInvitationCandidatesRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceOperationsInvitationCandidatesRequest'
+    WorkspaceOperationsInvitationOwnerCandidatesRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceOperationsInvitationOwnerCandidatesRequest'
+    WorkspaceOperationsInvitationCreateRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceOperationsInvitationCreateRequest'
+    WorkspaceOperationsInvitationOwnerCreateRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceOperationsInvitationOwnerCreateRequest'
+    WorkspaceOperationsInvitationActionRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceOperationsInvitationActionRequest'
+    WorkspaceOperationsInvitationOwnerActionRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/WorkspaceOperationsInvitationOwnerActionRequest'
+    PublicInvitationView:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/PublicInvitationView'
+    PublicInvitationAcceptIntent:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/PublicInvitationAcceptIntent'
+    PublicInvitationOtpSendRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/PublicInvitationOtpSendRequest'
+    PublicInvitationOtpSendResponse:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/PublicInvitationOtpSendResponse'
+    PublicInvitationOtpVerifyRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/PublicInvitationOtpVerifyRequest'
+    PublicInvitationReadiness:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/PublicInvitationReadiness'
+    PublicInvitationCredentialRequest:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/PublicInvitationCredentialRequest'
+    PublicInvitationCredentialResponse:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/PublicInvitationCredentialResponse'
+    PublicInvitationCompletion:
+      $ref: './components/workspace-iam.schemas.yaml#/components/schemas/PublicInvitationCompletion'
+    ExtensionEntityType:
+      $ref: './components/extension.schemas.yaml#/components/schemas/ExtensionEntityType'
+    ExtensionFieldType:
+      $ref: './components/extension.schemas.yaml#/components/schemas/ExtensionFieldType'
+    ExtensionFieldDefinition:
+      $ref: './components/extension.schemas.yaml#/components/schemas/ExtensionFieldDefinition'
+    ExtensionEntityCatalogItem:
+      $ref: './components/extension.schemas.yaml#/components/schemas/ExtensionEntityCatalogItem'
+    ExtensionEntityCatalogPage:
+      $ref: './components/extension.schemas.yaml#/components/schemas/ExtensionEntityCatalogPage'
+    ExtensionDefinition:
+      $ref: './components/extension.schemas.yaml#/components/schemas/ExtensionDefinition'
+    ExtensionDefinitionUpdateRequest:
+      $ref: './components/extension.schemas.yaml#/components/schemas/ExtensionDefinitionUpdateRequest'
+    ExtensionDefinitionProjectionEventV1:
+      $ref: './components/extension.schemas.yaml#/components/schemas/ExtensionDefinitionProjectionEventV1'
+    ExtensionDefinitionProjectionRepairRequestedV1:
+      $ref: './components/extension.schemas.yaml#/components/schemas/ExtensionDefinitionProjectionRepairRequestedV1'

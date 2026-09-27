@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { projectEdgeCatalog } from "./edge-operation-projections.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const safeRetryableOperationIds = new Set(["activateTerminal", "cancelTerminalActivation"]);
 const catalogPath = "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json";
 const placementPath = "doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json";
 const errorCatalogPath = "doc/plans/platform/2026-07-26-v2s-r5-error-code-disposition-catalog.json";
@@ -20,6 +21,29 @@ const writeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 function fail(code, detail = "") { throw new Error(`${code}${detail ? `:${detail}` : ""}`); }
 function readJson(relative, base = root) { return JSON.parse(fs.readFileSync(path.join(base, relative), "utf8")); }
 function sha256(file) { return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"); }
+function repoInputPath(base, value) {
+  if (typeof value !== "string" || value.length === 0 || value.includes("\0")
+      || path.isAbsolute(value) || path.win32.isAbsolute(value)) {
+    fail("R5_EDGE_INPUT_PATH_INVALID", String(value));
+  }
+  const baseRealPath = fs.realpathSync(base);
+  const absolute = path.resolve(baseRealPath, value);
+  const relative = path.relative(baseRealPath, absolute);
+  if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    fail("R5_EDGE_INPUT_PATH_OUTSIDE_ROOT", value);
+  }
+  let ancestor = baseRealPath;
+  for (const part of relative.split(path.sep).filter(Boolean)) {
+    ancestor = path.join(ancestor, part);
+    try {
+      if (fs.lstatSync(ancestor).isSymbolicLink()) fail("R5_EDGE_INPUT_PATH_OUTSIDE_ROOT", value);
+    } catch (error) {
+      if (error?.code === "ENOENT") break;
+      throw error;
+    }
+  }
+  return absolute;
+}
 function write(relative, value, base = root) {
   const absolute = path.join(base, relative);
   fs.mkdirSync(path.dirname(absolute), { recursive: true });
@@ -178,6 +202,7 @@ function security(operation) {
   if (operation.security === "NONE") return [];
   if (operation.security === "PLATFORM_SESSION_COOKIE") return [{ platformSessionCookie: [] }];
   if (operation.security === "OPERATIONS_SESSION_COOKIE") return [{ operationsSessionCookie: [] }];
+  if (operation.security === "TERMINAL_CREDENTIAL") return [{ terminalCredential: [] }];
   fail("R5_EDGE_SECURITY_UNRESOLVED", operation.operationId);
 }
 function successContentType(operation) {
@@ -212,7 +237,23 @@ function authorizationRequirements(manifest) {
   }
   return requirements;
 }
+function validateTerminalRetryPolicy(catalog) {
+  const activationPolicy = catalog.preAuthenticationIdempotencyPolicy?.operationOverrides?.activateTerminal;
+  if (!activationPolicy || activationPolicy.header !== "FORBIDDEN"
+    || activationPolicy.replay !== "NOT_APPLICABLE"
+    || activationPolicy.retryRecognition !== "R1.6_OPERATION_SECRET_DIGEST"
+    || Object.keys(activationPolicy).length !== 3
+    || catalog.preAuthenticationIdempotencyPolicy.operations?.includes("activateTerminal")) {
+    fail("R5_EDGE_TERMINAL_PREAUTH_IDEMPOTENCY_POLICY_DRIFT", "activateTerminal");
+  }
+}
 function operationDocument(operation, catalog, requirements, pathFile) {
+  const safeRetryable = safeRetryableOperationIds.has(operation.operationId);
+  if ((safeRetryable && operation.safeRetryable !== true)
+    || (!safeRetryable && operation.safeRetryable !== undefined)
+    || (safeRetryable && (operation.idempotency?.header !== "FORBIDDEN" || operation.idempotency?.replay !== "NOT_APPLICABLE"))) {
+    fail("R5_EDGE_TERMINAL_SAFE_RETRY_POLICY_DRIFT", operation.operationId);
+  }
   const parameters = [
     ...(operation.pathParameters || []).map((name) => ({ name, in: "path", required: true, schema: applyUuidReferenceFormat({ type: "string", minLength: 1, maxLength: 128 }, name) })),
     ...(operation.queryParameters || []).map((parameter) => ({ in: "query", ...clone(parameter), schema: applyUuidReferenceFormat(convertSymbolRefs(parameter.schema), parameter.name) })),
@@ -233,6 +274,7 @@ function operationDocument(operation, catalog, requirements, pathFile) {
     "x-scenario-ids": operation.scenarioIds,
     "x-page-key": operation.pageKey,
     "x-idempotency-policy": operation.idempotency.header,
+    ...(safeRetryable ? {"x-safe-retryable": true} : {}),
     "x-error-codes": operationErrors(operation, catalog),
     security: security(operation),
     parameters,
@@ -242,6 +284,21 @@ function operationDocument(operation, catalog, requirements, pathFile) {
     document["x-expected-version-policy"] = operation.expectedVersion;
   }
   const requirement = requirements.get(operationIdentity(operation));
+  if (operation.authorizationMode === "NONE") {
+    if (operation.operationId !== "activateTerminal" || operation.face !== "terminal"
+      || operation.security !== "NONE" || requirement) {
+      fail("R5_EDGE_TERMINAL_ANONYMOUS_AUTH_DRIFT", operation.operationId);
+    }
+    document["x-authorization-mode"] = "NONE";
+  } else if (operation.authorizationMode === "TERMINAL_CREDENTIAL") {
+    if (operation.operationId !== "cancelTerminalActivation" || operation.face !== "terminal"
+      || operation.security !== "TERMINAL_CREDENTIAL" || requirement?.authorizationMode !== "TERMINAL_CREDENTIAL") {
+      fail("R5_EDGE_TERMINAL_CREDENTIAL_AUTH_DRIFT", operation.operationId);
+    }
+    document["x-authorization-mode"] = "TERMINAL_CREDENTIAL";
+  } else if (operation.authorizationMode !== undefined) {
+    fail("R5_EDGE_AUTHORIZATION_MODE_UNRESOLVED", `${operation.operationId}:${operation.authorizationMode}`);
+  }
   if (requirement && writeMethods.has(operation.method)) {
     if (requirement.authorizationMode === "AUTHENTICATED_PLATFORM_SUPER_ADMIN") {
       document["x-required-platform-authorization"] = requirement.requirementId;
@@ -249,6 +306,8 @@ function operationDocument(operation, catalog, requirements, pathFile) {
       document["x-required-owner-protocol"] = requirement.requirementId;
     } else if (requirement.authorizationMode === "AUTHENTICATED_WORKSPACE") {
       document["x-required-capability"] = requirement.requirementId;
+    } else if (requirement.authorizationMode === "TERMINAL_CREDENTIAL") {
+      document["x-required-terminal-credential"] = requirement.requirementId;
     } else {
       fail("R5_EDGE_AUTHORIZATION_MODE_UNRESOLVED", operation.operationId);
     }
@@ -257,11 +316,11 @@ function operationDocument(operation, catalog, requirements, pathFile) {
   if (requestType) document.requestBody = { required: true, content: { [requestType]: { schema: { $ref: `#/components/schemas/${operation.requestSchema}` } } } };
   return document;
 }
-function collectSourceSchemas(catalog) {
+function collectSourceSchemas(catalog, base) {
   const schemas = new Map();
   const ranks = new Map();
   for (const source of catalog.sources) {
-    const absolute = path.resolve(root, source.path);
+    const absolute = repoInputPath(base, source.path);
     if (!fs.existsSync(absolute)) fail("R5_EDGE_HERITAGE_SOURCE_MISSING", source.path);
     if (sha256(absolute) !== source.sha256) fail("R5_EDGE_HERITAGE_HASH_DRIFT", source.path);
     const document = yamlAsJson(absolute);
@@ -278,8 +337,8 @@ function collectSourceSchemas(catalog) {
   }
   return schemas;
 }
-function materializeComponents(catalog, placement) {
-  const sourceSchemas = collectSourceSchemas(catalog);
+function materializeComponents(catalog, placement, base) {
+  const sourceSchemas = collectSourceSchemas(catalog, base);
   const components = new Map();
   for (const [name, baseline] of Object.entries(catalog.componentFieldBaseline)) {
     if (baseline.ref) {
@@ -356,6 +415,7 @@ function rewriteRefs(value, currentFile, componentFiles) {
 }
 function materialize(rootDir = root, writeOutputs = true) {
   const catalog = projectEdgeCatalog(readJson(catalogPath, rootDir)).catalog;
+  validateTerminalRetryPolicy(catalog);
   const placement = readJson(placementPath, rootDir);
   const errors = readJson(errorCatalogPath, rootDir);
   const requirements = authorizationRequirements(readJson(authorizationManifestPath, rootDir));
@@ -364,9 +424,9 @@ function materialize(rootDir = root, writeOutputs = true) {
   const operationRows = catalog.operations.map((operation) => ({ ...operation, ...resolveCapability(operation, placement) }));
   const ids = new Set(operationRows.map((operation) => operation.operationId));
   if (ids.size !== expectedOperationCount) fail("R5_EDGE_OPERATION_DUPLICATE");
-  const counts = Object.fromEntries(["platform-admin", "operations-admin", "public"].map((face) => [face, operationRows.filter((operation) => operation.face === face).length]));
+  const counts = Object.fromEntries(["platform-admin", "operations-admin", "public", "terminal"].map((face) => [face, operationRows.filter((operation) => operation.face === face).length]));
   if (JSON.stringify(counts) !== JSON.stringify(placement.closure.faceCounts)) fail("R5_EDGE_FACE_DENOMINATOR_DRIFT");
-  const { components, files } = materializeComponents(catalog, placement);
+  const { components, files } = materializeComponents(catalog, placement, rootDir);
   const componentFiles = new Map([...files.entries()].flatMap(([file, entries]) => Object.keys(entries).map((name) => [name, file])));
   const pathFiles = new Map();
   for (const operation of operationRows) {
@@ -389,7 +449,8 @@ function materialize(rootDir = root, writeOutputs = true) {
     components: {
       securitySchemes: {
         platformSessionCookie: { type: "apiKey", in: "cookie", name: "V2S_PLATFORM_SESSION" },
-        operationsSessionCookie: { type: "apiKey", in: "cookie", name: "V2S_OPERATIONS_SESSION" }
+        operationsSessionCookie: { type: "apiKey", in: "cookie", name: "V2S_OPERATIONS_SESSION" },
+        terminalCredential: { type: "http", scheme: "Terminal", description: "Terminal <generation>.<secret>" }
       },
       schemas: Object.fromEntries([...componentFiles.entries()].map(([name, file]) => [name, { $ref: `./${file}#/components/schemas/${name}` }])),
       responses: { ProblemResponse: { description: "Typed problem", content: { "application/problem+json": { schema: { $ref: "#/components/schemas/Problem" } } } } }
@@ -434,6 +495,7 @@ function check() {
 }
 function selfTest() {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-r5-edge-red-"));
+  const outsideRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-r5-edge-outside-"));
   try {
     const route = "/api/public/path~token";
     const rootReference = `#/paths/${pointer(route)}`;
@@ -476,6 +538,62 @@ function selfTest() {
       return result;
     };
     materialize(scratch, true);
+    const acceptedCatalog = readJson(catalogPath, scratch);
+    const safeRetryMutation = clone(acceptedCatalog);
+    safeRetryMutation.operations.find((operation) => operation.operationId === "activateTerminal").safeRetryable = false;
+    write(catalogPath, safeRetryMutation, scratch);
+    try {
+      materialize(scratch, false);
+      fail("R5_EDGE_TERMINAL_SAFE_RETRY_RED_NOT_DETECTED");
+    } catch (error) {
+      if (!String(error.message).includes("R5_EDGE_TERMINAL_SAFE_RETRY_POLICY_DRIFT")) throw error;
+    }
+    process.stdout.write("FIXTURE=activation-safe-retry-removed; EXPECTED=FAIL; ACTUAL=FAIL; MARKER=R5_EDGE_TERMINAL_SAFE_RETRY_POLICY_DRIFT\n");
+    const missingRetryOverride = clone(acceptedCatalog);
+    delete missingRetryOverride.preAuthenticationIdempotencyPolicy.operationOverrides.activateTerminal;
+    write(catalogPath, missingRetryOverride, scratch);
+    try {
+      materialize(scratch, false);
+      fail("R5_EDGE_TERMINAL_PREAUTH_POLICY_RED_NOT_DETECTED");
+    } catch (error) {
+      if (!String(error.message).includes("R5_EDGE_TERMINAL_PREAUTH_IDEMPOTENCY_POLICY_DRIFT")) throw error;
+    }
+    process.stdout.write("FIXTURE=activation-preauth-policy-removed; EXPECTED=FAIL; ACTUAL=FAIL; MARKER=R5_EDGE_TERMINAL_PREAUTH_IDEMPOTENCY_POLICY_DRIFT\n");
+    write(catalogPath, acceptedCatalog, scratch);
+    const escapedCatalog = clone(acceptedCatalog);
+    escapedCatalog.sources[0].path = "../outside-project/contracts/openapi/components/example.schemas.yaml";
+    write(catalogPath, escapedCatalog, scratch);
+    try {
+      materialize(scratch, true);
+      fail("R5_EDGE_INPUT_PATH_ESCAPE_RED_NOT_DETECTED");
+    } catch (error) {
+      if (!String(error.message).includes("R5_EDGE_INPUT_PATH_OUTSIDE_ROOT")) throw error;
+    }
+    process.stdout.write("FIXTURE=root-traversal-path; EXPECTED=FAIL; ACTUAL=FAIL; MARKER=R5_EDGE_INPUT_PATH_OUTSIDE_ROOT\n");
+    const absoluteCatalog = clone(acceptedCatalog);
+    absoluteCatalog.sources[0].path = path.join(outsideRoot, "external-schema.yaml");
+    write(catalogPath, absoluteCatalog, scratch);
+    try {
+      materialize(scratch, true);
+      fail("R5_EDGE_INPUT_PATH_ABSOLUTE_RED_NOT_DETECTED");
+    } catch (error) {
+      if (!String(error.message).includes("R5_EDGE_INPUT_PATH_INVALID")) throw error;
+    }
+    process.stdout.write("FIXTURE=absolute-external-path; EXPECTED=FAIL; ACTUAL=FAIL; MARKER=R5_EDGE_INPUT_PATH_INVALID\n");
+
+    const escapeLink = path.join(scratch, "outside-project-link");
+    fs.symlinkSync(outsideRoot, escapeLink, "dir");
+    const symlinkCatalog = clone(acceptedCatalog);
+    symlinkCatalog.sources[0].path = "outside-project-link/external-schema.yaml";
+    write(catalogPath, symlinkCatalog, scratch);
+    try {
+      materialize(scratch, true);
+      fail("R5_EDGE_INPUT_PATH_SYMLINK_RED_NOT_DETECTED");
+    } catch (error) {
+      if (!String(error.message).includes("R5_EDGE_INPUT_PATH_OUTSIDE_ROOT")) throw error;
+    }
+    process.stdout.write("FIXTURE=symlink-mediated-escape; EXPECTED=FAIL; ACTUAL=FAIL; MARKER=R5_EDGE_INPUT_PATH_OUTSIDE_ROOT\n");
+    write(catalogPath, acceptedCatalog, scratch);
     const sessionOutput = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-session.schemas.json"));
     const sessionEnums = requiredDataNodeTypeEnums(sessionOutput);
     if (sessionEnums.length < 2 || sessionEnums.some((values) => !values.includes("HEAD_COMPANY"))) {
@@ -486,7 +604,6 @@ function selfTest() {
     if (rolePageEnums.length !== 1 || !rolePageEnums[0].includes("HEAD_COMPANY")) {
       fail("R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING");
     }
-    const acceptedCatalog = readJson(catalogPath, scratch);
     const enumMutation = clone(acceptedCatalog);
     enumMutation.componentOverrides.WorkspaceSessionEntry.enumAdditions.requiredDataNodeType = [];
     enumMutation.componentOverrides.WorkspaceRolePage.enumAdditions.requiredDataNodeType = [];
@@ -515,8 +632,11 @@ function selfTest() {
     const componentOutput = path.join(scratch, generatedRoot, "components/organization/store.schemas.json");
     fs.appendFileSync(componentOutput, "\n");
     try { assertGeneratedOutputSnapshots(generatedOutputSnapshot(scratch), expectedOutputs); fail("R5_EDGE_COMPONENT_OUTPUT_DRIFT_RED_NOT_DETECTED"); } catch (error) { if (!String(error.message).includes("R5_EDGE_GENERATED_OUTPUT_DRIFT")) throw error; }
-    process.stdout.write("R5_EDGE_MATERIALIZE_SELF_TEST=PASS\nRED=R5_EDGE_JSON_POINTER_TOKEN_RED_NOT_DETECTED,R5_EDGE_NESTED_FORBIDDEN_PROPERTY_RED_NOT_DETECTED,R5_EDGE_RELATIVE_COMPONENT_REFERENCE_RED_NOT_DETECTED,R5_EDGE_SESSION_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING,R5_EDGE_SESSION_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED,R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING,R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED,R5_EDGE_CAPABILITY_UNRESOLVED,R5_EDGE_PATH_OUTPUT_DRIFT_RED_NOT_DETECTED,R5_EDGE_COMPONENT_OUTPUT_DRIFT_RED_NOT_DETECTED\n");
-  } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
+    process.stdout.write("R5_EDGE_MATERIALIZE_SELF_TEST=PASS\nRED=R5_EDGE_JSON_POINTER_TOKEN_RED_NOT_DETECTED,R5_EDGE_NESTED_FORBIDDEN_PROPERTY_RED_NOT_DETECTED,R5_EDGE_RELATIVE_COMPONENT_REFERENCE_RED_NOT_DETECTED,R5_EDGE_TERMINAL_SAFE_RETRY_POLICY_DRIFT,R5_EDGE_TERMINAL_PREAUTH_IDEMPOTENCY_POLICY_DRIFT,R5_EDGE_INPUT_PATH_OUTSIDE_ROOT,R5_EDGE_INPUT_PATH_INVALID,R5_EDGE_INPUT_PATH_SYMLINK_RED_NOT_DETECTED,R5_EDGE_SESSION_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING,R5_EDGE_SESSION_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED,R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING,R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED,R5_EDGE_CAPABILITY_UNRESOLVED,R5_EDGE_PATH_OUTPUT_DRIFT_RED_NOT_DETECTED,R5_EDGE_COMPONENT_OUTPUT_DRIFT_RED_NOT_DETECTED\n");
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true });
+    fs.rmSync(outsideRoot, { recursive: true, force: true });
+  }
 }
 
 try {

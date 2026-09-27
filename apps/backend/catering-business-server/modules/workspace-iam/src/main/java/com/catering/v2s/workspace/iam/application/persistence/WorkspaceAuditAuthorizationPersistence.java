@@ -20,8 +20,7 @@ public class WorkspaceAuditAuthorizationPersistence {
             String entityType, UUID subjectId, UUID workspaceUuid, String groupWorkspaceKey) {
         return switch (entityType) {
             case "WORKSPACE_ACCOUNT" -> jdbc.query(
-                    WorkspaceAuditAuthorizationServiceSql
-                                    .WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_SELECT_TARGET_SERVICE_NODE_TYPE_SERVICE_NODE_ID
+                    WorkspaceAuditAuthorizationServiceSql.SELECT_TARGET_SVC_NODE_TYPE_001
                             + WorkspaceAuditAuthorizationServiceSql
                                     .WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_ROLE_ASSIGNMENT_TARGET
                             + WorkspaceAuditAuthorizationServiceSql
@@ -35,8 +34,7 @@ public class WorkspaceAuditAuthorizationPersistence {
                     workspaceUuid,
                     groupWorkspaceKey);
             case "WORKSPACE_INVITATION" -> jdbc.query(
-                    WorkspaceAuditAuthorizationServiceSql
-                                    .WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_SELECT_INVITATION_TARGET_SERVICE_NODE_TYPE_SERVICE_NODE_ID
+                    WorkspaceAuditAuthorizationServiceSql.SELECT_INVITE_TARGET_SVC_NODE_002
                             + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_INVITATION
                             + WorkspaceAuditAuthorizationServiceSql
                                     .WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_JOIN_INVITATION_ASSIGNMENT_INTENT_TARGET
@@ -56,16 +54,14 @@ public class WorkspaceAuditAuthorizationPersistence {
 
     public Assignment assignment(UUID assignmentId, UUID accountId, UUID workspaceUuid, String groupWorkspaceKey) {
         List<Assignment> assignments = jdbc.query(
-                WorkspaceAuditAuthorizationServiceSql
-                                .WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_SELECT_ASSIGNMENT_SERVICE_NODE_TYPE_SERVICE_NODE_ID
+                WorkspaceAuditAuthorizationServiceSql.SELECT_ASSIGN_SVC_NODE_TYPE_003
                         + WorkspaceAuditAuthorizationServiceSql
                                 .WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_FROM_CLAUSE_ROLE_ASSIGNMENT_ASSIGNMENT
                         + WorkspaceAuditAuthorizationServiceSql
                                 .WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_JOIN_WORKSPACE_ROLE_ROLE_ASSIGNMENT_ROLE_ID
                         + WorkspaceAuditAuthorizationServiceSql
                                 .WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_WHERE_ASSIGNMENT_ACCOUNT_ID_WORKSPACE_UUID
-                        + WorkspaceAuditAuthorizationServiceSql
-                                .WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_CONDITION_ASSIGNMENT_GROUP_WORKSPACE_KEY_STATUS_ACTIVE
+                        + WorkspaceAuditAuthorizationServiceSql.CONDITION_ASSIGN_GRP_WS_KEY_004
                         + WorkspaceAuditAuthorizationServiceSql
                                 .WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_CONDITION_ROLE_STATUS_ENABLED,
                 (row, index) -> new Assignment(row.getString(1), row.getObject(2, UUID.class)),

@@ -78,9 +78,8 @@ public final class CatalogWorkbenchReadServiceSql {
             "SELECT i.item_ref,i.code,i.name,i.shape_key,i.status,";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_NULLIF_SECTIONS_STANDARD_SALE_PRICE_BIGINT_ALTERNATE_A =
             "NULLIF(i.sections->>'standardSalePrice','')::bigint AS default_price,i.version ";
-    public static final String
-            CATALOG_WORKBENCH_READ_SERVICE_FROM_CLAUSE_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_ALTERNATE_A =
-                    "FROM catalog.catalog_item i WHERE i.data_node_ref=? AND i.brand_ref=? ";
+    public static final String FROM_CLAUSE_CAT_ITEM_DATA_ALT_A_001 =
+            "FROM catalog.catalog_item i WHERE i.data_node_ref=? AND i.brand_ref=? ";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_CONDITION_ITEM_REF = "AND i.item_ref IN (";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_CTE_VISIBLE_CATEGORIES_CATEGORY_REF_CODE_NAME =
             "WITH RECURSIVE visible_categories AS MATERIALIZED (SELECT category_ref,code,name,";
@@ -125,9 +124,8 @@ public final class CatalogWorkbenchReadServiceSql {
     public static final String CATALOG_WORKBENCH_READ_SERVICE_ITEM_NAME = "item.name ";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_FROM_CLAUSE_CATALOG_ITEM_CATEGORY_SUBTREE_RELATION =
             "FROM category_subtree subtree JOIN catalog.catalog_item_category relation ";
-    public static final String
-            CATALOG_WORKBENCH_READ_SERVICE_JOIN_CONDITION_CATALOG_ITEM_RELATION_CATEGORY_REF_SUBTREE_ITEM =
-                    "ON relation.category_ref=subtree.category_ref JOIN catalog.catalog_item item ";
+    public static final String JOIN_CONDITION_CAT_ITEM_RELATION_002 =
+            "ON relation.category_ref=subtree.category_ref JOIN catalog.catalog_item item ";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_JOIN_CONDITION_ITEM_ITEM_REF_RELATION_DATA_NODE_REF =
             "ON item.item_ref=relation.item_ref AND item.data_node_ref=? AND item.brand_ref=? ";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_CONDITION_ITEM_STATUS_VOIDED_SUBTREE_SIZES =
@@ -208,9 +206,8 @@ public final class CatalogWorkbenchReadServiceSql {
 
     public static final String CATALOG_WORKBENCH_READ_SERVICE_CATALOG_ITEM_CATEGORY_RELATION_ITEM_REF_CATALOG_ITEM =
             "catalog.catalog_item_category relation WHERE relation.item_ref=catalog_item.item_ref)) ";
-    public static final String
-            CATALOG_WORKBENCH_READ_SERVICE_FROM_CLAUSE_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_STATUS_VOIDED =
-                    "FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND status <> 'VOIDED' ";
+    public static final String FROM_CLAUSE_CAT_ITEM_DATA_003 =
+            "FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND status <> 'VOIDED' ";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_GROUP_BY_SHAPE_KEY = "GROUP BY shape_key";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_SELECT_RELATION_REF_ITEM_REF =
             "SELECT relation.ref, COUNT(DISTINCT relation.item_ref) ";
@@ -286,16 +283,15 @@ public final class CatalogWorkbenchReadServiceSql {
             "ORDER BY paged.display_order,paged.name,paged.code,paged.category_ref";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_CTE_CATEGORY_SCOPE_CATEGORY_REF =
             "WITH RECURSIVE category_scope(category_ref) AS (";
-    public static final String
-            CATALOG_WORKBENCH_READ_SERVICE_SELECT_CATALOG_CATEGORY_CATEGORY_REF_DATA_NODE_REF_BRAND_REF =
-                    "SELECT c.category_ref FROM catalog.catalog_category c WHERE c.data_node_ref=? AND c.brand_ref=? AND ";
+    public static final String SELECT_CAT_CATG_REF_DATA_004 =
+            ("SELECT c.category_ref FROM catalog.catalog_category c WHERE c.data_node_"
+                    + "ref=? AND c.brand_ref=? AND ");
     public static final String CATALOG_WORKBENCH_READ_SERVICE_CATEGORY_REF_TEXT_STATUS_VOIDED =
             "c.category_ref::text=? AND c.status <> 'VOIDED' ";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_UNION_CATEGORY_SCOPE_CHILD_CATEGORY_REF_PARENT =
             "UNION ALL SELECT child.category_ref FROM catalog.catalog_category child JOIN category_scope parent ";
-    public static final String
-            CATALOG_WORKBENCH_READ_SERVICE_JOIN_CONDITION_CHILD_PARENT_CATEGORY_REF_PARENT_CATEGORY_REF =
-                    "ON child.parent_category_ref=parent.category_ref ";
+    public static final String JOIN_CONDITION_CHILD_PARENT_CATG_005 =
+            "ON child.parent_category_ref=parent.category_ref ";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_WHERE_CHILD_DATA_NODE_REF_BRAND_REF_STATUS_ALTERNATE_A =
             "WHERE child.data_node_ref=? AND child.brand_ref=? AND ? = TRUE AND child.status <> 'VOIDED') ";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_VALUE_SEPARATOR_FILTERED_ITEM_REF_CODE_NAME =
@@ -310,9 +306,8 @@ public final class CatalogWorkbenchReadServiceSql {
             "i.sales_unit_precision, i.base_measure_unit_ref, i.base_measure_unit_code, ";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_BASE_MEASURE_UNIT_NAME =
             "i.base_measure_unit_name, i.base_measure_unit_dimension, i.base_measure_unit_precision ";
-    public static final String
-            CATALOG_WORKBENCH_READ_SERVICE_FROM_CLAUSE_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_ALTERNATE_B =
-                    "FROM catalog.catalog_item i WHERE i.data_node_ref=? AND i.brand_ref=?";
+    public static final String FROM_CLAUSE_CAT_ITEM_DATA_ALT_B_006 =
+            "FROM catalog.catalog_item i WHERE i.data_node_ref=? AND i.brand_ref=?";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_CONDITION_CODE = " AND i.code IN (";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_CONDITION_ITEM_REF_ALTERNATE_A = " AND i.item_ref IN (";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_CONDITION_TEXT = " AND (?::text IS NULL)";
@@ -331,7 +326,7 @@ public final class CatalogWorkbenchReadServiceSql {
             " AND EXISTS (SELECT 1 FROM catalog.catalog_item_reference relation ";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_WHERE_RELATION_ITEM_REF_KIND_REF =
             "WHERE relation.item_ref=i.item_ref AND relation.kind=? AND relation.ref=?)";
-    public static final String CATALOG_WORKBENCH_READ_SERVICE_CONDITION_CATALOG_ITEM_REFERENCE_RELATION_ALTERNATE_A =
+    public static final String CONDITION_CAT_ITEM_REF_RELATION_ALT_A_007 =
             " AND EXISTS (SELECT 1 FROM catalog.catalog_item_reference relation ";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_WHERE_RELATION_ITEM_REF_KIND_REF_ALTERNATE_A =
             "WHERE relation.item_ref=i.item_ref AND relation.kind=? AND relation.ref=?)";
@@ -345,7 +340,7 @@ public final class CatalogWorkbenchReadServiceSql {
             " AND i.source_scope_ref IS NULL";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_CONDITION_SOURCE_SCOPE_REF_ALTERNATE_A =
             " AND i.source_scope_ref IS NOT NULL";
-    public static final String CATALOG_WORKBENCH_READ_SERVICE_CONDITION_SECTIONS_SOURCE_SOURCE_TYPE_OWNERSHIP_SOURCE =
+    public static final String CONDITION_SECTIONS_SRC_TYPE_OWNERSHIP_008 =
             " AND COALESCE(i.sections->>'source',i.sections->>'sourceType',i.sections->>'ownershipSource') ";
     public static final String CATALOG_WORKBENCH_READ_SERVICE_TEMPORARY_EXTERNAL_ORDER_TEMPORARY =
             "IN ('TEMPORARY','EXTERNAL_ORDER_TEMPORARY')";
@@ -442,7 +437,8 @@ public final class CatalogWorkbenchReadServiceSql {
             "WHERE relation.kind=? AND relation.item_ref IN (";
     public static final String
             CATALOG_WORKBENCH_READ_SERVICE_SELECT_ITEM_REF_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME =
-                    "SELECT item_ref,sales_unit_ref,sales_unit_code,sales_unit_name,sales_unit_dimension,sales_unit_pre";
+                    ("SELECT item_ref,sales_unit_ref,sales_unit_code,sales_unit_name,sales_uni"
+                            + "t_dimension,sales_unit_pre");
 
     public static final String CATALOG_WORKBENCH_READ_SERVICE_FROM_CLAUSE_CATALOG_ITEM_ITEM_REF =
             "FROM catalog.catalog_item WHERE item_ref IN (";
@@ -478,20 +474,20 @@ public final class CatalogWorkbenchReadServiceSql {
                     + "='AUTO_SYNC'";
     public static final String SQL_LIST_CLOSE = ")";
     public static final String SQL_SPACE = " ";
-    public static final String
-            CATALOG_WORKBENCH_READ_SERVICE_COALESCE_SECTIONS_SOURCE_SECTIONS_SOURCETYPE_SECTIONS_OWNERSHIPSOURCE_EXTERNAL_ORDER_TEMPORARY_SOURCETYPE_SECTIONS_OWNERSHIPSOURCE_EXTERNAL_ORDER_TEMPORARY =
-                    """
-    COALESCE(sections->>'source',sections->>'sourceType',sections->>'ownershipSource')='EXTERNAL_ORDER_TEMPORARY'),\s""";
-    public static final String
-            CATALOG_WORKBENCH_READ_SERVICE_COALESCE_SECTIONS_SOURCE_SECTIONS_SOURCETYPE_SECTIONS_OWNERSHIPSOURCE_AUTO_SYNC_COUNT_FILTER_NOT_EXISTS_SELECT_FROM =
-                    """
-    COALESCE(sections->>'source',sections->>'sourceType',sections->>'ownershipSource')='AUTO_SYNC'), COUNT(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM\s""";
-    public static final String
-            CATALOG_WORKBENCH_READ_SERVICE_SELECT_ITEM_REF_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION =
-                    """
+    public static final String COALESCE_SECTIONS_SRC_SECTIONS_SOURCETYPE_009 =
+            """
+    COALESCE(sections->>'source',sections->>'sourceType',sections->>'o\
+    wnershipSource')='EXTERNAL_ORDER_TEMPORARY'),\s""";
+    public static final String COALESCE_SECTIONS_SRC_SECTIONS_SOURCETYPE_010 =
+            """
+    COALESCE(sections->>'source',sections->>'sourceType',sections->>'o\
+    wnershipSource')='AUTO_SYNC'), COUNT(*) FILTER (WHERE NOT EXISTS (\
+    SELECT 1 FROM\s""";
+    public static final String SELECT_ITEM_REF_SALES_UNIT_011 =
+            """
     SELECT item_ref,sales_unit_ref,sales_unit_code,sales_unit_name,sales_unit_dimension,sales_unit_precision,""";
-    public static final String
-            CATALOG_WORKBENCH_READ_SERVICE_BASE_MEASURE_UNIT_REF_BASE_MEASURE_UNIT_CODE_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION =
-                    """
-    base_measure_unit_ref,base_measure_unit_code,base_measure_unit_name,base_measure_unit_dimension,base_measure_unit_precision\s""";
+    public static final String BASE_MEAS_UNIT_REF_BASE_012 =
+            """
+    base_measure_unit_ref,base_measure_unit_code,base_measure_unit_nam\
+    e,base_measure_unit_dimension,base_measure_unit_precision\s""";
 }

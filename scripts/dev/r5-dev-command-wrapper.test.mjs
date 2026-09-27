@@ -4,7 +4,7 @@ import {readFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import path from "node:path";
 import test from "node:test";
-import {buildManagedDevCleanupReceipt, canCleanupRemoteJavaRoot, cleanupManagedRemoteJavaRoot, cleanupManagedRemoteRootAfterStartFailure, collectStopDiagnostics, parseRemoteRootCleanupResult, stopAndCleanupStartedRemoteJava, validateManagedRemoteJavaBinding} from "./r5-dev-runner.mjs";
+import {buildManagedDevCleanupReceipt, canCleanupRemoteJavaRoot, cleanupManagedRemoteJavaRoot, cleanupManagedRemoteRootAfterStartFailure, collectStopDiagnostics, parseRemoteRootCleanupResult, remoteTdsReadinessScript, stopAndCleanupStartedRemoteJava, validateManagedRemoteJavaBinding} from "./r5-dev-runner.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const start = path.join(root, "scripts/dev/start");
@@ -140,7 +140,7 @@ test("DEV start failure refuses remote-root deletion when managed Java stop fail
   assert.match(result.failures[0].message, /REMOTE_STOP_FAILED/);
 });
 
-test("DEV terminal cleanup receipt keeps local, remote Java, and remote-root statuses separate", () => {
+test("DEV terminal cleanup receipt keeps local, remote Java, TDS, and remote-root statuses separate", () => {
   assert.deepEqual(buildManagedDevCleanupReceipt({
     cleanupStatus: "FAIL",
     localProcessStatus: "FAIL",
@@ -155,6 +155,9 @@ test("DEV terminal cleanup receipt keeps local, remote Java, and remote-root sta
     remoteJavaControl: "PASS",
     remoteJava: "PASS",
     remoteJavaStop: "STOPPED",
+    remoteTdsControl: "NOT_APPLICABLE",
+    remoteTds: "NOT_APPLICABLE",
+    remoteTdsStop: "NOT_APPLICABLE",
     remoteJavaRoot: "PASS",
   });
   assert.deepEqual(buildManagedDevCleanupReceipt({
@@ -171,6 +174,80 @@ test("DEV terminal cleanup receipt keeps local, remote Java, and remote-root sta
     remoteJavaStopStatus: "NOT_APPLICABLE",
     remoteJavaRootCleanupStatus: "PASS",
   }).remoteJava, "NOT_APPLICABLE");
+  const tdsReceipt = buildManagedDevCleanupReceipt({
+    cleanupStatus: "PASS",
+    localProcessStatus: "PASS",
+    remoteJavaControlStatus: "PASS",
+    remoteJavaStopStatus: "STOPPED",
+    remoteTdsControlStatus: "PASS",
+    remoteTdsStopStatus: "ALREADY_STOPPED",
+    remoteJavaRootCleanupStatus: "PASS",
+  });
+  assert.equal(tdsReceipt.remoteTds, "PASS");
+  assert.equal(buildManagedDevCleanupReceipt({
+    cleanupStatus: "FAIL",
+    localProcessStatus: "PASS",
+    remoteJavaControlStatus: "PASS",
+    remoteJavaStopStatus: "STOPPED",
+    remoteTdsControlStatus: "PASS",
+    remoteTdsStopStatus: "NOT_RUN",
+    remoteJavaRootCleanupStatus: "FAIL",
+  }).remoteTds, "FAIL");
+});
+
+test("remote TDS launch, readiness, logs and stop are independently manifest-bound", () => {
+  assert.match(runnerSource, /REMOTE_TDS_CONTROL_KIND/);
+  assert.match(runnerSource, /validateManagedRemoteTdsBinding/);
+  assert.match(runnerSource, /startRemoteTds\(/);
+  assert.match(runnerSource, /waitForRemoteTdsReady\(/);
+  assert.match(runnerSource, /collectRemoteTdsLog\(/);
+  assert.match(runnerSource, /stopRemoteTds\(/);
+  assert.match(runnerSource, /controlPath/);
+  assert.match(runnerSource, /databaseListenerReady/);
+  assert.match(runnerSource, /rss_budget_kib=\$\{control\.rssBudgetMiB \* 1024\}/);
+  assert.match(runnerSource, /rssWithinBudget/);
+  assert.match(runnerSource, /REMOTE_TDS_RSS_BUDGET_EXCEEDED_AT_READINESS/);
+});
+
+test("remote TDS readiness probe reads the owned process RSS and generates valid shell", () => {
+  const runId = "r5-dev-1789999999999-70123-1d53aa6c-cd00-444d-8f9a-125f6ee68081";
+  const remoteRoot = `/tmp/${runId}`;
+  const command = remoteTdsReadinessScript({
+    schemaVersion: 1,
+    kind: "r5-dev-remote-tds-control",
+    runId,
+    remoteRoot,
+    pid: 101,
+    pgid: 101,
+    bootId: "0123456789abcdef0123456789abcdef",
+    processStartTicks: 2026,
+    commandSha256: "a".repeat(64),
+    websocketPort: 18083,
+    rssBudgetMiB: 512,
+    phase: "READY",
+    controlPath: `${remoteRoot}/results/tds-control.json`,
+    logPath: `${remoteRoot}/results/tds-server.log`,
+    phasePath: `${remoteRoot}/results/tds-phase.jsonl`,
+  });
+  const syntax = childProcess.spawnSync("bash", ["-n"], {input: command, encoding: "utf8"});
+  assert.equal(syntax.status, 0, syntax.stderr || syntax.stdout);
+  assert.match(command, /\/proc\/\$pid\/status/);
+  assert.match(command, /rss_budget_kib=524288/);
+  assert.match(command, /rssWithinBudget/);
+  assert.match(command, /TDS_REMOTE_RSS_NOT_AVAILABLE/);
+});
+
+test("DEV requires capacity-derived TDS keys before start and validates the dedicated remote port", () => {
+  const environmentSource = readFileSync(path.join(root, "scripts/dev/r5-dev-environment.mjs"), "utf8");
+  const capacitySource = readFileSync(path.join(root, "scripts/env/tds-capacity-configuration.mjs"), "utf8");
+  assert.match(environmentSource, /loadTdsCapacityConfiguration/);
+  assert.match(environmentSource, /R5_DEV_\$\{key\}_REQUIRED_OR_INVALID/);
+  assert.match(capacitySource, /scripts\/env\/tds-dev-capacity\.json/);
+  assert.match(capacitySource, /TDS_CAPACITY_CONFIG_MISSING/);
+  assert.match(runnerSource, /V2S_DEV_REMOTE_TDS_PORT/);
+  assert.match(runnerSource, /V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS/);
+  assert.match(runnerSource, /V2S_TDS_MAX_TRACKED_SESSIONS/);
+  assert.match(runnerSource, /rssBudgetMiB/);
 });
 
 test("DEV start failure tracks and cleans a possible exact root before Java control exists", () => {

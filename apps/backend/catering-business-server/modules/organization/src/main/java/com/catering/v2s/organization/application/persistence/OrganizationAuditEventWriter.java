@@ -10,8 +10,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 /** Organization-owned audit adapter; the audit table and DML remain outside the value-only audit-model SPI. */
 public final class OrganizationAuditEventWriter implements AuditEventWriter {
-    private static final String INSERT =
-            "INSERT INTO organization.audit_event(id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?,?,?,?,?,?,?,?,?,?,?::jsonb)";
+    private static final String INSERT = ("INSERT INTO organization.audit_event(id, workspace_uuid, group_workspace"
+            + "_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_"
+            + "snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?,?,?,"
+            + "?,?,?,?,?,?,?,?::jsonb)");
 
     private final JdbcTemplate jdbc;
 

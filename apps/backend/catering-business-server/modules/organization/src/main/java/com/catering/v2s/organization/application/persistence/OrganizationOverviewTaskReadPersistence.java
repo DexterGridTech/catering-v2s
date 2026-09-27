@@ -356,15 +356,12 @@ public class OrganizationOverviewTaskReadPersistence {
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CTE_TARGET_BRAND_TEXT_ENTITY_TYPE
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TEXT_CREDIT_CODE_ALIAS_REMARK
-                        + OrganizationOverviewTaskReadServiceSql
-                                .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_UPDATE_BRAND_UPDATED_AT_EPOCH_MILLIS_EXTENSION_VALUES_TEXT
-                        + OrganizationOverviewTaskReadServiceSql
-                                .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TENANT_CODE
+                        + OrganizationOverviewTaskReadServiceSql.UPDATE_BRAND_UPDATED_AT_EPOCH_001
+                        + OrganizationOverviewTaskReadServiceSql.WHERE_WS_UUID_GRP_WS_002
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_NAME_LEGAL_NAME_CREDIT_CODE_REMARK
                         + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_UPDATE_TENANT
-                        + OrganizationOverviewTaskReadServiceSql
-                                .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_HEAD_COMPANY_CODE_NAME
+                        + OrganizationOverviewTaskReadServiceSql.CONDITION_GRP_WS_KEY_HEAD_003
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CREDIT_CODE_REMARK_STATUS_VERSION
                         + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_HEAD_COMPANY
@@ -430,14 +427,12 @@ public class OrganizationOverviewTaskReadPersistence {
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_STORE_PROJECT_ID
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_TENANT_BRAND_BRAND_ID_TENANT_ID
-                        + OrganizationOverviewTaskReadServiceSql
-                                .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_JOIN_HEAD_COMPANY_HEAD_COMPANY_ID_WORKSPACE_UUID
+                        + OrganizationOverviewTaskReadServiceSql.JOIN_HEAD_COMPANY_HEAD_COMPANY_004
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_ANCESTRY_TARGET_PROJECT_ID
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_NODE_PARENT_ID_CODE_NAME
-                        + OrganizationOverviewTaskReadServiceSql
-                                .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_NODE_TARGET_PROJECT_ID
+                        + OrganizationOverviewTaskReadServiceSql.ALT_ORG_NODE_TARGET_PROJECT_005
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ANCESTRY_TARGET_ID_PARENT_PARENT_ID
                         + OrganizationOverviewTaskReadServiceSql
@@ -446,8 +441,7 @@ public class OrganizationOverviewTaskReadPersistence {
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_SELECT_TARGET_CODE_NAME
-                        + OrganizationOverviewTaskReadServiceSql
-                                .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS_ALTERNATE_A
+                        + OrganizationOverviewTaskReadServiceSql.TARGET_STATUS_VER_CREATED_AT_ALT_A_006
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_NOTES_EXTENSION_VALUES_PROJECT_ID
                         + OrganizationOverviewTaskReadServiceSql
@@ -466,10 +460,8 @@ public class OrganizationOverviewTaskReadPersistence {
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_ALTERNATE_B
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_EXTENSION_VALUES_PROJECT_ID_PROJECT_CODE
-                        + OrganizationOverviewTaskReadServiceSql
-                                .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_BRAND_ID_BRAND_CODE_BRAND_NAME_ALTERNATE_A
-                        + OrganizationOverviewTaskReadServiceSql
-                                .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TARGET_TENANT_NAME_HEAD_ID_HEAD_CODE_ALTERNATE_A;
+                        + OrganizationOverviewTaskReadServiceSql.TARGET_BRAND_ID_BRAND_CODE_ALT_A_007
+                        + OrganizationOverviewTaskReadServiceSql.TARGET_TENANT_NAME_HEAD_ID_ALT_A_008;
         return jdbc.query(
                 sql,
                 statement -> {
@@ -554,10 +546,8 @@ public class OrganizationOverviewTaskReadPersistence {
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_NODE_GROUP_WORKSPACE_KEY_NODE_TYPE_REGION
                         + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_LATERAL
-                        + OrganizationOverviewTaskReadServiceSql
-                                .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_PROJECT_PHASE_NAME_PROJECT_ID_NODE_PHASES
-                        + OrganizationOverviewTaskReadServiceSql
-                                .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_WHERE_COMMERCIAL_GROUP_GROUP_WORKSPACE_KEY_NODE_NODE_TYPE,
+                        + OrganizationOverviewTaskReadServiceSql.ALT_PROJECT_PHASE_NAME_PROJECT_009
+                        + OrganizationOverviewTaskReadServiceSql.WHERE_COMMERCIAL_GRP_WS_KEY_010,
                 (row, index) -> new PlatformHierarchyRow(
                         row.getString(1),
                         row.getString(2),
@@ -829,8 +819,7 @@ public class OrganizationOverviewTaskReadPersistence {
                                         query.scopeNodeId(),
                                         OrganizationOverviewTaskReadServiceSql.STORE_ID_COLUMN,
                                         OrganizationOverviewTaskReadServiceSql.STORE_PROJECT_ID_COLUMN)
-                                + OrganizationOverviewTaskReadServiceSql
-                                        .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONDITION_PROJECT_ID_BRAND_ID_ALTERNATE_A
+                                + OrganizationOverviewTaskReadServiceSql.CONDITION_PROJECT_ID_BRAND_ID_ALT_A_011
                                 + OrganizationOverviewTaskReadServiceSql
                                         .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_OPEN_PAREN_TENANT_ID_HEAD_COMPANY_ID
                                 + (filters.isEmpty() ? "" : " AND " + filters.predicate("s.extension_values")),
@@ -983,8 +972,7 @@ public class OrganizationOverviewTaskReadPersistence {
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_BRAND_NODE_TYPE_PROJECT_CODE_NAME
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TENANT_CODE
-                        + OrganizationOverviewTaskReadServiceSql
-                                .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_TENANT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + OrganizationOverviewTaskReadServiceSql.ALT_TENANT_WS_UUID_GRP_012
                         + OrganizationOverviewTaskReadServiceSql
                                 .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_HEAD_COMPANY_CODE_NAME_WORKSPACE_UUID
                         + OrganizationOverviewTaskReadServiceSql
@@ -1012,8 +1000,7 @@ public class OrganizationOverviewTaskReadPersistence {
                 + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TENANT_CODE
                 + OrganizationOverviewTaskReadServiceSql
                         .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_NAME_TENANT_NAME_HEAD_ID_CODE_ALTERNATE_A
-                + OrganizationOverviewTaskReadServiceSql
-                        .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_STORE_PROJECT_ID_ALTERNATE_A
+                + OrganizationOverviewTaskReadServiceSql.ALT_ORG_NODE_STORE_PROJECT_ALT_A_013
                 + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_BRAND
                 + OrganizationOverviewTaskReadServiceSql
                         .ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_TENANT_BRAND_ID_TENANT_ID

@@ -1,0 +1,95 @@
+openapi: 3.0.3
+info: {title: Entity Extension Wire Components, version: 0.1.0}
+paths: {}
+components:
+  schemas:
+    ExtensionEntityType:
+      type: string
+      enum: [COMMERCIAL_GROUP, REGION, PROJECT, STORE, BRAND, TENANT, HEAD_COMPANY, CONTRACT]
+    ExtensionFieldType:
+      type: string
+      enum: [TEXT, NUMBER, DATE, BOOLEAN, SELECT]
+    ExtensionFieldStatus:
+      type: string
+      enum: [ENABLED, DISABLED]
+    ExtensionFieldDefinition:
+      type: object
+      additionalProperties: false
+      required: [key, label, type, required, options]
+      properties:
+        key: {type: string, minLength: 1, maxLength: 80, pattern: '^[a-z][a-zA-Z0-9_]*$'}
+        label: {type: string, minLength: 1, maxLength: 120}
+        type: {$ref: '#/components/schemas/ExtensionFieldType'}
+        required: {type: boolean}
+        options: {type: array, items: {type: string, maxLength: 120}}
+        status: {$ref: '#/components/schemas/ExtensionFieldStatus'}
+        displayOrder: {type: integer, minimum: 0}
+        displaySuffix: {type: string, minLength: 1, maxLength: 20}
+    ExtensionEntityCatalogItem:
+      type: object
+      additionalProperties: false
+      required: [entityType, displayName, configuredFieldCount, updatedAt]
+      properties:
+        entityType: {$ref: '#/components/schemas/ExtensionEntityType'}
+        displayName: {type: string, minLength: 1, maxLength: 120}
+        configuredFieldCount: {type: integer, minimum: 0}
+        updatedAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+    ExtensionEntityCatalogPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/ExtensionEntityCatalogItem'}}
+    ExtensionDefinition:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, entityType, definitions, revision, updatedAt]
+      properties:
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        entityType: {$ref: '#/components/schemas/ExtensionEntityType'}
+        definitions: {type: array, items: {$ref: '#/components/schemas/ExtensionFieldDefinition'}}
+        revision: {type: integer, format: int64, minimum: 0}
+        updatedAt: {$ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'}
+    ExtensionDefinitionUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [definitions, expectedRevision]
+      properties:
+        definitions: {type: array, items: {$ref: '#/components/schemas/ExtensionFieldDefinition'}}
+        expectedRevision: {type: integer, format: int64, minimum: 0}
+    ExtensionDefinitionProjectionEventV1:
+      description: >-
+        Extension-owned complete definition snapshot for one workspace and entity type. Consumers use it as a
+        local read model only; it never carries authorization and has no synchronous fallback read.
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, eventId, eventType, workspaceKey, entityType, previousRevision, revision, mode, occurredAt, definitions]
+      properties:
+        schemaVersion: {type: integer, minimum: 1, maximum: 1}
+        eventId: {type: string, format: uuid}
+        eventType: {type: string, enum: [EXTENSION_DEFINITION_PROJECTION_CHANGED]}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        entityType: {$ref: '#/components/schemas/ExtensionEntityType'}
+        previousRevision: {type: integer, format: int64, minimum: 0}
+        revision: {type: integer, format: int64, minimum: 1}
+        mode: {type: string, enum: [DELTA, SNAPSHOT]}
+        occurredAt: {type: integer, format: int64, minimum: 0}
+        definitions:
+          type: array
+          maxItems: 200
+          items: {$ref: '#/components/schemas/ExtensionFieldDefinition'}
+    ExtensionDefinitionProjectionRepairRequestedV1:
+      description: >-
+        Durable consumer-to-extension-owner repair request. It carries only consumer revision state and never
+        authorizes a command or permits a synchronous source read.
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, eventId, eventType, workspaceKey, entityType, appliedRevision, occurredAt]
+      properties:
+        schemaVersion: {type: integer, minimum: 1, maximum: 1}
+        eventId: {type: string, format: uuid}
+        eventType: {type: string, enum: [EXTENSION_DEFINITION_PROJECTION_REPAIR_REQUESTED]}
+        workspaceKey: {type: string, minLength: 1, maxLength: 64}
+        entityType: {$ref: '#/components/schemas/ExtensionEntityType'}
+        appliedRevision: {type: integer, format: int64, minimum: 0}
+        occurredAt: {type: integer, format: int64, minimum: 0}

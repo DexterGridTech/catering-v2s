@@ -6,7 +6,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {canonicalStartToken, evaluateCleanupReadback, snapshotProcessTree, terminateOwnedProcessTree, readProcessTable} from './managed-process-tree.mjs';
 import {refreshManagedDiagnosticFiles} from './managed-diagnostic-protocol.mjs';
-import {isOwnedRemoteDevRoot, remoteDevRootFor, remoteIdentityMatches, remoteJavaSelfTest, REMOTE_JAVA_CONTROL_KIND, validateRemoteJavaControl, validateRemoteResourceSnapshot} from './r5-remote-java.mjs';
+import {isOwnedRemoteDevRoot, remoteDevRootFor, remoteIdentityMatches, remoteTdsIdentityMatches, remoteJavaSelfTest, REMOTE_JAVA_CONTROL_KIND, REMOTE_TDS_CONTROL_KIND, validateRemoteJavaControl, validateRemoteTdsControl, validateRemoteResourceSnapshot} from './r5-remote-java.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
@@ -14,10 +14,10 @@ const manifestPath = path.join(runtime, 'run-manifest.json');
 const readinessProgressPath = path.join(runtime, `readiness-${process.pid}.jsonl`);
 const portLockPath = path.join(root, '.runtime/r5/managed-port-lock');
 const defaultTunnelPortPairs = Object.freeze([
-  {http: '28080', asset: '29000'},
-  {http: '28081', asset: '29002'},
-  {http: '28082', asset: '29004'},
-  {http: '28083', asset: '29006'},
+  {http: '28080', asset: '29000', tds: '28180'},
+  {http: '28081', asset: '29002', tds: '28181'},
+  {http: '28082', asset: '29004', tds: '28182'},
+  {http: '28083', asset: '29006', tds: '28183'},
 ]);
 const pidAlive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 const startToken = (pid) => canonicalStartToken(run('ps', ['-o', 'lstart=', '-p', String(pid)]));
@@ -90,6 +90,25 @@ export function remoteHttpPortPreflight(host, remoteRoot, candidates = ['18080',
   ].join('\n')).trim();
   if (!/^\d{4,5}$/.test(output)) fail('REMOTE_JAVA_HTTP_PORT_PREFLIGHT_INVALID');
   return Number(output);
+}
+
+export function assertRemotePortsAvailable(host, remoteRoot, ports) {
+  remoteRootGuard(remoteRoot);
+  if (!Array.isArray(ports) || ports.length === 0 || new Set(ports.map(String)).size !== ports.length
+    || ports.some(port => !/^\d{4,5}$/.test(String(port)) || Number(port) < 1024 || Number(port) > 65535)) {
+    fail('REMOTE_SERVICE_PORTS_INVALID');
+  }
+  const checks = ports.map(port => `port=${quote(String(port))}; if ss -ltnH "sport = :$port" | grep -q .; then printf '%s\\n' "$port"; exit 73; fi`).join('\n');
+  const output = remoteExec(host, [
+    'set -euo pipefail',
+    'command -v ss >/dev/null',
+    `root=${quote(remoteRoot)}`,
+    'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
+    checks,
+    'printf "%s\\n" REMOTE_SERVICE_PORTS_AVAILABLE=true',
+  ].join('\n')).trim();
+  if (output !== 'REMOTE_SERVICE_PORTS_AVAILABLE=true') fail('REMOTE_SERVICE_PORT_PREFLIGHT_INVALID');
+  return Object.freeze(ports.map(Number));
 }
 const waitForChild = (child) => new Promise((resolve) => {
   let settled = false;
@@ -294,6 +313,77 @@ export async function startRemoteJava(
     },
   };
 }
+export async function startRemoteTds(host, {runId, remoteRoot, env, credential, websocketPort = env.environment.V2S_DEV_REMOTE_TDS_PORT}) {
+  remoteRootGuard(remoteRoot);
+  if (!/^\d{4,5}$/.test(String(websocketPort)) || Number(websocketPort) < 1024 || Number(websocketPort) > 65535
+    || String(websocketPort) === String(env.environment.V2S_DEV_REMOTE_HTTP_PORT)) fail('REMOTE_TDS_WEBSOCKET_PORT_INVALID');
+  const maxUnauthenticated = env.environment.V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS;
+  const maxTracked = env.environment.V2S_TDS_MAX_TRACKED_SESSIONS;
+  const rssBudgetMiB = env.tdsCapacity?.rssBudgetMiB;
+  for (const [key, value] of [['V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS', maxUnauthenticated], ['V2S_TDS_MAX_TRACKED_SESSIONS', maxTracked]]) {
+    if (!/^[1-9][0-9]{0,9}$/.test(String(value ?? '')) || Number(value) > 2147483647) fail(`REMOTE_TDS_CAPACITY_INVALID:${key}`);
+  }
+  if (!Number.isSafeInteger(rssBudgetMiB) || rssBudgetMiB < 1) fail('REMOTE_TDS_RSS_BUDGET_INVALID');
+  const remoteWorkspace = `${remoteRoot}/workspace`;
+  const remoteResults = `${remoteRoot}/results`;
+  const remoteEnvFile = `${remoteRoot}/tds.env`;
+  const remoteControlPath = `${remoteResults}/tds-control.json`;
+  const remoteLog = `${remoteResults}/tds-server.log`;
+  const remotePhase = `${remoteResults}/tds-phase.jsonl`;
+  const values = {
+    SPRING_DATASOURCE_URL: env.environment.V2S_DEV_DATABASE_URL,
+    SPRING_DATASOURCE_USERNAME: credential.values.V2S_DEV_DATABASE_USERNAME ?? credential.values.CATERING_BUSINESS_DB_USERNAME,
+    SPRING_DATASOURCE_PASSWORD: credential.values.V2S_DEV_DATABASE_PASSWORD ?? credential.values.CATERING_BUSINESS_DB_PASSWORD,
+    SERVER_PORT: String(websocketPort),
+    V2S_RUNTIME_ENVIRONMENT: env.environment.V2S_RUNTIME_ENVIRONMENT,
+    V2S_DEV_PROFILE: env.environment.V2S_DEV_PROFILE,
+    V2S_DEV_NAMESPACE: env.namespace,
+    V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS: String(maxUnauthenticated),
+    V2S_TDS_MAX_TRACKED_SESSIONS: String(maxTracked),
+  };
+  for (const [name, value] of Object.entries(values)) {
+    if (!/^[A-Z][A-Z0-9_]{1,127}$/.test(name) || typeof value !== 'string' || !value || /[\u0000\r\n]/.test(value)) fail('REMOTE_TDS_ENVIRONMENT_INVALID');
+  }
+  const envLines = Object.entries(values).map(([name, value]) => quote(remoteEnvLine(name, value))).join(' ');
+  const commandText = './gradlew --no-daemon :apps:backend:terminal-data-server:bootRun';
+  const output = remoteExec(host, [
+    'set -euo pipefail',
+    `root=${quote(remoteRoot)}`,
+    `workspace=${quote(remoteWorkspace)}`,
+    `results=${quote(remoteResults)}`,
+    `env_file=${quote(remoteEnvFile)}`,
+    `control_path=${quote(remoteControlPath)}`,
+    `log_file=${quote(remoteLog)}`,
+    `phase_file=${quote(remotePhase)}`,
+    `run_id=${quote(runId)}`,
+    `command_text=${quote(commandText)}`,
+    `websocket_port=${quote(String(websocketPort))}`,
+    'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
+    'test -d "$workspace"',
+    `printf '%s\\n' ${envLines} > "$env_file"`,
+    'chmod 600 "$env_file"',
+    'printf \'%s\\n\' \'{"phase":"STARTING"}\' > "$phase_file"',
+    'chmod 600 "$phase_file"',
+    '( cd "$workspace"; set -a; . "$env_file"; set +a; exec nohup ./gradlew --no-daemon :apps:backend:terminal-data-server:bootRun ) > "$log_file" 2>&1 < /dev/null &',
+    'pid=$!',
+    'sleep 1',
+    'test -r "/proc/$pid/stat"',
+    'pgid=$(ps -o pgid= -p "$pid" | tr -d " ")',
+    'boot_id=$(cat /proc/sys/kernel/random/boot_id)',
+    'process_start_ticks=$(awk \'{print $22}\' "/proc/$pid/stat")',
+    'command_line=$(tr "\\0" " " < "/proc/$pid/cmdline" | sed "s/[[:space:]]*$//")',
+    'command_sha256=$(printf "%s" "$command_line" | sha256sum | awk \'{print $1}\')',
+    'test -n "$pgid" -a -n "$process_start_ticks" -a -n "$command_sha256"',
+    'tmp="$control_path.$$.tmp"',
+    `printf '%s\\n' "{\\"schemaVersion\\":1,\\"kind\\":\\"r5-dev-remote-tds-control\\",\\"runId\\":\\"$run_id\\",\\"remoteRoot\\":\\"$root\\",\\"pid\\":$pid,\\"pgid\\":$pgid,\\"bootId\\":\\"$boot_id\\",\\"processStartTicks\\":$process_start_ticks,\\"commandSha256\\":\\"$command_sha256\\",\\"websocketPort\\":$websocket_port,\\"rssBudgetMiB\\":${rssBudgetMiB},\\"phase\\":\\"STARTING\\",\\"controlPath\\":\\"$control_path\\",\\"logPath\\":\\"$log_file\\",\\"phasePath\\":\\"$phase_file\\"}" > "$tmp"`,
+    'chmod 600 "$tmp"; mv "$tmp" "$control_path"',
+    'printf \'%s\\n\' \'{"phase":"STARTING","status":"PASS"}\' >> "$phase_file"',
+    'cat "$control_path"',
+  ].join('\n'));
+  const control = validateRemoteTdsControl(JSON.parse(output.trim()));
+  if (control.runId !== runId || control.remoteRoot !== remoteRoot || control.websocketPort !== Number(websocketPort)) fail('REMOTE_TDS_CONTROL_BINDING_INVALID');
+  return {...control, workspace: remoteWorkspace, envFile: remoteEnvFile};
+}
 function readRemoteJavaControl(host, remoteRoot) {
   remoteRootGuard(remoteRoot);
   const output = remoteExec(host, ['set -euo pipefail', `root=${quote(remoteRoot)}`, 'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac', 'cat "$root/results/control.json"'].join('\n'));
@@ -323,6 +413,54 @@ export function remoteJavaReadiness(host, control) {
   ].join('\n'));
   return JSON.parse(output.trim());
 }
+export function remoteTdsReadinessScript(control) {
+  validateRemoteTdsControl(control);
+  return [
+    'set -euo pipefail',
+    `root=${quote(control.remoteRoot)}`,
+    `log_file=${quote(control.logPath)}`,
+    `websocket_port=${control.websocketPort}`,
+    `pid=${control.pid}`,
+    `expected_pgid=${control.pgid}`,
+    `expected_boot_id=${quote(control.bootId)}`,
+    `expected_start_ticks=${control.processStartTicks}`,
+    `expected_command_sha256=${quote(control.commandSha256)}`,
+    `rss_budget_kib=${control.rssBudgetMiB * 1024}`,
+    'test -r "/proc/$pid/stat"',
+    'actual_pgid=$(ps -o pgid= -p "$pid" | tr -d " ")',
+    'actual_boot_id=$(cat /proc/sys/kernel/random/boot_id)',
+    'actual_start_ticks=$(awk \'{print $22}\' "/proc/$pid/stat")',
+    'actual_command_line=$(tr "\\0" " " < "/proc/$pid/cmdline" | sed "s/[[:space:]]*$//")',
+    'actual_command_sha256=$(printf "%s" "$actual_command_line" | sha256sum | awk \'{print $1}\')',
+    'rss_kib=$(awk \'/^VmRSS:/{print $2; exit}\' "/proc/$pid/status")',
+    'case "$rss_kib" in \'\'|*[!0-9]*|0) printf \'%s\\n\' TDS_REMOTE_RSS_NOT_AVAILABLE >&2; exit 65 ;; esac',
+    'test "$actual_pgid" = "$expected_pgid" -a "$actual_boot_id" = "$expected_boot_id" -a "$actual_start_ticks" = "$expected_start_ticks" -a "$actual_command_sha256" = "$expected_command_sha256"',
+    'if grep -Fq "Started TerminalDataServerApplication" "$log_file"; then ready=true; else ready=false; fi',
+    'if grep -Fq "event=tds_listener_ready" "$log_file"; then database_listener=true; else database_listener=false; fi',
+    'if ss -ltnH "sport = :$websocket_port" | grep -q .; then listener=true; else listener=false; fi',
+    'rss_within_budget=true; if test "$rss_kib" -gt "$rss_budget_kib"; then rss_within_budget=false; fi',
+    'printf \'%s\\n\' "{\\"pid\\":$pid,\\"pgid\\":$actual_pgid,\\"bootId\\":\\"$actual_boot_id\\",\\"processStartTicks\\":$actual_start_ticks,\\"commandSha256\\":\\"$actual_command_sha256\\",\\"remoteRoot\\":\\"$root\\",\\"websocketPort\\":$websocket_port,\\"rssBudgetMiB\\":$((rss_budget_kib / 1024)),\\"readyMarkerSeen\\":$ready,\\"databaseListenerReady\\":$database_listener,\\"listenerReady\\":$listener,\\"rssKiB\\":$rss_kib,\\"rssWithinBudget\\":$rss_within_budget}"',
+  ].join('\n');
+}
+export function remoteTdsReadiness(host, control) {
+  const output = remoteExec(host, remoteTdsReadinessScript(control));
+  return JSON.parse(output.trim());
+}
+export function remoteTdsStartupFailure(host, control) {
+  validateRemoteTdsControl(control);
+  let output;
+  try {
+    output = remoteExec(host, [
+      'set -euo pipefail',
+      `pid=${control.pid}`,
+      `log_file=${quote(control.logPath)}`,
+      'test -r "$log_file"',
+      'if grep -Eq "APPLICATION FAILED TO START|BUILD FAILED|Web server failed to start|V2S_TDS_MAX_.* is invalid" "$log_file"; then printf \'%s\\n\' TDS_APPLICATION_STARTUP_FAILED; elif ! test -r "/proc/$pid/stat"; then printf \'%s\\n\' TDS_REMOTE_PROCESS_EXITED; else printf \'%s\\n\' NONE; fi',
+    ].join('\n'));
+  } catch { return null; }
+  const marker = output.trim();
+  return marker === 'NONE' || marker === '' ? null : marker;
+}
 export function remoteJavaStartupFailure(host, control) {
   validateRemoteJavaControl(control);
   let output;
@@ -341,11 +479,12 @@ export function remoteJavaStartupFailure(host, control) {
   const marker = output.trim();
   return marker === 'NONE' || marker === '' ? null : marker;
 }
-export async function stopRemoteJava(host, control) {
-  validateRemoteJavaControl(control);
+async function stopRemoteProcess(host, control, controlPath, service) {
   const output = remoteExec(host, [
     'set -euo pipefail',
     `root=${quote(control.remoteRoot)}`,
+    `control_path=${quote(controlPath)}`,
+    `phase_path=${quote(control.phasePath ?? `${control.remoteRoot}/results/phase.jsonl`)}`,
     `pid=${control.pid}`,
     `expected_pgid=${control.pgid}`,
     `expected_boot_id=${quote(control.bootId)}`,
@@ -360,14 +499,14 @@ export async function stopRemoteJava(host, control) {
     // fail-closed below.
     'if ! test -r "/proc/$pid/stat"; then',
     '  if ps -eo pid=,pgid= | awk -v group="$expected_pgid" \'$2 == group {found=1} END {exit found ? 0 : 1}\'; then exit 45; fi',
-    '  if test ! -e "$root" || test -r "$root/results/control.json"; then',
+    '  if test ! -e "$root" || test -r "$control_path"; then',
     '    printf \'%s\\n\' \'{"phase":"STOPPED","status":"PASS","alreadyStopped":true}\'',
-    '    printf \'%s\\n\' R5_REMOTE_JAVA_STOP=PASS STATUS=ALREADY_STOPPED',
+    `    printf '%s\\n' R5_REMOTE_PROCESS_STOP=PASS SERVICE=${service} STATUS=ALREADY_STOPPED`,
     '    exit 0',
     '  fi',
     '  exit 46',
     'fi',
-    'test -r "$root/results/control.json"',
+    'test -r "$control_path"',
     'actual_pgid=$(ps -o pgid= -p "$pid" | tr -d " ")',
     'actual_boot_id=$(cat /proc/sys/kernel/random/boot_id)',
     'actual_start_ticks=$(awk \'{print $22}\' "/proc/$pid/stat")',
@@ -379,17 +518,33 @@ export async function stopRemoteJava(host, control) {
     'if ps -eo pid=,pgid= | awk -v group="$expected_pgid" \'$2 == group {found=1} END {exit found ? 0 : 1}\'; then kill -KILL -- -"$expected_pgid"; fi',
     'for _ in $(seq 1 20); do if ! ps -eo pid=,pgid= | awk -v group="$expected_pgid" \'$2 == group {found=1} END {exit found ? 0 : 1}\'; then break; fi; sleep 0.5; done',
     'if ps -eo pid=,pgid= | awk -v group="$expected_pgid" \'$2 == group {found=1} END {exit found ? 0 : 1}\'; then exit 45; fi',
-    'printf \'%s\\n\' \'{"phase":"STOPPED","status":"PASS"}\' >> "$root/results/phase.jsonl"',
-    'printf \'%s\\n\' R5_REMOTE_JAVA_STOP=PASS',
+    'printf \'%s\\n\' \'{"phase":"STOPPED","status":"PASS"}\' >> "$phase_path"',
+    `printf '%s\\n' R5_REMOTE_PROCESS_STOP=PASS SERVICE=${service}`,
   ].join('\n'));
-  if (!output.includes('R5_REMOTE_JAVA_STOP=PASS')) fail('REMOTE_JAVA_STOP_PROTOCOL_INVALID');
-  return output.includes('R5_REMOTE_JAVA_STOP=PASS STATUS=ALREADY_STOPPED') ? 'ALREADY_STOPPED' : 'STOPPED';
+  if (!output.includes(`R5_REMOTE_PROCESS_STOP=PASS SERVICE=${service}`)) fail(`REMOTE_${service.toUpperCase()}_STOP_PROTOCOL_INVALID`);
+  return output.includes(`R5_REMOTE_PROCESS_STOP=PASS SERVICE=${service} STATUS=ALREADY_STOPPED`) ? 'ALREADY_STOPPED' : 'STOPPED';
+}
+export async function stopRemoteJava(host, control) {
+  validateRemoteJavaControl(control);
+  return stopRemoteProcess(host, control, `${control.remoteRoot}/results/control.json`, 'JAVA');
+}
+export async function stopRemoteTds(host, control) {
+  validateRemoteTdsControl(control);
+  return stopRemoteProcess(host, control, control.controlPath, 'TDS');
 }
 export function collectRemoteLog(host, control, target) {
   validateRemoteJavaControl(control);
   mkdirSync(path.dirname(target), {recursive: true, mode: 0o700});
   const result = spawnSync('scp', ['-q', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', `${host}:${control.logPath}`, target], {cwd: root, encoding: 'utf8'});
   if (result.status !== 0) fail(`REMOTE_LOG_COLLECTION_FAILED:${compact(result.stderr || result.stdout)}`);
+  chmodSync(target, 0o600);
+  return target;
+}
+export function collectRemoteTdsLog(host, control, target) {
+  validateRemoteTdsControl(control);
+  mkdirSync(path.dirname(target), {recursive: true, mode: 0o700});
+  const result = spawnSync('scp', ['-q', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', `${host}:${control.logPath}`, target], {cwd: root, encoding: 'utf8'});
+  if (result.status !== 0) fail(`REMOTE_TDS_LOG_COLLECTION_FAILED:${compact(result.stderr || result.stdout)}`);
   chmodSync(target, 0o600);
   return target;
 }
@@ -491,6 +646,13 @@ export function validateManagedRemoteJavaBinding(manifest) {
   if (control.remoteRoot !== remoteDevRootFor(manifest?.runId)) throw new Error('R5_DEV_REMOTE_JAVA_DERIVED_ROOT_MISMATCH');
   return control;
 }
+export function validateManagedRemoteTdsBinding(manifest) {
+  const control = validateRemoteTdsControl(manifest?.remoteTds);
+  if (control.runId !== manifest?.runId) throw new Error('R5_DEV_REMOTE_TDS_RUN_ID_MISMATCH');
+  if (control.remoteRoot !== manifest?.remoteDiagnostic?.remoteRoot) throw new Error('R5_DEV_REMOTE_TDS_ROOT_BINDING_MISMATCH');
+  if (control.remoteRoot !== remoteDevRootFor(manifest?.runId)) throw new Error('R5_DEV_REMOTE_TDS_DERIVED_ROOT_MISMATCH');
+  return control;
+}
 export function canCleanupRemoteJavaRoot({controlValid, remoteJavaStopStatus} = {}) {
   return controlValid === true && ['STOPPED', 'ALREADY_STOPPED'].includes(remoteJavaStopStatus);
 }
@@ -538,8 +700,9 @@ export async function stopAndCleanupStartedRemoteJava({host, runId, remoteRoot, 
   }
   return Object.freeze({controlValid: control !== null, stopStatus, cleanupStatus, failures: Object.freeze(failures)});
 }
-export function buildManagedDevCleanupReceipt({cleanupStatus, localProcessStatus, remoteJavaControlStatus, remoteJavaStopStatus, remoteJavaRootCleanupStatus, failedProcessCount = 0} = {}) {
+export function buildManagedDevCleanupReceipt({cleanupStatus, localProcessStatus, remoteJavaControlStatus, remoteJavaStopStatus, remoteTdsControlStatus = 'NOT_APPLICABLE', remoteTdsStopStatus = 'NOT_APPLICABLE', remoteJavaRootCleanupStatus, failedProcessCount = 0} = {}) {
   const remoteJavaStopped = ['STOPPED', 'ALREADY_STOPPED'].includes(remoteJavaStopStatus);
+  const remoteTdsStopped = ['STOPPED', 'ALREADY_STOPPED'].includes(remoteTdsStopStatus);
   return Object.freeze({
     status: cleanupStatus,
     failedProcessCount,
@@ -549,6 +712,11 @@ export function buildManagedDevCleanupReceipt({cleanupStatus, localProcessStatus
       ? 'NOT_APPLICABLE'
       : remoteJavaControlStatus === 'PASS' && remoteJavaStopped ? 'PASS' : 'FAIL',
     remoteJavaStop: remoteJavaStopStatus,
+    remoteTdsControl: remoteTdsControlStatus,
+    remoteTds: remoteTdsControlStatus === 'NOT_APPLICABLE'
+      ? 'NOT_APPLICABLE'
+      : remoteTdsControlStatus === 'PASS' && remoteTdsStopped ? 'PASS' : 'FAIL',
+    remoteTdsStop: remoteTdsStopStatus,
     remoteJavaRoot: remoteJavaRootCleanupStatus,
   });
 }
@@ -614,15 +782,35 @@ function selectTunnelPorts() {
   if (process.env.V2S_DEV_LOCAL_POSTGRES_PORT || process.env.V2S_DEV_LOCAL_POSTGRES_PORT_PAIR) fail('R5_DEV_LEGACY_POSTGRES_TUNNEL_FORBIDDEN');
   const requestedHttp = process.env.V2S_DEV_LOCAL_HTTP_PORT;
   const requestedAsset = process.env.V2S_DEV_LOCAL_ASSET_PORT;
+  const requestedTds = process.env.V2S_DEV_LOCAL_TDS_PORT;
   if (Boolean(requestedHttp) !== Boolean(requestedAsset)) fail('R5_DEV_LOCAL_PORT_PAIR_INCOMPLETE');
   if (requestedHttp && requestedAsset) {
     if (!/^\d{4,5}$/.test(requestedHttp) || !/^\d{4,5}$/.test(requestedAsset) || requestedHttp === requestedAsset) fail('R5_DEV_LOCAL_PORT_INVALID');
-    if (listenerPids(requestedHttp).length || listenerPids(requestedAsset).length) fail('R5_DEV_LOCAL_PORT_ALREADY_OCCUPIED');
-    return {http: requestedHttp, asset: requestedAsset};
+    const tdsCandidates = requestedTds ? [requestedTds] : defaultTunnelPortPairs.map(value => value.tds);
+    const tds = tdsCandidates.find(value => /^\d{4,5}$/.test(value) && value !== requestedHttp && value !== requestedAsset && !listenerPids(value).length);
+    if (!tds || ['5174', '5175'].includes(tds) || [requestedHttp, requestedAsset].some(value => ['5174', '5175'].includes(value)) || listenerPids(requestedHttp).length || listenerPids(requestedAsset).length) fail('R5_DEV_LOCAL_PORT_ALREADY_OCCUPIED');
+    return {http: requestedHttp, asset: requestedAsset, tds};
   }
-  const selected = selectFirstAvailableTunnelPortPair(defaultTunnelPortPairs, (port) => listenerPids(port).length > 0);
+  if (requestedTds) fail('R5_DEV_LOCAL_PORT_PAIR_INCOMPLETE');
+  const selected = defaultTunnelPortPairs.find(({http, asset, tds}) =>
+    ![http, asset, tds].some(port => ['5174', '5175'].includes(port) || listenerPids(port).length > 0),
+  );
   if (!selected) fail('R5_DEV_TUNNEL_PORT_PAIR_UNAVAILABLE');
   return selected;
+}
+export function probeLocalTdsWebSocket(websocketUrl) {
+  if (!/^ws:\/\/127\.0\.0\.1:\d{4,5}$/.test(String(websocketUrl))) fail('TDS_WEBSOCKET_PROBE_URL_INVALID');
+  const source = [
+    `const socket = new WebSocket(${JSON.stringify(websocketUrl)});`,
+    'let finished = false;',
+    'const timer = setTimeout(() => finish(2), 8000);',
+    'function finish(code) { if (finished) return; finished = true; clearTimeout(timer); try { socket.close(); } catch {} process.exitCode = code; if (code === 0) process.stdout.write("TDS_WEBSOCKET_TUNNEL=PASS\\n"); }',
+    'socket.addEventListener("open", () => finish(0), {once: true});',
+    'socket.addEventListener("error", () => finish(1), {once: true});',
+  ].join('\n');
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', source], {cwd: root, encoding: 'utf8', timeout: 10_000});
+  if (result.status !== 0 || result.stdout.trim() !== 'TDS_WEBSOCKET_TUNNEL=PASS') fail(`TDS_WEBSOCKET_TUNNEL_PROBE_FAILED:${compact(result.stderr || result.stdout)}`);
+  return Object.freeze({status: 'PASS', websocketUrl});
 }
 function secret() { return crypto.randomBytes(24).toString('base64url'); }
 function acquirePortLock() {
@@ -699,9 +887,9 @@ function provisionObjectStorage(env, secrets) {
   return {access, secretKey};
 }
 async function openTunnel(env, ports) {
-  const log = path.join(runtime, 'remote-http-asset-tunnel.log');
+  const log = path.join(runtime, 'remote-http-asset-tds-tunnel.log');
   const logFd = openSync(log, 'w');
-  const command = ['ssh', '-N', '-o', 'BatchMode=yes', '-o', 'ExitOnForwardFailure=yes', '-o', 'ServerAliveInterval=30', '-o', 'ServerAliveCountMax=3', '-L', `${ports.http}:127.0.0.1:${env.environment.V2S_DEV_REMOTE_HTTP_PORT}`, '-L', `${ports.asset}:127.0.0.1:${env.environment.V2S_DEV_REMOTE_ASSET_PORT}`, env.environment.V2S_DEV_REMOTE_HOST];
+  const command = ['ssh', '-N', '-o', 'BatchMode=yes', '-o', 'ExitOnForwardFailure=yes', '-o', 'ServerAliveInterval=30', '-o', 'ServerAliveCountMax=3', '-L', `${ports.http}:127.0.0.1:${env.environment.V2S_DEV_REMOTE_HTTP_PORT}`, '-L', `${ports.asset}:127.0.0.1:${env.environment.V2S_DEV_REMOTE_ASSET_PORT}`, '-L', `${ports.tds}:127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_PORT}`, env.environment.V2S_DEV_REMOTE_HOST];
   const tunnel = spawn(command[0], command.slice(1), {cwd: root, detached: true, stdio: ['ignore', 'ignore', logFd]});
   if (!tunnel.pid) fail('REMOTE_TUNNEL_START_FAILED');
   tunnel.unref();
@@ -712,7 +900,9 @@ async function openTunnel(env, ports) {
       if (!pidAlive(value.pid) || readStartToken(value.pid) !== value.startToken) fail('REMOTE_TUNNEL_IDENTITY_DRIFT');
       const httpListeners = listenerPids(ports.http);
       const assetListeners = listenerPids(ports.asset);
-      if (httpListeners.length === 1 && assetListeners.length === 1 && httpListeners[0] === value.pid && assetListeners[0] === value.pid) return value;
+      const tdsListeners = listenerPids(ports.tds);
+      if (httpListeners.length === 1 && assetListeners.length === 1 && tdsListeners.length === 1
+        && httpListeners[0] === value.pid && assetListeners[0] === value.pid && tdsListeners[0] === value.pid) return value;
       await delay(200);
     }
     fail('REMOTE_TUNNEL_LISTENER_IDENTITY_MISMATCH');
@@ -741,6 +931,28 @@ export async function waitForRemoteBusinessReady(host, control, progressPath) {
     await delay(1_000);
   }
   fail('REMOTE_BUSINESS_SERVER_READINESS_TIMEOUT');
+}
+export async function waitForRemoteTdsReady(host, control, progressPath) {
+  const deadline = Date.now() + 120_000;
+  let attempts = 0;
+  while (Date.now() < deadline) {
+    attempts += 1;
+    let probe = null;
+    let probeError = null;
+    try { probe = remoteTdsReadiness(host, control); } catch (error) { probeError = safeFailure(error); }
+    const identity = probe ? remoteTdsIdentityMatches(control, probe) : false;
+    appendFileSync(progressPath, `${JSON.stringify({at: new Date().toISOString(), phase: 'REMOTE_TDS_READINESS_PROBE', attempt: attempts, pid: control.pid, websocketPort: control.websocketPort, identityValid: identity, readyMarkerSeen: probe?.readyMarkerSeen === true, databaseListenerReady: probe?.databaseListenerReady === true, listenerReady: probe?.listenerReady === true, rssKiB: probe?.rssKiB ?? null, rssBudgetMiB: control.rssBudgetMiB, rssWithinBudget: probe?.rssWithinBudget === true, error: probeError})}\n`, {mode: 0o600});
+    if (probe && !identity) fail('REMOTE_TDS_PROCESS_IDENTITY_DRIFT');
+    if (probe && probe.rssWithinBudget !== true) fail('REMOTE_TDS_RSS_BUDGET_EXCEEDED_AT_READINESS');
+    if (probeError?.includes('TDS_REMOTE_RSS_NOT_AVAILABLE')) fail('REMOTE_TDS_RSS_MEASUREMENT_UNAVAILABLE');
+    if (probeError) {
+      const startupFailure = remoteTdsStartupFailure(host, control);
+      if (startupFailure) fail(`REMOTE_TDS_STARTUP_FAILED:${startupFailure}`);
+    }
+    if (probe?.readyMarkerSeen === true && probe?.databaseListenerReady === true && probe?.listenerReady === true) return {attempts, readiness: 'REMOTE_TDS_REACTIVE_WEBSOCKET_AND_DATABASE_LISTENER_READY', progressPath, remoteIdentity: probe};
+    await delay(1_000);
+  }
+  fail('REMOTE_TDS_READINESS_TIMEOUT');
 }
 async function waitForLocalViteReady(processValue, port, expectedName) {
   const deadline = Date.now() + 60_000;
@@ -804,6 +1016,7 @@ async function start() {
   const runId = `r5-dev-${Date.now()}-${process.pid}-${crypto.randomUUID()}`;
   const remoteRoot = remoteDevRootFor(runId);
   const remoteResources = remoteResourcePreflight(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot);
+  const remotePorts = assertRemotePortsAvailable(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot, [env.environment.V2S_DEV_REMOTE_HTTP_PORT, env.environment.V2S_DEV_REMOTE_TDS_PORT]);
   const remoteEvidenceDirectory = path.join(runtime, 'dev', runId);
   const seedEventsPath = path.join(runtime, 'evidence', 'seed-request-events.jsonl');
   const dbOperationsPath = path.join(runtime, 'evidence', 'db-operations.jsonl');
@@ -837,6 +1050,8 @@ async function start() {
   let processes = [];
   let remoteJava = null;
   let remoteJavaLogPath = null;
+  let remoteTds = null;
+  let remoteTdsLogPath = null;
   let remoteRootMayExist = false;
   let lastKnownGood = 'REMOTE_RESOURCE_PREFLIGHT';
   let brokenBoundary = 'REMOTE_SOURCE_SYNC';
@@ -864,6 +1079,10 @@ async function start() {
   lastKnownGood = 'REMOTE_JAVA_CONTROL_READY';
   brokenBoundary = 'REMOTE_HOST_IDENTITY';
   if (remoteJava.bootId !== remoteResources.bootId) fail('REMOTE_HOST_REBOOTED_DURING_START');
+  brokenBoundary = 'REMOTE_TDS_CONTROL';
+  remoteTds = await startRemoteTds(env.environment.V2S_DEV_REMOTE_HOST, {runId, remoteRoot, env, credential});
+  lastKnownGood = 'REMOTE_TDS_CONTROL_READY';
+  if (remoteTds.bootId !== remoteResources.bootId) fail('REMOTE_HOST_REBOOTED_DURING_TDS_START');
   const commands = [
     {name: 'platform-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/platform-admin'), 'vite', '--host', '0.0.0.0'], port: 5174, env: {VITE_PLATFORM_GATEWAY_PROXY_TARGET: `http://127.0.0.1:${tunnelPorts.http}`}},
     {name: 'operations-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/operations-admin'), 'vite', '--host', '0.0.0.0'], port: 5175, env: {VITE_OPERATIONS_GATEWAY_PROXY_TARGET: `http://127.0.0.1:${tunnelPorts.http}`}},
@@ -882,6 +1101,9 @@ async function start() {
   lastKnownGood = 'PROCESS_IDENTITIES';
   brokenBoundary = 'REMOTE_READINESS';
   const remoteReadiness = await waitForRemoteBusinessReady(env.environment.V2S_DEV_REMOTE_HOST, remoteJava, readinessProgressPath);
+  brokenBoundary = 'REMOTE_TDS_READINESS';
+  const remoteTdsReadiness = await waitForRemoteTdsReady(env.environment.V2S_DEV_REMOTE_HOST, remoteTds, readinessProgressPath);
+  const tdsWebSocketProbe = probeLocalTdsWebSocket(`ws://127.0.0.1:${tunnelPorts.tds}`);
   lastKnownGood = 'REMOTE_READINESS';
   brokenBoundary = 'VITE_READINESS';
   const viteReadiness = {};
@@ -893,22 +1115,28 @@ async function start() {
   brokenBoundary = 'LOG_COLLECTION';
   remoteJavaLogPath = path.join(remoteEvidenceDirectory, 'business-server.log');
   collectRemoteLog(env.environment.V2S_DEV_REMOTE_HOST, remoteJava, remoteJavaLogPath);
+  remoteTdsLogPath = path.join(remoteEvidenceDirectory, 'tds-server.log');
+  collectRemoteTdsLog(env.environment.V2S_DEV_REMOTE_HOST, remoteTds, remoteTdsLogPath);
   lastKnownGood = 'LOG_COLLECTION';
   brokenBoundary = 'MANIFEST_WRITE';
-  const readiness = {remoteJava: remoteReadiness, vite: viteReadiness, tunnel: {httpPort: tunnelPorts.http, assetPort: tunnelPorts.asset, listenerOwner: tunnel.pid}};
-  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, topology: {java: 'REMOTE_TRUSTED_HOST', database: 'REMOTE_LOCALHOST', tunnel: 'HTTP_AND_ASSET_ONLY'}, portLock, tunnelPorts, localHttpBaseUrl: `http://127.0.0.1:${tunnelPorts.http}`, remoteHttpBaseUrl: `http://127.0.0.1:${env.environment.V2S_DEV_REMOTE_HTTP_PORT}`, assetBaseUrl: `http://127.0.0.1:${tunnelPorts.asset}`, seedEventsPath, dbOperationsPath, statementDictionaryPath, remoteDiagnostic: {kind: 'REMOTE_SSH_PULL', remoteRoot}, diagnosticProtocol, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, remoteResources, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, catalogTestFaultAdmission: {requested: catalogFaultFlag === 'true', effective: catalogTestFaultsAdmitted}, readinessProgressPath, remoteJava: {...remoteJava, localLogPath: remoteJavaLogPath}, processes, readiness}, null, 2) + '\n');
-  process.stdout.write(`R5_DEV_START=PASS; MANIFEST=${manifestPath}; PROCESSES=${processes.map((value) => `${value.name}:${value.pid}`).join(',')}\n`);
+  const readiness = {remoteJava: remoteReadiness, remoteTds: remoteTdsReadiness, tdsWebSocketProbe, vite: viteReadiness, tunnel: {httpPort: tunnelPorts.http, assetPort: tunnelPorts.asset, tdsPort: tunnelPorts.tds, listenerOwner: tunnel.pid}};
+  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, topology: {java: 'REMOTE_TRUSTED_HOST', tds: 'REMOTE_TRUSTED_HOST', database: 'REMOTE_LOCALHOST', tunnel: 'HTTP_ASSET_AND_TDS_WEBSOCKET'}, tdsCapacity: env.tdsCapacity, portLock, tunnelPorts, remotePorts, localHttpBaseUrl: `http://127.0.0.1:${tunnelPorts.http}`, remoteHttpBaseUrl: `http://127.0.0.1:${env.environment.V2S_DEV_REMOTE_HTTP_PORT}`, localTdsWebSocketBaseUrl: `ws://127.0.0.1:${tunnelPorts.tds}`, remoteTdsWebSocketBaseUrl: `ws://127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_PORT}`, assetBaseUrl: `http://127.0.0.1:${tunnelPorts.asset}`, seedEventsPath, dbOperationsPath, statementDictionaryPath, remoteDiagnostic: {kind: 'REMOTE_SSH_PULL', remoteRoot}, diagnosticProtocol, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, remoteResources, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, catalogTestFaultAdmission: {requested: catalogFaultFlag === 'true', effective: catalogTestFaultsAdmitted}, readinessProgressPath, remoteJava: {...remoteJava, localLogPath: remoteJavaLogPath}, remoteTds: {...remoteTds, localLogPath: remoteTdsLogPath}, processes, readiness}, null, 2) + '\n');
+  process.stdout.write(`R5_DEV_START=PASS; MANIFEST=${manifestPath}; REMOTE_TDS_WS=ws://127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_PORT}; LOCAL_TDS_WS=ws://127.0.0.1:${tunnelPorts.tds}; PROCESSES=${processes.map((value) => `${value.name}:${value.pid}`).join(',')}\n`);
   } catch (error) {
     let cleanupStatus = 'PASS';
     let localProcessStatus = 'PASS';
     let remoteJavaLogStatus = remoteJava ? 'PENDING' : 'NOT_APPLICABLE';
     let remoteJavaStopStatus = remoteJava ? 'NOT_RUN' : 'NOT_APPLICABLE';
-    let remoteJavaRootCleanupStatus = remoteJava || !remoteRootMayExist ? 'NOT_RUN' : 'NOT_APPLICABLE';
+    let remoteTdsLogStatus = remoteTds ? 'PENDING' : 'NOT_APPLICABLE';
+    let remoteTdsStopStatus = remoteTds ? 'NOT_RUN' : 'NOT_APPLICABLE';
+    let remoteJavaRootCleanupStatus = remoteRootMayExist ? 'NOT_RUN' : 'NOT_APPLICABLE';
     let remoteJavaControlStatus = remoteJava ? 'FAIL' : 'NOT_APPLICABLE';
-    let remoteRootCleanupEvidence = {status: remoteJava || !remoteRootMayExist ? 'NOT_APPLICABLE' : 'NOT_RUN', remoteRoot};
+    let remoteTdsControlStatus = remoteTds ? 'FAIL' : 'NOT_APPLICABLE';
+    let remoteRootCleanupEvidence = {status: remoteRootMayExist ? 'NOT_RUN' : 'NOT_APPLICABLE', remoteRoot};
+    let managedRemoteJavaControl = null;
+    let managedRemoteTdsControl = null;
     if (remoteJava) {
       remoteJavaLogPath = path.join(remoteEvidenceDirectory, 'business-server.log');
-      let managedRemoteJavaControl = null;
       try {
         managedRemoteJavaControl = validateManagedRemoteJavaBinding({runId, remoteJava, remoteDiagnostic: {remoteRoot}});
         remoteJavaControlStatus = 'PASS';
@@ -917,26 +1145,48 @@ async function start() {
       } catch {
         remoteJavaLogStatus = 'FAIL';
       }
-      const remoteJavaCleanup = await stopAndCleanupStartedRemoteJava({
-        host: env.environment.V2S_DEV_REMOTE_HOST,
-        runId,
-        remoteRoot,
-        remoteJava,
-      });
-      remoteJavaStopStatus = remoteJavaCleanup.stopStatus;
-      remoteJavaRootCleanupStatus = remoteJavaCleanup.cleanupStatus;
-      if (remoteJavaCleanup.cleanupStatus !== 'PASS') cleanupStatus = 'FAIL';
-    } else if (remoteRootMayExist) {
+      if (managedRemoteJavaControl) {
+        try { remoteJavaStopStatus = await stopRemoteJava(env.environment.V2S_DEV_REMOTE_HOST, managedRemoteJavaControl); }
+        catch { cleanupStatus = 'FAIL'; remoteJavaStopStatus = 'FAIL'; }
+      } else {
+        remoteJavaStopStatus = 'FAIL';
+        cleanupStatus = 'FAIL';
+      }
+    }
+    if (remoteTds) {
+      remoteTdsLogPath = path.join(remoteEvidenceDirectory, 'tds-server.log');
       try {
-        const cleaned = cleanupManagedRemoteRootAfterStartFailure({
-          rootMayExist: true,
-          cleanupRoot: () => {
-            remoteRootCleanupEvidence = cleanupRemoteRootWithoutJavaControl(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot);
-            return remoteRootCleanupEvidence;
-          },
-        });
-        remoteJavaRootCleanupStatus = cleaned ? 'PASS' : 'FAIL';
-        if (!cleaned) cleanupStatus = 'FAIL';
+        managedRemoteTdsControl = validateManagedRemoteTdsBinding({runId, remoteTds, remoteDiagnostic: {remoteRoot}});
+        remoteTdsControlStatus = 'PASS';
+        collectRemoteTdsLog(env.environment.V2S_DEV_REMOTE_HOST, managedRemoteTdsControl, remoteTdsLogPath);
+        remoteTdsLogStatus = 'PASS';
+      } catch {
+        remoteTdsLogStatus = 'FAIL';
+      }
+      if (managedRemoteTdsControl) {
+        try { remoteTdsStopStatus = await stopRemoteTds(env.environment.V2S_DEV_REMOTE_HOST, managedRemoteTdsControl); }
+        catch { cleanupStatus = 'FAIL'; remoteTdsStopStatus = 'FAIL'; }
+      } else {
+        remoteTdsStopStatus = 'FAIL';
+        cleanupStatus = 'FAIL';
+      }
+    }
+    if (remoteRootMayExist) {
+      const javaStopped = !remoteJava || ['STOPPED', 'ALREADY_STOPPED'].includes(remoteJavaStopStatus);
+      const tdsStopped = !remoteTds || ['STOPPED', 'ALREADY_STOPPED'].includes(remoteTdsStopStatus);
+      try {
+        if (javaStopped && tdsStopped && (managedRemoteJavaControl || managedRemoteTdsControl)) {
+          cleanupRemoteJavaRoot(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot);
+          remoteRootCleanupEvidence = {status: 'PASS', remoteRoot, remoteRootAbsent: true};
+          remoteJavaRootCleanupStatus = 'PASS';
+        } else if (!managedRemoteJavaControl && !managedRemoteTdsControl) {
+          remoteRootCleanupEvidence = cleanupRemoteRootWithoutJavaControl(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot);
+          remoteJavaRootCleanupStatus = 'PASS';
+        } else {
+          remoteRootCleanupEvidence = {status: 'FAIL', remoteRoot, reason: 'REMOTE_SERVICE_NOT_VERIFIED_STOPPED'};
+          remoteJavaRootCleanupStatus = 'FAIL';
+          cleanupStatus = 'FAIL';
+        }
       } catch (error) {
         remoteRootCleanupEvidence = error.cleanupDetails ?? {status: 'FAIL', remoteRoot, failure: safeFailure(error)};
         remoteJavaRootCleanupStatus = 'FAIL';
@@ -948,8 +1198,8 @@ async function start() {
         try { await stopOwnedProcess(value); } catch { cleanupStatus = 'FAIL'; localProcessStatus = 'FAIL'; }
       }
     }
-    const terminal = writeTerminalManifest({kind: 'r5-dev-run-manifest', runId, readinessProgressPath, remoteJava, remoteJavaLogPath, remoteDiagnostic: {kind: 'REMOTE_SSH_PULL', remoteRoot}, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, processes}, {
-      firstFailure: safeFailure(error), lastKnownGood, brokenBoundary, business: {status: 'FAIL'}, cleanup: buildManagedDevCleanupReceipt({cleanupStatus, localProcessStatus, remoteJavaControlStatus, remoteJavaStopStatus, remoteJavaRootCleanupStatus}), cleanupEvidence: {remoteRoot: remoteRootCleanupEvidence}, diagnostics: {remoteJavaLogStatus, remoteJavaLogPath},
+    const terminal = writeTerminalManifest({kind: 'r5-dev-run-manifest', runId, readinessProgressPath, remoteJava, remoteTds, remoteJavaLogPath, remoteTdsLogPath, remoteDiagnostic: {kind: 'REMOTE_SSH_PULL', remoteRoot}, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, processes}, {
+      firstFailure: safeFailure(error), lastKnownGood, brokenBoundary, business: {status: 'FAIL'}, cleanup: buildManagedDevCleanupReceipt({cleanupStatus, localProcessStatus, remoteJavaControlStatus, remoteJavaStopStatus, remoteTdsControlStatus, remoteTdsStopStatus, remoteJavaRootCleanupStatus}), cleanupEvidence: {remoteRoot: remoteRootCleanupEvidence}, diagnostics: {remoteJavaLogStatus, remoteJavaLogPath, remoteTdsLogStatus, remoteTdsLogPath},
     });
     releasePortLock(portLock); throw error;
   }
@@ -991,15 +1241,38 @@ async function stop() {
   } else {
     recordFailure(diagnosticFailures, new Error('R5_DEV_REMOTE_JAVA_CONTROL_UNVERIFIED'));
   }
-  let remoteJavaRootCleanupStatus = 'NOT_RUN';
+  let managedRemoteTdsControl = null;
+  let remoteTdsControlStatus = manifest.remoteTds ? 'FAIL' : 'NOT_APPLICABLE';
   try {
-    const cleaned = cleanupManagedRemoteJavaRoot({
-      controlValid: managedRemoteJavaControl !== null,
-      remoteJavaStopStatus,
-      cleanupRoot: () => cleanupRemoteJavaRoot(manifest.remoteHostTrust.host, managedRemoteJavaControl.remoteRoot),
+    if (manifest.remoteTds) {
+      managedRemoteTdsControl = validateManagedRemoteTdsBinding(manifest);
+      remoteTdsControlStatus = 'PASS';
+    }
+  } catch (error) { failures.push(error); firstFailure ??= error; }
+  let remoteTdsStopStatus = manifest.remoteTds ? 'NOT_RUN' : 'NOT_APPLICABLE';
+  if (managedRemoteTdsControl) {
+    try { remoteTdsStopStatus = await stopRemoteTds(manifest.remoteHostTrust.host, managedRemoteTdsControl); }
+    catch (error) { failures.push(error); firstFailure ??= error; }
+    const diagnosticResult = collectStopDiagnostics({
+      remoteJavaStopStatus: remoteTdsStopStatus,
+      collectLog: () => collectRemoteTdsLog(
+        manifest.remoteHostTrust.host,
+        managedRemoteTdsControl,
+        managedRemoteTdsControl.localLogPath ?? path.join(runtime, 'dev', manifest.runId, 'tds-server.log'),
+      ),
+      refreshDiagnostics: () => {},
     });
-    remoteJavaRootCleanupStatus = cleaned ? 'PASS' : 'FAIL';
-    if (!cleaned) { const error = new Error('R5_DEV_REMOTE_ROOT_CLEANUP_SKIPPED_UNVERIFIED'); failures.push(error); firstFailure ??= error; }
+    for (const error of diagnosticResult.failures) recordFailure(diagnosticFailures, error);
+  } else if (manifest.remoteTds) {
+    recordFailure(diagnosticFailures, new Error('R5_DEV_REMOTE_TDS_CONTROL_UNVERIFIED'));
+  }
+  let remoteJavaRootCleanupStatus = 'NOT_RUN';
+  const javaStopped = managedRemoteJavaControl !== null && ['STOPPED', 'ALREADY_STOPPED'].includes(remoteJavaStopStatus);
+  const tdsStopped = !manifest.remoteTds || (managedRemoteTdsControl !== null && ['STOPPED', 'ALREADY_STOPPED'].includes(remoteTdsStopStatus));
+  try {
+    if (!javaStopped || !tdsStopped) throw new Error('R5_DEV_REMOTE_ROOT_CLEANUP_SKIPPED_UNVERIFIED');
+    cleanupRemoteJavaRoot(manifest.remoteHostTrust.host, managedRemoteJavaControl.remoteRoot);
+    remoteJavaRootCleanupStatus = 'PASS';
   } catch (error) { remoteJavaRootCleanupStatus = 'FAIL'; failures.push(error); firstFailure ??= error; }
   const statuses = stopStatuses(failures, diagnosticFailures);
   const terminal = writeTerminalManifest(manifest, {
@@ -1012,6 +1285,8 @@ async function stop() {
       localProcessStatus: localProcessFailures.length === 0 ? 'PASS' : 'FAIL',
       remoteJavaControlStatus,
       remoteJavaStopStatus,
+      remoteTdsControlStatus,
+      remoteTdsStopStatus,
       remoteJavaRootCleanupStatus,
       failedProcessCount: failures.length,
     }),

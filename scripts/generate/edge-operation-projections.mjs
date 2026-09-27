@@ -50,6 +50,7 @@ const p3CUserManagementOperationDescriptors = new Map([
 const p3CUserManagementPathPrefix = "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management";
 const materializedProjectionStatus = "MATERIALIZED";
 const materializedProjectionPipeline = "R24_P3C";
+const supportedConsumerFaces = new Set(["platform-admin", "operations-admin", "public", "terminal"]);
 
 function replacement(base, value) {
   return {
@@ -156,7 +157,7 @@ function assertMaterializedCatalog(catalog, report) {
   if (ids.size !== operations.length || operations.some((operation) => !operation?.operationId || operation.operationId === r24RetiredOperationId || p3CUserManagementOperationDescriptors.has(operation.operationId))) {
     throw new Error("R5_EDGE_MATERIALIZED_OPERATION_IDENTITY_INVALID");
   }
-  const faceCounts = Object.fromEntries(["platform-admin", "operations-admin", "public"].map((face) => [face, operations.filter((operation) => operation.face === face).length]));
+  const faceCounts = Object.fromEntries(["platform-admin", "operations-admin", "public", "terminal"].map((face) => [face, operations.filter((operation) => operation.face === face).length]));
   if (JSON.stringify(faceCounts) !== JSON.stringify(state.faceCounts)) throw new Error("R5_EDGE_MATERIALIZED_FACE_DENOMINATOR_INVALID");
   if (report !== undefined) {
     if (!report || report.closure?.operations !== operationCount || JSON.stringify(report.closure?.faceCounts) !== JSON.stringify(faceCounts)) {
@@ -166,8 +167,17 @@ function assertMaterializedCatalog(catalog, report) {
   return {catalog, report};
 }
 
+function assertSupportedOperationFaces(catalog) {
+  for (const operation of Array.isArray(catalog?.operations) ? catalog.operations : []) {
+    if (!supportedConsumerFaces.has(operation?.face)) {
+      throw new Error(`R5_EDGE_OPERATION_PROJECTION_FACE_INVALID:${operation?.operationId || "UNKNOWN"}`);
+    }
+  }
+}
+
 /** The only projection consumed by both root OpenAPI materialization and generated clients. */
 export function projectEdgeCatalog(catalog, report = undefined) {
+  assertSupportedOperationFaces(catalog);
   if (catalog?.projectionState?.status === materializedProjectionStatus) return assertMaterializedCatalog(catalog, report);
   const r24 = projectR24(catalog, report);
   return projectP3C(r24.catalog, r24.report);

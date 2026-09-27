@@ -31,22 +31,26 @@ public final class CatalogProductionTagOwnerServiceSql {
     public static final String CREATE_TYPED_TAG =
             "WITH receipt_lock AS MATERIALIZED (SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), "
                     + "hashtext(CAST(? AS text)))), prior_receipt AS MATERIALIZED (SELECT operation_id,request_hash,"
-                    + "response_json::text AS response FROM catalog.production_tag_command_receipt CROSS JOIN receipt_lock "
+                    + ("response_json::text AS response FROM catalog.production_tag_command_rece"
+                            + "ipt CROSS JOIN receipt_lock ")
                     + "WHERE data_node_ref=? AND idempotency_key=?), inserted_tag AS (INSERT INTO "
                     + "catalog.production_tag_definition(tag_ref,data_node_ref,brand_ref,code,name,"
                     + "created_at_epoch_millis,updated_at_epoch_millis) SELECT ?,?,?,?,?,?,? WHERE NOT EXISTS "
                     + "(SELECT 1 FROM prior_receipt) RETURNING tag_ref,code,name,status,version), written_receipt AS "
                     + "(INSERT INTO catalog.production_tag_command_receipt(receipt_ref,data_node_ref,idempotency_key,"
-                    + "operation_id,request_hash,response_json,created_at_epoch_millis) SELECT ?,?,?,?,?,jsonb_build_object("
+                    + ("operation_id,request_hash,response_json,created_at_epoch_millis) SELECT "
+                            + "?,?,?,?,?,jsonb_build_object(")
                     + "'tagRef',tag_ref,'code',code,'name',name,'status',status,'version',version),? FROM inserted_tag "
-                    + "RETURNING response_json::text AS response) SELECT prior_receipt.operation_id,prior_receipt.request_hash,"
+                    + ("RETURNING response_json::text AS response) SELECT prior_receipt.operatio"
+                            + "n_id,prior_receipt.request_hash,")
                     + "prior_receipt.response AS replay_response,written_receipt.response AS written_response "
                     + "FROM receipt_lock "
                     + "LEFT JOIN prior_receipt ON TRUE LEFT JOIN written_receipt ON TRUE";
 
     public static final String MUTATE_TYPED_TAG_PREFIX =
             "WITH receipt_lock AS MATERIALIZED (SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), "
-                    + "hashtext(CAST(? AS text)))), current_tag AS MATERIALIZED (SELECT tag_ref,code,name,status,version "
+                    + ("hashtext(CAST(? AS text)))), current_tag AS MATERIALIZED (SELECT tag_ref"
+                            + ",code,name,status,version ")
                     + "FROM catalog.production_tag_definition CROSS JOIN receipt_lock WHERE data_node_ref=? "
                     + "AND brand_ref=? AND code=? FOR UPDATE), prior_receipt AS MATERIALIZED "
                     + "(SELECT operation_id,request_hash,"
@@ -57,11 +61,14 @@ public final class CatalogProductionTagOwnerServiceSql {
     public static final String MUTATE_TYPED_TAG_SUFFIX =
             "=?,version=tag.version+1,updated_at_epoch_millis=? FROM current_tag current "
                     + "WHERE tag.tag_ref=current.tag_ref "
-                    + "AND current.status <> 'VOIDED' AND current.version=? AND NOT EXISTS (SELECT 1 FROM prior_receipt) "
-                    + "RETURNING tag.tag_ref,tag.code,tag.name,tag.status,tag.version), written_receipt AS (INSERT INTO "
+                    + ("AND current.status <> 'VOIDED' AND current.version=? AND NOT EXISTS (SEL"
+                            + "ECT 1 FROM prior_receipt) ")
+                    + ("RETURNING tag.tag_ref,tag.code,tag.name,tag.status,tag.version), written"
+                            + "_receipt AS (INSERT INTO ")
                     + "catalog.production_tag_command_receipt(receipt_ref,data_node_ref,idempotency_key,"
                     + "operation_id,request_hash,response_json,created_at_epoch_millis) SELECT ?,?,?,?,?,"
-                    + "jsonb_build_object('tagRef',tag_ref,'code',code,'name',name,'status',status,'version',version),? "
+                    + ("jsonb_build_object('tagRef',tag_ref,'code',code,'name',name,'status',sta"
+                            + "tus,'version',version),? ")
                     + "FROM updated_tag RETURNING response_json::text AS response) SELECT current_tag.tag_ref,"
                     + "current_tag.status,"
                     + "current_tag.version,prior_receipt.operation_id,prior_receipt.request_hash,"

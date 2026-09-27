@@ -734,13 +734,16 @@ class SalesMenuPersistenceEffectiveSqlCaptureTest {
 
     private static String parameterMappingFor(String branchCaseId) {
         if (branchCaseId.contains("list-menu-rows")) {
-            return "channelRef|scope.workspaceUuid|scope.groupWorkspaceKey|scope.storeRef|filter|position.sortKey|position.tieBreaker|pageSize";
+            return ("channelRef|scope.workspaceUuid|scope.groupWorkspaceKey|scope.storeRef|fi"
+                    + "lter|position.sortKey|position.tieBreaker|pageSize");
         }
         if (branchCaseId.contains("insert-version")) {
-            return "versionRef|menuRef|kind|revision|schedule.kind|schedule.start|schedule.end|sourceDraftRef|sourceDraftRevision-or-null";
+            return ("versionRef|menuRef|kind|revision|schedule.kind|schedule.start|schedule.e"
+                    + "nd|sourceDraftRef|sourceDraftRevision-or-null");
         }
         if (branchCaseId.contains("read-operation-record-rows")) {
-            return "menu.scope.workspaceUuid|menu.scope.groupWorkspaceKey|menu.scope.storeRef|menuRef|channelRef|position.occurredAt|position.tieBreaker|pageSize";
+            return ("menu.scope.workspaceUuid|menu.scope.groupWorkspaceKey|menu.scope.storeRe"
+                    + "f|menuRef|channelRef|position.occurredAt|position.tieBreaker|pageSize");
         }
         if (branchCaseId.contains("find-adjacent")) {
             return "versionRef|sectionRef-if-present|currentOrder|currentOrder|targetRef";

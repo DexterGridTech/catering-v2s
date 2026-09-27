@@ -2,29 +2,15 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(import.meta.dirname, "../..");
+const repoRoot = fs.realpathSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../.."));
 const requiredPath = path.join(repoRoot, "doc/heritage/required-inventory.json");
 const registryPath = path.join(repoRoot, "doc/heritage/registry.json");
-const REPOSITORY_KEYS = [
-  "repositoryId",
-  "relation",
-  "role",
-  "selectedAssetPolicy",
-  "writeBack",
-  "runtimeFallback",
-  "buildFallback",
-  "selectedAssets",
-];
-const ASSET_KEYS = [
-  "sourcePath",
-  "targetPath",
-  "expectedSha256",
-  "disposition",
-  "owningAssertion",
-];
+const ENTRY_KEYS = ["path", "expectedSha256", "owningAssertion"];
 
 function assert(condition, code, details = "") {
   if (!condition) throw new Error(`${code}${details ? `: ${details}` : ""}`);
@@ -35,6 +21,41 @@ function sameKeys(value, keys) {
     JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 }
 
+function repoInputPath(value, root = repoRoot) {
+  assert(
+    typeof value === "string" && value.length > 0 && !value.includes("\0") &&
+      !path.isAbsolute(value) && !path.win32.isAbsolute(value),
+    "HERITAGE_INPUT_PATH_INVALID",
+    String(value),
+  );
+  const canonicalRoot = fs.realpathSync(root);
+  const absolute = path.resolve(canonicalRoot, value);
+  const relative = path.relative(canonicalRoot, absolute);
+  assert(
+    relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative),
+    "HERITAGE_INPUT_PATH_OUTSIDE_ROOT",
+    value,
+  );
+
+  let ancestor = canonicalRoot;
+  for (const part of relative.split(path.sep).filter(Boolean)) {
+    ancestor = path.join(ancestor, part);
+    try {
+      if (fs.lstatSync(ancestor).isSymbolicLink()) {
+        assert(false, "HERITAGE_INPUT_PATH_OUTSIDE_ROOT", value);
+      }
+    } catch (error) {
+      if (error?.code === "ENOENT") break;
+      throw error;
+    }
+  }
+  return absolute;
+}
+
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
 function sha256(filePath) {
   return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
 }
@@ -43,151 +64,123 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function validateRequired(required) {
+function validateInventory(required, root = repoRoot) {
   assert(
-    sameKeys(required, ["schemaVersion", "kind", "repositories"]),
+    sameKeys(required, ["schemaVersion", "kind", "entries"]),
     "HERITAGE_REQUIRED_SHAPE_INVALID",
   );
   assert(required.schemaVersion === 1, "HERITAGE_REQUIRED_VERSION_INVALID");
-  assert(required.kind === "heritage-required-inventory", "HERITAGE_REQUIRED_KIND_INVALID");
-  assert(Array.isArray(required.repositories), "HERITAGE_REQUIRED_REPOSITORIES_INVALID");
-  assert(required.repositories.length === 4, "HERITAGE_REQUIRED_REPOSITORY_COUNT_INVALID");
+  assert(required.kind === "local-frozen-asset-inventory", "HERITAGE_REQUIRED_KIND_INVALID");
+  assert(Array.isArray(required.entries), "HERITAGE_REQUIRED_ENTRIES_INVALID");
+  assert(required.entries.length === 31, "HERITAGE_LOCAL_ASSET_COUNT_INVALID");
 
-  const expectedIds = [
-    "catering-all-v2",
-    "catering-all-v1",
-    "catering-server-v4",
-    "requirement-doc-v6",
-  ];
-  assert(
-    JSON.stringify(required.repositories.map(({repositoryId}) => repositoryId)) === JSON.stringify(expectedIds),
-    "HERITAGE_REQUIRED_REPOSITORY_IDS_INVALID",
-  );
-  for (const repository of required.repositories) {
-    assert(sameKeys(repository, REPOSITORY_KEYS), "HERITAGE_REQUIRED_REPOSITORY_SHAPE_INVALID");
-    assert(repository.role === "READ_ONLY_HERITAGE", "HERITAGE_ROLE_INVALID", repository.repositoryId);
-    assert(repository.writeBack === false, "HERITAGE_WRITE_BACK_FORBIDDEN", repository.repositoryId);
-    assert(repository.runtimeFallback === false, "HERITAGE_RUNTIME_FALLBACK_FORBIDDEN", repository.repositoryId);
-    assert(repository.buildFallback === false, "HERITAGE_BUILD_FALLBACK_FORBIDDEN", repository.repositoryId);
-    assert(Array.isArray(repository.selectedAssets), "HERITAGE_ASSETS_INVALID", repository.repositoryId);
-    if (repository.repositoryId === "catering-all-v2") {
-      assert(repository.selectedAssetPolicy === "EXPLICIT_FROZEN_SELECTED_ASSETS", "HERITAGE_ALL_V2_POLICY_INVALID");
-      assert(repository.selectedAssets.length === 31, "HERITAGE_ALL_V2_ASSET_COUNT_INVALID");
-    } else {
-      assert(repository.selectedAssetPolicy === "EXPLICIT_FUTURE_REF_ONLY", "HERITAGE_FUTURE_POLICY_INVALID");
-      assert(repository.selectedAssets.length === 0, "HERITAGE_FUTURE_ASSETS_MUST_BE_EMPTY");
-    }
-    const sourcePaths = new Set();
-    const targetPaths = new Set();
-    for (const asset of repository.selectedAssets) {
-      assert(sameKeys(asset, ASSET_KEYS), "HERITAGE_ASSET_SHAPE_INVALID");
-      assert(!sourcePaths.has(asset.sourcePath), "HERITAGE_SOURCE_PATH_DUPLICATE", asset.sourcePath);
-      assert(!targetPaths.has(asset.targetPath), "HERITAGE_TARGET_PATH_DUPLICATE", asset.targetPath);
-      assert(/^[a-f0-9]{64}$/.test(asset.expectedSha256), "HERITAGE_HASH_INVALID", asset.sourcePath);
-      assert(asset.disposition === "COPIED_FROZEN", "HERITAGE_DISPOSITION_INVALID", asset.sourcePath);
-      assert(typeof asset.owningAssertion === "string" && asset.owningAssertion.length > 0, "HERITAGE_ASSERTION_EMPTY");
-      sourcePaths.add(asset.sourcePath);
-      targetPaths.add(asset.targetPath);
-    }
+  const seenPaths = new Set();
+  for (const entry of required.entries) {
+    assert(sameKeys(entry, ENTRY_KEYS), "HERITAGE_ASSET_SHAPE_INVALID");
+    assert(typeof entry.path === "string" && entry.path.length > 0, "HERITAGE_ASSET_PATH_INVALID");
+    repoInputPath(entry.path, root);
+    assert(!seenPaths.has(entry.path), "HERITAGE_ASSET_PATH_DUPLICATE", entry.path);
+    assert(/^[a-f0-9]{64}$/.test(entry.expectedSha256), "HERITAGE_HASH_INVALID", entry.path);
+    assert(typeof entry.owningAssertion === "string" && entry.owningAssertion.length > 0, "HERITAGE_ASSERTION_EMPTY");
+    seenPaths.add(entry.path);
   }
 }
 
-function validateRegistry(required, registry, {verifyFiles = true} = {}) {
-  validateRequired(required);
+function validateRegistry(required, registry, {verifyFiles = true, root = repoRoot} = {}) {
+  validateInventory(required, root);
   assert(
-    sameKeys(registry, ["schemaVersion", "kind", "status", "requiredInventory", "repositories"]),
+    sameKeys(registry, ["schemaVersion", "kind", "status", "requiredInventory", "entries"]),
     "HERITAGE_REGISTRY_SHAPE_INVALID",
   );
   assert(registry.schemaVersion === 1, "HERITAGE_REGISTRY_VERSION_INVALID");
-  assert(registry.kind === "heritage-registry", "HERITAGE_REGISTRY_KIND_INVALID");
+  assert(registry.kind === "local-frozen-asset-registry", "HERITAGE_REGISTRY_KIND_INVALID");
   assert(registry.status === "ACTIVE", "HERITAGE_REGISTRY_STATUS_INVALID");
   assert(registry.requiredInventory === "doc/heritage/required-inventory.json", "HERITAGE_REQUIRED_REF_INVALID");
-  assert(
-    JSON.stringify(registry.repositories) === JSON.stringify(required.repositories),
-    "HERITAGE_REGISTRY_DENOMINATOR_MISMATCH",
-  );
+  assert(JSON.stringify(registry.entries) === JSON.stringify(required.entries), "HERITAGE_REGISTRY_DENOMINATOR_MISMATCH");
   if (!verifyFiles) return;
 
-  for (const repository of registry.repositories) {
-    const sourceRoot = path.resolve(repoRoot, repository.relation);
-    assert(fs.existsSync(sourceRoot) && fs.statSync(sourceRoot).isDirectory(), "HERITAGE_REPOSITORY_MISSING", repository.repositoryId);
-    for (const asset of repository.selectedAssets) {
-      const source = path.resolve(sourceRoot, asset.sourcePath);
-      const target = path.resolve(repoRoot, asset.targetPath);
-      assert(source.startsWith(`${sourceRoot}${path.sep}`), "HERITAGE_SOURCE_PATH_ESCAPE", asset.sourcePath);
-      assert(target.startsWith(`${repoRoot}${path.sep}`), "HERITAGE_TARGET_PATH_ESCAPE", asset.targetPath);
-      assert(fs.existsSync(source), "HERITAGE_SOURCE_MISSING", asset.sourcePath);
-      assert(fs.existsSync(target), "HERITAGE_COPY_MISSING", asset.targetPath);
-      assert(sha256(source) === asset.expectedSha256, "HERITAGE_SOURCE_HASH_MISMATCH", asset.sourcePath);
-      assert(sha256(target) === asset.expectedSha256, "HERITAGE_COPY_HASH_MISMATCH", asset.targetPath);
-      assert(fs.readFileSync(source).equals(fs.readFileSync(target)), "HERITAGE_COPY_BYTES_MISMATCH", asset.targetPath);
-    }
+  for (const entry of registry.entries) {
+    const filePath = repoInputPath(entry.path, root);
+    assert(fs.existsSync(filePath) && fs.statSync(filePath).isFile(), "HERITAGE_LOCAL_ASSET_MISSING", entry.path);
+    assert(sha256(filePath) === entry.expectedSha256, "HERITAGE_LOCAL_HASH_MISMATCH", entry.path);
   }
 }
 
-function expectFail(name, required, registry, expectedCode, {verifyFiles = false} = {}) {
+function expectFail(name, required, registry, expectedCode, {verifyFiles = false, root = repoRoot} = {}) {
   try {
-    validateRegistry(required, registry, {verifyFiles});
+    validateRegistry(required, registry, {verifyFiles, root});
   } catch (error) {
     assert(error.message.startsWith(expectedCode), "HERITAGE_SELF_TEST_WRONG_FAILURE", `${name}: ${error.message}`);
-    process.stdout.write(`FIXTURE=${name}; EXPECTED=FAIL; ACTUAL=FAIL; CODE=${expectedCode}\n`);
+    process.stdout.write(`FIXTURE=${name}; EXPECTED=FAIL; ACTUAL=FAIL; MARKER=${expectedCode}\n`);
     return;
   }
   throw new Error(`HERITAGE_SELF_TEST_FALSE_GREEN: ${name}`);
 }
 
 function selfTest(required, registry) {
-  validateRegistry(required, registry, {verifyFiles: false});
-  process.stdout.write("FIXTURE=approved-four-repository-thirty-one-asset; EXPECTED=PASS; ACTUAL=PASS\n");
+  validateRegistry(required, registry);
+  process.stdout.write("FIXTURE=repository-owned-frozen-assets; EXPECTED=PASS; ACTUAL=PASS; COUNT=31\n");
 
-  const missingRequired = clone(required);
-  const missing = clone(registry);
-  missingRequired.repositories[0].selectedAssets.pop();
-  missing.repositories[0].selectedAssets.pop();
-  expectFail("missing-selected-asset", missingRequired, missing, "HERITAGE_ALL_V2_ASSET_COUNT_INVALID");
+  const escapedRequired = clone(required);
+  const escapedRegistry = clone(registry);
+  escapedRequired.entries[0].path = "../outside-project/contracts/openapi/example.yaml";
+  escapedRegistry.entries[0].path = "../outside-project/contracts/openapi/example.yaml";
+  expectFail(
+    "repository-root-escape-path",
+    escapedRequired,
+    escapedRegistry,
+    "HERITAGE_INPUT_PATH_OUTSIDE_ROOT",
+  );
 
-  const extraRequired = clone(required);
-  const extra = clone(registry);
-  extraRequired.repositories.push(clone(extraRequired.repositories[1]));
-  extraRequired.repositories[4].repositoryId = "extra-current-truth";
-  extra.repositories.push(clone(extra.repositories[1]));
-  extra.repositories[4].repositoryId = "extra-current-truth";
-  expectFail("extra-current-repository", extraRequired, extra, "HERITAGE_REQUIRED_REPOSITORY_COUNT_INVALID");
+  const outsideRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-heritage-outside-"));
+  let testRoot;
+  try {
+    const absoluteRequired = clone(required);
+    const absoluteRegistry = clone(registry);
+    absoluteRequired.entries[0].path = path.join(outsideRoot, "external-asset.yaml");
+    absoluteRegistry.entries[0].path = path.join(outsideRoot, "external-asset.yaml");
+    expectFail(
+      "absolute-external-path",
+      absoluteRequired,
+      absoluteRegistry,
+      "HERITAGE_INPUT_PATH_INVALID",
+    );
 
-  for (const [name, field] of [
-    ["write-back-enabled", "writeBack"],
-    ["runtime-fallback-enabled", "runtimeFallback"],
-    ["build-fallback-enabled", "buildFallback"],
-  ]) {
-    const candidateRequired = clone(required);
-    const candidate = clone(registry);
-    candidateRequired.repositories[0][field] = true;
-    candidate.repositories[0][field] = true;
-    const code = field === "writeBack"
-      ? "HERITAGE_WRITE_BACK_FORBIDDEN"
-      : field === "runtimeFallback"
-        ? "HERITAGE_RUNTIME_FALLBACK_FORBIDDEN"
-        : "HERITAGE_BUILD_FALLBACK_FORBIDDEN";
-    expectFail(name, candidateRequired, candidate, code);
+    testRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-heritage-root-"));
+    fs.symlinkSync(outsideRoot, path.join(testRoot, "outside-project-link"), "dir");
+    const symlinkRequired = clone(required);
+    const symlinkRegistry = clone(registry);
+    symlinkRequired.entries[0].path = "outside-project-link/external-asset.yaml";
+    symlinkRegistry.entries[0].path = "outside-project-link/external-asset.yaml";
+    expectFail(
+      "symlink-mediated-escape",
+      symlinkRequired,
+      symlinkRegistry,
+      "HERITAGE_INPUT_PATH_OUTSIDE_ROOT",
+      {root: testRoot},
+    );
+  } finally {
+    if (testRoot) fs.rmSync(testRoot, {recursive: true, force: true});
+    fs.rmSync(outsideRoot, {recursive: true, force: true});
   }
 
-  const futureImplicitRequired = clone(required);
-  const futureImplicit = clone(registry);
-  futureImplicitRequired.repositories[1].selectedAssets.push(clone(required.repositories[0].selectedAssets[0]));
-  futureImplicit.repositories[1].selectedAssets.push(clone(required.repositories[0].selectedAssets[0]));
-  expectFail("future-source-implicit-asset", futureImplicitRequired, futureImplicit, "HERITAGE_FUTURE_ASSETS_MUST_BE_EMPTY");
-
   const hashDriftRequired = clone(required);
-  const hashDrift = clone(registry);
-  hashDriftRequired.repositories[0].selectedAssets[0].expectedSha256 = "0".repeat(64);
-  hashDrift.repositories[0].selectedAssets[0].expectedSha256 = "0".repeat(64);
-  expectFail("selected-asset-hash-drift", hashDriftRequired, hashDrift, "HERITAGE_SOURCE_HASH_MISMATCH", {verifyFiles: true});
+  const hashDriftRegistry = clone(registry);
+  hashDriftRequired.entries[0].expectedSha256 = "0".repeat(64);
+  hashDriftRegistry.entries[0].expectedSha256 = "0".repeat(64);
+  expectFail(
+    "local-asset-hash-drift",
+    hashDriftRequired,
+    hashDriftRegistry,
+    "HERITAGE_LOCAL_HASH_MISMATCH",
+    {verifyFiles: true},
+  );
   process.stdout.write("HERITAGE_REGISTRY_SELF_TEST=PASS\n");
 }
 
 try {
-  const required = JSON.parse(fs.readFileSync(requiredPath, "utf8"));
-  const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
+  const required = readJson(requiredPath);
+  const registry = readJson(registryPath);
   if (process.argv.includes("--self-test")) selfTest(required, registry);
   else validateRegistry(required, registry);
   process.stdout.write("HERITAGE_REGISTRY=PASS\n");

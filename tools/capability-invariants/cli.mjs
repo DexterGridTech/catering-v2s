@@ -48,6 +48,22 @@ const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const AUTHENTICATED_MODE = "AUTHENTICATED_WORKSPACE";
 const PLATFORM_SUPER_ADMIN_MODE = "AUTHENTICATED_PLATFORM_SUPER_ADMIN";
 const PUBLIC_MODE = "PUBLIC_PROTOCOL";
+const TERMINAL_CREDENTIAL_MODE = "TERMINAL_CREDENTIAL";
+const TERMINAL_CREDENTIAL_RESOLVER = "TERMINAL_CREDENTIAL_AUTHENTICATOR";
+const UNPROTECTED_TERMINAL_ACTIVATION = Object.freeze({
+  operationId: "activateTerminal",
+  method: "POST",
+  path: "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation",
+  consumerFace: "terminal",
+  ownerModule: "terminal-binding",
+});
+const TERMINAL_CREDENTIAL_CANCEL = Object.freeze({
+  operationId: "cancelTerminalActivation",
+  method: "POST",
+  path: "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel",
+  consumerFace: "terminal",
+  ownerModule: "terminal-binding",
+});
 const SELF_SESSION_RESOLVER = "AUTHENTICATED_WORKSPACE_SELF_SESSION";
 const READ_SCOPE_RESOLVER = "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE";
 const ROLE_NODE_RANGE_READ = "ROLE_NODE_RANGE_READ";
@@ -211,6 +227,10 @@ const RESOURCE_TYPE_CAPABILITY_OPERATIONS = new Map([
   ],
   [
     "postOperationsStoreTerminal|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals|operations-admin",
+    {STORE: "EDIT_STORE_TERMINAL"},
+  ],
+  [
+    "cancelOperationsStoreTerminalActivation|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel|operations-admin",
     {STORE: "EDIT_STORE_TERMINAL"},
   ],
   [
@@ -826,14 +846,64 @@ export function mutatingOperationInventory(root = process.cwd()) {
           fail(`CAPABILITY_OWNER_MODULE_MISSING:${operation.operationId}`);
         }
         const anonymousProtocol = Array.isArray(operation.security) && operation.security.length === 0;
-        const authorizationMode = consumerFaces[0] === "platform-admin" && !anonymousProtocol
-          ? PLATFORM_SUPER_ADMIN_MODE
-          : anonymousProtocol ? PUBLIC_MODE : AUTHENTICATED_MODE;
-        const requiredCapability = authorizationMode === PLATFORM_SUPER_ADMIN_MODE
-          ? operation["x-required-platform-authorization"]
-          : authorizationMode === PUBLIC_MODE
-            ? operation["x-required-owner-protocol"] ?? operation["x-required-capability"]
-            : operation["x-required-capability"];
+        const explicitAuthorizationMode = operation["x-authorization-mode"];
+        const identity = {
+          operationId: operation.operationId,
+          method: String(method).toUpperCase(),
+          path: route,
+          consumerFace: consumerFaces[0],
+          ownerModule: operation["x-owner-module"],
+        };
+        const isUnprotectedActivation = operation.operationId === UNPROTECTED_TERMINAL_ACTIVATION.operationId;
+        const isTerminalCredentialCancel = operation.operationId === TERMINAL_CREDENTIAL_CANCEL.operationId;
+        if (explicitAuthorizationMode !== undefined
+          && !["NONE", TERMINAL_CREDENTIAL_MODE].includes(explicitAuthorizationMode)) {
+          fail(`CAPABILITY_AUTHORIZATION_MODE_UNKNOWN:${operation.operationId}:${explicitAuthorizationMode}`);
+        }
+        if (isUnprotectedActivation) {
+          if (JSON.stringify(identity) !== JSON.stringify(UNPROTECTED_TERMINAL_ACTIVATION)
+            || explicitAuthorizationMode !== "NONE" || !anonymousProtocol
+            || operation["x-required-capability"] !== undefined
+            || operation["x-required-owner-protocol"] !== undefined
+            || operation["x-required-platform-authorization"] !== undefined
+            || operation["x-required-terminal-credential"] !== undefined) {
+            fail(`CAPABILITY_TERMINAL_ACTIVATION_MUST_BE_UNPROTECTED:${operation.operationId}`);
+          }
+        } else if (explicitAuthorizationMode === "NONE") {
+          fail(`CAPABILITY_UNEXPECTED_UNPROTECTED_OPERATION:${operation.operationId}`);
+        }
+        if (consumerFaces[0] === "terminal" && !isUnprotectedActivation && !isTerminalCredentialCancel) {
+          fail(`CAPABILITY_TERMINAL_OPERATION_IDENTITY_UNKNOWN:${operation.operationId}`);
+        }
+        if (isTerminalCredentialCancel) {
+          if (JSON.stringify(identity) !== JSON.stringify(TERMINAL_CREDENTIAL_CANCEL)
+            || explicitAuthorizationMode !== TERMINAL_CREDENTIAL_MODE
+            || JSON.stringify(operation.security) !== JSON.stringify([{terminalCredential: []}])
+            || operation["x-required-terminal-credential"] === undefined
+            || operation["x-required-capability"] !== undefined
+            || operation["x-required-owner-protocol"] !== undefined
+            || operation["x-required-platform-authorization"] !== undefined) {
+            fail(`CAPABILITY_TERMINAL_CREDENTIAL_CONTRACT_DRIFT:${operation.operationId}`);
+          }
+        } else if (explicitAuthorizationMode === TERMINAL_CREDENTIAL_MODE) {
+          fail(`CAPABILITY_UNEXPECTED_TERMINAL_CREDENTIAL_OPERATION:${operation.operationId}`);
+        }
+        const authorizationMode = explicitAuthorizationMode === "NONE"
+          ? "NONE"
+          : explicitAuthorizationMode === TERMINAL_CREDENTIAL_MODE
+            ? TERMINAL_CREDENTIAL_MODE
+            : consumerFaces[0] === "platform-admin" && !anonymousProtocol
+              ? PLATFORM_SUPER_ADMIN_MODE
+              : anonymousProtocol ? PUBLIC_MODE : AUTHENTICATED_MODE;
+        const requiredCapability = authorizationMode === "NONE"
+          ? undefined
+          : authorizationMode === TERMINAL_CREDENTIAL_MODE
+            ? operation["x-required-terminal-credential"]
+            : authorizationMode === PLATFORM_SUPER_ADMIN_MODE
+              ? operation["x-required-platform-authorization"]
+              : authorizationMode === PUBLIC_MODE
+                ? operation["x-required-owner-protocol"] ?? operation["x-required-capability"]
+                : operation["x-required-capability"];
         rows.push({
           sourcePath,
           operationId: operation.operationId,
@@ -842,6 +912,7 @@ export function mutatingOperationInventory(root = process.cwd()) {
           consumerFace: consumerFaces[0],
           anonymousProtocol,
           authorizationMode,
+          hasAuthorizationRequirement: authorizationMode !== "NONE",
           ownerModule: operation["x-owner-module"],
           requiredCapability,
         });
@@ -882,16 +953,18 @@ function indexBy(values, key, duplicateReason) {
 
 function validateResolver(resolver) {
   expectObject(resolver, "CAPABILITY_RESOLVER_INVALID");
-  if (!["AUTHENTICATED_WORKSPACE_TARGET_SCOPE", READ_SCOPE_RESOLVER, SELF_SESSION_RESOLVER, "PLATFORM_SESSION_ENABLED_ADMIN", "PUBLIC_PROTOCOL_TOKEN", "PUBLIC_PROTOCOL_OWNER_FACT"].includes(resolver.resolverId)) {
+  if (!["AUTHENTICATED_WORKSPACE_TARGET_SCOPE", READ_SCOPE_RESOLVER, SELF_SESSION_RESOLVER, "PLATFORM_SESSION_ENABLED_ADMIN", "PUBLIC_PROTOCOL_TOKEN", "PUBLIC_PROTOCOL_OWNER_FACT", TERMINAL_CREDENTIAL_RESOLVER].includes(resolver.resolverId)) {
     fail(`CAPABILITY_RESOLVER_ID_INVALID:${resolver.resolverId || "UNSET"}`);
   }
-  if (![AUTHENTICATED_MODE, PLATFORM_SUPER_ADMIN_MODE, PUBLIC_MODE].includes(resolver.authorizationMode)) fail(`CAPABILITY_RESOLVER_MODE_INVALID:${resolver.resolverId}`);
+  if (![AUTHENTICATED_MODE, PLATFORM_SUPER_ADMIN_MODE, PUBLIC_MODE, TERMINAL_CREDENTIAL_MODE].includes(resolver.authorizationMode)) fail(`CAPABILITY_RESOLVER_MODE_INVALID:${resolver.resolverId}`);
   if (!Array.isArray(resolver.inputs) || !Array.isArray(resolver.outputs) || !Array.isArray(resolver.clientDerivedInputsForbidden)) {
     fail(`CAPABILITY_RESOLVER_SHAPE_INVALID:${resolver.resolverId}`);
   }
-  const expectedOutputs = resolver.resolverId === READ_SCOPE_RESOLVER
-    ? ["ALLOW", "DENY", "readScopePredicate"]
-    : ["ALLOW", "DENY", "firstOwnerQueryPredicate"];
+  const expectedOutputs = resolver.authorizationMode === TERMINAL_CREDENTIAL_MODE
+    ? ["ALLOW", "DENY", "terminalBindingIdentity"]
+    : resolver.resolverId === READ_SCOPE_RESOLVER
+      ? ["ALLOW", "DENY", "readScopePredicate"]
+      : ["ALLOW", "DENY", "firstOwnerQueryPredicate"];
   if (!exactSet(resolver.outputs, expectedOutputs)) fail(`CAPABILITY_RESOLVER_OUTPUT_INVALID:${resolver.resolverId}`);
   if (!resolver.clientDerivedInputsForbidden.includes("pageDesignKey")
     || !resolver.clientDerivedInputsForbidden.includes("clientCapabilityLiteral")) {
@@ -916,6 +989,12 @@ function validateResolver(resolver) {
       : ["serverValidatedInvitationOrResetToken", "serverResolvedResourceTypeAndId"])
       || resolver.authenticatedWorkspaceSessionForbidden !== true)) {
     fail(`CAPABILITY_PUBLIC_PROTOCOL_RESOLVER_INVALID:${resolver.resolverId}`);
+  }
+  if (resolver.authorizationMode === TERMINAL_CREDENTIAL_MODE
+    && (resolver.resolverId !== TERMINAL_CREDENTIAL_RESOLVER
+      || !exactSet(resolver.inputs, ["parsedTerminalCredential", "deviceId", "serverResolvedTerminalBinding"])
+      || resolver.authenticatedWorkspaceSessionForbidden !== true)) {
+    fail(`CAPABILITY_TERMINAL_CREDENTIAL_RESOLVER_INVALID:${resolver.resolverId}`);
   }
 }
 
@@ -1191,7 +1270,7 @@ export function validateCapabilityInvariants(root = process.cwd()) {
   expectObject(manifest, "CAPABILITY_REGISTRY_INVALID");
   if (manifest.schemaVersion !== 1 || manifest.kind !== "iam-org-governance-manifest"
     || !exactSet(manifest.operationIdentityKey || [], ["operationId", "method", "path", "consumerFace"])
-    || !exactSet(manifest.authorizationModes || [], [AUTHENTICATED_MODE, PLATFORM_SUPER_ADMIN_MODE, PUBLIC_MODE])) {
+    || !exactSet(manifest.authorizationModes || [], [AUTHENTICATED_MODE, PLATFORM_SUPER_ADMIN_MODE, PUBLIC_MODE, TERMINAL_CREDENTIAL_MODE])) {
     fail("CAPABILITY_REGISTRY_HEADER_INVALID");
   }
   if (!manifest.generationTargets || typeof manifest.generationTargets !== "object"
@@ -1225,7 +1304,10 @@ export function validateCapabilityInvariants(root = process.cwd()) {
         consumerFace: "operations-admin",
       }))
     : [];
-  const expectedRequirementKeys = [...inventoryKeys, ...p3cReadRequirementKeys];
+  const expectedRequirementKeys = [
+    ...inventory.filter((row) => row.hasAuthorizationRequirement).map(operationIdentity),
+    ...p3cReadRequirementKeys,
+  ];
   if (!exactSet(expectedRequirementKeys, [...byIdentity.keys()])) {
     const missing = expectedRequirementKeys.filter((key) => !byIdentity.has(key));
     const extra = [...byIdentity.keys()].filter((key) => !expectedRequirementKeys.includes(key));
@@ -1239,6 +1321,7 @@ export function validateCapabilityInvariants(root = process.cwd()) {
   const failures = [];
   for (const row of inventory) {
     const requirement = byIdentity.get(operationIdentity(row));
+    if (row.authorizationMode === "NONE") continue;
     const catalogInventoryOperation = catalogInventoryOperations.get(operationIdentity(row));
     const expectedRequirement = catalogInventoryOperation?.authorizationRequirementId || capabilityRequirementId(row.operationId);
     if (typeof row.requiredCapability !== "string" || row.requiredCapability.length === 0) {
@@ -1346,13 +1429,19 @@ function writeFixture(root, operation) {
   fs.mkdirSync(path.join(root, "contracts/registry"), {recursive: true});
   const requirementId = capabilityRequirementId(operation.operationId);
   const ownerId = operation.ownerModule.replace(/[^A-Za-z0-9]+/g, "_").toUpperCase();
+  const noAuthorization = operation.authorizationMode === "NONE";
+  const terminalCredential = operation.authorizationMode === TERMINAL_CREDENTIAL_MODE;
   const resourceTypeCapabilities = RESOURCE_TYPE_CAPABILITY_OPERATIONS.get(
     `${operation.operationId}|${(operation.method || "POST").toUpperCase()}|${operation.path}|${operation.consumerFace}`,
   );
   const method = (operation.method || "POST").toLowerCase();
   const anonymousProtocol = Array.isArray(operation.security) ? operation.security.length === 0 : operation.consumerFace === "public";
   const platformSuperAdmin = operation.consumerFace === "platform-admin" && !anonymousProtocol;
-  const contractAuthorization = platformSuperAdmin
+  const contractAuthorization = noAuthorization
+    ? {"x-authorization-mode": "NONE"}
+    : terminalCredential
+      ? {"x-authorization-mode": TERMINAL_CREDENTIAL_MODE, "x-required-terminal-credential": requirementId}
+      : platformSuperAdmin
     ? {"x-required-platform-authorization": requirementId}
     : anonymousProtocol
       ? {"x-required-owner-protocol": requirementId}
@@ -1369,21 +1458,22 @@ function writeFixture(root, operation) {
     kind: "iam-org-governance-manifest",
     authority: "fixture",
     operationIdentityKey: ["operationId", "method", "path", "consumerFace"],
-    authorizationModes: [AUTHENTICATED_MODE, PLATFORM_SUPER_ADMIN_MODE, PUBLIC_MODE],
+    authorizationModes: [AUTHENTICATED_MODE, PLATFORM_SUPER_ADMIN_MODE, PUBLIC_MODE, TERMINAL_CREDENTIAL_MODE],
     resolvers: [
       {resolverId: "AUTHENTICATED_WORKSPACE_TARGET_SCOPE", authorizationMode: AUTHENTICATED_MODE, inputs: ["authenticatedWorkspaceSession", "serverResolvedResourceTypeAndId", "assignmentNode"], outputs: ["ALLOW", "DENY", "firstOwnerQueryPredicate"], clientDerivedInputsForbidden: ["pageDesignKey", "clientCapabilityLiteral"]},
       {resolverId: "PLATFORM_SESSION_ENABLED_ADMIN", authorizationMode: PLATFORM_SUPER_ADMIN_MODE, inputs: ["activePlatformSession", "enabledPlatformAdministrator"], outputs: ["ALLOW", "DENY", "firstOwnerQueryPredicate"], clientDerivedInputsForbidden: ["pageDesignKey", "clientCapabilityLiteral"], authenticatedWorkspaceSessionForbidden: true},
       {resolverId: "PUBLIC_PROTOCOL_TOKEN", authorizationMode: PUBLIC_MODE, inputs: ["serverValidatedInvitationOrResetToken", "serverResolvedResourceTypeAndId"], outputs: ["ALLOW", "DENY", "firstOwnerQueryPredicate"], clientDerivedInputsForbidden: ["pageDesignKey", "clientCapabilityLiteral"], authenticatedWorkspaceSessionForbidden: true},
+      {resolverId: TERMINAL_CREDENTIAL_RESOLVER, authorizationMode: TERMINAL_CREDENTIAL_MODE, inputs: ["parsedTerminalCredential", "deviceId", "serverResolvedTerminalBinding"], outputs: ["ALLOW", "DENY", "terminalBindingIdentity"], clientDerivedInputsForbidden: ["pageDesignKey", "clientCapabilityLiteral"], authenticatedWorkspaceSessionForbidden: true},
     ],
     ownerRechecks: [{ownerRecheckId: "OWNER_RECHECK_" + ownerId, ownerModule: operation.ownerModule, requiredInOwnerCommand: true, transactionRequirement: "REQUIRED", crossOwnerWritesUsePublicCommandApi: true}],
     typedProblemMappings: [{typedProblemMappingId: "PROBLEM_" + ownerId + "_TYPED_OWNER_EXCEPTION", ownerModule: operation.ownerModule, typedProblemOnly: true, noTestCodeInResponse: true, unmappedExceptionFails: true}],
     generationTargets: {serverCatalog: "generated/CapabilityRequirementCatalog.java", typedResolverRegistry: "generated/CapabilityResolverRegistry.java", workspaceIamCatalog: "generated/WorkspaceCapabilityRequirementCatalog.java", operationsCatalog: "generated/capability-operation-registry.json"},
-    requirements: [{
+    requirements: noAuthorization ? [] : [{
       requirementId,
       operationIdentity: {operationId: operation.operationId, method: method.toUpperCase(), path: operation.path, consumerFace: operation.consumerFace},
-      authorizationMode: platformSuperAdmin ? PLATFORM_SUPER_ADMIN_MODE : anonymousProtocol ? PUBLIC_MODE : AUTHENTICATED_MODE,
-      ...(!platformSuperAdmin && !anonymousProtocol && (resourceTypeCapabilities ? {capabilityMapping: {kind: "SERVER_RESOLVED_RESOURCE_TYPE", resourceTypeCapabilities, unsupportedResourceTypeDecision: "DENY"}} : {capabilityKey: operation.capabilityKey || "CAP_" + requirementId.replace(/^REQ_/, "")})),
-      resolverId: platformSuperAdmin ? "PLATFORM_SESSION_ENABLED_ADMIN" : anonymousProtocol ? "PUBLIC_PROTOCOL_TOKEN" : "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      authorizationMode: terminalCredential ? TERMINAL_CREDENTIAL_MODE : platformSuperAdmin ? PLATFORM_SUPER_ADMIN_MODE : anonymousProtocol ? PUBLIC_MODE : AUTHENTICATED_MODE,
+      ...(!terminalCredential && !platformSuperAdmin && !anonymousProtocol && (resourceTypeCapabilities ? {capabilityMapping: {kind: "SERVER_RESOLVED_RESOURCE_TYPE", resourceTypeCapabilities, unsupportedResourceTypeDecision: "DENY"}} : {capabilityKey: operation.capabilityKey || "CAP_" + requirementId.replace(/^REQ_/, "")})),
+      resolverId: terminalCredential ? TERMINAL_CREDENTIAL_RESOLVER : platformSuperAdmin ? "PLATFORM_SESSION_ENABLED_ADMIN" : anonymousProtocol ? "PUBLIC_PROTOCOL_TOKEN" : "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
       ownerModule: operation.ownerModule,
       ownerRecheckId: "OWNER_RECHECK_" + ownerId,
       typedProblemMappingId: "PROBLEM_" + ownerId + "_TYPED_OWNER_EXCEPTION",
@@ -1583,6 +1673,55 @@ function selfTest() {
     const publicOperation = {operationId: "acceptPublicInvitation", path: "/api/public/invitations/{token}", consumerFace: "public", ownerModule: "workspace-iam"};
     writeFixture(root, publicOperation);
     validateCapabilityInvariants(root);
+
+    const unprotectedActivation = {
+      operationId: UNPROTECTED_TERMINAL_ACTIVATION.operationId,
+      method: UNPROTECTED_TERMINAL_ACTIVATION.method,
+      path: UNPROTECTED_TERMINAL_ACTIVATION.path,
+      consumerFace: UNPROTECTED_TERMINAL_ACTIVATION.consumerFace,
+      ownerModule: UNPROTECTED_TERMINAL_ACTIVATION.ownerModule,
+      authorizationMode: "NONE",
+      security: [],
+    };
+    writeFixture(root, unprotectedActivation);
+    validateCapabilityInvariants(root);
+    if (governanceManifest(root).requirements.length !== 0) fail("CAPABILITY_SELF_TEST_TERMINAL_ACTIVATION_REQUIREMENT_ADDED");
+    const activationOpenApi = json(root, "contracts/openapi/fixture.json", "CAPABILITY_SELF_TEST_FIXTURE_INVALID");
+    activationOpenApi.paths[unprotectedActivation.path].post["x-required-owner-protocol"] = "ACTIVATION_PERMISSION_FORBIDDEN";
+    fs.writeFileSync(path.join(root, "contracts/openapi/fixture.json"), JSON.stringify(activationOpenApi));
+    try { mutatingOperationInventory(root); fail("CAPABILITY_SELF_TEST_TERMINAL_ACTIVATION_PERMISSION_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("CAPABILITY_TERMINAL_ACTIVATION_MUST_BE_UNPROTECTED:activateTerminal")) throw error; }
+    writeFixture(root, unprotectedActivation);
+    const activationWithRequirement = governanceManifest(root);
+    activationWithRequirement.requirements.push({
+      requirementId: "REQ_ACTIVATE_TERMINAL",
+      operationIdentity: {operationId: unprotectedActivation.operationId, method: "POST", path: unprotectedActivation.path, consumerFace: "terminal"},
+    });
+    fs.writeFileSync(path.join(root, REGISTRY_PATH), JSON.stringify(activationWithRequirement));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_TERMINAL_ACTIVATION_IAM_REQUIREMENT_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("CAPABILITY_OPERATION_REGISTRY_SET_DRIFT:")) throw error; }
+    const terminalCredentialCancellation = {
+      operationId: TERMINAL_CREDENTIAL_CANCEL.operationId,
+      method: TERMINAL_CREDENTIAL_CANCEL.method,
+      path: TERMINAL_CREDENTIAL_CANCEL.path,
+      consumerFace: TERMINAL_CREDENTIAL_CANCEL.consumerFace,
+      ownerModule: TERMINAL_CREDENTIAL_CANCEL.ownerModule,
+      authorizationMode: TERMINAL_CREDENTIAL_MODE,
+      security: [{terminalCredential: []}],
+    };
+    writeFixture(root, terminalCredentialCancellation);
+    validateCapabilityInvariants(root);
+    const terminalCredentialRegistry = governanceManifest(root);
+    if (terminalCredentialRegistry.requirements[0].capabilityKey !== undefined
+      || terminalCredentialRegistry.requirements[0].capabilityMapping !== undefined) {
+      fail("CAPABILITY_SELF_TEST_TERMINAL_CREDENTIAL_WORKSPACE_CAPABILITY_ADDED");
+    }
+    const terminalCredentialOpenApi = json(root, "contracts/openapi/fixture.json", "CAPABILITY_SELF_TEST_FIXTURE_INVALID");
+    terminalCredentialOpenApi.paths[terminalCredentialCancellation.path].post["x-consumer-faces"] = ["operations-admin"];
+    fs.writeFileSync(path.join(root, "contracts/openapi/fixture.json"), JSON.stringify(terminalCredentialOpenApi));
+    try { mutatingOperationInventory(root); fail("CAPABILITY_SELF_TEST_TERMINAL_CREDENTIAL_CROSS_FACE_NOT_DETECTED"); }
+    catch (error) { if (!String(error.message).includes("CAPABILITY_TERMINAL_CREDENTIAL_CONTRACT_DRIFT:cancelTerminalActivation")) throw error; }
+    writeFixture(root, terminalCredentialCancellation);
 
     const projectionPath = path.join(root, "contracts/openapi/generated-catalog-path-shard.json");
     const canonicalDocument = json(root, "contracts/openapi/fixture.json", "CAPABILITY_SELF_TEST_FIXTURE_INVALID");
@@ -1893,7 +2032,7 @@ function selfTest() {
     try { validateP3AStaticProofSurfaces(root); fail("CAPABILITY_SELF_TEST_PROBLEM_ADVICE_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("P3_A_TYPED_PROBLEM_ADVICE_HANDLER_MISSING")) throw error; }
 
-    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_CATALOG_INVENTORY_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_OPENAPI_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_TARGET_CAPABILITY_MAPPING=PASS\nRED_CATALOG_INVENTORY_READ_CAPABILITY=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_SCHEMA=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_PARAMETER=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_MISSING=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_EXPANSION=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_READ_PLACEMENT=PASS\nRED_CATALOG_INVENTORY_DIRECT_CONFIGURATION_CAPABILITY=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_READ_OPENAPI_CAPABILITY=PASS\nRED_READ_REGISTRY_CAPABILITY=PASS\nRED_READ_REGISTRY_SCOPE_MODEL=PASS\nRED_READ_EDGE_GET_CAPABILITY=PASS\nRED_READ_EDGE_GET_CAPABILITY_HELPER=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
+    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_TERMINAL_ACTIVATION_PERMISSION=PASS\nRED_TERMINAL_ACTIVATION_IAM_REQUIREMENT=PASS\nRED_TERMINAL_CREDENTIAL_WORKSPACE_CAPABILITY=PASS\nRED_TERMINAL_CREDENTIAL_CROSS_FACE=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_CATALOG_INVENTORY_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_OPENAPI_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_TARGET_CAPABILITY_MAPPING=PASS\nRED_CATALOG_INVENTORY_READ_CAPABILITY=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_SCHEMA=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_PARAMETER=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_MISSING=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_EXPANSION=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_READ_PLACEMENT=PASS\nRED_CATALOG_INVENTORY_DIRECT_CONFIGURATION_CAPABILITY=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_READ_OPENAPI_CAPABILITY=PASS\nRED_READ_REGISTRY_CAPABILITY=PASS\nRED_READ_REGISTRY_SCOPE_MODEL=PASS\nRED_READ_EDGE_GET_CAPABILITY=PASS\nRED_READ_EDGE_GET_CAPABILITY_HELPER=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
   } finally {
     fs.rmSync(root, {recursive: true, force: true});
   }

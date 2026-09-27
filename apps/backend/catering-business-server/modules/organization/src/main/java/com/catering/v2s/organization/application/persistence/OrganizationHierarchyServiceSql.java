@@ -29,9 +29,8 @@ public final class OrganizationHierarchyServiceSql {
     public static final String ORGANIZATION_HIERARCHY_SERVICE_PARAMETER_PLACEHOLDER_ALTERNATE_A = "?, ";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_PARAMETER_PLACEHOLDER_ENABLED_ALTERNATE_A =
             "?, ?, CAST('[]' AS JSONB), 'ENABLED', 1, ?, ?, CAST(? AS JSONB), ?)";
-    public static final String
-            ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE =
-                    "SELECT id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name, notes, status, ";
+    public static final String SELECT_WS_UUID_GRP_WS_001 =
+            "SELECT id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name, notes, status, ";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_VERSION =
             "version, created_at_epoch_millis, updated_at_epoch_millis, extension_values::text, ";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_ORGANIZATION_NODE_EXTENSION_RULE_REVISION_WORKSPACE_UUID =
@@ -54,9 +53,8 @@ public final class OrganizationHierarchyServiceSql {
             " AND (?::uuid IS NULL OR id=?)";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_SELECT_ORGANIZATION_NODE_SELECT_COUNT_FROM_ORGANIZATI =
             "SELECT COUNT(*) FROM organization.organization_node";
-    public static final String
-            ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE_ALTERNATE_A =
-                    "SELECT id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name, notes, status, ";
+    public static final String SELECT_WS_UUID_GRP_WS_ALT_A_002 =
+            "SELECT id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name, notes, status, ";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_VERSION_ALTERNATE_A =
             "version, created_at_epoch_millis, updated_at_epoch_millis, extension_values::text, ";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_ORGANIZATION_NODE_EXTENSION_RULE_REVISION =
@@ -85,9 +83,8 @@ public final class OrganizationHierarchyServiceSql {
 
     public static final String ORGANIZATION_HIERARCHY_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_VERSION_ALTERNATE_B =
             "AND group_workspace_key=? AND version=?";
-    public static final String
-            ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE_ALTERNATE_B =
-                    "SELECT n.id, n.workspace_uuid, n.group_workspace_key, n.parent_id, n.node_type, n.code, n.name,";
+    public static final String SELECT_WS_UUID_GRP_WS_ALT_B_003 =
+            "SELECT n.id, n.workspace_uuid, n.group_workspace_key, n.parent_id, n.node_type, n.code, n.name,";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_NOTES_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS =
             " n.notes, n.status, n.version, n.created_at_epoch_millis, n.updated_at_epoch_millis,";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_EXTENSION_VALUES_TEXT_EXTENSION_RULE_REVISION_ARRAY_AGG =
@@ -123,21 +120,19 @@ public final class OrganizationHierarchyServiceSql {
             "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=?";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_CLOSE_PAREN_ANCESTRY_STRING_AGG_CODE_NAME_DEPTH =
             ") SELECT string_agg(code || ' ' || name, ' / ' ORDER BY depth DESC) FROM ancestry";
-    public static final String
-            ORGANIZATION_HIERARCHY_SERVICE_SELECT_PROJECT_PHASE_NAME_PROJECT_ID_PHASE_NAME_ALTERNATE_A =
-                    "SELECT project_id, phase_name FROM organization.project_phase_name WHERE project_id IN (";
+    public static final String SELECT_PROJECT_PHASE_NAME_PROJECT_ALT_A_004 =
+            "SELECT project_id, phase_name FROM organization.project_phase_name WHERE project_id IN (";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_CTE_ANCESTRY_ALTERNATE_A = "WITH RECURSIVE ancestry AS (";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_SELECT_NODE_TARGET_ID_PARENT_ID_CODE =
             "SELECT node.id AS target_id, node.id, node.parent_id, node.code, node.name, 0 AS depth FROM ";
-    public static final String
-            ORGANIZATION_HIERARCHY_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_NODE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "organization.organization_node node WHERE node.workspace_uuid=? AND node.group_workspace_key=? ";
+    public static final String ALT_ORG_NODE_WS_UUID_005 =
+            "organization.organization_node node WHERE node.workspace_uuid=? AND node.group_workspace_key=? ";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_CONDITION_NODE = "AND node.id IN (";
     public static final String ORGANIZATION_HIERARCHY_SERVICE_DELETE_PROJECT_PHASE_NAME_PROJECT_ID =
             "DELETE FROM organization.project_phase_name WHERE project_id=?";
-    public static final String
-            ORGANIZATION_HIERARCHY_SERVICE_INSERT_INTO_PROJECT_PHASE_NAME_PROJECT_ID_PHASE_NAME_DISPLAY_ORDER =
-                    "INSERT INTO organization.project_phase_name (project_id, phase_name, display_order) VALUES (?, ?, ?)";
+    public static final String INSERT_INTO_PROJECT_PHASE_NAME_006 =
+            ("INSERT INTO organization.project_phase_name (project_id, phase_name, dis"
+                    + "play_order) VALUES (?, ?, ?)");
     public static final String PROJECT_PHASE_ORDER_SUFFIX = ") ORDER BY project_id, display_order";
     public static final String PATH_PARENT_SELECT =
             "UNION ALL SELECT ancestry.target_id, parent.id, parent.parent_id, parent.code, parent.name, ";

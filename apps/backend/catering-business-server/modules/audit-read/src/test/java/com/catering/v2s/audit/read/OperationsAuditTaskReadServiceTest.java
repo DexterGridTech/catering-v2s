@@ -20,6 +20,7 @@ import com.catering.v2s.contract.application.ContractAuditHistoryService;
 import com.catering.v2s.organization.api.OrganizationVisibilityLookup;
 import com.catering.v2s.organization.application.OrganizationAuditHistoryService;
 import com.catering.v2s.storeterminal.application.StoreTerminalAuditHistoryService;
+import com.catering.v2s.terminalbinding.api.TerminalBindingAuditReadApi;
 import com.catering.v2s.workspace.iam.application.WorkspaceIamAuditHistoryService;
 import com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts;
 import java.util.List;
@@ -28,11 +29,12 @@ import org.junit.jupiter.api.Test;
 
 class OperationsAuditTaskReadServiceTest {
     @Test
-    void dispatchesTheThirteenClosedQueriesOnlyToTheirNamedOwners() {
+    void dispatchesTheFourteenClosedQueriesOnlyToTheirNamedOwners() {
         WorkspaceIamAuditHistoryService workspaceIam = mock(WorkspaceIamAuditHistoryService.class);
         OrganizationAuditHistoryService organization = mock(OrganizationAuditHistoryService.class);
         ContractAuditHistoryService contract = mock(ContractAuditHistoryService.class);
         StoreTerminalAuditHistoryService storeTerminal = mock(StoreTerminalAuditHistoryService.class);
+        TerminalBindingAuditReadApi terminalBinding = mock(TerminalBindingAuditReadApi.class);
         WorkspaceReadAuthorizationFacts facts = mock(WorkspaceReadAuthorizationFacts.class);
         when(facts.workspaceUuid()).thenReturn(UUID.randomUUID());
         when(facts.groupWorkspaceKey()).thenReturn("gw");
@@ -40,6 +42,21 @@ class OperationsAuditTaskReadServiceTest {
         OrganizationVisibilityLookup.VisibleOrganizationFacts visibleFacts =
                 mock(OrganizationVisibilityLookup.VisibleOrganizationFacts.class);
         when(facts.visibleOrganizationFacts()).thenReturn(visibleFacts);
+        UUID visibleStoreRef = UUID.randomUUID();
+        when(visibleFacts.candidates())
+                .thenReturn(List.of(
+                        new OrganizationVisibilityLookup.VisibleDataNodeCandidate(
+                                "STORE",
+                                visibleStoreRef,
+                                "Visible store",
+                                "VISIBLE",
+                                List.of(),
+                                null,
+                                null,
+                                visibleStoreRef,
+                                null),
+                        new OrganizationVisibilityLookup.VisibleDataNodeCandidate(
+                                "REGION", UUID.randomUUID(), "Region", "REGION", List.of(), null, null, null, null)));
         AuditHistoryPage empty = new AuditHistoryPage(List.of(), 1, 20, 0);
         when(workspaceIam.readOperationsAuditProjection(any(), any(), anyLong(), anyLong()))
                 .thenReturn(empty);
@@ -49,8 +66,9 @@ class OperationsAuditTaskReadServiceTest {
                 .thenReturn(empty);
         when(storeTerminal.readOperationsAuditProjection(any(), any(), any(), anyLong(), anyLong()))
                 .thenReturn(empty);
-        OperationsAuditTaskReadService service =
-                new OperationsAuditTaskReadService(workspaceIam, organization, contract, storeTerminal);
+        when(terminalBinding.read(any(), any(), any(), anyLong(), anyLong())).thenReturn(empty);
+        OperationsAuditTaskReadService service = new OperationsAuditTaskReadService(
+                workspaceIam, organization, contract, storeTerminal, terminalBinding);
         String id = UUID.randomUUID().toString();
         List<OperationsAuditQuery> queries = List.of(
                 new OperationsAuditQuery.WorkspaceAccount(new AuditTarget("WORKSPACE_ACCOUNT", id), 1, 20),
@@ -68,7 +86,9 @@ class OperationsAuditTaskReadServiceTest {
                 new OperationsAuditQuery.StoreQrConfiguration(
                         new AuditTarget(AuditEntityTypes.STORE_QR_CONFIGURATION, id), 1, 20),
                 new OperationsAuditQuery.StoreContract(new AuditTarget("STORE_CONTRACT", id), 1, 20),
-                new OperationsAuditQuery.StoreTerminal(new AuditTarget(AuditEntityTypes.STORE_TERMINAL, id), 1, 20));
+                new OperationsAuditQuery.StoreTerminal(new AuditTarget(AuditEntityTypes.STORE_TERMINAL, id), 1, 20),
+                new OperationsAuditQuery.TerminalBinding(
+                        new AuditTarget(AuditEntityTypes.TERMINAL_BINDING, id), 1, 20));
         queries.forEach(query -> service.read(facts, query));
         AuditReadScope scope = new AuditReadScope(facts.workspaceUuid(), facts.groupWorkspaceKey());
         verify(workspaceIam)
@@ -90,11 +110,13 @@ class OperationsAuditTaskReadServiceTest {
         verify(storeTerminal)
                 .readOperationsAuditProjection(
                         eq(scope), same(visibleFacts), same(queries.get(12).target()), eq(1L), eq(20L));
-        verifyNoMoreInteractions(workspaceIam, organization, contract, storeTerminal);
+        verify(terminalBinding)
+                .read(eq(scope), eq(java.util.Set.of(visibleStoreRef)), eq(UUID.fromString(id)), eq(1L), eq(20L));
+        verifyNoMoreInteractions(workspaceIam, organization, contract, storeTerminal, terminalBinding);
     }
 
     @Test
-    void closedQueriesAcceptOnlyTheirCanonicalThirteenTargetTypes() {
+    void closedQueriesAcceptOnlyTheirCanonicalFourteenTargetTypes() {
         String id = UUID.randomUUID().toString();
         assertDoesNotThrow(
                 () -> new OperationsAuditQuery.WorkspaceAccount(new AuditTarget("WORKSPACE_ACCOUNT", id), 1, 20));
@@ -117,6 +139,8 @@ class OperationsAuditTaskReadServiceTest {
         assertDoesNotThrow(() -> new OperationsAuditQuery.StoreContract(new AuditTarget("STORE_CONTRACT", id), 1, 20));
         assertDoesNotThrow(() ->
                 new OperationsAuditQuery.StoreTerminal(new AuditTarget(AuditEntityTypes.STORE_TERMINAL, id), 1, 20));
+        assertDoesNotThrow(() -> new OperationsAuditQuery.TerminalBinding(
+                new AuditTarget(AuditEntityTypes.TERMINAL_BINDING, id), 1, 20));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new OperationsAuditQuery.WorkspaceAccount(new AuditTarget("STORE", id), 1, 20));

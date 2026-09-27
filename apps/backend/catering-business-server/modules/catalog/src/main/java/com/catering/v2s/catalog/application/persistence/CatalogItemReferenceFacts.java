@@ -99,11 +99,7 @@ public class CatalogItemReferenceFacts {
                 addRows(rows, entry.getKey(), PRODUCTION_TAG, singleton(values.productionTagRef(), "productionTagRef"));
                 addRows(rows, entry.getKey(), CATALOG_TAG, normalize(values.tagRefs(), "tagRefs"));
             }
-        if (!rows.isEmpty())
-            jdbc.batchUpdate(
-                    CatalogItemReferenceFactsSql
-                            .CATALOG_ITEM_REFERENCE_FACTS_INSERT_INTO_CATALOG_ITEM_REFERENCE_ITEM_REF_KIND_REF_ALTERNATE_A,
-                    rows);
+        if (!rows.isEmpty()) jdbc.batchUpdate(CatalogItemReferenceFactsSql.INSERT_INTO_CAT_ITEM_REF_ALT_A_001, rows);
     }
 
     public boolean referenced(String dataNodeRef, String brandRef, String kind, UUID ref) {

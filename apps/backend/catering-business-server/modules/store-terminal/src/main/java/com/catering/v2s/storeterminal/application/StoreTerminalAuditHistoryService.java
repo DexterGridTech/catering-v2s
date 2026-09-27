@@ -43,7 +43,19 @@ public class StoreTerminalAuditHistoryService {
         }
     }
 
-    public static final class TerminalNotFoundException extends RuntimeException {}
+    public static final class TerminalNotFoundException extends RuntimeException {
+        public TerminalNotFoundException() {}
 
-    public static final class TerminalAuthorizationException extends RuntimeException {}
+        public TerminalNotFoundException(Throwable cause) {
+            super("store-terminal audit target was not found", cause);
+        }
+    }
+
+    public static final class TerminalAuthorizationException extends RuntimeException {
+        public TerminalAuthorizationException() {}
+
+        public TerminalAuthorizationException(Throwable cause) {
+            super("store-terminal audit access was denied", cause);
+        }
+    }
 }

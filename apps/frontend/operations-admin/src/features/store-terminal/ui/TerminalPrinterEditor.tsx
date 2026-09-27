@@ -88,7 +88,7 @@ function updatePrinter(
   });
 }
 
-type TerminalPrinterEditorProps = {
+export type TerminalPrinterEditorProps = {
   form: FormInstance<StoreTerminalFormValues>;
   index: number;
   identity: string;

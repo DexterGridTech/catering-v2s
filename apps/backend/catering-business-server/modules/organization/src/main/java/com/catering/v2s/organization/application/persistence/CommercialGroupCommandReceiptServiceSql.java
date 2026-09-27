@@ -9,9 +9,8 @@ public final class CommercialGroupCommandReceiptServiceSql {
             "SELECT request_hash, response_json::text FROM organization.commercial_group_command_receipt WHERE ";
     public static final String COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY =
             "workspace_uuid=? AND idempotency_key=?";
-    public static final String
-            COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_UPDATE_COMMERCIAL_GROUP_COMMAND_RECEIPT_RESPONSE_JSON =
-                    "UPDATE organization.commercial_group_command_receipt SET response_json=?::jsonb WHERE ";
+    public static final String UPDATE_COMMERCIAL_GRP_CMD_RECEIPT_001 =
+            "UPDATE organization.commercial_group_command_receipt SET response_json=?::jsonb WHERE ";
     public static final String COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY_ALTERNATE_A =
             "workspace_uuid=? AND idempotency_key=?";
     public static final String COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_INSERT_INTO_COMMERCIAL_GROUP_COMMAND_RECEIPT =

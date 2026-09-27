@@ -1,0 +1,412 @@
+openapi: 3.0.3
+info:
+  title: Platform Identity Components
+  version: 0.1.0
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+paths: {}
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [accountName, password]
+      properties:
+        accountName:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: '.*\S.*'
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          writeOnly: true
+    PlatformPasswordLoginInternalRequest:
+      type: object
+      additionalProperties: false
+      required: [accountName, password, sourceAddress]
+      description: Gateway-to-IAM request. sourceAddress is resolved only from the peer socket or a configured trusted proxy chain.
+      properties:
+        accountName:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: '.*\S.*'
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          writeOnly: true
+        sourceAddress:
+          type: string
+          minLength: 1
+          maxLength: 128
+          writeOnly: true
+    PlatformSessionView:
+      type: object
+      additionalProperties: false
+      required: [sessionId, displayName, capabilities, platformAdminAccessible]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        capabilities:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: './platform-capabilities.schemas.yaml#/components/schemas/PlatformCapability'
+        platformAdminAccessible:
+          type: boolean
+          description: Gateway-derived UI admission projection. It never replaces owner-side typed authorization.
+    InternalSessionIssueResult:
+      type: object
+      additionalProperties: false
+      required: [sessionToken, session]
+      properties:
+        sessionToken:
+          type: string
+          minLength: 43
+          maxLength: 256
+        session:
+          $ref: '#/components/schemas/InternalSessionPrincipal'
+    InternalSessionPrincipal:
+      type: object
+      additionalProperties: false
+      required: [sessionId, adminUserId, displayName, capabilities]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        adminUserId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        capabilities:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: './platform-capabilities.schemas.yaml#/components/schemas/PlatformCapability'
+    InternalSessionTokenRequest:
+      type: object
+      additionalProperties: false
+      required: [sessionToken]
+      properties:
+        sessionToken:
+          type: string
+          minLength: 43
+          maxLength: 256
+          writeOnly: true
+    PlatformAdminStatus:
+      type: string
+      enum: [ACTIVE, DISABLED]
+    PlatformAdminCredentialStatus:
+      type: string
+      enum: [SET]
+    PlatformAdminSortKey:
+      type: string
+      enum: [USER_NAME, LOGIN_NAME, LAST_LOGIN_AT, UPDATED_AT]
+    PlatformAdminListItem:
+      type: object
+      additionalProperties: false
+      required: [id, userName, loginName, builtIn, status, updatedAt, version]
+      properties:
+        id:
+          type: string
+          format: uuid
+        userName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        loginName:
+          type: string
+          minLength: 1
+          maxLength: 64
+        builtIn:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/PlatformAdminStatus'
+        lastLoginAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+          nullable: true
+        updatedAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    PlatformAdminPage:
+      type: object
+      additionalProperties: false
+      required: [items, page, pageSize, total, sortKey, sortDirection]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformAdminListItem'
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+        sortKey:
+          $ref: '#/components/schemas/PlatformAdminSortKey'
+        sortDirection:
+          $ref: './platform-workspace.schemas.yaml#/components/schemas/SortDirection'
+    PlatformAdminDetail:
+      type: object
+      additionalProperties: false
+      required: [id, userName, loginName, builtIn, status, credentialStatus, createdAt, updatedAt, version, auditSummary]
+      properties:
+        id:
+          type: string
+          format: uuid
+        userName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        loginName:
+          type: string
+          minLength: 1
+          maxLength: 64
+        builtIn:
+          type: boolean
+        mobile:
+          type: string
+          maxLength: 32
+          nullable: true
+          description: Governance-authorized edit prefill only; the detail surface must render maskedMobile instead.
+        maskedMobile:
+          type: string
+          maxLength: 32
+          nullable: true
+        status:
+          $ref: '#/components/schemas/PlatformAdminStatus'
+        credentialStatus:
+          $ref: '#/components/schemas/PlatformAdminCredentialStatus'
+        lastLoginAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+          nullable: true
+        createdAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        updatedAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        auditSummary:
+          type: string
+          minLength: 1
+          maxLength: 512
+    PlatformAdminCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [loginName, userName, password, idempotencyKey]
+      properties:
+        loginName:
+          type: string
+          minLength: 3
+          maxLength: 64
+          pattern: '^[A-Za-z0-9._-]+$'
+        userName:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: '.*\S.*'
+        mobile:
+          type: string
+          maxLength: 32
+          nullable: true
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          writeOnly: true
+        idempotencyKey:
+          type: string
+          minLength: 16
+          maxLength: 128
+    PlatformAdminActorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [actorId, audience, operation, issuedAt, expiresAt, payloadDigest, signature]
+      properties:
+        actorId:
+          type: string
+          format: uuid
+        audience:
+          type: string
+          enum: [platform-iam-governance]
+        operation:
+          type: string
+          enum: [READ_PAGE, READ_DETAIL, CREATE, UPDATE_PROFILE, TRANSITION_STATUS, RESET_CREDENTIAL]
+        issuedAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        expiresAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        payloadDigest:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        signature:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+    PlatformAdminPageQueryRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        userName: {type: string, maxLength: 128, nullable: true}
+        loginName: {type: string, maxLength: 64, nullable: true}
+        status:
+          $ref: '#/components/schemas/PlatformAdminStatus'
+        page: {type: integer, minimum: 1, nullable: true}
+        pageSize: {type: integer, minimum: 1, maximum: 100, nullable: true}
+        sortKey:
+          $ref: '#/components/schemas/PlatformAdminSortKey'
+        sortDirection:
+          $ref: './platform-workspace.schemas.yaml#/components/schemas/SortDirection'
+    PlatformAdminPageQueryCommand:
+      type: object
+      additionalProperties: false
+      required: [request]
+      properties:
+        request:
+          $ref: '#/components/schemas/PlatformAdminPageQueryRequest'
+        envelope:
+          $ref: '#/components/schemas/PlatformAdminActorEnvelope'
+    PlatformAdminDetailReadCommand:
+      type: object
+      additionalProperties: false
+      properties:
+        envelope:
+          $ref: '#/components/schemas/PlatformAdminActorEnvelope'
+    PlatformAdminCreateCommand:
+      type: object
+      additionalProperties: false
+      required: [request]
+      properties:
+        request:
+          $ref: '#/components/schemas/PlatformAdminCreateRequest'
+        envelope:
+          $ref: '#/components/schemas/PlatformAdminActorEnvelope'
+    PlatformAdminProfileUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [userName, expectedVersion, idempotencyKey]
+      properties:
+        userName:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: '.*\S.*'
+        mobile:
+          type: string
+          maxLength: 32
+          nullable: true
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        idempotencyKey:
+          type: string
+          minLength: 16
+          maxLength: 128
+    PlatformAdminProfileUpdateCommand:
+      type: object
+      additionalProperties: false
+      required: [request]
+      properties:
+        request:
+          $ref: '#/components/schemas/PlatformAdminProfileUpdateRequest'
+        envelope:
+          $ref: '#/components/schemas/PlatformAdminActorEnvelope'
+    PlatformAdminStatusTransitionRequest:
+      type: object
+      additionalProperties: false
+      required: [targetStatus, expectedVersion, idempotencyKey]
+      properties:
+        targetStatus:
+          $ref: '#/components/schemas/PlatformAdminStatus'
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        idempotencyKey:
+          type: string
+          minLength: 16
+          maxLength: 128
+    PlatformAdminStatusTransitionCommand:
+      type: object
+      additionalProperties: false
+      required: [request]
+      properties:
+        request:
+          $ref: '#/components/schemas/PlatformAdminStatusTransitionRequest'
+        envelope:
+          $ref: '#/components/schemas/PlatformAdminActorEnvelope'
+    PlatformAdminCredentialResetRequest:
+      type: object
+      additionalProperties: false
+      required: [password, expectedVersion, idempotencyKey]
+      properties:
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          writeOnly: true
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        idempotencyKey:
+          type: string
+          minLength: 16
+          maxLength: 128
+    PlatformAdminCredentialResetCommand:
+      type: object
+      additionalProperties: false
+      required: [request]
+      properties:
+        request:
+          $ref: '#/components/schemas/PlatformAdminCredentialResetRequest'
+        envelope:
+          $ref: '#/components/schemas/PlatformAdminActorEnvelope'
+    PlatformCurrentPasswordChangeRequest:
+      type: object
+      additionalProperties: false
+      required: [currentPassword, newPassword, expectedSessionVersion]
+      properties:
+        currentPassword: {type: string, minLength: 1, maxLength: 128, writeOnly: true}
+        newPassword: {type: string, minLength: 8, maxLength: 128, writeOnly: true}
+        expectedSessionVersion: {type: integer, format: int64, minimum: 0}
+    PlatformCurrentPasswordChangeResult:
+      type: object
+      additionalProperties: false
+      required: [status, sessionsRevoked, reauthenticationRequired]
+      properties:
+        status: {type: string, enum: [COMPLETED]}
+        sessionsRevoked: {type: boolean}
+        reauthenticationRequired: {type: boolean}
+    InternalPlatformCurrentPasswordChangeRequest:
+      type: object
+      additionalProperties: false
+      required: [sessionToken, request]
+      properties:
+        sessionToken: {type: string, minLength: 43, maxLength: 256, writeOnly: true}
+        request: {$ref: '#/components/schemas/PlatformCurrentPasswordChangeRequest'}

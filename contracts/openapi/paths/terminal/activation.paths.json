@@ -1,0 +1,190 @@
+{
+  "paths": {
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation": {
+      "post": {
+        "operationId": "activateTerminal",
+        "tags": [
+          "terminal-binding"
+        ],
+        "x-consumer-faces": [
+          "terminal"
+        ],
+        "x-owner-module": "terminal-binding",
+        "x-scenario-ids": [
+          "R5-STORE-TERMINAL"
+        ],
+        "x-page-key": null,
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-safe-retryable": true,
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "STORE_TERMINAL_DEVICE_TYPE_MISMATCH",
+          "STORE_TERMINAL_DISABLED",
+          "STORE_TERMINAL_STORE_VOIDED",
+          "STORE_TERMINAL_VOIDED_IMMUTABLE",
+          "TERMINAL_BINDING_ACTIVATION_EXPIRED",
+          "TERMINAL_BINDING_ALREADY_BOUND"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/terminal-binding/terminal-binding.schemas.json#/components/schemas/TerminalActivationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-authorization-mode": "NONE",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/terminal-binding/terminal-binding.schemas.json#/components/schemas/TerminalActivationRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel": {
+      "post": {
+        "operationId": "cancelTerminalActivation",
+        "tags": [
+          "terminal-binding"
+        ],
+        "x-consumer-faces": [
+          "terminal"
+        ],
+        "x-owner-module": "terminal-binding",
+        "x-scenario-ids": [
+          "R5-STORE-TERMINAL"
+        ],
+        "x-page-key": null,
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-safe-retryable": true,
+        "x-error-codes": [
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "TERMINAL_BINDING_CREDENTIAL_INVALID"
+        ],
+        "security": [
+          {
+            "terminalCredential": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "terminalRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/terminal-binding/terminal-binding.schemas.json#/components/schemas/TerminalActivationCancellationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-authorization-mode": "TERMINAL_CREDENTIAL",
+        "x-required-terminal-credential": "REQ_CANCEL_TERMINAL_ACTIVATION",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/terminal-binding/terminal-binding.schemas.json#/components/schemas/TerminalActivationCancellationRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

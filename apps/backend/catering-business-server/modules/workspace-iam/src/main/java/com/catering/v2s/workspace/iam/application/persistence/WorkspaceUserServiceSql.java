@@ -46,9 +46,8 @@ public final class WorkspaceUserServiceSql {
     public static final String WORKSPACE_USER_SERVICE_CONDITION_ASSIGNMENT_ROLE_ID =
             "AND (CAST(? AS uuid) IS NULL OR assignment.role_id=?)))";
     public static final String WORKSPACE_USER_SERVICE_SET = "SET";
-    public static final String
-            WORKSPACE_USER_SERVICE_SELECT_DISPLAY_NAME_MOBILE_NORMALIZED_LOGIN_NAME_NORMALIZED_STATUS =
-                    "SELECT id, display_name, mobile_normalized, login_name_normalized, status, version, ";
+    public static final String SELECT_DISP_NAME_MOBILE_NORMALIZED_001 =
+            "SELECT id, display_name, mobile_normalized, login_name_normalized, status, version, ";
     public static final String WORKSPACE_USER_SERVICE_WORKSPACE_ACCOUNT =
             "created_at_epoch_millis, updated_at_epoch_millis FROM workspace_iam.workspace_account WHERE ";
     public static final String WORKSPACE_USER_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
@@ -77,9 +76,9 @@ public final class WorkspaceUserServiceSql {
     public static final String WORKSPACE_USER_SERVICE_WORKSPACE_AUTHENTICATION_HISTORY_ALTERNATE_A =
             "workspace_iam.workspace_authentication_history WHERE workspace_uuid=? AND group_workspace_key=? ";
     public static final String WORKSPACE_USER_SERVICE_CONDITION_ACCOUNT_ID_ALTERNATE_A = "AND account_id IN (";
-    public static final String
-            WORKSPACE_USER_SERVICE_SELECT_INVITATION_MOBILE_NORMALIZED_STATUS_VERSION_EXPIRES_AT_EPOCH_MILLIS =
-                    "SELECT mobile_normalized, id, status, version, expires_at_epoch_millis FROM workspace_iam.invitation ";
+    public static final String SELECT_INVITE_MOBILE_NORMALIZED_STATUS_002 =
+            ("SELECT mobile_normalized, id, status, version, expires_at_epoch_millis F"
+                    + "ROM workspace_iam.invitation ");
     public static final String WORKSPACE_USER_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED =
             "WHERE workspace_uuid=? AND group_workspace_key=? AND mobile_normalized IN (";
     public static final String WORKSPACE_USER_SERVICE_SELECT_WORKSPACE_CREDENTIAL_ACCOUNT_ID_PASSWORD_CHANGE_REQUIRED =

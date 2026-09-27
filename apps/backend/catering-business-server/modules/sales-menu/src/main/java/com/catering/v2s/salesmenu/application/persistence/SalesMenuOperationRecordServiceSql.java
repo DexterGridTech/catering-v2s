@@ -6,16 +6,13 @@ package com.catering.v2s.salesmenu.application.persistence;
 public final class SalesMenuOperationRecordServiceSql {
     public static final String SALES_MENU_OPERATION_RECORD_SERVICE_CONDITION_OCCURRED_AT_EPOCH_MILLIS =
             " AND (occurred_at_epoch_millis < ? OR ";
-    public static final String SALES_MENU_OPERATION_RECORD_SERVICE_OPEN_PAREN_OCCURRED_AT_EPOCH_MILLIS_RECORD_REF =
-            "(occurred_at_epoch_millis = ? AND record_ref < ?))";
+    public static final String OPEN_PAREN_OCCURRED_AT_EPOCH_001 = "(occurred_at_epoch_millis = ? AND record_ref < ?))";
     public static final String SALES_MENU_OPERATION_RECORD_SERVICE_SELECT_RECORD_REF =
             "SELECT record_ref,occurred_at_epoch_millis,operation_kind,collection_ref,target_ref,";
     public static final String SALES_MENU_OPERATION_RECORD_SERVICE_TARGET_KIND = "target_kind,";
     public static final String SALES_MENU_OPERATION_RECORD_SERVICE_TARGET_DISPLAY_SNAPSHOT =
             "target_display_snapshot,result,failure_code,actor_display_snapshot ";
-    public static final String
-            SALES_MENU_OPERATION_RECORD_SERVICE_FROM_CLAUSE_SALES_OPERATION_RECORD_FROM_SALES_MENU_SALES_OPERAT =
-                    "FROM sales_menu.sales_operation_record ";
+    public static final String FROM_CLAUSE_SALES_OP_RECORD_002 = "FROM sales_menu.sales_operation_record ";
     public static final String SALES_MENU_OPERATION_RECORD_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_REF =
             "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? ";
     public static final String SALES_MENU_OPERATION_RECORD_SERVICE_CONDITION_COLLECTION_REF_CHANNEL_REF =

@@ -1,0 +1,401 @@
+components:
+  schemas:
+    GroupWorkspaceStatus:
+      type: string
+      enum: [ENABLED, DISABLED]
+    GroupWorkspaceSortKey:
+      type: string
+      enum: [NAME, WORKSPACE_KEY, UPDATED_AT]
+    SortDirection:
+      type: string
+      enum: [ASC, DESC]
+    GroupWorkspaceListItem:
+      type: object
+      required: [workspaceKey, name, status, updatedAt]
+      properties:
+        workspaceKey:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        operationsTitle:
+          type: string
+          nullable: true
+          maxLength: 120
+        logoAssetRef:
+          type: string
+          nullable: true
+          maxLength: 128
+        logoUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Gateway-approved display URL for the bound Logo asset; clients must not derive it from logoAssetRef.
+        commercialGroup:
+          $ref: './commercial-group.schemas.yaml#/components/schemas/CommercialGroupRootSummary'
+        status:
+          $ref: '#/components/schemas/GroupWorkspaceStatus'
+        updatedAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+    GroupWorkspacePage:
+      type: object
+      required: [items, page, pageSize, total, sortKey, sortDirection]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupWorkspaceListItem'
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+        sortKey:
+          $ref: '#/components/schemas/GroupWorkspaceSortKey'
+        sortDirection:
+          $ref: '#/components/schemas/SortDirection'
+    GroupWorkspaceCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, name, operationsTitle, logoAssetRef, logoBindGrant, idempotencyKey]
+      properties:
+        workspaceKey:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: '^[A-Za-z0-9][A-Za-z0-9-]{0,63}$'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        operationsTitle:
+          type: string
+          minLength: 1
+          maxLength: 120
+        logoAssetRef:
+          type: string
+          minLength: 32
+          maxLength: 128
+        logoBindGrant:
+          type: string
+          minLength: 32
+          maxLength: 256
+        notes:
+          type: string
+          maxLength: 500
+        idempotencyKey:
+          type: string
+          minLength: 16
+          maxLength: 128
+    GroupWorkspaceCreateResult:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, name, operationsTitle, logoAssetRef, status, version, createdAt, updatedAt]
+      properties:
+        workspaceKey:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        operationsTitle:
+          type: string
+          minLength: 1
+          maxLength: 120
+        logoAssetRef:
+          type: string
+          minLength: 32
+          maxLength: 128
+        notes:
+          type: string
+          nullable: true
+          maxLength: 500
+        status:
+          $ref: '#/components/schemas/GroupWorkspaceStatus'
+        statusChangedAt:
+          description: UTC epoch milliseconds when the current status was established. Null for legacy workspaces without a provable status-history record.
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        updatedAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+    PlatformWorkspaceCreateOwnerRequest:
+      description: Gateway-normalized owner command. Browser asset bind grants never cross the gateway-to-owner boundary.
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, name, operationsTitle, logoAssetRef, idempotencyKey]
+      properties:
+        workspaceKey:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: '^[A-Za-z0-9][A-Za-z0-9-]{0,63}$'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        operationsTitle:
+          type: string
+          minLength: 1
+          maxLength: 120
+        logoAssetRef:
+          type: string
+          minLength: 32
+          maxLength: 128
+        notes:
+          type: string
+          nullable: true
+          maxLength: 500
+        idempotencyKey:
+          type: string
+          minLength: 16
+          maxLength: 128
+    GroupWorkspaceLogoIntent:
+      type: string
+      enum: [KEEP, REPLACE, REMOVE]
+    GroupWorkspaceDisplayUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, operationsTitle, logoIntent, expectedVersion, idempotencyKey]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        operationsTitle:
+          type: string
+          minLength: 1
+          maxLength: 120
+        notes:
+          type: string
+          nullable: true
+          maxLength: 500
+        logoIntent:
+          $ref: '#/components/schemas/GroupWorkspaceLogoIntent'
+        logoAssetRef:
+          type: string
+          nullable: true
+          minLength: 32
+          maxLength: 128
+        logoBindGrant:
+          type: string
+          nullable: true
+          minLength: 32
+          maxLength: 256
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        idempotencyKey:
+          type: string
+          minLength: 16
+          maxLength: 128
+    PlatformWorkspaceDisplayUpdateOwnerRequest:
+      description: Gateway-normalized owner command. Browser asset bind grants never cross the gateway-to-owner boundary.
+      type: object
+      additionalProperties: false
+      required: [name, operationsTitle, logoIntent, expectedVersion, idempotencyKey]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        operationsTitle:
+          type: string
+          minLength: 1
+          maxLength: 120
+        logoIntent:
+          $ref: '#/components/schemas/GroupWorkspaceLogoIntent'
+        logoAssetRef:
+          type: string
+          nullable: true
+          minLength: 32
+          maxLength: 128
+        notes:
+          type: string
+          nullable: true
+          maxLength: 500
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        idempotencyKey:
+          type: string
+          minLength: 16
+          maxLength: 128
+    GroupWorkspaceStatusTransitionRequest:
+      type: object
+      additionalProperties: false
+      required: [targetStatus, expectedVersion, idempotencyKey]
+      properties:
+        targetStatus:
+          $ref: '#/components/schemas/GroupWorkspaceStatus'
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        idempotencyKey:
+          type: string
+          minLength: 16
+          maxLength: 128
+    PlatformWorkspaceActorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [actorId, audience, operation, issuedAt, expiresAt, payloadDigest, signature]
+      properties:
+        actorId:
+          type: string
+          format: uuid
+        audience:
+          type: string
+          enum: [platform-workspace]
+        operation:
+          type: string
+          enum: [CREATE, UPDATE_DISPLAY, TRANSITION_STATUS, INITIALIZE_COMMERCIAL_GROUP]
+        issuedAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        expiresAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        payloadDigest:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        signature:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+    PlatformWorkspaceCreateCommand:
+      type: object
+      additionalProperties: false
+      required: [request, envelope, assetClaimProof]
+      properties:
+        request:
+          $ref: '#/components/schemas/PlatformWorkspaceCreateOwnerRequest'
+        envelope:
+          $ref: '#/components/schemas/PlatformWorkspaceActorEnvelope'
+        assetClaimProof:
+          $ref: './platform-asset.schemas.yaml#/components/schemas/PlatformAssetClaimProof'
+    PlatformWorkspaceDisplayUpdateCommand:
+      type: object
+      additionalProperties: false
+      required: [request, envelope]
+      properties:
+        request:
+          $ref: '#/components/schemas/PlatformWorkspaceDisplayUpdateOwnerRequest'
+        envelope:
+          $ref: '#/components/schemas/PlatformWorkspaceActorEnvelope'
+        assetClaimProof:
+          $ref: './platform-asset.schemas.yaml#/components/schemas/PlatformAssetClaimProof'
+    PlatformWorkspaceStatusCommand:
+      type: object
+      additionalProperties: false
+      required: [request, envelope]
+      properties:
+        request:
+          $ref: '#/components/schemas/GroupWorkspaceStatusTransitionRequest'
+        envelope:
+          $ref: '#/components/schemas/PlatformWorkspaceActorEnvelope'
+    GroupWorkspaceDetail:
+      type: object
+      additionalProperties: false
+      required: [workspaceKey, name, operationsTitle, status, version, createdAt, updatedAt]
+      properties:
+        workspaceKey:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        operationsTitle:
+          type: string
+          minLength: 1
+          maxLength: 120
+        logoAssetRef:
+          type: string
+          nullable: true
+          maxLength: 128
+        logoUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Gateway-approved display URL for the bound Logo asset; clients must not derive it from logoAssetRef.
+        notes:
+          type: string
+          nullable: true
+          maxLength: 500
+        status:
+          $ref: '#/components/schemas/GroupWorkspaceStatus'
+        statusChangedAt:
+          description: UTC epoch milliseconds when the current status was established. Null for legacy workspaces without a provable status-history record.
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        updatedAt:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        commercialGroup:
+          $ref: './commercial-group.schemas.yaml#/components/schemas/CommercialGroupRootSummary'
+        workspaceSourceStatus:
+          type: string
+          enum: [AVAILABLE, UNAVAILABLE]
+          description: Availability of the platform-workspace facts shown in the workspace overview.
+        workspaceAsOf:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        workspaceUnresolved:
+          type: string
+          nullable: true
+          maxLength: 160
+        initializationSourceStatus:
+          type: string
+          enum: [AVAILABLE, UNAVAILABLE]
+          description: Availability of the organization-owned initialization facts shown in the workspace overview.
+        initializationAsOf:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        initializationUnresolved:
+          type: string
+          nullable: true
+          maxLength: 160
+        accountAccessSourceStatus:
+          type: string
+          enum: [AVAILABLE, UNAVAILABLE]
+          description: Availability of the workspace IAM account and role counts shown in the workspace overview.
+        accountAccessAsOf:
+          $ref: './platform-time.schemas.yaml#/components/schemas/EpochMillis'
+        accountAccessUnresolved:
+          type: string
+          nullable: true
+          maxLength: 160
+        accountCount:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+        roleCount:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true

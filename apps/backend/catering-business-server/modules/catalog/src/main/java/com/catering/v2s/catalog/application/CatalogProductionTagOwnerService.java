@@ -295,7 +295,10 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
                     persistence.createTypedTag(scope, brand, tagRef, code, name, key, operation, requestHash);
             return typedReceiptReadback(row, operation, requestHash);
         } catch (DuplicateKeyException failure) {
-            throw new CatalogProductionTagOwnerApi.Problem("DUPLICATE_CODE", 409, "生产标签编码已存在", failure);
+            // spotless:off
+            throw new CatalogProductionTagOwnerApi.Problem("DUPLICATE_CODE", 409, "生产标签编码已存在",
+                failure);
+            // spotless:on
         }
     }
 
@@ -366,7 +369,10 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
             TypedMutationRow row, String operation, String requestHash) {
         if (row.replayResponse() != null
                 && (!operation.equals(row.receiptOperation()) || !requestHash.equals(row.receiptHash()))) {
-            throw new CatalogProductionTagOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
+            // spotless:off
+            throw new CatalogProductionTagOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409,
+                "幂等键已绑定其他请求");
+            // spotless:on
         }
         String response = row.replayResponse() == null ? row.writtenResponse() : row.replayResponse();
         if (response == null) throw new IllegalStateException("production tag receipt response is missing");
@@ -1105,7 +1111,10 @@ public class CatalogProductionTagOwnerService implements CatalogProductionTagOwn
         ReceiptRow row = persistence.findReceiptReplay(scope, key);
         if (row == null) return null;
         if (!row.operation().equals(operation) || !row.hash().equals(hash(request)))
-            throw new CatalogProductionTagOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
+            // spotless:off
+            throw new CatalogProductionTagOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409,
+                "幂等键已绑定其他请求");
+            // spotless:on
         return json(row.response());
     }
 

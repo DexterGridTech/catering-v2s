@@ -19,6 +19,11 @@ import {
 import path from 'node:path';
 import {resolveTrustedRemoteHost} from '../dev/r5-remote-host-trust.mjs';
 import {
+  TDS_CAPACITY_CONFIG_RELATIVE_PATH,
+  loadTdsCapacityConfiguration,
+  validateTdsCapacityConfiguration,
+} from '../env/tds-capacity-configuration.mjs';
+import {
   resolveGradleHome as resolveSharedGradleHome,
   validateGradleHome as validateSharedGradleHome,
 } from '../lib/gradle-runtime.mjs';
@@ -70,6 +75,20 @@ const compact = (value, limit = 240) =>
     .replace(/\s+/g, '_')
     .slice(0, limit);
 const script = (...lines) => lines.join('\n');
+export const terminalWireEvidenceAggregationScript = () =>
+  script(
+    'wire_log_directory="$root/backend-acceptance/tds"',
+    'wire_log_archive="$results/terminal-wire-client.log"',
+    'if test -f "$wire_log_directory/terminal-wire-client.log"; then cp -- "$wire_log_directory/terminal-wire-client.log" "$wire_log_archive" || exit 1; else : > "$wire_log_archive" || exit 1; fi',
+    'for wire_log in "$wire_log_directory"/terminal-wire-*.log; do',
+    '  test -f "$wire_log" || continue',
+    '  if test "$wire_log" = "$wire_log_directory/terminal-wire-client.log"; then continue; fi',
+    '  printf "\\n===== %s =====\\n" "${wire_log##*/}" >> "$wire_log_archive"',
+    '  cat -- "$wire_log" >> "$wire_log_archive" || exit 1',
+    'done',
+  );
+export const resolveTdsCapacityConfiguration = (configuration = loadTdsCapacityConfiguration()) =>
+  validateTdsCapacityConfiguration(configuration);
 const runnerEvent = (event, fields = {}) =>
   process.stdout.write(
     `R5_TESTCONTAINERS_${event} ${Object.entries(fields)
@@ -83,12 +102,16 @@ const ARCHIVED_EVIDENCE_ARTIFACTS = Object.freeze([
   'backend-acceptance-result.jsonl',
   'db-operation-events.jsonl',
   'statement-dictionary.json',
+  'tds-contract-result.jsonl',
+  'tds-process.log',
+  'tds-process-evidence.json',
+  'terminal-wire-client.log',
 ]);
 
 /**
  * A production mutation is applied only after the source has been copied to the
- * run-owned remote staging root.  The specification is intentionally closed:
- * this harness has one proof mutation, not a caller-controlled source editor.
+ * run-owned remote staging root. The specifications are intentionally closed:
+ * callers cannot choose a file or source replacement.
  */
 export const PRODUCTION_MUTATION_SPECS = Object.freeze({
   'extension-definition-second-field-status': Object.freeze({
@@ -105,6 +128,23 @@ export const PRODUCTION_MUTATION_SPECS = Object.freeze({
     to: 'value.displayOrder() == 1 ? "ENABLED" : value.status()',
     replaceCount: 1,
     expectedSignal: 'HTTP=200;CONTRACT=PASS;BUSINESS=FAIL;failureCategory=BUSINESS_ORACLE',
+  }),
+  'tds-registration-pending-generation-check': Object.freeze({
+    id: 'tds-registration-pending-generation-check',
+    evidenceType: 'TDS_CONTRACT',
+    operationId: 'cancelTerminalActivation',
+    scenarioId: 'terminal.connection.vs10.device-cancel',
+    scenarioOperation: 'storeTerminalActivationBusinessPrecedence',
+    module: 'TERMINAL_DATA_SERVER',
+    pointer: 'TDS_SESSION_REGISTRATION_GENERATION_REVOCATION',
+    file: 'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/session/TdsTerminalSessionActors.java',
+    symbol: 'generationRevoked',
+    anchor: 'private boolean generationRevoked(long generation)',
+    from: 'return generation <= revokedThroughGeneration;',
+    to: 'return false;',
+    replaceCount: 1,
+    expectedSignal:
+      'HTTP=200;BUSINESS=PASS;TDS_CONTRACT=FAIL;failureCategory=TDS_VS10_REGISTRATION_RACE_RED_CONTROL',
   }),
 });
 
@@ -231,9 +271,15 @@ export const backendAcceptanceEnvironment = (
   verificationMode = 'ACCEPTANCE',
   batchCardinality = null,
   extensionScaleProof = false,
+  tdsCapacity = null,
+  terminalWireNodePath = null,
+  topologyPreflight = false,
 ) => {
   if (extensionScaleProof && runId === null) throw new Error('EXTENSION_SCALE_PROOF_REQUIRES_BACKEND_ACCEPTANCE');
   const effectiveOperation = canonicalBackendAcceptanceOperation(operation, extensionScaleProof);
+  if (topologyPreflight && (runId === null || effectiveOperation === 'all' || verificationMode !== 'ACCEPTANCE')) {
+    throw new Error('BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT_ARGUMENT_INVALID');
+  }
   if (runId === null) return effectiveOperation === 'all' ? [] : ['export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY'];
   return [
         'export V2S_RUNTIME_ENVIRONMENT=non-production',
@@ -243,11 +289,23 @@ export const backendAcceptanceEnvironment = (
         'export V2S_BACKEND_ACCEPTANCE_SECRET="$(od -An -N32 -tx1 /dev/urandom | tr -d \' \\n\')"',
         'export V2S_BACKEND_ACCEPTANCE_EVENTS="$root/results/http-request-events.jsonl"',
         'export V2S_BACKEND_ACCEPTANCE_RESULT="$root/results/backend-acceptance-result.jsonl"',
+        'export V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_RESULT="$root/results/tds-contract-result.jsonl"',
+        'export V2S_BACKEND_ACCEPTANCE_RUN_DIRECTORY="$root/backend-acceptance"',
         'export V2S_DB_OPERATIONS_EVENTS="$root/results/db-operation-events.jsonl"',
         'export V2S_DB_OPERATIONS_HMAC_KEY="$(od -An -N32 -tx1 /dev/urandom | tr -d \' \\n\')"',
         'export V2S_DB_STATEMENT_DICTIONARY="$root/results/statement-dictionary.json"',
         `export V2S_BACKEND_ACCEPTANCE_OPERATION=${quote(effectiveOperation)}`,
+        `export V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT=${topologyPreflight ? 'true' : 'false'}`,
         `export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=${quote(verificationMode)}`,
+        ...(terminalWireNodePath === null
+          ? []
+          : [`export V2S_TERMINAL_WIRE_NODE_BINARY=${quote(terminalWireNodePath)}`]),
+        ...(tdsCapacity === null
+          ? []
+          : [
+              `export V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS=${quote(tdsCapacity.maxUnauthenticatedConnections)}`,
+              `export V2S_TDS_MAX_TRACKED_SESSIONS=${quote(tdsCapacity.maxTrackedSessions)}`,
+            ]),
         ...(effectiveOperation === 'all' ? [] : ['export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY']),
         ...(batchCardinality === null || batchCardinality === undefined || batchCardinality === ''
           ? []
@@ -451,14 +509,172 @@ export const parseBackendAcceptanceResult = contents => {
   return {rows: scenarios, discovery: discoveryRow, summary};
 };
 
+export const parseTdsContractResult = contents => {
+  const rows = String(contents ?? '')
+    .trim()
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map(row => {
+      try {
+        return JSON.parse(row);
+      } catch {
+        throw new Error('TDS_CONTRACT_RESULT_INVALID_JSON');
+      }
+    });
+  if (rows.length === 0) throw new Error('TDS_CONTRACT_RESULT_REQUIRED');
+  const seen = new Set();
+  for (const row of rows) {
+    if (
+      row?.type !== 'transport-contract' ||
+      typeof row.operation !== 'string' ||
+      row.operation.trim() === '' ||
+      row.module !== 'TERMINAL_DATA_SERVER' ||
+      !['PASS', 'FAIL'].includes(row.contract) ||
+      !['PASS', 'FAIL'].includes(row.status) ||
+      typeof row.runId !== 'string' ||
+      row.runId.trim() === '' ||
+      seen.has(row.operation)
+    ) {
+      throw new Error('TDS_CONTRACT_RESULT_INVALID');
+    }
+    seen.add(row.operation);
+  }
+  const directFailures = rows.filter(row => row.contract === 'FAIL' || row.status === 'FAIL').length;
+  return Object.freeze({
+    rows: Object.freeze(rows),
+    summary: Object.freeze({discovered: rows.length, contractPass: rows.length - directFailures, directFailures}),
+  });
+};
+
+export const parseTdsProcessEvidence = ({processEvidence, processLog, expectedRunId}) => {
+  let evidence;
+  try {
+    evidence = JSON.parse(String(processEvidence ?? ''));
+  } catch {
+    throw new Error('TDS_PROCESS_EVIDENCE_INVALID_JSON');
+  }
+  const log = String(processLog ?? '');
+  if (
+    evidence?.schemaVersion !== 1 ||
+    evidence?.kind !== 'backend-acceptance-tds-process' ||
+    evidence?.runId !== expectedRunId ||
+    evidence?.phase !== 'STOPPED' ||
+    !Number.isInteger(evidence?.processId) ||
+    evidence.processId <= 0 ||
+    typeof evidence?.processStartTicks !== 'string' ||
+    !/^\d+$/.test(evidence.processStartTicks) ||
+    evidence?.applicationType !== 'REACTIVE' ||
+    !Number.isInteger(evidence?.port) ||
+    evidence.port < 1 ||
+    evidence.port > 65535 ||
+    !/^[a-f0-9]{64}$/.test(evidence?.runtimeClasspathReportSha256 ?? '') ||
+    !/^[a-f0-9]{64}$/.test(evidence?.bootJarSha256 ?? '') ||
+    !Number.isInteger(evidence?.rssBudgetMiB) ||
+    evidence.rssBudgetMiB < 1 ||
+    !Number.isInteger(evidence?.rssAtReadyKiB) ||
+    evidence.rssAtReadyKiB < 1 ||
+    evidence.rssAtReadyKiB > evidence.rssBudgetMiB * 1024 ||
+    !Number.isInteger(evidence?.rssBeforeStopKiB) ||
+    evidence.rssBeforeStopKiB < 1 ||
+    evidence.rssBeforeStopKiB > evidence.rssBudgetMiB * 1024 ||
+    evidence?.cleanupStatus !== 'PASS' ||
+    !log.includes(`Netty started on port ${evidence.port}`) ||
+    !log.includes('event=tds_listener_ready')
+  ) {
+    throw new Error('TDS_PROCESS_EVIDENCE_INVALID');
+  }
+  return Object.freeze({
+    status: 'PASS',
+    processId: evidence.processId,
+    processStartTicks: evidence.processStartTicks,
+    startedAt: evidence.processStartedAt,
+    exitCode: evidence.exitCode,
+    applicationType: evidence.applicationType,
+    port: evidence.port,
+    runtimeClasspathReportSha256: evidence.runtimeClasspathReportSha256,
+    bootJarSha256: evidence.bootJarSha256,
+    rssBudgetMiB: evidence.rssBudgetMiB,
+    rssAtReadyKiB: evidence.rssAtReadyKiB,
+    rssBeforeStopKiB: evidence.rssBeforeStopKiB,
+    logPath: evidence.logPath,
+    cleanup: evidence.cleanupStatus,
+  });
+};
+
 /**
  * Confirms the one allowed production mutation was observed at the real HTTP
  * boundary.  A failing BUSINESS assertion is the expected red result here;
  * it is never converted into a normal acceptance PASS.
  */
-export function verifyProductionMutationOutcome({mutation, backendAcceptanceResult, httpEvents}) {
+export function verifyProductionMutationOutcome({
+  mutation,
+  backendAcceptanceResult,
+  tdsContractResult = null,
+  httpEvents,
+  runId = null,
+}) {
   if (!mutation || !backendAcceptanceResult || !Array.isArray(httpEvents)) {
     throw new Error('PRODUCTION_MUTATION_OUTCOME_INPUT_INVALID');
+  }
+  if (mutation.evidenceType === 'TDS_CONTRACT') {
+    if (!tdsContractResult || !Array.isArray(tdsContractResult.rows) || typeof runId !== 'string') {
+      throw new Error('PRODUCTION_MUTATION_TDS_CONTRACT_INPUT_INVALID');
+    }
+    if (
+      backendAcceptanceResult.discovery.selected !== 1 ||
+      backendAcceptanceResult.discovery.operation !== mutation.scenarioOperation ||
+      backendAcceptanceResult.rows.length !== 1 ||
+      backendAcceptanceResult.summary.directFailures !== 0
+    ) {
+      throw new Error('PRODUCTION_MUTATION_BUSINESS_SCENARIO_INVALID');
+    }
+    const [businessRow] = backendAcceptanceResult.rows;
+    if (
+      businessRow.contract !== 'PASS' ||
+      businessRow.business !== 'PASS' ||
+      businessRow.businessMode !== 'REAL' ||
+      businessRow.status !== 'PASS'
+    ) {
+      throw new Error('PRODUCTION_MUTATION_BUSINESS_SIGNAL_INVALID');
+    }
+    const raceRows = tdsContractResult.rows.filter(row => row.operation === mutation.scenarioId);
+    if (raceRows.length !== 1 || raceRows[0].runId !== runId) {
+      throw new Error('PRODUCTION_MUTATION_TDS_RACE_SCENARIO_INVALID');
+    }
+    const [raceRow] = raceRows;
+    if (
+      raceRow.module !== mutation.module ||
+      raceRow.contract !== 'FAIL' ||
+      raceRow.status !== 'FAIL' ||
+      raceRow.failureCategory !== 'TDS_VS10_REGISTRATION_RACE_RED_CONTROL' ||
+      raceRow.clientFailureCategory !== 'TERMINAL_WIRE_SOCKET_READ_TIMEOUT' ||
+      raceRow.sessionReadyObserved !== true ||
+      tdsContractResult.summary.directFailures !== 1 ||
+      tdsContractResult.rows.some(row => row.operation !== mutation.scenarioId && (row.contract !== 'PASS' || row.status !== 'PASS'))
+    ) {
+      throw new Error('PRODUCTION_MUTATION_TDS_CONTRACT_SIGNAL_INVALID');
+    }
+    const operationEvents = httpEvents.filter(event => event.operationId === mutation.operationId);
+    const successfulEvents = operationEvents.filter(event => event.status === 200 && event.outcome === 'SUCCEEDED');
+    if (operationEvents.length !== 1 || successfulEvents.length !== 1) {
+      throw new Error(`PRODUCTION_MUTATION_HTTP_SIGNAL_INVALID:${operationEvents.length}:${successfulEvents.length}`);
+    }
+    const signal =
+      `HTTP=${successfulEvents[0].status};BUSINESS=PASS;TDS_CONTRACT=${raceRow.contract};` +
+      `failureCategory=${raceRow.failureCategory}`;
+    if (signal !== mutation.expectedSignal) throw new Error('PRODUCTION_MUTATION_EXPECTED_SIGNAL_INVALID');
+    return Object.freeze({
+      signal,
+      operationId: mutation.operationId,
+      scenarioId: mutation.scenarioId,
+      pointer: mutation.pointer,
+      httpStatus: successfulEvents[0].status,
+      httpOutcome: successfulEvents[0].outcome,
+      httpEventCount: successfulEvents.length,
+      business: businessRow.business,
+      tdsContract: raceRow.contract,
+      failureCategory: raceRow.failureCategory,
+    });
   }
   const rows = backendAcceptanceResult.rows;
   if (!Array.isArray(rows) || rows.length !== 1) {
@@ -582,8 +798,57 @@ export function firstGradleFailureCode(log) {
   return log.match(/(?:^|\r?\n)Error:\s+([A-Z][A-Z0-9_]*(?::[A-Z0-9_.-]+)*)/)?.[1] ?? null;
 }
 
-export const requiresBackendAcceptanceEvidence = (backendAcceptanceRunId, targetTaskObserved) =>
-  backendAcceptanceRunId !== null && targetTaskObserved;
+const decodeXml = value =>
+  value
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&apos;', "'")
+    .replaceAll('&amp;', '&');
+
+const stableFailureToken = value =>
+  value
+    .replace(/\b(?:[a-z_$][\w$]*\.){2,}([A-Z_$][\w$]*)\b/g, '$1')
+    .replace(/\b[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\b/gi, 'UUID')
+    .replace(/\b\d+\b/g, 'N')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 96);
+
+/** Extract a stable test-level first failure; Gradle's summary alone loses setup causes. */
+export function firstJUnitFailureCode(xml) {
+  if (typeof xml !== 'string' || xml.trim() === '') return null;
+  const failure = xml.match(/<(?:failure|error)\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:failure|error)>)/);
+  if (!failure) return null;
+  const attributes = failure[1];
+  const detail = decodeXml(`${attributes} ${failure[2] ?? ''}`.replace(/<[^>]*>/g, ' '));
+  const assertionCode = detail.match(/\b([A-Z][A-Z0-9]*(?:_[A-Z0-9]+){2,})\b(?=\s*(?:==>|:))/)?.[1];
+  if (assertionCode) return `TEST_${assertionCode}`;
+
+  const causes = [...detail.matchAll(/Caused by:\s+([\w.$]+)(?::\s*([^\r\n]+))?/g)];
+  const deepestCause = causes.at(-1);
+  const throwable = deepestCause?.[1] ?? attributes.match(/\btype="([^"]+)"/)?.[1];
+  if (!throwable) return 'TEST_FAILURE_DETAILS_UNAVAILABLE';
+  const simpleType = throwable.split('.').at(-1).replace(/([a-z0-9])([A-Z])/g, '$1_$2');
+  const causeMessage = deepestCause?.[2] ?? detail.match(/\bmessage="([^"]+)"/)?.[1] ?? '';
+  const messageToken = stableFailureToken(causeMessage);
+  return `TEST_${stableFailureToken(simpleType)}${messageToken ? `_${messageToken}` : ''}`;
+}
+
+/** Prefer test evidence over Gradle's wrapper exit marker when classifying a failed run. */
+export function classifyRemoteGradleFailure(log, junitFailureCode) {
+  if (typeof junitFailureCode === 'string' && junitFailureCode.trim() !== '') return junitFailureCode;
+
+  const gradleCode = firstGradleFailureCode(log);
+  if (gradleCode && gradleCode !== 'REMOTE_GRADLE_EXIT_NONZERO') return gradleCode;
+  return 'GRADLE_TEST_FAILURE_DETAILS_UNAVAILABLE';
+}
+
+export const requiresBackendAcceptanceEvidence = (backendAcceptanceRunId, testExecutionPassed) =>
+  backendAcceptanceRunId !== null && testExecutionPassed;
 
 export const validateCleanupReceipt = cleanup => {
   if (cleanup?.status !== 'PASS') throw new Error('RESOURCE_CLEANUP_NOT_PASS');
@@ -597,6 +862,7 @@ export const validateProductionMutationReceipt = mutation => {
   const expected = resolveProductionMutation(mutation?.id);
   for (const field of [
     'operationId',
+    'evidenceType',
     'scenarioId',
     'scenarioOperation',
     'module',
@@ -611,7 +877,15 @@ export const validateProductionMutationReceipt = mutation => {
     if (mutation[field] !== expected[field]) throw new Error(`PRODUCTION_MUTATION_RECEIPT_${field.toUpperCase()}_INVALID`);
   }
   if (mutation.status !== 'PASS' || mutation.verdict !== 'PASS' || mutation.business !== 'FAIL' || mutation.cleanup !== 'PASS') {
-    throw new Error('PRODUCTION_MUTATION_RECEIPT_VERDICT_INVALID');
+    if (
+      expected.evidenceType !== 'TDS_CONTRACT' ||
+      mutation.status !== 'PASS' ||
+      mutation.verdict !== 'PASS' ||
+      mutation.business !== 'PASS' ||
+      mutation.cleanup !== 'PASS'
+    ) {
+      throw new Error('PRODUCTION_MUTATION_RECEIPT_VERDICT_INVALID');
+    }
   }
   for (const field of ['sourceBeforeSha256', 'sourceAfterSha256', 'stagingSnapshotHash']) {
     if (!/^[a-f0-9]{64}$/.test(mutation[field] ?? '')) {
@@ -619,6 +893,23 @@ export const validateProductionMutationReceipt = mutation => {
     }
   }
   const observed = mutation.observed;
+  if (expected.evidenceType === 'TDS_CONTRACT') {
+    if (
+      !observed ||
+      observed.operationId !== expected.operationId ||
+      observed.scenarioId !== expected.scenarioId ||
+      observed.pointer !== expected.pointer ||
+      observed.httpStatus !== 200 ||
+      observed.httpOutcome !== 'SUCCEEDED' ||
+      observed.httpEventCount !== 1 ||
+      observed.business !== 'PASS' ||
+      observed.tdsContract !== 'FAIL' ||
+      observed.failureCategory !== 'TDS_VS10_REGISTRATION_RACE_RED_CONTROL'
+    ) {
+      throw new Error('PRODUCTION_MUTATION_RECEIPT_OBSERVATION_INVALID');
+    }
+    return mutation;
+  }
   if (
     !observed ||
     observed.operationId !== expected.operationId ||
@@ -755,6 +1046,14 @@ export const parseAndValidateRunManifest = manifest => {
     (manifest.brokenBoundary !== null && typeof manifest.brokenBoundary !== 'string')
   ) {
     throw new Error('RUN_MANIFEST_BOUNDARY_FIELDS_INVALID');
+  }
+  if (
+    manifest.failureCategory !== undefined &&
+    ((manifest.failureCategory !== null &&
+      (typeof manifest.failureCategory !== 'string' || manifest.failureCategory.trim() === '')) ||
+      (manifest.firstFailure !== null && manifest.failureCategory === null))
+  ) {
+    throw new Error('RUN_MANIFEST_FAILURE_CATEGORY_INVALID');
   }
   if (manifest.lastKnownGood !== null && manifest.lastKnownGood.trim() === '') {
     throw new Error('RUN_MANIFEST_LAST_KNOWN_GOOD_INVALID');
@@ -958,14 +1257,112 @@ const atomicWrite = (target, value) => {
   renameSync(temporary, target);
 };
 
-export const remotePreflightScript = () =>
-  script(
+export const remotePreflightScript = ({requireTerminalWireRuntime = false, tdsCapacity = null} = {}) => {
+  if (requireTerminalWireRuntime && tdsCapacity === null) {
+    throw new Error('REMOTE_TDS_CAPACITY_LOCAL_INPUT_REQUIRED');
+  }
+  const validCapacity = requireTerminalWireRuntime
+    ? validateTdsCapacityConfiguration(tdsCapacity)
+    : null;
+  return script(
     'set -euo pipefail',
     'docker ps -aq --filter label=org.testcontainers=true | sed "s/^/CONTAINER\\t/"',
     'docker volume ls -q --filter label=org.testcontainers=true | sed "s/^/VOLUME\\t/"',
+    ...(requireTerminalWireRuntime
+      ? [
+          'node_candidates="$(type -a -p node || true)"',
+          'if test -z "$node_candidates"; then printf "NODE_RUNTIME\\t%s\\n" \'{"status":"FAIL","reason":"NODE_EXECUTABLE_MISSING"}\'; else',
+          `  node_probe='{"status":"FAIL","reason":"NODE_RUNTIME_PROBE_FAILED"}'`,
+          '  while IFS= read -r node_binary; do',
+          '    test -n "$node_binary" || continue',
+          '    candidate_probe="$("$node_binary" --input-type=module - <<\'NODE\'',
+          'import { createServer, createConnection } from "node:net";',
+          'import { randomBytes } from "node:crypto";',
+          'import { deflateRawSync } from "node:zlib";',
+          'import { createInterface } from "node:readline";',
+          'import { performance } from "node:perf_hooks";',
+          'import { mkdtempSync, rmSync } from "node:fs";',
+          'import os from "node:os";',
+          'import path from "node:path";',
+          'import { fileURLToPath } from "node:url";',
+          'const requiredWireModules = ["net", "crypto", "zlib", "readline", "perf_hooks", "path", "url"];',
+          'const coreApiPresent = typeof createServer === "function" && typeof createConnection === "function" && typeof randomBytes === "function" && typeof deflateRawSync === "function" && typeof createInterface === "function" && typeof performance.now === "function" && typeof path.resolve === "function" && typeof fileURLToPath === "function";',
+          'const result = { nodePath: process.execPath, nodeVersion: process.versions.node, platform: process.platform, coreModules: coreApiPresent ? requiredWireModules : [], unixDomainSocket: "FAIL" };',
+          'let directory;',
+          'let server;',
+          'try {',
+          '  directory = mkdtempSync(path.join(os.tmpdir(), "v2s-uds-preflight-"));',
+          '  server = createServer();',
+          '  await new Promise((resolve, reject) => { server.once("error", reject); server.listen(path.join(directory, "probe.sock"), resolve); });',
+          '  result.unixDomainSocket = "PASS";',
+          '} catch {',
+          '  result.reason = "UNIX_DOMAIN_SOCKET_UNAVAILABLE";',
+          '} finally {',
+          '  if (server?.listening) await new Promise(resolve => server.close(() => resolve()));',
+          '  if (directory) rmSync(directory, {recursive: true, force: true});',
+          '}',
+          'result.rawSocketClient = result.coreModules.includes("net");',
+          'result.status = result.platform === "linux" && result.nodeVersion === "22.23.2" && result.unixDomainSocket === "PASS" && result.rawSocketClient ? "PASS" : "FAIL";',
+          'if (result.status === "FAIL" && !result.reason) result.reason = "PINNED_NODE_RUNTIME_MISMATCH";',
+          'process.stdout.write(`${JSON.stringify(result)}\\n`);',
+          'NODE',
+          '    )" || candidate_probe=\'{"status":"FAIL","reason":"NODE_RUNTIME_PROBE_FAILED"}\'',
+          '    node_probe="$candidate_probe"',
+          `    case "$node_probe" in *'"status":"PASS"'*) break ;; esac`,
+          '  done <<< "$node_candidates"',
+          '  printf "NODE_RUNTIME\\t%s\\n" "$node_probe"',
+          'fi',
+          `printf "TDS_CAPACITY\\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\\t%s\\n" ${quote(validCapacity.maxUnauthenticatedConnections)}`,
+          `printf "TDS_CAPACITY\\tV2S_TDS_MAX_TRACKED_SESSIONS\\t%s\\n" ${quote(validCapacity.maxTrackedSessions)}`,
+          `printf "TDS_CAPACITY\\tV2S_TDS_RSS_BUDGET_MIB\\t%s\\n" ${quote(validCapacity.rssBudgetMiB)}`,
+        ]
+      : []),
   );
+};
 
-export const parseRemotePreflightResult = result => {
+const safeTerminalWireRuntimeObservation = runtime => ({
+  status: typeof runtime?.status === 'string' ? runtime.status.slice(0, 16) : null,
+  reason: typeof runtime?.reason === 'string' ? runtime.reason.slice(0, 64) : null,
+  platform: typeof runtime?.platform === 'string' ? runtime.platform.slice(0, 32) : null,
+  nodeVersion: typeof runtime?.nodeVersion === 'string' ? runtime.nodeVersion.slice(0, 32) : null,
+  unixDomainSocket: typeof runtime?.unixDomainSocket === 'string' ? runtime.unixDomainSocket.slice(0, 16) : null,
+  rawSocketClient: typeof runtime?.rawSocketClient === 'boolean' ? runtime.rawSocketClient : null,
+  coreModules: Array.isArray(runtime?.coreModules)
+          ? runtime.coreModules.filter(module => ['net', 'crypto', 'zlib', 'readline', 'perf_hooks', 'path', 'url'].includes(module))
+    : [],
+});
+
+const remotePreflightFailure = (code, {nodeRuntime = null, tdsCapacity = null} = {}) => {
+  const diagnostic = {
+    status: 'FAIL',
+    reason: code,
+    observedAt: now(),
+    resourceInventory: {status: 'EMPTY', containers: 0, volumes: 0},
+    ...(nodeRuntime === null ? {} : {nodeRuntime: safeTerminalWireRuntimeObservation(nodeRuntime)}),
+    ...(tdsCapacity === null ? {} : {tdsCapacity}),
+  };
+  const detail = nodeRuntime?.reason ?? code;
+  const error = new Error(`${code}:${detail}`);
+  error.preflightEvidence = diagnostic;
+  return error;
+};
+
+export const recordRemotePreflightFailure = (manifest, error, {remotePrepared = false} = {}) => {
+  const evidence = error?.preflightEvidence;
+  if (!evidence) return false;
+  manifest.resourcePreflight = evidence;
+  if (remotePrepared || evidence.resourceInventory?.status !== 'EMPTY') return true;
+  manifest.cleanup = {
+    status: 'PASS',
+    remoteProcess: 'PASS',
+    remoteWorkspace: 'PASS',
+    testcontainersContainers: 'PASS',
+    testcontainersVolumes: 'PASS',
+  };
+  return true;
+};
+
+export const parseRemotePreflightResult = (result, {requireTerminalWireRuntime = false} = {}) => {
   if (result.status !== 0) throw new Error('REMOTE_RESOURCE_PREFLIGHT_UNAVAILABLE');
   const rows = String(result.stdout)
     .trim()
@@ -975,10 +1372,73 @@ export const parseRemotePreflightResult = result => {
   const containers = rows.filter(([kind]) => kind === 'CONTAINER').map(([, value]) => value);
   const volumes = rows.filter(([kind]) => kind === 'VOLUME').map(([, value]) => value);
   if (containers.length || volumes.length) throw new Error('REMOTE_TESTCONTAINERS_STALE_RESOURCE');
-  return {containers, volumes, observedAt: now()};
+  const nodeRows = rows.filter(([kind]) => kind === 'NODE_RUNTIME');
+  if (nodeRows.length > 1) throw new Error('REMOTE_TERMINAL_WIRE_RUNTIME_DUPLICATE');
+  let nodeRuntime = null;
+  if (nodeRows.length === 1) {
+    try {
+      nodeRuntime = JSON.parse(nodeRows[0][1]);
+    } catch {
+      throw remotePreflightFailure('REMOTE_TERMINAL_WIRE_RUNTIME_INVALID');
+    }
+    if (
+      nodeRuntime?.status !== 'PASS' ||
+      nodeRuntime?.platform !== 'linux' ||
+      nodeRuntime?.nodeVersion !== '22.23.2' ||
+      nodeRuntime?.unixDomainSocket !== 'PASS' ||
+      nodeRuntime?.rawSocketClient !== true ||
+      !Array.isArray(nodeRuntime?.coreModules) ||
+      !['net', 'crypto', 'zlib', 'readline', 'perf_hooks', 'path', 'url']
+        .every(module => nodeRuntime.coreModules.includes(module)) ||
+      typeof nodeRuntime?.nodePath !== 'string' ||
+      nodeRuntime.nodePath.trim() === ''
+    ) {
+      throw remotePreflightFailure('REMOTE_TERMINAL_WIRE_RUNTIME_INVALID', {nodeRuntime});
+    }
+  }
+  if (requireTerminalWireRuntime && nodeRuntime === null) {
+    throw remotePreflightFailure('REMOTE_TERMINAL_WIRE_RUNTIME_REQUIRED');
+  }
+  const tdsCapacityRows = rows.filter(([kind]) => kind === 'TDS_CAPACITY');
+  let tdsCapacity = null;
+  if (requireTerminalWireRuntime) {
+    const values = Object.fromEntries(tdsCapacityRows.map(([, key, value]) => [key, value]));
+    const unauth = values.V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS;
+    const tracked = values.V2S_TDS_MAX_TRACKED_SESSIONS;
+    const rssBudgetMiB = values.V2S_TDS_RSS_BUDGET_MIB;
+    if (
+      tdsCapacityRows.length !== 3 ||
+      !/^[1-9][0-9]{0,9}$/.test(unauth ?? '') ||
+      !/^[1-9][0-9]{0,9}$/.test(tracked ?? '') ||
+      !/^[1-9][0-9]{0,9}$/.test(rssBudgetMiB ?? '') ||
+      Number(unauth) > 2147483647 ||
+      Number(tracked) > 2147483647 ||
+      Number(rssBudgetMiB) > 2147483647
+    ) {
+      throw remotePreflightFailure('REMOTE_TDS_CAPACITY_INVALID', {
+        nodeRuntime,
+        tdsCapacity: {
+          maxUnauthenticatedConnections: unauth ?? null,
+          maxTrackedSessions: tracked ?? null,
+          rssBudgetMiB: rssBudgetMiB ?? null,
+        },
+      });
+    }
+    tdsCapacity = Object.freeze({
+      maxUnauthenticatedConnections: unauth,
+      maxTrackedSessions: tracked,
+      rssBudgetMiB: Number(rssBudgetMiB),
+      source: TDS_CAPACITY_CONFIG_RELATIVE_PATH,
+    });
+  }
+  return {containers, volumes, ...(nodeRuntime === null ? {} : {nodeRuntime}), ...(tdsCapacity ? {tdsCapacity} : {}), observedAt: now()};
 };
 
-const remotePreflight = () => parseRemotePreflightResult(remoteResult(remotePreflightScript()));
+const remotePreflight = ({requireTerminalWireRuntime = false, tdsCapacity = null} = {}) =>
+  parseRemotePreflightResult(
+    remoteResult(remotePreflightScript({requireTerminalWireRuntime, tdsCapacity})),
+    {requireTerminalWireRuntime},
+  );
 
 const waitForClose = child =>
   new Promise(resolve => {
@@ -1394,17 +1854,28 @@ export const runScript = ({
   verificationMode,
   productionMutation = null,
   mutationPreflight = null,
+  tdsCapacity = null,
+  terminalWireNodePath = null,
+  topologyPreflight = false,
 }) => {
   if (productionMutation !== null && mutationPreflight === null) {
     throw new Error('PRODUCTION_MUTATION_PREFLIGHT_REQUIRED');
   }
-  const selectorArguments = invocation.extraArguments.map(quote).join(' ');
+  const selectorArguments = [
+    ...invocation.extraArguments.map(quote),
+    ...(productionMutation?.evidenceType === 'TDS_CONTRACT'
+      ? ['-Pv2s.acceptance.registration-race-red-control=true']
+      : []),
+  ].join(' ');
   const acceptanceEnvironment = backendAcceptanceEnvironment(
     backendAcceptanceRunId,
     backendAcceptanceOperation,
     verificationMode,
     process.env.V2S_BACKEND_ACCEPTANCE_BATCH_CARDINALITY ?? null,
     invocation.extensionScaleProof === true,
+    tdsCapacity,
+    terminalWireNodePath,
+    topologyPreflight,
   );
   const mutationLines =
     productionMutation === null
@@ -1526,6 +1997,9 @@ export const runScript = ({
     '  mkdir -p "$(dirname "$target")"',
     '  cp "$file" "$target"',
     'done',
+    'if test -f "$root/backend-acceptance/tds/tds.log"; then cp -- "$root/backend-acceptance/tds/tds.log" "$results/tds-process.log"; fi',
+    'if test -f "$root/backend-acceptance/tds/process-evidence.json"; then cp -- "$root/backend-acceptance/tds/process-evidence.json" "$results/tds-process-evidence.json"; fi',
+    ...terminalWireEvidenceAggregationScript().split('\n'),
     'archive_index="$results/evidence-artifacts.tsv"',
     ': > "$archive_index"',
     'archive_evidence() {',
@@ -1649,10 +2123,17 @@ const execute = async () => {
     invocation.extensionScaleProof === true,
   );
   const verificationMode = process.env.V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE ?? 'ACCEPTANCE';
+  const topologyPreflight = process.env.V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT === 'true';
   const requestedMutation =
     invocation.productionMutationId === undefined ? null : resolveProductionMutation(invocation.productionMutationId);
   if (!BACKEND_ACCEPTANCE_VERIFICATION_MODES.includes(verificationMode)) {
     throw new Error('BACKEND_ACCEPTANCE_VERIFICATION_MODE_INVALID');
+  }
+  if (
+    topologyPreflight &&
+    (backendAcceptanceRunId === null || backendAcceptanceOperation === 'all' || verificationMode !== 'ACCEPTANCE')
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT_ARGUMENT_INVALID');
   }
   if (verificationMode === 'CALIBRATION' && (backendAcceptanceRunId === null || backendAcceptanceOperation !== 'all')) {
     throw new Error('BACKEND_ACCEPTANCE_CALIBRATION_REQUIRES_FULL_RUN');
@@ -1663,6 +2144,12 @@ const execute = async () => {
       throw new Error('PRODUCTION_MUTATION_SCENARIO_REQUIRED');
     }
     if (verificationMode !== 'ACCEPTANCE') throw new Error('PRODUCTION_MUTATION_ACCEPTANCE_MODE_REQUIRED');
+    if (
+      requestedMutation.evidenceType === 'TDS_CONTRACT' &&
+      (!topologyPreflight || backendAcceptanceOperation !== requestedMutation.scenarioOperation)
+    ) {
+      throw new Error('PRODUCTION_MUTATION_TOPOLOGY_PREFLIGHT_REQUIRED');
+    }
   }
   const exactSetRequired = requiresFullPerformanceVerification(backendAcceptanceRunId, backendAcceptanceOperation);
   const activeBudgetRequired = requiresActiveBudgetVerification(
@@ -1733,6 +2220,7 @@ const execute = async () => {
     },
     status: 'FAIL',
     firstFailure: null,
+    failureCategory: null,
     lastKnownGood: 'RUN_INITIALIZATION',
     brokenBoundary: null,
     devLifecycle: {
@@ -1756,10 +2244,12 @@ const execute = async () => {
     manifest.brokenBoundary ??= boundary;
   };
   let remotePrepared = false;
+  let configuredTdsCapacity = null;
   let remoteRun;
   let failure;
   let mutationPreflight;
   let backendAcceptanceResult;
+  let tdsContractResult;
   let measurementEvidence;
   let devState;
   let releaseLocalRunLock;
@@ -1767,8 +2257,9 @@ const execute = async () => {
   const uninstallInterruptionHandlers = installInterruptionHandlers(signal => {
     interruptionSignal ??= signal;
   });
-  runnerEvent('STARTED', {RUN_ID: runId, TASK: invocation.task, MODE: 'FOCUSED'});
+    runnerEvent('STARTED', {RUN_ID: runId, TASK: invocation.task, MODE: 'FOCUSED'});
   try {
+    if (backendAcceptanceRunId !== null) configuredTdsCapacity = resolveTdsCapacityConfiguration();
     beginBoundary('LOCAL_RESOURCE_PREFLIGHT');
     releaseLocalRunLock = acquireLocalRunLock();
     devState = inspectManagedDevState();
@@ -1795,7 +2286,10 @@ const execute = async () => {
       path.join(root, '.runtime'),
     ]);
     if (localBudget.status !== 0) throw new Error('LOCAL_MANAGED_RESOURCE_BUDGET_EXCEEDED');
-    manifest.resourcePreflight = remotePreflight();
+    manifest.resourcePreflight = remotePreflight({
+      requireTerminalWireRuntime: backendAcceptanceRunId !== null,
+      tdsCapacity: configuredTdsCapacity,
+    });
     beginBoundary('REMOTE_WORKSPACE_PREPARE');
     remote(
       script(
@@ -1831,6 +2325,9 @@ const execute = async () => {
         verificationMode,
         productionMutation: requestedMutation,
         mutationPreflight,
+        tdsCapacity: manifest.resourcePreflight.tdsCapacity ?? null,
+        terminalWireNodePath: manifest.resourcePreflight.nodeRuntime?.nodePath ?? null,
+        topologyPreflight,
       }),
     );
     if (interruptionSignal) throw new Error(`HARNESS_INTERRUPTED:${interruptionSignal}`);
@@ -1840,6 +2337,14 @@ const execute = async () => {
     collectArtifacts(remoteResults, directory);
     const gradleLog = readFileSync(path.join(directory, 'gradle.log'), 'utf8');
     const actualExecution = classifyGradleTestExecution(gradleLog, invocation.task);
+    const testResultsDirectory = path.join(directory, 'test-results');
+    const junitFailureCode = existsSync(testResultsDirectory)
+      ? walkFiles(testResultsDirectory)
+          .filter(file => file.endsWith('.xml'))
+          .sort()
+          .map(file => firstJUnitFailureCode(readFileSync(path.join(testResultsDirectory, file), 'utf8')))
+          .find(Boolean) ?? null
+      : null;
     const runnerMarker = name => remoteRun.markers?.[name] ?? marker(remoteRun.stdoutTail, name);
     const remoteGradleStatus = runnerMarker('REMOTE_GRADLE_STATUS');
     const containerQueryStatus = runnerMarker('REMOTE_TESTCONTAINERS_CONTAINER_QUERY');
@@ -1849,11 +2354,11 @@ const execute = async () => {
     const containers = runnerMarker('REMOTE_TESTCONTAINERS_CONTAINERS');
     const volumes = runnerMarker('REMOTE_TESTCONTAINERS_VOLUMES');
     const archiveStatus = runnerMarker('REMOTE_EVIDENCE_ARCHIVE_STATUS');
-    const gradleFailureCode = firstGradleFailureCode(gradleLog);
+    const gradleFailureCode = classifyRemoteGradleFailure(gradleLog, junitFailureCode);
     const executionPass = actualExecution.status === 'PASS' && remoteGradleStatus === '0';
     const executionFailure =
       remoteGradleStatus !== undefined && remoteGradleStatus !== '0'
-        ? (gradleFailureCode ?? 'REMOTE_GRADLE_EXIT_NONZERO')
+        ? (gradleFailureCode ?? 'GRADLE_TEST_FAILURE_DETAILS_UNAVAILABLE')
         : (actualExecution.reason ?? 'REMOTE_GRADLE_STATUS_UNAVAILABLE');
     manifest.testExecution = {
       ...actualExecution,
@@ -1868,6 +2373,7 @@ const execute = async () => {
     // handling must not replace that boundary with an artifact-missing error.
     if (!executionPass) {
       manifest.firstFailure ??= executionFailure;
+      manifest.failureCategory ??= executionFailure;
       markBrokenBoundary('REMOTE_TEST_EXECUTION');
     } else {
       markLastKnownGood('REMOTE_TEST_EXECUTION');
@@ -1919,7 +2425,7 @@ const execute = async () => {
     }
     beginBoundary('BUSINESS_EVIDENCE');
     const requiresAcceptanceArtifacts =
-      requiresBackendAcceptanceEvidence(backendAcceptanceRunId, actualExecution.status === 'PASS') ||
+      requiresBackendAcceptanceEvidence(backendAcceptanceRunId, executionPass) ||
       (requestedMutation !== null && acceptanceArtifactsAvailable);
     if (requiresAcceptanceArtifacts) {
       const archiveRows = parseEvidenceArchiveIndex(
@@ -1943,14 +2449,31 @@ const execute = async () => {
       backendAcceptanceResult = parseBackendAcceptanceResult(
         readEvidenceArtifact(directory, 'backend-acceptance-result.jsonl', {requireArchive: true}),
       );
+      tdsContractResult = parseTdsContractResult(
+        readEvidenceArtifact(directory, 'tds-contract-result.jsonl', {requireArchive: true}),
+      );
+      const tdsProcessEvidence = parseTdsProcessEvidence({
+        processEvidence: readEvidenceArtifact(directory, 'tds-process-evidence.json', {requireArchive: true}),
+        processLog: readEvidenceArtifact(directory, 'tds-process.log', {requireArchive: true}),
+        expectedRunId: backendAcceptanceRunId,
+      });
+      manifest.backendAcceptance.tdsContract = tdsContractResult.summary.directFailures === 0 ? 'PASS' : 'FAIL';
+      manifest.backendAcceptance.tdsContractScenarios = tdsContractResult.summary;
+      manifest.backendAcceptance.tdsProcess = tdsProcessEvidence;
       manifest.business = backendAcceptanceResult.summary.directFailures === 0 ? 'PASS' : 'FAIL';
       if (manifest.business === 'PASS') markLastKnownGood('BUSINESS_EVIDENCE');
     }
     if (!executionPass && requestedMutation === null) throw new Error(executionFailure);
-    if (remoteGradleStatus !== '0' && requestedMutation === null) throw new Error('REMOTE_GRADLE_EXIT_NONZERO');
+    if (remoteGradleStatus !== '0' && requestedMutation === null) throw new Error(executionFailure);
     if (archiveStatus !== '0') throw new Error('REMOTE_EVIDENCE_ARCHIVE_FAILED');
     if (manifest.cleanup.status !== 'PASS') throw new Error('REMOTE_TESTCONTAINERS_RESOURCE_NOT_RECLAIMED');
     if (backendAcceptanceResult?.summary.stubOnly > 0) throw new Error('BACKEND_ACCEPTANCE_STUB_BUSINESS_NOT_ALLOWED');
+    if (
+      manifest.backendAcceptance?.tdsContract !== 'PASS' &&
+      requestedMutation?.evidenceType !== 'TDS_CONTRACT'
+    ) {
+      throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_FAILED');
+    }
     if (requestedMutation === null && backendAcceptanceResult?.summary.directFailures > 0) {
       throw new Error('BACKEND_ACCEPTANCE_SCENARIO_FAILURE');
     }
@@ -1966,10 +2489,13 @@ const execute = async () => {
         manifest.productionMutation.observed = verifyProductionMutationOutcome({
           mutation: requestedMutation,
           backendAcceptanceResult,
+          tdsContractResult,
           httpEvents: measurementEvidence.rows,
+          runId: backendAcceptanceRunId,
         });
         manifest.productionMutation.verdict = 'PASS';
-        manifest.productionMutation.business = 'FAIL';
+        manifest.productionMutation.business =
+          requestedMutation.evidenceType === 'TDS_CONTRACT' ? 'PASS' : 'FAIL';
       }
       const performanceEvidence = activeBudgetRequired
         ? verifyFullBackendAcceptancePerformance(performanceOperationRegistry, measurementEvidence.rows)
@@ -2005,12 +2531,15 @@ const execute = async () => {
     }
   } catch (error) {
     failure = error instanceof Error ? error : new Error(String(error));
+    recordRemotePreflightFailure(manifest, failure, {remotePrepared});
     manifest.firstFailure ??= failure.message;
+    manifest.failureCategory ??= manifest.firstFailure;
     markBrokenBoundary(currentBoundary);
   } finally {
     if (interruptionSignal && !failure) {
       failure = new Error(`HARNESS_INTERRUPTED:${interruptionSignal}`);
       manifest.firstFailure ??= failure.message;
+      manifest.failureCategory ??= manifest.firstFailure;
       markBrokenBoundary(currentBoundary);
     }
     if (remotePrepared) {
@@ -2032,6 +2561,7 @@ const execute = async () => {
       if (!failure) {
         failure = new Error('REMOTE_WORKSPACE_CLEANUP_FAILED');
         manifest.firstFailure ??= failure.message;
+        manifest.failureCategory ??= manifest.firstFailure;
         markBrokenBoundary('REMOTE_WORKSPACE_CLEANUP');
       }
     }
@@ -2047,6 +2577,7 @@ const execute = async () => {
           manifest.devLifecycle.cleanup = 'FAIL';
           failure = new Error('DEV_RESTART_FAILED');
           manifest.firstFailure ??= failure.message;
+          manifest.failureCategory ??= manifest.firstFailure;
           markBrokenBoundary('DEV_RESTORE');
         }
       } else {
@@ -2060,6 +2591,7 @@ const execute = async () => {
     } catch (releaseError) {
       failure = releaseError instanceof Error ? releaseError : new Error(String(releaseError));
       manifest.firstFailure ??= failure.message;
+      manifest.failureCategory ??= manifest.firstFailure;
       markBrokenBoundary('LOCAL_RUN_LOCK_RELEASE');
     } finally {
       uninstallInterruptionHandlers();
@@ -2080,6 +2612,7 @@ const execute = async () => {
       } catch (validationError) {
         failure = validationError instanceof Error ? validationError : new Error(String(validationError));
         manifest.firstFailure ??= failure.message;
+        manifest.failureCategory ??= manifest.firstFailure;
         markBrokenBoundary('MANIFEST_VALIDATION');
         manifest.status = 'FAIL';
       }
@@ -2097,10 +2630,15 @@ const execute = async () => {
         `BACKEND_ACCEPTANCE_SUMMARY DISCOVERED=${backendAcceptanceResult.summary.discovered} SELECTED=${backendAcceptanceResult.summary.selected} HTTP_SUCCESS=${backendAcceptanceResult.summary.httpSuccess} REAL_BUSINESS_ASSERTIONS=${backendAcceptanceResult.summary.realBusinessAssertions} STUB_ONLY=${backendAcceptanceResult.summary.stubOnly} DIRECT_FAILURES=${backendAcceptanceResult.summary.directFailures}\n`,
       );
     }
+    if (manifest.backendAcceptance?.tdsContractScenarios) {
+      process.stdout.write(
+        `BACKEND_ACCEPTANCE_TDS_CONTRACT_SUMMARY DISCOVERED=${manifest.backendAcceptance.tdsContractScenarios.discovered} PASS=${manifest.backendAcceptance.tdsContractScenarios.contractPass} FAIL=${manifest.backendAcceptance.tdsContractScenarios.directFailures}\n`,
+      );
+    }
     if (manifest.productionMutation !== null) {
       const observed = manifest.productionMutation.observed;
       process.stdout.write(
-        `BACKEND_ACCEPTANCE_MUTATION_RESULT MUTATION_ID=${manifest.productionMutation.id} OPERATION=${observed.operationId} SCENARIO=${observed.scenarioId} POINTER=${manifest.productionMutation.pointer} HTTP=${observed.httpStatus} CONTRACT=PASS BUSINESS=${manifest.productionMutation.business} FAILURE_CATEGORY=${observed.failureCategory} VERDICT=${manifest.productionMutation.verdict} REPLACE_COUNT=${manifest.productionMutation.observedReplaceCount} SOURCE_BEFORE_SHA256=${manifest.productionMutation.sourceBeforeSha256} SOURCE_AFTER_SHA256=${manifest.productionMutation.sourceAfterSha256} STAGING_SNAPSHOT_SHA256=${manifest.productionMutation.stagingSnapshotHash} CLEANUP=${manifest.productionMutation.cleanup}\n`,
+        `BACKEND_ACCEPTANCE_MUTATION_RESULT MUTATION_ID=${manifest.productionMutation.id} OPERATION=${observed.operationId} SCENARIO=${observed.scenarioId} POINTER=${manifest.productionMutation.pointer} HTTP=${observed.httpStatus} CONTRACT=${observed.tdsContract ?? 'PASS'} BUSINESS=${manifest.productionMutation.business} FAILURE_CATEGORY=${observed.failureCategory} VERDICT=${manifest.productionMutation.verdict} REPLACE_COUNT=${manifest.productionMutation.observedReplaceCount} SOURCE_BEFORE_SHA256=${manifest.productionMutation.sourceBeforeSha256} SOURCE_AFTER_SHA256=${manifest.productionMutation.sourceAfterSha256} STAGING_SNAPSHOT_SHA256=${manifest.productionMutation.stagingSnapshotHash} CLEANUP=${manifest.productionMutation.cleanup}\n`,
       );
     }
     if (measurementEvidence) {
@@ -2118,7 +2656,7 @@ const execute = async () => {
     );
   } else {
     process.stderr.write(
-      `R5_REMOTE_TESTCONTAINERS=FAIL; REASON=${compact(failure?.message || manifest.firstFailure || 'TEST_OR_RESOURCE_CLEANUP_FAILED')}; EVIDENCE=${path.relative(root, directory)}; BUSINESS=${manifest.business}; MUTATION_VERDICT=${manifest.productionMutation?.verdict ?? 'NOT_APPLICABLE'}; RESOURCE_CLEANUP=${manifest.cleanup.status}\n`,
+      `R5_REMOTE_TESTCONTAINERS=FAIL; REASON=${compact(failure?.message || manifest.firstFailure || 'TEST_OR_RESOURCE_CLEANUP_FAILED')}; FAILURE_CATEGORY=${compact(manifest.failureCategory || 'UNCLASSIFIED')}; EVIDENCE=${path.relative(root, directory)}; BUSINESS=${manifest.business}; MUTATION_VERDICT=${manifest.productionMutation?.verdict ?? 'NOT_APPLICABLE'}; RESOURCE_CLEANUP=${manifest.cleanup.status}\n`,
     );
     process.exitCode = 2;
   }

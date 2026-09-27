@@ -492,7 +492,7 @@
         {
           "assertionKey": "IMPLEMENTATION_RECONCILIATION_NOT_ROUND_LIMITED",
           "path": "doc/platform/review-standard.md",
-          "anchor": "### 实施步骤级独立对账 · 在下一步骤前完成"
+          "anchor": "### CP 阶段级独立对账 · 在下一 CP 前完成"
         },
         {
           "assertionKey": "IMPLEMENTATION_REVIEW_AGAINST_DESIGN_NOT_ROUND_LIMITED",
@@ -502,7 +502,7 @@
         {
           "assertionKey": "MAIN_AGENT_REVIEW_FALLBACK_AFTER_REPEATED_SUBAGENT_FAILURE",
           "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
-          "anchor": "## 6. 2026-09-15 Dexter 补充裁决：重复失败后的主 agent 接管"
+          "anchor": "## 5. 2026-09-15 Dexter 补充裁决：重复失败后的主 agent 接管"
         }
       ],
       "sourceRefs": [
@@ -793,7 +793,7 @@
         {
           "assertionKey": "MAIN_AGENT_REVIEW_FALLBACK_AFTER_REPEATED_SUBAGENT_FAILURE",
           "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
-          "anchor": "## 6. 2026-09-15 Dexter 补充裁决：重复失败后的主 agent 接管"
+          "anchor": "## 5. 2026-09-15 Dexter 补充裁决：重复失败后的主 agent 接管"
         }
       ],
       "sourceRefs": [
@@ -854,9 +854,9 @@
           "anchor": "### H.2 本阶段明确不做"
         },
         {
-        "assertionKey": "NO_GIT_WRITE",
-        "path": "doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md",
-        "anchor": "## 替代口径"
+          "assertionKey": "NO_GIT_WRITE",
+          "path": "doc/decisions/2026-09-25-v2s-roadmap-mechanism-retirement.md",
+          "anchor": "## 替代口径"
         },
         {
           "assertionKey": "OBSERVABILITY_REQUIRED_FOR_ACCEPTANCE",
@@ -1527,22 +1527,22 @@
         {
           "assertionKey": "LOCAL_EXECUTION_REMOTE_MIDDLEWARE",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP 与浏览器直连所需的资产端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java、HTTP/asset tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP、浏览器直连所需的资产端口，以及本批受管 TDS 的单一 WebSocket 端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java/TDS、HTTP/asset/WebSocket tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "CURRENT_L2_LOCAL_EXECUTION_ISOLATED_REMOTE_CLEANUP",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP 与浏览器直连所需的资产端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java、HTTP/asset tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP、浏览器直连所需的资产端口，以及本批受管 TDS 的单一 WebSocket 端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java/TDS、HTTP/asset/WebSocket tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "UAT_ALL_REMOTE_EXECUTION",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP 与浏览器直连所需的资产端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java、HTTP/asset tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP、浏览器直连所需的资产端口，以及本批受管 TDS 的单一 WebSocket 端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java/TDS、HTTP/asset/WebSocket tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "REMOTE_TESTCONTAINERS_NOT_BROWSER_L2",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP 与浏览器直连所需的资产端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java、HTTP/asset tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP、浏览器直连所需的资产端口，以及本批受管 TDS 的单一 WebSocket 端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java/TDS、HTTP/asset/WebSocket tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
@@ -1740,17 +1740,30 @@
         ]
       },
       "requiredAssertions": [
-        "BOUNDED_PREPARATION_FOR_CURRENT_CHANGE"
+        "BOUNDED_PREPARATION_FOR_CURRENT_CHANGE",
+        "INDEPENDENT_3D_RECONCILIATION_AT_CP_BOUNDARY"
       ],
       "assertionSources": [
         {
           "assertionKey": "BOUNDED_PREPARATION_FOR_CURRENT_CHANGE",
           "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
-          "anchor": "## 5. 2026-07-30 逐点实施与复核纪律"
+          "anchor": "## 4. 2026-07-30 逐点实施与复核纪律"
+        },
+        {
+          "assertionKey": "INDEPENDENT_3D_RECONCILIATION_AT_CP_BOUNDARY",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "### `R-READ-06` · 每个 CP 同输入双读，CP 阶段结束独立对账"
+        },
+        {
+          "assertionKey": "INDEPENDENT_3D_RECONCILIATION_AT_CP_BOUNDARY",
+          "path": "doc/platform/review-standard.md",
+          "anchor": "### CP 阶段级独立对账 · 在下一 CP 前完成"
         }
       ],
       "sourceRefs": [
-        "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"
+        "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+        "doc/platform/backend-coding-standard.md",
+        "doc/platform/review-standard.md"
       ]
     },
     {
@@ -1798,7 +1811,7 @@
       "requiredAssertions": [
         "SYSTEMIC_REPAIR_BEFORE_NEXT_PHASE",
         "IMPLEMENTATION_DESIGN_SOURCE_RECONCILIATION_IS_UNBOUNDED",
-        "STEP_BOUNDARY_INDEPENDENT_RECONCILIATION_REQUIRED",
+        "CP_BOUNDARY_INDEPENDENT_RECONCILIATION_REQUIRED",
         "PHASE_RETROSPECTIVE_FINITE_DENOMINATOR",
         "PHASE_RETROSPECTIVE_R4_GATE_PENDING",
         "IDENTIFIED_FINDING_GENERALIZATION_REQUIRED",
@@ -1817,7 +1830,13 @@
         "IA_RECONCILIATION_CATALOG_COPY_SCAN_MUST_INCLUDE_SHELL",
         "PLATFORM_SUPER_ADMIN_MUST_NOT_ENTER_WORKSPACE_CAPABILITY_MODEL",
         "CATALOG_INVENTORY_SCOPE_BOUND_WRITE_CAPABILITY",
-        "CROSS_LAYER_CONTRACT_CONSUMER_CLOSURE_BEFORE_DYNAMIC_RUN"
+        "CROSS_LAYER_CONTRACT_CONSUMER_CLOSURE_BEFORE_DYNAMIC_RUN",
+        "BACKEND_ACCEPTANCE_DYNAMIC_PROPERTY_CONTAINER_START_ORDER",
+        "TRANSACTIONAL_SPRING_COMPONENTS_MUST_BE_PROXYABLE",
+        "SPRING_APPLICATION_CONTEXT_OBJECT_IS_NOT_A_BEAN",
+        "BACKEND_ACCEPTANCE_SECONDARY_CONTEXT_MUST_EXCLUDE_TEST_CONFIGURATION_AND_MIGRATIONS",
+        "GRADLE_ACCEPTANCE_REPOSITORY_INPUTS_MUST_USE_EXPLICIT_ROOT",
+        "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION"
       ],
       "assertionSources": [
         {
@@ -1831,9 +1850,9 @@
           "anchor": "### IMPLEMENTATION_DESIGN_SOURCE_RECONCILIATION_IS_UNBOUNDED"
         },
         {
-          "assertionKey": "STEP_BOUNDARY_INDEPENDENT_RECONCILIATION_REQUIRED",
+          "assertionKey": "CP_BOUNDARY_INDEPENDENT_RECONCILIATION_REQUIRED",
           "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
-          "anchor": "### STEP_BOUNDARY_INDEPENDENT_RECONCILIATION_REQUIRED"
+          "anchor": "### CP_BOUNDARY_INDEPENDENT_RECONCILIATION_REQUIRED"
         },
         {
           "assertionKey": "PHASE_RETROSPECTIVE_FINITE_DENOMINATOR",
@@ -1868,7 +1887,7 @@
         {
           "assertionKey": "ENVIRONMENT_TOPOLOGY_MUST_COME_FROM_GOVERNING_SOURCE",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP 与浏览器直连所需的资产端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java、HTTP/asset tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV、backend acceptance 与当前受管浏览器 L2 的 Spring/Java 后端均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite（browser L2 另由本机 Playwright 驱动），经受管 tunnel 仅转发远端 Java HTTP、浏览器直连所需的资产端口，以及本批受管 TDS 的单一 WebSocket 端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed；browser L2 仍使用每 run 隔离的远端数据库/asset namespace，并分别证明远端 Java/TDS、HTTP/asset/WebSocket tunnel、本机 Vite/Playwright 及两侧 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 runner 尚未实现对应远端后端拓扑，必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "RETIRED_CONSUMER_REQUIRES_RETAINED_CAPABILITY_DENOMINATOR",
@@ -1877,23 +1896,23 @@
         },
         {
           "assertionKey": "IA_RECONCILIATION_MUST_PROVE_USER_OBSERVABLE_CONTROLS",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-ui-ia-implementation-baseline.json",
+          "anchor": "  \"consumerBindings\":["
+        },
+        {
+          "assertionKey": "IA_RECONCILIATION_MUST_PROVE_USER_OBSERVABLE_CONTROLS",
           "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
           "anchor": "  \"bindingInterpretation\": {"
         },
         {
           "assertionKey": "IA_LEDGER_NEEDS_CURRENT_SOURCE_AND_RUNTIME_LAYERS",
-          "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
-          "anchor": "  \"postProofReview\": {"
-        },
-        {
-          "assertionKey": "IA_RECONCILIATION_MUST_PROVE_USER_OBSERVABLE_CONTROLS",
-          "path": "doc/evidence/platform/rm1/p6/rm1p6-u02-ui-ia-implementation-baseline.json",
-          "anchor": "  \"consumerBindings\":["
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ia-source-reconciliation.md",
+          "anchor": "## Proof boundary"
         },
         {
           "assertionKey": "IA_LEDGER_NEEDS_CURRENT_SOURCE_AND_RUNTIME_LAYERS",
-          "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ia-source-reconciliation.md",
-          "anchor": "## Proof boundary"
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
+          "anchor": "  \"postProofReview\": {"
         },
         {
           "assertionKey": "SHELL_AND_SHARED_CONTROLS_ARE_IN_DENOMINATOR",
@@ -1949,19 +1968,198 @@
           "assertionKey": "CROSS_LAYER_CONTRACT_CONSUMER_CLOSURE_BEFORE_DYNAMIC_RUN",
           "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
           "anchor": "### CROSS_LAYER_CONTRACT_CONSUMER_CLOSURE"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_DYNAMIC_PROPERTY_CONTAINER_START_ORDER",
+          "path": "doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md",
+          "anchor": "## 2. 唯一代码布局"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_DYNAMIC_PROPERTY_CONTAINER_START_ORDER",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### BACKEND_ACCEPTANCE_DYNAMIC_PROPERTY_CONTAINER_START_ORDER"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_DYNAMIC_PROPERTY_CONTAINER_START_ORDER",
+          "path": "scripts/test/backend-acceptance-structure.test.mjs",
+          "anchor": "test('acceptance containers start before Spring resolves mapped-port dynamic properties', () => {"
+        },
+        {
+          "assertionKey": "TRANSACTIONAL_SPRING_COMPONENTS_MUST_BE_PROXYABLE",
+          "path": "apps/backend/catering-business-server/modules/terminal-binding/src/main/java/com/catering/v2s/terminalbinding/application/CancelTerminalActivationOperation.java",
+          "anchor": "public class CancelTerminalActivationOperation {"
+        },
+        {
+          "assertionKey": "TRANSACTIONAL_SPRING_COMPONENTS_MUST_BE_PROXYABLE",
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/terminal/ActivateTerminalOperation.java",
+          "anchor": "public class ActivateTerminalOperation {"
+        },
+        {
+          "assertionKey": "TRANSACTIONAL_SPRING_COMPONENTS_MUST_BE_PROXYABLE",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "### 2-C · 事务边界"
+        },
+        {
+          "assertionKey": "TRANSACTIONAL_SPRING_COMPONENTS_MUST_BE_PROXYABLE",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### TRANSACTIONAL_SPRING_COMPONENTS_MUST_BE_PROXYABLE"
+        },
+        {
+          "assertionKey": "TRANSACTIONAL_SPRING_COMPONENTS_MUST_BE_PROXYABLE",
+          "path": "scripts/test/backend-acceptance-structure.test.mjs",
+          "anchor": "test('transactional Spring components remain proxyable', () => {"
+        },
+        {
+          "assertionKey": "SPRING_APPLICATION_CONTEXT_OBJECT_IS_NOT_A_BEAN",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceTest.java",
+          "anchor": "        WebServerApplicationContext secondWebContext = (WebServerApplicationContext) secondBusinessContext;"
+        },
+        {
+          "assertionKey": "SPRING_APPLICATION_CONTEXT_OBJECT_IS_NOT_A_BEAN",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### SPRING_APPLICATION_CONTEXT_OBJECT_IS_NOT_A_BEAN"
+        },
+        {
+          "assertionKey": "SPRING_APPLICATION_CONTEXT_OBJECT_IS_NOT_A_BEAN",
+          "path": "scripts/test/backend-acceptance-structure.test.mjs",
+          "anchor": "test('second business web server port is read from its returned context instance', () => {"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_SECONDARY_CONTEXT_MUST_EXCLUDE_TEST_CONFIGURATION_AND_MIGRATIONS",
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/BusinessDataConfiguration.java",
+          "anchor": "    @ConditionalOnProperty(name = \"spring.flyway.enabled\", havingValue = \"true\", matchIfMissing = true)"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_SECONDARY_CONTEXT_MUST_EXCLUDE_TEST_CONFIGURATION_AND_MIGRATIONS",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceMetricsConfiguration.java",
+          "anchor": "@Profile(\"!backend-acceptance-secondary\")"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_SECONDARY_CONTEXT_MUST_EXCLUDE_TEST_CONFIGURATION_AND_MIGRATIONS",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceTest.java",
+          "anchor": "                .profiles(\"backend-acceptance-secondary\")"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_SECONDARY_CONTEXT_MUST_EXCLUDE_TEST_CONFIGURATION_AND_MIGRATIONS",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceTest.java",
+          "anchor": "        properties.put(\"spring.flyway.enabled\", false);"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_SECONDARY_CONTEXT_MUST_EXCLUDE_TEST_CONFIGURATION_AND_MIGRATIONS",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### BACKEND_ACCEPTANCE_SECONDARY_CONTEXT_MUST_EXCLUDE_TEST_CONFIGURATION_AND_MIGRATIONS"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_SECONDARY_CONTEXT_MUST_EXCLUDE_TEST_CONFIGURATION_AND_MIGRATIONS",
+          "path": "scripts/test/backend-acceptance-structure.test.mjs",
+          "anchor": "test('custom Flyway bean honors the secondary context migration switch', () => {"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_SECONDARY_CONTEXT_MUST_EXCLUDE_TEST_CONFIGURATION_AND_MIGRATIONS",
+          "path": "scripts/test/backend-acceptance-structure.test.mjs",
+          "anchor": "test('secondary business context excludes acceptance-only test configuration', () => {"
+        },
+        {
+          "assertionKey": "GRADLE_ACCEPTANCE_REPOSITORY_INPUTS_MUST_USE_EXPLICIT_ROOT",
+          "path": "apps/backend/catering-business-server/build.gradle.kts",
+          "anchor": "    systemProperty(\"v2s.acceptance.repository-root\", rootProject.projectDir.absolutePath)"
+        },
+        {
+          "assertionKey": "GRADLE_ACCEPTANCE_REPOSITORY_INPUTS_MUST_USE_EXPLICIT_ROOT",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/AcceptanceRepositoryPaths.java",
+          "anchor": "    static Path resolveRegularFile(String repositoryRelativePath, String missingFailure, String escapeFailure)"
+        },
+        {
+          "assertionKey": "GRADLE_ACCEPTANCE_REPOSITORY_INPUTS_MUST_USE_EXPLICIT_ROOT",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/AcceptanceRepositoryPathsTest.java",
+          "anchor": "    void resolvesExplicitRootInputsAndRejectsTraversalAndSymlinkEscape() throws IOException {"
+        },
+        {
+          "assertionKey": "GRADLE_ACCEPTANCE_REPOSITORY_INPUTS_MUST_USE_EXPLICIT_ROOT",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TdsAcceptanceProcess.java",
+          "anchor": "        Path capacityConfiguration = AcceptanceRepositoryPaths.resolveRegularFile("
+        },
+        {
+          "assertionKey": "GRADLE_ACCEPTANCE_REPOSITORY_INPUTS_MUST_USE_EXPLICIT_ROOT",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TerminalConnectionContractScenarios.java",
+          "anchor": "    private static Path terminalWireClientScript() throws IOException {"
+        },
+        {
+          "assertionKey": "GRADLE_ACCEPTANCE_REPOSITORY_INPUTS_MUST_USE_EXPLICIT_ROOT",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### GRADLE_ACCEPTANCE_REPOSITORY_INPUTS_MUST_USE_EXPLICIT_ROOT"
+        },
+        {
+          "assertionKey": "GRADLE_ACCEPTANCE_REPOSITORY_INPUTS_MUST_USE_EXPLICIT_ROOT",
+          "path": "scripts/test/backend-acceptance-structure.test.mjs",
+          "anchor": "test('acceptance repository inputs resolve only beneath the explicit Gradle root', () => {"
+        },
+        {
+          "assertionKey": "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION",
+          "path": "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/protocol/TerminalConnectionProtocol.java",
+          "anchor": "    public TerminalConnectionProtocol(ObjectMapper objectMapper) {"
+        },
+        {
+          "assertionKey": "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION",
+          "path": "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/session/TdsTrackedSessionLimiter.java",
+          "anchor": "    public TdsTrackedSessionLimiter(TdsRuntimeSettings settings) {"
+        },
+        {
+          "assertionKey": "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION",
+          "path": "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/UnauthenticatedConnectionLimiter.java",
+          "anchor": "    public UnauthenticatedConnectionLimiter(TdsRuntimeSettings settings) {"
+        },
+        {
+          "assertionKey": "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION",
+          "path": "apps/backend/terminal-data-server/src/test/java/architecture/TdsModuleBoundariesTest.java",
+          "anchor": "    static final ArchRule SPRING_STEREOTYPES_WITH_MULTIPLE_CONSTRUCTORS_SELECT_ONE = classes()"
+        },
+        {
+          "assertionKey": "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION",
+          "path": "apps/backend/terminal-data-server/src/test/java/com/catering/v2s/terminaldataserver/protocol/TerminalConnectionProtocolTest.java",
+          "anchor": "    void selectsTheProtocolResourceConstructorWhenManagedBySpring() {"
+        },
+        {
+          "assertionKey": "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION"
+        },
+        {
+          "assertionKey": "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION",
+          "path": "tools/verify-gates/verify.mjs",
+          "anchor": "    'tds-constructor-assembly',"
         }
       ],
       "sourceRefs": [
         "AGENTS.md",
         "PLATFORM-BLUEPRINT.md",
+        "apps/backend/catering-business-server/build.gradle.kts",
+        "apps/backend/catering-business-server/modules/terminal-binding/src/main/java/com/catering/v2s/terminalbinding/application/CancelTerminalActivationOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/BusinessDataConfiguration.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/terminal/ActivateTerminalOperation.java",
+        "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/AcceptanceRepositoryPaths.java",
+        "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/AcceptanceRepositoryPathsTest.java",
+        "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceMetricsConfiguration.java",
+        "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceTest.java",
+        "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TdsAcceptanceProcess.java",
+        "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TerminalConnectionContractScenarios.java",
+        "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/protocol/TerminalConnectionProtocol.java",
+        "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/session/TdsTrackedSessionLimiter.java",
+        "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/UnauthenticatedConnectionLimiter.java",
+        "apps/backend/terminal-data-server/src/test/java/architecture/TdsModuleBoundariesTest.java",
+        "apps/backend/terminal-data-server/src/test/java/com/catering/v2s/terminaldataserver/protocol/TerminalConnectionProtocolTest.java",
         "doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md",
         "doc/decisions/2026-07-27-v2s-identified-finding-generalization-and-prevention.md",
         "doc/decisions/2026-08-08-v2s-catalog-inventory-scope-specific-write-capabilities.md",
+        "doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md",
         "doc/evidence/platform/rm1/p6/rm1p6-u02-ui-ia-implementation-baseline.json",
         "doc/evidence/platform/rm1/p6/rm1p6-u06-ia-source-reconciliation.md",
         "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
+        "doc/platform/backend-coding-standard.md",
         "doc/review/platform/2026-07-25-v2s-all-v2-governance-disposition-ledger.md",
-        "project-memory/operations/phase-retrospective-and-systemic-repair.md"
+        "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+        "scripts/test/backend-acceptance-structure.test.mjs",
+        "tools/verify-gates/verify.mjs"
       ]
     },
     {
@@ -2004,26 +2202,15 @@
       "requiredAssertions": [
         "STATIC_PASS_NOT_DYNAMIC_PASS",
         "FAILURE_TAXONOMY_IS_TYPED",
+        "ASYNC_PROTOCOL_ERROR_DIAGNOSTICS_ARE_SAFE",
+        "ASYNC_POOLED_BUFFER_LIFETIME_IS_EXPLICIT",
+        "PARENT_CONTROLLED_CHILD_RESULTS_SURVIVE_EXIT_RACES",
         "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
         "BACKEND_ACCEPTANCE_REAL_SCENARIOS",
-        "EXPLICIT_NODE_TEST_DENOMINATOR_MUST_MATCH_DISCOVERY"
+        "EXPLICIT_NODE_TEST_DENOMINATOR_MUST_MATCH_DISCOVERY",
+        "JAVA_SQL_SOURCE_ASSERTIONS_MATCH_ASSEMBLED_VALUES"
       ],
       "assertionSources": [
-        {
-          "assertionKey": "STATIC_PASS_NOT_DYNAMIC_PASS",
-          "path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
-          "anchor": "本文档是需求分析，不是实施授权，也不是评审结论。未运行 Testcontainers / DEV / L2 / reset / seed / 浏览器 / UAT / 部署；不得据此宣称任何动态、业务、cleanup 或性能结果。Java 测试、Testcontainers、L2 三层本次未执行，相关判断均为静态。"
-        },
-        {
-          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
-          "path": "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md",
-          "anchor": "- heartbeat 进入 stall discriminator；readiness progress、terminal/preflight evidence、JSON `Content-Type` materialization 和 firstFailure 原码逐层透传都以 run manifest/report 为唯一事实。"
-        },
-        {
-          "assertionKey": "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
-          "path": "doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md",
-          "anchor": "## Decision"
-        },
         {
           "assertionKey": "BACKEND_ACCEPTANCE_REAL_SCENARIOS",
           "path": "scripts/README.md",
@@ -2033,13 +2220,188 @@
           "assertionKey": "EXPLICIT_NODE_TEST_DENOMINATOR_MUST_MATCH_DISCOVERY",
           "path": "scripts/README.md",
           "anchor": "- `scripts/test/test-health-entry-runner.mjs --self-test` 只验证显式 Node 测试入口的分母与红变异；`--node` 才执行这份有限清单，并要求 `DISCOVERED_TEST_FILES` 与 `EXECUTED_TEST_FILES` 精确相等。新增目录必须作为显式入口加入，禁止用宽 glob 掩盖空匹配。"
+        },
+        {
+          "assertionKey": "JAVA_SQL_SOURCE_ASSERTIONS_MATCH_ASSEMBLED_VALUES",
+          "path": "scripts/test/catalog-inventory-query-envelope.test.mjs",
+          "anchor": "const joinJavaSqlSourceFragments = source =>"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TdsRegistrationGateBroker.java",
+          "anchor": "        String awaitObserved(Duration timeout, CompletableFuture<?> competingCompletion) throws Exception {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TdsRegistrationGateBrokerTest.java",
+          "anchor": "    void clientExitBeforeTheRegistrationGateIsReportedImmediately() throws Exception {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TerminalConnectionContractScenarios.java",
+          "anchor": "    private static String awaitRegistrationGateObservation("
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketHandler.java",
+          "anchor": "                                            \"event=tds_ws_first_frame_received \""
+        },
+        {
+          "assertionKey": "ASYNC_PROTOCOL_ERROR_DIAGNOSTICS_ARE_SAFE",
+          "path": "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsAuthenticationFailureDiagnostics.java",
+          "anchor": "    static Diagnostic describe(Throwable failure, Stage stage) {"
+        },
+        {
+          "assertionKey": "ASYNC_PROTOCOL_ERROR_DIAGNOSTICS_ARE_SAFE",
+          "path": "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketHandler.java",
+          "anchor": "                        \"event=tds_ws_authentication_failed connectionId={} stage={} failureType={} \""
+        },
+        {
+          "assertionKey": "ASYNC_PROTOCOL_ERROR_DIAGNOSTICS_ARE_SAFE",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TerminalConnectionContractScenarios.java",
+          "anchor": "                    \"event=tds_ws_authentication_failed\","
+        },
+        {
+          "assertionKey": "ASYNC_PROTOCOL_ERROR_DIAGNOSTICS_ARE_SAFE",
+          "path": "apps/backend/terminal-data-server/src/test/java/com/catering/v2s/terminaldataserver/websocket/TdsAuthenticationFailureDiagnosticsTest.java",
+          "anchor": "    void describesFailureTypesAndSqlStateWithoutExposingExceptionMessages() {"
+        },
+        {
+          "assertionKey": "ASYNC_PROTOCOL_ERROR_DIAGNOSTICS_ARE_SAFE",
+          "path": "scripts/test/backend-acceptance-structure.test.mjs",
+          "anchor": "test('registration-gate waits race client exit and retain credential-safe stage diagnostics', () => {"
+        },
+        {
+          "assertionKey": "ASYNC_PROTOCOL_ERROR_DIAGNOSTICS_ARE_SAFE",
+          "path": "tools/verify-gates/verify.mjs",
+          "anchor": "      'com.catering.v2s.terminaldataserver.websocket.TdsAuthenticationFailureDiagnosticsTest',"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md",
+          "anchor": "- heartbeat 进入 stall discriminator；readiness progress、terminal/preflight evidence、JSON `Content-Type` materialization 和 firstFailure 原码逐层透传都以 run manifest/report 为唯一事实。"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "project-memory/operations/test-closed-loop.md",
+          "anchor": "# Test closed loop"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/backend-acceptance-structure.test.mjs",
+          "anchor": "test('registration-gate waits race client exit and retain credential-safe stage diagnostics', () => {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/r5-remote-testcontainers.mjs",
+          "anchor": "export const requiresBackendAcceptanceEvidence = (backendAcceptanceRunId, testExecutionPassed) =>"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/r5-remote-testcontainers.mjs",
+          "anchor": "export function classifyRemoteGradleFailure(log, junitFailureCode) {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/r5-remote-testcontainers.mjs",
+          "anchor": "export function firstJUnitFailureCode(xml) {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/r5-remote-testcontainers.test.mjs",
+          "anchor": "test('failed Gradle execution preserves its first failure without requiring business-result artifacts', () => {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/r5-remote-testcontainers.test.mjs",
+          "anchor": "test('failed remote Gradle runs retain the JUnit assertion or deepest setup cause as the failure category', () => {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/r5-remote-testcontainers.test.mjs",
+          "anchor": "test('remote Gradle failure classification prefers archived JUnit causes over wrapper markers', () => {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/terminal-ws-wire-client.mjs",
+          "anchor": "    process.stderr.write(`TERMINAL_WIRE_STAGE=WEBSOCKET_OPEN scenario=${request.scenario}\\n`);"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/terminal-ws-wire-client.mjs",
+          "anchor": "export const classifyWireFailureForDiagnostics = failure => {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/terminal-ws-wire-client.mjs",
+          "anchor": "export const safeCloseReasonForDiagnostics = reason =>"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/terminal-ws-wire-client.test.mjs",
+          "anchor": "test('registration-race client logs only non-sensitive handshake and auth-send stages', () => {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/terminal-ws-wire-client.test.mjs",
+          "anchor": "test('wire diagnostics preserve safe markers and redact unrecognized close reasons and errors', () => {"
+        },
+        {
+          "assertionKey": "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
+          "path": "doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md",
+          "anchor": "## Decision"
+        },
+        {
+          "assertionKey": "STATIC_PASS_NOT_DYNAMIC_PASS",
+          "path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
+          "anchor": "本文档是需求分析，不是实施授权，也不是评审结论。未运行 Testcontainers / DEV / L2 / reset / seed / 浏览器 / UAT / 部署；不得据此宣称任何动态、业务、cleanup 或性能结果。Java 测试、Testcontainers、L2 三层本次未执行，相关判断均为静态。"
+        },
+        {
+          "assertionKey": "ASYNC_POOLED_BUFFER_LIFETIME_IS_EXPLICIT",
+          "path": "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketHandler.java",
+          "anchor": "                    message.retain();"
+        },
+        {
+          "assertionKey": "ASYNC_POOLED_BUFFER_LIFETIME_IS_EXPLICIT",
+          "path": "apps/backend/terminal-data-server/src/test/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketMessageOwnershipTest.java",
+          "anchor": "    void retainedPayloadRemainsReadableAfterReactorNettyReleasesTheFrame() throws Exception {"
+        },
+        {
+          "assertionKey": "ASYNC_POOLED_BUFFER_LIFETIME_IS_EXPLICIT",
+          "path": "scripts/test/backend-acceptance-structure.test.mjs",
+          "anchor": "test('TDS retains pooled WebSocket payloads across asynchronous handling and releases once', () => {"
+        },
+        {
+          "assertionKey": "PARENT_CONTROLLED_CHILD_RESULTS_SURVIVE_EXIT_RACES",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TerminalConnectionContractScenarios.java",
+          "anchor": "        private JsonNode sendControlCommand(String stage, String command, boolean closeInput) throws Exception {"
+        },
+        {
+          "assertionKey": "PARENT_CONTROLLED_CHILD_RESULTS_SURVIVE_EXIT_RACES",
+          "path": "scripts/test/backend-acceptance-structure.test.mjs",
+          "anchor": "test('persistent wire-probe commands preserve child results across process-exit races', () => {"
         }
       ],
       "sourceRefs": [
+        "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TdsRegistrationGateBroker.java",
+        "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TdsRegistrationGateBrokerTest.java",
+        "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TerminalConnectionContractScenarios.java",
+        "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsAuthenticationFailureDiagnostics.java",
+        "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketHandler.java",
+        "apps/backend/terminal-data-server/src/test/java/com/catering/v2s/terminaldataserver/websocket/TdsAuthenticationFailureDiagnosticsTest.java",
+        "apps/backend/terminal-data-server/src/test/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketMessageOwnershipTest.java",
         "doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md",
         "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md",
         "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
-        "scripts/README.md"
+        "project-memory/operations/test-closed-loop.md",
+        "scripts/README.md",
+        "scripts/test/backend-acceptance-structure.test.mjs",
+        "scripts/test/catalog-inventory-query-envelope.test.mjs",
+        "scripts/test/r5-remote-testcontainers.mjs",
+        "scripts/test/r5-remote-testcontainers.test.mjs",
+        "scripts/test/terminal-ws-wire-client.mjs",
+        "scripts/test/terminal-ws-wire-client.test.mjs",
+        "tools/verify-gates/verify.mjs"
       ]
     },
     {
@@ -2086,7 +2448,8 @@
         "BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY",
         "PASS_WITHOUT_REVIEWED_FIXTURE_DENOMINATOR_IS_NOT_COMPLETION",
         "RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN",
-        "NATIVE_SEMANTIC_PROP_MUST_BE_PLATFORM_SUPPORTED"
+        "NATIVE_SEMANTIC_PROP_MUST_BE_PLATFORM_SUPPORTED",
+        "AGGREGATE_GATE_FAILURE_FAMILY_CLOSURE"
       ],
       "assertionSources": [
         {
@@ -2128,11 +2491,28 @@
           "assertionKey": "NATIVE_SEMANTIC_PROP_MUST_BE_PLATFORM_SUPPORTED",
           "path": "project-memory/operations/execution-economics-and-failure-family-closure.md",
           "anchor": "- `NATIVE_SEMANTIC_PROP_MUST_BE_PLATFORM_SUPPORTED`:**跨平台 primitive 的原生语义属性必须以目标平台实际支持集为准。**"
+        },
+        {
+          "assertionKey": "AGGREGATE_GATE_FAILURE_FAMILY_CLOSURE",
+          "path": "project-memory/operations/execution-economics-and-failure-family-closure.md",
+          "anchor": "### AGGREGATE_GATE_FAILURE_FAMILY_CLOSURE"
+        },
+        {
+          "assertionKey": "AGGREGATE_GATE_FAILURE_FAMILY_CLOSURE",
+          "path": "tools/verify-gates/verify.mjs",
+          "anchor": "  ['backend-spotless-check', 'gradle', ['spotlessCheck', '--no-daemon'], ['BUILD SUCCESSFUL']],"
+        },
+        {
+          "assertionKey": "AGGREGATE_GATE_FAILURE_FAMILY_CLOSURE",
+          "path": "build.gradle.kts",
+          "anchor": "        dependsOn(backendJavaUtf8LineLimit)"
         }
       ],
       "sourceRefs": [
+        "build.gradle.kts",
         "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md",
-        "project-memory/operations/execution-economics-and-failure-family-closure.md"
+        "project-memory/operations/execution-economics-and-failure-family-closure.md",
+        "tools/verify-gates/verify.mjs"
       ]
     },
     {
@@ -3040,10 +3420,22 @@
           "assertionKey": "LOCATE_BY_ANCHOR_NOT_LINE",
           "path": "doc/platform/foundation-charter.md",
           "anchor": "### 5-A · 定位用锚点,不用行号"
+        },
+        {
+          "assertionKey": "LOCATE_BY_ANCHOR_NOT_LINE",
+          "path": "project-memory/pitfalls/line-number-as-anchor.md",
+          "anchor": "# 用行号指认一个自己即将移动的目标"
+        },
+        {
+          "assertionKey": "LOCATE_BY_ANCHOR_NOT_LINE",
+          "path": "tools/project-memory/cli.mjs",
+          "anchor": "      if (!sourceText.split(\"\\n\").includes(source.anchor)) {"
         }
       ],
       "sourceRefs": [
-        "doc/platform/foundation-charter.md"
+        "doc/platform/foundation-charter.md",
+        "project-memory/pitfalls/line-number-as-anchor.md",
+        "tools/project-memory/cli.mjs"
       ]
     },
     {
@@ -5210,6 +5602,94 @@
       "sourceRefs": [
         "doc/platform/terminal-coding-standard.md",
         "project-memory/practices/ter-input-and-virtual-keyboard-usage.md"
+      ]
+    },
+    {
+      "id": "operations.claude-review-finding-intake",
+      "path": "project-memory/operations/claude-review-finding-intake.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform"
+        ],
+        "impacts": [
+          "evidence",
+          "governance"
+        ],
+        "triggers": [
+          "task-start",
+          "review"
+        ]
+      },
+      "requiredAssertions": [
+        "CLAUDE_REVIEW_FINDINGS_MAIN_AGENT_OWNS_INTAKE_AND_REPAIR"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "CLAUDE_REVIEW_FINDINGS_MAIN_AGENT_OWNS_INTAKE_AND_REPAIR",
+          "path": "project-memory/operations/claude-review-finding-intake.md",
+          "anchor": "# Claude 评审 finding 由主 agent 核验和处置"
+        }
+      ],
+      "sourceRefs": [
+        "project-memory/operations/claude-review-finding-intake.md"
+      ]
+    },
+    {
+      "id": "practices.third-party-library-official-source-verification",
+      "path": "project-memory/practices/third-party-library-official-source-verification.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "backend",
+          "contract",
+          "platform",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "architecture",
+          "evidence"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "THIRD_PARTY_BEHAVIOR_REQUIRES_VERSIONED_OFFICIAL_SOURCE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "THIRD_PARTY_BEHAVIOR_REQUIRES_VERSIONED_OFFICIAL_SOURCE",
+          "path": "doc/platform/third-party-library-usage-standard.md",
+          "anchor": "## 1 · 实际用到第三方行为时，先核准确版本的官方依据"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/third-party-library-usage-standard.md"
       ]
     }
   ]

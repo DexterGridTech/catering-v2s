@@ -103,6 +103,7 @@ const expectedStoreTerminalActionNodes = Object.freeze({
   TERMINAL_FORM: 'DRAWER',
   TERMINAL_FORM_TAB_BASIC: 'TAB',
   TERMINAL_FORM_TAB_FUNCTIONS: 'TAB',
+  TERMINAL_DEVICE_TYPE_READONLY: 'TEXT',
   TERMINAL_NAME: 'INPUT',
   TERMINAL_DEVICE_TYPE: 'RADIO_GROUP',
   TERMINAL_DEVICE_TYPE_OPTION: 'RADIO_OPTION',
@@ -280,6 +281,7 @@ function assertStoreTerminalActionNodeSource(controlKey, binding) {
     TERMINAL_FORM: 'storeTerminalTestIds.formDrawer',
     TERMINAL_FORM_TAB_BASIC: 'storeTerminalTestIds.formTab',
     TERMINAL_FORM_TAB_FUNCTIONS: 'storeTerminalTestIds.formTab',
+    TERMINAL_DEVICE_TYPE_READONLY: 'storeTerminalTestIds.deviceTypeReadonly',
     TERMINAL_NAME: 'storeTerminalTestIds.name',
     TERMINAL_DEVICE_TYPE: 'storeTerminalTestIds.deviceType',
     TERMINAL_DEVICE_TYPE_OPTION: 'storeTerminalTestIds.deviceTypeOption',
@@ -334,6 +336,11 @@ function assertStoreTerminalActionNodeSource(controlKey, binding) {
   if (controlKey === 'TERMINAL_DEVICE_TYPE_OPTION') {
     assert.match(source, /<Radio/u);
     assert.match(source, /storeTerminalTestIds\.deviceTypeOption\(value\.key\)/u);
+  }
+  if (controlKey === 'TERMINAL_DEVICE_TYPE_READONLY') {
+    assert.match(source, /<Typography\.Text \{\.\.\.testId\(storeTerminalTestIds\.deviceTypeReadonly\)\}>/u);
+    assert.match(source, /storeTerminalDeviceTypeLabels\[props\.deviceType\]/u);
+    assert.match(source, /deviceType=\{editor\?\.terminal\.deviceType \?\? ''\}/u);
   }
   if (controlKey === 'TERMINAL_SCENE_TOGGLE') {
     assert.match(source, /<Checkbox/u);

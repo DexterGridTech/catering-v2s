@@ -50,11 +50,7 @@ public class CatalogSkuMediaFacts {
                         + placeholders
                         + CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_CLOSE_PAREN,
                 skuRefs.toArray());
-        if (!rows.isEmpty())
-            jdbc.batchUpdate(
-                    CatalogSkuMediaFactsSql
-                            .CATALOG_SKU_MEDIA_FACTS_INSERT_INTO_CATALOG_SKU_MEDIA_PRODUCT_SKU_REF_ASSET_REF_DISPLAY_ORDER,
-                    rows);
+        if (!rows.isEmpty()) jdbc.batchUpdate(CatalogSkuMediaFactsSql.INSERT_INTO_CAT_SKU_MEDIA_001, rows);
     }
 
     /** Inserts facts for freshly-created copy targets in one owner-local JDBC batch. */
@@ -70,11 +66,7 @@ public class CatalogSkuMediaFacts {
                     for (int order = 0; order < assets.size(); order++)
                         rows.add(new Object[] {skuRef, assets.get(order), order});
                 }
-        if (!rows.isEmpty())
-            jdbc.batchUpdate(
-                    CatalogSkuMediaFactsSql
-                            .CATALOG_SKU_MEDIA_FACTS_INSERT_INTO_CATALOG_SKU_MEDIA_PRODUCT_SKU_REF_ASSET_REF_DISPLAY_ORDER_ALTERNATE_A,
-                    rows);
+        if (!rows.isEmpty()) jdbc.batchUpdate(CatalogSkuMediaFactsSql.INSERT_INTO_CAT_SKU_MEDIA_ALT_A_002, rows);
     }
 
     public void applyTo(Map<UUID, ArrayNode> skusByItem) {

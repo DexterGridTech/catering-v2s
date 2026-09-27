@@ -6,6 +6,10 @@ import {readCatalogInventoryOpenApi} from '../lib/catalog-inventory-openapi.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..');
 const read = relative => readFileSync(path.join(root, relative), 'utf8');
+const joinJavaSqlSourceFragments = source =>
+  source
+    .replace(/\\\r?\n[ \t]*/g, '')
+    .replace(/"\s*\+\s*"/g, '');
 const catalogFeatureRoot = path.join(root, 'apps/frontend/operations-admin/src/features/catalog-management');
 const collectCatalogFeatureSourceFiles = directory => {
   const files = [];
@@ -311,19 +315,20 @@ test('navigation derives both all and uncategorized counts from its one scoped s
   const navigationSql = read(
     'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogWorkbenchReadServiceSql.java',
   );
+  const assembledNavigationSql = joinJavaSqlSourceFragments(navigationSql);
   const navigation = owner.match(/private ObjectNode navigation\([\s\S]*?\n    \}/)?.[0] ?? '';
 
   assert.notEqual(navigation, '');
   assert.match(persistence, /readNavigationShapes\(/);
-  assert.match(navigationSql, /COUNT\(\*\) FILTER \(WHERE NOT EXISTS \(SELECT 1 FROM/);
-  assert.match(navigationSql, /catalog\.catalog_item_category relation WHERE relation\.item_ref=catalog_item\.item_ref/);
+  assert.match(assembledNavigationSql, /COUNT\(\*\) FILTER \(WHERE NOT EXISTS \(SELECT 1 FROM/);
+  assert.match(assembledNavigationSql, /catalog\.catalog_item_category relation WHERE relation\.item_ref=catalog_item\.item_ref/);
   assert.match(navigation, /allCount\s*\+=\s*row\.count\(\)/);
   assert.match(navigation, /uncategorizedCount\s*\+=\s*row\.uncategorizedCount\(\)/);
   assert.match(navigation, /data\.put\("allCount", allCount\)/);
   assert.match(navigation, /data\.put\("uncategorizedCount", uncategorizedCount\)/);
   assert.doesNotMatch(navigation, /jdbc\.queryForObject\(|jdbc\.query\(/);
 
-  const splitCountMutation = navigationSql.replace(
+  const splitCountMutation = assembledNavigationSql.replace(
     'COUNT(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM',
     'COUNT(*) ',
   );
@@ -848,9 +853,10 @@ test('typed production-tag commands atomically claim their receipt, lock the fac
   const sql = read(
     'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogProductionTagOwnerServiceSql.java',
   );
+  const assembledProductionSql = joinJavaSqlSourceFragments(sql);
   const p1 = read('scripts/generate/catalog-inventory-p1.mjs');
-  const existingMutation = sql;
-  const createMutation = sql;
+  const existingMutation = assembledProductionSql;
+  const createMutation = assembledProductionSql;
 
   assert.notEqual(existingMutation, '');
   assert.notEqual(createMutation, '');

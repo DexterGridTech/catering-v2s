@@ -1,0 +1,2147 @@
+openapi: 3.0.3
+info:
+  title: Platform Admin Edge API
+  version: 0.1.0
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: /
+paths:
+  /api/platform/group-workspaces/{workspaceKey}/contract-overview:
+    get:
+      summary: Read the audited contract overview page
+      operationId: getPlatformContractOverviewPage
+      tags: [PlatformContractOverview]
+      security: [{platformSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: contractNo, in: query, schema: {type: string, maxLength: 120}}
+        - {name: storeName, in: query, schema: {type: string, maxLength: 120}}
+        - {name: phaseName, in: query, schema: {type: string, maxLength: 120}}
+        - {name: tenantName, in: query, schema: {type: string, maxLength: 120}}
+        - {name: itemCode, in: query, schema: {type: string, maxLength: 120}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/StoreContractStatus'}}
+        - {name: sort, in: query, schema: {$ref: '#/components/schemas/StoreContractSortKey', default: UPDATED_AT}}
+        - {name: direction, in: query, schema: {$ref: '#/components/schemas/StoreContractSortDirection', default: DESC}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: pageSize, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200': {description: Contract overview page, content: {application/json: {schema: {$ref: '#/components/schemas/ContractOverviewPage'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/group-workspaces/{workspaceKey}/contract-overview/{contractId}:
+    get:
+      summary: Read a contract overview detail
+      operationId: getPlatformContractOverviewDetail
+      tags: [PlatformContractOverview]
+      security: [{platformSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: contractId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}
+      responses:
+        '200': {description: Contract overview detail, content: {application/json: {schema: {$ref: '#/components/schemas/ContractOverviewItem'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/login-entry:
+    get:
+      summary: Read the keyed operations login entry
+      operationId: getOperationsWorkspaceLoginEntry
+      tags: [OperationsWorkspaceSession]
+      security: []
+      parameters: [{$ref: '#/components/parameters/WorkspaceLoginPathKey'}]
+      responses:
+        '200': {description: Workspace-owned login entry, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceLoginEntry'}}}}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/password-login:
+    post:
+      summary: Login to the operations workspace with an account password
+      operationId: operationsWorkspacePasswordLogin
+      tags: [OperationsWorkspaceSession]
+      security: []
+      parameters: [{$ref: '#/components/parameters/WorkspaceLoginPathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspacePasswordLoginRequest'}}}}
+      responses:
+        '200': {description: Authenticated workspace session, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceSessionEntry'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '429': {$ref: '#/components/responses/PlatformRateLimitedProblem'}
+  /api/operations/workspaces/{workspaceKey}/otp/send:
+    post:
+      summary: Send a workspace OTP for operations login
+      operationId: sendOperationsWorkspaceOtp
+      tags: [OperationsWorkspaceSession]
+      security: []
+      parameters: [{$ref: '#/components/parameters/WorkspaceLoginPathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceOtpSendRequest'}}}}
+      responses:
+        '200': {description: OTP delivery receipt, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceOtpSendResponse'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '429': {$ref: '#/components/responses/PlatformRateLimitedProblem'}
+  /api/operations/workspaces/{workspaceKey}/otp/verify:
+    post:
+      summary: Verify a workspace OTP and establish operations session
+      operationId: verifyOperationsWorkspaceOtp
+      tags: [OperationsWorkspaceSession]
+      security: []
+      parameters: [{$ref: '#/components/parameters/WorkspaceLoginPathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceOtpVerifyRequest'}}}}
+      responses:
+        '200': {description: Authenticated workspace session, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceSessionEntry'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '429': {$ref: '#/components/responses/PlatformRateLimitedProblem'}
+  /api/operations/workspaces/{workspaceKey}/session/entry:
+    get:
+      summary: Read the current operations workspace entry
+      operationId: getOperationsWorkspaceSessionEntry
+      tags: [OperationsWorkspaceSession]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/WorkspaceLoginPathKey'}]
+      responses:
+        '200': {description: Current workspace session entry, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceSessionEntry'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/session/context:
+    post:
+      summary: Select the current operations workspace identity
+      operationId: selectOperationsWorkspaceSessionContext
+      tags: [OperationsWorkspaceSession]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/WorkspaceLoginPathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceSelectContextRequest'}}}}
+      responses:
+        '200': {description: Selected workspace context, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceSessionEntry'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/session/password:
+    post:
+      summary: Change the current operations account password
+      operationId: changeCurrentWorkspacePassword
+      tags: [OperationsWorkspaceSession]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/WorkspaceLoginPathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceCurrentPasswordChangeRequest'}}}}
+      responses:
+        '200': {description: Password changed and sessions revoked, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceCurrentPasswordChangeResult'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/session/data-node:
+    post:
+      summary: Select the current operations data node
+      operationId: selectOperationsWorkspaceSessionDataNode
+      tags: [OperationsWorkspaceSession]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/WorkspaceLoginPathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceSelectDataNodeRequest'}}}}
+      responses:
+        '200': {description: Selected data node, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceSessionEntry'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/logout:
+    post:
+      summary: Log out of the operations workspace
+      operationId: operationsWorkspaceLogout
+      tags: [OperationsWorkspaceSession]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/WorkspaceLoginPathKey'}]
+      responses:
+        '204': {description: Workspace session revoked and cookie cleared}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/group-workspaces/{workspaceKey}:
+    get:
+      summary: Read one group workspace for the platform administrator
+      operationId: getPlatformGroupWorkspaceDetail
+      tags: [PlatformWorkspace]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/GroupWorkspacePathKey'
+      responses:
+        '200':
+          description: Workspace facts returned by the platform workspace owner.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupWorkspaceDetail'
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+    patch:
+      summary: Update group workspace display facts
+      operationId: updatePlatformGroupWorkspaceDisplay
+      tags: [PlatformWorkspace]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/GroupWorkspacePathKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupWorkspaceDisplayUpdateRequest'
+      responses:
+        '200':
+          description: Updated workspace owner readback.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupWorkspaceDetail'
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+    post:
+      summary: Enable or disable a group workspace
+      operationId: transitionPlatformGroupWorkspaceStatus
+      tags: [PlatformWorkspace]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/GroupWorkspacePathKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupWorkspaceStatusTransitionRequest'
+      responses:
+        '200':
+          description: Updated workspace status and audit projection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupWorkspaceDetail'
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/group-workspaces/{workspaceKey}/organization-overview:
+    get:
+      summary: Read the audited organization overview page
+      operationId: getPlatformOrganizationOverviewPage
+      tags: [PlatformOrganizationOverview]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: category, in: query, required: true, schema: {$ref: '#/components/schemas/OrganizationOverviewCategory'}}
+        - {name: type, in: query, schema: {$ref: '#/components/schemas/OrganizationOverviewType'}}
+        - {name: name, in: query, schema: {type: string, maxLength: 160}}
+        - {name: code, in: query, schema: {type: string, maxLength: 120}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/OrganizationOverviewStatus'}}
+        - {name: source, in: query, schema: {$ref: '#/components/schemas/OrganizationOverviewSource'}}
+        - {name: projectId, in: query, schema: {type: string, maxLength: 64}}
+        - {name: brandId, in: query, schema: {type: string, maxLength: 64}}
+        - {name: tenantId, in: query, schema: {type: string, maxLength: 64}}
+        - {name: sort, in: query, schema: {$ref: '#/components/schemas/OrganizationOverviewSortKey', default: UPDATED_AT}}
+        - {name: direction, in: query, schema: {$ref: '#/components/schemas/OrganizationOverviewSortDirection', default: DESC}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: pageSize, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200': {description: Audited organization overview page, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationOverviewPage'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/group-workspaces/{workspaceKey}/organization-overview/{category}/{itemId}:
+    get:
+      summary: Read one audited organization overview detail
+      operationId: getPlatformOrganizationOverviewDetail
+      tags: [PlatformOrganizationOverview]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: category, in: path, required: true, schema: {$ref: '#/components/schemas/OrganizationOverviewCategory'}}
+        - {name: itemId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}
+      responses:
+        '200': {description: Audited organization overview detail, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationOverviewItem'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/group-workspaces/{workspaceKey}/commercial-group:
+    post:
+      summary: Initialize the commercial group root for a group workspace
+      operationId: initializePlatformCommercialGroupRoot
+      tags: [PlatformWorkspace]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/GroupWorkspacePathKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommercialGroupInitializeRequest'
+      responses:
+        '201':
+          description: Commercial group root owner readback.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommercialGroupRoot'
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+        '502': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/roles:
+    get:
+      summary: List workspace business roles
+      operationId: getWorkspaceRoles
+      tags: [WorkspaceRole]
+      security: [{platformSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {$ref: '#/components/parameters/RoleName'}
+        - {$ref: '#/components/parameters/RoleOrganizationType'}
+        - {$ref: '#/components/parameters/RoleStatus'}
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+      responses:
+        '200': {description: Workspace role owner readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceRolePage'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+    post:
+      summary: Create a workspace business role
+      operationId: createWorkspaceRole
+      tags: [WorkspaceRole]
+      security: [{platformSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceRoleCreateRequest'}}}}
+      responses:
+        '201': {description: Created workspace role, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceRole'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/role-candidates:
+    get:
+      summary: Read complete enabled business-role candidates for page authorization
+      operationId: getWorkspaceRoleCandidates
+      tags: [WorkspaceRole]
+      security: [{platformSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      responses:
+        '200': {description: Complete enabled business-role owner snapshot, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceRoleCandidateCatalog'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/roles/{roleId}:
+    patch:
+      summary: Update a workspace business role
+      operationId: updateWorkspaceRole
+      tags: [WorkspaceRole]
+      security: [{platformSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {$ref: '#/components/parameters/RolePathId'}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceRoleUpdateRequest'}}}}
+      responses:
+        '200': {description: Updated workspace role, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceRole'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/roles/{roleId}/status:
+    post:
+      summary: Transition a workspace business role status
+      operationId: transitionWorkspaceRoleStatus
+      tags: [WorkspaceRole]
+      security: [{platformSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {$ref: '#/components/parameters/RolePathId'}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceRoleStatusTransitionRequest'}}}}
+      responses:
+        '200': {description: Updated workspace role status, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceRole'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/accounts:
+    get:
+      summary: List workspace user accounts
+      operationId: getWorkspaceAccounts
+      tags: [WorkspaceAccount]
+      security: [{platformSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: userName, in: query, required: false, schema: {type: string, maxLength: 120}}
+        - {name: mobile, in: query, required: false, schema: {type: string, maxLength: 32}}
+        - {name: loginName, in: query, required: false, schema: {type: string, maxLength: 120}}
+        - {name: roleQuery, in: query, required: false, schema: {type: string, maxLength: 120}}
+        - {name: status, in: query, required: false, schema: {$ref: '#/components/schemas/WorkspaceAccountStatus'}}
+        - {name: page, in: query, required: false, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: pageSize, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200': {description: Workspace account owner readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceAccountPage'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/accounts/{accountId}:
+    get:
+      summary: Read one workspace user account
+      operationId: getWorkspaceAccount
+      tags: [WorkspaceAccount]
+      security: [{platformSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: accountId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      responses:
+        '200': {description: Workspace account detail owner readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceAccount'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/accounts/{accountId}/status:
+    post:
+      summary: Transition a workspace user account status
+      operationId: transitionWorkspaceAccountStatus
+      tags: [WorkspaceAccount]
+      security: [{platformSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: accountId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceAccountStatusTransitionRequest'}}}}
+      responses:
+        '200': {description: Updated workspace account owner readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceAccount'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/accounts/{accountId}/credential-reset:
+    post:
+      summary: Request a workspace user credential reset
+      operationId: requestWorkspaceCredentialReset
+      tags: [WorkspaceAccount]
+      security: [{platformSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: accountId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceCredentialResetRequest'}}}}
+      responses:
+        '200': {description: Credential reset generation owner readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceCredentialResetResult'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/invitations:
+    get:
+      summary: List workspace invitations
+      operationId: getWorkspaceInvitations
+      tags: [WorkspaceInvitation]
+      security: [{platformSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: mobile, in: query, required: false, schema: {type: string, minLength: 1, maxLength: 32}}
+        - {name: organizationQuery, in: query, required: false, schema: {type: string, minLength: 1, maxLength: 240}}
+        - {name: roleQuery, in: query, required: false, schema: {type: string, minLength: 1, maxLength: 120}}
+        - {name: status, in: query, required: false, schema: {$ref: '#/components/schemas/WorkspaceInvitationStatus'}}
+        - {name: expiresFrom, in: query, required: false, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: expiresTo, in: query, required: false, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: sort, in: query, required: false, schema: {$ref: '#/components/schemas/WorkspaceInvitationSortKey', default: CREATED_AT}}
+        - {name: direction, in: query, required: false, schema: {$ref: '#/components/schemas/SortDirection', default: DESC}}
+        - {name: page, in: query, required: false, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: pageSize, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200': {description: Invitation owner readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitationPage'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+    post:
+      summary: Create a workspace invitation
+      operationId: createWorkspaceInvitation
+      tags: [WorkspaceInvitation]
+      security: [{platformSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitationCreateRequest'}}}}
+      responses:
+        '201': {description: Created invitation readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitation'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/invitation-candidates:
+    get:
+      summary: List invitation organization and role candidates
+      operationId: getWorkspaceInvitationCandidates
+      tags: [WorkspaceInvitation]
+      security: [{platformSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      responses:
+        '200': {description: Invitation candidates, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitationCandidatePage'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/invitations/{invitationId}/cancel:
+    post:
+      summary: Cancel a workspace invitation
+      operationId: cancelWorkspaceInvitation
+      tags: [WorkspaceInvitation]
+      security: [{platformSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: invitationId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitationCancelRequest'}}}}
+      responses:
+        '200': {description: Cancelled invitation readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitation'}}}}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/invitations/{invitationId}/reissue:
+    post:
+      summary: Reissue a workspace invitation
+      operationId: reissueWorkspaceInvitation
+      tags: [WorkspaceInvitation]
+      security: [{platformSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: invitationId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitationReissueRequest'}}}}
+      responses:
+        '200': {description: Reissued invitation readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitation'}}}}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/brands:
+    get:
+      summary: Read brands in the current group context
+      operationId: getOperationsOrganizationBrands
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: name, in: query, schema: {type: string, maxLength: 120}}
+        - {name: code, in: query, schema: {type: string, maxLength: 64}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/BusinessEntityStatus'}}
+        - {name: source, in: query, schema: {$ref: '#/components/schemas/BusinessEntitySource'}}
+        - {name: sort, in: query, schema: {$ref: '#/components/schemas/BusinessEntitySortKey', default: UPDATED_AT}}
+        - {name: direction, in: query, schema: {$ref: '#/components/schemas/BusinessEntitySortDirection', default: DESC}}
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+      responses:
+        '200': {description: Brand page, content: {application/json: {schema: {$ref: '#/components/schemas/BrandPage'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+    post:
+      summary: Create a brand
+      operationId: createOperationsOrganizationBrand
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/BrandCreateRequest'}}}}
+      responses:
+        '201': {description: Created brand, content: {application/json: {schema: {$ref: '#/components/schemas/Brand'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/brands/{brandId}:
+    get:
+      summary: Read a brand detail
+      operationId: getOperationsOrganizationBrand
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: brandId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}, {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}]
+      responses:
+        '200': {description: Brand detail, content: {application/json: {schema: {$ref: '#/components/schemas/Brand'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+    patch:
+      summary: Update a brand
+      operationId: updateOperationsOrganizationBrand
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: brandId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/BrandUpdateRequest'}}}}
+      responses:
+        '200': {description: Updated brand, content: {application/json: {schema: {$ref: '#/components/schemas/Brand'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/brands/{brandId}/status:
+    post:
+      summary: Enable or disable a brand
+      operationId: transitionOperationsOrganizationBrandStatus
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: brandId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/BusinessEntityStatusRequest'}}}}
+      responses:
+        '200': {description: Brand status, content: {application/json: {schema: {$ref: '#/components/schemas/Brand'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/tenants:
+    get:
+      summary: Read operating tenants in the current group context
+      operationId: getOperationsOrganizationTenants
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: name, in: query, schema: {type: string, maxLength: 120}}
+        - {name: code, in: query, schema: {type: string, maxLength: 64}}
+        - {name: legalName, in: query, schema: {type: string, maxLength: 200}}
+        - {name: unifiedSocialCreditCode, in: query, schema: {type: string, maxLength: 32}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/BusinessEntityStatus'}}
+        - {name: source, in: query, schema: {$ref: '#/components/schemas/BusinessEntitySource'}}
+        - {name: sort, in: query, schema: {$ref: '#/components/schemas/BusinessEntitySortKey', default: UPDATED_AT}}
+        - {name: direction, in: query, schema: {$ref: '#/components/schemas/BusinessEntitySortDirection', default: DESC}}
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+      responses:
+        '200': {description: Tenant page, content: {application/json: {schema: {$ref: '#/components/schemas/TenantPage'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+    post:
+      summary: Create an operating tenant
+      operationId: createOperationsOrganizationTenant
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TenantCreateRequest'}}}}
+      responses:
+        '201': {description: Created tenant, content: {application/json: {schema: {$ref: '#/components/schemas/Tenant'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/tenants/{tenantId}:
+    get:
+      summary: Read an operating tenant detail
+      operationId: getOperationsOrganizationTenant
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: tenantId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}, {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}]
+      responses:
+        '200': {description: Tenant detail, content: {application/json: {schema: {$ref: '#/components/schemas/Tenant'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+    patch:
+      summary: Update an operating tenant
+      operationId: updateOperationsOrganizationTenant
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: tenantId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TenantUpdateRequest'}}}}
+      responses:
+        '200': {description: Updated tenant, content: {application/json: {schema: {$ref: '#/components/schemas/Tenant'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/tenants/{tenantId}/status:
+    post:
+      summary: Enable or disable an operating tenant
+      operationId: transitionOperationsOrganizationTenantStatus
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: tenantId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/BusinessEntityStatusRequest'}}}}
+      responses:
+        '200': {description: Tenant status, content: {application/json: {schema: {$ref: '#/components/schemas/Tenant'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/head-companies:
+    get:
+      summary: Read head companies in the current group context
+      operationId: getOperationsOrganizationHeadCompanies
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: name, in: query, schema: {type: string, maxLength: 120}}
+        - {name: code, in: query, schema: {type: string, maxLength: 64}}
+        - {name: legalName, in: query, schema: {type: string, maxLength: 200}}
+        - {name: unifiedSocialCreditCode, in: query, schema: {type: string, maxLength: 32}}
+        - {name: brandId, in: query, schema: {type: string, maxLength: 64}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/BusinessEntityStatus'}}
+        - {name: source, in: query, schema: {$ref: '#/components/schemas/BusinessEntitySource'}}
+        - {name: sort, in: query, schema: {$ref: '#/components/schemas/BusinessEntitySortKey', default: UPDATED_AT}}
+        - {name: direction, in: query, schema: {$ref: '#/components/schemas/BusinessEntitySortDirection', default: DESC}}
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+      responses:
+        '200': {description: Head company page, content: {application/json: {schema: {$ref: '#/components/schemas/HeadCompanyPage'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+    post:
+      summary: Create a head company
+      operationId: createOperationsOrganizationHeadCompany
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/HeadCompanyCreateRequest'}}}}
+      responses:
+        '201': {description: Created head company, content: {application/json: {schema: {$ref: '#/components/schemas/HeadCompany'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/head-companies/{headCompanyId}:
+    get:
+      summary: Read a head company detail
+      operationId: getOperationsOrganizationHeadCompany
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: headCompanyId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}, {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}]
+      responses:
+        '200': {description: Head company detail, content: {application/json: {schema: {$ref: '#/components/schemas/HeadCompany'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+    patch:
+      summary: Update a head company
+      operationId: updateOperationsOrganizationHeadCompany
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: headCompanyId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/HeadCompanyUpdateRequest'}}}}
+      responses:
+        '200': {description: Updated head company, content: {application/json: {schema: {$ref: '#/components/schemas/HeadCompany'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/head-companies/{headCompanyId}/status:
+    post:
+      summary: Enable or disable a head company
+      operationId: transitionOperationsOrganizationHeadCompanyStatus
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: headCompanyId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/BusinessEntityStatusRequest'}}}}
+      responses:
+        '200': {description: Head company status, content: {application/json: {schema: {$ref: '#/components/schemas/HeadCompany'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations:
+    put:
+      summary: Replace head company brand authorizations
+      operationId: replaceOperationsOrganizationHeadCompanyBrandAuthorizations
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: headCompanyId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/HeadCompanyBrandAuthorizationRequest'}}}}
+      responses:
+        '200': {description: Head company brand authorization readback, content: {application/json: {schema: {$ref: '#/components/schemas/HeadCompanyBrandAuthorizationResult'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/business-entities/extension-definition:
+    get:
+      summary: Read current business field rules for organization business entity forms
+      operationId: getOperationsOrganizationBusinessEntityExtensionDefinition
+      tags: [OperationsBusinessEntity]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}]
+      responses:
+        '200': {description: Current business entity field rules, content: {application/json: {schema: {$ref: '#/components/schemas/ExtensionDefinition'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/workspaces/{workspaceKey}/extension-definitions:
+    get:
+      summary: List contract extension entity types
+      operationId: getExtensionEntityCatalog
+      tags: [ExtensionDefinition]
+      security: [{platformSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      responses: {'200': {description: Entity catalog, content: {application/json: {schema: {$ref: '#/components/schemas/ExtensionEntityCatalogPage'}}}}, '401': {$ref: '#/components/responses/PlatformProblem'}, '403': {$ref: '#/components/responses/PlatformProblem'}}
+  /api/platform/workspaces/{workspaceKey}/extension-definitions/{entityType}:
+    get:
+      summary: Read current extension field rules
+      operationId: getExtensionDefinition
+      tags: [ExtensionDefinition]
+      security: [{platformSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: entityType, in: path, required: true, schema: {$ref: '#/components/schemas/ExtensionEntityType'}}]
+      responses: {'200': {description: Definition readback, content: {application/json: {schema: {$ref: '#/components/schemas/ExtensionDefinition'}}}}, '401': {$ref: '#/components/responses/PlatformProblem'}, '403': {$ref: '#/components/responses/PlatformProblem'}}
+    put:
+      summary: Replace current extension field rules
+      operationId: replaceExtensionDefinition
+      tags: [ExtensionDefinition]
+      security: [{platformSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: entityType, in: path, required: true, schema: {$ref: '#/components/schemas/ExtensionEntityType'}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ExtensionDefinitionUpdateRequest'}}}}
+      responses: {'200': {description: Definition readback, content: {application/json: {schema: {$ref: '#/components/schemas/ExtensionDefinition'}}}}, '409': {$ref: '#/components/responses/PlatformProblem'}}
+  /api/operations/workspaces/{workspaceKey}/invitations:
+    get:
+      summary: Read invitations in the current user management page scope
+      operationId: getOperationsWorkspaceInvitations
+      tags: [OperationsWorkspaceInvitation]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: pageDesignKey, in: query, required: true, schema: {type: string, enum: [PG-IAM-GROUP-USERS, PG-IAM-REGION-USERS, PG-IAM-PROJECT-USERS, PG-IAM-HEAD-COMPANY-USERS, PG-IAM-STORE-USERS]}}
+        - {name: scopeRef, in: query, required: false, schema: {type: string, maxLength: 240}}
+        - {name: mobile, in: query, required: false, schema: {type: string, maxLength: 32}}
+        - {name: organizationQuery, in: query, required: false, schema: {type: string, maxLength: 240}}
+        - {name: roleQuery, in: query, required: false, schema: {type: string, maxLength: 120}}
+        - {name: status, in: query, required: false, schema: {$ref: '#/components/schemas/WorkspaceInvitationStatus'}}
+        - {name: expiresFrom, in: query, required: false, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: expiresTo, in: query, required: false, schema: {type: integer, format: int64, minimum: 0}}
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+      responses:
+        '200': {description: Scoped invitation owner readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitationPage'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+    post:
+      summary: Create an invitation in the current user management page scope
+      operationId: createOperationsWorkspaceInvitation
+      tags: [OperationsWorkspaceInvitation]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceOperationsInvitationCreateRequest'}}}}
+      responses:
+        '201': {description: Created invitation owner readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitation'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/invitations/candidates:
+    get:
+      summary: Read fixed employment organization and eligible roles
+      operationId: getOperationsWorkspaceInvitationCandidates
+      tags: [OperationsWorkspaceInvitation]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: pageDesignKey, in: query, required: true, schema: {type: string, enum: [PG-IAM-GROUP-USERS, PG-IAM-REGION-USERS, PG-IAM-PROJECT-USERS, PG-IAM-HEAD-COMPANY-USERS, PG-IAM-STORE-USERS]}}
+        - {name: scopeRef, in: query, required: false, schema: {type: string, maxLength: 240}}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+      responses:
+        '200': {description: Fixed organization and eligible roles, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitationCandidatePage'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/invitations/{invitationId}/cancel:
+    post:
+      summary: Cancel an invitation in the current user management page scope
+      operationId: cancelOperationsWorkspaceInvitation
+      tags: [OperationsWorkspaceInvitation]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: invitationId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceOperationsInvitationActionRequest'}}}}
+      responses:
+        '200': {description: Cancelled invitation owner readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitation'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/invitations/{invitationId}/reissue:
+    post:
+      summary: Reissue an invitation in the current user management page scope
+      operationId: reissueOperationsWorkspaceInvitation
+      tags: [OperationsWorkspaceInvitation]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: invitationId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceOperationsInvitationActionRequest'}}}}
+      responses:
+        '200': {description: Reissued invitation owner readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceInvitation'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/hierarchy:
+    get:
+      summary: Read the organization hierarchy for the operations workspace
+      operationId: getOperationsOrganizationHierarchy
+      tags: [OperationsOrganizationHierarchy]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      responses:
+        '200': {description: Organization hierarchy snapshot readback, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationHierarchySnapshot'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/membership:
+    get:
+      summary: Read users and assignments in the closed target page scope
+      operationId: getOperationsWorkspaceMembership
+      tags: [OperationsWorkspaceMembership]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: pageDesignKey, in: query, required: true, schema: {type: string, enum: [PG-IAM-GROUP-USERS, PG-IAM-REGION-USERS, PG-IAM-PROJECT-USERS, PG-IAM-HEAD-COMPANY-USERS, PG-IAM-STORE-USERS]}}
+        - {name: scopeRef, in: query, required: false, schema: {type: string, maxLength: 240}}
+        - {name: userName, in: query, required: false, schema: {type: string, maxLength: 120}}
+        - {name: mobile, in: query, required: false, schema: {type: string, maxLength: 32}}
+        - {name: roleQuery, in: query, required: false, schema: {type: string, maxLength: 120}}
+        - {name: status, in: query, required: false, schema: {$ref: '#/components/schemas/WorkspaceAccountStatus'}}
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+      responses:
+        '200': {description: Scoped membership readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceMembershipPage'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/membership/accounts/{accountId}:
+    get:
+      summary: Read one user and the sources of its roles
+      operationId: getOperationsWorkspaceMembershipAccount
+      tags: [OperationsWorkspaceMembership]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: accountId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}
+        - {name: pageDesignKey, in: query, required: true, schema: {type: string, enum: [PG-IAM-GROUP-USERS, PG-IAM-REGION-USERS, PG-IAM-PROJECT-USERS, PG-IAM-HEAD-COMPANY-USERS, PG-IAM-STORE-USERS]}}
+        - {name: scopeRef, in: query, required: false, schema: {type: string, maxLength: 240}}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+      responses:
+        '200': {description: Scoped member detail, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceMember'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/membership/assignments/{assignmentId}/revoke:
+    post:
+      summary: Revoke one role assignment without deleting the account
+      operationId: revokeOperationsWorkspaceMembershipAssignment
+      tags: [OperationsWorkspaceMembership]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: assignmentId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceMembershipRevokeRequest'}}}}
+      responses:
+        '200': {description: Assignment and context readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspaceMembershipRevokeResult'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/hierarchy/regions:
+    post:
+      summary: Create an organization region from the operations workspace
+      operationId: createOperationsOrganizationRegion
+      tags: [OperationsOrganizationHierarchy]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationNodeCreateRequest'}}}}
+      responses:
+        '201': {description: Region readback, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationNode'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/hierarchy/regions/{regionId}/projects:
+    post:
+      summary: Create an organization project from the operations workspace
+      operationId: createOperationsOrganizationProject
+      tags: [OperationsOrganizationHierarchy]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {$ref: '#/components/parameters/OrganizationRegionPathId'}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationProjectCreateRequest'}}}}
+      responses:
+        '201': {description: Project readback, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationNode'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/hierarchy/{nodeId}:
+    patch:
+      summary: Update an organization node from the operations workspace
+      operationId: updateOperationsOrganizationNode
+      tags: [OperationsOrganizationHierarchy]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {$ref: '#/components/parameters/OrganizationNodePathId'}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationNodeUpdateRequest'}}}}
+      responses:
+        '200': {description: Node readback, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationNode'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/hierarchy/{nodeId}/status:
+    post:
+      summary: Change an organization node status from the operations workspace
+      operationId: transitionOperationsOrganizationNodeStatus
+      tags: [OperationsOrganizationHierarchy]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {$ref: '#/components/parameters/OrganizationNodePathId'}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationNodeStatusTransitionRequest'}}}}
+      responses:
+        '200': {description: Node status readback, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationNode'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/page-access/entry-guard:
+    post:
+      summary: Check an operations page direct-entry grant
+      operationId: checkOperationsPageEntryGuard
+      tags: [OperationsPageAccess]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspacePageEntryGuardRequest'}}}}
+      responses:
+        '200': {description: Page direct-entry authorization readback, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspacePageEntryGuard'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/auth/password-login:
+    post:
+      summary: Authenticate a platform administrator through the browser edge
+      operationId: platformPasswordLogin
+      tags: [PlatformAuth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated platform session; gateway sets the HttpOnly cookie.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformSessionView'
+        '400':
+          $ref: '#/components/responses/PlatformProblem'
+        '401':
+          $ref: '#/components/responses/PlatformProblem'
+        '429':
+          $ref: '#/components/responses/PlatformRateLimitedProblem'
+        '503':
+          $ref: '#/components/responses/PlatformProblem'
+  /api/platform/auth/session:
+    get:
+      summary: Read the current platform administrator session
+      operationId: getCurrentPlatformSession
+      tags: [PlatformAuth]
+      security:
+        - platformSessionCookie: []
+      responses:
+        '200':
+          description: Current platform administrator session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformSessionView'
+        '401':
+          $ref: '#/components/responses/PlatformProblem'
+        '403':
+          $ref: '#/components/responses/PlatformProblem'
+        '503':
+          $ref: '#/components/responses/PlatformProblem'
+  /api/platform/auth/password:
+    post:
+      summary: Change the current platform administrator password
+      operationId: changeCurrentPlatformPassword
+      tags: [PlatformAuth]
+      security:
+        - platformSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformCurrentPasswordChangeRequest'
+      responses:
+        '200':
+          description: Password changed and all current sessions revoked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformCurrentPasswordChangeResult'
+        '400':
+          $ref: '#/components/responses/PlatformProblem'
+        '401':
+          $ref: '#/components/responses/PlatformProblem'
+        '409':
+          $ref: '#/components/responses/PlatformProblem'
+  /api/platform/auth/logout:
+    post:
+      summary: Revoke the current platform administrator session
+      operationId: platformLogout
+      tags: [PlatformAuth]
+      security:
+        - platformSessionCookie: []
+      responses:
+        '204':
+          description: Session was revoked and the gateway clears the cookie.
+        '401':
+          $ref: '#/components/responses/PlatformProblem'
+        '503':
+          $ref: '#/components/responses/PlatformProblem'
+  /api/platform/group-workspaces:
+    get:
+      summary: Read the platform-owned group workspace page
+      operationId: getPlatformGroupWorkspacePage
+      tags: [PlatformWorkspace]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/GroupWorkspaceName'
+        - $ref: '#/components/parameters/GroupWorkspaceKey'
+        - $ref: '#/components/parameters/OperationsTitle'
+        - $ref: '#/components/parameters/GroupWorkspaceStatus'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/GroupWorkspaceSortKey'
+        - $ref: '#/components/parameters/SortDirection'
+      responses:
+        '200':
+          description: Page facts returned by the platform workspace owner.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupWorkspacePage'
+        '400':
+          $ref: '#/components/responses/PlatformProblem'
+        '401':
+          $ref: '#/components/responses/PlatformProblem'
+        '403':
+          $ref: '#/components/responses/PlatformProblem'
+        '503':
+          $ref: '#/components/responses/PlatformProblem'
+    post:
+      summary: Create a group workspace with a previously staged logo
+      operationId: createPlatformGroupWorkspace
+      tags: [PlatformWorkspace]
+      security:
+        - platformSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupWorkspaceCreateRequest'
+      responses:
+        '201':
+          description: Created workspace and owner readback.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupWorkspaceCreateResult'
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+        '502': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/assets/staging:
+    post:
+      summary: Stage a platform logo for a later business-owner bind
+      operationId: stagePlatformAsset
+      tags: [PlatformAsset]
+      security:
+        - platformSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, usage]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                usage:
+                  $ref: '#/components/schemas/PlatformAssetUsage'
+      responses:
+        '201':
+          description: Short-lived staging asset and one-time bind grant.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformAssetStagingResult'
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '413': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/assets/{assetRef}/content:
+    get:
+      summary: Read a bound platform asset for display
+      operationId: getPlatformAssetContent
+      tags: [PlatformAsset]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - {name: assetRef, in: path, required: true, schema: {type: string, minLength: 32, maxLength: 128}}
+      responses:
+        '200':
+          description: Asset bytes
+          content:
+            image/png: {schema: {type: string, format: binary}}
+            image/jpeg: {schema: {type: string, format: binary}}
+            image/webp: {schema: {type: string, format: binary}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/admin-users:
+    get:
+      summary: Read the platform administrator page
+      operationId: getPlatformAdminPage
+      tags: [PlatformAdminGovernance]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/PlatformAdminUserName'
+        - $ref: '#/components/parameters/PlatformAdminLoginName'
+        - $ref: '#/components/parameters/PlatformAdminStatus'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/PlatformAdminSortKey'
+        - $ref: '#/components/parameters/SortDirection'
+      responses:
+        '200':
+          description: Platform administrator page from the IAM owner.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformAdminPage'
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+    post:
+      summary: Create a platform administrator
+      operationId: createPlatformAdmin
+      tags: [PlatformAdminGovernance]
+      security:
+        - platformSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformAdminCreateRequest'
+      responses:
+        '201':
+          description: Created platform administrator without credential material.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformAdminDetail'
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/admin-users/{platformAdminId}:
+    get:
+      summary: Read one platform administrator and audit summary
+      operationId: getPlatformAdminDetail
+      tags: [PlatformAdminGovernance]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/PlatformAdminPathId'
+      responses:
+        '200':
+          description: Platform administrator readback without credential material.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformAdminDetail'
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/admin-users/{platformAdminId}/profile:
+    patch:
+      summary: Update platform administrator profile facts
+      operationId: updatePlatformAdminProfile
+      tags: [PlatformAdminGovernance]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/PlatformAdminPathId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformAdminProfileUpdateRequest'
+      responses:
+        '200':
+          description: Updated platform administrator readback.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformAdminDetail'
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/admin-users/{platformAdminId}/status:
+    post:
+      summary: Enable or disable a platform administrator
+      operationId: transitionPlatformAdminStatus
+      tags: [PlatformAdminGovernance]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/PlatformAdminPathId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformAdminStatusTransitionRequest'
+      responses:
+        '200':
+          description: Updated platform administrator status and session effect.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformAdminDetail'
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/platform/admin-users/{platformAdminId}/credential-reset:
+    post:
+      summary: Reset a platform administrator credential
+      operationId: resetPlatformAdminCredential
+      tags: [PlatformAdminGovernance]
+      security:
+        - platformSessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/PlatformAdminPathId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformAdminCredentialResetRequest'
+      responses:
+        '200':
+          description: Updated platform administrator credential metadata without secret material.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformAdminDetail'
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/public/invitations/{workspaceKey}/{invitationToken}:
+    get:
+      summary: Read a public invitation
+      operationId: getPublicInvitationView
+      tags: [PublicInvitation]
+      security: []
+      parameters: [{name: workspaceKey, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}, {name: invitationToken, in: path, required: true, schema: {type: string, minLength: 16, maxLength: 128}}]
+      responses:
+        '200': {description: Public invitation facts, content: {application/json: {schema: {$ref: '#/components/schemas/PublicInvitationView'}}}}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+    post:
+      summary: Accept a public invitation and start mobile verification
+      operationId: acceptPublicInvitation
+      tags: [PublicInvitation]
+      security: []
+      parameters: [{name: workspaceKey, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}, {name: invitationToken, in: path, required: true, schema: {type: string, minLength: 16, maxLength: 128}}]
+      responses:
+        '200': {description: Next step, content: {application/json: {schema: {$ref: '#/components/schemas/PublicInvitationAcceptIntent'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+  /api/public/invitations/{workspaceKey}/{invitationToken}/otp/send:
+    post:
+      summary: Send a mobile verification code
+      operationId: sendPublicInvitationOtp
+      tags: [PublicInvitation]
+      security: []
+      parameters: [{name: workspaceKey, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}, {name: invitationToken, in: path, required: true, schema: {type: string, minLength: 16, maxLength: 128}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PublicInvitationOtpSendRequest'}}}}
+      responses:
+        '200': {description: OTP delivery, content: {application/json: {schema: {$ref: '#/components/schemas/PublicInvitationOtpSendResponse'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+  /api/public/invitations/{workspaceKey}/{invitationToken}/otp/verify:
+    post:
+      summary: Verify the mobile verification code
+      operationId: verifyPublicInvitationOtp
+      tags: [PublicInvitation]
+      security: []
+      parameters: [{name: workspaceKey, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}, {name: invitationToken, in: path, required: true, schema: {type: string, minLength: 16, maxLength: 128}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PublicInvitationOtpVerifyRequest'}}}}
+      responses:
+        '200': {description: Readiness after mobile verification, content: {application/json: {schema: {$ref: '#/components/schemas/PublicInvitationReadiness'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+  /api/public/invitations/{workspaceKey}/{invitationToken}/credentials:
+    post:
+      summary: Save invited user credentials
+      operationId: savePublicInvitationCredentials
+      tags: [PublicInvitation]
+      security: []
+      parameters: [{name: workspaceKey, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}, {name: invitationToken, in: path, required: true, schema: {type: string, minLength: 16, maxLength: 128}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PublicInvitationCredentialRequest'}}}}
+      responses:
+        '200': {description: Credential readiness, content: {application/json: {schema: {$ref: '#/components/schemas/PublicInvitationCredentialResponse'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+  /api/public/invitations/{workspaceKey}/{invitationToken}/complete:
+    post:
+      summary: Complete a public invitation
+      operationId: completePublicInvitation
+      tags: [PublicInvitation]
+      security: []
+      parameters: [{name: workspaceKey, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}, {name: invitationToken, in: path, required: true, schema: {type: string, minLength: 16, maxLength: 128}}]
+      responses:
+        '200': {description: Stable completion, content: {application/json: {schema: {$ref: '#/components/schemas/PublicInvitationCompletion'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+  /api/public/invitations/{workspaceKey}/{invitationToken}/completion:
+    get:
+      summary: Read a completed public invitation
+      operationId: getPublicInvitationCompletion
+      tags: [PublicInvitation]
+      security: []
+      parameters: [{name: workspaceKey, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}, {name: invitationToken, in: path, required: true, schema: {type: string, minLength: 16, maxLength: 128}}]
+      responses:
+        '200': {description: Stable completion, content: {application/json: {schema: {$ref: '#/components/schemas/PublicInvitationCompletion'}}}}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+  /api/public/password-reset/{resetGenerationKey}/otp/send:
+    post:
+      summary: Send a password recovery verification code
+      operationId: sendWorkspacePasswordResetOtp
+      tags: [WorkspacePasswordReset]
+      security: []
+      parameters: [{name: resetGenerationKey, in: path, required: true, schema: {type: string, minLength: 16, maxLength: 128}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspacePasswordResetOtpSendRequest'}}}}
+      responses:
+        '200': {description: Password reset OTP delivery, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspacePasswordResetOtpSendResponse'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '429': {$ref: '#/components/responses/PlatformRateLimitedProblem'}
+  /api/public/password-reset/{resetGenerationKey}/otp/verify:
+    post:
+      summary: Verify a password recovery code
+      operationId: verifyWorkspacePasswordResetOtp
+      tags: [WorkspacePasswordReset]
+      security: []
+      parameters: [{name: resetGenerationKey, in: path, required: true, schema: {type: string, minLength: 16, maxLength: 128}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspacePasswordResetOtpVerifyRequest'}}}}
+      responses:
+        '200': {description: Password reset verification readiness, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspacePasswordResetReadiness'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '429': {$ref: '#/components/responses/PlatformRateLimitedProblem'}
+  /api/public/password-reset/{resetGenerationKey}/complete:
+    post:
+      summary: Complete a password recovery
+      operationId: completeWorkspacePasswordReset
+      tags: [WorkspacePasswordReset]
+      security: []
+      parameters: [{name: resetGenerationKey, in: path, required: true, schema: {type: string, minLength: 16, maxLength: 128}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspacePasswordResetCompleteRequest'}}}}
+      responses:
+        '200': {description: Password reset completion, content: {application/json: {schema: {$ref: '#/components/schemas/WorkspacePasswordResetCompletion'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/stores:
+    get:
+      summary: List operations stores
+      operationId: getOperationsOrganizationStores
+      tags: [OperationsStore]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: name, in: query, schema: {type: string, maxLength: 120}}
+        - {name: code, in: query, schema: {type: string, maxLength: 64}}
+        - {name: brandId, in: query, schema: {type: string, maxLength: 64}}
+        - {name: tenantId, in: query, schema: {type: string, maxLength: 64}}
+        - {name: headCompanyId, in: query, schema: {type: string, maxLength: 64}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/OrganizationStoreStatus'}}
+        - {name: sort, in: query, schema: {$ref: '#/components/schemas/OrganizationStoreSortKey', default: UPDATED_AT}}
+        - {name: direction, in: query, schema: {$ref: '#/components/schemas/OrganizationStoreSortDirection', default: DESC}}
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+      responses:
+        '200': {description: Store page, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationStorePage'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+    post:
+      summary: Create an operations store
+      operationId: createOperationsOrganizationStore
+      tags: [OperationsStore]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationStoreCreateRequest'}}}}
+      responses:
+        '201': {description: Created store, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationStore'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/stores/candidates:
+    get:
+      summary: List operations store candidates
+      operationId: getOperationsOrganizationStoreCandidates
+      tags: [OperationsStore]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}, {name: brandId, in: query, required: false, schema: {type: string, minLength: 1, maxLength: 64}}]
+      responses:
+        '200': {description: Store candidates, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationStoreCandidatePage'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/stores/extension-definition:
+    get:
+      summary: Read the current store business field rules for the store page
+      operationId: getOperationsOrganizationStoreExtensionDefinition
+      tags: [OperationsStore]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+      responses:
+        '200': {description: Current store business field rules, content: {application/json: {schema: {$ref: '#/components/schemas/ExtensionDefinition'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/stores/{storeId}:
+    get:
+      summary: Get an operations store
+      operationId: getOperationsOrganizationStore
+      tags: [OperationsStore]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: storeId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}, {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}]
+      responses:
+        '200': {description: Store detail, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationStore'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+    patch:
+      summary: Update an operations store
+      operationId: updateOperationsOrganizationStore
+      tags: [OperationsStore]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: storeId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationStoreUpdateRequest'}}}}
+      responses:
+        '200': {description: Updated store, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationStore'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/stores/{storeId}/status:
+    post:
+      summary: Transition an operations store status
+      operationId: transitionOperationsOrganizationStoreStatus
+      tags: [OperationsStore]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: storeId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationStoreStatusRequest'}}}}
+      responses:
+        '200': {description: Store status, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationStore'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/store/profile:
+    get:
+      summary: Get the operations store profile
+      operationId: getOperationsStoreProfile
+      tags: [OperationsStore]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}]
+      responses:
+        '200': {description: Fixed store profile, content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationStore'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/contracts:
+    get:
+      summary: List operations contracts
+      operationId: getOperationsContracts
+      tags: [OperationsContract]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: projectId, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 64}}
+        - {name: storeId, in: query, schema: {type: string, maxLength: 64}}
+        - {name: contractNo, in: query, schema: {type: string, maxLength: 120}}
+        - {name: phaseName, in: query, schema: {type: string, maxLength: 120}}
+        - {name: tenantName, in: query, schema: {type: string, maxLength: 120}}
+        - {name: itemCode, in: query, schema: {type: string, maxLength: 120}}
+        - {name: dateFrom, in: query, schema: {type: string, pattern: '^\\d{4}-\\d{2}-\\d{2}$'}}
+        - {name: dateTo, in: query, schema: {type: string, pattern: '^\\d{4}-\\d{2}-\\d{2}$'}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/StoreContractStatus'}}
+        - {name: sort, in: query, schema: {$ref: '#/components/schemas/StoreContractSortKey', default: UPDATED_AT}}
+        - {name: direction, in: query, schema: {$ref: '#/components/schemas/StoreContractSortDirection', default: DESC}}
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+      responses:
+        '200': {description: Operations contract page, content: {application/json: {schema: {$ref: '#/components/schemas/StoreContractPage'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+    post:
+      summary: Create an operations contract
+      operationId: createOperationsContract
+      tags: [OperationsContract]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/StoreContractCreateRequest'}}}}
+      responses:
+        '201': {description: Created operations contract, content: {application/json: {schema: {$ref: '#/components/schemas/StoreContract'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/contracts/extension-definition:
+    get:
+      summary: Read current business field rules for contract forms
+      operationId: getOperationsContractExtensionDefinition
+      tags: [OperationsContract]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: projectId, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 64}}
+      responses:
+        '200': {description: Current contract field rules, content: {application/json: {schema: {$ref: '#/components/schemas/ExtensionDefinition'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+        '503': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/contracts/candidates:
+    get:
+      summary: Get bounded operations contract form candidates
+      operationId: getOperationsContractCandidates
+      tags: [OperationsContract]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: projectId, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 64}}
+        - {name: storeSearch, in: query, schema: {type: string, maxLength: 120}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: pageSize, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200': {description: Operations contract form candidates, content: {application/json: {schema: {$ref: '#/components/schemas/StoreContractCandidatePage'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/store/profile/contracts:
+    get:
+      summary: List fixed-store contracts
+      operationId: getOperationsFixedStoreContracts
+      tags: [OperationsContract]
+      security: [{operationsSessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/GroupWorkspacePathKey'}
+        - {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: contractNo, in: query, schema: {type: string, maxLength: 120}}
+        - {name: phaseName, in: query, schema: {type: string, maxLength: 120}}
+        - {name: tenantName, in: query, schema: {type: string, maxLength: 120}}
+        - {name: itemCode, in: query, schema: {type: string, maxLength: 120}}
+        - {name: dateFrom, in: query, schema: {type: string, pattern: '^\\d{4}-\\d{2}-\\d{2}$'}}
+        - {name: dateTo, in: query, schema: {type: string, pattern: '^\\d{4}-\\d{2}-\\d{2}$'}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/StoreContractStatus'}}
+        - {name: sort, in: query, schema: {$ref: '#/components/schemas/StoreContractSortKey', default: UPDATED_AT}}
+        - {name: direction, in: query, schema: {$ref: '#/components/schemas/StoreContractSortDirection', default: DESC}}
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+      responses:
+        '200': {description: Fixed store contracts, content: {application/json: {schema: {$ref: '#/components/schemas/StoreContractPage'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/contracts/{contractId}:
+    get:
+      summary: Get an operations contract
+      operationId: getOperationsContract
+      tags: [OperationsContract]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: contractId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}, {name: expectedContextVersion, in: query, required: true, schema: {type: integer, format: int64, minimum: 0}}]
+      responses:
+        '200': {description: Operations contract detail, content: {application/json: {schema: {$ref: '#/components/schemas/StoreContract'}}}}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+    patch:
+      summary: Update an operations contract
+      operationId: updateOperationsContract
+      tags: [OperationsContract]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: contractId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/StoreContractUpdateRequest'}}}}
+      responses:
+        '200': {description: Updated operations contract, content: {application/json: {schema: {$ref: '#/components/schemas/StoreContract'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+  /api/operations/workspaces/{workspaceKey}/organization/contracts/{contractId}/invalidate:
+    post:
+      summary: Invalidate an operations contract
+      operationId: invalidateOperationsContract
+      tags: [OperationsContract]
+      security: [{operationsSessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/GroupWorkspacePathKey'}, {name: contractId, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/StoreContractInvalidateRequest'}}}}
+      responses:
+        '200': {description: Invalidated operations contract, content: {application/json: {schema: {$ref: '#/components/schemas/StoreContract'}}}}
+        '400': {$ref: '#/components/responses/PlatformProblem'}
+        '401': {$ref: '#/components/responses/PlatformProblem'}
+        '403': {$ref: '#/components/responses/PlatformProblem'}
+        '404': {$ref: '#/components/responses/PlatformProblem'}
+        '409': {$ref: '#/components/responses/PlatformProblem'}
+components:
+  securitySchemes:
+    platformSessionCookie:
+      type: apiKey
+      in: cookie
+      name: platform_session
+    operationsSessionCookie:
+      type: apiKey
+      in: cookie
+      name: operations_session
+  schemas:
+    LoginRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/LoginRequest'
+    PlatformSessionView:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformSessionView'
+    PlatformProblem:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformProblem'
+    PlatformCapability:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformCapability'
+    GroupWorkspacePage:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/GroupWorkspacePage'
+    GroupWorkspaceStatus:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/GroupWorkspaceStatus'
+    GroupWorkspaceSortKey:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/GroupWorkspaceSortKey'
+    SortDirection:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/SortDirection'
+    PlatformAssetUsage:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformAssetUsage'
+    PlatformAssetStagingResult:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformAssetStagingResult'
+    GroupWorkspaceCreateRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/GroupWorkspaceCreateRequest'
+    GroupWorkspaceCreateResult:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/GroupWorkspaceCreateResult'
+    GroupWorkspaceDetail:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/GroupWorkspaceDetail'
+    GroupWorkspaceDisplayUpdateRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/GroupWorkspaceDisplayUpdateRequest'
+    GroupWorkspaceStatusTransitionRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/GroupWorkspaceStatusTransitionRequest'
+    CommercialGroupRoot:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/CommercialGroupRoot'
+    CommercialGroupInitializeRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/CommercialGroupInitializeRequest'
+    WorkspaceRolePage:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceRolePage'
+    WorkspaceRoleCandidateCatalog:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceRoleCandidateCatalog'
+    WorkspaceBusinessCapability:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceBusinessCapability'
+    WorkspaceBusinessCapabilityOption:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceBusinessCapabilityOption'
+    WorkspaceRole:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceRole'
+    WorkspaceOrganizationType:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceOrganizationType'
+    WorkspaceRoleStatus:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceRoleStatus'
+    WorkspaceRoleCreateRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceRoleCreateRequest'
+    WorkspaceRoleUpdateRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceRoleUpdateRequest'
+    WorkspaceRoleStatusTransitionRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceRoleStatusTransitionRequest'
+    WorkspacePageEntryGuardRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspacePageEntryGuardRequest'
+    WorkspacePageEntryGuard:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspacePageEntryGuard'
+    WorkspaceInvitationStatus:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceInvitationStatus'
+    WorkspaceInvitationSortKey:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceInvitationSortKey'
+    WorkspaceAccountStatus:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceAccountStatus'
+    WorkspaceCredentialStatus:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceCredentialStatus'
+    WorkspaceAccountAssignment:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceAccountAssignment'
+    WorkspaceAccountInvitationHistory:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceAccountInvitationHistory'
+    WorkspaceAccount:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceAccount'
+    WorkspaceAccountPage:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceAccountPage'
+    WorkspaceAccountStatusTransitionRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceAccountStatusTransitionRequest'
+    WorkspaceCredentialResetRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceCredentialResetRequest'
+    WorkspaceCredentialResetResult:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceCredentialResetResult'
+    WorkspacePasswordResetOtpSendRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspacePasswordResetOtpSendRequest'
+    WorkspacePasswordResetOtpSendResponse:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspacePasswordResetOtpSendResponse'
+    WorkspacePasswordResetOtpVerifyRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspacePasswordResetOtpVerifyRequest'
+    WorkspacePasswordResetReadiness:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspacePasswordResetReadiness'
+    WorkspacePasswordResetCompleteRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspacePasswordResetCompleteRequest'
+    WorkspacePasswordResetCompletion:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspacePasswordResetCompletion'
+    WorkspaceMembershipPage:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceMembershipPage'
+    WorkspaceMember:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceMember'
+    WorkspaceMembershipQueryRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceMembershipQueryRequest'
+    WorkspaceMembershipOwnerAccountRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceMembershipOwnerAccountRequest'
+    WorkspaceMembershipRevokeRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceMembershipRevokeRequest'
+    WorkspaceMembershipRevokeResult:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceMembershipRevokeResult'
+    WorkspaceInvitation:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceInvitation'
+    WorkspaceInvitationPage:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceInvitationPage'
+    WorkspaceInvitationCriteria:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceInvitationCriteria'
+    WorkspaceInvitationOrganizationCandidate:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceInvitationOrganizationCandidate'
+    WorkspaceInvitationCandidatePage:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceInvitationCandidatePage'
+    WorkspaceInvitationCreateRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceInvitationCreateRequest'
+    WorkspaceInvitationReissueRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceInvitationReissueRequest'
+    WorkspaceInvitationCancelRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceInvitationCancelRequest'
+    WorkspaceOperationsInvitationCreateRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceOperationsInvitationCreateRequest'
+    WorkspaceOperationsInvitationActionRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceOperationsInvitationActionRequest'
+    PublicInvitationView:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PublicInvitationView'
+    PublicInvitationAcceptIntent:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PublicInvitationAcceptIntent'
+    PublicInvitationOtpSendRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PublicInvitationOtpSendRequest'
+    PublicInvitationOtpSendResponse:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PublicInvitationOtpSendResponse'
+    PublicInvitationOtpVerifyRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PublicInvitationOtpVerifyRequest'
+    PublicInvitationReadiness:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PublicInvitationReadiness'
+    PublicInvitationCredentialRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PublicInvitationCredentialRequest'
+    PublicInvitationCredentialResponse:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PublicInvitationCredentialResponse'
+    PublicInvitationCompletion:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PublicInvitationCompletion'
+    WorkspaceLoginEntry:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceLoginEntry'
+    WorkspacePasswordLoginRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspacePasswordLoginRequest'
+    WorkspaceOtpSendRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceOtpSendRequest'
+    WorkspaceOtpSendResponse:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceOtpSendResponse'
+    WorkspaceOtpVerifyRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceOtpVerifyRequest'
+    WorkspaceSessionEntry:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceSessionEntry'
+    WorkspaceSelectContextRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceSelectContextRequest'
+    WorkspaceCurrentPasswordChangeRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceCurrentPasswordChangeRequest'
+    WorkspaceCurrentPasswordChangeResult:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceCurrentPasswordChangeResult'
+    WorkspaceSelectDataNodeRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/WorkspaceSelectDataNodeRequest'
+    ExtensionEntityType:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/ExtensionEntityType'
+    ExtensionFieldType:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/ExtensionFieldType'
+    ExtensionFieldDefinition:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/ExtensionFieldDefinition'
+    ExtensionEntityCatalogItem:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/ExtensionEntityCatalogItem'
+    ExtensionEntityCatalogPage:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/ExtensionEntityCatalogPage'
+    ExtensionDefinition:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/ExtensionDefinition'
+    ExtensionDefinitionUpdateRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/ExtensionDefinitionUpdateRequest'
+    OrganizationHierarchySnapshot:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationHierarchySnapshot'
+    OrganizationNode:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationNode'
+    OrganizationNodeCreateRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationNodeCreateRequest'
+    OrganizationProjectCreateRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationProjectCreateRequest'
+    OrganizationNodeUpdateRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationNodeUpdateRequest'
+    OrganizationNodeStatusTransitionRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationNodeStatusTransitionRequest'
+    BusinessEntityStatus: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/BusinessEntityStatus'}
+    BusinessEntitySource: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/BusinessEntitySource'}
+    BusinessEntitySortKey: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/BusinessEntitySortKey'}
+    BusinessEntitySortDirection: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/BusinessEntitySortDirection'}
+    Brand: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/Brand'}
+    BrandPage: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/BrandPage'}
+    BrandCreateRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/BrandCreateRequest'}
+    BrandUpdateRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/BrandUpdateRequest'}
+    Tenant: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/Tenant'}
+    TenantPage: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/TenantPage'}
+    TenantCreateRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/TenantCreateRequest'}
+    TenantUpdateRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/TenantUpdateRequest'}
+    HeadCompany: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/HeadCompany'}
+    HeadCompanyPage: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/HeadCompanyPage'}
+    HeadCompanyCreateRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/HeadCompanyCreateRequest'}
+    HeadCompanyUpdateRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/HeadCompanyUpdateRequest'}
+    BusinessEntityStatusRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/BusinessEntityStatusRequest'}
+    HeadCompanyBrandAuthorizationRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/HeadCompanyBrandAuthorizationRequest'}
+    HeadCompanyBrandAuthorizationResult: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/HeadCompanyBrandAuthorizationResult'}
+    OrganizationStoreSource: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationStoreSource'}
+    StoreContractSource: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContractSource'}
+    StoreContractStatus: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContractStatus'}
+    StoreContractSortKey: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContractSortKey'}
+    StoreContractSortDirection: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContractSortDirection'}
+    StoreContractReference: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContractReference'}
+    StoreContractStoreCandidate: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContractStoreCandidate'}
+    StoreContractCandidatePage: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContractCandidatePage'}
+    StoreContractCandidatePageMetadata: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContractCandidatePageMetadata'}
+    StoreContract: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContract'}
+    StoreContractPage: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContractPage'}
+    ContractOverviewResolutionStatus: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/ContractOverviewResolutionStatus'}
+    ContractOverviewReference: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/ContractOverviewReference'}
+    ContractOverviewItem: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/ContractOverviewItem'}
+    ContractOverviewPageMetadata: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/ContractOverviewPageMetadata'}
+    ContractOverviewPage: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/ContractOverviewPage'}
+    StoreContractCreateRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContractCreateRequest'}
+    StoreContractUpdateRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContractUpdateRequest'}
+    StoreContractInvalidateRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/StoreContractInvalidateRequest'}
+    OrganizationStoreStatus: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationStoreStatus'}
+    OrganizationStoreSortKey: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationStoreSortKey'}
+    OrganizationStoreSortDirection: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationStoreSortDirection'}
+    OrganizationStore: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationStore'}
+    OrganizationStorePage: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationStorePage'}
+    OrganizationStoreCandidatePage: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationStoreCandidatePage'}
+    OrganizationStoreCreateRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationStoreCreateRequest'}
+    OrganizationStoreUpdateRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationStoreUpdateRequest'}
+    OrganizationStoreStatusRequest: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationStoreStatusRequest'}
+    OrganizationOverviewCategory: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationOverviewCategory'}
+    OrganizationOverviewType: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationOverviewType'}
+    OrganizationOverviewStatus: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationOverviewStatus'}
+    OrganizationOverviewSource: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationOverviewSource'}
+    OrganizationOverviewSortKey: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationOverviewSortKey'}
+    OrganizationOverviewSortDirection: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationOverviewSortDirection'}
+    OrganizationOverviewReference: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationOverviewReference'}
+    OrganizationOverviewFilterOption: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationOverviewFilterOption'}
+    OrganizationOverviewItem: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationOverviewItem'}
+    OrganizationOverviewPageMetadata: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationOverviewPageMetadata'}
+    OrganizationOverviewPage: {$ref: './platform-wire-model.openapi.yaml#/components/schemas/OrganizationOverviewPage'}
+    PlatformAdminStatus:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformAdminStatus'
+    PlatformAdminSortKey:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformAdminSortKey'
+    PlatformAdminPage:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformAdminPage'
+    PlatformAdminDetail:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformAdminDetail'
+    PlatformAdminCreateRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformAdminCreateRequest'
+    PlatformAdminProfileUpdateRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformAdminProfileUpdateRequest'
+    PlatformAdminStatusTransitionRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformAdminStatusTransitionRequest'
+    PlatformAdminCredentialResetRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformAdminCredentialResetRequest'
+    PlatformCurrentPasswordChangeRequest:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformCurrentPasswordChangeRequest'
+    PlatformCurrentPasswordChangeResult:
+      $ref: './platform-wire-model.openapi.yaml#/components/schemas/PlatformCurrentPasswordChangeResult'
+  parameters:
+    WorkspaceLoginPathKey:
+      name: workspaceKey
+      in: path
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 64, pattern: '^[A-Za-z0-9][A-Za-z0-9-]{0,63}$'}
+    GroupWorkspaceName:
+      name: name
+      in: query
+      schema: {type: string, maxLength: 120}
+    GroupWorkspaceKey:
+      name: workspaceKey
+      in: query
+      schema: {type: string, maxLength: 64}
+    GroupWorkspacePathKey:
+      name: workspaceKey
+      in: path
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 64, pattern: '^[A-Za-z0-9][A-Za-z0-9-]{0,63}$'}
+    OperationsTitle:
+      name: operationsTitle
+      in: query
+      schema: {type: string, maxLength: 120}
+    GroupWorkspaceStatus:
+      name: status
+      in: query
+      schema: {$ref: '#/components/schemas/GroupWorkspaceStatus'}
+    Page:
+      name: page
+      in: query
+      schema: {type: integer, minimum: 1, default: 1}
+    PageSize:
+      name: pageSize
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+    GroupWorkspaceSortKey:
+      name: sortKey
+      in: query
+      schema: {$ref: '#/components/schemas/GroupWorkspaceSortKey'}
+    SortDirection:
+      name: sortDirection
+      in: query
+      schema: {$ref: '#/components/schemas/SortDirection'}
+    PlatformAdminPathId:
+      name: platformAdminId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    RolePathId:
+      name: roleId
+      in: path
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 64}
+    OrganizationNodePathId:
+      name: nodeId
+      in: path
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 64}
+    OrganizationRegionPathId:
+      name: regionId
+      in: path
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 64}
+    RoleName:
+      name: name
+      in: query
+      schema: {type: string, maxLength: 120}
+    RoleOrganizationType:
+      name: organizationType
+      in: query
+      schema: {$ref: '#/components/schemas/WorkspaceOrganizationType'}
+    RoleStatus:
+      name: status
+      in: query
+      schema: {$ref: '#/components/schemas/WorkspaceRoleStatus'}
+    PlatformAdminUserName:
+      name: userName
+      in: query
+      schema: {type: string, maxLength: 128}
+    PlatformAdminLoginName:
+      name: loginName
+      in: query
+      schema: {type: string, maxLength: 64}
+    PlatformAdminStatus:
+      name: status
+      in: query
+      schema: {$ref: '#/components/schemas/PlatformAdminStatus'}
+    PlatformAdminSortKey:
+      name: sortKey
+      in: query
+      schema: {$ref: '#/components/schemas/PlatformAdminSortKey'}
+  responses:
+    PlatformProblem:
+      description: RFC 7807 platform error with code and correlation id.
+      content:
+        application/problem+json:
+          schema:
+              $ref: '#/components/schemas/PlatformProblem'
+    PlatformRateLimitedProblem:
+      description: Typed login rate limit. The response never reveals the account or source bucket that blocked the attempt.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/PlatformProblem'

@@ -1,14 +1,12 @@
 import {CloseCircleOutlined, PlusOutlined} from '@ant-design/icons';
-import {Alert, Button, Card, Drawer, Form, Input, Modal, Radio, Select, Space, Tabs, Typography} from 'antd';
+import {Alert, Button, Card, Drawer, Form, Input, Modal, Select, Space, Tabs, Typography} from 'antd';
 import type {FormInstance} from 'antd';
-import type {ComponentProps} from 'react';
 import {useEffect, useRef, useState} from 'react';
 import {adminWideDrawerSurfaceProps, testId, type DrawerFormLifecycleResult} from '@catering-v2s/admin-ui-foundation';
 import type {ApiProblem} from '../../../app/api/OperationsTransport';
 import {operationsLogger} from '../../../app/api/OperationsTransport';
 import type {StoreTerminalAreaCandidate, StoreTerminalTagCandidate} from '../../../app/api/generated/operations-edge';
 import {
-  STORE_TERMINAL_DEVICE_TYPES,
   addableFunctionsForDeviceType,
   nextFunctionIdentityAfterRemoval,
   newTerminalFunction,
@@ -20,13 +18,19 @@ import {
   storeTerminalFunctionMaxInstances,
   terminalFunctionIdentity,
   terminalPrinterIdentity,
+  type StoreTerminalConfigurationFormValues,
   type StoreTerminalEditor,
   type StoreTerminalFormValues,
   type TerminalFunctionForm,
   type TerminalPrinterForm,
 } from '../model/storeTerminalModel';
-import {TerminalFunctionEditor, type TerminalCandidateState} from './TerminalFunctionEditor';
+import {
+  TerminalFunctionEditor,
+  type TerminalCandidateState,
+  type TerminalFunctionEditorProps,
+} from './TerminalFunctionEditor';
 import {scenesReferencingPrinter, TerminalPrinterEditor, unbindPrinter} from './TerminalPrinterEditor';
+import {StoreTerminalDeviceTypeField} from './StoreTerminalDeviceTypeField';
 import {storeTerminalTestIds} from '../storeTerminalTestIds';
 
 const EMPTY_FUNCTIONS: StoreTerminalFormValues['functions'] = [];
@@ -37,7 +41,7 @@ type FunctionListOperations = {
   remove: (index: number | number[]) => void;
 };
 type FunctionEditorSharedProps = Omit<
-  ComponentProps<typeof TerminalFunctionEditor>,
+  TerminalFunctionEditorProps,
   'index' | 'functionIdentity' | 'functionOrdinal' | 'onRemove'
 >;
 type TerminalFunctionCollectionEditorProps = FunctionEditorSharedProps & {
@@ -52,15 +56,17 @@ type TerminalFunctionCollectionEditorProps = FunctionEditorSharedProps & {
  * reading the preserved aggregate Form store so switching function rows does
  * not turn the other configured rows into empty request entries.
  */
-export function preservedTerminalFormValues(form: FormInstance<StoreTerminalFormValues>): StoreTerminalFormValues {
-  return form.getFieldsValue(true) as StoreTerminalFormValues;
+export function preservedTerminalFormValues<TValues extends StoreTerminalConfigurationFormValues>(
+  form: FormInstance<StoreTerminalFormValues>,
+): TValues {
+  return form.getFieldsValue(true) as TValues;
 }
 
-export function handleStoreTerminalFormFinish(
+export function handleStoreTerminalFormFinish<TValues extends StoreTerminalConfigurationFormValues>(
   form: FormInstance<StoreTerminalFormValues>,
-  onFinish: (values: StoreTerminalFormValues) => void,
+  onFinish: (values: TValues) => void,
 ): void {
-  onFinish(preservedTerminalFormValues(form));
+  onFinish(preservedTerminalFormValues<TValues>(form));
 }
 
 function TerminalFunctionCollectionEditor({
@@ -190,7 +196,38 @@ function TerminalFunctionCollectionEditor({
   );
 }
 
-export function StoreTerminalFormDrawer({
+export type StoreTerminalFormDrawerProps<TValues extends StoreTerminalConfigurationFormValues> = {
+  mode: 'create' | 'edit';
+  editor?: StoreTerminalEditor;
+  form: FormInstance<StoreTerminalFormValues>;
+  lifecycle: DrawerFormLifecycleResult;
+  areaCandidates: TerminalCandidateState<StoreTerminalAreaCandidate>;
+  tagCandidates: TerminalCandidateState<StoreTerminalTagCandidate>;
+  areasLoading: boolean;
+  tagsLoading: boolean;
+  areaCandidateError?: unknown;
+  tagCandidateError?: unknown;
+  onRetryAreaCandidates: () => void;
+  onRetryTagCandidates: () => void;
+  onFinish: (values: TValues) => void;
+  onRetry: () => void;
+  onValuesChange: () => void;
+  saveDisabled?: boolean;
+  problem?: ApiProblem;
+  notice?: {title: string; detail: string};
+  onClearProblem: () => void;
+  onRefreshDetail: () => void | Promise<void>;
+  areaQueryText: string;
+  tagQueryText: string;
+  onAreaQueryTextChange: (value: string) => void;
+  onTagQueryTextChange: (value: string) => void;
+  onConfigurationOpen: () => void;
+  candidateCacheKey: string;
+  deviceType: string;
+};
+
+export function StoreTerminalFormDrawer<TValues extends StoreTerminalConfigurationFormValues>({
+  mode,
   editor,
   form,
   lifecycle,
@@ -216,42 +253,14 @@ export function StoreTerminalFormDrawer({
   onTagQueryTextChange,
   onConfigurationOpen,
   candidateCacheKey,
-}: {
-  editor?: StoreTerminalEditor;
-  form: FormInstance<StoreTerminalFormValues>;
-  lifecycle: DrawerFormLifecycleResult;
-  areaCandidates: TerminalCandidateState<StoreTerminalAreaCandidate>;
-  tagCandidates: TerminalCandidateState<StoreTerminalTagCandidate>;
-  areasLoading: boolean;
-  tagsLoading: boolean;
-  areaCandidateError?: unknown;
-  tagCandidateError?: unknown;
-  onRetryAreaCandidates: () => void;
-  onRetryTagCandidates: () => void;
-  onFinish: (values: StoreTerminalFormValues) => void;
-  onRetry: () => void;
-  onValuesChange: () => void;
-  saveDisabled?: boolean;
-  problem?: ApiProblem;
-  notice?: {title: string; detail: string};
-  onClearProblem: () => void;
-  onRefreshDetail: () => void | Promise<void>;
-  areaQueryText: string;
-  tagQueryText: string;
-  onAreaQueryTextChange: (value: string) => void;
-  onTagQueryTextChange: (value: string) => void;
-  onConfigurationOpen: () => void;
-  candidateCacheKey: string;
-}) {
+  deviceType,
+}: StoreTerminalFormDrawerProps<TValues>) {
   const [activeTab, setActiveTab] = useState<'basic' | 'functions'>('basic');
   const configurationOpenedKeyRef = useRef<string | undefined>(undefined);
   const pendingPrintersRef = useRef(new Map<number, TerminalPrinterForm>());
   const open = Boolean(editor);
-  const editorKey = editor
-    ? `${editor.mode}:${editor.contextKey}:${editor.terminal?.terminalRef ?? 'new'}`
-    : undefined;
+  const editorKey = editor ? `${editor.mode}:${editor.contextKey}:${editor.terminal?.terminalRef ?? 'new'}` : undefined;
   const editorMode = editor?.mode;
-  const deviceType = (Form.useWatch('deviceType', form) as string | undefined) ?? '';
   const watchedPrinters = Form.useWatch('printers', form) as StoreTerminalFormValues['printers'] | undefined;
   // The scene selectors use the same draft identity as the printer Form.List.
   // useWatch can publish a partial collection while a sibling printer field is
@@ -318,7 +327,8 @@ export function StoreTerminalFormDrawer({
       form.setFields([{name: field, errors: [message]}]);
       requestAnimationFrame(() => void form.scrollToField(field));
     }
-    if (code === 'STORE_TERMINAL_RULE_INVALID' || code === 'STORE_TERMINAL_REFERENCE_INVALID') setActiveTab('functions');
+    if (code === 'STORE_TERMINAL_RULE_INVALID' || code === 'STORE_TERMINAL_REFERENCE_INVALID')
+      setActiveTab('functions');
     if (code === 'PLATFORM_COMMON_VERSION_CONFLICT' || code === 'PLATFORM_COMMON_RESULT_UNKNOWN') setActiveTab('basic');
   }, [form, problem]);
 
@@ -453,26 +463,11 @@ export function StoreTerminalFormDrawer({
                       >
                         <Input maxLength={120} {...testId(storeTerminalTestIds.name)} />
                       </Form.Item>
-                      <Form.Item
-                        name="deviceType"
-                        label="设备类型"
-                        rules={[{required: true, message: '请选择设备类型'}]}
-                      >
-                        <Radio.Group {...testId(storeTerminalTestIds.deviceType)}>
-                          {STORE_TERMINAL_DEVICE_TYPES.map(value => (
-                            <Radio
-                              key={value.key}
-                              value={value.key}
-                              {...testId(storeTerminalTestIds.deviceTypeOption(value.key))}
-                            >
-                              {value.label}
-                              <Typography.Text type="secondary" style={{marginInlineStart: 8}}>
-                                {value.description}
-                              </Typography.Text>
-                            </Radio>
-                          ))}
-                        </Radio.Group>
-                      </Form.Item>
+                      {mode === 'create' ? (
+                        <StoreTerminalDeviceTypeField mode="create" />
+                      ) : (
+                        <StoreTerminalDeviceTypeField mode="edit" deviceType={deviceType} />
+                      )}
                     </div>
                     {editor?.mode === 'create' && (
                       <Form.Item
@@ -503,10 +498,7 @@ export function StoreTerminalFormDrawer({
                     )}
                   </section>
 
-                  <section
-                    style={{marginTop: 16}}
-                    {...testId(storeTerminalTestIds.formSection('printers'))}
-                  >
+                  <section style={{marginTop: 16}} {...testId(storeTerminalTestIds.formSection('printers'))}>
                     <Typography.Title level={5}>打印机信息</Typography.Title>
                     <Form.List name="printers">
                       {(fields, {add, remove}) => (
@@ -519,8 +511,7 @@ export function StoreTerminalFormDrawer({
                             const currentPrinter =
                               normalizeTerminalPrinterForm(
                                 form.getFieldValue(['printers', field.name]) as
-                                  | Partial<TerminalPrinterForm>
-                                  | undefined,
+                                  Partial<TerminalPrinterForm> | undefined,
                               ) ?? pendingPrintersRef.current.get(field.name);
                             if (!currentPrinter) return null;
                             const printerIdentity = terminalPrinterIdentity(currentPrinter);

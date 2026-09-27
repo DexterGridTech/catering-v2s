@@ -1,5 +1,9 @@
 # 门店终端管理 · 交互工件与低保真线框（Dexter 已确认）
 
+## D-18 覆盖（批次一，2026-09-26）
+
+门店终端需求 D-36 已标明原 R-1.4「设备类型可以修改」由《终端激活与长连接》D-18 取代。终端创建后设备类型不可修改，本批次一实施。新建 `TER-C01` 仍以 `Radio.Group` 显示台式/手持；已有终端 `TER-E01` 只读显示当前设备类型，不提供可编辑或禁用选择器，也不增加解释性提示。更新请求契约不含 `deviceType`；旧请求若仍携带该字段，由 controller 的 `strictBody` 按未知字段拒绝，owner 不执行更新且终端配置、版本不变；不另建 owner 专属错误码。下文与此冲突的旧设计一律以本覆盖为准。该 delta 归《终端激活与长连接》批次一，不属于旧 CP-07。
+
 ```text
 DATE=2026-09-23
 DOC_KIND=UI_INTERACTION_DESIGN
@@ -240,10 +244,10 @@ CONSUMER_FACE=operations-admin
 UI_SURFACE=Drawer（已存在终端的完整编辑任务）
 HOST_AND_ENTRY=TER-P01 右侧详情右上「编辑」；有独立写权限、终端未作废且门店可用
 ACTOR=调整现有点位规则的运营管理员
-BUSINESS_SCENARIO=终端的设备、打印机、功能范围或其场景关系要改变
+BUSINESS_SCENARIO=终端名称、打印机、功能范围或其场景关系要改变；设备类型在创建后不可变
 BUSINESS_GOAL=保留终端及打印机身份，先核对/定义打印机，再调整功能与范围下的场景，原子保存
-USER_VISIBLE_COPY=前台收银机 · 编辑终端；基本信息；打印机信息；品牌；型号；纸规格；连接方式；功能与范围；打印场景；订单类型；选择打印机；取消；保存终端；版本已变化，请核对最新规则；操作结果待确认
-TECHNICAL_BOUNDARY=latest detail 提供既有 ref/version、稳定厨打和打印机身份；既有失效区域/标签可保留但不作为新增候选；提交 expectedVersion 与幂等事实；激活码不进写 request
+USER_VISIBLE_COPY=前台收银机 · 编辑终端；基本信息；设备类型；台式；打印机信息；品牌；型号；纸规格；连接方式；功能与范围；打印场景；订单类型；选择打印机；取消；保存终端；版本已变化，请核对最新规则；操作结果待确认
+TECHNICAL_BOUNDARY=latest detail 提供既有 ref/version、只读设备类型、稳定厨打和打印机身份；既有失效区域/标签可保留但不作为新增候选；提交 expectedVersion 与幂等事实；激活码和设备类型不进写 request
 FOUNDATION_PRIMITIVE=adminWideDrawerSurfaceProps, useDrawerFormLifecycle, useSubmissionLifecycle, useCursorCandidates, testId
 CONTAINER_LAYOUT=与 TER-C02 相同的超宽 Drawer，普通 Tabs 按“基本信息与打印机”→“功能与范围”排列；正文全宽且唯一滚动；页脚固定；当前功能的场景只在该功能内容内出现，不另起区段
 ```
@@ -253,7 +257,7 @@ CONTAINER_LAYOUT=与 TER-C02 相同的超宽 Drawer，普通 Tabs 按“基本�
 │ 前台收银机 · 编辑终端                                                                   [×] │
 ├──────────────────┬──────────────────────────────────────────────────────────────────────────┤
 │ [基本信息与打印机]  [功能与范围]                                                   │
-│                    │ 终端名称 * [前台收银机____]  设备类型 * [台式 ▾]            │
+│                    │ 终端名称 * [前台收银机____]  设备类型  台式            │
 │                    │ ──────────────────────────────────────────────────────────────── │
 │                    │ 打印机信息（先核对设备；有场景引用时显示影响）[添加打印机]    │
 │                  │ 前台票据机  品牌 [爱普生 ▾]                                  │
@@ -276,7 +280,7 @@ CONTAINER_LAYOUT=与 TER-C02 相同的超宽 Drawer，普通 Tabs 按“基本�
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-编辑时仍按“基本信息与打印机→功能与范围”的信息顺序理解和操作；Tab 只定位内容，不逐段保存，也不显示 Steps 或“上一步/下一步”。每条场景有自己的订单类型和打印机控件，功能本身没有共用打印机控件；编辑“制作单”的打印机不会改写同一厨打的“标签制作联”。没有打印机也可调整功能并保存。既有功能行的类型只读，换类型必须移除后新增；设备类型改变不暗删功能；品牌改变须重选型号；连接方式改变清旧参数；纸型改变导致场景不相容时保留草稿并指向具体场景。没有 contract 场景的功能不渲染打印场景区域；删除被引用的打印机须逐场景列出影响并确认。失败保留全部输入，版本冲突引导核对，结果未知先读回。激活码只在父页面详情，不是编辑 Form 控件。
+编辑时仍按“基本信息与打印机→功能与范围”的信息顺序理解和操作；Tab 只定位内容，不逐段保存，也不显示 Steps 或“上一步/下一步”。设备类型以只读文本显示，无选择器或额外提示；编辑请求不得改变设备类型。每条场景有自己的订单类型和打印机控件，功能本身没有共用打印机控件；编辑“制作单”的打印机不会改写同一厨打的“标签制作联”。没有打印机也可调整功能并保存。既有功能行的类型只读，换类型必须移除后新增；品牌改变须重选型号；连接方式改变清旧参数；纸型改变导致场景不相容时保留草稿并指向具体场景。没有 contract 场景的功能不渲染打印场景区域；删除被引用的打印机须逐场景列出影响并确认。失败保留全部输入，版本冲突引导核对，结果未知先读回。激活码只在父页面详情，不是编辑 Form 控件。
 
 
 ### Screen TER-A01 · 所选终端的状态动作（Popover 菜单）
@@ -335,7 +339,7 @@ CONTAINER_LAYOUT=使用 foundation 的状态确认承载形态与标准小 Modal
 
 | 控件 | 类型／来源 | 上游与级联 | loading／空／失败；owner 复核 |
 |---|---|---|---|
-| 设备类型 | 固定字典 Radio/Select | 新建先选；编辑改变后保留现有功能并标出不支持项，不能静默清空 | 字典从 contract；owner 逐功能复核 |
+| 设备类型 | 新建为固定字典 `Radio.Group`；编辑为 owner detail 派生的只读文本 | 仅新建可选择；更新请求契约不含 `deviceType`，携带旧字段由 controller `strictBody` 按未知字段拒绝，owner 不执行更新且配置、版本不变 | 新建选项来自 contract；编辑态不渲染选择器；不新增 owner 专属错误码 |
 | 终端名称 | 中宽 Input，用户填写 | 无 | 必填与本门店未作废名称唯一，由 owner 复核 |
 | 添加功能／添加厨打 | contract 功能字典；当前已选实例列表 | 依设备类型展示可选项；单例功能不重复加；厨打可 N 个；移除实例一并移除其范围和场景 | 功能至少 1；owner 校验类型/数量/身份 |
 | 桌台区选择 | 一个远程搜索多选框，内含“全部桌台区”特殊项及具体桌台区；organization 候选 | 仅点餐收银、接单确认、出餐；选全部清具体项、选具体项清全部；门店变更关闭编辑 | 空时指引来源；失败与空区分；新增 ref 为本门店启用桌台区，owner 复核 |
@@ -362,13 +366,13 @@ CONTAINER_LAYOUT=使用 foundation 的状态确认承载形态与标准小 Modal
 | 新建 / 初始状态、终端身份、激活码 | 初始状态和身份为 `HIDDEN_OWNER_FACT`；激活码为选填 8 位数字字符串 Input | 用户明确输入的码，或留空时 owner 安全随机生成 | 手填码必须全状态集团唯一，重复原位拒绝；留空由 owner 重试撞码。创建后仅经详情读回；列表无码，前端不生成 ref 或激活码 |
 | 新建 / 动态子项身份与幂等意图 | 无可见控件，`HIDDEN_OWNER_FACT`；新增 printer/function 各有请求内唯一 `clientKey`，既有子项携带 `ref` | clientKey 在草稿创建时生成并稳定到请求重放；场景 printer 元素精确携带 `printerRef` 或 `printerClientKey`；clientKey 纳入请求摘要 | owner 分配 ref；同请求新 printer 可立即被场景引用；同键重放返回同一组 refs；clientKey 不持久化，前端不伪造 ref |
 | 编辑 / 所属门店、终端身份、激活码 | 所属门店与身份固定；激活码只在父详情，`FIXED_READONLY` / `HIDDEN_OWNER_FACT` | 当前会话＋所选终端 owner detail | 所属门店/激活码不可改；不得从 UI payload 传新值 |
-| 编辑 / 名称、设备类型、功能与范围 | 同新建，`EDITABLE` | 用户输入＋当前 owner detail 中稳定实例 ref | 可同次移除不相容功能再改设备；旧失效引用保持，新增必须可用；失败保留 draft |
+| 编辑 / 名称、功能与范围 | `EDITABLE`；设备类型另为 `FIXED_READONLY` | 用户输入＋当前 owner detail 中稳定实例 ref 与设备类型 | 更新请求契约不含 `deviceType`；携带该遗留字段的请求由 controller `strictBody` 按未知字段拒绝，owner 不执行更新，终端配置与版本不变；不另建 owner 专属错误码；旧失效引用保持，新增必须可用；失败保留 draft |
 | 编辑 / 打印机、功能内场景、订单类型、场景打印机 | 同新建；无论热敏或标签均按型号可用项数决定只读/可选 | 用户输入＋contract 型号纸规格字典＋当前 detail 中稳定打印机 ref | 改型号时仅保留仍兼容的已选规格；改纸规格显式重验；移除打印机须在本次完整保存中修好受影响场景，不静默删除其他绑定 |
 | 编辑 / 所见版本、幂等事实 | 无输入，`HIDDEN_OWNER_FACT` | 打开编辑时 owner detail 的版本＋本次保存意图；基础设施幂等键在一次用户意图中保持稳定 | version 必须随 request，409 不拿最新版本直接覆盖；结果未知以原键读回；既有 printer/function ref 原地保留 |
 | 状态变更 / 对象、当前状态、目标状态 | Modal 只读对象/动作，`FIXED_READONLY` | 所选详情＋用户选择的合法动作 | 无可编辑业务资料；owner 重新判状态、授权、门店；失败原位 |
 | 状态变更 / 所见版本、幂等事实 | 无输入，`HIDDEN_OWNER_FACT` | 所选详情版本＋当前确认意图；基础设施幂等键在一次用户意图中保持稳定 | 原子版本条件；结果未知不把重复点击当新意图 |
 
-当前 `*TestIds.ts` 及 L2 binding 没有本页实现，implementation-facing 控件 roster 不能伪装为已挂载证据。规划的逐控件分母为：左侧新建/名称选择/分页（无激活码），右侧详情激活码/编辑/更多，新建与编辑 Drawer 的两个普通 Tab、两个设备选项、终端名/设备类型/新建时的选填激活码及其清空动作、逐打印机名称/品牌/连接方式/级联型号/条件参数/纸型与移除、逐功能添加与移除、范围单一多选（含“全部”特殊项）/候选搜索与翻页/无桌台与外卖、所属功能内场景勾选/订单类型/无序打印机多选/保存，编辑 Drawer 对既有功能类型显示只读标签且不提供类型 Select；状态菜单和确认 Modal 的实际动作节点。后续详设为每项绑定唯一 testId 与 focused 断言；Browser L2 已获实施授权，但在该前置 roster、UI/代码逐控件对账和 focused/static 检查完成前 `TESTID_REVIEW=OPEN`、`L2_SCRIPT_ADMISSION=BLOCKED`。
+当前 `*TestIds.ts` 及 L2 binding 没有本页实现，implementation-facing 控件 roster 不能伪装为已挂载证据。规划的逐控件分母为：左侧新建/名称选择/分页（无激活码），右侧详情激活码/编辑/更多，新建与编辑 Drawer 的两个普通 Tab、新建态两个设备选项和编辑态只读设备类型文本、终端名/新建时的选填激活码及其清空动作、逐打印机名称/品牌/连接方式/级联型号/条件参数/纸型与移除、逐功能添加与移除、范围单一多选（含“全部”特殊项）/候选搜索与翻页/无桌台与外卖、所属功能内场景勾选/订单类型/无序打印机多选/保存，编辑 Drawer 对既有功能类型显示只读标签且不提供类型 Select；状态菜单和确认 Modal 的实际动作节点。后续详设为每项绑定唯一 testId 与 focused 断言；Browser L2 已获实施授权，但在该前置 roster、UI/代码逐控件对账和 focused/static 检查完成前 `TESTID_REVIEW=OPEN`、`L2_SCRIPT_ADMISSION=BLOCKED`。
 
 候选搜索分母：`TER-P01=NOT_APPLICABLE_WITH_REASON`（本批列表只按当前门店浏览，不提供尚无 owner 查询语义的搜索）；`TER-C01=NOT_APPLICABLE_WITH_REASON`（固定设备字典）；`TER-C02/TER-E01=APPLICABLE`（桌台区和生产标签是增长型、受门店与作用域约束的远程候选）；`TER-A01/TER-M01=NOT_APPLICABLE_WITH_REASON`（动作和确认不是对象搜索）。两种候选都要支持按业务名称搜索、持续分页、取消旧查询、区分空/失败，并保留已选旧引用；这些能力优先走 `useCursorCandidates`，详设已冻结各自的 owner task-read 语义与边界，实施前仍须逐代码确认具体参数、`subjectType`、返回字段和统一候选协议适配，不能以目前列表已加载行做浏览器筛选。固定字典、打印机场景中的本终端清单不伪装成跨 owner 候选接口。
 
@@ -395,7 +399,7 @@ CONTAINER_LAYOUT=使用 foundation 的状态确认承载形态与标准小 Modal
 | TER-P01 | 1 N/A 无输入；2 N/A 无弹层；3、4、5、7、8、9 适用；6 由 TER-M01；10 N/A 页面 Card 详情不是详情 Drawer | 左栏第一识别信息是终端名称且可选中；右栏头部最右“编辑”；启用/停用 Tag 颜色和词与规范相同；只读角色没有写控件；列表失败无假空态；选中切换时不泄露上一台激活码；实际动作节点使用稳定 testId。 |
 | TER-C01 | 1、2、3、4、8、9 适用；5 N/A 无集合空态；6 N/A 不确认状态；7 N/A；10 N/A 新建 Drawer | 两个普通 Tab 中默认“基本信息与打印机”；名称与设备类型同一行；×/Esc/遮罩统一 dirty；切换 Tab 不提交/重置；Radio 与 Tab/保存动作节点各有 testId。 |
 | TER-C02 | 1..5、8、9 适用；6 仅移除已绑定打印机的显式影响确认；7 只读旧引用状态适用；10 N/A 编辑任务 Drawer | “功能与范围”是普通 Tab；打印机先定义但不构成硬性步骤门；每条场景卡分别包含订单类型和打印机多选，同一功能两条场景可选不同打印机，无功能级打印机控件；无场景功能不渲染打印场景区域；候选空/失败不同；底部保存固定；无子控件 dirty 提示；提交失败聚焦具体场景首错。 |
-| TER-E01 | 同 TER-C02；10 N/A 编辑 Drawer | 标题“对象名 · 编辑终端”；先核对打印机再调整功能/场景，旧引用显示当前状态；变设备不暗删功能；版本冲突保留输入；无主备顺序控件。 |
+| TER-E01 | 同 TER-C02；10 N/A 编辑 Drawer | 标题“对象名 · 编辑终端”；设备类型显示为不可聚焦 Typography.Text，实际文本节点标识 TERMINAL_DEVICE_TYPE_READONLY；不提供输入、选择或操作；其余沿用 TER-C02。 |
 | TER-A01 | 3、4、8、9 适用；1、2、5、6、7、10 N/A Popover 动作菜单 | 启用态只能见停用/作废，停用态只能见启用/作废；危险项红色；无权限整菜单不存在；菜单 item 的 testId 在实际可点击节点。 |
 | TER-M01 | 2、3、4、6、8、9 适用；1、5、7、10 N/A 纯确认 Modal | 确认面能单独说出对象、动作、影响、是否可恢复；危险作废文案/按钮一致；失败原因原位；取消或成功后焦点回“更多”。 |
 
@@ -404,11 +408,11 @@ CONTAINER_LAYOUT=使用 foundation 的状态确认承载形态与标准小 Modal
 | TER-P01 | 左 Card 的列表、新建、分页及右 Card 的详情、更多、编辑；Shell 门店选择器只在文字说明，不画进页面 | PASS（线框提案） |
 | TER-C01 | 新建 Drawer 的“基本信息与打印机”Tab、名称/设备同排、打印机 section 与页脚；未画右侧详情或 Shell | PASS（线框提案） |
 | TER-C02 | “功能与范围”Tab、单一范围多选、先定义打印机后配置场景与页脚 | PASS（线框提案） |
-| TER-E01 | 编辑 Drawer 的两个普通 Tab、既有功能类型只读、旧引用状态与页脚 | PASS（线框提案） |
+| TER-E01 | 编辑 Drawer 的两个普通 Tab、既有功能类型只读、设备类型以不可聚焦文本显示并带 TERMINAL_DEVICE_TYPE_READONLY testId、旧引用状态与页脚 | PASS（D-18 静态 UI 形态已实现；当前字节的独立 UI/testId 准入复核仍待完成；Browser L2 未运行） |
 | TER-A01 | 只画菜单项，不画详情 Card | PASS（线框提案） |
 | TER-M01 | 只画确认内容，不画菜单或编辑表单 | PASS（线框提案） |
 
-L2/testId 控件清单尚未有业务 UI owning source，故不能伪造 `*TestIds.ts` 路径或声明已挂载。详设按六屏及逐动作分母列出名称/选择、两个普通 Tab、全部输入、多厨打、候选搜索/分页、打印机品牌/型号/条件参数/增删、每个功能实例下每条场景独立的勾选/订单类型/打印机多选、状态菜单和确认的唯一 testId 及真实触点；`TER-C02/E01` 动态 key 必须由功能实例稳定身份＋场景键定位，不用可编辑名称或数组下标。focused 反例：同一厨打同时勾“制作单”“标签制作联”，分别选不同打印机；修改或取消前者，后者的订单类型和打印机保持不变；无场景功能不应产生 scene picker；既有功能行不存在可改类型的动作；owner readback 亦须分别匹配。Browser L2 已获本次授权，但仅在逐控件 IA—实现对账、testId 真实触点核对及 focused/static 检查通过后执行；这些 proof 当前为 `NOT_RUN`，未通过前 `L2_SCRIPT_ADMISSION=BLOCKED`，不得写 `MATCHED`。
+当前 `*TestIds.ts`、L2 binding 与业务 UI owning source 已实现；本批详设 §3a 列出六屏逐控件分母，locator-bindings 为每项指定 testId 与触点。E01 的只读设备类型观察绑定到 `StoreTerminalDeviceTypeField.tsx` 的 `Typography.Text`，其值来自 `TerminalEditDrawer.tsx` 的终端详情，不是动作控件。详设 §3a 与 policy 的准入摘要覆盖当前完整控制面；focused/static 证据包括 `StoreTerminalPage.static.test.ts`、`StoreTerminalL2ActionNodes.static.test.ts`、`l2-locator-bindings.static.test.mjs` 与 `store-terminal-l2-p1.test.mjs`。独立 UI/testId 准入复核仍须绑定当前摘要；在 `L2_SCRIPT_ADMISSION=PASS` 且摘要匹配前，Browser L2 保持 BLOCKED，不能把源码或 focused/static 结果写成动态 PASS。
 
 ## 8. 看图结论与后续门
 

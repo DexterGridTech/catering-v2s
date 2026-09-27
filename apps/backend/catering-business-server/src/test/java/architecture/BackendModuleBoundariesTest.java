@@ -32,7 +32,9 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /** Production architecture boundary: the business deployable owns no TDP source tree. */
-@AnalyzeClasses(packages = "com.catering.v2s", importOptions = ImportOption.DoNotIncludeTests.class)
+@AnalyzeClasses(
+        packages = "com.catering.v2s",
+        importOptions = {ImportOption.DoNotIncludeTests.class, BusinessProductionOutputImportOption.class})
 class BackendModuleBoundariesTest {
     @ArchTest
     static final ArchRule DOMAIN_MODULES_ARE_FRAMEWORK_FREE = noClasses()
@@ -52,7 +54,7 @@ class BackendModuleBoundariesTest {
 
     @ArchTest
     static final ArchRule NO_MODULE_REFERENCES_TERMINAL_DATA_RUNTIME =
-            noClasses().should().dependOnClassesThat().resideInAnyPackage("..terminal.data..", "..tdp..");
+            noClasses().should().dependOnClassesThat().resideInAnyPackage("..terminaldataserver..", "..tdp..");
 
     @ArchTest
     static final ArchRule EDGE_CONTROLLERS_DO_NOT_TOUCH_SERVLET_API = noClasses()
@@ -74,7 +76,11 @@ class BackendModuleBoundariesTest {
     @ArchTest
     static final ArchRule EDGE_CAPABILITIES_DO_NOT_DEPEND_ON_PEERS = classes()
             .that()
-            .resideInAnyPackage("..app.edge.platform..", "..app.edge.operations..", "..app.edge.publicentry..")
+            .resideInAnyPackage(
+                    "..app.edge.platform..",
+                    "..app.edge.operations..",
+                    "..app.edge.publicentry..",
+                    "..app.edge.terminal..")
             .should(new ArchCondition<>("not depend on a peer edge capability except its face session capability") {
                 @Override
                 public void check(JavaClass item, ConditionEvents events) {
@@ -136,11 +142,10 @@ class BackendModuleBoundariesTest {
                             continue;
                         }
                         boolean delegates = codeUnit.getMethodCallsFromSelf().stream()
-                                .anyMatch(
-                                        call -> call.getTargetOwner()
-                                                .getFullName()
-                                                .equals(
-                                                        "com.catering.v2s.platform.foundation.collection.CollectionRequestSupport"));
+                                .anyMatch(call -> call.getTargetOwner()
+                                        .getFullName()
+                                        .equals(("com.catering.v2s.platform.foundation.collection.Coll"
+                                                + "ectionRequestSupport")));
                         if (!delegates) {
                             events.add(SimpleConditionEvent.violated(
                                     codeUnit, codeUnit.getFullName() + " must delegate to CollectionRequestSupport"));
@@ -153,9 +158,25 @@ class BackendModuleBoundariesTest {
     void backendModuleBoundaries() throws Exception {
         Path root = repositoryRoot();
         assertTrue(Files.exists(root.resolve("contracts/policy/module-dependency-registry.json")));
-        assertFalse(Files.exists(root.resolve("apps/backend/terminal-data-server/src")));
+        assertTrue(Files.exists(
+                root.resolve("apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver")));
         assertTrue(Files.exists(root.resolve("apps/backend/catering-business-server/modules/workspace")));
         assertTrue(Files.exists(root.resolve("apps/backend/catering-business-server/modules/organization")));
+    }
+
+    @Test
+    void businessArchunitImportScopeIncludesOnlyBusinessProductionOutputs() {
+        Path root = repositoryRoot();
+        var foundationJar =
+                root.resolve("apps/backend/catering-business-server/modules/foundation/build/libs/foundation-main.jar");
+        assertTrue(BusinessProductionOutputImportOption.includesProductionOutput(
+                java.net.URI.create("jar:" + foundationJar.toUri() + "!/com/catering/v2s/platform/foundation")));
+        assertFalse(BusinessProductionOutputImportOption.includesProductionOutput(
+                root.resolve("apps/backend/terminal-data-server/build/classes/java/main")
+                        .toUri()));
+        assertFalse(BusinessProductionOutputImportOption.includesProductionOutput(
+                root.resolve("apps/backend/catering-business-server/build/classes/java/test")
+                        .toUri()));
     }
 
     @Test
@@ -185,6 +206,29 @@ class BackendModuleBoundariesTest {
         assertTrue(failure.getMessage().contains("CrossCapabilityController"));
         assertDoesNotThrow(() -> EDGE_CAPABILITIES_DO_NOT_DEPEND_ON_PEERS.check(new ClassFileImporter()
                 .importClasses(SessionDependencyController.class, OperationsSessionResolver.class)));
+    }
+
+    @Test
+    void terminalEdgeCapabilityBoundaryRejectsPeerCapabilityDependency() {
+        AssertionError failure = org.junit.jupiter.api.Assertions.assertThrows(
+                AssertionError.class,
+                () -> EDGE_CAPABILITIES_DO_NOT_DEPEND_ON_PEERS.check(new ClassFileImporter()
+                        .importClasses(
+                                com.catering.v2s.app.edge.terminal.activation.TerminalActivationCapabilityFixture.class,
+                                com.catering.v2s.app.edge.terminal.cancellation.TerminalCancellationCapabilityFixture
+                                        .class)));
+        assertTrue(failure.getMessage().contains("TerminalActivationCapabilityFixture"));
+    }
+
+    @Test
+    void terminalDataServerPackageBoundaryRejectsAProductionDependencyShape() {
+        AssertionError failure = org.junit.jupiter.api.Assertions.assertThrows(
+                AssertionError.class,
+                () -> NO_MODULE_REFERENCES_TERMINAL_DATA_RUNTIME.check(new ClassFileImporter()
+                        .importClasses(
+                                architecture.fixture.TerminalDataServerDependencyFixture.class,
+                                com.catering.v2s.terminaldataserver.fixture.TerminalDataServerRuntimeFixture.class)));
+        assertTrue(failure.getMessage().contains("TerminalDataServerDependencyFixture"));
     }
 
     @Test

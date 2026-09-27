@@ -76,8 +76,7 @@ public class WorkspaceOtpRateLimitPersistence {
 
     public void clear(UUID workspace, String key, String purpose, UUID subject) {
         jdbc.update(
-                WorkspaceOtpRateLimitServiceSql
-                                .WORKSPACE_OTP_RATE_LIMIT_SERVICE_DELETE_OTP_RATE_LIMIT_BUCKET_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                WorkspaceOtpRateLimitServiceSql.DELETE_OTP_RATE_LIMIT_BUCKET_001
                         + WorkspaceOtpRateLimitServiceSql.WORKSPACE_OTP_RATE_LIMIT_SERVICE_PURPOSE_SUBJECT_REF,
                 workspace,
                 key,

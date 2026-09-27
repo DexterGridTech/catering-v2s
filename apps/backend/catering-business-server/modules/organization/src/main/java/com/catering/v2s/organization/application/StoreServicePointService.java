@@ -81,7 +81,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 pageIdentity("store-service-point-area-page", workspaceUuid, groupWorkspaceKey, storeRef, null);
         OpaqueCollectionCursor.Position position = decodeCursor(cursor, identity);
         long total = count(
-                "SELECT count(*) FROM organization.store_service_point_area WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND status <> 'VOIDED'",
+                ("SELECT count(*) FROM organization.store_service_point_area WHERE workspa"
+                        + "ce_uuid=? AND group_workspace_key=? AND store_ref=? AND status <> 'VOIDE"
+                        + "D'"),
                 workspaceUuid,
                 groupWorkspaceKey,
                 storeRef);
@@ -99,8 +101,10 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         }
         arguments.add(pageSize + 1);
         List<AreaRow> rows = jdbc.query(
-                "SELECT area_ref, store_ref, name, code, area_type, status, display_order, version, created_at_epoch_millis, updated_at_epoch_millis "
-                        + "FROM organization.store_service_point_area WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND status <> 'VOIDED' "
+                ("SELECT area_ref, store_ref, name, code, area_type, status, display_order"
+                                + ", version, created_at_epoch_millis, updated_at_epoch_millis ")
+                        + ("FROM organization.store_service_point_area WHERE workspace_uuid=? AND gr"
+                                + "oup_workspace_key=? AND store_ref=? AND status <> 'VOIDED' ")
                         + frontier
                         + " ORDER BY display_order, area_ref LIMIT ?",
                 StoreServicePointService::areaRow,
@@ -135,7 +139,8 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         arguments.addAll(requested);
         Map<UUID, AreaReference> found = new HashMap<>();
         jdbc.query(
-                        "SELECT area_ref, store_ref, name, code, area_type, status FROM organization.store_service_point_area "
+                        ("SELECT area_ref, store_ref, name, code, area_type, status FROM organizat"
+                                        + "ion.store_service_point_area ")
                                 + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND area_ref IN ("
                                 + placeholders + ")",
                         (result, ignored) -> new AreaReference(
@@ -224,7 +229,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         String identity = pageIdentity("store-service-point-page", workspaceUuid, groupWorkspaceKey, storeRef, areaRef);
         OpaqueCollectionCursor.Position position = decodeCursor(cursor, identity);
         long total = count(
-                "SELECT count(*) FROM organization.store_service_point WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND area_ref=? AND status <> 'VOIDED'",
+                ("SELECT count(*) FROM organization.store_service_point WHERE workspace_uu"
+                        + "id=? AND group_workspace_key=? AND store_ref=? AND area_ref=? AND status"
+                        + " <> 'VOIDED'"),
                 workspaceUuid,
                 groupWorkspaceKey,
                 storeRef,
@@ -244,9 +251,15 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         }
         arguments.add(pageSize + 1);
         List<PointRow> rows = jdbc.query(
-                "SELECT p.point_ref, p.store_ref, p.area_ref, p.name, p.code, p.point_type, p.status, p.display_order, p.seat_capacity, p.table_shape, p.reservable, p.image_asset_ref, p.extension_values::text, p.extension_rule_revision, p.version, p.created_at_epoch_millis, p.updated_at_epoch_millis, a.status AS area_status "
-                        + "FROM organization.store_service_point p JOIN organization.store_service_point_area a ON a.area_ref=p.area_ref "
-                        + "WHERE p.workspace_uuid=? AND p.group_workspace_key=? AND p.store_ref=? AND p.area_ref=? AND p.status <> 'VOIDED' "
+                ("SELECT p.point_ref, p.store_ref, p.area_ref, p.name, p.code, p.point_typ"
+                                + "e, p.status, p.display_order, p.seat_capacity, p.table_shape, p.reservab"
+                                + "le, p.image_asset_ref, p.extension_values::text, p.extension_rule_revisi"
+                                + "on, p.version, p.created_at_epoch_millis, p.updated_at_epoch_millis, a.s"
+                                + "tatus AS area_status ")
+                        + ("FROM organization.store_service_point p JOIN organization.store_service_"
+                                + "point_area a ON a.area_ref=p.area_ref ")
+                        + ("WHERE p.workspace_uuid=? AND p.group_workspace_key=? AND p.store_ref=? A"
+                                + "ND p.area_ref=? AND p.status <> 'VOIDED' ")
                         + frontier
                         + " ORDER BY p.display_order, p.point_ref LIMIT ?",
                 StoreServicePointService::pointRow,
@@ -287,7 +300,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     public QrConfiguration readQrConfiguration(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
         requireStore(workspaceUuid, groupWorkspaceKey, storeRef);
         List<QrRow> rows = jdbc.query(
-                "SELECT store_ref, enabled, channel_ref, version, updated_at_epoch_millis FROM organization.store_qr_configuration WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=?",
+                ("SELECT store_ref, enabled, channel_ref, version, updated_at_epoch_millis"
+                        + " FROM organization.store_qr_configuration WHERE workspace_uuid=? AND gro"
+                        + "up_workspace_key=? AND store_ref=?"),
                 (result, ignored) -> new QrRow(
                         result.getObject("store_ref", UUID.class),
                         result.getBoolean("enabled"),
@@ -331,14 +346,19 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
             return requireAreaRead(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), areaRef);
         long now = time.currentEpochMillis();
         Long nextOrder = jdbc.queryForObject(
-                "SELECT coalesce(max(display_order), -1) + 1 FROM organization.store_service_point_area WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND status <> 'VOIDED'",
+                ("SELECT coalesce(max(display_order), -1) + 1 FROM organization.store_serv"
+                        + "ice_point_area WHERE workspace_uuid=? AND group_workspace_key=? AND stor"
+                        + "e_ref=? AND status <> 'VOIDED'"),
                 Long.class,
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
                 command.storeRef());
         try {
             jdbc.update(
-                    "INSERT INTO organization.store_service_point_area(area_ref, workspace_uuid, group_workspace_key, store_ref, name, code, area_type, status, display_order, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?,?,?,?,?,?,?,'ENABLED',?,1,?,?)",
+                    ("INSERT INTO organization.store_service_point_area(area_ref, workspace_uu"
+                            + "id, group_workspace_key, store_ref, name, code, area_type, status, displ"
+                            + "ay_order, version, created_at_epoch_millis, updated_at_epoch_millis) VAL"
+                            + "UES (?,?,?,?,?,?,?,'ENABLED',?,1,?,?)"),
                     areaRef,
                     command.workspaceUuid(),
                     command.groupWorkspaceKey(),
@@ -391,7 +411,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                     command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.areaRef);
         if (!Objects.equals(before.areaType, type)
                 && count(
-                                "SELECT count(*) FROM organization.store_service_point WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND area_ref=? AND status <> 'VOIDED'",
+                                ("SELECT count(*) FROM organization.store_service_point WHERE workspace_uu"
+                                        + "id=? AND group_workspace_key=? AND store_ref=? AND area_ref=? AND status"
+                                        + " <> 'VOIDED'"),
                                 command.workspaceUuid(),
                                 command.groupWorkspaceKey(),
                                 command.storeRef(),
@@ -400,7 +422,10 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         int updated;
         try {
             updated = jdbc.update(
-                    "UPDATE organization.store_service_point_area SET name=?, code=?, area_type=?, status=?, version=version+1, updated_at_epoch_millis=? WHERE area_ref=? AND workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND version=?",
+                    ("UPDATE organization.store_service_point_area SET name=?, code=?, area_ty"
+                            + "pe=?, status=?, version=version+1, updated_at_epoch_millis=? WHERE area_"
+                            + "ref=? AND workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND"
+                            + " version=?"),
                     name,
                     code,
                     type,
@@ -447,7 +472,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
             return requireAreaRead(
                     command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.areaRef);
         int updated = jdbc.update(
-                "UPDATE organization.store_service_point_area SET status=?, version=version+1, updated_at_epoch_millis=? WHERE area_ref=? AND workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND version=?",
+                ("UPDATE organization.store_service_point_area SET status=?, version=versi"
+                        + "on+1, updated_at_epoch_millis=? WHERE area_ref=? AND workspace_uuid=? AN"
+                        + "D group_workspace_key=? AND store_ref=? AND version=?"),
                 target,
                 time.currentEpochMillis(),
                 before.areaRef,
@@ -487,7 +514,11 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                     command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.areaRef);
         requireExpectedVersion(before.version, command.expectedVersion());
         List<AreaRow> rows = jdbc.query(
-                "SELECT area_ref, store_ref, name, code, area_type, status, display_order, version, created_at_epoch_millis, updated_at_epoch_millis FROM organization.store_service_point_area WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND status <> 'VOIDED' ORDER BY display_order, area_ref FOR UPDATE",
+                ("SELECT area_ref, store_ref, name, code, area_type, status, display_order"
+                        + ", version, created_at_epoch_millis, updated_at_epoch_millis FROM organiz"
+                        + "ation.store_service_point_area WHERE workspace_uuid=? AND group_workspac"
+                        + "e_key=? AND store_ref=? AND status <> 'VOIDED' ORDER BY display_order, a"
+                        + "rea_ref FOR UPDATE"),
                 StoreServicePointService::areaRow,
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
@@ -544,7 +575,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 command.extensionRuleRevision());
         long now = time.currentEpochMillis();
         Long nextOrder = jdbc.queryForObject(
-                "SELECT coalesce(max(display_order), -1) + 1 FROM organization.store_service_point WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND area_ref=? AND status <> 'VOIDED'",
+                ("SELECT coalesce(max(display_order), -1) + 1 FROM organization.store_serv"
+                        + "ice_point WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref"
+                        + "=? AND area_ref=? AND status <> 'VOIDED'"),
                 Long.class,
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
@@ -552,7 +585,12 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 command.areaRef());
         try {
             jdbc.update(
-                    "INSERT INTO organization.store_service_point(point_ref, workspace_uuid, group_workspace_key, store_ref, area_ref, name, code, point_type, status, display_order, seat_capacity, table_shape, reservable, image_asset_ref, extension_values, extension_rule_revision, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?,?,?,?,?,?,?,?,'ENABLED',?,?,?,?,?,CAST(? AS JSONB),?,1,?,?)",
+                    ("INSERT INTO organization.store_service_point(point_ref, workspace_uuid, "
+                            + "group_workspace_key, store_ref, area_ref, name, code, point_type, status"
+                            + ", display_order, seat_capacity, table_shape, reservable, image_asset_ref"
+                            + ", extension_values, extension_rule_revision, version, created_at_epoch_m"
+                            + "illis, updated_at_epoch_millis) VALUES (?,?,?,?,?,?,?,?,'ENABLED',?,?,?,"
+                            + "?,?,CAST(? AS JSONB),?,1,?,?)"),
                     pointRef,
                     command.workspaceUuid(),
                     command.groupWorkspaceKey(),
@@ -635,7 +673,11 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         int updated;
         try {
             updated = jdbc.update(
-                    "UPDATE organization.store_service_point SET name=?, code=?, point_type=?, status=?, seat_capacity=?, table_shape=?, reservable=?, image_asset_ref=?, extension_values=CAST(? AS JSONB), extension_rule_revision=?, version=version+1, updated_at_epoch_millis=? WHERE point_ref=? AND workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND version=?",
+                    ("UPDATE organization.store_service_point SET name=?, code=?, point_type=?"
+                            + ", status=?, seat_capacity=?, table_shape=?, reservable=?, image_asset_re"
+                            + "f=?, extension_values=CAST(? AS JSONB), extension_rule_revision=?, versi"
+                            + "on=version+1, updated_at_epoch_millis=? WHERE point_ref=? AND workspace_"
+                            + "uuid=? AND group_workspace_key=? AND store_ref=? AND version=?"),
                     required(command.name(), 120),
                     required(command.code(), 64),
                     pointType,
@@ -697,7 +739,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 POINT))
             return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef);
         int updated = jdbc.update(
-                "UPDATE organization.store_service_point SET status=?, version=version+1, updated_at_epoch_millis=? WHERE point_ref=? AND workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND version=?",
+                ("UPDATE organization.store_service_point SET status=?, version=version+1,"
+                        + " updated_at_epoch_millis=? WHERE point_ref=? AND workspace_uuid=? AND gr"
+                        + "oup_workspace_key=? AND store_ref=? AND version=?"),
                 target,
                 time.currentEpochMillis(),
                 before.pointRef,
@@ -736,7 +780,15 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
             return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef);
         requireExpectedVersion(before.version, command.expectedVersion());
         List<PointRow> rows = jdbc.query(
-                "SELECT p.point_ref, p.store_ref, p.area_ref, p.name, p.code, p.point_type, p.status, p.display_order, p.seat_capacity, p.table_shape, p.reservable, p.image_asset_ref, p.extension_values::text, p.extension_rule_revision, p.version, p.created_at_epoch_millis, p.updated_at_epoch_millis, a.status AS area_status FROM organization.store_service_point p JOIN organization.store_service_point_area a ON a.area_ref=p.area_ref WHERE p.workspace_uuid=? AND p.group_workspace_key=? AND p.store_ref=? AND p.area_ref=? AND p.status <> 'VOIDED' ORDER BY p.display_order, p.point_ref FOR UPDATE",
+                ("SELECT p.point_ref, p.store_ref, p.area_ref, p.name, p.code, p.point_typ"
+                        + "e, p.status, p.display_order, p.seat_capacity, p.table_shape, p.reservab"
+                        + "le, p.image_asset_ref, p.extension_values::text, p.extension_rule_revisi"
+                        + "on, p.version, p.created_at_epoch_millis, p.updated_at_epoch_millis, a.s"
+                        + "tatus AS area_status FROM organization.store_service_point p JOIN organi"
+                        + "zation.store_service_point_area a ON a.area_ref=p.area_ref WHERE p.works"
+                        + "pace_uuid=? AND p.group_workspace_key=? AND p.store_ref=? AND p.area_ref"
+                        + "=? AND p.status <> 'VOIDED' ORDER BY p.display_order, p.point_ref FOR UP"
+                        + "DATE"),
                 StoreServicePointService::pointRow,
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
@@ -784,7 +836,15 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         }
         long now = time.currentEpochMillis();
         int updated = jdbc.update(
-                "INSERT INTO organization.store_qr_configuration(store_ref, workspace_uuid, group_workspace_key, enabled, channel_ref, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?,?,?,?,?,1,?,?) ON CONFLICT (store_ref) DO UPDATE SET enabled=excluded.enabled, channel_ref=excluded.channel_ref, version=organization.store_qr_configuration.version+1, updated_at_epoch_millis=excluded.updated_at_epoch_millis WHERE organization.store_qr_configuration.workspace_uuid=excluded.workspace_uuid AND organization.store_qr_configuration.group_workspace_key=excluded.group_workspace_key AND organization.store_qr_configuration.version=?",
+                ("INSERT INTO organization.store_qr_configuration(store_ref, workspace_uui"
+                        + "d, group_workspace_key, enabled, channel_ref, version, created_at_epoch_"
+                        + "millis, updated_at_epoch_millis) VALUES (?,?,?,?,?,1,?,?) ON CONFLICT (s"
+                        + "tore_ref) DO UPDATE SET enabled=excluded.enabled, channel_ref=excluded.c"
+                        + "hannel_ref, version=organization.store_qr_configuration.version+1, updat"
+                        + "ed_at_epoch_millis=excluded.updated_at_epoch_millis WHERE organization.s"
+                        + "tore_qr_configuration.workspace_uuid=excluded.workspace_uuid AND organiz"
+                        + "ation.store_qr_configuration.group_workspace_key=excluded.group_workspac"
+                        + "e_key AND organization.store_qr_configuration.version=?"),
                 command.storeRef(),
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
@@ -872,7 +932,10 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID areaRef, boolean includeVoided) {
         String suffix = includeVoided ? "" : " AND status <> 'VOIDED'";
         List<AreaRow> rows = jdbc.query(
-                "SELECT area_ref, store_ref, name, code, area_type, status, display_order, version, created_at_epoch_millis, updated_at_epoch_millis FROM organization.store_service_point_area WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND area_ref=?"
+                ("SELECT area_ref, store_ref, name, code, area_type, status, display_order"
+                                + ", version, created_at_epoch_millis, updated_at_epoch_millis FROM organiz"
+                                + "ation.store_service_point_area WHERE workspace_uuid=? AND group_workspac"
+                                + "e_key=? AND store_ref=? AND area_ref=?")
                         + suffix,
                 StoreServicePointService::areaRow,
                 workspaceUuid,
@@ -886,7 +949,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     private AreaRow requireAreaForUpdate(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID areaRef) {
         AreaRow row = requireArea(workspaceUuid, groupWorkspaceKey, storeRef, areaRef, true);
         jdbc.queryForList(
-                "SELECT area_ref FROM organization.store_service_point_area WHERE area_ref=? AND workspace_uuid=? AND group_workspace_key=? AND store_ref=? FOR UPDATE",
+                ("SELECT area_ref FROM organization.store_service_point_area WHERE area_re"
+                        + "f=? AND workspace_uuid=? AND group_workspace_key=? AND store_ref=? FOR U"
+                        + "PDATE"),
                 areaRef,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -898,7 +963,14 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID pointRef, boolean includeVoided) {
         String suffix = includeVoided ? "" : " AND p.status <> 'VOIDED'";
         List<PointRow> rows = jdbc.query(
-                "SELECT p.point_ref, p.store_ref, p.area_ref, p.name, p.code, p.point_type, p.status, p.display_order, p.seat_capacity, p.table_shape, p.reservable, p.image_asset_ref, p.extension_values::text, p.extension_rule_revision, p.version, p.created_at_epoch_millis, p.updated_at_epoch_millis, a.status AS area_status FROM organization.store_service_point p JOIN organization.store_service_point_area a ON a.area_ref=p.area_ref WHERE p.workspace_uuid=? AND p.group_workspace_key=? AND p.store_ref=? AND p.point_ref=?"
+                ("SELECT p.point_ref, p.store_ref, p.area_ref, p.name, p.code, p.point_typ"
+                                + "e, p.status, p.display_order, p.seat_capacity, p.table_shape, p.reservab"
+                                + "le, p.image_asset_ref, p.extension_values::text, p.extension_rule_revisi"
+                                + "on, p.version, p.created_at_epoch_millis, p.updated_at_epoch_millis, a.s"
+                                + "tatus AS area_status FROM organization.store_service_point p JOIN organi"
+                                + "zation.store_service_point_area a ON a.area_ref=p.area_ref WHERE p.works"
+                                + "pace_uuid=? AND p.group_workspace_key=? AND p.store_ref=? AND p.point_re"
+                                + "f=?")
                         + suffix,
                 StoreServicePointService::pointRow,
                 workspaceUuid,
@@ -912,7 +984,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     private PointRow requirePointForUpdate(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID pointRef) {
         PointRow row = requirePoint(workspaceUuid, groupWorkspaceKey, storeRef, pointRef, true);
         jdbc.query(
-                "SELECT point_ref FROM organization.store_service_point WHERE point_ref=? AND workspace_uuid=? AND group_workspace_key=? AND store_ref=? FOR UPDATE",
+                ("SELECT point_ref FROM organization.store_service_point WHERE point_ref=?"
+                        + " AND workspace_uuid=? AND group_workspace_key=? AND store_ref=? FOR UPDA"
+                        + "TE"),
                 (result, ignored) -> result.getObject(1, UUID.class),
                 pointRef,
                 workspaceUuid,
@@ -923,7 +997,8 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
 
     private void requireStore(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
         if (jdbc.queryForObject(
-                        "SELECT count(*) FROM organization.store WHERE id=? AND workspace_uuid=? AND group_workspace_key=?",
+                        ("SELECT count(*) FROM organization.store WHERE id=? AND workspace_uuid=? "
+                                + "AND group_workspace_key=?"),
                         Long.class,
                         storeRef,
                         workspaceUuid,
@@ -981,7 +1056,11 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
             throw new BusinessEntityService.OrganizationValidationException();
         String hash = Sha256Hex.digest(canonical);
         int inserted = jdbc.update(
-                "INSERT INTO organization.store_service_point_command_receipt(receipt_ref, workspace_uuid, group_workspace_key, idempotency_key, request_hash, target_kind, target_ref, created_at_epoch_millis) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT (workspace_uuid, group_workspace_key, idempotency_key) DO NOTHING",
+                ("INSERT INTO organization.store_service_point_command_receipt(receipt_ref"
+                        + ", workspace_uuid, group_workspace_key, idempotency_key, request_hash, ta"
+                        + "rget_kind, target_ref, created_at_epoch_millis) VALUES (?,?,?,?,?,?,?,?)"
+                        + " ON CONFLICT (workspace_uuid, group_workspace_key, idempotency_key) DO N"
+                        + "OTHING"),
                 UUID.randomUUID(),
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -992,7 +1071,8 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 time.currentEpochMillis());
         if (inserted == 1) return true;
         String stored = jdbc.queryForObject(
-                "SELECT request_hash FROM organization.store_service_point_command_receipt WHERE workspace_uuid=? AND group_workspace_key=? AND idempotency_key=?",
+                ("SELECT request_hash FROM organization.store_service_point_command_receip"
+                        + "t WHERE workspace_uuid=? AND group_workspace_key=? AND idempotency_key=?"),
                 String.class,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -1146,7 +1226,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
 
     private QrRow readQrRow(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
         List<QrRow> rows = jdbc.query(
-                "SELECT store_ref, enabled, channel_ref, version, updated_at_epoch_millis FROM organization.store_qr_configuration WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=?",
+                ("SELECT store_ref, enabled, channel_ref, version, updated_at_epoch_millis"
+                        + " FROM organization.store_qr_configuration WHERE workspace_uuid=? AND gro"
+                        + "up_workspace_key=? AND store_ref=?"),
                 (result, ignored) -> new QrRow(
                         result.getObject("store_ref", UUID.class),
                         result.getBoolean("enabled"),
@@ -1212,7 +1294,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
 
     private boolean hasAreaBefore(UUID workspaceUuid, String groupWorkspaceKey, AreaRow row) {
         return count(
-                        "SELECT count(*) FROM organization.store_service_point_area WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND status <> 'VOIDED' AND (display_order < ? OR (display_order = ? AND area_ref < ?))",
+                        ("SELECT count(*) FROM organization.store_service_point_area WHERE workspa"
+                                + "ce_uuid=? AND group_workspace_key=? AND store_ref=? AND status <> 'VOIDE"
+                                + "D' AND (display_order < ? OR (display_order = ? AND area_ref < ?))"),
                         workspaceUuid,
                         groupWorkspaceKey,
                         row.storeRef,
@@ -1224,7 +1308,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
 
     private boolean hasAreaAfter(UUID workspaceUuid, String groupWorkspaceKey, AreaRow row) {
         return count(
-                        "SELECT count(*) FROM organization.store_service_point_area WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND status <> 'VOIDED' AND (display_order > ? OR (display_order = ? AND area_ref > ?))",
+                        ("SELECT count(*) FROM organization.store_service_point_area WHERE workspa"
+                                + "ce_uuid=? AND group_workspace_key=? AND store_ref=? AND status <> 'VOIDE"
+                                + "D' AND (display_order > ? OR (display_order = ? AND area_ref > ?))"),
                         workspaceUuid,
                         groupWorkspaceKey,
                         row.storeRef,
@@ -1236,7 +1322,10 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
 
     private boolean hasPointBefore(UUID workspaceUuid, String groupWorkspaceKey, PointRow row) {
         return count(
-                        "SELECT count(*) FROM organization.store_service_point WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND area_ref=? AND status <> 'VOIDED' AND (display_order < ? OR (display_order = ? AND point_ref < ?))",
+                        ("SELECT count(*) FROM organization.store_service_point WHERE workspace_uu"
+                                + "id=? AND group_workspace_key=? AND store_ref=? AND area_ref=? AND status"
+                                + " <> 'VOIDED' AND (display_order < ? OR (display_order = ? AND point_ref "
+                                + "< ?))"),
                         workspaceUuid,
                         groupWorkspaceKey,
                         row.storeRef,
@@ -1249,7 +1338,10 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
 
     private boolean hasPointAfter(UUID workspaceUuid, String groupWorkspaceKey, PointRow row) {
         return count(
-                        "SELECT count(*) FROM organization.store_service_point WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND area_ref=? AND status <> 'VOIDED' AND (display_order > ? OR (display_order = ? AND point_ref > ?))",
+                        ("SELECT count(*) FROM organization.store_service_point WHERE workspace_uu"
+                                + "id=? AND group_workspace_key=? AND store_ref=? AND area_ref=? AND status"
+                                + " <> 'VOIDED' AND (display_order > ? OR (display_order = ? AND point_ref "
+                                + "> ?))"),
                         workspaceUuid,
                         groupWorkspaceKey,
                         row.storeRef,

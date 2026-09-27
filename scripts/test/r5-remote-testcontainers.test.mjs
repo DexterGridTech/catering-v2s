@@ -7,27 +7,39 @@ import os from 'node:os';
 import {resolveGradleCommand} from '../lib/gradle-runtime.mjs';
 import {BACKEND_PERFORMANCE_OPERATION_COUNTS} from '../policy/backend-performance-operation-counts.mjs';
 import {
+  TDS_CAPACITY_CONFIG_RELATIVE_PATH,
+  loadTdsCapacityConfiguration,
+  validateTdsCapacityConfiguration,
+} from '../env/tds-capacity-configuration.mjs';
+import {
   backendAcceptanceEnvironment,
   canonicalBackendAcceptanceOperation,
+  classifyRemoteGradleFailure,
   classifyGradleTestExecution,
   classifyManagedDevLifecycleCommand,
   cleanupRemoteWorkspaceDetailed,
   firstGradleFailureCode,
+  firstJUnitFailureCode,
   inspectManagedDevState,
   managedGradleHomeScript,
   parseAndValidateRunManifest,
   parseRemotePreflightResult,
+  recordRemotePreflightFailure,
   validateCleanupRecoveryTarget,
   acquireLocalRunLock,
   fullPerformanceWorkload,
   parseBackendAcceptanceResult,
+  parseTdsContractResult,
+  parseTdsProcessEvidence,
   parseEvidenceArchiveIndex,
   parseRunnerMarkers,
   hasArchivedEvidenceIndexEntries,
   readEvidenceArtifact,
+  resolveTdsCapacityConfiguration,
   remoteGradleDistributionPath,
   remoteResourceCleanupStatus,
   remotePreflightScript,
+  terminalWireEvidenceAggregationScript,
   resolveGradleHome,
   runScript,
   validateCleanupReceipt,
@@ -38,18 +50,35 @@ import {
   requiresFullPerformanceVerification,
   requiresBackendAcceptanceEvidence,
   requiresActiveBudgetVerification,
+  prepareProductionMutation,
+  resolveProductionMutation,
+  validateProductionMutationReceipt,
+  verifyProductionMutationOutcome,
   verifyFullBackendAcceptanceCalibration,
   verifyFullBackendAcceptancePerformance,
 } from './r5-remote-testcontainers.mjs';
 import {loadPerformanceOperationRegistry} from './backend-performance-operation-reconciliation.mjs';
-import {validateBudgetRegistry} from '../generate/backend-performance-budget.mjs';
+import {
+  BATCH_OPERATION_ID,
+  LINEAR_REQUEST_CARDINALITY_BUDGET,
+  validateBudgetRegistry,
+} from '../generate/backend-performance-budget.mjs';
 import path from 'node:path';
 import {gzipSync} from 'node:zlib';
 
 const task = ':apps:backend:catering-business-server:test';
 const expectedOperationCount = BACKEND_PERFORMANCE_OPERATION_COUNTS.operations;
 const runnerSource = readFileSync(new URL('./r5-remote-testcontainers.mjs', import.meta.url), 'utf8');
+const wireClientSource = readFileSync(new URL('./terminal-ws-wire-client.mjs', import.meta.url), 'utf8');
 const distribution = {sha256: 'a'.repeat(64), path: remoteGradleDistributionPath('a'.repeat(64)), status: 'REUSED'};
+const captureThrown = (action, matcher) => {
+  let captured;
+  assert.throws(action, error => {
+    captured = error;
+    return matcher.test(error.message);
+  });
+  return captured;
+};
 const validEvidenceArchive = () => ({
   status: 'PASS',
   indexPath: '.runtime/r5/evidence/remote-testcontainers/r5-tc-1786638000000-123/evidence-artifacts.tsv',
@@ -58,6 +87,10 @@ const validEvidenceArchive = () => ({
     'backend-acceptance-result.jsonl',
     'db-operation-events.jsonl',
     'statement-dictionary.json',
+    'tds-contract-result.jsonl',
+    'tds-process.log',
+    'tds-process-evidence.json',
+    'terminal-wire-client.log',
   ].map((name, index) => ({
     name,
     rawBytes: 10 + index,
@@ -69,6 +102,15 @@ const validEvidenceArchive = () => ({
       .repeat(64)
       .slice(0, 64),
   })),
+});
+const validRemoteTerminalWireRuntime = () => ({
+  status: 'PASS',
+  nodePath: '/usr/bin/node',
+  nodeVersion: '22.23.2',
+  platform: 'linux',
+  coreModules: ['net', 'crypto', 'zlib', 'readline', 'perf_hooks', 'path', 'url'],
+  unixDomainSocket: 'PASS',
+  rawSocketClient: true,
 });
 const validManifest = () => ({
   schemaVersion: 1,
@@ -274,14 +316,217 @@ test('cleanup recovery binds the terminal manifest to its exact remote host and 
 
 test('remote resource preflight rejects Docker query failure instead of returning empty resources', () => {
   assert.doesNotMatch(remotePreflightScript(), /\|\| true/);
-  assert.throws(
+  assert.doesNotMatch(remotePreflightScript(), /node_binary=/);
+  const unavailable = captureThrown(
     () => parseRemotePreflightResult({status: 1, stdout: '', stderr: 'docker unavailable'}),
     /REMOTE_RESOURCE_PREFLIGHT_UNAVAILABLE/,
   );
+  assert.equal(unavailable.preflightEvidence, undefined);
+  const unverifiedResourcesManifest = {
+    cleanup: {status: 'FAIL', remoteProcess: 'FAIL', remoteWorkspace: 'FAIL', testcontainersContainers: 'FAIL', testcontainersVolumes: 'FAIL'},
+  };
+  assert.equal(recordRemotePreflightFailure(unverifiedResourcesManifest, unavailable), false);
+  assert.equal(unverifiedResourcesManifest.cleanup.status, 'FAIL');
   const empty = parseRemotePreflightResult({status: 0, stdout: '', stderr: ''});
   assert.deepEqual(empty.containers, []);
   assert.deepEqual(empty.volumes, []);
   assert.match(empty.observedAt, /^\d{4}-\d{2}-\d{2}T/);
+});
+
+test('backend acceptance remote preflight requires the pinned Node wire runtime before startup', () => {
+  const tdsCapacity = resolveTdsCapacityConfiguration({
+    schemaVersion: 1,
+    rssBudgetMiB: 512,
+    maxUnauthenticatedConnections: 2,
+    maxTrackedSessions: 4,
+  });
+  const source = remotePreflightScript({requireTerminalWireRuntime: true, tdsCapacity});
+  const wireClientModules = [...wireClientSource.matchAll(/^import\s+.*?\s+from\s+['"]node:([^'"]+)['"];?$/gm)]
+    .map(match => match[1])
+    .sort();
+  const preflightModules = source.match(/const requiredWireModules = (\[[^\n]+\]);/)?.[1];
+  assert.ok(preflightModules, 'REMOTE_NODE_WIRE_MODULE_PREFLIGHT_LIST_MISSING');
+  assert.deepEqual(JSON.parse(preflightModules).sort(), wireClientModules);
+  assert.match(
+    runnerSource,
+    /resolveTdsCapacityConfiguration\(\)/,
+  );
+  assert.match(source, /NODE_RUNTIME/);
+  assert.match(source, /type -a -p node/);
+  assert.match(source, /while IFS= read -r node_binary/);
+  assert.match(source, /done <<< "\$node_candidates"/);
+  assert.doesNotMatch(source, /command -v node/);
+  assert.match(source, /--input-type=module/);
+  for (const module of ['net', 'crypto', 'zlib', 'readline', 'perf_hooks', 'path', 'url']) {
+    assert.match(source, new RegExp(`node:${module}`));
+    assert.match(source, new RegExp(`"${module}"`));
+  }
+  assert.match(source, /22\.23\.2/);
+  assert.doesNotMatch(source, /\bundici\b|6\.28\.0/, 'REMOTE_WIRE_CLIENT_MUST_NOT_PIN_UNUSED_UNDICI');
+  assert.match(source, /UNIX_DOMAIN_SOCKET_UNAVAILABLE/);
+  assert.match(source, /V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS/);
+  assert.match(source, /V2S_TDS_MAX_TRACKED_SESSIONS/);
+  assert.match(source, /TDS_CAPACITY\\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\\t%s/);
+  assert.match(source, /TDS_CAPACITY\\tV2S_TDS_MAX_TRACKED_SESSIONS\\t%s/);
+  assert.match(source, /TDS_CAPACITY\\tV2S_TDS_RSS_BUDGET_MIB\\t%s/);
+  assert.doesNotMatch(source, /validate_tds_capacity|\$\{!key/);
+  assert.match(source, /rawSocketClient/);
+  assert.doesNotMatch(source, /globalThis\.WebSocket/);
+  assert.doesNotMatch(source, /npm\s+install|npx\s+/);
+
+  const syntax = spawnSync('bash', ['-n'], {input: source, encoding: 'utf8'});
+  assert.equal(syntax.status, 0, syntax.stderr || syntax.stdout);
+
+  const runtime = validRemoteTerminalWireRuntime();
+  const parsed = parseRemotePreflightResult(
+    {
+      status: 0,
+      stdout: `NODE_RUNTIME\t${JSON.stringify(runtime)}\nTDS_CAPACITY\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\t2\nTDS_CAPACITY\tV2S_TDS_MAX_TRACKED_SESSIONS\t4\nTDS_CAPACITY\tV2S_TDS_RSS_BUDGET_MIB\t512\n`,
+      stderr: '',
+    },
+    {requireTerminalWireRuntime: true},
+  );
+  assert.deepEqual(parsed.nodeRuntime, runtime);
+  assert.deepEqual(parsed.containers, []);
+  assert.deepEqual(parsed.volumes, []);
+  assert.deepEqual(parsed.tdsCapacity, {
+    maxUnauthenticatedConnections: '2',
+    maxTrackedSessions: '4',
+    rssBudgetMiB: 512,
+    source: TDS_CAPACITY_CONFIG_RELATIVE_PATH,
+  });
+});
+
+test('backend acceptance loads its modest TDS capacity from the repository configuration file', () => {
+  const configured = loadTdsCapacityConfiguration();
+  assert.deepEqual(configured, {
+    schemaVersion: 1,
+    rssBudgetMiB: 512,
+    maxUnauthenticatedConnections: '4',
+    maxTrackedSessions: '8',
+    source: TDS_CAPACITY_CONFIG_RELATIVE_PATH,
+  });
+  assert.throws(() => validateTdsCapacityConfiguration({}), /TDS_CAPACITY_CONFIG_INVALID/);
+  for (const value of ['', '0', '-1', '2147483648', '2x']) {
+    assert.throws(
+      () => validateTdsCapacityConfiguration({
+        schemaVersion: 1,
+        rssBudgetMiB: 512,
+        maxUnauthenticatedConnections: value,
+        maxTrackedSessions: 4,
+      }),
+      /TDS_CAPACITY_CONFIG_INVALID/,
+    );
+  }
+  const overriddenForTest = resolveTdsCapacityConfiguration({
+    schemaVersion: 1,
+    rssBudgetMiB: 512,
+    maxUnauthenticatedConnections: 2,
+    maxTrackedSessions: 4,
+  });
+  const configPosition = runnerSource.indexOf('resolveTdsCapacityConfiguration()');
+  const devStopPosition = runnerSource.indexOf('devState = inspectManagedDevState()');
+  const remotePreflightPosition = runnerSource.indexOf('manifest.resourcePreflight = remotePreflight(');
+  assert.ok(configPosition >= 0 && configPosition < devStopPosition && configPosition < remotePreflightPosition);
+  const processEnvironment = backendAcceptanceEnvironment(
+    'backend-acceptance-run-12345678',
+    'storeTerminalDeviceActivationProtocols',
+    'ACCEPTANCE',
+    null,
+    false,
+    overriddenForTest,
+    '/usr/bin/node',
+  ).join('\n');
+  assert.match(processEnvironment, /V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS='2'/);
+  assert.match(processEnvironment, /V2S_TDS_MAX_TRACKED_SESSIONS='4'/);
+});
+
+test('backend acceptance remote preflight fails closed for missing or mismatched Node wire runtime', () => {
+  const missingRuntime = captureThrown(
+    () => parseRemotePreflightResult({status: 0, stdout: '', stderr: ''}, {requireTerminalWireRuntime: true}),
+    /REMOTE_TERMINAL_WIRE_RUNTIME_REQUIRED/,
+  );
+  assert.deepEqual(missingRuntime.preflightEvidence.resourceInventory, {status: 'EMPTY', containers: 0, volumes: 0});
+  assert.equal(missingRuntime.preflightEvidence.nodeRuntime, undefined);
+
+  for (const runtime of [
+    {...validRemoteTerminalWireRuntime(), nodeVersion: '24.12.0'},
+    {...validRemoteTerminalWireRuntime(), unixDomainSocket: 'FAIL'},
+    {...validRemoteTerminalWireRuntime(), coreModules: ['net', 'crypto', 'zlib', 'readline', 'perf_hooks', 'path']},
+    {...validRemoteTerminalWireRuntime(), rawSocketClient: false},
+    {...validRemoteTerminalWireRuntime(), platform: 'darwin'},
+    {...validRemoteTerminalWireRuntime(), nodePath: ' '},
+  ]) {
+    const failure = captureThrown(
+      () =>
+        parseRemotePreflightResult(
+          {status: 0, stdout: `NODE_RUNTIME\t${JSON.stringify(runtime)}\n`, stderr: ''},
+          {requireTerminalWireRuntime: true},
+        ),
+      /REMOTE_TERMINAL_WIRE_RUNTIME_INVALID/,
+    );
+    assert.equal(failure.preflightEvidence.resourceInventory.status, 'EMPTY');
+    assert.equal(failure.preflightEvidence.nodeRuntime.nodeVersion, runtime.nodeVersion);
+    assert.equal(Object.hasOwn(failure.preflightEvidence.nodeRuntime, 'nodePath'), false);
+  }
+
+  const validRow = `NODE_RUNTIME\t${JSON.stringify(validRemoteTerminalWireRuntime())}`;
+  assert.throws(
+    () =>
+      parseRemotePreflightResult(
+        {
+          status: 0,
+          stdout: `${validRow}\nTDS_CAPACITY\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\t2\nTDS_CAPACITY\tV2S_TDS_MAX_TRACKED_SESSIONS\t4\nTDS_CAPACITY\tV2S_TDS_RSS_BUDGET_MIB\t512\n${validRow}\n`,
+          stderr: '',
+        },
+        {requireTerminalWireRuntime: true},
+      ),
+    /REMOTE_TERMINAL_WIRE_RUNTIME_DUPLICATE/,
+  );
+  const parsed = parseRemotePreflightResult(
+    {
+      status: 0,
+      stdout: `${validRow}\nTDS_CAPACITY\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\t2\nTDS_CAPACITY\tV2S_TDS_MAX_TRACKED_SESSIONS\t4\nTDS_CAPACITY\tV2S_TDS_RSS_BUDGET_MIB\t512\n`,
+      stderr: '',
+    },
+    {requireTerminalWireRuntime: true},
+  );
+  assert.deepEqual(parsed.tdsCapacity, {
+    maxUnauthenticatedConnections: '2',
+    maxTrackedSessions: '4',
+    rssBudgetMiB: 512,
+    source: TDS_CAPACITY_CONFIG_RELATIVE_PATH,
+  });
+  const invalidCapacity = captureThrown(
+    () =>
+      parseRemotePreflightResult(
+        {status: 0, stdout: `${validRow}\nTDS_CAPACITY\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\tINVALID\nTDS_CAPACITY\tV2S_TDS_MAX_TRACKED_SESSIONS\t4\nTDS_CAPACITY\tV2S_TDS_RSS_BUDGET_MIB\t512\n`, stderr: ''},
+        {requireTerminalWireRuntime: true},
+      ),
+    /REMOTE_TDS_CAPACITY_INVALID/,
+  );
+  assert.deepEqual(invalidCapacity.preflightEvidence.tdsCapacity, {
+    maxUnauthenticatedConnections: 'INVALID',
+    maxTrackedSessions: '4',
+    rssBudgetMiB: '512',
+  });
+
+  const earlyFailureManifest = {
+    cleanup: {status: 'FAIL', remoteProcess: 'FAIL', remoteWorkspace: 'FAIL', testcontainersContainers: 'FAIL', testcontainersVolumes: 'FAIL'},
+  };
+  assert.equal(recordRemotePreflightFailure(earlyFailureManifest, invalidCapacity), true);
+  assert.equal(earlyFailureManifest.resourcePreflight.status, 'FAIL');
+  assert.deepEqual(validateCleanupReceipt(earlyFailureManifest.cleanup), {
+    status: 'PASS',
+    remoteProcess: 'PASS',
+    remoteWorkspace: 'PASS',
+    testcontainersContainers: 'PASS',
+    testcontainersVolumes: 'PASS',
+  });
+
+  const startedWorkspaceManifest = {cleanup: {status: 'FAIL'}};
+  assert.equal(recordRemotePreflightFailure(startedWorkspaceManifest, invalidCapacity, {remotePrepared: true}), true);
+  assert.deepEqual(startedWorkspaceManifest.cleanup, {status: 'FAIL'});
 });
 
 test('backend acceptance supplies every non-production server prerequisite and selection', () => {
@@ -289,7 +534,15 @@ test('backend acceptance supplies every non-production server prerequisite and s
   assert.deepEqual(backendAcceptanceEnvironment(null, 'focused-owner-test'), [
     'export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY',
   ]);
-  const environment = backendAcceptanceEnvironment('backend-acceptance-run-12345678', 'all').join('\n');
+  const environment = backendAcceptanceEnvironment(
+    'backend-acceptance-run-12345678',
+    'all',
+    'ACCEPTANCE',
+    null,
+    false,
+    null,
+    '/usr/bin/node',
+  ).join('\n');
   for (const required of [
     'V2S_RUNTIME_ENVIRONMENT=non-production',
     'V2S_DEV_PROFILE=backend-acceptance',
@@ -297,10 +550,13 @@ test('backend acceptance supplies every non-production server prerequisite and s
     'V2S_BACKEND_ACCEPTANCE_SECRET=',
     'V2S_BACKEND_ACCEPTANCE_EVENTS=',
     'V2S_BACKEND_ACCEPTANCE_RESULT=',
+    'V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_RESULT=',
+    'V2S_BACKEND_ACCEPTANCE_RUN_DIRECTORY=',
     'V2S_DB_OPERATIONS_EVENTS=',
     'V2S_DB_OPERATIONS_HMAC_KEY=',
     'V2S_DB_STATEMENT_DICTIONARY=',
     'V2S_BACKEND_ACCEPTANCE_OPERATION=',
+    'V2S_TERMINAL_WIRE_NODE_BINARY=',
     'CATERING_OTP_DEBUG_CODE_EXPOSURE=true',
     'V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE=true',
     'V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF=true',
@@ -308,6 +564,33 @@ test('backend acceptance supplies every non-production server prerequisite and s
     assert.match(environment, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
   assert.doesNotMatch(environment, /V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY/);
+  const topologyPreflightEnvironment = backendAcceptanceEnvironment(
+    'backend-acceptance-run-12345678',
+    'storeTerminalActivationBusinessPrecedence',
+    'ACCEPTANCE',
+    null,
+    false,
+    {maxUnauthenticatedConnections: '2', maxTrackedSessions: '4'},
+    '/usr/bin/node',
+    true,
+  ).join('\n');
+  assert.match(topologyPreflightEnvironment, /V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT=true/);
+  assert.throws(
+    () => backendAcceptanceEnvironment('backend-acceptance-run-12345678', 'all', 'ACCEPTANCE', null, false, null, null, true),
+    /BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT_ARGUMENT_INVALID/,
+  );
+  const tdsEnvironment = backendAcceptanceEnvironment(
+    'backend-acceptance-run-12345678',
+    'storeTerminalDeviceActivationProtocols',
+    'ACCEPTANCE',
+    null,
+    false,
+    {maxUnauthenticatedConnections: '2', maxTrackedSessions: '4'},
+    '/usr/bin/node',
+  ).join('\n');
+  assert.match(tdsEnvironment, /V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS='2'/);
+  assert.match(tdsEnvironment, /V2S_TDS_MAX_TRACKED_SESSIONS='4'/);
+  assert.match(tdsEnvironment, /V2S_TERMINAL_WIRE_NODE_BINARY='\/usr\/bin\/node'/);
   assert.match(
     backendAcceptanceEnvironment('backend-acceptance-run-12345678', 'catalog.category-candidate-hierarchy').join('\n'),
     /V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY/,
@@ -344,6 +627,102 @@ test('backend acceptance supplies every non-production server prerequisite and s
   );
 });
 
+test('TDS registration race mutation is exact, remote-only, and verified at the transport contract boundary', () => {
+  const runId = 'backend-acceptance-run-12345678';
+  const mutation = resolveProductionMutation('tds-registration-pending-generation-check');
+  const preflight = prepareProductionMutation({mutation});
+  assert.notEqual(preflight.sourceBeforeSha256, preflight.sourceAfterSha256);
+
+  const remoteScript = runScript({
+    remoteRoot: '/tmp/r5-tc-1789418414756-70098',
+    remoteWorkspace: '/tmp/r5-tc-1789418414756-70098/workspace',
+    remoteResults: '/tmp/r5-tc-1789418414756-70098/results',
+    distribution,
+    invocation: {extraArguments: []},
+    backendAcceptanceRunId: runId,
+    backendAcceptanceOperation: mutation.scenarioOperation,
+    verificationMode: 'ACCEPTANCE',
+    productionMutation: mutation,
+    mutationPreflight: preflight,
+    topologyPreflight: true,
+  });
+  assert.match(remoteScript, /-Pv2s\.acceptance\.registration-race-red-control=true/);
+  assert.match(remoteScript, /mutation_relative='apps\/backend\/terminal-data-server\/src\/main\/java/);
+
+  const tdsContractResult = parseTdsContractResult(
+    [
+      {
+        type: 'transport-contract',
+        operation: 'terminal.connection.topology-probe',
+        module: 'TERMINAL_DATA_SERVER',
+        contract: 'PASS',
+        status: 'PASS',
+        runId,
+      },
+      {
+        type: 'transport-contract',
+        operation: mutation.scenarioId,
+        module: mutation.module,
+        contract: 'FAIL',
+        status: 'FAIL',
+        runId,
+        failureCategory: 'TDS_VS10_REGISTRATION_RACE_RED_CONTROL',
+        clientFailureCategory: 'TERMINAL_WIRE_SOCKET_READ_TIMEOUT',
+        sessionReadyObserved: true,
+      },
+    ]
+      .map(row => JSON.stringify(row))
+      .join('\n'),
+  );
+  const backendAcceptanceResult = {
+    discovery: {selected: 1, operation: mutation.scenarioOperation},
+    rows: [{contract: 'PASS', business: 'PASS', businessMode: 'REAL', status: 'PASS'}],
+    summary: {directFailures: 0},
+  };
+  const observed = verifyProductionMutationOutcome({
+    mutation,
+    backendAcceptanceResult,
+    tdsContractResult,
+    httpEvents: [{operationId: mutation.operationId, status: 200, outcome: 'SUCCEEDED'}],
+    runId,
+  });
+  assert.equal(observed.tdsContract, 'FAIL');
+  assert.equal(observed.failureCategory, 'TDS_VS10_REGISTRATION_RACE_RED_CONTROL');
+
+  assert.throws(
+    () =>
+      verifyProductionMutationOutcome({
+        mutation,
+        backendAcceptanceResult,
+        tdsContractResult: parseTdsContractResult(
+          JSON.stringify({
+            type: 'transport-contract',
+            operation: mutation.scenarioId,
+            module: mutation.module,
+            contract: 'PASS',
+            status: 'PASS',
+            runId,
+          }),
+        ),
+        httpEvents: [{operationId: mutation.operationId, status: 200, outcome: 'SUCCEEDED'}],
+        runId,
+      }),
+    /PRODUCTION_MUTATION_TDS_CONTRACT_SIGNAL_INVALID/,
+  );
+
+  validateProductionMutationReceipt({
+    ...mutation,
+    status: 'PASS',
+    verdict: 'PASS',
+    business: 'PASS',
+    cleanup: 'PASS',
+    sourceBeforeSha256: 'a'.repeat(64),
+    sourceAfterSha256: 'b'.repeat(64),
+    stagingSnapshotHash: 'c'.repeat(64),
+    observed,
+  });
+});
+
 test('managed evidence archives preserve exact raw bytes without retaining raw event streams locally', () => {
   const directory = mkdtempSync(path.join(os.tmpdir(), 'r5-evidence-archive-'));
   try {
@@ -369,6 +748,47 @@ test('managed evidence archives preserve exact raw bytes without retaining raw e
   }
 });
 
+test('remote evidence aggregates every per-marker terminal wire log into the archived client log', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'r5-wire-evidence-'));
+  const tds = path.join(root, 'backend-acceptance', 'tds');
+  const results = path.join(root, 'results');
+  mkdirSync(tds, {recursive: true});
+  mkdirSync(results, {recursive: true});
+  try {
+    writeFileSync(path.join(tds, 'terminal-wire-client.log'), 'fixed client diagnostic\n');
+    writeFileSync(path.join(tds, 'terminal-wire-marker-a.log'), 'marker a diagnostic\n');
+    writeFileSync(path.join(tds, 'terminal-wire-marker-b.log'), 'marker b diagnostic\n');
+    const shell = [
+      `root='${root}'`,
+      `results='${results}'`,
+      terminalWireEvidenceAggregationScript(),
+    ].join('\n');
+    const execution = spawnSync('bash', ['-c', shell], {encoding: 'utf8'});
+    assert.equal(execution.status, 0, execution.stderr);
+    const archivedInput = readFileSync(path.join(results, 'terminal-wire-client.log'), 'utf8');
+    assert.match(archivedInput, /fixed client diagnostic/);
+    assert.match(archivedInput, /terminal-wire-marker-a\.log/);
+    assert.match(archivedInput, /marker a diagnostic/);
+    assert.match(archivedInput, /terminal-wire-marker-b\.log/);
+    assert.match(archivedInput, /marker b diagnostic/);
+    assert.equal(archivedInput.split('fixed client diagnostic').length - 1, 1);
+
+    const remoteScript = runScript({
+      remoteRoot: `${root}/remote`,
+      remoteWorkspace: `${root}/remote/workspace`,
+      remoteResults: `${root}/remote/results`,
+      distribution,
+      invocation: {extraArguments: []},
+      backendAcceptanceRunId: null,
+      backendAcceptanceOperation: 'all',
+      verificationMode: 'ACCEPTANCE',
+    });
+    assert.ok(remoteScript.includes(terminalWireEvidenceAggregationScript()));
+  } finally {
+    rmSync(root, {recursive: true, force: true});
+  }
+});
+
 test('pre-test failures do not masquerade as missing acceptance artifacts', () => {
   const directory = mkdtempSync(path.join(os.tmpdir(), 'r5-evidence-pretest-'));
   try {
@@ -379,6 +799,22 @@ test('pre-test failures do not masquerade as missing acceptance artifacts', () =
   } finally {
     rmSync(directory, {recursive: true, force: true});
   }
+});
+
+test('failed Gradle execution preserves its first failure without requiring business-result artifacts', () => {
+  assert.equal(requiresBackendAcceptanceEvidence('backend-acceptance-run', false), false);
+  assert.equal(requiresBackendAcceptanceEvidence('backend-acceptance-run', true), true);
+  const runnerSource = readFileSync(new URL('./r5-remote-testcontainers.mjs', import.meta.url), 'utf8');
+  assert.match(
+    runnerSource,
+    /requiresBackendAcceptanceEvidence\(backendAcceptanceRunId,\s*executionPass\)/,
+    'FAILED_TEST_EXECUTION_MUST_NOT_REQUIRE_SUCCESS_ONLY_BUSINESS_ARTIFACTS',
+  );
+  assert.doesNotMatch(
+    runnerSource,
+    /requiresBackendAcceptanceEvidence\(backendAcceptanceRunId,\s*actualExecution\.status === 'PASS'\)/,
+    'TASK_OBSERVED_MUST_NOT_STAND_IN_FOR_SUCCESSFUL_TEST_EXECUTION',
+  );
 });
 
 test('managed evidence reader can fail closed against local raw streams when archive is required', () => {
@@ -526,7 +962,7 @@ test('managed Testcontainers runner fails closed on pid reuse with a different O
   }
 });
 
-test('a complete backend acceptance run always enforces generated budgets without an environment opt-in', () => {
+test('a complete backend acceptance run requires and enforces budgets without an environment opt-in', () => {
   assert.equal(requiresFullPerformanceVerification('run-1', 'all'), true);
   assert.equal(requiresFullPerformanceVerification('run-1', 'catalog.category-candidate-hierarchy'), false);
   assert.equal(requiresFullPerformanceVerification(null, 'all'), false);
@@ -534,7 +970,25 @@ test('a complete backend acceptance run always enforces generated budgets withou
   assert.equal(requiresActiveBudgetVerification('run-1', 'all', 'CALIBRATION'), false);
 
   const repositoryRoot = path.resolve(import.meta.dirname, '..', '..');
-  const registry = loadPerformanceOperationRegistry({root: repositoryRoot});
+  const generatedIdentities = loadPerformanceOperationRegistry({root: repositoryRoot});
+  // Before CP-05 calibration, IDENTITY_ONLY outputs intentionally contain no budgets.
+  // Exercise the runner verifier with explicit test budgets; generated projection activation is
+  // independently checked after the three calibration reports.
+  const registry = generatedIdentities.map(operation => ({
+    ...operation,
+    databaseOperationBudget: operation.operationId === BATCH_OPERATION_ID
+      ? {
+          ...LINEAR_REQUEST_CARDINALITY_BUDGET,
+          measurementScenarioIds: ['performance.normal-path'],
+          history: [{from: null, to: 20, reason: 'runner test fixture'}],
+        }
+      : {
+          kind: 'FIXED',
+          max: 23,
+          measurementScenarioIds: ['performance.normal-path'],
+          history: [{from: null, to: 23, reason: 'runner test fixture'}],
+        },
+  }));
   assert.doesNotThrow(() => validateBudgetRegistry({operations: registry}));
   assert.throws(
     () =>
@@ -685,6 +1139,68 @@ test('backend acceptance result keeps discovery, contract, business, and DB obse
   );
 });
 
+test('TDS CONTRACT evidence stays separate from backend business scenario results', () => {
+  const result = parseTdsContractResult(
+    '{"type":"transport-contract","operation":"terminal.connection.topology-probe","module":"TERMINAL_DATA_SERVER","contract":"PASS","status":"PASS","runId":"backend-acceptance-run-12345678"}',
+  );
+  assert.deepEqual(result.summary, {discovered: 1, contractPass: 1, directFailures: 0});
+  assert.throws(() => parseTdsContractResult(''), /TDS_CONTRACT_RESULT_REQUIRED/);
+  const failure = parseTdsContractResult(
+    '{"type":"transport-contract","operation":"terminal.connection.topology-probe","module":"TERMINAL_DATA_SERVER","contract":"PASS","status":"FAIL","runId":"run"}',
+  );
+  assert.equal(failure.summary.directFailures, 1);
+});
+
+test('TDS process evidence requires a stopped reactive process and its real readiness log', () => {
+  const digest = 'a'.repeat(64);
+  const processEvidence = {
+    schemaVersion: 1,
+    kind: 'backend-acceptance-tds-process',
+    runId: 'backend-acceptance-run-12345678',
+    phase: 'STOPPED',
+    processId: 4812,
+    processStartTicks: '1928374',
+    processStartedAt: '2026-09-27T12:00:00Z',
+    exitCode: 143,
+    applicationType: 'REACTIVE',
+    port: 49152,
+    runtimeClasspathReportSha256: digest,
+    bootJarSha256: digest,
+    rssBudgetMiB: 512,
+    rssAtReadyKiB: 180000,
+    rssBeforeStopKiB: 196000,
+    logPath: '/tmp/r5-tc-1-2/backend-acceptance/tds/tds.log',
+    cleanupStatus: 'PASS',
+  };
+  const parsed = parseTdsProcessEvidence({
+    processEvidence: JSON.stringify(processEvidence),
+    processLog: 'Netty started on port 49152\nevent=tds_listener_ready targetCount=0',
+    expectedRunId: processEvidence.runId,
+  });
+  assert.equal(parsed.status, 'PASS');
+  assert.equal(parsed.applicationType, 'REACTIVE');
+  assert.equal(parsed.cleanup, 'PASS');
+  assert.equal(parsed.rssBudgetMiB, 512);
+  assert.equal(parsed.rssAtReadyKiB, 180000);
+  assert.equal(parsed.rssBeforeStopKiB, 196000);
+  assert.throws(
+    () => parseTdsProcessEvidence({
+      processEvidence: JSON.stringify({...processEvidence, cleanupStatus: 'FAIL'}),
+      processLog: 'Netty started on port 49152\nevent=tds_listener_ready',
+      expectedRunId: processEvidence.runId,
+    }),
+    /TDS_PROCESS_EVIDENCE_INVALID/,
+  );
+  assert.throws(
+    () => parseTdsProcessEvidence({
+      processEvidence: JSON.stringify({...processEvidence, rssBeforeStopKiB: 512 * 1024 + 1}),
+      processLog: 'Netty started on port 49152\nevent=tds_listener_ready',
+      expectedRunId: processEvidence.runId,
+    }),
+    /TDS_PROCESS_EVIDENCE_INVALID/,
+  );
+});
+
 test('focused runner accepts only a non-cached actual Gradle Test task', () => {
   assert.deepEqual(classifyGradleTestExecution(`> Task ${task}\nBUILD SUCCESSFUL`, task), {
     status: 'PASS',
@@ -711,6 +1227,54 @@ test('failed pre-test Gradle output preserves its structured first failure witho
   assert.equal(requiresBackendAcceptanceEvidence('backend-acceptance-run', false), false);
   assert.equal(requiresBackendAcceptanceEvidence('backend-acceptance-run', true), true);
   assert.equal(requiresBackendAcceptanceEvidence(null, true), false);
+});
+
+test('failed remote Gradle runs retain the JUnit assertion or deepest setup cause as the failure category', () => {
+  const assertionXml = `<?xml version="1.0"?><testsuite><testcase><failure message="org.opentest4j.AssertionFailedError: TDS_CAPACITY_CONFIG_MISSING ==&gt; expected true" type="org.opentest4j.AssertionFailedError">TDS_CAPACITY_CONFIG_MISSING ==&gt; expected true</failure></testcase></testsuite>`;
+  assert.equal(firstJUnitFailureCode(assertionXml), 'TEST_TDS_CAPACITY_CONFIG_MISSING');
+
+  const nestedCauseXml = `<?xml version="1.0"?><testsuite><testcase><failure message="ApplicationContext failed" type="java.lang.IllegalStateException">wrapper\nCaused by: java.lang.IllegalStateException: Mapped port can only be obtained after the container is started\n at Test.java:10</failure></testcase></testsuite>`;
+  assert.equal(
+    firstJUnitFailureCode(nestedCauseXml),
+    'TEST_ILLEGAL_STATE_EXCEPTION_MAPPED_PORT_CAN_ONLY_BE_OBTAINED_AFTER_THE_CONTAINER_IS_STARTED',
+  );
+  const qualifiedCauseXml = `<?xml version="1.0"?><testsuite><testcase><failure message="context failed" type="java.lang.IllegalStateException">Caused by: java.lang.IllegalArgumentException: Cannot subclass final class com.catering.v2s.app.edge.terminal.ActivateTerminalOperation</failure></testcase></testsuite>`;
+  assert.equal(
+    firstJUnitFailureCode(qualifiedCauseXml),
+    'TEST_ILLEGAL_ARGUMENT_EXCEPTION_CANNOT_SUBCLASS_FINAL_CLASS_ACTIVATETERMINALOPERATION',
+  );
+  assert.equal(firstJUnitFailureCode('<testsuite><testcase /></testsuite>'), null);
+});
+
+test('remote Gradle failure classification prefers archived JUnit causes over wrapper markers', () => {
+  const gradleWrapperFailure = 'Error: REMOTE_GRADLE_EXIT_NONZERO\nBUILD FAILED';
+  assert.equal(
+    classifyRemoteGradleFailure(gradleWrapperFailure, 'TEST_TDS_CAPACITY_CONFIG_MISSING'),
+    'TEST_TDS_CAPACITY_CONFIG_MISSING',
+  );
+  assert.equal(
+    classifyRemoteGradleFailure('Error: BUDGET_NOT_READY_CP05_BLOCKED:25', 'TEST_CONTEXT_START_FAILURE'),
+    'TEST_CONTEXT_START_FAILURE',
+  );
+  assert.equal(
+    classifyRemoteGradleFailure('Error: BUDGET_NOT_READY_CP05_BLOCKED:25', null),
+    'BUDGET_NOT_READY_CP05_BLOCKED:25',
+  );
+  assert.equal(
+    classifyRemoteGradleFailure(gradleWrapperFailure, null),
+    'GRADLE_TEST_FAILURE_DETAILS_UNAVAILABLE',
+  );
+
+  const executionClassificationStart = runnerSource.indexOf('const gradleFailureCode =');
+  const executionClassification = runnerSource.slice(
+    executionClassificationStart,
+    runnerSource.indexOf("markLastKnownGood('REMOTE_TEST_EXECUTION')", executionClassificationStart),
+  );
+  assert.match(executionClassification, /classifyRemoteGradleFailure\(gradleLog, junitFailureCode\)/);
+  assert.match(executionClassification, /remoteGradleStatus !== '0'[\s\S]*?gradleFailureCode/);
+  assert.match(executionClassification, /manifest\.firstFailure \?\?= executionFailure/);
+  assert.match(executionClassification, /manifest\.failureCategory \?\?= executionFailure/);
+  assert.doesNotMatch(executionClassification, /firstGradleFailureCode\(gradleLog\)\s*\?\?\s*junitFailureCode/);
 });
 
 test('manifest requires proof that the focused process, workspace, containers, and volumes were reclaimed', () => {

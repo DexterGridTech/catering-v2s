@@ -15,6 +15,15 @@ import {
 import {STORE_TERMINAL_ORDER_TYPES} from '../../../app/api/generated/storeTerminalRules';
 import {storeTerminalTestIds} from '../storeTerminalTestIds';
 
+export type TerminalSceneEditorProps = {
+  form: FormInstance<StoreTerminalFormValues>;
+  index: number;
+  functionIdentity: string;
+  scene: {key: string; label: string; allowedPaperSpecKeys: readonly string[]};
+  printerValues: readonly TerminalPrinterForm[];
+  showToggle?: boolean;
+};
+
 export function TerminalSceneEditor({
   form,
   index,
@@ -22,14 +31,7 @@ export function TerminalSceneEditor({
   scene,
   printerValues,
   showToggle = true,
-}: {
-  form: FormInstance<StoreTerminalFormValues>;
-  index: number;
-  functionIdentity: string;
-  scene: {key: string; label: string; allowedPaperSpecKeys: readonly string[]};
-  printerValues: readonly TerminalPrinterForm[];
-  showToggle?: boolean;
-}) {
+}: TerminalSceneEditorProps) {
   const watchedScene = Form.useWatch(['functions', index, 'scenes', scene.key], form) as
     Partial<TerminalSceneForm> | undefined;
   // The scene editor is controlled by this subscription. A one-off

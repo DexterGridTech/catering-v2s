@@ -34,6 +34,8 @@
     "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
     "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx",
     "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx",
+    "apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDeviceTypeField.tsx",
+    "apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalEditDrawer.tsx",
     "apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx",
     "apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalPrinterEditor.tsx",
     "apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalSceneEditor.tsx",
@@ -41,11 +43,14 @@
     "doc/plans/platform/2026-09-23-v2s-store-terminal-management-ia-codex.md",
     "doc/plans/platform/2026-09-23-v2s-store-terminal-management-ui-interaction-design-codex.md",
     "doc/plans/platform/2026-09-24-v2s-store-terminal-management-implementation-design-codex.md",
-    "doc/plans/platform/2026-09-24-v2s-store-terminal-management-implementation-plan-codex.md"
+    "doc/plans/platform/2026-09-24-v2s-store-terminal-management-implementation-plan-codex.md",
+    "doc/plans/platform/2026-09-25-v2s-terminal-activation-and-connection-requirements-claude.md",
+    "doc/plans/platform/2026-09-26-v2s-terminal-activation-and-connection-implementation-design-codex.md",
+    "doc/plans/platform/2026-09-26-v2s-terminal-activation-and-connection-implementation-plan-codex.md"
   ],
   "uiSourceDirectory": "apps/frontend/operations-admin/src/features/store-terminal",
-  "designPath": "doc/plans/platform/2026-09-24-v2s-store-terminal-management-implementation-design-codex.md",
-  "reviewRecordPath": "doc/review/platform/2026-09-25-v2s-store-terminal-l2-admission-review-codex.md",
+  "designPath": "doc/plans/platform/2026-09-26-v2s-terminal-activation-and-connection-implementation-design-codex.md",
+  "reviewRecordPath": "doc/review/platform/2026-09-28-v2s-terminal-activation-batch-1-l2-admission-review-r3-codex.md",
   "requiredMarkers": {
     "uiDesign": "UI_DESIGN_REVIEW=PASS",
     "testId": "TESTID_REVIEW=PASS",

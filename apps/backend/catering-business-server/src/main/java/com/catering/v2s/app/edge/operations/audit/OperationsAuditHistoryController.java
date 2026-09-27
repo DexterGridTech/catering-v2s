@@ -58,6 +58,8 @@ public final class OperationsAuditHistoryController {
                     case "STORE_CONTRACT" -> new OperationsAuditQuery.StoreContract(target, page, pageSize);
                     case AuditEntityTypes.STORE_TERMINAL -> new OperationsAuditQuery.StoreTerminal(
                             target, page, pageSize);
+                    case AuditEntityTypes.TERMINAL_BINDING -> new OperationsAuditQuery.TerminalBinding(
+                            target, page, pageSize);
                     default -> throw new InvalidEdgeRequestException("unsupported operations audit target");
                 });
         return AuditHistoryWireMapper.page(result);

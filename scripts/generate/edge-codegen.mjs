@@ -24,6 +24,7 @@ const problemComponentPath = 'contracts/openapi/components/common/problem.schema
 const salesMenuTagPolicyPath = 'contracts/policy/sales-menu-rtk-tag-policy.json';
 const storeServicePointTagPolicyPath = 'contracts/policy/store-service-point-rtk-tag-policy.json';
 const storeTerminalTagPolicyPath = 'contracts/policy/store-terminal-rtk-tag-policy.json';
+const safeRetryableOperationIds = new Set(['activateTerminal', 'cancelTerminalActivation']);
 const targets = {
   errorsJava:
     'apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/EdgeProblemCode.java',
@@ -193,6 +194,28 @@ function openApiOperation(base, catalogOperation, reportOperation) {
   }
   if (!Array.isArray(operation.security))
     fail('R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED', catalogOperation.operationId);
+  const terminalAuthorizationMarkers = [
+    operation['x-required-capability'],
+    operation['x-required-owner-protocol'],
+    operation['x-required-platform-authorization'],
+    operation['x-required-terminal-credential'],
+  ].filter(value => value !== undefined);
+  if (catalogOperation.authorizationMode === 'NONE'
+    && (operation['x-authorization-mode'] !== 'NONE' || operation.security.length !== 0 || terminalAuthorizationMarkers.length !== 0)) {
+    fail('R5_EDGE_CODEGEN_TERMINAL_ACTIVATION_AUTH_DRIFT', catalogOperation.operationId);
+  }
+  if (catalogOperation.authorizationMode === 'TERMINAL_CREDENTIAL'
+    && (operation['x-authorization-mode'] !== 'TERMINAL_CREDENTIAL'
+      || JSON.stringify(operation.security) !== JSON.stringify([{terminalCredential: []}])
+      || typeof operation['x-required-terminal-credential'] !== 'string'
+      || terminalAuthorizationMarkers.length !== 1)) {
+    fail('R5_EDGE_CODEGEN_TERMINAL_CREDENTIAL_AUTH_DRIFT', catalogOperation.operationId);
+  }
+  const safeRetryable = safeRetryableOperationIds.has(catalogOperation.operationId);
+  if (safeRetryable !== (catalogOperation.safeRetryable === true)
+    || safeRetryable !== (operation['x-safe-retryable'] === true)) {
+    fail('R5_EDGE_CODEGEN_TERMINAL_SAFE_RETRY_DRIFT', catalogOperation.operationId);
+  }
   const idempotencyHeaders = headerParameters.filter(parameter => parameter.name.toLowerCase() === 'idempotency-key');
   const expectsIdempotency = catalogOperation.idempotency?.header === 'REQUIRED_16_128';
   if (
@@ -208,7 +231,9 @@ function openApiOperation(base, catalogOperation, reportOperation) {
       queryParameters,
       headerParameters,
       requestRequired: requestBody?.required === true,
-      requiresSession: operation.security.length > 0,
+      requiresSession: operation.security.some(requirement =>
+        Object.keys(requirement || {}).some(scheme => scheme === 'platformSessionCookie' || scheme === 'operationsSessionCookie'),
+      ),
     },
   };
 }
@@ -331,7 +356,7 @@ function load(base = root) {
   ]);
   assertRootOpenApiRouteRegistryExactSet(base, operations);
   const faceCounts = Object.fromEntries(
-    ['platform-admin', 'operations-admin', 'public'].map(face => [
+    ['platform-admin', 'operations-admin', 'public', 'terminal'].map(face => [
       face,
       operations.filter(operation => operation.face === face).length,
     ]),
@@ -503,7 +528,8 @@ function validateStoreTerminalTagDescriptor(operation, descriptor, collection) {
     }
     return;
   }
-  const pathNames = descriptor.kind === 'requestPath' ? operation.openApi.pathParameters.map(parameter => parameter.name) : undefined;
+  const pathNames =
+    descriptor.kind === 'requestPath' ? operation.openApi.pathParameters.map(parameter => parameter.name) : undefined;
   if (
     descriptor.kind !== 'requestPath' ||
     typeof descriptor.prefix !== 'string' ||
@@ -1148,9 +1174,7 @@ function strictWireReadExpression(type, nullable = false) {
       : type.includes('<')
         ? `context.readValue(parser, new tools.jackson.core.type.TypeReference<${type}>() {})`
         : `context.readValue(parser, ${type}.class)`;
-  return nullable
-    ? `(parser.currentToken() == tools.jackson.core.JsonToken.VALUE_NULL ? null : ${read})`
-    : read;
+  return nullable ? `(parser.currentToken() == tools.jackson.core.JsonToken.VALUE_NULL ? null : ${read})` : read;
 }
 function strictEmptyObjectDeserializer(name) {
   return `@tools.jackson.databind.annotation.JsonDeserialize(using = ${name}.Deserializer.class)
@@ -1203,11 +1227,10 @@ function strictWireDeserializer(name, properties, required, components, inlineTy
     .join('\n');
   const missingChecks = properties
     .filter(([property]) => required.has(property))
-    .map(
-      ([property]) =>
-        nullableProperties.has(property)
-          ? `      if (!seen.contains(${javaString(property)})) return context.reportInputMismatch(${name}.class, "missing required property ${property}");`
-          : `      if (${javaIdentifier(property)} == null) return context.reportInputMismatch(${name}.class, "missing required property ${property}");`,
+    .map(([property]) =>
+      nullableProperties.has(property)
+        ? `      if (!seen.contains(${javaString(property)})) return context.reportInputMismatch(${name}.class, "missing required property ${property}");`
+        : `      if (${javaIdentifier(property)} == null) return context.reportInputMismatch(${name}.class, "missing required property ${property}");`,
     )
     .join('\n');
   const constructorArgs = properties.map(([property]) => javaIdentifier(property)).join(', ');
@@ -1375,7 +1398,14 @@ function schemaAllowsNull(schema, components, seen = new Set()) {
     schemaAllowsNull(candidate, components, seen),
   );
 }
-function javaWireType(name, schema, components, inlineTypes = new Map(), strictNames = new Set(), strictInlineNames = new Set()) {
+function javaWireType(
+  name,
+  schema,
+  components,
+  inlineTypes = new Map(),
+  strictNames = new Set(),
+  strictInlineNames = new Set(),
+) {
   schema = resolvedSchema(schema, components, new Set([name]));
   if (Array.isArray(schema.enum)) {
     const values = schema.enum.filter(value => value !== null);
@@ -1460,8 +1490,7 @@ function strictWireSchemaNames(operations, components) {
     for (const part of [...(schema.allOf || []), ...(schema.oneOf || []), ...(schema.anyOf || [])]) visitSchema(part);
   }
   for (const operation of operations) {
-    if (operation.requestSchema !== 'NoBody')
-      visitSchema({$ref: `#/components/schemas/${operation.requestSchema}`});
+    if (operation.requestSchema !== 'NoBody') visitSchema({$ref: `#/components/schemas/${operation.requestSchema}`});
   }
   return strictNames;
 }
@@ -1862,7 +1891,7 @@ function capabilityResolverRegistry(model) {
     '    public static Optional<ResolverDefinition> resolver(String resolverId) { return resolvers().stream().filter(value -> value.resolverId().equals(resolverId)).findFirst(); }',
     '    public static Optional<String> resolveCapabilityKey(String requirementId, String serverResolvedResourceType) { return WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(requirementId, serverResolvedResourceType); }',
     '    private static ResolverDefinition resolver(String resolverId, AuthorizationMode authorizationMode, List<String> inputs, List<String> outputs, boolean authenticatedWorkspaceSessionForbidden) { return new ResolverDefinition(resolverId, authorizationMode, inputs, outputs, authenticatedWorkspaceSessionForbidden); }',
-    '    public enum AuthorizationMode { AUTHENTICATED_WORKSPACE, AUTHENTICATED_PLATFORM_SUPER_ADMIN, PUBLIC_PROTOCOL }',
+    '    public enum AuthorizationMode { AUTHENTICATED_WORKSPACE, AUTHENTICATED_PLATFORM_SUPER_ADMIN, PUBLIC_PROTOCOL, TERMINAL_CREDENTIAL }',
     '    public record ResolverDefinition(String resolverId, AuthorizationMode authorizationMode, List<String> inputs, List<String> outputs, boolean authenticatedWorkspaceSessionForbidden) { }',
     '}',
     '',
@@ -1906,6 +1935,82 @@ function capabilityOutputs(base) {
     [targets.capabilityResolverRegistryJava, capabilityResolverRegistry(model)],
     [targets.capabilityOperationsCatalog, capabilityOperationCatalog(model)],
   ];
+}
+function identityOnlyRouteRegistryMatches(actualSource, expectedSource) {
+  let actual;
+  let expected;
+  try {
+    actual = JSON.parse(actualSource);
+    expected = JSON.parse(expectedSource);
+  } catch {
+    fail('R5_EDGE_CODEGEN_IDENTITY_ONLY_PROJECTION_INVALID', targets.routeRegistry);
+  }
+  if (!/^[a-f0-9]{64}$/.test(actual.calibrationReportDigest || ''))
+    fail('R5_EDGE_CODEGEN_IDENTITY_ONLY_PROJECTION_INVALID', `${targets.routeRegistry}:calibrationReportDigest`);
+  const projectedBudgetCount = (actual.operations || []).filter(operation =>
+    Object.hasOwn(operation, 'databaseOperationBudget'),
+  ).length;
+  if (projectedBudgetCount !== 0 && projectedBudgetCount !== (actual.operations || []).length)
+    fail('R5_EDGE_CODEGEN_IDENTITY_ONLY_PROJECTION_INVALID', `${targets.routeRegistry}:partialBudgetProjection`);
+  for (const operation of actual.operations || []) {
+    const budget = operation.databaseOperationBudget;
+    if (
+      budget !== undefined &&
+      (!budget || typeof budget !== 'object' || !Number.isSafeInteger(budget.max) || budget.max < 0)
+    )
+      fail('R5_EDGE_CODEGEN_IDENTITY_ONLY_PROJECTION_INVALID', `${targets.routeRegistry}:${operation.operationId}`);
+    delete operation.databaseOperationBudget;
+  }
+  delete actual.calibrationReportDigest;
+  delete expected.calibrationReportDigest;
+  for (const operation of expected.operations || []) delete operation.databaseOperationBudget;
+  return normalized(actual) === normalized(expected);
+}
+function identityOnlyTsSource(relative, source, expected, face, operations) {
+  const symbol = `${face.replaceAll('-', '_').toUpperCase()}_DATABASE_OPERATION_BUDGETS`;
+  const marker = `\n\nexport const ${symbol} = `;
+  const start = source.indexOf(marker);
+  const expectedStart = expected.indexOf(marker);
+  if (start < 0 || source.indexOf(marker, start + marker.length) >= 0 || expectedStart < 0)
+    fail('R5_EDGE_CODEGEN_IDENTITY_ONLY_PROJECTION_INVALID', `${relative}:${symbol}`);
+  const valueStart = start + marker.length;
+  const valueEnd = source.indexOf(' as const;', valueStart);
+  if (valueEnd < 0) fail('R5_EDGE_CODEGEN_IDENTITY_ONLY_PROJECTION_INVALID', `${relative}:${symbol}`);
+  let budgetProjection;
+  try {
+    budgetProjection = JSON.parse(source.slice(valueStart, valueEnd));
+  } catch {
+    fail('R5_EDGE_CODEGEN_IDENTITY_ONLY_PROJECTION_INVALID', `${relative}:${symbol}`);
+  }
+  const expectedIds = operations.filter(operation => operation.face === face).map(operation => operation.operationId);
+  const budgetIds = budgetProjection && typeof budgetProjection === 'object' ? Object.keys(budgetProjection) : [];
+  if (budgetIds.length !== 0 && !sameSet(budgetIds, expectedIds))
+    fail('R5_EDGE_CODEGEN_IDENTITY_ONLY_PROJECTION_INVALID', `${relative}:${symbol}:operationIds`);
+  const expectedEnd = expected.indexOf(' as const;', expectedStart + marker.length);
+  if (expectedEnd < 0) fail('R5_EDGE_CODEGEN_IDENTITY_ONLY_PROJECTION_INVALID', `${relative}:${symbol}:expected`);
+  return [
+    source.slice(0, start) + source.slice(valueEnd + ' as const;'.length),
+    expected.slice(0, expectedStart) + expected.slice(expectedEnd + ' as const;'.length),
+  ];
+}
+function generatedOutputMatches(relative, actual, expected, operations) {
+  if (!isCp05IdentityOnlyProjectionMode()) return actual === expected;
+  if (relative === targets.routeRegistry) return identityOnlyRouteRegistryMatches(actual, expected);
+  const faceByTarget = new Map([
+    [targets.platformTs, 'platform-admin'],
+    [targets.operationsTs, 'operations-admin'],
+    [targets.publicTs, 'public'],
+  ]);
+  const face = faceByTarget.get(relative);
+  if (!face) return actual === expected;
+  const [actualWithoutBudget, expectedWithoutBudget] = identityOnlyTsSource(
+    relative,
+    actual,
+    expected,
+    face,
+    operations,
+  );
+  return actualWithoutBudget === expectedWithoutBudget;
 }
 function expected(base = root) {
   const {
@@ -2038,7 +2143,7 @@ function checkOutputs(base = root) {
   let count = 0;
   for (const [relative, value] of outputs) {
     if (!fs.existsSync(path.join(base, relative))) fail('R5_EDGE_CODEGEN_MISSING', relative);
-    if (fs.readFileSync(path.join(base, relative), 'utf8') !== value)
+    if (!generatedOutputMatches(relative, fs.readFileSync(path.join(base, relative), 'utf8'), value, operations))
       fail(
         tsFaces.has(relative) || rtkFaces.has(relative) ? 'R5_EDGE_TS_GENERATED_DRIFT' : 'R5_EDGE_CODEGEN_DRIFT',
         relative,
@@ -2068,6 +2173,39 @@ function selfTest() {
       filter: source => !source.includes('/build') && !source.includes('/dist') && !source.includes('/.git'),
     });
     writeOutputs(scratch);
+    const previousProjectionMode = process.env.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE;
+    process.env.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE = 'IDENTITY_ONLY';
+    try {
+      checkOutputs(scratch);
+      const routeRegistryPath = path.join(scratch, targets.routeRegistry);
+      const routeRegistrySource = fs.readFileSync(routeRegistryPath, 'utf8');
+      const routeRegistry = JSON.parse(routeRegistrySource);
+      routeRegistry.operations[0].path += '/identity-only-red';
+      fs.writeFileSync(routeRegistryPath, normalized(routeRegistry));
+      try {
+        checkOutputs(scratch);
+        fail('R5_EDGE_CODEGEN_IDENTITY_ONLY_ROUTE_DRIFT_RED_NOT_DETECTED');
+      } catch (error) {
+        if (error.code !== 'R5_EDGE_CODEGEN_DRIFT') throw error;
+      }
+      fs.writeFileSync(routeRegistryPath, routeRegistrySource);
+      const platformTsPath = path.join(scratch, targets.platformTs);
+      const platformTsSource = fs.readFileSync(platformTsPath, 'utf8');
+      fs.appendFileSync(platformTsPath, '\n// identity-only drift red mutation\n');
+      try {
+        checkOutputs(scratch);
+        fail('R5_EDGE_CODEGEN_IDENTITY_ONLY_TS_DRIFT_RED_NOT_DETECTED');
+      } catch (error) {
+        if (error.code !== 'R5_EDGE_TS_GENERATED_DRIFT') throw error;
+      }
+      fs.writeFileSync(platformTsPath, platformTsSource);
+      writeOutputs(scratch);
+      checkOutputs(scratch);
+      process.stdout.write('R5_EDGE_CODEGEN_IDENTITY_ONLY_CHECK=PASS\n');
+    } finally {
+      if (previousProjectionMode === undefined) delete process.env.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE;
+      else process.env.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE = previousProjectionMode;
+    }
     for (const name of ['PlatformPasswordRecoveryOtpSendRequest', 'OperationsPasswordRecoveryOtpSendRequest']) {
       const source = fs.readFileSync(path.join(scratch, targets.wireJavaRoot, `${name}.java`), 'utf8');
       if (
@@ -2145,10 +2283,7 @@ function selfTest() {
     const storeTerminalDenominatorMutation = structuredClone(storeTerminalPolicy);
     storeTerminalDenominatorMutation.operations = storeTerminalDenominatorMutation.operations.slice(1);
     storeTerminalDenominatorMutation.operationCount -= 1;
-    fs.writeFileSync(
-      path.join(scratch, storeTerminalTagPolicyPath),
-      normalized(storeTerminalDenominatorMutation),
-    );
+    fs.writeFileSync(path.join(scratch, storeTerminalTagPolicyPath), normalized(storeTerminalDenominatorMutation));
     try {
       load(scratch);
       fail('R5_STORE_TERMINAL_RTK_TAG_OPERATION_DENOMINATOR_RED_NOT_DETECTED');
@@ -2170,10 +2305,7 @@ function selfTest() {
           }
         : entry,
     );
-    fs.writeFileSync(
-      path.join(scratch, storeTerminalTagPolicyPath),
-      normalized(storeTerminalStaticIdMutation),
-    );
+    fs.writeFileSync(path.join(scratch, storeTerminalTagPolicyPath), normalized(storeTerminalStaticIdMutation));
     try {
       load(scratch);
       fail('R5_STORE_TERMINAL_RTK_TAG_STATIC_ID_RED_NOT_DETECTED');

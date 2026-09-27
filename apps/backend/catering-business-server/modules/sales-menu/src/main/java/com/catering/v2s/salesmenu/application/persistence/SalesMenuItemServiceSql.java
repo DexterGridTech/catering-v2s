@@ -17,9 +17,8 @@ public final class SalesMenuItemServiceSql {
     public static final String UPDATE_PREFIX = "UPDATE ";
     public static final String DISPLAY_ORDER_DESC_LOCK_SUFFIX = " DESC LIMIT 1 FOR UPDATE";
     public static final String DISPLAY_ORDER_ASC_LOCK_SUFFIX = " ASC LIMIT 1 FOR UPDATE";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_UPDATE_SALES_VERSION_ITEM_DISPLAY_NAME_OVERRIDE_LISTED_PRICE_CENTS =
-                    "UPDATE sales_menu.sales_version_item SET display_name_override=?,listed_price_cents=?,";
+    public static final String UPDATE_SALES_VER_ITEM_DISP_001 =
+            "UPDATE sales_menu.sales_version_item SET display_name_override=?,listed_price_cents=?,";
     public static final String SALES_MENU_ITEM_SERVICE_RESOLVED_ITEM_NAME_RESOLVED_ITEM_CODE_RESOLVED_PRODUCT_SHAPE =
             "resolved_item_name=?,resolved_item_code=?,resolved_product_shape=?,";
     public static final String SALES_MENU_ITEM_SERVICE_RESOLVED_SALES_UNIT_REF_RESOLVED_SALES_UNIT_CODE =
@@ -28,25 +27,22 @@ public final class SalesMenuItemServiceSql {
             "resolved_sales_unit_name=NULL,resolved_sales_unit_dimension=NULL,";
     public static final String SALES_MENU_ITEM_SERVICE_RESOLVED_SALES_UNIT_PRECISION =
             "resolved_sales_unit_precision=NULL,";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_ALTERNATIVE_ORDERING_CONSTRAINTS_JSON_DISPLAY_MEDIA_MODE_VERSION =
-                    "ordering_constraints_json=?::jsonb,display_media_mode=?,version=version+1 ";
+    public static final String ALT_ORDERING_CONSTRAINTS_JSON_DISP_002 =
+            "ordering_constraints_json=?::jsonb,display_media_mode=?,version=version+1 ";
     public static final String SALES_MENU_ITEM_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF =
             "WHERE version_ref=? AND sales_item_ref=?";
     public static final String SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_SKU_VERSION_REF_SALES_ITEM_REF =
             "DELETE FROM sales_menu.sales_version_item_sku WHERE version_ref=? AND sales_item_ref=?";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_SKU_VERSION_REF_SALES_ITEM_REF_SKU_REF =
-                    "INSERT INTO sales_menu.sales_version_item_sku(version_ref,sales_item_ref,sku_ref,";
+    public static final String INSERT_INTO_SALES_VER_ITEM_003 =
+            "INSERT INTO sales_menu.sales_version_item_sku(version_ref,sales_item_ref,sku_ref,";
     public static final String SALES_MENU_ITEM_SERVICE_LISTED_PRICE_CENTS =
             "listed_price_cents,resolved_sku_code,resolved_sku_name,default_price_cents,";
     public static final String SALES_MENU_ITEM_SERVICE_DISPLAY_ORDER = "display_order) VALUES(?,?,?,?,?,?,?,?)";
     public static final String
             SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_SKU_VERSION_REF_SALES_ITEM_REF_ALTERNATE_A =
                     "DELETE FROM sales_menu.sales_version_item_sku WHERE version_ref=? AND sales_item_ref=?";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_ORDER_OPTION_VA_DELETE_FROM_SALES_MENU_SALES =
-                    "DELETE FROM sales_menu.sales_version_item_order_option_value ";
+    public static final String DELETE_SALES_VER_ITEM_ORD_004 =
+            "DELETE FROM sales_menu.sales_version_item_order_option_value ";
     public static final String SALES_MENU_ITEM_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF_ALTERNATE_A =
             "WHERE version_ref=? AND sales_item_ref=?";
     public static final String SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_ORDER_OPTION_VERSION_REF =
@@ -84,9 +80,8 @@ public final class SalesMenuItemServiceSql {
                     "FROM sales_menu.sales_command_receipt ";
     public static final String SALES_MENU_ITEM_SERVICE_WHERE_WORKSPACE_UUID_OPERATION_ID_IDEMPOTENCY_KEY_ALTERNATE_A =
             "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_ITEM_SALES_ITEM_REF_COLLECTION_REF_CATALOG_ITEM_REF =
-                    "INSERT INTO sales_menu.sales_item(sales_item_ref,collection_ref,catalog_item_ref) VALUES ";
+    public static final String INSERT_INTO_SALES_ITEM_SALES_005 =
+            "INSERT INTO sales_menu.sales_item(sales_item_ref,collection_ref,catalog_item_ref) VALUES ";
     public static final String SALES_MENU_ITEM_SERVICE_CTE_INPUT_SALES_ITEM_REF_RESOLVED_ITEM_NAME_RESOLVED_ITEM_CODE =
             "WITH input(sales_item_ref,resolved_item_name,resolved_item_code,resolved_product_shape,ordinal) AS ";
     public static final String SALES_MENU_ITEM_SERVICE_OPEN_PAREN = "(VALUES ";
@@ -94,14 +89,12 @@ public final class SalesMenuItemServiceSql {
             "), base AS (SELECT COALESCE(MAX(display_order)+1,0) AS start_order ";
     public static final String SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_VERSION_REF_SECTION_REF =
             "FROM sales_menu.sales_version_item WHERE version_ref=? AND section_ref=?) ";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_VERSION_REF_SALES_ITEM_REF_SECTION_REF =
-                    "INSERT INTO sales_menu.sales_version_item(version_ref,sales_item_ref,section_ref,";
+    public static final String INSERT_INTO_SALES_VER_ITEM_006 =
+            "INSERT INTO sales_menu.sales_version_item(version_ref,sales_item_ref,section_ref,";
     public static final String SALES_MENU_ITEM_SERVICE_COLLECTION_REF =
             "collection_ref,display_order,resolved_item_name,resolved_item_code,resolved_product_shape,";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_ALTERNATIVE_ORDERING_CONSTRAINTS_JSON_DISPLAY_MEDIA_MODE_VERSION_ALTERNATE_A =
-                    "ordering_constraints_json,display_media_mode,version) ";
+    public static final String ALT_ORDERING_CONSTRAINTS_JSON_DISP_ALT_A_007 =
+            "ordering_constraints_json,display_media_mode,version) ";
     public static final String SALES_MENU_ITEM_SERVICE_SELECT_INPUT_SALES_ITEM_REF_BASE_START_ORDER =
             "SELECT ?,input.sales_item_ref,?,?,base.start_order+input.ordinal,";
     public static final String SALES_MENU_ITEM_SERVICE_INPUT =
@@ -171,12 +164,10 @@ public final class SalesMenuItemServiceSql {
             "ON i.sales_item_ref=v.sales_item_ref WHERE v.version_ref=? AND v.section_ref=?";
     public static final String SALES_MENU_ITEM_SERVICE_ORDER_BY_DISPLAY_ORDER_SALES_ITEM_REF =
             " ORDER BY v.display_order,v.sales_item_ref LIMIT ?";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_SELECT_VERSION_REF_SALES_ITEM_REF_CATALOG_ITEM_REF_SECTION_REF_ALTERNATE_A =
-                    "SELECT v.version_ref,i.sales_item_ref,i.catalog_item_ref,v.section_ref,v.display_order,v.version,";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_DISPLAY_NAME_OVERRIDE_RESOLVED_ITEM_NAME_RESOLVED_ITEM_CODE_ALTERNATE_A =
-                    "v.display_name_override,v.resolved_item_name,v.resolved_item_code,";
+    public static final String SELECT_VER_REF_SALES_ITEM_ALT_A_008 =
+            "SELECT v.version_ref,i.sales_item_ref,i.catalog_item_ref,v.section_ref,v.display_order,v.version,";
+    public static final String DISP_NAME_OVERRIDE_RESOLVED_ITEM_ALT_A_009 =
+            "v.display_name_override,v.resolved_item_name,v.resolved_item_code,";
     public static final String SALES_MENU_ITEM_SERVICE_RESOLVED_PRODUCT_SHAPE_ALTERNATE_A =
             "v.resolved_product_shape,v.resolved_sales_unit_ref,v.resolved_sales_unit_code,";
     public static final String SALES_MENU_ITEM_SERVICE_RESOLVED_SALES_UNIT_NAME_ALTERNATE_A =
@@ -216,9 +207,8 @@ public final class SalesMenuItemServiceSql {
     public static final String SALES_MENU_ITEM_SERVICE_CONDITION_SALES_ITEM_REF_ALTERNATE_B = " AND v.sales_item_ref=?";
     public static final String SALES_MENU_ITEM_SERVICE_ORDER_BY_SECTION_REF_DISPLAY_ORDER_SALES_ITEM_REF =
             " ORDER BY v.section_ref,v.display_order,v.sales_item_ref";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_SELECT_SALES_ITEM_REF_DEFINITION_REF_RESOLVED_DEFINITION_NAME_SELECTION_MODE =
-                    "SELECT sales_item_ref,definition_ref,resolved_definition_name,selection_mode,required,";
+    public static final String SELECT_SALES_ITEM_REF_DEF_010 =
+            "SELECT sales_item_ref,definition_ref,resolved_definition_name,selection_mode,required,";
     public static final String SALES_MENU_ITEM_SERVICE_MIN_SELECTION_COUNT_MAX_SELECTION_COUNT_DISPLAY_ORDER =
             "min_selection_count,max_selection_count,display_order ";
     public static final String SALES_MENU_ITEM_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_ORDER_OPTION_VERSION_REF =
@@ -234,12 +224,10 @@ public final class SalesMenuItemServiceSql {
             "FROM sales_menu.sales_version_item_order_option_value WHERE version_ref=? ";
     public static final String SALES_MENU_ITEM_SERVICE_CONDITION_SALES_ITEM_REF_ALTERNATE_D = "AND sales_item_ref IN (";
     public static final String SALES_MENU_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_A = ") ";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_ORDER_BY_SALES_ITEM_REF_DEFINITION_REF_DISPLAY_ORDER_DEFINITION_VALUE_REF =
-                    "ORDER BY sales_item_ref,definition_ref,display_order,definition_value_ref";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_SELECT_SALES_ITEM_REF_SKU_REF_LISTED_PRICE_CENTS_RESOLVED_SKU_CODE =
-                    "SELECT sales_item_ref,sku_ref,listed_price_cents,resolved_sku_code,resolved_sku_name,";
+    public static final String ORD_BY_SALES_ITEM_REF_011 =
+            "ORDER BY sales_item_ref,definition_ref,display_order,definition_value_ref";
+    public static final String SELECT_SALES_ITEM_REF_SKU_012 =
+            "SELECT sales_item_ref,sku_ref,listed_price_cents,resolved_sku_code,resolved_sku_name,";
     public static final String SALES_MENU_ITEM_SERVICE_SALES_VERSION_ITEM_SKU_DEFAULT_PRICE_CENTS_DISPLAY_ORDER =
             "default_price_cents,display_order FROM sales_menu.sales_version_item_sku ";
     public static final String SALES_MENU_ITEM_SERVICE_WHERE_VERSION_REF_SALES_ITEM_REF_ALTERNATE_B =
@@ -286,16 +274,14 @@ public final class SalesMenuItemServiceSql {
     public static final String
             SALES_MENU_ITEM_SERVICE_DELETE_SALES_VERSION_ITEM_ORDER_OPTION_VERSION_REF_SALES_ITEM_REF =
                     "DELETE FROM sales_menu.sales_version_item_order_option WHERE version_ref=? AND sales_item_ref=?";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION_VERSION_REF_SALES_ITEM_REF =
-                    "INSERT INTO sales_menu.sales_version_item_order_option(version_ref,sales_item_ref,";
+    public static final String INSERT_INTO_SALES_VER_ITEM_013 =
+            "INSERT INTO sales_menu.sales_version_item_order_option(version_ref,sales_item_ref,";
     public static final String SALES_MENU_ITEM_SERVICE_DEFINITION_REF_RESOLVED_DEFINITION_NAME_SELECTION_MODE_REQUIRED =
             "definition_ref,resolved_definition_name,selection_mode,required,min_selection_count,";
     public static final String SALES_MENU_ITEM_SERVICE_MAX_SELECTION_COUNT_DISPLAY_ORDER =
             "max_selection_count,display_order) VALUES(?,?,?,?,?,?,?,?,?)";
-    public static final String
-            SALES_MENU_ITEM_SERVICE_INSERT_INTO_SALES_VERSION_ITEM_ORDER_OPTION_VA_VERSION_REF_SALES_ITEM_REF =
-                    "INSERT INTO sales_menu.sales_version_item_order_option_value(version_ref,sales_item_ref,";
+    public static final String INSERT_INTO_SALES_VER_ITEM_014 =
+            "INSERT INTO sales_menu.sales_version_item_order_option_value(version_ref,sales_item_ref,";
     public static final String SALES_MENU_ITEM_SERVICE_DEFINITION_REF =
             "definition_ref,definition_value_ref,resolved_value_name,display_order,";
     public static final String SALES_MENU_ITEM_SERVICE_DEFAULT_VALUE_EXTRA_PRICE_ALTERNATE_A =

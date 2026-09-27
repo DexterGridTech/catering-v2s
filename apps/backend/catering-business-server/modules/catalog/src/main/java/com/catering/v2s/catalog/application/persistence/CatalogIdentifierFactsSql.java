@@ -17,8 +17,7 @@ public final class CatalogIdentifierFactsSql {
     public static final String CATALOG_IDENTIFIER_FACTS_VALUES = "VALUES(?,?,?,?,?,?,?,?,?)";
     public static final String CATALOG_IDENTIFIER_FACTS_SELECT_CATALOG_SKU_PRODUCT_SKU_REF_ITEM_REF =
             "SELECT product_sku_ref FROM catalog.catalog_sku WHERE item_ref=? AND product_sku_ref IN (";
-    public static final String
-            CATALOG_IDENTIFIER_FACTS_CLOSE_PAREN_ITEM_REF_PRODUCT_SKU_REF_DISPLAY_ORDER_IDENTIFIER_REF =
-                    ") ORDER BY item_ref,product_sku_ref NULLS FIRST,display_order,identifier_ref";
+    public static final String CLOSE_PAREN_ITEM_REF_PRODUCT_001 =
+            ") ORDER BY item_ref,product_sku_ref NULLS FIRST,display_order,identifier_ref";
     public static final String CATALOG_IDENTIFIER_FACTS_CLOSE_PAREN = ")";
 }

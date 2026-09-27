@@ -19,8 +19,7 @@ public class WorkspaceAssignmentScopePersistence {
     public WorkspaceAssignmentScopeLookup.AssignmentScope findActiveScope(
             UUID workspaceUuid, String groupWorkspaceKey, UUID assignmentId) {
         return jdbc.query(
-                WorkspaceAssignmentScopeServiceSql
-                                .WORKSPACE_ASSIGNMENT_SCOPE_SERVICE_SELECT_ROLE_ASSIGNMENT_SERVICE_NODE_TYPE_SERVICE_NODE_ID
+                WorkspaceAssignmentScopeServiceSql.SELECT_ROLE_ASSIGN_SVC_NODE_001
                         + WorkspaceAssignmentScopeServiceSql
                                 .WORKSPACE_ASSIGNMENT_SCOPE_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ACTIVE,
                 statement -> {

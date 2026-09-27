@@ -586,6 +586,15 @@
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates": {
       "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1tag-candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel": {
+      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1{terminalRef}~1activation~1cancel"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation": {
+      "$ref": "./paths/terminal/activation.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1activation"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel": {
+      "$ref": "./paths/terminal/activation.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1terminals~1{terminalRef}~1activation~1cancel"
     }
   },
   "components": {
@@ -599,6 +608,11 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "V2S_OPERATIONS_SESSION"
+      },
+      "terminalCredential": {
+        "type": "http",
+        "scheme": "Terminal",
+        "description": "Terminal <generation>.<secret>"
       }
     },
     "schemas": {
@@ -830,6 +844,12 @@
       "StoreTerminalStatus": {
         "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalStatus"
       },
+      "StoreTerminalBindingStatus": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalBindingStatus"
+      },
+      "StoreTerminalBinding": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalBinding"
+      },
       "StoreTerminalPrinterBinding": {
         "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalPrinterBinding"
       },
@@ -904,6 +924,24 @@
       },
       "StoreTerminalMutation": {
         "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalMutation"
+      },
+      "TerminalActivationRequest": {
+        "$ref": "./components/terminal-binding/terminal-binding.schemas.json#/components/schemas/TerminalActivationRequest"
+      },
+      "TerminalActivationResult": {
+        "$ref": "./components/terminal-binding/terminal-binding.schemas.json#/components/schemas/TerminalActivationResult"
+      },
+      "TerminalActivationCancellationRequest": {
+        "$ref": "./components/terminal-binding/terminal-binding.schemas.json#/components/schemas/TerminalActivationCancellationRequest"
+      },
+      "TerminalActivationCancellationResult": {
+        "$ref": "./components/terminal-binding/terminal-binding.schemas.json#/components/schemas/TerminalActivationCancellationResult"
+      },
+      "OperationsTerminalActivationCancellationRequest": {
+        "$ref": "./components/terminal-binding/terminal-binding.schemas.json#/components/schemas/OperationsTerminalActivationCancellationRequest"
+      },
+      "OperationsTerminalActivationCancellationResult": {
+        "$ref": "./components/terminal-binding/terminal-binding.schemas.json#/components/schemas/OperationsTerminalActivationCancellationResult"
       },
       "GroupWorkspaceCreateRequest": {
         "$ref": "./components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceCreateRequest"

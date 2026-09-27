@@ -13,7 +13,6 @@ import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
 import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence;
 import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence.ChannelProjection;
 import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence;
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence.TemplateCommandProjection;
 import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
@@ -219,8 +218,12 @@ public class BusinessChannelService {
                 request,
                 BusinessChannelReadback.Channel.class,
                 () -> {
-                    TemplateCommandProjection template = readTemplateCommandProjection(
-                            command.workspaceUuid(), command.groupWorkspaceKey(), command.templateRef(), channelCode);
+                    BusinessChannelTemplatePersistence.TemplateCommandProjection template =
+                            readTemplateCommandProjection(
+                                    command.workspaceUuid(),
+                                    command.groupWorkspaceKey(),
+                                    command.templateRef(),
+                                    channelCode);
                     requireEnabledTemplate(template.status());
                     CollaborationReadback.Tree collaborationTree = BusinessChannelPolicy.EXTERNAL.equals(
                                     template.accessKind())
@@ -531,12 +534,14 @@ public class BusinessChannelService {
     }
 
     private void validateTemplateProvider(
-            TemplateCommandProjection template, UUID workspaceUuid, String groupWorkspaceKey) {
+            BusinessChannelTemplatePersistence.TemplateCommandProjection template,
+            UUID workspaceUuid,
+            String groupWorkspaceKey) {
         validateTemplateProvider(template, workspaceUuid, groupWorkspaceKey, null);
     }
 
     private void validateTemplateProvider(
-            TemplateCommandProjection template,
+            BusinessChannelTemplatePersistence.TemplateCommandProjection template,
             UUID workspaceUuid,
             String groupWorkspaceKey,
             CollaborationReadback.Tree preloadedTree) {
@@ -676,7 +681,7 @@ public class BusinessChannelService {
         }
     }
 
-    private TemplateCommandProjection readTemplateCommandProjection(
+    private BusinessChannelTemplatePersistence.TemplateCommandProjection readTemplateCommandProjection(
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef, String channelCode) {
         if (templateRef == null) throw problem("VALIDATION_ERROR", 422, "templateRef is required");
         return templatePersistence

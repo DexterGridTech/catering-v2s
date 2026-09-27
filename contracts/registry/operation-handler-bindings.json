@@ -22,7 +22,7 @@
         "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
       ],
       "contractDigest": null,
-      "contentSha256": "e1fdd164175766288915996f1dd1f1cb574b4aeae07f6a7c3c76467ed2d6f9ec"
+      "contentSha256": "b479bc3e9dae2147b5cb300d7b5f47381883eeb49b2f925dec98f9e85bdf97a7"
     }
   },
   "runtimeIntegration": {
@@ -30,14 +30,15 @@
     "legacyDispatcher": "NO_LEGACY_DISPATCH",
     "reason": "BP-U06 completed the 51-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth."
   },
-  "operationCount": 293,
+  "operationCount": 296,
   "readCount": 124,
-  "commandCount": 169,
+  "commandCount": 172,
   "contextCounts": {
     "PLATFORM_COMMAND_CONTEXT": 34,
-    "PUBLIC_PROTOCOL_CONTEXT": 9,
+    "PUBLIC_PROTOCOL_CONTEXT": 10,
     "READ_CONTEXT": 124,
-    "WORKSPACE_EXECUTION_CONTEXT": 119,
+    "TERMINAL_CREDENTIAL_CONTEXT": 1,
+    "WORKSPACE_EXECUTION_CONTEXT": 120,
     "WORKSPACE_PROTOCOL_CONTEXT": 7
   },
   "operations": [
@@ -4728,11 +4729,59 @@
       "transactionMode": "REQUIRED",
       "copyRole": "NONE",
       "commandBoundary": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "cancelOperationsStoreTerminalActivation",
+      "owner": "terminal-binding",
+      "routeRegistry": "edge-face",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.app.edge.operations.organization.OperationsStoreTerminalActivationCancellation",
+      "wireRequest": "OperationsTerminalActivationCancellationRequest",
+      "wireResponse": "OperationsTerminalActivationCancellationResult",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "activateTerminal",
+      "owner": "terminal-binding",
+      "routeRegistry": "edge-face",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation",
+      "normalizedPath": "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation",
+      "face": "terminal",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.app.edge.terminal.ActivateTerminalOperation",
+      "wireRequest": "TerminalActivationRequest",
+      "wireResponse": "TerminalActivationResult",
+      "contextKind": "PUBLIC_PROTOCOL_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "cancelTerminalActivation",
+      "owner": "terminal-binding",
+      "routeRegistry": "edge-face",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel",
+      "normalizedPath": "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel",
+      "face": "terminal",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.terminalbinding.application.CancelTerminalActivationOperation",
+      "wireRequest": "TerminalActivationCancellationRequest",
+      "wireResponse": "TerminalActivationCancellationResult",
+      "contextKind": "TERMINAL_CREDENTIAL_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND"
     }
   ],
   "commandBoundaryCounts": {
     "NOT_APPLICABLE": 124,
-    "OWNER_COMMAND": 144,
+    "OWNER_COMMAND": 147,
     "PROTOCOL": 25
   }
 }

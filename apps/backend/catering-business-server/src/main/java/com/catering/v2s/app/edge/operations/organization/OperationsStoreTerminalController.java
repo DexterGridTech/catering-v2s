@@ -1,9 +1,12 @@
 package com.catering.v2s.app.edge.operations.organization;
 
 import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
+import com.catering.v2s.app.edge.generated.wire.OperationsTerminalActivationCancellationRequest;
+import com.catering.v2s.app.edge.generated.wire.OperationsTerminalActivationCancellationResult;
 import com.catering.v2s.app.edge.generated.wire.StoreTerminalAreaCandidate;
 import com.catering.v2s.app.edge.generated.wire.StoreTerminalAreaCandidatePage;
 import com.catering.v2s.app.edge.generated.wire.StoreTerminalAreaReference;
+import com.catering.v2s.app.edge.generated.wire.StoreTerminalBinding;
 import com.catering.v2s.app.edge.generated.wire.StoreTerminalConfiguration;
 import com.catering.v2s.app.edge.generated.wire.StoreTerminalConfigurationInput;
 import com.catering.v2s.app.edge.generated.wire.StoreTerminalCreateRequest;
@@ -175,10 +178,8 @@ public class OperationsStoreTerminalController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody tools.jackson.databind.JsonNode body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
-        StoreTerminalReplaceRequest input = strictBody(
-                body,
-                StoreTerminalReplaceRequest.class,
-                Set.of("name", "deviceType", "configuration", "expectedVersion"));
+        StoreTerminalReplaceRequest input =
+                strictBody(body, StoreTerminalReplaceRequest.class, Set.of("name", "configuration", "expectedVersion"));
         StoreTerminalOwnerApi.TerminalMutation value =
                 m1Bindings.bindPutOperationsStoreTerminal(new StoreTerminalOwnerApi.ReplaceCommand(
                         session.workspaceUuid(),
@@ -186,7 +187,6 @@ public class OperationsStoreTerminalController {
                         storeRef,
                         terminalRef,
                         input.name(),
-                        input.deviceType(),
                         configuration(input.configuration()),
                         required(input.expectedVersion(), "expectedVersion"),
                         idempotencyKey,
@@ -218,6 +218,31 @@ public class OperationsStoreTerminalController {
                         sessions.actor(session),
                         grant(session, REQ_STATUS, storeRef)));
         return mutation(value);
+    }
+
+    @PostMapping("/{terminalRef}/activation/cancel")
+    public OperationsTerminalActivationCancellationResult cancelActivation(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID storeRef,
+            @PathVariable UUID terminalRef,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody tools.jackson.databind.JsonNode body) {
+        WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
+        OperationsTerminalActivationCancellationRequest input = strictBody(
+                body, OperationsTerminalActivationCancellationRequest.class, Set.of("expectedBindingGeneration"));
+        var outcome = m1Bindings.bindCancelOperationsStoreTerminalActivation(
+                session,
+                storeRef,
+                terminalRef,
+                required(input.expectedBindingGeneration(), "expectedBindingGeneration"),
+                idempotencyKey,
+                sessions.actor(session));
+        return switch (outcome) {
+            case CANCELLED -> new OperationsTerminalActivationCancellationResult("CANCELLED");
+            case NOT_ACTIVE -> throw OperationsTerminalActivationProblem.notActive();
+            case BINDING_CHANGED -> throw OperationsTerminalActivationProblem.bindingChanged();
+        };
     }
 
     private WorkspaceSessionReadback readSession(EdgeRequestContext request, String groupWorkspaceKey, UUID storeRef) {
@@ -280,7 +305,12 @@ public class OperationsStoreTerminalController {
                 value.tagReferences().stream()
                         .map(item -> new StoreTerminalTagReference(
                                 item.tagRef(), item.name(), item.code(), status(item.status())))
-                        .toList());
+                        .toList(),
+                new StoreTerminalBinding(
+                        com.catering.v2s.app.edge.generated.wire.StoreTerminalBindingStatus.valueOf(
+                                value.binding().status()),
+                        value.binding().activatedAt(),
+                        value.binding().generation()));
     }
 
     private static StoreTerminalMutation mutation(StoreTerminalOwnerApi.TerminalMutation value) {

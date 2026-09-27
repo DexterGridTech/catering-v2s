@@ -27,29 +27,26 @@ public final class CatalogUnitDefinitionFactsSql {
             "UPDATE catalog.unit_definition SET code=?,name=?,dimension=?,precision=?,version=version+1,upd";
 
     public static final String CATALOG_UNIT_DEFINITION_FACTS_WHERE_UNIT_REF_VERSION = "WHERE unit_ref=? AND version=?";
-    public static final String
-            CATALOG_UNIT_DEFINITION_FACTS_UPDATE_UNIT_DEFINITION_STATUS_VERSION_UPDATED_AT_EPOCH_MILLIS =
-                    "UPDATE catalog.unit_definition SET status=?,version=version+1,updated_at_epoch_millis=? ";
+    public static final String UPDATE_UNIT_DEF_STATUS_VER_001 =
+            "UPDATE catalog.unit_definition SET status=?,version=version+1,updated_at_epoch_millis=? ";
     public static final String CATALOG_UNIT_DEFINITION_FACTS_WHERE_UNIT_REF_VERSION_STATUS_VOIDED =
             "WHERE unit_ref=? AND version=? AND status <> 'VOIDED'";
-    public static final String
-            CATALOG_UNIT_DEFINITION_FACTS_CTE_UNIT_LOCKS_PG_ADVISORY_XACT_LOCK_LOCK_KEY_ONE_LOCK_KEY_TWO =
-                    "WITH unit_locks AS MATERIALIZED (SELECT pg_advisory_xact_lock(lock_key_one,lock_key_two) ";
+    public static final String CTE_UNIT_LOCKS_PG_ADVISORY_002 =
+            "WITH unit_locks AS MATERIALIZED (SELECT pg_advisory_xact_lock(lock_key_one,lock_key_two) ";
     public static final String CATALOG_UNIT_DEFINITION_FACTS_FROM_CLAUSE_FROM_VALUES = "FROM (VALUES ";
     public static final String CATALOG_UNIT_DEFINITION_FACTS_CLOSE_PAREN_REQUESTED_LOCKS_LOCK_KEY_ONE_LOCK_KEY_TWO =
             ") AS requested_locks(lock_key_one,lock_key_two)) ";
-    public static final String
-            CATALOG_UNIT_DEFINITION_FACTS_SELECT_UNIT_DEFINITION_UNIT_REF_CODE_NAME_DIMENSION_ALTERNATE_A =
-                    "SELECT unit_ref,code,name,dimension,precision,status,version FROM catalog.unit_definition ";
+    public static final String SELECT_UNIT_DEF_UNIT_REF_ALT_A_003 =
+            "SELECT unit_ref,code,name,dimension,precision,status,version FROM catalog.unit_definition ";
     public static final String CATALOG_UNIT_DEFINITION_FACTS_WHERE_DATA_NODE_REF_BRAND_REF_UNIT_REF =
             "WHERE data_node_ref=? AND brand_ref=? AND unit_ref IN (";
     public static final String
             CATALOG_UNIT_DEFINITION_FACTS_SELECT_UNIT_DEFINITION_UNIT_REF_CODE_NAME_DIMENSION_ALTERNATE_B =
-                    "SELECT unit_ref,code,name,dimension,precision,status,version FROM catalog.unit_definition WHERE un";
+                    ("SELECT unit_ref,code,name,dimension,precision,status,version FROM catalo"
+                            + "g.unit_definition WHERE un");
 
-    public static final String
-            CATALOG_UNIT_DEFINITION_FACTS_SELECT_UNIT_DEFINITION_UNIT_REF_CODE_NAME_DIMENSION_ALTERNATE_C =
-                    "SELECT unit_ref,code,name,dimension,precision,status,version FROM catalog.unit_definition ";
+    public static final String SELECT_UNIT_DEF_UNIT_REF_ALT_C_004 =
+            "SELECT unit_ref,code,name,dimension,precision,status,version FROM catalog.unit_definition ";
     public static final String CATALOG_UNIT_DEFINITION_FACTS_WHERE_DATA_NODE_REF_BRAND_REF_UNIT_REF_ALTERNATE_A =
             "WHERE data_node_ref=? AND brand_ref=? AND unit_ref=?";
     public static final String CATALOG_UNIT_DEFINITION_FACTS_SELECT_CATALOG_ITEM_SALES_UNIT_REF_BASE_MEASURE_UNIT_REF =
@@ -63,9 +60,8 @@ public final class CatalogUnitDefinitionFactsSql {
     public static final String CATALOG_UNIT_DEFINITION_FACTS_SELECT_REF = "SELECT ref FROM (";
     public static final String CATALOG_UNIT_DEFINITION_FACTS_SELECT_CATALOG_ITEM_SALES_UNIT_REF_REF =
             "SELECT sales_unit_ref AS ref FROM catalog.catalog_item WHERE sales_unit_ref IN (";
-    public static final String
-            CATALOG_UNIT_DEFINITION_FACTS_CLOSE_PAREN_CATALOG_ORDER_OPTION_DEFINITION_MA_CONSUMPTION_UNIT_REF =
-                    ") UNION SELECT consumption_unit_ref FROM catalog.catalog_order_option_definition_material ";
+    public static final String CLOSE_PAREN_CAT_ORD_OPT_005 =
+            ") UNION SELECT consumption_unit_ref FROM catalog.catalog_order_option_definition_material ";
     public static final String CATALOG_UNIT_DEFINITION_FACTS_WHERE_CONSUMPTION_UNIT_REF =
             "WHERE consumption_unit_ref IN (";
     public static final String CATALOG_UNIT_DEFINITION_FACTS_CLOSE_PAREN_UNIT_LOCKS_AND_SELECT_COUNT_FROM_UNIT_L =
@@ -83,24 +79,23 @@ public final class CatalogUnitDefinitionFactsSql {
             "base_measure_unit_override_ref IN (";
     public static final String CATALOG_UNIT_DEFINITION_FACTS_CLOSE_PAREN_REFERENCED_REF =
             ")) referenced WHERE ref IS NOT NULL";
-    public static final String
-            CATALOG_UNIT_DEFINITION_FACTS_INSERT_INTO_CATALOG_UNIT_DEFINITION_UNIT_REF_DATA_NODE_REF_BRAND_REF_CODE_NAME_DIMENSION_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS =
-                    """
-    INSERT INTO catalog.unit_definition(unit_ref,data_node_ref,brand_ref,code,name,dimension,precision,status,version,created_at_epoch_millis,updated_at_epoch_millis)\s""";
-    public static final String
-            CATALOG_UNIT_DEFINITION_FACTS_UPDATE_CATALOG_UNIT_DEFINITION_SET_CODE_NAME_DIMENSION_PRECISION_VERSION_UPDATED_AT_EPOCH_MILLIS_DIMENSION_PRECISION_VERSION_UPDATED_AT_EPOCH_MILLIS =
-                    """
-    UPDATE catalog.unit_definition SET code=?,name=?,dimension=?,precision=?,version=version+1,updated_at_epoch_millis=?\s""";
-    public static final String
-            CATALOG_UNIT_DEFINITION_FACTS_SELECT_UNIT_REF_CODE_NAME_DIMENSION_PRECISION_STATUS_VERSION_FROM_CATALOG_UNIT_DEFINITION_WHERE_UNIT_REF =
-                    """
+    public static final String INSERT_INTO_CAT_UNIT_DEF_006 =
+            """
+    INSERT INTO catalog.unit_definition(unit_ref,data_node_ref,brand_r\
+    ef,code,name,dimension,precision,status,version,created_at_epoch_m\
+    illis,updated_at_epoch_millis)\s""";
+    public static final String UPDATE_CAT_UNIT_DEF_SET_007 =
+            """
+    UPDATE catalog.unit_definition SET code=?,name=?,dimension=?,preci\
+    sion=?,version=version+1,updated_at_epoch_millis=?\s""";
+    public static final String SELECT_UNIT_REF_CODE_NAME_008 =
+            """
     SELECT unit_ref,code,name,dimension,precision,status,version FROM catalog.unit_definition WHERE unit_ref=?""";
-    public static final String
-            CATALOG_UNIT_DEFINITION_FACTS_OR_EXISTS_SELECT_FROM_CATALOG_CATALOG_SKU_WHERE_SALES_UNIT_OVERRIDE_REF_OR_BASE_MEASURE_UNIT_OVERRIDE_REF_WHERE_SALES_UNIT_OVERRIDE_REF_OR_BASE_MEASURE_UNIT_OVERRIDE_REF =
-                    """
-    OR EXISTS (SELECT 1 FROM catalog.catalog_sku WHERE sales_unit_override_ref=? OR base_measure_unit_override_ref=?)\s""";
-    public static final String
-            CATALOG_UNIT_DEFINITION_FACTS_OR_EXISTS_SELECT_FROM_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_MATERIAL_WHERE_CONSUMPTION_UNIT_REF_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_MATERIAL_WHERE_CONSUMPTION_UNIT_REF =
-                    """
+    public static final String OR_EXISTS_SELECT_FROM_CAT_009 =
+            """
+    OR EXISTS (SELECT 1 FROM catalog.catalog_sku WHERE sales_unit_over\
+    ride_ref=? OR base_measure_unit_override_ref=?)\s""";
+    public static final String OR_EXISTS_SELECT_FROM_CAT_010 =
+            """
     OR EXISTS (SELECT 1 FROM catalog.catalog_order_option_definition_material WHERE consumption_unit_ref=?)""";
 }

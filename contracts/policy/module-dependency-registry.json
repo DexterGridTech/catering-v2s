@@ -81,6 +81,24 @@
       "sourceRoot": "apps/backend/catering-business-server/modules/sales-menu",
       "ownerSchema": "sales_menu",
       "commandApiPackages": ["com.catering.v2s.salesmenu.api"]
+    },
+    {
+      "moduleKey": "audit-read",
+      "sourceRoot": "apps/backend/catering-business-server/modules/audit-read",
+      "ownerSchema": null,
+      "commandApiPackages": ["com.catering.v2s.audit.read"]
+    },
+    {
+      "moduleKey": "store-terminal",
+      "sourceRoot": "apps/backend/catering-business-server/modules/store-terminal",
+      "ownerSchema": "store_terminal",
+      "commandApiPackages": ["com.catering.v2s.storeterminal.api"]
+    },
+    {
+      "moduleKey": "terminal-binding",
+      "sourceRoot": "apps/backend/catering-business-server/modules/terminal-binding",
+      "ownerSchema": "terminal_binding",
+      "commandApiPackages": ["com.catering.v2s.terminalbinding.api"]
     }
   ],
   "edges": [
@@ -463,6 +481,143 @@
       "queryId": "business-channel-organization-tenant",
       "initiatingModule": "business-channel",
       "referencedSchemaObject": "organization.tenant"
+    },
+    {
+      "edgeId": "r5-task-read-catalog-sales-menu-published-item",
+      "edgeKind": "TASK_READ",
+      "fromModule": "catalog",
+      "toModule": "sales-menu",
+      "rationale": "The catalog referenced-asset task read checks published menu image references without writing sales-menu facts.",
+      "queryId": "catalog-referenced-assets-sales-menu-published-images",
+      "initiatingModule": "catalog",
+      "referencedSchemaObject": "sales_menu.sales_version_item"
+    },
+    {
+      "edgeId": "r5-task-read-catalog-sales-menu-published-version",
+      "edgeKind": "TASK_READ",
+      "fromModule": "catalog",
+      "toModule": "sales-menu",
+      "rationale": "The catalog referenced-asset task read limits the published image check to published sales-menu versions.",
+      "queryId": "catalog-referenced-assets-sales-menu-published-images",
+      "initiatingModule": "catalog",
+      "referencedSchemaObject": "sales_menu.sales_collection_version"
+    },
+    {
+      "edgeId": "v2s-value-api-store-terminal-audit-contract",
+      "edgeKind": "VALUE_API",
+      "fromModule": "store-terminal",
+      "toModule": "audit-contract",
+      "rationale": "Store-terminal mutations use the value-only audit actor, target and change contract.",
+      "apiPackage": "com.catering.v2s.audit.contract",
+      "operation": "AuditActorAuditTargetAuditHistory"
+    },
+    {
+      "edgeId": "v2s-value-api-audit-read-audit-contract",
+      "edgeKind": "VALUE_API",
+      "fromModule": "audit-read",
+      "toModule": "audit-contract",
+      "rationale": "Audit read services expose the shared typed history page and scope values.",
+      "apiPackage": "com.catering.v2s.audit.contract",
+      "operation": "AuditActorAuditTargetAuditHistory"
+    },
+    {
+      "edgeId": "v2s-value-api-terminal-binding-audit-contract",
+      "edgeKind": "VALUE_API",
+      "fromModule": "terminal-binding",
+      "toModule": "audit-contract",
+      "rationale": "Terminal-binding writes and reads use shared audit values without owning another audit model.",
+      "apiPackage": "com.catering.v2s.audit.contract",
+      "operation": "AuditActorAuditTargetAuditHistory"
+    },
+    {
+      "edgeId": "v2s-fk-terminal-binding-store-terminal",
+      "edgeKind": "SCHEMA_FK",
+      "fromModule": "terminal-binding",
+      "toModule": "store-terminal",
+      "rationale": "A binding row belongs to one exact workspace, group and terminal identity.",
+      "referencingObject": "terminal_binding.latest_binding.terminal_ref",
+      "referencedObject": "store_terminal.terminal.terminal_ref",
+      "constraintName": "fk_terminal_binding_terminal"
+    },
+    {
+      "edgeId": "v2s-task-read-terminal-binding-workspace",
+      "edgeKind": "TASK_READ",
+      "fromModule": "terminal-binding",
+      "toModule": "platform-workspace",
+      "rationale": "Terminal-binding rechecks group-workspace enablement inside the activation transaction.",
+      "queryId": "terminal-binding-activation-facts",
+      "initiatingModule": "terminal-binding",
+      "referencedSchemaObject": "platform_workspace.group_workspace"
+    },
+    {
+      "edgeId": "v2s-task-read-terminal-binding-store",
+      "edgeKind": "TASK_READ",
+      "fromModule": "terminal-binding",
+      "toModule": "organization",
+      "rationale": "Terminal-binding rechecks store status inside the activation transaction without storing organization facts.",
+      "queryId": "terminal-binding-activation-facts",
+      "initiatingModule": "terminal-binding",
+      "referencedSchemaObject": "organization.store"
+    },
+    {
+      "edgeId": "v2s-task-read-terminal-binding-store-terminal-void-validation",
+      "edgeKind": "TASK_READ",
+      "fromModule": "terminal-binding",
+      "toModule": "store-terminal",
+      "rationale": "The binding owner confirms the terminal is voided in the same transaction before ending its binding.",
+      "queryId": "terminal-binding-void-status",
+      "initiatingModule": "terminal-binding",
+      "referencedSchemaObject": "store_terminal.terminal"
+    },
+    {
+      "edgeId": "v2s-task-read-terminal-binding-audit-visibility",
+      "edgeKind": "TASK_READ",
+      "fromModule": "terminal-binding",
+      "toModule": "store-terminal",
+      "rationale": "The binding-owner audit task joins the terminal's store reference to the caller's authorized store set.",
+      "queryId": "terminal-binding-audit-history",
+      "initiatingModule": "terminal-binding",
+      "referencedSchemaObject": "store_terminal.terminal"
+    },
+    {
+      "edgeId": "v2s-task-read-terminal-binding-terminal",
+      "edgeKind": "TASK_READ",
+      "fromModule": "terminal-binding",
+      "toModule": "store-terminal",
+      "rationale": "Terminal-binding validates the locked terminal identity and status through a bounded read only.",
+      "queryId": "terminal-binding-activation-facts",
+      "initiatingModule": "terminal-binding",
+      "referencedSchemaObject": "store_terminal.terminal"
+    },
+    {
+      "edgeId": "v2s-task-read-store-terminal-binding-detail",
+      "edgeKind": "TASK_READ",
+      "fromModule": "store-terminal",
+      "toModule": "terminal-binding",
+      "rationale": "Store-terminal detail composes the latest binding status while leaving binding facts with their owner.",
+      "queryId": "store-terminal-detail-binding",
+      "initiatingModule": "store-terminal",
+      "referencedSchemaObject": "terminal_binding.latest_binding"
+    },
+    {
+      "edgeId": "v2s-task-read-store-terminal-activation-group",
+      "edgeKind": "TASK_READ",
+      "fromModule": "store-terminal",
+      "toModule": "platform-workspace",
+      "rationale": "Activation resolves group workspace identity before locking a terminal by activation code.",
+      "queryId": "store-terminal-activation-candidate",
+      "initiatingModule": "store-terminal",
+      "referencedSchemaObject": "platform_workspace.group_workspace"
+    },
+    {
+      "edgeId": "v2s-task-read-audit-read-terminal-binding",
+      "edgeKind": "TASK_READ",
+      "fromModule": "audit-read",
+      "toModule": "terminal-binding",
+      "rationale": "The audit history reader reads terminal-binding audit events through one bounded task projection.",
+      "queryId": "terminal-binding-audit-history",
+      "initiatingModule": "audit-read",
+      "referencedSchemaObject": "terminal_binding.audit_event"
     }
   ]
 }

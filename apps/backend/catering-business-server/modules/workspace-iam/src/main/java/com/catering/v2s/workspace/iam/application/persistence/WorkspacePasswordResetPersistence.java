@@ -19,8 +19,7 @@ public class WorkspacePasswordResetPersistence {
 
     public AccountRow account(UUID workspaceUuid, String groupWorkspaceKey, UUID accountId) {
         return jdbc.query(
-                WorkspacePasswordResetServiceSql
-                                .WORKSPACE_PASSWORD_RESET_SERVICE_SELECT_WORKSPACE_ACCOUNT_LOGIN_NAME_NORMALIZED_STATUS_VERSION
+                WorkspacePasswordResetServiceSql.SELECT_WS_ACCOUNT_LOGIN_NAME_001
                         + WorkspacePasswordResetServiceSql
                                 .WORKSPACE_PASSWORD_RESET_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
@@ -39,8 +38,7 @@ public class WorkspacePasswordResetPersistence {
 
     public int bumpAccountVersion(UUID accountId, long expectedVersion, long now) {
         return jdbc.update(
-                WorkspacePasswordResetServiceSql
-                                .WORKSPACE_PASSWORD_RESET_SERVICE_UPDATE_WORKSPACE_ACCOUNT_VERSION_UPDATED_AT_EPOCH_MILLIS
+                WorkspacePasswordResetServiceSql.UPDATE_WS_ACCOUNT_VER_UPDATED_002
                         + WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_VERSION,
                 now,
                 accountId,
@@ -49,8 +47,7 @@ public class WorkspacePasswordResetPersistence {
 
     public int updateCredential(UUID accountId, String passwordHash, long now) {
         return jdbc.update(
-                WorkspacePasswordResetServiceSql
-                                .WORKSPACE_PASSWORD_RESET_SERVICE_UPDATE_WORKSPACE_CREDENTIAL_PASSWORD_HASH_CHANGED_AT_EPOCH_MILLIS
+                WorkspacePasswordResetServiceSql.UPDATE_WS_CREDENTIAL_PASSWORD_HASH_003
                         + WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_FAILED_ATTEMPTS
                         + WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_VERSION_ACCOUNT_ID,
                 passwordHash,
@@ -60,8 +57,7 @@ public class WorkspacePasswordResetPersistence {
 
     public int revokeSessions(UUID accountId, long now) {
         return jdbc.update(
-                WorkspacePasswordResetServiceSql
-                                .WORKSPACE_PASSWORD_RESET_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS
+                WorkspacePasswordResetServiceSql.UPDATE_WS_SESSION_STATUS_REVOKED_004
                         + WorkspacePasswordResetServiceSql.WORKSPACE_PASSWORD_RESET_SERVICE_ACCOUNT_ID_STATUS_ACTIVE,
                 now,
                 accountId);

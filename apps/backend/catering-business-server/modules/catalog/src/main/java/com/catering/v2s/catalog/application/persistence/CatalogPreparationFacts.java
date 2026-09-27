@@ -158,8 +158,7 @@ public class CatalogPreparationFacts {
         Map<UUID, Map<UUID, JsonNode>> result = new LinkedHashMap<>();
         refs.forEach(ref -> result.put(ref, new LinkedHashMap<>()));
         jdbc.query(
-                CatalogPreparationFactsSql
-                                .CATALOG_PREPARATION_FACTS_SELECT_CONFIG_ITEM_REF_OVERRIDE_ORDER_OPTION_DEFINITION_VALUE_REF
+                CatalogPreparationFactsSql.SELECT_CONFIG_ITEM_REF_OVERRIDE_001
                         + CatalogPreparationFactsSql
                                 .CATALOG_PREPARATION_FACTS_FROM_CLAUSE_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG
                         + CatalogPreparationFactsSql
@@ -169,8 +168,7 @@ public class CatalogPreparationFacts {
                         + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_WHERE_CONFIG_ITEM_REF
                         + placeholders
                         + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CLOSE_PAREN_OVERRIDE_PREPARATION_EFFECT
-                        + CatalogPreparationFactsSql
-                                .CATALOG_PREPARATION_FACTS_ORDER_BY_CONFIG_ITEM_REF_OVERRIDE_ORDER_OPTION_DEFINITION_VALUE_REF,
+                        + CatalogPreparationFactsSql.ORD_BY_CONFIG_ITEM_REF_002,
                 statement -> bind(statement, refs),
                 rows -> {
                     while (rows.next())
@@ -212,11 +210,9 @@ public class CatalogPreparationFacts {
                         + CatalogPreparationFactsSql
                                 .CATALOG_PREPARATION_FACTS_CLOSE_PAREN_OVERRIDE_PREPARATION_EFFECT_ALTERNATE_A);
         if (!skus.isEmpty())
-            sql.append(
-                            CatalogPreparationFactsSql
-                                            .CATALOG_PREPARATION_FACTS_UNION_SKU_ITEM_REF_PRODUCT_SKU_REF_PREPARATION_OVERRIDE
-                                    + CatalogPreparationFactsSql
-                                            .CATALOG_PREPARATION_FACTS_FROM_CLAUSE_CATALOG_SKU_SKU_PRODUCT_SKU_REF)
+            sql.append(CatalogPreparationFactsSql.UNION_SKU_ITEM_REF_PRODUCT_003
+                            + CatalogPreparationFactsSql
+                                    .CATALOG_PREPARATION_FACTS_FROM_CLAUSE_CATALOG_SKU_SKU_PRODUCT_SKU_REF)
                     .append(placeholders(skus.size()))
                     .append(')');
         sql.append(CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_ORDER_BY_FACT_KIND_ITEM_REF_RELATED_REF);
@@ -290,10 +286,8 @@ public class CatalogPreparationFacts {
     /** Replaces option effects only on the current item's existing override rows. */
     public void replaceOptionEffects(UUID itemRef, Map<UUID, JsonNode> effects) {
         jdbc.update(
-                CatalogPreparationFactsSql
-                                .CATALOG_PREPARATION_FACTS_UPDATE_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE_PREPARATION_EFFECT
-                        + CatalogPreparationFactsSql
-                                .CATALOG_PREPARATION_FACTS_FROM_CLAUSE_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG_ALTERNATE_A
+                CatalogPreparationFactsSql.UPDATE_CAT_ITEM_ORD_OPT_004
+                        + CatalogPreparationFactsSql.FROM_CLAUSE_CAT_ITEM_ORD_ALT_A_005
                         + CatalogPreparationFactsSql
                                 .CATALOG_PREPARATION_FACTS_WHERE_OVERRIDE_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG
                         + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CONDITION_CONFIG_ITEM_REF,
@@ -305,12 +299,9 @@ public class CatalogPreparationFacts {
         jdbc.batchUpdate(
                 CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_UPDATE_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE
                         + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_SET_PREPARATION_EFFECT
-                        + CatalogPreparationFactsSql
-                                .CATALOG_PREPARATION_FACTS_FROM_CLAUSE_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG_ALTERNATE_B
-                        + CatalogPreparationFactsSql
-                                .CATALOG_PREPARATION_FACTS_WHERE_OVERRIDE_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG_ALTERNATE_A
-                        + CatalogPreparationFactsSql
-                                .CATALOG_PREPARATION_FACTS_CONDITION_CONFIG_ITEM_REF_OVERRIDE_ORDER_OPTION_DEFINITION_VALUE_REF,
+                        + CatalogPreparationFactsSql.FROM_CLAUSE_CAT_ITEM_ORD_ALT_B_006
+                        + CatalogPreparationFactsSql.WHERE_OVERRIDE_ITEM_ORD_OPT_ALT_A_007
+                        + CatalogPreparationFactsSql.CONDITION_CONFIG_ITEM_REF_OVERRIDE_008,
                 values);
     }
 

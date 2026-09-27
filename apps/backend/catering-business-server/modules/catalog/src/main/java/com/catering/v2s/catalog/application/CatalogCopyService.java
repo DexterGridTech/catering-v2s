@@ -3305,7 +3305,10 @@ public class CatalogCopyService {
             if (row.status() != null
                     && !"VOIDED".equals(row.status())
                     && refs.putIfAbsent(row.code(), row.categoryRef()) != null)
-                throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标分类编码引用不唯一: " + row.code());
+                // spotless:off
+                throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422,
+                    "目标分类编码引用不唯一: " + row.code());
+                // spotless:on
         }
         return new TargetCategoryFacts(Map.copyOf(refs), Map.copyOf(versions));
     }
@@ -3556,7 +3559,10 @@ public class CatalogCopyService {
         for (CatalogCopyPersistence.UnitRow row : persistence.targetUnitsByCode(target, brand, codes)) {
             UnitRow mapped = unitRow(row);
             if (result.putIfAbsent(mapped.code(), mapped) != null)
-                throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标单位编码引用不唯一: " + mapped.code());
+                // spotless:off
+                throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422,
+                    "目标单位编码引用不唯一: " + mapped.code());
+                // spotless:on
         }
         return result;
     }

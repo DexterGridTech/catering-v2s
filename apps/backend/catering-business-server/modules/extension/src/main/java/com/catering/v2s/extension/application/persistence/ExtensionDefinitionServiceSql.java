@@ -18,13 +18,11 @@ public final class ExtensionDefinitionServiceSql {
     public static final String EXTENSION_DEFINITION_SERVICE_PARAMETER_PLACEHOLDER = "?)";
     public static final String EXTENSION_DEFINITION_SERVICE_UPDATE_EXTENSION_DEFINITION_DEFINITIONS_REVISION =
             "UPDATE extension.extension_definition SET definitions=CAST(? AS JSONB), revision=?, ";
-    public static final String
-            EXTENSION_DEFINITION_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "updated_at_epoch_millis=? WHERE workspace_uuid=? AND group_workspace_key=? AND ";
+    public static final String UPDATE_UPDATED_AT_EPOCH_MS_001 =
+            "updated_at_epoch_millis=? WHERE workspace_uuid=? AND group_workspace_key=? AND ";
     public static final String EXTENSION_DEFINITION_SERVICE_ENTITY_TYPE_REVISION = "entity_type=? AND revision=?";
-    public static final String
-            EXTENSION_DEFINITION_SERVICE_SELECT_EXTENSION_DEFINITION_DEFINITIONS_TEXT_REVISION_WORKSPACE_UUID =
-                    "SELECT definitions::text, revision FROM extension.extension_definition WHERE workspace_uuid=? AND ";
+    public static final String SELECT_EXTENSION_DEF_DEFINITIONS_TEXT_002 =
+            ("SELECT definitions::text, revision FROM extension.extension_definition W" + "HERE workspace_uuid=? AND ");
     public static final String EXTENSION_DEFINITION_SERVICE_GROUP_WORKSPACE_KEY_ENTITY_TYPE =
             "group_workspace_key=? AND entity_type=?";
     public static final String EXTENSION_DEFINITION_SERVICE_SELECT_DEFINITION_HISTORY_CHANGES =
@@ -38,9 +36,8 @@ public final class ExtensionDefinitionServiceSql {
                AND action='EXTENSION_DEFINITION_REPLACED'
              ORDER BY occurred_at_epoch_millis, id
             """;
-    public static final String
-            EXTENSION_DEFINITION_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE =
-                    "INSERT INTO extension.audit_event (id, workspace_uuid, group_workspace_key, entity_type, ";
+    public static final String INSERT_INTO_AUDIT_EVENT_WS_003 =
+            "INSERT INTO extension.audit_event (id, workspace_uuid, group_workspace_key, entity_type, ";
     public static final String EXTENSION_DEFINITION_SERVICE_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT =
             "entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, ";
     public static final String EXTENSION_DEFINITION_SERVICE_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_EXTENSION_DEFINITION =

@@ -54,8 +54,7 @@ public class OrganizationAuditHistoryPersistence {
         if (!Boolean.TRUE.equals(exists))
             throw new com.catering.v2s.organization.application.BusinessEntityService.OrganizationNotFoundException();
         long total = jdbc.queryForObject(
-                OrganizationAuditHistoryServiceSql
-                                .ORGANIZATION_AUDIT_HISTORY_SERVICE_SELECT_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                OrganizationAuditHistoryServiceSql.SELECT_AUDIT_EVENT_WS_UUID_001
                         + OrganizationAuditHistoryServiceSql
                                 .ORGANIZATION_AUDIT_HISTORY_SERVICE_ENTITY_TYPE_ENTITY_REF_TEXT,
                 Long.class,
@@ -125,10 +124,8 @@ public class OrganizationAuditHistoryPersistence {
             throw new com.catering.v2s.organization.application.BusinessEntityService.OrganizationNotFoundException();
         String workspaceRef = String.valueOf(groupWorkspaceIds.getFirst());
         long total = jdbc.queryForObject(
-                OrganizationAuditHistoryServiceSql
-                                .ORGANIZATION_AUDIT_HISTORY_SERVICE_SELECT_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A
-                        + OrganizationAuditHistoryServiceSql
-                                .ORGANIZATION_AUDIT_HISTORY_SERVICE_OPEN_PAREN_ENTITY_TYPE_GROUP_WORKSPACE_ENTITY_REF_TEXT
+                OrganizationAuditHistoryServiceSql.SELECT_AUDIT_EVENT_WS_UUID_ALT_A_002
+                        + OrganizationAuditHistoryServiceSql.OPEN_PAREN_ENTITY_TYPE_GRP_003
                         + OrganizationAuditHistoryServiceSql.ORGANIZATION_AUDIT_HISTORY_SERVICE_ACTION
                         + OrganizationAuditHistoryServiceSql.ORGANIZATION_AUDIT_HISTORY_SERVICE_ENTITY_REF_TEXT,
                 Long.class,
@@ -139,8 +136,7 @@ public class OrganizationAuditHistoryPersistence {
         List<AuditHistoryItem> items = jdbc.query(
                 OrganizationAuditHistoryServiceSql
                                 .ORGANIZATION_AUDIT_HISTORY_SERVICE_SELECT_OCCURRED_AT_EPOCH_MILLIS_ALTERNATE_A
-                        + OrganizationAuditHistoryServiceSql
-                                .ORGANIZATION_AUDIT_HISTORY_SERVICE_AUDIT_EVENT_CHANGES_JSON_TEXT_WORKSPACE_UUID_ALTERNATE_A
+                        + OrganizationAuditHistoryServiceSql.AUDIT_EVENT_CHANGES_JSON_TEXT_ALT_A_004
                         + OrganizationAuditHistoryServiceSql.ORGANIZATION_AUDIT_HISTORY_SERVICE_GROUP_WORKSPACE_KEY
                         + OrganizationAuditHistoryServiceSql.ORGANIZATION_AUDIT_HISTORY_SERVICE_ACTION_ALTERNATE_A
                         + OrganizationAuditHistoryServiceSql
@@ -283,10 +279,8 @@ public class OrganizationAuditHistoryPersistence {
                                     .ORGANIZATION_AUDIT_HISTORY_SERVICE_COMMERCIAL_GROUP_ALTERNATE_C;
                     case "ORGANIZATION_NODE" -> OrganizationAuditHistoryServiceSql
                                     .ORGANIZATION_AUDIT_HISTORY_SERVICE_SELECT_NODE_TEXT_INITIALIZATION_REF
-                            + OrganizationAuditHistoryServiceSql
-                                    .ORGANIZATION_AUDIT_HISTORY_SERVICE_GROUP_ONLY_NODE_SCOPE_HEAD_COMPANY_SCOPE_STORE_SCOPE
-                            + OrganizationAuditHistoryServiceSql
-                                    .ORGANIZATION_AUDIT_HISTORY_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_NODE_WORKSPACE_UUID
+                            + OrganizationAuditHistoryServiceSql.GRP_ONLY_NODE_SCOPE_HEAD_005
+                            + OrganizationAuditHistoryServiceSql.ALT_ORG_NODE_WS_UUID_006
                             + OrganizationAuditHistoryServiceSql
                                     .ORGANIZATION_AUDIT_HISTORY_SERVICE_NODE_GROUP_WORKSPACE_KEY;
                     case "BRAND" -> OrganizationAuditHistoryServiceSql
@@ -305,10 +299,8 @@ public class OrganizationAuditHistoryPersistence {
                                     .ORGANIZATION_AUDIT_HISTORY_SERVICE_TENANT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY;
                     case AuditEntityTypes.HEAD_COMPANY -> OrganizationAuditHistoryServiceSql
                                     .ORGANIZATION_AUDIT_HISTORY_SERVICE_SELECT_HEAD_COMPANY_TEXT_INITIALIZATION_REF
-                            + OrganizationAuditHistoryServiceSql
-                                    .ORGANIZATION_AUDIT_HISTORY_SERVICE_GROUP_ONLY_NODE_SCOPE_HEAD_COMPANY_SCOPE_STORE_SCOPE_ALTERNATE_A
-                            + OrganizationAuditHistoryServiceSql
-                                    .ORGANIZATION_AUDIT_HISTORY_SERVICE_FROM_CLAUSE_HEAD_COMPANY_FROM_ORGANIZATION_HEAD_COMPA
+                            + OrganizationAuditHistoryServiceSql.GRP_ONLY_NODE_SCOPE_HEAD_ALT_A_007
+                            + OrganizationAuditHistoryServiceSql.FROM_CLAUSE_HEAD_COMPANY_FROM_008
                             + OrganizationAuditHistoryServiceSql
                                     .ORGANIZATION_AUDIT_HISTORY_SERVICE_HEAD_COMPANY_WORKSPACE_UUID_GROUP_WORKSPACE_KEY;
                     case AuditEntityTypes.STORE -> OrganizationAuditHistoryServiceSql
@@ -340,10 +332,8 @@ public class OrganizationAuditHistoryPersistence {
                         .ORGANIZATION_AUDIT_HISTORY_SERVICE_ALTERNATIVE_AUTH_SCOPE_AUDIT_EVENT_EVENT_FOUND
                 + OrganizationAuditHistoryServiceSql
                         .ORGANIZATION_AUDIT_HISTORY_SERVICE_AUTH_SCOPE_AUTHORIZED_EVENT_WORKSPACE_UUID
-                + OrganizationAuditHistoryServiceSql
-                        .ORGANIZATION_AUDIT_HISTORY_SERVICE_OPEN_PAREN_COMMERCIAL_GROUP_EVENT_ENTITY_TYPE_ENTITY_REF_TEXT
-                + OrganizationAuditHistoryServiceSql
-                        .ORGANIZATION_AUDIT_HISTORY_SERVICE_ALTERNATIVE_EVENT_ENTITY_TYPE_GROUP_WORKSPACE_ENTITY_REF_TEXT
+                + OrganizationAuditHistoryServiceSql.OPEN_PAREN_COMMERCIAL_GRP_EVENT_009
+                + OrganizationAuditHistoryServiceSql.ALT_EVENT_ENTITY_TYPE_GRP_010
                 + OrganizationAuditHistoryServiceSql.ORGANIZATION_AUDIT_HISTORY_SERVICE_CONDITION_EVENT
                 + OrganizationAuditHistoryServiceSql.ORGANIZATION_AUDIT_HISTORY_SERVICE_AUDIT_ROWS
                 + OrganizationAuditHistoryServiceSql

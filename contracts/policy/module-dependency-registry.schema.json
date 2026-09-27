@@ -18,6 +18,7 @@
       "items": {
         "oneOf": [
           {"$ref": "#/$defs/commandEdge"},
+          {"$ref": "#/$defs/valueApiEdge"},
           {"$ref": "#/$defs/schemaFkEdge"},
           {"$ref": "#/$defs/taskReadEdge"}
         ]
@@ -28,10 +29,19 @@
     "module": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["moduleKey", "ownerSchema", "commandApiPackages"],
+      "required": ["moduleKey", "sourceRoot", "ownerSchema", "commandApiPackages"],
       "properties": {
         "moduleKey": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
-        "ownerSchema": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "sourceRoot": {
+          "type": "string",
+          "pattern": "^apps/backend/catering-business-server/modules/[a-z][a-z0-9-]*$"
+        },
+        "ownerSchema": {
+          "oneOf": [
+            {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+            {"type": "null"}
+          ]
+        },
         "commandApiPackages": {
           "type": "array",
           "uniqueItems": true,
@@ -39,7 +49,8 @@
             "type": "string",
             "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
           }
-        }
+        },
+        "valueOnly": {"type": "boolean"}
       }
     },
     "commandEdge": {
@@ -57,6 +68,28 @@
       "properties": {
         "edgeId": {"type": "string", "minLength": 1},
         "edgeKind": {"const": "COMMAND"},
+        "fromModule": {"type": "string"},
+        "toModule": {"type": "string"},
+        "rationale": {"type": "string", "minLength": 1},
+        "apiPackage": {"type": "string"},
+        "operation": {"type": "string", "pattern": "^[A-Z][A-Za-z0-9]*$"}
+      }
+    },
+    "valueApiEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "edgeId",
+        "edgeKind",
+        "fromModule",
+        "toModule",
+        "rationale",
+        "apiPackage",
+        "operation"
+      ],
+      "properties": {
+        "edgeId": {"type": "string", "minLength": 1},
+        "edgeKind": {"const": "VALUE_API"},
         "fromModule": {"type": "string"},
         "toModule": {"type": "string"},
         "rationale": {"type": "string", "minLength": 1},

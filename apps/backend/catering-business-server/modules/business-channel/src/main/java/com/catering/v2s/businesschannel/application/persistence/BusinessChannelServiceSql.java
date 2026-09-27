@@ -17,10 +17,11 @@ public final class BusinessChannelServiceSql {
     public static final String CHANNEL_REF_ORDER_SUFFIX = ", c.channel_ref";
     public static final String
             BUSINESS_CHANNEL_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TARGET_NODE_TYPE_TARGET_NODE_R =
-                    " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.target_node_type=? AND c.target_node_r";
+                    (" WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.target_node_"
+                            + "type=? AND c.target_node_r");
 
     public static final String BUSINESS_CHANNEL_SERVICE_CONDITION_STATUS = " AND c.status=?";
-    public static final String BUSINESS_CHANNEL_SERVICE_BUSINESS_CHANNEL_TEMPLATE_LEFT_JOIN_BUSINESS_CHANNEL_B =
+    public static final String BIZ_CHANNEL_TEMPLATE_LEFT_JOIN_001 =
             "LEFT JOIN business_channel.business_channel_template t ";
     public static final String BUSINESS_CHANNEL_SERVICE_JOIN_CONDITION_TEMPLATE_REF_WORKSPACE_UUID =
             "ON t.template_ref=c.template_ref AND t.workspace_uuid=c.workspace_uuid ";
@@ -28,9 +29,8 @@ public final class BusinessChannelServiceSql {
             "AND t.group_workspace_key=c.group_workspace_key ";
     public static final String BUSINESS_CHANNEL_SERVICE_ORDER_BY = " ORDER BY ";
     public static final String BUSINESS_CHANNEL_SERVICE_LIMIT = " LIMIT ?";
-    public static final String
-            BUSINESS_CHANNEL_SERVICE_SELECT_CHANNEL_REF_TEMPLATE_REF_TARGET_NODE_TYPE_TARGET_NODE_REF =
-                    "SELECT c.channel_ref, c.template_ref, c.target_node_type, c.target_node_ref, c.channel_name, ";
+    public static final String SELECT_CHANNEL_REF_TEMPLATE_REF_002 =
+            "SELECT c.channel_ref, c.template_ref, c.target_node_type, c.target_node_ref, c.channel_name, ";
     public static final String BUSINESS_CHANNEL_SERVICE_BINDING_REF_VERSION_ACCESS_KIND_ORDER_KIND =
             "c.binding_ref, c.version, t.access_kind, t.order_kind, t.provider_code ";
     public static final String BUSINESS_CHANNEL_SERVICE_FROM_CLAUSE_BUSINESS_CHANNEL_FROM_BUSINESS_CHANNEL_BUSINE =
@@ -51,21 +51,18 @@ public final class BusinessChannelServiceSql {
             "UPDATE business_channel.business_channel SET status=?, ";
     public static final String BUSINESS_CHANNEL_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS_CHANNEL_REF_ALTERNATE_A =
             "version=version+1, updated_at_epoch_millis=? WHERE channel_ref=? ";
-    public static final String
-            BUSINESS_CHANNEL_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION_ALTERNATE_A =
-                    "AND workspace_uuid=? AND group_workspace_key=? AND version=?";
+    public static final String CONDITION_WS_UUID_GRP_WS_ALT_A_003 =
+            "AND workspace_uuid=? AND group_workspace_key=? AND version=?";
     public static final String BUSINESS_CHANNEL_SERVICE_UPDATE_BUSINESS_CHANNEL_BINDING_REF =
             "UPDATE business_channel.business_channel SET binding_ref=null, ";
     public static final String BUSINESS_CHANNEL_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS_CHANNEL_REF_ALTERNATE_B =
             "version=version+1, updated_at_epoch_millis=? WHERE channel_ref=? ";
-    public static final String
-            BUSINESS_CHANNEL_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION_ALTERNATE_B =
-                    "AND workspace_uuid=? AND group_workspace_key=? AND version=?";
+    public static final String CONDITION_WS_UUID_GRP_WS_ALT_B_004 =
+            "AND workspace_uuid=? AND group_workspace_key=? AND version=?";
     public static final String BUSINESS_CHANNEL_SERVICE_CTE_BUSINESS_CHANNEL_INSERTED =
             "WITH inserted AS (INSERT INTO business_channel.business_channel ";
-    public static final String
-            BUSINESS_CHANNEL_SERVICE_OPEN_PAREN_CHANNEL_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TARGET_NODE_TYPE =
-                    "(channel_ref, workspace_uuid, group_workspace_key, target_node_type, target_node_ref, ";
+    public static final String OPEN_PAREN_CHANNEL_REF_WS_005 =
+            "(channel_ref, workspace_uuid, group_workspace_key, target_node_type, target_node_ref, ";
     public static final String BUSINESS_CHANNEL_SERVICE_TEMPLATE_REF_CHANNEL_CODE_CHANNEL_NAME_BINDING_REF =
             "template_ref, channel_code, channel_name, binding_ref, status, version, ";
     public static final String BUSINESS_CHANNEL_SERVICE_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS =
@@ -91,14 +88,12 @@ public final class BusinessChannelServiceSql {
             "WHERE template.workspace_uuid=? AND template.group_workspace_key=? ";
     public static final String BUSINESS_CHANNEL_SERVICE_CONDITION_TEMPLATE_TEMPLATE_REF =
             "AND template.template_ref=? FOR UPDATE";
-    public static final String
-            BUSINESS_CHANNEL_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CHANNEL_REF_ALTERNATE_A =
-                    "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=?";
-    public static final String BUSINESS_CHANNEL_SERVICE_WHERE_OF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CHANNEL_REF =
+    public static final String WHERE_WS_UUID_GRP_WS_ALT_A_006 =
+            "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=?";
+    public static final String WHERE_OF_WS_UUID_GRP_007 =
             "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=? FOR UPDATE OF c";
-    public static final String
-            BUSINESS_CHANNEL_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CHANNEL_REF_ALTERNATE_B =
-                    "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=?";
+    public static final String WHERE_WS_UUID_GRP_WS_ALT_B_008 =
+            "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=?";
     public static final String BUSINESS_CHANNEL_SERVICE_CTE_ANCESTRY = "WITH RECURSIVE ancestry AS (";
     public static final String BUSINESS_CHANNEL_SERVICE_SELECT_SOURCE_REF_PARENT_ID_NODE_TYPE_STATUS =
             "SELECT id AS source_ref, id, parent_id, node_type, status, 0 AS depth ";
@@ -117,16 +112,14 @@ public final class BusinessChannelServiceSql {
             "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=? ) ";
     public static final String BUSINESS_CHANNEL_SERVICE_SELECT_ANCESTRY_SOURCE_REF_NODE_TYPE_STATUS_DEPTH =
             "SELECT source_ref, node_type, id, status FROM ancestry ORDER BY source_ref, depth DESC";
-    public static final String
-            BUSINESS_CHANNEL_SERVICE_INSERT_INTO_AUDIT_EVENT_EVENT_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
-                    "INSERT INTO business_channel.audit_event (event_ref, workspace_uuid, group_workspace_key, ";
+    public static final String INSERT_INTO_AUDIT_EVENT_REF_009 =
+            "INSERT INTO business_channel.audit_event (event_ref, workspace_uuid, group_workspace_key, ";
     public static final String BUSINESS_CHANNEL_SERVICE_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT_ENTITY_TYPE =
             "actor_type, actor_id, actor_display_snapshot, entity_type, entity_ref, action, ";
     public static final String BUSINESS_CHANNEL_SERVICE_CHANGES_JSON_OCCURRED_AT_EPOCH_MILLIS =
             "changes_json, occurred_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?)";
     public static final String CHANNEL_LOCK_SUFFIX = " FOR UPDATE OF c";
-    public static final String
-            BUSINESS_CHANNEL_SERVICE_WHERE_C_WORKSPACE_UUID_AND_C_GROUP_WORKSPACE_KEY_AND_C_TARGET_NODE_TYPE_AND_TARGET_NODE_TYPE_AND_C_TARGET_NODE_REF =
-                    """
+    public static final String WHERE_C_WS_UUID_AND_010 =
+            """
     \sWHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.target_node_type=? AND c.target_node_ref=?""";
 }

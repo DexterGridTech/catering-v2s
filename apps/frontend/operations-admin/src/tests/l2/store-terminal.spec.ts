@@ -314,7 +314,10 @@ function observeResponses(page: Page, runtime: Runtime): {drain: () => Promise<v
           actionIdsByRequest.get(request) ??
           (authenticationOperationIds.has(operation.operationId) ? activeActionContext?.actionId : undefined);
         let responseBody: unknown;
-        if (operation.operationId === 'postOperationsStoreTerminal' || operation.operationId === 'getOperationsStoreTerminal') {
+        if (
+          operation.operationId === 'postOperationsStoreTerminal' ||
+          operation.operationId === 'getOperationsStoreTerminal'
+        ) {
           try {
             responseBody = await response.json();
           } catch {
@@ -644,7 +647,10 @@ function jsonArray(value: unknown, errorCode: string): JsonObject[] {
 function latestSuccessfulObservation(runtime: Runtime, operationId: string, actionId: string): Observation {
   const observation = [...runtime.observations]
     .reverse()
-    .find(entry => entry.operationId === operationId && entry.actionId === actionId && entry.status >= 200 && entry.status < 300);
+    .find(
+      entry =>
+        entry.operationId === operationId && entry.actionId === actionId && entry.status >= 200 && entry.status < 300,
+    );
   if (!observation) throw new Error(`STORE_TERMINAL_L2_OBSERVATION_MISSING:${runtime.row.caseId}:${operationId}`);
   return observation;
 }
@@ -659,10 +665,19 @@ function expectedCreatedFunctionKeys(runtime: Runtime): string[] {
 
 function assertCreateConfigurationRequest(runtime: Runtime, actionId: string): string {
   const observation = latestSuccessfulObservation(runtime, 'postOperationsStoreTerminal', actionId);
-  const request = jsonObject(observation.requestBody, `STORE_TERMINAL_L2_CREATE_REQUEST_BODY_MISSING:${runtime.row.caseId}`);
-  const configuration = jsonObject(request.configuration, `STORE_TERMINAL_L2_CREATE_CONFIGURATION_MISSING:${runtime.row.caseId}`);
+  const request = jsonObject(
+    observation.requestBody,
+    `STORE_TERMINAL_L2_CREATE_REQUEST_BODY_MISSING:${runtime.row.caseId}`,
+  );
+  const configuration = jsonObject(
+    request.configuration,
+    `STORE_TERMINAL_L2_CREATE_CONFIGURATION_MISSING:${runtime.row.caseId}`,
+  );
   const printers = jsonArray(configuration.printers, `STORE_TERMINAL_L2_CREATE_PRINTERS_MISSING:${runtime.row.caseId}`);
-  const functions = jsonArray(configuration.functions, `STORE_TERMINAL_L2_CREATE_FUNCTIONS_MISSING:${runtime.row.caseId}`);
+  const functions = jsonArray(
+    configuration.functions,
+    `STORE_TERMINAL_L2_CREATE_FUNCTIONS_MISSING:${runtime.row.caseId}`,
+  );
   expect(functions.map(entry => String(entry.functionKey)).sort()).toEqual(expectedCreatedFunctionKeys(runtime).sort());
 
   const printerByName = new Map(printers.map(printer => [String(printer.name), printer]));
@@ -676,12 +691,14 @@ function assertCreateConfigurationRequest(runtime: Runtime, actionId: string): s
 
   expect(kitchen.ranges).toEqual(expect.arrayContaining([expect.objectContaining({key: 'PRODUCTION_TAG', all: true})]));
   expect(ordering.ranges).toEqual(expect.arrayContaining([expect.objectContaining({key: 'TABLE_AREA', all: true})]));
-  const kitchenScene = jsonArray(kitchen.scenes, `STORE_TERMINAL_L2_CREATE_KITCHEN_SCENE_MISSING:${runtime.row.caseId}`).find(
-    scene => scene.sceneKey === 'LABEL_PREPARATION_TICKET',
-  );
-  const orderingScene = jsonArray(ordering.scenes, `STORE_TERMINAL_L2_CREATE_ORDERING_SCENE_MISSING:${runtime.row.caseId}`).find(
-    scene => scene.sceneKey === 'TABLE_ORDER_TICKET',
-  );
+  const kitchenScene = jsonArray(
+    kitchen.scenes,
+    `STORE_TERMINAL_L2_CREATE_KITCHEN_SCENE_MISSING:${runtime.row.caseId}`,
+  ).find(scene => scene.sceneKey === 'LABEL_PREPARATION_TICKET');
+  const orderingScene = jsonArray(
+    ordering.scenes,
+    `STORE_TERMINAL_L2_CREATE_ORDERING_SCENE_MISSING:${runtime.row.caseId}`,
+  ).find(scene => scene.sceneKey === 'TABLE_ORDER_TICKET');
   if (!kitchenScene || !orderingScene)
     throw new Error(`STORE_TERMINAL_L2_CREATE_SCENES_INCOMPLETE:${runtime.row.caseId}`);
   expect(kitchenScene.orderTypes).toEqual(expect.arrayContaining(['DINE_IN']));
@@ -693,7 +710,10 @@ function assertCreateConfigurationRequest(runtime: Runtime, actionId: string): s
     expect.arrayContaining([expect.objectContaining({printerClientKey: thermalPrinter.clientKey})]),
   );
 
-  const mutation = jsonObject(observation.responseBody, `STORE_TERMINAL_L2_CREATE_RESPONSE_BODY_MISSING:${runtime.row.caseId}`);
+  const mutation = jsonObject(
+    observation.responseBody,
+    `STORE_TERMINAL_L2_CREATE_RESPONSE_BODY_MISSING:${runtime.row.caseId}`,
+  );
   const terminalRef = mutation.terminalRef;
   if (typeof terminalRef !== 'string' || terminalRef.length === 0)
     throw new Error(`STORE_TERMINAL_L2_CREATE_TERMINAL_REF_MISSING:${runtime.row.caseId}`);
@@ -702,31 +722,44 @@ function assertCreateConfigurationRequest(runtime: Runtime, actionId: string): s
 
 function assertCreatedConfigurationReadback(runtime: Runtime, terminalRef: string, actionId: string): void {
   const observation = latestSuccessfulObservation(runtime, 'getOperationsStoreTerminal', actionId);
-  const detail = jsonObject(observation.responseBody, `STORE_TERMINAL_L2_DETAIL_RESPONSE_BODY_MISSING:${runtime.row.caseId}`);
+  const detail = jsonObject(
+    observation.responseBody,
+    `STORE_TERMINAL_L2_DETAIL_RESPONSE_BODY_MISSING:${runtime.row.caseId}`,
+  );
   if (detail.terminalRef !== terminalRef)
     throw new Error(`STORE_TERMINAL_L2_DETAIL_REF_MISMATCH:${runtime.row.caseId}:${String(detail.terminalRef)}`);
-  const configuration = jsonObject(detail.configuration, `STORE_TERMINAL_L2_DETAIL_CONFIGURATION_MISSING:${runtime.row.caseId}`);
+  const configuration = jsonObject(
+    detail.configuration,
+    `STORE_TERMINAL_L2_DETAIL_CONFIGURATION_MISSING:${runtime.row.caseId}`,
+  );
   const printers = jsonArray(configuration.printers, `STORE_TERMINAL_L2_DETAIL_PRINTERS_MISSING:${runtime.row.caseId}`);
-  const functions = jsonArray(configuration.functions, `STORE_TERMINAL_L2_DETAIL_FUNCTIONS_MISSING:${runtime.row.caseId}`);
+  const functions = jsonArray(
+    configuration.functions,
+    `STORE_TERMINAL_L2_DETAIL_FUNCTIONS_MISSING:${runtime.row.caseId}`,
+  );
   expect(functions.map(entry => String(entry.functionKey)).sort()).toEqual(expectedCreatedFunctionKeys(runtime).sort());
   const printerNamesByRef = new Map(printers.map(printer => [String(printer.ref), String(printer.name)]));
   const kitchen = functions.find(entry => entry.functionKey === 'KITCHEN_PRINT');
   const ordering = functions.find(entry => entry.functionKey === 'ORDERING_CASHIER');
   if (!kitchen || !ordering) throw new Error(`STORE_TERMINAL_L2_DETAIL_FUNCTIONS_INCOMPLETE:${runtime.row.caseId}`);
-  const kitchenScene = jsonArray(kitchen.scenes, `STORE_TERMINAL_L2_DETAIL_KITCHEN_SCENE_MISSING:${runtime.row.caseId}`).find(
-    scene => scene.sceneKey === 'LABEL_PREPARATION_TICKET',
-  );
-  const orderingScene = jsonArray(ordering.scenes, `STORE_TERMINAL_L2_DETAIL_ORDERING_SCENE_MISSING:${runtime.row.caseId}`).find(
-    scene => scene.sceneKey === 'TABLE_ORDER_TICKET',
-  );
+  const kitchenScene = jsonArray(
+    kitchen.scenes,
+    `STORE_TERMINAL_L2_DETAIL_KITCHEN_SCENE_MISSING:${runtime.row.caseId}`,
+  ).find(scene => scene.sceneKey === 'LABEL_PREPARATION_TICKET');
+  const orderingScene = jsonArray(
+    ordering.scenes,
+    `STORE_TERMINAL_L2_DETAIL_ORDERING_SCENE_MISSING:${runtime.row.caseId}`,
+  ).find(scene => scene.sceneKey === 'TABLE_ORDER_TICKET');
   if (!kitchenScene || !orderingScene)
     throw new Error(`STORE_TERMINAL_L2_DETAIL_SCENES_INCOMPLETE:${runtime.row.caseId}`);
-  const kitchenPrinterNames = jsonArray(kitchenScene.printers, `STORE_TERMINAL_L2_DETAIL_KITCHEN_PRINTERS_MISSING:${runtime.row.caseId}`).map(
-    printer => printerNamesByRef.get(String(printer.printerRef)),
-  );
-  const orderingPrinterNames = jsonArray(orderingScene.printers, `STORE_TERMINAL_L2_DETAIL_ORDERING_PRINTERS_MISSING:${runtime.row.caseId}`).map(
-    printer => printerNamesByRef.get(String(printer.printerRef)),
-  );
+  const kitchenPrinterNames = jsonArray(
+    kitchenScene.printers,
+    `STORE_TERMINAL_L2_DETAIL_KITCHEN_PRINTERS_MISSING:${runtime.row.caseId}`,
+  ).map(printer => printerNamesByRef.get(String(printer.printerRef)));
+  const orderingPrinterNames = jsonArray(
+    orderingScene.printers,
+    `STORE_TERMINAL_L2_DETAIL_ORDERING_PRINTERS_MISSING:${runtime.row.caseId}`,
+  ).map(printer => printerNamesByRef.get(String(printer.printerRef)));
   expect(kitchenPrinterNames).toContain('L2标签打印机替换');
   expect(orderingPrinterNames).toContain('L2热敏主机');
 }
@@ -933,7 +966,8 @@ async function assertFunctionControlsAbsent(
   absentControlKeys: readonly string[],
 ): Promise<void> {
   for (const controlKey of absentControlKeys) {
-    if (!bindings.controls[controlKey]) throw new Error(`STORE_TERMINAL_L2_ABSENT_CONTROL_BINDING_MISSING:${controlKey}`);
+    if (!bindings.controls[controlKey])
+      throw new Error(`STORE_TERMINAL_L2_ABSENT_CONTROL_BINDING_MISSING:${controlKey}`);
     const testId = functionControlTestId(controlKey, functionIdentity);
     await expect(page.getByTestId(testId)).toHaveCount(0);
     appendJoinEvent({
@@ -1243,6 +1277,24 @@ async function runCase(page: Page, runtime: Runtime): Promise<void> {
       await clickStatic(page, 'TERMINAL_EDIT');
       await staticControl(page, 'TERMINAL_FORM');
       await clickStatic(page, 'TERMINAL_FORM_TAB_BASIC');
+      const deviceTypeReadonly = await observeExact(
+        page,
+        'TERMINAL_DEVICE_TYPE_READONLY',
+        storeTerminalTestIds.deviceTypeReadonly,
+      );
+      await expect(deviceTypeReadonly).toHaveText(/\S/u);
+      const deviceTypeReadonlyShape = await deviceTypeReadonly.evaluate(node => ({
+        tagName: node.tagName,
+        hasTabIndex: node.hasAttribute('tabindex'),
+        interactive: node.matches('button,input,select,textarea,[role="button"],[role="radio"]'),
+      }));
+      if (
+        deviceTypeReadonlyShape.tagName !== 'SPAN' ||
+        deviceTypeReadonlyShape.hasTabIndex ||
+        deviceTypeReadonlyShape.interactive
+      ) {
+        throw new Error('STORE_TERMINAL_L2_DEVICE_TYPE_READONLY_SHAPE_INVALID');
+      }
       const printerIdentity = await identityFromFixture(
         page,
         facts,

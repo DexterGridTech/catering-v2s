@@ -20,52 +20,45 @@ public final class BusinessChannelTaskReadServiceSql {
     public static final String CHANNEL_REF_ORDER_SUFFIX = ", c.channel_ref";
     public static final String CURSOR_LESS_OPERATOR = "<";
     public static final String CURSOR_GREATER_OPERATOR = ">";
-    public static final String
-            BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TARGET_NODE_TYPE_STORE =
-                    " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.target_node_type='STORE'";
+    public static final String WHERE_WS_UUID_GRP_WS_001 =
+            " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.target_node_type='STORE'";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_NODE_REF_TARGET_STORE =
             " AND c.target_node_ref=? AND target_store.id IS NOT NULL";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_ACCESS_KIND_INTERNAL_OPERATOR_KIND_STORE =
             " AND t.access_kind='INTERNAL' AND t.operator_kind='STORE'";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_ORDER_KIND_DINE_IN_TAKEAWAY =
             " AND t.order_kind IN ('DINE_IN','TAKEAWAY')";
-    public static final String
-            BUSINESS_CHANNEL_TASK_READ_SERVICE_JOIN_BUSINESS_CHANNEL_TEMPLATE_JOIN_BUSINESS_CHANNEL_BUSINE =
-                    "JOIN business_channel.business_channel_template t ";
-    public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_JOIN_CONDITION_TEMPLATE_REF_WORKSPACE_UUID =
+    public static final String JOIN_BIZ_CHANNEL_TEMPLATE_JOIN_002 =
+            "JOIN business_channel.business_channel_template t ";
+    public static final String JOIN_CONDITION_TEMPLATE_REF_WS_003 =
             "ON t.template_ref=c.template_ref AND t.workspace_uuid=c.workspace_uuid ";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_GROUP_WORKSPACE_KEY =
             "AND t.group_workspace_key=c.group_workspace_key ";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_ORDER_BY = " ORDER BY ";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_LIMIT = " LIMIT ?";
-    public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CHANNEL_REF =
+    public static final String WHERE_WS_UUID_GRP_WS_004 =
             "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=? ";
-    public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_NODE_TYPE_STORE_TARGET_NODE_REF =
+    public static final String CONDITION_TARGET_NODE_TYPE_STORE_005 =
             "AND c.target_node_type='STORE' AND c.target_node_ref=? ";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_STORE_ACCESS_KIND_INTERNAL =
             "AND target_store.id IS NOT NULL AND t.access_kind='INTERNAL' ";
-    public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_OPERATOR_KIND_STORE_ORDER_KIND_DINE_IN =
+    public static final String CONDITION_OPERATOR_KIND_STORE_ORD_006 =
             "AND t.operator_kind='STORE' AND t.order_kind IN ('DINE_IN','TAKEAWAY')";
-    public static final String
-            BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CHANNEL_REF_ALTERNATE_A =
-                    "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=? ";
-    public static final String
-            BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_NODE_TYPE_STORE_TARGET_NODE_REF_ALTERNATE_A =
-                    "AND c.target_node_type='STORE' AND c.target_node_ref=? ";
+    public static final String WHERE_WS_UUID_GRP_WS_ALT_A_007 =
+            "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=? ";
+    public static final String CONDITION_TARGET_NODE_TYPE_STORE_ALT_A_008 =
+            "AND c.target_node_type='STORE' AND c.target_node_ref=? ";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_TARGET_STORE =
             "AND target_store.id IS NOT NULL";
-    public static final String
-            BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CHANNEL_REF_ALTERNATE_B =
-                    "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=?";
-    public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_BINDING_REF =
+    public static final String WHERE_WS_UUID_GRP_WS_ALT_B_009 =
+            "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=?";
+    public static final String WHERE_WS_UUID_GRP_WS_010 =
             "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.binding_ref=?";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_ORDER_BY_CHANNEL_REF = " ORDER BY channel_ref";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CTE_ANCESTRY = "WITH RECURSIVE ancestry AS (";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_SELECT_SOURCE_REF_PARENT_ID_NODE_TYPE_STATUS =
             "SELECT id AS source_ref, id, parent_id, node_type, status, 0 AS depth ";
-    public static final String
-            BUSINESS_CHANNEL_TASK_READ_SERVICE_FROM_CLAUSE_ORGANIZATION_NODE_FROM_ORGANIZATION_ORGANIZATI =
-                    "FROM organization.organization_node ";
+    public static final String FROM_CLAUSE_ORG_NODE_FROM_011 = "FROM organization.organization_node ";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WHERE_ID_IN = "WHERE id IN (";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CLOSE_PAREN_WORKSPACE_UUID_GROUP_WORKSPACE_KEY =
             ") AND workspace_uuid=? AND group_workspace_key=? ";

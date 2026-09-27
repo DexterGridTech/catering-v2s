@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "rssBudgetMiB": 512,
+  "maxUnauthenticatedConnections": 4,
+  "maxTrackedSessions": 8
+}

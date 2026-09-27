@@ -7,7 +7,11 @@ import {
   type StoreTerminalStatus,
 } from '../../../app/api/generated/operations-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
-import {configurationInput, type StoreTerminalFormValues as FormValues} from './storeTerminalModel';
+import {
+  configurationInput,
+  type StoreTerminalCreateFormValues,
+  type StoreTerminalEditFormValues,
+} from './storeTerminalModel';
 
 type Context = {groupWorkspaceKey: string; storeRef: string};
 
@@ -15,7 +19,7 @@ function pathFor(context: Context) {
   return {groupWorkspaceKey: context.groupWorkspaceKey, storeRef: wireUuid(context.storeRef)};
 }
 
-function createBody(values: FormValues): StoreTerminalCreateRequest {
+function createBody(values: StoreTerminalCreateFormValues): StoreTerminalCreateRequest {
   const activationCode = values.activationCode?.trim();
   return {
     name: values.name.trim(),
@@ -25,7 +29,11 @@ function createBody(values: FormValues): StoreTerminalCreateRequest {
   };
 }
 
-export async function createStoreTerminal(context: Context, values: FormValues, idempotencyKey: string) {
+export async function createStoreTerminal(
+  context: Context,
+  values: StoreTerminalCreateFormValues,
+  idempotencyKey: string,
+) {
   const path = pathFor(context);
   const body = createBody(values);
   const key = body.activationCode
@@ -34,17 +42,25 @@ export async function createStoreTerminal(context: Context, values: FormValues, 
   return operationsClient.postOperationsStoreTerminal(path, {body, headers: {'Idempotency-Key': key}});
 }
 
-export async function replaceStoreTerminal(context: Context, terminal: StoreTerminalDetail, values: FormValues) {
+export async function replaceStoreTerminal(
+  context: Context,
+  terminal: StoreTerminalDetail,
+  values: StoreTerminalEditFormValues,
+) {
   const path = {...pathFor(context), terminalRef: wireUuid(String(terminal.terminalRef))};
   const body = {
     name: values.name.trim(),
-    deviceType: values.deviceType,
     configuration: configurationInput(values),
     expectedVersion: terminal.version,
   };
+  const idempotencyBody = {
+    name: body.name,
+    configuration: body.configuration,
+    expectedVersion: body.expectedVersion,
+  };
   const key = await createContentIdempotencyKey(OPERATIONS_ADMIN_OPERATION_IDS.putOperationsStoreTerminal, {
     path,
-    body,
+    body: idempotencyBody,
   });
   return operationsClient.putOperationsStoreTerminal(path, {body, headers: {'Idempotency-Key': key}});
 }

@@ -296,9 +296,8 @@ public final class CatalogItemServiceSql {
             "AND owner_item.item_ref <> target_sku.item_ref ORDER BY ";
     public static final String CATALOG_ITEM_SERVICE_COMPONENT_PRODUCT_SKU_REF_OWNER_ITEM_CODE =
             "component.product_sku_ref,owner_item.code,component.composite_component_ref";
-    public static final String
-            CATALOG_ITEM_SERVICE_UPDATE_CATALOG_ITEM_STATUS_VERSION_UPDATED_AT_EPOCH_MILLIS_ALTERNATE_A =
-                    "UPDATE catalog.catalog_item SET status=?, version=version+1, updated_at_epoch_millis=? WHERE ";
+    public static final String UPDATE_CAT_ITEM_STATUS_VER_ALT_A_001 =
+            "UPDATE catalog.catalog_item SET status=?, version=version+1, updated_at_epoch_millis=? WHERE ";
     public static final String CATALOG_ITEM_SERVICE_ITEM_REF_DATA_NODE_REF_BRAND_REF_VERSION =
             "item_ref=? AND data_node_ref=? AND brand_ref=? AND version=?";
     public static final String CATALOG_ITEM_SERVICE_SELECT_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_CODE =
@@ -398,7 +397,7 @@ public final class CatalogItemServiceSql {
             "WHERE data_node_ref=? AND brand_ref=? ";
     public static final String CATALOG_ITEM_SERVICE_CONDITION_DICTIONARY_KIND_ENTRY_REF =
             "AND (dictionary_kind,entry_ref) IN (";
-    public static final String CATALOG_ITEM_SERVICE_SELECT_CATALOG_ITEM_ITEM_REF_STATUS_DATA_NODE_REF_BRAND_REF =
+    public static final String SELECT_CAT_ITEM_REF_STATUS_002 =
             "SELECT item_ref,status FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? ";
     public static final String CATALOG_ITEM_SERVICE_CONDITION_ITEM_REF = "AND item_ref IN (";
     public static final String CATALOG_ITEM_SERVICE_SELECT_SKU_PRODUCT_SKU_REF_ITEM_REF_ITEM =
@@ -495,18 +494,17 @@ public final class CatalogItemServiceSql {
 
     public static final String CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_ITEM_ITEM_REF =
             "FROM catalog.catalog_item WHERE item_ref IN (";
-    public static final String
-            CATALOG_ITEM_SERVICE_SELECT_CATALOG_ITEM_SALES_UNIT_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF =
-                    "SELECT sales_unit_ref FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND item_ref=? ";
+    public static final String SELECT_CAT_ITEM_SALES_UNIT_003 =
+            ("SELECT sales_unit_ref FROM catalog.catalog_item WHERE data_node_ref=? AN"
+                    + "D brand_ref=? AND item_ref=? ");
     public static final String CATALOG_ITEM_SERVICE_CONDITION_CATALOG_ITEM_SALES_UNIT_REF_BASE_MEASURE_UNIT_REF =
             "AND sales_unit_ref IS NOT NULL UNION SELECT base_measure_unit_ref FROM catalog.catalog_item ";
     public static final String CATALOG_ITEM_SERVICE_WHERE_DATA_NODE_REF_BRAND_REF_ITEM_REF_BASE_MEASURE_UNIT_REF =
             "WHERE data_node_ref=? AND brand_ref=? AND item_ref=? AND base_measure_unit_ref IS NOT NULL ";
     public static final String CATALOG_ITEM_SERVICE_UNION_CATALOG_SKU_SKU_SALES_UNIT_OVERRIDE_REF_ITEM_REF =
             "UNION SELECT sku.sales_unit_override_ref FROM catalog.catalog_sku sku WHERE sku.item_ref=? ";
-    public static final String
-            CATALOG_ITEM_SERVICE_CONDITION_SKU_SALES_UNIT_OVERRIDE_REF_BASE_MEASURE_UNIT_OVERRIDE_REF =
-                    "AND sku.sales_unit_override_ref IS NOT NULL UNION SELECT sku.base_measure_unit_override_ref ";
+    public static final String CONDITION_SKU_SALES_UNIT_OVERRIDE_004 =
+            "AND sku.sales_unit_override_ref IS NOT NULL UNION SELECT sku.base_measure_unit_override_ref ";
     public static final String CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_SKU_SKU_ITEM_REF =
             "FROM catalog.catalog_sku sku WHERE sku.item_ref=? ";
     public static final String CATALOG_ITEM_SERVICE_CONDITION_SKU_BASE_MEASURE_UNIT_OVERRIDE_REF =
@@ -570,36 +568,34 @@ public final class CatalogItemServiceSql {
     public static final String CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_J = "))";
     public static final String CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_K = ")";
     public static final String BATCH_STATUS_SCOPE_PREDICATE = "data_node_ref=? AND brand_ref=? AND ";
-    public static final String
-            CATALOG_ITEM_SERVICE_UPDATE_CATALOG_CATALOG_ITEM_SET_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION =
-                    """
-    UPDATE catalog.catalog_item SET sales_unit_ref=?,sales_unit_code=?,sales_unit_name=?,sales_unit_dimension=?,sales_unit_precision=?,""";
-    public static final String
-            CATALOG_ITEM_SERVICE_BASE_MEASURE_UNIT_REF_BASE_MEASURE_UNIT_CODE_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_WHERE_BASE_MEASURE_UNIT_PRECISION_WHERE_ITEM_REF =
-                    """
-    base_measure_unit_ref=?,base_measure_unit_code=?,base_measure_unit_name=?,base_measure_unit_dimension=?,base_measure_unit_precision=? WHERE item_ref=?""";
-    public static final String
-            CATALOG_ITEM_SERVICE_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION =
-                    """
+    public static final String UPDATE_CAT_ITEM_SET_SALES_005 =
+            """
+    UPDATE catalog.catalog_item SET sales_unit_ref=?,sales_unit_code=?\
+    ,sales_unit_name=?,sales_unit_dimension=?,sales_unit_precision=?,""";
+    public static final String BASE_MEAS_UNIT_REF_BASE_006 =
+            """
+    base_measure_unit_ref=?,base_measure_unit_code=?,base_measure_unit\
+    _name=?,base_measure_unit_dimension=?,base_measure_unit_precision=\
+    ? WHERE item_ref=?""";
+    public static final String SALES_UNIT_REF_SALES_UNIT_007 =
+            """
     \ssales_unit_ref=?,sales_unit_code=?,sales_unit_name=?,sales_unit_dimension=?,sales_unit_precision=?,""";
-    public static final String
-            CATALOG_ITEM_SERVICE_SOURCE_ITEM_CODE_SOURCE_SCOPE_REF_VERSION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_SOURCE_SCOPE_REF_VERSION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS =
-                    """
+    public static final String SRC_ITEM_CODE_SRC_SCOPE_008 =
+            """
     source_item_code,source_scope_ref,version,created_at_epoch_millis,updated_at_epoch_millis)\s""";
-    public static final String
-            CATALOG_ITEM_SERVICE_ITEM_REF_CODE_NAME_SHORT_NAME_SHAPE_KEY_STATUS_SECTIONS_TEXT_VERSION_UPDATED_AT_EPOCH_MILLIS_CATALOG_ITEM_WHERE_DATA_NODE_REF_AND =
-                    """
-    item_ref,code,name,short_name,shape_key,status,sections::text,version,updated_at_epoch_millis,source_scope_ref FROM catalog.catalog_item WHERE data_node_ref=? AND\s""";
-    public static final String
-            CATALOG_ITEM_SERVICE_SELECT_ITEM_REF_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION =
-                    """
+    public static final String ITEM_REF_CODE_NAME_SHORT_009 =
+            """
+    item_ref,code,name,short_name,shape_key,status,sections::text,vers\
+    ion,updated_at_epoch_millis,source_scope_ref FROM catalog.catalog_\
+    item WHERE data_node_ref=? AND\s""";
+    public static final String SELECT_ITEM_REF_SALES_UNIT_010 =
+            """
     SELECT item_ref,sales_unit_ref,sales_unit_code,sales_unit_name,sales_unit_dimension,sales_unit_precision,""";
-    public static final String
-            CATALOG_ITEM_SERVICE_BASE_MEASURE_UNIT_REF_BASE_MEASURE_UNIT_CODE_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION =
-                    """
-    base_measure_unit_ref,base_measure_unit_code,base_measure_unit_name,base_measure_unit_dimension,base_measure_unit_precision\s""";
-    public static final String
-            CATALOG_ITEM_SERVICE_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB_VALUES_CAST_AS_JSONB =
-                    """
+    public static final String BASE_MEAS_UNIT_REF_BASE_011 =
+            """
+    base_measure_unit_ref,base_measure_unit_code,base_measure_unit_nam\
+    e,base_measure_unit_dimension,base_measure_unit_precision\s""";
+    public static final String RESP_CREATED_AT_EPOCH_MS_012 =
+            """
     response_json,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)""";
 }

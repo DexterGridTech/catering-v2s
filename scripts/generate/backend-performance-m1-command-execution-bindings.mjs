@@ -28,7 +28,7 @@ function selectedRows(bindings) {
     .map((row) => ({...row, adapterFqcn: row.adapter, edge: {methodName: bindingMethodName(row.operationId)}}));
 }
 
-function validate(bindings) {
+function validate(bindings, {availableEmitters = emitters} = {}) {
   if (bindings?.schemaVersion !== 1 || bindings?.kind !== "operation-handler-bindings" || !Array.isArray(bindings.operations)) fail("OPERATION_COMMAND_BINDINGS_SOURCE_INVALID");
   const rows = selectedRows(bindings);
   if (rows.length === 0) fail("OPERATION_COMMAND_BINDINGS_SOURCE_EMPTY");
@@ -36,7 +36,7 @@ function validate(bindings) {
   for (const row of rows) {
     if (seen.has(row.operationId)) fail("OPERATION_COMMAND_BINDINGS_DUPLICATE:" + row.operationId);
     seen.add(row.operationId);
-    if (typeof row.adapter !== "string" || row.adapter.length === 0 || typeof row.owner !== "string" || row.owner.length === 0 || !emitters.has(row.operationId)) {
+    if (typeof row.adapter !== "string" || row.adapter.length === 0 || typeof row.owner !== "string" || row.owner.length === 0 || !availableEmitters.has(row.operationId)) {
       fail("OPERATION_COMMAND_BINDING_EMITTER_MISSING:" + row.operationId);
     }
   }
@@ -106,6 +106,10 @@ function emitStoreCommand(row, commandType, adapterType, field) {
 
 function emitStoreTerminalCommand(row, commandType, adapterType, field) {
   return `    public com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.TerminalMutation ${row.edge.methodName}(${commandType} command) {\n        return ${field}.execute(command);\n    }`;
+}
+
+function emitTerminalActivationCancellation(row) {
+  return `    public com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi.OperationsCancelOutcome ${row.edge.methodName}(com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback session, java.util.UUID storeRef, java.util.UUID terminalRef, long expectedGeneration, String idempotencyKey, com.catering.v2s.audit.contract.AuditActor actor) {\n        return operationsStoreTerminalActivationCancellation.execute(session, storeRef, terminalRef, expectedGeneration, idempotencyKey, actor);\n    }`;
 }
 
 function emitContractCommand(row, commandType, adapterType, field) {
@@ -280,6 +284,7 @@ const additionalBindingDependencies = new Map([
   ["releaseOperationsCatalogStagedAsset", {type: "ReleaseOperationsCatalogStagedAssetOperation", field: "releaseOperationsCatalogStagedAsset", importPath: "com.catering.v2s.platform.asset.application.operations.ReleaseOperationsCatalogStagedAssetOperation", emitter: emitReleaseOperationsCatalogStagedAsset}],
   ["stageStoreServicePointImage", {type: "StageStoreServicePointImageOperation", field: "stageStoreServicePointImage", importPath: "com.catering.v2s.platform.asset.application.operations.StageStoreServicePointImageOperation", emitter: emitStageStoreServicePointImage}],
   ["releaseStagedStoreServicePointImage", {type: "ReleaseStagedStoreServicePointImageOperation", field: "releaseStagedStoreServicePointImage", importPath: "com.catering.v2s.platform.asset.application.operations.ReleaseStagedStoreServicePointImageOperation", emitter: emitReleaseStagedStoreServicePointImage}],
+  ["cancelOperationsStoreTerminalActivation", {type: "OperationsStoreTerminalActivationCancellation", field: "operationsStoreTerminalActivationCancellation", importPath: "com.catering.v2s.app.edge.operations.organization.OperationsStoreTerminalActivationCancellation", emitter: emitTerminalActivationCancellation}],
   ["postOperationsStoreTerminal", {type: "PostOperationsStoreTerminalOperation", field: "postOperationsStoreTerminal", importPath: "com.catering.v2s.storeterminal.application.operations.PostOperationsStoreTerminalOperation", emitter: (row) => emitStoreTerminalCommand(row, "com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.CreateCommand", "PostOperationsStoreTerminalOperation", "postOperationsStoreTerminal")}],
   ["putOperationsStoreTerminal", {type: "PutOperationsStoreTerminalOperation", field: "putOperationsStoreTerminal", importPath: "com.catering.v2s.storeterminal.application.operations.PutOperationsStoreTerminalOperation", emitter: (row) => emitStoreTerminalCommand(row, "com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.ReplaceCommand", "PutOperationsStoreTerminalOperation", "putOperationsStoreTerminal")}],
   ["postOperationsStoreTerminalStatus", {type: "PostOperationsStoreTerminalStatusOperation", field: "postOperationsStoreTerminalStatus", importPath: "com.catering.v2s.storeterminal.application.operations.PostOperationsStoreTerminalStatusOperation", emitter: (row) => emitStoreTerminalCommand(row, "com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi.StatusCommand", "PostOperationsStoreTerminalStatusOperation", "postOperationsStoreTerminalStatus")}],
@@ -413,7 +418,21 @@ function renderFocusedBindingFactories(className, allDependencies, factoryDefini
   }).join("\n\n");
 }
 
-function selfTest(rows) {
+function selfTest(bindings, rows) {
+  const terminalRow = rows.find((row) => row.operationId === "cancelOperationsStoreTerminalActivation");
+  if (!terminalRow) fail("M1_TERMINAL_OPERATION_EMITTER_FIXTURE_MISSING");
+  const emittersWithoutTerminal = new Map(emitters);
+  emittersWithoutTerminal.delete(terminalRow.operationId);
+  let observedEmitterFailure = null;
+  try {
+    validate(bindings, {availableEmitters: emittersWithoutTerminal});
+  } catch (error) {
+    observedEmitterFailure = error;
+  }
+  if (!(observedEmitterFailure instanceof Error) || observedEmitterFailure.message !== `OPERATION_COMMAND_BINDING_EMITTER_MISSING:${terminalRow.operationId}`) {
+    fail("M1_TERMINAL_OPERATION_EMITTER_RED_NOT_DETECTED");
+  }
+  process.stdout.write("RED_TERMINAL_OPERATION_EMITTER_MISSING=PASS\n");
   const catalog = rows.find((row) => row.routeRegistry === "catalog-inventory");
   if (!catalog || catalog.edge.methodName !== bindingMethodName(catalog.operationId)) fail("OPERATION_COMMAND_BINDING_METHOD_NAME_DRIFT");
   if (bindingMethodName(catalog.operationId) === catalog.operationId) fail("OPERATION_COMMAND_BINDING_METHOD_RED_MUTATION_ACCEPTED");
@@ -461,7 +480,7 @@ try {
   if (argumentsAfterScript.some((argument) => !["--emit", "--check", "--self-test"].includes(argument)) || (selfTestRequested && argumentsAfterScript.length !== 1)) fail("USAGE: backend-performance-m1-command-execution-bindings [--check|--emit|--self-test]");
   const bindings = readJson(bindingsPath);
   const commandRows = validate(bindings);
-  if (selfTestRequested) selfTest(commandRows);
+  if (selfTestRequested) selfTest(bindings, commandRows);
   if (emitRequested) emit(commandRows);
   process.stdout.write(`OPERATION_COMMAND_BINDINGS=${emitRequested ? "EMITTED" : "VALIDATED"}\nROWS=${commandRows.length}\nEMITTED=${commandRows.length}\nCATALOG_P1_TASK=${catalogP1TaskName}\nOUTPUT=${generatedSourcePath}\n`);
 } catch (error) {

@@ -7,13 +7,11 @@ public final class HeadCompanyServiceSql {
     public static final String HEAD_COMPANY_SERVICE_BRAND_ID_AUTHORIZED_AT_EPOCH_MILLIS =
             "brand_id, authorized_at_epoch_millis) VALUES (?, ?, ?) ON CONFLICT DO ";
     public static final String HEAD_COMPANY_SERVICE_ON_CONFLICT_NOTHING = "NOTHING";
-    public static final String
-            HEAD_COMPANY_SERVICE_DELETE_HEAD_COMPANY_BRAND_AUTHORIZATION_DELETE_FROM_ORGANIZATION_HEA =
-                    "DELETE FROM organization.head_company_brand_authorization WHERE ";
+    public static final String DELETE_HEAD_COMPANY_BRAND_AUTH_001 =
+            "DELETE FROM organization.head_company_brand_authorization WHERE ";
     public static final String HEAD_COMPANY_SERVICE_HEAD_COMPANY_ID_BRAND_ID = "head_company_id=? AND brand_id=?";
-    public static final String
-            HEAD_COMPANY_SERVICE_INSERT_INTO_HEAD_COMPANY_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME =
-                    "INSERT INTO organization.head_company (id, workspace_uuid, group_workspace_key, code, name, ";
+    public static final String INSERT_INTO_HEAD_COMPANY_WS_002 =
+            "INSERT INTO organization.head_company (id, workspace_uuid, group_workspace_key, code, name, ";
     public static final String HEAD_COMPANY_SERVICE_LEGAL_NAME_CREDIT_CODE_REMARK_STATUS =
             "legal_name, credit_code, remark, status, version, created_at_epoch_millis, ";
     public static final String HEAD_COMPANY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_ENABLED =

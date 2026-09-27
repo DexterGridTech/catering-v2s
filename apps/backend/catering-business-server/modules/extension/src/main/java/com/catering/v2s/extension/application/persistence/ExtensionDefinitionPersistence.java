@@ -70,8 +70,7 @@ public class ExtensionDefinitionPersistence {
         return jdbc.update(
                 ExtensionDefinitionServiceSql
                                 .EXTENSION_DEFINITION_SERVICE_UPDATE_EXTENSION_DEFINITION_DEFINITIONS_REVISION
-                        + ExtensionDefinitionServiceSql
-                                .EXTENSION_DEFINITION_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + ExtensionDefinitionServiceSql.UPDATE_UPDATED_AT_EPOCH_MS_001
                         + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_ENTITY_TYPE_REVISION,
                 definitionsJson,
                 revision,
@@ -84,8 +83,7 @@ public class ExtensionDefinitionPersistence {
 
     public PreStateRow findPreState(UUID workspaceUuid, String groupWorkspaceKey, String hostType) {
         return jdbc.query(
-                ExtensionDefinitionServiceSql
-                                .EXTENSION_DEFINITION_SERVICE_SELECT_EXTENSION_DEFINITION_DEFINITIONS_TEXT_REVISION_WORKSPACE_UUID
+                ExtensionDefinitionServiceSql.SELECT_EXTENSION_DEF_DEFINITIONS_TEXT_002
                         + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_GROUP_WORKSPACE_KEY_ENTITY_TYPE,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
@@ -118,8 +116,7 @@ public class ExtensionDefinitionPersistence {
             AuditActor actor,
             String changesJson) {
         jdbc.update(
-                ExtensionDefinitionServiceSql
-                                .EXTENSION_DEFINITION_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
+                ExtensionDefinitionServiceSql.INSERT_INTO_AUDIT_EVENT_WS_003
                         + ExtensionDefinitionServiceSql
                                 .EXTENSION_DEFINITION_SERVICE_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
                         + ExtensionDefinitionServiceSql

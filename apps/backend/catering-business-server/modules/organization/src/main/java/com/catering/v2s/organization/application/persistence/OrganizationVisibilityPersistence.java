@@ -33,8 +33,7 @@ public class OrganizationVisibilityPersistence {
                                     .ORGANIZATION_VISIBILITY_SERVICE_SELECT_ORGANIZATION_NODE_WORKSPACE_UUID
                             + OrganizationVisibilityServiceSql
                                     .ORGANIZATION_VISIBILITY_SERVICE_STORE_GROUP_WORKSPACE_KEY_STATUS_ENABLED
-                            + OrganizationVisibilityServiceSql
-                                    .ORGANIZATION_VISIBILITY_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED,
+                            + OrganizationVisibilityServiceSql.WHERE_WS_UUID_GRP_WS_001,
                     statement -> {
                         statement.setObject(1, visibleNode);
                         statement.setObject(2, workspaceUuid);
@@ -84,8 +83,7 @@ public class OrganizationVisibilityPersistence {
                         + OrganizationVisibilityServiceSql
                                 .ORGANIZATION_VISIBILITY_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_PARENT_ID
                         + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_FROM_CLAUSE
-                        + OrganizationVisibilityServiceSql
-                                .ORGANIZATION_VISIBILITY_SERVICE_ALTERNATIVE_ANCESTRY_ORGANIZATION_NODE_PARENT_CHILD_PARENT_ID
+                        + OrganizationVisibilityServiceSql.ALT_ANCESTRY_ORG_NODE_PARENT_002
                         + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_SELECT
                         + OrganizationVisibilityServiceSql
                                 .ORGANIZATION_VISIBILITY_SERVICE_ANCESTRY_EXISTS_SELECT_1_FROM_ANCESTR,
@@ -213,8 +211,7 @@ public class OrganizationVisibilityPersistence {
                 || ServiceNodeTypes.HEAD_COMPANY.equals(assignmentNodeType)
                 || effectiveHeadCompanyId != null) {
             jdbc.query(
-                            OrganizationVisibilityServiceSql
-                                            .ORGANIZATION_VISIBILITY_SERVICE_SELECT_HEAD_COMPANY_CODE_NAME_WORKSPACE_UUID
+                            OrganizationVisibilityServiceSql.SELECT_HEAD_COMPANY_CODE_NAME_003
                                     + OrganizationVisibilityServiceSql
                                             .ORGANIZATION_VISIBILITY_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED_CODE,
                             (row, index) ->
@@ -311,8 +308,7 @@ public class OrganizationVisibilityPersistence {
     private Map<UUID, HierarchyNode> hierarchy(UUID workspaceUuid, String key) {
         Map<UUID, HierarchyNode> nodes = new LinkedHashMap<>();
         jdbc.query(
-                        OrganizationVisibilityServiceSql
-                                        .ORGANIZATION_VISIBILITY_SERVICE_SELECT_ORGANIZATION_NODE_NODE_TYPE_CODE_NAME_PARENT_ID_ALTERNATE_A
+                        OrganizationVisibilityServiceSql.SELECT_ORG_NODE_TYPE_CODE_ALT_A_004
                                 + OrganizationVisibilityServiceSql
                                         .ORGANIZATION_VISIBILITY_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                         (row, index) -> new HierarchyNode(

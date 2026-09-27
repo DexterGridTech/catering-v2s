@@ -120,11 +120,7 @@ public class CatalogItemCategoryFacts {
                 for (UUID categoryRef : normalize(entry.getValue()))
                     rows.add(new Object[] {entry.getKey(), categoryRef});
             }
-        if (!rows.isEmpty())
-            jdbc.batchUpdate(
-                    CatalogItemCategoryFactsSql
-                            .CATALOG_ITEM_CATEGORY_FACTS_INSERT_INTO_CATALOG_ITEM_CATEGORY_ITEM_REF_CATEGORY_REF_ALTERNATE_A,
-                    rows);
+        if (!rows.isEmpty()) jdbc.batchUpdate(CatalogItemCategoryFactsSql.INSERT_INTO_CAT_ITEM_CATG_ALT_A_001, rows);
     }
 
     private static List<UUID> normalize(ArrayNode categoryRefs) {
