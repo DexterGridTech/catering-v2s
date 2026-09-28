@@ -45,7 +45,7 @@ public class TdsWebSocketConfiguration implements WebFluxConfigurer {
 
     @Bean
     NettyServerCustomizer tdsWebSocketPipelineCustomizer() {
-        return server -> server.doOnConnection(connection -> TdsWebSocketPipelineInstaller.install(
-                connection.channel().pipeline(), settings.maxMessageBytes(), logScheduler));
+        return server -> server.doOnChannelInit((observer, channel, remoteAddress) ->
+                TdsWebSocketPipelineInstaller.install(channel.pipeline(), settings.maxMessageBytes(), logScheduler));
     }
 }

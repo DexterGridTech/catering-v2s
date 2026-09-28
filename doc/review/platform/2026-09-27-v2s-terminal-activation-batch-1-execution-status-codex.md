@@ -3,31 +3,187 @@
 Status source for the implementation plan. This file is intentionally outside the L2 admission
 control-plane digest so runtime evidence can be appended without invalidating the reviewed UI bytes.
 
-## Current state at 2026-09-28 08:28 KST
+## Current state at 2026-09-28 18:40 KST — Stage 1 reconciliation refresh
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+CURRENT_BYTE_IDENTITY_ONLY_STATIC=PASS; EXECUTED=46/46; R5_VERIFY_VALIDATE_ONLY=PASS
+CURRENT_BYTE_TDS_STATIC=PASS; 20/20
+CURRENT_CP05_RECONCILIATION=MATCHED; M/S/N=0/0/0; reviewer=/root/stage1_cp05_reconcile_current
+CURRENT_WHOLE_BATCH_6B=MATCHED; M/S/N=0/0/0; reviewer=/root/stage1_whole_batch_6b_current; source set=467 files/43c6578ad33ec7483ca60147c782466d0132acd79631c64e757c97c99f9fc988
+CURRENT_SOURCE_SET_REPRODUCTION=PASS; canonical r2 inventory command returned the same 467-file count and digest
+CURRENT_BYTE_NORMAL_STATIC=EXPECTED_PRE_CALIBRATION_STOP; openapi-contracts; BUDGET_PROJECTION_OPERATION_MISSING:cancelOperationsStoreTerminalActivation; not a green baseline
+FIRST_CURRENT_BYTE_MANAGED_RUN=NOT_RUN
+LATEST_MANAGED_PASS=r5-tc-1790586025608-67247; 2026-09-28 18:00:25–18:02:20 KST; predates current binding/test/format changes; historical only
+FIRST_RUN_6C=REFRESH_REQUIRED_FOR_CURRENT_467_FILE_SOURCE_SET
+L2=NOT_RUN; RESET=NOT_RUN; ACTUAL_SEED=NOT_RUN; FULL_BACKEND_ACCEPTANCE=NOT_RUN
+NEXT=Fresh read-only 6c admission for the exact single-scenario topology-preflight invocation; then run-scoped local/remote resource and topology preflight
+```
+
+当前字节上的最新静态运行：identity-only `scripts/verify --validate-only`，46/46 PASS，TDS 静态测试 20/20 PASS。普通模式仍按计划在 CP-05 标定前的预算投影缺项处停止，不是绿基线。
+
+最后一次受管通过：`r5-tc-1790586025608-67247`，2026-09-28 18:00:25–18:02:20 KST；该运行早于当前生成绑定、TDS 测试预期与格式字节，不能作为当前字节受管证据。
+
+当前 CP-05 与整批 6b 分别由 fresh reviewer 重新对账，均为 `MATCHED`、`M/S/N=0/0/0`。整批 6b 当前源集合由主 agent 按 r2 正本算法复算为 467 个文件，摘要 `43c6578ad33ec7483ca60147c782466d0132acd79631c64e757c97c99f9fc988`。较早的同算法 `b5b36…` 快照先于生成绑定刷新，不作为当前字节身份。
+
+## Current state at 2026-09-28 18:31 KST — generated binding and D-42 static repairs
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+OPERATION_HANDLER_BINDINGS_GENERATION=PASS; node scripts/generate/operation-handler-bindings.mjs --write; 16 JSON + 16 Java = 32 files
+OPERATION_HANDLER_BINDINGS_SELF_TEST=PASS; BP_U02_BINDING_SELF_TEST=PASS; enumerated red fixtures PASS
+OPERATION_HANDLER_BINDINGS_CHECK=PASS; BP_U02_BINDING_CHECK=PASS; CONTEXT_KIND_NEGATIVE=PASS; 16 JSON + 16 Java
+CURRENT_BYTE_TDS_TESTS=PASS; identity-only verify ran terminal-data-server suite; 20/20 successful, 0 failed
+CURRENT_BYTE_BACKEND_JAVA_UTF8_LINE_LIMIT=PASS; full apps/backend src/**/*.java byte scan (same exclusions as build.gradle.kts) found 0 lines >120 bytes; both app owning tasks PASS
+CURRENT_BYTE_BACKEND_SPOTLESS=PASS; ./gradlew :apps:backend:terminal-data-server:spotlessJavaApply reviewed over 7 listed TDS files; ./gradlew :apps:backend:spotlessCheck PASS
+CURRENT_BYTE_IDENTITY_ONLY_STATIC=PASS; V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY scripts/verify --validate-only; R5_VERIFY_VALIDATE_ONLY=PASS; EXECUTED=46/46; nested terminal run=ter-local-static-16148-1790587733527; terminal static PASS; static cleanup=N/A
+CURRENT_STATIC_LOG=.runtime/r5/evidence/terminal-activation-identity-only-verify-20260928-after-full-spotless-repair.log; SHA256=a8e6fc15aa7c61a49a01883540c7be946e056a5250654ebeec2e7d08d7f0aba9
+FIRST_FAILURES_RETAINED=R5_VERIFY_STATIC_FIRST_FAILURE:operation-handler-bindings-self-test/BP_U02_ROUTE_SOURCE_DIGEST_DRIFT; then tds-constructor-assembly (stale D-42 1009-reason assertion); then backend-spotless-check (UTF-8 line limit, followed by TDS formatter diff)
+CURRENT_CP05_RECONCILIATION=REFRESH_REQUIRED; TerminalConnectionContractScenarios.java received formatting-only changes after the previous verdict
+CURRENT_WHOLE_BATCH_6B=REFRESH_REQUIRED; generated bindings, TDS test oracles, and formatting bytes postdate the previous verdict
+LATEST_RUN_ON_CURRENT_BYTES=identity-only static command PASS; outer scripts/verify exposes no run id; nested terminal verifier run=ter-local-static-16148-1790587733527; 18:28:53–18:31:02 KST; evidence above
+LAST_MANAGED_PASS=r5-tc-1790586025608-67247; 18:00:25–18:02:20 KST; CONTRACT/BUSINESS PASS, TDS 3/3, cleanup PASS; predates the binding regeneration and TDS test/format bytes, so it is not current-byte managed evidence
+NEXT=Refresh CP-05 and whole-batch 6b on these bytes before the next managed run/calibration
+```
+
+当前字节上的最新运行：identity-only `scripts/verify --validate-only`，18:28:53–18:31:02 KST，`R5_VERIFY_VALIDATE_ONLY=PASS`、`EXECUTED=46/46`，内层 terminal static run=`ter-local-static-16148-1790587733527`；日志哈希见上。
+
+最后一次受管通过：`r5-tc-1790586025608-67247`，18:00:25–18:02:20 KST，合同、业务、TDS 3/3 与清理均 PASS；它早于生成绑定和 TDS 测试/格式字节，不冒充当前字节受管证据。
+
+## Current state at 2026-09-28 18:02 KST — V-S12 repeated failure closed on the same proof
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+CURRENT_BYTE_TDS_FOCUSED_TEST=PASS; ./gradlew :apps:backend:terminal-data-server:test --tests com.catering.v2s.terminaldataserver.websocket.TdsWebSocketHandlerTransportFailureTest; BUILD SUCCESSFUL; 3s
+CURRENT_BYTE_HANDLER_SHA256=f488970dda4f39fd40eae5e3009f08f52807afec557150cca2ec0fb30d107db6
+CURRENT_BYTE_HANDLER_TEST_SHA256=6fd2c07d16b44ce357a9562cd4324947323d0aba700ee7b4b4fb4a4f61cdfd38
+LATEST_MANAGED_RUN_ON_CURRENT_BYTES=r5-tc-1790586025608-67247; 2026-09-28 18:00:25–18:02:20 KST; operation=storeTerminalActivationBusinessPrecedence --topology-preflight; CONTRACT=PASS; BUSINESS=PASS; DB_OPERATIONS=7; TDS_CONTRACT=3/3; cleanup=PASS
+VS10=PASS; DEVICE_CANCEL; close=4000/ACTIVATION_CANCELLED
+VS12_10S=PASS; pausedMillis=12860; existingSessionPongs=1; newAuthentication=4000/SERVER_ERROR in 5104ms; listener backendPid=72->76; same session later closed ACTIVATION_CANCELLED
+TOPOLOGY_PROBE=PASS; REACTIVE TDS process; remote separate process/classpath; shared DB; valid HTTP/WebSocket paths
+TDS_RUNTIME_CLEANUP=PASS; process exitCode=143 is the run-owned TDS stop result; all Node wire clients observed expected WebSocket close frames and emitted no SIGTERM diagnostic
+CURRENT_RUN_EVIDENCE=.runtime/r5/evidence/remote-testcontainers/r5-tc-1790586025608-67247; sourceSync=PASS; remote Gradle=0; TDS/contract/client/HTTP/DB evidence archived; containers=PASS; volumes=PASS
+FIRST_FAILURES_RETAINED=r5-tc-1790555369043-70678,r5-tc-1790576608198-51098; both failureCategory=TEST_TERMINAL_WIRE_CLIENT_EXIT_NONZERO; cleanup=PASS
+FAILURE_FAMILY_REPAIR=authentication credential-verification errors are caught inside authenticate() and rejected as SERVER_ERROR; outer transport termination logs applicationClose=NONE and cannot emit NETWORK_ERROR; focused and same-path managed proof now pass
+PREVIOUS_SIGTERM_SENDER=UNRESOLVED; the failing runs recorded stopRequested=false, while this same-path run completed all owned client close handshakes without client SIGTERM; no sender is inferred
+CP05_RECONCILIATION=MATCHED before the added focused regression test; refresh CP05 at its next required stage boundary
+WHOLE_BATCH_6B=prior report predates the current TDS handler/test bytes; refresh before calibration/full acceptance
+NEXT=Refresh whole-batch 6b on current bytes; then continue the admitted R3-M1 red control, three CP-05 calibrations, ordinary static verify, and full managed acceptance in plan order
+```
+
+当前字节上的最新受管运行：`r5-tc-1790586025608-67247`，2026-09-28 18:00:25–18:02:20 KST；V-S10、V-S12 十秒停库及 topology probe 的 TDS CONTRACT 3/3，选定业务 CONTRACT/BUSINESS PASS、DB_OPERATIONS=7、cleanup PASS。
+
+最后一次通过：同一 run `r5-tc-1790586025608-67247`；TDS focused `TdsWebSocketHandlerTransportFailureTest` 也在该源码字节上 PASS。之前两次首败均保留；本次同一路径未复现 wire-client 非零退出。此前 `stopRequested=false` 的 SIGTERM 来源仍未由证据确认，因此本记录不指定信号发送者。
+
+## Current state at 2026-09-28 09:46 KST — first current-byte topology scenario passed
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+DIAGNOSTIC_LOG_PATCH=COMPLETE; TDS authentication timeout/malformed rejection records safe stage/root/error/close reason; V-S12 failure receipt records allowlisted client stage, correlated TDS stage trace, elapsed time, safe error types and outage state; terminal HTTP activation/cancel routes confirmed covered by request-completion diagnostics
+CURRENT_BYTE_NODE_FOCUSED=PASS; node --test scripts/test/backend-acceptance-structure.test.mjs scripts/test/terminal-ws-wire-client.test.mjs; 29/29
+CURRENT_BYTE_JAVA_TEST_COMPILE=PASS; ./gradlew :apps:backend:terminal-data-server:compileTestJava :apps:backend:catering-business-server:compileTestJava
+CURRENT_BYTE_SPOTLESS=PASS; ./gradlew :apps:backend:terminal-data-server:spotlessJavaCheck :apps:backend:catering-business-server:spotlessJavaCheck
+LATEST_MANAGED_RUN_ON_CURRENT_BYTES=r5-tc-1790559857804-76646; 2026-09-28 09:44:17–09:46:04 KST; operation=storeTerminalActivationBusinessPrecedence; CONTRACT=PASS; BUSINESS=PASS; DB_OPERATIONS=7; TDS_CONTRACT=3/3; cleanup=PASS
+CURRENT_RUN_EVIDENCE=.runtime/r5/evidence/remote-testcontainers/r5-tc-1790559857804-76646; TDS log confirms per-connection frame/decode/attempt/verification/gate/register/close events; HTTP event log confirms activateTerminal/cancelTerminalActivation operation, owner, outcome, status, duration and DB counts; payload/credential values were not printed in inspection
+FIRST_FAILURE_RETAINED=r5-tc-1790555369043-70678; failureCategory=TEST_TERMINAL_WIRE_CLIENT_EXIT_NONZERO; not reproduced by the current-byte positive run
+LAST_CURRENT_BYTE_PASS=r5-tc-1790559857804-76646; 2026-09-28 09:44:17–09:46:04 KST; same current source bytes; CONTRACT=PASS; BUSINESS=PASS; cleanup=PASS
+RECONCILIATION_AFTER_DIAGNOSTIC_ONLY_CHANGE=WAIVED_BY_DEXTER; prior 6b/6c records predate the log-only edits and are not claimed as current-byte verdicts
+NEXT=Run the authorized R3-M1 TDS registration-generation-check red control; preserve separate mutation verdict, business result and cleanup
+```
+
+当前字节上的最新受管运行：`r5-tc-1790559857804-76646`，2026-09-28 09:44:17–09:46:04 KST；首个单场景拓扑预检 `CONTRACT=PASS`、`BUSINESS=PASS`、`DB_OPERATIONS=7`、TDS `3/3`、cleanup `PASS`。
+
+最后一次通过：同一 run `r5-tc-1790559857804-76646`，时间及结果同上，源码字节与当前一致。之前的 wire-client 首败 `r5-tc-1790555369043-70678` 保留；本次正向运行未复现该类别。Dexter 明确要求日志改动后不做对账；旧 6b/6c 记录没有被冒充为当前字节 verdict。
+
+## Current state at 2026-09-28 09:25 KST — 6c admits the exact first managed operation
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+THIRD_PARTY_USAGE_AUDIT=COMPLETE; official version-matched source checks and fixes are recorded in doc/review/platform/2026-09-28-v2s-terminal-activation-tds-third-party-usage-audit-codex.md
+CP05_RECONCILIATION=MATCHED; M/S/N=0/0/0; fresh reviewer=/root/cp05_r5_preflight_reconcile; report=doc/review/platform/2026-09-28-v2s-terminal-activation-batch-1-cp05-reconciliation-r2-codex.md
+CP06_RECONCILIATION=MATCHED; M/S/N=0/0/0; reviewer=/root/cp06_review_r2; source review record unchanged
+CURRENT_BYTE_R5_PREFLIGHT_TESTS=PASS; node --test scripts/test/r5-remote-testcontainers.test.mjs; 37/37; duration_ms=168.913
+CURRENT_BYTE_NODE_HEALTH=PASS; node scripts/test/test-health-entry-runner.mjs --node; 532/532 tests; 45/45 files; duration_ms=2112.3145; log=/tmp/v2s-node-health-after-r5-preflight-evidence.log
+CURRENT_BYTE_PROJECT_MEMORY=PASS; scripts/memory/build-index ENTRIES=85; scripts/check/project-memory PASS
+CURRENT_BYTE_IDENTITY_ONLY_STATIC=PASS; V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY scripts/verify --validate-only; nested runId=ter-local-static-32696-1790553302396; 46/46; TERMINAL_STATIC=PASS; R5_VERIFY_VALIDATE_ONLY=PASS
+CURRENT_BYTE_NORMAL_STATIC=EXPECTED_PRE_CALIBRATION_STOP; openapi-contracts; BUDGET_PROJECTION_OPERATION_MISSING:cancelOperationsStoreTerminalActivation; this is not a green baseline
+WHOLE_BATCH_6B=MATCHED; M/S/N=0/0/0; reviewer=/root/batch1_6b_status_consistency_r2; report=doc/review/platform/2026-09-28-v2s-terminal-activation-batch-1-6b-reconciliation-r2-codex.md; source set=466 files/949a7d6d690183d2d75c15c1ab8c93f0b52b733aef6519461f11d93e1d1f0b19
+FIRST_RUN_6C=PASS_ONLY_FOR_EXACT_INVOCATION; M/S/N=0/0/0; fresh reviewer=/root/batch1_first_run_6c_admission_r2; report=doc/review/platform/2026-09-28-v2s-terminal-activation-batch-1-first-run-6c-admission-codex.md
+CURRENT_LOCAL_RESOURCE_PREFLIGHT=PASS; 0 manifest-owned processes, 0 MiB RSS, 4096 MiB budget; captured 2026-09-28 09:23 KST; runner repeats at launch
+CURRENT_DEV_MANIFEST=ABSENT; V2S_RUNTIME_DIR=UNSET
+LATEST_MANAGED_RUN_ON_CURRENT_BYTES=NONE; no remote inventory query, SSH, tunnel, TDS/business process or Testcontainers run has started on these bytes
+LAST_CURRENT_BYTE_PASS=identity-only static verify above; static cleanup=NOT_APPLICABLE_STATIC_ONLY
+LAST_POSITIVE_MANAGED_RUN_ON_OLDER_BYTES=r5-tc-1790516314218-64728; BUSINESS=PASS; TDS_CONTRACT=3/3; CLEANUP=PASS; not current-byte evidence
+NEXT=Recheck resource/DEV manifest immediately before starting scripts/test/backend-acceptance --operation storeTerminalActivationBusinessPrecedence --topology-preflight
+```
+
+当前字节上的最新运行：本地 R5 前置资源检查 `scripts/env/check-runtime-resource-budget --profile admin-validation-with-ter .runtime`，2026-09-28 09:23 KST，`LIVE_MANAGED_PROCESSES=0`、`MANAGED_RSS_MB=0`、`STATUS=PASS`；非受管运行，执行器启动前会重查。
+
+最后一次通过：current-byte identity-only `scripts/verify --validate-only`，nested runId=`ter-local-static-32696-1790553302396`，`EXECUTED=46/46`、`TERMINAL_STATIC=PASS`、`R5_VERIFY_VALIDATE_ONLY=PASS`，静态 cleanup=`NOT_APPLICABLE_STATIC_ONLY`。当前字节没有 managed/dynamic PASS。
+
+## Current state at 2026-09-28 09:01 KST — 6c preflight root repair
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+THIRD_PARTY_USAGE_AUDIT=COMPLETE; version-matched official source review and fixes are recorded at doc/review/platform/2026-09-28-v2s-terminal-activation-tds-third-party-usage-audit-codex.md
+CP05_RECONCILIATION=REFRESH_PENDING_AFTER_R5_REMOTE_PREFLIGHT_EVIDENCE_FIX
+CP06_RECONCILIATION=MATCHED; latest focused input source hash unchanged; whole-batch review will re-open the whole CP06 row
+CURRENT_BYTE_R5_PREFLIGHT_FIX=SOURCE_AND_TESTS_CLOSED_LOCALLY; inventory query errors and observed resources persist as structured preflight evidence before remote workspace preparation
+CURRENT_BYTE_R5_RUNNER_TESTS=PASS; node --test scripts/test/r5-remote-testcontainers.test.mjs; 37/37; duration_ms=168.913
+CURRENT_BYTE_NODE_HEALTH=PASS; node scripts/test/test-health-entry-runner.mjs --node; 532/532; 45/45 files; duration_ms=2112.3145; log=/tmp/v2s-node-health-after-r5-preflight-evidence.log
+CURRENT_BYTE_PROJECT_MEMORY=PASS; scripts/memory/build-index ENTRIES=85; scripts/check/project-memory PASS
+CURRENT_BYTE_IDENTITY_ONLY_STATIC=PASS; V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY scripts/verify --validate-only; runId=ter-local-static-32696-1790553302396; EXECUTED=46/46; TERMINAL_STATIC=PASS; R5_VERIFY_VALIDATE_ONLY=PASS; log=/tmp/v2s-terminal-activation-identity-verify-after-r5-preflight.log
+CURRENT_BYTE_NORMAL_STATIC=EXPECTED_PRE_CALIBRATION_STOP; openapi-contracts; BUDGET_PROJECTION_OPERATION_MISSING:cancelOperationsStoreTerminalActivation; not a green baseline
+CURRENT_BYTE_LOCAL_RESOURCE_PREFLIGHT=PASS; scripts/env/check-runtime-resource-budget --profile admin-validation-with-ter .runtime; LIVE_MANAGED_PROCESSES=0; MANAGED_RSS_MB=0; budget=4096 MiB; 2026-09-28 09:01:12 KST; checker emits no run id
+CURRENT_DEV_MANIFEST=ABSENT; V2S_RUNTIME_DIR=UNSET; default .runtime/r5/run-manifest.json absent
+WHOLE_BATCH_6B=REFRESH_PENDING_AFTER_R5_PREFLIGHT_REPAIR_AND_MEMORY_BYTES; previous 381-file digest is stale
+FIRST_RUN_6C=REFRESH_REVIEW_PENDING; prior fresh reviewer BLOCKED M/S/N=0/1/0; root cause repaired, current-byte decision pending
+CURRENT_BYTE_LATEST_MANAGED_RUN=NONE; no remote inventory query, SSH, tunnel, service, Testcontainers, DEV, or business run has been started on these bytes
+LAST_POSITIVE_MANAGED_RUN_ON_OLDER_BYTES=r5-tc-1790516314218-64728; BUSINESS=PASS; TDS_CONTRACT=3/3; CLEANUP=PASS; not current-byte proof
+NEXT=Fresh CP-05 reconciliation; then current whole-batch 6b and exact single-operation 6c admission; no remote launch before all required current-byte verdicts
+```
+
+当前字节上的最新运行：`scripts/env/check-runtime-resource-budget --profile admin-validation-with-ter .runtime`，2026-09-28 09:01:12 KST，`LIVE_MANAGED_PROCESSES=0`、`MANAGED_RSS_MB=0`、`STATUS=PASS`；这是本地资源快照，不是受管业务运行。
+
+最后一次通过：current-byte identity-only `scripts/verify --validate-only`，runId=`ter-local-static-32696-1790553302396`，`EXECUTED=46/46`、`TERMINAL_STATIC=PASS`、`R5_VERIFY_VALIDATE_ONLY=PASS`，2026-09-27T23:55:02.396Z–23:57:16.806Z；静态清理为 `NOT_APPLICABLE_STATIC_ONLY`。最近受管正向运行仍为旧字节 `r5-tc-1790516314218-64728`，不作为 current-byte 证据。
+
+## Current state at 2026-09-28 08:58 KST
 
 ```text
 IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
 THIRD_PARTY_USAGE_AUDIT=COMPLETE; official version-matched API guidance reviewed and recorded at doc/review/platform/2026-09-28-v2s-terminal-activation-tds-third-party-usage-audit-codex.md; audit fixes are in the current byte set
-CP05_RECONCILIATION=MATCHED; M/S/N=0/0/0; reviewer=/root/cp05_final_reconcile_r6; report=doc/review/platform/2026-09-28-v2s-terminal-activation-batch-1-cp05-reconciliation-r6-codex.md
+CP05_RECONCILIATION=REFRESH_PENDING_AFTER_R5_REMOTE_PREFLIGHT_EVIDENCE_FIX; prior MATCHED record predates current runner/test/memory bytes
 CP06_RECONCILIATION=MATCHED; M/S/N=0/0/0; reviewer=/root/cp06_review_r2; report=doc/review/platform/2026-09-28-v2s-terminal-activation-batch-1-cp06-reconciliation-codex.md; report header reconciled to reviewer verdict
 CURRENT_BYTE_CP06_FOCUSED_TESTS=PASS; command=node --test scripts/dev/r5-dev-command-wrapper.test.mjs scripts/test/store-terminal-l2-admission.test.mjs; 19/19; duration=52.842042ms; non-managed local process; exact wall-clock start time was not emitted by the command
 CURRENT_BYTE_L2_ADMISSION=PASS; cases=6; control-plane-files=36; UI-files=22; admission-digest=0994b6f0b376eeba8b9854039514cdcdb28da2c62e9a98ff8d7c17ad45e46da8; policy-digest=9e4f136958e21d6e6a2c739fc25f85d9914f508e0bf8ea0ded4c4df71e482e7f; current test validator PASS
-CURRENT_BYTE_IDENTITY_ONLY_STATIC=PASS; command=V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY scripts/verify --validate-only; nested RUN_ID=ter-local-static-59267-1790549650221; EXECUTED=46/46; TERMINAL_STATIC=PASS; cleanup=NOT_APPLICABLE_STATIC_ONLY
+CURRENT_BYTE_R5_RESOURCE_PREFLIGHT=FIXED; errors retain per-query status, valid observed IDs/names, inventory classification and exit code; no query failure maps to EMPTY
+CURRENT_BYTE_R5_RUNNER_TESTS=PASS; command=node --test scripts/test/r5-remote-testcontainers.test.mjs; 37/37; elapsed=168.9ms; output is the current tool-run result; command does not emit run ID or exact start time
+CURRENT_BYTE_NODE_HEALTH=PASS; command=node scripts/test/test-health-entry-runner.mjs --node; 532/532 tests; 45/45 files; duration_ms=2112.3145; log=/tmp/v2s-node-health-after-r5-preflight-evidence.log
+CURRENT_BYTE_PROJECT_MEMORY=PASS; scripts/memory/build-index ENTRIES=85; scripts/check/project-memory PASS; remote resource preflight rule extended in the existing test-closed-loop memory entry
+CURRENT_BYTE_IDENTITY_ONLY_STATIC=PASS; command=V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY scripts/verify --validate-only; nested RUN_ID=ter-local-static-32696-1790553302396; `TERMINAL_STATIC=PASS` 2026-09-27T23:55:02.396Z–23:57:16.806Z; `R5_VERIFY_VALIDATE_ONLY=PASS`; EXECUTED=46/46; total log=/tmp/v2s-terminal-activation-identity-verify-after-r5-preflight.log; static cleanup=NOT_APPLICABLE_STATIC_ONLY
 CURRENT_BYTE_NORMAL_STATIC=EXPECTED_PRE_CALIBRATION_STOP; scripts/verify --validate-only; exit=1 at openapi-contracts; BUDGET_PROJECTION_OPERATION_MISSING:cancelOperationsStoreTerminalActivation; not a green baseline
 CURRENT_BYTE_IDENTITY_ONLY_LOG=.runtime/r5/evidence/terminal-activation-identity-only-verify-20260928-after-cp05-findings.log; SHA256=2415804fb0a8bae45bbc545545f90a95d642cda37276bc4d060f837b7209595c
 CURRENT_BYTE_NORMAL_STATIC_LOG=.runtime/r5/evidence/terminal-activation-normal-verify-20260928-pre-calibration-after-cp05-findings.log; SHA256=63c2f13cbf9e517b677c288ce19d35d370297f83fc797ed58bb2376e4110befa
 CURRENT_BYTE_VERIFY_REPAIRS=PASS; M1 emitter self-test/check and module-dependency-registry self-test/check are registered before openapi-contracts; runtime U01-codegen duplicate removed
-CURRENT_BYTE_NODE_HEALTH=PASS; 531/531 tests; 45/45 files
 LATEST_REMOTE_RUN=r5-tc-1790516560304-69487; EXPECTED_TDS_VS10_RED_CAUGHT; BUSINESS=PASS; MUTATION_VERDICT=PASS; CLEANUP=PASS; source byte predates current static/gate/memory repairs
 LAST_POSITIVE_REMOTE_RUN=r5-tc-1790516314218-64728; BUSINESS=PASS; TDS_CONTRACT=3/3; CLEANUP=PASS; source byte predates current static/gate/memory repairs
 DEV=NOT_RUN; RESET=NOT_RUN; SEED=NOT_RUN; L2=NOT_RUN; FULL_BACKEND_ACCEPTANCE=NOT_RUN
-WHOLE_BATCH_6B=OPEN; reviewer=/root/batch1_6b_current_r2; finding=M-1 CP06 evidence record header contradicted matched reviewer; record reconciled, fresh whole-batch recheck pending; DYNAMIC_6C=NOT_RUN; NO_MANAGED_RUN
-NEXT=Fresh whole-batch 6b recheck after CP06 record reconciliation; then prepare the separate exact-operation 6c admission; no managed run before both gates
+WHOLE_BATCH_6B=REFRESH_PENDING_AFTER_R5_REMOTE_PREFLIGHT_AND_MEMORY_FIX; previous 381-file digest is historical for current source
+FIRST_MANAGED_RUN_6C=NOT_RUN; NO_MANAGED_RUN_UNTIL_FRESH_6C_PASS
+CURRENT_LOCAL_PRELAUNCH_RESOURCE_PREFLIGHT=PASS; command=scripts/env/check-runtime-resource-budget --profile admin-validation-with-ter .runtime; LIVE_MANAGED_PROCESSES=0; MANAGED_RSS_MB=0; budget=4096 MiB; captured 2026-09-27 23:58 UTC; checker does not emit run ID or exact start timestamp
+CURRENT_DEV_MANIFEST=ABSENT; V2S_RUNTIME_DIR=UNSET; default `.runtime/r5/run-manifest.json` absent
+DYNAMIC_6C=REFRESH_REVIEW_PENDING_AFTER_M1_ROOT_FIX; previous reviewer=/root/batch1_first_run_6c_admission_r1; previous verdict=BLOCKED M/S/N=0/1/0; no managed run before fresh independent PASS
+CURRENT_BYTE_LATEST_MANAGED_RUN=NONE; the latest completed current-byte command is local identity-only static verify, not a managed/dynamic run
+LAST_POSITIVE_MANAGED_RUN_ON_OLDER_BYTES=r5-tc-1790516314218-64728; BUSINESS=PASS; TDS_CONTRACT=3/3; CLEANUP=PASS; not current-byte evidence
+NEXT=Fresh CP05 stage reconciliation, then whole-batch 6b and 6c admission; start only the exact first scenario after all three are current-byte PASS/MATCHED
 ```
 
-当前字节上的最新运行：`node --test scripts/dev/r5-dev-command-wrapper.test.mjs scripts/test/store-terminal-l2-admission.test.mjs`，非受管本地 focused run（该命令不输出 run id 或 wall-clock start time），2026-09-28 本任务回合，19/19 PASS，elapsed 52.842042ms；摘要逐项见 [CP-06 对账记录](2026-09-28-v2s-terminal-activation-batch-1-cp06-reconciliation-codex.md)。
+当前字节上的最新受管运行：NONE；本批没有在修复后的当前字节启动远端业务、TDS 或 Testcontainers。
 
-最后一次通过：当前 CP-06 runner/admission 字节上的上述 Node focused run 19/19 PASS；最近整条静态 verify 为 identity-only `--validate-only`，runId=`ter-local-static-59267-1790549650221`，2026-09-28 07:52–07:56 KST，46/46 PASS，静态 cleanup=`NOT_APPLICABLE_STATIC_ONLY`。普通预算模式在标定前预期停于 `openapi-contracts`，不是绿基线。当前字节没有受管远端动态 PASS；最近的历史远端 run 仍早于当前静态/门修复。
+最后一次通过：当前字节 identity-only `scripts/verify --validate-only`，嵌套 runId=`ter-local-static-32696-1790553302396`，终端静态子链于 2026-09-27T23:57:16.806Z PASS，R5 verify 46/46 PASS；outer log=`/tmp/v2s-terminal-activation-identity-verify-after-r5-preflight.log`，静态 cleanup=`NOT_APPLICABLE_STATIC_ONLY`。最近受管正向通过仍为 `r5-tc-1790516314218-64728`，其源码字节较旧，不作为当前通过。
 
 ## Current state at 2026-09-27 18:55 UTC
 
@@ -742,3 +898,119 @@ managed runtime.
 `/tmp/v2s-identity-verify-2026-09-27-2147.log`。这是静态运行，不构成业务或 TDS 受管运行。
 
 最后一次通过：同一 current-byte 静态验证 36/36；此前远端运行不是当前字节，不能升级为当前实现通过。
+
+## Current state 2026-09-28 03:54 UTC — R3-M1 red control closed
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+R3_M1_RED_CONTROL=PASS; runId=r5-tc-1790567363477-38908; selected business HTTP=200 CONTRACT=PASS BUSINESS=PASS; TDS mutation signal=TDS_VS10_REGISTRATION_RACE_RED_CONTROL after SESSION_READY; MUTATION_VERDICT=PASS; CLEANUP=PASS
+RED_CONTROL_ROOT_CAUSE=the mutation deliberately let a revoked generation register; the prior harness waited for a later WebSocket close timeout and the owned client was SIGTERM-terminated before that timeout, although the forbidden SESSION_READY had already been emitted
+RED_CONTROL_REPAIR=V-S10 contract now records SESSION_READY_AFTER_REVOCATION as the direct red signal and stops the run-owned client in cleanup; r5 verifier requires that exact signal; plan/design acceptance text updated accordingly
+RED_CONTROL_PRIOR_FAILURES=r5-tc-1790566178580-12966,r5-tc-1790566948305-30453; both preserved, resource cleanup PASS; no further failure in this family on the current acceptance/test-code snapshot
+R5_RUNNER_TEST=PASS; node --test scripts/test/r5-remote-testcontainers.test.mjs; 37/37; node --check scripts/test/r5-remote-testcontainers.mjs PASS
+LOCAL_RESOURCE_PREFLIGHT=PASS; LIVE_MANAGED_PROCESSES=0; MANAGED_RSS_MB=0; budget=4096 MiB; 2026-09-28T03:48Z
+WHOLE_BATCH_6B=last record predates latest test-only red-control change; no log-only reconciliation added per Dexter direction; full-batch 6b remains required at delivery as directed
+CP03_CP04_STANDALONE_RECONCILIATION=DEFERRED_UNTIL_BATCH_GOAL_COMPLETION_PER_DEXTER
+CP05_CALIBRATION=NOT_STARTED; next exact invocation is scripts/test/backend-acceptance --operation all --calibration; three successful current-source reports required
+LATEST_POSITIVE_TOPOLOGY_RUN=r5-tc-1790566048243-10252; BUSINESS=PASS; TDS CONTRACT=3/3; exact 10-second pause/recovery PASS; CLEANUP=PASS; predates red-control diagnostic changes
+DEV=NOT_RUN; BROWSER_L2=NOT_RUN; RESET=NOT_RUN; SEED=NOT_RUN; FULL_BACKEND_ACCEPTANCE=NOT_RUN
+```
+
+The first two same-family failures were preserved. JUnit XML showed the mutated flow had completed the real HTTP cancellation, observed the production notification, released the registration gate, and emitted `SESSION_READY`; the old test then waited for a subsequent socket timeout. The direct frame is the earlier and stronger proof of the mutation, so the test and verifier now fail immediately on that frame and record the exact signal. The R5 acceptance run above confirms the business path passes, the expected production mutation is caught, other TDS contracts pass, and all remote processes/resources are cleaned up. The implementation-plan and design mutation criteria were synchronized before calibration.
+
+当前字节上的最新运行：`r5-tc-1790567363477-38908`，2026-09-28T03:49:23Z–03:51:30Z，mutation VERDICT=PASS、BUSINESS=PASS、CLEANUP=PASS；运行源码快照与 Java/runner 源文件一致，之后只同步详设与计划中的同一验收信号。
+
+最后一次通过：同一 run；当前 Java/runner 源码保持不变，详设与计划现已记录该 run 实际证明的直接红信号。
+
+## Current state 2026-09-28 — V-S12 listener-recovery repair
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+PRESERVED_FIRST_FAILURE=r5-tc-1790590651136-97769; V-S12 listener recovery gate timed out; BUSINESS=NOT_RUN; CLEANUP=PASS
+ROOT_CAUSE=PostgreSQL pause/unpause did not sever the established listener TCP session; no tds_listener_disconnected or recovery-gate event was emitted
+REPAIR=After unpause, record the exact-PID pg_terminate_backend signal response; require a fresh same-PID disconnect event after the saved TDS log offset and observe/hold TdsListenerRecoveryGate before real HTTP cancellation
+CURRENT_CP05_RECONCILIATION=MATCHED; M/S/N=0/0/0; fresh reviewer=/root/cp05_vs12_reconcile; current V-S12 files/design/plan hashes in 2026-09-28-v2s-terminal-activation-vs12-listener-recovery-repair-codex.md
+CURRENT_BYTE_FOCUSED_STRUCTURE=PASS; node --test scripts/test/backend-acceptance-structure.test.mjs; 22/22
+CURRENT_BYTE_BACKEND_TEST_COMPILE=PASS; ./gradlew :apps:backend:catering-business-server:compileTestJava; BUILD SUCCESSFUL
+CURRENT_BYTE_IDENTITY_ONLY_VERIFY=REFRESH_REQUIRED
+CURRENT_WHOLE_BATCH_6B=REFRESH_REQUIRED_AFTER_V-S12_REPAIR
+FIRST_RUN_6C=REFRESH_REQUIRED_AFTER_V-S12_REPAIR
+LATEST_MANAGED_RUN_ON_CURRENT_BYTES=NONE
+NEXT=Fresh current-byte whole-batch 6b and first-run 6c admission; then the already-authorized exact single operation topology-preflight only
+L2=NOT_RUN; RESET=NOT_RUN; ACTUAL_SEED=NOT_RUN; FULL_BACKEND_ACCEPTANCE=NOT_RUN
+```
+
+The first failure's run manifest and compressed TDS log were read before repair. The log shows
+`tds_listener_ready ... backendPid=72` but no listener-disconnected event; the test's previous
+pause/unpause sequence therefore had no evidence that the listener recovered. The repair keeps the
+real Testcontainer outage and HTTP cancellation, adds the existing exact-PID termination action,
+and treats the exact fresh disconnect plus held recovery gate as proof. It does not assume that
+`pg_terminate_backend` returning true proves termination.
+
+当前字节上的最新运行：`node --test scripts/test/backend-acceptance-structure.test.mjs` 22/22 PASS；
+`./gradlew :apps:backend:catering-business-server:compileTestJava` BUILD SUCCESSFUL。无修复后受管运行。
+
+最后一次通过：`r5-tc-1790586025608-67247` 是修复前受管 PASS；不能作为当前字节 V-S12 通过。
+
+## Current state 2026-09-28 10:53 UTC — current 6b/static refresh
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+V-S12_REPAIR_CP05=MATCHED; M/S/N=0/0/0; reviewer=/root/cp05_vs12_current_format
+WHOLE_BATCH_6B=MATCHED; M/S/N=0/0/0; reviewer=/root/stage1_6b_vs12_current; source set=468; digest=5886fa6cfd862a4d31b3e3f9bf4dd3618ea6dae23dc9296fad0fc182962699dd; code-layout=23694b4699d15d26d16298665701fa7dea3b0012c1782cb173515291855bd5a2
+CURRENT_BYTE_IDENTITY_ONLY_STATIC=PASS; command=V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY scripts/verify --validate-only; R5_VERIFY_VALIDATE_ONLY=PASS; EXECUTED=46/46; execSession=94966; terminal-static-subrun=ter-local-static-45641-1790592533043; CLEANUP=NOT_APPLICABLE_STATIC_ONLY
+CURRENT_BYTE_BACKEND_ACCEPTANCE_STRUCTURE=PASS; node --test scripts/test/backend-acceptance-structure.test.mjs; 22/22
+CURRENT_BYTE_SPOTLESS_AND_TEST_COMPILE=PASS; spotlessJavaCheck + compileTestJava; BUILD SUCCESSFUL
+LOCAL_RESOURCE_PREFLIGHT=PASS; LIVE_MANAGED_PROCESSES=0; MANAGED_RSS_MB=0; RSS_BUDGET_MB=4096; V2S_RUNTIME_DIR=UNSET; DEV manifest absent
+FIRST_RUN_6C=NO-GO; M/S/N=1/0/0; reviewer=/root/stage1_6c_current; missing current 6b/static records at review time; no runtime executed; current evidence is now recorded and requires a fresh admission turn
+LATEST_MANAGED_RUN=r5-tc-1790590651136-97769; first V-S12 recovery-gate timeout; BUSINESS=NOT_RUN; CLEANUP=PASS; ran before final formatter byte
+LATEST_MANAGED_RUN_ON_CURRENT_BYTES=NONE
+LAST_MANAGED_PASS=r5-tc-1790586025608-67247; pre-repair; historical only
+NEXT=Fresh 6c admission on the now-recorded current 6b/static evidence; then run only the exact first topology-preflight operation
+L2=NOT_RUN; RESET=NOT_RUN; ACTUAL_SEED=NOT_RUN; FULL_BACKEND_ACCEPTANCE=NOT_RUN
+```
+
+The identity-only verification's first attempt stopped at `backend-spotless-check`; the exact source
+format correction then passed the focused Spotless/compile gate and structure test before the whole
+identity-only verification was rerun. Its final output was `R5_VERIFY_VALIDATE_ONLY=PASS`,
+`EXECUTED=46/46`, `TERMINAL_STATIC=PASS`, and static cleanup `NOT_APPLICABLE`. The whole-batch 6b
+review used the post-Spotless byte set above. The initial 6c reviewer returned NO-GO only because
+these current results had not yet been written into repository records; no managed run followed
+that NO-GO.
+
+当前字节上的最新运行：identity-only `scripts/verify --validate-only` PASS 46/46，exec session 94966；
+资源预检 PASS（0 个受管进程、0 MiB），无修复后受管运行。
+
+最后一次通过：当前字节 identity-only static verify 46/46；上次受管 PASS
+`r5-tc-1790586025608-67247` 为修复前字节。
+
+## Current state 2026-09-28 10:57 UTC — first-run admission refreshed
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+WHOLE_BATCH_6B=MATCHED; M/S/N=0/0/0; current report=2026-09-28-v2s-terminal-activation-batch-1-6b-reconciliation-r5-codex.md; source set=468; digest=5886fa6cfd862a4d31b3e3f9bf4dd3618ea6dae23dc9296fad0fc182962699dd
+FIRST_RUN_6C=PASS; M/S/N=0/0/0; fresh reviewer=/root/stage1_6c_current; exact invocation=scripts/test/backend-acceptance --operation storeTerminalActivationBusinessPrecedence --topology-preflight
+CURRENT_BYTE_IDENTITY_ONLY_STATIC=PASS; R5_VERIFY_VALIDATE_ONLY=PASS; EXECUTED=46/46; execSession=94966; TERMINAL_STATIC=PASS
+CURRENT_BYTE_BACKEND_ACCEPTANCE_STRUCTURE=PASS; 22/22
+CURRENT_BYTE_SPOTLESS_AND_TEST_COMPILE=PASS; BUILD SUCCESSFUL
+LOCAL_RESOURCE_PREFLIGHT=PASS; command=scripts/env/check-runtime-resource-budget --profile admin-validation-with-ter .runtime; LIVE_MANAGED_PROCESSES=0; MANAGED_RSS_MB=0; RSS_BUDGET_MB=4096
+CURRENT_DEV_MANIFEST=ABSENT; V2S_RUNTIME_DIR=UNSET; DEV_WAS_RUNNING=false
+LATEST_MANAGED_RUN=r5-tc-1790590651136-97769; preserved pre-repair V-S12 recovery-gate timeout; BUSINESS=NOT_RUN; CLEANUP=PASS
+LATEST_MANAGED_RUN_ON_CURRENT_BYTES=NONE
+LAST_MANAGED_PASS=r5-tc-1790586025608-67247; pre-repair bytes; not current-byte proof
+TOPOLOGY=NOT_RUN; BUSINESS=NOT_RUN; TDS_CONTRACT=NOT_RUN; DB_OPERATIONS=NOT_RUN; CLEANUP=NOT_RUN
+NEXT=Run the exact 6c-admitted managed single-operation topology preflight; runner performs remote preflight before any remote workspace preparation
+L2=NOT_RUN; RESET=NOT_RUN; ACTUAL_SEED=NOT_RUN; FULL_BACKEND_ACCEPTANCE=NOT_RUN
+```
+
+The previous 6c `NO-GO` remains in the `...-admission-r4-codex.md` record as history. The fresh
+6c PASS was issued after the current r5 6b/static evidence was written and admits only the exact
+single-operation invocation. This update records admission and pre-run resource state; it does not
+claim topology, business, TDS CONTRACT, DB operations, or cleanup results.
+
+当前字节上的最新运行：身份静态验证 46/46 PASS（exec session 94966）；尚无修复后受管运行。
+
+最后一次通过：静态验证是当前字节；最后一个受管 PASS `r5-tc-1790586025608-67247` 属于修复前字节。

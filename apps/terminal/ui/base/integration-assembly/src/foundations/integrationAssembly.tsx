@@ -353,6 +353,7 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
     deviceIdentity,
     platformPortCapabilities: describePlatformPortCapabilities(input.platformPorts),
     displayFacts,
+    surfaceCanvasSizes: input.surfaceDeclarations,
   })
   const allParts = Object.freeze([...adminShellAssembly.parts, ...input.parts])
   const selectedParts = selectPartsForSurfaceForm(allParts, input.surfaceForm)

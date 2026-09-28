@@ -49,6 +49,7 @@ import {
   validateInvocationArguments,
   requiresFullPerformanceVerification,
   requiresBackendAcceptanceEvidence,
+  requiresBackendAcceptanceTdsContract,
   requiresActiveBudgetVerification,
   prepareProductionMutation,
   resolveProductionMutation,
@@ -79,6 +80,11 @@ const captureThrown = (action, matcher) => {
   });
   return captured;
 };
+const emptyRemoteResourceInventoryRows = [
+  'RESOURCE_QUERY\tCONTAINERS\tPASS',
+  'RESOURCE_QUERY\tVOLUMES\tPASS',
+].join('\n');
+const remotePreflightOutput = (...rows) => [emptyRemoteResourceInventoryRows, ...rows].join('\n');
 const validEvidenceArchive = () => ({
   status: 'PASS',
   indexPath: '.runtime/r5/evidence/remote-testcontainers/r5-tc-1786638000000-123/evidence-artifacts.tsv',
@@ -314,23 +320,217 @@ test('cleanup recovery binds the terminal manifest to its exact remote host and 
   );
 });
 
-test('remote resource preflight rejects Docker query failure instead of returning empty resources', () => {
+test('remote resource preflight records unknown, partial, stale and empty inventories without false cleanup claims', () => {
   assert.doesNotMatch(remotePreflightScript(), /\|\| true/);
   assert.doesNotMatch(remotePreflightScript(), /node_binary=/);
+  assert.match(remotePreflightScript(), /RESOURCE_QUERY\\tCONTAINERS/);
+  assert.match(remotePreflightScript(), /RESOURCE_QUERY\\tVOLUMES/);
+  assert.match(remotePreflightScript(), /container_query_status=FAIL/);
+  assert.match(remotePreflightScript(), /volume_query_status=FAIL/);
+
   const unavailable = captureThrown(
     () => parseRemotePreflightResult({status: 1, stdout: '', stderr: 'docker unavailable'}),
     /REMOTE_RESOURCE_PREFLIGHT_UNAVAILABLE/,
   );
-  assert.equal(unavailable.preflightEvidence, undefined);
+  assert.deepEqual(unavailable.preflightEvidence.resourceInventory, {
+    status: 'UNAVAILABLE',
+    containerQueryStatus: 'UNAVAILABLE',
+    volumeQueryStatus: 'UNAVAILABLE',
+    containers: 0,
+    volumes: 0,
+  });
+  assert.deepEqual(unavailable.preflightEvidence.containers, []);
+  assert.deepEqual(unavailable.preflightEvidence.volumes, []);
+  assert.doesNotMatch(JSON.stringify(unavailable.preflightEvidence), /docker unavailable/);
   const unverifiedResourcesManifest = {
     cleanup: {status: 'FAIL', remoteProcess: 'FAIL', remoteWorkspace: 'FAIL', testcontainersContainers: 'FAIL', testcontainersVolumes: 'FAIL'},
   };
-  assert.equal(recordRemotePreflightFailure(unverifiedResourcesManifest, unavailable), false);
-  assert.equal(unverifiedResourcesManifest.cleanup.status, 'FAIL');
-  const empty = parseRemotePreflightResult({status: 0, stdout: '', stderr: ''});
+  assert.equal(recordRemotePreflightFailure(unverifiedResourcesManifest, unavailable), true);
+  assert.deepEqual(unverifiedResourcesManifest.resourcePreflight, unavailable.preflightEvidence);
+  assert.deepEqual(unverifiedResourcesManifest.cleanup, {
+    status: 'FAIL',
+    remoteProcess: 'PASS',
+    remoteWorkspace: 'PASS',
+    testcontainersContainers: 'FAIL',
+    testcontainersVolumes: 'FAIL',
+  });
+
+  const partial = captureThrown(
+    () =>
+      parseRemotePreflightResult({
+        status: 80,
+        stdout: [
+          'RESOURCE_QUERY\tCONTAINERS\tFAIL',
+          'CONTAINER\t0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          'RESOURCE_QUERY\tVOLUMES\tPASS',
+        ].join('\n'),
+        stderr: 'docker query detail is deliberately not persisted',
+      }),
+    /REMOTE_RESOURCE_PREFLIGHT_UNAVAILABLE/,
+  );
+  assert.deepEqual(partial.preflightEvidence.resourceInventory, {
+    status: 'PARTIAL',
+    containerQueryStatus: 'FAIL',
+    volumeQueryStatus: 'PASS',
+    containers: 1,
+    volumes: 0,
+  });
+  assert.equal(partial.preflightEvidence.containers.length, 1);
+  assert.deepEqual(partial.preflightEvidence.volumes, []);
+
+  const partialVolumes = captureThrown(
+    () =>
+      parseRemotePreflightResult({
+        status: 80,
+        stdout: [
+          'RESOURCE_QUERY\tCONTAINERS\tPASS',
+          'RESOURCE_QUERY\tVOLUMES\tFAIL',
+          'VOLUME\tpartial-testcontainers-volume',
+        ].join('\n'),
+        stderr: 'volume query detail is deliberately not persisted',
+      }),
+    /REMOTE_RESOURCE_PREFLIGHT_UNAVAILABLE/,
+  );
+  assert.deepEqual(partialVolumes.preflightEvidence.resourceInventory, {
+    status: 'PARTIAL',
+    containerQueryStatus: 'PASS',
+    volumeQueryStatus: 'FAIL',
+    containers: 0,
+    volumes: 1,
+  });
+  const partialManifest = {cleanup: {status: 'FAIL'}};
+  assert.equal(recordRemotePreflightFailure(partialManifest, partialVolumes), true);
+  assert.equal(partialManifest.cleanup.remoteProcess, 'PASS');
+  assert.equal(partialManifest.cleanup.remoteWorkspace, 'PASS');
+  assert.equal(partialManifest.cleanup.testcontainersContainers, 'PASS');
+  assert.equal(partialManifest.cleanup.testcontainersVolumes, 'FAIL');
+
+  const staleCases = [
+    {
+      rows: ['CONTAINER\t0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'],
+      containers: 1,
+      volumes: 0,
+    },
+    {rows: ['VOLUME\ttestcontainers-volume'], containers: 0, volumes: 1},
+    {
+      rows: [
+        'CONTAINER\t0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        'VOLUME\ttestcontainers-volume',
+      ],
+      containers: 1,
+      volumes: 1,
+    },
+  ];
+  for (const staleCase of staleCases) {
+    const stale = captureThrown(
+      () => parseRemotePreflightResult({status: 0, stdout: remotePreflightOutput(...staleCase.rows), stderr: ''}),
+      /REMOTE_TESTCONTAINERS_STALE_RESOURCE/,
+    );
+    assert.deepEqual(stale.preflightEvidence.resourceInventory, {
+      status: 'NON_EMPTY',
+      containerQueryStatus: 'PASS',
+      volumeQueryStatus: 'PASS',
+      containers: staleCase.containers,
+      volumes: staleCase.volumes,
+    });
+    assert.equal(stale.preflightEvidence.containers.length, staleCase.containers);
+    assert.equal(stale.preflightEvidence.volumes.length, staleCase.volumes);
+    const staleManifest = {cleanup: {status: 'FAIL'}};
+    assert.equal(recordRemotePreflightFailure(staleManifest, stale), true);
+    assert.deepEqual(staleManifest.resourcePreflight.containers, stale.preflightEvidence.containers);
+    assert.deepEqual(staleManifest.resourcePreflight.volumes, stale.preflightEvidence.volumes);
+    assert.equal(staleManifest.cleanup.status, 'FAIL');
+    assert.equal(staleManifest.cleanup.remoteProcess, 'PASS');
+    assert.equal(staleManifest.cleanup.remoteWorkspace, 'PASS');
+    assert.equal(staleManifest.cleanup.testcontainersContainers, staleCase.containers === 0 ? 'PASS' : 'FAIL');
+    assert.equal(staleManifest.cleanup.testcontainersVolumes, staleCase.volumes === 0 ? 'PASS' : 'FAIL');
+  }
+
+  const unmarked = captureThrown(
+    () => parseRemotePreflightResult({status: 0, stdout: '', stderr: ''}),
+    /REMOTE_RESOURCE_PREFLIGHT_EVIDENCE_INVALID/,
+  );
+  assert.equal(unmarked.preflightEvidence.resourceInventory.status, 'INVALID');
+
+  const unknownQuery = captureThrown(
+    () =>
+      parseRemotePreflightResult({
+        status: 0,
+        stdout: [emptyRemoteResourceInventoryRows, ['RESOURCE_QUERY', 'IMAGES', 'PASS'].join('\t')].join('\n'),
+        stderr: '',
+      }),
+    /REMOTE_RESOURCE_PREFLIGHT_EVIDENCE_INVALID/,
+  );
+  assert.equal(unknownQuery.preflightEvidence.resourceInventory.status, 'INVALID');
+
+  const empty = parseRemotePreflightResult({status: 0, stdout: emptyRemoteResourceInventoryRows, stderr: ''});
   assert.deepEqual(empty.containers, []);
   assert.deepEqual(empty.volumes, []);
+  assert.deepEqual(empty.resourceInventory, {
+    status: 'EMPTY',
+    containerQueryStatus: 'PASS',
+    volumeQueryStatus: 'PASS',
+    containers: 0,
+    volumes: 0,
+  });
   assert.match(empty.observedAt, /^\d{4}-\d{2}-\d{2}T/);
+});
+
+test('remote preflight shell emits truthful Docker inventory status and partial resource rows', () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'v2s-r5-resource-preflight-'));
+  try {
+    const dockerPath = path.join(directory, 'docker');
+    writeFileSync(
+      dockerPath,
+      [
+        '#!/bin/sh',
+        'case "$DOCKER_SCENARIO:$1:$2" in',
+        '  fail-container:ps:-aq) printf "%s\\n" "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"; exit 17 ;;',
+        '  fail-volume:volume:ls) printf "%s\\n" "partial-testcontainers-volume"; exit 19 ;;',
+        '  stale-volume:volume:ls) printf "%s\\n" "testcontainers-volume" ;;',
+        'esac',
+      ].join('\n'),
+      {mode: 0o700},
+    );
+    const run = scenario =>
+      spawnSync('bash', ['-s'], {
+        input: remotePreflightScript(),
+        encoding: 'utf8',
+        env: {...process.env, PATH: `${directory}:${process.env.PATH}`, DOCKER_SCENARIO: scenario},
+      });
+
+    const emptyResult = run('empty');
+    assert.equal(emptyResult.status, 0, emptyResult.stderr || emptyResult.stdout);
+    assert.deepEqual(parseRemotePreflightResult(emptyResult).resourceInventory, {
+      status: 'EMPTY',
+      containerQueryStatus: 'PASS',
+      volumeQueryStatus: 'PASS',
+      containers: 0,
+      volumes: 0,
+    });
+
+    const staleVolumeResult = run('stale-volume');
+    assert.equal(staleVolumeResult.status, 0, staleVolumeResult.stderr || staleVolumeResult.stdout);
+    const staleVolume = captureThrown(
+      () => parseRemotePreflightResult(staleVolumeResult),
+      /REMOTE_TESTCONTAINERS_STALE_RESOURCE/,
+    );
+    assert.deepEqual(staleVolume.preflightEvidence.volumes, ['testcontainers-volume']);
+
+    for (const scenario of ['fail-container', 'fail-volume']) {
+      const failedResult = run(scenario);
+      assert.equal(failedResult.status, 80, failedResult.stderr || failedResult.stdout);
+      const failure = captureThrown(
+        () => parseRemotePreflightResult(failedResult),
+        /REMOTE_RESOURCE_PREFLIGHT_UNAVAILABLE/,
+      );
+      assert.equal(failure.preflightEvidence.resourceInventory.status, 'PARTIAL');
+      assert.equal(failure.preflightEvidence.resourceInventory.containerQueryStatus, scenario === 'fail-container' ? 'FAIL' : 'PASS');
+      assert.equal(failure.preflightEvidence.resourceInventory.volumeQueryStatus, scenario === 'fail-volume' ? 'FAIL' : 'PASS');
+    }
+  } finally {
+    rmSync(directory, {recursive: true, force: true});
+  }
 });
 
 test('backend acceptance remote preflight requires the pinned Node wire runtime before startup', () => {
@@ -381,7 +581,12 @@ test('backend acceptance remote preflight requires the pinned Node wire runtime 
   const parsed = parseRemotePreflightResult(
     {
       status: 0,
-      stdout: `NODE_RUNTIME\t${JSON.stringify(runtime)}\nTDS_CAPACITY\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\t2\nTDS_CAPACITY\tV2S_TDS_MAX_TRACKED_SESSIONS\t4\nTDS_CAPACITY\tV2S_TDS_RSS_BUDGET_MIB\t512\n`,
+      stdout: remotePreflightOutput(
+        `NODE_RUNTIME\t${JSON.stringify(runtime)}`,
+        'TDS_CAPACITY\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\t2',
+        'TDS_CAPACITY\tV2S_TDS_MAX_TRACKED_SESSIONS\t4',
+        'TDS_CAPACITY\tV2S_TDS_RSS_BUDGET_MIB\t512',
+      ),
       stderr: '',
     },
     {requireTerminalWireRuntime: true},
@@ -443,10 +648,16 @@ test('backend acceptance loads its modest TDS capacity from the repository confi
 
 test('backend acceptance remote preflight fails closed for missing or mismatched Node wire runtime', () => {
   const missingRuntime = captureThrown(
-    () => parseRemotePreflightResult({status: 0, stdout: '', stderr: ''}, {requireTerminalWireRuntime: true}),
+    () => parseRemotePreflightResult({status: 0, stdout: emptyRemoteResourceInventoryRows, stderr: ''}, {requireTerminalWireRuntime: true}),
     /REMOTE_TERMINAL_WIRE_RUNTIME_REQUIRED/,
   );
-  assert.deepEqual(missingRuntime.preflightEvidence.resourceInventory, {status: 'EMPTY', containers: 0, volumes: 0});
+  assert.deepEqual(missingRuntime.preflightEvidence.resourceInventory, {
+    status: 'EMPTY',
+    containerQueryStatus: 'PASS',
+    volumeQueryStatus: 'PASS',
+    containers: 0,
+    volumes: 0,
+  });
   assert.equal(missingRuntime.preflightEvidence.nodeRuntime, undefined);
 
   for (const runtime of [
@@ -460,12 +671,14 @@ test('backend acceptance remote preflight fails closed for missing or mismatched
     const failure = captureThrown(
       () =>
         parseRemotePreflightResult(
-          {status: 0, stdout: `NODE_RUNTIME\t${JSON.stringify(runtime)}\n`, stderr: ''},
+          {status: 0, stdout: remotePreflightOutput(`NODE_RUNTIME\t${JSON.stringify(runtime)}`), stderr: ''},
           {requireTerminalWireRuntime: true},
         ),
       /REMOTE_TERMINAL_WIRE_RUNTIME_INVALID/,
     );
     assert.equal(failure.preflightEvidence.resourceInventory.status, 'EMPTY');
+    assert.deepEqual(failure.preflightEvidence.containers, []);
+    assert.deepEqual(failure.preflightEvidence.volumes, []);
     assert.equal(failure.preflightEvidence.nodeRuntime.nodeVersion, runtime.nodeVersion);
     assert.equal(Object.hasOwn(failure.preflightEvidence.nodeRuntime, 'nodePath'), false);
   }
@@ -476,7 +689,13 @@ test('backend acceptance remote preflight fails closed for missing or mismatched
       parseRemotePreflightResult(
         {
           status: 0,
-          stdout: `${validRow}\nTDS_CAPACITY\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\t2\nTDS_CAPACITY\tV2S_TDS_MAX_TRACKED_SESSIONS\t4\nTDS_CAPACITY\tV2S_TDS_RSS_BUDGET_MIB\t512\n${validRow}\n`,
+          stdout: remotePreflightOutput(
+            validRow,
+            'TDS_CAPACITY\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\t2',
+            'TDS_CAPACITY\tV2S_TDS_MAX_TRACKED_SESSIONS\t4',
+            'TDS_CAPACITY\tV2S_TDS_RSS_BUDGET_MIB\t512',
+            validRow,
+          ),
           stderr: '',
         },
         {requireTerminalWireRuntime: true},
@@ -486,7 +705,12 @@ test('backend acceptance remote preflight fails closed for missing or mismatched
   const parsed = parseRemotePreflightResult(
     {
       status: 0,
-      stdout: `${validRow}\nTDS_CAPACITY\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\t2\nTDS_CAPACITY\tV2S_TDS_MAX_TRACKED_SESSIONS\t4\nTDS_CAPACITY\tV2S_TDS_RSS_BUDGET_MIB\t512\n`,
+      stdout: remotePreflightOutput(
+        validRow,
+        'TDS_CAPACITY\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\t2',
+        'TDS_CAPACITY\tV2S_TDS_MAX_TRACKED_SESSIONS\t4',
+        'TDS_CAPACITY\tV2S_TDS_RSS_BUDGET_MIB\t512',
+      ),
       stderr: '',
     },
     {requireTerminalWireRuntime: true},
@@ -500,7 +724,16 @@ test('backend acceptance remote preflight fails closed for missing or mismatched
   const invalidCapacity = captureThrown(
     () =>
       parseRemotePreflightResult(
-        {status: 0, stdout: `${validRow}\nTDS_CAPACITY\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\tINVALID\nTDS_CAPACITY\tV2S_TDS_MAX_TRACKED_SESSIONS\t4\nTDS_CAPACITY\tV2S_TDS_RSS_BUDGET_MIB\t512\n`, stderr: ''},
+        {
+          status: 0,
+          stdout: remotePreflightOutput(
+            validRow,
+            'TDS_CAPACITY\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\tINVALID',
+            'TDS_CAPACITY\tV2S_TDS_MAX_TRACKED_SESSIONS\t4',
+            'TDS_CAPACITY\tV2S_TDS_RSS_BUDGET_MIB\t512',
+          ),
+          stderr: '',
+        },
         {requireTerminalWireRuntime: true},
       ),
     /REMOTE_TDS_CAPACITY_INVALID/,
@@ -667,7 +900,7 @@ test('TDS registration race mutation is exact, remote-only, and verified at the 
         status: 'FAIL',
         runId,
         failureCategory: 'TDS_VS10_REGISTRATION_RACE_RED_CONTROL',
-        clientFailureCategory: 'TERMINAL_WIRE_SOCKET_READ_TIMEOUT',
+        clientFailureCategory: 'SESSION_READY_AFTER_REVOCATION',
         sessionReadyObserved: true,
       },
     ]
@@ -804,6 +1037,9 @@ test('pre-test failures do not masquerade as missing acceptance artifacts', () =
 test('failed Gradle execution preserves its first failure without requiring business-result artifacts', () => {
   assert.equal(requiresBackendAcceptanceEvidence('backend-acceptance-run', false), false);
   assert.equal(requiresBackendAcceptanceEvidence('backend-acceptance-run', true), true);
+  assert.equal(requiresBackendAcceptanceTdsContract(null, undefined), false);
+  assert.equal(requiresBackendAcceptanceTdsContract('backend-acceptance-run', undefined), true);
+  assert.equal(requiresBackendAcceptanceTdsContract('backend-acceptance-run', 'TDS_CONTRACT'), false);
   const runnerSource = readFileSync(new URL('./r5-remote-testcontainers.mjs', import.meta.url), 'utf8');
   assert.match(
     runnerSource,
@@ -814,6 +1050,11 @@ test('failed Gradle execution preserves its first failure without requiring busi
     runnerSource,
     /requiresBackendAcceptanceEvidence\(backendAcceptanceRunId,\s*actualExecution\.status === 'PASS'\)/,
     'TASK_OBSERVED_MUST_NOT_STAND_IN_FOR_SUCCESSFUL_TEST_EXECUTION',
+  );
+  assert.match(
+    runnerSource,
+    /if \(backendAcceptanceRunId !== null\) \{[\s\S]*?requiresBackendAcceptanceTdsContract\(backendAcceptanceRunId,\s*requestedMutation\?\.evidenceType\)/,
+    'FOCUSED_NON_ACCEPTANCE_TASK_MUST_NOT_REQUIRE_ACCEPTANCE_TDS_ARTIFACTS',
   );
 });
 

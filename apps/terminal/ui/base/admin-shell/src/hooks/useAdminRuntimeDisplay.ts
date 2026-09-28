@@ -16,6 +16,7 @@ export const useAdminRuntimeDisplay = ({context, surfaceForm}: AdminRuntimeDispl
   const status = useRenderStatus()
   const display = projectRuntimeDisplay({
     facts: facts.displayFacts,
+    surfaceCanvasSizes: facts.surfaceCanvasSizes ?? {},
     surfaceForm,
     renderDisplayMode: context.surface.displayMode,
     currentLogicalSize: context.surface.hostLogicalSize,

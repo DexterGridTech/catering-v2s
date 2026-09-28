@@ -15,6 +15,7 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import java.io.ByteArrayOutputStream;
@@ -86,6 +87,41 @@ class TdsPmdAllocationTest {
         assertThat(allocatedByteBufBytes(allocator)).isZero();
     }
 
+    @Test
+    void stopsInflatingAnOversizedCompressedMessageAtTheDecodedLimit() {
+        UnpooledByteBufAllocator allocator = new UnpooledByteBufAllocator(false);
+        EmbeddedChannel channel = negotiatedChannel(allocator);
+        byte[] plaintext = new byte[MAX_MESSAGE_BYTES * 64 + 1];
+        Arrays.fill(plaintext, (byte) 'x');
+        byte[] compressed = perMessageDeflate(plaintext);
+        long boundedLogicalBytes =
+                compressed.length + MAX_MESSAGE_BYTES + DECODER_SCRATCH_BYTES + ZLIB_STATE_ESTIMATE_BYTES;
+
+        try {
+            assertThat(compressed.length).isLessThan(MAX_MESSAGE_BYTES);
+            assertThat(channel.writeInbound(new TextWebSocketFrame(
+                            true,
+                            4,
+                            allocator
+                                    .buffer(compressed.length, compressed.length)
+                                    .writeBytes(compressed))))
+                    .isFalse();
+            Object overflowInbound = channel.readInbound();
+            assertThat(overflowInbound).isNull();
+            CloseWebSocketFrame close = channel.readOutbound();
+            assertThat(close).isNotNull();
+            assertThat(close.statusCode()).isEqualTo(1009);
+            close.release();
+            assertThat(channel.isOpen()).isFalse();
+            assertThat(allocatedByteBufBytes(allocator) + boundedLogicalBytes)
+                    .isLessThanOrEqualTo(MAX_LOGICAL_CONNECTION_BYTES);
+        } finally {
+            channel.finishAndReleaseAll();
+        }
+
+        assertThat(allocatedByteBufBytes(allocator)).isZero();
+    }
+
     private static long allocatedByteBufBytes(UnpooledByteBufAllocator allocator) {
         ByteBufAllocatorMetric metric = allocator.metric();
         long heapBytes = metric.usedHeapMemory();
@@ -115,9 +151,7 @@ class TdsPmdAllocationTest {
         response.headers().set(HttpHeaderNames.CONNECTION, "Upgrade");
         assertThat(channel.writeOutbound(response)).isTrue();
         HttpResponse negotiated = channel.readOutbound();
-        assertThat(negotiated.headers().get("Sec-WebSocket-Extensions"))
-                .contains("client_no_context_takeover")
-                .contains("server_no_context_takeover");
+        assertThat(negotiated.headers().get("Sec-WebSocket-Extensions")).contains("permessage-deflate");
         return channel;
     }
 

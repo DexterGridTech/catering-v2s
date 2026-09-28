@@ -111,7 +111,6 @@ public final class TerminalConnectionFrameCodec {
             JsonNode message = objectMapper.readTree(serialized);
             if (message == null || !message.isObject()) throw invalidMessage();
             TerminalConnectionProtocol.MessageDefinition definition = protocol.message(type);
-            if (definition.additionalFieldsAllowed()) throw invalidMessage();
             JsonNode typeNode = message.get("type");
             if (typeNode == null || !typeNode.isString() || !type.equals(typeNode.asString())) {
                 throw invalidMessage();
@@ -120,7 +119,8 @@ public final class TerminalConnectionFrameCodec {
             expected.add("type");
             Set<String> actual = new HashSet<>();
             message.propertyNames().forEach(actual::add);
-            if (!actual.equals(expected)) throw invalidMessage();
+            if (!actual.containsAll(expected)) throw invalidMessage();
+            if (!definition.additionalFieldsAllowed() && !actual.equals(expected)) throw invalidMessage();
             return message;
         } catch (JacksonException malformed) {
             throw invalidMessage();

@@ -25,6 +25,8 @@ public-surface focused test，不得让 README 或 invariant 漂移。
 再修改本包的呈现；不得引入业务 feature import、持久化认证、第二个注册表或新的
 navigation/input owner。
 
+运行状态页中的“逻辑分辨率”指每个 surface 的应用逻辑画布声明；设备逻辑显示区域仅用于该屏矩形比例，物理像素尺寸来自同一 surface 的 display facts。主屏和副屏都必须逐屏显示各自的逻辑分辨率、物理尺寸与状态，不因当前渲染屏而省略或借用数值。
+
 拓扑 section 只接收 `TopologyAdminCapability` 这一窄能力：事实由 capability 读取，配对、解绑和
 主机服务操作委托给 topology owner，admin-shell 不取得 Runtime、stateSource、platform port 或原生
 lifecycle。拓扑 tab 在 laptop/mobile 都恒显；mobile 以禁用控件和可读原因表达限制。电源角色切换由

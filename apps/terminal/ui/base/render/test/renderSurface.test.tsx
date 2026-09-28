@@ -962,6 +962,7 @@ describe('render surface hosts', () => {
       right: 0,
       bottom: 0,
       left: 0,
+      pointerEvents: 'box-none',
     })
     expect(layerStyle).not.toHaveProperty('alignItems')
     expect(layerStyle).not.toHaveProperty('justifyContent')

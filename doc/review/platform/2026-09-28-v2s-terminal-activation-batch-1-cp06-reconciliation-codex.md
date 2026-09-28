@@ -18,7 +18,8 @@ BROWSER_L2=NOT_RUN
 DEV=NOT_RUN
 RESET=NOT_RUN
 SEED=NOT_RUN
-WHOLE_BATCH_6B=NOT_RUN
+WHOLE_BATCH_6B_AT_CP06_SIGNOFF=NOT_RUN
+CURRENT_WHOLE_BATCH_6B=MATCHED; M/S/N=0/0/0; reviewer=/root/batch1_6b_status_consistency_r2; report=2026-09-28-v2s-terminal-activation-batch-1-6b-reconciliation-r2-codex.md; source set=466 files/949a7d6d690183d2d75c15c1ab8c93f0b52b733aef6519461f11d93e1d1f0b19
 FIRST_RUN_6C=NOT_RUN
 ```
 

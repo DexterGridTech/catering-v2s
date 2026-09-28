@@ -45,13 +45,14 @@ export const RnrView = ({className, ...props}: RnrViewProps) => (
 
 export const RnrText = ({className, ...props}: RnrTextProps) => {
   const inheritedClassName = useContext(RnrTextClassContext)
-  return (
+  const text = (
     <Text
       {...props}
       allowFontScaling={false}
       {...({className: cn(inheritedClassName, className)} as {readonly className?: string})}
     />
   )
+  return text
 }
 
 export const RnrTextInput = forwardRef<RnrTextInputRef, RnrTextInputProps>(
@@ -77,13 +78,16 @@ RnrScrollView.displayName = 'RnrScrollView'
 
 export const RnrPressable = forwardRef<RnrPressableRef, RnrPressableProps & Readonly<{
   readonly children?: ReactNode
-}>>(({className, children, ...props}, ref) => (
+}>>(({className, children, ...props}, ref) => {
+  const control = (
     <RnrTextClassContext.Provider value={undefined}>
       <Pressable {...props} ref={ref as unknown as Ref<ComponentRef<typeof Pressable>>} {...({className} as {readonly className?: string})}>
         {children}
       </Pressable>
     </RnrTextClassContext.Provider>
-  ),
+  )
+  return control
+},
 )
 RnrPressable.displayName = 'RnrPressable'
 
@@ -130,20 +134,23 @@ export type RnrSvgIconProps = NativeWindClassName & Readonly<{
 // prop through the same theme boundary used by the other primitive slots.
 const RnrSvg = cssInterop(Svg, {className: 'style'})
 
-export const RnrSvgIcon = ({accessibilityLabel, className, path, size = 20, style, testID}: RnrSvgIconProps) => (
-  <RnrSvg
-    testID={testID}
-    {...(Platform?.OS === 'web' ? {} : {accessible: true})}
-    accessibilityLabel={accessibilityLabel}
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    style={style}
-    {...({className} as Partial<SvgProps>)}
-  >
-    <Path d={path} fill="none" strokeWidth={2} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
-  </RnrSvg>
-)
+export const RnrSvgIcon = ({accessibilityLabel, className, path, size = 20, style, testID}: RnrSvgIconProps) => {
+  const icon = (
+    <RnrSvg
+      testID={testID}
+      {...(Platform?.OS === 'web' ? {} : {accessible: true})}
+      accessibilityLabel={accessibilityLabel}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      style={style}
+      {...({className} as Partial<SvgProps>)}
+    >
+      <Path d={path} fill="none" strokeWidth={2} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
+    </RnrSvg>
+  )
+  return icon
+}
 
 export type RnrGradientBackgroundProps = Readonly<{
   readonly endColor: string

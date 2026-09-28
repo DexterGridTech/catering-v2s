@@ -36,7 +36,8 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
             }
           },
           {
@@ -157,7 +158,8 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
             }
           },
           {
@@ -263,7 +265,8 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
             }
           },
           {
@@ -366,7 +369,8 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
             }
           },
           {
@@ -490,7 +494,8 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
             }
           },
           {
@@ -609,7 +614,8 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
             }
           },
           {
@@ -723,7 +729,8 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
             }
           },
           {
@@ -843,7 +850,8 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
             }
           },
           {

@@ -28,7 +28,7 @@ public class ActivateTerminalOperation {
     @Transactional(propagation = Propagation.REQUIRED)
     public TerminalBindingOwnerApi.ActivationResult execute(
             String groupWorkspaceKey, TerminalActivationRequest request) {
-        requireText(groupWorkspaceKey, 128, "groupWorkspaceKey");
+        requireGroupWorkspaceKey(groupWorkspaceKey);
         Objects.requireNonNull(request, "request");
         ActivationCode activationCode = activationCode(request.activationCode());
         String deviceId = requireText(request.deviceId(), 128, "deviceId");
@@ -88,6 +88,11 @@ public class ActivateTerminalOperation {
 
     private static String requireText(String value, int maxLength, String field) {
         if (value == null || value.isBlank() || value.length() > maxLength) throw invalidRequest();
+        return value;
+    }
+
+    private static String requireGroupWorkspaceKey(String value) {
+        if (value == null || !value.matches("[A-Za-z0-9][A-Za-z0-9_-]{0,63}")) throw invalidRequest();
         return value;
     }
 

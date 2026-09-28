@@ -99,7 +99,9 @@
 
 ### 1.4 已确认的 surface 口径变更记录
 
-本批此前曾把 R-9/J-2 与线框表写成“当前 surface 与非当前 surface 对称展示全部字段”；该文字与 Dexter 已确认的 non-current 下限不一致，属于需求文档漂移，不构成新的产品裁定。现按已确认口径收敛：当前 surface 展示权威逻辑/物理分辨率与就绪/可用状态；非当前 surface 只展示真实存在性、主/副角色和“该屏信息未提供”，不展示逻辑/物理分辨率或就绪状态；任何 surface 都不得复制另一块的值。高保真 IA 已按此口径绘制，线框、需求、详设和计划必须保持同文案与字段分母。
+Dexter 于 2026-09-28 明确裁定并取代此前“非当前 surface 不显示尺寸与状态”的限制：单机双屏必须读取并显示副屏信息。此后所有真实 surface（包括非当前 surface）均显示各自的角色、应用逻辑画布分辨率、物理分辨率及就绪/可用状态；任何字段只能来自该 surface 自己的事实，不得从另一块屏复制。设备逻辑显示区域仍逐屏读取，但仅用于矩形外形比例，不显示“设备显示区域：宽×高”数值字段。
+
+术语也在此冻结：**逻辑画布就是逻辑分辨率**，其唯一值源是应用传入的逐 surface `terminalSurfaces` 声明；不得把 Android `Display.getRealMetrics()` 的像素除以 density 所得设备逻辑显示区域冒称应用逻辑分辨率。设备逻辑显示区域与物理像素是独立事实；设备逻辑显示区域仅用于矩形比例，不显示数值标签。当前两个 Android application package 的横屏 PRIMARY、SECONDARY 画布均为 `1280×800`；当前真机设备逻辑区域为 `1280×720`、物理尺寸为 `1920×1080`，不得互相覆盖。
 
 ## 2. 用户与用户任务
 
@@ -173,7 +175,7 @@
 1. 一个“运行状态”tab 同时承载总体运行状态、环境/调试/设备可用性和所有相关 display surface 的状态；导航中不能出现重复的“运行状态/显示上下文”两个入口。
 2. 顶部先给出总体运行结论和红/黄/绿/灰状态含义；详细信息按用户问题分组，而不是把原始字段逐行堆叠。
 3. laptop 单机双屏必须同时呈现 PRIMARY 主屏和 SECONDARY 副屏；mobile 设备按本批支持形态只有一个屏幕，不得画副屏卡片或把拓扑副屏冒充 mobile 的物理屏。单屏设备只呈现真实存在的屏幕，不能伪造副屏；双机副屏场景仍必须按当前 topology/display facts 区分物理屏与拓扑副屏语义。
-4. 每个实际显示屏以可识别且符合该 surface 宽高比的矩形/卡片表现其形状和角色。当前 surface 的逻辑分辨率标在矩形内部对应的长边和高边，物理分辨率标在矩形外对应的长边和高边，并表达就绪/可用状态；非当前 surface 只显示真实存在性、主/副角色和“该屏信息未提供”，不显示分辨率或就绪状态。物理分辨率必须来自按 surface 提供的权威 display-facts owner，不能用当前 surface 的值复制给另一块屏；当前 surface 没有权威值时在数字位置显示“未知”，不得用推算值冒充。
+4. 每个实际显示屏以可识别且符合该 surface 设备显示区域宽高比的矩形/卡片表现其形状和角色。矩形内标注该 surface 的逻辑画布分辨率（即应用配置的逻辑分辨率）及就绪/可用状态；物理像素分辨率标在矩形外。设备逻辑显示区域由对应 display-facts owner 提供，仅用于矩形比例，不显示为数值字段。主屏和副屏都展示角色、逻辑分辨率、物理分辨率和状态，不能因 current/non-current 隐藏字段，也不能从另一块屏复制字段。应用逻辑分辨率必须来自逐 surface `terminalSurfaces` 声明；缺失时显示“未声明/未知”，不得用另一类尺寸或推算值冒充。
 5. 画面状态用用户语言表达，例如主屏/副屏、已就绪/正在准备/不可用/暂时不可达；不得把 `surfaceKey`、`displayIndex`、`instanceMode` 或“承载几何”直接作为主要文案。
 6. 运行状态与显示上下文的合并不能改变既有生命周期语义：runtime 未 started、资料未就绪、数据缺失和实际错误必须可区分；不能仅凭某个 selector 返回 `undefined` 推断 runtime 生命周期。
 7. laptop 下应优先使用足够大的并列或主从视觉关系，让两个屏幕、各自逻辑/物理分辨率和运行摘要可以同时阅读；mobile 下只展示一个实际屏幕，使用竖屏单列/紧凑分区，不得生成副屏卡片，不得把矩形压到不可辨认或产生横向溢出。
@@ -236,15 +238,15 @@ Admin shell 的公共面板、导航、摘要、状态、可展开分组、比�
 
 ### R-9 全 surface 的显示表达
 
-运行状态页面必须表达当前设备上下文中所有真实相关的 surface。单机双屏时必须同时显示主屏与副屏；单屏时不得伪造第二屏。
+运行状态页面必须表达当前设备上下文中所有真实相关的 surface。单机双屏时必须读取并同时显示主屏与副屏的逐屏信息；单屏时不得伪造第二屏。
 
-- 当前 surface 必须显示逻辑分辨率、物理分辨率、主/副角色和就绪/可用状态；逻辑分辨率标在矩形内部对应的长边和高边，物理分辨率标在矩形外对应的长边和高边。非当前 surface 只显示真实存在性、主/副角色和“该屏信息未提供”，不显示分辨率或就绪状态；任一 surface 都不得复制另一块的值。矩形宽高比必须由该 surface 的权威宽高计算，不能使用统一固定比例。
+- 每个 surface 都必须显示主/副角色、该屏逻辑画布分辨率、物理像素分辨率和就绪/可用状态；不得按 current/non-current 隐藏尺寸字段。应用逻辑分辨率来自该屏的 `terminalSurfaces` 声明，设备逻辑显示区域与物理像素来自同一个 surface 的 display facts；设备逻辑显示区域只用于矩形宽高比、不显示数值字段。任一 surface 都不得复制另一块的值。矩形宽高比使用该 surface 的设备逻辑显示区域，缺失时使用该 surface 物理像素尺寸；不得以应用画布比例冒充设备外形。
 - mobile 形态只呈现一个实际 surface；如果输入事实声称 mobile 有多个 surface，页面必须在同一“运行状态”页显示 typed display-facts 异常/未提供态（复用 `IA-14` 的 error variant），而不是画第二块屏。
 - 任一 surface 的物理分辨率/物理尺寸只有在权威数据可用时才能显示；不得把另一块 surface 的值复制过来，也不得为了填满矩形而伪造数据。缺失时，物理分辨率对应的数字位置必须显示“未知”。
 
 ### R-10 显示图形与语言
 
-显示上下文不得以“承载几何”等面向实现的术语作为用户主信息。必须用主屏、副屏、逻辑分辨率、物理分辨率、画面状态、当前形态等用户可理解的语言，并用矩形/卡片或等效视觉关系让用户能够比较屏幕，而不是只列键值行。当前 surface 的矩形按该 surface 的权威逻辑宽高比绘制，逻辑分辨率写在矩形内部对应的长边和高边，物理分辨率写在矩形外对应的长边和高边；非当前 surface 不绘制分辨率或就绪字段，只显示存在性、角色和“该屏信息未提供”；当前 surface 缺失权威物理值时，在数字位置显示“未知”，不得复制或推算。
+显示上下文不得以“承载几何”等面向实现的术语作为用户主信息。必须用主屏、副屏、逻辑分辨率、物理分辨率、画面状态等用户可理解的语言，并用矩形/卡片让用户比较屏幕。每块矩形按本屏设备逻辑显示区域宽高比绘制；框内标注应用逻辑画布分辨率（即逻辑分辨率）和状态，框外标注该屏物理像素尺寸。设备逻辑显示区域只决定矩形比例，不显示数值标签。当前与非当前 surface 字段相同，区别仅为当前标记和视觉强调。缺失的应用画布显示“未声明”，缺失的物理事实显示“未知”，不得复制或推算。
 
 ### R-11 运行状态的分层与状态灯
 
@@ -303,9 +305,9 @@ Admin shell 的公共面板、导航、摘要、状态、可展开分组、比�
 
 ### 5.2 运行状态与 display facts
 
-当前 `DisplayContextSection` 只能直接拿到当前 `SurfaceContextValue` 的 displayMode、surface identity、host logical size、surface form、主承载标志和 host availability；`SurfaceIdentity` 也只描述当前 surface 的 key/index/form/mode。Android 内部确实已有更丰富的显示诊断日志，例如 `apps/terminal/adapter/android/device/android/src/main/java/com/catering/v2s/terminal/adapter/android/device/TerminalDeviceModule.kt:320-334` 记录 app/real 尺寸与 density，`apps/terminal/adapter/android/dual-screen/android/src/main/java/com/catering/v2s/terminal/adapter/android/dualscreen/TerminalDualScreenActivityHandler.kt:159-172` 记录 view 的 logical bounds；这些是日志/宿主内部事实，不是 Admin 可消费的公共 read model。当前公开 `DevicePort.DisplayInfo` 只有 displayCount，不能把日志字段当成现成 UI owner。
+当前 display-context 已通过公开 `DisplayInfo.surfaces[]` 为每块实际屏幕提供 `logicalSize`（Android real metrics 除以该屏 density 得到的设备逻辑显示区域）、`physicalSize`（该屏物理像素尺寸）和 readiness；旧 Admin 投影只描述当前 surface，导致已有副屏事实被 UI 隐藏。应用逻辑画布则来自 integration assembly 已解析的逐屏 `surfaceDeclarations`，不属于 display facts；应用 package 配置 `1280×800` 是这项事实的来源。此前 render runtime facts 未承载画布声明，且 Admin 把设备逻辑显示区域误标为逻辑分辨率，故本次修复补齐应用画布数据流并明确区分两种尺寸。
 
-因此，R-9/R-10 的业务要求成立，但本轮用户澄清把 display facts 的最低输出提高为“每个实际 surface 的逻辑/物理分辨率和状态”。当前公开 owner 不足以满足该最低输出，必须由详设先闭合 display-facts owner；在 owner 闭合前，IA 可以展示字段和缺失态，但不得把日志或推导值当成已具备的 UI 数据。需求不允许实现方：
+需求不允许实现方：
 
 - 复制一份不受 owner 管理的 display state；
 - 用当前 surface 的尺寸填充另一块屏；
@@ -334,7 +336,7 @@ surface 的主/副角色与宽高必须来自 display-facts owner；不得用当
 
 UI 可以把 `MASTER/SLAVE` 翻译成“主机/副机”，把 `CHIEF/VICE` 翻译成“主屏/副屏”或更符合用户旅途的文案，但翻译不等于改变内部事实。详设必须建立内部值到用户语言的单一映射，并覆盖未知、转换中和错误状态；不能在不同 tab 各自翻译一套。
 
-“物理副屏存在”与“双机拓扑可用”也必须使用不同语料。laptop 双物理屏时，运行状态 tab 应同时表达两块物理屏；当前 surface 展示该屏自己的逻辑/物理分辨率、主/副角色与就绪/可用状态，非当前 surface 只展示真实存在性、主/副角色和“该屏信息未提供”。没有权威物理值的当前 surface 在对应数字位置显示“未知”。双机拓扑 tab 在 mobile 形态必须表达“当前功能不可用”及“**mobile 形态不支持双机拓扑**”；laptop 双物理屏则表达“当前功能不可用”及“**双机拓扑要求本机只有一个物理屏**”。前者不代表后者可用，不能把 `hasTopologySecondarySurface` 当成 topology operation eligibility。
+“物理副屏存在”与“双机拓扑可用”也必须使用不同语料。laptop 双物理屏时，运行状态 tab 应同时表达两块物理屏各自的逻辑画布分辨率、物理分辨率、角色与就绪/可用状态；设备逻辑显示区域只用于矩形比例、不显示数值。逻辑画布分辨率就是逻辑分辨率，取自应用逐屏声明；设备逻辑显示区域和物理分辨率取自该屏的 display facts。任何缺失的可见字段显示“未声明/未知”，不得借用另一屏数值。双机拓扑 tab 在 mobile 形态必须表达“当前功能不可用”及“**mobile 形态不支持双机拓扑**”；laptop 双物理屏则表达“当前功能不可用”及“**双机拓扑要求本机只有一个物理屏**”。前者不代表后者可用，不能把 `hasTopologySecondarySurface` 当成 topology operation eligibility。
 
 ## 6. 范围边界
 
@@ -370,7 +372,7 @@ UI 可以把 `MASTER/SLAVE` 翻译成“主机/副机”，把 `CHIEF/VICE` 翻�
 1. panel header、整体状态摘要、关闭入口和导航在 laptop/mobile 的信息层级与尺寸如何保持可读；
 2. 三个用户 tab 如何与现有四个 part/catalog entry 映射，旧 part key、testID 和 feature 注入边界如何保持；
 3. 平台端口五类初始分类的完整 port/capability 对账、已冻结的能力单位分母、合成“未声明”单位表达和展开层级；
-4. 运行状态 surface map 的事实边界与视觉呈现：当前 surface 必须在自己的矩形/卡片中显示逻辑分辨率、物理分辨率、主/副角色和就绪/可用状态；非当前 surface 只显示真实存在性、主/副角色和“该屏信息未提供”，不显示分辨率或就绪状态；矩形比例跟随该 surface 的权威宽高；不得复制 current surface 或用推算值填充另一块 surface。mobile 只允许一个实际 surface，多 surface 事实进入 `IA-14` 的 display-facts error variant。当前公开 display-facts owner 不足以提供这些逐 surface 事实，缺失项必须进入明确的未提供态；若方案试图扩展 display facts owner，必须先按 §9.3 停止并报告 Dexter；
+4. 运行状态 surface map 的事实边界与视觉呈现：每个 surface 都显示自己的逻辑画布分辨率、物理分辨率、主/副角色和就绪/可用状态；设备逻辑显示区域只用于该 surface 的矩形比例，不显示数值标签。current/non-current 只影响当前标记与视觉强调，可见字段集合相同；矩形比例跟随该 surface 的设备显示区域；不得复制另一 surface 或用推算值填充。mobile 只允许一个实际 surface，多 surface 事实进入 `IA-14` 的 display-facts error variant。display-facts owner 已提供逐屏设备逻辑显示区域、物理尺寸与状态，应用逻辑画布来自 integration assembly 的逐屏声明；如果真实 surface 的某项可见数据缺失，应明确显示未声明/未知，不得跨屏补值；
 5. laptop 并列 surface map 与 mobile 单列/紧凑 map 的最小尺寸、滚动和折叠规则；
 6. 状态灯 token、文字、图例和 theme 语义；两个 integration 必须保留的可识别差异；
 7. laptop topology 的不可用单态、未配对目标选择、主机服务启动/可用/失败、主机服务关闭、输入主机 IP 直接配对、配对、已配对可达、已配对重连、主机解绑、副机解绑、关闭/解绑后回到目标选择和失败恢复的完整状态图；mobile 只设计不可用单态，不设计任何拓扑角色或配对交互；不得把 identity-query 画成用户步骤。其中整页不可用必须消费 topology owner 的 page-level availability/read model，不得用代表性 operation reason 或 raw facts 在 UI 重组；
@@ -392,7 +394,7 @@ UI 可以把 `MASTER/SLAVE` 翻译成“主机/副机”，把 `CHIEF/VICE` 翻�
 | P-3 端口聚合 | 以能力单位为分母，`可用 + 不可用 + 未声明 = 总单位数`；分类和展开明细与同一单位集合守恒，missing descriptor/空 capability 不被吞掉 | 测试只断言有一个 list，或只按 port 数量计算百分比 |
 | P-4 端口旅途 | 用户可从总览定位不可用/未提供类别和具体名称/原因 | 只断言字符串存在 |
 | P-5 运行状态合并 | runtime 与 display context 的事实全保留且只通过一个用户入口获得 | 只移除 tab 名称 |
-| P-6 双屏表达 | 单机双屏同时显示主屏和副屏；单屏不伪造第二屏；当前 surface 在自己的矩形/卡片内显示自己的逻辑分辨率、物理分辨率、主/副角色、就绪/可用状态并按自己的权威宽高比绘制；非当前 surface 只显示真实存在性、主/副角色和“该屏信息未提供”；mobile 只显示一个实际 surface，多 surface 事实进入 IA-14 的 display-facts error variant；任何物理值不冒充、不复制 | 用当前 surface 数据复制另一块屏，给非当前 surface 补分辨率/就绪状态，使用统一固定比例绘制所有 surface，或在任一 surface 填入未经 owner 提供的事实 |
+| P-6 双屏表达 | 单机双屏同时读取并显示主屏、副屏各自的逻辑画布分辨率、物理分辨率、角色和就绪/可用状态；设备逻辑显示区域仅用于各自矩形比例，不显示数值标签；单屏不伪造第二屏；矩形按各自设备显示区域宽高比绘制；mobile 只显示一个实际 surface，多 surface 事实进入 IA-14 的 display-facts error variant；任何字段不跨屏复制 | 把设备逻辑显示区域冒充应用逻辑分辨率或显示已裁定移除的“设备显示区域：宽×高”字段，隐藏非当前屏字段，用当前屏数据复制另一块屏，使用统一固定比例，或填入未经 owner 提供的事实 |
 | P-7 状态诚实 | lifecycle、loading、缺失、暂时不可达、错误和正常可区分 | 用 undefined 或颜色单独代表生命周期 |
 | P-8 拓扑资格闸 | 不支持时只显示不可用原因，不展示无关 topology 细节；tab 不隐藏 | 只把按钮 disabled 但保留所有细节 |
 | P-9 拓扑角色旅途 | 主机/副机、未配对/配对/重连/失败的内容和动作不同且由 owner 给出 | UI 自行拼装 paired/reachable 布尔 |
@@ -405,7 +407,7 @@ UI 可以把 `MASTER/SLAVE` 翻译成“主机/副机”，把 `CHIEF/VICE` 翻�
 
 ### 9.1 需要设计解决、但不改变本批产品范围
 
-- 当前公共 display facts 没有直接提供每个 surface 的完整事实：`DisplayInfo` 只有 `displayCount`，`SurfaceContextValue` 只公开当前 surface 的 `hostLogicalSize`、identity 与 availability；Android 侧的物理尺寸目前仍只在日志计算。按本轮已确认的 non-current 下限，当前 surface 仍需逻辑/物理分辨率与状态，非当前 surface 只需真实存在性、角色和“该屏信息未提供”，因此 display-facts owner 仍是详设必须先闭合的 blocker。当前 owner 未闭合前，IA 只能画字段和明确缺失态，不能把日志、复制值或推导值当成 UI 数据；若认为必须扩展 kernel/Android display facts，必须按 §9.3 停止并报告 Dexter。
+- 当前 display-facts owner 已按 `DisplayInfo.surfaces[]` 提供逐屏 `logicalSize`、`physicalSize` 与 readiness；Android adapter 的 `getRealMetrics()`/display mode 是设备显示区域与物理像素的来源。此前误把这些 `logicalSize` 当作应用逻辑画布，是投影口径错误。应用逻辑画布的来源是 integration assembly 已解析的 `surfaceDeclarations`，但该配置此前未进入 `RenderRuntimeFacts`，故 UI 无法展示。此次实现将声明尺寸作为独立逐屏只读事实传至 admin-shell，并修正字段标签与双屏投影；若真实 surface 缺少其自身事实，只显示该字段未提供，不借用另一块屏数据。
 - topology 全局资格的 owner 尚未闭合：当前 `evaluateTopologyOperation` 只返回 operation-level eligibility，`TopologyAdminCapability` 也没有整页 availability 方法。进入 IA/详设前必须由 topology owner 提供 page-level availability/read model 或明确的 page-level reason 输出；Admin shell 不得读取 raw facts、挑一个 operation 或维护 reason 清单来重算整页 gate。若该 owner 变化需要改动 topology contract/kernel，必须按 §9.3 停止并报告 Dexter。
 - 当前 Admin catalog 有四个 part，目标用户 tab 是三个；保留哪些旧 part key、如何让 catalog/renderer 对账，需要详设明确，不由实现时临时删除。
 - 端口分类的最终用户中文名、能力单位到分类的映射和合成“未声明”单位的视觉表达需要在 IA/详设冻结；摘要分母与缺失 descriptor/空 capability 的计数方式已经由 §5.1 冻结。

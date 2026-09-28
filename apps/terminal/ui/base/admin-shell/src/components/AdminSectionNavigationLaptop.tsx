@@ -10,9 +10,8 @@ export const AdminSectionNavigationLaptop = ({
   readonly sections: readonly UiCatalogEntry[]
   readonly selectedPartKey: string | null
   readonly onSelect: (partKey: string) => void
-}>) => (
-  <PrimitiveGrid testID="terminal.admin:navigation" appearance="admin-nav" accessibilityLabel="终端管理分区" style={adminGeometry.navigationList}>
-    {sections.map(section => (
+}>) => {
+  const items = sections.map(section => (
       <PrimitivePressOption
         key={section.partKey}
         testID={adminTestIds.section(section.partKey)}
@@ -25,6 +24,10 @@ export const AdminSectionNavigationLaptop = ({
       >
         {section.title}
       </PrimitivePressOption>
-    ))}
-  </PrimitiveGrid>
-)
+  ))
+  return (
+    <PrimitiveGrid testID="terminal.admin:navigation" appearance="admin-nav" accessibilityLabel="终端管理分区" style={adminGeometry.navigationList}>
+      {items}
+    </PrimitiveGrid>
+  )
+}

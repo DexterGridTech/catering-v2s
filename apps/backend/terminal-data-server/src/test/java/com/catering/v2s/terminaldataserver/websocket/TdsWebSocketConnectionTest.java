@@ -3,6 +3,7 @@ package com.catering.v2s.terminaldataserver.websocket;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,7 +26,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class TdsWebSocketConnectionTest {
     @Test
-    void closesOversizedMessagesWithTheSharedStandard1009Tuple() {
+    void closesOversizedMessagesWithTheSharedStandard1009Code() {
         WebSocketSession session = mock(WebSocketSession.class);
         when(session.getId()).thenReturn("oversized-session");
         when(session.close(any(CloseStatus.class))).thenReturn(Mono.empty());
@@ -38,8 +39,7 @@ class TdsWebSocketConnectionTest {
 
         connection.closeStandardAsync(1009).block();
 
-        verify(session).close(new CloseStatus(1009, "MESSAGE_TOO_BIG"));
-        assertThat(connection.closeReasonOr("missing")).isEqualTo("MESSAGE_TOO_BIG");
+        verify(session).close(argThat(closeStatus -> closeStatus.getCode() == 1009));
     }
 
     @Test

@@ -2243,8 +2243,18 @@
         },
         {
           "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TerminalConnectionContractScenarios.java",
+          "anchor": "    private static String safeWireSignalDiagnostic(Path stderrLog) {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
           "path": "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketHandler.java",
           "anchor": "                                            \"event=tds_ws_first_frame_received \""
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketHandler.java",
+          "anchor": "                                                            \"event=tds_ws_credential_verification_started \""
         },
         {
           "assertionKey": "ASYNC_PROTOCOL_ERROR_DIAGNOSTICS_ARE_SAFE",
@@ -2293,6 +2303,11 @@
         },
         {
           "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/backend-acceptance-structure.test.mjs",
+          "anchor": "test('one-shot wire-client failures log bounded safe process and signal diagnostics before asserting', () => {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
           "path": "scripts/test/r5-remote-testcontainers.mjs",
           "anchor": "export const requiresBackendAcceptanceEvidence = (backendAcceptanceRunId, testExecutionPassed) =>"
         },
@@ -2323,8 +2338,18 @@
         },
         {
           "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/r5-remote-testcontainers.test.mjs",
+          "anchor": "test('remote resource preflight records unknown, partial, stale and empty inventories without false cleanup claims', () => {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
           "path": "scripts/test/terminal-ws-wire-client.mjs",
           "anchor": "    process.stderr.write(`TERMINAL_WIRE_STAGE=WEBSOCKET_OPEN scenario=${request.scenario}\\n`);"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/terminal-ws-wire-client.mjs",
+          "anchor": "  process.on('SIGTERM', () => {"
         },
         {
           "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
@@ -2340,6 +2365,11 @@
           "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
           "path": "scripts/test/terminal-ws-wire-client.test.mjs",
           "anchor": "test('registration-race client logs only non-sensitive handshake and auth-send stages', () => {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/terminal-ws-wire-client.test.mjs",
+          "anchor": "  'one-shot wire client records SIGTERM stage and correlation marker before preserving POSIX exit status',"
         },
         {
           "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",

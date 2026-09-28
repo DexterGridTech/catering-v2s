@@ -57,12 +57,12 @@ ADMISSION_BLOCKERS=DISPLAY_FACTS_OWNER:OPEN_WITH_FOCUSED_OWNER_EVIDENCE;TOPOLOGY
 - laptop 单屏才允许拓扑旅途；双物理屏显示“当前功能不可用”和“**双机拓扑要求本机只有一个物理屏**”。
 - 主机入口是“开启主机服务”，副机入口是输入主机 IP 后“直接配对”；查询身份不是用户步骤。
 - 主机和副机都可以主动解除配对；解绑完成后回到目标选择；不新增 `SLAVE-RECOVERY` 页面。
-- current surface 显示权威逐 surface 事实；non-current surface 只显示存在性、主副角色和“该屏信息未提供”，不能补逻辑/物理尺寸、就绪或物理状态。
+- 每个实际 surface 都显示自身的逻辑画布分辨率、物理像素尺寸与 readiness；设备逻辑显示区域来自该 surface 的 `displayFacts.surfaces[]`，仅用于矩形比例、不显示数值字段。current/non-current 只影响焦点标记，不影响可见字段集合。逻辑画布分辨率来自 integration assembly 的 `surfaceDeclarations`；禁止跨屏复制。
 - surface 矩形按该 surface 的权威逻辑宽高比绘制；逻辑长/高写在矩形内，物理长/高写在矩形外；缺失数字位置写“未知”。
 
 ### 0.4 需求正本与已确认 IA 的一致口径
 
-需求 R-9/J-2、frame inventory 与 high-fidelity IA 已按同一裁定收敛：当前 surface 显示权威逻辑/物理分辨率与就绪/可用状态；非当前 surface 只显示真实存在性、主/副角色和“该屏信息未提供”，不显示分辨率或就绪状态；任何 surface 都不得复制另一块的值。此前需求中的对称文字已在需求 §1.4 记录为文档漂移并修回。
+需求 §1.4 的 2026-09-28 裁定取代旧的非当前屏字段限制：单机双屏必须显示主副屏各自的角色、逻辑画布分辨率、物理尺寸与状态。逻辑画布就是逻辑分辨率，唯一来源是应用逐 surface `terminalSurfaces` 声明；Android `getRealMetrics()` 得出的设备逻辑显示区域不是该逻辑分辨率，只用于矩形比例且不显示数值。任何 surface 都不得借用另一块屏的值。
 
 IA 正本优先级固定为：frame inventory 负责语义字段、状态、文案、动作和旅途；high-fidelity IA 负责同一 IA-ID 的几何与视觉 token。两者如再冲突，必须先修 IA 并保持 CP-0/CP-3 `OPEN`，实施者不得自行择一。
 
@@ -254,7 +254,7 @@ type DisplayFactsReadModel = Readonly<{
 }>
 ```
 
-owner 必须保证 `surfaces` 是真实实际 surface 集合，不是把 current surface 复制成两个对象。presentation projection 再应用 IA 不对称：current surface 可显示 logical/physical/status；non-current 只显示 `present`、role 和“该屏信息未提供”。如果 physical size 为 null，current surface 的长边/高边数字位置写“未知”。surface-map primitive 接收已经投影好的 `SurfaceMapModel`，自己不访问 selector。
+owner 必须保证 `surfaces` 是真实实际 surface 集合，不是把 current surface 复制成两个对象。`integration-assembly` 创建 runtime facts 时，同时把已解析的 `surfaceDeclarations` 作为 `surfaceCanvasSizes` 传给 `RenderRuntimeFacts`；admin-shell projection 按 PRIMARY/SECONDARY 分别对齐 canvas 声明与 display-facts surface。`displayFacts.logicalSize` 用于设备矩形比例但不显示为数值标签，canvas 声明显示为“逻辑分辨率”，`physicalSize` 显示为“物理分辨率”。current/non-current 可见字段集合一致；任一缺失的可见值明确显示“未声明/未知”，绝不跨屏回填。surface-map primitive 仅渲染投影后的模型，不读 selector 或重算事实。
 
 矩形宽高比使用该 surface 的权威 `logicalSize.width / logicalSize.height`；不得用固定卡片比例。mobile 的正常模型只允许一块实际 surface；`physicalDisplayCount > 1`、surface 集合超出支持范围或 owner malformed，进入明确的 display facts unavailable/error，不伪造副屏。
 
@@ -355,7 +355,7 @@ page gate 只有 `available=false` 时才渲染 IA-16/17 的单一 gate card。g
 | `PrimitiveDropdownSelect` | 新增真实展开/收起 selector；不改变现有循环式 `PrimitiveSelect` | controlled `value/open/options/onValueChange`; 不持 page selection source |
 | `PrimitiveRatioBar` | 新增多 segment ratio bar | 校验非负、total 与 segment sum；不负责 port semantics |
 | `PrimitiveDisclosure` | 新增 controlled disclosure row | 只呈现 expanded/pressed/chevron；展开 state 由 ports section 持有 |
-| `PrimitiveSurfaceMap` | 新增 surface rectangle/labels | 只消费 presentation model；宽高比、unknown label、current/non-current 字段由 owner projection 决定 |
+| `PrimitiveSurfaceMap` | 每块 surface 渲染 rectangle 与可见 labels | 只消费 presentation model；宽高比取设备显示区域；逻辑画布与物理尺寸各有独立标签，设备逻辑显示区域不显示为文字，current 仅影响边框强调 |
 | `PrimitiveStatus`/`PrimitiveBadge`/`PrimitiveButton`/`PrimitiveInput` | 复用并补 admin semantic recipes | 不复制 topology/ports 业务文案 |
 | `PrimitiveIcon` | 仅扩充通用 `chevron-down`, `chevron-right`, `monitor`, `server`, `link`, `blocked`, `refresh` 等确有 IA 使用的图标 | 不把 `MASTER/SLAVE` 或 port 名称写入 primitive |
 
@@ -451,7 +451,7 @@ token alias 的完整分母是：两个 integration `theme/global.css`、两个 
 | port unit denominator | platform descriptor source | `describePlatformPortCapabilities` 不变 | `buildPortUnits` | sum/category red tests | fixture capabilities inline | 同步 UI tests |
 | five category mapping | 详设 §4.3 | admin-shell presentation owner | category rows | unmapped category red test | fixture new port | 同步 map/test |
 | all-surface display facts | requirements §5.2/R-9 | display-context/device adapter | render context + runtime page | owner/public-surface tests | dual-display fixture | **MATCHED_FOCUSED；dynamic/device visual pending** |
-| current/non-current projection | IA/requirements R-9 | admin-shell pure projector | `SurfaceMapModel` | missing non-current fields red test | single/dual facts | 同步 UI tests |
+| per-surface size projection | requirements §1.4/R-9 | integration assembly + admin-shell projector | `surfaceCanvasSizes` + `displayFacts.surfaces[]` | canvas 与 host 不得互换；SECONDARY 不得省略或借值 | single/dual facts | exact per-screen assertions |
 | topology page gate | requirements R-12 | topology owner capability | topology page | raw/operation bypass red test | mobile/dual/ready snapshots | **MATCHED_FOCUSED；dynamic visual pending** |
 | direct pair | requirements R-13/R-14 | topology command owner | host input/pair progress | no-query red test | pair success/failure | **MATCHED_FOCUSED；dynamic visual pending** |
 | topology action matrix | IA topology frames | capability eligibility/commands | host/slave render | role cross-action red tests | role snapshots | 同步 action tests |
@@ -493,7 +493,7 @@ token alias 的完整分母是：两个 integration `theme/global.css`、两个 
 | `port-unit-conservation` | `buildPortUnits` | real/empty/missing descriptors | available+unavailable+undeclared equals total; category expansion preserves units | count ports, drop synthetic unit |
 | `port-category-navigation` | ports section | one unavailable unit per category | summary→category→named reason path | render flat list only |
 | `runtime-single-surface` | display facts owner + runtime page | one surface, missing physical | logical/physical/status/role in correct locations, unknown only when absent | copy current value to physical |
-| `runtime-dual-surface` | display facts owner + projector | primary+secondary with unequal aspect ratios | two cards, correct ratios, non-current hides forbidden facts | render only current or add non-current resolution |
+| `runtime-dual-surface` | canvas declaration + per-display facts + projector | primary+secondary 各自拥有独立尺寸 | two complete cards; logical canvas, physical size, readiness match same-key source; device logical area drives each rectangle ratio but is not shown as a numeric label | hide SECONDARY or substitute device logical area for canvas |
 | `topology-page-gate` | topology capability | mobile, dual physical, single laptop | exact gate reason; no secondary data/actions | derive from pair eligibility/raw facts |
 | `topology-role-choice` | topology section | unpaired master | host action and slave IP action differ | show same options or switch-role |
 | `topology-direct-pair` | `pairByHost` capability | valid/invalid/occupied host | no query button; progress/error/retry with typed reason | query identity user step |

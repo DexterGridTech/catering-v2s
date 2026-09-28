@@ -23,6 +23,8 @@ import java.util.regex.Pattern;
 /** Run-owned UDS broker for deterministic registration and PostgreSQL listener timing controls. */
 final class TdsRegistrationGateBroker implements AutoCloseable {
     private static final int MAX_LINE_BYTES = 128;
+    private static final Duration DEFAULT_RELEASE_TIMEOUT = Duration.ofSeconds(14);
+    private static final Duration LISTENER_RECOVERY_RELEASE_TIMEOUT = Duration.ofSeconds(45);
     private static final Pattern ATTEMPT_ID =
             Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
     private static final Pattern TERMINAL_REF =
@@ -82,7 +84,7 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
     }
 
     ArmedAttempt armNextListenerRecovery() {
-        ArmedAttempt next = new ArmedAttempt();
+        ArmedAttempt next = new ArmedAttempt(LISTENER_RECOVERY_RELEASE_TIMEOUT);
         synchronized (attemptLock) {
             if (armedListenerRecovery != null || heldListenerRecovery != null) {
                 throw new IllegalStateException("TDS_LISTENER_RECOVERY_GATE_ALREADY_ARMED");
@@ -313,14 +315,24 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
         private final CompletableFuture<String> release = new CompletableFuture<>();
         private final String expectedTerminalRef;
         private final String expectedGeneration;
+        private final Duration releaseTimeout;
 
         private ArmedAttempt() {
-            this(null, null);
+            this(null, null, DEFAULT_RELEASE_TIMEOUT);
+        }
+
+        private ArmedAttempt(Duration releaseTimeout) {
+            this(null, null, releaseTimeout);
         }
 
         private ArmedAttempt(String expectedTerminalRef, String expectedGeneration) {
+            this(expectedTerminalRef, expectedGeneration, DEFAULT_RELEASE_TIMEOUT);
+        }
+
+        private ArmedAttempt(String expectedTerminalRef, String expectedGeneration, Duration releaseTimeout) {
             this.expectedTerminalRef = expectedTerminalRef;
             this.expectedGeneration = expectedGeneration;
+            this.releaseTimeout = releaseTimeout;
         }
 
         private boolean matchesRevocation(String terminalRef, String generation) {
@@ -339,9 +351,8 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
 
         String awaitObserved(Duration timeout, CompletableFuture<?> competingCompletion) throws Exception {
             try {
-                Object completion = CompletableFuture.anyOf(observed, competingCompletion)
-                        .get(timeout.toMillis(), TimeUnit.MILLISECONDS);
-                if (completion instanceof String attemptId) return attemptId;
+                CompletableFuture.anyOf(observed, competingCompletion).get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+                if (observed.isDone() && !observed.isCompletedExceptionally()) return observed.getNow(null);
                 throw new IllegalStateException("TDS_REGISTRATION_GATE_CLIENT_EXITED_BEFORE_OBSERVED");
             } catch (TimeoutException expired) {
                 throw new IllegalStateException("TDS_REGISTRATION_GATE_OBSERVATION_DEADLINE_EXCEEDED", expired);
@@ -350,8 +361,7 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
 
         private String awaitRelease(CompletableFuture<Boolean> disconnected) throws Exception {
             try {
-                CompletableFuture.anyOf(release, disconnected)
-                        .get(Duration.ofSeconds(14).toMillis(), TimeUnit.MILLISECONDS);
+                CompletableFuture.anyOf(release, disconnected).get(releaseTimeout.toMillis(), TimeUnit.MILLISECONDS);
                 if (disconnected.isCompletedExceptionally()) {
                     throw new IOException("TDS_REGISTRATION_GATE_EXTRA_INPUT");
                 }

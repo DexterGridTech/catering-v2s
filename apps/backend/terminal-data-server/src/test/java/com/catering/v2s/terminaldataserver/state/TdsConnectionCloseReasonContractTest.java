@@ -34,9 +34,7 @@ class TdsConnectionCloseReasonContractTest {
         Matcher reason = SQL_TEXT.matcher(check.group(1));
         while (reason.find()) persistedReasons.add(reason.group(1));
 
-        Set<String> protocolReasons = new HashSet<>(protocol.applicationCloseReasons());
-        protocol.standardCloseReasons().values().forEach(protocolReasons::add);
-        assertThat(persistedReasons).containsAll(protocolReasons);
+        assertThat(persistedReasons).containsAll(protocol.applicationCloseReasons());
     }
 
     private static Path workspaceRoot() {

@@ -647,7 +647,7 @@ export function verifyProductionMutationOutcome({
       raceRow.contract !== 'FAIL' ||
       raceRow.status !== 'FAIL' ||
       raceRow.failureCategory !== 'TDS_VS10_REGISTRATION_RACE_RED_CONTROL' ||
-      raceRow.clientFailureCategory !== 'TERMINAL_WIRE_SOCKET_READ_TIMEOUT' ||
+      raceRow.clientFailureCategory !== 'SESSION_READY_AFTER_REVOCATION' ||
       raceRow.sessionReadyObserved !== true ||
       tdsContractResult.summary.directFailures !== 1 ||
       tdsContractResult.rows.some(row => row.operation !== mutation.scenarioId && (row.contract !== 'PASS' || row.status !== 'PASS'))
@@ -849,6 +849,9 @@ export function classifyRemoteGradleFailure(log, junitFailureCode) {
 
 export const requiresBackendAcceptanceEvidence = (backendAcceptanceRunId, testExecutionPassed) =>
   backendAcceptanceRunId !== null && testExecutionPassed;
+
+export const requiresBackendAcceptanceTdsContract = (backendAcceptanceRunId, mutationEvidenceType) =>
+  backendAcceptanceRunId !== null && mutationEvidenceType !== 'TDS_CONTRACT';
 
 export const validateCleanupReceipt = cleanup => {
   if (cleanup?.status !== 'PASS') throw new Error('RESOURCE_CLEANUP_NOT_PASS');
@@ -1264,10 +1267,25 @@ export const remotePreflightScript = ({requireTerminalWireRuntime = false, tdsCa
   const validCapacity = requireTerminalWireRuntime
     ? validateTdsCapacityConfiguration(tdsCapacity)
     : null;
+  const capacityRows = requireTerminalWireRuntime
+    ? [
+        `printf "TDS_CAPACITY\\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\\t%s\\n" ${quote(validCapacity.maxUnauthenticatedConnections)}`,
+        `printf "TDS_CAPACITY\\tV2S_TDS_MAX_TRACKED_SESSIONS\\t%s\\n" ${quote(validCapacity.maxTrackedSessions)}`,
+        `printf "TDS_CAPACITY\\tV2S_TDS_RSS_BUDGET_MIB\\t%s\\n" ${quote(validCapacity.rssBudgetMiB)}`,
+      ]
+    : [];
   return script(
     'set -euo pipefail',
-    'docker ps -aq --filter label=org.testcontainers=true | sed "s/^/CONTAINER\\t/"',
-    'docker volume ls -q --filter label=org.testcontainers=true | sed "s/^/VOLUME\\t/"',
+    'container_query_status=PASS',
+    'container_ids=""',
+    'if ! container_ids="$(docker ps -aq --filter label=org.testcontainers=true 2>/dev/null)"; then container_query_status=FAIL; fi',
+    'printf "RESOURCE_QUERY\\tCONTAINERS\\t%s\\n" "$container_query_status"',
+    'if test -n "$container_ids"; then while IFS= read -r container_id; do test -z "$container_id" || printf "CONTAINER\\t%s\\n" "$container_id"; done <<< "$container_ids"; fi',
+    'volume_query_status=PASS',
+    'volume_ids=""',
+    'if ! volume_ids="$(docker volume ls -q --filter label=org.testcontainers=true 2>/dev/null)"; then volume_query_status=FAIL; fi',
+    'printf "RESOURCE_QUERY\\tVOLUMES\\t%s\\n" "$volume_query_status"',
+    'if test -n "$volume_ids"; then while IFS= read -r volume_id; do test -z "$volume_id" || printf "VOLUME\\t%s\\n" "$volume_id"; done <<< "$volume_ids"; fi',
     ...(requireTerminalWireRuntime
       ? [
           'node_candidates="$(type -a -p node || true)"',
@@ -1312,11 +1330,10 @@ export const remotePreflightScript = ({requireTerminalWireRuntime = false, tdsCa
           '  done <<< "$node_candidates"',
           '  printf "NODE_RUNTIME\\t%s\\n" "$node_probe"',
           'fi',
-          `printf "TDS_CAPACITY\\tV2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS\\t%s\\n" ${quote(validCapacity.maxUnauthenticatedConnections)}`,
-          `printf "TDS_CAPACITY\\tV2S_TDS_MAX_TRACKED_SESSIONS\\t%s\\n" ${quote(validCapacity.maxTrackedSessions)}`,
-          `printf "TDS_CAPACITY\\tV2S_TDS_RSS_BUDGET_MIB\\t%s\\n" ${quote(validCapacity.rssBudgetMiB)}`,
         ]
       : []),
+    ...capacityRows,
+    'if test "$container_query_status" != PASS || test "$volume_query_status" != PASS; then exit 80; fi',
   );
 };
 
@@ -1332,14 +1349,35 @@ const safeTerminalWireRuntimeObservation = runtime => ({
     : [],
 });
 
-const remotePreflightFailure = (code, {nodeRuntime = null, tdsCapacity = null} = {}) => {
+const unavailableResourceInventory = () => ({
+  status: 'UNAVAILABLE',
+  containerQueryStatus: 'UNAVAILABLE',
+  volumeQueryStatus: 'UNAVAILABLE',
+  containers: 0,
+  volumes: 0,
+});
+
+const remotePreflightFailure = (
+  code,
+  {
+    nodeRuntime = null,
+    tdsCapacity = null,
+    resourceInventory = unavailableResourceInventory(),
+    containers = [],
+    volumes = [],
+    remoteExitStatus = null,
+  } = {},
+) => {
   const diagnostic = {
     status: 'FAIL',
     reason: code,
     observedAt: now(),
-    resourceInventory: {status: 'EMPTY', containers: 0, volumes: 0},
+    resourceInventory,
+    containers,
+    volumes,
     ...(nodeRuntime === null ? {} : {nodeRuntime: safeTerminalWireRuntimeObservation(nodeRuntime)}),
     ...(tdsCapacity === null ? {} : {tdsCapacity}),
+    ...(remoteExitStatus === null ? {} : {remoteExitStatus}),
   };
   const detail = nodeRuntime?.reason ?? code;
   const error = new Error(`${code}:${detail}`);
@@ -1351,35 +1389,96 @@ export const recordRemotePreflightFailure = (manifest, error, {remotePrepared = 
   const evidence = error?.preflightEvidence;
   if (!evidence) return false;
   manifest.resourcePreflight = evidence;
-  if (remotePrepared || evidence.resourceInventory?.status !== 'EMPTY') return true;
+  if (remotePrepared) return true;
+  const inventory = evidence.resourceInventory ?? unavailableResourceInventory();
+  const containersKnownEmpty = inventory.containerQueryStatus === 'PASS' && inventory.containers === 0;
+  const volumesKnownEmpty = inventory.volumeQueryStatus === 'PASS' && inventory.volumes === 0;
   manifest.cleanup = {
-    status: 'PASS',
+    status: containersKnownEmpty && volumesKnownEmpty ? 'PASS' : 'FAIL',
     remoteProcess: 'PASS',
     remoteWorkspace: 'PASS',
-    testcontainersContainers: 'PASS',
-    testcontainersVolumes: 'PASS',
+    testcontainersContainers: containersKnownEmpty ? 'PASS' : 'FAIL',
+    testcontainersVolumes: volumesKnownEmpty ? 'PASS' : 'FAIL',
   };
   return true;
 };
 
 export const parseRemotePreflightResult = (result, {requireTerminalWireRuntime = false} = {}) => {
-  if (result.status !== 0) throw new Error('REMOTE_RESOURCE_PREFLIGHT_UNAVAILABLE');
-  const rows = String(result.stdout)
+  const rows = String(result?.stdout ?? '')
     .trim()
     .split('\n')
     .filter(Boolean)
     .map(line => line.split('\t'));
-  const containers = rows.filter(([kind]) => kind === 'CONTAINER').map(([, value]) => value);
-  const volumes = rows.filter(([kind]) => kind === 'VOLUME').map(([, value]) => value);
-  if (containers.length || volumes.length) throw new Error('REMOTE_TESTCONTAINERS_STALE_RESOURCE');
+  const queryRows = rows.filter(([kind]) => kind === 'RESOURCE_QUERY');
+  const allowedRowKinds = new Set(['RESOURCE_QUERY', 'CONTAINER', 'VOLUME', 'NODE_RUNTIME', 'TDS_CAPACITY']);
+  const unrecognizedOutputRows = rows.filter(([kind]) => !allowedRowKinds.has(kind)).length;
+  const invalidQueryRows = queryRows.filter(
+    row => row.length !== 3 || !['CONTAINERS', 'VOLUMES'].includes(row[1]) || !['PASS', 'FAIL'].includes(row[2]),
+  ).length;
+  const queryStatus = name => {
+    const matches = queryRows.filter(([, query]) => query === name);
+    if (matches.length === 0) return result.status === 0 ? 'NOT_REPORTED' : 'UNAVAILABLE';
+    if (matches.length !== 1 || matches[0].length !== 3 || !['PASS', 'FAIL'].includes(matches[0][2])) return 'INVALID';
+    return matches[0][2];
+  };
+  const containerQueryStatus = queryStatus('CONTAINERS');
+  const volumeQueryStatus = queryStatus('VOLUMES');
+  const rawContainers = rows.filter(([kind]) => kind === 'CONTAINER');
+  const rawVolumes = rows.filter(([kind]) => kind === 'VOLUME');
+  const safeContainerId = value => typeof value === 'string' && /^[a-f0-9]{12,64}$/i.test(value);
+  const safeVolumeName = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(value);
+  const containers = rawContainers.filter(row => row.length === 2 && safeContainerId(row[1])).map(([, value]) => value);
+  const volumes = rawVolumes.filter(row => row.length === 2 && safeVolumeName(row[1])).map(([, value]) => value);
+  const invalidResourceRows = rawContainers.length - containers.length + rawVolumes.length - volumes.length;
+  const bothQueriesPassed = containerQueryStatus === 'PASS' && volumeQueryStatus === 'PASS';
+  const anyQueryPassed = containerQueryStatus === 'PASS' || volumeQueryStatus === 'PASS';
+  const successfulCommandMissingQueryEvidence =
+    result.status === 0 && (containerQueryStatus === 'NOT_REPORTED' || volumeQueryStatus === 'NOT_REPORTED');
+  const resourceInventory = {
+    status:
+      invalidResourceRows > 0 ||
+      invalidQueryRows > 0 ||
+      unrecognizedOutputRows > 0 ||
+      containerQueryStatus === 'INVALID' ||
+      volumeQueryStatus === 'INVALID' ||
+      successfulCommandMissingQueryEvidence
+        ? 'INVALID'
+        : bothQueriesPassed
+          ? containers.length || volumes.length
+            ? 'NON_EMPTY'
+            : 'EMPTY'
+          : anyQueryPassed || containers.length || volumes.length
+            ? 'PARTIAL'
+            : 'UNAVAILABLE',
+    containerQueryStatus,
+    volumeQueryStatus,
+    containers: containers.length,
+    volumes: volumes.length,
+    ...(invalidResourceRows + invalidQueryRows + unrecognizedOutputRows > 0
+      ? {invalidRows: invalidResourceRows + invalidQueryRows + unrecognizedOutputRows}
+      : {}),
+  };
+  const failureEvidence = {resourceInventory, containers, volumes, remoteExitStatus: Number.isInteger(result.status) ? result.status : null};
+  if (invalidResourceRows > 0 || resourceInventory.status === 'INVALID') {
+    throw remotePreflightFailure('REMOTE_RESOURCE_PREFLIGHT_EVIDENCE_INVALID', failureEvidence);
+  }
+  if (!bothQueriesPassed) {
+    throw remotePreflightFailure('REMOTE_RESOURCE_PREFLIGHT_UNAVAILABLE', failureEvidence);
+  }
+  if (containers.length || volumes.length) {
+    throw remotePreflightFailure('REMOTE_TESTCONTAINERS_STALE_RESOURCE', failureEvidence);
+  }
+  if (result.status !== 0) {
+    throw remotePreflightFailure('REMOTE_RESOURCE_PREFLIGHT_COMMAND_FAILED', failureEvidence);
+  }
   const nodeRows = rows.filter(([kind]) => kind === 'NODE_RUNTIME');
-  if (nodeRows.length > 1) throw new Error('REMOTE_TERMINAL_WIRE_RUNTIME_DUPLICATE');
+  if (nodeRows.length > 1) throw remotePreflightFailure('REMOTE_TERMINAL_WIRE_RUNTIME_DUPLICATE', failureEvidence);
   let nodeRuntime = null;
   if (nodeRows.length === 1) {
     try {
       nodeRuntime = JSON.parse(nodeRows[0][1]);
     } catch {
-      throw remotePreflightFailure('REMOTE_TERMINAL_WIRE_RUNTIME_INVALID');
+      throw remotePreflightFailure('REMOTE_TERMINAL_WIRE_RUNTIME_INVALID', failureEvidence);
     }
     if (
       nodeRuntime?.status !== 'PASS' ||
@@ -1393,11 +1492,11 @@ export const parseRemotePreflightResult = (result, {requireTerminalWireRuntime =
       typeof nodeRuntime?.nodePath !== 'string' ||
       nodeRuntime.nodePath.trim() === ''
     ) {
-      throw remotePreflightFailure('REMOTE_TERMINAL_WIRE_RUNTIME_INVALID', {nodeRuntime});
+      throw remotePreflightFailure('REMOTE_TERMINAL_WIRE_RUNTIME_INVALID', {...failureEvidence, nodeRuntime});
     }
   }
   if (requireTerminalWireRuntime && nodeRuntime === null) {
-    throw remotePreflightFailure('REMOTE_TERMINAL_WIRE_RUNTIME_REQUIRED');
+    throw remotePreflightFailure('REMOTE_TERMINAL_WIRE_RUNTIME_REQUIRED', failureEvidence);
   }
   const tdsCapacityRows = rows.filter(([kind]) => kind === 'TDS_CAPACITY');
   let tdsCapacity = null;
@@ -1416,6 +1515,7 @@ export const parseRemotePreflightResult = (result, {requireTerminalWireRuntime =
       Number(rssBudgetMiB) > 2147483647
     ) {
       throw remotePreflightFailure('REMOTE_TDS_CAPACITY_INVALID', {
+        ...failureEvidence,
         nodeRuntime,
         tdsCapacity: {
           maxUnauthenticatedConnections: unauth ?? null,
@@ -1431,7 +1531,14 @@ export const parseRemotePreflightResult = (result, {requireTerminalWireRuntime =
       source: TDS_CAPACITY_CONFIG_RELATIVE_PATH,
     });
   }
-  return {containers, volumes, ...(nodeRuntime === null ? {} : {nodeRuntime}), ...(tdsCapacity ? {tdsCapacity} : {}), observedAt: now()};
+  return {
+    containers,
+    volumes,
+    resourceInventory,
+    ...(nodeRuntime === null ? {} : {nodeRuntime}),
+    ...(tdsCapacity ? {tdsCapacity} : {}),
+    observedAt: now(),
+  };
 };
 
 const remotePreflight = ({requireTerminalWireRuntime = false, tdsCapacity = null} = {}) =>
@@ -2467,15 +2574,16 @@ const execute = async () => {
     if (remoteGradleStatus !== '0' && requestedMutation === null) throw new Error(executionFailure);
     if (archiveStatus !== '0') throw new Error('REMOTE_EVIDENCE_ARCHIVE_FAILED');
     if (manifest.cleanup.status !== 'PASS') throw new Error('REMOTE_TESTCONTAINERS_RESOURCE_NOT_RECLAIMED');
-    if (backendAcceptanceResult?.summary.stubOnly > 0) throw new Error('BACKEND_ACCEPTANCE_STUB_BUSINESS_NOT_ALLOWED');
-    if (
-      manifest.backendAcceptance?.tdsContract !== 'PASS' &&
-      requestedMutation?.evidenceType !== 'TDS_CONTRACT'
-    ) {
-      throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_FAILED');
-    }
-    if (requestedMutation === null && backendAcceptanceResult?.summary.directFailures > 0) {
-      throw new Error('BACKEND_ACCEPTANCE_SCENARIO_FAILURE');
+    if (backendAcceptanceRunId !== null) {
+      if (backendAcceptanceResult?.summary.stubOnly > 0) throw new Error('BACKEND_ACCEPTANCE_STUB_BUSINESS_NOT_ALLOWED');
+      if (requiresBackendAcceptanceTdsContract(backendAcceptanceRunId, requestedMutation?.evidenceType)) {
+        if (manifest.backendAcceptance?.tdsContract !== 'PASS') {
+          throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_FAILED');
+        }
+      }
+      if (requestedMutation === null && backendAcceptanceResult?.summary.directFailures > 0) {
+        throw new Error('BACKEND_ACCEPTANCE_SCENARIO_FAILURE');
+      }
     }
     if (backendAcceptanceRunId !== null) {
       beginBoundary('MEASUREMENT_EVIDENCE');

@@ -1,4 +1,5 @@
 import {PrimitiveKeyboardBackdrop} from '@catering-v2s/ui-base-primitives';
+import {useCallback} from 'react';
 import {View, type LayoutChangeEvent} from 'react-native';
 import {
   calculateVirtualKeyboardCellWidth,
@@ -33,7 +34,6 @@ export const InputKeyboard = ({snapshot, interactive, onKey, onLayout, testIDSuf
   const state = useInputKeyboardState();
   const controller = useInputController();
 
-  if (snapshot === undefined && !state.visible) return null;
   const current: InputKeyboardSnapshot = snapshot ?? {
     fieldId: state.activeFieldId ?? '',
     layout: state.layout,
@@ -42,10 +42,21 @@ export const InputKeyboard = ({snapshot, interactive, onKey, onLayout, testIDSuf
     shift: state.shift,
     hasNextField: state.hasNextField,
   };
+  const canInteract = interactive ?? state.visible;
+  const handleKey = useCallback((key: KeyboardKey): void => {
+    const target = onKey ?? controller.handleKeyboardKey;
+    if (__DEV__ && current.fieldId === 'terminal.admin:password-field') {
+      console.info('TER_ADMIN_INPUT_TRACE key-dispatched', {
+        keyKind: key.kind,
+        interactive: canInteract,
+      });
+    }
+    target(key);
+  }, [canInteract, controller.handleKeyboardKey, current.fieldId, onKey]);
+  if (snapshot === undefined && !state.visible) return null;
   const compact = current.frameWidth <= INPUT_LAYOUT_CONSTANTS.MOBILE_SYMBOL_MAX_FRAME_WIDTH;
   const frameWidth = calculateVirtualKeyboardDockWidth(current.frameWidth, current.layout);
   const cellWidth = calculateVirtualKeyboardCellWidth(frameWidth, current.layout, compact);
-  const canInteract = interactive ?? state.visible;
   const keyboard = (
     <VirtualKeyboard
       layout={current.layout}
@@ -56,7 +67,7 @@ export const InputKeyboard = ({snapshot, interactive, onKey, onLayout, testIDSuf
       shift={current.shift}
       hasNextField={current.hasNextField}
       testIDSuffix={testIDSuffix}
-        onKey={canInteract ? onKey ?? controller.handleKeyboardKey : noopKeyboardKey}
+        onKey={canInteract ? handleKey : noopKeyboardKey}
     />
   );
   const backdrop = (

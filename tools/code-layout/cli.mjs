@@ -23,6 +23,7 @@ const allowedRepositoryRootDirectories = new Set([
   ".git",
   ".gradle",
   ".idea",
+  ".playwright-cli",
   ".runtime",
   ".turbo",
   ".yarn",
@@ -56,6 +57,7 @@ function walk(root, visitor) {
     if ([
       "build",
       ".gradle",
+      ".runtime",
       "node_modules",
       "dist",
       ".kotlin",
@@ -213,12 +215,27 @@ function selfTest() {
   const repositoryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-code-layout-"));
   try {
     fs.mkdirSync(path.join(repositoryRoot, ".turbo/cache"), { recursive: true });
+    fs.mkdirSync(path.join(repositoryRoot, ".playwright-cli"), { recursive: true });
+    fs.writeFileSync(path.join(repositoryRoot, ".playwright-cli/page.yml"), "snapshot: local\n");
     validate(repositoryRoot);
     expectFailure(repositoryRoot, (fixture) => {
       fs.mkdirSync(path.join(fixture, "components/common"), { recursive: true });
     }, "REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:components");
   } finally {
     fs.rmSync(repositoryRoot, { recursive: true, force: true });
+  }
+
+  const runtimeCacheRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-code-layout-"));
+  try {
+    fs.mkdirSync(
+      path.join(runtimeCacheRoot, "apps/terminal/ui/base/primitives/.runtime/ter-rntl-v14-poc/npm-cache/_cacache/tmp"),
+      { recursive: true },
+    );
+    if (!validate(runtimeCacheRoot).includes("CODE_LAYOUT=PASS")) {
+      fail("RUNTIME_CACHE_DIRECTORY_NOT_IGNORED");
+    }
+  } finally {
+    fs.rmSync(runtimeCacheRoot, { recursive: true, force: true });
   }
 
   const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-code-layout-"));
@@ -285,6 +302,8 @@ function selfTest() {
     "CONTRACT_REGISTRY_ALLOWED=PASS",
     "RED_FIXTURE_CONTRACT_CLASSIFICATION=PASS",
     "RED_FIXTURE_REPOSITORY_ROOT_ALLOWLIST=PASS",
+    "GREEN_FIXTURE_IGNORED_PLAYWRIGHT_CAPTURE=PASS",
+    "GREEN_FIXTURE_IGNORED_RUNTIME_CACHE=PASS",
     "RED_FIXTURE_PRODUCTION_RED_FIXTURE=PASS",
     "RED_FIXTURE_EMPTY_SOURCE_DIRECTORY=PASS",
     "GREEN_FIXTURE_APPROVED_TDS_RUNTIME=PASS",

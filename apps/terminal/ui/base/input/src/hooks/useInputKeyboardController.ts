@@ -24,6 +24,16 @@ export const useInputKeyboardController = ({
       if (field === undefined) return;
       const before = field.getEditState();
       const result = field.applyKey(key);
+      if (__DEV__ && field.testID === 'terminal.admin:password') {
+        console.info('TER_ADMIN_INPUT_TRACE key-applied', {
+          keyKind: key.kind,
+          beforeLength: before.value.length,
+          afterLength: result.state.value.length,
+          shiftBefore: before.shift,
+          shiftAfter: result.state.shift,
+          effect: result.effect,
+        });
+      }
       const keyboardPresentationChanged = before.shift !== result.state.shift;
       if (result.effect === 'mode' || keyboardPresentationChanged) {
         forceKeyboardUpdate(value => value + 1);

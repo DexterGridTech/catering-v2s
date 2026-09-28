@@ -24,6 +24,7 @@ export type {
   DebugModeResolutionInput,
   DebugModeSource,
   RenderRuntimeFacts,
+  RuntimeSurfaceCanvasSizes,
   RuntimeDeviceIdentity,
 } from './types/runtimeFacts';
 export {createRenderRuntimeFacts, resolveDebugMode} from './types/runtimeFacts';

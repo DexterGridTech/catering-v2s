@@ -62,9 +62,13 @@ const DisplayRole = () => {
 再按 `partKey → catalog entry → rendererKey → renderer binding` 两跳解析。运行时不可用、容器为空、
 catalog 缺失、renderer 缺失和非法 props 使用不同的 fallback 语义；render 不创建默认业务内容。
 
+`RenderRuntimeFacts.surfaceCanvasSizes`（由 integration assembly 提供）保存逐 surface 的应用逻辑画布尺寸，
+也就是应用逻辑分辨率；其公开类型为 `RuntimeSurfaceCanvasSizes`。它与 display facts 中按真实设备读取的逻辑显示区域、物理像素尺寸分开保存；
+consumer 不得把宿主测量或 Android real metrics 当作应用画布声明。
+
 ## 公共面
 
-公共面以 `terminal-invariants.json` 与 TypeScript 实际导出为准，其中包括 `SurfaceFocusBoundaryContext`、
+公共面以 `terminal-invariants.json` 与 TypeScript 实际导出为准，其中包括 `RuntimeSurfaceCanvasSizes`、`SurfaceFocusBoundaryContext`、
 `SurfacePresentationOffsetProvider` 与 `useSurfacePresentationOffset`（presentation-only 位移桥；无 provider 时偏移为 `0`）、
 `SurfaceRootContentFrame`、
 `useSurfaceFocusBoundary`、`useDispatchCommand`、`useUiVariable`、`dispatchWithRequestId`、

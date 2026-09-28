@@ -9,6 +9,7 @@ import io.netty.handler.codec.PrematureChannelClosureException;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.CorruptedWebSocketFrameException;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.util.ReferenceCountUtil;
@@ -60,6 +61,19 @@ final class TdsReservedBitsGate extends ChannelInboundHandlerAdapter {
         if (closing && cause instanceof PrematureChannelClosureException) return;
         Throwable classified = cause;
         while (classified != null) {
+            if (classified instanceof CorruptedWebSocketFrameException websocketFailure) {
+                int closeCode = websocketFailure.closeStatus().code();
+                if (closeCode == MESSAGE_TOO_BIG) {
+                    close(context, MESSAGE_TOO_BIG, "MESSAGE_TOO_BIG");
+                    return;
+                }
+                if (closeCode == PROTOCOL_ERROR) {
+                    close(context, PROTOCOL_ERROR, "PROTOCOL_ERROR");
+                    return;
+                }
+                context.fireExceptionCaught(cause);
+                return;
+            }
             if (classified instanceof TooLongFrameException) {
                 close(context, MESSAGE_TOO_BIG, "MESSAGE_TOO_BIG");
                 return;

@@ -26,6 +26,13 @@ final class TdsPmdOfferGate extends ChannelInboundHandlerAdapter {
     }
 
     @Override
+    public void handlerAdded(ChannelHandlerContext context) {
+        String channelId = context.channel().id().asShortText();
+        TdsAsyncLog.enqueue(
+                logScheduler, () -> LOGGER.info("event=tds_ws_extension_gate_installed channelId={}", channelId));
+    }
+
+    @Override
     public void channelRead(ChannelHandlerContext context, Object message) {
         if (message instanceof HttpRequest request && isWebSocketUpgrade(request)) {
             OfferResult result = normalizeOffer(request);

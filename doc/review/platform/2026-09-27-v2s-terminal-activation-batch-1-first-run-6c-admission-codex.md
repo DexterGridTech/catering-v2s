@@ -1,11 +1,15 @@
 # Terminal activation batch 1 · first dynamic run 6c admission
 
+> Historical admission snapshot. Its prior 6b/6c verdict applied to earlier source bytes and its
+> launch opportunity has been consumed by later failed managed attempts. It does not admit a new
+> current-byte run; use the 2026-09-28 6b/6c records.
+
 ```text
 REVIEW_TARGET=FIRST_DYNAMIC_RUN_6C_ADMISSION
 REVIEWER_KIND=FRESH_INDEPENDENT_SUBAGENT
 REVIEWER=/root/terminal_activation_current_6b_review
-WHOLE_BATCH_6B=MATCHED; M/S/N=0/0/0
-LAUNCH_ADMISSION=PASS_TO_ENTER_MANAGED_REMOTE_PREFLIGHT_AND_FIRST_EXACT_SCENARIO
+WHOLE_BATCH_6B=HISTORICAL_MATCHED_NOT_CURRENT
+LAUNCH_ADMISSION=HISTORICAL_PASS_CONSUMED_NOT_CURRENT
 FIRST_BUSINESS_OPERATION=storeTerminalActivationBusinessPrecedence
 FIRST_RUN_COMMAND=scripts/test/backend-acceptance --operation storeTerminalActivationBusinessPrecedence --topology-preflight
 FIXTURE_DENOMINATOR=INDEPENDENT_SOURCE_REVIEW_PASS

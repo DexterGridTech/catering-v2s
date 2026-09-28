@@ -27,6 +27,7 @@
     "DebugModeResolutionInput",
     "DebugModeSource",
     "RenderRuntimeFacts",
+    "RuntimeSurfaceCanvasSizes",
     "RuntimeDeviceIdentity",
     "RendererBinding",
     "RendererCatalog",

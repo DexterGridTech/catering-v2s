@@ -603,6 +603,7 @@ describe('sample-console real assembly', () => {
     })
     try {
       expect(assembly.surfaceDeclarations).toEqual(override.orientations.landscape)
+      expect(assembly.runtimeFacts.surfaceCanvasSizes).toEqual(override.orientations.landscape)
     } finally {
       releaseRuntimeForTest(assembly.runtime)
     }
@@ -819,6 +820,7 @@ describe('sample-console real assembly', () => {
       const laptopSelectedSectionButton = laptopRenderer.root.findAllByProps({testID: adminTestIds.sections.runtime})
         .find(node => node.type === Pressable)!
       expect(laptopSelectedSectionButton.props.accessibilityState).toMatchObject({selected: true})
+      expect(laptopRenderer.root.findByProps({testID: adminTestIds.runtime.title})).toBeDefined()
       await act(async () => {
         press(laptopRenderer!, adminTestIds.sections.platformPorts)()
         await new Promise(resolve => setTimeout(resolve, 0))
@@ -1170,6 +1172,51 @@ describe('sample-console real assembly', () => {
       expect(renderer.root.findByProps({testID: 'terminal.admin:login:instruction'})).toBeDefined()
       expect(events.some(event => String((event as {readonly event?: unknown}).event) === 'sample.runtime-facts-resolved')).toBe(true)
       expect(events.some(event => JSON.stringify(event).includes('123456'))).toBe(false)
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('accepts the displayed device-derived admin code entered through the virtual keyboard', async () => {
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({deviceInfo: {
+        deviceId: 'DEVICE-ADMIN-LOGIN-001',
+        systemName: 'Android',
+        systemVersion: '34',
+        logicalProcessorCount: 8,
+      }}),
+      persistenceKey: `sample-console-admin-derived-password-test-${Date.now()}`,
+      surfaceForm: 'laptop',
+      startupDebugMode: false,
+      showAdminPassword: true,
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true)},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME)
+      for (let index = 0; index < 5; index += 1) {
+        await act(async () => {
+          pressLauncher(renderer!)
+          await new Promise(resolve => setTimeout(resolve, 0))
+        })
+      }
+      finishKeyboardPresentation(renderer)
+      const displayedCode = String(renderer.root.findByProps({testID: adminTestIds.debugPassword}).props.children)
+        .match(/\d{6}/)?.[0]
+      expect(displayedCode).toMatch(/^\d{6}$/)
+      for (const digit of displayedCode!) {
+        await act(async () => {
+          press(renderer!, `ui.base.input:virtual-keyboard:text-${digit}`)()
+          await new Promise(resolve => setTimeout(resolve, 0))
+        })
+      }
+      await act(async () => {
+        press(renderer!, adminTestIds.verify)()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      await waitForAdminContent(renderer)
+      expect(renderer.root.findByProps({testID: adminTestIds.shell})).toBeDefined()
     } finally {
       if (renderer !== undefined) act(() => { renderer!.unmount() })
       releaseRuntimeForTest(assembly.runtime)

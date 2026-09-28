@@ -56,7 +56,19 @@ const AdminShellLaptopContent = ({onClose}: AdminShellProps) => {
         instanceMode: catalogContext?.instanceMode ?? null,
       },
     })
+    logger.info({
+      category: 'admin.navigation',
+      event: 'admin.section-selection-dispatch-started',
+      message: 'Admin section selection dispatch started',
+      data: {partKey},
+    })
     selection.selectSection(partKey)
+    logger.info({
+      category: 'admin.navigation',
+      event: 'admin.section-selection-dispatch-returned',
+      message: 'Admin section selection dispatch returned',
+      data: {partKey},
+    })
   }, [catalogContext?.instanceMode, catalogContext?.workspace, logger, selection.selectSection, surface.displayMode, surface.surfaceForm])
 
   useEffect(() => {

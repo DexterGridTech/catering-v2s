@@ -13,11 +13,11 @@
       "landscape": {
         "PRIMARY": {
           "width": 1280,
-          "height": 800
+          "height": 720
         },
         "SECONDARY": {
           "width": 1280,
-          "height": 800
+          "height": 720
         }
       },
       "portrait": {

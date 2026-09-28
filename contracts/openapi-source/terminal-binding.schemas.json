@@ -20,7 +20,12 @@
         "properties": {
           "terminalRef": {"type": "string", "format": "uuid"},
           "storeRef": {"type": "string", "format": "uuid"},
-          "groupWorkspaceKey": {"type": "string", "minLength": 1, "maxLength": 128},
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          },
           "bindingGeneration": {"type": "integer", "format": "int64", "minimum": 1}
         }
       },

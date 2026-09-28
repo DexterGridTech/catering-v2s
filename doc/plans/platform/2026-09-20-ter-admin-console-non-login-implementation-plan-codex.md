@@ -43,7 +43,7 @@ Dexter 在本次继续实施时新增并提升为本交付硬要求：admin cons
 5. ports 以 capability unit 计数，synthetic undeclared unit 不能被吞掉；
 6. runtime/display 只消费 display-facts owner；topology 只消费 page availability/snapshot/capability；admin-shell 不读 raw slice；
 7. topology mobile 只有不可用 gate；laptop 主机/副机动作集合不同，查询身份不成为用户步骤；
-8. current/non-current surface 信息不对称、真实宽高比、unknown 数字位置、主副标题和状态文字必须与已同步的需求/线框/高保真 IA 逐 frame 对齐；
+8. current/non-current surface 使用相同可见字段；每屏逻辑画布分辨率、物理像素尺寸和状态按自身来源显示；设备显示区域只用于真实矩形宽高比，不显示数值标签；
 9. 所有状态证据分 `static`、`focused`、`Web`、`Android/native/device`、`visual`、`cleanup`，不混写。
 
 ## 2. 实施前 admission：CP-0
@@ -80,7 +80,7 @@ rg -n 'color-admin-|sharedColors|createTailwindConfig' apps/terminal/ui/integrat
 
 ### 2.3 CP-0 停止条件
 
-- 如果 display facts 仍只有 `displayCount`，但没有获得 display-context/device adapter 的最小公共 contract 方案：`CP-0=OPEN`，不进入 CP-1；不读日志补 UI。
+- CP-0 应核对当前 `DisplayInfo.surfaces[]` 的逐屏 logicalSize/physicalSize/readiness 以及 assembly 已解析的 surfaceDeclarations；不得再把“display facts 只有 displayCount”作为现状。若任一 owner 当前字节不具备其已声明字段，才按 owner 边界记录 `OPEN` 并停止，不从日志或另一块屏补值。
 - 如果 topology 没有办法由 owner 提供 `getPageAvailability()` 和 `pairByHost()`，或者旧 query/pair 有未知消费者无法安全调整：`CP-0=OPEN`，不在 admin-shell 自行重算或造 command。
 - 如果 MASTER unpair 仍以 `masterLocator` 而不是 typed `paired` 作为通用前置，或没有验证成功清理 `masterLocator`、`peerIdentity`、`peerReachable` 并 read back：`CP-0=OPEN`，不进入 CP-2。
 - 如果五类映射漏掉当前 port，或 feature part 与三页 user registry 的可见边界不清：`CP-0=OPEN`，交 Dexter 决定，不静默删 feature。
@@ -170,7 +170,7 @@ CP-0 关闭条件：源码分母、owner contract、feature 边界、primitive c
 
 1. 新建 `projectRuntimeDisplay`，把 runtime facts 与 display facts 转成一个 page model；技术词 `承载几何`、raw enum 不进入用户主文案。
 2. 单屏 laptop/mobile 画一块实际 surface；dual laptop 画两块实际 surface；mobile 不伪造 secondary。
-3. current/non-current projection 严格按已同步 IA：non-current 不能出现 resolution/readiness/physical；current physical missing 的数字位置是 `未知`。mobile 若输入事实声称多 surface，复用 IA-14 的 `display-facts-error` 变体，不生成第二块矩形。
+3. current/non-current projection 均显示该 surface 自身的逻辑画布分辨率、物理尺寸和 readiness；设备逻辑显示区域只用于矩形比例、不显示数值标签。缺失的画布为“未声明”、缺失的设备事实为“未知”，不得跨屏复制。mobile 若输入事实声称多 surface，复用 IA-14 的 `display-facts-error` 变体，不生成第二块矩形。
 4. `PrimitiveSurfaceMap` 使用每块 logical size 的真实 ratio；双屏测试使用不同 ratio，防止固定框假绿。
 5. 运行状态整体 status 先于 details；status 同时有 dot/tone 与文字，loading/missing/error 分开。
 

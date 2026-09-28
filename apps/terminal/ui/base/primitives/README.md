@@ -72,6 +72,9 @@ focus/measurement seam；它们都不增加业务语义、业务控件
 `PrimitiveStack` 与 `PrimitiveGrid` 的可选 `style` 做局部原生布局约束；这些字段只用于呈现，
 不携带业务状态。`PrimitivePressOption` 的 `tab` variant 只提供紧凑导航 tab 外观，仍沿用同一
 press/selected 状态模型。
+
+`PrimitiveSurfaceMap` 是无业务语义的数据呈现控件；调用方须分别提供逻辑画布分辨率、设备显示区域、物理尺寸、
+角色和状态。当前标记只改变强调样式，不得让非当前 surface 的尺寸字段被隐藏。
 当前 `dependencyModuleNames` 为空，因为它表示本包运行时模块实际 import 的 workspace 能力；本包
 不声明任何未实现的 workspace 边，也不导入自动化后端。未来若正式接入自动化挂点，必须先形成新的
 设计与授权，并同步公共面、依赖、graph、测试与本 README；不能以 planned edge 或 fallback 伪装成已实现能力。

@@ -209,16 +209,11 @@
       }); wrap.append(rows); return wrap;
     };
     const dimensionText = value => value === undefined || value === null || value === '' ? '未知' : value;
-    const runtimeSurface = (title, logicalWidth, logicalHeight, physicalWidth, physicalHeight, current, ratioClass, ratioLabel) => {
+    const runtimeSurface = (title, logicalWidth, logicalHeight, deviceWidth, deviceHeight, physicalWidth, physicalHeight, current, ratioClass, ratioLabel) => {
       const card = el('div', `surface ${current ? 'current' : ''}`); card.append(el('div', 'surface-title', `${title} · ${current ? '当前 surface' : '非当前 surface'}`), chip(`runtime.surface.${current ? 'current' : 'role'}`));
-      if (!current) {
-        const limited = el('div', 'surface-state', '该屏信息未提供\n仅保留存在性与角色');
-        card.append(limited, chip('runtime.surface.role'), chip('runtime.surface.info-unavailable'));
-        return card;
-      }
       const wrap = el('div', 'screen-wrap');
       const shape = el('div', `screen-shape ${ratioClass}`);
-      shape.append(el('div', 'dimension logical-width', `逻辑长：${dimensionText(logicalWidth)}`), el('div', 'dimension logical-height', `逻辑高：${dimensionText(logicalHeight)}`), el('div', 'surface-state', '已就绪\n可用状态：正常\n比例：' + ratioLabel));
+      shape.append(el('div', 'dimension logical-width', `逻辑分辨率宽：${dimensionText(logicalWidth)}`), el('div', 'dimension logical-height', `逻辑分辨率高：${dimensionText(logicalHeight)}`), el('div', 'surface-state', `设备显示区域：${dimensionText(deviceWidth)} × ${dimensionText(deviceHeight)}\n已就绪 · 可用状态：正常\n比例：${ratioLabel}`));
       wrap.append(el('div', 'dimension physical-width', `物理长：${dimensionText(physicalWidth)}`), el('div', 'dimension physical-height', `物理高：${dimensionText(physicalHeight)}`), shape);
       card.append(wrap);
       card.append(chip('runtime.surface.aspect-ratio'), chip('runtime.surface.logical-size'), chip('runtime.surface.physical-size'), chip('runtime.surface.ready-state')); return card;
@@ -226,9 +221,9 @@
     const runtimeContent = frame => {
       const dual = frame.state === 'DUAL-SURFACE'; const mobile = frame.form === 'mobile'; const wrap = el('div', 'content'); wrap.append(el('div', 'content-title', '运行状态'), status(dual ? '运行正常 · 检测到两块物理屏' : '运行正常 · 检测到一块物理屏', 'success', 'runtime.overall-status'));
       wrap.append(el('div', 'kv')); wrap.lastChild.append(kv('运行阶段', '已就绪'), kv('环境', 'TEST', 'runtime.environment'), kv('调试态', '关闭', 'runtime.debug'), kv('设备', '可用', 'runtime.device'), kv('显示事实', '已读取', 'runtime.display-status'), kv('物理屏数量', dual ? '2' : '1', 'runtime.physical-display-count')); const surfaces = el('div', 'surfaces');
-      surfaces.append(runtimeSurface('主屏', mobile ? 390 : 1280, mobile ? 844 : 800, mobile ? undefined : 1920, mobile ? undefined : 1200, true, mobile ? 'ratio-mobile' : 'ratio-16-10', mobile ? '390:844' : '16:10'));
-      if (dual) surfaces.append(runtimeSurface('副屏', 1024, 768, 1536, 1152, false, 'ratio-4-3', '4:3'));
-      wrap.append(surfaces); wrap.append(el('div', 'hint', '逻辑尺寸标在框内，物理尺寸标在框外；矩形比例跟随各自 surface 的逻辑宽高。物理值为线框示意，缺失时数字位置显示“未知”，详设须绑定 display-facts owner。')); return wrap;
+      surfaces.append(runtimeSurface('主屏', mobile ? 390 : 1280, mobile ? 844 : 800, mobile ? 390 : 1280, mobile ? 844 : 720, mobile ? undefined : 1920, mobile ? undefined : 1080, true, mobile ? 'ratio-mobile' : 'ratio-16-9', mobile ? '390:844' : '16:9'));
+      if (dual) surfaces.append(runtimeSurface('副屏', 1280, 800, 1280, 720, 1920, 1080, false, 'ratio-16-9', '16:9'));
+      wrap.append(surfaces); wrap.append(el('div', 'hint', '逻辑画布分辨率取应用逐屏配置；设备显示区域与物理像素按各自屏幕读取，缺失时分别显示“未声明/未知”，不跨屏复制。')); return wrap;
     };
     const roleChoice = () => {
       const wrap = el('div', 'topology'); const card = el('div', 'card'); card.append(status('尚未配对 · 请选择当前机器的用途', 'pending', 'topology.goal-choice'));
@@ -254,7 +249,7 @@
       return pairedTopology(frame);
     };
     const crossContent = () => {
-      const wrap = el('div', 'cross'); const runtime = el('div', 'cross-pane'); runtime.append(el('h3', '', '运行状态 tab')); const r = el('div', 'card'); r.append(el('strong', '', '检测到两块物理屏'), document.createTextNode('主屏：当前 surface · 逻辑 1280 × 800 · 物理 1920 × 1200\n副屏：非当前 surface · 该屏信息未提供（仅保留存在性与角色）')); runtime.append(r);
+      const wrap = el('div', 'cross'); const runtime = el('div', 'cross-pane'); runtime.append(el('h3', '', '运行状态 tab')); const r = el('div', 'card'); r.append(el('strong', '', '检测到两块物理屏'), document.createTextNode('主屏：逻辑画布 1280 × 800 · 设备显示区域 1280 × 720 · 物理 1920 × 1080\n副屏：逻辑画布 1280 × 800 · 设备显示区域 1280 × 720 · 物理 1920 × 1080')); runtime.append(r);
       const topo = el('div', 'cross-pane'); topo.append(el('h3', '', '双机拓扑 tab')); const t = el('div', 'card'); t.append(el('strong', '', '当前功能不可用'), document.createTextNode('双机拓扑要求本机只有一个物理屏')); topo.append(t); wrap.append(runtime, topo); return wrap;
     };
     const renderContent = frame => frame.kind === 'panel' ? panelContent(frame) : frame.kind === 'ports' ? portsContent(frame) : frame.kind === 'runtime' ? runtimeContent(frame) : frame.kind === 'unavailable' || frame.kind === 'topology' ? topologyContent(frame) : crossContent();

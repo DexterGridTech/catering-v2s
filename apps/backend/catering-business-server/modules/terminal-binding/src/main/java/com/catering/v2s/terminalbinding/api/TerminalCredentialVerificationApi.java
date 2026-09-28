@@ -20,7 +20,7 @@ public interface TerminalCredentialVerificationApi {
     record Credential(
             String groupWorkspaceKey, UUID terminalRef, long generation, byte[] secretDigest, String deviceId) {
         public Credential {
-            groupWorkspaceKey = required(groupWorkspaceKey, "groupWorkspaceKey", 128);
+            groupWorkspaceKey = requiredGroupWorkspaceKey(groupWorkspaceKey);
             terminalRef = Objects.requireNonNull(terminalRef, "terminalRef");
             if (generation < 1) throw new IllegalArgumentException("generation is invalid");
             secretDigest = digest(secretDigest);
@@ -61,7 +61,7 @@ public interface TerminalCredentialVerificationApi {
             outcome = Objects.requireNonNull(outcome, "outcome");
             if (outcome == Outcome.VERIFIED) {
                 workspaceUuid = Objects.requireNonNull(workspaceUuid, "workspaceUuid");
-                groupWorkspaceKey = required(groupWorkspaceKey, "groupWorkspaceKey", 128);
+                groupWorkspaceKey = requiredGroupWorkspaceKey(groupWorkspaceKey);
                 storeRef = Objects.requireNonNull(storeRef, "storeRef");
                 terminalRef = Objects.requireNonNull(terminalRef, "terminalRef");
                 if (generation < 1 || activatedAtEpochMillis < 0) {
@@ -87,6 +87,13 @@ public interface TerminalCredentialVerificationApi {
     private static String required(String value, String name, int maxLength) {
         if (value == null || value.isEmpty() || value.length() > maxLength) {
             throw new IllegalArgumentException(name + " is invalid");
+        }
+        return value;
+    }
+
+    private static String requiredGroupWorkspaceKey(String value) {
+        if (value == null || !value.matches("[A-Za-z0-9][A-Za-z0-9_-]{0,63}")) {
+            throw new IllegalArgumentException("groupWorkspaceKey is invalid");
         }
         return value;
     }

@@ -20,7 +20,7 @@ public final class TerminalConnectionProtocol {
     private final Map<String, MessageDefinition> messages;
     private final int applicationCloseCode;
     private final Set<String> applicationCloseReasons;
-    private final Map<Integer, String> standardCloseReasons;
+    private final Set<Integer> standardCloseCodes;
     private final int maxFramePayloadBytes;
     private final int maxDecompressedMessageBytes;
     private final int maxCompleteDecompressedMessageBytes;
@@ -41,13 +41,15 @@ public final class TerminalConnectionProtocol {
             JsonNode fields = requiredObject(messageNode, "fields");
             Set<String> fieldNames = new HashSet<>();
             fields.propertyNames().forEach(fieldNames::add);
+            String additionalFields = requiredText(messageNode, "additionalFields");
+            if (!"ignore".equals(additionalFields)) throw invalidContract("unknown additional-fields handling");
             MessageDefinition definition = new MessageDefinition(
                     type,
                     requiredText(messageNode, "direction"),
                     messageNode.path("firstMessage").asBoolean(false),
                     messageNode.path("maxSerializedUtf8Bytes").asInt(0),
                     Set.copyOf(fieldNames),
-                    messageNode.path("additionalFields").asBoolean(true));
+                    true);
             if (loadedMessages.putIfAbsent(type, definition) != null) {
                 throw invalidContract("duplicate message type");
             }
@@ -61,15 +63,14 @@ public final class TerminalConnectionProtocol {
         applicationCloseReasons = readUniqueTextArray(application, "reasons");
         if (applicationCloseReasons.isEmpty()) throw invalidContract("application close reasons are empty");
 
-        Map<Integer, String> loadedStandardReasons = new HashMap<>();
+        Set<Integer> loadedStandardCloseCodes = new HashSet<>();
         for (JsonNode exception : requiredArray(close, "standardExceptions")) {
             int code = requiredPositiveInteger(exception, "code");
-            String reason = requiredText(exception, "reason");
-            if (loadedStandardReasons.putIfAbsent(code, reason) != null) {
+            if (!loadedStandardCloseCodes.add(code)) {
                 throw invalidContract("duplicate standard close code");
             }
         }
-        standardCloseReasons = Map.copyOf(loadedStandardReasons);
+        standardCloseCodes = Set.copyOf(loadedStandardCloseCodes);
 
         JsonNode limits = requiredObject(requiredObject(contract, "compression"), "limits");
         maxFramePayloadBytes = requiredPositiveInteger(limits, "maxFramePayloadBytes");
@@ -95,17 +96,18 @@ public final class TerminalConnectionProtocol {
     }
 
     public Close standardClose(int code) {
-        String reason = standardCloseReasons.get(code);
-        if (reason == null) throw new IllegalArgumentException("unknown terminal standard close code");
-        return new Close(code, reason);
+        if (!standardCloseCodes.contains(code)) {
+            throw new IllegalArgumentException("unknown terminal standard close code");
+        }
+        return new Close(code, "");
     }
 
     public Set<String> applicationCloseReasons() {
         return applicationCloseReasons;
     }
 
-    public Map<Integer, String> standardCloseReasons() {
-        return standardCloseReasons;
+    public Set<Integer> standardCloseCodes() {
+        return standardCloseCodes;
     }
 
     public int maxFramePayloadBytes() {

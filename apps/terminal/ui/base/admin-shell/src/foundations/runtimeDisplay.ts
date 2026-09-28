@@ -7,9 +7,6 @@ export type RuntimeDisplayProjection = Readonly<{
   readonly surfaces: readonly PrimitiveSurfaceMapSurface[]
 }>
 
-const sizeLabel = (size: Readonly<{readonly width: number; readonly height: number}> | null): string =>
-  size === null ? '未知' : `${size.width}×${size.height}`
-
 const roleLabel = (role: DisplayFactsSurface['role']): string => {
   if (role === 'primary') return '主屏'
   if (role === 'secondary') return '副屏'
@@ -42,6 +39,10 @@ const currentSurfaceKeyOf = (
 
 export const projectRuntimeDisplay = (input: Readonly<{
   readonly facts: DisplayFactsReadModel | undefined
+  readonly surfaceCanvasSizes: Readonly<{
+    readonly PRIMARY?: Readonly<{readonly width: number; readonly height: number}>
+    readonly SECONDARY?: Readonly<{readonly width: number; readonly height: number}>
+  }>
   readonly surfaceForm: 'laptop' | 'mobile'
   readonly renderDisplayMode: 'PRIMARY' | 'SECONDARY'
   readonly currentLogicalSize: Readonly<{readonly width: number; readonly height: number}> | null
@@ -61,8 +62,11 @@ export const projectRuntimeDisplay = (input: Readonly<{
   const currentSurfaceKey = currentSurfaceKeyOf(facts, input.renderDisplayMode)
   const projected = facts.surfaces.map((surface): PrimitiveSurfaceMapSurface | null => {
     const current = surface.surfaceKey === currentSurfaceKey
-    const logicalSize = current && surface.logicalSize === null ? input.currentLogicalSize : surface.logicalSize
-    if (logicalSize === null || logicalSize.width <= 0 || logicalSize.height <= 0) return null
+    const canvasSize = input.surfaceCanvasSizes[surface.surfaceKey]
+    const deviceLogicalSize = surface.logicalSize ?? (current ? input.currentLogicalSize : null)
+    const physicalSize = surface.physicalSize
+    const aspectSize = deviceLogicalSize ?? physicalSize
+    if (aspectSize === null || aspectSize.width <= 0 || aspectSize.height <= 0) return null
     const readiness = readinessLabel(surface.readiness)
     return Object.freeze({
       key: surface.surfaceKey,
@@ -70,21 +74,20 @@ export const projectRuntimeDisplay = (input: Readonly<{
       roleLabel: current ? '当前 surface' : '非当前 surface',
       current,
       present: surface.present,
-      aspectRatio: logicalSize.width / logicalSize.height,
-      insideLabels: current
-        ? Object.freeze([readiness.label, `可用状态：${surface.readiness === 'ready' ? '正常' : readiness.label}`])
-        : Object.freeze(['该屏信息未提供', '仅保留存在性与角色']),
+      aspectRatio: aspectSize.width / aspectSize.height,
+      insideLabels: Object.freeze([
+        readiness.label,
+        `可用状态：${surface.readiness === 'ready' ? '正常' : readiness.label}`,
+      ]),
       outsideLabels: Object.freeze([]),
-      ...(current ? {
-        logicWidthLabel: `逻辑长：${logicalSize.width}`,
-        logicHeightLabel: `逻辑高：${logicalSize.height}`,
-        physicalWidthLabel: `物理长：${surface.physicalSize?.width ?? '未知'}`,
-        physicalHeightLabel: `物理高：${surface.physicalSize?.height ?? '未知'}`,
-      } : {}),
+      logicWidthLabel: `逻辑分辨率宽：${canvasSize?.width ?? '未声明'}`,
+      logicHeightLabel: `逻辑分辨率高：${canvasSize?.height ?? '未声明'}`,
+      physicalWidthLabel: `物理长：${physicalSize?.width ?? '未知'}`,
+      physicalHeightLabel: `物理高：${physicalSize?.height ?? '未知'}`,
     })
   })
   if (projected.some(surface => surface === null)) {
-    return Object.freeze({status: 'error', reason: reasonLabel('DISPLAY_FACTS_LOGICAL_SIZE_NOT_PROVIDED'), surfaces: Object.freeze([])})
+    return Object.freeze({status: 'error', reason: '屏幕尺寸事实未提供', surfaces: Object.freeze([])})
   }
   return Object.freeze({status: 'ready', reason: null, surfaces: Object.freeze(projected as PrimitiveSurfaceMapSurface[])})
 }

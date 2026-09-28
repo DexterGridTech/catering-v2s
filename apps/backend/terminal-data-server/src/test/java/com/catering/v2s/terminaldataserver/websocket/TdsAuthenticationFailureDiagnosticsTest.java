@@ -33,4 +33,15 @@ class TdsAuthenticationFailureDiagnosticsTest {
         assertEquals(
                 new TdsAuthenticationFailureDiagnostics.Diagnostic("UNKNOWN", "UNKNOWN", "UNKNOWN", "NONE"), absent);
     }
+
+    @Test
+    void identifiesAnActiveSessionReceiveFailureWithoutIncludingItsMessage() {
+        var diagnostic = TdsAuthenticationFailureDiagnostics.describe(
+                new IllegalStateException("raw-frame-must-not-be-logged"),
+                TdsAuthenticationFailureDiagnostics.Stage.ACTIVE_SESSION_RECEIVE);
+
+        assertEquals("ACTIVE_SESSION_RECEIVE", diagnostic.stage());
+        assertEquals("IllegalStateException", diagnostic.failureType());
+        assertFalse(diagnostic.toString().contains("raw-frame-must-not-be-logged"));
+    }
 }

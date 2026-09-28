@@ -748,6 +748,39 @@ describe('ui primitives', () => {
     act(() => { renderer.unmount(); });
   });
 
+  it('keeps the admin navigation native Pressable class stable across selection updates', () => {
+    const AdminNavigationHarness = () => {
+      const [selected, setSelected] = useState(false);
+      return (
+        <PrimitivePressOption
+          testID="sample:admin-navigation-option"
+          accessibilityLabel="运行状态"
+          selected={selected}
+          variant="admin-nav"
+          icon="monitor"
+          onPress={() => setSelected(true)}
+        >
+          运行状态
+        </PrimitivePressOption>
+      );
+    };
+    const renderer = mount(<AdminNavigationHarness />);
+    const initialPressable = renderer.root.findAllByType(Pressable)
+      .find(node => node.props.testID === 'sample:admin-navigation-option')!;
+    const initialClassName = initialPressable.props.className;
+    expect(initialClassName).toBe(baseTokens.adminNavItem);
+
+    act(() => { (initialPressable.props.onPress as () => void)(); });
+
+    const selectedPressable = renderer.root.findAllByType(Pressable)
+      .find(node => node.props.testID === 'sample:admin-navigation-option')!;
+    expect(selectedPressable.props.className).toBe(initialClassName);
+    expect(selectedPressable.props.accessibilityState).toMatchObject({selected: true});
+    const selectedSurface = renderer.root.findByProps({testID: 'sample:admin-navigation-option:selected-surface'});
+    expect(selectedSurface.props.className).toBe(baseTokens.adminNavItemSelected);
+    act(() => { renderer.unmount(); });
+  });
+
   it('renders a non-empty SVG path from the primitives icon set', () => {
     const renderer = mount(
       <RnrSvgIcon
@@ -806,7 +839,7 @@ describe('ui primitives', () => {
             direction="row"
             surfaces={[
               {key: 'PRIMARY', label: '当前屏', roleLabel: '主屏', current: true, present: true, aspectRatio: 2, insideLabels: ['已就绪'], outsideLabels: ['备用'], logicWidthLabel: '逻辑长：1920', logicHeightLabel: '逻辑高：960', physicalWidthLabel: '物理长：2560', physicalHeightLabel: '物理高：1440', statusLabel: '已就绪', statusTone: 'ok'},
-              {key: 'SECONDARY', label: '副屏', roleLabel: '副屏', current: false, present: true, aspectRatio: 1.5, insideLabels: ['该屏信息未提供'], outsideLabels: []},
+              {key: 'SECONDARY', label: '副屏', roleLabel: '副屏', current: false, present: true, aspectRatio: 1.5, insideLabels: ['设备显示区域：1280×720', '已就绪'], outsideLabels: [], logicWidthLabel: '逻辑分辨率宽：1280', logicHeightLabel: '逻辑分辨率高：800', physicalWidthLabel: '物理长：1920', physicalHeightLabel: '物理高：1080'},
             ]}
           />
         </>
@@ -837,9 +870,10 @@ describe('ui primitives', () => {
     expect(baseTokens.adminSurfaceMapPhysicalWidth).toContain('top-0');
     expect(baseTokens.adminSurfaceMapPhysicalHeight).toContain('left-full top-1/2');
     expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY:card'}).props.style).toBeUndefined();
-    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY:inside:0'})).toBeDefined();
-    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY'}).props.className).toContain(baseTokens.adminSurfaceMapLimited);
-    expect(renderer.root.findAllByProps({testID: 'sample:surface-map:surface:SECONDARY:logic-width'})).toHaveLength(0);
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY:inside:0'}).props.children).toBe('设备显示区域：1280×720');
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY'}).props.className).toContain(baseTokens.adminSurfaceMapRect);
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY:logic-width'}).props.children).toBe('逻辑分辨率宽：1280');
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY:outside:1'}).props.children).toBe('物理高：1080');
     act(() => { renderer.unmount(); });
   });
 

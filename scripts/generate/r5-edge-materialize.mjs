@@ -247,6 +247,17 @@ function validateTerminalRetryPolicy(catalog) {
     fail("R5_EDGE_TERMINAL_PREAUTH_IDEMPOTENCY_POLICY_DRIFT", "activateTerminal");
   }
 }
+function pathParameterSchema(name) {
+  if (name === "groupWorkspaceKey") {
+    return {
+      type: "string",
+      minLength: 1,
+      maxLength: 64,
+      pattern: "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+    };
+  }
+  return applyUuidReferenceFormat({ type: "string", minLength: 1, maxLength: 128 }, name);
+}
 function operationDocument(operation, catalog, requirements, pathFile) {
   const safeRetryable = safeRetryableOperationIds.has(operation.operationId);
   if ((safeRetryable && operation.safeRetryable !== true)
@@ -255,7 +266,12 @@ function operationDocument(operation, catalog, requirements, pathFile) {
     fail("R5_EDGE_TERMINAL_SAFE_RETRY_POLICY_DRIFT", operation.operationId);
   }
   const parameters = [
-    ...(operation.pathParameters || []).map((name) => ({ name, in: "path", required: true, schema: applyUuidReferenceFormat({ type: "string", minLength: 1, maxLength: 128 }, name) })),
+    ...(operation.pathParameters || []).map((name) => ({
+      name,
+      in: "path",
+      required: true,
+      schema: pathParameterSchema(name)
+    })),
     ...(operation.queryParameters || []).map((parameter) => ({ in: "query", ...clone(parameter), schema: applyUuidReferenceFormat(convertSymbolRefs(parameter.schema), parameter.name) })),
     ...(operation.headerParameters || []).map((parameter) => ({ ...clone(parameter), schema: applyUuidReferenceFormat(convertSymbolRefs(parameter.schema), parameter.name) })),
   ];

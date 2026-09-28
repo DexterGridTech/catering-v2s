@@ -21,8 +21,8 @@ export const baseTokens = Object.freeze({
   adminGateIcon: 'h-12 w-12 items-center justify-center rounded-[16px]',
   adminNav: 'w-full min-h-0 rounded-2xl bg-admin-shell-surface',
   adminNavList: 'w-full flex-col gap-1.5 bg-admin-shell-surface',
-  adminNavItem: 'relative w-full min-h-11 flex-row items-center gap-2 rounded-xl px-3 text-admin-shell-muted',
-  adminNavItemSelected: 'relative w-full min-h-11 flex-row items-center gap-2 rounded-xl bg-admin-action px-3 text-admin-shell-foreground shadow-lg',
+  adminNavItem: 'relative w-full min-h-11 flex-row items-center gap-2 rounded-xl px-3',
+  adminNavItemSelected: 'absolute inset-0 rounded-xl bg-admin-action shadow-lg',
   adminNavItemText: 'text-sm leading-5 font-semibold text-admin-shell-muted',
   adminNavItemSelectedText: 'text-sm leading-5 font-semibold text-admin-action-foreground',
   adminNavFocusBar: 'absolute left-0 h-6 w-1 rounded-full bg-admin-focus',
@@ -73,7 +73,6 @@ export const baseTokens = Object.freeze({
   adminSurfaceMapCardColumn: 'w-full rounded-2xl border border-admin-content-border bg-surface-elevated p-4 gap-2 shadow-lg',
   adminSurfaceMapCardCurrentColumn: 'w-full rounded-2xl border-2 border-admin-focus bg-surface-elevated p-4 gap-2 shadow-lg',
   adminSurfaceMapWrap: 'w-full relative px-4 py-4 pb-12',
-  adminSurfaceMapLimited: 'w-full min-h-[74px] items-center justify-center rounded-[10px] border border-admin-content-border bg-admin-inset p-3 gap-1',
   // The rectangle's aspectRatio is an executable surface fact. Do not add a
   // fixed min-height here: it would override portrait/landscape geometry on
   // narrow surfaces and turn the map into a false square. The geometry token

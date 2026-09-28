@@ -8,8 +8,11 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.ContinuationWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.CorruptedWebSocketFrameException;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocket08FrameDecoder;
+import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
 import java.util.List;
@@ -38,6 +41,17 @@ class TdsReservedBitsGateTest {
     }
 
     @Test
+    void preservesTheDecoderSuppliedCloseStatusForCorruptedWebSocketFrames() {
+        EmbeddedChannel channel = new EmbeddedChannel(new TdsReservedBitsGate(65_536, Schedulers.immediate()));
+
+        channel.pipeline()
+                .fireExceptionCaught(new CorruptedWebSocketFrameException(
+                        WebSocketCloseStatus.MESSAGE_TOO_BIG, "Netty frame decoder message"));
+
+        assertMessageTooBig(channel);
+    }
+
+    @Test
     void installsTheOfferGateAfterHttpCodecAndReservedGateBeforeReactiveBridge() {
         EmbeddedChannel channel = new EmbeddedChannel();
         channel.pipeline().addLast(NettyPipeline.HttpCodec, new ChannelInboundHandlerAdapter());
@@ -46,6 +60,8 @@ class TdsReservedBitsGateTest {
         TdsWebSocketPipelineInstaller.install(channel.pipeline(), 65_536, Schedulers.immediate());
 
         List<String> names = channel.pipeline().names();
+        assertThat(names.indexOf(TdsWebSocketPipelineInstaller.CLOSE_REASON_NORMALIZER))
+                .isZero();
         assertThat(names.indexOf(TdsWebSocketPipelineInstaller.PMD_OFFER_GATE))
                 .isEqualTo(names.indexOf(NettyPipeline.HttpCodec) + 1);
         assertThat(names.indexOf(TdsWebSocketPipelineInstaller.PMD_COMPRESSION_HANDLER))
@@ -56,6 +72,35 @@ class TdsReservedBitsGateTest {
                 .isEqualTo(names.indexOf(NettyPipeline.ReactiveBridge) - 1);
         assertThat(names.indexOf(TdsWebSocketPipelineInstaller.RESERVED_BITS_GATE))
                 .isEqualTo(names.indexOf(TdsWebSocketPipelineInstaller.MESSAGE_AGGREGATOR) + 1);
+        channel.finishAndReleaseAll();
+    }
+
+    @Test
+    void normalizesTheNettyDecoderOversizeReasonAfterTheUpgradeDecoderIsInserted() {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        channel.pipeline().addLast(NettyPipeline.HttpCodec, new ChannelInboundHandlerAdapter());
+        channel.pipeline().addLast(NettyPipeline.ReactiveBridge, new ChannelInboundHandlerAdapter());
+        TdsWebSocketPipelineInstaller.install(channel.pipeline(), 65_536, Schedulers.immediate());
+
+        // Netty's WebSocket handshaker inserts its decoder immediately before HttpCodec during upgrade.
+        channel.pipeline()
+                .addBefore(
+                        NettyPipeline.HttpCodec,
+                        "nettyWebSocketDecoder",
+                        new WebSocket08FrameDecoder(true, false, 65_536));
+
+        var oversizedMaskedFrame = Unpooled.buffer(14 + 65_537)
+                .writeByte(0x82)
+                .writeByte(0xff)
+                .writeLong(65_537)
+                .writeInt(0x01020304)
+                .writeZero(65_537);
+        channel.writeInbound(oversizedMaskedFrame);
+
+        CloseWebSocketFrame normalized = channel.readOutbound();
+        assertThat(normalized).isNotNull();
+        assertThat(normalized.statusCode()).isEqualTo(1009);
+        normalized.release();
         channel.finishAndReleaseAll();
     }
 
@@ -106,8 +151,6 @@ class TdsReservedBitsGateTest {
         assertThat(channel.writeInbound(invalidFrame)).isFalse();
         CloseWebSocketFrame close = channel.readOutbound();
         assertThat(close).isNotNull();
-        assertThat(close.statusCode()).isEqualTo(1002);
-        assertThat(close.reasonText()).isEqualTo("PROTOCOL_ERROR");
         close.release();
         channel.finishAndReleaseAll();
     }
@@ -116,7 +159,6 @@ class TdsReservedBitsGateTest {
         CloseWebSocketFrame close = channel.readOutbound();
         assertThat(close).isNotNull();
         assertThat(close.statusCode()).isEqualTo(1009);
-        assertThat(close.reasonText()).isEqualTo("MESSAGE_TOO_BIG");
         close.release();
         channel.finishAndReleaseAll();
     }

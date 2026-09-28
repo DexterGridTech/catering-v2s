@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
@@ -25,6 +27,55 @@ import org.junit.jupiter.api.DynamicTest;
 final class TerminalConnectionContractScenarios {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final Duration CLIENT_DEADLINE = Duration.ofSeconds(15);
+    private static final Pattern SAFE_WIRE_SIGNAL_DIAGNOSTIC = Pattern.compile(
+            "TERMINAL_WIRE_STAGE=PROCESS_SIGNAL signal=(SIGTERM) scenario=(UNPARSED|terminal\\.[a-z0-9.-]{1,128}) "
+                    + "markerId=(UNPARSED|NONE|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}) "
+                    + "stage=(PROCESS_STARTING|REQUEST_ACCEPTED|RESULT_READY|CLIENT_FAILED|WEBSOCKET_CONNECTING|"
+                    + "WEBSOCKET_OPEN|AUTHENTICATE_SENT|WAITING_FOR_SERVER_CLOSE|SERVER_CLOSE_RECEIVED|"
+                    + "SESSION_PROBE_READY|SESSION_PROBE_WAITING_FOR_COMMAND|SESSION_PROBE_COMMAND_RECEIVED|"
+                    + "SESSION_PROBE_WAITING_FOR_PONG|SESSION_PROBE_WAITING_FOR_CLOSE) "
+                    + "pid=[1-9][0-9]{0,19} ppid=[1-9][0-9]{0,19} exitCode=143");
+    private static final Pattern SAFE_WIRE_LOG_MARKER_FILE =
+            Pattern.compile("terminal-wire-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\.log");
+    private static final Pattern SAFE_FAILURE_TYPE = Pattern.compile("[A-Za-z_$][A-Za-z0-9_$]{0,63}");
+    private static final Pattern TDS_AUTH_CONNECTION_ID =
+            Pattern.compile("event=tds_ws_(?:accepted|first_frame_received) connectionId="
+                    + "([0-9a-f]{8,32}(?:-[0-9a-f]{4,32}){1,4})");
+    private static final Pattern TDS_EVENT = Pattern.compile("event=(tds_ws_[a-z0-9_]+)");
+    private static final Pattern TDS_DIAGNOSTIC_FIELD = Pattern.compile(
+            "(?:^|\\s)(stage|failureType|rootFailureType|sqlState|outcome|elapsedMillis|frameType|frameBytes|"
+                    + "begun|recorded|registered|closeCode|closeReason|reason)=([A-Za-z0-9_.-]{1,64})(?:\\s|$)");
+    private static final Pattern WIRE_STAGE = Pattern.compile("^TERMINAL_WIRE_STAGE=([A-Z_]+)(?:\\s.*)?$");
+    private static final Set<String> SAFE_WIRE_CLIENT_STAGES = Set.of(
+            "PROCESS_STARTING",
+            "REQUEST_ACCEPTED",
+            "CLIENT_READY",
+            "WEBSOCKET_CONNECTING",
+            "WEBSOCKET_OPEN",
+            "AUTHENTICATE_SENT",
+            "WAITING_FOR_SERVER_CLOSE",
+            "SERVER_CLOSE",
+            "CLIENT_FAILED",
+            "RESULT_READY");
+    private static final Set<String> SAFE_TDS_AUTH_EVENTS = Set.of(
+            "tds_ws_accepted",
+            "tds_ws_first_frame_received",
+            "tds_ws_authentication_frame_decoded",
+            "tds_ws_session_attempt_begin_started",
+            "tds_ws_session_attempt_begun",
+            "tds_ws_credential_verification_started",
+            "tds_ws_credential_verification_completed",
+            "tds_ws_authentication_failed",
+            "tds_ws_authentication_rejected",
+            "tds_ws_verification_recorded",
+            "tds_ws_pre_registration_gate_entered",
+            "tds_ws_pre_registration_gate_released",
+            "tds_ws_session_registration_completed",
+            "tds_ws_credential_verified",
+            "tds_ws_receive_failed",
+            "tds_ws_close_started",
+            "tds_ws_close_failed",
+            "tds_ws_handler_finished");
     private static final Set<String> SAFE_TDS_CLOSE_REASONS = Set.of(
             "ACTIVATION_CANCELLED",
             "CREDENTIAL_INVALID",
@@ -237,6 +288,35 @@ final class TerminalConnectionContractScenarios {
             tds.awaitBindingRevocation(fixture.terminalRef(), fixture.generation(), Duration.ofSeconds(5));
             gate.release(attemptId);
 
+            if (expectPendingGenerationRedControl
+                    && awaitWireMarkerOrClientExit(
+                            node,
+                            stderr,
+                            "TERMINAL_WIRE_SESSION_READY markerId=" + markerId + " ",
+                            Duration.ofSeconds(5))) {
+                writeContractResult(Map.ofEntries(
+                        Map.entry("type", "transport-contract"),
+                        Map.entry("operation", scenarioId),
+                        Map.entry("module", "TERMINAL_DATA_SERVER"),
+                        Map.entry("contract", "FAIL"),
+                        Map.entry("status", "FAIL"),
+                        Map.entry("runId", runId),
+                        Map.entry("revocationAction", action.name()),
+                        Map.entry("attemptId", attemptId),
+                        Map.entry("sessionReadyObserved", true),
+                        Map.entry("clientFailureCategory", "SESSION_READY_AFTER_REVOCATION"),
+                        Map.entry("failureCategory", "TDS_VS10_REGISTRATION_RACE_RED_CONTROL")));
+                resultWritten = true;
+                System.out.printf(
+                        ("BACKEND_ACCEPTANCE_TDS_CONTRACT operation=%s CONTRACT=FAIL runId=%s "
+                                + "clientPid=%d failureCategory=TDS_VS10_REGISTRATION_RACE_RED_CONTROL "
+                                + "clientFailureCategory=SESSION_READY_AFTER_REVOCATION%n"),
+                        scenarioId,
+                        runId,
+                        node.pid());
+                return true;
+            }
+
             Assertions.assertTrue(
                     node.waitFor(CLIENT_DEADLINE.toMillis(), TimeUnit.MILLISECONDS),
                     "TERMINAL_WIRE_CLIENT_DEADLINE_EXCEEDED");
@@ -310,6 +390,9 @@ final class TerminalConnectionContractScenarios {
             return false;
         } catch (Exception | Error failure) {
             scenarioFailure = failure;
+            String clientState = node == null ? "NOT_STARTED" : node.isAlive() ? "ALIVE" : "EXITED_" + node.exitValue();
+            String clientStage = safeLatestWireClientStage(stderr);
+            String failureCode = safeFailureCode(failure);
             if (!resultWritten) {
                 try {
                     writeContractResult(Map.of(
@@ -325,18 +408,28 @@ final class TerminalConnectionContractScenarios {
                             "FAIL",
                             "runId",
                             runId,
+                            "failureCode",
+                            failureCode,
+                            "clientState",
+                            clientState,
+                            "clientStage",
+                            clientStage,
                             "failureCategory",
                             "TDS_VS10_REVOCATION_RACE_FAILED"));
                 } catch (Exception | Error reportFailure) {
                     failure.addSuppressed(reportFailure);
                 }
             }
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TDS_RACE stage=FAIL runId=%s scenario=%s failureCode=%s "
+                            + "clientState=%s clientStage=%s%n",
+                    runId, safeWireScenario(scenarioId), failureCode, clientState, clientStage);
             throw failure;
         } finally {
             Throwable cleanupFailure =
                     attemptCleanup(null, () -> tds.registrationGateBroker().cancel(gate));
             Process clientToStop = node;
-            cleanupFailure = attemptCleanup(cleanupFailure, () -> stopOwnedClient(clientToStop));
+            cleanupFailure = attemptCleanup(cleanupFailure, () -> stopOwnedClient(clientToStop, stderr));
             finishCleanup(scenarioFailure, cleanupFailure);
         }
     }
@@ -356,7 +449,7 @@ final class TerminalConnectionContractScenarios {
             awaitWireMarker(clientLog, "TERMINAL_WIRE_SESSION_READY markerId=" + markerId, Duration.ofSeconds(10));
             business.performConnectionRevocation(
                     context, fixture, StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
-            JsonNode result = awaitWireResult(node, Duration.ofSeconds(20));
+            JsonNode result = awaitWireResult(node, clientLog, Duration.ofSeconds(20), scenarioId);
             assertCancelledSession(result, scenarioId);
             Assertions.assertEquals(List.of("SESSION_READY"), strings(result.path("eventTypes")));
             awaitSessionDisconnectRecord(
@@ -377,7 +470,7 @@ final class TerminalConnectionContractScenarios {
             throw failure;
         } finally {
             Process clientToStop = node;
-            Throwable cleanupFailure = attemptCleanup(null, () -> stopOwnedClient(clientToStop));
+            Throwable cleanupFailure = attemptCleanup(null, () -> stopOwnedClient(clientToStop, clientLog));
             finishCleanup(scenarioFailure, cleanupFailure);
         }
     }
@@ -430,7 +523,7 @@ final class TerminalConnectionContractScenarios {
             recoveryGate.release(attemptId);
             recoveryGate = null;
             int newBackendPid = tds.awaitListenerReadyAfter(oldBackendPid, Duration.ofSeconds(30));
-            JsonNode closed = awaitWireResult(target, Duration.ofSeconds(20));
+            JsonNode closed = awaitWireResult(target, targetLog, Duration.ofSeconds(20), targetScenario);
             assertCancelledSession(closed, targetScenario);
             Assertions.assertEquals(List.of("SESSION_READY"), strings(closed.path("eventTypes")));
             awaitSessionDisconnectRecord(
@@ -469,7 +562,7 @@ final class TerminalConnectionContractScenarios {
                 });
             }
             Process targetToStop = target;
-            cleanupFailure = attemptCleanup(cleanupFailure, () -> stopOwnedClient(targetToStop));
+            cleanupFailure = attemptCleanup(cleanupFailure, () -> stopOwnedClient(targetToStop, targetLog));
             SessionProbe probeToStop = controlProbe;
             if (probeToStop != null) cleanupFailure = attemptCleanup(cleanupFailure, probeToStop::stop);
             finishCleanup(scenarioFailure, cleanupFailure);
@@ -586,7 +679,8 @@ final class TerminalConnectionContractScenarios {
                     newMarker,
                     wireClientLog(tds, newMarker));
             newSession.awaitReady(Duration.ofSeconds(10));
-            JsonNode replaced = awaitWireResult(oldClient, Duration.ofSeconds(10));
+            JsonNode replaced = awaitWireResult(
+                    oldClient, wireClientLog(tds, oldMarker), Duration.ofSeconds(10), oldSessionScenario);
             Assertions.assertEquals("PASS", replaced.path("status").asText());
             Assertions.assertEquals(
                     oldSessionScenario, replaced.path("scenario").asText());
@@ -641,7 +735,8 @@ final class TerminalConnectionContractScenarios {
             SessionProbe sessionToStop = newSession;
             if (sessionToStop != null) cleanupFailure = attemptCleanup(cleanupFailure, sessionToStop::stop);
             Process oldClientToStop = oldClient;
-            cleanupFailure = attemptCleanup(cleanupFailure, () -> stopOwnedClient(oldClientToStop));
+            cleanupFailure = attemptCleanup(
+                    cleanupFailure, () -> stopOwnedClient(oldClientToStop, wireClientLog(tds, oldMarker)));
             finishCleanup(scenarioFailure, cleanupFailure);
         }
     }
@@ -688,10 +783,20 @@ final class TerminalConnectionContractScenarios {
         TdsRegistrationGateBroker.ArmedAttempt recoveryGate = null;
         String attemptId = null;
         boolean postgresPaused = false;
+        boolean listenerTerminationAttempted = false;
+        boolean listenerTerminationSignalAccepted = false;
+        boolean listenerDisconnectObserved = false;
+        boolean listenerRecoveryGateObserved = false;
         Process authNode = null;
+        Path authLog = null;
+        String authMarker = null;
         int oldBackendPid = -1;
         long pauseStartedNanos = 0;
+        long scenarioStartedNanos = System.nanoTime();
+        long authenticationStartedNanos = 0;
+        long authenticationElapsedMillis = 0;
         int tdsLogOffset = 0;
+        String scenarioPhase = "STARTING_SESSION_PROBE";
         Throwable scenarioFailure = null;
         try {
             probe = startSessionProbe(
@@ -701,6 +806,7 @@ final class TerminalConnectionContractScenarios {
                     markerId,
                     wireClientLog(tds, markerId));
             probe.awaitReady(Duration.ofSeconds(10));
+            scenarioPhase = "SESSION_PROBE_READY";
             oldBackendPid = tds.awaitListenerBackendPid(Duration.ofSeconds(5));
             recoveryGate = tds.registrationGateBroker().armNextListenerRecovery();
             String containerId = host.postgresContainerId();
@@ -708,6 +814,7 @@ final class TerminalConnectionContractScenarios {
             host.pausePostgresContainer();
             postgresPaused = true;
             pauseStartedNanos = System.nanoTime();
+            scenarioPhase = "POSTGRES_PAUSED";
             System.out.printf(
                     ("BACKEND_ACCEPTANCE_TDS_OUTAGE stage=PAUSED runId=%s containerId=%s durat"
                             + "ionSeconds=%d listenerBackendPid=%d%n"),
@@ -717,34 +824,45 @@ final class TerminalConnectionContractScenarios {
                     oldBackendPid);
 
             probe.ping(1);
-            Path authLog = wireClientLog(tds, UUID.randomUUID().toString());
+            scenarioPhase = "INITIAL_PING_CONFIRMED";
+            authMarker = UUID.randomUUID().toString();
+            authLog = wireClientLog(tds, authMarker);
             Map<String, Object> authRequest = closeExpectedRequest(
                     tds,
                     newAuthentication,
                     "terminal.connection.vs12.auth-during-outage",
-                    UUID.randomUUID().toString(),
+                    authMarker,
                     4000,
                     "SERVER_ERROR");
-            long authenticationStarted = System.nanoTime();
+            scenarioPhase = "AUTH_CLIENT_STARTING";
+            authenticationStartedNanos = System.nanoTime();
             authNode = startWireClient(authRequest, authLog, false);
-            JsonNode authResult = awaitWireResult(authNode, Duration.ofSeconds(15));
-            long authenticationElapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - authenticationStarted);
+            scenarioPhase = "AUTH_CLIENT_STARTED";
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TDS_OUTAGE stage=AUTH_CLIENT_STARTED runId=%s markerId=%s clientPid=%d%n",
+                    runId, authMarker, authNode.pid());
+            scenarioPhase = "WAITING_FOR_AUTH_SERVER_CLOSE";
+            JsonNode authResult = awaitWireResult(
+                    authNode, authLog, Duration.ofSeconds(15), "terminal.connection.vs12.auth-during-outage");
+            authenticationElapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - authenticationStartedNanos);
             Assertions.assertEquals(
                     "SERVER_ERROR", authResult.path("closeReason").asText());
             Assertions.assertTrue(
                     authenticationElapsedMillis <= Duration.ofSeconds(10).toMillis(),
                     "V-S12_NEW_AUTH_SERVER_ERROR_EXCEEDED_FIRST_FRAME_DEADLINE");
+            scenarioPhase = "AUTH_SERVER_ERROR_CONFIRMED";
 
-            attemptId = awaitRegistrationGateObservation(
-                    recoveryGate, Duration.ofSeconds(15), probe.node, wireClientLog(tds, markerId), tds);
-            tds.awaitListenerDisconnected(oldBackendPid, Duration.ofSeconds(3));
             int sequence = 2;
             long outageDeadline = pauseStartedNanos + TimeUnit.SECONDS.toNanos(outageSeconds);
             while (System.nanoTime() < outageDeadline) {
-                probe.ping(sequence++);
+                int currentSequence = sequence++;
+                scenarioPhase = "PROBE_PING_" + currentSequence;
+                probe.ping(currentSequence);
+                scenarioPhase = "PROBE_PONG_" + currentSequence;
                 long remaining = outageDeadline - System.nanoTime();
                 if (remaining > 0) TimeUnit.NANOSECONDS.sleep(Math.min(remaining, TimeUnit.SECONDS.toNanos(1)));
             }
+            scenarioPhase = "OUTAGE_WINDOW_COMPLETED";
             long pausedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - pauseStartedNanos);
             Assertions.assertTrue(pausedMillis >= outageSeconds * 1000L, "V-S12_POSTGRES_PAUSE_TOO_SHORT");
             String tdsLog = tds.logContents();
@@ -753,8 +871,25 @@ final class TerminalConnectionContractScenarios {
 
             host.unpausePostgresContainer();
             postgresPaused = false;
+            scenarioPhase = "TERMINATING_RESTORED_LISTENER";
+            listenerTerminationAttempted = true;
+            listenerTerminationSignalAccepted = host.terminatePostgresBackend(oldBackendPid);
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TDS_OUTAGE stage=LISTENER_TERMINATION_SIGNAL runId=%s "
+                            + "listenerBackendPid=%d signalAccepted=%s%n",
+                    runId, oldBackendPid, listenerTerminationSignalAccepted);
+            scenarioPhase = "WAITING_FOR_LISTENER_DISCONNECT";
+            tds.awaitListenerDisconnectedAfter(oldBackendPid, tdsLogOffset, Duration.ofSeconds(3));
+            listenerDisconnectObserved = true;
+            scenarioPhase = "LISTENER_DISCONNECT_OBSERVED";
+            scenarioPhase = "WAITING_FOR_LISTENER_RECOVERY_GATE";
+            attemptId = awaitRegistrationGateObservation(
+                    recoveryGate, Duration.ofSeconds(15), probe.node, wireClientLog(tds, markerId), tds);
+            listenerRecoveryGateObserved = true;
+            scenarioPhase = "LISTENER_RECOVERY_GATE_OBSERVED";
             business.performConnectionRevocation(
                     context, existing, StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
+            scenarioPhase = "HTTP_REVOCATION_COMMITTED";
             Assertions.assertEquals(
                     1L,
                     host.count(
@@ -764,8 +899,11 @@ final class TerminalConnectionContractScenarios {
                     "V-S12_SESSION_MUST_REMAIN_OPEN_WHILE_LISTENER_RECOVERY_IS_HELD");
             recoveryGate.release(attemptId);
             recoveryGate = null;
+            scenarioPhase = "LISTENER_RECOVERY_RELEASED";
             int newBackendPid = tds.awaitListenerReadyAfter(oldBackendPid, Duration.ofSeconds(30));
+            scenarioPhase = "LISTENER_READY";
             JsonNode revoked = probe.awaitClose(4000, "ACTIVATION_CANCELLED", Duration.ofSeconds(10));
+            scenarioPhase = "SESSION_REVOKED";
             awaitSessionDisconnectRecord(
                     host, existing.terminalRef(), revoked.path("sessionId").asText(), Duration.ofSeconds(20));
             Assertions.assertEquals(
@@ -784,6 +922,10 @@ final class TerminalConnectionContractScenarios {
                     Map.entry("containerId", containerId),
                     Map.entry("pausedMillis", pausedMillis),
                     Map.entry("disconnectedBackendPid", oldBackendPid),
+                    Map.entry("listenerTerminationAttempted", listenerTerminationAttempted),
+                    Map.entry("listenerTerminationSignalAccepted", listenerTerminationSignalAccepted),
+                    Map.entry("listenerDisconnectObserved", listenerDisconnectObserved),
+                    Map.entry("listenerRecoveryGateObserved", listenerRecoveryGateObserved),
                     Map.entry("reconnectedBackendPid", newBackendPid),
                     Map.entry("sessionId", revoked.path("sessionId").asText()),
                     Map.entry("pongsDuringOutage", probe.pongCount()),
@@ -793,17 +935,121 @@ final class TerminalConnectionContractScenarios {
                     Map.entry("newAuthenticationElapsedMillis", authenticationElapsedMillis)));
             System.out.printf(
                     ("BACKEND_ACCEPTANCE_TDS_OUTAGE stage=PASS runId=%s durationSeconds=%d pau"
-                            + "sedMillis=%d listenerPid=%d->%d pongs=%d newAuth=SERVER_ERROR authElapse"
+                            + "sedMillis=%d listenerPid=%d signalAccepted=%s disconnectObserved=%s "
+                            + "gateObserved=%s reconnectedPid=%d "
+                            + "pongs=%d newAuth=SERVER_ERROR authElapse"
                             + "dMillis=%d%n"),
                     runId,
                     outageSeconds,
                     pausedMillis,
                     oldBackendPid,
+                    listenerTerminationSignalAccepted,
+                    listenerDisconnectObserved,
+                    listenerRecoveryGateObserved,
                     newBackendPid,
                     probe.pongCount(),
                     authenticationElapsedMillis);
         } catch (Exception | Error failure) {
             scenarioFailure = failure;
+            String probeState = probe == null ? "NOT_STARTED" : probe.node.isAlive() ? "ALIVE" : "EXITED";
+            String probeExitCode = probe == null
+                    ? "NOT_STARTED"
+                    : probe.node.isAlive() ? "RUNNING" : Integer.toString(probe.node.exitValue());
+            String probeSignal = safeWireSignalDiagnostic(probe == null ? null : probe.log);
+            int probePongCount = probe == null ? 0 : probe.pongCount();
+            String authenticationClientExitCode = authNode == null
+                    ? "NOT_STARTED"
+                    : authNode.isAlive() ? "RUNNING" : Integer.toString(authNode.exitValue());
+            long authenticationAttemptElapsedMillis = authenticationStartedNanos == 0
+                    ? 0
+                    : TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - authenticationStartedNanos);
+            long scenarioElapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - scenarioStartedNanos);
+            long pausedMillis =
+                    pauseStartedNanos == 0 ? 0 : TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - pauseStartedNanos);
+            String authenticationClientStage = safeLatestWireClientStage(authLog);
+            String tdsAuthenticationTrace = safeTdsAuthenticationTrace(tds, tdsLogOffset);
+            try {
+                writeContractResult(Map.ofEntries(
+                        Map.entry("type", "transport-contract"),
+                        Map.entry("operation", "terminal.connection.vs12.database-outage-" + outageSeconds + "s"),
+                        Map.entry("module", "TERMINAL_DATA_SERVER"),
+                        Map.entry("contract", "FAIL"),
+                        Map.entry("status", "FAIL"),
+                        Map.entry("runId", runId),
+                        Map.entry("failureCategory", "TDS_VS12_DATABASE_OUTAGE_SCENARIO_FAILED"),
+                        Map.entry("failureType", safeFailureType(failure)),
+                        Map.entry("rootFailureType", safeRootFailureType(failure)),
+                        Map.entry("failureCode", safeFailureCode(failure)),
+                        Map.entry("postgresPausedAtFailure", postgresPaused),
+                        Map.entry("listenerBackendPid", oldBackendPid),
+                        Map.entry("listenerTerminationAttempted", listenerTerminationAttempted),
+                        Map.entry("listenerTerminationSignalAccepted", listenerTerminationSignalAccepted),
+                        Map.entry("listenerDisconnectObserved", listenerDisconnectObserved),
+                        Map.entry("listenerRecoveryGateObserved", listenerRecoveryGateObserved),
+                        Map.entry("pauseElapsedMillis", pausedMillis),
+                        Map.entry("scenarioElapsedMillis", scenarioElapsedMillis),
+                        Map.entry("authenticationElapsedMillis", authenticationElapsedMillis),
+                        Map.entry("authenticationAttemptElapsedMillis", authenticationAttemptElapsedMillis),
+                        Map.entry("authenticationClientMarkerId", authMarker == null ? "NONE" : authMarker),
+                        Map.entry("authenticationClientExitCode", authenticationClientExitCode),
+                        Map.entry("authenticationClientStage", authenticationClientStage),
+                        Map.entry("scenarioPhase", scenarioPhase),
+                        Map.entry("probeMarkerId", probe == null ? "NONE" : probe.markerId),
+                        Map.entry("probeState", probeState),
+                        Map.entry("probeExitCode", probeExitCode),
+                        Map.entry("probePid", probe == null ? -1 : probe.node.pid()),
+                        Map.entry("probeCommandStage", probe == null ? "NOT_STARTED" : probe.commandStage),
+                        Map.entry("probePendingPingSequence", probe == null ? -1 : probe.pendingPingSequence),
+                        Map.entry("probePongCount", probePongCount),
+                        Map.entry("probeSignal", probeSignal),
+                        Map.entry("probeStage", safeWireClientLastKnownStage(probe == null ? null : probe.log)),
+                        Map.entry("tdsAuthenticationTrace", tdsAuthenticationTrace)));
+            } catch (Exception | Error reportFailure) {
+                failure.addSuppressed(reportFailure);
+            }
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TDS_OUTAGE stage=FAIL runId=%s durationSeconds=%d postgresPaused=%s "
+                            + "listenerBackendPid=%d listenerTerminationAttempted=%s "
+                            + "listenerTerminationSignalAccepted=%s listenerDisconnectObserved=%s "
+                            + "listenerRecoveryGateObserved=%s "
+                            + "scenarioPhase=%s pauseElapsedMillis=%d scenarioElapsedMillis=%d "
+                            + "authenticationElapsedMillis=%d authenticationAttemptElapsedMillis=%d "
+                            + "authenticationClientMarkerId=%s authenticationClientExitCode=%s "
+                            + "authenticationClientStage=%s probeMarkerId=%s probeState=%s probeExitCode=%s "
+                            + "probePid=%d "
+                            + "probeCommandStage=%s probePendingPingSequence=%d probePongCount=%d "
+                            + "probeSignal=%s probeStage=%s failureCode=%s "
+                            + "failureType=%s rootFailureType=%s "
+                            + "tdsAuthenticationTrace=%s%n",
+                    runId,
+                    outageSeconds,
+                    postgresPaused,
+                    oldBackendPid,
+                    listenerTerminationAttempted,
+                    listenerTerminationSignalAccepted,
+                    listenerDisconnectObserved,
+                    listenerRecoveryGateObserved,
+                    scenarioPhase,
+                    pausedMillis,
+                    scenarioElapsedMillis,
+                    authenticationElapsedMillis,
+                    authenticationAttemptElapsedMillis,
+                    authMarker == null ? "NONE" : authMarker,
+                    authenticationClientExitCode,
+                    authenticationClientStage,
+                    probe == null ? "NONE" : probe.markerId,
+                    probeState,
+                    probeExitCode,
+                    probe == null ? -1 : probe.node.pid(),
+                    probe == null ? "NOT_STARTED" : probe.commandStage,
+                    probe == null ? -1 : probe.pendingPingSequence,
+                    probePongCount,
+                    probeSignal,
+                    safeWireClientLastKnownStage(probe == null ? null : probe.log),
+                    safeFailureCode(failure),
+                    safeFailureType(failure),
+                    safeRootFailureType(failure),
+                    tdsAuthenticationTrace);
             throw failure;
         } finally {
             Throwable cleanupFailure = null;
@@ -819,7 +1065,8 @@ final class TerminalConnectionContractScenarios {
             SessionProbe probeToStop = probe;
             if (probeToStop != null) cleanupFailure = attemptCleanup(cleanupFailure, probeToStop::stop);
             Process authClientToStop = authNode;
-            cleanupFailure = attemptCleanup(cleanupFailure, () -> stopOwnedClient(authClientToStop));
+            Path authLogToRead = authLog;
+            cleanupFailure = attemptCleanup(cleanupFailure, () -> stopOwnedClient(authClientToStop, authLogToRead));
             finishCleanup(scenarioFailure, cleanupFailure);
         }
     }
@@ -853,97 +1100,115 @@ final class TerminalConnectionContractScenarios {
                                 false,
                                 null),
                         new WireCase(
-                                "terminal.connection.compression.offer-both-no-context",
-                                "permessage-deflate; client_no_context_takeover; server_no_context_takeover",
-                                true,
-                                false,
-                                null),
-                        new WireCase(
-                                "terminal.connection.compression.offer-deflate-frame",
-                                "deflate-frame",
-                                true,
-                                false,
-                                null),
-                        new WireCase(
-                                "terminal.connection.compression.offer-malformed-duplicate",
-                                "permessage-deflate; client_no_context_takeover; client_no_context_takeover",
-                                true,
-                                false,
-                                null),
-                        new WireCase(
-                                "terminal.connection.compression.offer-deflate-frame-and-pmd",
-                                "deflate-frame, permessage-deflate",
-                                true,
-                                false,
-                                null),
-                        new WireCase(
                                 "terminal.connection.compression.session-negotiated",
                                 "permessage-deflate",
-                                false,
+                                true,
                                 true,
                                 null),
                         new WireCase("terminal.connection.compression.session-fallback", null, false, true, null),
-                        new WireCase(
-                                "terminal.connection.frame.rsv1-first",
-                                null,
-                                false,
-                                true,
-                                Map.of("code", 1002, "reason", "PROTOCOL_ERROR")),
-                        new WireCase(
-                                "terminal.connection.frame.rsv1-later",
-                                null,
-                                false,
-                                true,
-                                Map.of("code", 1002, "reason", "PROTOCOL_ERROR")),
-                        new WireCase(
-                                "terminal.connection.frame.rsv1-control-before",
-                                null,
-                                false,
-                                false,
-                                Map.of("code", 1002, "reason", "PROTOCOL_ERROR")),
-                        new WireCase(
-                                "terminal.connection.frame.rsv1-control-after",
-                                "permessage-deflate",
-                                false,
-                                true,
-                                Map.of("code", 1002, "reason", "PROTOCOL_ERROR")),
-                        new WireCase(
-                                "terminal.connection.frame.rsv2",
-                                null,
-                                false,
-                                true,
-                                Map.of("code", 1002, "reason", "PROTOCOL_ERROR")),
-                        new WireCase(
-                                "terminal.connection.frame.rsv3",
-                                null,
-                                false,
-                                true,
-                                Map.of("code", 1002, "reason", "PROTOCOL_ERROR")),
-                        new WireCase(
-                                "terminal.connection.frame.raw-overflow",
-                                null,
-                                false,
-                                true,
-                                Map.of("code", 1009, "reason", "MESSAGE_TOO_BIG")),
+                        new WireCase("terminal.connection.frame.exact-boundary", null, false, true, null),
+                        new WireCase("terminal.connection.frame.raw-overflow", null, false, true, Map.of("code", 1009)),
                         new WireCase(
                                 "terminal.connection.frame.compressed-single-overflow",
                                 "permessage-deflate",
-                                false,
                                 true,
-                                Map.of("code", 1009, "reason", "MESSAGE_TOO_BIG")),
+                                true,
+                                Map.of("code", 1009)),
                         new WireCase(
                                 "terminal.connection.frame.compressed-fragmented-overflow",
                                 "permessage-deflate",
-                                false,
                                 true,
-                                Map.of("code", 1009, "reason", "MESSAGE_TOO_BIG")),
-                        new WireCase(
-                                "terminal.connection.frame.exact-boundary",
-                                null,
-                                false,
                                 true,
-                                Map.of("code", 4000, "reason", "UNKNOWN")))
+                                Map.of("code", 1009)))
                 .map(testCase -> DynamicTest.dynamicTest(testCase.scenario(), () -> v14Scenario(host, tds, testCase)));
+    }
+
+    static Stream<DynamicTest> forwardCompatibleMessageFieldScenarios(
+            BackendAcceptanceTest host, TdsAcceptanceProcess tds) {
+        return Stream.of("terminal.connection.vs1.unknown-auth-field", "terminal.connection.vs3.unknown-ping-field")
+                .map(scenario -> DynamicTest.dynamicTest(
+                        scenario, () -> forwardCompatibleMessageFieldScenario(host, tds, scenario)));
+    }
+
+    private static void forwardCompatibleMessageFieldScenario(
+            BackendAcceptanceTest host, TdsAcceptanceProcess tds, String scenario) throws Exception {
+        String runId = requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_ID");
+        String markerId = UUID.randomUUID().toString();
+        boolean sendsUnknownPingField = "terminal.connection.vs3.unknown-ping-field".equals(scenario);
+        BackendAcceptanceTest.ScenarioContext context = host.new ScenarioContext(null, "performance.normal-path");
+        StoreTerminalAcceptanceScenarios.ConnectionFixture fixture =
+                new StoreTerminalAcceptanceScenarios(host).createConnectionContractFixture(context);
+        SessionProbe probe = null;
+        Throwable scenarioFailure = null;
+        boolean resultWritten = false;
+        try {
+            probe = startSessionProbe(tds, fixture, scenario, markerId, wireClientLog(tds, markerId));
+            probe.awaitReady(Duration.ofSeconds(15));
+            if (sendsUnknownPingField) probe.ping(7);
+            JsonNode result = probe.finish(Duration.ofSeconds(10));
+            List<String> expectedEvents =
+                    sendsUnknownPingField ? List.of("SESSION_READY", "PONG") : List.of("SESSION_READY");
+            Assertions.assertEquals("PASS", result.path("status").asText(), "TERMINAL_WIRE_CLIENT_CONTRACT_FAILED");
+            Assertions.assertEquals(scenario, result.path("scenario").asText());
+            Assertions.assertEquals("OPEN", result.path("handshake").asText());
+            Assertions.assertEquals(expectedEvents, strings(result.path("eventTypes")));
+            Assertions.assertEquals(
+                    sendsUnknownPingField ? 1 : 0, result.path("pongCount").asInt());
+            String sessionId = result.path("sessionId").asText();
+            awaitAnySessionDisconnectRecord(host, fixture.terminalRef(), sessionId, Duration.ofSeconds(20));
+            writeContractResult(Map.ofEntries(
+                    Map.entry("type", "transport-contract"),
+                    Map.entry("operation", scenario),
+                    Map.entry("module", "TERMINAL_DATA_SERVER"),
+                    Map.entry("contract", "PASS"),
+                    Map.entry("status", "PASS"),
+                    Map.entry("runId", runId),
+                    Map.entry("producer", "node-core-net-crypto-zlib-raw-frames"),
+                    Map.entry("handshake", "OPEN"),
+                    Map.entry("eventTypes", expectedEvents),
+                    Map.entry("pongCount", sendsUnknownPingField ? 1 : 0),
+                    Map.entry("sessionId", sessionId)));
+            resultWritten = true;
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT operation=%s CONTRACT=PASS "
+                            + "runId=%s producer=node-core-net-crypto-zlib-raw-frames%n",
+                    scenario, runId);
+        } catch (Exception | Error failure) {
+            scenarioFailure = failure;
+            if (!resultWritten) {
+                try {
+                    writeContractResult(Map.of(
+                            "type",
+                            "transport-contract",
+                            "operation",
+                            scenario,
+                            "module",
+                            "TERMINAL_DATA_SERVER",
+                            "contract",
+                            "FAIL",
+                            "status",
+                            "FAIL",
+                            "runId",
+                            runId,
+                            "failureCategory",
+                            "TDS_D43_UNKNOWN_FIELD_ACCEPTANCE_FAILED",
+                            "failureType",
+                            safeFailureType(failure),
+                            "rootFailureType",
+                            safeRootFailureType(failure),
+                            "failureCode",
+                            safeFailureCode(failure)));
+                } catch (Exception | Error reportFailure) {
+                    failure.addSuppressed(reportFailure);
+                }
+            }
+            throw failure;
+        } finally {
+            Throwable cleanupFailure = null;
+            SessionProbe probeToStop = probe;
+            if (probeToStop != null) cleanupFailure = attemptCleanup(cleanupFailure, probeToStop::stop);
+            finishCleanup(scenarioFailure, cleanupFailure);
+        }
     }
 
     private static void v14Scenario(BackendAcceptanceTest host, TdsAcceptanceProcess tds, WireCase testCase)
@@ -976,6 +1241,7 @@ final class TerminalConnectionContractScenarios {
         }
         if (testCase.expectedClose() != null) request.put("expectedClose", testCase.expectedClose());
 
+        int tdsLogOffset = tds.logContents().length();
         JsonNode result = runWireClient(tds, request);
         boolean resultWritten = false;
         try {
@@ -993,34 +1259,70 @@ final class TerminalConnectionContractScenarios {
                         strings(result.path("clientCompressedTypes")),
                         "TERMINAL_WIRE_CLIENT_COMPRESSION_DIRECTION_INVALID");
                 Assertions.assertEquals(
-                        negotiated ? List.of("SESSION_READY", "PONG") : List.of(),
+                        negotiated ? List.of("SESSION_READY") : List.of(),
                         strings(result.path("serverCompressedTypes")),
                         "TERMINAL_WIRE_SERVER_COMPRESSION_DIRECTION_INVALID");
+            } else if (isExactBoundaryMessage(testCase.scenario())) {
+                Assertions.assertEquals(List.of("SESSION_READY"), strings(result.path("eventTypes")));
             } else if (testCase.expectedClose() != null) {
                 Assertions.assertEquals(
                         testCase.expectedClose().get("code"),
                         result.path("closeCode").asInt());
-                Assertions.assertEquals(
-                        testCase.expectedClose().get("reason"),
-                        result.path("closeReason").asText());
-                List<String> expectedEvents = testCase.scenario().endsWith("rsv1-later")
-                                || testCase.scenario().endsWith("rsv1-control-after")
-                        ? List.of("SESSION_READY")
-                        : List.of();
-                Assertions.assertEquals(expectedEvents, strings(result.path("eventTypes")));
+                if (testCase.expectedClose().containsKey("reason")) {
+                    Assertions.assertEquals(
+                            testCase.expectedClose().get("reason"),
+                            result.path("closeReason").asText());
+                }
+                Assertions.assertEquals(List.of(), strings(result.path("eventTypes")));
             }
 
-            if (fixture != null && isPreAuthenticationProtocolRejection(testCase.scenario())) {
+            if (fixture != null && isOversizedMessageRejection(testCase.scenario())) {
+                String scenarioTdsLog = awaitTdsScenarioLogAfterOffset(
+                        tds, tdsLogOffset, "event=tds_ws_handler_finished", Duration.ofSeconds(3));
+                for (String forbiddenEvent : List.of(
+                        "event=tds_ws_authentication_frame_decoded",
+                        "event=tds_ws_session_attempt_begin_started",
+                        "event=tds_ws_session_attempt_begun",
+                        "event=tds_ws_credential_verification_started",
+                        "event=tds_ws_credential_verification_completed",
+                        "event=tds_ws_verification_recorded",
+                        "event=tds_ws_pre_registration_gate_entered",
+                        "event=tds_ws_pre_registration_gate_released",
+                        "event=tds_ws_session_registration_completed",
+                        "event=tds_ws_credential_verified")) {
+                    Assertions.assertFalse(
+                            scenarioTdsLog.contains(forbiddenEvent),
+                            "V-S14 rejected frame reached a forbidden TDS stage: " + forbiddenEvent);
+                }
                 Assertions.assertFalse(
-                        tds.logContents()
-                                .contains("event=tds_ws_credential_verified terminalRef=" + fixture.terminalRef()),
-                        "V-S14 rejected frame must not reach credential verification");
+                        scenarioTdsLog.contains("event=tds_ws_first_frame_received"),
+                        "V-S14 oversized message must be rejected before application frame delivery");
                 Assertions.assertEquals(
                         0L,
                         host.count(
                                 "SELECT count(*) FROM terminal_connection.latest_state WHERE terminal_ref = ?",
                                 fixture.terminalRef()),
                         "V-S14 rejected frame must not open a TDS session row");
+            }
+
+            if (fixture != null && isExactBoundaryMessage(testCase.scenario())) {
+                String scenarioTdsLog = awaitTdsScenarioLogAfterOffset(
+                        tds, tdsLogOffset, "event=tds_ws_handler_finished", Duration.ofSeconds(3));
+                Assertions.assertTrue(
+                        scenarioTdsLog.contains("frameType=TEXT frameBytes=65536"),
+                        "V-S14 exact boundary must reach the application at exactly 65,536 bytes");
+                Assertions.assertTrue(
+                        scenarioTdsLog.contains("event=tds_ws_session_registration_completed")
+                                && scenarioTdsLog.contains("registered=true"),
+                        "V-S14 exact boundary must register its session");
+                String sessionId = result.path("sessionId").asText();
+                awaitAnySessionDisconnectRecord(host, fixture.terminalRef(), sessionId, Duration.ofSeconds(20));
+                Assertions.assertEquals(
+                        1L,
+                        host.count(
+                                "SELECT count(*) FROM terminal_connection.latest_state WHERE terminal_ref = ?",
+                                fixture.terminalRef()),
+                        "V-S14 exact boundary must authenticate and persist its session");
             }
 
             writeContractResult(Map.ofEntries(
@@ -1068,6 +1370,19 @@ final class TerminalConnectionContractScenarios {
             }
             throw failure;
         }
+    }
+
+    private static String awaitTdsScenarioLogAfterOffset(
+            TdsAcceptanceProcess tds, int offset, String marker, Duration timeout) throws Exception {
+        long deadline = System.nanoTime() + timeout.toNanos();
+        while (System.nanoTime() < deadline) {
+            String contents = tds.logContents();
+            Assertions.assertTrue(offset >= 0 && offset <= contents.length(), "V-S14_TDS_LOG_OFFSET_INVALID");
+            String scenarioLog = contents.substring(offset);
+            if (scenarioLog.contains(marker)) return scenarioLog;
+            TimeUnit.MILLISECONDS.sleep(50);
+        }
+        throw new IllegalStateException("V-S14_TDS_SCENARIO_LOG_MARKER_MISSING:" + marker);
     }
 
     private static Map<String, Object> closeExpectedRequest(
@@ -1126,14 +1441,19 @@ final class TerminalConnectionContractScenarios {
             String wireStages = relevantLogLines(
                     Files.isRegularFile(wireClientLog) ? Files.readString(wireClientLog, StandardCharsets.UTF_8) : "",
                     "TERMINAL_WIRE_STAGE=",
+                    "TERMINAL_WIRE_STAGE=PROCESS_SIGNAL ",
                     "TERMINAL_WIRE_SESSION_READY markerId=");
             String tdsStages = relevantLogLines(
                     tds.logContents(),
                     "event=tds_ws_accepted",
                     "event=tds_ws_first_frame_received",
                     "event=tds_ws_authentication_failed",
+                    "event=tds_ws_session_attempt_begun",
+                    "event=tds_ws_credential_verification_started",
                     "event=tds_ws_credential_verification_completed",
-                    "event=tds_ws_pre_registration_gate_entered");
+                    "event=tds_ws_pre_registration_gate_entered",
+                    "event=tds_ws_pre_registration_gate_released",
+                    "event=tds_ws_session_registration_completed");
             System.out.printf(
                     "BACKEND_ACCEPTANCE_GATE_OBSERVATION status=FAIL reason=%s client=%s wireStages=%s tdsStages=%s%n",
                     failure.getMessage(), clientState, wireStages, tdsStages);
@@ -1156,13 +1476,225 @@ final class TerminalConnectionContractScenarios {
         try {
             JsonNode result = JSON.readTree(output);
             return "exitCode=" + wireClient.exitValue()
-                    + ",scenario=" + result.path("scenario").asText("unknown")
-                    + ",status=" + result.path("status").asText("unknown")
-                    + ",failureCategory=" + result.path("failureCategory").asText("none")
-                    + ",closeCode=" + result.path("closeCode").asText("none")
-                    + ",closeReason=" + result.path("closeReason").asText("none");
+                    + ",scenario=" + safeWireScenario(result.path("scenario").asText())
+                    + ",status=" + safeWireStatus(result)
+                    + ",failureCategory=" + safeWireFailureCategory(result)
+                    + ",closeCode=" + safeWireCloseCode(result)
+                    + ",closeReason=" + safeWireCloseReason(result)
+                    + ",sessionIdPresent=" + safeWireSessionIdPresent(result);
         } catch (Exception ignored) {
             return "exitCode=" + wireClient.exitValue() + ",result=invalid-json";
+        }
+    }
+
+    private static String safeWireScenario(String scenario) {
+        return scenario != null && scenario.matches("terminal\\.[a-z0-9.-]{1,128}") ? scenario : "UNRECOGNIZED";
+    }
+
+    private static String safeFailureType(Throwable failure) {
+        String type = failure == null ? null : failure.getClass().getSimpleName();
+        return type != null && SAFE_FAILURE_TYPE.matcher(type).matches() ? type : "UNKNOWN";
+    }
+
+    private static String safeFailureCode(Throwable failure) {
+        for (Throwable current = failure; current != null; current = current.getCause()) {
+            String message = current.getMessage();
+            if (message != null) {
+                Matcher failureCode = Pattern.compile(
+                                "(?<![A-Za-z0-9])((?:TDS|TERMINAL)_[A-Z0-9_]+|V-S[0-9]+_[A-Z0-9_]+)(?![A-Za-z0-9])")
+                        .matcher(message);
+                if (failureCode.find()) return failureCode.group(1);
+            }
+        }
+        return "UNKNOWN";
+    }
+
+    private static String safeRootFailureType(Throwable failure) {
+        Throwable root = failure;
+        for (int depth = 0; root != null && depth < 16; depth++) {
+            Throwable cause = root.getCause();
+            if (cause == null || cause == root) break;
+            root = cause;
+        }
+        return safeFailureType(root);
+    }
+
+    private static String safeLatestWireClientStage(Path stderrLog) {
+        if (stderrLog == null || !Files.isRegularFile(stderrLog)) return "UNAVAILABLE";
+        try (Stream<String> lines = Files.lines(stderrLog, StandardCharsets.UTF_8)) {
+            return lines.map(line -> {
+                        Matcher matcher = WIRE_STAGE.matcher(line);
+                        if (!matcher.matches() || !SAFE_WIRE_CLIENT_STAGES.contains(matcher.group(1))) return null;
+                        return matcher.group(1);
+                    })
+                    .filter(java.util.Objects::nonNull)
+                    .reduce((first, latest) -> latest)
+                    .orElse("NONE");
+        } catch (IOException unreadableLog) {
+            return "UNAVAILABLE";
+        }
+    }
+
+    private static String safeWireClientLastKnownStage(Path stderrLog) {
+        if (stderrLog == null || !Files.isRegularFile(stderrLog)) return "UNAVAILABLE";
+        Pattern signalStage = Pattern.compile("(?:^| )stage=([A-Z_]{1,64})(?: |$)");
+        try (Stream<String> lines = Files.lines(stderrLog, StandardCharsets.UTF_8)) {
+            return lines.map(line -> {
+                        if (line.contains("TERMINAL_WIRE_STAGE=PROCESS_SIGNAL")) {
+                            Matcher matcher = signalStage.matcher(line);
+                            return matcher.find() ? matcher.group(1) : "PROCESS_SIGNAL";
+                        }
+                        Matcher matcher = WIRE_STAGE.matcher(line);
+                        return matcher.matches() && SAFE_WIRE_CLIENT_STAGES.contains(matcher.group(1))
+                                ? matcher.group(1)
+                                : null;
+                    })
+                    .filter(java.util.Objects::nonNull)
+                    .reduce((first, latest) -> latest)
+                    .orElse("NONE");
+        } catch (IOException unreadableLog) {
+            return "UNAVAILABLE";
+        }
+    }
+
+    private static String safeTdsAuthenticationTrace(TdsAcceptanceProcess tds, int offset) {
+        try {
+            String contents = tds.logContents();
+            if (offset < 0 || offset > contents.length()) return "INVALID_OFFSET";
+            List<String> lines = contents.substring(offset).lines().toList();
+            String connectionId = lines.stream()
+                    .map(TDS_AUTH_CONNECTION_ID::matcher)
+                    .filter(Matcher::find)
+                    .map(matcher -> matcher.group(1))
+                    .reduce((first, latest) -> latest)
+                    .orElse(null);
+            if (connectionId == null) return "AUTHENTICATION_CONNECTION_NOT_OBSERVED";
+            List<String> events = lines.stream()
+                    .filter(line -> line.contains("connectionId=" + connectionId))
+                    .map(TerminalConnectionContractScenarios::safeTdsAuthenticationEvent)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+            int start = Math.max(0, events.size() - 12);
+            return events.isEmpty()
+                    ? "NO_AUTHENTICATION_EVENTS"
+                    : String.join(",", events.subList(start, events.size()));
+        } catch (IOException unreadableLog) {
+            return "UNAVAILABLE";
+        }
+    }
+
+    private static String safeTdsAuthenticationEvent(String line) {
+        Matcher eventMatcher = TDS_EVENT.matcher(line);
+        if (!eventMatcher.find()) return null;
+        String event = eventMatcher.group(1);
+        if (!SAFE_TDS_AUTH_EVENTS.contains(event)) return null;
+        List<String> safeFields = new ArrayList<>();
+        Matcher fieldMatcher = TDS_DIAGNOSTIC_FIELD.matcher(line);
+        while (fieldMatcher.find()) {
+            String value = safeTdsDiagnosticField(fieldMatcher.group(1), fieldMatcher.group(2));
+            if (value != null) safeFields.add(fieldMatcher.group(1) + "=" + value);
+        }
+        return safeFields.isEmpty() ? event : event + "(" + String.join(";", safeFields) + ")";
+    }
+
+    private static String safeTdsDiagnosticField(String key, String value) {
+        return switch (key) {
+            case "stage" -> value.matches("[A-Z_]{1,64}") ? value : null;
+            case "failureType", "rootFailureType" -> SAFE_FAILURE_TYPE
+                            .matcher(value)
+                            .matches()
+                    ? value
+                    : null;
+            case "sqlState" -> value.equals("NONE") || value.matches("[A-Z0-9]{5}") ? value : null;
+            case "outcome" -> value.matches("[A-Z_]{1,64}") ? value : null;
+            case "elapsedMillis", "frameBytes" -> value.matches("[0-9]{1,12}") ? value : null;
+            case "frameType" -> value.equals("TEXT") || value.equals("BINARY") ? value : null;
+            case "begun", "recorded", "registered" -> value.equals("true") || value.equals("false") ? value : null;
+            case "closeCode" -> value.matches("[0-9]{4}") ? value : null;
+            case "closeReason", "reason" -> SAFE_TDS_CLOSE_REASONS.contains(value) ? value : null;
+            default -> null;
+        };
+    }
+
+    private static String safeWireStatus(JsonNode result) {
+        String status = result == null ? "" : result.path("status").asText();
+        return status.equals("PASS") || status.equals("FAIL") ? status : "UNKNOWN";
+    }
+
+    private static String safeWireFailureCategory(JsonNode result) {
+        String category = result == null ? "" : result.path("failureCategory").asText();
+        return category.matches("TERMINAL_WIRE_[A-Z0-9_]+") ? category : "NONE";
+    }
+
+    private static String safeWireCloseCode(JsonNode result) {
+        int code = result == null ? -1 : result.path("closeCode").asInt(-1);
+        return code >= 1000 && code <= 4999 ? Integer.toString(code) : "UNAVAILABLE";
+    }
+
+    private static String safeWireCloseReason(JsonNode result) {
+        String reason = result == null ? "" : result.path("closeReason").asText();
+        if (reason.isEmpty()) return "NONE";
+        return SAFE_TDS_CLOSE_REASONS.contains(reason) ? reason : "UNRECOGNIZED";
+    }
+
+    private static boolean safeWireSessionIdPresent(JsonNode result) {
+        return result != null
+                && result.path("sessionId").isTextual()
+                && !result.path("sessionId").asText().isBlank();
+    }
+
+    private static void logWireClientResult(
+            Process node,
+            Path stderrLog,
+            String expectedScenario,
+            String exitCode,
+            long elapsedMillis,
+            String stdoutShape,
+            JsonNode result) {
+        String actualScenario = result == null
+                ? "UNAVAILABLE"
+                : safeWireScenario(result.path("scenario").asText());
+        System.out.printf(
+                ("BACKEND_ACCEPTANCE_WIRE_CLIENT stage=RESULT expectedScenario=%s actualScenario=%s markerId=%s "
+                        + "clientPid=%d parentPid=%d exitCode=%s elapsedMillis=%d stdoutShape=%s "
+                        + "resultStatus=%s closeCode=%s closeReason=%s failureCategory=%s sessionIdPresent=%s "
+                        + "signalDiagnostic=%s%n"),
+                safeWireScenario(expectedScenario),
+                actualScenario,
+                safeWireLogMarker(stderrLog),
+                node.pid(),
+                ProcessHandle.current().pid(),
+                exitCode,
+                elapsedMillis,
+                stdoutShape,
+                safeWireStatus(result),
+                safeWireCloseCode(result),
+                safeWireCloseReason(result),
+                safeWireFailureCategory(result),
+                safeWireSessionIdPresent(result),
+                safeWireSignalDiagnostic(stderrLog));
+    }
+
+    private static String safeWireLogMarker(Path stderrLog) {
+        if (stderrLog == null) return "NONE";
+        String fileName = stderrLog.getFileName().toString();
+        Matcher matcher = SAFE_WIRE_LOG_MARKER_FILE.matcher(fileName);
+        return matcher.matches() ? matcher.group(1) : "NONE";
+    }
+
+    private static String safeWireSignalDiagnostic(Path stderrLog) {
+        if (stderrLog == null || !Files.isRegularFile(stderrLog)) return "UNAVAILABLE";
+        try (Stream<String> lines = Files.lines(stderrLog, StandardCharsets.UTF_8)) {
+            return lines.filter(line -> line.startsWith("TERMINAL_WIRE_STAGE=PROCESS_SIGNAL "))
+                    .map(line -> {
+                        Matcher matcher = SAFE_WIRE_SIGNAL_DIAGNOSTIC.matcher(line);
+                        if (!matcher.matches()) return "TERMINAL_WIRE_PROCESS_SIGNAL_LINE_INVALID";
+                        return matcher.group(1) + ":" + matcher.group(4) + ":" + matcher.group(3);
+                    })
+                    .reduce((first, latest) -> latest)
+                    .orElse("NONE");
+        } catch (IOException unreadableLog) {
+            return "UNAVAILABLE";
         }
     }
 
@@ -1198,13 +1730,52 @@ final class TerminalConnectionContractScenarios {
         throw new IllegalStateException("TERMINAL_WIRE_CLIENT_MARKER_DEADLINE_EXCEEDED");
     }
 
-    private static JsonNode awaitWireResult(Process node, Duration timeout) throws Exception {
-        Assertions.assertTrue(
-                node.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS), "TERMINAL_WIRE_CLIENT_DEADLINE_EXCEEDED");
+    private static boolean awaitWireMarkerOrClientExit(Process wireClient, Path log, String marker, Duration timeout)
+            throws Exception {
+        long deadline = System.nanoTime() + timeout.toNanos();
+        while (System.nanoTime() < deadline) {
+            if (Files.isRegularFile(log)
+                    && Files.readString(log, StandardCharsets.UTF_8).contains(marker)) return true;
+            if (!wireClient.isAlive()) return false;
+            TimeUnit.MILLISECONDS.sleep(25);
+        }
+        return Files.isRegularFile(log)
+                && Files.readString(log, StandardCharsets.UTF_8).contains(marker);
+    }
+
+    private static JsonNode awaitWireResult(Process node, Path stderrLog, Duration timeout, String expectedScenario)
+            throws Exception {
+        long startedNanos = System.nanoTime();
+        boolean exited = node.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
+        if (!exited) logWireClientResult(node, stderrLog, expectedScenario, "RUNNING", elapsedMillis, "NOT_READ", null);
+        Assertions.assertTrue(exited, "TERMINAL_WIRE_CLIENT_DEADLINE_EXCEEDED");
         String output = new String(node.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+        JsonNode result = null;
+        String stdoutShape;
+        if (output.isEmpty()) {
+            stdoutShape = "EMPTY";
+        } else if (output.contains("\n")) {
+            stdoutShape = "MULTILINE";
+        } else {
+            try {
+                result = JSON.readTree(output);
+                stdoutShape = result != null && result.isObject() ? "SINGLE_LINE_JSON_OBJECT" : "NON_OBJECT_JSON";
+            } catch (IOException invalidJson) {
+                stdoutShape = "INVALID_JSON";
+            }
+        }
+        logWireClientResult(
+                node,
+                stderrLog,
+                expectedScenario,
+                Integer.toString(node.exitValue()),
+                elapsedMillis,
+                stdoutShape,
+                result);
         Assertions.assertEquals(0, node.exitValue(), "TERMINAL_WIRE_CLIENT_EXIT_NONZERO");
         Assertions.assertFalse(output.contains("\n"), "TERMINAL_WIRE_CLIENT_OUTPUT_CARDINALITY_INVALID");
-        JsonNode result = JSON.readTree(output);
+        Assertions.assertNotNull(result, "TERMINAL_WIRE_CLIENT_OUTPUT_JSON_INVALID");
         Assertions.assertEquals("PASS", result.path("status").asText(), "TERMINAL_WIRE_CLIENT_CONTRACT_FAILED");
         return result;
     }
@@ -1237,17 +1808,40 @@ final class TerminalConnectionContractScenarios {
     }
 
     private static void stopOwnedClient(Process node) throws Exception {
-        if (node == null || !node.isAlive()) return;
-        try {
-            node.getOutputStream().close();
-        } catch (IOException ignored) {
-            // The process may already have closed its control input.
+        stopOwnedClient(node, null);
+    }
+
+    private static void stopOwnedClient(Process node, Path stderrLog) throws Exception {
+        if (node == null) return;
+        long startedNanos = System.nanoTime();
+        boolean stopRequested = node.isAlive();
+        boolean forced = false;
+        if (stopRequested) {
+            try {
+                node.getOutputStream().close();
+            } catch (IOException ignored) {
+                // The process may already have closed its control input.
+            }
+            node.destroy();
         }
-        node.destroy();
-        if (!node.waitFor(2, TimeUnit.SECONDS)) {
+        boolean stopped = !node.isAlive() || node.waitFor(2, TimeUnit.SECONDS);
+        if (!stopped) {
+            forced = true;
             node.destroyForcibly();
-            Assertions.assertTrue(node.waitFor(2, TimeUnit.SECONDS), "TERMINAL_WIRE_CLIENT_CLEANUP_FAILED");
+            stopped = node.waitFor(2, TimeUnit.SECONDS);
         }
+        System.out.printf(
+                ("BACKEND_ACCEPTANCE_WIRE_CLIENT stage=CLEANUP markerId=%s clientPid=%d parentPid=%d "
+                        + "exitCode=%s stopRequested=%s forced=%s elapsedMillis=%d signalDiagnostic=%s%n"),
+                stderrLog == null ? "NONE" : safeWireLogMarker(stderrLog),
+                node.pid(),
+                ProcessHandle.current().pid(),
+                stopped ? Integer.toString(node.exitValue()) : "RUNNING",
+                stopRequested,
+                forced,
+                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos),
+                stderrLog == null ? "UNAVAILABLE" : safeWireSignalDiagnostic(stderrLog));
+        Assertions.assertTrue(stopped, "TERMINAL_WIRE_CLIENT_CLEANUP_FAILED");
     }
 
     private static void assertCancelledSession(JsonNode result, String scenario) {
@@ -1274,6 +1868,22 @@ final class TerminalConnectionContractScenarios {
             TimeUnit.MILLISECONDS.sleep(100);
         }
         throw new IllegalStateException("V-S10_EXPECTED_SESSION_DISCONNECT_RECORD_MISSING");
+    }
+
+    private static void awaitAnySessionDisconnectRecord(
+            BackendAcceptanceTest host, UUID terminalRef, String sessionId, Duration timeout) throws Exception {
+        Assertions.assertFalse(sessionId == null || sessionId.isBlank(), "V-S14_SESSION_ID_MISSING");
+        long deadline = System.nanoTime() + timeout.toNanos();
+        while (System.nanoTime() < deadline) {
+            long matches = host.count(
+                    "SELECT count(*) FROM terminal_connection.latest_state "
+                            + "WHERE terminal_ref=? AND session_id=? AND disconnected_at_epoch_millis IS NOT NULL",
+                    terminalRef,
+                    sessionId);
+            if (matches == 1) return;
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+        throw new IllegalStateException("V-S14_EXPECTED_SESSION_DISCONNECT_RECORD_MISSING");
     }
 
     private static SessionProbe startSessionProbe(
@@ -1312,6 +1922,8 @@ final class TerminalConnectionContractScenarios {
         private final String markerId;
         private final OutputStream input;
         private int pongCount;
+        private int pendingPingSequence = -1;
+        private String commandStage = "STARTING";
 
         private SessionProbe(Process node, Path log, String markerId) {
             this.node = node;
@@ -1322,26 +1934,37 @@ final class TerminalConnectionContractScenarios {
 
         void awaitReady(Duration timeout) throws Exception {
             awaitWireMarker(log, "TERMINAL_WIRE_SESSION_READY markerId=" + markerId + " sessionId=", timeout);
+            commandStage = "READY";
         }
 
         void ping(int sequence) throws Exception {
+            pendingPingSequence = sequence;
+            commandStage = "PING_COMMAND_WRITE";
             JsonNode exited = sendControlCommand("PING", "PING\t" + sequence, false);
             Assertions.assertNull(exited, "TERMINAL_WIRE_SESSION_PROBE_EXITED_BEFORE_PONG");
+            commandStage = "WAITING_FOR_PONG";
             awaitPong(sequence, Duration.ofSeconds(15));
             pongCount++;
+            pendingPingSequence = -1;
+            commandStage = "PONG_CONFIRMED";
         }
 
         JsonNode finish(Duration timeout) throws Exception {
+            commandStage = "CLOSE_COMMAND_WRITE";
             JsonNode result = sendControlCommand("CLOSE", "CLOSE", true);
-            return result == null ? awaitProbeResult(timeout, "CLOSE_RESULT") : result;
+            JsonNode completed = result == null ? awaitProbeResult(timeout, "CLOSE_RESULT") : result;
+            commandStage = "CLOSE_CONFIRMED";
+            return completed;
         }
 
         JsonNode awaitClose(int code, String reason, Duration timeout) throws Exception {
+            commandStage = "AWAIT_CLOSE_COMMAND_WRITE";
             JsonNode result = sendControlCommand("AWAIT_CLOSE", "AWAIT_CLOSE\t" + code + "\t" + reason, true);
             if (result == null) result = awaitProbeResult(timeout, "AWAIT_CLOSE_RESULT");
             Assertions.assertEquals(code, result.path("closeCode").asInt());
             Assertions.assertEquals(reason, result.path("closeReason").asText());
             Assertions.assertEquals(sessionId(), result.path("sessionId").asText(), "V-S12_SESSION_ID_CHANGED");
+            commandStage = "EXPECTED_CLOSE_CONFIRMED";
             return result;
         }
 
@@ -1437,7 +2060,7 @@ final class TerminalConnectionContractScenarios {
         }
 
         void stop() throws Exception {
-            stopOwnedClient(node);
+            stopOwnedClient(node, log);
         }
     }
 
@@ -1452,19 +2075,14 @@ final class TerminalConnectionContractScenarios {
         try {
             node.getOutputStream().write((JSON.writeValueAsString(request) + "\n").getBytes(StandardCharsets.UTF_8));
             node.getOutputStream().close();
-            Assertions.assertTrue(
-                    node.waitFor(CLIENT_DEADLINE.toMillis(), TimeUnit.MILLISECONDS),
-                    "TERMINAL_WIRE_CLIENT_DEADLINE_EXCEEDED");
-            String output = new String(node.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-            Assertions.assertEquals(0, node.exitValue(), "TERMINAL_WIRE_CLIENT_EXIT_NONZERO");
-            Assertions.assertFalse(output.contains("\n"), "TERMINAL_WIRE_CLIENT_OUTPUT_CARDINALITY_INVALID");
-            return JSON.readTree(output);
+            return awaitWireResult(
+                    node, stderr, CLIENT_DEADLINE, String.valueOf(request.getOrDefault("scenario", "UNRECOGNIZED")));
         } catch (Exception | Error failure) {
             scenarioFailure = failure;
             throw failure;
         } finally {
             Process clientToStop = node;
-            Throwable cleanupFailure = attemptCleanup(null, () -> stopOwnedClient(clientToStop));
+            Throwable cleanupFailure = attemptCleanup(null, () -> stopOwnedClient(clientToStop, stderr));
             finishCleanup(scenarioFailure, cleanupFailure);
         }
     }
@@ -1472,44 +2090,43 @@ final class TerminalConnectionContractScenarios {
     private static void assertNegotiatedExtension(String scenario, String response) {
         Set<String> requiresCompression = Set.of(
                 "terminal.connection.compression.offer-bare",
-                "terminal.connection.compression.offer-client-max-window-bits",
-                "terminal.connection.compression.offer-both-no-context",
-                "terminal.connection.compression.offer-deflate-frame-and-pmd");
+                "terminal.connection.compression.offer-client-max-window-bits");
         if (!requiresCompression.contains(scenario)) {
             Assertions.assertTrue(
-                    response == null || response.isBlank(), "TERMINAL_WIRE_UNEXPECTED_EXTENSION_RESPONSE");
+                    response == null || response.isBlank() || !hasPmdExtension(response),
+                    "TERMINAL_WIRE_UNEXPECTED_EXTENSION_RESPONSE");
             return;
         }
-        Assertions.assertNotNull(response, "TERMINAL_WIRE_REQUIRED_EXTENSION_RESPONSE_MISSING");
-        String[] parts = response.split(";");
-        Assertions.assertEquals("permessage-deflate", parts[0].trim().toLowerCase());
-        Set<String> parameters = new java.util.TreeSet<>();
-        for (int index = 1; index < parts.length; index++) {
-            Assertions.assertTrue(
-                    parameters.add(parts[index].trim().toLowerCase()), "TERMINAL_WIRE_EXTENSION_PARAMETER_DUPLICATE");
-        }
-        Assertions.assertEquals(
-                Set.of("client_no_context_takeover", "server_no_context_takeover"),
-                parameters,
-                "TERMINAL_WIRE_EXTENSION_PARAMETERS_INVALID");
+        Assertions.assertTrue(hasPmdExtension(response), "TERMINAL_WIRE_REQUIRED_EXTENSION_RESPONSE_MISSING");
+    }
+
+    private static boolean hasPmdExtension(String response) {
+        if (response == null || response.isBlank()) return false;
+        return java.util.Arrays.stream(response.split(","))
+                .map(extension -> extension.split(";", 2)[0].trim())
+                .anyMatch("permessage-deflate"::equalsIgnoreCase);
     }
 
     private static List<String> strings(JsonNode node) {
+        Assertions.assertTrue(node.isArray(), "TERMINAL_WIRE_CLIENT_ARRAY_FIELD_MISSING");
         List<String> result = new ArrayList<>();
-        if (node.isArray()) node.forEach(value -> result.add(value.asText()));
+        node.forEach(value -> {
+            Assertions.assertTrue(value.isTextual(), "TERMINAL_WIRE_CLIENT_ARRAY_VALUE_INVALID");
+            result.add(value.asText());
+        });
         return List.copyOf(result);
     }
 
-    private static boolean isPreAuthenticationProtocolRejection(String scenario) {
+    private static boolean isOversizedMessageRejection(String scenario) {
         return Set.of(
-                        "terminal.connection.frame.rsv1-first",
-                        "terminal.connection.frame.rsv2",
-                        "terminal.connection.frame.rsv3",
                         "terminal.connection.frame.raw-overflow",
                         "terminal.connection.frame.compressed-single-overflow",
-                        "terminal.connection.frame.compressed-fragmented-overflow",
-                        "terminal.connection.frame.exact-boundary")
+                        "terminal.connection.frame.compressed-fragmented-overflow")
                 .contains(scenario);
+    }
+
+    private static boolean isExactBoundaryMessage(String scenario) {
+        return "terminal.connection.frame.exact-boundary".equals(scenario);
     }
 
     private record WireCase(

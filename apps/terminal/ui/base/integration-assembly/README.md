@@ -15,6 +15,8 @@ mode 和 surface form 生成界面树，并导出 `createIntegrationAssembly` �
 - `src/foundations/integrationAssembly.tsx`：共享整机装配壳、设备/屏幕事实读取、parts 合并、
   runtime 启动、surface 输入和 per-runtime primary-ready 生命周期门，并导出
   `createIntegrationAssembly`。
+- runtime facts 同时携带按 PRIMARY/SECONDARY 解析后的应用逻辑画布尺寸；这是应用逻辑分辨率，
+  不等同于设备 adapter 提供的逻辑显示区域或物理像素尺寸。
 - `src/foundations/terminalSurfaces.ts`：无业务知识的 surface declaration parser 与
   orientation selector；package.json 仍由 integration adapter 读取。
 - `src/foundations/startupReady.ts`：startup-ready payload 与 actor 的机械共性；command

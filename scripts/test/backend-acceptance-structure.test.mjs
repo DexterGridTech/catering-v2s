@@ -28,6 +28,41 @@ const tdsWebSocketConnectionPath = path.join(
   root,
   'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketConnection.java',
 );
+const terminalRouteRegistryPath = path.join(
+  root,
+  'apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json',
+);
+const terminalActivationPathsPath = path.join(root, 'contracts/openapi/paths/terminal/activation.paths.json');
+const operationsStoreTerminalPathsPath = path.join(
+  root,
+  'contracts/openapi/paths/operations-admin/store-terminals.paths.json',
+);
+const terminalBindingSchemasPath = path.join(root, 'contracts/openapi-source/terminal-binding.schemas.json');
+const workspaceAdministrationServicePath = path.join(
+  root,
+  'apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java',
+);
+const terminalBindingOwnerApiPath = path.join(
+  root,
+  'apps/backend/catering-business-server/modules/terminal-binding/src/main/java/com/catering/v2s/terminalbinding/api/TerminalBindingOwnerApi.java',
+);
+const terminalCredentialVerificationApiPath = path.join(
+  root,
+  'apps/backend/catering-business-server/modules/terminal-binding/src/main/java/com/catering/v2s/terminalbinding/api/TerminalCredentialVerificationApi.java',
+);
+const activateTerminalOperationPath = path.join(
+  root,
+  'apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/terminal/ActivateTerminalOperation.java',
+);
+const terminalWireClientPath = path.join(root, 'scripts/test/terminal-ws-wire-client.mjs');
+const requestCompletionInterceptorPath = path.join(
+  root,
+  'apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/RequestCompletionDiagnosticInterceptor.java',
+);
+const requestCompletionRecorderPath = path.join(
+  root,
+  'apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/diagnostic/Slf4jSecurityDiagnosticRecorder.java',
+);
 const businessBuildPath = path.join(root, 'apps/backend/catering-business-server/build.gradle.kts');
 const businessDataConfigurationPath = path.join(
   root,
@@ -573,6 +608,12 @@ test('registration-gate waits race client exit and retain credential-safe stage 
     /CompletableFuture\.anyOf\(observed,\s*competingCompletion\)/,
     'TDS_REGISTRATION_GATE_MUST_RACE_OBSERVATION_WITH_CLIENT_EXIT',
   );
+  assert.match(
+    brokerSource,
+    /if \(observed\.isDone\(\) && !observed\.isCompletedExceptionally\(\)\) return observed\.getNow\(null\);/,
+    'TDS_REGISTRATION_GATE_RESULT_MUST_BE_SELECTED_BY_FUTURE_IDENTITY',
+  );
+  assert.doesNotMatch(brokerSource, /completion instanceof String/);
   assert.match(brokerSource, /TDS_REGISTRATION_GATE_CLIENT_EXITED_BEFORE_OBSERVED/);
   assert.match(brokerSource, /TDS_REGISTRATION_GATE_OBSERVATION_DEADLINE_EXCEEDED/);
   assert.equal(
@@ -591,19 +632,56 @@ test('registration-gate waits race client exit and retain credential-safe stage 
     'TDS_REGISTRATION_GATE_CENTRAL_WAIT_MUST_RACE_CLIENT_EXIT',
   );
   for (const event of [
+    'event=tds_ws_accepted connectionId={} sessionId={}',
     'event=tds_ws_first_frame_received',
+    'event=tds_ws_authentication_frame_decoded',
+    'event=tds_ws_session_attempt_begin_started',
     'event=tds_ws_authentication_failed',
+    'event=tds_ws_authentication_rejected',
+    'event=tds_ws_receive_failed',
+    'event=tds_ws_session_attempt_begun',
+    'event=tds_ws_credential_verification_started',
     'event=tds_ws_credential_verification_completed',
     'event=tds_ws_pre_registration_gate_entered',
+    'event=tds_ws_pre_registration_gate_released',
+    'event=tds_ws_session_registration_completed',
+    'event=tds_ws_credential_verified',
+    'event=tds_ws_handler_finished connectionId={}',
   ]) {
     assert.ok(handlerSource.includes(event), `TDS_AUTH_DIAGNOSTIC_STAGE_MISSING:${event}`);
   }
+  const authStageOrder = [
+    'event=tds_ws_first_frame_received',
+    'event=tds_ws_authentication_frame_decoded',
+    'event=tds_ws_session_attempt_begin_started',
+    'event=tds_ws_session_attempt_begun',
+    'event=tds_ws_credential_verification_started',
+    'event=tds_ws_credential_verification_completed',
+    'event=tds_ws_verification_recorded',
+    'event=tds_ws_pre_registration_gate_entered',
+    'event=tds_ws_pre_registration_gate_released',
+    'event=tds_ws_session_registration_completed',
+    'event=tds_ws_credential_verified',
+  ].map(event => handlerSource.indexOf(event));
+  assert.ok(
+    authStageOrder.every((position, index) => position >= 0 && (index === 0 || position > authStageOrder[index - 1])),
+    'TDS_AUTH_DIAGNOSTIC_STAGES_MUST_REMAIN_ORDERED',
+  );
   const diagnosticLines = handlerSource
     .split('\n')
-    .filter(line => line.includes('event=tds_ws_first_frame_received')
+    .filter(line => line.includes('event=tds_ws_accepted')
+      || line.includes('event=tds_ws_first_frame_received')
+      || line.includes('event=tds_ws_authentication_frame_decoded')
+      || line.includes('event=tds_ws_session_attempt_begin_started')
       || line.includes('event=tds_ws_authentication_failed')
+      || line.includes('event=tds_ws_receive_failed')
+      || line.includes('event=tds_ws_session_attempt_begun')
+      || line.includes('event=tds_ws_credential_verification_started')
       || line.includes('event=tds_ws_credential_verification_completed')
-      || line.includes('event=tds_ws_pre_registration_gate_entered'))
+      || line.includes('event=tds_ws_pre_registration_gate_entered')
+      || line.includes('event=tds_ws_pre_registration_gate_released')
+      || line.includes('event=tds_ws_session_registration_completed')
+      || line.includes('event=tds_ws_handler_finished'))
     .join('\n');
   assert.doesNotMatch(
     diagnosticLines,
@@ -611,10 +689,321 @@ test('registration-gate waits race client exit and retain credential-safe stage 
     'TDS_AUTH_DIAGNOSTICS_MUST_NOT_INCLUDE_CREDENTIAL_OR_FRAME_CONTENT',
   );
   assert.match(handlerSource, /diagnostic\.stage\(\)/, 'TDS_AUTH_DIAGNOSTIC_STAGE_MUST_BE_EMITTED');
+  const receiveFailureStart = handlerSource.indexOf('event=tds_ws_receive_failed');
+  const receiveFailureEnd = handlerSource.indexOf('\n                })\n                .doFinally', receiveFailureStart);
+  assert.ok(
+    receiveFailureStart >= 0 && receiveFailureEnd > receiveFailureStart,
+    'TDS_RECEIVE_FAILURE_BRANCH_MISSING',
+  );
+  const receiveFailureBranch = handlerSource.slice(receiveFailureStart, receiveFailureEnd);
+  assert.match(
+    receiveFailureBranch,
+    /rootFailureType=\{\} sqlState=\{\} disposition=TRANSPORT_TERMINATED/,
+    'TDS_RECEIVE_FAILURE_MUST_RETAIN_SAFE_ROOT_DIAGNOSTICS_WITHOUT_APPLICATION_CLOSE',
+  );
+  assert.ok(receiveFailureBranch.includes('applicationClose=NONE'));
+  assert.match(receiveFailureBranch, /diagnostic\.rootFailureType\(\)[\s\S]*?diagnostic\.sqlState\(\)/);
+  assert.match(receiveFailureBranch, /return Mono\.empty\(\);/);
+  assert.doesNotMatch(
+    handlerSource,
+    /close\(connection,\s*"NETWORK_ERROR"\)/,
+    'TDS_MUST_NOT_EMIT_CLIENT_CLASSIFIED_NETWORK_ERROR',
+  );
+  assert.match(
+    handlerSource,
+    /event=tds_ws_authentication_rejected[\s\S]*?rootFailureType=\{\} sqlState=\{\} closeReason=\{\}[\s\S]*?diagnostic\.stage\(\)[\s\S]*?diagnostic\.rootFailureType\(\)[\s\S]*?diagnostic\.sqlState\(\)[\s\S]*?closeReason/,
+    'TDS_AUTHENTICATION_REJECTION_MUST_LOG_STAGE_ROOT_AND_CLOSE_REASON',
+  );
   assert.match(
     scenariosSource,
     /"event=tds_ws_authentication_failed"/,
     'TDS_GATE_FAILURE_SUMMARY_MUST_RETAIN_AUTHENTICATION_FAILURE_EVENT',
+  );
+  assert.match(
+    scenariosSource,
+    /awaitTdsScenarioLogAfterOffset\(\s*tds,\s*tdsLogOffset,\s*"event=tds_ws_handler_finished"/,
+    'V_S14_MUST_READ_THE_RUN_SCOPED_TDS_LOG_SLICE_TO_HANDLER_COMPLETION',
+  );
+  assert.doesNotMatch(
+    scenariosSource,
+    /event=tds_ws_credential_verified terminalRef=/,
+    'V_S14_MUST_MATCH_THE_ACTUAL_CREDENTIAL_VERIFIED_LOG_FIELDS',
+  );
+  assert.ok(
+    handlerSource.includes('event=tds_ws_credential_verified connectionId={} sessionId={}'),
+    'TDS_CREDENTIAL_VERIFIED_DIAGNOSTIC_FIELD_TEMPLATE_MISSING',
+  );
+});
+
+test('TDS wire-control producer and Java result consumer reject missing or misspelled fields', () => {
+  const wireClientSource = readFileSync(terminalWireClientPath, 'utf8');
+  assert.match(
+    wireClientSource,
+    /Object\.keys\(request\)\.some\(field => !allowedControlFields\.has\(field\)\)/,
+    'TDS_WIRE_CONTROL_MUST_REJECT_UNKNOWN_ROOT_FIELDS',
+  );
+  assert.match(
+    wireClientSource,
+    /const expectedFields = Object\.hasOwn\(expectedClose, 'reason'\) \? 'code,reason' : 'code';[\s\S]*?closeFields\.join\(','\) !== expectedFields/,
+    'TDS_WIRE_CONTROL_CLOSE_EXPECTATION_MUST_BE_CLOSED',
+  );
+  assert.match(
+    wireClientSource,
+    /scenario === 'terminal\.connection\.frame\.raw-overflow'[\s\S]*?return \{code: 1009\};/,
+    'TDS_WIRE_CONTROL_1009_EXPECTATION_MUST_NOT_REQUIRE_REASON_TEXT',
+  );
+
+  const scenariosSource = readFileSync(terminalContractScenariosPath, 'utf8');
+  const helperStart = scenariosSource.indexOf('private static List<String> strings(JsonNode node) {');
+  const helperEnd = scenariosSource.indexOf('\n    }', helperStart);
+  assert.ok(helperStart >= 0 && helperEnd > helperStart, 'TDS_WIRE_RESULT_ARRAY_READER_MISSING');
+  const helper = scenariosSource.slice(helperStart, helperEnd);
+  assert.match(helper, /Assertions\.assertTrue\(node\.isArray\(\)/, 'TDS_WIRE_RESULT_ARRAY_MUST_BE_PRESENT');
+  assert.match(helper, /Assertions\.assertTrue\(value\.isTextual\(\)/, 'TDS_WIRE_RESULT_ARRAY_VALUES_MUST_BE_TEXT');
+  assert.doesNotMatch(helper, /if \(node\.isArray\(\)\)/, 'TDS_WIRE_RESULT_MUST_NOT_DEFAULT_MISSING_ARRAY_TO_EMPTY');
+});
+
+test('terminal activation and TDS routes agree on the workspace key grammar', () => {
+  const javaPattern = '[A-Za-z0-9][A-Za-z0-9_-]{0,63}';
+  const expectedSchema = {
+    type: 'string',
+    minLength: 1,
+    maxLength: 64,
+    pattern: `^${javaPattern}$`,
+  };
+  const findOperation = (paths, operationId) => {
+    for (const pathItem of Object.values(paths)) {
+      for (const operation of Object.values(pathItem)) {
+        if (operation?.operationId === operationId) return operation;
+      }
+    }
+    assert.fail(`TERMINAL_OPENAPI_OPERATION_MISSING:${operationId}`);
+  };
+  const operationSchemas = [
+    [terminalActivationPathsPath, 'activateTerminal'],
+    [terminalActivationPathsPath, 'cancelTerminalActivation'],
+    [operationsStoreTerminalPathsPath, 'cancelOperationsStoreTerminalActivation'],
+  ].map(([pathName, operationId]) => {
+    const document = JSON.parse(readFileSync(pathName, 'utf8'));
+    const parameter = findOperation(document.paths, operationId).parameters
+      .find(candidate => candidate.name === 'groupWorkspaceKey' && candidate.in === 'path');
+    assert.ok(parameter, `TERMINAL_OPENAPI_GROUP_WORKSPACE_KEY_MISSING:${operationId}`);
+    return [operationId, parameter.schema];
+  });
+  for (const [operationId, schema] of operationSchemas) {
+    assert.deepEqual(schema, expectedSchema, `TERMINAL_OPENAPI_GROUP_WORKSPACE_KEY_GRAMMAR_MISMATCH:${operationId}`);
+  }
+
+  const sourceSchemas = JSON.parse(readFileSync(terminalBindingSchemasPath, 'utf8'));
+  assert.deepEqual(
+    sourceSchemas.components.schemas.TerminalActivationResult.properties.groupWorkspaceKey,
+    expectedSchema,
+    'TERMINAL_ACTIVATION_RESULT_GROUP_WORKSPACE_KEY_GRAMMAR_MISMATCH',
+  );
+
+  for (const sourcePath of [
+    workspaceAdministrationServicePath,
+    terminalBindingOwnerApiPath,
+    terminalCredentialVerificationApiPath,
+    activateTerminalOperationPath,
+    tdsWebSocketHandlerPath,
+  ]) {
+    assert.ok(
+      readFileSync(sourcePath, 'utf8').includes(javaPattern),
+      `TERMINAL_GROUP_WORKSPACE_KEY_RUNTIME_GRAMMAR_MISMATCH:${path.relative(root, sourcePath)}`,
+    );
+  }
+  const wireClientSource = readFileSync(terminalWireClientPath, 'utf8');
+  assert.ok(
+    wireClientSource.includes(String.raw`\/tdp\/${javaPattern}\/ws`),
+    'TERMINAL_WIRE_CLIENT_GROUP_WORKSPACE_KEY_GRAMMAR_MISMATCH',
+  );
+});
+
+test('all generated groupWorkspaceKey path parameters match the workspace owner grammar', () => {
+  const expectedSchema = {
+    type: 'string',
+    minLength: 1,
+    maxLength: 64,
+    pattern: '^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$',
+  };
+  const pathRoot = path.join(root, 'contracts/openapi/paths');
+  const jsonFiles = directory => readdirSync(directory, {withFileTypes: true}).flatMap(entry => {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) return jsonFiles(entryPath);
+    return entry.isFile() && entry.name.endsWith('.json') ? [entryPath] : [];
+  });
+  let checked = 0;
+  for (const pathDocumentPath of jsonFiles(pathRoot)) {
+    const pathDocument = JSON.parse(readFileSync(pathDocumentPath, 'utf8'));
+    for (const [route, pathItem] of Object.entries(pathDocument.paths || {})) {
+      for (const operation of Object.values(pathItem)) {
+        if (!operation || typeof operation !== 'object' || !operation.operationId) continue;
+        for (const parameter of operation.parameters || []) {
+          if (parameter.name !== 'groupWorkspaceKey' || parameter.in !== 'path') continue;
+          checked++;
+          assert.deepEqual(
+            parameter.schema,
+            expectedSchema,
+            `GROUP_WORKSPACE_KEY_PATH_SCHEMA_MISMATCH:${path.relative(root, pathDocumentPath)}:${route}:${operation.operationId}`,
+          );
+        }
+      }
+    }
+  }
+  assert.ok(checked > 0, 'GROUP_WORKSPACE_KEY_PATH_PARAMETER_DENOMINATOR_EMPTY');
+});
+
+test('V-S12 restores PostgreSQL, terminates its exact listener and holds recovery for HTTP revocation', () => {
+  const scenariosSource = readFileSync(terminalContractScenariosPath, 'utf8');
+  const start = scenariosSource.indexOf('private static void v12DatabaseOutageScenario(');
+  const end = scenariosSource.indexOf('\n    private static void assertPendingWriterQueueBounds(', start);
+  assert.ok(start >= 0 && end > start, 'V_S12_SCENARIO_METHOD_NOT_FOUND');
+  const scenario = scenariosSource.slice(start, end);
+  const positions = [
+    scenario.indexOf('host.pausePostgresContainer();'),
+    scenario.indexOf('while (System.nanoTime() < outageDeadline)'),
+    scenario.indexOf('assertPendingWriterQueueBounds('),
+    scenario.indexOf('host.unpausePostgresContainer();'),
+    scenario.indexOf('host.terminatePostgresBackend(oldBackendPid)'),
+    scenario.indexOf('tds.awaitListenerDisconnectedAfter(oldBackendPid, tdsLogOffset,'),
+    scenario.indexOf('awaitRegistrationGateObservation('),
+    scenario.indexOf('business.performConnectionRevocation('),
+    scenario.indexOf('recoveryGate.release(attemptId);'),
+  ];
+  assert.ok(positions.every(position => position >= 0), 'V_S12_RECOVERY_SEQUENCE_STEP_MISSING');
+  assert.deepEqual(
+    positions,
+    [...positions].sort((left, right) => left - right),
+    'V_S12_MUST_RESTORE_DATABASE_AND_TERMINATE_THE_EXACT_LISTENER_BEFORE_HELD_RECOVERY_AND_HTTP_REVOCATION',
+  );
+  for (const diagnostic of [
+    'listenerBackendPid',
+    'listenerTerminationAttempted',
+    'listenerTerminationSignalAccepted',
+    'listenerDisconnectObserved',
+    'listenerRecoveryGateObserved',
+  ]) {
+    assert.ok(scenario.includes(diagnostic), `V_S12_SAFE_LISTENER_DIAGNOSTIC_MISSING:${diagnostic}`);
+  }
+});
+
+test('terminal activation HTTP routes use payload-free owner and outcome diagnostics', () => {
+  const registry = JSON.parse(readFileSync(terminalRouteRegistryPath, 'utf8'));
+  const routes = new Map(registry.operations.map(operation => [operation.operationId, operation]));
+  for (const [operationId, routePath] of [
+    ['activateTerminal', '/api/terminal/group-workspaces/{groupWorkspaceKey}/activation'],
+    [
+      'cancelTerminalActivation',
+      '/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel',
+    ],
+  ]) {
+    assert.deepEqual(
+      routes.get(operationId),
+      {
+        operationId,
+        method: 'POST',
+        path: routePath,
+        consumerFaces: ['terminal'],
+        owner: 'terminal-binding',
+      },
+      `TERMINAL_HTTP_DIAGNOSTIC_ROUTE_REGISTRY_INVALID:${operationId}`,
+    );
+  }
+  const interceptor = readFileSync(requestCompletionInterceptorPath, 'utf8');
+  assert.match(interceptor, /definitions\.get\(method \+ " " \+ pattern\)/);
+  assert.match(interceptor, /recorder\.recordCompletion\(event\)/);
+  assert.match(interceptor, /if \(isPublicSecurity\(handler\) \|\| isManagedDiagnosticRequest\(request\)\) return true/);
+  const recorder = readFileSync(requestCompletionRecorderPath, 'utf8');
+  for (const field of [
+    'operationId',
+    'routeTemplate',
+    'owner',
+    'consumerFace',
+    'outcome',
+    'durationMillis',
+    'status',
+    'errorCode',
+    'databaseOperationCount',
+    'databaseDurationMillis',
+  ]) {
+    assert.ok(recorder.includes(`addKeyValue("${field}"`), `TERMINAL_HTTP_DIAGNOSTIC_FIELD_MISSING:${field}`);
+  }
+  assert.doesNotMatch(interceptor + recorder, /getInputStream\(|getReader\(|getParameterMap\(/);
+});
+
+test('V-S12 persists a safe TDS CONTRACT failure before outage cleanup', () => {
+  const source = readFileSync(terminalContractScenariosPath, 'utf8');
+  const start = source.indexOf('private static void v12DatabaseOutageScenario(');
+  const end = source.indexOf('\n    private static void assertPendingWriterQueueBounds', start);
+  assert.ok(start >= 0 && end > start, 'V_S12_DATABASE_OUTAGE_SCENARIO_BOUNDARY_MISSING');
+  const scenario = source.slice(start, end);
+  const catchPosition = scenario.indexOf('} catch (Exception | Error failure) {');
+  const failureReceiptPosition = scenario.indexOf('Map.entry("contract", "FAIL")', catchPosition);
+  const rethrowPosition = scenario.indexOf('throw failure;', catchPosition);
+  assert.ok(catchPosition >= 0, 'V_S12_DATABASE_OUTAGE_FAILURE_HANDLER_MISSING');
+  assert.ok(
+    failureReceiptPosition > catchPosition && failureReceiptPosition < rethrowPosition,
+    'V_S12_FAILURE_RECEIPT_MUST_PRECEDE_SCENARIO_RETHROW',
+  );
+  assert.ok(scenario.includes('TDS_VS12_DATABASE_OUTAGE_SCENARIO_FAILED'));
+  assert.ok(scenario.includes('safeFailureType(failure)'));
+  assert.ok(scenario.includes('safeRootFailureType(failure)'));
+  assert.ok(scenario.includes('postgresPausedAtFailure'));
+  assert.ok(scenario.includes('authenticationElapsedMillis'));
+  assert.ok(scenario.includes('scenarioElapsedMillis'));
+  assert.ok(scenario.includes('authenticationAttemptElapsedMillis'));
+  assert.ok(scenario.includes('authenticationClientMarkerId'));
+  assert.match(
+    scenario,
+    /authenticationElapsedMillis\s*=\s*TimeUnit\.NANOSECONDS\.toMillis\(System\.nanoTime\(\)\s*-\s*authenticationStartedNanos\)/,
+    'V_S12_AUTHENTICATION_DURATION_MUST_BE_LATCHED_WHEN_AUTHENTICATION_COMPLETES',
+  );
+  assert.match(
+    scenario,
+    /Map\.entry\("authenticationAttemptElapsedMillis",\s*authenticationAttemptElapsedMillis\)/,
+    'V_S12_FAILURE_RECEIPT_MUST_LABEL_IN_FLIGHT_AUTH_DURATION_SEPARATELY',
+  );
+  assert.match(
+    scenario,
+    /Map\.entry\("scenarioElapsedMillis",\s*scenarioElapsedMillis\)/,
+    'V_S12_FAILURE_RECEIPT_MUST_LABEL_TOTAL_SCENARIO_DURATION',
+  );
+  for (const field of [
+    'scenarioPhase',
+    'probeMarkerId',
+    'probeExitCode',
+    'probePid',
+    'probeCommandStage',
+    'probePendingPingSequence',
+    'probePongCount',
+    'probeSignal',
+  ]) {
+    assert.ok(scenario.includes(`Map.entry("${field}"`), `V_S12_FAILURE_RECEIPT_FIELD_MISSING:${field}`);
+  }
+  assert.ok(scenario.includes('safeLatestWireClientStage(authLog)'));
+  assert.ok(scenario.includes('safeWireSignalDiagnostic(probe == null ? null : probe.log)'));
+  assert.ok(scenario.includes('safeTdsAuthenticationTrace(tds, tdsLogOffset)'));
+  assert.ok(source.includes('TDS_AUTH_CONNECTION_ID'));
+  assert.ok(source.includes('SAFE_TDS_AUTH_EVENTS.contains(event)'));
+  assert.ok(source.includes('TDS_DIAGNOSTIC_FIELD'));
+  assert.match(scenario, /finally\s*\{\s*Throwable cleanupFailure = null;\s*if \(postgresPaused\) cleanupFailure = attemptCleanup\(cleanupFailure, host::unpausePostgresContainer\)/);
+  assert.doesNotMatch(scenario.slice(catchPosition, rethrowPosition), /failure\.getMessage\(\)/);
+});
+
+test('V-S12 TDS log correlator accepts the actual Reactor Netty connection id shape', () => {
+  const source = readFileSync(terminalContractScenariosPath, 'utf8');
+  const idPattern = source.match(
+    /TDS_AUTH_CONNECTION_ID\s*=\s*Pattern\.compile\("event=tds_ws_\(\?:accepted\|first_frame_received\) connectionId="\s*\+\s*"([^"]+)"\);/,
+  );
+  assert.ok(idPattern, 'V_S12_TDS_CONNECTION_ID_PATTERN_MISSING');
+  const connectionId = '00163efffe165b09-00388ad7-00000023-db2240a131a6328c-8b8f1bd0';
+  const matcher = new RegExp(`event=tds_ws_(?:accepted|first_frame_received) connectionId=${idPattern[1]}`)
+    .exec(`event=tds_ws_accepted connectionId=${connectionId}`);
+  assert.equal(matcher?.[1], connectionId, 'V_S12_TDS_CONNECTION_ID_CORRELATION_MISMATCH');
+  assert.doesNotMatch(
+    `event=tds_ws_accepted connectionId=${'not-a-netty-id'}`,
+    new RegExp(`event=tds_ws_(?:accepted|first_frame_received) connectionId=${idPattern[1]}`),
   );
 });
 
@@ -638,6 +1027,79 @@ test('persistent wire-probe commands preserve child results across process-exit 
     'BACKEND_ACCEPTANCE_SESSION_PROBE_RESULT_FIELDS_MISSING',
   );
   assert.match(probe, /SAFE_TDS_CLOSE_REASONS\.contains\(closeReason\)/);
+});
+
+test('one-shot wire-client failures log bounded safe process and signal diagnostics before asserting', () => {
+  const source = readFileSync(terminalContractScenariosPath, 'utf8');
+  const wireSource = readFileSync(new URL('./terminal-ws-wire-client.mjs', import.meta.url), 'utf8');
+  const loggerStart = source.indexOf('private static void logWireClientResult(');
+  const loggerEnd = source.indexOf('\n    private static String relevantLogLines', loggerStart);
+  const cleanupStart = source.indexOf('private static void stopOwnedClient(Process node, Path stderrLog)');
+  const cleanupEnd = source.indexOf('\n    private static void assertCancelledSession', cleanupStart);
+  const awaitStart = source.indexOf('private static JsonNode awaitWireResult(');
+  const awaitEnd = source.indexOf('\n    @FunctionalInterface', awaitStart);
+  assert.ok(loggerStart >= 0 && loggerEnd > loggerStart, 'BACKEND_ACCEPTANCE_WIRE_RESULT_LOGGER_MISSING');
+  assert.ok(cleanupStart >= 0 && cleanupEnd > cleanupStart, 'BACKEND_ACCEPTANCE_WIRE_CLEANUP_LOGGER_MISSING');
+  assert.ok(awaitStart >= 0 && awaitEnd > awaitStart, 'BACKEND_ACCEPTANCE_WIRE_RESULT_WAITER_MISSING');
+  const logger = source.slice(loggerStart, loggerEnd);
+  const cleanup = source.slice(cleanupStart, cleanupEnd);
+  const waiter = source.slice(awaitStart, awaitEnd);
+  for (const field of [
+    'expectedScenario=%s',
+    'actualScenario=%s',
+    'markerId=%s',
+    'clientPid=%d',
+    'parentPid=%d',
+    'exitCode=%s',
+    'elapsedMillis=%d',
+    'stdoutShape=%s',
+    'resultStatus=%s',
+    'closeCode=%s',
+    'closeReason=%s',
+    'failureCategory=%s',
+    'sessionIdPresent=%s',
+    'signalDiagnostic=%s',
+  ]) {
+    assert.ok(logger.includes(field), `BACKEND_ACCEPTANCE_WIRE_RESULT_FIELD_MISSING:${field}`);
+  }
+  const resultLog = waiter.indexOf('logWireClientResult(');
+  const exitAssertion = waiter.indexOf('Assertions.assertEquals(0, node.exitValue(), "TERMINAL_WIRE_CLIENT_EXIT_NONZERO")');
+  assert.ok(resultLog >= 0 && exitAssertion > resultLog, 'BACKEND_ACCEPTANCE_WIRE_RESULT_MUST_LOG_BEFORE_ASSERTION');
+  assert.ok(
+    /logWireClientResult\(node,\s*stderrLog,/.test(waiter),
+    'BACKEND_ACCEPTANCE_WIRE_LOG_MUST_READ_CLIENT_STDERR',
+  );
+  assert.ok(/TERMINAL_WIRE_STAGE=PROCESS_SIGNAL signal=\(SIGTERM\)/.test(source), 'WIRE_SIGNAL_FORMAT_MISSING');
+  assert.ok(
+    /' markerId=' \+ diagnosticMarkerId/.test(wireSource),
+    'WIRE_SIGNAL_MARKER_CORRELATION_MISSING',
+  );
+  assert.doesNotMatch(logger, /terminalCredential|deviceId|payload|sessionId=%s|raw|output=%s/i);
+  assert.ok(
+    /safeWireSignalDiagnostic\(stderrLog\)/.test(source),
+    'BACKEND_ACCEPTANCE_WIRE_SIGNAL_SUMMARY_MISSING',
+  );
+  for (const field of [
+    'stage=CLEANUP',
+    'markerId=%s',
+    'clientPid=%d',
+    'parentPid=%d',
+    'exitCode=%s',
+    'stopRequested=%s',
+    'forced=%s',
+    'elapsedMillis=%d',
+    'signalDiagnostic=%s',
+  ]) {
+    assert.ok(cleanup.includes(field), `BACKEND_ACCEPTANCE_WIRE_CLEANUP_FIELD_MISSING:${field}`);
+  }
+  assert.ok(
+    /safeWireSignalDiagnostic\(stderrLog\)/.test(cleanup),
+    'BACKEND_ACCEPTANCE_WIRE_CLEANUP_SIGNAL_SUMMARY_MISSING',
+  );
+  assert.ok(
+    /TERMINAL_WIRE_PROCESS_SIGNAL_LINE_INVALID/.test(source),
+    'BACKEND_ACCEPTANCE_WIRE_SIGNAL_INVALID_MARKER_MISSING',
+  );
 });
 
 test('TDS records the correlated close outcome before persisting a session disconnect', () => {

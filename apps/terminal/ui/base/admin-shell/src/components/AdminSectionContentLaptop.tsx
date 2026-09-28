@@ -1,4 +1,4 @@
-import type {RendererCatalog, RenderRuntimeFacts, SurfaceContextValue} from '@catering-v2s/ui-base-render'
+import {type RendererCatalog, type RenderRuntimeFacts, type SurfaceContextValue} from '@catering-v2s/ui-base-render'
 import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state'
 import {PrimitiveCard, PrimitiveEmptyState, PrimitiveFactGrid, PrimitiveHeading, PrimitiveScrollView, PrimitiveStatusLine, PrimitiveText} from '@catering-v2s/ui-base-primitives'
 import type {TopologyAdminCapability} from '@catering-v2s/kernel-base-contracts'
@@ -50,7 +50,6 @@ export const AdminSectionContentLaptop = ({
     topologyCapability,
     surfaceForm: 'laptop',
   })
-
   if (selectedSection === undefined || activeSection === undefined || activeContext === undefined) {
     if (selectedSection === undefined) return <AdminPanelNormalStateLaptop />
     return (

@@ -220,7 +220,7 @@ export const LayerStack = () => {
   }
 
   return (
-    <View testID={LAYER_STACK_TEST_ID} style={[styles.stack, {pointerEvents: Platform?.OS === 'web' ? 'none' : 'box-none'}]}>
+    <View testID={LAYER_STACK_TEST_ID} style={[styles.stack, {pointerEvents: 'box-none'}]}>
       {orderedLayers.length > 0 ? (
         <Pressable
           testID={LAYER_BACKDROP_TEST_ID}
@@ -233,7 +233,7 @@ export const LayerStack = () => {
         <View
           key={layer.layerId}
           testID={`ui-base-render:layer:${layer.layerId}`}
-          style={[styles.layer, {pointerEvents: Platform?.OS === 'web' ? 'none' : 'box-none'}]}
+          style={[styles.layer, {pointerEvents: 'box-none'}]}
           focusable={layer.layerId === topLayerId}
           tabIndex={layer.layerId === topLayerId ? -1 : undefined}
           accessibilityViewIsModal={layer.layerId === topLayerId}

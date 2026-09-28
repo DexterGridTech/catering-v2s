@@ -3,10 +3,41 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
-def nativeWindBuildInputs = [
+def terminalWorkspaceJsInputs = [
+    fileTree("${projectRoot}/../../../ui") { tree ->
+        tree.include("**/src/**/*")
+        tree.include("**/assets/**/*")
+        tree.include("**/theme/**/*")
+        tree.include("**/package.json")
+        tree.include("**/app.json")
+        tree.include("**/babel.config.*")
+        tree.include("**/metro.config.*")
+        tree.include("**/tailwind.config.*")
+        tree.exclude("**/android/**/*")
+        tree.exclude("**/ios/**/*")
+        tree.exclude("**/build/**/*")
+        tree.exclude("**/node_modules/**/*")
+        tree.exclude("**/.expo/**/*")
+        tree.exclude("**/.turbo/**/*")
+    },
+    fileTree("${projectRoot}/../../../kernel") { tree ->
+        tree.include("**/src/**/*")
+        tree.include("**/assets/**/*")
+        tree.include("**/package.json")
+        tree.exclude("**/android/**/*")
+        tree.exclude("**/ios/**/*")
+        tree.exclude("**/build/**/*")
+        tree.exclude("**/node_modules/**/*")
+        tree.exclude("**/.expo/**/*")
+        tree.exclude("**/.turbo/**/*")
+    },
     file("${projectRoot}/metro.config.js"),
     file("${projectRoot}/tailwind.config.cjs"),
-    file("${projectRoot}/../../../../ui/integration/sample-wallpaper-console/theme/global.css"),
+    file("${projectRoot}/../../base/android/config/index.cjs"),
+    file("${projectRoot}/../../base/android/package.json"),
+    file("${projectRoot}/../../../../../package.json"),
+    file("${projectRoot}/../../../../../yarn.lock"),
+    file("${projectRoot}/../../../ui/integration/sample-wallpaper-console/theme/global.css"),
 ]
 
 /**
@@ -68,12 +99,12 @@ react {
     autolinkLibrariesWithApp()
 }
 
-// The React Native Gradle task does not infer NativeWind's generated CSS
-// runtime from the Metro/Tailwind inputs. Keep release bundles from reusing a
-// stale JS asset after those inputs change.
+// RN Gradle 0.86.3 snapshots JS under the app root, not workspace packages
+// outside it. Declare the workspace bundle inputs (source, assets, manifests,
+// Metro/Babel/Tailwind config and theme) so Gradle cannot reuse stale output.
 tasks.configureEach { task ->
     if (task.name == "createBundleReleaseJsAndAssets") {
-        task.inputs.files(nativeWindBuildInputs)
+        task.inputs.files(terminalWorkspaceJsInputs)
     }
 }
 

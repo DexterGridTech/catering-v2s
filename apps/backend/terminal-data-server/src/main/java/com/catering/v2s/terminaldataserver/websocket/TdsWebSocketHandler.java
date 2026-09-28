@@ -40,7 +40,7 @@ import reactor.core.scheduler.Scheduler;
 @Component
 public final class TdsWebSocketHandler implements WebSocketHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(TdsWebSocketHandler.class);
-    private static final String GROUP_WORKSPACE_KEY = "[A-Za-z0-9][A-Za-z0-9-]{0,63}";
+    private static final String GROUP_WORKSPACE_KEY = "[A-Za-z0-9][A-Za-z0-9_-]{0,63}";
 
     private final TdsRuntimeSettings settings;
     private final TerminalConnectionFrameCodec codec;
@@ -148,7 +148,22 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                 .then()
                 .onErrorResume(
                         AuthenticationTimeoutException.class, ignored -> close(connection, "AUTHENTICATION_TIMEOUT"))
-                .onErrorResume(ignored -> close(connection, "NETWORK_ERROR"))
+                .onErrorResume(failure -> {
+                    TdsAuthenticationFailureDiagnostics.Diagnostic diagnostic =
+                            TdsAuthenticationFailureDiagnostics.describe(failure, authenticationStage.get());
+                    TdsAsyncLog.enqueue(
+                            logScheduler,
+                            () -> LOGGER.warn(
+                                    "event=tds_ws_receive_failed connectionId={} stage={} failureType={} "
+                                            + "rootFailureType={} sqlState={} disposition=TRANSPORT_TERMINATED "
+                                            + "applicationClose=NONE",
+                                    connection.connectionId(),
+                                    diagnostic.stage(),
+                                    diagnostic.failureType(),
+                                    diagnostic.rootFailureType(),
+                                    diagnostic.sqlState()));
+                    return Mono.empty();
+                })
                 .doFinally(ignored -> {
                     AttemptReference attempt = attemptReference.get();
                     if (attempt != null) {
@@ -168,7 +183,11 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
 
         return Mono.when(session.send(connection.outboundMessages()), receive, heartbeatTimeout)
                 .doOnSubscribe(ignored -> TdsAsyncLog.enqueue(
-                        logScheduler, () -> LOGGER.info("event=tds_ws_accepted sessionId={}", connection.sessionId())))
+                        logScheduler,
+                        () -> LOGGER.info(
+                                "event=tds_ws_accepted connectionId={} sessionId={}",
+                                connection.connectionId(),
+                                connection.sessionId())))
                 .doOnError(failure -> TdsAsyncLog.enqueue(
                         logScheduler,
                         () -> LOGGER.warn(
@@ -178,6 +197,10 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                 .doFinally(ignored -> {
                     connection.finish();
                     completeHeartbeatSinks(connection, heartbeatEvents, stopHeartbeatWatch);
+                    TdsAsyncLog.enqueue(
+                            logScheduler,
+                            () -> LOGGER.info(
+                                    "event=tds_ws_handler_finished connectionId={}", connection.connectionId()));
                 });
     }
 
@@ -204,15 +227,25 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                 .onErrorMap(IllegalArgumentException.class, MalformedAuthenticationException::new)
                 .subscribeOn(codecScheduler)
                 .flatMap(authenticate -> {
+                    TdsAsyncLog.enqueue(
+                            logScheduler,
+                            () -> LOGGER.info(
+                                    "event=tds_ws_authentication_frame_decoded connectionId={}",
+                                    connection.connectionId()));
                     authenticationStage.set(TdsAuthenticationFailureDiagnostics.Stage.SESSION_ATTEMPT_ID_GENERATION);
                     return beginAuthentication(
                             connection, authenticate, attemptReference, authenticationStage, heartbeatEvents);
                 })
                 .timeout(Duration.ofNanos(remainingNanos))
-                .onErrorResume(MalformedAuthenticationException.class, ignored -> close(connection, "UNKNOWN"))
-                .onErrorResume(
-                        TimeoutException.class,
-                        ignored -> rejectCurrent(connection, attemptReference, "AUTHENTICATION_TIMEOUT"))
+                .onErrorResume(MalformedAuthenticationException.class, failure -> {
+                    logAuthenticationRejection(connection, authenticationStage.get(), failure, "UNKNOWN");
+                    return close(connection, "UNKNOWN");
+                })
+                .onErrorResume(TimeoutException.class, failure -> {
+                    logAuthenticationRejection(
+                            connection, authenticationStage.get(), failure, "AUTHENTICATION_TIMEOUT");
+                    return rejectCurrent(connection, attemptReference, "AUTHENTICATION_TIMEOUT");
+                })
                 .onErrorResume(failure -> rejectAfterAuthenticationFailure(
                         connection, attemptReference, authenticationStage.get(), failure));
     }
@@ -237,6 +270,26 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
         return Mono.defer(() -> rejectCurrent(connection, attemptReference, "SERVER_ERROR"));
     }
 
+    private void logAuthenticationRejection(
+            TdsWebSocketConnection connection,
+            TdsAuthenticationFailureDiagnostics.Stage stage,
+            Throwable failure,
+            String closeReason) {
+        TdsAuthenticationFailureDiagnostics.Diagnostic diagnostic =
+                TdsAuthenticationFailureDiagnostics.describe(failure, stage);
+        TdsAsyncLog.enqueue(
+                logScheduler,
+                () -> LOGGER.warn(
+                        "event=tds_ws_authentication_rejected connectionId={} stage={} failureType={} "
+                                + "rootFailureType={} sqlState={} closeReason={}",
+                        connection.connectionId(),
+                        diagnostic.stage(),
+                        diagnostic.failureType(),
+                        diagnostic.rootFailureType(),
+                        diagnostic.sqlState(),
+                        closeReason));
+    }
+
     private Mono<Void> beginAuthentication(
             TdsWebSocketConnection connection,
             Authenticate authenticate,
@@ -253,6 +306,11 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                     AttemptReference attempt = new AttemptReference(credential.terminalRef(), attemptId);
                     if (!attemptReference.compareAndSet(null, attempt)) return close(connection, "UNKNOWN");
                     authenticationStage.set(TdsAuthenticationFailureDiagnostics.Stage.SESSION_ATTEMPT_BEGIN);
+                    TdsAsyncLog.enqueue(
+                            logScheduler,
+                            () -> LOGGER.info(
+                                    "event=tds_ws_session_attempt_begin_started connectionId={}",
+                                    connection.connectionId()));
                     return sessionActors
                             .beginAttempt(
                                     credential.terminalRef(),
@@ -261,10 +319,23 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                                     credential.generation(),
                                     connection)
                             .flatMap(began -> {
+                                TdsAsyncLog.enqueue(
+                                        logScheduler,
+                                        () -> LOGGER.info(
+                                                "event=tds_ws_session_attempt_begun connectionId={} begun={}",
+                                                connection.connectionId(),
+                                                began));
                                 if (!began) return Mono.empty();
+                                long verificationStartedAtNanos = System.nanoTime();
                                 return Mono.fromCallable(() -> {
                                             authenticationStage.set(
                                                     TdsAuthenticationFailureDiagnostics.Stage.CREDENTIAL_VERIFICATION);
+                                            TdsAsyncLog.enqueue(
+                                                    logScheduler,
+                                                    () -> LOGGER.info(
+                                                            "event=tds_ws_credential_verification_started "
+                                                                    + "connectionId={}",
+                                                            connection.connectionId()));
                                             return credentialVerification.verify(credential);
                                         })
                                         .subscribeOn(databaseScheduler)
@@ -273,9 +344,12 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                                                     logScheduler,
                                                     () -> LOGGER.info(
                                                             "event=tds_ws_credential_verification_completed "
-                                                                    + "connectionId={} outcome={}",
+                                                                    + "connectionId={} outcome={} elapsedMillis={}",
                                                             connection.connectionId(),
-                                                            verification.outcome()));
+                                                            verification.outcome(),
+                                                            Duration.ofNanos(System.nanoTime()
+                                                                            - verificationStartedAtNanos)
+                                                                    .toMillis()));
                                             return registerVerifiedConnection(
                                                     connection,
                                                     attempt,
@@ -315,18 +389,34 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                                         () -> LOGGER.info(
                                                 "event=tds_ws_pre_registration_gate_entered connectionId={}",
                                                 connection.connectionId()));
-                                return registrationGate.beforeRegistration(attempt.attemptId());
+                                return registrationGate
+                                        .beforeRegistration(attempt.attemptId())
+                                        .doOnSuccess(ignored -> TdsAsyncLog.enqueue(
+                                                logScheduler,
+                                                () -> LOGGER.info(
+                                                        "event=tds_ws_pre_registration_gate_released "
+                                                                + "connectionId={}",
+                                                        connection.connectionId())));
                             })
                             .then(Mono.defer(() -> {
                                 authenticationStage.set(TdsAuthenticationFailureDiagnostics.Stage.SESSION_REGISTER);
                                 return sessionActors.register(attempt.terminalRef(), attempt.attemptId(), verification);
                             }))
                             .flatMap(registered -> {
+                                TdsAsyncLog.enqueue(
+                                        logScheduler,
+                                        () -> LOGGER.info(
+                                                "event=tds_ws_session_registration_completed "
+                                                        + "connectionId={} registered={}",
+                                                connection.connectionId(),
+                                                registered));
                                 if (!registered) return Mono.empty();
                                 if (!heartbeatEvents.tryEmitNext(0L).isSuccess()) {
                                     connection.close("SERVER_ERROR");
                                     return Mono.empty();
                                 }
+                                authenticationStage.set(
+                                        TdsAuthenticationFailureDiagnostics.Stage.ACTIVE_SESSION_RECEIVE);
                                 TdsAsyncLog.enqueue(
                                         logScheduler,
                                         () -> LOGGER.info(

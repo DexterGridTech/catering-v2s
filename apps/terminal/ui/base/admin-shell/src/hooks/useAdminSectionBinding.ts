@@ -47,10 +47,34 @@ export const useAdminSectionBinding = ({
     () => commandBoundary ?? createAdminSectionCommandBoundary(),
     [commandBoundary],
   )
+  const sectionRenderStartedAt = Date.now()
+  logger.info({
+    category: 'admin.navigation',
+    event: 'admin.section-binding-started',
+    message: 'Admin section binding started',
+    data: {
+      partKey: selectedSection?.partKey ?? null,
+      rendererKey: selectedSection?.rendererKey ?? null,
+      displayMode: surface.displayMode,
+      surfaceForm,
+    },
+  })
   const activeBinding = selectedSection === undefined
     ? undefined
     : rendererCatalog.resolve(selectedSection.rendererKey)
   const activeSection = activeBinding?.component as AdminSectionComponent | undefined
+  logger.info({
+    category: 'admin.navigation',
+    event: 'admin.section-binding-resolved',
+    message: 'Admin section binding resolved',
+    data: {
+      partKey: selectedSection?.partKey ?? null,
+      rendererKey: selectedSection?.rendererKey ?? null,
+      componentAvailable: activeSection !== undefined,
+      elapsedMs: Date.now() - sectionRenderStartedAt,
+      surfaceForm,
+    },
+  })
   const activeContext = selectedSection === undefined
     ? undefined
     : {

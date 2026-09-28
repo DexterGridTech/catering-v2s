@@ -40,7 +40,7 @@ public interface TerminalBindingOwnerApi {
             outcome = Objects.requireNonNull(outcome, "outcome");
             if (outcome == ActivationOutcome.ACTIVATED) {
                 workspaceUuid = Objects.requireNonNull(workspaceUuid, "workspaceUuid");
-                groupWorkspaceKey = Objects.requireNonNull(groupWorkspaceKey, "groupWorkspaceKey");
+                groupWorkspaceKey = requiredGroupWorkspaceKey(groupWorkspaceKey);
                 storeRef = Objects.requireNonNull(storeRef, "storeRef");
                 terminalRef = Objects.requireNonNull(terminalRef, "terminalRef");
                 if (bindingGeneration < 1 || activatedAtEpochMillis < 0) {
@@ -71,7 +71,7 @@ public interface TerminalBindingOwnerApi {
             String surfaceForm) {
         public ActivationCandidate {
             workspaceUuid = Objects.requireNonNull(workspaceUuid, "workspaceUuid");
-            groupWorkspaceKey = Objects.requireNonNull(groupWorkspaceKey, "groupWorkspaceKey");
+            groupWorkspaceKey = requiredGroupWorkspaceKey(groupWorkspaceKey);
             if (!"laptop".equals(surfaceForm) && !"mobile".equals(surfaceForm)) {
                 throw new IllegalArgumentException("surfaceForm is invalid");
             }
@@ -113,7 +113,7 @@ public interface TerminalBindingOwnerApi {
             byte[] secretDigest,
             String deviceId) {
         public DeviceCancelCommand {
-            groupWorkspaceKey = required(groupWorkspaceKey, "groupWorkspaceKey", 128);
+            groupWorkspaceKey = requiredGroupWorkspaceKey(groupWorkspaceKey);
             terminalRef = Objects.requireNonNull(terminalRef, "terminalRef");
             if (credentialGeneration < 1) throw new IllegalArgumentException("credentialGeneration is invalid");
             secretDigest = digest(secretDigest);
@@ -142,7 +142,7 @@ public interface TerminalBindingOwnerApi {
     record OperationsCancelTarget(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID terminalRef) {
         public OperationsCancelTarget {
             workspaceUuid = Objects.requireNonNull(workspaceUuid, "workspaceUuid");
-            groupWorkspaceKey = required(groupWorkspaceKey, "groupWorkspaceKey", 128);
+            groupWorkspaceKey = requiredGroupWorkspaceKey(groupWorkspaceKey);
             storeRef = Objects.requireNonNull(storeRef, "storeRef");
             terminalRef = Objects.requireNonNull(terminalRef, "terminalRef");
         }
@@ -158,7 +158,7 @@ public interface TerminalBindingOwnerApi {
             long expectedContextVersion) {
         public OperationsCancelGrant {
             workspaceUuid = Objects.requireNonNull(workspaceUuid, "workspaceUuid");
-            groupWorkspaceKey = required(groupWorkspaceKey, "groupWorkspaceKey", 128);
+            groupWorkspaceKey = requiredGroupWorkspaceKey(groupWorkspaceKey);
             requirementId = required(requirementId, "requirementId", 128);
             capabilityKey = required(capabilityKey, "capabilityKey", 128);
             targetType = required(targetType, "targetType", 64);
@@ -213,7 +213,7 @@ public interface TerminalBindingOwnerApi {
     record TerminalVoidCommand(UUID workspaceUuid, String groupWorkspaceKey, UUID terminalRef, AuditActor actor) {
         public TerminalVoidCommand {
             workspaceUuid = Objects.requireNonNull(workspaceUuid, "workspaceUuid");
-            groupWorkspaceKey = required(groupWorkspaceKey, "groupWorkspaceKey", 128);
+            groupWorkspaceKey = requiredGroupWorkspaceKey(groupWorkspaceKey);
             terminalRef = Objects.requireNonNull(terminalRef, "terminalRef");
             actor = Objects.requireNonNull(actor, "actor");
         }
@@ -234,6 +234,13 @@ public interface TerminalBindingOwnerApi {
     private static String required(String value, String name, int maxLength) {
         if (value == null || value.isEmpty() || value.length() > maxLength) {
             throw new IllegalArgumentException(name + " is invalid");
+        }
+        return value;
+    }
+
+    private static String requiredGroupWorkspaceKey(String value) {
+        if (value == null || !value.matches("[A-Za-z0-9][A-Za-z0-9_-]{0,63}")) {
+            throw new IllegalArgumentException("groupWorkspaceKey is invalid");
         }
         return value;
     }

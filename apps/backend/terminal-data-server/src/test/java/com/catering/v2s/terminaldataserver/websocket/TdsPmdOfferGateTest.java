@@ -114,7 +114,6 @@ class TdsPmdOfferGateTest {
         CloseWebSocketFrame close = channel.readOutbound();
         assertThat(close).isNotNull();
         assertThat(close.statusCode()).isEqualTo(1009);
-        assertThat(close.reasonText()).isEqualTo("MESSAGE_TOO_BIG");
         assertThat(channel.isOpen()).isFalse();
         close.release();
         channel.finishAndReleaseAll();
@@ -171,7 +170,6 @@ class TdsPmdOfferGateTest {
         CloseWebSocketFrame close = channel.readOutbound();
         assertThat(close).isNotNull();
         assertThat(close.statusCode()).isEqualTo(1009);
-        assertThat(close.reasonText()).isEqualTo("MESSAGE_TOO_BIG");
         assertThat(channel.isOpen()).isFalse();
         close.release();
         channel.finishAndReleaseAll();

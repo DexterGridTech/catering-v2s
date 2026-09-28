@@ -132,3 +132,69 @@ The fresh independent CP-05 reconciliation is preserved in
 `2026-09-28-v2s-terminal-activation-batch-1-cp05-reconciliation-r6-codex.md`. It returned
 `MATCHED`, `M/S/N=0/0/0`, and ran no builds, tests, scripts, or managed runtime. CP-05 is closed;
 the whole-batch 6b and dynamic-run 6c gates still precede any managed run.
+
+## Current-byte verification follow-up · 2026-09-28
+
+```text
+SCOPE=STAGE_1_ONLY
+ROUTE_BINDING_GENERATOR=PASS; node scripts/generate/operation-handler-bindings.mjs --write; 32 generated outputs
+ROUTE_BINDING_SELF_TEST_AND_CHECK=PASS
+IDENTITY_ONLY_STATIC=PASS; R5_VERIFY_VALIDATE_ONLY=PASS; EXECUTED=46/46
+NESTED_TERMINAL_STATIC=PASS; runId=ter-local-static-16148-1790587733527; 20/20 terminal-data-server tests passed
+DYNAMIC_LATEST=PREVIOUS_RUN_ONLY; latest managed run predates the regenerated binding/test bytes
+```
+
+The stale catalog-inventory route-source digest was repaired through its owning generator;
+the binding registry and JSON/Java projections were not hand-edited. The generator self-test
+and `--check` then passed, with all 296 operation identities retained.
+
+The first identity-only retry stopped in `tds-constructor-assembly`: the TDS connection test
+still required `MESSAGE_TOO_BIG` as the reason for close code 1009, while D-42 and the shared
+protocol prescribe only the 1009 code. A source-wide TDS test scan found the related exact
+standard-reason assertions in `TdsPmdOfferGateTest` and `TdsReservedBitsGateTest`; these tests
+now preserve the required 1009-code assertions and do not lock the reason text. The reserved-bit
+focused test still proves the invalid frame does not reach inbound application handling, without
+fixing a close tuple D-42 leaves to the library. The repair changed test oracles only; no
+production close behavior was changed.
+
+The first three-class focused rerun had a compile failure because `CloseStatus` was still used in
+the Mockito matcher after its import was removed. The import was restored and the same focused
+suite passed. This first failure remains visible in the command transcript; the final complete
+TDS suite passed 20/20 through the static verifier.
+
+The next identity-only run stopped at `backendJavaUtf8LineLimit`. The Gradle task emits only
+`violations.take(3)` per project, so after splitting its first five displayed lines, a complete
+read-only byte scan matching the task's `src/**/*.java` scope and exclusions found two more.
+All seven lines were split without changing behavior: three in
+`TdsWebSocketHandlerTransportFailureTest.java`, two in
+`TerminalConnectionContractScenarios.java`, one in `TerminalConnectionFrameCodecTest.java`,
+and one in `TerminalConnectionProtocol.java`. The full byte scan returned no lines over 120;
+the terminal-data-server and business-server owning tasks passed.
+
+The following identity-only run exposed the rest of that aggregate's formatter diff. The TDS
+Spotless diff enumerated seven files: `TdsPmdOfferGate.java`,
+`TdsWebSocketPipelineInstaller.java`, `TerminalConnectionFrameCodecTest.java`,
+`TerminalConnectionProtocolTest.java`, `TdsPmdAllocationTest.java`,
+`TdsReservedBitsGateTest.java`, and `TdsWebSocketHandlerTransportFailureTest.java`. The
+versioned formatter was run only for the TDS Java source set; every diff was inspected against
+the pre-format snapshot and contained import ordering, whitespace, or line wrapping only. No
+logic changed. The full backend `spotlessCheck` passed afterwards.
+
+Current-byte identity-only proof:
+
+| Command | Result |
+|---|---|
+| `node scripts/generate/operation-handler-bindings.mjs --write` | exit 0; `BP_U02_BINDING_GENERATION=PASS`; 16 JSON + 16 Java = 32 files |
+| `node scripts/generate/operation-handler-bindings.mjs --self-test` | exit 0; `BP_U02_BINDING_SELF_TEST=PASS`; all enumerated red fixtures passed |
+| `node scripts/generate/operation-handler-bindings.mjs --check` | exit 0; `BP_U02_BINDING_CHECK=PASS`; `CONTEXT_KIND_NEGATIVE=PASS` |
+| `./gradlew :apps:backend:terminal-data-server:test --tests 'com.catering.v2s.terminaldataserver.websocket.TdsWebSocketConnectionTest' --tests 'com.catering.v2s.terminaldataserver.websocket.TdsReservedBitsGateTest' --tests 'com.catering.v2s.terminaldataserver.websocket.TdsPmdOfferGateTest'` | exit 0 after restoring the still-used `CloseStatus` import |
+| `./gradlew :apps:backend:terminal-data-server:backendJavaUtf8LineLimit :apps:backend:catering-business-server:backendJavaUtf8LineLimit` | exit 0 after the full source-set scan returned zero over-limit lines |
+| `./gradlew :apps:backend:spotlessCheck` | exit 0 after reviewing the complete TDS formatter diff |
+| `V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY scripts/verify --validate-only` | exit 0; `EXECUTED=46/46`; nested terminal static run `ter-local-static-16148-1790587733527`; TDS tests 20/20 |
+
+The complete static log is retained at
+`.runtime/r5/evidence/terminal-activation-identity-only-verify-20260928-after-full-spotless-repair.log`
+with SHA-256 `a8e6fc15aa7c61a49a01883540c7be946e056a5250654ebeec2e7d08d7f0aba9`. This is
+static evidence only. Refresh CP-05 and whole-batch 6b against the current bytes before
+calibration or another managed run; the earlier managed run does not match this generated/test
+source set.

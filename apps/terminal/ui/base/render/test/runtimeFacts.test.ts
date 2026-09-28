@@ -83,6 +83,7 @@ describe('render runtime facts', () => {
       deviceIdentity: {available: false, deviceId: null},
       platformPortCapabilities: [],
       displayFacts,
+      surfaceCanvasSizes: {PRIMARY: {width: 1280, height: 800}, SECONDARY: {width: 960, height: 540}},
     })
 
     expect(facts.displayFacts).toEqual(displayFacts)
@@ -92,5 +93,8 @@ describe('render runtime facts', () => {
     expect(Object.isFrozen(facts.displayFacts?.surfaces[0])).toBe(true)
     expect(facts.displayFacts?.surfaces[1]?.physicalSize).toBeNull()
     expect(facts.displayFacts?.surfaces[1]?.readiness).toBe('unavailable')
+    expect(facts.surfaceCanvasSizes).toEqual({PRIMARY: {width: 1280, height: 800}, SECONDARY: {width: 960, height: 540}})
+    expect(Object.isFrozen(facts.surfaceCanvasSizes)).toBe(true)
+    expect(Object.isFrozen(facts.surfaceCanvasSizes?.SECONDARY)).toBe(true)
   })
 })

@@ -248,12 +248,20 @@ final class TdsAcceptanceProcess implements AutoCloseable {
     }
 
     void awaitListenerDisconnected(int backendPid, Duration timeout) throws Exception {
+        awaitListenerDisconnectedAfter(backendPid, 0, timeout);
+    }
+
+    void awaitListenerDisconnectedAfter(int backendPid, int logOffset, Duration timeout) throws Exception {
+        if (logOffset < 0) throw new IllegalArgumentException("TDS_LISTENER_LOG_OFFSET_INVALID");
         String marker = "event=tds_listener_disconnected";
         String pidMarker = "backendPid=" + backendPid;
         long deadline = System.nanoTime() + timeout.toNanos();
         while (System.nanoTime() < deadline) {
             if (!process.isAlive()) throw new IllegalStateException("TDS_PROCESS_EXITED_BEFORE_LISTENER_DISCONNECT");
-            boolean found = Files.readAllLines(logPath, StandardCharsets.UTF_8).stream()
+            String log = Files.readString(logPath, StandardCharsets.UTF_8);
+            if (log.length() < logOffset) throw new IllegalStateException("TDS_LISTENER_LOG_OFFSET_INVALID");
+            boolean found = log.substring(logOffset)
+                    .lines()
                     .anyMatch(line -> line.contains(marker) && line.contains(pidMarker));
             if (found) return;
             TimeUnit.MILLISECONDS.sleep(50);

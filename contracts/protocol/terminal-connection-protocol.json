@@ -18,7 +18,7 @@
         "appVersion": {"type": "string", "minUtf8Bytes": 1, "maxUtf8Bytes": 64}
       },
       "maxSerializedUtf8Bytes": 65536,
-      "additionalFields": false
+      "additionalFields": "ignore"
     },
     {
       "type": "SESSION_READY",
@@ -30,7 +30,7 @@
         "heartbeatIntervalMs": {"type": "integer", "minimum": 1000},
         "heartbeatTimeoutMs": {"type": "integer", "minimumFormula": "2 * heartbeatIntervalMs"}
       },
-      "additionalFields": false
+      "additionalFields": "ignore"
     },
     {
       "type": "PING",
@@ -40,7 +40,7 @@
         "clientTs": {"type": "string", "format": "RFC3339-UTC"},
         "lastRttMs": {"type": "number", "minimum": 0, "initialValue": 0}
       },
-      "additionalFields": false
+      "additionalFields": "ignore"
     },
     {
       "type": "PONG",
@@ -49,7 +49,7 @@
         "seq": {"type": "integer", "sameAs": "accepted PING.seq"},
         "serverTs": {"type": "string", "format": "RFC3339-UTC"}
       },
-      "additionalFields": false
+      "additionalFields": "ignore"
     }
   ],
   "close": {
@@ -73,16 +73,10 @@
     "standardExceptions": [
       {
         "code": 1002,
-        "reason": "PROTOCOL_ERROR",
-        "when": [
-          "data frame RSV1 is set without negotiated permessage-deflate",
-          "RSV1 is set on a WebSocket control frame",
-          "WebSocket framing or negotiated extension state is invalid"
-        ]
+        "handling": "protocol violations are handled by the WebSocket implementation; this contract does not prescribe the close reason"
       },
       {
         "code": 1009,
-        "reason": "MESSAGE_TOO_BIG",
         "when": [
           "frame payload exceeds 65536 bytes",
           "permessage-deflate output exceeds 65536 bytes during decompression",
@@ -96,35 +90,11 @@
     "extension": "permessage-deflate",
     "rfc": 7692,
     "enabledOnlyWhenClientOffers": true,
-    "unsupportedExtensions": ["deflate-frame"],
-    "contextTakeover": "none_in_both_directions",
-    "requiredServerResponseParameters": [
-      "client_no_context_takeover",
-      "server_no_context_takeover"
-    ],
-    "acceptedOfferClasses": [
-      "bare permessage-deflate",
-      "permessage-deflate with client_max_window_bits",
-      "permessage-deflate already carrying both no-context-takeover parameters"
-    ],
-    "offerHandling": {
-      "acceptedOfferResponse": "include both requiredServerResponseParameters",
-      "offerWithoutPermessageDeflate": "no extension response",
-      "malformedOrDuplicatePermessageDeflateParameters": "no extension response",
-      "deflateFrameOnly": "no extension response",
-      "deflateFrameTogetherWithPermessageDeflate": "accept permessage-deflate only"
-    },
-    "rsv1": {
-      "negotiatedDataFrame": "decompress before application-message validation, including the first AUTHENTICATE message",
-      "unnegotiatedDataFrame": "close 1002/PROTOCOL_ERROR before application processing",
-      "controlFrame": "RSV1 must be zero; otherwise close 1002/PROTOCOL_ERROR",
-      "dataMessagesMayBePlain": true
-    },
     "limits": {
       "maxFramePayloadBytes": 65536,
       "maxDecompressedMessageBytes": 65536,
       "maxCompleteDecompressedMessageBytes": 65536,
-      "overflowClose": "1009/MESSAGE_TOO_BIG"
+      "overflowCloseCode": 1009
     }
   }
 }

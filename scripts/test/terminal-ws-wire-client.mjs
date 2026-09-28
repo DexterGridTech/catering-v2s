@@ -18,6 +18,7 @@ const BOMB_BYTES = 64 * MAX_MESSAGE_BYTES;
 const HANDSHAKE_DEADLINE_MS = 5000;
 const FRAME_DEADLINE_MS = 12000;
 const CLIENT_CLOSE_DEADLINE_MS = 1000;
+const MAX_TERMINAL_CREDENTIAL_GENERATION = 9_223_372_036_854_775_807n;
 const DEFLATE_TAIL = Buffer.from([0x00, 0x00, 0xff, 0xff]);
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 const SAFE_TDS_CLOSE_REASONS = new Set([
@@ -40,6 +41,100 @@ const SAFE_TDS_CLOSE_REASONS = new Set([
 export const safeCloseReasonForDiagnostics = reason =>
   SAFE_TDS_CLOSE_REASONS.has(reason) ? reason : 'UNRECOGNIZED';
 
+const requireKnownMessageFields = (message, requiredFields, marker) => {
+  if (!message || typeof message !== 'object' || Array.isArray(message)) throw new Error(marker);
+  if (requiredFields.some(field => !Object.prototype.hasOwnProperty.call(message, field))) {
+    throw new Error(marker);
+  }
+};
+
+const isUtcTimestamp = value => {
+  if (typeof value !== 'string') return false;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?Z$/.exec(value);
+  if (!match) return false;
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  if (month < 1 || month > 12 || day < 1 || hour > 23 || minute > 59 || second > 59) return false;
+  const date = new Date(0);
+  date.setUTCFullYear(year, month - 1, day);
+  date.setUTCHours(hour, minute, second, 0);
+  return date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day
+    && date.getUTCHours() === hour
+    && date.getUTCMinutes() === minute
+    && date.getUTCSeconds() === second;
+};
+
+export function validateSessionReadyMessage(message) {
+  requireKnownMessageFields(
+    message,
+    ['heartbeatIntervalMs', 'heartbeatTimeoutMs', 'nodeId', 'serverTime', 'sessionId', 'type'],
+    'TERMINAL_WIRE_SESSION_READY_SHAPE_INVALID',
+  );
+  const sessionIdBytes = typeof message.sessionId === 'string' ? Buffer.byteLength(message.sessionId, 'utf8') : 0;
+  const nodeIdBytes = typeof message.nodeId === 'string' ? Buffer.byteLength(message.nodeId, 'utf8') : 0;
+  if (message.type !== 'SESSION_READY'
+      || sessionIdBytes < 1 || sessionIdBytes > 128
+      || nodeIdBytes < 1 || nodeIdBytes > 128
+      || !isUtcTimestamp(message.serverTime)
+      || !Number.isSafeInteger(message.heartbeatIntervalMs) || message.heartbeatIntervalMs < 1000
+      || !Number.isSafeInteger(message.heartbeatTimeoutMs)
+      || message.heartbeatTimeoutMs < 2 * message.heartbeatIntervalMs) {
+    throw new Error('TERMINAL_WIRE_SESSION_READY_SHAPE_INVALID');
+  }
+  return message;
+}
+
+export function validatePongMessage(message, expectedSequence = null) {
+  requireKnownMessageFields(message, ['seq', 'serverTs', 'type'], 'TERMINAL_WIRE_PONG_SHAPE_INVALID');
+  if (message.type !== 'PONG'
+      || !Number.isSafeInteger(message.seq) || message.seq < 1
+      || (expectedSequence !== null && message.seq !== expectedSequence)
+      || !isUtcTimestamp(message.serverTs)) {
+    throw new Error('TERMINAL_WIRE_PONG_SHAPE_INVALID');
+  }
+  return message;
+}
+
+export function createPingMessage(sequence, clientTs = new Date().toISOString(), lastRttMs = 0) {
+  return Object.freeze({type: 'PING', seq: sequence, clientTs, lastRttMs});
+}
+
+let diagnosticScenario = 'UNPARSED';
+let diagnosticMarkerId = 'UNPARSED';
+let diagnosticStage = 'PROCESS_STARTING';
+let terminationDiagnosticWritten = false;
+
+const setDiagnosticStage = stage => {
+  diagnosticStage = stage;
+};
+
+const installTerminationDiagnostics = () => {
+  process.on('SIGTERM', () => {
+    if (terminationDiagnosticWritten) return;
+    terminationDiagnosticWritten = true;
+    process.stderr.write(
+      'TERMINAL_WIRE_STAGE=PROCESS_SIGNAL signal=SIGTERM scenario=' + diagnosticScenario
+        + ' markerId=' + diagnosticMarkerId
+        + ' stage=' + diagnosticStage
+        + ' pid=' + process.pid
+        + ' ppid=' + process.ppid
+        + ' exitCode=143\n',
+      () => process.exit(143),
+    );
+  });
+  process.stderr.write(
+    'TERMINAL_WIRE_STAGE=CLIENT_READY stage=PROCESS_STARTING pid=' + process.pid
+      + ' ppid=' + process.ppid + '\n',
+  );
+};
+
 export const classifyWireFailureForDiagnostics = failure => {
   const message = failure instanceof Error ? failure.message : '';
   return /^TERMINAL_WIRE_[A-Z0-9_]+$/.test(message) ? message : 'TERMINAL_WIRE_CLIENT_FAILED';
@@ -48,10 +143,6 @@ export const classifyWireFailureForDiagnostics = failure => {
 const EXTENSION_OFFERS = new Set([
   'permessage-deflate',
   'permessage-deflate; client_max_window_bits',
-  'permessage-deflate; client_no_context_takeover; server_no_context_takeover',
-  'deflate-frame',
-  'permessage-deflate; client_no_context_takeover; client_no_context_takeover',
-  'deflate-frame, permessage-deflate',
 ]);
 
 const V10_SCENARIOS = new Set([
@@ -66,6 +157,8 @@ const V10_SCENARIOS = new Set([
 const SESSION_PROBE_SCENARIOS = new Set([
   'terminal.connection.vs10.status-only-probe',
   'terminal.connection.vs12.database-outage-probe',
+  'terminal.connection.vs1.unknown-auth-field',
+  'terminal.connection.vs3.unknown-ping-field',
 ]);
 
 const SERVER_ERROR_SCENARIOS = new Set(['terminal.connection.vs12.auth-during-outage']);
@@ -75,19 +168,9 @@ const OFFER_SCENARIOS = new Set([
   'terminal.connection.compression.offer-none',
   'terminal.connection.compression.offer-bare',
   'terminal.connection.compression.offer-client-max-window-bits',
-  'terminal.connection.compression.offer-both-no-context',
-  'terminal.connection.compression.offer-deflate-frame',
-  'terminal.connection.compression.offer-malformed-duplicate',
-  'terminal.connection.compression.offer-deflate-frame-and-pmd',
 ]);
 
 const FRAME_SCENARIOS = new Set([
-  'terminal.connection.frame.rsv1-first',
-  'terminal.connection.frame.rsv1-later',
-  'terminal.connection.frame.rsv1-control-before',
-  'terminal.connection.frame.rsv1-control-after',
-  'terminal.connection.frame.rsv2',
-  'terminal.connection.frame.rsv3',
   'terminal.connection.frame.raw-overflow',
   'terminal.connection.frame.compressed-single-overflow',
   'terminal.connection.frame.compressed-fragmented-overflow',
@@ -115,11 +198,9 @@ const expectedCloseForScenario = scenario => {
   if (V10_SCENARIOS.has(scenario)) return {code: 4000, reason: 'ACTIVATION_CANCELLED'};
   if (SESSION_REPLACED_SCENARIOS.has(scenario)) return {code: 4000, reason: 'SESSION_REPLACED'};
   if (SERVER_ERROR_SCENARIOS.has(scenario)) return {code: 4000, reason: 'SERVER_ERROR'};
-  if (scenario === 'terminal.connection.frame.exact-boundary') return {code: 4000, reason: 'UNKNOWN'};
   if (scenario === 'terminal.connection.frame.raw-overflow' || scenario.includes('compressed-')) {
-    return {code: 1009, reason: 'MESSAGE_TOO_BIG'};
+    return {code: 1009};
   }
-  if (FRAME_SCENARIOS.has(scenario)) return {code: 1002, reason: 'PROTOCOL_ERROR'};
   return null;
 };
 
@@ -136,15 +217,31 @@ export function parseControlRequest(contents) {
   } catch {
     throw new Error('TERMINAL_WIRE_CONTROL_JSON_INVALID');
   }
-  if (!request || !SUPPORTED_SCENARIOS.has(request.scenario) || typeof request.url !== 'string') {
+  const allowedControlFields = new Set([
+    'scenario',
+    'url',
+    'authenticate',
+    'expectedClose',
+    'markerId',
+    'extensionOffer',
+  ]);
+  if (!request || typeof request !== 'object' || Array.isArray(request)
+      || Object.keys(request).some(field => !allowedControlFields.has(field))
+      || !SUPPORTED_SCENARIOS.has(request.scenario)
+      || typeof request.url !== 'string') {
     throw new Error('TERMINAL_WIRE_CONTROL_SCHEMA_INVALID');
   }
 
-  const url = new URL(request.url);
+  let url;
+  try {
+    url = new URL(request.url);
+  } catch {
+    throw new Error('TERMINAL_WIRE_CONTROL_TARGET_INVALID');
+  }
   if (
     url.protocol !== 'ws:' ||
     !['127.0.0.1', 'localhost'].includes(url.hostname) ||
-    !/^\/tdp\/[A-Za-z0-9][A-Za-z0-9-]{0,63}\/ws$/.test(url.pathname) ||
+    !/^\/tdp\/[A-Za-z0-9][A-Za-z0-9_-]{0,63}\/ws$/.test(url.pathname) ||
     url.username !== '' ||
     url.password !== '' ||
     url.search !== '' ||
@@ -164,11 +261,6 @@ export function parseControlRequest(contents) {
     SESSION_PROBE_SCENARIOS.has(request.scenario) ||
     SERVER_ERROR_SCENARIOS.has(request.scenario) ||
     COMPRESSION_SESSION_SCENARIOS.has(request.scenario) ||
-    request.scenario === 'terminal.connection.frame.rsv1-control-after' ||
-    request.scenario === 'terminal.connection.frame.rsv1-first' ||
-    request.scenario === 'terminal.connection.frame.rsv1-later' ||
-    request.scenario === 'terminal.connection.frame.rsv2' ||
-    request.scenario === 'terminal.connection.frame.rsv3' ||
     request.scenario === 'terminal.connection.frame.raw-overflow' ||
     request.scenario === 'terminal.connection.frame.compressed-single-overflow' ||
     request.scenario === 'terminal.connection.frame.compressed-fragmented-overflow' ||
@@ -177,17 +269,32 @@ export function parseControlRequest(contents) {
   if (requiresAuthentication || request.authenticate !== undefined) {
     const auth = request.authenticate;
     const keys = auth && typeof auth === 'object' ? Object.keys(auth).sort() : [];
+    const credential = typeof auth?.terminalCredential === 'string'
+      ? /^([1-9][0-9]*)\.([A-Za-z0-9_-]{43})$/.exec(auth.terminalCredential)
+      : null;
+    let credentialIsCanonical = false;
+    if (credential) {
+      try {
+        const generation = BigInt(credential[1]);
+        const secret = Buffer.from(credential[2], 'base64url');
+        credentialIsCanonical = generation <= MAX_TERMINAL_CREDENTIAL_GENERATION
+          && secret.length === 32
+          && secret.toString('base64url') === credential[2];
+      } catch {
+        credentialIsCanonical = false;
+      }
+    }
     if (
       keys.join(',') !== 'appVersion,deviceId,terminalCredential,terminalRef,type' ||
       auth.type !== 'AUTHENTICATE' ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(auth.terminalRef) ||
-      !/^[1-9][0-9]{0,18}\.[A-Za-z0-9_-]{43}$/.test(auth.terminalCredential) ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(auth.terminalRef) ||
+      !credentialIsCanonical ||
       typeof auth.deviceId !== 'string' ||
-      auth.deviceId.length < 1 ||
-      auth.deviceId.length > 128 ||
+      Buffer.byteLength(auth.deviceId, 'utf8') < 1 ||
+      Buffer.byteLength(auth.deviceId, 'utf8') > 128 ||
       typeof auth.appVersion !== 'string' ||
-      auth.appVersion.length < 1 ||
-      auth.appVersion.length > 64
+      Buffer.byteLength(auth.appVersion, 'utf8') < 1 ||
+      Buffer.byteLength(auth.appVersion, 'utf8') > 64
     ) {
       throw new Error('TERMINAL_WIRE_CONTROL_AUTHENTICATE_INVALID');
     }
@@ -195,11 +302,17 @@ export function parseControlRequest(contents) {
   }
 
   const expectedClose = expectedCloseForScenario(request.scenario);
-  if (expectedClose && (
-    request.expectedClose?.code !== expectedClose.code ||
-    request.expectedClose?.reason !== expectedClose.reason
-  )) {
-    throw new Error('TERMINAL_WIRE_CONTROL_EXPECTED_CLOSE_INVALID');
+  if (expectedClose) {
+    const close = request.expectedClose;
+    const closeFields = close && typeof close === 'object' && !Array.isArray(close)
+      ? Object.keys(close).sort()
+      : [];
+    const expectedFields = Object.hasOwn(expectedClose, 'reason') ? 'code,reason' : 'code';
+    if (closeFields.join(',') !== expectedFields
+        || close.code !== expectedClose.code
+        || (Object.hasOwn(expectedClose, 'reason') && close.reason !== expectedClose.reason)) {
+      throw new Error('TERMINAL_WIRE_CONTROL_EXPECTED_CLOSE_INVALID');
+    }
   }
   if (!expectedClose && request.expectedClose !== undefined && request.expectedClose !== null) {
     throw new Error('TERMINAL_WIRE_CONTROL_EXPECTED_CLOSE_INVALID');
@@ -207,7 +320,8 @@ export function parseControlRequest(contents) {
 
   const requiresMarker = V10_SCENARIOS.has(request.scenario)
     || SESSION_REPLACED_SCENARIOS.has(request.scenario)
-    || SESSION_PROBE_SCENARIOS.has(request.scenario);
+    || SESSION_PROBE_SCENARIOS.has(request.scenario)
+    || SERVER_ERROR_SCENARIOS.has(request.scenario);
   if (requiresMarker && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(request.markerId ?? '')) {
     throw new Error('TERMINAL_WIRE_CONTROL_MARKER_ID_INVALID');
   }
@@ -223,11 +337,7 @@ export function parseControlRequest(contents) {
   if (request.scenario === 'terminal.connection.compression.session-fallback' && request.extensionOffer != null) {
     throw new Error('TERMINAL_WIRE_CONTROL_EXTENSION_OFFER_FORBIDDEN');
   }
-  if (request.scenario === 'terminal.connection.frame.rsv1-control-after' &&
-      request.extensionOffer !== 'permessage-deflate') {
-    throw new Error('TERMINAL_WIRE_CONTROL_EXTENSION_OFFER_REQUIRED');
-  }
-  if (!request.extensionOffer && request.extensionOffer !== null && request.scenario !== 'terminal.connection.frame.rsv1-control-after') {
+  if (!request.extensionOffer && request.extensionOffer !== null) {
     // Missing means no extension; null is the explicit no-extension form used by Java.
   }
 
@@ -490,6 +600,8 @@ class RawWebSocketClient {
         throw new Error('TERMINAL_WIRE_SERVER_JSON_INVALID');
       }
       if (typeof message?.type !== 'string') throw new Error('TERMINAL_WIRE_SERVER_MESSAGE_TYPE_MISSING');
+      if (message.type === 'SESSION_READY') validateSessionReadyMessage(message);
+      if (message.type === 'PONG') validatePongMessage(message);
       return {kind: 'message', type: message.type, message, compressed: current.compressed};
     }
   }
@@ -547,34 +659,12 @@ function headerHasToken(value, token) {
   return typeof value === 'string' && value.split(',').some(part => part.trim().toLowerCase() === token);
 }
 
-function validatePmdResponse(header, offered) {
+export function validatePmdResponse(header, offered) {
   if (header === '') return false;
-  if (!offered) throw new Error('TERMINAL_WIRE_EXTENSION_NOT_OFFERED');
-  const extensions = header.split(',');
-  if (extensions.length !== 1) throw new Error('TERMINAL_WIRE_EXTENSION_RESPONSE_INVALID');
-  const [name, ...rawParameters] = extensions[0].split(';').map(part => part.trim());
-  if (name.toLowerCase() !== 'permessage-deflate') throw new Error('TERMINAL_WIRE_EXTENSION_RESPONSE_INVALID');
-  const parameters = new Map();
-  for (const rawParameter of rawParameters) {
-    const separator = rawParameter.indexOf('=');
-    const parameter = (separator < 0 ? rawParameter : rawParameter.slice(0, separator)).trim().toLowerCase();
-    const value = separator < 0 ? null : rawParameter.slice(separator + 1).trim();
-    if (!parameter || parameters.has(parameter)) throw new Error('TERMINAL_WIRE_EXTENSION_RESPONSE_INVALID');
-    if (!['client_no_context_takeover', 'server_no_context_takeover', 'client_max_window_bits'].includes(parameter)) {
-      throw new Error('TERMINAL_WIRE_EXTENSION_RESPONSE_INVALID');
-    }
-    if (parameter.endsWith('no_context_takeover') && value !== null) {
-      throw new Error('TERMINAL_WIRE_EXTENSION_RESPONSE_INVALID');
-    }
-    if (parameter === 'client_max_window_bits' && !/^(?:8|9|1[0-5])$/.test(value ?? '')) {
-      throw new Error('TERMINAL_WIRE_EXTENSION_RESPONSE_INVALID');
-    }
-    parameters.set(parameter, value);
-  }
-  if (!parameters.has('client_no_context_takeover') || !parameters.has('server_no_context_takeover')) {
-    throw new Error('TERMINAL_WIRE_EXTENSION_RESPONSE_INVALID');
-  }
-  return true;
+  const pmdSelected = header.split(',').some(extension =>
+    extension.split(';', 1)[0].trim().toLowerCase() === 'permessage-deflate');
+  if (!offered && pmdSelected) throw new Error('TERMINAL_WIRE_EXTENSION_NOT_OFFERED');
+  return pmdSelected;
 }
 
 function parseClose(payload) {
@@ -611,21 +701,15 @@ export function inflateMessage(payload) {
   });
 }
 
-function authJson(authenticate, {padBytes = 0, extraField = 'pad'} = {}) {
-  const value = {...authenticate};
-  if (padBytes > 0) value[extraField] = '';
-  let text = JSON.stringify(value);
-  if (padBytes > 0) {
-    const current = Buffer.byteLength(text, 'utf8');
-    const nextLength = padBytes - current;
-    if (nextLength < 0) throw new Error('TERMINAL_WIRE_AUTH_PADDING_TOO_SMALL');
-    value[extraField] = 'A'.repeat(nextLength);
-    text = JSON.stringify(value);
-  }
-  if (padBytes > 0 && Buffer.byteLength(text, 'utf8') !== padBytes) {
+function authJson(authenticate, {padBytes = 0} = {}) {
+  const text = JSON.stringify(authenticate);
+  const current = Buffer.byteLength(text, 'utf8');
+  if (current > padBytes && padBytes > 0) throw new Error('TERMINAL_WIRE_AUTH_PADDING_TOO_SMALL');
+  const padded = padBytes > 0 ? `${text}${' '.repeat(padBytes - current)}` : text;
+  if (padBytes > 0 && Buffer.byteLength(padded, 'utf8') !== padBytes) {
     throw new Error('TERMINAL_WIRE_AUTH_PADDING_SIZE_MISMATCH');
   }
-  return text;
+  return padded;
 }
 
 async function waitForServerClose(socket, timeoutMs = CLIENT_CLOSE_DEADLINE_MS) {
@@ -645,10 +729,12 @@ async function expectServerClose(socket, expected, eventTypes = [], onMessage = 
   for (;;) {
     const event = await socket.readEvent();
     if (event.kind === 'close') {
+      setDiagnosticStage('SERVER_CLOSE_RECEIVED');
       process.stderr.write(
         `TERMINAL_WIRE_STAGE=SERVER_CLOSE code=${event.code} reason=${safeCloseReasonForDiagnostics(event.reason)}\n`,
       );
-      if (event.code !== expected.code || event.reason !== expected.reason) {
+      if (event.code !== expected.code
+          || (Object.hasOwn(expected, 'reason') && event.reason !== expected.reason)) {
         throw new Error('TERMINAL_WIRE_CLOSE_CONTRACT_MISMATCH');
       }
       socket.sendClose(event.code, event.reason);
@@ -669,13 +755,17 @@ function describeHandshake(socket) {
 }
 
 async function runTopologyOrRace(request) {
+  setDiagnosticStage('WEBSOCKET_CONNECTING');
   const socket = await RawWebSocketClient.connect(request.url, null);
   try {
+    setDiagnosticStage('WEBSOCKET_OPEN');
     process.stderr.write(`TERMINAL_WIRE_STAGE=WEBSOCKET_OPEN scenario=${request.scenario}\n`);
     socket.sendText(JSON.stringify(request.authenticate));
+    setDiagnosticStage('AUTHENTICATE_SENT');
     process.stderr.write(`TERMINAL_WIRE_STAGE=AUTHENTICATE_SENT scenario=${request.scenario}\n`);
     const eventTypes = [];
     let sessionId = null;
+    setDiagnosticStage('WAITING_FOR_SERVER_CLOSE');
     const close = await expectServerClose(socket, request.expectedClose, eventTypes, event => {
       if (event.type === 'SESSION_READY' && request.markerId) {
         sessionId = event.message.sessionId;
@@ -699,7 +789,10 @@ async function runSessionProbe(request, inputIterator) {
   const socket = await RawWebSocketClient.connect(request.url, null);
   const eventTypes = [];
   try {
-    socket.sendText(JSON.stringify(request.authenticate));
+    const authenticate = request.scenario === 'terminal.connection.vs1.unknown-auth-field'
+      ? {...request.authenticate, futureMessageField: true}
+      : request.authenticate;
+    socket.sendText(JSON.stringify(authenticate));
     const ready = await socket.readEvent(FRAME_DEADLINE_MS);
     if (ready.kind !== 'message' || ready.type !== 'SESSION_READY') {
       throw new Error('TERMINAL_WIRE_SESSION_READY_MISSING');
@@ -708,16 +801,20 @@ async function runSessionProbe(request, inputIterator) {
     if (typeof sessionId !== 'string' || sessionId.length === 0) throw new Error('TERMINAL_WIRE_SESSION_ID_MISSING');
     eventTypes.push(ready.type);
     process.stderr.write(`TERMINAL_WIRE_SESSION_READY markerId=${request.markerId} sessionId=${sessionId}\n`);
+    setDiagnosticStage('SESSION_PROBE_READY');
 
     let pongCount = 0;
     for (;;) {
+      setDiagnosticStage('SESSION_PROBE_WAITING_FOR_COMMAND');
       const {value, done} = await inputIterator.next();
       if (done) throw new Error('TERMINAL_WIRE_SESSION_PROBE_CONTROL_EOF');
+      setDiagnosticStage('SESSION_PROBE_COMMAND_RECEIVED');
       const command = value.trim();
       if (Buffer.byteLength(command, 'utf8') > MAX_CONTROL_BYTES) {
         throw new Error('TERMINAL_WIRE_SESSION_PROBE_COMMAND_TOO_LARGE');
       }
       if (command === 'CLOSE') {
+        setDiagnosticStage('SESSION_PROBE_WAITING_FOR_CLOSE');
         socket.sendClose(1000, '');
         const close = await waitForServerClose(socket);
         if (close !== null && close.code !== 1000) throw new Error('TERMINAL_WIRE_SESSION_PROBE_CLOSE_MISMATCH');
@@ -748,19 +845,20 @@ async function runSessionProbe(request, inputIterator) {
       const match = /^PING\t([1-9][0-9]{0,8})$/.exec(command);
       if (!match) throw new Error('TERMINAL_WIRE_SESSION_PROBE_COMMAND_INVALID');
       const sequence = Number(match[1]);
-      socket.sendText(JSON.stringify({
-        type: 'PING',
-        seq: sequence,
-        clientTs: new Date().toISOString(),
-        lastRttMs: 0,
-      }));
+      const ping = request.scenario === 'terminal.connection.vs3.unknown-ping-field'
+        ? {...createPingMessage(sequence), futureMessageField: true}
+        : createPingMessage(sequence);
+      socket.sendText(JSON.stringify(ping));
+      setDiagnosticStage('SESSION_PROBE_WAITING_FOR_PONG');
       const pong = await socket.readEvent(FRAME_DEADLINE_MS);
-      if (pong.kind !== 'message' || pong.type !== 'PONG' || pong.message.seq !== sequence) {
+      if (pong.kind !== 'message' || pong.type !== 'PONG') {
         throw new Error('TERMINAL_WIRE_SESSION_PROBE_PONG_MISMATCH');
       }
+      validatePongMessage(pong.message, sequence);
       pongCount++;
       eventTypes.push(pong.type);
       process.stderr.write(`TERMINAL_WIRE_SESSION_PONG markerId=${request.markerId} seq=${sequence}\n`);
+      setDiagnosticStage('SESSION_PROBE_READY');
     }
   } finally {
     socket.destroy();
@@ -775,7 +873,7 @@ async function runOffer(request) {
     const close = await waitForServerClose(socket);
     if (close !== null && close.code !== 1000) throw new Error('TERMINAL_WIRE_OFFER_CLOSE_MISMATCH');
     socket.socket.end();
-    return {...handshake, clientCloseSent: 1000, serverCloseReceived: close !== null};
+    return {...handshake, eventTypes: [], clientCloseSent: 1000, serverCloseReceived: close !== null};
   } finally {
     socket.destroy();
   }
@@ -798,18 +896,14 @@ async function runCompressionSession(request) {
     eventTypes.push(ready.type);
     if (ready.compressed) serverCompressedTypes.push(ready.type);
 
-    const ping = {
-      type: 'PING',
-      seq: 1,
-      clientTs: new Date().toISOString(),
-      lastRttMs: 0,
-    };
+    const ping = createPingMessage(1);
     const pingFrame = socket.sendText(JSON.stringify(ping), {compressed: negotiated});
     if (pingFrame.rsv1) clientCompressedTypes.push('PING');
     const pong = await socket.readEvent();
-    if (pong.kind !== 'message' || pong.type !== 'PONG' || pong.message.seq !== ping.seq) {
+    if (pong.kind !== 'message' || pong.type !== 'PONG') {
       throw new Error('TERMINAL_WIRE_PONG_MISMATCH');
     }
+    validatePongMessage(pong.message, ping.seq);
     eventTypes.push(pong.type);
     if (pong.compressed) serverCompressedTypes.push(pong.type);
     if (negotiated && serverCompressedTypes.length === 0) {
@@ -836,40 +930,6 @@ async function runProtocolFailure(request) {
   const eventTypes = [];
   try {
     switch (request.scenario) {
-      case 'terminal.connection.frame.rsv1-first':
-        socket.sendText(JSON.stringify(request.authenticate), {rsv: 4});
-        break;
-      case 'terminal.connection.frame.rsv1-later': {
-        socket.sendText(JSON.stringify(request.authenticate));
-        const ready = await socket.readEvent();
-        if (ready.kind !== 'message' || ready.type !== 'SESSION_READY') {
-          throw new Error('TERMINAL_WIRE_SESSION_READY_MISSING');
-        }
-        eventTypes.push(ready.type);
-        socket.sendText(JSON.stringify({type: 'PING', seq: 1, clientTs: new Date().toISOString(), lastRttMs: 0}), {
-          rsv: 4,
-        });
-        break;
-      }
-      case 'terminal.connection.frame.rsv1-control-before':
-        socket.sendFrame(9, Buffer.from('x'), {rsv: 4});
-        break;
-      case 'terminal.connection.frame.rsv1-control-after': {
-        socket.sendText(JSON.stringify(request.authenticate));
-        const ready = await socket.readEvent();
-        if (ready.kind !== 'message' || ready.type !== 'SESSION_READY') {
-          throw new Error('TERMINAL_WIRE_SESSION_READY_MISSING');
-        }
-        eventTypes.push(ready.type);
-        socket.sendFrame(9, Buffer.from('x'), {rsv: 4});
-        break;
-      }
-      case 'terminal.connection.frame.rsv2':
-        socket.sendText(JSON.stringify(request.authenticate), {rsv: 2});
-        break;
-      case 'terminal.connection.frame.rsv3':
-        socket.sendText(JSON.stringify(request.authenticate), {rsv: 1});
-        break;
       case 'terminal.connection.frame.raw-overflow':
         socket.sendFrame(1, Buffer.from(authJson(request.authenticate, {padBytes: MAX_MESSAGE_BYTES + 1})));
         break;
@@ -879,18 +939,30 @@ async function runProtocolFailure(request) {
       case 'terminal.connection.frame.compressed-fragmented-overflow':
         socket.sendCompressedFragments(authJson(request.authenticate, {padBytes: BOMB_BYTES}));
         break;
-      case 'terminal.connection.frame.exact-boundary':
+      case 'terminal.connection.frame.exact-boundary': {
         socket.sendText(authJson(request.authenticate, {padBytes: MAX_MESSAGE_BYTES}));
-        break;
+        setDiagnosticStage('WAITING_FOR_EXACT_BOUNDARY_SESSION_READY');
+        const ready = await socket.readEvent();
+        if (ready.kind !== 'message' || ready.type !== 'SESSION_READY') {
+          throw new Error('TERMINAL_WIRE_EXACT_BOUNDARY_SESSION_READY_MISSING');
+        }
+        eventTypes.push(ready.type);
+        socket.sendClose(1000, '');
+        const close = await waitForServerClose(socket);
+        if (close !== null && close.code !== 1000) throw new Error('TERMINAL_WIRE_NORMAL_CLOSE_MISMATCH');
+        return {
+          ...describeHandshake(socket),
+          eventTypes,
+          sessionId: ready.message.sessionId,
+          clientCloseSent: 1000,
+          serverCloseReceived: close !== null,
+        };
+      }
       default:
         throw new Error('TERMINAL_WIRE_FRAME_SCENARIO_UNSUPPORTED');
     }
     const outcome = await expectServerClose(socket, request.expectedClose, eventTypes);
-    const expectedBeforeClose = ['terminal.connection.frame.rsv1-later', 'terminal.connection.frame.rsv1-control-after']
-      .includes(request.scenario)
-      ? ['SESSION_READY']
-      : [];
-    if (outcome.eventTypes.join(',') !== expectedBeforeClose.join(',')) {
+    if (outcome.eventTypes.length !== 0) {
       throw new Error('TERMINAL_WIRE_PROTOCOL_ERROR_REACHED_APPLICATION');
     }
     return {
@@ -940,9 +1012,14 @@ async function main() {
   try {
     const {request, inputIterator} = await readRequest();
     scenario = request.scenario;
+    diagnosticScenario = scenario;
+    diagnosticMarkerId = request.markerId ?? 'NONE';
+    setDiagnosticStage('REQUEST_ACCEPTED');
     const result = await run(request, inputIterator);
+    setDiagnosticStage('RESULT_READY');
     process.stdout.write(`${JSON.stringify({scenario, status: 'PASS', ...result})}\n`);
   } catch (failure) {
+    setDiagnosticStage('CLIENT_FAILED');
     const failureCategory = classifyWireFailureForDiagnostics(failure);
     process.stderr.write(`TERMINAL_WIRE_STAGE=CLIENT_FAILED scenario=${scenario} failureCategory=${failureCategory}\n`);
     process.stdout.write(
@@ -953,5 +1030,6 @@ async function main() {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  installTerminationDiagnostics();
   await main();
 }

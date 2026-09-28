@@ -40,6 +40,28 @@ export const useAdminLogin = ({
   })
   const password = field.inputProps.value ?? ''
   const [error, setError] = useState<string | null>(null)
+  const lastLoggedPasswordLength = useRef<number | null>(null)
+  const lastLoggedFocusState = useRef<string | null>(null)
+
+  useEffect(() => {
+    const length = password.length
+    if (lastLoggedPasswordLength.current === length) return
+    lastLoggedPasswordLength.current = length
+    if (__DEV__) console.info('TER_ADMIN_AUTH_TRACE input-state', {length})
+  }, [password.length])
+
+  useEffect(() => {
+    const focusState = `${keyboardState.activeFieldId === PASSWORD_FIELD_ID}:${keyboardState.owner}:${keyboardState.capacity}`
+    if (lastLoggedFocusState.current === focusState) return
+    lastLoggedFocusState.current = focusState
+    if (__DEV__) {
+      console.info('TER_ADMIN_AUTH_TRACE focus-state', {
+        passwordFieldActive: keyboardState.activeFieldId === PASSWORD_FIELD_ID,
+        owner: keyboardState.owner,
+        capacity: keyboardState.capacity,
+      })
+    }
+  }, [keyboardState.activeFieldId, keyboardState.capacity, keyboardState.owner])
 
   useEffect(() => {
     if (keyboardState.activeFieldId === PASSWORD_FIELD_ID) {
@@ -62,12 +84,29 @@ export const useAdminLogin = ({
     : null
 
   const submit = () => {
-    if (password.length !== 6) return
+    if (password.length !== 6) {
+      if (__DEV__) console.info('TER_ADMIN_AUTH_TRACE submit-rejected', {reason: 'incomplete-input', attemptLength: password.length})
+      return
+    }
     if (clockUnavailable) {
+      if (__DEV__) console.info('TER_ADMIN_AUTH_TRACE submit-rejected', {reason: 'clock-unavailable', attemptLength: password.length})
       setError('无法读取设备时间')
       return
     }
-    if (verifyAdminPassword({identity, attempt: password, localDate: currentDate})) {
+    const accepted = verifyAdminPassword({identity, attempt: password, localDate: currentDate})
+    if (__DEV__ && debugPassword !== null) {
+      const differingDigits = [...password].reduce((count, digit, index) => (
+        count + Number(digit !== debugPassword[index])
+      ), 0)
+      console.info('TER_ADMIN_AUTH_TRACE submit', {
+        attemptLength: password.length,
+        displayedCodeMismatchCount: differingDigits,
+        attemptMatchesDisplayedCode: differingDigits === 0,
+        identityAvailable: identity.available,
+        verificationAccepted: accepted,
+      })
+    }
+    if (accepted) {
       setError(null)
       onAuthenticated()
       return

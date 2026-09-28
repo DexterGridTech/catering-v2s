@@ -43,7 +43,7 @@ export const RuntimeSectionMobile = ({context}: AdminSectionProps) => {
                 compact
               />
             </PrimitiveStack>
-            <PrimitiveText appearance="admin-muted" testID={adminTestIds.runtime.legend}>当前屏幕显示完整事实；非当前屏幕仅显示存在性、角色与信息未提供边界</PrimitiveText>
+            <PrimitiveText appearance="admin-muted" testID={adminTestIds.runtime.legend}>逻辑分辨率为应用配置的画布尺寸；矩形按设备比例绘制，物理分辨率分别读取</PrimitiveText>
           </>
         ) : (
           <PrimitiveEmptyState testID={adminTestIds.runtime.displayFactsError} tone="warn">

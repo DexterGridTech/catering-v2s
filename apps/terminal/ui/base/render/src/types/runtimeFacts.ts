@@ -4,6 +4,12 @@ import type {
   PlatformPortCapabilitySnapshot,
 } from '@catering-v2s/kernel-base-platform-ports'
 import type {DisplayFactsReadModel} from '@catering-v2s/kernel-base-display-context'
+import type {SurfaceCanvasDeclaration} from '../foundations/surfaceHost'
+
+export type RuntimeSurfaceCanvasSizes = Readonly<{
+  readonly PRIMARY?: SurfaceCanvasDeclaration
+  readonly SECONDARY?: SurfaceCanvasDeclaration
+}>
 
 export type DebugModeSource = 'startup' | 'packaging' | 'default'
 
@@ -22,6 +28,8 @@ export type RenderRuntimeFacts = Readonly<{
   readonly deviceIdentity: RuntimeDeviceIdentity
   readonly platformPortCapabilities: readonly PlatformPortCapabilitySnapshot[]
   readonly displayFacts?: DisplayFactsReadModel
+  /** Application-declared logical canvas resolution, independent of measured device display bounds. */
+  readonly surfaceCanvasSizes?: RuntimeSurfaceCanvasSizes
 }>
 
 export type DebugModeResolutionInput = Readonly<{
@@ -45,6 +53,7 @@ export const createRenderRuntimeFacts = ({
   deviceIdentity,
   platformPortCapabilities,
   displayFacts,
+  surfaceCanvasSizes,
 }: Readonly<{
   readonly environmentMode: EnvironmentMode
   readonly debugMode: DebugMode
@@ -52,6 +61,7 @@ export const createRenderRuntimeFacts = ({
   readonly deviceIdentity: RuntimeDeviceIdentity
   readonly platformPortCapabilities: readonly PlatformPortCapabilitySnapshot[]
   readonly displayFacts?: DisplayFactsReadModel
+  readonly surfaceCanvasSizes?: RuntimeSurfaceCanvasSizes
 }>): RenderRuntimeFacts => Object.freeze({
   environmentMode,
   debugMode: Object.freeze({enabled: debugMode.enabled, source: debugMode.source}),
@@ -80,6 +90,12 @@ export const createRenderRuntimeFacts = ({
         physicalSize: surface.physicalSize === null ? null : Object.freeze({...surface.physicalSize}),
       }))),
       reasonCode: displayFacts.reasonCode,
+    }),
+  }),
+  ...(surfaceCanvasSizes === undefined ? {} : {
+    surfaceCanvasSizes: Object.freeze({
+      ...(surfaceCanvasSizes.PRIMARY === undefined ? {} : {PRIMARY: Object.freeze({...surfaceCanvasSizes.PRIMARY})}),
+      ...(surfaceCanvasSizes.SECONDARY === undefined ? {} : {SECONDARY: Object.freeze({...surfaceCanvasSizes.SECONDARY})}),
     }),
   }),
 })

@@ -6,8 +6,11 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import com.catering.v2s.terminalbinding.domain.TerminalCredentialDigest;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 class TerminalConnectionFrameCodecTest {
@@ -15,9 +18,10 @@ class TerminalConnectionFrameCodecTest {
     private static final UUID TERMINAL_REF = UUID.fromString("2643118e-0f9b-47bb-82a4-f3d482d9a01d");
     private static final String SECRET = Base64.getUrlEncoder().withoutPadding().encodeToString(new byte[32]);
 
-    private final TerminalConnectionFrameCodec codec = new TerminalConnectionFrameCodec(
-            TdsWireJsonConfiguration.createWireObjectMapper(),
-            new TerminalConnectionProtocol(JsonMapper.builder().build()));
+    private final JsonMapper mapper = JsonMapper.builder().build();
+    private final TerminalConnectionProtocol protocol = new TerminalConnectionProtocol(mapper);
+    private final TerminalConnectionFrameCodec codec =
+            new TerminalConnectionFrameCodec(TdsWireJsonConfiguration.createWireObjectMapper(), protocol);
 
     @Test
     void parsesTheAnonymousAuthenticateFrameIntoTheNarrowVerifierCredential() {
@@ -37,21 +41,38 @@ class TerminalConnectionFrameCodecTest {
     }
 
     @Test
-    void rejectsCredentialAliasesExtraFieldsDuplicatesAndOversizedUtf8Text() {
-        for (String credential : new String[] {"07." + SECRET, "+7." + SECRET, "7." + SECRET + "="}) {
+    void rejectsCredentialAliasesDuplicatesAndOversizedUtf8Text() {
+        for (String credential : new String[] {
+            "07." + SECRET,
+            "+7." + SECRET,
+            "9223372036854775808." + SECRET,
+            "7." + SECRET + "=",
+            "7." + "A".repeat(42) + "B"
+        }) {
             assertInvalid(authenticateFrame(credential, "device-1", "1.2.3"));
         }
         assertInvalid(authenticateFrame("7." + SECRET, "终".repeat(43), "1.2.3"));
-        assertInvalid(authenticateFrame("7." + SECRET, "device-1", "1.2.3", ",\"extra\":true"));
+        assertInvalid(authenticateFrame("7." + SECRET, "device-1", "终".repeat(22)));
         assertInvalid("{\"type\":\"AUTHENTICATE\",\"terminalRef\":\"" + TERMINAL_REF
                 + "\",\"terminalCredential\":\"7." + SECRET
                 + "\",\"deviceId\":\"device-1\",\"appVersion\":\"1\",\"appVersion\":\"2\"}");
     }
 
     @Test
-    void acceptsOnlyClosedPingShapeWithSafeSequenceUtcTimeAndFiniteRtt() {
+    void ignoresUnknownAuthenticateFieldsWhileStillReadingTheKnownFields() {
+        TerminalConnectionFrameCodec.Authenticate authenticate = codec.authenticate(
+                GROUP_KEY, authenticateFrame("7." + SECRET, "device-1", "1.2.3", ",\"futureField\":true"));
+
+        assertThat(authenticate.credential().terminalRef()).isEqualTo(TERMINAL_REF);
+        assertThat(authenticate.credential().generation()).isEqualTo(7);
+        assertThat(authenticate.appVersion()).isEqualTo("1.2.3");
+    }
+
+    @Test
+    void ignoresUnknownPingFieldsAndStrictlyValidatesKnownFields() {
         TerminalConnectionFrameCodec.Ping ping =
-                codec.ping("{\"type\":\"PING\",\"seq\":4,\"clientTs\":\"2026-09-26T12:00:00Z\",\"lastRttMs\":12.5}");
+                codec.ping("{\"type\":\"PING\",\"seq\":4,\"clientTs\":\"2026-09-26T12:00:00Z\","
+                        + "\"lastRttMs\":12.5,\"futureField\":true}");
 
         assertThat(ping.sequence()).isEqualTo(4);
         assertThat(ping.clientTimestamp()).isEqualTo(Instant.parse("2026-09-26T12:00:00Z"));
@@ -84,12 +105,33 @@ class TerminalConnectionFrameCodecTest {
     void serializesSessionReadyAndPongUsingTheSharedMessageNames() throws Exception {
         String ready = codec.sessionReady("session-1", "tds-1", Instant.parse("2026-09-26T12:00:00Z"), 30_000, 90_000);
         String pong = codec.pong(4, Instant.parse("2026-09-26T12:00:01Z"));
-        var mapper = JsonMapper.builder().build();
+        JsonNode readyNode = mapper.readTree(ready);
+        JsonNode pongNode = mapper.readTree(pong);
 
-        assertThat(mapper.readTree(ready).path("type").asString()).isEqualTo("SESSION_READY");
-        assertThat(mapper.readTree(ready).path("heartbeatTimeoutMs").asLong()).isEqualTo(90_000);
-        assertThat(mapper.readTree(pong).path("type").asString()).isEqualTo("PONG");
-        assertThat(mapper.readTree(pong).path("seq").asLong()).isEqualTo(4);
+        assertFieldsMatchProtocol("SESSION_READY", readyNode);
+        assertFieldsMatchProtocol("PONG", pongNode);
+        assertThat(readyNode)
+                .isEqualTo(
+                        mapper.readTree(
+                                """
+                        {"type":"SESSION_READY","sessionId":"session-1","nodeId":"tds-1",
+                         "serverTime":"2026-09-26T12:00:00Z","heartbeatIntervalMs":30000,
+                         "heartbeatTimeoutMs":90000}
+                        """));
+        assertThat(pongNode)
+                .isEqualTo(
+                        mapper.readTree(
+                                """
+                        {"type":"PONG","seq":4,"serverTs":"2026-09-26T12:00:01Z"}
+                        """));
+    }
+
+    private void assertFieldsMatchProtocol(String messageType, JsonNode message) {
+        Set<String> actual = new HashSet<>();
+        message.propertyNames().forEach(actual::add);
+        Set<String> expected = new HashSet<>(protocol.message(messageType).fieldNames());
+        expected.add("type");
+        assertThat(actual).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     private void assertInvalid(String frame) {

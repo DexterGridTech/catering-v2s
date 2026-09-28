@@ -38,7 +38,7 @@ Dexter 已授权三处 follow-up 文字补齐后执行 CP-0 至 CP-4：可修改
 - 由主 agent 独立写入全部文件；fresh 子 agent 只读盲审/对账，不实现、不改文件、不运行 computer use。
 - 任一 CP 结束后先做三维对账：v5 需求、详设/方案、四条指定 project-memory；任何 OPEN 先修复并复查，再进入下一 CP。
 - 全部 CP 完成、整体测试前，再做一次全批三维对账；不是阶段对账的汇总。
-- 同一 failure category 第二次出现立即冻结该失败族，保留 first failure、last known good、broken boundary、business 与 cleanup；不能换命令、加 timeout 或循环截图来掩盖。
+- 同一 failure category 第二次出现时，只冻结该失败族后续业务推进：不运行后续场景，也不换场景、命令、文件或 reviewer 绕过计数；保留 first failure、last known good、broken boundary、business 与 cleanup。回到日志、owning source 和边界证据做根因修复，用同一个 focused proof 证明零复发后继续剩余授权工作；这不结束整个 task，也不需要等待 Dexter。只有硬约束或下一步会实质偏离批准设计、需要 Dexter 裁决时，才停止整个 task。代码字节未改不得重跑。
 - 同一时间只允许一个受管运行；持有运行期间不得改源码。
 - CP-1/CP-2/CP-3 的 staged install 只能在上一 CP MATCHED、当前 CP 快照/锁协议已冻结后进入；CP-4 的构建、Web、设备（以及其后的任何再安装）必须通过 §7.1 的全量静态门与 TR-16 前置门。
 - Git 由 Dexter 控制；本计划不要求任何 Git 操作。
@@ -540,7 +540,7 @@ CP-1/CP-2/CP-3 的安装只允许在上一 CP MATCHED、当前 CP 的 source/fil
 4. TR-16 的 Web 行先于设备行；
 5. 同一时间没有另一个受管运行，runner manifest 的 owner/start token/readiness 可读；
 6. 运行期间不改源码，sourceDigest 在 Web 与设备行相同；
-7. 同一 failure category 第二次出现即停，不通过重试或截图循环掩盖。
+7. 同一归一化 `failureCategory` 第二次出现时，只冻结该失败族后续业务推进：不再运行后续场景，也不换场景、命令、文件或 reviewer 绕过计数。回到日志、owning source 与边界证据定位并修复根因，用同一个 focused proof 证明零复发后继续剩余授权工作；这不结束整个 task，也不要求等待 Dexter。只有硬约束或下一步会实质偏离批准设计、需要 Dexter 裁决时，才停止整个 task。不得重跑相关字节未变化的输入。
 
 前置门任一失败时只输出“未进入昂贵阶段”及缺项，不启动下一个 runner。
 

@@ -9,12 +9,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /** Acceptance-only barriers for listener recovery and exact revocation-delivery timing. */
 @Component
 public final class TdsListenerRecoveryGate {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TdsListenerRecoveryGate.class);
     public static final String CONTROL_SOCKET_PROPERTY = "v2s.tds.acceptance.listener-gate-socket";
     private static final int MAX_CONTROL_LINE_BYTES = 160;
 
@@ -38,13 +41,24 @@ public final class TdsListenerRecoveryGate {
         if (controlSocket == null) return;
         if (backendPid < 1) throw new IllegalArgumentException("TDS_LISTENER_BACKEND_PID_INVALID");
         String attemptId = UUID.randomUUID().toString();
+        long startedNanos = System.nanoTime();
+        LOGGER.info("event=tds_listener_recovery_gate stage=WAITING backendPid={}", backendPid);
         try (SocketChannel channel = SocketChannel.open(StandardProtocolFamily.UNIX)) {
             channel.connect(UnixDomainSocketAddress.of(controlSocket));
             writeLine(channel, "LISTENER_DISCONNECTED\t" + backendPid + "\t" + attemptId);
             if (!("RELEASE\t" + attemptId).equals(readLine(channel))) {
                 throw new IOException("TDS_LISTENER_RECOVERY_GATE_RELEASE_INVALID");
             }
+            LOGGER.info(
+                    "event=tds_listener_recovery_gate stage=RELEASED backendPid={} elapsedMillis={}",
+                    backendPid,
+                    java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos));
         } catch (IOException failure) {
+            LOGGER.warn(
+                    "event=tds_listener_recovery_gate stage=FAILED backendPid={} elapsedMillis={} failureType={}",
+                    backendPid,
+                    java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos),
+                    failure.getClass().getSimpleName());
             throw new IllegalStateException("TDS_LISTENER_RECOVERY_GATE_CONTROL_FAILED", failure);
         }
     }

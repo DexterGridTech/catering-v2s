@@ -239,7 +239,7 @@ export const PrimitivePressOption = ({
 }: PrimitivePressOptionProps) => {
   const [pressed, setPressed] = useState(false);
   const isDisabled = disabled === true || busy === true;
-  return (
+  const option = (
     <RnrPressable
       testID={assertTestID(testID)}
       accessibilityRole={accessibilityRole}
@@ -247,15 +247,24 @@ export const PrimitivePressOption = ({
       aria-selected={accessibilityRole === 'tab' ? selected : undefined}
       accessibilityState={{selected, disabled: isDisabled, busy: busy === true}}
       disabled={isDisabled}
-      className={variant === 'admin-nav'
-        ? selected ? baseTokens.adminNavItemSelected : baseTokens.adminNavItem
-        : undefined}
-      onPressIn={() => setPressed(true)}
-      onPressOut={() => setPressed(false)}
+      className={variant === 'admin-nav' ? baseTokens.adminNavItem : undefined}
+      onPressIn={() => {
+        setPressed(true);
+      }}
+      onPressOut={() => {
+        setPressed(false);
+      }}
       onPress={() => {
         if (!isDisabled) onPress?.();
       }}
     >
+      {variant === 'admin-nav' && selected ? (
+        <RnrView
+          testID={`${assertTestID(testID)}:selected-surface`}
+          pointerEvents="none"
+          className={baseTokens.adminNavItemSelected}
+        />
+      ) : null}
       {variant === 'admin-nav' && icon !== undefined ? (
         <PrimitiveIcon
           testID={`${assertTestID(testID)}:icon`}
@@ -278,4 +287,5 @@ export const PrimitivePressOption = ({
       {variant === 'admin-nav' && selected ? <RnrView testID={`${assertTestID(testID)}:focus-bar`} className={baseTokens.adminNavFocusBar} /> : null}
     </RnrPressable>
   );
+  return option;
 };

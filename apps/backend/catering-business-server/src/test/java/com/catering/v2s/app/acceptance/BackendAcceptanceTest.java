@@ -821,6 +821,14 @@ class BackendAcceptanceTest {
     }
 
     @TestFactory
+    Stream<DynamicTest> terminalConnectionForwardCompatibleMessageContracts() {
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
+        if (!"all".equals(selectedOperation)) return Stream.empty();
+        return TerminalConnectionContractScenarios.forwardCompatibleMessageFieldScenarios(this, tdsAcceptanceProcess);
+    }
+
+    @TestFactory
     Stream<DynamicTest> terminalConnectionDatabaseOutageContracts() {
         String selectedOperation =
                 System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");

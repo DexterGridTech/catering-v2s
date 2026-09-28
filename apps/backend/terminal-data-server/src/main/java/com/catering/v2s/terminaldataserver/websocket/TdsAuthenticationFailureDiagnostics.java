@@ -44,6 +44,7 @@ final class TdsAuthenticationFailureDiagnostics {
         VERIFICATION_RECORD,
         REGISTRATION_GATE,
         SESSION_REGISTER,
+        ACTIVE_SESSION_RECEIVE,
         UNKNOWN
     }
 

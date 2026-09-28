@@ -109,6 +109,8 @@ const staticCommands = Object.freeze([
       '--tests',
       'com.catering.v2s.terminaldataserver.websocket.TdsWebSocketConnectionTest',
       '--tests',
+      'com.catering.v2s.terminaldataserver.websocket.TdsWebSocketHandlerTransportFailureTest',
+      '--tests',
       'com.catering.v2s.terminaldataserver.config.TdsRuntimeSettingsTest',
       '--tests',
       'com.catering.v2s.terminaldataserver.config.TdsBlockHoundTest',
