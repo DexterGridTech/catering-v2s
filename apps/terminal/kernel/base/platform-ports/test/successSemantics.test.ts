@@ -13,17 +13,17 @@ const noOutput: NoOutput = {completed: true};
 describe('S: explicit action terminal semantics', () => {
   it('keeps accepted reset distinct from succeeded until the successor signal exists', async () => {
     let signalSuccess!: () => void;
-    const successorSignal = new Promise<void>((resolve) => {
+    const successorSignal = new Promise<void>(resolve => {
       signalSuccess = resolve;
     });
     const fakeState: {terminalState: 'pending' | 'succeeded'} = {terminalState: 'pending'};
-    const resetRuntime: AppControlPort['resetRuntime'] = async (input) => ({
+    const resetRuntime: AppControlPort['resetRuntime'] = async input => ({
       status: 'accepted',
       requestId: input.requestId,
       acceptedAt: nowTimestampMs(),
       terminalObservation: 'SUCCESSOR_RUNTIME_STARTED',
     });
-    const observedResetRuntime: AppControlPort['resetRuntime'] = async (input) => {
+    const observedResetRuntime: AppControlPort['resetRuntime'] = async input => {
       void successorSignal.then(() => {
         fakeState.terminalState = 'succeeded';
       });
@@ -48,7 +48,7 @@ describe('S: explicit action terminal semantics', () => {
 
   it('only returns succeeded after an observable state change and preserves timeout', async () => {
     let enabled = false;
-    const setFullscreen: AppControlPort['setFullscreen'] = async (input) => {
+    const setFullscreen: AppControlPort['setFullscreen'] = async input => {
       enabled = input.enabled;
       return {status: 'succeeded', value: {enabled}, completedAt: nowTimestampMs()};
     };
@@ -59,7 +59,7 @@ describe('S: explicit action terminal semantics', () => {
 
     const timeoutPort: AppControlPort = {
       ...unavailableAppControlPort,
-      resetRuntime: async (input) => {
+      resetRuntime: async input => {
         const fakeElapsedMs = input.timeoutMs + 1;
         if (fakeElapsedMs > input.timeoutMs) {
           return {

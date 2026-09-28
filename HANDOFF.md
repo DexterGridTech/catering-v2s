@@ -4,7 +4,7 @@
 
 编码规范唯一正本入口：后台见 [`doc/platform/backend-coding-standard.md`](doc/platform/backend-coding-standard.md)，前端见 [`doc/platform/frontend-coding-standard.md`](doc/platform/frontend-coding-standard.md)。本文件只提供指针，不复制规范内容。
 
-本批双机拓扑基建加固的外部/仓外边界登记如下；这些行只记录事实与触发条件，不授权后续实施。
+TER 已裁定延期的外部/仓外能力边界登记如下；这些行只记录事实与触发条件，不授权后续实施。
 
 | id | currentBoundary | deferredReason | risk | activationTrigger | futureAcceptanceEvidence | decisionSource |
 |---|---|---|---|---|---|---|
@@ -13,6 +13,7 @@
 | TER_DUAL_SCREEN_JS_RELOAD | 双屏 JS reload 与已注册 surface 的恢复依赖 ReactHostImpl 行为，当前无设备结论 | 该仓外行为不能由静态源码推出 | reload 后主/副屏生命周期可能不同步 | TER_DUAL_SCREEN_JS_RELOAD_IMPLEMENTATION_AUTHORIZED | 单机双屏冷启动、reload、UI XML/timeline 与 cleanup 证据 | `doc/plans/platform/2026-09-17-ter-dual-machine-topology-requirements-claude.md` §8.4 |
 | TER_DUAL_SCREEN_SECONDARY_RESTORE | 副屏 Presentation 是否在 JS 重启后自行恢复仍属 UNVERIFIED | 需要单机双屏设备观察；不得以双机单屏替代 | 副屏可能停留在空白或旧 surface | TER_DUAL_SCREEN_SECONDARY_RESTORE_FIX_AUTHORIZED | 修复 owner、生命周期与 generation-safe restore 的设备复测 | `doc/plans/platform/2026-09-17-ter-dual-machine-topology-requirements-claude.md` §8.4 |
 | TER_NANOHTTPD_REPLACEMENT | 当前保留 NanoHTTPD 2.3.1 与既有 NanoWSD 文本管道 | 依 Dexter 裁定本批不换 HTTP/WS 依赖 | 上游停更，新漏洞缺少补丁通道 | TER_NANOHTTPD_REPLACEMENT_AUTHORIZED | 替代库兼容性、Android 构建、HTTP/WS/close/stats 与设备证据 | `doc/plans/platform/2026-09-18-ter-dual-machine-topology-infrastructure-hardening-requirements-claude.md` §0.2 |
+| TER_SENTRY_ERROR_REPORTING | 本批实现 `react-error-boundary` 与结构化日志，不上传 Sentry | Dexter 2026-09-28 选择 6：离线队列、上传窗口、脱敏、上报服务与 DSN 延期 | 门店离线时故障不可见，无法集中发现 | TER_SENTRY_ERROR_REPORTING_AUTHORIZED | 接入获准的上报服务；验证离线队列、上传窗口、脱敏、服务端接收与离线恢复 | `doc/decisions/2026-09-28-ter-third-party-usage-remediation.md` |
 
 | id | currentBoundary | deferredReason | risk | activationTrigger | futureAcceptanceEvidence | decisionSource |
 |---|---|---|---|---|---|---|

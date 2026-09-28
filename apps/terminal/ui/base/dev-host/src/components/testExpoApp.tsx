@@ -8,14 +8,7 @@ import {
   type FC,
   type ReactElement,
 } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type GestureResponderEvent,
-  type LayoutChangeEvent,
-} from 'react-native';
+import {Pressable, StyleSheet, Text, View, type GestureResponderEvent, type LayoutChangeEvent} from 'react-native';
 import {
   readDisplayInfo,
   resolveSecondarySurfaceAvailable,
@@ -79,11 +72,13 @@ export type TestExpoAppOptions<TAssembly extends TestExpoAssembly> = Readonly<{
    * Lets the integration owner commit a display-topology refresh before the
    * host reads the same display facts for surface mounting.
    */
-  readonly onSurfaceModeChanged?: (input: Readonly<{
-    readonly assembly: TAssembly;
-    readonly surfaceMode: SurfaceMode;
-  }>) => Promise<void>;
-}>; 
+  readonly onSurfaceModeChanged?: (
+    input: Readonly<{
+      readonly assembly: TAssembly;
+      readonly surfaceMode: SurfaceMode;
+    }>,
+  ) => Promise<void>;
+}>;
 
 const createWebNativeLoadingCapability = (): NativeLoadingCapability => {
   let hidden = false;
@@ -107,6 +102,16 @@ const SURFACE_WIDTH_MIN_PERCENT = 30;
 const SURFACE_WIDTH_MAX_PERCENT = 100;
 const SURFACE_WIDTH_STEP_PERCENT = 1;
 const DEFAULT_SURFACE_WIDTH_PERCENT = SURFACE_WIDTH_MAX_PERCENT;
+
+const createSurfaceModeSource = (initial: SurfaceMode) => {
+  let current = initial;
+  return Object.freeze({
+    read: (): SurfaceMode => current,
+    write: (next: SurfaceMode): void => {
+      current = next;
+    },
+  });
+};
 
 const clampSurfaceWidthPercent = (value: number): number => {
   if (!Number.isFinite(value)) return DEFAULT_SURFACE_WIDTH_PERCENT;
@@ -229,7 +234,8 @@ const readWebRect = (node: unknown): WebRect | null => {
       !isFiniteNumber(rect.bottom) ||
       !isFiniteNumber(rect.width) ||
       !isFiniteNumber(rect.height)
-    ) return null;
+    )
+      return null;
     return {
       left: rect.left,
       top: rect.top,
@@ -259,15 +265,18 @@ const readWebViewport = (): WebViewport => {
     width: isFiniteNumber(window.innerWidth) ? window.innerWidth : null,
     height: isFiniteNumber(window.innerHeight) ? window.innerHeight : null,
     devicePixelRatio: isFiniteNumber(window.devicePixelRatio) ? window.devicePixelRatio : null,
-    visualViewportWidth: visualViewport !== null && visualViewport !== undefined && isFiniteNumber(visualViewport.width)
-      ? visualViewport.width
-      : null,
-    visualViewportHeight: visualViewport !== null && visualViewport !== undefined && isFiniteNumber(visualViewport.height)
-      ? visualViewport.height
-      : null,
-    visualViewportScale: visualViewport !== null && visualViewport !== undefined && isFiniteNumber(visualViewport.scale)
-      ? visualViewport.scale
-      : null,
+    visualViewportWidth:
+      visualViewport !== null && visualViewport !== undefined && isFiniteNumber(visualViewport.width)
+        ? visualViewport.width
+        : null,
+    visualViewportHeight:
+      visualViewport !== null && visualViewport !== undefined && isFiniteNumber(visualViewport.height)
+        ? visualViewport.height
+        : null,
+    visualViewportScale:
+      visualViewport !== null && visualViewport !== undefined && isFiniteNumber(visualViewport.scale)
+        ? visualViewport.scale
+        : null,
   };
 };
 
@@ -287,46 +296,55 @@ const SurfaceCanvas = ({
   const scaledStageNodeRef = useRef<unknown>(null);
   const logicalStageNodeRef = useRef<unknown>(null);
   const surfaceNodeRefs = useRef<Partial<Record<DisplayMode, unknown>>>({});
-  const reportReactLayout = useCallback((node: string, event: LayoutChangeEvent) => {
-    if (!__DEV__) return;
-    const {x, y, width, height} = event.nativeEvent.layout;
-    logger.info({
-      category: 'display-diagnostics',
-      event: 'web.react-layout',
-      message: 'Web display-chain React layout observed',
-      data: {
-        source: 'ui-base-dev-host.SurfaceCanvas',
-        node,
-        units: 'css-layout-unit',
-        x,
-        y,
-        width,
-        height,
-        previewViewportWidth: previewViewportSize?.width ?? null,
-        previewViewportHeight: previewViewportSize?.height ?? null,
-        showSecondary,
-      },
-    });
-  }, [logger, previewViewportSize, showSecondary]);
-  const handleCanvasLayout = useCallback((event: LayoutChangeEvent) => {
-    reportReactLayout('canvas', event);
-  }, [reportReactLayout]);
-  const handlePreviewViewportLayout = useCallback((event: LayoutChangeEvent) => {
-    const {width, height} = event.nativeEvent.layout;
-    reportReactLayout('preview-viewport', event);
-    if (!isFiniteNumber(width) || width <= 0 || !isFiniteNumber(height) || height <= 0) {
-      setPreviewViewportSize(null);
-      return;
-    }
-    setPreviewViewportSize(current =>
-      current?.width === width && current.height === height ? current : {width, height},
-    );
-  }, [reportReactLayout]);
+  const reportReactLayout = useCallback(
+    (node: string, event: LayoutChangeEvent) => {
+      if (!__DEV__) return;
+      const {x, y, width, height} = event.nativeEvent.layout;
+      logger.info({
+        category: 'display-diagnostics',
+        event: 'web.react-layout',
+        message: 'Web display-chain React layout observed',
+        data: {
+          source: 'ui-base-dev-host.SurfaceCanvas',
+          node,
+          units: 'css-layout-unit',
+          x,
+          y,
+          width,
+          height,
+          previewViewportWidth: previewViewportSize?.width ?? null,
+          previewViewportHeight: previewViewportSize?.height ?? null,
+          showSecondary,
+        },
+      });
+    },
+    [logger, previewViewportSize, showSecondary],
+  );
+  const handleCanvasLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      reportReactLayout('canvas', event);
+    },
+    [reportReactLayout],
+  );
+  const handlePreviewViewportLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const {width, height} = event.nativeEvent.layout;
+      reportReactLayout('preview-viewport', event);
+      if (!isFiniteNumber(width) || width <= 0 || !isFiniteNumber(height) || height <= 0) {
+        setPreviewViewportSize(null);
+        return;
+      }
+      setPreviewViewportSize(current =>
+        current?.width === width && current.height === height ? current : {width, height},
+      );
+    },
+    [reportReactLayout],
+  );
   const geometry = useMemo(
     () =>
       previewViewportSize === null
         ? null
-          : calculateSurfacePreviewGeometry({
+        : calculateSurfacePreviewGeometry({
             layout: DEV_HOST_PREVIEW_LAYOUT,
             showSecondary,
             viewport: {
@@ -524,11 +542,7 @@ const SurfaceRadioOption = ({label, selected, onPress, optionTestID}: SurfaceRad
 );
 
 const SurfaceFormSwitcher = ({surfaceForm, supportsMobile, onSelect, testIdPrefix}: SurfaceFormSwitcherProps) => (
-  <View
-    style={styles.surfaceRadioGroup}
-    testID={`${testIdPrefix}:surface-form-switcher`}
-    accessibilityLabel="终端视角"
-  >
+  <View style={styles.surfaceRadioGroup} testID={`${testIdPrefix}:surface-form-switcher`} accessibilityLabel="终端视角">
     <Text style={styles.surfaceRadioGroupLabel}>视角</Text>
     <SurfaceRadioOption
       optionTestID={`${testIdPrefix}:surface-form:laptop`}
@@ -562,9 +576,8 @@ type SurfaceWidthKeyDownEvent = Readonly<{
 
 const surfaceWidthPercentFromLocation = (locationX: number): number =>
   clampSurfaceWidthPercent(
-    SURFACE_WIDTH_MIN_PERCENT
-      + (locationX / SURFACE_WIDTH_SLIDER_TRACK_WIDTH)
-        * (SURFACE_WIDTH_MAX_PERCENT - SURFACE_WIDTH_MIN_PERCENT),
+    SURFACE_WIDTH_MIN_PERCENT +
+      (locationX / SURFACE_WIDTH_SLIDER_TRACK_WIDTH) * (SURFACE_WIDTH_MAX_PERCENT - SURFACE_WIDTH_MIN_PERCENT),
   );
 
 const SurfaceWidthSlider = ({surfaceWidthPercent, onChange, testIdPrefix}: SurfaceWidthControlProps) => {
@@ -574,19 +587,22 @@ const SurfaceWidthSlider = ({surfaceWidthPercent, onChange, testIdPrefix}: Surfa
   };
   const handleKeyDown = (event: SurfaceWidthKeyDownEvent): void => {
     const key = event.nativeEvent.key;
-    const delta = key === 'ArrowLeft' || key === 'ArrowDown' ? -SURFACE_WIDTH_STEP_PERCENT
-      : key === 'ArrowRight' || key === 'ArrowUp' ? SURFACE_WIDTH_STEP_PERCENT
-        : 0;
+    const delta =
+      key === 'ArrowLeft' || key === 'ArrowDown'
+        ? -SURFACE_WIDTH_STEP_PERCENT
+        : key === 'ArrowRight' || key === 'ArrowUp'
+          ? SURFACE_WIDTH_STEP_PERCENT
+          : 0;
     if (delta === 0) return;
     event.preventDefault();
     onChange(clampSurfaceWidthPercent(surfaceWidthPercent + delta));
   };
   const fillPercent =
-    ((surfaceWidthPercent - SURFACE_WIDTH_MIN_PERCENT)
-      / (SURFACE_WIDTH_MAX_PERCENT - SURFACE_WIDTH_MIN_PERCENT)) * 100;
-  const pressableProps: ComponentProps<typeof Pressable> & Readonly<{
-    readonly onKeyDown: (event: SurfaceWidthKeyDownEvent) => void;
-  }> = {
+    ((surfaceWidthPercent - SURFACE_WIDTH_MIN_PERCENT) / (SURFACE_WIDTH_MAX_PERCENT - SURFACE_WIDTH_MIN_PERCENT)) * 100;
+  const pressableProps: ComponentProps<typeof Pressable> &
+    Readonly<{
+      readonly onKeyDown: (event: SurfaceWidthKeyDownEvent) => void;
+    }> = {
     accessibilityLabel: 'surface 宽度比例',
     accessibilityRole: 'adjustable',
     accessibilityValue: {
@@ -618,11 +634,7 @@ type SurfaceModeRadioProps = Readonly<{
 }>;
 
 const SurfaceModeRadio = ({surfaceMode, onSelect, testIdPrefix}: SurfaceModeRadioProps) => (
-  <View
-    style={styles.surfaceRadioGroup}
-    testID={`${testIdPrefix}:surface-toggle`}
-    accessibilityLabel="屏幕模式"
-  >
+  <View style={styles.surfaceRadioGroup} testID={`${testIdPrefix}:surface-toggle`} accessibilityLabel="屏幕模式">
     <Text style={styles.surfaceRadioGroupLabel}>屏幕</Text>
     <SurfaceRadioOption
       optionTestID={`${testIdPrefix}:surface-mode:single`}
@@ -646,78 +658,83 @@ const SurfaceWidthControl = ({surfaceWidthPercent, onChange, testIdPrefix}: Surf
     accessibilityLabel="surface 宽度"
   >
     <Text style={styles.surfaceWidthControlLabel}>surface 宽度</Text>
-    <SurfaceWidthSlider
-      surfaceWidthPercent={surfaceWidthPercent}
-      onChange={onChange}
-      testIdPrefix={testIdPrefix}
-    />
+    <SurfaceWidthSlider surfaceWidthPercent={surfaceWidthPercent} onChange={onChange} testIdPrefix={testIdPrefix} />
     <Text style={styles.surfaceWidthControlValue} testID={`${testIdPrefix}:surface-width-value`}>
       {surfaceWidthPercent}%
     </Text>
   </View>
 );
 
-const HeaderStatus = ({runtimeStatus, showSecondary, surfaceForm, terminalSurfaces, testIdPrefix}: HeaderStatusProps) => {
+const HeaderStatus = ({
+  runtimeStatus,
+  showSecondary,
+  surfaceForm,
+  terminalSurfaces,
+  testIdPrefix,
+}: HeaderStatusProps) => {
   const {primary, secondary} = resolveSurfaceGroup(terminalSurfaces, surfaceForm);
   return (
-  <View style={styles.headerInfo} testID={`${testIdPrefix}:header-status`}>
-    <View style={styles.headerMetricRow}>
-      <View style={styles.headerMetric}>
-        <View
-          style={[
-            styles.statusIndicator,
-            runtimeStatus === 'started' ? styles.statusIndicatorSuccess : styles.statusIndicatorWarning,
-          ]}
-        />
-        <Text style={styles.headerMetricLabel}>RUNTIME</Text>
-        <Text style={styles.headerMetricValue} testID={`${testIdPrefix}:runtime-status`}>
-          {runtimeStatus === 'started' ? 'Started' : runtimeStatus === 'failed' ? 'Failed' : 'Starting'}
-        </Text>
-      </View>
-      <View style={styles.headerMetricDivider} />
-      <View style={styles.headerMetric}>
-        <View style={[styles.statusIndicator, styles.statusIndicatorInfo]} />
-        <Text style={styles.headerMetricLabel}>STORE</Text>
-        <Text style={styles.headerMetricValue}>同一 assembly</Text>
-      </View>
-      <View style={styles.headerMetricDivider} />
-      <View style={styles.headerMetric}>
-        <View
-          style={[styles.statusIndicator, showSecondary ? styles.statusIndicatorSuccess : styles.statusIndicatorMuted]}
-        />
-        <Text style={styles.headerMetricLabel}>SURFACES</Text>
-        <Text style={styles.headerMetricValue}>
-          {showSecondary ? '2 个 Root' : showSecondary === false ? '1 个 Root' : '读取中'}
-        </Text>
-      </View>
-    </View>
-    <View style={styles.headerSurfaceRow}>
-      <View
-        style={[styles.headerSurface, styles.headerPrimarySurface]}
-        testID={`${testIdPrefix}:surface-summary:PRIMARY`}
-      >
-        <View style={[styles.surfaceDot, styles.primaryDot]} />
-        <Text style={styles.headerSurfaceText}>
-          {surfaceForm === 'laptop' ? '主屏' : '手持屏'} · {primary.width} × {primary.height}
-        </Text>
-        <Text style={styles.headerSurfaceState}>已挂载</Text>
-      </View>
-      {surfaceForm === 'laptop' ? (
-        <View
-          style={[styles.headerSurface, showSecondary ? styles.headerSecondarySurface : styles.headerInactiveSurface]}
-          testID={`${testIdPrefix}:surface-summary:SECONDARY`}
-        >
-          <View style={[styles.surfaceDot, showSecondary ? styles.secondaryDot : styles.inactiveDot]} />
-          <Text style={styles.headerSurfaceText}>
-            客显 · {secondary.width} × {secondary.height}
-          </Text>
-          <Text style={[styles.headerSurfaceState, !showSecondary && styles.inactiveText]}>
-            {showSecondary ? '已挂载' : showSecondary === false ? '未启用' : '读取中'}
+    <View style={styles.headerInfo} testID={`${testIdPrefix}:header-status`}>
+      <View style={styles.headerMetricRow}>
+        <View style={styles.headerMetric}>
+          <View
+            style={[
+              styles.statusIndicator,
+              runtimeStatus === 'started' ? styles.statusIndicatorSuccess : styles.statusIndicatorWarning,
+            ]}
+          />
+          <Text style={styles.headerMetricLabel}>RUNTIME</Text>
+          <Text style={styles.headerMetricValue} testID={`${testIdPrefix}:runtime-status`}>
+            {runtimeStatus === 'started' ? 'Started' : runtimeStatus === 'failed' ? 'Failed' : 'Starting'}
           </Text>
         </View>
-      ) : null}
+        <View style={styles.headerMetricDivider} />
+        <View style={styles.headerMetric}>
+          <View style={[styles.statusIndicator, styles.statusIndicatorInfo]} />
+          <Text style={styles.headerMetricLabel}>STORE</Text>
+          <Text style={styles.headerMetricValue}>同一 assembly</Text>
+        </View>
+        <View style={styles.headerMetricDivider} />
+        <View style={styles.headerMetric}>
+          <View
+            style={[
+              styles.statusIndicator,
+              showSecondary ? styles.statusIndicatorSuccess : styles.statusIndicatorMuted,
+            ]}
+          />
+          <Text style={styles.headerMetricLabel}>SURFACES</Text>
+          <Text style={styles.headerMetricValue}>
+            {showSecondary ? '2 个 Root' : showSecondary === false ? '1 个 Root' : '读取中'}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.headerSurfaceRow}>
+        <View
+          style={[styles.headerSurface, styles.headerPrimarySurface]}
+          testID={`${testIdPrefix}:surface-summary:PRIMARY`}
+        >
+          <View style={[styles.surfaceDot, styles.primaryDot]} />
+          <Text style={styles.headerSurfaceText}>
+            {surfaceForm === 'laptop' ? '主屏' : '手持屏'} · {primary.width} × {primary.height}
+          </Text>
+          <Text style={styles.headerSurfaceState}>已挂载</Text>
+        </View>
+        {surfaceForm === 'laptop' ? (
+          <View
+            style={[styles.headerSurface, showSecondary ? styles.headerSecondarySurface : styles.headerInactiveSurface]}
+            testID={`${testIdPrefix}:surface-summary:SECONDARY`}
+          >
+            <View style={[styles.surfaceDot, showSecondary ? styles.secondaryDot : styles.inactiveDot]} />
+            <Text style={styles.headerSurfaceText}>
+              客显 · {secondary.width} × {secondary.height}
+            </Text>
+            <Text style={[styles.headerSurfaceState, !showSecondary && styles.inactiveText]}>
+              {showSecondary ? '已挂载' : showSecondary === false ? '未启用' : '读取中'}
+            </Text>
+          </View>
+        ) : null}
+      </View>
     </View>
-  </View>
   );
 };
 
@@ -761,52 +778,58 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
     );
     const [surfaceWidthPercent, setSurfaceWidthPercent] = useState(DEFAULT_SURFACE_WIDTH_PERCENT);
     const [surfaceMode, setSurfaceMode] = useState<SurfaceMode>('single');
-    const surfaceModeRef = useRef<SurfaceMode>(surfaceMode);
-    surfaceModeRef.current = surfaceMode;
+    const [surfaceModeSource] = useState(() => createSurfaceModeSource(surfaceMode));
+    const changeSurfaceMode = (nextSurfaceMode: SurfaceMode): void => {
+      surfaceModeSource.write(nextSurfaceMode);
+      setSurfaceMode(nextSurfaceMode);
+    };
     const [assembly, setAssembly] = useState<TAssembly | undefined>();
     const [startupError, setStartupError] = useState(false);
     const [showSecondary, setShowSecondary] = useState<boolean | undefined>();
     const webPlatformOptions = useMemo(() => {
-      const readDisplaySurfaces = options.webPlatformOptions?.readDisplaySurfaces ?? (() => {
-        const {primary, secondary} = resolveSurfaceGroup(options.terminalSurfaces, surfaceForm)
-        return Object.freeze([
-          Object.freeze({
-            displayId: 0,
-            role: 'primary' as const,
-            logicalSize: Object.freeze({...primary}),
-            physicalSize: null,
-            readiness: 'ready' as const,
-          }),
-          ...(surfaceModeRef.current === 'dual' && surfaceForm === 'laptop' ? [Object.freeze({
-            displayId: 1,
-            role: 'secondary' as const,
-            logicalSize: Object.freeze({...secondary}),
-            physicalSize: null,
-            readiness: 'ready' as const,
-          })] : []),
-        ])
-      })
+      const readDisplaySurfaces =
+        options.webPlatformOptions?.readDisplaySurfaces ??
+        (() => {
+          const {primary, secondary} = resolveSurfaceGroup(options.terminalSurfaces, surfaceForm);
+          return Object.freeze([
+            Object.freeze({
+              displayId: 0,
+              role: 'primary' as const,
+              logicalSize: Object.freeze({...primary}),
+              physicalSize: null,
+              readiness: 'ready' as const,
+            }),
+            ...(surfaceModeSource.read() === 'dual' && surfaceForm === 'laptop'
+              ? [
+                  Object.freeze({
+                    displayId: 1,
+                    role: 'secondary' as const,
+                    logicalSize: Object.freeze({...secondary}),
+                    physicalSize: null,
+                    readiness: 'ready' as const,
+                  }),
+                ]
+              : []),
+          ]);
+        });
       return Object.freeze({
         ...options.webPlatformOptions,
         readDisplaySurfaces,
         storageNamespace: options.appName,
-      })
-    }, [options.appName, options.terminalSurfaces, options.webPlatformOptions, surfaceForm])
+      });
+    }, [surfaceForm, surfaceModeSource]);
     const platformPorts = useMemo(
-      () =>
-        createWebPlatformPorts(() => surfaceModeRef.current, webPlatformOptions),
-      [webPlatformOptions],
+      () => createWebPlatformPorts(surfaceModeSource.read, webPlatformOptions),
+      [surfaceModeSource, webPlatformOptions],
     );
     const webSurfaceHostSources = useMemo(() => {
       const {primary, secondary} = resolveSurfaceGroup(options.terminalSurfaces, surfaceForm);
       return Object.freeze({
         0: createWebSurfaceHostSource({displayIndex: 0, size: primary}),
-        ...(surfaceForm === 'laptop'
-          ? {1: createWebSurfaceHostSource({displayIndex: 1, size: secondary})}
-          : {}),
+        ...(surfaceForm === 'laptop' ? {1: createWebSurfaceHostSource({displayIndex: 1, size: secondary})} : {}),
       });
-    }, [options.terminalSurfaces, surfaceForm]);
-    const nativeLoadingCapability = useMemo(createWebNativeLoadingCapability, []);
+    }, [surfaceForm]);
+    const [nativeLoadingCapability] = useState(createWebNativeLoadingCapability);
 
     useEffect(() => {
       let active = true;
@@ -871,7 +894,7 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
       return () => {
         active = false;
       };
-    }, [assembly, options, platformPorts, surfaceForm, surfaceMode]);
+    }, [assembly, platformPorts, surfaceForm, surfaceMode]);
 
     const runtimeStatus = startupError
       ? 'failed'
@@ -897,41 +920,41 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
                 />
               </View>
               <View style={styles.toolbarActions} testID={`${testIdPrefix}:toolbar-actions`}>
-                  <SurfaceWidthControl
-                    surfaceWidthPercent={surfaceWidthPercent}
-                    onChange={setSurfaceWidthPercent}
+                <SurfaceWidthControl
+                  surfaceWidthPercent={surfaceWidthPercent}
+                  onChange={setSurfaceWidthPercent}
+                  testIdPrefix={testIdPrefix}
+                />
+                <SurfaceFormSwitcher
+                  surfaceForm={surfaceForm}
+                  supportsMobile={supportsMobile}
+                  testIdPrefix={testIdPrefix}
+                  onSelect={nextSurfaceForm => {
+                    if (nextSurfaceForm === surfaceForm) return;
+                    const restarted = restartWebSurfaceWithForm(nextSurfaceForm);
+                    platformPorts.logger.info({
+                      category: `${options.appName}.test-expo`,
+                      event: 'surface-form-switch-requested',
+                      message: restarted
+                        ? 'Web surface form switch requested; restarting the surface page'
+                        : 'Surface form switch requested; rebuilding the host in place',
+                      data: {
+                        from: surfaceForm,
+                        to: nextSurfaceForm,
+                        restart: restarted ? 'web-page-reload' : 'in-memory-rebuild',
+                      },
+                    });
+                    changeSurfaceMode('single');
+                    if (!restarted) setSurfaceForm(nextSurfaceForm);
+                  }}
+                />
+                {surfaceForm === 'laptop' ? (
+                  <SurfaceModeRadio
+                    surfaceMode={surfaceMode}
+                    onSelect={changeSurfaceMode}
                     testIdPrefix={testIdPrefix}
                   />
-                  <SurfaceFormSwitcher
-                    surfaceForm={surfaceForm}
-                    supportsMobile={supportsMobile}
-                    testIdPrefix={testIdPrefix}
-                    onSelect={nextSurfaceForm => {
-                      if (nextSurfaceForm === surfaceForm) return;
-                      const restarted = restartWebSurfaceWithForm(nextSurfaceForm);
-                      platformPorts.logger.info({
-                        category: `${options.appName}.test-expo`,
-                        event: 'surface-form-switch-requested',
-                        message: restarted
-                          ? 'Web surface form switch requested; restarting the surface page'
-                          : 'Surface form switch requested; rebuilding the host in place',
-                        data: {
-                          from: surfaceForm,
-                          to: nextSurfaceForm,
-                          restart: restarted ? 'web-page-reload' : 'in-memory-rebuild',
-                        },
-                      });
-                      setSurfaceMode('single');
-                      if (!restarted) setSurfaceForm(nextSurfaceForm);
-                    }}
-                  />
-                  {surfaceForm === 'laptop' ? (
-                    <SurfaceModeRadio
-                      surfaceMode={surfaceMode}
-                      onSelect={setSurfaceMode}
-                      testIdPrefix={testIdPrefix}
-                    />
-                  ) : null}
+                ) : null}
               </View>
             </View>
             {startupError ? (

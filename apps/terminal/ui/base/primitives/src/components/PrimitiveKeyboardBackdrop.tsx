@@ -1,4 +1,4 @@
-import {RnrView} from '../vendor/slots';
+import {RnrView} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import type {PrimitiveKeyboardBackdropProps} from '../types/types';

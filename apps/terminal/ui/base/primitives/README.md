@@ -25,8 +25,8 @@ automation 后端仍按裁定押后。
 键盘布局、业务字段、command 或 store；`selection.end` 缺省时按光标位置归一为 `start`。业务层
 可用 `maxLength` 表达通用编辑上限，虚拟键盘的纯编辑模型也必须遵守同一个上限。
 
-系统软键盘抑制不属于公共 props；`src/vendor/slots.tsx` 在唯一的 RN `TextInput` slot 内固定
-`showSoftInputOnFocus={false}`，调用方不能重新打开该逃生口。
+系统软键盘与系统选择/粘贴菜单抑制不属于公共 props；`src/foundations/nativeSlots.tsx` 在唯一的 RN `TextInput` slot 内固定
+`showSoftInputOnFocus={false}` 和 `contextMenuHidden={true}`。Web 另在该 slot 阻止原生 `contextmenu` 默认动作；调用方不能重新打开这些入口。
 
 为支持输入包的真实 focus/restore 与 surface 点击边界，`PrimitiveInput` 另外接受呈现无关的
 `onFocus`、`onBlur`、`onPressIn` 与 `inputRef`。前三者只转发真实 `TextInput` 生命周期/按下通知，后者只暴露 `focus`/`blur`、
@@ -61,7 +61,7 @@ Pressable 根，供 owner 按自己的坐标契约测量可见 PIN 锚点；prim
 未来需要无障碍字号放大，必须另行裁定应用级策略，不能通过 feature 绕过 primitives。
 
 本包不保存业务状态、不读取 Runtime、不派发命令、不定义具体 partKey，也不导入 automation。
-`className` 只存在于 `src/vendor` 与 primitives 内部 recipe，不能出现在任何 ui/feature 生产源码；
+`className` 只存在于 primitives 的本地 `src/foundations/nativeSlots.tsx` 适配层与内部 recipe，不能出现在任何 ui/feature 生产源码；
 业务组件继续只消费带强制 `testID` 的语义控件。本轮已授权的公共面加法包括
 `PrimitiveContainer` 的可选 `layout`/`bounded` 呈现字段、受控 `PrimitiveScrollView`、`PrimitiveButton` 的
 `default`/`key`/`key-action` 呈现 variant，以及 `PrimitiveInput` 的三个可选编辑/呈现 prop 与四个
@@ -84,8 +84,11 @@ press/selected 状态模型。
 - `src/components/`：排版、布局、表单、反馈和数据展示的 bounded primitives；控件共用
   `src/foundations/assertTestID.ts` 的非空 `testID` 校验。
 - `src/types/types.ts`：控件公共 props、handle 与事件类型，不含运行时值。
-- `src/vendor/`：唯一接触 React Native value API 的 slot，包括 Text/Button/Input、滚动、Spinner、
-  VirtualizedList 和首批 SVG/icon 接缝；不把平台分支泄漏到 component 层。
+- `src/foundations/nativeSlots.tsx`：唯一接触 React Native value API 的本地适配层，包括 Text/Button/Input、滚动、Spinner、
+  VirtualizedList 和 SVG/icon 接缝；TextInput 的软键盘及系统上下文菜单抑制只在该 slot 固定。
+- `src/foundations/cssInterop.*` 与 `nativeVariable.*`：包内平台适配；使用 `react-native-css-interop` 根公开入口，
+  不复制上游实现或导入 `dist/` 深路径。
+- `src/foundations/cn.ts`：primitives recipe 使用的本地 class-name 拼接函数，不是第三方 vendor 内容。
 - `src/theme/`：只含 base 展示 token 和 `ok`/`warn`/`error`/`info` 语义 tone 映射，不含应用主题与业务文案。
 - `src/index.ts`：唯一公共面，导出控件与其 props 类型。
 - `src/dependencies.ts`：本包实际 workspace 依赖声明；本批为空。

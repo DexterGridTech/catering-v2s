@@ -25,7 +25,7 @@ function sourceFiles(root) {
 function resolveAliasedSymbol(checker, symbol) {
   let current = symbol;
   const seen = new Set();
-  while (current && (current.flags & ts.SymbolFlags.Alias) && !seen.has(current)) {
+  while (current && current.flags & ts.SymbolFlags.Alias && !seen.has(current)) {
     seen.add(current);
     const next = checker.getAliasedSymbol(current);
     if (!next || next === current) break;
@@ -44,8 +44,12 @@ function resolveAliasedSymbol(checker, symbol) {
 function resolveValueExpressionSymbol(checker, expression, seen = new Set()) {
   if (!expression) return null;
   let current = expression;
-  while (ts.isAsExpression(current) || ts.isTypeAssertionExpression(current)
-    || ts.isParenthesizedExpression(current) || ts.isSatisfiesExpression(current)) {
+  while (
+    ts.isAsExpression(current) ||
+    ts.isTypeAssertionExpression(current) ||
+    ts.isParenthesizedExpression(current) ||
+    ts.isSatisfiesExpression(current)
+  ) {
     current = current.expression;
   }
   const symbolAtExpression = checker.getSymbolAtLocation(current);
@@ -53,8 +57,8 @@ function resolveValueExpressionSymbol(checker, expression, seen = new Set()) {
   const resolved = resolveAliasedSymbol(checker, symbolAtExpression);
   if (!resolved || seen.has(resolved)) return resolved;
   seen.add(resolved);
-  const declaration = resolved.valueDeclaration
-    ?? resolved.declarations?.find(candidate => ts.isVariableDeclaration(candidate));
+  const declaration =
+    resolved.valueDeclaration ?? resolved.declarations?.find(candidate => ts.isVariableDeclaration(candidate));
   if (declaration && ts.isBindingElement(declaration)) {
     const variable = declaration.parent?.parent;
     const initializer = variable && ts.isVariableDeclaration(variable) ? variable.initializer : null;
@@ -63,7 +67,11 @@ function resolveValueExpressionSymbol(checker, expression, seen = new Set()) {
       const objectType = checker.getTypeAtLocation(initializer);
       const property = checker.getPropertyOfType(objectType, bindingName.text);
       if (property) {
-        const nested = resolveValueExpressionSymbol(checker, property.valueDeclaration ?? property.declarations?.[0], seen);
+        const nested = resolveValueExpressionSymbol(
+          checker,
+          property.valueDeclaration ?? property.declarations?.[0],
+          seen,
+        );
         return nested ?? resolveAliasedSymbol(checker, property);
       }
     }
@@ -85,44 +93,6 @@ function packageModulePath(root, moduleName) {
   return path.join(root, 'apps/terminal', ...segments);
 }
 
-function workspacePaths(root) {
-  const terminalRoot = path.join(root, 'apps/terminal');
-  if (!fs.existsSync(terminalRoot)) return {};
-  const paths = {};
-  const visit = directory => {
-    for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
-      if (['node_modules', '.git', '.turbo', '.expo', 'build', 'dist'].includes(entry.name)) continue;
-      const entryPath = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
-        visit(entryPath);
-        continue;
-      }
-      if (entry.name !== 'package.json') continue;
-      try {
-        const manifest = JSON.parse(fs.readFileSync(entryPath, 'utf8'));
-        const indexPath = path.join(path.dirname(entryPath), 'src/index.ts');
-        const invariantPath = path.join(path.dirname(entryPath), 'terminal-invariants.json');
-        let invariantName;
-        if (fs.existsSync(invariantPath)) {
-          try {
-            invariantName = JSON.parse(fs.readFileSync(invariantPath, 'utf8')).package;
-          } catch {
-            invariantName = undefined;
-          }
-        }
-        const packageName = typeof invariantName === 'string' ? invariantName : manifest.name;
-        if (typeof packageName === 'string' && fs.existsSync(indexPath)) {
-          paths[packageName] = [path.relative(root, indexPath).split(path.sep).join('/')];
-        }
-      } catch {
-        // The owning checker will report malformed manifests separately.
-      }
-    }
-  };
-  visit(terminalRoot);
-  return paths;
-}
-
 export function createAnalysisProgram(root) {
   const files = sourceFiles(root);
   return {
@@ -134,10 +104,29 @@ export function createAnalysisProgram(root) {
       strict: true,
       skipLibCheck: true,
       noEmit: true,
-      baseUrl: root,
-      paths: workspacePaths(root),
     }),
   };
+}
+
+export function assertNoSyntacticDiagnostics(analysis, root) {
+  const diagnostics = analysis.program.getSyntacticDiagnostics();
+  if (diagnostics.length === 0) return;
+  const messages = diagnostics.map(diagnostic => {
+    const sourcePath = diagnostic.file?.fileName;
+    const location =
+      sourcePath && diagnostic.start !== undefined
+        ? (() => {
+            const position = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+            return `${path.relative(root, sourcePath).split(path.sep).join('/')}:${position.line + 1}:${position.character + 1}`;
+          })()
+        : path
+            .relative(root, sourcePath ?? '')
+            .split(path.sep)
+            .join('/');
+    const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ');
+    return `TS${diagnostic.code} ${location}: ${message}`;
+  });
+  throw new Error(messages.join('\n'));
 }
 
 /**
@@ -161,15 +150,19 @@ export function resolveModuleNameExport({root, moduleName, exportName = 'moduleK
   const exported = checker.getExportsOfModule(module).find(symbol => symbol.name === exportName);
   if (!exported) return null;
   const symbol = resolveAliasedSymbol(checker, exported);
-  const declaration = symbol?.declarations?.find(candidate =>
-    ts.isVariableDeclaration(candidate) && candidate.parent?.parent?.parent === sourceFile,
+  const declaration = symbol?.declarations?.find(
+    candidate => ts.isVariableDeclaration(candidate) && candidate.parent?.parent?.parent === sourceFile,
   );
   if (!declaration?.initializer) {
     throw new Error(`${moduleName} ${exportName} must be declared in ${path.relative(root, sourcePath)}`);
   }
   let initializer = declaration.initializer;
-  while (ts.isAsExpression(initializer) || ts.isTypeAssertionExpression(initializer)
-    || ts.isParenthesizedExpression(initializer) || ts.isSatisfiesExpression(initializer)) {
+  while (
+    ts.isAsExpression(initializer) ||
+    ts.isTypeAssertionExpression(initializer) ||
+    ts.isParenthesizedExpression(initializer) ||
+    ts.isSatisfiesExpression(initializer)
+  ) {
     initializer = initializer.expression;
   }
   if (!ts.isStringLiteral(initializer) || !['owner', 'toolkit'].includes(initializer.text)) {
@@ -187,13 +180,20 @@ export function resolveImportedSymbol({root, sourcePath, importName, moduleSpeci
   const checker = program.getTypeChecker();
   const sourceFile = program.getSourceFile(sourcePath);
   if (!sourceFile) return null;
-  const importDeclaration = sourceFile.statements.find(statement =>
-    ts.isImportDeclaration(statement)
-    && ts.isStringLiteral(statement.moduleSpecifier)
-    && statement.moduleSpecifier.text === moduleSpecifier,
+  const importDeclaration = sourceFile.statements.find(
+    statement =>
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === moduleSpecifier,
   );
-  if (!importDeclaration?.importClause?.namedBindings || !ts.isNamedImports(importDeclaration.importClause.namedBindings)) return null;
-  const element = importDeclaration.importClause.namedBindings.elements.find(candidate => candidate.name.text === importName);
+  if (
+    !importDeclaration?.importClause?.namedBindings ||
+    !ts.isNamedImports(importDeclaration.importClause.namedBindings)
+  )
+    return null;
+  const element = importDeclaration.importClause.namedBindings.elements.find(
+    candidate => candidate.name.text === importName,
+  );
   if (!element) return null;
   const symbol = checker.getSymbolAtLocation(element.name);
   if (!symbol) return null;

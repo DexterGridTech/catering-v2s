@@ -3,7 +3,7 @@
   "package": "@catering-v2s/ui-base-admin-shell",
   "owned": {
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-admin-shell", "runner": "vitest"},
-    "lint": {"kind": "ABSENT"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-base-admin-shell", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
   "ownerKind": "owner",
@@ -20,7 +20,8 @@
     "ADMIN_SECTION_CONTAINER_KEY",
     "ADMIN_TOPOLOGY_SECTION_PART_KEY",
     "ADMIN_PASSWORD_FALLBACK",
-    "AdminLauncher", "AdminGestureCoordinateSpace",
+    "AdminLauncher",
+    "AdminGestureCoordinateSpace",
     "adminLauncherPointFromEvent",
     "AdminNavigationRejectedError",
     "AdminPageKey",
@@ -43,9 +44,10 @@
     "devDependencyModuleNames",
     "moduleName",
     "normalizeDeviceIdentity",
-    "verifyAdminPassword"
-    ,"selectAdminPageProjections"
-    ,"selectAdminSections"
-    ,"trackAdminGesture", "logicalPointFromWindow"
+    "verifyAdminPassword",
+    "selectAdminPageProjections",
+    "selectAdminSections",
+    "trackAdminGesture",
+    "logicalPointFromWindow"
   ]
 }

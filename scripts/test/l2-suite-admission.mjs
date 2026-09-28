@@ -34,7 +34,8 @@ function selectCaseIds(source, selector) {
 }
 
 function filesUnder(directory) {
-  if (!existsSync(directory) || !statSync(directory).isDirectory()) fail('L2_ADMISSION_UI_DIRECTORY_MISSING', relative(directory));
+  if (!existsSync(directory) || !statSync(directory).isDirectory())
+    fail('L2_ADMISSION_UI_DIRECTORY_MISSING', relative(directory));
   const files = [];
   const visit = (current, currentRelative) => {
     for (const name of readdirSync(current).sort()) {
@@ -75,7 +76,11 @@ function resolveCaseIds(policy, caseSourcePaths) {
         readJson(path.join(root, policy.caseIdsSource.path), 'L2_ADMISSION_CASE_ID_SOURCE'),
         policy.caseIdsSource.selector,
       );
-  if (!Array.isArray(expected) || expected.some(value => typeof value !== 'string') || new Set(expected).size !== expected.length) {
+  if (
+    !Array.isArray(expected) ||
+    expected.some(value => typeof value !== 'string') ||
+    new Set(expected).size !== expected.length
+  ) {
     fail('L2_ADMISSION_CASE_DENOMINATOR_INVALID');
   }
   const sources = normalizeSourceEntries(policy, caseSourcePaths);
@@ -85,13 +90,17 @@ function resolveCaseIds(policy, caseSourcePaths) {
       readJson(path.join(root, sourceEntry.path), `L2_ADMISSION_${sourceEntry.label.toUpperCase()}`),
       sourceEntry.selector,
     );
-    if (!Array.isArray(actual) || actual.some(value => typeof value !== 'string') || new Set(actual).size !== actual.length) {
+    if (
+      !Array.isArray(actual) ||
+      actual.some(value => typeof value !== 'string') ||
+      new Set(actual).size !== actual.length
+    ) {
       fail('L2_ADMISSION_CASE_SOURCE_INVALID', sourceEntry.label);
     }
     const actualSet = new Set(actual);
     const missing = expected.filter(value => !actualSet.has(value));
     const extra = actual.filter(value => !expectedSet.has(value));
-    if (missing.length > 0 || (policy.caseSetMode ?? 'EXACT') === 'EXACT' && extra.length > 0) {
+    if (missing.length > 0 || ((policy.caseSetMode ?? 'EXACT') === 'EXACT' && extra.length > 0)) {
       fail('L2_ADMISSION_CASE_SET_MISMATCH', `${sourceEntry.label}:${missing.join(',')}:${extra.join(',')}`);
     }
     if ((policy.caseSetMode ?? 'EXACT') === 'EXACT' && JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -105,7 +114,11 @@ function validatePolicy(policy, {suite, policyKind, caseSourcePaths}) {
   if (policy.kind !== policyKind || policy.suite !== suite) fail('L2_ADMISSION_POLICY_KIND_INVALID');
   const caseIds = resolveCaseIds(policy, caseSourcePaths);
   const controlPlaneFiles = policy.controlPlaneFiles;
-  if (!Array.isArray(controlPlaneFiles) || controlPlaneFiles.length === 0 || new Set(controlPlaneFiles).size !== controlPlaneFiles.length) {
+  if (
+    !Array.isArray(controlPlaneFiles) ||
+    controlPlaneFiles.length === 0 ||
+    new Set(controlPlaneFiles).size !== controlPlaneFiles.length
+  ) {
     fail('L2_ADMISSION_CONTROL_PLANE_INVALID');
   }
   const uiSourceDirectories = Array.isArray(policy.uiSourceDirectories)
@@ -113,8 +126,10 @@ function validatePolicy(policy, {suite, policyKind, caseSourcePaths}) {
     : typeof policy.uiSourceDirectory === 'string'
       ? [policy.uiSourceDirectory]
       : [];
-  if (uiSourceDirectories.length === 0 || uiSourceDirectories.some(value => typeof value !== 'string')) fail('L2_ADMISSION_UI_DIRECTORIES_INVALID');
-  if (typeof policy.designPath !== 'string' || typeof policy.reviewRecordPath !== 'string') fail('L2_ADMISSION_PATHS_INVALID');
+  if (uiSourceDirectories.length === 0 || uiSourceDirectories.some(value => typeof value !== 'string'))
+    fail('L2_ADMISSION_UI_DIRECTORIES_INVALID');
+  if (typeof policy.designPath !== 'string' || typeof policy.reviewRecordPath !== 'string')
+    fail('L2_ADMISSION_PATHS_INVALID');
   return {caseIds, controlPlaneFiles, uiSourceDirectories};
 }
 
@@ -177,11 +192,25 @@ export function createL2SuiteAdmissionStrategy({suite, policyPath, policyKind, c
   };
 
   const validateAdmissionRecord = ({snapshot, reviewText} = {}) => {
-    if (!snapshot || typeof snapshot.admissionDigest !== 'string' || typeof reviewText !== 'string') fail('L2_SCRIPT_ADMISSION_RECORD_INVALID');
-    if (!reviewText.includes('REVIEW_TARGET=L2_SCRIPT_ADMISSION')) fail('L2_SCRIPT_ADMISSION_REVIEW_TARGET_INVALID');
-    if (!reviewText.includes('REVIEWER_KIND=INDEPENDENT_SUBAGENT')) fail('L2_SCRIPT_ADMISSION_REVIEWER_INVALID');
-    if (!reviewText.includes('L2_ADMISSION_REVIEW_STATUS=PASS')) fail('L2_SCRIPT_ADMISSION_REVIEW_NOT_PASS');
-    if (!reviewText.includes(`ADMISSION_SOURCE_DIGEST=${snapshot.admissionDigest}`)) fail('L2_SCRIPT_ADMISSION_SOURCE_DRIFT');
+    if (!snapshot || typeof snapshot.admissionDigest !== 'string' || typeof reviewText !== 'string')
+      fail('L2_SCRIPT_ADMISSION_RECORD_INVALID');
+    const reviewStarts = [...reviewText.matchAll(/^REVIEW_TARGET=([^\r\n]+)$/gm)];
+    const targetReview = reviewStarts.filter(match => match[1] === 'L2_SCRIPT_ADMISSION').at(-1);
+    if (!targetReview) fail('L2_SCRIPT_ADMISSION_REVIEW_TARGET_INVALID');
+    const nextReview = reviewStarts.find(match => match.index > targetReview.index);
+    const currentReviewText = reviewText.slice(targetReview.index, nextReview?.index ?? reviewText.length);
+    const readUniqueMarker = (name, failureCode) => {
+      const values = [...currentReviewText.matchAll(new RegExp(`^${name}=([^\\r\\n]*)$`, 'gm'))].map(match => match[1]);
+      if (values.length !== 1) fail(failureCode);
+      return values[0];
+    };
+
+    if (readUniqueMarker('REVIEWER_KIND', 'L2_SCRIPT_ADMISSION_REVIEWER_INVALID') !== 'INDEPENDENT_SUBAGENT')
+      fail('L2_SCRIPT_ADMISSION_REVIEWER_INVALID');
+    if (readUniqueMarker('L2_ADMISSION_REVIEW_STATUS', 'L2_SCRIPT_ADMISSION_REVIEW_NOT_PASS') !== 'PASS')
+      fail('L2_SCRIPT_ADMISSION_REVIEW_NOT_PASS');
+    if (readUniqueMarker('ADMISSION_SOURCE_DIGEST', 'L2_SCRIPT_ADMISSION_SOURCE_DRIFT') !== snapshot.admissionDigest)
+      fail('L2_SCRIPT_ADMISSION_SOURCE_DRIFT');
     return snapshot;
   };
 
@@ -193,12 +222,29 @@ export function createL2SuiteAdmissionStrategy({suite, policyPath, policyKind, c
   };
 
   const findFailureFamilyBlock = ({runtimeRoot, admissionDigest, caseId, failureCategory} = {}) => {
-    if (typeof runtimeRoot !== 'string' || typeof admissionDigest !== 'string' || typeof caseId !== 'string' || typeof failureCategory !== 'string') return null;
+    if (
+      typeof runtimeRoot !== 'string' ||
+      typeof admissionDigest !== 'string' ||
+      typeof caseId !== 'string' ||
+      typeof failureCategory !== 'string'
+    )
+      return null;
     for (const file of executionManifestFiles(runtimeRoot)) {
       let manifest;
-      try { manifest = JSON.parse(readFileSync(file, 'utf8')); } catch { continue; }
+      try {
+        manifest = JSON.parse(readFileSync(file, 'utf8'));
+      } catch {
+        continue;
+      }
       const failed = manifest.business === 'FAIL' || manifest.status === 'FAIL';
-      if (manifest.kind === `${suite}-l2-execution-manifest` && manifest.admissionDigest === admissionDigest && manifest.firstFailedCaseId === caseId && manifest.failureCategory === failureCategory && failed && manifest.cleanup === 'PASS') {
+      if (
+        manifest.kind === `${suite}-l2-execution-manifest` &&
+        manifest.admissionDigest === admissionDigest &&
+        manifest.firstFailedCaseId === caseId &&
+        manifest.failureCategory === failureCategory &&
+        failed &&
+        manifest.cleanup === 'PASS'
+      ) {
         return Object.freeze({runId: manifest.runId, manifestPath: relative(file), caseId, failureCategory});
       }
     }
@@ -210,10 +256,22 @@ export function createL2SuiteAdmissionStrategy({suite, policyPath, policyKind, c
     for (const caseId of cases) {
       for (const file of executionManifestFiles(runtimeRoot)) {
         let manifest;
-        try { manifest = JSON.parse(readFileSync(file, 'utf8')); } catch { continue; }
+        try {
+          manifest = JSON.parse(readFileSync(file, 'utf8'));
+        } catch {
+          continue;
+        }
         const failed = manifest.business === 'FAIL' || manifest.status === 'FAIL';
-        if (manifest.kind !== `${suite}-l2-execution-manifest` || manifest.admissionDigest !== admissionDigest || manifest.firstFailedCaseId !== caseId || !failed || manifest.cleanup !== 'PASS') continue;
-        if (manifest.failureCategory) fail('L2_FAILURE_FAMILY_RETRY_BLOCKED', `${caseId}:${manifest.failureCategory}:${manifest.runId}`);
+        if (
+          manifest.kind !== `${suite}-l2-execution-manifest` ||
+          manifest.admissionDigest !== admissionDigest ||
+          manifest.firstFailedCaseId !== caseId ||
+          !failed ||
+          manifest.cleanup !== 'PASS'
+        )
+          continue;
+        if (manifest.failureCategory)
+          fail('L2_FAILURE_FAMILY_RETRY_BLOCKED', `${caseId}:${manifest.failureCategory}:${manifest.runId}`);
       }
     }
   };

@@ -28,6 +28,13 @@ export default [
     },
   },
   {
+    files: ['apps/terminal/**/src/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/refs': 'error',
+      'react-hooks/purity': 'error',
+    },
+  },
+  {
     files: ['apps/frontend/*/src/features/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': [

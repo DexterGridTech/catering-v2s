@@ -169,6 +169,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 8,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 8,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-IA-STATE-001",
@@ -396,6 +410,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-IA-NAV-001",
@@ -553,6 +581,20 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 20,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 20,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -847,6 +889,20 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 23,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 23,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -1173,6 +1229,20 @@
             "owner": "asset",
             "readCount": 2,
             "writeCount": 1
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 14,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 14,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -1522,6 +1592,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 45,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 45,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-06",
@@ -1726,6 +1810,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-IA-CAT-LIFECYCLE-001",
@@ -1918,6 +2016,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 15,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 15,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-IA-CAT-CATEGORY-001",
@@ -2093,6 +2205,20 @@
             "owner": "catalog",
             "readCount": 2,
             "writeCount": 2
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 7,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -2285,6 +2411,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 7,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-10",
@@ -2401,6 +2541,20 @@
             "owner": "catalog",
             "readCount": 2,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -2612,6 +2766,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-13",
@@ -2785,6 +2953,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 14,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 14,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-14",
@@ -2955,6 +3137,20 @@
             "owner": "catalog",
             "readCount": 3,
             "writeCount": 2
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 15,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 15,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -3147,6 +3343,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 16,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 16,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-16",
@@ -3263,6 +3473,20 @@
             "owner": "catalog",
             "readCount": 2,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 8,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 8,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -3438,6 +3662,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 7,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-18",
@@ -3608,6 +3846,20 @@
             "owner": "catalog",
             "readCount": 2,
             "writeCount": 2
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 7,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -3800,6 +4052,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-20",
@@ -3928,6 +4194,20 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -4077,6 +4357,20 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 14,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 14,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -4324,6 +4618,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 32,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 32,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-23",
@@ -4455,6 +4763,20 @@
             "owner": "catalog",
             "readCount": 2,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 23,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 23,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -4674,6 +4996,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 17,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 17,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-25",
@@ -4803,6 +5139,20 @@
             "owner": "organization",
             "readCount": 1,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -4990,6 +5340,20 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 21,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 21,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -5370,6 +5734,21 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 49,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": 48,
+            "to": 49,
+            "reason": "Dexter 2026-08-26: brand-copy keeps its complete multi-owner closure; three current-tree CP-05 calibration runs measured a stable maximum of 49 after the Store operating-rule gate, with no safe consolidation that preserves all business facts.",
+            "decisionRef": "DEXTER-2026-08-26-BRAND_COPY_CLOSURE_BUDGET"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-28",
@@ -5500,6 +5879,20 @@
             "owner": "catalog",
             "readCount": 1,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -5639,6 +6032,20 @@
             "owner": "catalog",
             "readCount": 1,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 11,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 11,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -5805,6 +6212,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-31",
@@ -5919,6 +6340,20 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -6053,6 +6488,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 17,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 17,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-33",
@@ -6167,6 +6616,20 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -6292,6 +6755,20 @@
             "owner": "inventory",
             "readCount": 1,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 7,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -6454,6 +6931,20 @@
             "owner": "inventory",
             "readCount": 4,
             "writeCount": 3
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -6631,6 +7122,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-IA-INV-ACTION-INCREASE-001",
@@ -6799,6 +7304,20 @@
             "owner": "inventory",
             "readCount": 4,
             "writeCount": 3
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -6973,6 +7492,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 19,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 19,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-IA-INV-ACTION-CONFIG-001",
@@ -7129,6 +7662,20 @@
             "owner": "asset",
             "readCount": 3,
             "writeCount": 2
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 22,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 22,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -7335,6 +7882,20 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-41",
@@ -7451,6 +8012,20 @@
             "owner": "catalog",
             "readCount": 0,
             "writeCount": 0
+          }
+        ]
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 7,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       },
@@ -7804,6 +8379,22 @@
           }
         ]
       },
+      "databaseOperationBudget": {
+        "kind": "LINEAR_REQUEST_CARDINALITY",
+        "base": 15,
+        "perItem": 5,
+        "cardinalityPath": "$.items",
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 20,
+            "reason": "CP-05 calibrated linear shape"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-43",
@@ -7916,6 +8507,20 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 8,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 8,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
       },
       "assertions": [
         {
@@ -8076,6 +8681,20 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-45",
@@ -8235,6 +8854,20 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-46",
@@ -8347,6 +8980,20 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 10,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 10,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
       },
       "assertions": [
         {
@@ -8526,6 +9173,20 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 18,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 18,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
       },
       "assertions": [
         {
@@ -8707,6 +9368,20 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 22,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 22,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-50",
@@ -8819,6 +9494,20 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 9,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 9,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
       },
       "assertions": [
         {
@@ -8994,6 +9683,20 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 10,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 10,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
       },
       "assertions": [
         {
@@ -9182,6 +9885,20 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 16,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 16,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-54",
@@ -9349,6 +10066,20 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 12,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-60",
@@ -9515,6 +10246,20 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
       },
       "assertions": [
         {
@@ -9703,6 +10448,20 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 15,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 15,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-62",
@@ -9870,6 +10629,20 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 15,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 15,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-63",
@@ -9974,6 +10747,20 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 8,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 8,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
       },
       "assertions": [
         {
@@ -10088,6 +10875,20 @@
         "verificationScenarioIds": [],
         "breakdown": []
       },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 8,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 8,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      },
       "assertions": [
         {
           "assertionId": "ASSERT-OPERATION-58",
@@ -10200,6 +11001,20 @@
         ],
         "verificationScenarioIds": [],
         "breakdown": []
+      },
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 11,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 11,
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
       },
       "assertions": [
         {

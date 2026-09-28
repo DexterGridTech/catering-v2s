@@ -5,7 +5,9 @@
       "dependsOn": ["^typecheck"]
     },
     "test": {},
-    "lint": {},
+    "lint": {
+      "cache": false
+    },
     "clean": {
       "cache": false
     }

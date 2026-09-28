@@ -1,5 +1,8 @@
-import {createFeatureAssemblyModule, type CreateFeatureAssemblyModuleInput} from '@catering-v2s/ui-base-feature-assembly'
-import {runtimeModuleDependencyNames} from '../dependencies'
+import {
+  createFeatureAssemblyModule,
+  type CreateFeatureAssemblyModuleInput,
+} from '@catering-v2s/ui-base-feature-assembly';
+import {runtimeModuleDependencyNames} from '../dependencies';
 import {
   deskSystemFailureDismissedCommand,
   deskSystemFailureObservedCommand,
@@ -9,7 +12,7 @@ import {
   memberRegistrationAbandonedCommand,
   memberRegistrationRetryRequestedCommand,
   memberSubmissionWithdrawnCommand,
-} from '../features/commands/commands'
+} from '../features/commands/commands';
 import {
   createDeskConfirmedActor,
   createDeskFormActor,
@@ -18,8 +21,8 @@ import {
   createDeskPendingActor,
   createDeskRejectedActor,
   createDeskSystemNoticeActor,
-} from '../features/actors/actors'
-import {moduleKind, moduleName} from '../moduleName'
+} from '../features/actors/actors';
+import {moduleKind, moduleName} from '../moduleName';
 
 const commands = [
   memberFormOpenedCommand,
@@ -30,7 +33,7 @@ const commands = [
   memberRegistrationAbandonedCommand,
   deskSystemFailureObservedCommand,
   deskSystemFailureDismissedCommand,
-] as const
+] as const;
 
 export const createSampleMemberDeskModuleInput = (): CreateFeatureAssemblyModuleInput => {
   const actors = [
@@ -41,14 +44,14 @@ export const createSampleMemberDeskModuleInput = (): CreateFeatureAssemblyModule
     createDeskRejectedActor(),
     createDeskNoticeActor(),
     createDeskSystemNoticeActor(),
-  ] as const
+  ] as const;
   return {
     moduleName,
     kind: moduleKind,
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
     commandDefinitions: commands,
     actorDefinitions: actors,
-  }
-}
+  };
+};
 
-export const createSampleMemberDeskModule = () => createFeatureAssemblyModule(createSampleMemberDeskModuleInput())
+export const createSampleMemberDeskModule = () => createFeatureAssemblyModule(createSampleMemberDeskModuleInput());

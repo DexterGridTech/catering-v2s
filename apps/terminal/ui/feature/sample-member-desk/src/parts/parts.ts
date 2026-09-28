@@ -1,32 +1,32 @@
-import {definePartPair, type RenderLayerDismissal} from '@catering-v2s/ui-base-render'
-import {CustomerMember as LaptopCustomerMember} from '../components/laptop/CustomerMember'
-import {CustomerMember as MobileCustomerMember} from '../components/mobile/CustomerMember'
-import {CustomerWelcome as LaptopCustomerWelcome} from '../components/laptop/CustomerWelcome'
-import {CustomerWelcome as MobileCustomerWelcome} from '../components/mobile/CustomerWelcome'
-import {DiscardConfirm as LaptopDiscardConfirm} from '../components/laptop/DiscardConfirm'
-import {DiscardConfirm as MobileDiscardConfirm} from '../components/mobile/DiscardConfirm'
-import {MemberForm as LaptopMemberForm} from '../components/laptop/MemberForm'
-import {MemberForm as MobileMemberForm} from '../components/mobile/MemberForm'
-import {MemberList as LaptopMemberList} from '../components/laptop/MemberList'
-import {MemberList as MobileMemberList} from '../components/mobile/MemberList'
-import {RegistryNotice as LaptopRegistryNotice} from '../components/laptop/RegistryNotice'
-import {RegistryNotice as MobileRegistryNotice} from '../components/mobile/RegistryNotice'
-import {DeskSystemNotice as LaptopDeskSystemNotice} from '../components/laptop/DeskSystemNotice'
-import {DeskSystemNotice as MobileDeskSystemNotice} from '../components/mobile/DeskSystemNotice'
-import {WaitingConfirm as LaptopWaitingConfirm} from '../components/laptop/WaitingConfirm'
-import {WaitingConfirm as MobileWaitingConfirm} from '../components/mobile/WaitingConfirm'
-import {WithdrawConfirm as LaptopWithdrawConfirm} from '../components/laptop/WithdrawConfirm'
-import {WithdrawConfirm as MobileWithdrawConfirm} from '../components/mobile/WithdrawConfirm'
-import {dispatchDeskSystemFailureDismissal} from '../foundations/systemFailureDismissal'
+import {definePartPair, type RenderLayerDismissal} from '@catering-v2s/ui-base-render';
+import {CustomerMember as LaptopCustomerMember} from '../components/laptop/CustomerMember';
+import {CustomerMember as MobileCustomerMember} from '../components/mobile/CustomerMember';
+import {CustomerWelcome as LaptopCustomerWelcome} from '../components/laptop/CustomerWelcome';
+import {CustomerWelcome as MobileCustomerWelcome} from '../components/mobile/CustomerWelcome';
+import {DiscardConfirm as LaptopDiscardConfirm} from '../components/laptop/DiscardConfirm';
+import {DiscardConfirm as MobileDiscardConfirm} from '../components/mobile/DiscardConfirm';
+import {MemberForm as LaptopMemberForm} from '../components/laptop/MemberForm';
+import {MemberForm as MobileMemberForm} from '../components/mobile/MemberForm';
+import {MemberList as LaptopMemberList} from '../components/laptop/MemberList';
+import {MemberList as MobileMemberList} from '../components/mobile/MemberList';
+import {RegistryNotice as LaptopRegistryNotice} from '../components/laptop/RegistryNotice';
+import {RegistryNotice as MobileRegistryNotice} from '../components/mobile/RegistryNotice';
+import {DeskSystemNotice as LaptopDeskSystemNotice} from '../components/laptop/DeskSystemNotice';
+import {DeskSystemNotice as MobileDeskSystemNotice} from '../components/mobile/DeskSystemNotice';
+import {WaitingConfirm as LaptopWaitingConfirm} from '../components/laptop/WaitingConfirm';
+import {WaitingConfirm as MobileWaitingConfirm} from '../components/mobile/WaitingConfirm';
+import {WithdrawConfirm as LaptopWithdrawConfirm} from '../components/laptop/WithdrawConfirm';
+import {WithdrawConfirm as MobileWithdrawConfirm} from '../components/mobile/WithdrawConfirm';
+import {dispatchDeskSystemFailureDismissal} from '../foundations/systemFailureDismissal';
 
-const primary = ['PRIMARY'] as const
-const secondary = ['SECONDARY'] as const
-const bothDisplayModes = ['PRIMARY', 'SECONDARY'] as const
-const main = ['main'] as const
-const layer = [] as const
-const mainWorkspace = ['MAIN'] as const
-const master = ['MASTER'] as const
-const masterAndSlave = ['MASTER', 'SLAVE'] as const
+const primary = ['PRIMARY'] as const;
+const secondary = ['SECONDARY'] as const;
+const bothDisplayModes = ['PRIMARY', 'SECONDARY'] as const;
+const main = ['main'] as const;
+const layer = [] as const;
+const mainWorkspace = ['MAIN'] as const;
+const master = ['MASTER'] as const;
+const masterAndSlave = ['MASTER', 'SLAVE'] as const;
 
 const memberListPair = definePartPair({
   partKey: 'sample.desk.member-list',
@@ -37,7 +37,7 @@ const memberListPair = definePartPair({
   title: '已登记会员',
   description: '查看已登记会员并开始新增登记',
   components: {laptop: LaptopMemberList, mobile: MobileMemberList},
-})
+});
 
 const memberFormPair = definePartPair({
   partKey: 'sample.desk.member-form',
@@ -48,7 +48,7 @@ const memberFormPair = definePartPair({
   title: '新增会员',
   description: '录入姓名和电话并提交给顾客确认',
   components: {laptop: LaptopMemberForm, mobile: MobileMemberForm},
-})
+});
 
 const waitingConfirmPair = definePartPair({
   partKey: 'sample.desk.waiting-confirm',
@@ -60,7 +60,7 @@ const waitingConfirmPair = definePartPair({
   description: '告知店员登记已提交并等待顾客确认',
   layerTier: 'standard',
   components: {laptop: LaptopWaitingConfirm, mobile: MobileWaitingConfirm},
-})
+});
 
 const registryNoticePair = definePartPair({
   partKey: 'sample.desk.registry-notice',
@@ -73,7 +73,7 @@ const registryNoticePair = definePartPair({
   layerTier: 'alert',
   layerGuard: 'decisive',
   components: {laptop: LaptopRegistryNotice, mobile: MobileRegistryNotice},
-})
+});
 
 const discardConfirmPair = definePartPair({
   partKey: 'sample.desk.discard-confirm',
@@ -86,7 +86,7 @@ const discardConfirmPair = definePartPair({
   layerTier: 'alert',
   layerGuard: 'decisive',
   components: {laptop: LaptopDiscardConfirm, mobile: MobileDiscardConfirm},
-})
+});
 
 const withdrawConfirmPair = definePartPair({
   partKey: 'sample.desk.withdraw-confirm',
@@ -99,7 +99,7 @@ const withdrawConfirmPair = definePartPair({
   layerTier: 'alert',
   layerGuard: 'decisive',
   components: {laptop: LaptopWithdrawConfirm, mobile: MobileWithdrawConfirm},
-})
+});
 
 const systemNoticePair = definePartPair({
   partKey: 'sample.desk.system-notice',
@@ -111,7 +111,7 @@ const systemNoticePair = definePartPair({
   description: '向店员说明登记链路的基础设施失败，并允许继续操作',
   layerTier: 'alert',
   components: {laptop: LaptopDeskSystemNotice, mobile: MobileDeskSystemNotice},
-})
+});
 
 const customerWelcomePair = definePartPair({
   partKey: 'sample.desk.customer-welcome',
@@ -122,7 +122,7 @@ const customerWelcomePair = definePartPair({
   title: '顾客欢迎页',
   description: '副屏待机时提示顾客等待店员操作',
   components: {laptop: LaptopCustomerWelcome, mobile: MobileCustomerWelcome},
-})
+});
 
 const customerMemberPair = definePartPair({
   partKey: 'sample.desk.customer-member',
@@ -133,7 +133,7 @@ const customerMemberPair = definePartPair({
   title: '顾客会员确认',
   description: '向顾客展示待登记会员并提供确认或拒绝',
   components: {laptop: LaptopCustomerMember, mobile: MobileCustomerMember},
-})
+});
 
 export const parts = Object.freeze([
   memberListPair.laptop,
@@ -154,9 +154,9 @@ export const parts = Object.freeze([
   customerWelcomePair.mobile,
   customerMemberPair.laptop,
   customerMemberPair.mobile,
-])
+]);
 
 export const layerDismissals: Readonly<Record<string, RenderLayerDismissal>> = Object.freeze({
   [systemNoticePair.laptop.catalogEntry.partKey]: ({dispatchCommand}) =>
     dispatchDeskSystemFailureDismissal(dispatchCommand),
-})
+});

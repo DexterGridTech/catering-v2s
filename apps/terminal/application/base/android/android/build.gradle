@@ -6,11 +6,22 @@ plugins {
 group = 'com.catering.v2s.terminal.application.base.android'
 version = '0.1.0'
 
+repositories {
+  maven {
+    url uri("${rootProject.projectDir}/../../../../../node_modules/expo-splash-screen/local-maven-repo")
+  }
+  mavenCentral()
+  google()
+}
+
 android {
   namespace "com.catering.v2s.terminal.application.base.android"
   defaultConfig {
     versionCode 1
     versionName "0.1.0"
+  }
+  testOptions {
+    unitTests.returnDefaultValues = true
   }
   lintOptions {
     abortOnError false
@@ -19,9 +30,13 @@ android {
 
 dependencies {
   implementation("com.facebook.react:react-android")
+  // Compile against Expo's single autolinked splash-screen implementation;
+  // the consuming App remains the runtime owner of that module.
+  compileOnly("host.exp.exponent:expo.modules.splashscreen:57.0.9")
   // The base module owns the Android HTTP/WS host adapter. Keeping the
   // dependency here makes the module's compile contract truthful; app-level
   // declarations remain explicit for the two Expo hosts.
   implementation("org.nanohttpd:nanohttpd-websocket:2.3.1")
   testImplementation 'junit:junit:4.13.2'
+  testImplementation 'org.json:json:20260719'
 }

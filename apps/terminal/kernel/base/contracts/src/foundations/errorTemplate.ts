@@ -81,14 +81,16 @@ export const isAppError = (value: unknown): value is AppError => {
   const createdAt = Reflect.get(value, 'createdAt');
   const templateMissingKeys = Reflect.get(value, 'templateMissingKeys');
 
-  return typeof name === 'string'
-    && typeof message === 'string'
-    && typeof key === 'string'
-    && typeof code === 'string'
-    && errorCategories.has(category)
-    && errorSeverities.has(severity)
-    && typeof createdAt === 'number'
-    && Number.isFinite(createdAt)
-    && Array.isArray(templateMissingKeys)
-    && templateMissingKeys.every((missingKey) => typeof missingKey === 'string');
+  return (
+    typeof name === 'string' &&
+    typeof message === 'string' &&
+    typeof key === 'string' &&
+    typeof code === 'string' &&
+    errorCategories.has(category) &&
+    errorSeverities.has(severity) &&
+    typeof createdAt === 'number' &&
+    Number.isFinite(createdAt) &&
+    Array.isArray(templateMissingKeys) &&
+    templateMissingKeys.every(missingKey => typeof missingKey === 'string')
+  );
 };

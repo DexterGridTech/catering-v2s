@@ -126,7 +126,7 @@ public final class ContractTaskReadServiceSql {
             ILIKE ? ESCAPE '!') AND (?::text IS NULL OR c.phase_name_snapshot ILIKE ? ESCAPE '!') AND (?::text IS NULL \
             OR EXISTS (SELECT 1 FROM jsonb_array_elements(c.items_json) ci WHERE ci->>'code' ILIKE ? ESCAPE '!')) AND \
             (?::date IS NULL OR c.effective_from>=?) AND (?::date IS NULL OR c.effective_to IS NULL OR \
-            c.effective_to<=?) AND (?::text IS NULL OR c.status=?)),
+            c.effective_to<=?) AND (?::text IS NULL OR c.status=?) __EXTENSION_FILTER__),
             paged AS (SELECT * FROM filtered ORDER BY __ORDER__ __DIRECTION__, contract_id ASC LIMIT ? OFFSET ?), \
             page_total AS (SELECT COALESCE(MAX(total), (SELECT COUNT(*) FROM filtered)) AS total FROM paged)
             SELECT paged.*, page_total.total, project_meta.id, project_meta.name FROM page_total LEFT JOIN paged ON \

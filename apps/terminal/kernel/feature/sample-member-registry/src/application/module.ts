@@ -1,5 +1,5 @@
-import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime'
-import {runtimeModuleDependencyNames} from '../dependencies'
+import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime';
+import {runtimeModuleDependencyNames} from '../dependencies';
 import {
   confirmMemberCommand,
   memberConfirmedCommand,
@@ -9,11 +9,11 @@ import {
   submitMemberCommand,
   memberWithdrawnCommand,
   withdrawMemberCommand,
-} from '../features/commands/commands'
-import {createConfirmMemberActor, createRejectMemberActor, createSubmitMemberActor} from '../features/actors/actors'
-import {memberErrorDefinitions} from '../foundations/errors'
-import {moduleKind, moduleName} from '../moduleName'
-import {memberStateRegistration} from '../features/slices/slice'
+} from '../features/commands/commands';
+import {createConfirmMemberActor, createRejectMemberActor, createSubmitMemberActor} from '../features/actors/actors';
+import {memberErrorDefinitions} from '../foundations/errors';
+import {moduleKind, moduleName} from '../moduleName';
+import {memberStateRegistration} from '../features/slices/slice';
 
 const commands = [
   submitMemberCommand,
@@ -24,14 +24,10 @@ const commands = [
   memberRejectedCommand,
   withdrawMemberCommand,
   memberWithdrawnCommand,
-] as const
+] as const;
 
 export const createSampleMemberRegistryModule = (): RuntimeModule => {
-  const actors = [
-    createSubmitMemberActor(),
-    createConfirmMemberActor(),
-    createRejectMemberActor(),
-  ] as const
+  const actors = [createSubmitMemberActor(), createConfirmMemberActor(), createRejectMemberActor()] as const;
   return Object.freeze({
     moduleName,
     kind: moduleKind,
@@ -43,5 +39,5 @@ export const createSampleMemberRegistryModule = (): RuntimeModule => {
     actorDefinitions: actors,
     slices: [{name: memberStateRegistration.name, persistIntent: memberStateRegistration.persistIntent}],
     stateSlices: [memberStateRegistration],
-  })
-}
+  });
+};

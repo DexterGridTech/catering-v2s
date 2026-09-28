@@ -6,6 +6,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "lint": "node ../../../../../tools/terminal-shared/run-owned-lint.mjs",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
   },
@@ -25,10 +26,11 @@
   },
   "devDependencies": {
     "@catering-v2s/kernel-base-platform-ports": "workspace:*",
+    "@testing-library/react-native": "14.0.1",
     "@types/react": "~19.2.2",
     "react": "19.2.3",
     "react-native": "0.86.3",
-    "react-test-renderer": "19.2.3",
+    "test-renderer": "1.2.0",
     "typescript": "~6.0.3",
     "vitest": "4.1.10"
   }

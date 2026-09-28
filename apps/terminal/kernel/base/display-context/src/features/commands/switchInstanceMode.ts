@@ -1,8 +1,8 @@
-import {defineCommand} from '@catering-v2s/kernel-base-runtime'
-import {moduleName} from '../../moduleName'
-import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime'
+import {defineCommand} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../../moduleName';
+import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 
-type SwitchInstanceModePayload = Readonly<{instanceMode: RuntimeInstanceMode}>
+type SwitchInstanceModePayload = Readonly<{instanceMode: RuntimeInstanceMode}>;
 
 export const switchInstanceModeCommand = defineCommand<SwitchInstanceModePayload>(moduleName, {
   name: 'switch-instance-mode',
@@ -10,4 +10,4 @@ export const switchInstanceModeCommand = defineCommand<SwitchInstanceModePayload
   allowNoActor: false,
   allowReentry: false,
   defaultTarget: 'local',
-})
+});

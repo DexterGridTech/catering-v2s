@@ -3,13 +3,22 @@
   "package": "@catering-v2s/kernel-feature-sample-wallpaper",
   "owned": {
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-feature-sample-wallpaper", "runner": "vitest"},
-    "lint": {"kind": "ABSENT"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-feature-sample-wallpaper", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
   "ownerKind": "owner",
   "publicExports": [
-    "WallpaperId", "WallpaperState", "confirmWallpaperCommand", "createSampleWallpaperModule",
-    "dependencyModuleNames", "devDependencyModuleNames", "isWallpaperId", "moduleKind", "moduleName",
-    "selectPendingWallpaperId", "selectWallpaperCommand", "selectWallpaperId"
+    "WallpaperId",
+    "WallpaperState",
+    "confirmWallpaperCommand",
+    "createSampleWallpaperModule",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "isWallpaperId",
+    "moduleKind",
+    "moduleName",
+    "selectPendingWallpaperId",
+    "selectWallpaperCommand",
+    "selectWallpaperId"
   ]
 }

@@ -63,6 +63,10 @@ node scripts/test/r5-remote-testcontainers.mjs :apps:backend:catering-business-s
 
 The entry creates a per-run temporary source and Gradle snapshot on that host, reuses only a fixed remote dependency cache, returns the test report under `.runtime/r5/evidence/remote-testcontainers/`, compares Testcontainers resources before and after the run, and deletes its exact temporary directory. Before source sync it rejects identity-matching prior managed processes, prior RSS above 2048 MiB, or any stale `org.testcontainers=true` container/volume; those observations are written into the run manifest. It neither starts DEV nor uses the DEV database as a Testcontainers substitute.
 
+For a full backend-acceptance calibration only, `V2S_R5_TRACE_SYSTEM_SIGNALS=true scripts/test/backend-acceptance --operation all --calibration` asks the remote runner to capture kernel `signal:signal_generate` events for SIGTERM in a run-scoped tracefs instance. This records the signal sender from the trace event's task prefix, its PID/command and target PID/command, then snapshots up to eight readable `/proc` ancestors with parent PID, command and executable path. Paths under home directories are reduced to a safe basename; raw command-line arguments are never captured. The listener self-tests before Gradle starts, is stopped only after matching its remote PID, boot ID, and start ticks, and its log is archived in the run evidence. If remote tracefs access or the tracepoint is unavailable, the runner fails closed before tests execute. Do not enable this for unrelated runs; the host-wide event is filtered to SIGTERM and exists only for that managed run.
+
+For a one-off V-S12 signal-source diagnosis, run `scripts/test/backend-acceptance --operation storeTerminalActivationBusinessPrecedence --v-s12-diagnostic`. This is one managed `ACCEPTANCE` run with system SIGTERM tracing enabled by the wrapper; it runs the selected business operation, the normal topology probe, and only `terminal.connection.vs12.database-outage-30s` (not the 10-second outage, calibration, or other TDS contracts). The trace listener must pass its own event and parent-chain self-test before Gradle starts; unsupported tracefs access fails closed before the tests. It captures up to eight readable `/proc` ancestors and executable paths, never command-line arguments. The runner archives the trace and applies the normal process, workspace, container, volume, and cleanup checks.
+
 The root Gradle build has a fail-closed guard for every test source that imports or constructs Testcontainers. Such a task must receive `V2S_TESTCONTAINERS_EXECUTION_PLANE=remote`, which only the managed remote runner exports immediately before the remote JVM starts. Direct local Gradle execution therefore stops with `V2S_TESTCONTAINERS_REMOTE_REQUIRED` before Testcontainers can invoke `DockerClientProviderStrategy`; no local Colima or Docker socket fallback is permitted.
 
 All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-budget <runtime-root>` before starting processes. The default checker only recognizes manifest PID plus OS start token, refuses prior live managed work or RSS above 2048 MiB, and never kills a process. When the explicitly authorized TER run is intentionally kept alive during management-backend/frontend validation, the backend acceptance and DEV runners use the narrow `--profile admin-validation-with-ter` profile: it admits only the exact `.runtime/ter-virtual-keyboard-android/` manifest subtree and raises the aggregate RSS ceiling to 4096 MiB; any other live managed tree or an over-budget aggregate still fails closed.
@@ -75,7 +79,9 @@ All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-b
 
 2026-08-14 起，唯一公共入口是
 `scripts/test/backend-acceptance --operation all`（也可用同一参数聚焦单个 operation）。性能校准只可使用
-`scripts/test/backend-acceptance --operation all --calibration`：它校验 generated operation set 的 exact-set、正常样本与连接门，
+`scripts/test/backend-acceptance --operation all --calibration`：每次调用都必须显式设置
+`V2S_BACKEND_ACCEPTANCE_BATCH_CARDINALITY` 为 `1`、`20` 或 `100`，缺失或其他值会在远端运行前失败。
+CP-05 的三次全目录标定分别使用这三个值；重分类器要求三份报告的基数闭集为 `1/20/100`。该模式校验 generated operation set 的 exact-set、正常样本与连接门，
 但不把未校准的固定 DB 上限当作已验收预算。普通 `all` 则无条件执行完整预算门；两种模式都在真实远端
 Testcontainers 中启动应用，经真实 HTTP 自动发现并串行运行全部已注册的手写 fixture/request/business
 assertion，逐条分开打印 `CONTRACT`、`BUSINESS` 和场景内信息性 `DB_OPERATIONS`；结果还明确标记
@@ -146,7 +152,8 @@ L2 框架、单一真相、fixture、进度、join、cleanup 与失败纪律以
 
 ```bash
 node scripts/test/browser-l2-runtime.mjs readiness
-CATALOG_INVENTORY_L2_READINESS_MANIFEST=<readiness-manifest.json> node scripts/generate/catalog-inventory-p1.mjs --write --check
+CATALOG_INVENTORY_L2_READINESS_MANIFEST=<readiness-manifest.json> node scripts/generate/catalog-inventory-p1.mjs
+node tools/catalog-inventory-p1/cli.mjs
 # 此处继续执行专题批准的完整生成链；finalize 会先刷新同一 run 所拥有的两个 Vite，再绑定当前仓库字节。
 node scripts/test/browser-l2-runtime.mjs finalize
 node scripts/test/browser-l2-runtime.mjs run

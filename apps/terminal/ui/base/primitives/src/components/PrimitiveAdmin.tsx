@@ -1,10 +1,17 @@
-import {RnrPressable, RnrText, RnrView} from '../vendor/slots';
-import {cn} from '../vendor/cn';
+import {RnrPressable, RnrText, RnrView} from '../foundations/nativeSlots';
+import {cn} from '../foundations/cn';
 import {assertTestID} from '../foundations/assertTestID';
 import {toneClassName, toneForegroundClassName} from '../foundations/toneClassName';
 import {adminGeometry, baseTokens} from '../theme/tokens';
 import {PrimitiveIcon} from './PrimitiveIcon';
-import type {PrimitiveDisclosureProps, PrimitiveFactGridProps, PrimitiveRatioBarProps, PrimitiveRatioSegment, PrimitiveStatusLineProps, PrimitiveSurfaceMapProps} from '../types/types';
+import type {
+  PrimitiveDisclosureProps,
+  PrimitiveFactGridProps,
+  PrimitiveRatioBarProps,
+  PrimitiveRatioSegment,
+  PrimitiveStatusLineProps,
+  PrimitiveSurfaceMapProps,
+} from '../types/types';
 
 const ratioIsValid = ({total, segments}: PrimitiveRatioBarProps): boolean => {
   if (!Number.isFinite(total) || total <= 0) return false;
@@ -14,9 +21,7 @@ const ratioIsValid = ({total, segments}: PrimitiveRatioBarProps): boolean => {
 };
 
 const ratioSegmentClassName = (tone: PrimitiveRatioSegment['tone']): string =>
-  tone === 'neutral'
-    ? cn('h-full', baseTokens.adminRatioSegmentUndeclared)
-    : toneClassName(tone, 'h-full');
+  tone === 'neutral' ? cn('h-full', baseTokens.adminRatioSegmentUndeclared) : toneClassName(tone, 'h-full');
 
 export const PrimitiveRatioBar = ({testID, accessibilityLabel, total, segments}: PrimitiveRatioBarProps) => {
   const address = assertTestID(testID);
@@ -29,15 +34,17 @@ export const PrimitiveRatioBar = ({testID, accessibilityLabel, total, segments}:
       accessibilityValue={valid ? {min: 0, max: total, now: total} : undefined}
       className={baseTokens.adminRatioBar}
     >
-      {valid ? segments.map(segment => (
-        <RnrView
-          key={segment.key}
-          testID={`${address}:segment:${segment.key}`}
-          accessibilityLabel={segment.label}
-          className={ratioSegmentClassName(segment.tone)}
-          style={{width: `${(segment.value / total) * 100}%`}}
-        />
-      )) : (
+      {valid ? (
+        segments.map(segment => (
+          <RnrView
+            key={segment.key}
+            testID={`${address}:segment:${segment.key}`}
+            accessibilityLabel={segment.label}
+            className={ratioSegmentClassName(segment.tone)}
+            style={{width: `${(segment.value / total) * 100}%`}}
+          />
+        ))
+      ) : (
         <RnrText testID={`${address}:invalid`} className={toneForegroundClassName('warn', baseTokens.status)}>
           比例数据不可用
         </RnrText>
@@ -46,7 +53,13 @@ export const PrimitiveRatioBar = ({testID, accessibilityLabel, total, segments}:
   );
 };
 
-export const PrimitiveStatusLine = ({testID, accessibilityLabel, tone = 'neutral', children, style}: PrimitiveStatusLineProps) => (
+export const PrimitiveStatusLine = ({
+  testID,
+  accessibilityLabel,
+  tone = 'neutral',
+  children,
+  style,
+}: PrimitiveStatusLineProps) => (
   <RnrView
     testID={assertTestID(testID)}
     accessibilityLabel={accessibilityLabel}
@@ -61,9 +74,16 @@ export const PrimitiveStatusLine = ({testID, accessibilityLabel, tone = 'neutral
 export const PrimitiveFactGrid = ({testID, items, columns = 3}: PrimitiveFactGridProps) => (
   <RnrView testID={assertTestID(testID)} className={baseTokens.adminFactGrid}>
     {items.map(item => (
-      <RnrView key={item.key} testID={item.testID ?? `${assertTestID(testID)}:item:${item.key}`} className={baseTokens.adminFact} style={{flexBasis: `${100 / columns - 2}%`}}>
+      <RnrView
+        key={item.key}
+        testID={item.testID ?? `${assertTestID(testID)}:item:${item.key}`}
+        className={baseTokens.adminFact}
+        style={{flexBasis: `${100 / columns - 2}%`}}
+      >
         <RnrText className={baseTokens.adminFactLabel}>{item.label}</RnrText>
-        <RnrText className={toneForegroundClassName(item.tone ?? 'neutral', baseTokens.adminFactValue)}>{item.value}</RnrText>
+        <RnrText className={toneForegroundClassName(item.tone ?? 'neutral', baseTokens.adminFactValue)}>
+          {item.value}
+        </RnrText>
       </RnrView>
     ))}
   </RnrView>
@@ -94,8 +114,16 @@ export const PrimitiveDisclosure = ({
         onPress={() => onExpandedChange?.(!expanded)}
       >
         <RnrText className={baseTokens.adminDisclosureLabel}>{label}</RnrText>
-        {status === undefined ? null : <RnrText testID={statusTestID} className={baseTokens.adminDisclosureSummary}>{status}</RnrText>}
-        {summary === undefined ? null : <RnrText testID={summaryTestID} className={baseTokens.adminDisclosureSummary}>{summary}</RnrText>}
+        {status === undefined ? null : (
+          <RnrText testID={statusTestID} className={baseTokens.adminDisclosureSummary}>
+            {status}
+          </RnrText>
+        )}
+        {summary === undefined ? null : (
+          <RnrText testID={summaryTestID} className={baseTokens.adminDisclosureSummary}>
+            {summary}
+          </RnrText>
+        )}
         <PrimitiveIcon
           testID={`${address}:icon`}
           accessibilityLabel={expanded ? '收起' : '展开'}
@@ -103,12 +131,22 @@ export const PrimitiveDisclosure = ({
           size={18}
         />
       </RnrPressable>
-      {expanded ? <RnrView testID={`${address}:content`} className={baseTokens.adminDisclosureContent}>{children}</RnrView> : null}
+      {expanded ? (
+        <RnrView testID={`${address}:content`} className={baseTokens.adminDisclosureContent}>
+          {children}
+        </RnrView>
+      ) : null}
     </RnrView>
   );
 };
 
-export const PrimitiveSurfaceMap = ({testID, accessibilityLabel, surfaces, direction = 'row', compact = false}: PrimitiveSurfaceMapProps) => {
+export const PrimitiveSurfaceMap = ({
+  testID,
+  accessibilityLabel,
+  surfaces,
+  direction = 'row',
+  compact = false,
+}: PrimitiveSurfaceMapProps) => {
   const address = assertTestID(testID);
   return (
     <RnrView
@@ -122,67 +160,127 @@ export const PrimitiveSurfaceMap = ({testID, accessibilityLabel, surfaces, direc
           key={surface.key}
           testID={`${address}:surface:${surface.key}:card`}
           accessibilityLabel={surface.label}
-          className={direction === 'row'
-            ? surface.current ? baseTokens.adminSurfaceMapCardCurrent : baseTokens.adminSurfaceMapCard
-            : surface.current ? baseTokens.adminSurfaceMapCardCurrentColumn : baseTokens.adminSurfaceMapCardColumn}
+          className={
+            direction === 'row'
+              ? surface.current
+                ? baseTokens.adminSurfaceMapCardCurrent
+                : baseTokens.adminSurfaceMapCard
+              : surface.current
+                ? baseTokens.adminSurfaceMapCardCurrentColumn
+                : baseTokens.adminSurfaceMapCardColumn
+          }
         >
-          <RnrText testID={`${address}:surface:${surface.key}:label`} className={baseTokens.adminSurfaceMapLabel}>{surface.label}</RnrText>
-          <RnrText testID={`${address}:surface:${surface.key}:role`} className={baseTokens.adminSurfaceMapRole}>{surface.roleLabel}</RnrText>
+          <RnrText testID={`${address}:surface:${surface.key}:label`} className={baseTokens.adminSurfaceMapLabel}>
+            {surface.label}
+          </RnrText>
+          <RnrText testID={`${address}:surface:${surface.key}:role`} className={baseTokens.adminSurfaceMapRole}>
+            {surface.roleLabel}
+          </RnrText>
           <RnrView testID={`${address}:surface:${surface.key}:wrap`} className={baseTokens.adminSurfaceMapWrap}>
-            {surface.physicalWidthLabel === undefined ? null : <RnrText testID={`${address}:surface:${surface.key}:outside:0`} className={baseTokens.adminSurfaceMapPhysicalWidth}>{surface.physicalWidthLabel}</RnrText>}
-            <RnrView
-                  testID={`${address}:surface:${surface.key}:frame`}
-                  className={baseTokens.adminSurfaceMapFrame}
-                  style={{
-                    width: '100%',
-                    ...(direction === 'row'
-                      ? {
-                          maxWidth: adminGeometry.surfaceRectLaptop.maxWidth,
-                          alignSelf: 'center' as const,
-                        }
-                      : {}),
-                  }}
-                >
-                  <RnrView
-                    testID={`${address}:surface:${surface.key}`}
-                    accessibilityRole="none"
-                    className={surface.current ? baseTokens.adminSurfaceMapRectCurrent : baseTokens.adminSurfaceMapRect}
-                    style={{
-                      ...(compact ? adminGeometry.surfaceRectMobile : adminGeometry.surfaceRectLaptop),
-                      width: '100%',
-                      ...(direction === 'row'
-                        ? {
-                            maxWidth: adminGeometry.surfaceRectLaptop.maxWidth,
-                            height: adminGeometry.surfaceRectLaptop.maxWidth / surface.aspectRatio,
-                            alignSelf: 'center' as const,
-                          }
-                        : {}),
-                      aspectRatio: surface.aspectRatio,
-                    }}
-                  >
-                    {surface.logicWidthLabel === undefined ? null : <RnrText testID={`${address}:surface:${surface.key}:logic-width`} className={baseTokens.adminSurfaceMapLogicWidth}>{surface.logicWidthLabel}</RnrText>}
-                    {surface.logicHeightLabel === undefined ? null : <RnrText testID={`${address}:surface:${surface.key}:logic-height`} className={baseTokens.adminSurfaceMapLogicHeight}>{surface.logicHeightLabel}</RnrText>}
-                    {surface.present ? surface.insideLabels.map((label, index) => (
-                      <RnrText key={`${surface.key}:inside:${index}`} testID={`${address}:surface:${surface.key}:inside:${index}`} className={baseTokens.adminSurfaceMapInside}>
-                        {label}
-                      </RnrText>
-                    )) : <RnrText testID={`${address}:surface:${surface.key}:absent`} className={baseTokens.adminSurfaceMapInside}>未检测到</RnrText>}
-                    {surface.statusLabel === undefined ? null : (
-                      <RnrText
-                        testID={`${address}:surface:${surface.key}:status`}
-                        className={toneForegroundClassName(surface.statusTone ?? 'neutral', baseTokens.adminSurfaceMapStatus)}
-                      >
-                        {surface.statusLabel}
-                      </RnrText>
-                    )}
-                  </RnrView>
-                  {surface.physicalHeightLabel === undefined ? null : <RnrText testID={`${address}:surface:${surface.key}:outside:1`} className={baseTokens.adminSurfaceMapPhysicalHeight}>{surface.physicalHeightLabel}</RnrText>}
-            </RnrView>
-            {surface.physicalWidthLabel !== undefined ? null : surface.outsideLabels.map((label, index) => (
-              <RnrText key={`${surface.key}:outside:${index}`} testID={`${address}:surface:${surface.key}:outside:${index}`} className={baseTokens.adminSurfaceMapOutside}>
-                {label}
+            {surface.physicalWidthLabel === undefined ? null : (
+              <RnrText
+                testID={`${address}:surface:${surface.key}:outside:0`}
+                className={baseTokens.adminSurfaceMapPhysicalWidth}
+              >
+                {surface.physicalWidthLabel}
               </RnrText>
-            ))}
+            )}
+            <RnrView
+              testID={`${address}:surface:${surface.key}:frame`}
+              className={baseTokens.adminSurfaceMapFrame}
+              style={{
+                width: '100%',
+                ...(direction === 'row'
+                  ? {
+                      maxWidth: adminGeometry.surfaceRectLaptop.maxWidth,
+                      alignSelf: 'center' as const,
+                    }
+                  : {}),
+              }}
+            >
+              <RnrView
+                testID={`${address}:surface:${surface.key}`}
+                accessibilityRole="none"
+                className={surface.current ? baseTokens.adminSurfaceMapRectCurrent : baseTokens.adminSurfaceMapRect}
+                style={{
+                  ...(compact ? adminGeometry.surfaceRectMobile : adminGeometry.surfaceRectLaptop),
+                  width: '100%',
+                  ...(direction === 'row'
+                    ? {
+                        maxWidth: adminGeometry.surfaceRectLaptop.maxWidth,
+                        height: adminGeometry.surfaceRectLaptop.maxWidth / surface.aspectRatio,
+                        alignSelf: 'center' as const,
+                      }
+                    : {}),
+                  aspectRatio: surface.aspectRatio,
+                }}
+              >
+                {surface.logicWidthLabel === undefined ? null : (
+                  <RnrText
+                    testID={`${address}:surface:${surface.key}:logic-width`}
+                    className={baseTokens.adminSurfaceMapLogicWidth}
+                  >
+                    {surface.logicWidthLabel}
+                  </RnrText>
+                )}
+                {surface.logicHeightLabel === undefined ? null : (
+                  <RnrText
+                    testID={`${address}:surface:${surface.key}:logic-height`}
+                    className={baseTokens.adminSurfaceMapLogicHeight}
+                  >
+                    {surface.logicHeightLabel}
+                  </RnrText>
+                )}
+                {surface.present ? (
+                  surface.insideLabels.map((label, index) => (
+                    <RnrText
+                      key={`${surface.key}:inside:${index}`}
+                      testID={`${address}:surface:${surface.key}:inside:${index}`}
+                      className={baseTokens.adminSurfaceMapInside}
+                    >
+                      {label}
+                    </RnrText>
+                  ))
+                ) : (
+                  <RnrText
+                    testID={`${address}:surface:${surface.key}:absent`}
+                    className={baseTokens.adminSurfaceMapInside}
+                  >
+                    未检测到
+                  </RnrText>
+                )}
+                {surface.statusLabel === undefined ? null : (
+                  <RnrText
+                    testID={`${address}:surface:${surface.key}:status`}
+                    className={toneForegroundClassName(
+                      surface.statusTone ?? 'neutral',
+                      baseTokens.adminSurfaceMapStatus,
+                    )}
+                  >
+                    {surface.statusLabel}
+                  </RnrText>
+                )}
+              </RnrView>
+              {surface.physicalHeightLabel === undefined ? null : (
+                <RnrText
+                  testID={`${address}:surface:${surface.key}:outside:1`}
+                  className={baseTokens.adminSurfaceMapPhysicalHeight}
+                >
+                  {surface.physicalHeightLabel}
+                </RnrText>
+              )}
+            </RnrView>
+            {surface.physicalWidthLabel !== undefined
+              ? null
+              : surface.outsideLabels.map((label, index) => (
+                  <RnrText
+                    key={`${surface.key}:outside:${index}`}
+                    testID={`${address}:surface:${surface.key}:outside:${index}`}
+                    className={baseTokens.adminSurfaceMapOutside}
+                  >
+                    {label}
+                  </RnrText>
+                ))}
           </RnrView>
         </RnrView>
       ))}

@@ -1,36 +1,33 @@
-import {useEffect, useMemo} from 'react'
+import {useEffect, useMemo} from 'react';
 import {
   useRenderContext,
   type RenderRuntimeFacts,
   type RendererCatalog,
   type SurfaceContextValue,
-} from '@catering-v2s/ui-base-render'
-import type {TopologyAdminCapability} from '@catering-v2s/kernel-base-contracts'
-import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state'
-import {ADMIN_TOPOLOGY_SECTION_PART_KEY} from '../foundations/adminIdentity'
+} from '@catering-v2s/ui-base-render';
+import type {TopologyAdminCapability} from '@catering-v2s/kernel-base-contracts';
+import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state';
+import {ADMIN_TOPOLOGY_SECTION_PART_KEY} from '../foundations/adminIdentity';
 import {
   createAdminSectionCommandBoundary,
   type AdminSectionCommandBoundary,
-} from '../foundations/adminSectionSelection'
-import type {
-  AdminSectionComponent,
-  AdminSectionRenderContext,
-} from '../types/adminSection'
+} from '../foundations/adminSectionSelection';
+import type {AdminSectionComponent, AdminSectionRenderContext} from '../types/adminSection';
 
 export type AdminSectionBindingInput = Readonly<{
-  readonly selectedSection: UiCatalogEntry | undefined
-  readonly rendererCatalog: RendererCatalog
-  readonly runtimeFacts: RenderRuntimeFacts
-  readonly surface: SurfaceContextValue
-  readonly commandBoundary?: AdminSectionCommandBoundary
-  readonly topologyCapability?: TopologyAdminCapability
-  readonly surfaceForm: 'laptop' | 'mobile'
-}>
+  readonly selectedSection: UiCatalogEntry | undefined;
+  readonly rendererCatalog: RendererCatalog;
+  readonly runtimeFacts: RenderRuntimeFacts;
+  readonly surface: SurfaceContextValue;
+  readonly commandBoundary?: AdminSectionCommandBoundary;
+  readonly topologyCapability?: TopologyAdminCapability;
+  readonly surfaceForm: 'laptop' | 'mobile';
+}>;
 
 export type AdminSectionBinding = Readonly<{
-  readonly activeSection: AdminSectionComponent | undefined
-  readonly activeContext: AdminSectionRenderContext | undefined
-}>
+  readonly activeSection: AdminSectionComponent | undefined;
+  readonly activeContext: AdminSectionRenderContext | undefined;
+}>;
 
 /** Shared catalog binding and lifecycle owner; form renderers retain their own layout JSX. */
 export const useAdminSectionBinding = ({
@@ -42,48 +39,25 @@ export const useAdminSectionBinding = ({
   topologyCapability,
   surfaceForm,
 }: AdminSectionBindingInput): AdminSectionBinding => {
-  const {logger} = useRenderContext()
+  const {logger} = useRenderContext();
   const resolvedCommandBoundary = useMemo(
     () => commandBoundary ?? createAdminSectionCommandBoundary(),
     [commandBoundary],
-  )
-  const sectionRenderStartedAt = Date.now()
-  logger.info({
-    category: 'admin.navigation',
-    event: 'admin.section-binding-started',
-    message: 'Admin section binding started',
-    data: {
-      partKey: selectedSection?.partKey ?? null,
-      rendererKey: selectedSection?.rendererKey ?? null,
-      displayMode: surface.displayMode,
-      surfaceForm,
-    },
-  })
-  const activeBinding = selectedSection === undefined
-    ? undefined
-    : rendererCatalog.resolve(selectedSection.rendererKey)
-  const activeSection = activeBinding?.component as AdminSectionComponent | undefined
-  logger.info({
-    category: 'admin.navigation',
-    event: 'admin.section-binding-resolved',
-    message: 'Admin section binding resolved',
-    data: {
-      partKey: selectedSection?.partKey ?? null,
-      rendererKey: selectedSection?.rendererKey ?? null,
-      componentAvailable: activeSection !== undefined,
-      elapsedMs: Date.now() - sectionRenderStartedAt,
-      surfaceForm,
-    },
-  })
-  const activeContext = selectedSection === undefined
-    ? undefined
-    : {
-      catalogEntry: selectedSection,
-      runtimeFacts,
-      surface,
-      commandBoundary: resolvedCommandBoundary,
-      topologyCapability: selectedSection.partKey === ADMIN_TOPOLOGY_SECTION_PART_KEY ? topologyCapability : undefined,
-    }
+  );
+  const activeBinding =
+    selectedSection === undefined ? undefined : rendererCatalog.resolve(selectedSection.rendererKey);
+  const activeSection = activeBinding?.component as AdminSectionComponent | undefined;
+  const activeContext =
+    selectedSection === undefined
+      ? undefined
+      : {
+          catalogEntry: selectedSection,
+          runtimeFacts,
+          surface,
+          commandBoundary: resolvedCommandBoundary,
+          topologyCapability:
+            selectedSection.partKey === ADMIN_TOPOLOGY_SECTION_PART_KEY ? topologyCapability : undefined,
+        };
 
   useEffect(() => {
     logger.info({
@@ -97,8 +71,8 @@ export const useAdminSectionBinding = ({
         displayMode: surface.displayMode,
         surfaceForm,
       },
-    })
-  }, [activeSection, logger, selectedSection?.partKey, selectedSection?.rendererKey, surface.displayMode, surfaceForm])
+    });
+  }, [activeSection, logger, selectedSection?.partKey, selectedSection?.rendererKey, surface.displayMode, surfaceForm]);
 
-  return {activeSection, activeContext}
-}
+  return {activeSection, activeContext};
+};

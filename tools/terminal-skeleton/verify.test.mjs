@@ -4,7 +4,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {assertOwnedTaskContracts, assertPackageTestMarkers, expectedTaskOwners} from './verify.mjs';
+import {
+  assertOwnedTaskContracts,
+  assertPackageLintMarkers,
+  assertPackageTestMarkers,
+  expectedTaskOwners,
+} from './verify.mjs';
 
 const toolsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(toolsDirectory, '../..');
@@ -70,62 +75,89 @@ const realTestPackages = [
   '@catering-v2s/adapter-android-persist-kv',
 ].sort();
 const noTestPackages = [].sort();
+const expectedLintPackages = expectedTaskOwners('lint').sort();
 const marker = (kind, packageName) => `TERMINAL_PACKAGE_TEST=PASS kind=${kind} package=${packageName}`;
 const validMarkerLines = [
   ...realTestPackages.map(packageName => marker('REAL_TESTS', packageName)),
   ...noTestPackages.map(packageName => marker('NO_TEST_FILES', packageName)),
 ];
+const validLintMarkers = expectedLintPackages.map(
+  packageName =>
+    `TERMINAL_PACKAGE_LINT=PASS ${JSON.stringify({packageName, expectedFiles: 1, actualFiles: 1, errors: 0, warnings: 0, elapsedMs: 1})}`,
+);
 const terminalSourceDirectory = path.join(repoRoot, 'apps/terminal');
 const fixtureCopyFilter = sourcePath => {
   const relativePath = path.relative(terminalSourceDirectory, sourcePath);
-  return !relativePath.split(path.sep).some(segment =>
-    ['node_modules', '.expo', 'dist', '.vite', '.vite-temp'].includes(segment),
-  );
+  return !relativePath
+    .split(path.sep)
+    .some(segment => ['node_modules', '.expo', 'dist', '.vite', '.vite-temp'].includes(segment));
 };
 
 assert.deepEqual(expectedTaskOwners('test', 2).sort(), expectedTestPackages);
-assert.deepEqual(
-  assertPackageTestMarkers(validMarkerLines.join('\n'), expectedTestPackages),
-  {
-    real: realTestPackages,
-    noTests: noTestPackages,
-  },
+assert.deepEqual(expectedLintPackages.length, 29);
+assert.equal(assertOwnedTaskContracts('lint').length, expectedLintPackages.length);
+assert.equal(
+  assertPackageLintMarkers(validLintMarkers.join('\n'), expectedLintPackages).length,
+  expectedLintPackages.length,
 );
 assert.throws(
-  () => assertPackageTestMarkers(
-    validMarkerLines.slice(0, -1).join('\n'),
-    expectedTestPackages,
-  ),
+  () => assertPackageLintMarkers(validLintMarkers.slice(0, -1).join('\n'), expectedLintPackages),
+  /lint marker count mismatch/,
+);
+assert.throws(
+  () =>
+    assertPackageLintMarkers(
+      validLintMarkers.map(line => line.replace('"actualFiles":1', '"actualFiles":0')).join('\n'),
+      expectedLintPackages,
+    ),
+  /lint marker file denominator or result mismatch/,
+);
+assert.deepEqual(assertPackageTestMarkers(validMarkerLines.join('\n'), expectedTestPackages), {
+  real: realTestPackages,
+  noTests: noTestPackages,
+});
+assert.throws(
+  () => assertPackageTestMarkers(validMarkerLines.slice(0, -1).join('\n'), expectedTestPackages),
   /marker count mismatch/,
 );
 assert.throws(
-  () => assertPackageTestMarkers(
-    validMarkerLines.map(line => line.replace(
-      'kind=REAL_TESTS package=@catering-v2s/kernel-base-platform-ports',
-      'kind=NO_TEST_FILES package=@catering-v2s/kernel-base-platform-ports',
-    )).join('\n'),
-    expectedTestPackages,
-  ),
+  () =>
+    assertPackageTestMarkers(
+      validMarkerLines
+        .map(line =>
+          line.replace(
+            'kind=REAL_TESTS package=@catering-v2s/kernel-base-platform-ports',
+            'kind=NO_TEST_FILES package=@catering-v2s/kernel-base-platform-ports',
+          ),
+        )
+        .join('\n'),
+      expectedTestPackages,
+    ),
   /marker kind mismatch.*platform-ports/,
 );
 assert.throws(
-  () => assertPackageTestMarkers(
-    validMarkerLines.map(line => line.replace(
-      'kind=REAL_TESTS package=@catering-v2s/kernel-base-state',
-      'kind=NO_TEST_FILES package=@catering-v2s/kernel-base-state',
-    )).join('\n'),
-    expectedTestPackages,
-  ),
+  () =>
+    assertPackageTestMarkers(
+      validMarkerLines
+        .map(line =>
+          line.replace(
+            'kind=REAL_TESTS package=@catering-v2s/kernel-base-state',
+            'kind=NO_TEST_FILES package=@catering-v2s/kernel-base-state',
+          ),
+        )
+        .join('\n'),
+      expectedTestPackages,
+    ),
   /marker kind mismatch.*kernel-base-state/,
 );
 assert.throws(
-  () => assertPackageTestMarkers(
-    validMarkerLines.map(line => line.replace(
-      '@catering-v2s/ui-base-dev-host',
-      '@catering-v2s/ui-support-test-harness',
-    )).join('\n'),
-    expectedTestPackages,
-  ),
+  () =>
+    assertPackageTestMarkers(
+      validMarkerLines
+        .map(line => line.replace('@catering-v2s/ui-base-dev-host', '@catering-v2s/ui-support-test-harness'))
+        .join('\n'),
+      expectedTestPackages,
+    ),
   /test marker package mismatch/,
 );
 
@@ -143,10 +175,22 @@ try {
   assert.equal(result.status, 1, output);
   assert.match(output, /TERMINAL_VERIFY_DEBUG .*"phase":"verify.start"/);
   assert.match(output, /TERMINAL_VERIFY_DEBUG .*"phase":"subprocess.start".*"label":"turbo-dry-typecheck"/);
-  assert.match(output, /TERMINAL_VERIFY_DEBUG .*"phase":"subprocess.finish".*"label":"turbo-dry-typecheck".*"status":17/);
-  assert.match(output, /TERMINAL_VERIFY_DEBUG .*"phase":"subprocess.finish".*"label":"turbo-dry-typecheck".*"signal":null/);
-  assert.match(output, /TERMINAL_VERIFY_DEBUG .*"phase":"subprocess.finish".*"label":"turbo-dry-typecheck".*"errorCode":null/);
-  assert.match(output, /TERMINAL_VERIFY_DEBUG .*"phase":"subprocess.finish".*"label":"turbo-dry-typecheck".*"durationMs":\d+/);
+  assert.match(
+    output,
+    /TERMINAL_VERIFY_DEBUG .*"phase":"subprocess.finish".*"label":"turbo-dry-typecheck".*"status":17/,
+  );
+  assert.match(
+    output,
+    /TERMINAL_VERIFY_DEBUG .*"phase":"subprocess.finish".*"label":"turbo-dry-typecheck".*"signal":null/,
+  );
+  assert.match(
+    output,
+    /TERMINAL_VERIFY_DEBUG .*"phase":"subprocess.finish".*"label":"turbo-dry-typecheck".*"errorCode":null/,
+  );
+  assert.match(
+    output,
+    /TERMINAL_VERIFY_DEBUG .*"phase":"subprocess.finish".*"label":"turbo-dry-typecheck".*"durationMs":\d+/,
+  );
   assert.match(output, /TERMINAL_VERIFY_FIRST_FAILURE:turbo-dry-typecheck:exit=17/);
   assert.doesNotMatch(output, /TERMINAL_VERIFY=PASS/);
 } finally {
@@ -160,10 +204,7 @@ try {
     recursive: true,
     filter: fixtureCopyFilter,
   });
-  const runtimePackageJsonPath = path.join(
-    ownershipFixture,
-    'apps/terminal/kernel/base/runtime/package.json',
-  );
+  const runtimePackageJsonPath = path.join(ownershipFixture, 'apps/terminal/kernel/base/runtime/package.json');
   const originalRuntimePackageJson = fs.readFileSync(runtimePackageJsonPath, 'utf8');
   const runtimePackageJson = JSON.parse(originalRuntimePackageJson);
   delete runtimePackageJson.scripts.test;
@@ -184,10 +225,12 @@ try {
   assert.equal(noTestsRun.status, 0, noTestsRun.stderr);
   assert.match(noTestsRun.stdout, /kind=NO_TEST_FILES package=@catering-v2s\/kernel-base-runtime/);
   const expected = expectedTaskOwners('test', 2, {root: ownershipFixture});
-  const cleanMarkers = validMarkerLines.join('\n').replace(
-    'kind=REAL_TESTS package=@catering-v2s/kernel-base-runtime',
-    noTestsRun.stdout.trim().replace('TERMINAL_PACKAGE_TEST=PASS ', ''),
-  );
+  const cleanMarkers = validMarkerLines
+    .join('\n')
+    .replace(
+      'kind=REAL_TESTS package=@catering-v2s/kernel-base-runtime',
+      noTestsRun.stdout.trim().replace('TERMINAL_PACKAGE_TEST=PASS ', ''),
+    );
   assert.throws(
     () => assertPackageTestMarkers(cleanMarkers, expected, {root: ownershipFixture, batch: 2}),
     /marker kind mismatch.*kernel-base-runtime/,

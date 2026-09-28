@@ -23,7 +23,7 @@
 
 ### 键宽基准（Dexter 对 S-3 的裁定）
 
-键帽列轨随全宽外框填满，按各布局既有列数、内边距和 gap 计算。laptop surface `1280×800`：full/alpha 标准键宽 `118`，numeric/financial 每列键宽 `412`；mobile surface `360×640`：full/alpha 标准键宽 `30`，numeric/financial 每列键宽 `110`。这四组数是后续 IA 逐控件视觉对账基准；最终实现仍按实测外框与真实 padding/gap 验证，不设居中限宽。
+键帽列轨随全宽外框填满，按各布局既有列数、内边距和 gap 计算。laptop surface `1280×720`：full/alpha 标准键宽 `118`，numeric/financial 每列键宽 `412`；mobile surface `360×640`：full/alpha 标准键宽 `30`，numeric/financial 每列键宽 `110`。这四组数是后续 IA 逐控件视觉对账基准；最终实现仍按实测外框与真实 padding/gap 验证，不设居中限宽。
 
 以上每 screen 的技术边界相同：字段 value/selection/maxLength 和 business validation 归现有 field/feature；输入 owner 仍仅一个 `virtual` 或 `system`；`UI_VISIBLE_COPY` 中的键盘标签不是服务端事实。所有控件同时有键级 testID 和非纯颜色的 selected/focus 反馈。此批没有 HTTP query、候选集合、提交命令或后台 Drawer，模板中 CRUD、候选搜索、B.4 HTTP 和管理后台 §3-K-1..10 均 `NOT_APPLICABLE_WITH_REASON=TER 本地输入基础能力`。
 

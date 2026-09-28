@@ -63,7 +63,7 @@ sourceRefs: ["doc/plans/platform/2026-08-29-v2s-terminal-skeleton-requirements-c
 本文件前述批次历史保留为历史记录。自 2026-09-25 起，TER 顶层可运行层的现状名称为
 `application/{android,electron}`，不再把该层的目录、workspace package、moduleName 或 TR-16
 运行目标称为 `assembly`。包布局整理的当前执行顺序与验收以
-`doc/plans/platform/2026-09-25-ter-package-layout-cleanup-formal-requirements-claude.md`、
+`doc/plans/platform/2026-09-24-ter-package-layout-cleanup-formal-requirements-claude.md`、
 `doc/plans/platform/2026-09-25-ter-package-layout-cleanup-implementation-design-codex.md` 和
 `doc/plans/platform/2026-09-25-ter-package-layout-cleanup-implementation-plan-codex.md` 为准；
 本段不改写前述批次发生时的历史事实。

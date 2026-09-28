@@ -1,5 +1,13 @@
 import {useCallback, useLayoutEffect, useMemo, useRef, useState} from 'react';
-import {Animated, Easing, Platform, StyleSheet, View, type GestureResponderEvent, type LayoutChangeEvent} from 'react-native';
+import {
+  Animated,
+  Easing,
+  Platform,
+  StyleSheet,
+  View,
+  type GestureResponderEvent,
+  type LayoutChangeEvent,
+} from 'react-native';
 import {PrimitiveStatus, type PrimitiveNativeNode} from '@catering-v2s/ui-base-primitives';
 import {SurfacePresentationOffsetProvider} from '@catering-v2s/ui-base-render';
 import {useInputController, useInputKeyboardState, useInputPendingFocusCommit} from '../contexts/context';
@@ -27,35 +35,39 @@ const unsupportedMessageOf = (capacity: KeyboardCapacity): string => {
 export const InputSurfaceFrame = ({onMeasuredFrame, children}: InputSurfaceFrameProps) => {
   const [frameMetrics, setFrameMetrics] = useState<LocalFrameMetrics | null>(null);
   const lastMeasuredFrame = useRef<LocalFrameMetrics | null>(null);
-  const surfaceRootRef = useRef<PrimitiveNativeNode | null>(null);
+  const [surfaceRoot, setSurfaceRootState] = useState<PrimitiveNativeNode | null>(null);
   const setSurfaceRoot = useCallback((node: unknown) => {
-    surfaceRootRef.current = node as PrimitiveNativeNode | null;
+    setSurfaceRootState(node as PrimitiveNativeNode | null);
   }, []);
-  const handleSurfaceLayout = useCallback((event: LayoutChangeEvent) => {
-    const {width, height} = event.nativeEvent.layout;
-    const ready = Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0;
-    const nextFrameMetrics: LocalFrameMetrics = {
-      width,
-      height,
-      ready,
-      orientation: width >= height ? 'landscape' : 'portrait',
-    };
-    const previous = lastMeasuredFrame.current;
-    const changed = previous === null
-      || previous.width !== nextFrameMetrics.width
-      || previous.height !== nextFrameMetrics.height
-      || previous.ready !== nextFrameMetrics.ready
-      || previous.orientation !== nextFrameMetrics.orientation;
-    if (!changed) return;
-    lastMeasuredFrame.current = nextFrameMetrics;
-    setFrameMetrics(nextFrameMetrics);
-    onMeasuredFrame?.(nextFrameMetrics);
-  }, [onMeasuredFrame]);
+  const handleSurfaceLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const {width, height} = event.nativeEvent.layout;
+      const ready = Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0;
+      const nextFrameMetrics: LocalFrameMetrics = {
+        width,
+        height,
+        ready,
+        orientation: width >= height ? 'landscape' : 'portrait',
+      };
+      const previous = lastMeasuredFrame.current;
+      const changed =
+        previous === null ||
+        previous.width !== nextFrameMetrics.width ||
+        previous.height !== nextFrameMetrics.height ||
+        previous.ready !== nextFrameMetrics.ready ||
+        previous.orientation !== nextFrameMetrics.orientation;
+      if (!changed) return;
+      lastMeasuredFrame.current = nextFrameMetrics;
+      setFrameMetrics(nextFrameMetrics);
+      onMeasuredFrame?.(nextFrameMetrics);
+    },
+    [onMeasuredFrame],
+  );
 
   return (
     <View ref={setSurfaceRoot} testID="ui.base.input:surface-frame" style={styles.frame} onLayout={handleSurfaceLayout}>
       <InputProvider frameMetrics={frameMetrics}>
-        <InputSurfaceFrameContents frameMetrics={frameMetrics} surfaceRoot={surfaceRootRef.current}>
+        <InputSurfaceFrameContents frameMetrics={frameMetrics} surfaceRoot={surfaceRoot}>
           {children}
         </InputSurfaceFrameContents>
       </InputProvider>
@@ -137,8 +149,7 @@ type PresentationSample = Readonly<{
   readonly offset: number;
 }>;
 
-const clamp = (value: number, minimum: number, maximum: number): number =>
-  Math.min(maximum, Math.max(minimum, value));
+const clamp = (value: number, minimum: number, maximum: number): number => Math.min(maximum, Math.max(minimum, value));
 
 const interpolateNumber = (progress: number, inputRange: readonly number[], outputRange: readonly number[]): number => {
   const segment = inputRange.findIndex((point, index) => index > 0 && point >= progress);
@@ -153,8 +164,7 @@ const interpolateNumber = (progress: number, inputRange: readonly number[], outp
 const maxVisibleHeight = (layers: readonly FrozenKeyboardLayer[]): number =>
   Math.max(0, ...layers.map(layer => layer.snapshot.height - layer.translateY));
 
-const activeLayerKeyOf = (snapshot: InputKeyboardSnapshot): string =>
-  `active:${snapshot.fieldId}:${snapshot.layout}`;
+const activeLayerKeyOf = (snapshot: InputKeyboardSnapshot): string => `active:${snapshot.fieldId}:${snapshot.layout}`;
 
 const incomingSampleLayerKeyOf = (serial: number, snapshot: InputKeyboardSnapshot): string =>
   `incoming:${serial}:${snapshot.fieldId}:${snapshot.layout}`;
@@ -187,26 +197,37 @@ const samplePresentation = (
       return {layers: presentation.outgoing, offset: presentation.startOffset};
     case 'enter':
       return {
-        layers: [{
-          snapshot: presentation.incoming,
-          translateY: presentation.incoming.height * (1 - progress),
-          layerKey: incomingSampleLayerKeyOf(presentation.serial, presentation.incoming),
-        }],
+        layers: [
+          {
+            snapshot: presentation.incoming,
+            translateY: presentation.incoming.height * (1 - progress),
+            layerKey: incomingSampleLayerKeyOf(presentation.serial, presentation.incoming),
+          },
+        ],
         offset: presentation.startOffset + (presentation.targetOffset - presentation.startOffset) * progress,
       };
     case 'display':
-      return {layers: [{snapshot: presentation.active, translateY: 0, layerKey: activeLayerKeyOf(presentation.active)}], offset: stableOffset};
+      return {
+        layers: [{snapshot: presentation.active, translateY: 0, layerKey: activeLayerKeyOf(presentation.active)}],
+        offset: stableOffset,
+      };
     case 'handoff':
       return {
         layers: [
           ...presentation.outgoing.map(layer => ({
             snapshot: layer.snapshot,
-            translateY: layer.translateY + interpolateNumber(progress, presentation.track.inputRange, presentation.track.outgoingTranslateY),
+            translateY:
+              layer.translateY +
+              interpolateNumber(progress, presentation.track.inputRange, presentation.track.outgoingTranslateY),
             layerKey: layer.layerKey,
           })),
           {
             snapshot: presentation.incoming,
-            translateY: interpolateNumber(progress, presentation.track.inputRange, presentation.track.incomingTranslateY),
+            translateY: interpolateNumber(
+              progress,
+              presentation.track.inputRange,
+              presentation.track.incomingTranslateY,
+            ),
             layerKey: incomingSampleLayerKeyOf(presentation.serial, presentation.incoming),
           },
         ],
@@ -233,11 +254,12 @@ const animatedInterpolation = (
   progress: Animated.Value,
   inputRange: readonly number[],
   outputRange: readonly number[],
-): Animated.AnimatedInterpolation<number> => progress.interpolate({
-  inputRange: [...inputRange],
-  outputRange: [...outputRange],
-  extrapolate: 'clamp',
-});
+): Animated.AnimatedInterpolation<number> =>
+  progress.interpolate({
+    inputRange: [...inputRange],
+    outputRange: [...outputRange],
+    extrapolate: 'clamp',
+  });
 
 const keyboardHeightKey = (layout: InputKeyboardSnapshot['layout'], width: number, expectedHeight: number): string =>
   `${layout}:${width}:${expectedHeight}`;
@@ -255,8 +277,9 @@ const isWebInputTarget = (event: unknown): boolean => {
   const target = webEventTargetOf(event);
   if (target === null || typeof target !== 'object') return false;
   const closest = (target as {readonly closest?: unknown}).closest;
-  return typeof closest === 'function'
-    && (closest as (selector: string) => unknown).call(target, 'input,textarea') !== null;
+  return (
+    typeof closest === 'function' && (closest as (selector: string) => unknown).call(target, 'input,textarea') !== null
+  );
 };
 
 const InputSurfaceFrameContents = ({
@@ -271,7 +294,7 @@ const InputSurfaceFrameContents = ({
   const state = useInputKeyboardState();
   const controller = useInputController();
   const commitPendingFocus = useInputPendingFocusCommit();
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
   const animationRef = useRef<ReturnType<typeof Animated.timing> | null>(null);
   const presentationSerialRef = useRef(0);
   const presentationRef = useRef<KeyboardPresentation>({phase: 'idle'});
@@ -283,8 +306,11 @@ const InputSurfaceFrameContents = ({
   const focusReadyFieldRef = useRef<string | null>(null);
   const measuredHeightsRef = useRef(new Map<string, number>());
   const measuredGeometryKeyRef = useRef<string | null>(null);
-  const [measuredHeightRevision, setMeasuredHeightRevision] = useState(0);
-  const [focusVisibilityFailure, setFocusVisibilityFailure] = useState<Readonly<{readonly fieldId: string; readonly reason: string}> | null>(null);
+  const [measuredHeights, setMeasuredHeights] = useState<ReadonlyMap<string, number>>(() => new Map());
+  const [focusVisibilityFailure, setFocusVisibilityFailure] = useState<Readonly<{
+    readonly fieldId: string;
+    readonly reason: string;
+  }> | null>(null);
   const [scheduledScrollRevision, setScheduledScrollRevision] = useState(0);
   const scheduledScrollStartRef = useRef<ScheduledScrollStart | null>(null);
   const setPresentationState = useCallback((next: KeyboardPresentation) => {
@@ -293,7 +319,7 @@ const InputSurfaceFrameContents = ({
   }, []);
   const assignPresentationOffset = useCallback((offset: number) => {
     presentationOffsetRef.current = offset;
-    setPresentationOffsetY(previous => Math.abs(previous - offset) <= 0.001 ? previous : offset);
+    setPresentationOffsetY(previous => (Math.abs(previous - offset) <= 0.001 ? previous : offset));
   }, []);
   const nextPresentationSerial = useCallback((): number => {
     presentationSerialRef.current += 1;
@@ -316,12 +342,13 @@ const InputSurfaceFrameContents = ({
   }, []);
   const setFocusTargetState = useCallback((fieldId: string, rect: LayoutRect, offset: number) => {
     const previous = focusTargetRef.current;
-    const unchanged = previous?.fieldId === fieldId
-      && Math.abs(previous.offset - offset) <= 0.5
-      && Math.abs(previous.rect.x - rect.x) <= 0.5
-      && Math.abs(previous.rect.y - rect.y) <= 0.5
-      && Math.abs(previous.rect.width - rect.width) <= 0.5
-      && Math.abs(previous.rect.height - rect.height) <= 0.5;
+    const unchanged =
+      previous?.fieldId === fieldId &&
+      Math.abs(previous.offset - offset) <= 0.5 &&
+      Math.abs(previous.rect.x - rect.x) <= 0.5 &&
+      Math.abs(previous.rect.y - rect.y) <= 0.5 &&
+      Math.abs(previous.rect.width - rect.width) <= 0.5 &&
+      Math.abs(previous.rect.height - rect.height) <= 0.5;
     if (unchanged) return;
     focusReadyFieldRef.current = null;
     const next = {fieldId, rect, offset, revision: (previous?.revision ?? 0) + 1};
@@ -331,7 +358,7 @@ const InputSurfaceFrameContents = ({
   const pendingFieldId = state.blockedCapacity === null ? state.blockedFieldId : null;
   const presentationFieldId = state.owner === 'virtual' && state.visible ? state.activeFieldId : pendingFieldId;
   const keyboardHeightKeyValue = keyboardHeightKey(state.layout, state.frameWidth, state.height);
-  const measuredKeyboardHeight = measuredHeightsRef.current.get(keyboardHeightKeyValue);
+  const measuredKeyboardHeight = measuredHeights.get(keyboardHeightKeyValue);
   const keyboardHeight = measuredKeyboardHeight ?? state.height;
   const desiredSnapshot = useMemo<InputKeyboardSnapshot | null>(() => {
     if (presentationFieldId === null || keyboardHeight <= 0 || state.frameWidth <= 0) return null;
@@ -344,135 +371,188 @@ const InputSurfaceFrameContents = ({
       shift: isPending ? false : state.shift,
       hasNextField: state.hasNextField,
     };
-  }, [keyboardHeight, pendingFieldId, presentationFieldId, state.frameWidth, state.hasNextField, state.layout, state.owner, state.shift]);
-  const desiredSignature = desiredSnapshot === null
-    ? null
-    : `${desiredSnapshot.fieldId}|${desiredSnapshot.layout}|${desiredSnapshot.frameWidth}|${desiredSnapshot.height}|${desiredSnapshot.shift}|${desiredSnapshot.hasNextField}`;
-  const targetOffsetFor = useCallback(({fieldId, fallback}: PresentationTargetInput): number =>
-    focusTargetRef.current?.fieldId === fieldId ? focusTargetRef.current.offset : fallback,
-  []);
-  const freezeVisibleLayers = useCallback((current: KeyboardPresentation, value: number): PresentationSample =>
-    samplePresentation(current, clamp(value, 0, 1), presentationOffsetRef.current),
-  []);
-  const beginMeasure = useCallback((incoming: InputKeyboardSnapshot, outgoing: readonly FrozenKeyboardLayer[]) => {
-    const startOffset = presentationOffsetRef.current;
-    setPresentationState({
-      phase: 'measure',
-      serial: nextPresentationSerial(),
-      outgoing,
-      incoming,
-      kind: outgoing.length === 0 ? 'enter' : 'handoff',
-      startOffset,
-      targetOffset: targetOffsetFor({fieldId: incoming.fieldId, fallback: startOffset}),
-    });
-  }, [nextPresentationSerial, setPresentationState, targetOffsetFor]);
-  const beginExit = useCallback((outgoing: readonly FrozenKeyboardLayer[], startOffset: number) => {
-    scheduledScrollStartRef.current = null;
-    const obstructionHeight = maxVisibleHeight(outgoing);
-    if (obstructionHeight <= 0) {
-      assignPresentationOffset(0);
-      setPresentationState({phase: 'idle'});
-      return;
-    }
-    setPresentationState({
-      phase: 'exit',
-      serial: nextPresentationSerial(),
-      outgoing,
-      obstructionHeight,
-      startOffset,
-    });
-  }, [assignPresentationOffset, nextPresentationSerial, setPresentationState]);
-  const retargetPresentation = useCallback((desired: InputKeyboardSnapshot | null) => {
-    const current = presentationRef.current;
-    if (current.phase === 'measure') {
-      if (desired === null) beginExit(current.outgoing, current.startOffset);
-      else beginMeasure(desired, current.outgoing);
-      return;
-    }
-    if (current.phase === 'exit' && desired === null) return;
-    const freeze = (value: number) => {
-      const sampled = freezeVisibleLayers(current, value);
-      const visible = sampled.layers.filter(layer => layer.snapshot.height - layer.translateY > 0.001);
-      assignPresentationOffset(sampled.offset);
-      if (desired === null) beginExit(visible, sampled.offset);
-      else beginMeasure(desired, visible);
-    };
-    const isAnimating = current.phase === 'enter'
-      || current.phase === 'handoff'
-      || current.phase === 'exit'
-      || current.phase === 'reposition';
-    if (isAnimating) {
-      animationRef.current?.stop();
-      animationRef.current = null;
-      progress.stopAnimation(value => freeze(value));
-      return;
-    }
-    const sampled = freezeVisibleLayers(current, 1);
-    if (desired === null) beginExit(sampled.layers, sampled.offset);
-    else beginMeasure(desired, sampled.layers);
-  }, [assignPresentationOffset, beginExit, beginMeasure, freezeVisibleLayers, progress]);
-  const reportFocusVisibilityFailure = useCallback((fieldId: string, reason: string) => {
-    const activeVirtualField = state.owner === 'virtual' && state.activeFieldId === fieldId;
-    const pendingField = state.blockedFieldId === fieldId && state.blockedCapacity === null;
-    if (!activeVirtualField && !pendingField) return;
-    focusReadyFieldRef.current = null;
-    setFocusVisibilityFailure({fieldId, reason});
-    if (activeVirtualField) controller.blurField(fieldId);
-    else {
-      controller.dismissActiveField();
-      controller.blurField(fieldId);
-    }
-  }, [controller, state.activeFieldId, state.blockedCapacity, state.blockedFieldId, state.owner]);
-  const reportFocusVisibilitySuccess = useCallback((fieldId: string) => {
-    focusReadyFieldRef.current = fieldId;
-    setFocusVisibilityFailure(previous => previous?.fieldId === fieldId ? null : previous);
-    const current = presentationRef.current;
-    if ((current.phase === 'enter' || current.phase === 'handoff') && current.settled && current.incoming.fieldId === fieldId) {
-      const pending = state.owner === 'none'
-        && state.blockedFieldId === fieldId
-        && state.blockedCapacity === null;
-      const alreadyActive = state.owner === 'virtual' && state.activeFieldId === fieldId;
-      if ((pending && commitPendingFocus(fieldId)) || alreadyActive) {
-        assignPresentationOffset(current.targetOffset);
-        setPresentationState({phase: 'display', active: current.incoming});
-      }
-    }
-  }, [assignPresentationOffset, commitPendingFocus, setPresentationState, state.activeFieldId, state.blockedCapacity, state.blockedFieldId, state.owner]);
-  const presentFocusRect = useCallback((fieldId: string, rect: LayoutRect): number => {
-    const activeVirtualField = state.owner === 'virtual' && state.visible && state.activeFieldId === fieldId;
-    const pendingVirtualField = state.owner === 'none' && state.blockedFieldId === fieldId && state.blockedCapacity === null;
-    if (
-      frameMetrics?.ready !== true
-      || (!activeVirtualField && !pendingVirtualField)
-      || keyboardHeight <= 0
-    ) return presentationOffsetRef.current;
-    const nextOffset = calculatePresentationOffsetY(rect, frameMetrics.height, keyboardHeight);
-    setFocusTargetState(fieldId, rect, nextOffset);
-    return nextOffset;
-  }, [frameMetrics, keyboardHeight, setFocusTargetState, state.activeFieldId, state.blockedCapacity, state.blockedFieldId, state.owner, state.visible]);
-  const geometry = useMemo<InputSurfaceGeometry>(() => ({
-    surfaceRoot,
-    surfaceWidth: frameMetrics?.width ?? 0,
-    surfaceHeight: frameMetrics?.height ?? 0,
-    keyboardHeight: desiredSnapshot?.height ?? 0,
-    presentationOffsetY,
-    presentFocusRect,
-    scheduleScrollAtPresentationStart,
-    cancelScheduledScroll,
-    reportFocusVisibilityFailure,
-    reportFocusVisibilitySuccess,
-  }), [
-    frameMetrics?.height,
-    frameMetrics?.width,
-    desiredSnapshot?.height,
-    presentFocusRect,
-    presentationOffsetY,
-    scheduleScrollAtPresentationStart,
-    cancelScheduledScroll,
-    reportFocusVisibilityFailure,
-    reportFocusVisibilitySuccess,
-    surfaceRoot,
+  }, [
+    keyboardHeight,
+    pendingFieldId,
+    presentationFieldId,
+    state.frameWidth,
+    state.hasNextField,
+    state.layout,
+    state.owner,
+    state.shift,
   ]);
+  const desiredSignature =
+    desiredSnapshot === null
+      ? null
+      : `${desiredSnapshot.fieldId}|${desiredSnapshot.layout}|${desiredSnapshot.frameWidth}|${desiredSnapshot.height}|${desiredSnapshot.shift}|${desiredSnapshot.hasNextField}`;
+  const targetOffsetFor = useCallback(
+    ({fieldId, fallback}: PresentationTargetInput): number =>
+      focusTargetRef.current?.fieldId === fieldId ? focusTargetRef.current.offset : fallback,
+    [],
+  );
+  const freezeVisibleLayers = useCallback(
+    (current: KeyboardPresentation, value: number): PresentationSample =>
+      samplePresentation(current, clamp(value, 0, 1), presentationOffsetRef.current),
+    [],
+  );
+  const beginMeasure = useCallback(
+    (incoming: InputKeyboardSnapshot, outgoing: readonly FrozenKeyboardLayer[]) => {
+      const startOffset = presentationOffsetRef.current;
+      setPresentationState({
+        phase: 'measure',
+        serial: nextPresentationSerial(),
+        outgoing,
+        incoming,
+        kind: outgoing.length === 0 ? 'enter' : 'handoff',
+        startOffset,
+        targetOffset: targetOffsetFor({fieldId: incoming.fieldId, fallback: startOffset}),
+      });
+    },
+    [nextPresentationSerial, setPresentationState, targetOffsetFor],
+  );
+  const beginExit = useCallback(
+    (outgoing: readonly FrozenKeyboardLayer[], startOffset: number) => {
+      scheduledScrollStartRef.current = null;
+      const obstructionHeight = maxVisibleHeight(outgoing);
+      if (obstructionHeight <= 0) {
+        assignPresentationOffset(0);
+        setPresentationState({phase: 'idle'});
+        return;
+      }
+      setPresentationState({
+        phase: 'exit',
+        serial: nextPresentationSerial(),
+        outgoing,
+        obstructionHeight,
+        startOffset,
+      });
+    },
+    [assignPresentationOffset, nextPresentationSerial, setPresentationState],
+  );
+  const retargetPresentation = useCallback(
+    (desired: InputKeyboardSnapshot | null) => {
+      const current = presentationRef.current;
+      if (current.phase === 'measure') {
+        if (desired === null) beginExit(current.outgoing, current.startOffset);
+        else beginMeasure(desired, current.outgoing);
+        return;
+      }
+      if (current.phase === 'exit' && desired === null) return;
+      const freeze = (value: number) => {
+        const sampled = freezeVisibleLayers(current, value);
+        const visible = sampled.layers.filter(layer => layer.snapshot.height - layer.translateY > 0.001);
+        assignPresentationOffset(sampled.offset);
+        if (desired === null) beginExit(visible, sampled.offset);
+        else beginMeasure(desired, visible);
+      };
+      const isAnimating =
+        current.phase === 'enter' ||
+        current.phase === 'handoff' ||
+        current.phase === 'exit' ||
+        current.phase === 'reposition';
+      if (isAnimating) {
+        animationRef.current?.stop();
+        animationRef.current = null;
+        progress.stopAnimation(value => freeze(value));
+        return;
+      }
+      const sampled = freezeVisibleLayers(current, 1);
+      if (desired === null) beginExit(sampled.layers, sampled.offset);
+      else beginMeasure(desired, sampled.layers);
+    },
+    [assignPresentationOffset, beginExit, beginMeasure, freezeVisibleLayers, progress],
+  );
+  const reportFocusVisibilityFailure = useCallback(
+    (fieldId: string, reason: string) => {
+      const activeVirtualField = state.owner === 'virtual' && state.activeFieldId === fieldId;
+      const pendingField = state.blockedFieldId === fieldId && state.blockedCapacity === null;
+      if (!activeVirtualField && !pendingField) return;
+      focusReadyFieldRef.current = null;
+      setFocusVisibilityFailure({fieldId, reason});
+      if (activeVirtualField) controller.blurField(fieldId);
+      else {
+        controller.dismissActiveField();
+        controller.blurField(fieldId);
+      }
+    },
+    [controller, state.activeFieldId, state.blockedCapacity, state.blockedFieldId, state.owner],
+  );
+  const reportFocusVisibilitySuccess = useCallback(
+    (fieldId: string) => {
+      focusReadyFieldRef.current = fieldId;
+      setFocusVisibilityFailure(previous => (previous?.fieldId === fieldId ? null : previous));
+      const current = presentationRef.current;
+      if (
+        (current.phase === 'enter' || current.phase === 'handoff') &&
+        current.settled &&
+        current.incoming.fieldId === fieldId
+      ) {
+        const pending = state.owner === 'none' && state.blockedFieldId === fieldId && state.blockedCapacity === null;
+        const alreadyActive = state.owner === 'virtual' && state.activeFieldId === fieldId;
+        if ((pending && commitPendingFocus(fieldId)) || alreadyActive) {
+          assignPresentationOffset(current.targetOffset);
+          setPresentationState({phase: 'display', active: current.incoming});
+        }
+      }
+    },
+    [
+      assignPresentationOffset,
+      commitPendingFocus,
+      setPresentationState,
+      state.activeFieldId,
+      state.blockedCapacity,
+      state.blockedFieldId,
+      state.owner,
+    ],
+  );
+  const presentFocusRect = useCallback(
+    (fieldId: string, rect: LayoutRect): number => {
+      const activeVirtualField = state.owner === 'virtual' && state.visible && state.activeFieldId === fieldId;
+      const pendingVirtualField =
+        state.owner === 'none' && state.blockedFieldId === fieldId && state.blockedCapacity === null;
+      if (frameMetrics?.ready !== true || (!activeVirtualField && !pendingVirtualField) || keyboardHeight <= 0)
+        return presentationOffsetRef.current;
+      const nextOffset = calculatePresentationOffsetY(rect, frameMetrics.height, keyboardHeight);
+      setFocusTargetState(fieldId, rect, nextOffset);
+      return nextOffset;
+    },
+    [
+      frameMetrics,
+      keyboardHeight,
+      setFocusTargetState,
+      state.activeFieldId,
+      state.blockedCapacity,
+      state.blockedFieldId,
+      state.owner,
+      state.visible,
+    ],
+  );
+  const geometry = useMemo<InputSurfaceGeometry>(
+    () => ({
+      surfaceRoot,
+      surfaceWidth: frameMetrics?.width ?? 0,
+      surfaceHeight: frameMetrics?.height ?? 0,
+      keyboardHeight: desiredSnapshot?.height ?? 0,
+      presentationOffsetY,
+      presentFocusRect,
+      scheduleScrollAtPresentationStart,
+      cancelScheduledScroll,
+      reportFocusVisibilityFailure,
+      reportFocusVisibilitySuccess,
+    }),
+    [
+      frameMetrics?.height,
+      frameMetrics?.width,
+      desiredSnapshot?.height,
+      presentFocusRect,
+      presentationOffsetY,
+      scheduleScrollAtPresentationStart,
+      cancelScheduledScroll,
+      reportFocusVisibilityFailure,
+      reportFocusVisibilitySuccess,
+      surfaceRoot,
+    ],
+  );
   const showUnsupportedNotice =
     state.blockedFieldId !== null && state.blockedCapacity !== null && state.blockedCapacity !== 'unmeasured';
   const touchStartRef = useRef<Readonly<{readonly pageX: number; readonly pageY: number}> | null>(null);
@@ -482,137 +562,185 @@ const InputSurfaceFrameContents = ({
     touchStartRef.current = Number.isFinite(pageX) && Number.isFinite(pageY) ? {pageX, pageY} : null;
   }, []);
 
-  const dismissFromSurfaceTouchEnd = useCallback((event: GestureResponderEvent) => {
-    const start = touchStartRef.current;
-    touchStartRef.current = null;
-    const {pageX, pageY} = event.nativeEvent;
-    const distance = start === null || !Number.isFinite(pageX) || !Number.isFinite(pageY)
-      ? null
-      : Math.hypot(pageX - start.pageX, pageY - start.pageY);
-    const shouldDismiss = distance !== null && distance <= 8;
-    if (shouldDismiss) controller.dismissActiveField();
-  }, [controller]);
+  const dismissFromSurfaceTouchEnd = useCallback(
+    (event: GestureResponderEvent) => {
+      const start = touchStartRef.current;
+      touchStartRef.current = null;
+      const {pageX, pageY} = event.nativeEvent;
+      const distance =
+        start === null || !Number.isFinite(pageX) || !Number.isFinite(pageY)
+          ? null
+          : Math.hypot(pageX - start.pageX, pageY - start.pageY);
+      const shouldDismiss = distance !== null && distance <= 8;
+      if (shouldDismiss) controller.dismissActiveField();
+    },
+    [controller],
+  );
 
-  const dismissFromSurfaceClick = useCallback((event: unknown) => {
-    const target = webEventTargetOf(event);
-    const pendingTarget = pendingFieldId !== null && controller.isFieldEventTarget(pendingFieldId, target);
-    if (pendingTarget) return;
-    if (pendingFieldId !== null) {
+  const dismissFromSurfaceClick = useCallback(
+    (event: unknown) => {
+      const target = webEventTargetOf(event);
+      const pendingTarget = pendingFieldId !== null && controller.isFieldEventTarget(pendingFieldId, target);
+      if (pendingTarget) return;
+      if (pendingFieldId !== null) {
+        controller.dismissActiveField();
+        return;
+      }
+      if (isWebInputTarget(event)) return;
       controller.dismissActiveField();
-      return;
-    }
-    if (isWebInputTarget(event)) return;
-    controller.dismissActiveField();
-  }, [controller, pendingFieldId]);
-  const finishPendingPresentation = useCallback((incoming: InputKeyboardSnapshot, targetOffset: number): boolean => {
-    const pending = state.owner === 'none'
-      && state.blockedFieldId === incoming.fieldId
-      && state.blockedCapacity === null;
-    const alreadyActive = state.owner === 'virtual' && state.activeFieldId === incoming.fieldId;
-    if (!pending && !alreadyActive) return false;
-    if (pending && focusReadyFieldRef.current !== incoming.fieldId) return false;
-    if (pending && !commitPendingFocus(incoming.fieldId)) return false;
-    assignPresentationOffset(targetOffset);
-    setPresentationState({phase: 'display', active: incoming});
-    return true;
-  }, [assignPresentationOffset, commitPendingFocus, setPresentationState, state.activeFieldId, state.blockedCapacity, state.blockedFieldId, state.owner]);
+    },
+    [controller, pendingFieldId],
+  );
+  const finishPendingPresentation = useCallback(
+    (incoming: InputKeyboardSnapshot, targetOffset: number): boolean => {
+      const pending =
+        state.owner === 'none' && state.blockedFieldId === incoming.fieldId && state.blockedCapacity === null;
+      const alreadyActive = state.owner === 'virtual' && state.activeFieldId === incoming.fieldId;
+      if (!pending && !alreadyActive) return false;
+      if (pending && focusReadyFieldRef.current !== incoming.fieldId) return false;
+      if (pending && !commitPendingFocus(incoming.fieldId)) return false;
+      assignPresentationOffset(targetOffset);
+      setPresentationState({phase: 'display', active: incoming});
+      return true;
+    },
+    [
+      assignPresentationOffset,
+      commitPendingFocus,
+      setPresentationState,
+      state.activeFieldId,
+      state.blockedCapacity,
+      state.blockedFieldId,
+      state.owner,
+    ],
+  );
   const finishPendingPresentationRef = useRef(finishPendingPresentation);
-  finishPendingPresentationRef.current = finishPendingPresentation;
-  const onKeyboardLayout = useCallback((snapshot: InputKeyboardSnapshot) => (event: LayoutChangeEvent) => {
-    const {height} = event.nativeEvent.layout;
-    if (!Number.isFinite(height) || height <= 0) return;
-    const current = presentationRef.current;
-    if (current.phase !== 'measure' || current.incoming.fieldId !== snapshot.fieldId) return;
-    const geometryKey = `${snapshot.frameWidth}:${frameMetrics?.height ?? 0}`;
-    if (measuredGeometryKeyRef.current !== geometryKey) {
-      measuredHeightsRef.current.clear();
-      measuredGeometryKeyRef.current = geometryKey;
-    }
-    const key = keyboardHeightKey(snapshot.layout, snapshot.frameWidth, state.height);
-    const previous = measuredHeightsRef.current.get(key);
-    if (previous === undefined || Math.abs(previous - height) > 0.5) {
-      measuredHeightsRef.current.set(key, height);
-      setMeasuredHeightRevision(value => value + 1);
-    }
-    const pending = state.owner === 'none' && state.blockedFieldId === snapshot.fieldId && state.blockedCapacity === null;
-    if (Math.abs(current.incoming.height - height) > 0.5 && pending && !controller.preflightFocusTarget(snapshot.fieldId)) {
-      reportFocusVisibilityFailure(snapshot.fieldId, 'keyboard-height-preflight-changed');
-      return;
-    }
-    const incoming = {...current.incoming, height};
-    const targetOffset = targetOffsetFor({fieldId: incoming.fieldId, fallback: current.targetOffset});
-    const focusTarget = focusTargetRef.current;
-    if (focusTarget?.fieldId === incoming.fieldId && frameMetrics !== null) {
-      setFocusTargetState(
-        incoming.fieldId,
-        focusTarget.rect,
-        calculatePresentationOffsetY(focusTarget.rect, frameMetrics.height, height),
-      );
-    }
-    const resolvedTargetOffset = targetOffsetFor({fieldId: incoming.fieldId, fallback: targetOffset});
-    if (current.kind === 'enter') {
-      setPresentationState({
-        phase: 'enter',
-        serial: nextPresentationSerial(),
-        incoming,
-        startOffset: current.startOffset,
-        targetOffset: resolvedTargetOffset,
-        settled: false,
-      });
-    } else {
-      const outgoingHeight = maxVisibleHeight(current.outgoing);
-      setPresentationState({
-        phase: 'handoff',
-        serial: nextPresentationSerial(),
-        outgoing: current.outgoing,
-        incoming,
-        track: handoffTrackOf({
-          outgoingHeight,
-          incomingHeight: height,
-          outgoingOffset: current.startOffset,
-          incomingOffset: resolvedTargetOffset,
-        }),
-        startOffset: current.startOffset,
-        targetOffset: resolvedTargetOffset,
-        settled: false,
-      });
-    }
-  }, [controller, frameMetrics, nextPresentationSerial, reportFocusVisibilityFailure, setFocusTargetState, setPresentationState, state.blockedCapacity, state.blockedFieldId, state.height, state.owner, targetOffsetFor]);
+  useLayoutEffect(() => {
+    finishPendingPresentationRef.current = finishPendingPresentation;
+  }, [finishPendingPresentation]);
+  const onKeyboardLayout = useCallback(
+    (snapshot: InputKeyboardSnapshot, event: LayoutChangeEvent) => {
+      const {height} = event.nativeEvent.layout;
+      if (!Number.isFinite(height) || height <= 0) return;
+      const current = presentationRef.current;
+      if (current.phase !== 'measure' || current.incoming.fieldId !== snapshot.fieldId) return;
+      const geometryKey = `${snapshot.frameWidth}:${frameMetrics?.height ?? 0}`;
+      if (measuredGeometryKeyRef.current !== geometryKey) {
+        measuredHeightsRef.current.clear();
+        measuredGeometryKeyRef.current = geometryKey;
+        setMeasuredHeights(new Map());
+      }
+      const key = keyboardHeightKey(snapshot.layout, snapshot.frameWidth, state.height);
+      const previous = measuredHeightsRef.current.get(key);
+      if (previous === undefined || Math.abs(previous - height) > 0.5) {
+        measuredHeightsRef.current.set(key, height);
+        setMeasuredHeights(new Map(measuredHeightsRef.current));
+      }
+      const pending =
+        state.owner === 'none' && state.blockedFieldId === snapshot.fieldId && state.blockedCapacity === null;
+      if (
+        Math.abs(current.incoming.height - height) > 0.5 &&
+        pending &&
+        !controller.preflightFocusTarget(snapshot.fieldId)
+      ) {
+        reportFocusVisibilityFailure(snapshot.fieldId, 'keyboard-height-preflight-changed');
+        return;
+      }
+      const incoming = {...current.incoming, height};
+      const targetOffset = targetOffsetFor({fieldId: incoming.fieldId, fallback: current.targetOffset});
+      const focusTarget = focusTargetRef.current;
+      if (focusTarget?.fieldId === incoming.fieldId && frameMetrics !== null) {
+        setFocusTargetState(
+          incoming.fieldId,
+          focusTarget.rect,
+          calculatePresentationOffsetY(focusTarget.rect, frameMetrics.height, height),
+        );
+      }
+      const resolvedTargetOffset = targetOffsetFor({fieldId: incoming.fieldId, fallback: targetOffset});
+      if (current.kind === 'enter') {
+        setPresentationState({
+          phase: 'enter',
+          serial: nextPresentationSerial(),
+          incoming,
+          startOffset: current.startOffset,
+          targetOffset: resolvedTargetOffset,
+          settled: false,
+        });
+      } else {
+        const outgoingHeight = maxVisibleHeight(current.outgoing);
+        setPresentationState({
+          phase: 'handoff',
+          serial: nextPresentationSerial(),
+          outgoing: current.outgoing,
+          incoming,
+          track: handoffTrackOf({
+            outgoingHeight,
+            incomingHeight: height,
+            outgoingOffset: current.startOffset,
+            incomingOffset: resolvedTargetOffset,
+          }),
+          startOffset: current.startOffset,
+          targetOffset: resolvedTargetOffset,
+          settled: false,
+        });
+      }
+    },
+    [
+      controller,
+      frameMetrics,
+      nextPresentationSerial,
+      reportFocusVisibilityFailure,
+      setFocusTargetState,
+      setPresentationState,
+      state.blockedCapacity,
+      state.blockedFieldId,
+      state.height,
+      state.owner,
+      targetOffsetFor,
+    ],
+  );
 
   useLayoutEffect(() => {
     if (state.activeFieldId !== null) {
-      setFocusVisibilityFailure(previous => previous !== null && previous.fieldId !== state.activeFieldId ? null : previous);
+      setFocusVisibilityFailure(previous =>
+        previous !== null && previous.fieldId !== state.activeFieldId ? null : previous,
+      );
     }
     const current = presentationRef.current;
     if (current.phase === 'measure') {
       if (desiredSnapshot === null) retargetPresentation(null);
       else if (
-        current.incoming.fieldId !== desiredSnapshot.fieldId
-        || current.incoming.layout !== desiredSnapshot.layout
-        || current.incoming.frameWidth !== desiredSnapshot.frameWidth
-        || Math.abs(current.incoming.height - desiredSnapshot.height) > 0.5
-      ) retargetPresentation(desiredSnapshot);
+        current.incoming.fieldId !== desiredSnapshot.fieldId ||
+        current.incoming.layout !== desiredSnapshot.layout ||
+        current.incoming.frameWidth !== desiredSnapshot.frameWidth ||
+        Math.abs(current.incoming.height - desiredSnapshot.height) > 0.5
+      )
+        retargetPresentation(desiredSnapshot);
       return;
     }
-    const transitioning = current.phase === 'enter'
-      || current.phase === 'handoff'
-      || current.phase === 'exit'
-      || current.phase === 'reposition';
+    const transitioning =
+      current.phase === 'enter' ||
+      current.phase === 'handoff' ||
+      current.phase === 'exit' ||
+      current.phase === 'reposition';
     if (transitioning) {
-      const expectedFieldId = current.phase === 'enter' || current.phase === 'handoff'
-        ? current.incoming.fieldId
-        : current.phase === 'reposition'
-          ? current.active.fieldId
+      const expectedFieldId =
+        current.phase === 'enter' || current.phase === 'handoff'
+          ? current.incoming.fieldId
+          : current.phase === 'reposition'
+            ? current.active.fieldId
+            : null;
+      const expectedSignature =
+        current.phase === 'enter' || current.phase === 'handoff'
+          ? `${current.incoming.fieldId}|${current.incoming.layout}|${current.incoming.frameWidth}|${current.incoming.height}`
           : null;
-      const expectedSignature = current.phase === 'enter' || current.phase === 'handoff'
-        ? `${current.incoming.fieldId}|${current.incoming.layout}|${current.incoming.frameWidth}|${current.incoming.height}`
-        : null;
-      const actualSignature = desiredSnapshot === null
-        ? null
-        : `${desiredSnapshot.fieldId}|${desiredSnapshot.layout}|${desiredSnapshot.frameWidth}|${desiredSnapshot.height}`;
-      const matches = desiredSnapshot !== null
-        && desiredSnapshot.fieldId === expectedFieldId
-        && (expectedSignature === null || expectedSignature === actualSignature);
+      const actualSignature =
+        desiredSnapshot === null
+          ? null
+          : `${desiredSnapshot.fieldId}|${desiredSnapshot.layout}|${desiredSnapshot.frameWidth}|${desiredSnapshot.height}`;
+      const matches =
+        desiredSnapshot !== null &&
+        desiredSnapshot.fieldId === expectedFieldId &&
+        (expectedSignature === null || expectedSignature === actualSignature);
       if (current.phase === 'exit' && desiredSnapshot === null) return;
       if (!matches) {
         retargetPresentation(desiredSnapshot);
@@ -624,7 +752,11 @@ const InputSurfaceFrameContents = ({
       return;
     }
     if (desiredSnapshot === null) {
-      if (current.phase === 'display') beginExit([{snapshot: current.active, translateY: 0, layerKey: activeLayerKeyOf(current.active)}], presentationOffsetRef.current);
+      if (current.phase === 'display')
+        beginExit(
+          [{snapshot: current.active, translateY: 0, layerKey: activeLayerKeyOf(current.active)}],
+          presentationOffsetRef.current,
+        );
       return;
     }
     if (current.phase === 'idle') {
@@ -632,11 +764,14 @@ const InputSurfaceFrameContents = ({
       return;
     }
     if (current.phase !== 'display') return;
-    const sameDimensions = current.active.layout === desiredSnapshot.layout
-      && current.active.frameWidth === desiredSnapshot.frameWidth
-      && Math.abs(current.active.height - desiredSnapshot.height) <= 0.5;
+    const sameDimensions =
+      current.active.layout === desiredSnapshot.layout &&
+      current.active.frameWidth === desiredSnapshot.frameWidth &&
+      Math.abs(current.active.height - desiredSnapshot.height) <= 0.5;
     if (!sameDimensions) {
-      beginMeasure(desiredSnapshot, [{snapshot: current.active, translateY: 0, layerKey: activeLayerKeyOf(current.active)}]);
+      beginMeasure(desiredSnapshot, [
+        {snapshot: current.active, translateY: 0, layerKey: activeLayerKeyOf(current.active)},
+      ]);
       return;
     }
     if (current.active.fieldId !== desiredSnapshot.fieldId) {
@@ -662,16 +797,17 @@ const InputSurfaceFrameContents = ({
         targetOffset,
       });
     } else if (
-      current.active.shift !== desiredSnapshot.shift
-      || current.active.hasNextField !== desiredSnapshot.hasNextField
-    ) setPresentationState({phase: 'display', active: desiredSnapshot});
+      current.active.shift !== desiredSnapshot.shift ||
+      current.active.hasNextField !== desiredSnapshot.hasNextField
+    )
+      setPresentationState({phase: 'display', active: desiredSnapshot});
   }, [
     beginExit,
     beginMeasure,
     desiredSignature,
     desiredSnapshot,
     focusTarget?.revision,
-    measuredHeightRevision,
+    measuredHeights,
     nextPresentationSerial,
     retargetPresentation,
     setPresentationState,
@@ -685,40 +821,51 @@ const InputSurfaceFrameContents = ({
     readonly phase: KeyboardPresentation['phase'];
     readonly fieldId: string | null;
   }>;
-  const startPresentationAnimation = useCallback(({phase, fieldId}: PresentationAnimationInput) => {
-    if (phase === 'measure') return;
-    if (phase === 'exit' || phase === 'idle') {
-      scheduledScrollStartRef.current = null;
-      return;
-    }
-    if (fieldId !== null) startScheduledScrollFor(fieldId);
-  }, [startScheduledScrollFor]);
+  const startPresentationAnimation = useCallback(
+    ({phase, fieldId}: PresentationAnimationInput) => {
+      if (phase === 'measure') return;
+      if (phase === 'exit' || phase === 'idle') {
+        scheduledScrollStartRef.current = null;
+        return;
+      }
+      if (fieldId !== null) startScheduledScrollFor(fieldId);
+    },
+    [startScheduledScrollFor],
+  );
   useLayoutEffect(() => {
     const current = presentationRef.current;
     startPresentationAnimation({phase: current.phase, fieldId: presentationScrollFieldIdOf(current)});
   }, [presentation.phase, scheduledScrollRevision, startPresentationAnimation]);
   useLayoutEffect(() => {
+    const currentAtStart = presentationRef.current;
     if (
-      presentation.phase !== 'enter'
-      && presentation.phase !== 'handoff'
-      && presentation.phase !== 'exit'
-      && presentation.phase !== 'reposition'
-    ) return;
+      currentAtStart.phase !== animationPhase ||
+      !('serial' in currentAtStart) ||
+      currentAtStart.serial !== animationSerial
+    )
+      return;
+    if (
+      currentAtStart.phase !== 'enter' &&
+      currentAtStart.phase !== 'handoff' &&
+      currentAtStart.phase !== 'exit' &&
+      currentAtStart.phase !== 'reposition'
+    )
+      return;
     animationRef.current?.stop();
     animationRef.current = null;
     progress.setValue(0);
-    const serial = presentation.serial;
+    const serial = currentAtStart.serial;
     const animation = Animated.timing(progress, {
       toValue: 1,
       duration: 250,
       easing: Easing.inOut(Easing.quad),
-      useNativeDriver: Platform?.OS !== 'web',
+      useNativeDriver: Platform.OS !== 'web',
     });
     animationRef.current = animation;
-    if (presentation.phase === 'enter' || presentation.phase === 'handoff') {
-      startScheduledScrollFor(presentation.incoming.fieldId);
-    } else if (presentation.phase === 'reposition') {
-      startScheduledScrollFor(presentation.active.fieldId);
+    if (currentAtStart.phase === 'enter' || currentAtStart.phase === 'handoff') {
+      startScheduledScrollFor(currentAtStart.incoming.fieldId);
+    } else if (currentAtStart.phase === 'reposition') {
+      startScheduledScrollFor(currentAtStart.active.fieldId);
     }
     animation.start(({finished}) => {
       if (!finished) return;
@@ -752,11 +899,14 @@ const InputSurfaceFrameContents = ({
     startScheduledScrollFor,
   ]);
 
-  useLayoutEffect(() => () => {
-    animationRef.current?.stop();
-    progress.stopAnimation();
-    scheduledScrollStartRef.current = null;
-  }, [progress]);
+  useLayoutEffect(
+    () => () => {
+      animationRef.current?.stop();
+      progress.stopAnimation();
+      scheduledScrollStartRef.current = null;
+    },
+    [progress],
+  );
 
   const animatedOffset = useMemo((): number | Animated.AnimatedInterpolation<number> => {
     switch (presentation.phase) {
@@ -772,67 +922,99 @@ const InputSurfaceFrameContents = ({
     }
   }, [presentation, presentationOffsetY, progress]);
 
-  const renderedLayers = useMemo(() => {
-    type RenderedLayer = Readonly<{
-      readonly snapshot: InputKeyboardSnapshot;
-      readonly layerKey: string;
-      readonly translateY: number | Animated.AnimatedInterpolation<number>;
-      readonly interactive?: boolean;
-      readonly hidden?: boolean;
-      readonly suffix?: string;
-      readonly onLayout?: (event: LayoutChangeEvent) => void;
-    }>;
-    type KeyboardLayerRenderInput = Readonly<{
-      readonly snapshot: InputKeyboardSnapshot;
-      readonly translateY: number | Animated.AnimatedInterpolation<number>;
-      readonly layerKey: string;
-      readonly options?: Omit<RenderedLayer, 'snapshot' | 'translateY' | 'layerKey'>;
-    }>;
-    const layer = ({snapshot, translateY, layerKey, options = {}}: KeyboardLayerRenderInput): RenderedLayer => ({snapshot, translateY, layerKey, ...options});
+  type RenderedLayer = Readonly<{
+    readonly snapshot: InputKeyboardSnapshot;
+    readonly layerKey: string;
+    readonly translateY: number | Animated.AnimatedInterpolation<number>;
+    readonly interactive?: boolean;
+    readonly hidden?: boolean;
+    readonly suffix?: string;
+    readonly measureSnapshot?: InputKeyboardSnapshot;
+  }>;
+  const renderedLayers = useMemo<RenderedLayer[]>(() => {
     switch (presentation.phase) {
-      case 'idle': return [] as RenderedLayer[];
-      case 'measure': return [
-        ...presentation.outgoing.map((item, index) => layer({snapshot: item.snapshot, translateY: item.translateY, layerKey: item.layerKey, options: {suffix: `outgoing-${index}`}})),
-        layer({snapshot: presentation.incoming, translateY: presentation.incoming.height, layerKey: `incoming:${presentation.incoming.fieldId}:${presentation.incoming.layout}`, options: {
-          hidden: true,
-          suffix: 'measure',
-          onLayout: onKeyboardLayout(presentation.incoming),
-        }}),
-      ];
-      case 'enter': return [layer({
-        snapshot: presentation.incoming,
-        translateY: animatedInterpolation(progress, [0, 1], [presentation.incoming.height, 0]),
-        layerKey: `incoming:${presentation.incoming.fieldId}:${presentation.incoming.layout}`,
-      })];
-      case 'display': return [layer({snapshot: presentation.active, translateY: 0, layerKey: `active:${presentation.active.fieldId}:${presentation.active.layout}`, options: {
-        interactive: state.visible && state.activeFieldId === presentation.active.fieldId,
-        onLayout: onKeyboardLayout(presentation.active),
-      }})];
-      case 'handoff': return [
-        layer({snapshot: presentation.incoming, translateY: animatedInterpolation(progress, presentation.track.inputRange, presentation.track.incomingTranslateY), layerKey: `incoming:${presentation.incoming.fieldId}:${presentation.incoming.layout}`}),
-        ...presentation.outgoing.map((item, index) => layer({
+      case 'idle':
+        return [] as RenderedLayer[];
+      case 'measure':
+        return [
+          ...presentation.outgoing.map((item, index) => ({
+            snapshot: item.snapshot,
+            translateY: item.translateY,
+            layerKey: item.layerKey,
+            suffix: `outgoing-${index}`,
+          })),
+          {
+            snapshot: presentation.incoming,
+            translateY: presentation.incoming.height,
+            layerKey: `incoming:${presentation.incoming.fieldId}:${presentation.incoming.layout}`,
+            hidden: true,
+            suffix: 'measure',
+            measureSnapshot: presentation.incoming,
+          },
+        ];
+      case 'enter':
+        return [
+          {
+            snapshot: presentation.incoming,
+            translateY: animatedInterpolation(progress, [0, 1], [presentation.incoming.height, 0]),
+            layerKey: `incoming:${presentation.incoming.fieldId}:${presentation.incoming.layout}`,
+          },
+        ];
+      case 'display':
+        return [
+          {
+            snapshot: presentation.active,
+            translateY: 0,
+            layerKey: `active:${presentation.active.fieldId}:${presentation.active.layout}`,
+            interactive: state.visible && state.activeFieldId === presentation.active.fieldId,
+            measureSnapshot: presentation.active,
+          },
+        ];
+      case 'handoff':
+        return [
+          {
+            snapshot: presentation.incoming,
+            translateY: animatedInterpolation(
+              progress,
+              presentation.track.inputRange,
+              presentation.track.incomingTranslateY,
+            ),
+            layerKey: `incoming:${presentation.incoming.fieldId}:${presentation.incoming.layout}`,
+          },
+          ...presentation.outgoing.map((item, index) => ({
+            snapshot: item.snapshot,
+            translateY: animatedInterpolation(
+              progress,
+              presentation.track.inputRange,
+              presentation.track.outgoingTranslateY.map(shift => item.translateY + shift),
+            ),
+            layerKey: item.layerKey,
+            suffix: `outgoing-${index}`,
+          })),
+        ];
+      case 'exit':
+        return presentation.outgoing.map((item, index) => ({
           snapshot: item.snapshot,
           translateY: animatedInterpolation(
             progress,
-            presentation.track.inputRange,
-            presentation.track.outgoingTranslateY.map(shift => item.translateY + shift),
+            [0, 1],
+            [item.translateY, item.translateY + presentation.obstructionHeight],
           ),
           layerKey: item.layerKey,
-          options: {suffix: `outgoing-${index}`},
-        })),
-      ];
-      case 'exit': return presentation.outgoing.map((item, index) => layer({
-        snapshot: item.snapshot,
-        translateY: animatedInterpolation(progress, [0, 1], [item.translateY, item.translateY + presentation.obstructionHeight]),
-        layerKey: item.layerKey,
-        options: {suffix: `outgoing-${index}`},
-      }));
-      case 'reposition': return [layer({snapshot: presentation.active, translateY: 0, layerKey: `active:${presentation.active.fieldId}:${presentation.active.layout}`, options: {
-        interactive: state.visible && state.activeFieldId === presentation.active.fieldId,
-        onLayout: onKeyboardLayout(presentation.active),
-      }})];
+          suffix: `outgoing-${index}`,
+        }));
+      case 'reposition':
+        return [
+          {
+            snapshot: presentation.active,
+            translateY: 0,
+            layerKey: `active:${presentation.active.fieldId}:${presentation.active.layout}`,
+            interactive: state.visible && state.activeFieldId === presentation.active.fieldId,
+            measureSnapshot: presentation.active,
+          },
+        ];
     }
-  }, [onKeyboardLayout, presentation, progress, state.activeFieldId, state.visible]);
+  }, [presentation, progress, state.activeFieldId, state.visible]);
 
   const hitShield = useMemo(() => {
     switch (presentation.phase) {
@@ -859,18 +1041,20 @@ const InputSurfaceFrameContents = ({
         const height = presentation.obstructionHeight;
         return {height, translateY: animatedInterpolation(progress, [0, 1], [0, height])};
       }
-      default: return null;
+      default:
+        return null;
     }
   }, [presentation, progress]);
 
-  const surfaceInteractionProps = typeof document === 'undefined'
+  const surfaceInteractionProps =
+    typeof document === 'undefined'
       ? {
-        onTouchStart: rememberSurfaceTouchStart,
-        onTouchEnd: dismissFromSurfaceTouchEnd,
-      }
-    : {
-        onClick: dismissFromSurfaceClick,
-      };
+          onTouchStart: rememberSurfaceTouchStart,
+          onTouchEnd: dismissFromSurfaceTouchEnd,
+        }
+      : {
+          onClick: dismissFromSurfaceClick,
+        };
   const consumeKeyboardAreaTouch = useCallback(() => true, []);
   const finishKeyboardAreaTouch = useCallback((event: GestureResponderEvent) => event.stopPropagation(), []);
 
@@ -878,11 +1062,7 @@ const InputSurfaceFrameContents = ({
     <InputSurfaceGeometryContext.Provider value={geometry}>
       <SurfacePresentationOffsetProvider offset={animatedOffset}>
         {/* Passive touch/click observation keeps ScrollView and business descendants' responder negotiation intact. */}
-        <View
-          testID="ui.base.input:surface-content"
-          style={styles.content}
-          {...surfaceInteractionProps}
-        >
+        <View testID="ui.base.input:surface-content" style={styles.content} {...surfaceInteractionProps}>
           {children}
           {showUnsupportedNotice ? (
             <PrimitiveStatus testID="ui.base.input:unsupported-size">
@@ -894,14 +1074,15 @@ const InputSurfaceFrameContents = ({
       {frameMetrics?.ready === true ? (
         <View
           testID="ui.base.input:keyboard-overlay"
-          style={[styles.keyboardOverlay, {pointerEvents: Platform?.OS === 'web' ? 'none' : 'box-none'}]}
+          style={[styles.keyboardOverlay, {pointerEvents: Platform.OS === 'web' ? 'none' : 'box-none'}]}
         >
-          {renderedLayers.map((item, index) => {
-            const interactive = item.interactive === true
-              && presentation.phase !== 'enter'
-              && presentation.phase !== 'handoff'
-              && presentation.phase !== 'exit'
-              && presentation.phase !== 'measure';
+          {renderedLayers.map(item => {
+            const interactive =
+              item.interactive === true &&
+              presentation.phase !== 'enter' &&
+              presentation.phase !== 'handoff' &&
+              presentation.phase !== 'exit' &&
+              presentation.phase !== 'measure';
             return (
               <Animated.View
                 key={item.layerKey}
@@ -909,10 +1090,19 @@ const InputSurfaceFrameContents = ({
                 nativeID={item.layerKey}
                 accessibilityElementsHidden={!interactive || item.hidden === true}
                 importantForAccessibility={interactive ? 'auto' : 'no-hide-descendants'}
-                onLayout={item.onLayout}
+                onLayout={
+                  item.measureSnapshot === undefined
+                    ? undefined
+                    : event => onKeyboardLayout(item.measureSnapshot!, event)
+                }
                 style={[
                   styles.keyboardLayer,
-                  {width: item.snapshot.frameWidth, pointerEvents: interactive ? 'auto' : 'none', transform: [{translateY: item.translateY}], opacity: item.hidden ? 0 : 1},
+                  {
+                    width: item.snapshot.frameWidth,
+                    pointerEvents: interactive ? 'auto' : 'none',
+                    transform: [{translateY: item.translateY}],
+                    opacity: item.hidden ? 0 : 1,
+                  },
                 ]}
               >
                 <InputKeyboard snapshot={item.snapshot} interactive={interactive} testIDSuffix={item.suffix} />
@@ -930,7 +1120,10 @@ const InputSurfaceFrameContents = ({
               {...(typeof document === 'undefined'
                 ? {}
                 : {onClick: (event: Readonly<{readonly stopPropagation: () => void}>) => event.stopPropagation()})}
-              style={[styles.keyboardHitShield, {height: hitShield.height, pointerEvents: 'auto', transform: [{translateY: hitShield.translateY}]}]}
+              style={[
+                styles.keyboardHitShield,
+                {height: hitShield.height, pointerEvents: 'auto', transform: [{translateY: hitShield.translateY}]},
+              ]}
             />
           ) : null}
         </View>

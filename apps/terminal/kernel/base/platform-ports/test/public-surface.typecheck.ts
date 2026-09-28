@@ -167,7 +167,10 @@ const completeResult = <TValue>(value: TValue): PortResult<TValue> => ({
   value,
   completedAt: timestamp,
 });
-const unavailableResultFor = <TValue>(port: 'persistSecure' | 'device' | 'appControl' | 'script' | 'connector' | 'hotUpdate' | 'logUpload' | 'topologyHost', capability: string): PortResult<TValue> => ({
+const unavailableResultFor = <TValue>(
+  port: 'persistSecure' | 'device' | 'appControl' | 'script' | 'connector' | 'hotUpdate' | 'logUpload' | 'topologyHost',
+  capability: string,
+): PortResult<TValue> => ({
   status: 'unavailable',
   port,
   capability,
@@ -237,12 +240,22 @@ const completeDevice: DevicePort = {
   unsubscribePowerStatus: async () => completeResult(noOutput),
 };
 const completeAppControl: AppControlPort = {
-  resetRuntime: async (input) => ({status: 'accepted', requestId: input.requestId, acceptedAt: timestamp, terminalObservation: 'SUCCESSOR_RUNTIME_STARTED'}),
-  exitApplication: async (input) => ({status: 'accepted', requestId: input.requestId, acceptedAt: timestamp, terminalObservation: 'PROCESS_TERMINATED'}),
+  resetRuntime: async input => ({
+    status: 'accepted',
+    requestId: input.requestId,
+    acceptedAt: timestamp,
+    terminalObservation: 'SUCCESSOR_RUNTIME_STARTED',
+  }),
+  exitApplication: async input => ({
+    status: 'accepted',
+    requestId: input.requestId,
+    acceptedAt: timestamp,
+    terminalObservation: 'PROCESS_TERMINATED',
+  }),
   clearHostDataCache: async () => completeResult(noOutput),
-  setFullscreen: async (input) => completeResult({enabled: input.enabled}),
+  setFullscreen: async input => completeResult({enabled: input.enabled}),
   getFullscreen: async () => completeResult({enabled: false}),
-  setKioskMode: async (input) => completeResult({enabled: input.enabled}),
+  setKioskMode: async input => completeResult({enabled: input.enabled}),
   getKioskMode: async () => completeResult({enabled: false}),
   showNativeLoading: async () => completeResult(noOutput),
   hideNativeLoading: async () => completeResult(noOutput),
@@ -253,10 +266,16 @@ const completeScript: ScriptPort = {
   clearStats: async () => completeResult(noOutput),
 };
 const completeConnector: ConnectorPort = {
-  call: async <TRequest extends ConnectorObject, TResponse extends ConnectorValue>(input: ConnectorCallRequest<TRequest>): Promise<PortResult<ConnectorCallResponse<TResponse>>> => unavailableResultFor('connector', 'call'),
-  subscribe: async <TMessage extends ConnectorValue>(input: ConnectorSubscribeInput<TMessage>): Promise<PortResult<ConnectorSubscription>> => unavailableResultFor('connector', 'subscribe'),
+  call: async <TRequest extends ConnectorObject, TResponse extends ConnectorValue>(
+    input: ConnectorCallRequest<TRequest>,
+  ): Promise<PortResult<ConnectorCallResponse<TResponse>>> => unavailableResultFor('connector', 'call'),
+  subscribe: async <TMessage extends ConnectorValue>(
+    input: ConnectorSubscribeInput<TMessage>,
+  ): Promise<PortResult<ConnectorSubscription>> => unavailableResultFor('connector', 'subscribe'),
   unsubscribe: async (input: ConnectorUnsubscribeInput) => unavailableResultFor<NoOutput>('connector', 'unsubscribe'),
-  on: async <TEvent extends ConnectorValue>(input: ConnectorOnInput<TEvent>): Promise<PortResult<ConnectorSubscription>> => unavailableResultFor('connector', 'on'),
+  on: async <TEvent extends ConnectorValue>(
+    input: ConnectorOnInput<TEvent>,
+  ): Promise<PortResult<ConnectorSubscription>> => unavailableResultFor('connector', 'on'),
 };
 const completeHotUpdate: HotUpdatePort = {
   downloadPackage: async () => unavailableResultFor('hotUpdate', 'downloadPackage'),
@@ -385,14 +404,14 @@ const connectorEvent: ConnectorEvent<{readonly ok: boolean}> = {
 };
 const connectorOnInput: ConnectorOnInput<{readonly ok: boolean}> = {
   eventName: 'fixture',
-  handler: (event) => void event,
-  onError: (error) => void error,
+  handler: event => void event,
+  onError: error => void error,
   timeoutMs: 50,
 };
 const connectorSubscribeInput: ConnectorSubscribeInput<{readonly ok: boolean}> = {
   channel: {channelKey: 'fixture'},
-  onMessage: (message) => void message,
-  onError: (error) => void error,
+  onMessage: message => void message,
+  onError: error => void error,
   timeoutMs: 50,
 };
 const connectorUnsubscribeInput: ConnectorUnsubscribeInput = {subscriptionId: 'sub_fixture', timeoutMs: 50};
@@ -401,7 +420,7 @@ const subscription: ConnectorSubscription = {subscriptionId: 'sub_fixture'};
 const namedBindings: ScriptNativeBindings = {
   kind: 'named',
   functionNames: ['read'],
-  invoke: async (input) => {
+  invoke: async input => {
     const functionName: string = input.functionName;
     const argsJson: string = input.argsJson;
     void functionName;
@@ -432,11 +451,11 @@ void wrongUploadInput;
 
 const fullConnectorOnInput: ConnectorOnInput<{readonly ok: boolean}> = {
   eventName: 'fixture',
-  handler: (event) => {
+  handler: event => {
     const ok: boolean = event.payload.ok;
     void ok;
   },
-  onError: (error) => {
+  onError: error => {
     const errorCode: string = error.error.code;
     void errorCode;
   },
@@ -444,13 +463,13 @@ const fullConnectorOnInput: ConnectorOnInput<{readonly ok: boolean}> = {
 };
 const fullConnectorSubscribeInput: ConnectorSubscribeInput<{readonly ok: boolean}> = {
   channel: {channelKey: 'fixture'},
-  onMessage: (message) => {
+  onMessage: message => {
     const sequence: number = message.sequence;
     const ok: boolean = message.payload.ok;
     void sequence;
     void ok;
   },
-  onError: (error) => {
+  onError: error => {
     const errorCode: string = error.error.code;
     void errorCode;
   },
@@ -459,7 +478,7 @@ const fullConnectorSubscribeInput: ConnectorSubscribeInput<{readonly ok: boolean
 // C-4: message payloads are not interchangeable with arbitrary shapes.
 const wrongConnectorOnInput: ConnectorOnInput<{readonly ok: boolean}> = {
   ...fullConnectorOnInput,
-  handler: (event) => {
+  handler: event => {
     // @ts-expect-error The listener payload is the declared {ok:boolean} shape.
     const missing: string = event.payload.missing;
     void missing;

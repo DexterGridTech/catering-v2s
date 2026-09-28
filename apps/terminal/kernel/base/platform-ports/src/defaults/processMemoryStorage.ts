@@ -28,7 +28,8 @@ export const createProcessMemoryStateStoragePort = (): StateStoragePort => {
   };
   const noOutput = (): PortResult<NoOutput> => success({completed: true});
   const port: StateStoragePort = {
-    read: async (input: StateStorageReadInput): Promise<PortResult<StateStorageReadValue>> => success(readValue(input.key)),
+    read: async (input: StateStorageReadInput): Promise<PortResult<StateStorageReadValue>> =>
+      success(readValue(input.key)),
     write: async (input: StateStorageWriteInput): Promise<PortResult<NoOutput>> => {
       values.set(input.key, input.value);
       return noOutput();
@@ -38,7 +39,7 @@ export const createProcessMemoryStateStoragePort = (): StateStoragePort => {
       return noOutput();
     },
     readMany: async (input: StateStorageKeysInput): Promise<PortResult<readonly StateStorageReadEntry[]>> =>
-      success(input.keys.map((key) => ({key, result: readValue(key)}))),
+      success(input.keys.map(key => ({key, result: readValue(key)}))),
     writeMany: async (input: StateStorageEntriesInput): Promise<PortResult<NoOutput>> => {
       for (const entry of input.entries) values.set(entry.key, entry.value);
       return noOutput();
@@ -54,15 +55,17 @@ export const createProcessMemoryStateStoragePort = (): StateStoragePort => {
     },
   };
   Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
-      value: Object.freeze({
-        port: 'persistKv',
-        capabilities: Object.freeze([
-          'read', 'write', 'remove', 'readMany', 'writeMany', 'removeMany', 'listKeys', 'clear',
-        ].map(capability => Object.freeze({capability, state: 'real' as const, source: 'default' as const}))),
-      }),
-      enumerable: false,
-      writable: false,
-      configurable: false,
-    });
+    value: Object.freeze({
+      port: 'persistKv',
+      capabilities: Object.freeze(
+        ['read', 'write', 'remove', 'readMany', 'writeMany', 'removeMany', 'listKeys', 'clear'].map(capability =>
+          Object.freeze({capability, state: 'real' as const, source: 'default' as const}),
+        ),
+      ),
+    }),
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
   return Object.freeze(port);
 };

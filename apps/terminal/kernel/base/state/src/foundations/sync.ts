@@ -1,122 +1,110 @@
-import {type TimestampMs} from '@catering-v2s/kernel-base-contracts'
+import {type TimestampMs} from '@catering-v2s/kernel-base-contracts';
 import type {
   StateRuntimeSyncRecordDescriptor,
   SyncStateDiff,
   SyncStateDiffEntry,
   SyncValueEnvelope,
-} from '../types/sync'
-import type {StateJsonValue} from '../types/value'
-import {isStateJsonValue} from './persistenceCodec'
-import {assertNonEmptyString} from './assertNonEmptyString'
-import {isObject} from './isObject'
+} from '../types/sync';
+import type {StateJsonValue} from '../types/value';
+import {isStateJsonValue} from './persistenceCodec';
+import {assertNonEmptyString} from './assertNonEmptyString';
+import {isObject} from './isObject';
 
-const readProperty = (value: object, key: string): unknown => Reflect.get(value, key)
+const readProperty = (value: object, key: string): unknown => Reflect.get(value, key);
 
-function assertValidSyncDiff(
-  diff: unknown,
-): asserts diff is SyncStateDiff<string, StateJsonValue> {
+function assertValidSyncDiff(diff: unknown): asserts diff is SyncStateDiff<string, StateJsonValue> {
   if (
-    !isObject(diff)
-    || readProperty(diff, 'mode') !== 'authoritative'
-    || typeof readProperty(diff, 'replaceMissing') !== 'boolean'
+    !isObject(diff) ||
+    readProperty(diff, 'mode') !== 'authoritative' ||
+    typeof readProperty(diff, 'replaceMissing') !== 'boolean'
   ) {
-    throw new Error('[state.sync] invalid authoritative sync diff')
+    throw new Error('[state.sync] invalid authoritative sync diff');
   }
-  const entries = readProperty(diff, 'entries')
+  const entries = readProperty(diff, 'entries');
   if (!Array.isArray(entries)) {
-    throw new Error('[state.sync] sync diff entries must be an array')
+    throw new Error('[state.sync] sync diff entries must be an array');
   }
-  const seen = new Set<string>()
+  const seen = new Set<string>();
   for (const entry of entries) {
-    const key = isObject(entry) ? readProperty(entry, 'key') : undefined
-    assertNonEmptyString(key, 'state.sync', 'sync diff entry key')
+    const key = isObject(entry) ? readProperty(entry, 'key') : undefined;
+    assertNonEmptyString(key, 'state.sync', 'sync diff entry key');
     if (seen.has(key)) {
-      throw new Error(`[state.sync] duplicate sync diff entry: ${key}`)
+      throw new Error(`[state.sync] duplicate sync diff entry: ${key}`);
     }
-    seen.add(key)
-    const envelope = readProperty(entry, 'value')
+    seen.add(key);
+    const envelope = readProperty(entry, 'value');
     if (!isObject(envelope) || !Number.isFinite(readProperty(envelope, 'updatedAt'))) {
-      throw new Error(`[state.sync] invalid sync envelope: ${key}`)
+      throw new Error(`[state.sync] invalid sync envelope: ${key}`);
     }
-    const tombstone = readProperty(envelope, 'tombstone')
-    const hasTombstoneField = Object.prototype.hasOwnProperty.call(envelope, 'tombstone')
-    const hasTombstone = tombstone === true
-    const rawValue = readProperty(envelope, 'value')
-    const hasValueField = Object.prototype.hasOwnProperty.call(envelope, 'value')
-    const hasValue = hasValueField && rawValue !== undefined
+    const tombstone = readProperty(envelope, 'tombstone');
+    const hasTombstoneField = Object.prototype.hasOwnProperty.call(envelope, 'tombstone');
+    const hasTombstone = tombstone === true;
+    const rawValue = readProperty(envelope, 'value');
+    const hasValueField = Object.prototype.hasOwnProperty.call(envelope, 'value');
+    const hasValue = hasValueField && rawValue !== undefined;
     if (
-      (hasTombstoneField && !hasTombstone)
-      || (hasValueField && !hasValue)
-      || hasTombstone === hasValue
-      || (hasValue && !isStateJsonValue(rawValue))
+      (hasTombstoneField && !hasTombstone) ||
+      (hasValueField && !hasValue) ||
+      hasTombstone === hasValue ||
+      (hasValue && !isStateJsonValue(rawValue))
     ) {
-      throw new Error(`[state.sync] sync envelope must contain exactly one valid variant: ${key}`)
+      throw new Error(`[state.sync] sync envelope must contain exactly one valid variant: ${key}`);
     }
   }
 }
 
-export function createFullSliceSyncPayload<
-  TState extends object,
-  TKey extends string,
-  TValue extends StateJsonValue,
->(
+export function createFullSliceSyncPayload<TState extends object, TKey extends string, TValue extends StateJsonValue>(
   descriptor: StateRuntimeSyncRecordDescriptor<TState, TKey, TValue>,
   state: Readonly<TState>,
-): Extract<SyncStateDiff<TKey, TValue>, {readonly replaceMissing: true}>
+): Extract<SyncStateDiff<TKey, TValue>, {readonly replaceMissing: true}>;
 export function createFullSliceSyncPayload(
   descriptor: StateRuntimeSyncRecordDescriptor<object, string, StateJsonValue>,
   state: Readonly<object>,
 ): Extract<SyncStateDiff<string, StateJsonValue>, {readonly replaceMissing: true}> {
-  const entries: SyncStateDiffEntry<string, StateJsonValue>[] = []
+  const entries: SyncStateDiffEntry<string, StateJsonValue>[] = [];
   for (const [key, envelope] of Object.entries(descriptor.getEntries(state))) {
     if (envelope !== undefined) {
-      entries.push({key, value: envelope})
+      entries.push({key, value: envelope});
     }
   }
   return {
     mode: 'authoritative',
     replaceMissing: true,
     entries,
-  }
+  };
 }
 
-export function applySliceSyncDiff<
-  TState extends object,
-  TKey extends string,
-  TValue extends StateJsonValue,
->(
+export function applySliceSyncDiff<TState extends object, TKey extends string, TValue extends StateJsonValue>(
   descriptor: StateRuntimeSyncRecordDescriptor<TState, TKey, TValue>,
   state: Readonly<TState>,
   diff: SyncStateDiff<TKey, TValue>,
-): TState
+): TState;
 export function applySliceSyncDiff(
   descriptor: StateRuntimeSyncRecordDescriptor<object, string, StateJsonValue>,
   state: Readonly<object>,
   diff: SyncStateDiff<string, StateJsonValue>,
 ): object {
-  assertValidSyncDiff(diff)
-  const current = descriptor.getEntries(state)
-  const next: Partial<Record<string, SyncValueEnvelope<StateJsonValue>>> = {}
+  assertValidSyncDiff(diff);
+  const current = descriptor.getEntries(state);
+  const next: Partial<Record<string, SyncValueEnvelope<StateJsonValue>>> = {};
   if (!diff.replaceMissing) {
     for (const [key, value] of Object.entries(current)) {
       if (value !== undefined) {
-        next[key] = value
+        next[key] = value;
       }
     }
   }
   for (const entry of diff.entries) {
     if (entry.value.tombstone === true) {
-      Reflect.deleteProperty(next, entry.key)
-      continue
+      Reflect.deleteProperty(next, entry.key);
+      continue;
     }
-    next[entry.key] = entry.value
+    next[entry.key] = entry.value;
   }
-  return descriptor.applyEntries(state, next)
+  return descriptor.applyEntries(state, next);
 }
 
-export const createSyncTombstone = (
-  updatedAt: TimestampMs,
-): SyncValueEnvelope<never> => ({
+export const createSyncTombstone = (updatedAt: TimestampMs): SyncValueEnvelope<never> => ({
   updatedAt,
   tombstone: true,
-})
+});

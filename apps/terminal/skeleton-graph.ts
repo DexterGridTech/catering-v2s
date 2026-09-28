@@ -61,7 +61,15 @@ export const skeletonGraph = {
   'ui.base.render': {
     batch: 1,
     plannedKind: 'toolkit',
-    dependencies: ['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.runtime', 'kernel.base.state', 'kernel.base.display-context', 'kernel.base.ui-state', 'ui.base.primitives'],
+    dependencies: [
+      'kernel.base.contracts',
+      'kernel.base.platform-ports',
+      'kernel.base.runtime',
+      'kernel.base.state',
+      'kernel.base.display-context',
+      'kernel.base.ui-state',
+      'ui.base.primitives',
+    ],
     devDependencies: [],
   },
   'ui.base.integration-assembly': {
@@ -95,10 +103,7 @@ export const skeletonGraph = {
   'ui.base.input': {
     batch: 2,
     plannedKind: 'owner',
-    dependencies: [
-      'ui.base.render',
-      'ui.base.primitives',
-    ],
+    dependencies: ['ui.base.render', 'ui.base.primitives'],
     devDependencies: [],
   },
   'ui.base.admin-shell': {
@@ -121,11 +126,7 @@ export const skeletonGraph = {
   'ui.base.dev-host': {
     batch: 1,
     plannedKind: 'toolkit',
-    dependencies: [
-      'kernel.base.contracts',
-      'kernel.base.display-context',
-      'kernel.base.platform-ports',
-    ],
+    dependencies: ['kernel.base.contracts', 'kernel.base.display-context', 'kernel.base.platform-ports'],
     devDependencies: [],
   },
   'kernel.feature.sample-staff-session': {
@@ -207,7 +208,7 @@ export const skeletonGraph = {
       'ui.base.admin-shell',
       'ui.base.integration-assembly',
     ],
-    devDependencies: ['ui.base.dev-host'],
+    devDependencies: ['ui.base.dev-host', 'ui.base.primitives'],
   },
   'ui.integration.sample-wallpaper-console': {
     batch: 2,
@@ -283,6 +284,6 @@ export const skeletonGraph = {
       'adapter.android.persist-kv',
       'kernel.base.transport',
     ],
-    devDependencies: [],
+    devDependencies: ['ui.base.primitives'],
   },
 } as const;

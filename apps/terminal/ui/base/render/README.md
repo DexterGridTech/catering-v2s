@@ -79,6 +79,10 @@ render 只发出生命周期事件，不读取 input 的 active field 或 keyboa
 `SurfaceRoot` 可选接收 `renderContentFrame({content})`。默认路径仍将 assembly children、
 `ScreenContainer` 与 `LayerStack` 放在一个 `flex: 1` content subtree；frame consumer 可以把这个
 content subtree 与自己的底部 sibling 放入同一 surface frame，而不让 render 反向依赖 input。
+每个已解析 screen、每个 LayerStack layer 与 SurfaceRoot content 子树均由独立 `react-error-boundary`
+边界保护。边界只记录 owner ID 与 error name，并显示唯一 `SystemFailureNotice`；“知道了”只派发
+runtime reset command，由 runtime actor 调用 `appControl.resetRuntime`。首屏错误以 `contentFailure=render-error`
+完成 startup readiness，但不报告真实业务 part ready；AdminLauncher 位于 outer boundary 外。
 当 assembly 在 `RenderProvider`/`SurfaceRoot` 建立前被拒绝时，App 只能把失败原因与物理
 `displayIndex` 交给 `StandaloneStartupFailurePage`；该页面仍由本包拥有固定 failure testID、
 文案与 alert 语义，并只对物理 PRIMARY 调用注入的 `NativeLoadingCapability.hideOnce('startup-failure')`。
@@ -91,7 +95,7 @@ App 不得自绘第二套失败页或自行决定 splash 收起时机。
 - `src/foundations`：安装期 catalog、快照与解析基础设施；
 - `src/contexts`、`src/hooks`：只读 React 接缝；
 - `src/components`：Provider、SurfaceRoot、ScreenContainer 与 LayerStack；
-- `test`：Vitest 的 `.ts`/`.tsx` 行为测试，使用 `react-test-renderer`；
+- `test`：Vitest 的 `.ts`/`.tsx` 行为测试，使用 React Native Testing Library v14 与仓内 renderer 测试桩；
 - `vitest.config.ts`：显式收集 `.test.ts` 与 `.test.tsx`。
 
 本包的生产测试命令由 `tools/terminal-shared/run-owned-tests.mjs` 托管。跨包 catalog 契约测试真实调用

@@ -1,7 +1,7 @@
-import {useEffect, useMemo, useState, useSyncExternalStore, type ReactNode} from 'react'
-import {PixelRatio, StyleSheet, View} from 'react-native'
-import {PrimitiveSpinner} from '@catering-v2s/ui-base-primitives'
-import {useRenderContext} from '../contexts/RenderContext'
+import {useEffect, useMemo, useState, useSyncExternalStore, type ReactNode} from 'react';
+import {PixelRatio, StyleSheet, View} from 'react-native';
+import {PrimitiveSpinner} from '@catering-v2s/ui-base-primitives';
+import {useRenderContext} from '../contexts/RenderContext';
 import {
   calculateSurfaceHostGeometry,
   type SurfaceCanvasDeclaration,
@@ -9,73 +9,83 @@ import {
   type SurfaceHostGeometry,
   type SurfaceHostSnapshot,
   type SurfaceHostSource,
-} from '../foundations/surfaceHost'
+} from '../foundations/surfaceHost';
 
 export type SurfaceHostControllerProps = Readonly<{
-  readonly canvas: SurfaceCanvasDeclaration
-  readonly source?: SurfaceHostSource
-  readonly snapshot?: SurfaceHostSnapshot | null
-  readonly children?: ReactNode
-}>
+  readonly canvas: SurfaceCanvasDeclaration;
+  readonly source?: SurfaceHostSource;
+  readonly snapshot?: SurfaceHostSnapshot | null;
+  readonly children?: ReactNode;
+}>;
 
-const subscribeToNothing = (_listener: (snapshot: SurfaceHostSnapshot | null) => void): (() => void) => () => undefined
-const readNoSnapshot = (): null => null
-const subscribeToNoAvailability = (_listener: (availability: SurfaceHostAvailability) => void): (() => void) => () => undefined
-const readNoAvailability = (): undefined => undefined
+const subscribeToNothing =
+  (_listener: (snapshot: SurfaceHostSnapshot | null) => void): (() => void) =>
+  () =>
+    undefined;
+const readNoSnapshot = (): null => null;
+const subscribeToNoAvailability =
+  (_listener: (availability: SurfaceHostAvailability) => void): (() => void) =>
+  () =>
+    undefined;
+const readNoAvailability = (): undefined => undefined;
 
 export const useSurfaceHostSnapshot = (
   source: SurfaceHostSource | undefined,
 ): SurfaceHostSnapshot | null | undefined => {
-  const subscribe = source?.subscribe ?? subscribeToNothing
-  const getSnapshot = source?.getSnapshot ?? readNoSnapshot
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
-  return source === undefined ? undefined : snapshot
-}
+  const subscribe = source?.subscribe ?? subscribeToNothing;
+  const getSnapshot = source?.getSnapshot ?? readNoSnapshot;
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return source === undefined ? undefined : snapshot;
+};
 
 export const useSurfaceHostAvailability = (
   source: SurfaceHostSource | undefined,
 ): SurfaceHostAvailability | undefined => {
-  const subscribe = source?.subscribeAvailability ?? subscribeToNoAvailability
-  const getSnapshot = source?.getAvailability ?? readNoAvailability
-  const availability = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
-  return source?.getAvailability === undefined ? undefined : availability
-}
+  const subscribe = source?.subscribeAvailability ?? subscribeToNoAvailability;
+  const getSnapshot = source?.getAvailability ?? readNoAvailability;
+  const availability = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return source?.getAvailability === undefined ? undefined : availability;
+};
 
-const staticGeometryOf = (canvas: SurfaceCanvasDeclaration): SurfaceHostGeometry => Object.freeze({
+const staticGeometryOf = (canvas: SurfaceCanvasDeclaration): SurfaceHostGeometry =>
+  Object.freeze({
+    canvas,
+    host: canvas,
+    scaleX: 1,
+    scaleY: 1,
+  });
+
+export const SurfaceHostController = ({
   canvas,
-  host: canvas,
-  scaleX: 1,
-  scaleY: 1,
-})
-
-export const SurfaceHostController = ({canvas, source, snapshot: controlledSnapshot, children}: SurfaceHostControllerProps) => {
-  const {logger} = useRenderContext()
+  source,
+  snapshot: controlledSnapshot,
+  children,
+}: SurfaceHostControllerProps) => {
+  const {logger} = useRenderContext();
   const [internalSnapshot, setInternalSnapshot] = useState<SurfaceHostSnapshot | null>(
     () => source?.getSnapshot() ?? null,
-  )
+  );
 
   useEffect(() => {
-    if (controlledSnapshot !== undefined) return undefined
+    if (controlledSnapshot !== undefined) return undefined;
     if (source === undefined) {
-      setInternalSnapshot(null)
-      return undefined
+      setInternalSnapshot(null);
+      return undefined;
     }
-    setInternalSnapshot(source.getSnapshot())
-    return source.subscribe(setInternalSnapshot)
-  }, [controlledSnapshot, source])
+    setInternalSnapshot(source.getSnapshot());
+    return source.subscribe(setInternalSnapshot);
+  }, [controlledSnapshot, source]);
 
-  const snapshot = controlledSnapshot === undefined ? internalSnapshot : controlledSnapshot
-  const explicitAvailability = useSurfaceHostAvailability(source)
-  const availability = explicitAvailability ?? (snapshot === null ? 'pending' : 'ready')
+  const snapshot = controlledSnapshot === undefined ? internalSnapshot : controlledSnapshot;
+  const explicitAvailability = useSurfaceHostAvailability(source);
+  const availability = explicitAvailability ?? (snapshot === null ? 'pending' : 'ready');
 
   const geometry = useMemo(
-    () => source === undefined
-      ? staticGeometryOf(canvas)
-      : calculateSurfaceHostGeometry({canvas, snapshot}),
+    () => (source === undefined ? staticGeometryOf(canvas) : calculateSurfaceHostGeometry({canvas, snapshot})),
     [canvas, snapshot, source],
-  )
+  );
   useEffect(() => {
-    if (!__DEV__) return
+    if (!__DEV__) return;
     logger.info({
       category: 'display-diagnostics',
       event: 'render.surface-host-layout',
@@ -96,8 +106,8 @@ export const SurfaceHostController = ({canvas, source, snapshot: controlledSnaps
         fontScale: PixelRatio.getFontScale(),
         units: 'logical-layout-unit',
       },
-    })
-  }, [canvas.height, canvas.width, geometry, logger, source])
+    });
+  }, [canvas.height, canvas.width, geometry, logger, source]);
 
   if (geometry === null) {
     if (availability === 'unavailable') {
@@ -105,7 +115,7 @@ export const SurfaceHostController = ({canvas, source, snapshot: controlledSnaps
         <View testID="ui-base-render:surface-host-failure" style={styles.viewport}>
           {children}
         </View>
-      )
+      );
     }
     return (
       <View
@@ -114,12 +124,9 @@ export const SurfaceHostController = ({canvas, source, snapshot: controlledSnaps
         accessibilityRole="progressbar"
         accessibilityLabel="正在准备显示面"
       >
-        <PrimitiveSpinner
-          testID="ui-base-render:surface-host-loading-indicator"
-          accessibilityLabel="正在准备显示面"
-        />
+        <PrimitiveSpinner testID="ui-base-render:surface-host-loading-indicator" accessibilityLabel="正在准备显示面" />
       </View>
-    )
+    );
   }
 
   return (
@@ -138,8 +145,8 @@ export const SurfaceHostController = ({canvas, source, snapshot: controlledSnaps
         {children}
       </View>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   viewport: {
@@ -155,4 +162,4 @@ const styles = StyleSheet.create({
     position: 'relative',
     transformOrigin: 'top left',
   },
-})
+});

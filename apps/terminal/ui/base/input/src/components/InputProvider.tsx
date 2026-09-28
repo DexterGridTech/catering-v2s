@@ -1,5 +1,9 @@
 import {useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
-import {calculateVirtualKeyboardMetrics, type KeyboardCapacity, type LocalFrameMetrics} from '../foundations/keyboardHeight';
+import {
+  calculateVirtualKeyboardMetrics,
+  type KeyboardCapacity,
+  type LocalFrameMetrics,
+} from '../foundations/keyboardHeight';
 import {
   InputControllerContext,
   InputFieldKeyboardStateContext,
@@ -10,13 +14,19 @@ import {FocusBoundaryBridge} from './FocusBoundaryBridge';
 import {useInputFieldRegistry} from '../hooks/useInputFieldRegistry';
 import {useInputFocusController} from '../hooks/useInputFocusController';
 import {useInputKeyboardController} from '../hooks/useInputKeyboardController';
-import type {
-  InputController,
-  InputFieldKeyboardState,
-  InputFieldController,
-  InputKeyboardState,
-} from '../types/types';
-import type {KeyboardStateBase} from '../hooks/inputProviderTypes';
+import type {InputController, InputFieldKeyboardState, InputFieldController, InputKeyboardState} from '../types/types';
+import type {KeyboardStateBase, MutableFieldController} from '../hooks/inputProviderTypes';
+
+type InputProviderRenderSnapshot = Readonly<{
+  readonly keyboard: KeyboardStateBase;
+  readonly blockedFieldId: string | null;
+  readonly blockedCapacity: KeyboardCapacity | null;
+  readonly fields: readonly Readonly<{
+    readonly fieldId: string;
+    readonly layout: InputFieldController['layout'];
+    readonly shift: boolean;
+  }>[];
+}>;
 
 type EventTargetLike = Readonly<{
   readonly parentElement?: unknown;
@@ -37,8 +47,8 @@ const eventTargetMatchesField = (field: InputFieldController, target: unknown): 
     if (testID === field.testID) return true;
     const inputAncestor = node.closest?.('input,textarea');
     if (inputAncestor !== null && inputAncestor !== undefined && typeof inputAncestor === 'object') {
-      const inputNodeTestID = (inputAncestor as EventTargetLike).testID
-        ?? (inputAncestor as EventTargetLike).getAttribute?.('data-testid');
+      const inputNodeTestID =
+        (inputAncestor as EventTargetLike).testID ?? (inputAncestor as EventTargetLike).getAttribute?.('data-testid');
       if (inputNodeTestID === field.testID) return true;
     }
     const next = node.parentElement ?? node.parentNode;
@@ -55,7 +65,9 @@ export type InputProviderProps = Readonly<{
 
 export const InputProvider = ({frameMetrics, children}: InputProviderProps) => {
   const frameMetricsRef = useRef<LocalFrameMetrics | null>(frameMetrics);
-  frameMetricsRef.current = frameMetrics;
+  useLayoutEffect(() => {
+    frameMetricsRef.current = frameMetrics;
+  }, [frameMetrics]);
   const keyboardStateRef = useRef<KeyboardStateBase>({
     activeFieldId: null,
     owner: 'none',
@@ -64,7 +76,26 @@ export const InputProvider = ({frameMetrics, children}: InputProviderProps) => {
   });
   const blockedFieldIdRef = useRef<string | null>(null);
   const blockedCapacityRef = useRef<KeyboardCapacity | null>(null);
-  const [, forceKeyboardUpdate] = useState(0);
+  const fieldsRef = useRef(new Map<string, MutableFieldController>());
+  const [renderSnapshot, setRenderSnapshot] = useState<InputProviderRenderSnapshot>(() => ({
+    keyboard: {activeFieldId: null, owner: 'none', layout: 'numeric', revision: 0},
+    blockedFieldId: null,
+    blockedCapacity: null,
+    fields: [],
+  }));
+  const publishRenderSnapshot = useCallback(() => {
+    setRenderSnapshot({
+      keyboard: {...keyboardStateRef.current},
+      blockedFieldId: blockedFieldIdRef.current,
+      blockedCapacity: blockedCapacityRef.current,
+      fields: Array.from(fieldsRef.current.values(), field => ({
+        fieldId: field.fieldId,
+        layout: field.layout,
+        shift: field.getEditState().shift,
+      })),
+    });
+  }, []);
+  const forceKeyboardUpdate = publishRenderSnapshot;
 
   const commitKeyboardState = useCallback(
     (
@@ -79,9 +110,9 @@ export const InputProvider = ({frameMetrics, children}: InputProviderProps) => {
         ...next,
         revision: previous.revision + 1,
       };
-      forceKeyboardUpdate(value => value + 1);
+      publishRenderSnapshot();
     },
-    [],
+    [publishRenderSnapshot],
   );
 
   const notifyRegistryChange = useCallback(() => {
@@ -97,35 +128,35 @@ export const InputProvider = ({frameMetrics, children}: InputProviderProps) => {
     if (blockedFieldIdRef.current === null && blockedCapacityRef.current === null) return;
     blockedFieldIdRef.current = null;
     blockedCapacityRef.current = null;
-    forceKeyboardUpdate(value => value + 1);
-  }, []);
+    publishRenderSnapshot();
+  }, [publishRenderSnapshot]);
 
-  const markBlockedField = useCallback((fieldId: string, capacity: KeyboardCapacity | null) => {
-    blockedFieldIdRef.current = fieldId;
-    blockedCapacityRef.current = capacity;
-    forceKeyboardUpdate(value => value + 1);
-  }, []);
+  const markBlockedField = useCallback(
+    (fieldId: string, capacity: KeyboardCapacity | null) => {
+      blockedFieldIdRef.current = fieldId;
+      blockedCapacityRef.current = capacity;
+      publishRenderSnapshot();
+    },
+    [publishRenderSnapshot],
+  );
 
   const fieldRegistry = useInputFieldRegistry({
+    fieldsRef,
     commitKeyboardState,
     notifyRegistryChange,
     keyboardStateRef,
     blockedFieldIdRef,
     blockedCapacityRef,
   });
-  const {
-    fieldsRef,
-    registerField,
-    unregisterField,
-    updateValue,
-    updateSelection,
-    updateFieldConfig,
-    captureInputSnapshot,
-  } = fieldRegistry;
-  const isFieldEventTarget = useCallback((fieldId: string, target: unknown): boolean => {
-    const field = fieldsRef.current.get(fieldId);
-    return field !== undefined && eventTargetMatchesField(field, target);
-  }, [fieldsRef]);
+  const {registerField, unregisterField, updateValue, updateSelection, updateFieldConfig, captureInputSnapshot} =
+    fieldRegistry;
+  const isFieldEventTarget = useCallback(
+    (fieldId: string, target: unknown): boolean => {
+      const field = fieldsRef.current.get(fieldId);
+      return field !== undefined && eventTargetMatchesField(field, target);
+    },
+    [fieldsRef],
+  );
 
   const focusController = useInputFocusController({
     fieldsRef,
@@ -147,6 +178,7 @@ export const InputProvider = ({frameMetrics, children}: InputProviderProps) => {
     completeField,
     completePendingFocus,
     activateFocusScope,
+    canEditField,
     notifyFocusBoundary,
   } = focusController;
   const {handleKeyboardKey} = useInputKeyboardController({
@@ -156,19 +188,30 @@ export const InputProvider = ({frameMetrics, children}: InputProviderProps) => {
     completeField,
   });
 
-  const activeFieldId = keyboardStateRef.current.activeFieldId;
-  const pendingFieldId = blockedCapacityRef.current === null ? blockedFieldIdRef.current : null;
+  const activeFieldId = renderSnapshot.keyboard.activeFieldId;
+  const pendingFieldId = renderSnapshot.blockedCapacity === null ? renderSnapshot.blockedFieldId : null;
   const presentationFieldId = activeFieldId ?? pendingFieldId;
-  const presentationField = presentationFieldId === null ? undefined : fieldsRef.current.get(presentationFieldId);
-  const presentationLayout = presentationField?.layout ?? keyboardStateRef.current.layout;
+  const presentationField =
+    presentationFieldId === null
+      ? undefined
+      : renderSnapshot.fields.find(field => field.fieldId === presentationFieldId);
+  const presentationLayout = presentationField?.layout ?? renderSnapshot.keyboard.layout;
   const surfaceMetrics = calculateVirtualKeyboardMetrics(frameMetrics, presentationLayout);
   useLayoutEffect(() => {
-    if (keyboardStateRef.current.owner !== 'virtual' || activeFieldId === null) return;
+    if (renderSnapshot.keyboard.owner !== 'virtual' || activeFieldId === null) return;
     if (surfaceMetrics.capacity === 'supported') return;
     markBlockedField(activeFieldId, surfaceMetrics.capacity);
     fieldsRef.current.get(activeFieldId)?.inputRef?.current?.blur();
     commitKeyboardState({activeFieldId: null, owner: 'none', layout: keyboardStateRef.current.layout});
-  }, [activeFieldId, commitKeyboardState, fieldsRef, markBlockedField, presentationLayout, surfaceMetrics.capacity]);
+  }, [
+    activeFieldId,
+    commitKeyboardState,
+    fieldsRef,
+    markBlockedField,
+    presentationLayout,
+    renderSnapshot.keyboard.owner,
+    surfaceMetrics.capacity,
+  ]);
 
   const controllerValue = useMemo<InputController>(
     () => ({
@@ -186,12 +229,14 @@ export const InputProvider = ({frameMetrics, children}: InputProviderProps) => {
       focusField,
       completeField,
       activateFocusScope,
+      canEditField,
       captureInputSnapshot,
       handleKeyboardKey,
     }),
     [
       captureInputSnapshot,
       activateFocusScope,
+      canEditField,
       completeField,
       blurField,
       dismissActiveField,
@@ -211,48 +256,49 @@ export const InputProvider = ({frameMetrics, children}: InputProviderProps) => {
 
   const keyboardState: InputKeyboardState = {
     activeFieldId,
-    owner: keyboardStateRef.current.owner,
+    owner: renderSnapshot.keyboard.owner,
     layout: presentationLayout,
     capacity: surfaceMetrics.capacity,
-    blockedFieldId: blockedFieldIdRef.current,
-    blockedCapacity: blockedCapacityRef.current,
+    blockedFieldId: renderSnapshot.blockedFieldId,
+    blockedCapacity: renderSnapshot.blockedCapacity,
     height: surfaceMetrics.height,
     contentHeight: surfaceMetrics.contentHeight,
     frameWidth: surfaceMetrics.frameWidth,
     cellWidth: surfaceMetrics.cellWidth,
     rowCount: surfaceMetrics.rowCount,
     hasNextField: (() => {
-      const fieldIds = Array.from(fieldsRef.current.keys());
+      const fieldIds = renderSnapshot.fields.map(field => field.fieldId);
       const activeIndex = fieldIds.indexOf(presentationFieldId ?? '');
       return activeIndex >= 0 && activeIndex < fieldIds.length - 1;
     })(),
     visible:
-      keyboardStateRef.current.owner === 'virtual' &&
-      keyboardStateRef.current.activeFieldId !== null &&
+      renderSnapshot.keyboard.owner === 'virtual' &&
+      renderSnapshot.keyboard.activeFieldId !== null &&
       surfaceMetrics.visible,
     contentTooSmall: surfaceMetrics.contentTooSmall,
-    revision: keyboardStateRef.current.revision,
+    revision: renderSnapshot.keyboard.revision,
     shift:
-      keyboardStateRef.current.activeFieldId === null
+      renderSnapshot.keyboard.activeFieldId === null
         ? false
-        : (fieldsRef.current.get(keyboardStateRef.current.activeFieldId)?.getEditState().shift ?? false),
+        : (renderSnapshot.fields.find(field => field.fieldId === renderSnapshot.keyboard.activeFieldId)?.shift ??
+          false),
   };
   const fieldKeyboardState: InputFieldKeyboardState = {
-    activeFieldId: keyboardStateRef.current.activeFieldId,
-    owner: keyboardStateRef.current.owner,
+    activeFieldId: renderSnapshot.keyboard.activeFieldId,
+    owner: renderSnapshot.keyboard.owner,
     height: surfaceMetrics.height,
     visible: surfaceMetrics.visible,
     contentTooSmall: surfaceMetrics.contentTooSmall,
   };
   return (
-      <InputControllerContext.Provider value={controllerValue}>
-        <InputFieldKeyboardStateContext.Provider value={fieldKeyboardState}>
-      <InputKeyboardStateContext.Provider value={keyboardState}>
-            <InputPendingFocusCommitContext.Provider value={completePendingFocus}>
-              <FocusBoundaryBridge notify={notifyFocusBoundary}>{children}</FocusBoundaryBridge>
-            </InputPendingFocusCommitContext.Provider>
-          </InputKeyboardStateContext.Provider>
-        </InputFieldKeyboardStateContext.Provider>
-      </InputControllerContext.Provider>
+    <InputControllerContext.Provider value={controllerValue}>
+      <InputFieldKeyboardStateContext.Provider value={fieldKeyboardState}>
+        <InputKeyboardStateContext.Provider value={keyboardState}>
+          <InputPendingFocusCommitContext.Provider value={completePendingFocus}>
+            <FocusBoundaryBridge notify={notifyFocusBoundary}>{children}</FocusBoundaryBridge>
+          </InputPendingFocusCommitContext.Provider>
+        </InputKeyboardStateContext.Provider>
+      </InputFieldKeyboardStateContext.Provider>
+    </InputControllerContext.Provider>
   );
 };

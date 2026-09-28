@@ -26,6 +26,16 @@ const packageJsonPath = path.join(packageRoot, 'package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 const packageName = packageJson.name;
 const testFiles = collectTestFiles(path.join(packageRoot, 'test'));
+const devMatrix = process.argv.slice(2).includes('--dev-matrix');
+if (process.argv.slice(2).some(argument => argument !== '--dev-matrix')) {
+  console.error(`TERMINAL_PACKAGE_TEST_FAILURE package=${packageName} reason=unknown-argument`);
+  process.exit(2);
+}
+const devTestFiles = testFiles.filter(file => /\.dev\.test\.tsx?$/.test(file));
+if (devMatrix && devTestFiles.length === 0) {
+  console.error(`TERMINAL_PACKAGE_TEST_FAILURE package=${packageName} reason=dev-matrix-without-dev-tests`);
+  process.exit(2);
+}
 if (testFiles.length === 0) {
   console.log(marker('NO_TEST_FILES', packageName));
   process.exit(0);
@@ -33,33 +43,36 @@ if (testFiles.length === 0) {
 
 const vitestPath = path.join(repositoryRoot, 'node_modules/.bin/vitest');
 const packageNodeModules = path.join(packageRoot, 'node_modules');
-const vitestCacheDirectories = [
-  path.join(packageNodeModules, '.vite'),
-  path.join(packageNodeModules, '.vite-temp'),
-];
-let result;
-try {
-  result = spawnSync(vitestPath, ['run', '--config', 'vitest.config.ts'], {
-    cwd: packageRoot,
-    stdio: 'inherit',
-  });
-} finally {
-  for (const cacheDirectory of vitestCacheDirectories) {
-    fs.rmSync(cacheDirectory, {recursive: true, force: true});
-  }
+const vitestCacheDirectories = [path.join(packageNodeModules, '.vite'), path.join(packageNodeModules, '.vite-temp')];
+const modes = devMatrix ? ['PROD', 'DEV'] : ['PROD'];
+for (const mode of modes) {
+  console.log(`TERMINAL_PACKAGE_TEST_MODE_START package=${packageName} mode=${mode}`);
+  let result;
   try {
-    fs.rmdirSync(packageNodeModules);
-  } catch (error) {
-    if (error?.code !== 'ENOENT' && error?.code !== 'ENOTEMPTY') throw error;
+    result = spawnSync(vitestPath, ['run', '--config', 'vitest.config.ts'], {
+      cwd: packageRoot,
+      env: {...process.env, TERMINAL_TEST_DEV_MODE: mode === 'DEV' ? 'true' : 'false'},
+      stdio: 'inherit',
+    });
+  } finally {
+    for (const cacheDirectory of vitestCacheDirectories) {
+      fs.rmSync(cacheDirectory, {recursive: true, force: true});
+    }
+    try {
+      fs.rmdirSync(packageNodeModules);
+    } catch (error) {
+      if (error?.code !== 'ENOENT' && error?.code !== 'ENOTEMPTY') throw error;
+    }
   }
+  if (result.error) {
+    console.error(`TERMINAL_PACKAGE_TEST_FAILURE package=${packageName} mode=${mode} error=${result.error.message}`);
+    process.exit(1);
+  }
+  if (result.signal) {
+    console.error(`TERMINAL_PACKAGE_TEST_FAILURE package=${packageName} mode=${mode} signal=${result.signal}`);
+    process.exit(1);
+  }
+  if (result.status !== 0) process.exit(result.status ?? 1);
+  console.log(`TERMINAL_PACKAGE_TEST_MODE=PASS package=${packageName} mode=${mode}`);
 }
-if (result.error) {
-  console.error(`TERMINAL_PACKAGE_TEST_FAILURE package=${packageName} error=${result.error.message}`);
-  process.exit(1);
-}
-if (result.signal) {
-  console.error(`TERMINAL_PACKAGE_TEST_FAILURE package=${packageName} signal=${result.signal}`);
-  process.exit(1);
-}
-if (result.status !== 0) process.exit(result.status ?? 1);
 console.log(marker('REAL_TESTS', packageName));

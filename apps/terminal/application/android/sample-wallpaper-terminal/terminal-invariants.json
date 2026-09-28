@@ -1,1 +1,13 @@
-{"schemaVersion":1,"package":"@catering-v2s/application-android-sample-wallpaper-terminal","owned":{"test":{"kind":"ABSENT"},"lint":{"kind":"ABSENT"},"clean":{"kind":"ABSENT"}}}
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/application-android-sample-wallpaper-terminal",
+  "owned": {
+    "test": {"kind": "ABSENT"},
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/application-android-sample-wallpaper-terminal",
+      "runner": "eslint"
+    },
+    "clean": {"kind": "ABSENT"}
+  }
+}

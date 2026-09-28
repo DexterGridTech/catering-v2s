@@ -1,7 +1,7 @@
-import {defineCommand} from '../../foundations/defineCommand'
-import {moduleName} from '../../moduleName'
+import {defineCommand} from '../../foundations/defineCommand';
+import {moduleName} from '../../moduleName';
 
-export type InitializePayload = Readonly<{}>
+export type InitializePayload = Readonly<{}>;
 
 export const initializeCommand = defineCommand<InitializePayload>(moduleName, {
   name: 'initialize',
@@ -9,4 +9,4 @@ export const initializeCommand = defineCommand<InitializePayload>(moduleName, {
   allowNoActor: true,
   allowReentry: false,
   defaultTarget: 'local',
-})
+});

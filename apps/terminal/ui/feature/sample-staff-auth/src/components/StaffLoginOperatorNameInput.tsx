@@ -1,11 +1,11 @@
-import {useInputField} from '@catering-v2s/ui-base-input'
-import {useUiVariable} from '@catering-v2s/ui-base-render'
-import {PrimitiveInput, PrimitiveLabel} from '@catering-v2s/ui-base-primitives'
-import {operatorNameVariable} from '../features/variables/variables'
-import {operatorNameFieldId} from '../hooks/useStaffLogin'
+import {useInputField} from '@catering-v2s/ui-base-input';
+import {useUiVariable} from '@catering-v2s/ui-base-render';
+import {PrimitiveInput, PrimitiveLabel} from '@catering-v2s/ui-base-primitives';
+import {operatorNameVariable} from '../features/variables/variables';
+import {operatorNameFieldId} from '../hooks/useStaffLogin';
 
 export const StaffLoginOperatorNameInput = ({editable}: Readonly<{readonly editable: boolean}>) => {
-  const operatorName = useUiVariable(operatorNameVariable)
+  const operatorName = useUiVariable(operatorNameVariable);
   const field = useInputField({
     fieldId: operatorNameFieldId,
     testID: operatorNameFieldId,
@@ -14,7 +14,7 @@ export const StaffLoginOperatorNameInput = ({editable}: Readonly<{readonly edita
     editable,
     keyboardKind: 'virtual',
     layout: 'full',
-  })
+  });
 
   return (
     <>
@@ -23,5 +23,5 @@ export const StaffLoginOperatorNameInput = ({editable}: Readonly<{readonly edita
       </PrimitiveLabel>
       <PrimitiveInput {...field.inputProps} />
     </>
-  )
-}
+  );
+};

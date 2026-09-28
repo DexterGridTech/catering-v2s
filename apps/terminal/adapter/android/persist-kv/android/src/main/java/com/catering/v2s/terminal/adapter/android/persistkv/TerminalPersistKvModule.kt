@@ -7,6 +7,9 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 class TerminalPersistKvModule : Module() {
+  internal fun initializeMmkv(initializer: () -> String): Boolean =
+    PersistKvProcessInitialization.initialize(initializer)
+
   override fun definition() = ModuleDefinition {
     Name("TerminalPersistKv")
 
@@ -110,9 +113,6 @@ class TerminalPersistKvModule : Module() {
     data class Finished(val result: Map<String, Any?>) : OpenedStore()
   }
 
-  private val initializationLock = Any()
-  private var initialized = false
-
   private fun withStore(
     persistenceKey: String?,
     modeToken: String?,
@@ -149,15 +149,11 @@ class TerminalPersistKvModule : Module() {
       ?: return OpenedStore.Finished(unavailable(mode, "ADAPTER_NOT_INJECTED", "application context is unavailable", capability))
 
     return try {
-      synchronized(initializationLock) {
-        if (!initialized) {
-          val rootDir = MMKV.initialize(context)
-          if (rootDir.isEmpty()) {
-            return@synchronized OpenedStore.Finished(
-              failureForMode(mode, "PERSIST_KV_INITIALIZATION_FAILED", "persist-kv initialization failed", capability, true),
-            )
-          }
-          initialized = true
+      synchronized(PersistKvProcessInitialization) {
+        if (!initializeMmkv { MMKV.initialize(context) }) {
+          return@synchronized OpenedStore.Finished(
+            failureForMode(mode, "PERSIST_KV_INITIALIZATION_FAILED", "persist-kv initialization failed", capability, true),
+          )
         }
 
         val namespace = namespaceId(persistenceKey, mode)
@@ -169,6 +165,18 @@ class TerminalPersistKvModule : Module() {
         }
 
         val existing = mode == StorageMode.PROTECTED && MMKV.checkExist(namespace)
+        val legacyProtectedNamespaceExists = if (mode == StorageMode.PROTECTED && !existing) {
+          MMKV.checkExist(LEGACY_PROTECTED_NAMESPACE_PREFIX + percentEncodeUtf8(persistenceKey))
+        } else {
+          null
+        }
+        if (mode == StorageMode.PROTECTED) {
+          val legacyObservation = legacyProtectedNamespaceExists?.let { " legacyNamespacePresent=$it" }.orEmpty()
+          Log.i(
+            LOG_TAG,
+            "event=persist-kv operation=$capability mode=protected namespaceVersion=${ProtectedStorageIdentity.NAMESPACE_VERSION} existedBeforeOpen=$existing$legacyObservation",
+          )
+        }
         val store = if (cryptKey == null) {
           MMKV.mmkvWithID(namespace, MMKV.SINGLE_PROCESS_MODE)
         } else {
@@ -207,9 +215,9 @@ class TerminalPersistKvModule : Module() {
   }
 
   private fun cryptKeyOf(context: android.content.Context): String? {
-    val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)?.trim().orEmpty()
+    val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID).orEmpty()
     if (deviceId.isEmpty()) return null
-    return PROTECTED_CRYPT_KEY_PREFIX + deviceId
+    return ProtectedStorageIdentity.cryptKey(deviceId)
   }
 
   private fun percentEncodeUtf8(value: String): String {
@@ -298,8 +306,8 @@ class TerminalPersistKvModule : Module() {
   private companion object {
     const val LOG_TAG = "TerminalPersistKv"
     const val PLAIN_NAMESPACE_PREFIX = "catering-v2s.terminal.state.v1."
-    const val PROTECTED_NAMESPACE_PREFIX = "catering-v2s.terminal.state.protected.v1."
-    const val PROTECTED_CRYPT_KEY_PREFIX = "catering-v2s.persist-secure.v1:"
+    const val LEGACY_PROTECTED_NAMESPACE_PREFIX = "catering-v2s.terminal.state.protected.v1."
+    const val PROTECTED_NAMESPACE_PREFIX = ProtectedStorageIdentity.NAMESPACE_PREFIX
     const val PROTECTED_INITIALIZED_VALUE = "initialized"
   }
 }

@@ -54,7 +54,7 @@ describe('T-1, T-2 and T-9: runtime IDs', () => {
     const requestIds = Array.from({length: 32}, () => createRequestId());
 
     expect(new Set(requestIds).size).toBe(32);
-    expect(requestIds.every((id) => id.startsWith('req_'))).toBe(true);
+    expect(requestIds.every(id => id.startsWith('req_'))).toBe(true);
   });
 });
 
@@ -92,7 +92,7 @@ describe('T-4: AppError structural guard', () => {
 
   it.each(['name', 'message', 'key', 'code', 'category', 'severity', 'createdAt', 'templateMissingKeys'] as const)(
     'rejects an AppError missing required field %s',
-    (field) => {
+    field => {
       const candidate = {...validError};
       Reflect.deleteProperty(candidate, field);
       expect(isAppError(candidate)).toBe(false);

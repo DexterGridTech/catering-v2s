@@ -1,18 +1,11 @@
 import {useCallback, useRef} from 'react';
 import {createInputRegistry, type InputRegistrationToken, type InputRegistry} from '../foundations/snapshot';
-import type {
-  InputFieldController,
-  InputFieldRegistration,
-} from '../types/types';
+import type {InputFieldController, InputFieldRegistration} from '../types/types';
 import type {KeyboardCapacity} from '../foundations/keyboardHeight';
-import type {
-  CommitKeyboardState,
-  KeyboardStateBase,
-  MutableFieldController,
-  MutableRef,
-} from './inputProviderTypes';
+import type {CommitKeyboardState, KeyboardStateBase, MutableFieldController, MutableRef} from './inputProviderTypes';
 
 type InputFieldRegistryOptions = Readonly<{
+  readonly fieldsRef: MutableRef<Map<string, MutableFieldController>>;
   readonly commitKeyboardState: CommitKeyboardState;
   readonly notifyRegistryChange: () => void;
   readonly keyboardStateRef: MutableRef<KeyboardStateBase>;
@@ -21,6 +14,7 @@ type InputFieldRegistryOptions = Readonly<{
 }>;
 
 export const useInputFieldRegistry = ({
+  fieldsRef,
   commitKeyboardState,
   notifyRegistryChange,
   keyboardStateRef,
@@ -29,24 +23,26 @@ export const useInputFieldRegistry = ({
 }: InputFieldRegistryOptions) => {
   const registryRef = useRef<InputRegistry | null>(null);
   if (registryRef.current === null) registryRef.current = createInputRegistry();
-  const fieldsRef = useRef(new Map<string, MutableFieldController>());
 
-  const registerField = useCallback((registration: InputFieldRegistration): InputRegistrationToken => {
-    const token = registryRef.current!.register({
-      fieldId: registration.fieldId,
-      value: registration.value,
-      selection: registration.selection,
-    });
-    fieldsRef.current.set(registration.fieldId, {
-      ...registration,
-      token,
-    });
-    // Registration is an input lifecycle boundary. Making it observable lets
-    // a just-mounted native-less field retry an autofocus request that raced
-    // its registration without adding a timer or changing keyboard semantics.
-    notifyRegistryChange();
-    return token;
-  }, [notifyRegistryChange]);
+  const registerField = useCallback(
+    (registration: InputFieldRegistration): InputRegistrationToken => {
+      const token = registryRef.current!.register({
+        fieldId: registration.fieldId,
+        value: registration.value,
+        selection: registration.selection,
+      });
+      fieldsRef.current.set(registration.fieldId, {
+        ...registration,
+        token,
+      });
+      // Registration is an input lifecycle boundary. Making it observable lets
+      // a just-mounted native-less field retry an autofocus request that raced
+      // its registration without adding a timer or changing keyboard semantics.
+      notifyRegistryChange();
+      return token;
+    },
+    [fieldsRef, notifyRegistryChange],
+  );
 
   const unregisterField = useCallback(
     (token: InputRegistrationToken): void => {
@@ -63,7 +59,7 @@ export const useInputFieldRegistry = ({
         notifyRegistryChange();
       }
     },
-    [blockedCapacityRef, blockedFieldIdRef, commitKeyboardState, keyboardStateRef, notifyRegistryChange],
+    [blockedCapacityRef, blockedFieldIdRef, commitKeyboardState, fieldsRef, keyboardStateRef, notifyRegistryChange],
   );
 
   const updateValue = useCallback((token: InputRegistrationToken, value: string): void => {
@@ -81,10 +77,10 @@ export const useInputFieldRegistry = ({
     (
       token: InputRegistrationToken,
       config: Readonly<{
-      readonly keyboardKind: 'virtual';
-      readonly layout: InputFieldController['layout'];
-      readonly maxLength?: number;
-      readonly focusScopeId: string;
+        readonly keyboardKind: 'virtual';
+        readonly layout: InputFieldController['layout'];
+        readonly maxLength?: number;
+        readonly focusScopeId: string;
       }>,
     ): void => {
       const field = fieldsRef.current.get(token.fieldId);
@@ -94,7 +90,7 @@ export const useInputFieldRegistry = ({
       field.maxLength = config.maxLength;
       field.focusScopeId = config.focusScopeId;
     },
-    [],
+    [fieldsRef],
   );
 
   const captureInputSnapshot = useCallback(() => registryRef.current!.capture(), []);

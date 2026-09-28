@@ -16,6 +16,16 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import java.util.UUID
 import kotlin.math.roundToInt
 
+internal data class TerminalDisplayCandidate(
+  val displayId: Int,
+  val flags: Int,
+)
+
+internal fun orderReportedDisplays(displays: List<TerminalDisplayCandidate>): List<TerminalDisplayCandidate> =
+  displays
+    .filter { it.displayId == Display.DEFAULT_DISPLAY || it.flags and Display.FLAG_PRESENTATION != 0 }
+    .sortedWith(compareBy { if (it.displayId == Display.DEFAULT_DISPLAY) 0 else 1 })
+
 class TerminalDeviceModule : Module() {
   private val powerReceiverLock = Any()
   private val powerReceivers = mutableMapOf<String, BroadcastReceiver>()
@@ -71,17 +81,20 @@ class TerminalDeviceModule : Module() {
         ?: return@AsyncFunction unavailableResult("PLATFORM_UNSUPPORTED", "DisplayManager is unavailable")
 
       try {
-        val displays = displayManager.displays
-          .toList()
-          .sortedWith(compareBy { if (it.displayId == Display.DEFAULT_DISPLAY) 0 else 1 })
-        val displayCount = displays.size
-        displays.forEachIndexed { index, display -> logDisplay(index, display) }
+        val displays = displayManager.displays.toList()
+        val displayCandidates = orderReportedDisplays(
+          displays.map { TerminalDisplayCandidate(it.displayId, it.flags) },
+        )
+        val byDisplayId = displays.associateBy { it.displayId }
+        val reportedDisplays = displayCandidates.mapNotNull { byDisplayId[it.displayId] }
+        val displayCount = reportedDisplays.size
+        reportedDisplays.forEachIndexed { index, display -> logDisplay(index, display) }
         Log.i(LOG_TAG, "event=display-info-read status=succeeded displayCount=$displayCount")
         mapOf(
           "status" to "succeeded",
           "value" to mapOf(
             "displayCount" to displayCount,
-            "surfaces" to displays.map { display -> displaySurfaceInfo(display) },
+            "surfaces" to reportedDisplays.map { display -> displaySurfaceInfo(display) },
           ),
           "completedAt" to System.currentTimeMillis(),
         )

@@ -4,6 +4,7 @@ import fi.iki.elonen.NanoHTTPD
 import fi.iki.elonen.NanoWSD
 import org.json.JSONObject
 import java.io.IOException
+import java.net.SocketTimeoutException
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.util.Collections
@@ -11,6 +12,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 internal class TerminalTopologyHeartbeatState(
   private val now: () -> Long,
@@ -67,6 +69,7 @@ class TerminalTopologyServer(
         val current = synchronized(peerLock) { peer }
         if (current == null || !current.isOpen) return@scheduleAtFixedRate
         if (heartbeatState.isTimedOut(config.heartbeatTimeoutMs)) {
+          current.setLocalCloseIntent("TOPOLOGY_TIMEOUT")
           try {
             current.close(NanoWSD.WebSocketFrame.CloseCode.GoingAway, "TOPOLOGY_TIMEOUT", false)
           } catch (_error: IOException) {
@@ -89,10 +92,12 @@ class TerminalTopologyServer(
     current.send(raw)
   }
 
-  fun closePeer() {
+  fun closePeer(reason: String = "TOPOLOGY_HOST_STOPPED") {
     val current = synchronized(peerLock) { peer } ?: return
+    val closeReason = normalizeCloseReason(reason)
+    current.setLocalCloseIntent(closeReason)
     try {
-      current.close(NanoWSD.WebSocketFrame.CloseCode.NormalClosure, "TOPOLOGY_HOST_STOPPED", false)
+      current.close(NanoWSD.WebSocketFrame.CloseCode.NormalClosure, closeReason, false)
     } catch (_error: IOException) {
       // The peer is already closed.
     }
@@ -109,7 +114,7 @@ class TerminalTopologyServer(
 
   fun shutdown() {
     heartbeatExecutor.shutdownNow()
-    closePeer()
+    closePeer("TOPOLOGY_HOST_STOPPED")
     stop()
   }
 
@@ -155,24 +160,39 @@ class TerminalTopologyServer(
 
   private inner class TopologySocket(handshake: NanoHTTPD.IHTTPSession) : NanoWSD.WebSocket(handshake) {
     val connectionId: String = "topology-connection-${connectionSequence.incrementAndGet()}"
+    private val localCloseIntent = AtomicReference<String?>(null)
+    private val peerCloseReason = AtomicReference<String?>(null)
+
+    override fun debugFrameReceived(frame: NanoWSD.WebSocketFrame) {
+      if (frame.opCode != NanoWSD.WebSocketFrame.OpCode.Close) return
+      val closeFrame = frame as? NanoWSD.WebSocketFrame.CloseFrame ?: return
+      peerCloseReason.compareAndSet(null, normalizeCloseReason(closeFrame.closeReason))
+    }
 
     override fun onOpen() {
-      synchronized(peerLock) {
+      val accepted = synchronized(peerLock) {
         val existing = peer
         if (existing != null && existing.isOpen) {
-          try {
-            send(rejectionFrame())
-            close(NanoWSD.WebSocketFrame.CloseCode.PolicyViolation, "TOPOLOGY_ROLE_OCCUPIED", false)
-          } catch (_error: IOException) {
-            // The rejected peer is already closed.
-          }
-          publishConnection("error", connectionId, "TOPOLOGY_ROLE_OCCUPIED")
-          return
+          false
+        } else {
+          peer = this
+          heartbeatState.reset()
+          true
         }
-        peer = this
-        heartbeatState.reset()
       }
-      publishConnection("open", connectionId)
+      if (accepted) {
+        publishConnection("open", connectionId)
+        return
+      }
+
+      setLocalCloseIntent("TOPOLOGY_ROLE_OCCUPIED")
+      try {
+        send(rejectionFrame())
+        close(NanoWSD.WebSocketFrame.CloseCode.PolicyViolation, "TOPOLOGY_ROLE_OCCUPIED", false)
+      } catch (_error: IOException) {
+        // The rejected peer is already closed.
+      }
+      publishConnection("error", connectionId, "TOPOLOGY_ROLE_OCCUPIED")
     }
 
     override fun onClose(
@@ -183,7 +203,7 @@ class TerminalTopologyServer(
       synchronized(peerLock) {
         if (peer === this) peer = null
       }
-      publishConnection("close", connectionId, safeCloseReason(code, reason))
+      publishConnection("close", connectionId, safeCloseReason(reason))
     }
 
     override fun onMessage(frame: NanoWSD.WebSocketFrame) {
@@ -217,7 +237,13 @@ class TerminalTopologyServer(
     }
 
     override fun onException(exception: IOException) {
-      publishConnection("error", connectionId, "TOPOLOGY_PEER_UNREACHABLE")
+      val reason = if (exception is SocketTimeoutException) "TOPOLOGY_TIMEOUT" else "TOPOLOGY_PEER_UNREACHABLE"
+      if (exception is SocketTimeoutException) setLocalCloseIntent(reason)
+      publishConnection("error", connectionId, localCloseIntent.get() ?: reason)
+    }
+
+    fun setLocalCloseIntent(reason: String) {
+      localCloseIntent.compareAndSet(null, normalizeCloseReason(reason))
     }
 
     private fun rejectionFrame(): String = JSONObject()
@@ -227,13 +253,13 @@ class TerminalTopologyServer(
       .put("error", JSONObject().put("code", "TOPOLOGY_ROLE_OCCUPIED").put("retryable", false))
       .toString()
 
-    private fun safeCloseReason(code: NanoWSD.WebSocketFrame.CloseCode?, reason: String?): String = when {
-      reason == "TOPOLOGY_TIMEOUT" -> "TOPOLOGY_TIMEOUT"
-      reason == "TOPOLOGY_ROLE_OCCUPIED" -> "TOPOLOGY_ROLE_OCCUPIED"
-      reason == "TOPOLOGY_UNPAIRED" -> "TOPOLOGY_UNPAIRED"
-      code == NanoWSD.WebSocketFrame.CloseCode.NormalClosure -> "TOPOLOGY_HOST_STOPPED"
-      else -> "TOPOLOGY_PEER_UNREACHABLE"
-    }
+    private fun safeCloseReason(reason: String?): String =
+      localCloseIntent.get() ?: peerCloseReason.get() ?: normalizeCloseReason(reason)
+  }
+
+  private fun normalizeCloseReason(reason: String?): String = when (reason) {
+    "TOPOLOGY_ROLE_OCCUPIED", "TOPOLOGY_TIMEOUT", "TOPOLOGY_UNPAIRED", "TOPOLOGY_HOST_STOPPED", "TOPOLOGY_PEER_UNREACHABLE" -> reason
+    else -> "TOPOLOGY_PEER_UNREACHABLE"
   }
 
 }

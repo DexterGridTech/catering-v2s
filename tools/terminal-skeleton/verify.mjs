@@ -16,7 +16,9 @@ const staticPath = path.join(toolDirectory, 'verify-static.mjs');
 const terminalPackageName = '@catering-v2s/terminal';
 const terminalFilters = ['--filter=./apps/terminal/**', `--filter=!${terminalPackageName}`];
 const nonExecutableTaskCommand = '<NONEXISTENT>';
-const packageTestMarkerPattern = /TERMINAL_PACKAGE_TEST=PASS kind=(REAL_TESTS|NO_TEST_FILES) package=(@catering-v2s\/[A-Za-z0-9-]+)/g;
+const packageTestMarkerPattern =
+  /TERMINAL_PACKAGE_TEST=PASS kind=(REAL_TESTS|NO_TEST_FILES) package=(@catering-v2s\/[A-Za-z0-9-]+)/g;
+const packageLintMarkerPattern = /TERMINAL_PACKAGE_LINT=PASS (\{[^\n]+\})/g;
 
 const verifyRunId = `ter-local-${process.pid}-${Date.now()}`;
 
@@ -142,9 +144,14 @@ export function assertOwnedTaskContracts(taskName, batch, options = {}) {
         errors.push(`${packageName} test script must not emit an inline marker`);
       }
     }
+    if (taskName === 'lint' && (owned.runner !== 'eslint' || !script.includes('run-owned-lint.mjs'))) {
+      errors.push(`${packageName} lint script must use run-owned-lint.mjs`);
+    }
   }
   if (errors.length) throw new Error(`owned task contract mismatch; ${errors.join('; ')}`);
-  return expectedTaskEntries(taskName, batch, root).map(entry => entry.packageName).sort();
+  return expectedTaskEntries(taskName, batch, root)
+    .map(entry => entry.packageName)
+    .sort();
 }
 
 function expectedTestKinds(batch, root = repoRoot) {
@@ -164,7 +171,9 @@ export function assertPackageTestMarkers(output, expected = expectedTaskOwners('
     throw new Error(`marker count mismatch; expected=${expected.length} actual=${markers.length}`);
   }
   const actualPackages = markers.map(marker => marker.packageName);
-  const duplicatePackages = actualPackages.filter((packageName, index) => actualPackages.indexOf(packageName) !== index);
+  const duplicatePackages = actualPackages.filter(
+    (packageName, index) => actualPackages.indexOf(packageName) !== index,
+  );
   const missing = difference(expected, actualPackages);
   const extra = difference(actualPackages, expected);
   if (duplicatePackages.length || missing.length || extra.length) {
@@ -175,12 +184,41 @@ export function assertPackageTestMarkers(output, expected = expectedTaskOwners('
   for (const marker of markers) {
     const expectedKind = expectedKinds.get(marker.packageName);
     if (!expectedKind || marker.kind !== expectedKind) {
-      throw new Error(`marker kind mismatch; package=${marker.packageName} expected=${String(expectedKind)} actual=${marker.kind}`);
+      throw new Error(
+        `marker kind mismatch; package=${marker.packageName} expected=${String(expectedKind)} actual=${marker.kind}`,
+      );
     }
   }
   const real = sorted(markers.filter(marker => marker.kind === 'REAL_TESTS').map(marker => marker.packageName));
   const noTests = sorted(markers.filter(marker => marker.kind === 'NO_TEST_FILES').map(marker => marker.packageName));
   return {real, noTests};
+}
+
+export function assertPackageLintMarkers(output, expected = expectedTaskOwners('lint'), options = {}) {
+  assertOwnedTaskContracts('lint', options.batch, {root: options.root ?? repoRoot});
+  const markers = [...String(output).matchAll(packageLintMarkerPattern)].map(match => JSON.parse(match[1]));
+  if (markers.length !== expected.length) {
+    throw new Error(`lint marker count mismatch; expected=${expected.length} actual=${markers.length}`);
+  }
+  const actualPackages = markers.map(marker => marker.packageName);
+  const duplicates = actualPackages.filter((name, index) => actualPackages.indexOf(name) !== index);
+  const missing = difference(expected, actualPackages);
+  const extra = difference(actualPackages, expected);
+  if (duplicates.length || missing.length || extra.length) {
+    throw new Error(
+      `lint marker package mismatch; missing=${JSON.stringify(missing)} extra=${JSON.stringify(extra)} duplicates=${JSON.stringify(sorted(duplicates))}`,
+    );
+  }
+  const invalid = markers.filter(
+    marker =>
+      !Number.isInteger(marker.expectedFiles) ||
+      marker.expectedFiles <= 0 ||
+      marker.actualFiles !== marker.expectedFiles ||
+      marker.errors !== 0 ||
+      marker.warnings !== 0,
+  );
+  if (invalid.length) throw new Error(`lint marker file denominator or result mismatch; ${JSON.stringify(invalid)}`);
+  return markers;
 }
 
 export function parseTurboDryRun(stdout) {
@@ -194,17 +232,18 @@ export function assertTurboDryRun(report, taskName, expected = expectedTaskOwner
   if (!Array.isArray(report.packages) || !Array.isArray(report.tasks)) {
     throw new Error(`Turbo dry-run ${taskName} report must contain packages and tasks arrays`);
   }
-  const invalidPackages = report.packages.filter(packageName =>
-    packageName === terminalPackageName || !packageName.startsWith('@catering-v2s/'),
+  const invalidPackages = report.packages.filter(
+    packageName => packageName === terminalPackageName || !packageName.startsWith('@catering-v2s/'),
   );
   if (invalidPackages.length) {
     throw new Error(`Turbo dry-run ${taskName} contains non-TER package scope: ${invalidPackages.join(', ')}`);
   }
-  const invalidTasks = report.tasks.filter(task =>
-    task.task !== taskName ||
-    typeof task.directory !== 'string' ||
-    !task.directory.startsWith('apps/terminal/') ||
-    task.package === terminalPackageName,
+  const invalidTasks = report.tasks.filter(
+    task =>
+      task.task !== taskName ||
+      typeof task.directory !== 'string' ||
+      !task.directory.startsWith('apps/terminal/') ||
+      task.package === terminalPackageName,
   );
   if (invalidTasks.length) {
     throw new Error(`Turbo dry-run ${taskName} contains an invalid task directory or aggregate owner`);
@@ -219,7 +258,11 @@ export function assertTurboDryRun(report, taskName, expected = expectedTaskOwner
       `Turbo dry-run ${taskName} executable owner mismatch; missing=${JSON.stringify(missing)} extra=${JSON.stringify(extra)}`,
     );
   }
-  return {packageCount: report.packages.length, taskCount: report.tasks.length, executableOwners: sorted(executableOwners)};
+  return {
+    packageCount: report.packages.length,
+    taskCount: report.tasks.length,
+    executableOwners: sorted(executableOwners),
+  };
 }
 
 function runTurboDryRun(taskName) {
@@ -229,11 +272,13 @@ function runTurboDryRun(taskName) {
   } catch (error) {
     fail(`owned-${taskName}`, error instanceof Error ? error.message : String(error));
   }
-  const result = spawnLogged(
-    `turbo-dry-${taskName}`,
-    'yarn',
-    ['turbo', 'run', taskName, ...terminalFilters, '--dry=json'],
-  );
+  const result = spawnLogged(`turbo-dry-${taskName}`, 'yarn', [
+    'turbo',
+    'run',
+    taskName,
+    ...terminalFilters,
+    '--dry=json',
+  ]);
   if (result.status !== 0) {
     debugLog('phase.finish', {phase: `turbo-dry-${taskName}`, outcome: 'FAIL', status: result.status});
     fail(`turbo-dry-${taskName}`, `exit=${String(result.status)}`);
@@ -283,9 +328,32 @@ function main() {
   try {
     const markers = assertPackageTestMarkers(`${testResult.stdout ?? ''}\n${testResult.stderr ?? ''}`);
     console.log(`TERMINAL_TEST_MARKERS=PASS real=${markers.real.length} noTests=${markers.noTests.length}`);
-    debugLog('phase.finish', {phase: 'test-markers', outcome: 'PASS', real: markers.real.length, noTests: markers.noTests.length});
+    debugLog('phase.finish', {
+      phase: 'test-markers',
+      outcome: 'PASS',
+      real: markers.real.length,
+      noTests: markers.noTests.length,
+    });
   } catch (error) {
     fail('test-markers', error instanceof Error ? error.message : String(error));
+  }
+  const androidUnitTestRunner = path.join(repoRoot, 'tools/terminal-shared/run-owned-android-tests.mjs');
+  debugLog('phase.start', {phase: 'android-unit-test-runner-self-test'});
+  run('android-unit-test-runner-self-test', process.execPath, [androidUnitTestRunner, '--self-test']);
+  debugLog('phase.finish', {phase: 'android-unit-test-runner-self-test', outcome: 'PASS'});
+  debugLog('phase.start', {phase: 'android-unit-tests'});
+  run('android-unit-tests', process.execPath, [androidUnitTestRunner]);
+  debugLog('phase.finish', {phase: 'android-unit-tests', outcome: 'PASS'});
+  debugLog('phase.start', {phase: 'turbo-lint'});
+  const lintResult = run('lint', 'yarn', ['turbo', 'run', 'lint', ...terminalFilters]);
+  debugLog('phase.finish', {phase: 'turbo-lint', outcome: 'PASS'});
+  try {
+    const markers = assertPackageLintMarkers(`${lintResult.stdout ?? ''}\n${lintResult.stderr ?? ''}`);
+    const files = markers.reduce((sum, marker) => sum + marker.expectedFiles, 0);
+    console.log(`TERMINAL_LINT_MARKERS=PASS packages=${markers.length} files=${files}`);
+    debugLog('phase.finish', {phase: 'lint-markers', outcome: 'PASS', packages: markers.length, files});
+  } catch (error) {
+    fail('lint-markers', error instanceof Error ? error.message : String(error));
   }
   const applicationDirectory = path.join(repoRoot, 'apps/terminal/application/android/sample-terminal');
   const exportArtifacts = exportArtifactPaths(applicationDirectory);
@@ -315,7 +383,9 @@ function main() {
     }
   }
   if (cleanupFailure) {
-    console.error(`TERMINAL_VERIFY_CLEANUP=FAIL:${cleanupFailure instanceof Error ? cleanupFailure.message : String(cleanupFailure)}`);
+    console.error(
+      `TERMINAL_VERIFY_CLEANUP=FAIL:${cleanupFailure instanceof Error ? cleanupFailure.message : String(cleanupFailure)}`,
+    );
     debugLog('phase.finish', {
       phase: 'application-export-cleanup',
       outcome: 'FAIL',
@@ -327,7 +397,10 @@ function main() {
     debugLog('phase.finish', {phase: 'application-export-cleanup', outcome: 'PASS'});
   }
   if (firstFailure) {
-    debugLog('verify.finish', {outcome: 'FAIL', error: firstFailure instanceof Error ? firstFailure.message : String(firstFailure)});
+    debugLog('verify.finish', {
+      outcome: 'FAIL',
+      error: firstFailure instanceof Error ? firstFailure.message : String(firstFailure),
+    });
     throw firstFailure;
   }
   debugLog('phase.finish', {phase: 'application-export', outcome: 'PASS'});

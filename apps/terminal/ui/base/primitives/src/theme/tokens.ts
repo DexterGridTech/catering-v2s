@@ -3,7 +3,8 @@ export const baseTokens = Object.freeze({
   containerContent: 'w-full bg-canvas gap-3',
   containerCard: 'w-11/12 max-w-xl self-center rounded-xl border border-border bg-surface p-6 gap-4',
   containerElevated: 'bg-surface-elevated shadow-lg',
-  containerLogin: 'w-11/12 max-w-2xl self-center rounded-2xl border border-login-border bg-login-surface p-4 gap-3 shadow-2xl md:p-10 md:gap-5',
+  containerLogin:
+    'w-11/12 max-w-2xl self-center rounded-2xl border border-login-border bg-login-surface p-4 gap-3 shadow-2xl md:p-10 md:gap-5',
   containerBoundedCard: 'min-h-0 overflow-hidden',
   containerBoundedContent: 'flex-1 min-h-0',
   containerCentered: 'flex-1 items-center justify-center bg-canvas p-6 gap-4',
@@ -15,7 +16,8 @@ export const baseTokens = Object.freeze({
   adminShellMobile: 'overflow-hidden border border-admin-shell-border bg-admin-shell-surface',
   adminHeader: 'w-full flex-row items-center border-b border-admin-shell-border bg-admin-shell-surface',
   adminHeaderTitle: 'text-2xl leading-8 font-bold text-admin-shell-foreground',
-  adminHeaderClose: 'min-h-7 min-w-7 items-center justify-center rounded-[9px] border border-admin-shell-border bg-transparent px-2',
+  adminHeaderClose:
+    'min-h-7 min-w-7 items-center justify-center rounded-[9px] border border-admin-shell-border bg-transparent px-2',
   adminHeaderCloseText: 'text-sm leading-5 font-semibold text-admin-shell-muted',
   adminBrand: 'h-7 w-7 items-center justify-center rounded-lg border border-admin-shell-border bg-admin-action',
   adminGateIcon: 'h-12 w-12 items-center justify-center rounded-[16px]',
@@ -41,18 +43,24 @@ export const baseTokens = Object.freeze({
   adminPortItemName: 'flex-1 min-w-[120px] text-sm leading-5 font-semibold text-admin-content-foreground',
   adminPortItemStatus: 'text-sm leading-5 font-semibold',
   adminPortItemMeta: 'text-xs leading-[18px] text-admin-content-muted',
-  adminButton: 'self-start min-h-11 flex-row items-center justify-center gap-2 overflow-hidden rounded-xl border border-admin-action bg-admin-action px-4',
+  adminButton:
+    'self-start min-h-11 flex-row items-center justify-center gap-2 overflow-hidden rounded-xl border border-admin-action bg-admin-action px-4',
   adminButtonText: 'text-center text-sm leading-5 font-semibold text-admin-action-foreground',
-  adminButtonDisabled: 'self-start min-h-11 flex-row items-center justify-center gap-2 overflow-hidden rounded-xl border border-admin-content-border bg-admin-inset px-4',
+  adminButtonDisabled:
+    'self-start min-h-11 flex-row items-center justify-center gap-2 overflow-hidden rounded-xl border border-admin-content-border bg-admin-inset px-4',
   adminButtonDisabledText: 'text-center text-sm leading-5 font-semibold text-admin-content-muted',
-  adminButtonSecondary: 'self-start min-h-11 flex-row items-center justify-center gap-2 overflow-hidden rounded-xl border border-admin-content-border bg-admin-content-surface px-4',
+  adminButtonSecondary:
+    'self-start min-h-11 flex-row items-center justify-center gap-2 overflow-hidden rounded-xl border border-admin-content-border bg-admin-content-surface px-4',
   adminButtonSecondaryText: 'text-center text-sm leading-5 font-semibold text-admin-content-foreground',
-  adminMobileSelector: 'w-full min-h-12 flex-row items-center justify-between rounded-xl border-2 border-admin-focus bg-admin-inset px-4',
+  adminMobileSelector:
+    'w-full min-h-12 flex-row items-center justify-between rounded-xl border-2 border-admin-focus bg-admin-inset px-4',
   adminMobileSelectorValue: 'flex-1 text-sm leading-5 font-semibold text-admin-content-foreground',
   adminMobileSelectorChevron: 'text-base leading-5 text-admin-content-muted',
-  adminDropdownMenu: 'w-full rounded-xl border border-admin-content-border bg-admin-content-surface p-1 gap-1 shadow-lg',
+  adminDropdownMenu:
+    'w-full rounded-xl border border-admin-content-border bg-admin-content-surface p-1 gap-1 shadow-lg',
   adminDropdownOption: 'w-full rounded-lg px-3 py-3 text-sm leading-5 text-admin-content-foreground',
-  adminDropdownOptionSelected: 'w-full rounded-lg bg-admin-action px-3 py-3 text-sm leading-5 text-admin-action-foreground',
+  adminDropdownOptionSelected:
+    'w-full rounded-lg bg-admin-action px-3 py-3 text-sm leading-5 text-admin-action-foreground',
   adminDisclosure: 'w-full rounded-2xl border border-admin-content-border bg-surface-elevated',
   adminDisclosureTrigger: 'w-full min-h-[52px] flex-row items-center gap-3 px-4',
   adminDisclosureContent: 'w-full gap-3 border-t border-admin-content-border p-4',
@@ -68,26 +76,36 @@ export const baseTokens = Object.freeze({
   adminFactValue: 'text-sm leading-5 font-semibold text-admin-content-foreground',
   adminSurfaceMapRow: 'w-full flex-row items-start gap-4',
   adminSurfaceMapColumn: 'w-full flex-col items-center gap-4',
-  adminSurfaceMapCard: 'flex-1 min-w-0 rounded-2xl border border-admin-content-border bg-surface-elevated p-4 gap-2 shadow-lg',
-  adminSurfaceMapCardCurrent: 'flex-1 min-w-0 rounded-2xl border-2 border-admin-focus bg-surface-elevated p-4 gap-2 shadow-lg',
-  adminSurfaceMapCardColumn: 'w-full rounded-2xl border border-admin-content-border bg-surface-elevated p-4 gap-2 shadow-lg',
-  adminSurfaceMapCardCurrentColumn: 'w-full rounded-2xl border-2 border-admin-focus bg-surface-elevated p-4 gap-2 shadow-lg',
+  adminSurfaceMapCard:
+    'flex-1 min-w-0 rounded-2xl border border-admin-content-border bg-surface-elevated p-4 gap-2 shadow-lg',
+  adminSurfaceMapCardCurrent:
+    'flex-1 min-w-0 rounded-2xl border-2 border-admin-focus bg-surface-elevated p-4 gap-2 shadow-lg',
+  adminSurfaceMapCardColumn:
+    'w-full rounded-2xl border border-admin-content-border bg-surface-elevated p-4 gap-2 shadow-lg',
+  adminSurfaceMapCardCurrentColumn:
+    'w-full rounded-2xl border-2 border-admin-focus bg-surface-elevated p-4 gap-2 shadow-lg',
   adminSurfaceMapWrap: 'w-full relative px-4 py-4 pb-12',
   // The rectangle's aspectRatio is an executable surface fact. Do not add a
   // fixed min-height here: it would override portrait/landscape geometry on
   // narrow surfaces and turn the map into a false square. The geometry token
   // supplies the minimum short edge instead.
   adminSurfaceMapFrame: 'relative self-center',
-  adminSurfaceMapRect: 'relative w-full items-center justify-center rounded-xl border border-admin-content-border bg-admin-inset p-3 gap-2',
-  adminSurfaceMapRectCurrent: 'relative w-full items-center justify-center rounded-xl border-2 border-admin-focus bg-admin-surface-current p-3 gap-2',
-  adminSurfaceMapLogicWidth: 'absolute left-0 right-0 top-2 text-center text-xs leading-[18px] text-admin-content-muted whitespace-nowrap',
+  adminSurfaceMapRect:
+    'relative w-full items-center justify-center rounded-xl border border-admin-content-border bg-admin-inset p-3 gap-2',
+  adminSurfaceMapRectCurrent:
+    'relative w-full items-center justify-center rounded-xl border-2 border-admin-focus bg-admin-surface-current p-3 gap-2',
+  adminSurfaceMapLogicWidth:
+    'absolute left-0 right-0 top-2 text-center text-xs leading-[18px] text-admin-content-muted whitespace-nowrap',
   // Height labels stay in a readable horizontal writing direction on native
   // and web.  Their edge anchor still communicates the height dimension;
   // rotating CJK text made the runtime surface facts materially harder to
   // read and did not match the high-fidelity IA.
-  adminSurfaceMapLogicHeight: 'absolute right-2 top-1/2 -translate-y-1/2 text-right text-xs leading-[18px] text-admin-content-muted whitespace-nowrap',
-  adminSurfaceMapPhysicalWidth: 'absolute top-0 self-center text-[10px] leading-4 text-admin-content-muted whitespace-nowrap',
-  adminSurfaceMapPhysicalHeight: 'absolute left-full top-1/2 -translate-y-1/2 text-[10px] leading-4 text-admin-content-muted whitespace-nowrap',
+  adminSurfaceMapLogicHeight:
+    'absolute right-2 top-1/2 -translate-y-1/2 text-right text-xs leading-[18px] text-admin-content-muted whitespace-nowrap',
+  adminSurfaceMapPhysicalWidth:
+    'absolute top-0 self-center text-[10px] leading-4 text-admin-content-muted whitespace-nowrap',
+  adminSurfaceMapPhysicalHeight:
+    'absolute left-full top-1/2 -translate-y-1/2 text-[10px] leading-4 text-admin-content-muted whitespace-nowrap',
   adminSurfaceMapLabel: 'text-sm leading-5 font-bold text-admin-content-foreground',
   adminSurfaceMapRole: 'text-xs leading-[18px] font-medium text-admin-content-muted',
   adminSurfaceMapInside: 'text-sm leading-5 text-admin-content-foreground',
@@ -113,18 +131,28 @@ export const baseTokens = Object.freeze({
   buttonLoginSecondary: 'self-center min-h-12 rounded-md bg-transparent px-4 py-2',
   buttonLoginSecondaryText: 'text-center text-lg leading-7 font-medium text-login-foreground',
   keyboardDock: 'w-full self-center border border-keyboard-border bg-keyboard-surface',
-  keyboardKey: 'flex-1 self-stretch min-h-[48px] rounded-[9px] border border-keyboard-border bg-keyboard-key px-2 py-2 items-center justify-center',
-  keyboardKeyCompact: 'flex-1 self-stretch min-h-[38px] rounded-[7px] border border-keyboard-border bg-keyboard-key px-1 py-1 items-center justify-center',
-  keyboardKeySelected: 'flex-1 self-stretch min-h-[48px] rounded-[9px] border-2 border-keyboard-focus bg-keyboard-key px-2 py-2 items-center justify-center',
-  keyboardKeySelectedCompact: 'flex-1 self-stretch min-h-[38px] rounded-[7px] border-2 border-keyboard-focus bg-keyboard-key px-1 py-1 items-center justify-center',
-  keyboardAction: 'flex-1 self-stretch min-h-[48px] rounded-[9px] border border-keyboard-border bg-keyboard-action px-0 py-2 items-center justify-center',
-  keyboardActionCompact: 'flex-1 self-stretch min-h-[38px] rounded-[7px] border border-keyboard-border bg-keyboard-action px-0 py-1 items-center justify-center',
-  keyboardActionSelected: 'flex-1 self-stretch min-h-[48px] rounded-[9px] border-2 border-keyboard-focus bg-keyboard-action px-0 py-2 items-center justify-center',
-  keyboardActionSelectedCompact: 'flex-1 self-stretch min-h-[38px] rounded-[7px] border-2 border-keyboard-focus bg-keyboard-action px-0 py-1 items-center justify-center',
+  keyboardKey:
+    'flex-1 self-stretch min-h-[48px] rounded-[9px] border border-keyboard-border bg-keyboard-key px-2 py-2 items-center justify-center',
+  keyboardKeyCompact:
+    'flex-1 self-stretch min-h-[38px] rounded-[7px] border border-keyboard-border bg-keyboard-key px-1 py-1 items-center justify-center',
+  keyboardKeySelected:
+    'flex-1 self-stretch min-h-[48px] rounded-[9px] border-2 border-keyboard-focus bg-keyboard-key px-2 py-2 items-center justify-center',
+  keyboardKeySelectedCompact:
+    'flex-1 self-stretch min-h-[38px] rounded-[7px] border-2 border-keyboard-focus bg-keyboard-key px-1 py-1 items-center justify-center',
+  keyboardAction:
+    'flex-1 self-stretch min-h-[48px] rounded-[9px] border border-keyboard-border bg-keyboard-action px-0 py-2 items-center justify-center',
+  keyboardActionCompact:
+    'flex-1 self-stretch min-h-[38px] rounded-[7px] border border-keyboard-border bg-keyboard-action px-0 py-1 items-center justify-center',
+  keyboardActionSelected:
+    'flex-1 self-stretch min-h-[48px] rounded-[9px] border-2 border-keyboard-focus bg-keyboard-action px-0 py-2 items-center justify-center',
+  keyboardActionSelectedCompact:
+    'flex-1 self-stretch min-h-[38px] rounded-[7px] border-2 border-keyboard-focus bg-keyboard-action px-0 py-1 items-center justify-center',
   keyboardButtonText: 'text-center text-[21px] leading-[25px] font-semibold text-keyboard-key-foreground',
   keyboardButtonTextCompact: 'text-center text-[17px] leading-[20px] font-semibold text-keyboard-key-foreground',
-  keyboardActionText: 'text-center text-[16px] leading-[20px] font-semibold whitespace-nowrap text-keyboard-action-foreground',
-  keyboardActionTextCompact: 'text-center text-[12px] leading-[14px] font-semibold whitespace-nowrap text-keyboard-action-foreground',
+  keyboardActionText:
+    'text-center text-[16px] leading-[20px] font-semibold whitespace-nowrap text-keyboard-action-foreground',
+  keyboardActionTextCompact:
+    'text-center text-[12px] leading-[14px] font-semibold whitespace-nowrap text-keyboard-action-foreground',
   status: 'text-sm leading-6 pb-1 text-muted-foreground',
   statusLogin: 'w-full text-sm leading-6 pb-1 text-login-muted text-center',
   actions: 'flex-row flex-wrap items-start gap-3',
@@ -141,15 +169,21 @@ export const baseTokens = Object.freeze({
   stack: 'w-full gap-3',
   grid: 'w-full flex-row flex-wrap gap-3',
   pinInput: 'w-full flex-row gap-2',
-  pinCell: 'flex-1 aspect-square min-w-0 items-center justify-center rounded-lg border-2 border-border bg-surface-inset',
-  pinCellFocused: 'flex-1 aspect-square min-w-0 items-center justify-center rounded-lg border-2 border-focus bg-surface-inset',
-  pinCellInvalid: 'flex-1 aspect-square min-w-0 items-center justify-center rounded-lg border-2 border-error-border bg-error-background',
+  pinCell:
+    'flex-1 aspect-square min-w-0 items-center justify-center rounded-lg border-2 border-border bg-surface-inset',
+  pinCellFocused:
+    'flex-1 aspect-square min-w-0 items-center justify-center rounded-lg border-2 border-focus bg-surface-inset',
+  pinCellInvalid:
+    'flex-1 aspect-square min-w-0 items-center justify-center rounded-lg border-2 border-error-border bg-error-background',
   pinCellDisabled: 'opacity-50',
   pinCellText: 'text-2xl leading-8 font-semibold text-foreground',
   pinInputLogin: 'w-full max-w-2xl self-center flex-row justify-center gap-3',
-  pinCellLogin: 'flex-1 aspect-square min-w-0 max-w-20 items-center justify-center rounded-lg border-2 border-login-border bg-login-inset',
-  pinCellLoginFocused: 'flex-1 aspect-square min-w-0 max-w-20 items-center justify-center rounded-lg border-2 border-login-focus bg-login-inset',
-  pinCellLoginInvalid: 'flex-1 aspect-square min-w-0 max-w-20 items-center justify-center rounded-lg border-2 border-error-border bg-error-background',
+  pinCellLogin:
+    'flex-1 aspect-square min-w-0 max-w-20 items-center justify-center rounded-lg border-2 border-login-border bg-login-inset',
+  pinCellLoginFocused:
+    'flex-1 aspect-square min-w-0 max-w-20 items-center justify-center rounded-lg border-2 border-login-focus bg-login-inset',
+  pinCellLoginInvalid:
+    'flex-1 aspect-square min-w-0 max-w-20 items-center justify-center rounded-lg border-2 border-error-border bg-error-background',
   pinCellLoginText: 'text-3xl leading-10 font-semibold text-login-foreground',
   textLogin: 'text-base leading-6 text-login-foreground text-center',
   textLoginMuted: 'text-base leading-6 text-login-muted text-center',
@@ -170,7 +204,8 @@ export const baseTokens = Object.freeze({
   switchChecked: 'min-w-12 rounded-full border border-action bg-action px-1 py-1',
   controlMarker: 'text-center text-base font-semibold text-action-foreground',
   option: 'w-full min-h-12 rounded-md border border-border bg-surface px-3 py-3 text-left text-base text-foreground',
-  optionSelected: 'w-full min-h-12 rounded-md border border-action bg-action px-3 py-3 text-left text-base text-action-foreground',
+  optionSelected:
+    'w-full min-h-12 rounded-md border border-action bg-action px-3 py-3 text-left text-base text-action-foreground',
   dataRow: 'w-full flex-row items-center justify-between gap-3 border-b border-border py-3',
   dataLabel: 'flex-1 text-sm leading-5 font-medium text-muted-foreground',
   dataValue: 'flex-1 text-right text-sm leading-5 text-foreground',
@@ -182,7 +217,8 @@ export const baseTokens = Object.freeze({
   tab: 'min-h-12 rounded-md border border-border bg-surface px-3 py-3 text-sm leading-5 text-foreground',
   tabSelected: 'min-h-12 rounded-md border border-action bg-action px-3 py-3 text-sm leading-5 text-action-foreground',
   dropdown: 'w-full gap-2',
-  dropdownTrigger: 'w-full min-h-12 flex-row items-center justify-between rounded-md border border-border bg-surface-inset px-3 py-3',
+  dropdownTrigger:
+    'w-full min-h-12 flex-row items-center justify-between rounded-md border border-border bg-surface-inset px-3 py-3',
   dropdownValue: 'flex-1 text-base leading-6 text-foreground',
   dropdownChevron: 'text-lg leading-6 text-muted-foreground',
   dropdownMenu: 'w-full rounded-md border border-border bg-surface p-1 gap-1',
@@ -202,27 +238,51 @@ export const baseTokens = Object.freeze({
   surfaceMapInside: 'text-sm leading-5 text-foreground',
   surfaceMapStatus: 'text-sm leading-5 font-semibold',
   surfaceMapOutside: 'text-xs leading-4 text-muted-foreground',
-} as const)
+} as const);
 
 export const semanticToneTokens = Object.freeze({
   neutral: Object.freeze({foreground: 'text-muted-foreground', background: 'bg-surface', border: 'border-border'}),
   ok: Object.freeze({foreground: 'text-ok-foreground', background: 'bg-ok-background', border: 'border-ok-border'}),
-  warn: Object.freeze({foreground: 'text-warn-foreground', background: 'bg-warn-background', border: 'border-warn-border'}),
-  error: Object.freeze({foreground: 'text-error-foreground', background: 'bg-error-background', border: 'border-error-border'}),
-  info: Object.freeze({foreground: 'text-info-foreground', background: 'bg-info-background', border: 'border-info-border'}),
-} as const)
+  warn: Object.freeze({
+    foreground: 'text-warn-foreground',
+    background: 'bg-warn-background',
+    border: 'border-warn-border',
+  }),
+  error: Object.freeze({
+    foreground: 'text-error-foreground',
+    background: 'bg-error-background',
+    border: 'border-error-border',
+  }),
+  info: Object.freeze({
+    foreground: 'text-info-foreground',
+    background: 'bg-info-background',
+    border: 'border-info-border',
+  }),
+} as const);
 
 export const buttonToneTokens = Object.freeze({
   neutral: Object.freeze({background: 'bg-action', foreground: 'text-action-foreground', border: 'border-action'}),
   ok: Object.freeze({background: 'bg-ok-background', foreground: 'text-ok-foreground', border: 'border-ok-border'}),
-  warn: Object.freeze({background: 'bg-warn-background', foreground: 'text-warn-foreground', border: 'border-warn-border'}),
-  error: Object.freeze({background: 'bg-error-background', foreground: 'text-error-foreground', border: 'border-error-border'}),
-  info: Object.freeze({background: 'bg-info-background', foreground: 'text-info-foreground', border: 'border-info-border'}),
-} as const)
+  warn: Object.freeze({
+    background: 'bg-warn-background',
+    foreground: 'text-warn-foreground',
+    border: 'border-warn-border',
+  }),
+  error: Object.freeze({
+    background: 'bg-error-background',
+    foreground: 'text-error-foreground',
+    border: 'border-error-border',
+  }),
+  info: Object.freeze({
+    background: 'bg-info-background',
+    foreground: 'text-info-foreground',
+    border: 'border-info-border',
+  }),
+} as const);
 
 export const baseLayout = Object.freeze({
   scrollContentGap: 12,
-} as const)
+} as const);
 
 /**
  * Geometry is deliberately declared as data instead of hidden in a macro or
@@ -235,12 +295,55 @@ export const adminGeometry = Object.freeze({
   // outer safe-area padding or centered bounded card is allowed here.
   rootLaptop: Object.freeze({paddingHorizontal: 0, paddingVertical: 0}),
   rootMobile: Object.freeze({paddingHorizontal: 0, paddingVertical: 0}),
-  shellLaptop: Object.freeze({flex: 1, width: '100%' as const, maxWidth: '100%' as const, minHeight: 0, minWidth: 0, alignSelf: 'stretch' as const}),
-  shellMobile: Object.freeze({flex: 1, width: '100%' as const, maxWidth: '100%' as const, minHeight: 0, minWidth: 0, alignSelf: 'stretch' as const}),
-  headerLaptop: Object.freeze({height: 72, paddingHorizontal: 24, borderBottomWidth: 1, gap: 12, flexDirection: 'row' as const, alignItems: 'center' as const, flexWrap: 'nowrap' as const}),
-  headerMobile: Object.freeze({height: 60, paddingHorizontal: 16, borderBottomWidth: 1, gap: 12, flexDirection: 'row' as const, alignItems: 'center' as const, flexWrap: 'nowrap' as const}),
-  navigation: Object.freeze({width: 248, minWidth: 248, minHeight: 0, padding: 12, borderRightWidth: 1, borderRadius: 16, flexShrink: 0}),
-  navigationList: Object.freeze({flexDirection: 'column' as const, flexWrap: 'nowrap' as const, alignItems: 'stretch' as const, gap: 6}),
+  shellLaptop: Object.freeze({
+    flex: 1,
+    width: '100%' as const,
+    maxWidth: '100%' as const,
+    minHeight: 0,
+    minWidth: 0,
+    alignSelf: 'stretch' as const,
+  }),
+  shellMobile: Object.freeze({
+    flex: 1,
+    width: '100%' as const,
+    maxWidth: '100%' as const,
+    minHeight: 0,
+    minWidth: 0,
+    alignSelf: 'stretch' as const,
+  }),
+  headerLaptop: Object.freeze({
+    height: 72,
+    paddingHorizontal: 24,
+    borderBottomWidth: 1,
+    gap: 12,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    flexWrap: 'nowrap' as const,
+  }),
+  headerMobile: Object.freeze({
+    height: 60,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    gap: 12,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    flexWrap: 'nowrap' as const,
+  }),
+  navigation: Object.freeze({
+    width: 248,
+    minWidth: 248,
+    minHeight: 0,
+    padding: 12,
+    borderRightWidth: 1,
+    borderRadius: 16,
+    flexShrink: 0,
+  }),
+  navigationList: Object.freeze({
+    flexDirection: 'column' as const,
+    flexWrap: 'nowrap' as const,
+    alignItems: 'stretch' as const,
+    gap: 6,
+  }),
   contentLaptop: Object.freeze({flex: 1, minHeight: 0, minWidth: 0, padding: 24}),
   contentMobile: Object.freeze({flex: 1, minHeight: 0, minWidth: 0, padding: 16, gap: 12}),
   card: Object.freeze({borderRadius: 16, borderWidth: 1, padding: 20, minHeight: 96}),
@@ -253,4 +356,4 @@ export const adminGeometry = Object.freeze({
   // driven portrait/square shape.
   surfaceRectLaptop: Object.freeze({minWidth: 176, maxWidth: 320}),
   surfaceRectMobile: Object.freeze({minWidth: 120}),
-} as const)
+} as const);

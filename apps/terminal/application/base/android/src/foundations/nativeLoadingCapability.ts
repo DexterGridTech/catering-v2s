@@ -36,13 +36,10 @@ export const createAndroidNativeLoadingCapability = (): NativeLoadingCapability 
       if (preventFailure !== null) throw preventFailure;
       const request = await getNativeModule().beginHide(reason);
       if (request.alreadyHidden) return Object.freeze({hidden: false, reason, alreadyHidden: true});
-      // Keep Expo's splash gate closed until the custom Activity gate has
-      // been released.  If Expo is released first, its pre-draw listener can
-      // start the exit animation while this gate is still suppressing the
-      // first business frame, exposing the window background as a black
-      // intermediate frame on Android.
+      // Release the Activity-owned gate first; then synchronously release
+      // Expo's gate. Android's hideAsync is only a Promise wrapper around hide.
       await getNativeModule().releaseHide(request.activityInstanceId);
-      await SplashScreen.hideAsync();
+      SplashScreen.hide();
       return Object.freeze({hidden: true, reason, alreadyHidden: false});
     },
   });

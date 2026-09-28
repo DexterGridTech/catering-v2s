@@ -1,4 +1,4 @@
-import {useCallback, type Dispatch, type SetStateAction} from 'react';
+import {useCallback} from 'react';
 import type {InputFieldController} from '../types/types';
 import type {KeyboardKey} from '../foundations/editText';
 import type {KeyboardStateBase, MutableFieldController, MutableRef} from './inputProviderTypes';
@@ -6,7 +6,7 @@ import type {KeyboardStateBase, MutableFieldController, MutableRef} from './inpu
 type InputKeyboardControllerOptions = Readonly<{
   readonly fieldsRef: MutableRef<Map<string, MutableFieldController>>;
   readonly keyboardStateRef: MutableRef<KeyboardStateBase>;
-  readonly forceKeyboardUpdate: Dispatch<SetStateAction<number>>;
+  readonly forceKeyboardUpdate: () => void;
   readonly completeField: (fieldId: string) => void;
 }>;
 
@@ -36,7 +36,7 @@ export const useInputKeyboardController = ({
       }
       const keyboardPresentationChanged = before.shift !== result.state.shift;
       if (result.effect === 'mode' || keyboardPresentationChanged) {
-        forceKeyboardUpdate(value => value + 1);
+        forceKeyboardUpdate();
       }
       if (result.effect === 'focus-next') completeField(active);
       if (result.effect === 'close-only') completeField(active);

@@ -1,9 +1,9 @@
-import {act, create, type ReactTestRenderer} from 'react-test-renderer'
-import {afterEach, describe, expect, it, vi} from 'vitest'
-import * as renderHooks from '@catering-v2s/ui-base-render'
-import {DisplayContextSectionLaptop} from '../src/components/sections/DisplayContextSectionLaptop'
-import type {AdminSectionProps} from '../src/types/adminSection'
-import {adminTestIds} from '../src/foundations/adminTestIds'
+import {render, type RenderResult} from '@testing-library/react-native';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import * as renderHooks from '@catering-v2s/ui-base-render';
+import {DisplayContextSectionLaptop} from '../src/components/sections/DisplayContextSectionLaptop';
+import type {AdminSectionProps} from '../src/types/adminSection';
+import {adminTestIds} from '../src/foundations/adminTestIds';
 
 const context = {
   catalogEntry: {title: '运行状态'},
@@ -15,34 +15,30 @@ const context = {
   },
   surface: {surfaceForm: 'laptop', displayMode: 'PRIMARY', hostLogicalSize: null},
   commandBoundary: {},
-} as unknown as AdminSectionProps['context']
+} as unknown as AdminSectionProps['context'];
 
-const findText = (renderer: ReactTestRenderer, text: string) => renderer.root.findAll(node => node.type === 'Text' && node.props.children === text)
+const renderSection = async (status: 'created' | 'started'): Promise<RenderResult> => {
+  vi.spyOn(renderHooks, 'useRenderStatus').mockReturnValue(status);
+  vi.spyOn(renderHooks, 'useUiStateSelector').mockReturnValue(undefined);
+  return render(<DisplayContextSectionLaptop context={context} />);
+};
 
-const renderSection = (status: 'created' | 'started') => {
-  vi.spyOn(renderHooks, 'useRenderStatus').mockReturnValue(status)
-  vi.spyOn(renderHooks, 'useUiStateSelector').mockReturnValue(undefined)
-  let renderer: ReactTestRenderer | undefined
-  act(() => { renderer = create(<DisplayContextSectionLaptop context={context} />) })
-  return renderer!
-}
-
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => vi.restoreAllMocks());
 
 describe('DisplayContextSection lifecycle boundary', () => {
-  it('uses runtime status for lifecycle unavailability', () => {
-    const renderer = renderSection('created')
+  it('uses runtime status for lifecycle unavailability', async () => {
+    const renderer = await renderSection('created');
 
-    expect(renderer.root.findByProps({testID: adminTestIds.runtime.overallStatus})).toBeDefined()
-    expect(renderer.root.findByProps({testID: adminTestIds.runtime.displayFactsError})).toBeDefined()
-    renderer.unmount()
-  })
+    expect(renderer.getByTestId(adminTestIds.runtime.overallStatus)).toBeDefined();
+    expect(renderer.getByTestId(adminTestIds.runtime.displayFactsError)).toBeDefined();
+    await renderer.unmount();
+  });
 
-  it('keeps missing display data distinct from runtime unavailability after start', () => {
-    const renderer = renderSection('started')
+  it('keeps missing display data distinct from runtime unavailability after start', async () => {
+    const renderer = await renderSection('started');
 
-    expect(renderer.root.findByProps({testID: adminTestIds.runtime.overallStatus})).toBeDefined()
-    expect(renderer.root.findAllByProps({testID: adminTestIds.runtime.displayFactsError}).length).toBeGreaterThan(0)
-    renderer.unmount()
-  })
-})
+    expect(renderer.getByTestId(adminTestIds.runtime.overallStatus)).toBeDefined();
+    expect(renderer.getAllByTestId(adminTestIds.runtime.displayFactsError).length).toBeGreaterThan(0);
+    await renderer.unmount();
+  });
+});

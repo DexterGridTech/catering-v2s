@@ -26,10 +26,11 @@ type InputFieldOptionsBase = Readonly<{
   readonly focusScopeId?: string;
 }>;
 
-export type InputFieldOptions = InputFieldOptionsBase & Readonly<{
-  readonly keyboardKind: 'virtual';
-  readonly layout: KeyboardLayout;
-}>;
+export type InputFieldOptions = InputFieldOptionsBase &
+  Readonly<{
+    readonly keyboardKind: 'virtual';
+    readonly layout: KeyboardLayout;
+  }>;
 
 export type InputFieldResult = Readonly<{
   readonly inputProps: PrimitiveInputProps;
@@ -107,6 +108,7 @@ export type InputController = Readonly<{
   readonly focusField: (fieldId: string) => void;
   readonly completeField: (fieldId: string) => void;
   readonly activateFocusScope: (scopeId: string) => void;
+  readonly canEditField: (fieldId: string) => boolean;
   readonly captureInputSnapshot: () => InputSnapshot;
   readonly handleKeyboardKey: (key: KeyboardKey) => void;
 }>;

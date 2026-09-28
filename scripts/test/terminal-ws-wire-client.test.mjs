@@ -98,8 +98,10 @@ test(
   assert.match(
     stderr,
     new RegExp(
-      `TERMINAL_WIRE_STAGE=PROCESS_SIGNAL signal=SIGTERM scenario=terminal\\.connection\\.vs12\\.auth-during-outage `
-        + `markerId=${markerId} stage=WEBSOCKET_CONNECTING pid=[1-9][0-9]* ppid=[1-9][0-9]* exitCode=143`,
+      `TERMINAL_WIRE_STAGE=PROCESS_SIGNAL signal=SIGTERM timestampUtc=[0-9TZ:.-]+ `
+        + `runId=NONE scenario=terminal\\.connection\\.vs12\\.auth-during-outage `
+        + `markerId=${markerId} stage=WEBSOCKET_CONNECTING lastCommand=NONE lastPingSequence=NONE `
+        + `pid=[1-9][0-9]* ppid=[1-9][0-9]* senderPid=UNAVAILABLE_BY_NODE_SIGNAL_API exitCode=143`,
     ),
   );
   },

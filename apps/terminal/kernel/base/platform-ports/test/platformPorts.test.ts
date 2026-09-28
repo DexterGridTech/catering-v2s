@@ -36,6 +36,7 @@ describe('A: platform port assembly', () => {
     const ports = createPlatformPorts({environmentMode: 'TEST', bindings});
 
     expect(Object.keys(ports)).toEqual([
+      ...(__DEV__ ? ['startupRunId'] : []),
       'logger',
       'persistKv',
       'persistSecure',
@@ -94,9 +95,7 @@ describe('A: platform port assembly', () => {
       ]),
     });
     expect(descriptors.find(descriptor => descriptor.port === 'persistKv')).toMatchObject({
-      capabilities: expect.arrayContaining([
-        {capability: 'read', state: 'real', source: 'default'},
-      ]),
+      capabilities: expect.arrayContaining([{capability: 'read', state: 'real', source: 'default'}]),
     });
   });
 });

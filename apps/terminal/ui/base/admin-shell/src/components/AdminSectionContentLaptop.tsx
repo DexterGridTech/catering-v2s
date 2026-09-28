@@ -1,25 +1,40 @@
-import {type RendererCatalog, type RenderRuntimeFacts, type SurfaceContextValue} from '@catering-v2s/ui-base-render'
-import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state'
-import {PrimitiveCard, PrimitiveEmptyState, PrimitiveFactGrid, PrimitiveHeading, PrimitiveScrollView, PrimitiveStatusLine, PrimitiveText} from '@catering-v2s/ui-base-primitives'
-import type {TopologyAdminCapability} from '@catering-v2s/kernel-base-contracts'
-import {adminTestIds} from '../foundations/adminTestIds'
-import {createAdminSectionCommandBoundary, type AdminSectionCommandBoundary} from '../foundations/adminSectionSelection'
-import {useAdminSectionBinding} from '../hooks/useAdminSectionBinding'
+import {type RendererCatalog, type RenderRuntimeFacts, type SurfaceContextValue} from '@catering-v2s/ui-base-render';
+import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state';
+import {
+  PrimitiveCard,
+  PrimitiveEmptyState,
+  PrimitiveFactGrid,
+  PrimitiveHeading,
+  PrimitiveScrollView,
+  PrimitiveStatusLine,
+  PrimitiveText,
+} from '@catering-v2s/ui-base-primitives';
+import type {TopologyAdminCapability} from '@catering-v2s/kernel-base-contracts';
+import {adminTestIds} from '../foundations/adminTestIds';
+import {
+  createAdminSectionCommandBoundary,
+  type AdminSectionCommandBoundary,
+} from '../foundations/adminSectionSelection';
+import {useAdminSectionBinding} from '../hooks/useAdminSectionBinding';
 
 export type AdminSectionContentLaptopProps = Readonly<{
-  readonly selectedSection: UiCatalogEntry | undefined
-  readonly rendererCatalog: RendererCatalog
-  readonly runtimeFacts: RenderRuntimeFacts
-  readonly surface: SurfaceContextValue
-  readonly commandBoundary?: AdminSectionCommandBoundary
-  readonly topologyCapability?: TopologyAdminCapability
-}>
+  readonly selectedSection: UiCatalogEntry | undefined;
+  readonly rendererCatalog: RendererCatalog;
+  readonly runtimeFacts: RenderRuntimeFacts;
+  readonly surface: SurfaceContextValue;
+  readonly commandBoundary?: AdminSectionCommandBoundary;
+  readonly topologyCapability?: TopologyAdminCapability;
+}>;
 
 const AdminPanelNormalStateLaptop = () => (
   <PrimitiveScrollView testID="terminal.admin:panel:normal:scroll">
-    <PrimitiveHeading appearance="admin-page" testID="terminal.admin:panel:normal:title">面板状态</PrimitiveHeading>
+    <PrimitiveHeading appearance="admin-page" testID="terminal.admin:panel:normal:title">
+      面板状态
+    </PrimitiveHeading>
     <PrimitiveCard appearance="admin" testID="terminal.admin:panel:normal:card">
-      <PrimitiveStatusLine testID="terminal.admin:panel:normal:status" tone="ok">终端状态：可操作</PrimitiveStatusLine>
+      <PrimitiveStatusLine testID="terminal.admin:panel:normal:status" tone="ok">
+        终端状态：可操作
+      </PrimitiveStatusLine>
       <PrimitiveFactGrid
         testID="terminal.admin:panel:normal:facts"
         columns={2}
@@ -28,10 +43,12 @@ const AdminPanelNormalStateLaptop = () => (
           {key: 'content-area', label: '内容区', value: '可滚动'},
         ]}
       />
-      <PrimitiveText appearance="admin-muted" testID="terminal.admin:panel:normal:hint">关闭入口固定在右上角；selector 固定在内容顶部。</PrimitiveText>
+      <PrimitiveText appearance="admin-muted" testID="terminal.admin:panel:normal:hint">
+        关闭入口固定在右上角；selector 固定在内容顶部。
+      </PrimitiveText>
     </PrimitiveCard>
   </PrimitiveScrollView>
-)
+);
 
 export const AdminSectionContentLaptop = ({
   selectedSection,
@@ -49,18 +66,16 @@ export const AdminSectionContentLaptop = ({
     commandBoundary,
     topologyCapability,
     surfaceForm: 'laptop',
-  })
+  });
   if (selectedSection === undefined || activeSection === undefined || activeContext === undefined) {
-    if (selectedSection === undefined) return <AdminPanelNormalStateLaptop />
+    if (selectedSection === undefined) return <AdminPanelNormalStateLaptop />;
     return (
       <PrimitiveEmptyState testID={`${adminTestIds.content}:empty`} accessibilityLabel="暂无可用诊断节">
         暂无可用诊断节；请检查当前运行时配置后重试
       </PrimitiveEmptyState>
-    )
+    );
   }
 
-  const ActiveSection = activeSection
-  return (
-    <ActiveSection context={activeContext} />
-  )
-}
+  const ActiveSection = activeSection;
+  return <ActiveSection context={activeContext} />;
+};

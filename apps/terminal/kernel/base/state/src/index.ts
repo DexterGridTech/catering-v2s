@@ -1,11 +1,7 @@
 export {moduleName} from './moduleName';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
 
-export type {
-  StateJsonPrimitive,
-  StateJsonValue,
-  StateJsonObject,
-} from './types/value';
+export type {StateJsonPrimitive, StateJsonValue, StateJsonObject} from './types/value';
 
 export type {
   PersistIntent,
@@ -37,16 +33,9 @@ export type {
   StateRuntimeSyncRecordDescriptor,
   StateRuntimeSyncDescriptor,
 } from './types/sync';
-export {
-  createFullSliceSyncPayload,
-  applySliceSyncDiff,
-  createSyncTombstone,
-} from './foundations/sync';
+export {createFullSliceSyncPayload, applySliceSyncDiff, createSyncTombstone} from './foundations/sync';
 
-export type {
-  StateRuntimeSliceDescriptor,
-  StateRuntimeSliceRegistration,
-} from './types/slice';
+export type {StateRuntimeSliceDescriptor, StateRuntimeSliceRegistration} from './types/slice';
 export {defineStateRuntimeSlice} from './foundations/defineStateRuntimeSlice';
 
 export type {PartitionedStateKeys} from './types/partitioned';

@@ -3,16 +3,26 @@
   "package": "@catering-v2s/ui-feature-sample-wallpaper-picker",
   "owned": {
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-feature-sample-wallpaper-picker", "runner": "vitest"},
-    "lint": {"kind": "ABSENT"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-feature-sample-wallpaper-picker", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
   "ownerKind": "owner",
   "publicExports": [
-    "WallpaperBackground", "WallpaperPickerAssembly",
-    "WallpaperId", "WallpaperPickerCommandPayload", "assetsById",
-    "confirmWallpaperRequestedCommand", "createSampleWallpaperPickerModule",
-    "dependencyModuleNames", "devDependencyModuleNames", "moduleKind", "moduleName",
-    "parts", "sampleWallpaperPickerAssembly", "wallpaperOptionTestId", "wallpaperPickerTestIds",
+    "WallpaperBackground",
+    "WallpaperPickerAssembly",
+    "WallpaperId",
+    "WallpaperPickerCommandPayload",
+    "assetsById",
+    "confirmWallpaperRequestedCommand",
+    "createSampleWallpaperPickerModule",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleKind",
+    "moduleName",
+    "parts",
+    "sampleWallpaperPickerAssembly",
+    "wallpaperOptionTestId",
+    "wallpaperPickerTestIds",
     "wallpaperOptionSelectedCommand"
   ],
   "publicExportMap": {

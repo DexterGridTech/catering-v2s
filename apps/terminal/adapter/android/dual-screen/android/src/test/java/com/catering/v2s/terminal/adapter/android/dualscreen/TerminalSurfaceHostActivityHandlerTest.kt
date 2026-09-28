@@ -1,6 +1,7 @@
 package com.catering.v2s.terminal.adapter.android.dualscreen
 
 import android.content.pm.ActivityInfo
+import android.view.Display
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -92,14 +93,21 @@ class TerminalSurfaceHostActivityHandlerTest {
   }
 
   @Test
-  fun `selects primary-only and secondary display snapshots from display ids`() {
+  fun `selects primary and presentation display snapshots while excluding unrelated secondary displays`() {
     assertEquals(
       DisplaySnapshotReadResult.Ready(displayCount = 1, secondaryDisplayIndex = null),
-      readDisplaySnapshotSelection { listOf(0) },
+      readDisplaySnapshotSelection { listOf(DisplaySnapshotCandidate(0, 0)) },
     )
     assertEquals(
       DisplaySnapshotReadResult.Ready(displayCount = 2, secondaryDisplayIndex = 1),
-      readDisplaySnapshotSelection { listOf(0, 2) },
+      readDisplaySnapshotSelection {
+        listOf(
+          DisplaySnapshotCandidate(0, 0),
+          DisplaySnapshotCandidate(4, Display.FLAG_PRIVATE),
+          DisplaySnapshotCandidate(5, 0),
+          DisplaySnapshotCandidate(2, Display.FLAG_PRESENTATION),
+        )
+      },
     )
   }
 

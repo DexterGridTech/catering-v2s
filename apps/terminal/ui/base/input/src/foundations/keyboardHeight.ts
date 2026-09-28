@@ -57,10 +57,7 @@ const isReady = (frame: FrameMetricsInput | null): frame is FrameMetricsInput =>
   frame.height > 0;
 
 const calculateAvailableDockHeight = (frameHeight: number): number => {
-  const candidate = Math.min(
-    MAX_DOCK_HEIGHT,
-    Math.floor(frameHeight * MAX_DOCK_RATIO),
-  );
+  const candidate = Math.min(MAX_DOCK_HEIGHT, Math.floor(frameHeight * MAX_DOCK_RATIO));
   return Math.max(0, candidate);
 };
 
@@ -131,9 +128,8 @@ export const calculateVirtualKeyboardMetrics = (
   const height = Math.min(availableDockHeight, verticalRequired);
   const contentHeight = Math.max(0, frame.height - height);
   const cellWidth = calculateVirtualKeyboardCellWidth(frame.width, layout);
-  const minimumCellWidth = definition.horizontalMode === 'dense'
-    ? DENSE_KEY_MIN_WIDTH
-    : compact ? COMPACT_KEY_CELL_HEIGHT : KEY_CELL_HEIGHT;
+  const minimumCellWidth =
+    definition.horizontalMode === 'dense' ? DENSE_KEY_MIN_WIDTH : compact ? COMPACT_KEY_CELL_HEIGHT : KEY_CELL_HEIGHT;
   const horizontalFeasible = cellWidth >= minimumCellWidth;
   const verticalFeasible = availableDockHeight >= verticalRequired;
   const capacity: KeyboardCapacity =

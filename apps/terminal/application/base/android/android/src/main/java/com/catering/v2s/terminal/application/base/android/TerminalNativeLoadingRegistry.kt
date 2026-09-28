@@ -5,6 +5,7 @@ import android.app.Application
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import android.view.Gravity
 import android.view.ViewGroup
@@ -12,10 +13,41 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import android.widget.ImageView
+import expo.modules.kotlin.exception.CodedException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import java.util.IdentityHashMap
-import java.util.concurrent.Callable
-import java.util.concurrent.FutureTask
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
+
+internal const val TERMINAL_NATIVE_LOADING_MAIN_THREAD_TIMEOUT = "TERMINAL_NATIVE_LOADING_MAIN_THREAD_TIMEOUT"
+
+internal suspend fun <T> runNativeLoadingOnMainThread(
+  operation: String,
+  timeoutMs: Long,
+  dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
+  onTimeout: (operation: String, failureCode: String, timeoutMs: Long, elapsedMs: Long) -> Unit,
+  block: () -> T,
+): T {
+  val startedAt = SystemClock.elapsedRealtime()
+  try {
+    return withTimeout(timeoutMs) { withContext(dispatcher) { block() } }
+  } catch (_error: TimeoutCancellationException) {
+    onTimeout(
+      operation,
+      TERMINAL_NATIVE_LOADING_MAIN_THREAD_TIMEOUT,
+      timeoutMs,
+      SystemClock.elapsedRealtime() - startedAt,
+    )
+    throw CodedException(
+      TERMINAL_NATIVE_LOADING_MAIN_THREAD_TIMEOUT,
+      "native loading operation exceeded its main-thread deadline",
+      null,
+    )
+  }
+}
 
 /**
  * Holds the native pre-draw gate for each concrete Activity instance. The
@@ -33,6 +65,7 @@ object TerminalNativeLoadingRegistry {
   private var registeredApplication: Application? = null
   private var nextToken = 0L
   private var loadingOverlayConfig: LoadingOverlayConfig? = null
+  private val debugMainThreadDelayBeforeNextDispatchMs = AtomicLong(0L)
 
   private data class LoadingOverlayConfig(
     val backgroundColorResId: Int,
@@ -69,41 +102,28 @@ object TerminalNativeLoadingRegistry {
 
   @JvmStatic
   fun registerApplication(application: Application) {
-    onMain {
-      if (registeredApplication === application) return@onMain
+    mainHandler.post {
+      if (registeredApplication === application) return@post
       registeredApplication?.unregisterActivityLifecycleCallbacks(lifecycleCallbacks)
       application.registerActivityLifecycleCallbacks(lifecycleCallbacks)
       registeredApplication = application
-      Log.i(LOG_TAG, "event=native.application-callbacks-registered")
+      Log.i(LOG_TAG, "event=native.application-callbacks-registered owner=application-process")
     }
   }
 
   @JvmStatic
-  fun unregisterApplication(application: Application?) {
-    onMain {
-      val registered = registeredApplication ?: return@onMain
-      if (application != null && registered !== application) return@onMain
-      registered.unregisterActivityLifecycleCallbacks(lifecycleCallbacks)
-      registeredApplication = null
-      val gates = synchronized(lock) {
-        val values = gatesByActivity.values.toList()
-        gatesByActivity.clear()
-        gatesByToken.clear()
-        values
-      }
-      loadingOverlayConfig = null
-      gates.forEach(::removeListener)
-      Log.i(LOG_TAG, "event=native.application-callbacks-unregistered")
-    }
+  fun armDebugMainThreadDelayBeforeNextDispatch(delayMs: Long) {
+    if (!BuildConfig.DEBUG || delayMs !in 2_100L..4_000L) return
+    debugMainThreadDelayBeforeNextDispatchMs.set(delayMs)
+    Log.i(LOG_TAG, "event=native.debug-main-thread-delay-armed delayMs=$delayMs")
   }
 
   /** Called from each App's MainActivity before React's super.onCreate. */
   @JvmStatic
   fun registerOnActivity(activity: Activity, backgroundColorResId: Int, logoResId: Int) {
-    onMain {
-      loadingOverlayConfig = LoadingOverlayConfig(backgroundColorResId, logoResId)
-      installOnMain(activity)
-    }
+    checkMainThread()
+    loadingOverlayConfig = LoadingOverlayConfig(backgroundColorResId, logoResId)
+    installOnMain(activity)
   }
 
   /**
@@ -113,16 +133,15 @@ object TerminalNativeLoadingRegistry {
    */
   @JvmStatic
   fun attachLoadingOverlay(activity: Activity) {
-    onMain {
-      val gate = synchronized(lock) { gatesByActivity[activity] } ?: run {
-        Log.i(LOG_TAG, "event=native.loading-overlay-skipped reason=gate-unavailable")
-        return@onMain
-      }
-      attachLoadingOverlayOnMain(gate)
+    checkMainThread()
+    val gate = synchronized(lock) { gatesByActivity[activity] } ?: run {
+      Log.i(LOG_TAG, "event=native.loading-overlay-skipped reason=gate-unavailable")
+      return
     }
+    attachLoadingOverlayOnMain(gate)
   }
 
-  fun beginHide(activity: Activity, reason: String): Map<String, Any?> = onMain {
+  suspend fun beginHide(activity: Activity, reason: String): Map<String, Any?> = dispatchToMainThread("beginHide") {
     val gate = installOnMain(activity)
       ?: throw IllegalStateException("native loading content view is unavailable")
     val safeReason = when (reason) {
@@ -141,7 +160,7 @@ object TerminalNativeLoadingRegistry {
     result
   }
 
-  fun releaseHide(activityInstanceId: String): Map<String, Any?> = onMain {
+  suspend fun releaseHide(activityInstanceId: String): Map<String, Any?> = dispatchToMainThread("releaseHide") {
     val gate = synchronized(lock) { gatesByToken[activityInstanceId] }
       ?: throw IllegalStateException("native loading Activity instance is unavailable")
     synchronized(lock) { gate.released = true }
@@ -309,10 +328,32 @@ object TerminalNativeLoadingRegistry {
     }
   }
 
-  private fun <T> onMain(block: () -> T): T {
-    if (Looper.myLooper() === Looper.getMainLooper()) return block()
-    val task = FutureTask(Callable { block() })
-    mainHandler.post(task)
-    return task.get(MAIN_QUEUE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+  private fun checkMainThread() {
+    check(Looper.myLooper() === Looper.getMainLooper()) { "native loading lifecycle must run on the main thread" }
+  }
+
+  private suspend fun <T> dispatchToMainThread(operation: String, block: () -> T): T {
+    if (BuildConfig.DEBUG) {
+      val debugDelayMs = debugMainThreadDelayBeforeNextDispatchMs.getAndSet(0L)
+      if (debugDelayMs > 0L) {
+        mainHandler.post {
+          Log.w(LOG_TAG, "event=native.debug-main-thread-delay-start operation=$operation delayMs=$debugDelayMs")
+          SystemClock.sleep(debugDelayMs)
+          Log.w(LOG_TAG, "event=native.debug-main-thread-delay-finished operation=$operation delayMs=$debugDelayMs")
+        }
+      }
+    }
+    return runNativeLoadingOnMainThread(
+      operation = operation,
+      timeoutMs = MAIN_QUEUE_TIMEOUT_MS,
+      onTimeout = { timedOperation, failureCode, timeoutMs, elapsedMs ->
+        Log.e(
+          LOG_TAG,
+          "event=native.main-thread-operation status=timeout operation=$timedOperation " +
+            "failureCode=$failureCode timeoutMs=$timeoutMs elapsedMs=$elapsedMs",
+        )
+      },
+      block = block,
+    )
   }
 }

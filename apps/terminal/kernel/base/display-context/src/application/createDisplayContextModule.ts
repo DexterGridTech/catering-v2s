@@ -1,8 +1,8 @@
-import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime'
-import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts'
-import {runtimeModuleDependencyNames} from '../dependencies'
-import {moduleKind, moduleName} from '../moduleName'
-import {displayRoleSlice, displayRoleSliceName} from '../features/slices/displayRole'
+import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
+import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts';
+import {runtimeModuleDependencyNames} from '../dependencies';
+import {moduleKind, moduleName} from '../moduleName';
+import {displayRoleSlice, displayRoleSliceName} from '../features/slices/displayRole';
 import {
   powerStatusChangedCommand,
   requestPowerRoleChangeCommand,
@@ -11,22 +11,24 @@ import {
   switchDisplayRoleCommand,
   switchInstanceModeCommand,
   validateHydratedDisplayRoleCommand,
-} from '../features/commands'
-import {createSwitchDisplayRoleActor} from '../features/actors/switchDisplayRoleActor'
-import {createSwitchInstanceModeActor} from '../features/actors/switchInstanceModeActor'
-import {createPowerStatusActor} from '../features/actors/powerStatusActor'
-import {createPowerRoleChangeActor} from '../features/actors/powerRoleChangeActor'
-import {createValidateHydratedDisplayRoleActor} from '../features/actors/validateHydratedDisplayRoleActor'
-import {createRuntimeRoleChangedActor} from '../features/actors/runtimeRoleChangedActor'
-import {installPowerStatusBridge} from './createPowerStatusBridge'
+} from '../features/commands';
+import {createSwitchDisplayRoleActor} from '../features/actors/switchDisplayRoleActor';
+import {createSwitchInstanceModeActor} from '../features/actors/switchInstanceModeActor';
+import {createPowerStatusActor} from '../features/actors/powerStatusActor';
+import {createPowerRoleChangeActor} from '../features/actors/powerRoleChangeActor';
+import {createValidateHydratedDisplayRoleActor} from '../features/actors/validateHydratedDisplayRoleActor';
+import {createRuntimeRoleChangedActor} from '../features/actors/runtimeRoleChangedActor';
+import {installPowerStatusBridge} from './createPowerStatusBridge';
 
-export const createDisplayContextModule = (input: Readonly<{readonly surfaceForm?: SurfaceForm}> = {}): RuntimeModule => {
-  const switchDisplayRoleActor = createSwitchDisplayRoleActor()
-  const switchInstanceModeActor = createSwitchInstanceModeActor()
-  const powerStatusActor = createPowerStatusActor()
-  const powerRoleChangeActor = createPowerRoleChangeActor(input.surfaceForm ?? 'laptop')
-  const validateHydratedDisplayRoleActor = createValidateHydratedDisplayRoleActor()
-  const runtimeRoleChangedActor = createRuntimeRoleChangedActor()
+export const createDisplayContextModule = (
+  input: Readonly<{readonly surfaceForm?: SurfaceForm}> = {},
+): RuntimeModule => {
+  const switchDisplayRoleActor = createSwitchDisplayRoleActor();
+  const switchInstanceModeActor = createSwitchInstanceModeActor();
+  const powerStatusActor = createPowerStatusActor();
+  const powerRoleChangeActor = createPowerRoleChangeActor(input.surfaceForm ?? 'laptop');
+  const validateHydratedDisplayRoleActor = createValidateHydratedDisplayRoleActor();
+  const runtimeRoleChangedActor = createRuntimeRoleChangedActor();
 
   return Object.freeze({
     moduleName,
@@ -34,7 +36,7 @@ export const createDisplayContextModule = (input: Readonly<{readonly surfaceForm
     // The package dependency list is the source-import closure.  Only the
     // runtime owner is a runtime-module edge; contracts, ports and state are
     // toolkits and are not fabricated into the runtime graph.
-    dependencies: runtimeModuleDependencyNames.map((name) => ({moduleName: name})),
+    dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
     commands: [
       {name: switchDisplayRoleCommand.commandName, visibility: switchDisplayRoleCommand.visibility},
       {name: switchInstanceModeCommand.commandName, visibility: switchInstanceModeCommand.visibility},
@@ -72,11 +74,11 @@ export const createDisplayContextModule = (input: Readonly<{readonly surfaceForm
     slices: [{name: displayRoleSliceName, persistIntent: 'owner-only' as const}],
     stateSlices: [displayRoleSlice],
     install: async (context: RuntimeModuleContext) => {
-      const validation = await context.dispatchCommand(validateHydratedDisplayRoleCommand, Object.freeze({}))
+      const validation = await context.dispatchCommand(validateHydratedDisplayRoleCommand, Object.freeze({}));
       if (validation.status !== 'completed') {
-        throw new Error(`Display role startup validation failed: ${validation.status}`)
+        throw new Error(`Display role startup validation failed: ${validation.status}`);
       }
-      await installPowerStatusBridge(context)
+      await installPowerStatusBridge(context);
     },
-  })
-}
+  });
+};

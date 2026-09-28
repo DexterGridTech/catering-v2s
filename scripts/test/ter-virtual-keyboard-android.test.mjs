@@ -13,6 +13,8 @@ import {
   iaControlRoster,
   perControlVisualAuditRows,
   parseArgs,
+  debugFailureInjectionIntentArgs,
+  debugNativeLoadingDelayIntentArgs,
   parseAndroidProcessTable,
   parseLogicalDisplays,
   parseResourceNode,
@@ -28,14 +30,33 @@ import {
   parsePngFileDescription,
   parseSurfaceDisplays,
   resolveCaptureDisplayInventory,
+  summarizePersistKvW10,
+  validateA11BaselineManifest,
+  validateA11W10Action,
   validateDeviceShape,
 } from './ter-virtual-keyboard-android.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const IA_IDS = [
-  'VK-IA-01', 'VK-IA-02', 'VK-IA-03', 'VK-IA-04', 'VK-IA-05', 'VK-IA-06', 'VK-IA-07',
-  'VK-IA-08', 'VK-IA-09', 'VK-IA-10', 'VK-IA-11', 'VK-IA-12', 'VK-IA-13', 'VK-IA-14',
-  'VK-IA-15', 'VK-IA-16', 'VK-IA-17', 'VK-IA-18', 'VK-IA-19',
+  'VK-IA-01',
+  'VK-IA-02',
+  'VK-IA-03',
+  'VK-IA-04',
+  'VK-IA-05',
+  'VK-IA-06',
+  'VK-IA-07',
+  'VK-IA-08',
+  'VK-IA-09',
+  'VK-IA-10',
+  'VK-IA-11',
+  'VK-IA-12',
+  'VK-IA-13',
+  'VK-IA-14',
+  'VK-IA-15',
+  'VK-IA-16',
+  'VK-IA-17',
+  'VK-IA-18',
+  'VK-IA-19',
 ];
 
 function validManifest() {
@@ -48,7 +69,8 @@ function validManifest() {
     },
     appBindings: {
       'sample-terminal': {
-        apkPath: 'apps/terminal/application/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk',
+        apkPath:
+          'apps/terminal/application/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk',
         bytes: 128,
         sha256: 'a'.repeat(64),
       },
@@ -64,22 +86,51 @@ function validManifest() {
 
 function validLaunchLogReinspectionManifest() {
   const intent = {
-    intentId: 'dual-sample-terminal-epoch-01', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-12345678',
-    resolution: 'PROCESS_ABSENT', processCount: 0,
+    intentId: 'dual-sample-terminal-epoch-01',
+    shape: 'dual',
+    appName: 'sample-terminal',
+    packageName: 'com.anonymous.sampleterminal',
+    host: 'emulator-5554',
+    bootId: 'boot-12345678',
+    resolution: 'PROCESS_ABSENT',
+    processCount: 0,
   };
   const inspection = {
-    intentId: intent.intentId, shape: intent.shape, appName: intent.appName, packageName: intent.packageName,
-    host: intent.host, bootId: intent.bootId, evidenceStatus: 'MATCHED', startupPid: '321',
-    startupAtEpochMs: 1790203633400, overlayOutcome: 'ATTACHED',
-    observedMarkers: ['activity.onCreate:start', 'native.loading-overlay-attached'], markerCount: 2,
-    signals: {fatalException: false, processDied: false, nativeFatalSignals: [], exceptionTypes: [], appFrames: [], jsErrorSeen: false},
+    intentId: intent.intentId,
+    shape: intent.shape,
+    appName: intent.appName,
+    packageName: intent.packageName,
+    host: intent.host,
+    bootId: intent.bootId,
+    evidenceStatus: 'MATCHED',
+    startupPid: '321',
+    startupAtEpochMs: 1790203633400,
+    overlayOutcome: 'ATTACHED',
+    observedMarkers: ['activity.onCreate:start', 'native.loading-overlay-attached'],
+    markerCount: 2,
+    signals: {
+      fatalException: false,
+      processDied: false,
+      nativeFatalSignals: [],
+      exceptionTypes: [],
+      appFrames: [],
+      jsErrorSeen: false,
+    },
     processObservation: {
-      startupPid: '321', processTableCandidateCount: 1,
-      processTableCandidates: [{pid: 321, name: 'com.anonymous.sampleterminal', statStatus: 'READABLE', processState: 'S', startTicks: '9001'}],
+      startupPid: '321',
+      processTableCandidateCount: 1,
+      processTableCandidates: [
+        {pid: 321, name: 'com.anonymous.sampleterminal', statStatus: 'READABLE', processState: 'S', startTicks: '9001'},
+      ],
       startupPidStatus: 'READABLE',
     },
-    exitInfo: {startupPid: '321', status: 'NO_PACKAGE_RECORD', packageRecordCount: 0, targetPidRecordCount: 0, records: []},
+    exitInfo: {
+      startupPid: '321',
+      status: 'NO_PACKAGE_RECORD',
+      packageRecordCount: 0,
+      targetPidRecordCount: 0,
+      records: [],
+    },
     inspectedAt: '2026-09-24T00:00:00.000Z',
   };
   const manifest = validManifest();
@@ -90,37 +141,358 @@ function validLaunchLogReinspectionManifest() {
 
 test('runner requires explicit, distinct device identities and keeps fixed IA denominator', () => {
   assert.deepEqual(parseArgs(['prepare', '--run-id', 'vk-run-01', '--dual-serial', 'emulator-5554']), {
-    positionals: ['prepare'], 'run-id': 'vk-run-01', 'dual-serial': 'emulator-5554',
+    positionals: ['prepare'],
+    'run-id': 'vk-run-01',
+    'dual-serial': 'emulator-5554',
   });
   const frames = emptyFrameMatrix();
   assert.deepEqual(Object.keys(frames), IA_IDS);
   assert.throws(() => parseArgs(['prepare', '--run-id', 'x', '--run-id', 'y']), /VK_ANDROID_ARGUMENT_INVALID/);
 });
 
+test('A11 W10 log parser binds new and legacy namespace facts to the exact launch intent', () => {
+  const intentId = 'dual-sample-terminal-1234567890';
+  const logs = [
+    'I/TerminalPersistKv( 100): event=persist-kv operation=listKeys mode=protected status=succeeded',
+    `I/TER-VK-LAUNCH( 101): intent=${intentId}`,
+    'I/TerminalPersistKv( 102): event=persist-kv operation=listKeys mode=protected namespaceVersion=2 existedBeforeOpen=false legacyNamespacePresent=true',
+    'I/TerminalPersistKv( 102): event=persist-kv operation=listKeys mode=protected status=succeeded',
+  ].join('\n');
+  assert.deepEqual(summarizePersistKvW10(logs, intentId), {
+    status: 'PASS',
+    intentObserved: true,
+    namespaceVersion: 2,
+    newNamespaceExistedBeforeOpen: false,
+    legacyNamespacePresent: true,
+    operationSucceededAfterOpen: true,
+    keyMismatchObserved: false,
+  });
+  const otherIntent = logs.replace(`intent=${intentId}`, 'intent=another-intent');
+  assert.equal(summarizePersistKvW10(otherIntent, intentId).status, 'LAUNCH_INTENT_NOT_FOUND');
+  const cases = [
+    [
+      'new namespace already existed',
+      logs.replace('existedBeforeOpen=false', 'existedBeforeOpen=true'),
+      'NEW_NAMESPACE_PREEXISTED',
+    ],
+    [
+      'old namespace absent',
+      logs.replace('legacyNamespacePresent=true', 'legacyNamespacePresent=false'),
+      'LEGACY_NAMESPACE_NOT_PRESENT',
+    ],
+    [
+      'protected operation did not succeed',
+      logs.replace(
+        'I/TerminalPersistKv( 102): event=persist-kv operation=listKeys mode=protected status=succeeded',
+        'I/TerminalPersistKv( 102): event=persist-kv operation=listKeys mode=protected status=failed',
+      ),
+      'PROTECTED_OPERATION_NOT_SUCCEEDED',
+    ],
+    [
+      'new namespace marker absent',
+      logs.replace('namespaceVersion=2 ', 'namespaceVersion=3 '),
+      'NEW_NAMESPACE_OBSERVATION_MISSING',
+    ],
+    [
+      'identity mismatch observed',
+      logs.replace('namespaceVersion=2 ', 'PERSIST_KV_PROTECTED_KEY_MISMATCH namespaceVersion=2 '),
+      'PROTECTED_KEY_MISMATCH',
+    ],
+  ];
+  for (const [label, value, expected] of cases)
+    assert.equal(summarizePersistKvW10(value, intentId).status, expected, label);
+});
+
+test('A11 W10 baseline binds the dynamically discovered devices and all four old APK markers', () => {
+  const devices = {
+    dual: {inventory: {serial: 'physical-device', bootId: 'boot-dual-12345678'}},
+    mobile: {inventory: {serial: 'emulator-new-id', bootId: 'boot-mobile-12345678'}},
+  };
+  const markers = [
+    ['dual', 'sample-terminal', 'physical-dual'],
+    ['mobile', 'sample-terminal', 'mobile-vm'],
+    ['dual', 'sample-wallpaper-terminal', 'physical-dual'],
+    ['mobile', 'sample-wallpaper-terminal', 'mobile-vm'],
+  ].map(([shape, appName, deviceRole]) => ({
+    shape,
+    appName,
+    deviceRole,
+    serial: devices[shape].inventory.serial,
+    packageName:
+      appName === 'sample-terminal' ? 'com.anonymous.sampleterminal' : 'com.catering.v2s.terminal.samplewallpaper',
+    apkSha256: `${appName === 'sample-terminal' ? 'a' : 'b'}${shape === 'dual' ? 'c' : 'd'}`.repeat(32).slice(0, 64),
+    sourceDigest: 'e'.repeat(64),
+    status: 'CONFIRMED',
+  }));
+  const baseline = {
+    runId: 'ter-a11-prechange-test01',
+    status: 'PASS',
+    business: 'PASS',
+    cleanup: 'PASS',
+    sourceDigest: 'e'.repeat(64),
+    sourceFiles: ['apps/terminal/package.json'],
+    markers,
+    devices: {
+      dual: {serial: 'physical-device', bootId: 'boot-dual-12345678'},
+      mobile: {serial: 'emulator-new-id', bootId: 'boot-mobile-12345678'},
+    },
+  };
+  const bound = validateA11BaselineManifest(baseline, devices);
+  assert.deepEqual(Object.keys(bound.devices), ['dual', 'mobile']);
+  assert.equal(bound.devices.mobile.serial, 'emulator-new-id');
+  assert.equal(bound.markers.length, 4);
+  assert.throws(
+    () =>
+      validateA11BaselineManifest(baseline, {
+        ...devices,
+        mobile: {inventory: {...devices.mobile.inventory, bootId: 'boot-recreated-12345678'}},
+      }),
+    /VK_ANDROID_A11_BASELINE_DEVICE_BINDING_MISMATCH/,
+  );
+  assert.throws(
+    () => validateA11BaselineManifest({...baseline, markers: markers.slice(1)}, devices),
+    /VK_ANDROID_A11_BASELINE_INVALID/,
+  );
+
+  const digest = createHash('sha256')
+    .update(`apps/terminal/package.json\0${fs.readFileSync(path.join(root, 'apps/terminal/package.json'))}`)
+    .digest('hex');
+  const manifest = validManifest();
+  manifest.appBindings['sample-wallpaper-terminal'] = {
+    apkPath:
+      'apps/terminal/application/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk',
+    bytes: 256,
+    sha256: 'f'.repeat(64),
+    sourceDigest: digest,
+  };
+  manifest.appBindings['sample-terminal'].sourceDigest = digest;
+  manifest.devices.dual.serial = devices.dual.inventory.serial;
+  manifest.devices.dual.inventory = devices.dual.inventory;
+  manifest.devices.mobile.serial = devices.mobile.inventory.serial;
+  manifest.devices.mobile.inventory = devices.mobile.inventory;
+  manifest.a11BaselineRunId = baseline.runId;
+  manifest.a11Baseline = bound;
+  manifest.a11W10SourceDigest = digest;
+  manifest.persistKvW10Upgrades = [];
+  manifest.persistKvW10PendingObservation = null;
+  assert.equal(validateA11W10Action(manifest, 'launch', 'dual', 'sample-terminal'), true);
+  assert.throws(
+    () => validateA11W10Action(manifest, 'capture', 'dual', 'sample-terminal'),
+    /VK_ANDROID_A11_W10_ACTION_NOT_ALLOWED/,
+  );
+  manifest.appBindings['sample-terminal'].sha256 = markers[0].apkSha256;
+  assert.throws(
+    () => validateA11W10Action(manifest, 'launch', 'dual', 'sample-terminal'),
+    /VK_ANDROID_A11_W10_FINAL_RELEASE_BINDING_INVALID/,
+  );
+
+  manifest.appBindings['sample-terminal'].sha256 = 'f'.repeat(64);
+  manifest.persistKvW10Upgrades = markers.map((marker, index) => {
+    const appBinding = manifest.appBindings[marker.appName];
+    return {
+      shape: marker.shape,
+      appName: marker.appName,
+      packageName: marker.packageName,
+      serial: devices[marker.shape].inventory.serial,
+      bootId: devices[marker.shape].inventory.bootId,
+      intentId: `w10-${marker.shape}-${index}`,
+      oldApkSha256: marker.apkSha256,
+      apkSha256: appBinding.sha256,
+      sourceDigest: digest,
+      installMode: 'install -r',
+      namespaceVersion: 2,
+      newNamespaceExistedBeforeOpen: false,
+      legacyNamespacePresent: true,
+      operationSucceededAfterOpen: true,
+      keyMismatchObserved: false,
+      observationStatus: 'PASS',
+      observedAt: '2026-09-29T00:00:00.000Z',
+    };
+  });
+  manifest.business = 'PASS';
+  assert.equal(runner.validateRunManifest(manifest), true);
+  manifest.persistKvW10Upgrades.pop();
+  assert.throws(() => runner.validateRunManifest(manifest), /VK_ANDROID_A11_W10_DENOMINATOR_INVALID/);
+});
+
 test('successful Gradle output binds a nonempty APK by exact bytes without requiring mtime churn', () => {
   assert.equal(typeof runner.createAppBuildBinding, 'function');
   const bytes = Buffer.from('verified APK bytes');
   const binding = runner.createAppBuildBinding('apps/example/app-release.apk', bytes);
-  assert.deepEqual({apkPath: binding.apkPath, bytes: binding.bytes, sha256: binding.sha256}, {
-    apkPath: 'apps/example/app-release.apk', bytes: bytes.length,
-    sha256: createHash('sha256').update(bytes).digest('hex'),
-  });
+  assert.deepEqual(
+    {apkPath: binding.apkPath, bytes: binding.bytes, sha256: binding.sha256},
+    {
+      apkPath: 'apps/example/app-release.apk',
+      bytes: bytes.length,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+    },
+  );
   assert.match(binding.builtAt, /^\d{4}-\d{2}-\d{2}T/);
-  assert.throws(() => runner.createAppBuildBinding('apps/example/app-release.apk', Buffer.alloc(0)), /VK_ANDROID_BUILD_ARTIFACT_INVALID/);
+  assert.throws(
+    () => runner.createAppBuildBinding('apps/example/app-release.apk', Buffer.alloc(0)),
+    /VK_ANDROID_BUILD_ARTIFACT_INVALID/,
+  );
   const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
-  const build = source.slice(source.indexOf('async function buildApp('), source.indexOf('async function remoteProcessIdentity('));
+  const build = source.slice(
+    source.indexOf('async function buildApp('),
+    source.indexOf('async function remoteProcessIdentity('),
+  );
   assert.match(build, /createAppBuildBinding\(path\.relative\(ROOT, apk\), bytes\)/);
   assert.match(build, /'--rerun-tasks'/);
-  assert.match(build, /env: releaseBuildEnvironment\(\)/);
+  assert.match(build, /buildType === 'release' \? releaseBuildEnvironment\(\) : process\.env/);
   assert.doesNotMatch(build, /mtime|BUILD_ARTIFACT_NOT_REFRESHED/);
-  assert.deepEqual(runner.releaseBuildEnvironment({NODE_ENV: 'development', CI: '1'}), {NODE_ENV: 'production', CI: '1'});
+  assert.deepEqual(runner.releaseBuildEnvironment({NODE_ENV: 'development', CI: '1'}), {
+    NODE_ENV: 'production',
+    CI: '1',
+  });
+});
+
+test('managed Android build variant is explicit, path-bound, and cannot replace A11 release observation', () => {
+  assert.deepEqual(runner.appBuildArtifact('sample-terminal', 'release'), {
+    androidRoot: 'apps/terminal/application/android/sample-terminal/android',
+    gradleTask: 'assembleRelease',
+    apkPath: path.join(
+      'apps/terminal/application/android/sample-terminal/android',
+      'app/build/outputs/apk/release/app-release.apk',
+    ),
+    buildType: 'release',
+  });
+  assert.deepEqual(runner.appBuildArtifact('sample-terminal', 'debug'), {
+    androidRoot: 'apps/terminal/application/android/sample-terminal/android',
+    gradleTask: 'assembleDebug',
+    apkPath: path.join(
+      'apps/terminal/application/android/sample-terminal/android',
+      'app/build/outputs/apk/debug/app-debug.apk',
+    ),
+    buildType: 'debug',
+  });
+  assert.throws(() => runner.appBuildArtifact('sample-terminal', 'profile'), /VK_ANDROID_BUILD_VARIANT_INVALID/);
+  const manifest = validManifest();
+  manifest.a11BaselineRunId = 'ter-a11-baseline';
+  manifest.appBindings['sample-terminal'] = {
+    apkPath: runner.appBuildArtifact('sample-terminal', 'debug').apkPath,
+    bytes: 8,
+    sha256: 'a'.repeat(64),
+    buildType: 'debug',
+  };
+  assert.throws(() => runner.validateRunManifest(manifest), /VK_ANDROID_A11_W10_DEBUG_BUILD_FORBIDDEN/);
+  const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
+  const build = source.slice(
+    source.indexOf('async function buildApp('),
+    source.indexOf('async function remoteProcessIdentity('),
+  );
+  assert.match(
+    source,
+    /if \(action === 'build'\) return buildApp\(manifest, args\.app, args\['build-type'\] \?\? 'release'\)/,
+  );
+  assert.match(build, /manifest\.a11BaselineRunId && buildType !== 'release'/);
+});
+
+test('debug failure injection uses an explicit bounded VIEW intent and remains unavailable to release bindings', () => {
+  assert.deepEqual(
+    debugFailureInjectionIntentArgs(
+      'com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity',
+      'screen:sample.auth.login',
+    ),
+    [
+      'shell',
+      'am',
+      'start',
+      '-W',
+      '-n',
+      'com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity',
+      '-a',
+      'android.intent.action.VIEW',
+      '-d',
+      'ter-failure://inject/screen%3Asample.auth.login',
+    ],
+  );
+  assert.deepEqual(
+    debugFailureInjectionIntentArgs('com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity').slice(-2),
+    ['-d', 'ter-failure://clear'],
+  );
+  assert.throws(
+    () => debugFailureInjectionIntentArgs('not-an-activity', 'screen:x'),
+    /VK_ANDROID_HARNESS_ACTIVITY_INVALID/,
+  );
+  assert.throws(
+    () =>
+      debugFailureInjectionIntentArgs(
+        'com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity',
+        'screen:bad target',
+      ),
+    /VK_ANDROID_DEBUG_FAILURE_OWNER_INVALID/,
+  );
+
+  const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
+  const installer = source.slice(
+    source.indexOf('async function installLaunch('),
+    source.indexOf('function screenshotPath('),
+  );
+  const dispatcher = source.slice(
+    source.indexOf('async function dispatch('),
+    source.indexOf('export function selfTest()'),
+  );
+  assert.match(installer, /initialFailureOwnerId !== null && binding\.buildType !== 'debug'/);
+  assert.match(installer, /debugFailureInjectionIntentArgs\(app\.activity, initialFailureOwnerId\)/);
+  assert.match(dispatcher, /args\['failure-owner'\] \?\? null/);
+  assert.match(dispatcher, /action === 'clear-failure-injection'/);
+  assert.match(dispatcher, /binding\?\.buildType !== 'debug'/);
+  assert.match(dispatcher, /debugFailureInjectionIntentArgs\(app\.activity\)/);
+});
+
+test('native-loading main-thread injection is bounded and requires a debug launch', () => {
+  assert.deepEqual(
+    debugNativeLoadingDelayIntentArgs('com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity', 2_300),
+    [
+      'shell',
+      'am',
+      'start',
+      '-W',
+      '-n',
+      'com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity',
+      '--el',
+      'terminalDebugMainThreadDelayMs',
+      '2300',
+    ],
+  );
+  assert.throws(
+    () => debugNativeLoadingDelayIntentArgs('not-an-activity', 2_300),
+    /VK_ANDROID_HARNESS_ACTIVITY_INVALID/,
+  );
+  assert.throws(
+    () =>
+      debugNativeLoadingDelayIntentArgs(
+        'com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity',
+        2_000,
+      ),
+    /VK_ANDROID_NATIVE_LOADING_DELAY_INVALID/,
+  );
+  const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
+  const installer = source.slice(
+    source.indexOf('async function installLaunch('),
+    source.indexOf('function screenshotPath('),
+  );
+  const dispatcher = source.slice(
+    source.indexOf('async function dispatch('),
+    source.indexOf('export function selfTest()'),
+  );
+  assert.match(installer, /nativeLoadingDelayMs !== null && binding\.buildType !== 'debug'/);
+  assert.match(installer, /debugNativeLoadingDelayIntentArgs\(app\.activity, Number\(nativeLoadingDelayMs\)\)/);
+  assert.match(installer, /nativeLoadingDelayMs !== null && initialFailureOwnerId !== null/);
+  assert.match(dispatcher, /args\['native-loading-delay-ms'\]/);
 });
 
 test('report retains the full IA by app by VM-shape by surface observation denominator without visual false PASS', () => {
   const frames = emptyFrameMatrix();
   frames['VK-IA-01'].captures.push({
-    shape: 'dual', app: 'sample-terminal', surface: 'primary', screenshot: 'evidence/one.png',
-    captureEvidence: 'evidence/one.capture-evidence.json', state: 'stable', transitionIndex: null,
+    shape: 'dual',
+    app: 'sample-terminal',
+    surface: 'primary',
+    screenshot: 'evidence/one.png',
+    captureEvidence: 'evidence/one.capture-evidence.json',
+    state: 'stable',
+    transitionIndex: null,
   });
   const matrix = captureObservationMatrix(frames);
   assert.deepEqual(Object.keys(matrix), IA_IDS);
@@ -129,12 +501,28 @@ test('report retains the full IA by app by VM-shape by surface observation denom
   assert.equal(matrix['VK-IA-01'].routes['dual/sample-terminal/primary'].perControlVisualAudit, 'OPEN');
   assert.equal(matrix['VK-IA-01'].routes['dual/sample-wallpaper-terminal/primary'].status, 'OPEN_NOT_OBSERVED');
   assert.equal(matrix['VK-IA-01'].routes['mobile/sample-terminal/primary'].status, 'NOT_APPLICABLE_FRAME_SHAPE');
-  assert.equal(matrix['VK-IA-03'].routes['dual/sample-wallpaper-terminal/primary'].status, 'NOT_COVERED_BY_PRODUCT_CONSUMER');
+  assert.equal(
+    matrix['VK-IA-03'].routes['dual/sample-wallpaper-terminal/primary'].status,
+    'NOT_COVERED_BY_PRODUCT_CONSUMER',
+  );
   assert.equal(matrix['VK-IA-17'].routes['dual/sample-terminal/primary'].status, 'HARNESS_ONLY_NOT_PRODUCT');
-  assert.equal(matrix['VK-IA-19'].routes['dual/sample-wallpaper-terminal/secondary'].status, 'NOT_COVERED_BY_PRODUCT_CONSUMER');
+  assert.equal(
+    matrix['VK-IA-19'].routes['dual/sample-wallpaper-terminal/secondary'].status,
+    'NOT_COVERED_BY_PRODUCT_CONSUMER',
+  );
   assert.equal(matrix['VK-IA-01'].routes['mobile/sample-terminal/secondary'].status, 'NOT_APPLICABLE_DEVICE_SHAPE');
-  assert.equal(matrix['VK-IA-11'].routes['dual/sample-terminal/primary'].controlRoster.some(item => item.controlId === 'sample.desk.member-form:cancel'), true);
-  assert.equal(matrix['VK-IA-11'].routes['dual/sample-wallpaper-terminal/primary'].controlRoster.some(item => item.controlId === 'sample.desk.member-form:cancel'), false);
+  assert.equal(
+    matrix['VK-IA-11'].routes['dual/sample-terminal/primary'].controlRoster.some(
+      item => item.controlId === 'sample.desk.member-form:cancel',
+    ),
+    true,
+  );
+  assert.equal(
+    matrix['VK-IA-11'].routes['dual/sample-wallpaper-terminal/primary'].controlRoster.some(
+      item => item.controlId === 'sample.desk.member-form:cancel',
+    ),
+    false,
+  );
 });
 
 test('all 19 IA frames retain explicit per-control rosters and CP-0 product coverage classes', () => {
@@ -143,29 +531,66 @@ test('all 19 IA frames retain explicit per-control rosters and CP-0 product cove
   assert.equal(Object.keys(matrix).length, 19);
   for (const [iaId, frame] of Object.entries(matrix)) {
     assert.ok(frame.controlRoster.length > 0, `${iaId} must have at least one expected visual/control target`);
-    assert.equal(new Set(frame.controlRoster.map(item => item.controlId)).size, frame.controlRoster.length, `${iaId} roster IDs must be unique`);
-    assert.equal(frame.controlRoster.every(item => item.status === 'OPEN' && item.reviewer === null), true);
+    assert.equal(
+      new Set(frame.controlRoster.map(item => item.controlId)).size,
+      frame.controlRoster.length,
+      `${iaId} roster IDs must be unique`,
+    );
+    assert.equal(
+      frame.controlRoster.every(item => item.status === 'OPEN' && item.reviewer === null),
+      true,
+    );
   }
   assert.equal(iaControlRoster('VK-IA-01').length, 41);
   assert.equal(iaControlRoster('VK-IA-03').length, 31);
-  assert.equal(iaControlRoster('VK-IA-03').some(item => item.controlId === 'ui.base.input:virtual-keyboard:space'), true);
+  assert.equal(
+    iaControlRoster('VK-IA-03').some(item => item.controlId === 'ui.base.input:virtual-keyboard:space'),
+    true,
+  );
   assert.equal(iaControlRoster('VK-IA-05').length, 13);
   assert.equal(iaControlRoster('VK-IA-07').length, 15);
-  assert.equal(iaControlRoster('VK-IA-15').some(item => item.controlId === 'outgoing/ui.base.input:virtual-keyboard:text-1'), true);
-  assert.equal(iaControlRoster('VK-IA-15').some(item => item.controlId === 'incoming/ui.base.input:virtual-keyboard:text-a'), true);
+  assert.equal(
+    iaControlRoster('VK-IA-15').some(item => item.controlId === 'outgoing/ui.base.input:virtual-keyboard:text-1'),
+    true,
+  );
+  assert.equal(
+    iaControlRoster('VK-IA-15').some(item => item.controlId === 'incoming/ui.base.input:virtual-keyboard:text-a'),
+    true,
+  );
   assert.equal(classifyFrameRoute('VK-IA-13', 'dual', 'sample-terminal', 'secondary'), 'OPEN_PRODUCT_PATH_TO_CONFIRM');
   assert.equal(classifyFrameRoute('VK-IA-15', 'mobile', 'sample-terminal', 'primary'), 'NOT_APPLICABLE_FRAME_SHAPE');
-  assert.equal(classifyFrameRoute('VK-IA-18', 'mobile', 'sample-wallpaper-terminal', 'primary'), 'PRODUCT_CONSUMER_CANDIDATE');
+  assert.equal(
+    classifyFrameRoute('VK-IA-18', 'mobile', 'sample-wallpaper-terminal', 'primary'),
+    'PRODUCT_CONSUMER_CANDIDATE',
+  );
   assert.throws(() => iaControlRoster('VK-IA-99'), /VK_ANDROID_IA_ID_INVALID/);
 });
 
 test('per-control visual report includes every captured UI node and keeps all judgments OPEN by default', () => {
   const frames = emptyFrameMatrix();
   frames['VK-IA-01'].captures.push({
-    shape: 'dual', app: 'sample-terminal', surface: 'primary', screenshot: 'evidence/one.png',
+    shape: 'dual',
+    app: 'sample-terminal',
+    surface: 'primary',
+    screenshot: 'evidence/one.png',
     visibleControls: [
-      {nodeIndex: 0, resourceId: 'ui.base.input:virtual-keyboard:text-1', className: 'android.widget.Button', bounds: {left: 1, top: 2, right: 10, bottom: 11}, textSha256: 'a'.repeat(64), contentDescriptionSha256: 'b'.repeat(64)},
-      {nodeIndex: 1, resourceId: null, resourceIdSha256: 'c'.repeat(64), className: 'android.widget.TextView', bounds: null, textSha256: null, contentDescriptionSha256: null},
+      {
+        nodeIndex: 0,
+        resourceId: 'ui.base.input:virtual-keyboard:text-1',
+        className: 'android.widget.Button',
+        bounds: {left: 1, top: 2, right: 10, bottom: 11},
+        textSha256: 'a'.repeat(64),
+        contentDescriptionSha256: 'b'.repeat(64),
+      },
+      {
+        nodeIndex: 1,
+        resourceId: null,
+        resourceIdSha256: 'c'.repeat(64),
+        className: 'android.widget.TextView',
+        bounds: null,
+        textSha256: null,
+        contentDescriptionSha256: null,
+      },
     ],
   });
   const audit = perControlVisualAuditRows(frames);
@@ -173,19 +598,74 @@ test('per-control visual report includes every captured UI node and keeps all ju
   const observed = audit.find(row => row.controlId === 'ui.base.input:virtual-keyboard:text-1');
   assert.equal(observed?.presenceStatus, 'OBSERVED_AWAITING_VISUAL_JUDGMENT');
   assert.equal(observed?.observedResourceIds[0], 'ui.base.input:virtual-keyboard:text-1');
-  assert.equal(audit.some(row => row.controlId === 'ui.base.input:virtual-keyboard:text-2' && row.presenceStatus === 'OPEN_EXPECTED_CONTROL_NOT_OBSERVED'), true);
-  assert.equal(audit.some(row => row.controlId === 'unaddressed:android.widget.TextView:1:cccccccccccc'), true);
-  assert.equal(audit.every(row => row.visualStatus === 'OPEN' && row.reviewer === null), true);
-  assert.deepEqual(audit[0].visualDimensions, ['position', 'size', 'shape', 'color', 'icon', 'font', 'background', 'text', 'state', 'hierarchy', 'gap']);
+  assert.equal(
+    audit.some(
+      row =>
+        row.controlId === 'ui.base.input:virtual-keyboard:text-2' &&
+        row.presenceStatus === 'OPEN_EXPECTED_CONTROL_NOT_OBSERVED',
+    ),
+    true,
+  );
+  assert.equal(
+    audit.some(row => row.controlId === 'unaddressed:android.widget.TextView:1:cccccccccccc'),
+    true,
+  );
+  assert.equal(
+    audit.every(row => row.visualStatus === 'OPEN' && row.reviewer === null),
+    true,
+  );
+  assert.deepEqual(audit[0].visualDimensions, [
+    'position',
+    'size',
+    'shape',
+    'color',
+    'icon',
+    'font',
+    'background',
+    'text',
+    'state',
+    'hierarchy',
+    'gap',
+  ]);
 });
 
 test('prepare rejects a missing serial and duplicate dual/mobile identity before resource work', () => {
   assert.equal(typeof runner.validatePrepareOptions, 'function');
-  assert.throws(() => runner.validatePrepareOptions({'run-id': 'vk-run-01', 'mobile-serial': 'emulator-5556'}), /VK_ANDROID_SERIAL_REQUIRED/);
-  assert.throws(() => runner.validatePrepareOptions({'run-id': 'vk-run-01', 'dual-serial': 'emulator-5554', 'mobile-serial': 'emulator-5554'}), /VK_ANDROID_DEVICE_SERIALS_MUST_DIFFER/);
-  assert.deepEqual(runner.validatePrepareOptions({'run-id': 'vk-run-01', 'dual-serial': 'emulator-5554', 'mobile-serial': 'emulator-5556'}), {
-    runId: 'vk-run-01', dualSerial: 'emulator-5554', mobileSerial: 'emulator-5556',
-  });
+  assert.throws(
+    () => runner.validatePrepareOptions({'run-id': 'vk-run-01', 'mobile-serial': 'emulator-5556'}),
+    /VK_ANDROID_SERIAL_REQUIRED/,
+  );
+  assert.throws(
+    () =>
+      runner.validatePrepareOptions({
+        'run-id': 'vk-run-01',
+        'dual-serial': 'emulator-5554',
+        'mobile-serial': 'emulator-5554',
+      }),
+    /VK_ANDROID_DEVICE_SERIALS_MUST_DIFFER/,
+  );
+  assert.deepEqual(
+    runner.validatePrepareOptions({
+      'run-id': 'vk-run-01',
+      'dual-serial': 'emulator-5554',
+      'mobile-serial': 'emulator-5556',
+    }),
+    {
+      runId: 'vk-run-01',
+      dualSerial: 'emulator-5554',
+      mobileSerial: 'emulator-5556',
+      a11BaselineRunId: null,
+    },
+  );
+  assert.equal(
+    runner.validatePrepareOptions({
+      'run-id': 'vk-run-01',
+      'dual-serial': 'physical-dynamic-id',
+      'mobile-serial': 'emulator-dynamic-id',
+      'a11-baseline-run-id': 'ter-a11-prechange-test01',
+    }).a11BaselineRunId,
+    'ter-a11-prechange-test01',
+  );
 });
 
 test('ADB device inventory accepts tab or space delimiters and excludes non-device states', () => {
@@ -211,33 +691,42 @@ test('ADB device inventory accepts tab or space delimiters and excludes non-devi
 
 test('Android process-table parser keeps exact package and colon sub-process identities', () => {
   assert.equal(typeof parseAndroidProcessTable, 'function');
-  assert.deepEqual(parseAndroidProcessTable([
-    'PID NAME',
-    '101 init',
-    '202 com.anonymous.sampleterminal',
-    '303 com.anonymous.sampleterminal:remote',
-    '404 com.anonymous.sampleterminal.debug',
-    '505 com.catering.v2s.terminal.samplewallpaper',
-  ].join('\n'), 'com.anonymous.sampleterminal'), [
-    {pid: 202, name: 'com.anonymous.sampleterminal'},
-    {pid: 303, name: 'com.anonymous.sampleterminal:remote'},
-  ]);
-  assert.throws(() => parseAndroidProcessTable('USER PID CMD\nuser 202 app', 'com.anonymous.sampleterminal'), /VK_ANDROID_PROCESS_TABLE_INVALID/);
+  assert.deepEqual(
+    parseAndroidProcessTable(
+      [
+        'PID NAME',
+        '101 init',
+        '202 com.anonymous.sampleterminal',
+        '303 com.anonymous.sampleterminal:remote',
+        '404 com.anonymous.sampleterminal.debug',
+        '505 com.catering.v2s.terminal.samplewallpaper',
+      ].join('\n'),
+      'com.anonymous.sampleterminal',
+    ),
+    [
+      {pid: 202, name: 'com.anonymous.sampleterminal'},
+      {pid: 303, name: 'com.anonymous.sampleterminal:remote'},
+    ],
+  );
+  assert.throws(
+    () => parseAndroidProcessTable('USER PID CMD\nuser 202 app', 'com.anonymous.sampleterminal'),
+    /VK_ANDROID_PROCESS_TABLE_INVALID/,
+  );
   assert.throws(() => parseAndroidProcessTable('PID NAME\n202 com.unknown', 'com.unknown'), /VK_ANDROID_APP_INVALID/);
 });
 
 test('process observation keeps ps candidates whose proc stat disappeared', () => {
   const pkg = 'com.anonymous.sampleterminal';
   const statFields = ['S', '1', ...Array(17).fill('0'), '90210'];
-  const result = runner.summarizeAndroidProcessObservation([
-    'PID NAME',
-    `${4500} ${pkg}`,
-    `${4501} ${pkg}:remote`,
-    '4502 com.other.app',
-  ].join('\n'), pkg, new Map([
-    ['4500', ''],
-    ['4501', `4501 (${pkg}:remote) ${statFields.join(' ')}`],
-  ]), '4500');
+  const result = runner.summarizeAndroidProcessObservation(
+    ['PID NAME', `${4500} ${pkg}`, `${4501} ${pkg}:remote`, '4502 com.other.app'].join('\n'),
+    pkg,
+    new Map([
+      ['4500', ''],
+      ['4501', `4501 (${pkg}:remote) ${statFields.join(' ')}`],
+    ]),
+    '4500',
+  );
 
   assert.deepEqual(result, {
     startupPid: '4500',
@@ -252,11 +741,15 @@ test('process observation keeps ps candidates whose proc stat disappeared', () =
 
 test('activity exit-info summary keeps exact target exit facts and drops descriptions', () => {
   const pkg = 'com.anonymous.sampleterminal';
-  const evidence = runner.summarizeAndroidExitInfo([
-    'Historical Process Exit for uid 10234:',
-    `  #0: ApplicationExitInfo(timestamp=2026-09-24 01:06:58, pid=4500, process=${pkg}, reason=6 (CRASH_NATIVE), subReason=0, status=11, description=private raw exception payload)`,
-    '  #1: ApplicationExitInfo(timestamp=2026-09-24 01:05:00, pid=4499, process=com.other.app, reason=4 (USER_REQUESTED), status=0, description=ignore)',
-  ].join('\n'), pkg, '4500');
+  const evidence = runner.summarizeAndroidExitInfo(
+    [
+      'Historical Process Exit for uid 10234:',
+      `  #0: ApplicationExitInfo(timestamp=2026-09-24 01:06:58, pid=4500, process=${pkg}, reason=6 (CRASH_NATIVE), subReason=0, status=11, description=private raw exception payload)`,
+      '  #1: ApplicationExitInfo(timestamp=2026-09-24 01:05:00, pid=4499, process=com.other.app, reason=4 (USER_REQUESTED), status=0, description=ignore)',
+    ].join('\n'),
+    pkg,
+    '4500',
+  );
 
   assert.deepEqual(evidence, {
     startupPid: '4500',
@@ -274,8 +767,12 @@ test('run manifest accepts only fixed app bindings and run-scoped remote tempora
 
   const wrongPackage = validManifest();
   wrongPackage.ownedRemoteProcesses.push({
-    host: 'emulator-5554', bootId: 'boot-a', packageName: 'com.attacker/.Injected',
-    appName: 'sample-terminal', shape: 'dual', processes: [{pid: 100, startTicks: '20'}],
+    host: 'emulator-5554',
+    bootId: 'boot-a',
+    packageName: 'com.attacker/.Injected',
+    appName: 'sample-terminal',
+    shape: 'dual',
+    processes: [{pid: 100, startTicks: '20'}],
   });
   assert.throws(() => runner.validateRunManifest(wrongPackage), /VK_ANDROID_MANIFEST_APP_BINDING_INVALID/);
 
@@ -288,11 +785,30 @@ test('run manifest accepts only fixed app bindings and run-scoped remote tempora
   assert.throws(() => runner.validateRunManifest(wrongTemporaryPath), /VK_ANDROID_MANIFEST_TEMP_PATH_INVALID/);
 
   const ownedRecorder = validManifest();
-  ownedRecorder.ownedRemoteCaptureProcesses.push({shape: 'dual', host: 'emulator-5554', bootId: 'boot-id-123', executable: 'screenrecord', pid: 123, startTicks: '50', path: '/sdcard/vk-run-01-dual-1234567890123-transition.mp4'});
-  ownedRecorder.remoteTempFiles.push({host: 'emulator-5554', path: '/sdcard/vk-run-01-dual-1234567890123-transition.mp4'});
+  ownedRecorder.ownedRemoteCaptureProcesses.push({
+    shape: 'dual',
+    host: 'emulator-5554',
+    bootId: 'boot-id-123',
+    executable: 'screenrecord',
+    pid: 123,
+    startTicks: '50',
+    path: '/sdcard/vk-run-01-dual-1234567890123-transition.mp4',
+  });
+  ownedRecorder.remoteTempFiles.push({
+    host: 'emulator-5554',
+    path: '/sdcard/vk-run-01-dual-1234567890123-transition.mp4',
+  });
   assert.equal(runner.validateRunManifest(ownedRecorder), true);
   const foreignRecorder = validManifest();
-  foreignRecorder.ownedRemoteCaptureProcesses.push({shape: 'dual', host: 'emulator-5554', bootId: 'boot-id-123', executable: 'screenrecord', pid: 123, startTicks: '50', path: '/sdcard/foreign-dual-1234567890123-transition.mp4'});
+  foreignRecorder.ownedRemoteCaptureProcesses.push({
+    shape: 'dual',
+    host: 'emulator-5554',
+    bootId: 'boot-id-123',
+    executable: 'screenrecord',
+    pid: 123,
+    startTicks: '50',
+    path: '/sdcard/foreign-dual-1234567890123-transition.mp4',
+  });
   assert.throws(() => runner.validateRunManifest(foreignRecorder), /VK_ANDROID_REMOTE_CAPTURE_IDENTITY_INVALID/);
 });
 
@@ -327,7 +843,10 @@ test('cleanup terminates only a still-live local command with matching PID, PGID
   terminateCalls = 0;
   const rejected = await runner.cleanupRecordedLocalCommand(reused, {
     readTable: () => [{pid: 42, pgid: 42, startToken: 'new-process'}],
-    terminate: async () => { terminateCalls += 1; return {status: 'PASS', treeReadback: []}; },
+    terminate: async () => {
+      terminateCalls += 1;
+      return {status: 'PASS', treeReadback: []};
+    },
   });
   assert.equal(rejected.status, 'FAIL');
   assert.equal(terminateCalls, 0);
@@ -338,7 +857,9 @@ test('cleanup terminates only a still-live local command with matching PID, PGID
   };
   const runnerStillLive = await runner.cleanupRecordedLocalCommand(exitedCommandWithLiveRunner, {
     readTable: () => [{pid: 7, pgid: 7, startToken: 'live-runner'}],
-    terminate: async () => { throw new Error('must-not-terminate-unowned-runner-group'); },
+    terminate: async () => {
+      throw new Error('must-not-terminate-unowned-runner-group');
+    },
   });
   assert.deepEqual(runnerStillLive, {status: 'FAIL', reason: 'VK_ANDROID_LOCAL_RUNNER_STILL_LIVE'});
 });
@@ -347,53 +868,116 @@ test('pending remote launch survives a failed readback so cleanup cannot report 
   assert.equal(typeof runner.launchWithPendingOwnership, 'function');
   const manifest = {devices: {dual: {serial: 'emulator-5554'}}, pendingRemoteLaunches: [], ownedRemoteProcesses: []};
   const order = [];
-  await assert.rejects(() => runner.launchWithPendingOwnership(manifest, {
-    host: 'emulator-5554', bootId: 'boot-a', packageName: 'com.anonymous.sampleterminal',
-    appName: 'sample-terminal', shape: 'dual', intentId: 'launch-01',
-  }, {
-    persist: async () => { order.push(`persist:${manifest.pendingRemoteLaunches.length}`); },
-    launch: async () => { order.push(`launch:${manifest.pendingRemoteLaunches.length}`); },
-    readback: async () => { order.push(`readback:${manifest.pendingRemoteLaunches.length}`); throw new Error('readback-failed'); },
-  }), /readback-failed/);
+  await assert.rejects(
+    () =>
+      runner.launchWithPendingOwnership(
+        manifest,
+        {
+          host: 'emulator-5554',
+          bootId: 'boot-a',
+          packageName: 'com.anonymous.sampleterminal',
+          appName: 'sample-terminal',
+          shape: 'dual',
+          intentId: 'launch-01',
+        },
+        {
+          persist: async () => {
+            order.push(`persist:${manifest.pendingRemoteLaunches.length}`);
+          },
+          launch: async () => {
+            order.push(`launch:${manifest.pendingRemoteLaunches.length}`);
+          },
+          readback: async () => {
+            order.push(`readback:${manifest.pendingRemoteLaunches.length}`);
+            throw new Error('readback-failed');
+          },
+        },
+      ),
+    /readback-failed/,
+  );
   assert.deepEqual(order, ['persist:1', 'launch:1', 'readback:1']);
   assert.equal(manifest.pendingRemoteLaunches.length, 1);
   assert.equal(manifest.ownedRemoteProcesses.length, 0);
 });
 
 test('managed cleanup recovers only runner-recorded invalidated app ownership on the same host and boot', () => {
-  const makeManifest = ({startupPid = null, resolution = 'PROCESS_ABSENT', markers = ['activity.onCreate:start']} = {}) => {
+  const makeManifest = ({
+    startupPid = null,
+    resolution = 'PROCESS_ABSENT',
+    markers = ['activity.onCreate:start'],
+  } = {}) => {
     const manifest = validManifest();
     const bootId = 'boot-recovery-12345678';
     manifest.devices.dual.inventory = {bootId};
     const intent = {
-      intentId: 'dual-sample-terminal-recovery-01', shape: 'dual', appName: 'sample-terminal',
-      packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId,
-      startedAt: '2026-09-24T00:00:00Z', resolution, processCount: 0,
+      intentId: 'dual-sample-terminal-recovery-01',
+      shape: 'dual',
+      appName: 'sample-terminal',
+      packageName: 'com.anonymous.sampleterminal',
+      host: 'emulator-5554',
+      bootId,
+      startedAt: '2026-09-24T00:00:00Z',
+      resolution,
+      processCount: 0,
     };
     manifest.resolvedRemoteLaunches = [{...intent}];
-    manifest.launchDiagnostics = [{
-      intentId: intent.intentId, shape: intent.shape, appName: intent.appName,
-      packageName: intent.packageName, host: intent.host, bootId: intent.bootId,
-      startupPid: startupPid == null ? null : String(startupPid), observedMarkers: markers, markerCount: markers.length,
-    }];
+    manifest.launchDiagnostics = [
+      {
+        intentId: intent.intentId,
+        shape: intent.shape,
+        appName: intent.appName,
+        packageName: intent.packageName,
+        host: intent.host,
+        bootId: intent.bootId,
+        startupPid: startupPid == null ? null : String(startupPid),
+        observedMarkers: markers,
+        markerCount: markers.length,
+      },
+    ];
     return {manifest, intent};
   };
 
   const {manifest, intent} = makeManifest({startupPid: 4500});
-  assert.equal(runner.resolveInvalidatedRemoteLaunch(manifest, intent.intentId, {
-    host: intent.host, bootId: intent.bootId, processes: [{pid: 4500, startTicks: '90123'}],
-  }, '2026-09-24T03:00:00Z'), 'PROCESS_ADOPTED');
-  assert.deepEqual(manifest.ownedRemoteProcesses, [{
-    host: intent.host, bootId: intent.bootId, processes: [{pid: 4500, startTicks: '90123'}],
-    packageName: intent.packageName, appName: intent.appName, shape: intent.shape,
-  }]);
+  assert.equal(
+    runner.resolveInvalidatedRemoteLaunch(
+      manifest,
+      intent.intentId,
+      {
+        host: intent.host,
+        bootId: intent.bootId,
+        processes: [{pid: 4500, startTicks: '90123'}],
+      },
+      '2026-09-24T03:00:00Z',
+    ),
+    'PROCESS_ADOPTED',
+  );
+  assert.deepEqual(manifest.ownedRemoteProcesses, [
+    {
+      host: intent.host,
+      bootId: intent.bootId,
+      processes: [{pid: 4500, startTicks: '90123'}],
+      packageName: intent.packageName,
+      appName: intent.appName,
+      shape: intent.shape,
+    },
+  ]);
   assert.equal(manifest.historicalRemoteLaunchRecoveries[0].resolution, 'PROCESS_ADOPTED');
   assert.equal(runner.validateRunManifest(manifest), true);
 
   const absent = makeManifest();
-  assert.equal(runner.resolveInvalidatedRemoteLaunch(absent.manifest, absent.intent.intentId, {
-    host: absent.intent.host, bootId: absent.intent.bootId, processes: [],
-  }, '2026-09-24T03:00:01Z'), 'PROCESS_ABSENT');
+  assert.equal(
+    runner.resolveInvalidatedRemoteLaunch(
+      absent.manifest,
+      absent.intent.intentId,
+      {
+        host: absent.intent.host,
+        bootId: absent.intent.bootId,
+        processes: [],
+      },
+      '2026-09-24T03:00:01Z',
+    ),
+    'PROCESS_ABSENT',
+  );
   assert.equal(absent.manifest.ownedRemoteProcesses.length, 0);
   assert.equal(runner.validateRunManifest(absent.manifest), true);
 
@@ -405,8 +989,10 @@ test('managed cleanup recovers only runner-recorded invalidated app ownership on
   ];
   for (const observed of invalidReadbacks) {
     const invalid = makeManifest({startupPid: 4500});
-    assert.throws(() => runner.resolveInvalidatedRemoteLaunch(invalid.manifest, invalid.intent.intentId, observed),
-      /VK_ANDROID_HISTORICAL_LAUNCH_IDENTITY_MISMATCH/);
+    assert.throws(
+      () => runner.resolveInvalidatedRemoteLaunch(invalid.manifest, invalid.intent.intentId, observed),
+      /VK_ANDROID_HISTORICAL_LAUNCH_IDENTITY_MISMATCH/,
+    );
     assert.equal(invalid.manifest.ownedRemoteProcesses.length, 0);
     assert.equal(invalid.manifest.historicalRemoteLaunchRecoveries, undefined);
   }
@@ -416,25 +1002,46 @@ test('managed cleanup recovers only runner-recorded invalidated app ownership on
     makeManifest({markers: ['untrusted.launch-marker']}),
     makeManifest({markers: ['activity.onCreate:start', 'activity.onCreate:start']}),
   ]) {
-    assert.throws(() => runner.resolveInvalidatedRemoteLaunch(invalid.manifest, invalid.intent.intentId, {
-      host: invalid.intent.host, bootId: invalid.intent.bootId, processes: [],
-    }), /VK_ANDROID_HISTORICAL_LAUNCH_IDENTITY_MISMATCH/);
+    assert.throws(
+      () =>
+        runner.resolveInvalidatedRemoteLaunch(invalid.manifest, invalid.intent.intentId, {
+          host: invalid.intent.host,
+          bootId: invalid.intent.bootId,
+          processes: [],
+        }),
+      /VK_ANDROID_HISTORICAL_LAUNCH_IDENTITY_MISMATCH/,
+    );
     assert.equal(invalid.manifest.ownedRemoteProcesses.length, 0);
   }
 
   const mismatchedMarkerCount = makeManifest();
   mismatchedMarkerCount.manifest.launchDiagnostics[0].markerCount = 2;
-  assert.throws(() => runner.validateRunManifest(mismatchedMarkerCount.manifest), /VK_ANDROID_MANIFEST_APP_BINDING_INVALID/);
+  assert.throws(
+    () => runner.validateRunManifest(mismatchedMarkerCount.manifest),
+    /VK_ANDROID_MANIFEST_APP_BINDING_INVALID/,
+  );
 
   const mismatchedDiagnosticIdentity = makeManifest();
   mismatchedDiagnosticIdentity.manifest.launchDiagnostics[0].bootId = 'other-boot-12345678';
-  assert.throws(() => runner.resolveInvalidatedRemoteLaunch(
-    mismatchedDiagnosticIdentity.manifest, mismatchedDiagnosticIdentity.intent.intentId,
-    {host: mismatchedDiagnosticIdentity.intent.host, bootId: mismatchedDiagnosticIdentity.intent.bootId, processes: []},
-  ), /VK_ANDROID_HISTORICAL_LAUNCH_IDENTITY_MISMATCH/);
+  assert.throws(
+    () =>
+      runner.resolveInvalidatedRemoteLaunch(
+        mismatchedDiagnosticIdentity.manifest,
+        mismatchedDiagnosticIdentity.intent.intentId,
+        {
+          host: mismatchedDiagnosticIdentity.intent.host,
+          bootId: mismatchedDiagnosticIdentity.intent.bootId,
+          processes: [],
+        },
+      ),
+    /VK_ANDROID_HISTORICAL_LAUNCH_IDENTITY_MISMATCH/,
+  );
 
   const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
-  const recovery = source.slice(source.indexOf('async function recoverInvalidatedLaunchOwnership('), source.indexOf('async function doCleanup('));
+  const recovery = source.slice(
+    source.indexOf('async function recoverInvalidatedLaunchOwnership('),
+    source.indexOf('async function doCleanup('),
+  );
   assert.match(recovery, /remoteProcessIdentity\(manifest, device, intent\.packageName\)/);
   assert.match(recovery, /resolveInvalidatedRemoteLaunch\(manifest, intent\.intentId, observed\)/);
   assert.match(recovery, /doCleanup\(manifest\)/);
@@ -444,61 +1051,145 @@ test('managed cleanup recovers only runner-recorded invalidated app ownership on
 test('unresolved launch reports a bounded diagnostic callback before preserving failure ownership', async () => {
   const manifest = {devices: {dual: {serial: 'emulator-5554'}}, pendingRemoteLaunches: [], ownedRemoteProcesses: []};
   const notices = [];
-  await assert.rejects(() => runner.launchWithPendingOwnership(manifest, {
-    host: 'emulator-5554', bootId: 'boot-a', packageName: 'com.anonymous.sampleterminal',
-    appName: 'sample-terminal', shape: 'dual', intentId: 'launch-capture-01',
-  }, {
-    persist: async () => {},
-    launch: async () => {},
-    readback: async () => ({host: 'emulator-5554', bootId: 'boot-a', processes: []}),
-    onLaunchFailure: async notice => { notices.push(notice); },
-  }), /VK_ANDROID_REMOTE_LAUNCH_OWNERSHIP_UNRESOLVED/);
-  assert.deepEqual(notices, [{intentId: 'launch-capture-01', stage: 'ownership-readback', failureCode: 'VK_ANDROID_REMOTE_LAUNCH_OWNERSHIP_UNRESOLVED'}]);
+  await assert.rejects(
+    () =>
+      runner.launchWithPendingOwnership(
+        manifest,
+        {
+          host: 'emulator-5554',
+          bootId: 'boot-a',
+          packageName: 'com.anonymous.sampleterminal',
+          appName: 'sample-terminal',
+          shape: 'dual',
+          intentId: 'launch-capture-01',
+        },
+        {
+          persist: async () => {},
+          launch: async () => {},
+          readback: async () => ({host: 'emulator-5554', bootId: 'boot-a', processes: []}),
+          onLaunchFailure: async notice => {
+            notices.push(notice);
+          },
+        },
+      ),
+    /VK_ANDROID_REMOTE_LAUNCH_OWNERSHIP_UNRESOLVED/,
+  );
+  assert.deepEqual(notices, [
+    {
+      intentId: 'launch-capture-01',
+      stage: 'ownership-readback',
+      failureCode: 'VK_ANDROID_REMOTE_LAUNCH_OWNERSHIP_UNRESOLVED',
+    },
+  ]);
   assert.equal(manifest.pendingRemoteLaunches.length, 1);
   assert.equal(manifest.ownedRemoteProcesses.length, 0);
 
-  const errorManifest = {devices: {dual: {serial: 'emulator-5554'}}, pendingRemoteLaunches: [], ownedRemoteProcesses: []};
+  const errorManifest = {
+    devices: {dual: {serial: 'emulator-5554'}},
+    pendingRemoteLaunches: [],
+    ownedRemoteProcesses: [],
+  };
   const errorNotices = [];
-  await assert.rejects(() => runner.launchWithPendingOwnership(errorManifest, {
-    host: 'emulator-5554', bootId: 'boot-a', packageName: 'com.anonymous.sampleterminal',
-    appName: 'sample-terminal', shape: 'dual', intentId: 'launch-capture-02',
-  }, {
-    persist: async () => {},
-    launch: async () => {},
-    readback: async () => { throw new Error('raw readback detail must not enter callback'); },
-    onLaunchFailure: async notice => { errorNotices.push(notice); },
-  }), /raw readback detail must not enter callback/);
-  assert.deepEqual(errorNotices, [{intentId: 'launch-capture-02', stage: 'process-readback', failureCode: 'VK_ANDROID_REMOTE_PROCESS_READBACK_FAILED'}]);
+  await assert.rejects(
+    () =>
+      runner.launchWithPendingOwnership(
+        errorManifest,
+        {
+          host: 'emulator-5554',
+          bootId: 'boot-a',
+          packageName: 'com.anonymous.sampleterminal',
+          appName: 'sample-terminal',
+          shape: 'dual',
+          intentId: 'launch-capture-02',
+        },
+        {
+          persist: async () => {},
+          launch: async () => {},
+          readback: async () => {
+            throw new Error('raw readback detail must not enter callback');
+          },
+          onLaunchFailure: async notice => {
+            errorNotices.push(notice);
+          },
+        },
+      ),
+    /raw readback detail must not enter callback/,
+  );
+  assert.deepEqual(errorNotices, [
+    {
+      intentId: 'launch-capture-02',
+      stage: 'process-readback',
+      failureCode: 'VK_ANDROID_REMOTE_PROCESS_READBACK_FAILED',
+    },
+  ]);
   assert.equal(errorManifest.pendingRemoteLaunches.length, 1);
   assert.equal(errorManifest.ownedRemoteProcesses.length, 0);
 
-  const launchErrorManifest = {devices: {dual: {serial: 'emulator-5554'}}, pendingRemoteLaunches: [], ownedRemoteProcesses: []};
+  const launchErrorManifest = {
+    devices: {dual: {serial: 'emulator-5554'}},
+    pendingRemoteLaunches: [],
+    ownedRemoteProcesses: [],
+  };
   const launchErrorNotices = [];
-  await assert.rejects(() => runner.launchWithPendingOwnership(launchErrorManifest, {
-    host: 'emulator-5554', bootId: 'boot-a', packageName: 'com.anonymous.sampleterminal',
-    appName: 'sample-terminal', shape: 'dual', intentId: 'launch-capture-03',
-  }, {
-    persist: async () => {},
-    launch: async () => { throw new Error('VK_ANDROID_ACTIVITY_LAUNCH_FAILED'); },
-    readback: async () => { throw new Error('readback must not be reached'); },
-    onLaunchFailure: async notice => { launchErrorNotices.push(notice); },
-  }), /VK_ANDROID_ACTIVITY_LAUNCH_FAILED/);
-  assert.deepEqual(launchErrorNotices, [{intentId: 'launch-capture-03', stage: 'activity-launch', failureCode: 'VK_ANDROID_ACTIVITY_LAUNCH_FAILED'}]);
+  await assert.rejects(
+    () =>
+      runner.launchWithPendingOwnership(
+        launchErrorManifest,
+        {
+          host: 'emulator-5554',
+          bootId: 'boot-a',
+          packageName: 'com.anonymous.sampleterminal',
+          appName: 'sample-terminal',
+          shape: 'dual',
+          intentId: 'launch-capture-03',
+        },
+        {
+          persist: async () => {},
+          launch: async () => {
+            throw new Error('VK_ANDROID_ACTIVITY_LAUNCH_FAILED');
+          },
+          readback: async () => {
+            throw new Error('readback must not be reached');
+          },
+          onLaunchFailure: async notice => {
+            launchErrorNotices.push(notice);
+          },
+        },
+      ),
+    /VK_ANDROID_ACTIVITY_LAUNCH_FAILED/,
+  );
+  assert.deepEqual(launchErrorNotices, [
+    {intentId: 'launch-capture-03', stage: 'activity-launch', failureCode: 'VK_ANDROID_ACTIVITY_LAUNCH_FAILED'},
+  ]);
   assert.equal(launchErrorManifest.pendingRemoteLaunches.length, 1);
   assert.equal(launchErrorManifest.ownedRemoteProcesses.length, 0);
 });
 
 test('launch diagnostic callback failure cannot replace the original launch failure', async () => {
   const manifest = {devices: {dual: {serial: 'emulator-5554'}}, pendingRemoteLaunches: [], ownedRemoteProcesses: []};
-  await assert.rejects(() => runner.launchWithPendingOwnership(manifest, {
-    host: 'emulator-5554', bootId: 'boot-a', packageName: 'com.anonymous.sampleterminal',
-    appName: 'sample-terminal', shape: 'dual', intentId: 'launch-capture-callback-fails',
-  }, {
-    persist: async () => {},
-    launch: async () => {},
-    readback: async () => ({host: 'emulator-5554', bootId: 'boot-a', processes: []}),
-    onLaunchFailure: async () => { throw new Error('diagnostic-write-failed'); },
-  }), /VK_ANDROID_REMOTE_LAUNCH_OWNERSHIP_UNRESOLVED/);
+  await assert.rejects(
+    () =>
+      runner.launchWithPendingOwnership(
+        manifest,
+        {
+          host: 'emulator-5554',
+          bootId: 'boot-a',
+          packageName: 'com.anonymous.sampleterminal',
+          appName: 'sample-terminal',
+          shape: 'dual',
+          intentId: 'launch-capture-callback-fails',
+        },
+        {
+          persist: async () => {},
+          launch: async () => {},
+          readback: async () => ({host: 'emulator-5554', bootId: 'boot-a', processes: []}),
+          onLaunchFailure: async () => {
+            throw new Error('diagnostic-write-failed');
+          },
+        },
+      ),
+    /VK_ANDROID_REMOTE_LAUNCH_OWNERSHIP_UNRESOLVED/,
+  );
   assert.equal(manifest.pendingRemoteLaunches.length, 1);
   assert.equal(manifest.ownedRemoteProcesses.length, 0);
 });
@@ -506,14 +1197,18 @@ test('launch diagnostic callback failure cannot replace the original launch fail
 test('launch crash diagnostics expose only package-bound failure facts and reconcile exact pending ownership', () => {
   assert.equal(typeof runner.summarizeAndroidLaunchDiagnostics, 'function');
   assert.equal(typeof runner.resolvePendingRemoteLaunch, 'function');
-  const summary = runner.summarizeAndroidLaunchDiagnostics([
-    'E/AndroidRuntime( 100): FATAL EXCEPTION: main',
-    'E/AndroidRuntime( 100): Process: com.anonymous.sampleterminal, PID: 100',
-    'E/AndroidRuntime( 100): java.lang.RuntimeException: password=secret token=abc 192.168.1.2',
-    'E/AndroidRuntime( 100):     at com.anonymous.sampleterminal.MainActivity.onCreate(MainActivity.kt:42)',
-    'E/AndroidRuntime( 100): Process: com.other.app, PID: 200',
-    'E/AndroidRuntime( 200): java.lang.IllegalStateException: unrelated',
-  ].join('\n'), 'com.anonymous.sampleterminal', '100');
+  const summary = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'E/AndroidRuntime( 100): FATAL EXCEPTION: main',
+      'E/AndroidRuntime( 100): Process: com.anonymous.sampleterminal, PID: 100',
+      'E/AndroidRuntime( 100): java.lang.RuntimeException: password=secret token=abc 192.168.1.2',
+      'E/AndroidRuntime( 100):     at com.anonymous.sampleterminal.MainActivity.onCreate(MainActivity.kt:42)',
+      'E/AndroidRuntime( 100): Process: com.other.app, PID: 200',
+      'E/AndroidRuntime( 200): java.lang.IllegalStateException: unrelated',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+    '100',
+  );
   assert.deepEqual(summary, {
     fatalException: true,
     processDied: false,
@@ -523,127 +1218,227 @@ test('launch crash diagnostics expose only package-bound failure facts and recon
     jsErrorSeen: false,
   });
 
-  const processDeathForOtherPid = runner.summarizeAndroidLaunchDiagnostics([
-    'E/AndroidRuntime( 100): Process: com.anonymous.sampleterminal, PID: 100',
-    'E/ActivityManager( 1): Process com.anonymous.sampleterminal (pid 200) has died: fg TOP',
-  ].join('\n'), 'com.anonymous.sampleterminal', '100');
+  const processDeathForOtherPid = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'E/AndroidRuntime( 100): Process: com.anonymous.sampleterminal, PID: 100',
+      'E/ActivityManager( 1): Process com.anonymous.sampleterminal (pid 200) has died: fg TOP',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+    '100',
+  );
   assert.equal(processDeathForOtherPid.processDied, false);
-  const processDeathForPackagePrefix = runner.summarizeAndroidLaunchDiagnostics([
-    'E/AndroidRuntime( 100): Process: com.anonymous.sampleterminal, PID: 100',
-    'E/ActivityManager( 1): Process com.anonymous.sampleterminal.debug (pid 100) has died: fg TOP',
-  ].join('\n'), 'com.anonymous.sampleterminal', '100');
+  const processDeathForPackagePrefix = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'E/AndroidRuntime( 100): Process: com.anonymous.sampleterminal, PID: 100',
+      'E/ActivityManager( 1): Process com.anonymous.sampleterminal.debug (pid 100) has died: fg TOP',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+    '100',
+  );
   assert.equal(processDeathForPackagePrefix.processDied, false);
-  const processDeathForTargetPid = runner.summarizeAndroidLaunchDiagnostics([
-    'E/AndroidRuntime( 100): Process: com.anonymous.sampleterminal, PID: 100',
-    'E/ActivityManager( 1): Process com.anonymous.sampleterminal (pid 100) has died: fg TOP',
-  ].join('\n'), 'com.anonymous.sampleterminal', '100');
+  const processDeathForTargetPid = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'E/AndroidRuntime( 100): Process: com.anonymous.sampleterminal, PID: 100',
+      'E/ActivityManager( 1): Process com.anonymous.sampleterminal (pid 100) has died: fg TOP',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+    '100',
+  );
   assert.equal(processDeathForTargetPid.processDied, true);
-  const processDeathFromStartupBreadcrumbPid = runner.summarizeAndroidLaunchDiagnostics([
-    'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
-    'I/ActivityManager( 1): Process com.anonymous.sampleterminal (pid 321) has died: vis +30s',
-  ].join('\n'), 'com.anonymous.sampleterminal', '321');
+  const processDeathFromStartupBreadcrumbPid = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
+      'I/ActivityManager( 1): Process com.anonymous.sampleterminal (pid 321) has died: vis +30s',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+    '321',
+  );
   assert.equal(processDeathFromStartupBreadcrumbPid.processDied, true);
-  const processDeathForOtherStartupPid = runner.summarizeAndroidLaunchDiagnostics([
-    'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
-    'I/ActivityManager( 1): Process com.anonymous.sampleterminal (pid 654) has died: vis +30s',
-  ].join('\n'), 'com.anonymous.sampleterminal', '321');
+  const processDeathForOtherStartupPid = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
+      'I/ActivityManager( 1): Process com.anonymous.sampleterminal (pid 654) has died: vis +30s',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+    '321',
+  );
   assert.equal(processDeathForOtherStartupPid.processDied, false);
-  const staleProcessDeathBeforeLatestLaunch = runner.summarizeAndroidLaunchDiagnostics([
-    'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
-    'I/ActivityManager( 1): Process com.anonymous.sampleterminal (pid 321) has died: vis +30s',
-    'I/TER-Splash( 654): event=activity.onCreate phase=start app=sample-terminal',
-  ].join('\n'), 'com.anonymous.sampleterminal', '654');
+  const staleProcessDeathBeforeLatestLaunch = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
+      'I/ActivityManager( 1): Process com.anonymous.sampleterminal (pid 321) has died: vis +30s',
+      'I/TER-Splash( 654): event=activity.onCreate phase=start app=sample-terminal',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+    '654',
+  );
   assert.equal(staleProcessDeathBeforeLatestLaunch.processDied, false);
 
-  const nativeCrashForTarget = runner.summarizeAndroidLaunchDiagnostics([
-    'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
-    'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal',
-    'F/DEBUG( 999): pid: 321, tid: 321, name: main >>> com.anonymous.sampleterminal <<<',
-    'F/DEBUG( 999): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR)',
-  ].join('\n'), 'com.anonymous.sampleterminal', '321');
+  const nativeCrashForTarget = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
+      'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal',
+      'F/DEBUG( 999): pid: 321, tid: 321, name: main >>> com.anonymous.sampleterminal <<<',
+      'F/DEBUG( 999): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR)',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+    '321',
+  );
   assert.deepEqual(nativeCrashForTarget.nativeFatalSignals, ['SIGSEGV']);
-  const nativeCrashForOtherPid = runner.summarizeAndroidLaunchDiagnostics([
-    'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
-    'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal',
-    'F/DEBUG( 999): pid: 654, tid: 654, name: main >>> com.anonymous.sampleterminal <<<',
-    'F/DEBUG( 999): signal 6 (SIGABRT), code -1 (SI_QUEUE)',
-  ].join('\n'), 'com.anonymous.sampleterminal', '321');
+  const nativeCrashForOtherPid = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
+      'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal',
+      'F/DEBUG( 999): pid: 654, tid: 654, name: main >>> com.anonymous.sampleterminal <<<',
+      'F/DEBUG( 999): signal 6 (SIGABRT), code -1 (SI_QUEUE)',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+    '321',
+  );
   assert.deepEqual(nativeCrashForOtherPid.nativeFatalSignals, []);
-  const nativeCrashForPackagePrefix = runner.summarizeAndroidLaunchDiagnostics([
-    'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
-    'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal.debug',
-    'F/DEBUG( 999): pid: 321, tid: 321, name: main >>> com.anonymous.sampleterminal.debug <<<',
-    'F/DEBUG( 999): signal 6 (SIGABRT), code -1 (SI_QUEUE)',
-  ].join('\n'), 'com.anonymous.sampleterminal', '321');
+  const nativeCrashForPackagePrefix = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
+      'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal.debug',
+      'F/DEBUG( 999): pid: 321, tid: 321, name: main >>> com.anonymous.sampleterminal.debug <<<',
+      'F/DEBUG( 999): signal 6 (SIGABRT), code -1 (SI_QUEUE)',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+    '321',
+  );
 
-  const nativeCrashWithoutExactLaunchPid = runner.summarizeAndroidLaunchDiagnostics([
-    'E/AndroidRuntime( 654): Process: com.anonymous.sampleterminal, PID: 654',
-    'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal',
-    'F/DEBUG( 999): pid: 654, tid: 654, name: main >>> com.anonymous.sampleterminal <<<',
-    'F/DEBUG( 999): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR)',
-  ].join('\n'), 'com.anonymous.sampleterminal');
+  const nativeCrashWithoutExactLaunchPid = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'E/AndroidRuntime( 654): Process: com.anonymous.sampleterminal, PID: 654',
+      'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal',
+      'F/DEBUG( 999): pid: 654, tid: 654, name: main >>> com.anonymous.sampleterminal <<<',
+      'F/DEBUG( 999): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR)',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+  );
   assert.deepEqual(nativeCrashWithoutExactLaunchPid.nativeFatalSignals, []);
-  const nativeCrashWithUnknownSignal = runner.summarizeAndroidLaunchDiagnostics([
-    'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal',
-    'F/DEBUG( 999): pid: 321, tid: 321, name: main >>> com.anonymous.sampleterminal <<<',
-    'F/DEBUG( 999): signal 11 (SIGNOTREAL), code 1 (UNKNOWN)',
-  ].join('\n'), 'com.anonymous.sampleterminal', '321');
+  const nativeCrashWithUnknownSignal = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal',
+      'F/DEBUG( 999): pid: 321, tid: 321, name: main >>> com.anonymous.sampleterminal <<<',
+      'F/DEBUG( 999): signal 11 (SIGNOTREAL), code 1 (UNKNOWN)',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+    '321',
+  );
   assert.deepEqual(nativeCrashWithUnknownSignal.nativeFatalSignals, []);
   assert.deepEqual(nativeCrashForPackagePrefix.nativeFatalSignals, []);
-  const nativeCrashEvidenceAcrossSeparateDumps = runner.summarizeAndroidLaunchDiagnostics([
-    'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
-    'F/DEBUG( 999): *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***',
-    'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal',
-    'F/DEBUG( 999): pid: 654, tid: 654, name: main >>> com.anonymous.sampleterminal <<<',
-    'F/DEBUG( 998): *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***',
-    'F/DEBUG( 998): Cmdline: com.other.process',
-    'F/DEBUG( 998): pid: 321, tid: 321, name: main >>> com.other.process <<<',
-    'F/DEBUG( 998): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR)',
-  ].join('\n'), 'com.anonymous.sampleterminal');
+  const nativeCrashEvidenceAcrossSeparateDumps = runner.summarizeAndroidLaunchDiagnostics(
+    [
+      'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
+      'F/DEBUG( 999): *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***',
+      'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal',
+      'F/DEBUG( 999): pid: 654, tid: 654, name: main >>> com.anonymous.sampleterminal <<<',
+      'F/DEBUG( 998): *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***',
+      'F/DEBUG( 998): Cmdline: com.other.process',
+      'F/DEBUG( 998): pid: 321, tid: 321, name: main >>> com.other.process <<<',
+      'F/DEBUG( 998): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR)',
+    ].join('\n'),
+    'com.anonymous.sampleterminal',
+  );
   assert.deepEqual(nativeCrashEvidenceAcrossSeparateDumps.nativeFatalSignals, []);
 
   const intent = {
-    host: 'emulator-5554', bootId: 'boot-a', packageName: 'com.anonymous.sampleterminal',
-    appName: 'sample-terminal', shape: 'dual', intentId: 'dual-sample-terminal-01', startedAt: '2026-09-24T00:00:00Z',
+    host: 'emulator-5554',
+    bootId: 'boot-a',
+    packageName: 'com.anonymous.sampleterminal',
+    appName: 'sample-terminal',
+    shape: 'dual',
+    intentId: 'dual-sample-terminal-01',
+    startedAt: '2026-09-24T00:00:00Z',
   };
   const absent = {pendingRemoteLaunches: [{...intent}], ownedRemoteProcesses: [], resolvedRemoteLaunches: []};
-  assert.equal(runner.resolvePendingRemoteLaunch(absent, intent.intentId, {host: intent.host, bootId: intent.bootId, processes: []}, '2026-09-24T00:00:01Z'), 'PROCESS_ABSENT');
+  assert.equal(
+    runner.resolvePendingRemoteLaunch(
+      absent,
+      intent.intentId,
+      {host: intent.host, bootId: intent.bootId, processes: []},
+      '2026-09-24T00:00:01Z',
+    ),
+    'PROCESS_ABSENT',
+  );
   assert.equal(absent.pendingRemoteLaunches.length, 0);
   assert.equal(absent.resolvedRemoteLaunches[0].resolution, 'PROCESS_ABSENT');
 
   const live = {pendingRemoteLaunches: [{...intent}], ownedRemoteProcesses: [], resolvedRemoteLaunches: []};
-  assert.equal(runner.resolvePendingRemoteLaunch(live, intent.intentId, {
-    host: intent.host, bootId: intent.bootId, processes: [{pid: 101, startTicks: '55'}],
-  }, '2026-09-24T00:00:02Z'), 'PROCESS_ADOPTED');
+  assert.equal(
+    runner.resolvePendingRemoteLaunch(
+      live,
+      intent.intentId,
+      {
+        host: intent.host,
+        bootId: intent.bootId,
+        processes: [{pid: 101, startTicks: '55'}],
+      },
+      '2026-09-24T00:00:02Z',
+    ),
+    'PROCESS_ADOPTED',
+  );
   assert.equal(live.pendingRemoteLaunches.length, 0);
   assert.equal(live.ownedRemoteProcesses[0].processes[0].pid, 101);
 
   const mismatched = {pendingRemoteLaunches: [{...intent}], ownedRemoteProcesses: [], resolvedRemoteLaunches: []};
-  assert.throws(() => runner.resolvePendingRemoteLaunch(mismatched, intent.intentId, {
-    host: intent.host, bootId: 'other-boot', processes: [],
-  }, '2026-09-24T00:00:03Z'), /VK_ANDROID_PENDING_LAUNCH_IDENTITY_MISMATCH/);
+  assert.throws(
+    () =>
+      runner.resolvePendingRemoteLaunch(
+        mismatched,
+        intent.intentId,
+        {
+          host: intent.host,
+          bootId: 'other-boot',
+          processes: [],
+        },
+        '2026-09-24T00:00:03Z',
+      ),
+    /VK_ANDROID_PENDING_LAUNCH_IDENTITY_MISMATCH/,
+  );
   assert.equal(mismatched.pendingRemoteLaunches.length, 1);
 
   for (const processes of [
     [null],
     [{pid: '101', startTicks: '55'}],
     [{pid: 101, startTicks: 'not-numeric'}],
-    [{pid: 101, startTicks: '55'}, {pid: 101, startTicks: '56'}],
+    [
+      {pid: 101, startTicks: '55'},
+      {pid: 101, startTicks: '56'},
+    ],
   ]) {
     const invalid = {pendingRemoteLaunches: [{...intent}], ownedRemoteProcesses: [], resolvedRemoteLaunches: []};
-    assert.throws(() => runner.resolvePendingRemoteLaunch(invalid, intent.intentId, {
-      host: intent.host, bootId: intent.bootId, processes,
-    }, '2026-09-24T00:00:04Z'), /VK_ANDROID_PENDING_LAUNCH_IDENTITY_MISMATCH/);
+    assert.throws(
+      () =>
+        runner.resolvePendingRemoteLaunch(
+          invalid,
+          intent.intentId,
+          {
+            host: intent.host,
+            bootId: intent.bootId,
+            processes,
+          },
+          '2026-09-24T00:00:04Z',
+        ),
+      /VK_ANDROID_PENDING_LAUNCH_IDENTITY_MISMATCH/,
+    );
     assert.equal(invalid.pendingRemoteLaunches.length, 1);
     assert.equal(invalid.ownedRemoteProcesses.length, 0);
     assert.equal(invalid.resolvedRemoteLaunches.length, 0);
   }
 
   const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
-  const action = source.slice(source.indexOf('async function diagnosePendingLaunch('), source.indexOf('async function report('));
+  const action = source.slice(
+    source.indexOf('async function diagnosePendingLaunch('),
+    source.indexOf('async function report('),
+  );
   assert.match(action, /remoteProcessIdentity\(manifest, device, intent\.packageName\)/);
   assert.match(action, /summarizeAppLaunchBreadcrumbs\(logcat, intent\.appName, intent\.intentId\)/);
-  assert.match(action, /summarizeAndroidLaunchDiagnostics\(logcat, intent\.packageName, breadcrumbs\.startupPid, intent\.intentId\)/);
+  assert.match(
+    action,
+    /summarizeAndroidLaunchDiagnostics\(logcat, intent\.packageName, breadcrumbs\.startupPid, intent\.intentId\)/,
+  );
   assert.match(action, /'AndroidRuntime:E', 'ReactNativeJS:E'/);
   assert.match(action, /'TER-VK-LAUNCH:I', 'TER-Splash:I'/);
   assert.match(action, /'ActivityManager:I', 'ActivityTaskManager:I'/);
@@ -654,34 +1449,49 @@ test('launch crash diagnostics expose only package-bound failure facts and recon
 
 test('launch breadcrumb diagnostics expose only whitelisted TER-Splash stages for the exact app', () => {
   assert.equal(typeof runner.summarizeAppLaunchBreadcrumbs, 'function');
-  const summary = runner.summarizeAppLaunchBreadcrumbs([
-    'I/TER-Splash( 100): event=activity.onCreate phase=start app=sample-terminal',
-    'I/TER-VK-LAUNCH( 111): intent=dual-sample-terminal-01',
-    'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
-    'I/TER-Splash( 321): event=expo.prevent-auto-hide-set app=sample-terminal value=true',
-    'I/TER-Splash( 321): event=activity.onCreate phase=after-super app=sample-terminal',
-    'I/TER-Splash( 654): event=activity.onCreate phase=start app=sample-wallpaper-terminal',
-    'I/OtherTag( 321): event=activity.onCreate phase=before-super app=sample-terminal',
-    'I/TER-Splash( 321): event=untrusted marker app=sample-terminal token=secret',
-  ].join('\n'), 'sample-terminal', 'dual-sample-terminal-01');
+  const summary = runner.summarizeAppLaunchBreadcrumbs(
+    [
+      'I/TER-Splash( 100): event=activity.onCreate phase=start app=sample-terminal',
+      'I/TER-VK-LAUNCH( 111): intent=dual-sample-terminal-01',
+      'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
+      'I/TER-Splash( 321): event=expo.prevent-auto-hide-set app=sample-terminal value=true',
+      'I/TER-Splash( 321): event=activity.onCreate phase=after-super app=sample-terminal',
+      'I/TER-Splash( 654): event=activity.onCreate phase=start app=sample-wallpaper-terminal',
+      'I/OtherTag( 321): event=activity.onCreate phase=before-super app=sample-terminal',
+      'I/TER-Splash( 321): event=untrusted marker app=sample-terminal token=secret',
+    ].join('\n'),
+    'sample-terminal',
+    'dual-sample-terminal-01',
+  );
   assert.deepEqual(summary, {
-    observedMarkers: [
-      'activity.onCreate:start',
-      'expo.prevent-auto-hide-set',
-      'activity.onCreate:after-super',
-    ],
+    observedMarkers: ['activity.onCreate:start', 'expo.prevent-auto-hide-set', 'activity.onCreate:after-super'],
     markerCount: 3,
     startupPid: '321',
   });
-  assert.deepEqual(runner.summarizeAppLaunchBreadcrumbs([
-    'I/TER-Splash( 100): event=activity.onCreate phase=start app=sample-terminal',
-  ].join('\n'), 'sample-terminal', 'dual-sample-terminal-01'), {
-    observedMarkers: [], markerCount: 0, startupPid: null,
-  });
-  assert.throws(() => runner.summarizeAppLaunchBreadcrumbs([
-    'I/TER-VK-LAUNCH( 111): intent=dual-sample-terminal-01',
-    'I/TER-VK-LAUNCH( 112): intent=dual-sample-terminal-01',
-  ].join('\n'), 'sample-terminal', 'dual-sample-terminal-01'), /VK_ANDROID_LAUNCH_SENTINEL_DUPLICATE/);
+  assert.deepEqual(
+    runner.summarizeAppLaunchBreadcrumbs(
+      ['I/TER-Splash( 100): event=activity.onCreate phase=start app=sample-terminal'].join('\n'),
+      'sample-terminal',
+      'dual-sample-terminal-01',
+    ),
+    {
+      observedMarkers: [],
+      markerCount: 0,
+      startupPid: null,
+    },
+  );
+  assert.throws(
+    () =>
+      runner.summarizeAppLaunchBreadcrumbs(
+        [
+          'I/TER-VK-LAUNCH( 111): intent=dual-sample-terminal-01',
+          'I/TER-VK-LAUNCH( 112): intent=dual-sample-terminal-01',
+        ].join('\n'),
+        'sample-terminal',
+        'dual-sample-terminal-01',
+      ),
+    /VK_ANDROID_LAUNCH_SENTINEL_DUPLICATE/,
+  );
   const laterLaunchLog = [
     'I/TER-VK-LAUNCH( 111): intent=dual-sample-terminal-old',
     'I/TER-Splash( 321): event=activity.onCreate phase=start app=sample-terminal',
@@ -692,14 +1502,11 @@ test('launch breadcrumb diagnostics expose only whitelisted TER-Splash stages fo
     'F/DEBUG( 998): pid: 999, tid: 999, name: main >>> com.anonymous.sampleterminal <<<',
     'F/DEBUG( 998): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR)',
   ].join('\n');
-  const oldLaunch = runner.summarizeAppLaunchBreadcrumbs(
-    laterLaunchLog, 'sample-terminal', 'dual-sample-terminal-old',
-  );
+  const oldLaunch = runner.summarizeAppLaunchBreadcrumbs(laterLaunchLog, 'sample-terminal', 'dual-sample-terminal-old');
   assert.equal(oldLaunch.startupPid, '321');
   assert.deepEqual(
-    runner.summarizeAndroidLaunchDiagnostics(
-      laterLaunchLog, 'com.anonymous.sampleterminal', oldLaunch.startupPid,
-    ).nativeFatalSignals,
+    runner.summarizeAndroidLaunchDiagnostics(laterLaunchLog, 'com.anonymous.sampleterminal', oldLaunch.startupPid)
+      .nativeFatalSignals,
     [],
   );
   const reusedPidLaunchLog = [
@@ -713,12 +1520,16 @@ test('launch breadcrumb diagnostics expose only whitelisted TER-Splash stages fo
     'F/DEBUG( 998): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR)',
   ].join('\n');
   const oldReusedPidLaunch = runner.summarizeAppLaunchBreadcrumbs(
-    reusedPidLaunchLog, 'sample-terminal', 'dual-sample-terminal-old-pid-reuse',
+    reusedPidLaunchLog,
+    'sample-terminal',
+    'dual-sample-terminal-old-pid-reuse',
   );
   assert.equal(oldReusedPidLaunch.startupPid, '321');
   assert.deepEqual(
     runner.summarizeAndroidLaunchDiagnostics(
-      reusedPidLaunchLog, 'com.anonymous.sampleterminal', oldReusedPidLaunch.startupPid,
+      reusedPidLaunchLog,
+      'com.anonymous.sampleterminal',
+      oldReusedPidLaunch.startupPid,
       'dual-sample-terminal-old-pid-reuse',
     ),
     {
@@ -740,29 +1551,50 @@ test('launch breadcrumb diagnostics expose only whitelisted TER-Splash stages fo
     'F/DEBUG( 998): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR)',
   ].join('\n');
   const oldMalformedNextLaunch = runner.summarizeAppLaunchBreadcrumbs(
-    malformedNextSentinelLog, 'sample-terminal', 'dual-sample-terminal-old-malformed-next',
+    malformedNextSentinelLog,
+    'sample-terminal',
+    'dual-sample-terminal-old-malformed-next',
   );
   assert.equal(oldMalformedNextLaunch.startupPid, '321');
   assert.deepEqual(
     runner.summarizeAndroidLaunchDiagnostics(
-      malformedNextSentinelLog, 'com.anonymous.sampleterminal', oldMalformedNextLaunch.startupPid,
+      malformedNextSentinelLog,
+      'com.anonymous.sampleterminal',
+      oldMalformedNextLaunch.startupPid,
       'dual-sample-terminal-old-malformed-next',
     ).nativeFatalSignals,
     [],
   );
-  assert.throws(() => runner.summarizeAppLaunchBreadcrumbs('I/TER-Splash( 321): event=activity.onCreate phase=start app=unknown', 'unknown'), /VK_ANDROID_APP_INVALID/);
+  assert.throws(
+    () =>
+      runner.summarizeAppLaunchBreadcrumbs(
+        'I/TER-Splash( 321): event=activity.onCreate phase=start app=unknown',
+        'unknown',
+      ),
+    /VK_ANDROID_APP_INVALID/,
+  );
   const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
-  const inspection = source.slice(source.indexOf('async function inspectResolvedLaunch('), source.indexOf('async function report('));
-  const resolver = source.slice(source.indexOf('export function resolveInspectableLaunch('), source.indexOf('async function inspectResolvedLaunch('));
+  const inspection = source.slice(
+    source.indexOf('async function inspectResolvedLaunch('),
+    source.indexOf('async function report('),
+  );
+  const resolver = source.slice(
+    source.indexOf('export function resolveInspectableLaunch('),
+    source.indexOf('async function inspectResolvedLaunch('),
+  );
   assert.match(resolver, /resolvedRemoteLaunches/);
   assert.match(inspection, /resolveInspectableLaunch\(manifest\)/);
   assert.match(inspection, /summarizeAppLaunchBreadcrumbs\(logcat, intent\.appName, intent\.intentId\)/);
-  assert.match(inspection, /summarizeAndroidLaunchDiagnostics\(logcat, intent\.packageName, breadcrumbs\.startupPid, intent\.intentId\)/);
+  assert.match(
+    inspection,
+    /summarizeAndroidLaunchDiagnostics\(logcat, intent\.packageName, breadcrumbs\.startupPid, intent\.intentId\)/,
+  );
   assert.match(inspection, /'TER-Splash:I'/);
   assert.match(inspection, /'TER-VK-LAUNCH:I', 'TER-Splash:I'/);
   assert.match(inspection, /diagnosticOutput: 'omit'/);
   const resolvedProcessTableRead = inspection.slice(
-    inspection.indexOf('const processTableText ='), inspection.indexOf('const processTable ='),
+    inspection.indexOf('const processTableText ='),
+    inspection.indexOf('const processTable ='),
   );
   assert.match(resolvedProcessTableRead, /'shell', 'ps', '-A', '-o', 'PID,NAME'/);
   assert.match(resolvedProcessTableRead, /diagnosticOutput: 'sanitized'/);
@@ -772,7 +1604,10 @@ test('launch breadcrumb diagnostics expose only whitelisted TER-Splash stages fo
   assert.match(inspection, /'shell', 'ps', '-A', '-o', 'PID,NAME'/);
   assert.match(inspection, /parseAndroidProcessTable\(processTableText, intent\.packageName\)/);
   assert.doesNotMatch(inspection, /remoteProcessIdentity\(|am', 'start|force-stop/);
-  const installer = source.slice(source.indexOf('async function installLaunch('), source.indexOf('function screenshotPath('));
+  const installer = source.slice(
+    source.indexOf('async function installLaunch('),
+    source.indexOf('function screenshotPath('),
+  );
   assert.match(installer, /onLaunchFailure: async \(\{intentId, stage, failureCode\}\)/);
   assert.match(installer, /launch-intent-marker/);
   assert.match(installer, /'shell', 'log', '-p', 'i', '-t', 'TER-VK-LAUNCH'/);
@@ -781,22 +1616,29 @@ test('launch breadcrumb diagnostics expose only whitelisted TER-Splash stages fo
   assert.match(installer, /'TER-VK-LAUNCH:I', 'TER-Splash:I'/);
   assert.match(installer, /'ActivityManager:I', 'ActivityTaskManager:I'/);
   assert.match(installer, /'DEBUG:F', 'libc:F', 'crash_dump32:F', 'crash_dump64:F', 'tombstoned:F'/);
-  assert.match(installer, /summarizeAndroidLaunchDiagnostics\(logcat, app\.packageName, breadcrumbs\.startupPid, intentId\)/);
+  assert.match(
+    installer,
+    /summarizeAndroidLaunchDiagnostics\(logcat, app\.packageName, breadcrumbs\.startupPid, intentId\)/,
+  );
   assert.match(installer, /summarizeAppLaunchBreadcrumbs\(logcat, appName, intentId\)/);
   assert.match(installer, /appendEvent\(manifest, 'REMOTE_LAUNCH_FAILURE_LOG_CAPTURED'/);
   assert.match(source, /action === 'inspect-resolved-launch'/);
 });
 
 test('launch epoch diagnostics bind app pid, timestamp, and actual overlay outcome to one intent', () => {
-  const summary = runner.summarizeAppLaunchBreadcrumbs([
-    '1790203633.300 777 777 I TER-VK-LAUNCH: intent=dual-sample-terminal-epoch-01',
-    '1790203633.400 321 321 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal',
-    '1790203633.405 321 321 I TER-Splash: event=native.loading-overlay-attached activity=ephemeral-activity-token',
-    '1790203633.410 321 321 I TER-Splash: event=native.loading-overlay-attached-after-super app=sample-terminal',
-    '1790203633.415 322 322 I TER-Splash: event=native.loading-overlay-skipped reason=gate-unavailable activity=other-token',
-    '1790203633.500 778 778 I TER-VK-LAUNCH: intent=dual-sample-terminal-epoch-02',
-    '1790203633.510 999 999 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal',
-  ].join('\n'), 'sample-terminal', 'dual-sample-terminal-epoch-01');
+  const summary = runner.summarizeAppLaunchBreadcrumbs(
+    [
+      '1790203633.300 777 777 I TER-VK-LAUNCH: intent=dual-sample-terminal-epoch-01',
+      '1790203633.400 321 321 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal',
+      '1790203633.405 321 321 I TER-Splash: event=native.loading-overlay-attached activity=ephemeral-activity-token',
+      '1790203633.410 321 321 I TER-Splash: event=native.loading-overlay-attached-after-super app=sample-terminal',
+      '1790203633.415 322 322 I TER-Splash: event=native.loading-overlay-skipped reason=gate-unavailable activity=other-token',
+      '1790203633.500 778 778 I TER-VK-LAUNCH: intent=dual-sample-terminal-epoch-02',
+      '1790203633.510 999 999 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal',
+    ].join('\n'),
+    'sample-terminal',
+    'dual-sample-terminal-epoch-01',
+  );
 
   assert.equal(summary.startupPid, '321');
   assert.equal(summary.startupAtEpochMs, 1790203633400);
@@ -807,11 +1649,15 @@ test('launch epoch diagnostics bind app pid, timestamp, and actual overlay outco
 });
 
 test('launch epoch diagnostics report a same-process registry skip without exposing activity tokens', () => {
-  const summary = runner.summarizeAppLaunchBreadcrumbs([
-    '1790203633.300 777 777 I TER-VK-LAUNCH: intent=dual-sample-terminal-epoch-skip',
-    '1790203633.400 321 321 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal',
-    '1790203633.405 321 321 I TER-Splash: event=native.loading-overlay-skipped reason=config-unavailable activity=private-token',
-  ].join('\n'), 'sample-terminal', 'dual-sample-terminal-epoch-skip');
+  const summary = runner.summarizeAppLaunchBreadcrumbs(
+    [
+      '1790203633.300 777 777 I TER-VK-LAUNCH: intent=dual-sample-terminal-epoch-skip',
+      '1790203633.400 321 321 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal',
+      '1790203633.405 321 321 I TER-Splash: event=native.loading-overlay-skipped reason=config-unavailable activity=private-token',
+    ].join('\n'),
+    'sample-terminal',
+    'dual-sample-terminal-epoch-skip',
+  );
 
   assert.equal(summary.overlayOutcome, 'SKIPPED_CONFIG_UNAVAILABLE');
   assert.ok(summary.observedMarkers.includes('native.loading-overlay-skipped:config-unavailable'));
@@ -819,12 +1665,16 @@ test('launch epoch diagnostics report a same-process registry skip without expos
 });
 
 test('launch epoch diagnostics mark repeated same-pid Activity starts ambiguous', () => {
-  const summary = runner.summarizeAppLaunchBreadcrumbs([
-    '1790203633.300 777 777 I TER-VK-LAUNCH: intent=dual-sample-terminal-epoch-repeat',
-    '1790203633.400 321 321 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal',
-    '1790203633.405 321 321 I TER-Splash: event=native.loading-overlay-attached activity=first-token',
-    '1790203633.410 321 321 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal',
-  ].join('\n'), 'sample-terminal', 'dual-sample-terminal-epoch-repeat');
+  const summary = runner.summarizeAppLaunchBreadcrumbs(
+    [
+      '1790203633.300 777 777 I TER-VK-LAUNCH: intent=dual-sample-terminal-epoch-repeat',
+      '1790203633.400 321 321 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal',
+      '1790203633.405 321 321 I TER-Splash: event=native.loading-overlay-attached activity=first-token',
+      '1790203633.410 321 321 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal',
+    ].join('\n'),
+    'sample-terminal',
+    'dual-sample-terminal-epoch-repeat',
+  );
 
   assert.equal(summary.startupPidStatus, 'AMBIGUOUS');
   assert.equal(summary.startupPid, null);
@@ -834,45 +1684,120 @@ test('launch epoch diagnostics mark repeated same-pid Activity starts ambiguous'
 
 test('launch log reinspection requires an exact uninspected PROCESS_ABSENT intent', () => {
   const absent = {
-    intentId: 'dual-sample-terminal-epoch-01', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-12345678',
-    resolution: 'PROCESS_ABSENT', processCount: 0,
+    intentId: 'dual-sample-terminal-epoch-01',
+    shape: 'dual',
+    appName: 'sample-terminal',
+    packageName: 'com.anonymous.sampleterminal',
+    host: 'emulator-5554',
+    bootId: 'boot-12345678',
+    resolution: 'PROCESS_ABSENT',
+    processCount: 0,
   };
-  const secondAbsent = {...absent, intentId: 'dual-sample-wallpaper-terminal-epoch-02',
-    appName: 'sample-wallpaper-terminal', packageName: 'com.catering.v2s.terminal.samplewallpaper'};
-  const adopted = {...absent, intentId: 'dual-sample-wallpaper-terminal-adopted', appName: 'sample-wallpaper-terminal',
-    packageName: 'com.catering.v2s.terminal.samplewallpaper', resolution: 'PROCESS_ADOPTED', processCount: 1};
+  const secondAbsent = {
+    ...absent,
+    intentId: 'dual-sample-wallpaper-terminal-epoch-02',
+    appName: 'sample-wallpaper-terminal',
+    packageName: 'com.catering.v2s.terminal.samplewallpaper',
+  };
+  const adopted = {
+    ...absent,
+    intentId: 'dual-sample-wallpaper-terminal-adopted',
+    appName: 'sample-wallpaper-terminal',
+    packageName: 'com.catering.v2s.terminal.samplewallpaper',
+    resolution: 'PROCESS_ADOPTED',
+    processCount: 1,
+  };
 
-  assert.deepEqual(runner.resolveLaunchLogReinspection({
-    resolvedRemoteLaunches: [adopted, absent, secondAbsent], launchLogReinspections: [],
-  }, absent.intentId), absent);
-  assert.deepEqual(runner.resolveLaunchLogReinspection({
-    resolvedRemoteLaunches: [adopted, absent, secondAbsent], launchLogReinspections: [],
-  }, secondAbsent.intentId), secondAbsent);
-  assert.throws(() => runner.resolveLaunchLogReinspection({
-    resolvedRemoteLaunches: [absent, secondAbsent], launchLogReinspections: [],
-  }), /VK_ANDROID_LAUNCH_INTENT_ID_INVALID/);
-  assert.throws(() => runner.resolveLaunchLogReinspection({
-    resolvedRemoteLaunches: [absent, secondAbsent], launchLogReinspections: [{intentId: absent.intentId}],
-  }, absent.intentId), /VK_ANDROID_RESOLVED_LAUNCH_ALREADY_INSPECTED/);
-  assert.throws(() => runner.resolveLaunchLogReinspection({
-    resolvedRemoteLaunches: [adopted, absent, secondAbsent], launchLogReinspections: [],
-  }, adopted.intentId), /VK_ANDROID_RESOLVED_LAUNCH_NOT_INSPECTABLE/);
-  assert.throws(() => runner.resolveLaunchLogReinspection({
-    resolvedRemoteLaunches: [absent, {...absent}], launchLogReinspections: [],
-  }, absent.intentId), /VK_ANDROID_RESOLVED_LAUNCH_COUNT_INVALID/);
-  assert.deepEqual(parseArgs(['reinspect-resolved-launch-logs', '--run-id', 'vk-run-01', '--intent-id', absent.intentId]), {
-    positionals: ['reinspect-resolved-launch-logs'], 'run-id': 'vk-run-01', 'intent-id': absent.intentId,
-  });
-  assert.throws(() => runner.resolveLaunchLogReinspection({
-    resolvedRemoteLaunches: [absent], launchLogReinspections: [{intentId: absent.intentId}],
-  }, absent.intentId), /VK_ANDROID_RESOLVED_LAUNCH_ALREADY_INSPECTED/);
+  assert.deepEqual(
+    runner.resolveLaunchLogReinspection(
+      {
+        resolvedRemoteLaunches: [adopted, absent, secondAbsent],
+        launchLogReinspections: [],
+      },
+      absent.intentId,
+    ),
+    absent,
+  );
+  assert.deepEqual(
+    runner.resolveLaunchLogReinspection(
+      {
+        resolvedRemoteLaunches: [adopted, absent, secondAbsent],
+        launchLogReinspections: [],
+      },
+      secondAbsent.intentId,
+    ),
+    secondAbsent,
+  );
+  assert.throws(
+    () =>
+      runner.resolveLaunchLogReinspection({
+        resolvedRemoteLaunches: [absent, secondAbsent],
+        launchLogReinspections: [],
+      }),
+    /VK_ANDROID_LAUNCH_INTENT_ID_INVALID/,
+  );
+  assert.throws(
+    () =>
+      runner.resolveLaunchLogReinspection(
+        {
+          resolvedRemoteLaunches: [absent, secondAbsent],
+          launchLogReinspections: [{intentId: absent.intentId}],
+        },
+        absent.intentId,
+      ),
+    /VK_ANDROID_RESOLVED_LAUNCH_ALREADY_INSPECTED/,
+  );
+  assert.throws(
+    () =>
+      runner.resolveLaunchLogReinspection(
+        {
+          resolvedRemoteLaunches: [adopted, absent, secondAbsent],
+          launchLogReinspections: [],
+        },
+        adopted.intentId,
+      ),
+    /VK_ANDROID_RESOLVED_LAUNCH_NOT_INSPECTABLE/,
+  );
+  assert.throws(
+    () =>
+      runner.resolveLaunchLogReinspection(
+        {
+          resolvedRemoteLaunches: [absent, {...absent}],
+          launchLogReinspections: [],
+        },
+        absent.intentId,
+      ),
+    /VK_ANDROID_RESOLVED_LAUNCH_COUNT_INVALID/,
+  );
+  assert.deepEqual(
+    parseArgs(['reinspect-resolved-launch-logs', '--run-id', 'vk-run-01', '--intent-id', absent.intentId]),
+    {
+      positionals: ['reinspect-resolved-launch-logs'],
+      'run-id': 'vk-run-01',
+      'intent-id': absent.intentId,
+    },
+  );
+  assert.throws(
+    () =>
+      runner.resolveLaunchLogReinspection(
+        {
+          resolvedRemoteLaunches: [absent],
+          launchLogReinspections: [{intentId: absent.intentId}],
+        },
+        absent.intentId,
+      ),
+    /VK_ANDROID_RESOLVED_LAUNCH_ALREADY_INSPECTED/,
+  );
 });
 
 test('resolved launch evidence joins epoch and brief logs only for the same startup pid', () => {
   const intent = {
-    intentId: 'dual-sample-terminal-epoch-01', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-12345678',
+    intentId: 'dual-sample-terminal-epoch-01',
+    shape: 'dual',
+    appName: 'sample-terminal',
+    packageName: 'com.anonymous.sampleterminal',
+    host: 'emulator-5554',
+    bootId: 'boot-12345678',
   };
   const epochLogcat = [
     '1790203633.300 777 777 I TER-VK-LAUNCH: intent=dual-sample-terminal-epoch-01',
@@ -902,7 +1827,11 @@ test('resolved launch evidence joins epoch and brief logs only for the same star
   assert.ok(summary.observedMarkers.includes('native.loading-overlay-attached'));
   assert.ok(!JSON.stringify(summary).includes('private-activity-token'));
 
-  const mismatch = runner.summarizeResolvedLaunchLogEvidence(intent, epochLogcat, briefLogcat.replaceAll('( 321)', '( 999)').replaceAll('pid: 321', 'pid: 999'));
+  const mismatch = runner.summarizeResolvedLaunchLogEvidence(
+    intent,
+    epochLogcat,
+    briefLogcat.replaceAll('( 321)', '( 999)').replaceAll('pid: 321', 'pid: 999'),
+  );
   assert.equal(mismatch.evidenceStatus, 'PID_MISMATCH');
   assert.equal(mismatch.startupPid, null);
   assert.equal(mismatch.startupAtEpochMs, null);
@@ -913,8 +1842,12 @@ test('resolved launch evidence joins epoch and brief logs only for the same star
 
 test('resolved native fatal signals are timestamped at or after the exact Activity start', () => {
   const intent = {
-    intentId: 'dual-sample-terminal-epoch-time', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-12345678',
+    intentId: 'dual-sample-terminal-epoch-time',
+    shape: 'dual',
+    appName: 'sample-terminal',
+    packageName: 'com.anonymous.sampleterminal',
+    host: 'emulator-5554',
+    bootId: 'boot-12345678',
   };
   const epochLogcat = [
     '1790203633.300 777 777 I TER-VK-LAUNCH: intent=dual-sample-terminal-epoch-time',
@@ -935,13 +1868,10 @@ test('resolved native fatal signals are timestamped at or after the exact Activi
   assert.equal(stale.evidenceStatus, 'MATCHED');
   assert.deepEqual(stale.signals.nativeFatalSignals, []);
 
-  const freshEpochLogcat = epochLogcat.replace(
-    '1790203633.390 321 321 F DEBUG:', '1790203633.405 321 321 F DEBUG:',
-  ).replace(
-    '1790203633.391 321 321 F DEBUG:', '1790203633.406 321 321 F DEBUG:',
-  ).replace(
-    '1790203633.392 321 321 F DEBUG:', '1790203633.407 321 321 F DEBUG:',
-  );
+  const freshEpochLogcat = epochLogcat
+    .replace('1790203633.390 321 321 F DEBUG:', '1790203633.405 321 321 F DEBUG:')
+    .replace('1790203633.391 321 321 F DEBUG:', '1790203633.406 321 321 F DEBUG:')
+    .replace('1790203633.392 321 321 F DEBUG:', '1790203633.407 321 321 F DEBUG:');
   const fresh = runner.summarizeResolvedLaunchLogEvidence(intent, freshEpochLogcat, briefLogcat);
   assert.deepEqual(fresh.signals.nativeFatalSignals, ['SIGSEGV']);
 });
@@ -949,23 +1879,52 @@ test('resolved native fatal signals are timestamped at or after the exact Activi
 test('manifest binds launch log reinspection to absent intent and rejects raw output fields', () => {
   const manifest = validManifest();
   const intent = {
-    intentId: 'dual-sample-terminal-epoch-01', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-12345678',
-    resolution: 'PROCESS_ABSENT', processCount: 0,
+    intentId: 'dual-sample-terminal-epoch-01',
+    shape: 'dual',
+    appName: 'sample-terminal',
+    packageName: 'com.anonymous.sampleterminal',
+    host: 'emulator-5554',
+    bootId: 'boot-12345678',
+    resolution: 'PROCESS_ABSENT',
+    processCount: 0,
   };
   manifest.resolvedRemoteLaunches = [intent];
   const inspection = {
-    intentId: intent.intentId, shape: intent.shape, appName: intent.appName, packageName: intent.packageName,
-    host: intent.host, bootId: intent.bootId, evidenceStatus: 'MATCHED', startupPid: '321',
-    startupAtEpochMs: 1790203633400, overlayOutcome: 'ATTACHED',
-    observedMarkers: ['activity.onCreate:start', 'native.loading-overlay-attached'], markerCount: 2,
-    signals: {fatalException: false, processDied: false, nativeFatalSignals: [], exceptionTypes: [], appFrames: [], jsErrorSeen: false},
+    intentId: intent.intentId,
+    shape: intent.shape,
+    appName: intent.appName,
+    packageName: intent.packageName,
+    host: intent.host,
+    bootId: intent.bootId,
+    evidenceStatus: 'MATCHED',
+    startupPid: '321',
+    startupAtEpochMs: 1790203633400,
+    overlayOutcome: 'ATTACHED',
+    observedMarkers: ['activity.onCreate:start', 'native.loading-overlay-attached'],
+    markerCount: 2,
+    signals: {
+      fatalException: false,
+      processDied: false,
+      nativeFatalSignals: [],
+      exceptionTypes: [],
+      appFrames: [],
+      jsErrorSeen: false,
+    },
     processObservation: {
-      startupPid: '321', processTableCandidateCount: 1,
-      processTableCandidates: [{pid: 321, name: 'com.anonymous.sampleterminal', statStatus: 'READABLE', processState: 'S', startTicks: '9001'}],
+      startupPid: '321',
+      processTableCandidateCount: 1,
+      processTableCandidates: [
+        {pid: 321, name: 'com.anonymous.sampleterminal', statStatus: 'READABLE', processState: 'S', startTicks: '9001'},
+      ],
       startupPidStatus: 'READABLE',
     },
-    exitInfo: {startupPid: '321', status: 'NO_PACKAGE_RECORD', packageRecordCount: 0, targetPidRecordCount: 0, records: []},
+    exitInfo: {
+      startupPid: '321',
+      status: 'NO_PACKAGE_RECORD',
+      packageRecordCount: 0,
+      targetPidRecordCount: 0,
+      records: [],
+    },
     inspectedAt: '2026-09-24T00:00:00.000Z',
   };
   manifest.launchLogReinspections = [{...inspection}];
@@ -976,11 +1935,21 @@ test('manifest binds launch log reinspection to absent intent and rejects raw ou
 
   const nestedManifest = validManifest();
   nestedManifest.resolvedRemoteLaunches = [intent];
-  nestedManifest.launchLogReinspections = [{...inspection, signals: {...inspection.signals, rawOutput: 'unredacted nested output'}}];
+  nestedManifest.launchLogReinspections = [
+    {...inspection, signals: {...inspection.signals, rawOutput: 'unredacted nested output'}},
+  ];
   assert.throws(() => runner.validateRunManifest(nestedManifest), /VK_ANDROID_MANIFEST_APP_BINDING_INVALID/);
 
   const invalidRecords = [
-    {...inspection, signals: {...inspection.signals, appFrames: [{className: 'com.anonymous.sampleterminal.MainActivity', location: 'MainActivity.kt:4', rawOutput: 'secret'}]}},
+    {
+      ...inspection,
+      signals: {
+        ...inspection.signals,
+        appFrames: [
+          {className: 'com.anonymous.sampleterminal.MainActivity', location: 'MainActivity.kt:4', rawOutput: 'secret'},
+        ],
+      },
+    },
     {...inspection, signals: {...inspection.signals, exceptionTypes: ['unbounded raw exception payload']}},
     {...inspection, signals: {...inspection.signals, nativeFatalSignals: ['SIGSEGV', 'SIGSEGV']}},
     {...inspection, evidenceStatus: 'INSUFFICIENT_EVIDENCE'},
@@ -996,10 +1965,22 @@ test('manifest binds launch log reinspection to absent intent and rejects raw ou
 
 test('manifest preserves bounded legacy insufficient launch reinspection records for managed cleanup', () => {
   const {manifest, inspection} = validLaunchLogReinspectionManifest();
-  const legacy = {...inspection,
-    evidenceStatus: 'INSUFFICIENT_EVIDENCE', startupPid: null, startupAtEpochMs: null,
-    overlayOutcome: 'NOT_OBSERVED', observedMarkers: [], markerCount: 0,
-    signals: {fatalException: false, processDied: false, nativeFatalSignals: [], exceptionTypes: [], appFrames: [], jsErrorSeen: false},
+  const legacy = {
+    ...inspection,
+    evidenceStatus: 'INSUFFICIENT_EVIDENCE',
+    startupPid: null,
+    startupAtEpochMs: null,
+    overlayOutcome: 'NOT_OBSERVED',
+    observedMarkers: [],
+    markerCount: 0,
+    signals: {
+      fatalException: false,
+      processDied: false,
+      nativeFatalSignals: [],
+      exceptionTypes: [],
+      appFrames: [],
+      jsErrorSeen: false,
+    },
   };
   delete legacy.processObservation;
   delete legacy.exitInfo;
@@ -1033,47 +2014,109 @@ test('manifest rejects overlay summaries that contradict the observed outcome ma
 
 test('manifest bounds reinspection timestamps and diagnostic string fields', () => {
   const invalidCases = [
-    ['non-string inspectedAt', candidate => { candidate.inspection.inspectedAt = {raw: 'timestamp'}; }],
-    ['non-canonical inspectedAt', candidate => { candidate.inspection.inspectedAt = '2026-02-30T00:00:00.000Z'; }],
-    ['oversized startup pid', candidate => { candidate.inspection.startupPid = '9'.repeat(1000); }],
-    ['oversized exception type', candidate => { candidate.inspection.signals.exceptionTypes = [`com.example.${'A'.repeat(300)}Exception`]; }],
-    ['oversized app frame class', candidate => { candidate.inspection.signals.appFrames = [{
-      className: `com.anonymous.sampleterminal.${'A'.repeat(300)}`, location: 'MainActivity.kt:4',
-    }]; }],
-    ['oversized app frame location', candidate => { candidate.inspection.signals.appFrames = [{
-      className: 'com.anonymous.sampleterminal.MainActivity', location: `MainActivity.kt:${'1'.repeat(1000)}`,
-    }]; }],
-    ['process candidate crosses package boundary', candidate => {
-      candidate.inspection.processObservation.processTableCandidates[0].name = 'com.anonymous.sampleterminal.debug';
-    }],
-    ['process candidate has unreadable stat fields marked readable', candidate => {
-      candidate.inspection.processObservation.processTableCandidates[0].startTicks = null;
-    }],
-    ['exit-info summary cannot persist raw description', candidate => {
-      candidate.inspection.exitInfo = {
-        startupPid: '321', status: 'MATCHED', packageRecordCount: 1, targetPidRecordCount: 1,
-        records: [{pid: 321, reasonCode: 6, reasonName: 'CRASH_NATIVE', statusCode: 11, description: 'private'},],
-      };
-    }],
-    ['exit-info record cannot claim another pid', candidate => {
-      candidate.inspection.exitInfo = {
-        startupPid: '321', status: 'MATCHED', packageRecordCount: 1, targetPidRecordCount: 1,
-        records: [{pid: 322, reasonCode: 6, reasonName: 'CRASH_NATIVE', statusCode: 11}],
-      };
-    }],
+    [
+      'non-string inspectedAt',
+      candidate => {
+        candidate.inspection.inspectedAt = {raw: 'timestamp'};
+      },
+    ],
+    [
+      'non-canonical inspectedAt',
+      candidate => {
+        candidate.inspection.inspectedAt = '2026-02-30T00:00:00.000Z';
+      },
+    ],
+    [
+      'oversized startup pid',
+      candidate => {
+        candidate.inspection.startupPid = '9'.repeat(1000);
+      },
+    ],
+    [
+      'oversized exception type',
+      candidate => {
+        candidate.inspection.signals.exceptionTypes = [`com.example.${'A'.repeat(300)}Exception`];
+      },
+    ],
+    [
+      'oversized app frame class',
+      candidate => {
+        candidate.inspection.signals.appFrames = [
+          {
+            className: `com.anonymous.sampleterminal.${'A'.repeat(300)}`,
+            location: 'MainActivity.kt:4',
+          },
+        ];
+      },
+    ],
+    [
+      'oversized app frame location',
+      candidate => {
+        candidate.inspection.signals.appFrames = [
+          {
+            className: 'com.anonymous.sampleterminal.MainActivity',
+            location: `MainActivity.kt:${'1'.repeat(1000)}`,
+          },
+        ];
+      },
+    ],
+    [
+      'process candidate crosses package boundary',
+      candidate => {
+        candidate.inspection.processObservation.processTableCandidates[0].name = 'com.anonymous.sampleterminal.debug';
+      },
+    ],
+    [
+      'process candidate has unreadable stat fields marked readable',
+      candidate => {
+        candidate.inspection.processObservation.processTableCandidates[0].startTicks = null;
+      },
+    ],
+    [
+      'exit-info summary cannot persist raw description',
+      candidate => {
+        candidate.inspection.exitInfo = {
+          startupPid: '321',
+          status: 'MATCHED',
+          packageRecordCount: 1,
+          targetPidRecordCount: 1,
+          records: [{pid: 321, reasonCode: 6, reasonName: 'CRASH_NATIVE', statusCode: 11, description: 'private'}],
+        };
+      },
+    ],
+    [
+      'exit-info record cannot claim another pid',
+      candidate => {
+        candidate.inspection.exitInfo = {
+          startupPid: '321',
+          status: 'MATCHED',
+          packageRecordCount: 1,
+          targetPidRecordCount: 1,
+          records: [{pid: 322, reasonCode: 6, reasonName: 'CRASH_NATIVE', statusCode: 11}],
+        };
+      },
+    ],
   ];
 
   for (const [label, mutate] of invalidCases) {
     const candidate = validLaunchLogReinspectionManifest();
     mutate(candidate);
-    assert.throws(() => runner.validateRunManifest(candidate.manifest), /VK_ANDROID_MANIFEST_APP_BINDING_INVALID/, label);
+    assert.throws(
+      () => runner.validateRunManifest(candidate.manifest),
+      /VK_ANDROID_MANIFEST_APP_BINDING_INVALID/,
+      label,
+    );
   }
 });
 
 test('resolved launch log collection verifies boot before reading bounded read-only logcat', async () => {
   const intent = {
-    intentId: 'dual-sample-terminal-epoch-01', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-12345678',
+    intentId: 'dual-sample-terminal-epoch-01',
+    shape: 'dual',
+    appName: 'sample-terminal',
+    packageName: 'com.anonymous.sampleterminal',
+    host: 'emulator-5554',
+    bootId: 'boot-12345678',
   };
   const epochLogcat = [
     '1790203633.300 777 777 I TER-VK-LAUNCH: intent=dual-sample-terminal-epoch-01',
@@ -1088,30 +2131,60 @@ test('resolved launch log collection verifies boot before reading bounded read-o
   const processStat = `321 (com.anonymous.sampleterminal) ${statFields.join(' ')}`;
   const exitInfoText = 'No historical process exit information';
   const calls = [];
-  const replies = [intent.bootId, epochLogcat, briefLogcat, processTableText,
-    {stdout: processStat, stderr: '', exitCode: 0, signal: null}, exitInfoText, intent.bootId];
-  const evidence = await runner.collectResolvedLaunchLogEvidence(validManifest(), intent, async (manifest, device, label, args, options) => {
-    calls.push({runId: manifest.runId, serial: device.serial, label, args, options});
-    return replies.shift();
-  });
+  const replies = [
+    intent.bootId,
+    epochLogcat,
+    briefLogcat,
+    processTableText,
+    {stdout: processStat, stderr: '', exitCode: 0, signal: null},
+    exitInfoText,
+    intent.bootId,
+  ];
+  const evidence = await runner.collectResolvedLaunchLogEvidence(
+    validManifest(),
+    intent,
+    async (manifest, device, label, args, options) => {
+      calls.push({runId: manifest.runId, serial: device.serial, label, args, options});
+      return replies.shift();
+    },
+  );
 
   assert.equal(evidence.evidenceStatus, 'MATCHED');
   assert.equal(evidence.processObservation.startupPidStatus, 'READABLE');
   assert.equal(evidence.exitInfo.status, 'NO_PACKAGE_RECORD');
-  assert.deepEqual(calls.map(call => call.label), [
-    'dual-sample-terminal-reinspection-boot-id',
-    'dual-sample-terminal-reinspection-epoch-logcat',
-    'dual-sample-terminal-reinspection-brief-logcat',
-    'dual-sample-terminal-reinspection-process-table',
-    'dual-sample-terminal-reinspection-stat-321',
-    'dual-sample-terminal-reinspection-exit-info',
-    'dual-sample-terminal-reinspection-post-boot-id',
-  ]);
+  assert.deepEqual(
+    calls.map(call => call.label),
+    [
+      'dual-sample-terminal-reinspection-boot-id',
+      'dual-sample-terminal-reinspection-epoch-logcat',
+      'dual-sample-terminal-reinspection-brief-logcat',
+      'dual-sample-terminal-reinspection-process-table',
+      'dual-sample-terminal-reinspection-stat-321',
+      'dual-sample-terminal-reinspection-exit-info',
+      'dual-sample-terminal-reinspection-post-boot-id',
+    ],
+  );
   assert.ok(calls.every(call => call.serial === intent.host));
   assert.deepEqual(calls[1].args, [
-    'shell', 'logcat', '-d', '-t', '2000', '-v', 'epoch', '-s', 'TER-VK-LAUNCH:I', 'TER-Splash:I',
-    'AndroidRuntime:E', 'ReactNativeJS:E', 'ActivityManager:I', 'ActivityTaskManager:I',
-    'DEBUG:F', 'libc:F', 'crash_dump32:F', 'crash_dump64:F', 'tombstoned:F',
+    'shell',
+    'logcat',
+    '-d',
+    '-t',
+    '2000',
+    '-v',
+    'epoch',
+    '-s',
+    'TER-VK-LAUNCH:I',
+    'TER-Splash:I',
+    'AndroidRuntime:E',
+    'ReactNativeJS:E',
+    'ActivityManager:I',
+    'ActivityTaskManager:I',
+    'DEBUG:F',
+    'libc:F',
+    'crash_dump32:F',
+    'crash_dump64:F',
+    'tombstoned:F',
   ]);
   assert.ok(calls.every(call => call.options?.preserveLastKnownGood === true));
   assert.equal(calls[1].options?.diagnosticOutput, 'omit');
@@ -1128,20 +2201,34 @@ test('resolved launch log collection verifies boot before reading bounded read-o
   assert.ok(!calls.some(call => call.args.includes('am') || call.args.includes('force-stop')));
 
   const mismatchCalls = [];
-  await assert.rejects(() => runner.collectResolvedLaunchLogEvidence(validManifest(), intent, async (_manifest, _device, _label, args) => {
-    mismatchCalls.push(args);
-    return 'boot-87654321';
-  }), /VK_ANDROID_PENDING_LAUNCH_IDENTITY_MISMATCH/);
+  await assert.rejects(
+    () =>
+      runner.collectResolvedLaunchLogEvidence(validManifest(), intent, async (_manifest, _device, _label, args) => {
+        mismatchCalls.push(args);
+        return 'boot-87654321';
+      }),
+    /VK_ANDROID_PENDING_LAUNCH_IDENTITY_MISMATCH/,
+  );
   assert.equal(mismatchCalls.length, 1);
 
   const postMismatchCalls = [];
-  const postMismatchReplies = [intent.bootId, epochLogcat, briefLogcat, processTableText,
-    {stdout: processStat, stderr: '', exitCode: 0, signal: null}, exitInfoText, 'boot-87654321'];
-  await assert.rejects(() => runner.collectResolvedLaunchLogEvidence(validManifest(), intent,
-    async (_manifest, _device, label, args) => {
-      postMismatchCalls.push({label, args});
-      return postMismatchReplies.shift();
-    }), /VK_ANDROID_PENDING_LAUNCH_IDENTITY_MISMATCH/);
+  const postMismatchReplies = [
+    intent.bootId,
+    epochLogcat,
+    briefLogcat,
+    processTableText,
+    {stdout: processStat, stderr: '', exitCode: 0, signal: null},
+    exitInfoText,
+    'boot-87654321',
+  ];
+  await assert.rejects(
+    () =>
+      runner.collectResolvedLaunchLogEvidence(validManifest(), intent, async (_manifest, _device, label, args) => {
+        postMismatchCalls.push({label, args});
+        return postMismatchReplies.shift();
+      }),
+    /VK_ANDROID_PENDING_LAUNCH_IDENTITY_MISMATCH/,
+  );
   assert.equal(postMismatchCalls.length, 7);
   assert.equal(postMismatchCalls[6].label, 'dual-sample-terminal-reinspection-post-boot-id');
 });
@@ -1149,14 +2236,17 @@ test('resolved launch log collection verifies boot before reading bounded read-o
 test('remote process readback passes pidof, stat, and cmdline operands directly and preserves expected absence stderr', async () => {
   assert.equal(typeof runner.remoteNamedProcessIdentity, 'function');
   const calls = [];
-  const identity = await runner.remoteNamedProcessIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 'system_server',
+  const identity = await runner.remoteNamedProcessIdentity(
+    validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'},
+    'system_server',
     async (_manifest, _device, label, args, options) => {
       calls.push({label, args, options});
       if (label.endsWith('remote-boot-id')) return 'boot-12345678';
       if (label.endsWith('remote-process')) return {stdout: '', stderr: 'pidof: no matching process', exitCode: 1};
       throw new Error('stat must not run when pidof reports absence');
-    });
+    },
+  );
 
   assert.deepEqual(identity, {host: 'emulator-5554', bootId: 'boot-12345678', processes: []});
   assert.deepEqual(calls[1].args, ['shell', 'pidof', 'system_server']);
@@ -1165,45 +2255,61 @@ test('remote process readback passes pidof, stat, and cmdline operands directly 
   assert.equal(calls[1].options?.returnCommandResult, true);
 
   const missingStatCalls = [];
-  const missingStat = await runner.remoteNamedProcessIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 'system_server',
+  const missingStat = await runner.remoteNamedProcessIdentity(
+    validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'},
+    'system_server',
     async (_manifest, _device, label, args, options) => {
       missingStatCalls.push({label, args, options});
       if (label.endsWith('remote-boot-id')) return 'boot-12345678';
       if (label.endsWith('remote-process')) return {stdout: '321\n', stderr: '', exitCode: 0};
-      if (label.endsWith('remote-stat-321')) return {stdout: '', stderr: 'cat: /proc/321/stat: No such file', exitCode: 1, signal: null};
+      if (label.endsWith('remote-stat-321'))
+        return {stdout: '', stderr: 'cat: /proc/321/stat: No such file', exitCode: 1, signal: null};
       throw new Error(`unexpected read: ${label}`);
-    });
+    },
+  );
   assert.deepEqual(missingStat.processes, []);
   assert.deepEqual(missingStatCalls[1].args, ['shell', 'pidof', 'system_server']);
   assert.deepEqual(missingStatCalls[2].args, ['shell', 'cat', '/proc/321/stat']);
   assert.deepEqual(missingStatCalls[2].options?.acceptedExitCodes, [0, 1]);
 
-  const mismatchedStat = await runner.remoteNamedProcessIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 'system_server',
+  const mismatchedStat = await runner.remoteNamedProcessIdentity(
+    validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'},
+    'system_server',
     async (_manifest, _device, label) => {
       if (label.endsWith('remote-boot-id')) return 'boot-12345678';
       if (label.endsWith('remote-process')) return {stdout: '321\n', stderr: '', exitCode: 0};
       return {stdout: '321 (other-process) S 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9001', stderr: '', exitCode: 0};
-    });
+    },
+  );
   assert.deepEqual(mismatchedStat.processes, []);
 });
 
 test('named process identity accepts Android-truncated stat comm only with exact cmdline binding', async () => {
   const statFields = ['S', '1', ...Array(17).fill('0'), '9001'];
   const calls = [];
-  const identity = await runner.remoteNamedProcessIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 'com.anonymous.sampleterminal',
+  const identity = await runner.remoteNamedProcessIdentity(
+    validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'},
+    'com.anonymous.sampleterminal',
     async (_manifest, _device, label, args, options) => {
       calls.push({label, args, options});
       if (label.endsWith('remote-boot-id')) return 'boot-12345678';
       if (label.endsWith('remote-process')) return {stdout: '321\n', stderr: '', exitCode: 0, signal: null};
-      if (label.endsWith('remote-stat-321')) return {stdout: `321 (.sampleterminal) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
-      if (label.endsWith('remote-cmdline-321')) return {stdout: 'com.anonymous.sampleterminal\u0000', stderr: '', exitCode: 0, signal: null};
+      if (label.endsWith('remote-stat-321'))
+        return {stdout: `321 (.sampleterminal) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
+      if (label.endsWith('remote-cmdline-321'))
+        return {stdout: 'com.anonymous.sampleterminal\u0000', stderr: '', exitCode: 0, signal: null};
       throw new Error(`unexpected read: ${label}`);
-    });
+    },
+  );
 
-  assert.deepEqual(identity, {host: 'emulator-5554', bootId: 'boot-12345678', processes: [{pid: 321, startTicks: '9001'}]});
+  assert.deepEqual(identity, {
+    host: 'emulator-5554',
+    bootId: 'boot-12345678',
+    processes: [{pid: 321, startTicks: '9001'}],
+  });
   assert.deepEqual(calls[3].args, ['shell', 'cat', '/proc/321/cmdline']);
   assert.equal(calls[3].options?.returnCommandResult, true);
   assert.equal(calls[3].options?.diagnosticOutput, 'sanitized');
@@ -1211,56 +2317,95 @@ test('named process identity accepts Android-truncated stat comm only with exact
 
 test('named process identity rejects a PID whose exact cmdline is not the requested package', async () => {
   const statFields = ['S', '1', ...Array(17).fill('0'), '9001'];
-  const identity = await runner.remoteNamedProcessIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 'com.anonymous.sampleterminal',
+  const identity = await runner.remoteNamedProcessIdentity(
+    validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'},
+    'com.anonymous.sampleterminal',
     async (_manifest, _device, label) => {
       if (label.endsWith('remote-boot-id')) return 'boot-12345678';
       if (label.endsWith('remote-process')) return {stdout: '321\n', stderr: '', exitCode: 0, signal: null};
-      if (label.endsWith('remote-stat-321')) return {stdout: `321 (.sampleterminal) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
+      if (label.endsWith('remote-stat-321'))
+        return {stdout: `321 (.sampleterminal) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
       return {stdout: 'com.other.application\u0000', stderr: '', exitCode: 0, signal: null};
-    });
+    },
+  );
   assert.deepEqual(identity.processes, []);
 });
 
 test('process readback rejects unexpected exit-one diagnostics instead of treating them as absence', async () => {
-  await assert.rejects(() => runner.remoteNamedProcessIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 'system_server',
-    async (_manifest, _device, label) => label.endsWith('remote-boot-id')
-      ? 'boot-12345678'
-      : {stdout: '', stderr: 'permission denied', exitCode: 1, signal: null}),
-  /VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID/);
+  await assert.rejects(
+    () =>
+      runner.remoteNamedProcessIdentity(
+        validManifest(),
+        {serial: 'emulator-5554', shape: 'dual'},
+        'system_server',
+        async (_manifest, _device, label) =>
+          label.endsWith('remote-boot-id')
+            ? 'boot-12345678'
+            : {stdout: '', stderr: 'permission denied', exitCode: 1, signal: null},
+      ),
+    /VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID/,
+  );
 
-  await assert.rejects(() => runner.remotePidIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 321, 'screenrecord', '/sdcard/run-dual-transition.mp4',
-    async (_manifest, _device, label) => label.endsWith('boot-id')
-      ? 'boot-12345678'
-      : {stdout: '', stderr: 'cat: /proc/321/stat: Permission denied', exitCode: 1, signal: null}),
-  /VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID/);
+  await assert.rejects(
+    () =>
+      runner.remotePidIdentity(
+        validManifest(),
+        {serial: 'emulator-5554', shape: 'dual'},
+        321,
+        'screenrecord',
+        '/sdcard/run-dual-transition.mp4',
+        async (_manifest, _device, label) =>
+          label.endsWith('boot-id')
+            ? 'boot-12345678'
+            : {stdout: '', stderr: 'cat: /proc/321/stat: Permission denied', exitCode: 1, signal: null},
+      ),
+    /VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID/,
+  );
 
-  await assert.rejects(() => runner.remoteNamedProcessIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 'system_server',
-    async (_manifest, _device, label) => label.endsWith('remote-boot-id')
-      ? 'boot-12345678'
-      : {stdout: '', stderr: 'pidof: command not found', exitCode: 1, signal: null}),
-  /VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID/);
+  await assert.rejects(
+    () =>
+      runner.remoteNamedProcessIdentity(
+        validManifest(),
+        {serial: 'emulator-5554', shape: 'dual'},
+        'system_server',
+        async (_manifest, _device, label) =>
+          label.endsWith('remote-boot-id')
+            ? 'boot-12345678'
+            : {stdout: '', stderr: 'pidof: command not found', exitCode: 1, signal: null},
+      ),
+    /VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID/,
+  );
 
-  await assert.rejects(() => runner.remotePidIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 321, 'screenrecord', '/sdcard/run-dual-transition.mp4',
-    async (_manifest, _device, label) => label.endsWith('boot-id')
-      ? 'boot-12345678'
-      : {stdout: '', stderr: 'cat: command not found', exitCode: 1, signal: null}),
-  /VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID/);
+  await assert.rejects(
+    () =>
+      runner.remotePidIdentity(
+        validManifest(),
+        {serial: 'emulator-5554', shape: 'dual'},
+        321,
+        'screenrecord',
+        '/sdcard/run-dual-transition.mp4',
+        async (_manifest, _device, label) =>
+          label.endsWith('boot-id')
+            ? 'boot-12345678'
+            : {stdout: '', stderr: 'cat: command not found', exitCode: 1, signal: null},
+      ),
+    /VK_ANDROID_REMOTE_PROCESS_READBACK_INVALID/,
+  );
 });
 
 test('named process identity rejects a proc stat comm mismatch after pidof', async () => {
   const statFields = ['S', '1', ...Array(17).fill('0'), '9001'];
-  const identity = await runner.remoteNamedProcessIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 'com.anonymous.sampleterminal',
+  const identity = await runner.remoteNamedProcessIdentity(
+    validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'},
+    'com.anonymous.sampleterminal',
     async (_manifest, _device, label) => {
       if (label.endsWith('remote-boot-id')) return 'boot-12345678';
       if (label.endsWith('remote-process')) return {stdout: '321\n', stderr: '', exitCode: 0, signal: null};
       return {stdout: `321 (other.process) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
-    });
+    },
+  );
   assert.deepEqual(identity, {host: 'emulator-5554', bootId: 'boot-12345678', processes: []});
 });
 
@@ -1268,52 +2413,88 @@ test('process readback preflight checks known-present system_server before every
   assert.equal(typeof runner.verifyRemoteProcessReadback, 'function');
   const manifest = validManifest();
   const calls = [];
-  const observations = await runner.verifyRemoteProcessReadback(manifest, async (_manifest, device, processName) => {
-    calls.push(`${device.shape}:${processName}`);
-    return {
-      host: device.serial, bootId: device.shape === 'dual' ? 'boot-12345678' : 'boot-87654321',
-      processes: processName === 'system_server' ? [{pid: 1, startTicks: '10'}] : [],
-    };
-  }, () => {});
+  const observations = await runner.verifyRemoteProcessReadback(
+    manifest,
+    async (_manifest, device, processName) => {
+      calls.push(`${device.shape}:${processName}`);
+      return {
+        host: device.serial,
+        bootId: device.shape === 'dual' ? 'boot-12345678' : 'boot-87654321',
+        processes: processName === 'system_server' ? [{pid: 1, startTicks: '10'}] : [],
+      };
+    },
+    () => {},
+  );
 
   assert.deepEqual(calls, [
-    'dual:system_server', 'dual:com.anonymous.sampleterminal', 'dual:com.catering.v2s.terminal.samplewallpaper',
-    'mobile:system_server', 'mobile:com.anonymous.sampleterminal', 'mobile:com.catering.v2s.terminal.samplewallpaper',
+    'dual:system_server',
+    'dual:com.anonymous.sampleterminal',
+    'dual:com.catering.v2s.terminal.samplewallpaper',
+    'mobile:system_server',
+    'mobile:com.anonymous.sampleterminal',
+    'mobile:com.catering.v2s.terminal.samplewallpaper',
   ]);
   assert.equal(observations.length, 6);
-  assert.equal(observations.filter(item => item.processName === 'system_server').every(item => item.status === 'PRESENT'), true);
+  assert.equal(
+    observations.filter(item => item.processName === 'system_server').every(item => item.status === 'PRESENT'),
+    true,
+  );
   assert.equal(manifest.processReadbackPreflight, observations);
 
   const unavailable = validManifest();
   let laterReadReached = false;
-  await assert.rejects(() => runner.verifyRemoteProcessReadback(unavailable, async (_manifest, _device, processName) => {
-    if (processName !== 'system_server') laterReadReached = true;
-    return {host: 'emulator-5554', bootId: 'boot-12345678', processes: []};
-  }, () => {}), /VK_ANDROID_PROCESS_READBACK_POSITIVE_PREFLIGHT_FAILED/);
+  await assert.rejects(
+    () =>
+      runner.verifyRemoteProcessReadback(
+        unavailable,
+        async (_manifest, _device, processName) => {
+          if (processName !== 'system_server') laterReadReached = true;
+          return {host: 'emulator-5554', bootId: 'boot-12345678', processes: []};
+        },
+        () => {},
+      ),
+    /VK_ANDROID_PROCESS_READBACK_POSITIVE_PREFLIGHT_FAILED/,
+  );
   assert.equal(laterReadReached, false);
 
   const bootMismatch = validManifest();
   const bootMismatchCalls = [];
-  await assert.rejects(() => runner.verifyRemoteProcessReadback(bootMismatch, async (_manifest, device, processName) => {
-    bootMismatchCalls.push(`${device.shape}:${processName}`);
-    return {
-      host: device.serial,
-      bootId: device.shape === 'dual' ? 'boot-wrong-123456' : 'boot-87654321',
-      processes: [{pid: 1, startTicks: '10'}],
-    };
-  }, () => {}), /VK_ANDROID_PROCESS_READBACK_IDENTITY_MISMATCH/);
+  await assert.rejects(
+    () =>
+      runner.verifyRemoteProcessReadback(
+        bootMismatch,
+        async (_manifest, device, processName) => {
+          bootMismatchCalls.push(`${device.shape}:${processName}`);
+          return {
+            host: device.serial,
+            bootId: device.shape === 'dual' ? 'boot-wrong-123456' : 'boot-87654321',
+            processes: [{pid: 1, startTicks: '10'}],
+          };
+        },
+        () => {},
+      ),
+    /VK_ANDROID_PROCESS_READBACK_IDENTITY_MISMATCH/,
+  );
   assert.deepEqual(bootMismatchCalls, ['dual:system_server']);
 
   const packageMismatch = validManifest();
   const packageMismatchCalls = [];
-  await assert.rejects(() => runner.verifyRemoteProcessReadback(packageMismatch, async (_manifest, device, processName) => {
-    packageMismatchCalls.push(`${device.shape}:${processName}`);
-    return {
-      host: device.serial,
-      bootId: processName === 'system_server' ? 'boot-12345678' : 'boot-wrong-123456',
-      processes: processName === 'system_server' ? [{pid: 1, startTicks: '10'}] : [],
-    };
-  }, () => {}), /VK_ANDROID_PROCESS_READBACK_IDENTITY_MISMATCH/);
+  await assert.rejects(
+    () =>
+      runner.verifyRemoteProcessReadback(
+        packageMismatch,
+        async (_manifest, device, processName) => {
+          packageMismatchCalls.push(`${device.shape}:${processName}`);
+          return {
+            host: device.serial,
+            bootId: processName === 'system_server' ? 'boot-12345678' : 'boot-wrong-123456',
+            processes: processName === 'system_server' ? [{pid: 1, startTicks: '10'}] : [],
+          };
+        },
+        () => {},
+      ),
+    /VK_ANDROID_PROCESS_READBACK_IDENTITY_MISMATCH/,
+  );
   assert.deepEqual(packageMismatchCalls, ['dual:system_server', 'dual:com.anonymous.sampleterminal']);
 });
 
@@ -1321,15 +2502,22 @@ test('remote PID identity reads stat and cmdline as direct adb shell argv', asyn
   assert.equal(typeof runner.remotePidIdentity, 'function');
   const calls = [];
   const statFields = ['S', '1', ...Array(17).fill('0'), '9001'];
-  const identity = await runner.remotePidIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 321, 'screenrecord', '/sdcard/run-dual-transition.mp4',
+  const identity = await runner.remotePidIdentity(
+    validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'},
+    321,
+    'screenrecord',
+    '/sdcard/run-dual-transition.mp4',
     async (_manifest, _device, label, args, options) => {
       calls.push({label, args, options});
       if (label.endsWith('boot-id')) return 'boot-12345678';
-      if (label.includes('-stat-')) return {stdout: `321 (screenrecord) ${statFields.join(' ')}`, stderr: '', exitCode: 0};
-      if (label.includes('-cmdline-')) return {stdout: 'screenrecord\u0000/sdcard/run-dual-transition.mp4\u0000', stderr: '', exitCode: 0};
+      if (label.includes('-stat-'))
+        return {stdout: `321 (screenrecord) ${statFields.join(' ')}`, stderr: '', exitCode: 0};
+      if (label.includes('-cmdline-'))
+        return {stdout: 'screenrecord\u0000/sdcard/run-dual-transition.mp4\u0000', stderr: '', exitCode: 0};
       throw new Error(`unexpected read: ${label}`);
-    });
+    },
+  );
 
   assert.deepEqual(identity, {host: 'emulator-5554', bootId: 'boot-12345678', process: {pid: 321, startTicks: '9001'}});
   assert.deepEqual(calls[1].args, ['shell', 'cat', '/proc/321/stat']);
@@ -1341,13 +2529,18 @@ test('remote PID identity reads stat and cmdline as direct adb shell argv', asyn
   }
 
   const missingStatCalls = [];
-  const missingStat = await runner.remotePidIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 321, 'screenrecord', '/sdcard/run-dual-transition.mp4',
+  const missingStat = await runner.remotePidIdentity(
+    validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'},
+    321,
+    'screenrecord',
+    '/sdcard/run-dual-transition.mp4',
     async (_manifest, _device, label, args) => {
       missingStatCalls.push({label, args});
       if (label.endsWith('boot-id')) return 'boot-12345678';
       return {stdout: '', stderr: 'cat: /proc/321/stat: No such file', exitCode: 1, signal: null};
-    });
+    },
+  );
   assert.equal(missingStat.process, null);
   assert.deepEqual(missingStatCalls[1].args, ['shell', 'cat', '/proc/321/stat']);
   assert.equal(missingStatCalls.length, 2);
@@ -1355,13 +2548,20 @@ test('remote PID identity reads stat and cmdline as direct adb shell argv', asyn
 
 test('remote PID identity requires exact executable and argument tokens', async () => {
   const statFields = ['S', '1', ...Array(17).fill('0'), '9001'];
-  const readIdentity = cmdline => runner.remotePidIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 321, 'screenrecord', '/sdcard/run-dual-transition.mp4',
-    async (_manifest, _device, label) => {
-      if (label.endsWith('boot-id')) return 'boot-12345678';
-      if (label.includes('-stat-')) return {stdout: `321 (screenrecord) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
-      return {stdout: cmdline, stderr: '', exitCode: 0, signal: null};
-    });
+  const readIdentity = cmdline =>
+    runner.remotePidIdentity(
+      validManifest(),
+      {serial: 'emulator-5554', shape: 'dual'},
+      321,
+      'screenrecord',
+      '/sdcard/run-dual-transition.mp4',
+      async (_manifest, _device, label) => {
+        if (label.endsWith('boot-id')) return 'boot-12345678';
+        if (label.includes('-stat-'))
+          return {stdout: `321 (screenrecord) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
+        return {stdout: cmdline, stderr: '', exitCode: 0, signal: null};
+      },
+    );
 
   assert.equal((await readIdentity('screenrecord-helper\u0000/sdcard/run-dual-transition.mp4\u0000')).process, null);
   assert.equal((await readIdentity('screenrecord\u0000/sdcard/run-dual-transition.mp4.bak\u0000')).process, null);
@@ -1369,28 +2569,44 @@ test('remote PID identity requires exact executable and argument tokens', async 
 
 test('remote PID identity binds Android app packages by exact cmdline when stat comm is truncated', async () => {
   const statFields = ['S', '1', ...Array(17).fill('0'), '9001'];
-  const readIdentity = cmdline => runner.remotePidIdentity(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 321, 'com.anonymous.sampleterminal', null,
-    async (_manifest, _device, label, args) => {
-      if (label.endsWith('boot-id')) return 'boot-12345678';
-      if (label.includes('-stat-')) return {stdout: `321 (.sampleterminal) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
-      assert.deepEqual(args, ['shell', 'cat', '/proc/321/cmdline']);
-      return {stdout: cmdline, stderr: '', exitCode: 0, signal: null};
-    });
+  const readIdentity = cmdline =>
+    runner.remotePidIdentity(
+      validManifest(),
+      {serial: 'emulator-5554', shape: 'dual'},
+      321,
+      'com.anonymous.sampleterminal',
+      null,
+      async (_manifest, _device, label, args) => {
+        if (label.endsWith('boot-id')) return 'boot-12345678';
+        if (label.includes('-stat-'))
+          return {stdout: `321 (.sampleterminal) ${statFields.join(' ')}`, stderr: '', exitCode: 0, signal: null};
+        assert.deepEqual(args, ['shell', 'cat', '/proc/321/cmdline']);
+        return {stdout: cmdline, stderr: '', exitCode: 0, signal: null};
+      },
+    );
 
-  assert.deepEqual((await readIdentity('com.anonymous.sampleterminal\u0000')).process,
-    {pid: 321, startTicks: '9001'});
+  assert.deepEqual((await readIdentity('com.anonymous.sampleterminal\u0000')).process, {pid: 321, startTicks: '9001'});
   assert.equal((await readIdentity('com.other.application\u0000')).process, null);
 });
 
 test('screenrecord startup passes one complete shell command string to adb', async () => {
   assert.equal(typeof runner.launchRemoteScreenrecord, 'function');
   const calls = [];
-  const command = 'screenrecord --time-limit 2 --display-id 11 /sdcard/run-dual-transition.mp4 >/sdcard/run-dual-transition.log 2>&1 & echo $!';
-  const output = await runner.launchRemoteScreenrecord(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 'sample-terminal', 'VK-IA-15', 11,
-    '/sdcard/run-dual-transition.mp4', '/sdcard/run-dual-transition.log',
-    async (_manifest, _device, _label, args) => { calls.push(args); return '321\n'; });
+  const command =
+    'screenrecord --time-limit 2 --display-id 11 /sdcard/run-dual-transition.mp4 >/sdcard/run-dual-transition.log 2>&1 & echo $!';
+  const output = await runner.launchRemoteScreenrecord(
+    validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'},
+    'sample-terminal',
+    'VK-IA-15',
+    11,
+    '/sdcard/run-dual-transition.mp4',
+    '/sdcard/run-dual-transition.log',
+    async (_manifest, _device, _label, args) => {
+      calls.push(args);
+      return '321\n';
+    },
+  );
 
   assert.equal(output, '321\n');
   assert.deepEqual(calls, [['shell', command]]);
@@ -1403,22 +2619,42 @@ test('screenrecord startup accepts a SurfaceFlinger 64-bit display id and cleanu
   const calls = [];
   const displayId = '4619827259835644672';
   const command = `screenrecord --time-limit 2 --display-id ${displayId} /sdcard/run-dual-transition.mp4 >/sdcard/run-dual-transition.log 2>&1 & echo $!`;
-  const output = await runner.launchRemoteScreenrecord(validManifest(),
-    {serial: 'emulator-5554', shape: 'dual'}, 'sample-terminal', 'VK-IA-15', displayId,
-    '/sdcard/run-dual-transition.mp4', '/sdcard/run-dual-transition.log',
-    async (_manifest, _device, _label, args) => { calls.push(args); return '321\\n'; });
+  const output = await runner.launchRemoteScreenrecord(
+    validManifest(),
+    {serial: 'emulator-5554', shape: 'dual'},
+    'sample-terminal',
+    'VK-IA-15',
+    displayId,
+    '/sdcard/run-dual-transition.mp4',
+    '/sdcard/run-dual-transition.log',
+    async (_manifest, _device, _label, args) => {
+      calls.push(args);
+      return '321\\n';
+    },
+  );
   assert.equal(output, '321\\n');
   assert.deepEqual(calls, [['shell', command]]);
-  assert.equal(runner.screenrecordProcessUsesPath(`123 screenrecord ${displayId} /sdcard/run-dual-transition.mp4`, '/sdcard/run-dual-transition.mp4'), true);
+  assert.equal(
+    runner.screenrecordProcessUsesPath(
+      `123 screenrecord ${displayId} /sdcard/run-dual-transition.mp4`,
+      '/sdcard/run-dual-transition.mp4',
+    ),
+    true,
+  );
   assert.equal(runner.screenrecordProcessUsesPath('123 surfaceflinger', '/sdcard/run-dual-transition.mp4'), false);
 });
 
 test('native fatal signal allowlist rejects unknown and non-fatal signal names', () => {
-  const summarize = signal => runner.summarizeAndroidLaunchDiagnostics([
-    'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal',
-    'F/DEBUG( 999): pid: 321, tid: 321, name: main >>> com.anonymous.sampleterminal <<<',
-    `F/DEBUG( 999): signal 11 (${signal}), code 1 (UNKNOWN)`,
-  ].join('\n'), 'com.anonymous.sampleterminal', '321');
+  const summarize = signal =>
+    runner.summarizeAndroidLaunchDiagnostics(
+      [
+        'F/DEBUG( 999): Cmdline: com.anonymous.sampleterminal',
+        'F/DEBUG( 999): pid: 321, tid: 321, name: main >>> com.anonymous.sampleterminal <<<',
+        `F/DEBUG( 999): signal 11 (${signal}), code 1 (UNKNOWN)`,
+      ].join('\n'),
+      'com.anonymous.sampleterminal',
+      '321',
+    );
   assert.deepEqual(summarize('SIGSEGV').nativeFatalSignals, ['SIGSEGV']);
   assert.deepEqual(summarize('SIGNOTREAL').nativeFatalSignals, []);
   assert.deepEqual(summarize('SIGTERM').nativeFatalSignals, []);
@@ -1426,17 +2662,32 @@ test('native fatal signal allowlist rejects unknown and non-fatal signal names',
 
 test('launch breadcrumb evidence stays bound to one exact absent launch and marker vocabulary', () => {
   const manifest = validManifest();
-  manifest.resolvedRemoteLaunches = [{
-    intentId: 'dual-sample-terminal-01', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-abcdef',
-    resolution: 'PROCESS_ABSENT', processCount: 0,
-  }];
-  manifest.launchLogInspections = [{
-    intentId: 'dual-sample-terminal-01', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-abcdef',
-    startupPid: '321', observedMarkers: ['activity.onCreate:start'], markerCount: 1,
-    signals: {nativeFatalSignals: ['SIGSEGV']},
-  }];
+  manifest.resolvedRemoteLaunches = [
+    {
+      intentId: 'dual-sample-terminal-01',
+      shape: 'dual',
+      appName: 'sample-terminal',
+      packageName: 'com.anonymous.sampleterminal',
+      host: 'emulator-5554',
+      bootId: 'boot-abcdef',
+      resolution: 'PROCESS_ABSENT',
+      processCount: 0,
+    },
+  ];
+  manifest.launchLogInspections = [
+    {
+      intentId: 'dual-sample-terminal-01',
+      shape: 'dual',
+      appName: 'sample-terminal',
+      packageName: 'com.anonymous.sampleterminal',
+      host: 'emulator-5554',
+      bootId: 'boot-abcdef',
+      startupPid: '321',
+      observedMarkers: ['activity.onCreate:start'],
+      markerCount: 1,
+      signals: {nativeFatalSignals: ['SIGSEGV']},
+    },
+  ];
   assert.equal(runner.validateRunManifest(manifest), true);
 
   manifest.launchLogInspections[0].signals.nativeFatalSignals = ['SIGNOTREAL'];
@@ -1468,32 +2719,61 @@ test('launch breadcrumb evidence stays bound to one exact absent launch and mark
   assert.throws(() => runner.validateRunManifest(manifest), /VK_ANDROID_MANIFEST_APP_BINDING_INVALID/);
 
   const historical = validManifest();
-  historical.resolvedRemoteLaunches = [{
-    intentId: 'dual-sample-terminal-historical-01', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-abcdef',
-    resolution: 'PROCESS_ABSENT', processCount: 0,
-  }];
-  historical.launchLogInspections = [{
-    intentId: 'dual-sample-terminal-historical-01', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-abcdef',
-    observedMarkers: ['native.loading-overlay-attached-after-super'], markerCount: 1,
-  }];
+  historical.resolvedRemoteLaunches = [
+    {
+      intentId: 'dual-sample-terminal-historical-01',
+      shape: 'dual',
+      appName: 'sample-terminal',
+      packageName: 'com.anonymous.sampleterminal',
+      host: 'emulator-5554',
+      bootId: 'boot-abcdef',
+      resolution: 'PROCESS_ABSENT',
+      processCount: 0,
+    },
+  ];
+  historical.launchLogInspections = [
+    {
+      intentId: 'dual-sample-terminal-historical-01',
+      shape: 'dual',
+      appName: 'sample-terminal',
+      packageName: 'com.anonymous.sampleterminal',
+      host: 'emulator-5554',
+      bootId: 'boot-abcdef',
+      observedMarkers: ['native.loading-overlay-attached-after-super'],
+      markerCount: 1,
+    },
+  ];
   assert.equal(runner.validateRunManifest(historical), true);
 });
 
 test('resolved launch process-table evidence accepts only exact package identities', () => {
   const manifest = validManifest();
-  manifest.resolvedRemoteLaunches = [{
-    intentId: 'dual-sample-terminal-01', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-abcdef',
-    resolution: 'PROCESS_ABSENT', processCount: 0,
-  }];
-  manifest.launchLogInspections = [{
-    intentId: 'dual-sample-terminal-01', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-abcdef',
-    observedMarkers: [], markerCount: 0, processTableCandidateCount: 1,
-    processTableCandidates: [{pid: 612, name: 'com.anonymous.sampleterminal:remote', startTicks: '9182'}],
-  }];
+  manifest.resolvedRemoteLaunches = [
+    {
+      intentId: 'dual-sample-terminal-01',
+      shape: 'dual',
+      appName: 'sample-terminal',
+      packageName: 'com.anonymous.sampleterminal',
+      host: 'emulator-5554',
+      bootId: 'boot-abcdef',
+      resolution: 'PROCESS_ABSENT',
+      processCount: 0,
+    },
+  ];
+  manifest.launchLogInspections = [
+    {
+      intentId: 'dual-sample-terminal-01',
+      shape: 'dual',
+      appName: 'sample-terminal',
+      packageName: 'com.anonymous.sampleterminal',
+      host: 'emulator-5554',
+      bootId: 'boot-abcdef',
+      observedMarkers: [],
+      markerCount: 0,
+      processTableCandidateCount: 1,
+      processTableCandidates: [{pid: 612, name: 'com.anonymous.sampleterminal:remote', startTicks: '9182'}],
+    },
+  ];
   assert.equal(runner.validateRunManifest(manifest), true);
 
   manifest.launchLogInspections[0].processTableCandidates[0].name = 'com.anonymous.sampleterminal.debug';
@@ -1507,11 +2787,18 @@ test('resolved launch process-table evidence accepts only exact package identiti
 
 test('resolved launch inspection refuses repeated reads before touching logcat', () => {
   const manifest = {
-    resolvedRemoteLaunches: [{
-      intentId: 'dual-sample-terminal-01', shape: 'dual', appName: 'sample-terminal',
-      packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-abcdef',
-      resolution: 'PROCESS_ABSENT', processCount: 0,
-    }],
+    resolvedRemoteLaunches: [
+      {
+        intentId: 'dual-sample-terminal-01',
+        shape: 'dual',
+        appName: 'sample-terminal',
+        packageName: 'com.anonymous.sampleterminal',
+        host: 'emulator-5554',
+        bootId: 'boot-abcdef',
+        resolution: 'PROCESS_ABSENT',
+        processCount: 0,
+      },
+    ],
     launchLogInspections: [{intentId: 'dual-sample-terminal-01'}],
   };
   assert.throws(() => runner.resolveInspectableLaunch(manifest), /VK_ANDROID_RESOLVED_LAUNCH_ALREADY_INSPECTED/);
@@ -1519,14 +2806,24 @@ test('resolved launch inspection refuses repeated reads before touching logcat',
 
 test('resolved launch inspector selects the only uninspected absent launch', () => {
   const terminal = {
-    intentId: 'dual-sample-terminal-01', shape: 'dual', appName: 'sample-terminal',
-    packageName: 'com.anonymous.sampleterminal', host: 'emulator-5554', bootId: 'boot-abcdef',
-    resolution: 'PROCESS_ABSENT', processCount: 0,
+    intentId: 'dual-sample-terminal-01',
+    shape: 'dual',
+    appName: 'sample-terminal',
+    packageName: 'com.anonymous.sampleterminal',
+    host: 'emulator-5554',
+    bootId: 'boot-abcdef',
+    resolution: 'PROCESS_ABSENT',
+    processCount: 0,
   };
   const wallpaper = {
-    intentId: 'dual-sample-wallpaper-terminal-01', shape: 'dual', appName: 'sample-wallpaper-terminal',
-    packageName: 'com.catering.v2s.terminal.samplewallpaper', host: 'emulator-5554', bootId: 'boot-abcdef',
-    resolution: 'PROCESS_ABSENT', processCount: 0,
+    intentId: 'dual-sample-wallpaper-terminal-01',
+    shape: 'dual',
+    appName: 'sample-wallpaper-terminal',
+    packageName: 'com.catering.v2s.terminal.samplewallpaper',
+    host: 'emulator-5554',
+    bootId: 'boot-abcdef',
+    resolution: 'PROCESS_ABSENT',
+    processCount: 0,
   };
   const manifest = {
     resolvedRemoteLaunches: [terminal, wallpaper],
@@ -1555,26 +2852,49 @@ test('first failure keeps its broken boundary available at the top level', () =>
 
 test('diagnostic command success preserves the previous last-known-good checkpoint', () => {
   const manifest = {lastKnownGood: 'dual-sample-wallpaper-terminal-startup-logcat-diagnostic'};
-  assert.equal(runner.recordLastKnownGood(manifest, 'dual-reinspection-logcat', {preserveCurrent: true}),
-    'dual-sample-wallpaper-terminal-startup-logcat-diagnostic');
+  assert.equal(
+    runner.recordLastKnownGood(manifest, 'dual-reinspection-logcat', {preserveCurrent: true}),
+    'dual-sample-wallpaper-terminal-startup-logcat-diagnostic',
+  );
   assert.equal(manifest.lastKnownGood, 'dual-sample-wallpaper-terminal-startup-logcat-diagnostic');
   assert.equal(runner.recordLastKnownGood(manifest, 'next-owned-runtime-step'), 'next-owned-runtime-step');
 });
 
 test('command diagnostics do not mark a result-validated exit one as PASS', () => {
   const record = runner.commandDiagnosticRecord({
-    phase: 'CLEANUP', label: 'dual-sample-terminal-remote-process', executable: 'adb',
-    args: ['shell', 'pidof', 'com.anonymous.sampleterminal'], durationMs: 12,
-    exitCode: 1, signal: null, stdout: '', stderr: 'permission denied',
-    acceptedExitCodes: [0, 1], resultAccepted: false, outputPolicy: 'sanitized',
+    phase: 'CLEANUP',
+    label: 'dual-sample-terminal-remote-process',
+    executable: 'adb',
+    args: ['shell', 'pidof', 'com.anonymous.sampleterminal'],
+    durationMs: 12,
+    exitCode: 1,
+    signal: null,
+    stdout: '',
+    stderr: 'permission denied',
+    acceptedExitCodes: [0, 1],
+    resultAccepted: false,
+    outputPolicy: 'sanitized',
   });
   assert.equal(record.result, 'FAIL');
   assert.equal(record.stderr, 'permission denied');
-  assert.throws(() => runner.commandDiagnosticRecord({
-    phase: 'CLEANUP', label: 'invalid-result-validation', executable: 'adb', args: [],
-    durationMs: 1, exitCode: 1, signal: null, stdout: '', stderr: '',
-    acceptedExitCodes: [0, 1], resultAccepted: 'false', outputPolicy: 'sanitized',
-  }), /VK_ANDROID_COMMAND_RESULT_VALIDATION_INVALID/);
+  assert.throws(
+    () =>
+      runner.commandDiagnosticRecord({
+        phase: 'CLEANUP',
+        label: 'invalid-result-validation',
+        executable: 'adb',
+        args: [],
+        durationMs: 1,
+        exitCode: 1,
+        signal: null,
+        stdout: '',
+        stderr: '',
+        acceptedExitCodes: [0, 1],
+        resultAccepted: 'false',
+        outputPolicy: 'sanitized',
+      }),
+    /VK_ANDROID_COMMAND_RESULT_VALIDATION_INVALID/,
+  );
 });
 
 test('command logs mirror complete runtime history when evidence logs directory is absent', () => {
@@ -1588,9 +2908,19 @@ test('command logs mirror complete runtime history when evidence logs directory 
     fs.mkdirSync(evidenceRunDirectory, {recursive: true});
     fs.writeFileSync(runtimeLogPath, `${JSON.stringify({label: 'earlier-command', result: 'PASS'})}\n`);
 
-    runner.appendCommandLogRecord({runtimeLogPath, evidenceLogPath, evidenceRunDirectory, record: {label: 'diagnose', result: 'PASS'}});
+    runner.appendCommandLogRecord({
+      runtimeLogPath,
+      evidenceLogPath,
+      evidenceRunDirectory,
+      record: {label: 'diagnose', result: 'PASS'},
+    });
     assert.equal(fs.readFileSync(evidenceLogPath, 'utf8'), fs.readFileSync(runtimeLogPath, 'utf8'));
-    runner.appendCommandLogRecord({runtimeLogPath, evidenceLogPath, evidenceRunDirectory, record: {label: 'cleanup', result: 'PASS'}});
+    runner.appendCommandLogRecord({
+      runtimeLogPath,
+      evidenceLogPath,
+      evidenceRunDirectory,
+      record: {label: 'cleanup', result: 'PASS'},
+    });
     assert.equal(fs.readFileSync(evidenceLogPath, 'utf8'), fs.readFileSync(runtimeLogPath, 'utf8'));
     assert.equal(fs.readFileSync(evidenceLogPath, 'utf8').match(/earlier-command/g)?.length, 1);
   } finally {
@@ -1600,8 +2930,10 @@ test('command logs mirror complete runtime history when evidence logs directory 
 
 test('transition evidence samples are explicitly unaligned video times and full-video review remains open', () => {
   assert.deepEqual(runner.transitionVideoSampleOffsets(2), [
-    {index: 1, offsetFromVideoStartMs: 333.333}, {index: 2, offsetFromVideoStartMs: 666.667},
-    {index: 3, offsetFromVideoStartMs: 1000}, {index: 4, offsetFromVideoStartMs: 1333.333},
+    {index: 1, offsetFromVideoStartMs: 333.333},
+    {index: 2, offsetFromVideoStartMs: 666.667},
+    {index: 3, offsetFromVideoStartMs: 1000},
+    {index: 4, offsetFromVideoStartMs: 1333.333},
     {index: 5, offsetFromVideoStartMs: 1666.667},
   ]);
   assert.throws(() => runner.transitionVideoSampleOffsets(0), /VK_ANDROID_TRANSITION_VIDEO_DURATION_INVALID/);
@@ -1632,11 +2964,18 @@ test('transition video samples are tied only to the probed video timeline, never
 });
 
 test('transition samples stop at the last decodable video frame when the container has trailing time', () => {
-  assert.deepEqual(runner.parseVideoFrameTimestamps(JSON.stringify({frames: [
-    {best_effort_timestamp_time: '0.000000'},
-    {best_effort_timestamp_time: '0.760156'},
-    {best_effort_timestamp_time: '1.760700'},
-  ]})), [0, 0.760156, 1.7607]);
+  assert.deepEqual(
+    runner.parseVideoFrameTimestamps(
+      JSON.stringify({
+        frames: [
+          {best_effort_timestamp_time: '0.000000'},
+          {best_effort_timestamp_time: '0.760156'},
+          {best_effort_timestamp_time: '1.760700'},
+        ],
+      }),
+    ),
+    [0, 0.760156, 1.7607],
+  );
   assert.deepEqual(runner.transitionVideoSampleOffsets(2.272622, [0, 0.760156, 1.7607]), [
     {index: 1, offsetFromVideoStartMs: 293.45},
     {index: 2, offsetFromVideoStartMs: 586.9},
@@ -1644,7 +2983,10 @@ test('transition samples stop at the last decodable video frame when the contain
     {index: 4, offsetFromVideoStartMs: 1173.8},
     {index: 5, offsetFromVideoStartMs: 1467.25},
   ]);
-  assert.throws(() => runner.parseVideoFrameTimestamps('{"frames":[]}'), /VK_ANDROID_TRANSITION_FRAME_TIMELINE_INVALID/);
+  assert.throws(
+    () => runner.parseVideoFrameTimestamps('{"frames":[]}'),
+    /VK_ANDROID_TRANSITION_FRAME_TIMELINE_INVALID/,
+  );
   assert.throws(() => runner.transitionVideoSampleOffsets(2, []), /VK_ANDROID_TRANSITION_FRAME_TIMELINE_INVALID/);
   const source = fs.readFileSync(new URL('./ter-virtual-keyboard-android.mjs', import.meta.url), 'utf8');
   assert.match(source, /transition-frame-timeline/);
@@ -1656,22 +2998,38 @@ test('cleanup recovery never skips the full repository runtime resource inventor
   assert.equal(typeof runner.runtimeResourceRoot, 'function');
   assert.equal(runner.runtimeResourceRoot('/workspace/repo'), path.join('/workspace/repo', '.runtime'));
   assert.deepEqual(runner.terResourcePreflightArgs('/workspace/repo'), [
-    '--profile', 'admin-validation-with-ter', '/workspace/repo/.runtime',
+    '--profile',
+    'admin-validation-with-ter',
+    '/workspace/repo/.runtime',
   ]);
 });
 
 test('ADB command validation rejects destructive argument vectors independent of source formatting', () => {
   assert.equal(typeof runner.validateAdbArgs, 'function');
-  assert.throws(() => runner.validateAdbArgs(['-s', 'emulator-5554', 'shell', 'pm', 'clear', 'com.example.app']), /VK_ANDROID_FORBIDDEN_DEVICE_COMMAND/);
-  assert.throws(() => runner.validateAdbArgs(['-s', 'emulator-5554', 'logcat', '-c']), /VK_ANDROID_FORBIDDEN_DEVICE_COMMAND/);
+  assert.throws(
+    () => runner.validateAdbArgs(['-s', 'emulator-5554', 'shell', 'pm', 'clear', 'com.example.app']),
+    /VK_ANDROID_FORBIDDEN_DEVICE_COMMAND/,
+  );
+  assert.throws(
+    () => runner.validateAdbArgs(['-s', 'emulator-5554', 'logcat', '-c']),
+    /VK_ANDROID_FORBIDDEN_DEVICE_COMMAND/,
+  );
   assert.equal(runner.validateAdbArgs(['-s', 'emulator-5554', 'shell', 'input', 'tap', '10', '20']), true);
 });
 
 test('command diagnostics are readable, secret-redacted, and never persist raw UI hierarchy', () => {
   assert.equal(typeof runner.commandDiagnosticRecord, 'function');
   const ordinary = runner.commandDiagnosticRecord({
-    phase: 'INSPECT', label: 'dual-adb-display', executable: 'adb', args: ['-s', 'emulator-5554', 'shell', 'dumpsys'],
-    durationMs: 17, exitCode: 1, signal: null, stdout: 'token=abc123', stderr: 'failed for 192.0.2.8', outputPolicy: 'sanitized',
+    phase: 'INSPECT',
+    label: 'dual-adb-display',
+    executable: 'adb',
+    args: ['-s', 'emulator-5554', 'shell', 'dumpsys'],
+    durationMs: 17,
+    exitCode: 1,
+    signal: null,
+    stdout: 'token=abc123',
+    stderr: 'failed for 192.0.2.8',
+    outputPolicy: 'sanitized',
   });
   assert.equal(ordinary.result, 'FAIL');
   assert.match(ordinary.stdout, /token=\[REDACTED\]/);
@@ -1680,17 +3038,33 @@ test('command diagnostics are readable, secret-redacted, and never persist raw U
   assert.equal('args' in ordinary, false);
 
   const hierarchy = runner.commandDiagnosticRecord({
-    phase: 'INSPECT', label: 'uia-read', executable: 'adb', args: ['shell', 'cat', 'temp.xml'],
-    durationMs: 10, exitCode: 0, signal: null, stdout: '<node text="private-value"/>', stderr: 'private-stderr-payload', outputPolicy: 'omit',
+    phase: 'INSPECT',
+    label: 'uia-read',
+    executable: 'adb',
+    args: ['shell', 'cat', 'temp.xml'],
+    durationMs: 10,
+    exitCode: 0,
+    signal: null,
+    stdout: '<node text="private-value"/>',
+    stderr: 'private-stderr-payload',
+    outputPolicy: 'omit',
   });
   assert.equal(hierarchy.stdout, '[RAW_OUTPUT_OMITTED]');
   assert.equal(hierarchy.stderr, '[RAW_OUTPUT_OMITTED]');
   assert.doesNotMatch(JSON.stringify(hierarchy), /private-value|private-stderr-payload/);
 
   const expectedAbsent = runner.commandDiagnosticRecord({
-    phase: 'PREPARE', label: 'dual-sample-terminal-remote-process', executable: 'adb', args: ['shell', 'pidof', 'com.anonymous.sampleterminal'],
-    durationMs: 12, exitCode: 1, signal: null, stdout: '', stderr: 'pidof: no matching process',
-    acceptedExitCodes: [0, 1], outputPolicy: 'sanitized',
+    phase: 'PREPARE',
+    label: 'dual-sample-terminal-remote-process',
+    executable: 'adb',
+    args: ['shell', 'pidof', 'com.anonymous.sampleterminal'],
+    durationMs: 12,
+    exitCode: 1,
+    signal: null,
+    stdout: '',
+    stderr: 'pidof: no matching process',
+    acceptedExitCodes: [0, 1],
+    outputPolicy: 'sanitized',
   });
   assert.equal(expectedAbsent.result, 'PASS');
   assert.deepEqual(expectedAbsent.acceptedExitCodes, [0, 1]);
@@ -1702,14 +3076,22 @@ test('binary command output is omitted from structured diagnostic logs', () => {
   assert.equal(runner.commandDiagnosticOutputPolicy({binary: true}), 'omit');
   assert.equal(runner.commandDiagnosticOutputPolicy({binary: false, requestedPolicy: 'sanitized'}), 'sanitized');
   const binaryRecord = runner.commandDiagnosticRecord({
-    phase: 'CAPTURE', label: 'dual-frame-capture', executable: 'adb', args: ['exec-out', 'screencap'],
-    durationMs: 10, exitCode: 0, signal: null, stdout: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0xff]),
-    stderr: Buffer.alloc(0), outputPolicy: 'omit',
+    phase: 'CAPTURE',
+    label: 'dual-frame-capture',
+    executable: 'adb',
+    args: ['exec-out', 'screencap'],
+    durationMs: 10,
+    exitCode: 0,
+    signal: null,
+    stdout: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0xff]),
+    stderr: Buffer.alloc(0),
+    outputPolicy: 'omit',
   });
   assert.equal(binaryRecord.stdoutBytes, 5);
   assert.equal(binaryRecord.stdout, '[RAW_OUTPUT_OMITTED]');
   const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
-  const diagnosticCall = source.match(/appendCommandLog\(manifest, commandDiagnosticRecord\(\{([\s\S]*?)\}\)\)/)?.[1] ?? '';
+  const diagnosticCall =
+    source.match(/appendCommandLog\(manifest, commandDiagnosticRecord\(\{([\s\S]*?)\}\)\)/)?.[1] ?? '';
   assert.match(diagnosticCall, /\bstdout,\s*stderr\b/);
   assert.doesNotMatch(diagnosticCall, /\bstdout:\s*stdoutText/);
 });
@@ -1724,8 +3106,12 @@ test('omitted command output stays omitted in runtime and evidence capture logs'
 
   try {
     runner.writeCommandCaptureLog({
-      runtimeLogPath, evidenceLogPath, evidenceRunDirectory,
-      stdout: 'raw stdout payload', stderr: 'raw stderr token=private-value', outputPolicy: 'omit',
+      runtimeLogPath,
+      evidenceLogPath,
+      evidenceRunDirectory,
+      stdout: 'raw stdout payload',
+      stderr: 'raw stderr token=private-value',
+      outputPolicy: 'omit',
     });
     const runtimeContent = fs.readFileSync(runtimeLogPath, 'utf8');
     const evidenceContent = fs.readFileSync(evidenceLogPath, 'utf8');
@@ -1738,22 +3124,75 @@ test('omitted command output stays omitted in runtime and evidence capture logs'
 });
 
 test('logical and SurfaceFlinger identities must prove both approved device shapes', () => {
-  const logicalDual = parseLogicalDisplays([
-    'Display id 0: DisplayInfo{"Internal", real 2560 x 1600, uniqueId "primary", flags=FLAG_DEFAULT}',
-    'Display id 2: DisplayInfo{"Presentation", real 1280 x 720, uniqueId "secondary", flags=FLAG_PRESENTATION}',
-  ].join('\n'));
-  const surfacesDual = parseSurfaceDisplays([
-    'Display local:0 (HWC display 0, primary, "Internal")',
-    'activeMode={id=1, resolution=2560x1600}',
-    'Virtual Display virtual:1',
-    'name="Presentation"',
-    'activeMode={id=2, resolution=1280x720}',
-  ].join('\n'));
+  const logicalDual = parseLogicalDisplays(
+    [
+      'Display id 0: DisplayInfo{"Internal", real 2560 x 1600, uniqueId "primary", flags=FLAG_DEFAULT}',
+      'Display id 2: DisplayInfo{"Presentation", real 1280 x 720, uniqueId "secondary", flags=FLAG_PRESENTATION}',
+    ].join('\n'),
+  );
+  const surfacesDual = parseSurfaceDisplays(
+    [
+      'Display local:0 (HWC display 0, primary, "Internal")',
+      'activeMode={id=1, resolution=2560x1600}',
+      'Virtual Display virtual:1',
+      'name="Presentation"',
+      'activeMode={id=2, resolution=1280x720}',
+    ].join('\n'),
+  );
   assert.equal(validateDeviceShape({shape: 'dual', logical: logicalDual, surfaces: surfacesDual}).secondary.id, 2);
-  assert.throws(() => validateDeviceShape({shape: 'mobile', logical: logicalDual, surfaces: surfacesDual}), /VK_ANDROID_MOBILE_SHAPE_MISMATCH/);
+  assert.throws(
+    () => validateDeviceShape({shape: 'mobile', logical: logicalDual, surfaces: surfacesDual}),
+    /VK_ANDROID_MOBILE_SHAPE_MISMATCH/,
+  );
   const logicalMobile = [logicalDual[0]];
-  const surfacesMobile = {primary: surfacesDual.primary, virtual: []};
-  assert.equal(validateDeviceShape({shape: 'mobile', logical: logicalMobile, surfaces: surfacesMobile}).secondary, null);
+  const surfacesMobile = {primary: surfacesDual.primary, virtual: [], external: []};
+  assert.equal(
+    validateDeviceShape({shape: 'mobile', logical: logicalMobile, surfaces: surfacesMobile}).secondary,
+    null,
+  );
+});
+
+test('dual admission accepts either an emulator secondary surface or one physical external presentation surface', () => {
+  const logical = parseLogicalDisplays(
+    [
+      'Display id 0: DisplayInfo{"Built-in", real 1920 x 1080, uniqueId "local:0", flags=FLAG_DEFAULT}',
+      'Display id 2: DisplayInfo{"HDMI", real 1920 x 1080, uniqueId "local:1", flags=FLAG_PRESENTATION}',
+    ].join('\n'),
+  );
+  const physical = parseSurfaceDisplays(
+    [
+      'Display 0',
+      '    connectionType=Internal',
+      '    name="Primary display"',
+      '    displayModes={id=0, resolution=1920x1080}',
+      'Display 1',
+      '    connectionType=External',
+      '    name="Secondary display"',
+      '    displayModes={id=0, resolution=1920x1080}',
+    ].join('\n'),
+  );
+  const admitted = validateDeviceShape({shape: 'dual', logical, surfaces: physical});
+  assert.equal(admitted.secondary.id, 2);
+  assert.equal(admitted.secondarySurface.id, '1');
+  assert.equal(admitted.secondarySurfaceKind, 'physical');
+  assert.throws(
+    () =>
+      validateDeviceShape({
+        shape: 'dual',
+        logical,
+        surfaces: {...physical, virtual: [{id: 'virtual:extra', width: 1920, height: 1080}]},
+      }),
+    /VK_ANDROID_DUAL_SHAPE_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      validateDeviceShape({
+        shape: 'mobile',
+        logical: [logical[0]],
+        surfaces: {...physical, primary: [physical.primary[0]], external: physical.external},
+      }),
+    /VK_ANDROID_MOBILE_SHAPE_MISMATCH/,
+  );
 });
 
 test('capture display inventory is freshly resolved and corroborated by dumpsys display facts', () => {
@@ -1768,37 +3207,76 @@ test('capture display inventory is freshly resolved and corroborated by dumpsys 
   ].join('\n');
   const latestSurfaceDump = [
     'Display local:latest-primary (HWC display 0, primary, "Built-in Screen")',
-    'activeMode={id=1, resolution=1280x800}',
+    'activeMode={id=1, resolution=1280×720}',
     'Virtual Display virtual:latest-secondary',
     'name="Emulator 2D Display"',
-    'activeMode={id=2, resolution=1280x800}',
+    'activeMode={id=2, resolution=1280×720}',
   ].join('\n');
 
   assert.deepEqual(parseDumpsysDisplayFacts(displayDump), [
     {id: 0, name: 'Built-in Screen', width: 1280, height: 800, uniqueId: 'local:primary', flags: ['FLAG_DEFAULT']},
-    {id: 2, name: 'Emulator 2D Display', width: 1280, height: 800, uniqueId: 'virtual:secondary', flags: ['FLAG_PRESENTATION']},
+    {
+      id: 2,
+      name: 'Emulator 2D Display',
+      width: 1280,
+      height: 800,
+      uniqueId: 'virtual:secondary',
+      flags: ['FLAG_PRESENTATION'],
+    },
   ]);
   const resolved = resolveCaptureDisplayInventory('dual', logicalText, displayDump, latestSurfaceDump);
   assert.equal(resolved.pairing.primarySurface.id, 'local:latest-primary');
   assert.equal(resolved.pairing.secondarySurface.id, 'virtual:latest-secondary');
-  assert.throws(() => resolveCaptureDisplayInventory('dual', logicalText, displayDump.replace('uniqueId "virtual:secondary"', 'uniqueId "virtual:stale"'), latestSurfaceDump), /VK_ANDROID_CAPTURE_DISPLAY_FACTS_MISMATCH/);
+  assert.throws(
+    () =>
+      resolveCaptureDisplayInventory(
+        'dual',
+        logicalText,
+        displayDump.replace('uniqueId "virtual:secondary"', 'uniqueId "virtual:stale"'),
+        latestSurfaceDump,
+      ),
+    /VK_ANDROID_CAPTURE_DISPLAY_FACTS_MISMATCH/,
+  );
 });
 
 test('testID taps are scoped to the requested Android logical display', () => {
-  const xml = '<hierarchy><display id="0"><node resource-id="shared:key" bounds="[1,2][9,10]" enabled="true"/></display><display id="2"><node resource-id="shared:key" bounds="[11,12][29,30]" enabled="true"/></display></hierarchy>';
-  assert.deepEqual(parseResourceNode(xml, 'shared:key', 0), {left: 1, top: 2, right: 9, bottom: 10, enabled: true, selected: false});
-  assert.deepEqual(parseResourceNode(xml, 'shared:key', 2), {left: 11, top: 12, right: 29, bottom: 30, enabled: true, selected: false});
+  const xml =
+    '<hierarchy><display id="0"><node resource-id="shared:key" bounds="[1,2][9,10]" enabled="true"/></display><display id="2"><node resource-id="shared:key" bounds="[11,12][29,30]" enabled="true"/></display></hierarchy>';
+  assert.deepEqual(parseResourceNode(xml, 'shared:key', 0), {
+    left: 1,
+    top: 2,
+    right: 9,
+    bottom: 10,
+    enabled: true,
+    selected: false,
+  });
+  assert.deepEqual(parseResourceNode(xml, 'shared:key', 2), {
+    left: 11,
+    top: 12,
+    right: 29,
+    bottom: 30,
+    enabled: true,
+    selected: false,
+  });
   assert.equal(parseResourceNode(xml, 'shared:key', 3), null);
-  assert.throws(() => parseResourceNode(
-    '<hierarchy><display id="2"><node resource-id="shared:key" bounds="[11,12][29,30]" enabled="true"/><node resource-id="shared:key" bounds="[31,32][49,50]" enabled="true"/></display></hierarchy>',
-    'shared:key', 2,
-  ), /VK_ANDROID_RESOURCE_NODE_AMBIGUOUS/);
+  assert.throws(
+    () =>
+      parseResourceNode(
+        '<hierarchy><display id="2"><node resource-id="shared:key" bounds="[11,12][29,30]" enabled="true"/><node resource-id="shared:key" bounds="[31,32][49,50]" enabled="true"/></display></hierarchy>',
+        'shared:key',
+        2,
+      ),
+    /VK_ANDROID_RESOURCE_NODE_AMBIGUOUS/,
+  );
 });
 
 test('admin launcher gesture uses the bounded five-tap physical point plan', () => {
   const plan = adminLauncherTapPlan(0);
   assert.equal(plan.length, 5);
-  assert.deepEqual(plan.map(item => item.tapIndex), [1, 2, 3, 4, 5]);
+  assert.deepEqual(
+    plan.map(item => item.tapIndex),
+    [1, 2, 3, 4, 5],
+  );
   assert.deepEqual(plan[0].args, ['shell', 'input', '-d', '0', 'tap', '48', '48']);
   assert.deepEqual(plan[4].args, ['shell', 'input', '-d', '0', 'tap', '48', '48']);
   assert.throws(() => adminLauncherTapPlan(-1), /VK_ANDROID_ADMIN_LAUNCH_DISPLAY_INVALID/);
@@ -1806,18 +3284,21 @@ test('admin launcher gesture uses the bounded five-tap physical point plan', () 
 });
 
 test('URL symbol taps use the shifted-state nodes only after confirming unchanged key geometry', () => {
-  assert.equal(sameResourceNodeBounds(
-    {left: 1, top: 2, right: 10, bottom: 11},
-    {left: 1, top: 2, right: 10, bottom: 11},
-  ), true);
-  assert.equal(sameResourceNodeBounds(
-    {left: 1, top: 2, right: 10, bottom: 11},
-    {left: 1, top: 3, right: 10, bottom: 11},
-  ), false);
+  assert.equal(
+    sameResourceNodeBounds({left: 1, top: 2, right: 10, bottom: 11}, {left: 1, top: 2, right: 10, bottom: 11}),
+    true,
+  );
+  assert.equal(
+    sameResourceNodeBounds({left: 1, top: 2, right: 10, bottom: 11}, {left: 1, top: 3, right: 10, bottom: 11}),
+    false,
+  );
   assert.equal(sameResourceNodeBounds(null, {left: 1, top: 2, right: 10, bottom: 11}), false);
 
   const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
-  const action = source.slice(source.indexOf('async function insertUrlSymbolSequence('), source.indexOf('async function doCleanup('));
+  const action = source.slice(
+    source.indexOf('async function insertUrlSymbolSequence('),
+    source.indexOf('async function doCleanup('),
+  );
   assert.match(action, /shiftedShift\.selected/);
   assert.match(action, /sameResourceNodeBounds\(item\.node, keys\[index\]\.node\)/);
   assert.match(action, /tapNodeCenter\(manifest, device, display\.id, shiftedKeys\[index\]\.node/);
@@ -1825,14 +3306,26 @@ test('URL symbol taps use the shifted-state nodes only after confirming unchange
 });
 
 test('screenshot proof requires an app window identity scoped to its logical display and file dimensions', () => {
-  const xml = '<hierarchy><display id="0"><window id="w-primary"><node class="android.widget.FrameLayout" package="com.anonymous.sampleterminal" resource-id="sample.auth.login" bounds="[0,0][1280,800]"/></window></display><display id="2"><window id="w-secondary"><node class="android.widget.FrameLayout" package="com.other.app" resource-id="other:root" bounds="[0,0][1280,800]"/></window></display></hierarchy>';
+  const xml =
+    '<hierarchy><display id="0"><window id="w-primary"><node class="android.widget.FrameLayout" package="com.anonymous.sampleterminal" resource-id="sample.auth.login" bounds="[0,0][1280,800]"/></window></display><display id="2"><window id="w-secondary"><node class="android.widget.FrameLayout" package="com.other.app" resource-id="other:root" bounds="[0,0][1280,800]"/></window></display></hierarchy>';
   assert.deepEqual(parseDisplayWindowIdentity(xml, 0, 'com.anonymous.sampleterminal'), {
-    logicalDisplayId: 0, packageName: 'com.anonymous.sampleterminal', rootClass: 'android.widget.FrameLayout', rootResourceId: 'sample.auth.login',
+    logicalDisplayId: 0,
+    packageName: 'com.anonymous.sampleterminal',
+    rootClass: 'android.widget.FrameLayout',
+    rootResourceId: 'sample.auth.login',
   });
-  assert.throws(() => parseDisplayWindowIdentity(xml, 2, 'com.anonymous.sampleterminal'), /VK_ANDROID_CAPTURE_WINDOW_IDENTITY_UNPROVEN/);
-  assert.deepEqual(parsePngFileDescription('/tmp/cap.png: PNG image data, 1280 x 800, 8-bit/color RGBA, non-interlaced'), {
-    description: 'PNG image data, 1280 x 800, 8-bit/color RGBA, non-interlaced', width: 1280, height: 800,
-  });
+  assert.throws(
+    () => parseDisplayWindowIdentity(xml, 2, 'com.anonymous.sampleterminal'),
+    /VK_ANDROID_CAPTURE_WINDOW_IDENTITY_UNPROVEN/,
+  );
+  assert.deepEqual(
+    parsePngFileDescription('/tmp/cap.png: PNG image data, 1280 x 800, 8-bit/color RGBA, non-interlaced'),
+    {
+      description: 'PNG image data, 1280 x 800, 8-bit/color RGBA, non-interlaced',
+      width: 1280,
+      height: 800,
+    },
+  );
   assert.throws(() => parsePngFileDescription('/tmp/cap.png: ASCII text'), /VK_ANDROID_CAPTURE_FILE_TYPE_INVALID/);
   const inventory = parseVisibleControlInventory(
     '<hierarchy><display id="0"><node resource-id="keyboard:key" class="android.widget.Button" bounds="[1,2][9,10]" enabled="true" selected="false" clickable="true" text=":/.?&amp;=-_%+" content-desc="符号键"/><node class="android.widget.TextView" text="敏感输入"/></display><display id="2"><node resource-id="other:key"/></display></hierarchy>',
@@ -1847,7 +3340,10 @@ test('screenshot proof requires an app window identity scoped to its logical dis
   assert.equal(JSON.stringify(inventory).includes('敏感输入'), false);
   assert.throws(() => parseVisibleControlInventory('<hierarchy/>', 0), /VK_ANDROID_CONTROL_INVENTORY_DISPLAY_MISSING/);
   const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
-  const captureSource = source.slice(source.indexOf('async function capture('), source.indexOf('async function tapResource('));
+  const captureSource = source.slice(
+    source.indexOf('async function capture('),
+    source.indexOf('async function tapResource('),
+  );
   assert.match(captureSource, /parseDisplayWindowIdentity\(/);
   assert.match(captureSource, /cmd', 'display', 'get-displays/);
   assert.match(captureSource, /dumpsys', 'display/);
@@ -1864,16 +3360,25 @@ test('screenshot proof requires an app window identity scoped to its logical dis
 
 test('URL symbol business oracle hashes only the exact ten synthetic inserted characters', () => {
   assert.deepEqual(URL_SYMBOL_KEYS, [
-    {keyId: 'text-1', value: ':'}, {keyId: 'text-2', value: '/'}, {keyId: 'text-3', value: '.'},
-    {keyId: 'text-4', value: '?'}, {keyId: 'text-5', value: '&'}, {keyId: 'text-6', value: '='},
-    {keyId: 'text-7', value: '-'}, {keyId: 'text-8', value: '_'}, {keyId: 'text-9', value: '%'}, {keyId: 'text-0', value: '+'},
+    {keyId: 'text-1', value: ':'},
+    {keyId: 'text-2', value: '/'},
+    {keyId: 'text-3', value: '.'},
+    {keyId: 'text-4', value: '?'},
+    {keyId: 'text-5', value: '&'},
+    {keyId: 'text-6', value: '='},
+    {keyId: 'text-7', value: '-'},
+    {keyId: 'text-8', value: '_'},
+    {keyId: 'text-9', value: '%'},
+    {keyId: 'text-0', value: '+'},
   ]);
   assert.equal(URL_SYMBOL_SEQUENCE, ':/ .?&=-_%+'.replace(' ', ''));
   assert.equal(typeof runner.resolveUrlSymbolHarnessField, 'function');
   if (typeof runner.resolveUrlSymbolHarnessField !== 'function') return;
-  const loginOnlyXml = '<hierarchy><display id="0"><node resource-id="sample.auth.login:operator-name" text="" enabled="true" bounds="[1,2][9,10]"/></display></hierarchy>';
+  const loginOnlyXml =
+    '<hierarchy><display id="0"><node resource-id="sample.auth.login:operator-name" text="" enabled="true" bounds="[1,2][9,10]"/></display></hierarchy>';
   assert.equal(runner.resolveUrlSymbolHarnessField(loginOnlyXml, 0), null);
-  const harnessXml = '<hierarchy><display id="0"><node resource-id="harness:full-field" text=":/.?&amp;=-_%+" enabled="true" bounds="[1,2][9,10]"/><node resource-id="sample.auth.login:operator-name" text="must-not-read" enabled="true" bounds="[11,12][19,20]"/></display></hierarchy>';
+  const harnessXml =
+    '<hierarchy><display id="0"><node resource-id="harness:full-field" text=":/.?&amp;=-_%+" enabled="true" bounds="[1,2][9,10]"/><node resource-id="sample.auth.login:operator-name" text="must-not-read" enabled="true" bounds="[11,12][19,20]"/></display></hierarchy>';
   assert.deepEqual(runner.resolveUrlSymbolHarnessField(harnessXml, 0), {
     fieldId: 'harness:full-field',
     node: {left: 1, top: 2, right: 9, bottom: 10, enabled: true, selected: false},
@@ -1882,13 +3387,32 @@ test('URL symbol business oracle hashes only the exact ten synthetic inserted ch
   const digest = parseResourceTextHash(harnessXml, 'harness:full-field', 0);
   assert.equal(digest, createHash('sha256').update(URL_SYMBOL_SEQUENCE).digest('hex'));
   assert.doesNotMatch(digest, /[:/?&=_%+]/);
-  assert.throws(() => parseResourceTextHash('<hierarchy><display id="0"><node resource-id="field"/></display></hierarchy>', 'field', 0), /VK_ANDROID_RESOURCE_TEXT_MISSING/);
-  const keyboardLabelXml = '<hierarchy><display id="0"><node resource-id="ui.base.input:virtual-keyboard:text-1" text="" content-desc="1" enabled="true" bounds="[1,2][9,10]"/></display></hierarchy>';
-  assert.equal(parseResourceContentDescriptionHash(keyboardLabelXml, 'ui.base.input:virtual-keyboard:text-1', 0), createHash('sha256').update('1').digest('hex'));
-  assert.throws(() => parseResourceContentDescriptionHash('<hierarchy><display id="0"><node resource-id="ui.base.input:virtual-keyboard:text-1" text="" /></display></hierarchy>', 'ui.base.input:virtual-keyboard:text-1', 0), /VK_ANDROID_RESOURCE_CONTENT_DESCRIPTION_MISSING/);
+  assert.throws(
+    () =>
+      parseResourceTextHash('<hierarchy><display id="0"><node resource-id="field"/></display></hierarchy>', 'field', 0),
+    /VK_ANDROID_RESOURCE_TEXT_MISSING/,
+  );
+  const keyboardLabelXml =
+    '<hierarchy><display id="0"><node resource-id="ui.base.input:virtual-keyboard:text-1" text="" content-desc="1" enabled="true" bounds="[1,2][9,10]"/></display></hierarchy>';
+  assert.equal(
+    parseResourceContentDescriptionHash(keyboardLabelXml, 'ui.base.input:virtual-keyboard:text-1', 0),
+    createHash('sha256').update('1').digest('hex'),
+  );
+  assert.throws(
+    () =>
+      parseResourceContentDescriptionHash(
+        '<hierarchy><display id="0"><node resource-id="ui.base.input:virtual-keyboard:text-1" text="" /></display></hierarchy>',
+        'ui.base.input:virtual-keyboard:text-1',
+        0,
+      ),
+    /VK_ANDROID_RESOURCE_CONTENT_DESCRIPTION_MISSING/,
+  );
 
   const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
-  const action = source.slice(source.indexOf('async function insertUrlSymbolSequence('), source.indexOf('async function doCleanup('));
+  const action = source.slice(
+    source.indexOf('async function insertUrlSymbolSequence('),
+    source.indexOf('async function doCleanup('),
+  );
   assert.match(action, /URL_SYMBOL_KEYS/);
   assert.match(action, /parseResourceContentDescriptionHash\(xml, item\.id, display\.id\)/);
   assert.match(action, /observedSha256 === expectedSha256/);
@@ -1934,7 +3458,10 @@ test('both Android apps mount the harness only from the exact primary-surface ro
   ];
   for (const directory of appDirectories) {
     const appSource = fs.readFileSync(path.join(root, directory, 'App.tsx'), 'utf8');
-    const harnessSource = fs.readFileSync(path.join(root, directory, 'src/components/controlledKeyboardHarness.tsx'), 'utf8');
+    const harnessSource = fs.readFileSync(
+      path.join(root, directory, 'src/components/controlledKeyboardHarness.tsx'),
+      'utf8',
+    );
     const packageJson = JSON.parse(fs.readFileSync(path.join(root, directory, 'package.json'), 'utf8'));
     const dependenciesSource = fs.readFileSync(path.join(root, directory, 'src/dependencies.ts'), 'utf8');
 
@@ -1961,11 +3488,25 @@ test('controlled harness is entered by an explicit VIEW intent without stopping 
   assert.equal(typeof runner.controlledKeyboardHarnessIntentArgs, 'function');
   if (typeof runner.controlledKeyboardHarnessIntentArgs !== 'function') return;
   assert.deepEqual(runner.controlledKeyboardHarnessIntentArgs('com.example/.MainActivity'), [
-    'shell', 'am', 'start', '-W', '-n', 'com.example/.MainActivity',
-    '-a', 'android.intent.action.VIEW', '-d', runner.CONTROLLED_KEYBOARD_HARNESS_URL,
+    'shell',
+    'am',
+    'start',
+    '-W',
+    '-n',
+    'com.example/.MainActivity',
+    '-a',
+    'android.intent.action.VIEW',
+    '-d',
+    runner.CONTROLLED_KEYBOARD_HARNESS_URL,
   ]);
-  assert.throws(() => runner.controlledKeyboardHarnessIntentArgs('com.example;pm clear'), /VK_ANDROID_HARNESS_ACTIVITY_INVALID/);
-  assert.throws(() => runner.controlledKeyboardHarnessIntentArgs('com.example/.Main$Activity'), /VK_ANDROID_HARNESS_ACTIVITY_INVALID/);
+  assert.throws(
+    () => runner.controlledKeyboardHarnessIntentArgs('com.example;pm clear'),
+    /VK_ANDROID_HARNESS_ACTIVITY_INVALID/,
+  );
+  assert.throws(
+    () => runner.controlledKeyboardHarnessIntentArgs('com.example/.Main$Activity'),
+    /VK_ANDROID_HARNESS_ACTIVITY_INVALID/,
+  );
 });
 
 test('controlled-harness screenshots remain separate from the 19 product IA-frame denominator', () => {
@@ -1973,33 +3514,55 @@ test('controlled-harness screenshots remain separate from the 19 product IA-fram
   if (typeof runner.recordCapture !== 'function') return;
   const manifest = {frameMatrix: emptyFrameMatrix()};
   const record = {
-    shape: 'dual', app: 'sample-terminal', iaId: 'VK-IA-09', surface: 'primary',
-    screenshot: 'evidence/harness-shift.png', captureEvidence: 'evidence/harness-shift.capture-evidence.json',
-    state: 'controlled-harness-url-symbol-shift', transitionIndex: null,
+    shape: 'dual',
+    app: 'sample-terminal',
+    iaId: 'VK-IA-09',
+    surface: 'primary',
+    screenshot: 'evidence/harness-shift.png',
+    captureEvidence: 'evidence/harness-shift.capture-evidence.json',
+    state: 'controlled-harness-url-symbol-shift',
+    transitionIndex: null,
   };
   runner.recordCapture(manifest, 'VK-IA-09', record, 'CONTROLLED_HARNESS');
   assert.equal(manifest.frameMatrix['VK-IA-09'].captures.length, 0);
   assert.equal(manifest.controlledHarnessCaptures.length, 1);
   assert.equal(manifest.controlledHarnessCaptures[0].evidenceKind, 'CONTROLLED_HARNESS');
   assert.equal(manifest.controlledHarnessCaptures[0].coveredIaId, 'VK-IA-09');
-  assert.equal(captureObservationMatrix(manifest.frameMatrix)['VK-IA-09'].routes['dual/sample-terminal/primary'].status, 'OPEN_NOT_OBSERVED');
-  assert.throws(() => runner.recordCapture(manifest, 'VK-IA-09', {...record, iaId: 'VK-IA-08'}, 'CONTROLLED_HARNESS'), /VK_ANDROID_IA_ID_OUT_OF_RANGE/);
+  assert.equal(
+    captureObservationMatrix(manifest.frameMatrix)['VK-IA-09'].routes['dual/sample-terminal/primary'].status,
+    'OPEN_NOT_OBSERVED',
+  );
+  assert.throws(
+    () => runner.recordCapture(manifest, 'VK-IA-09', {...record, iaId: 'VK-IA-08'}, 'CONTROLLED_HARNESS'),
+    /VK_ANDROID_IA_ID_OUT_OF_RANGE/,
+  );
 });
 
 test('transition samples use the shared product capture registration with explicit evidence kind', () => {
   const manifest = {frameMatrix: emptyFrameMatrix()};
   const record = {
-    shape: 'dual', app: 'sample-terminal', iaId: 'VK-IA-15', surface: 'primary',
-    screenshot: 'evidence/transition-1.png', captureEvidence: 'evidence/transition-1.capture-evidence.json',
-    transitionVideo: 'evidence/transition.mp4', state: 'transition-video-sample-1-uncalibrated',
-    transitionIndex: 1, controlsInventory: null, visibleControlCount: 0, visibleControls: [],
+    shape: 'dual',
+    app: 'sample-terminal',
+    iaId: 'VK-IA-15',
+    surface: 'primary',
+    screenshot: 'evidence/transition-1.png',
+    captureEvidence: 'evidence/transition-1.capture-evidence.json',
+    transitionVideo: 'evidence/transition.mp4',
+    state: 'transition-video-sample-1-uncalibrated',
+    transitionIndex: 1,
+    controlsInventory: null,
+    visibleControlCount: 0,
+    visibleControls: [],
   };
 
   runner.recordCapture(manifest, 'VK-IA-15', record, 'PRODUCT_TRANSITION_SAMPLE');
   assert.equal(manifest.frameMatrix['VK-IA-15'].captures.length, 1);
   assert.equal(manifest.frameMatrix['VK-IA-15'].captures[0].evidenceKind, 'PRODUCT_TRANSITION_SAMPLE');
   assert.equal(manifest.frameMatrix['VK-IA-15'].reason, 'AWAITING_PER_CONTROL_VISUAL_JUDGMENT');
-  assert.throws(() => runner.recordCapture(manifest, 'VK-IA-15', record, 'UNKNOWN_PRODUCT_CAPTURE'), /VK_ANDROID_CAPTURE_EVIDENCE_KIND_INVALID/);
+  assert.throws(
+    () => runner.recordCapture(manifest, 'VK-IA-15', record, 'UNKNOWN_PRODUCT_CAPTURE'),
+    /VK_ANDROID_CAPTURE_EVIDENCE_KIND_INVALID/,
+  );
 
   const source = fs.readFileSync(new URL('./ter-virtual-keyboard-android.mjs', import.meta.url), 'utf8');
   assert.match(source, /recordCapture\(manifest, iaId, capture, 'PRODUCT_TRANSITION_SAMPLE'\)/);

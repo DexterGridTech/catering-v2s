@@ -54,6 +54,8 @@ TER = `apps/terminal`，v2s 仓内的终端产品工程。设计输入是对 POC
   满足 reanimated 4.5.1 的 peer `0.83-0.86`；快照与当时 latest 不符时以实际为准 ·
   NativeWind + React Native Reusables（由此新增 `ui/base/primitives`，承载统一语义注册）·
   Sentry + `react-error-boundary`（boundary 到 screen 级）· **不引入 React Compiler** ·
+  Sentry 故障上报按 Dexter 2026-09-28 选择 6 延期；本批仅落实错误边界与结构化日志，见
+  [`doc/decisions/2026-09-28-ter-third-party-usage-remediation.md`](../../doc/decisions/2026-09-28-ter-third-party-usage-remediation.md)。
   **不使用 RTK Query**（OpenAPI → 类型化 client + transport 执行全部策略）· automation 完全自研 ·
   vitest 单一 runner · TDP 用 WS（放弃 SSE）· adapter/android 用 expo-module ·
   持久化后端由 adapter 决定 · 虚拟键盘按「单表面命中测试」（Reanimated 随之进入既定依赖集）· 引入 turbo。

@@ -53,8 +53,8 @@ class TerminalTopologyHostModule : Module() {
       TerminalTopologyHostRegistry.sendFrame(raw)
     }
 
-    AsyncFunction("closePeer") {
-      TerminalTopologyHostRegistry.closePeer()
+    AsyncFunction("closePeer") { reason: String ->
+      TerminalTopologyHostRegistry.closePeer(reason)
     }
 
     OnCreate {

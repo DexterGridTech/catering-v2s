@@ -1,5 +1,5 @@
 import {useState, type ReactNode} from 'react';
-import {RnrPressable, RnrText, RnrView} from '../vendor/slots';
+import {RnrPressable, RnrText, RnrView} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import {PrimitiveInput} from './PrimitiveInput';
@@ -110,7 +110,10 @@ export const PrimitiveSelect = ({
   value,
   onValueChange,
 }: PrimitiveSelectProps) => {
-  const selectedIndex = Math.max(0, options.findIndex(option => option.value === value));
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex(option => option.value === value),
+  );
   const selected = options[selectedIndex];
   const isBlocked = disabled === true || busy === true;
   return (
@@ -118,7 +121,12 @@ export const PrimitiveSelect = ({
       testID={assertTestID(testID)}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{disabled: disabled === true, busy: busy === true, expanded: false, selected: selected !== undefined}}
+      accessibilityState={{
+        disabled: disabled === true,
+        busy: busy === true,
+        expanded: false,
+        selected: selected !== undefined,
+      }}
       disabled={isBlocked}
       onPress={() => {
         if (isBlocked || options.length === 0) return;
@@ -158,11 +166,22 @@ export const PrimitiveDropdownSelect = ({
           if (!isBlocked) onOpenChange?.(!open);
         }}
       >
-        <RnrText className={appearance === 'admin-mobile' ? baseTokens.adminMobileSelectorValue : baseTokens.dropdownValue}>{selected?.label ?? ''}</RnrText>
-        <RnrText className={appearance === 'admin-mobile' ? baseTokens.adminMobileSelectorChevron : baseTokens.dropdownChevron}>{open ? '⌃' : '⌄'}</RnrText>
+        <RnrText
+          className={appearance === 'admin-mobile' ? baseTokens.adminMobileSelectorValue : baseTokens.dropdownValue}
+        >
+          {selected?.label ?? ''}
+        </RnrText>
+        <RnrText
+          className={appearance === 'admin-mobile' ? baseTokens.adminMobileSelectorChevron : baseTokens.dropdownChevron}
+        >
+          {open ? '⌃' : '⌄'}
+        </RnrText>
       </RnrPressable>
       {open ? (
-        <RnrView testID={`${assertTestID(testID)}:menu`} className={appearance === 'admin-mobile' ? baseTokens.adminDropdownMenu : baseTokens.dropdownMenu}>
+        <RnrView
+          testID={`${assertTestID(testID)}:menu`}
+          className={appearance === 'admin-mobile' ? baseTokens.adminDropdownMenu : baseTokens.dropdownMenu}
+        >
           {options.map(option => (
             <RnrPressable
               key={option.value}
@@ -177,9 +196,17 @@ export const PrimitiveDropdownSelect = ({
                 onOpenChange?.(false);
               }}
             >
-              <RnrText className={appearance === 'admin-mobile'
-                ? option.value === value ? baseTokens.adminDropdownOptionSelected : baseTokens.adminDropdownOption
-                : option.value === value ? baseTokens.dropdownOptionSelected : baseTokens.dropdownOption}>
+              <RnrText
+                className={
+                  appearance === 'admin-mobile'
+                    ? option.value === value
+                      ? baseTokens.adminDropdownOptionSelected
+                      : baseTokens.adminDropdownOption
+                    : option.value === value
+                      ? baseTokens.dropdownOptionSelected
+                      : baseTokens.dropdownOption
+                }
+              >
                 {option.label}
               </RnrText>
             </RnrPressable>
@@ -194,10 +221,12 @@ export const PrimitiveDropdownSelect = ({
 export const PrimitiveForm = ({children, onSubmit}: PrimitiveFormProps): ReactNode => {
   if (typeof document === 'undefined') return <>{children}</>;
   return (
-    <form onSubmit={event => {
-      event.preventDefault();
-      onSubmit?.({preventDefault: () => event.preventDefault()});
-    }}>
+    <form
+      onSubmit={event => {
+        event.preventDefault();
+        onSubmit?.({preventDefault: () => event.preventDefault()});
+      }}
+    >
       {children}
     </form>
   );
@@ -205,9 +234,15 @@ export const PrimitiveForm = ({children, onSubmit}: PrimitiveFormProps): ReactNo
 
 export const PrimitiveFormField = ({testID, label, children, error}: PrimitiveFormFieldProps) => (
   <RnrView testID={assertTestID(testID)} className={baseTokens.stack}>
-    <PrimitiveLabel testID={`${testID}:label`} nativeID={`${testID}:input`}>{label}</PrimitiveLabel>
+    <PrimitiveLabel testID={`${testID}:label`} nativeID={`${testID}:input`}>
+      {label}
+    </PrimitiveLabel>
     {children}
-    {error === undefined ? null : <PrimitiveStatus testID={`${testID}:error`} tone="error">{error}</PrimitiveStatus>}
+    {error === undefined ? null : (
+      <PrimitiveStatus testID={`${testID}:error`} tone="error">
+        {error}
+      </PrimitiveStatus>
+    )}
   </RnrView>
 );
 
@@ -276,15 +311,25 @@ export const PrimitivePressOption = ({
       ) : null}
       <RnrText
         style={pressed ? {opacity: 0.86} : undefined}
-        className={variant === 'admin-nav'
-          ? selected ? baseTokens.adminNavItemSelectedText : baseTokens.adminNavItemText
-          : variant === 'tab'
-            ? selected ? baseTokens.tabSelected : baseTokens.tab
-            : selected ? baseTokens.optionSelected : baseTokens.option}
+        className={
+          variant === 'admin-nav'
+            ? selected
+              ? baseTokens.adminNavItemSelectedText
+              : baseTokens.adminNavItemText
+            : variant === 'tab'
+              ? selected
+                ? baseTokens.tabSelected
+                : baseTokens.tab
+              : selected
+                ? baseTokens.optionSelected
+                : baseTokens.option
+        }
       >
         {children}
       </RnrText>
-      {variant === 'admin-nav' && selected ? <RnrView testID={`${assertTestID(testID)}:focus-bar`} className={baseTokens.adminNavFocusBar} /> : null}
+      {variant === 'admin-nav' && selected ? (
+        <RnrView testID={`${assertTestID(testID)}:focus-bar`} className={baseTokens.adminNavFocusBar} />
+      ) : null}
     </RnrPressable>
   );
   return option;

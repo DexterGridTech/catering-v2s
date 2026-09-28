@@ -43,16 +43,19 @@ export const InputKeyboard = ({snapshot, interactive, onKey, onLayout, testIDSuf
     hasNextField: state.hasNextField,
   };
   const canInteract = interactive ?? state.visible;
-  const handleKey = useCallback((key: KeyboardKey): void => {
-    const target = onKey ?? controller.handleKeyboardKey;
-    if (__DEV__ && current.fieldId === 'terminal.admin:password-field') {
-      console.info('TER_ADMIN_INPUT_TRACE key-dispatched', {
-        keyKind: key.kind,
-        interactive: canInteract,
-      });
-    }
-    target(key);
-  }, [canInteract, controller.handleKeyboardKey, current.fieldId, onKey]);
+  const handleKey = useCallback(
+    (key: KeyboardKey): void => {
+      const target = onKey ?? controller.handleKeyboardKey;
+      if (__DEV__ && current.fieldId === 'terminal.admin:password-field') {
+        console.info('TER_ADMIN_INPUT_TRACE key-dispatched', {
+          keyKind: key.kind,
+          interactive: canInteract,
+        });
+      }
+      target(key);
+    },
+    [canInteract, controller.handleKeyboardKey, current.fieldId, onKey],
+  );
   if (snapshot === undefined && !state.visible) return null;
   const compact = current.frameWidth <= INPUT_LAYOUT_CONSTANTS.MOBILE_SYMBOL_MAX_FRAME_WIDTH;
   const frameWidth = calculateVirtualKeyboardDockWidth(current.frameWidth, current.layout);
@@ -67,7 +70,7 @@ export const InputKeyboard = ({snapshot, interactive, onKey, onLayout, testIDSuf
       shift={current.shift}
       hasNextField={current.hasNextField}
       testIDSuffix={testIDSuffix}
-        onKey={canInteract ? handleKey : noopKeyboardKey}
+      onKey={canInteract ? handleKey : noopKeyboardKey}
     />
   );
   const backdrop = (

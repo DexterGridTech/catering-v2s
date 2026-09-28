@@ -7,8 +7,10 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -27,14 +29,17 @@ import org.junit.jupiter.api.DynamicTest;
 final class TerminalConnectionContractScenarios {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final Duration CLIENT_DEADLINE = Duration.ofSeconds(15);
-    private static final Pattern SAFE_WIRE_SIGNAL_DIAGNOSTIC = Pattern.compile(
-            "TERMINAL_WIRE_STAGE=PROCESS_SIGNAL signal=(SIGTERM) scenario=(UNPARSED|terminal\\.[a-z0-9.-]{1,128}) "
+    private static final Pattern SAFE_WIRE_SIGNAL_DIAGNOSTIC =
+            Pattern.compile("TERMINAL_WIRE_STAGE=PROCESS_SIGNAL signal=(SIGTERM) timestampUtc=([0-9TZ:.-]+) "
+                    + "runId=(NONE|[A-Za-z0-9._-]{1,128}) scenario=(UNPARSED|terminal\\.[a-z0-9.-]{1,128}) "
                     + "markerId=(UNPARSED|NONE|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}) "
                     + "stage=(PROCESS_STARTING|REQUEST_ACCEPTED|RESULT_READY|CLIENT_FAILED|WEBSOCKET_CONNECTING|"
                     + "WEBSOCKET_OPEN|AUTHENTICATE_SENT|WAITING_FOR_SERVER_CLOSE|SERVER_CLOSE_RECEIVED|"
                     + "SESSION_PROBE_READY|SESSION_PROBE_WAITING_FOR_COMMAND|SESSION_PROBE_COMMAND_RECEIVED|"
                     + "SESSION_PROBE_WAITING_FOR_PONG|SESSION_PROBE_WAITING_FOR_CLOSE) "
-                    + "pid=[1-9][0-9]{0,19} ppid=[1-9][0-9]{0,19} exitCode=143");
+                    + "lastCommand=(NONE|PING|CLOSE|AWAIT_CLOSE|INVALID) "
+                    + "lastPingSequence=(NONE|[1-9][0-9]{0,8}) pid=[1-9][0-9]{0,19} "
+                    + "ppid=[1-9][0-9]{0,19} senderPid=UNAVAILABLE_BY_NODE_SIGNAL_API exitCode=143");
     private static final Pattern SAFE_WIRE_LOG_MARKER_FILE =
             Pattern.compile("terminal-wire-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\.log");
     private static final Pattern SAFE_FAILURE_TYPE = Pattern.compile("[A-Za-z_$][A-Za-z0-9_$]{0,63}");
@@ -55,6 +60,8 @@ final class TerminalConnectionContractScenarios {
             "AUTHENTICATE_SENT",
             "WAITING_FOR_SERVER_CLOSE",
             "SERVER_CLOSE",
+            "CONTROL_RECEIVED",
+            "PING_SENT",
             "CLIENT_FAILED",
             "RESULT_READY");
     private static final Set<String> SAFE_TDS_AUTH_EVENTS = Set.of(
@@ -742,10 +749,19 @@ final class TerminalConnectionContractScenarios {
     }
 
     static Stream<DynamicTest> v12DatabaseOutageScenarios(BackendAcceptanceTest host, TdsAcceptanceProcess tds) {
-        return Stream.of(10, 30)
-                .map(seconds -> DynamicTest.dynamicTest(
-                        "terminal.connection.vs12.database-outage-" + seconds + "s",
-                        () -> v12DatabaseOutageScenario(host, tds, seconds)));
+        return Stream.of(10, 30).map(seconds -> v12DatabaseOutageTest(host, tds, seconds));
+    }
+
+    static Stream<DynamicTest> v12DatabaseOutage30SecondDiagnostic(
+            BackendAcceptanceTest host, TdsAcceptanceProcess tds) {
+        return Stream.of(v12DatabaseOutageTest(host, tds, 30));
+    }
+
+    private static DynamicTest v12DatabaseOutageTest(
+            BackendAcceptanceTest host, TdsAcceptanceProcess tds, int outageSeconds) {
+        return DynamicTest.dynamicTest(
+                "terminal.connection.vs12.database-outage-" + outageSeconds + "s",
+                () -> v12DatabaseOutageScenario(host, tds, outageSeconds));
     }
 
     static boolean topologyPreflightWithTenSecondOutage(
@@ -1621,6 +1637,33 @@ final class TerminalConnectionContractScenarios {
         return status.equals("PASS") || status.equals("FAIL") ? status : "UNKNOWN";
     }
 
+    private static String safeRunId() {
+        String value = System.getenv("V2S_BACKEND_ACCEPTANCE_RUN_ID");
+        return value != null && value.matches("[A-Za-z0-9._-]{1,128}") ? value : "NONE";
+    }
+
+    private static void writeWireLifecycleLog(Path stderrLog, String fields) throws IOException {
+        String entry = "BACKEND_ACCEPTANCE_WIRE_CLIENT " + fields + System.lineSeparator();
+        if (stderrLog == null) {
+            System.out.print(entry);
+            return;
+        }
+        Files.writeString(
+                stderrLog, entry, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+    }
+
+    private static String probeCommandKind(String command) {
+        if (command.matches("PING\\t[1-9][0-9]{0,8}")) return "PING";
+        if (command.equals("CLOSE")) return "CLOSE";
+        if (command.matches("AWAIT_CLOSE\\t[1-9][0-9]{2,3}\\t[A-Z_]{1,48}")) return "AWAIT_CLOSE";
+        return "INVALID";
+    }
+
+    private static String probeCommandSequence(String command) {
+        Matcher matcher = Pattern.compile("PING\\t([1-9][0-9]{0,8})").matcher(command);
+        return matcher.matches() ? matcher.group(1) : "NONE";
+    }
+
     private static String safeWireFailureCategory(JsonNode result) {
         String category = result == null ? "" : result.path("failureCategory").asText();
         return category.matches("TERMINAL_WIRE_[A-Z0-9_]+") ? category : "NONE";
@@ -1689,7 +1732,8 @@ final class TerminalConnectionContractScenarios {
                     .map(line -> {
                         Matcher matcher = SAFE_WIRE_SIGNAL_DIAGNOSTIC.matcher(line);
                         if (!matcher.matches()) return "TERMINAL_WIRE_PROCESS_SIGNAL_LINE_INVALID";
-                        return matcher.group(1) + ":" + matcher.group(4) + ":" + matcher.group(3);
+                        return matcher.group(1) + ":" + matcher.group(4) + ":" + matcher.group(5) + ":"
+                                + matcher.group(8) + ":" + matcher.group(2);
                     })
                     .reduce((first, latest) -> latest)
                     .orElse("NONE");
@@ -1713,6 +1757,21 @@ final class TerminalConnectionContractScenarios {
                 .directory(Path.of(System.getProperty("user.dir")).toFile())
                 .redirectError(ProcessBuilder.Redirect.appendTo(stderr.toFile()))
                 .start();
+        String runId = requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_ID");
+        String scenario = safeWireScenario(String.valueOf(request.getOrDefault("scenario", "UNRECOGNIZED")));
+        String markerId = safeWireLogMarker(stderr);
+        writeWireLifecycleLog(
+                stderr,
+                String.format(
+                        ("stage=SPAWNED timestampUtc=%s runId=%s scenario=%s markerId=%s clientPid=%d "
+                                + "parentPid=%d keepInputOpen=%s"),
+                        Instant.now(),
+                        runId,
+                        scenario,
+                        markerId,
+                        node.pid(),
+                        ProcessHandle.current().pid(),
+                        keepInputOpen));
         OutputStream input = node.getOutputStream();
         input.write((JSON.writeValueAsString(request) + "\n").getBytes(StandardCharsets.UTF_8));
         input.flush();
@@ -1816,6 +1875,17 @@ final class TerminalConnectionContractScenarios {
         long startedNanos = System.nanoTime();
         boolean stopRequested = node.isAlive();
         boolean forced = false;
+        writeWireLifecycleLog(
+                stderrLog,
+                String.format(
+                        ("stage=STOP_DECISION timestampUtc=%s runId=%s markerId=%s clientPid=%d parentPid=%d "
+                                + "aliveBeforeStop=%s actor=TerminalConnectionContractScenarios.stopOwnedClient"),
+                        Instant.now(),
+                        safeRunId(),
+                        stderrLog == null ? "NONE" : safeWireLogMarker(stderrLog),
+                        node.pid(),
+                        ProcessHandle.current().pid(),
+                        stopRequested));
         if (stopRequested) {
             try {
                 node.getOutputStream().close();
@@ -1830,17 +1900,21 @@ final class TerminalConnectionContractScenarios {
             node.destroyForcibly();
             stopped = node.waitFor(2, TimeUnit.SECONDS);
         }
-        System.out.printf(
-                ("BACKEND_ACCEPTANCE_WIRE_CLIENT stage=CLEANUP markerId=%s clientPid=%d parentPid=%d "
-                        + "exitCode=%s stopRequested=%s forced=%s elapsedMillis=%d signalDiagnostic=%s%n"),
-                stderrLog == null ? "NONE" : safeWireLogMarker(stderrLog),
-                node.pid(),
-                ProcessHandle.current().pid(),
-                stopped ? Integer.toString(node.exitValue()) : "RUNNING",
-                stopRequested,
-                forced,
-                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos),
-                stderrLog == null ? "UNAVAILABLE" : safeWireSignalDiagnostic(stderrLog));
+        writeWireLifecycleLog(
+                stderrLog,
+                String.format(
+                        ("stage=CLEANUP timestampUtc=%s runId=%s markerId=%s clientPid=%d parentPid=%d "
+                                + "exitCode=%s stopRequested=%s forced=%s elapsedMillis=%d signalDiagnostic=%s"),
+                        Instant.now(),
+                        safeRunId(),
+                        stderrLog == null ? "NONE" : safeWireLogMarker(stderrLog),
+                        node.pid(),
+                        ProcessHandle.current().pid(),
+                        stopped ? Integer.toString(node.exitValue()) : "RUNNING",
+                        stopRequested,
+                        forced,
+                        TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos),
+                        stderrLog == null ? "UNAVAILABLE" : safeWireSignalDiagnostic(stderrLog)));
         Assertions.assertTrue(stopped, "TERMINAL_WIRE_CLIENT_CLEANUP_FAILED");
     }
 
@@ -1984,10 +2058,52 @@ final class TerminalConnectionContractScenarios {
         }
 
         private JsonNode sendControlCommand(String stage, String command, boolean closeInput) throws Exception {
-            if (!node.isAlive()) return awaitProbeResult(Duration.ofSeconds(2), stage + "_CHILD_EXITED_BEFORE_WRITE");
+            String commandKind = probeCommandKind(command);
+            String sequence = probeCommandSequence(command);
+            if (!node.isAlive()) {
+                writeWireLifecycleLog(
+                        log,
+                        String.format(
+                                ("stage=COMMAND_WRITE_SKIPPED timestampUtc=%s runId=%s markerId=%s commandStage=%s "
+                                        + "command=%s sequence=%s clientPid=%d exitCode=%d"),
+                                Instant.now(),
+                                safeRunId(),
+                                markerId,
+                                stage,
+                                commandKind,
+                                sequence,
+                                node.pid(),
+                                node.exitValue()));
+                return awaitProbeResult(Duration.ofSeconds(2), stage + "_CHILD_EXITED_BEFORE_WRITE");
+            }
             try {
+                writeWireLifecycleLog(
+                        log,
+                        String.format(
+                                ("stage=COMMAND_WRITE_STARTED timestampUtc=%s runId=%s markerId=%s commandStage=%s "
+                                        + "command=%s sequence=%s clientPid=%d"),
+                                Instant.now(),
+                                safeRunId(),
+                                markerId,
+                                stage,
+                                commandKind,
+                                sequence,
+                                node.pid()));
                 input.write((command + "\n").getBytes(StandardCharsets.US_ASCII));
                 input.flush();
+                writeWireLifecycleLog(
+                        log,
+                        String.format(
+                                ("stage=COMMAND_WRITE_COMPLETED timestampUtc=%s runId=%s markerId=%s commandStage=%s "
+                                        + "command=%s sequence=%s clientPid=%d aliveAfterWrite=%s"),
+                                Instant.now(),
+                                safeRunId(),
+                                markerId,
+                                stage,
+                                commandKind,
+                                sequence,
+                                node.pid(),
+                                node.isAlive()));
                 if (!closeInput) return null;
                 try {
                     input.close();
@@ -2008,18 +2124,59 @@ final class TerminalConnectionContractScenarios {
         }
 
         private JsonNode awaitProbeResult(Duration timeout, String stage) throws Exception {
-            Assertions.assertTrue(
-                    node.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS),
-                    "TERMINAL_WIRE_SESSION_PROBE_RESULT_DEADLINE_EXCEEDED");
+            long startedNanos = System.nanoTime();
+            boolean exited = node.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            writeWireLifecycleLog(
+                    log,
+                    String.format(
+                            ("stage=EXIT_OBSERVED timestampUtc=%s runId=%s markerId=%s resultStage=%s "
+                                    + "clientPid=%d exitCode=%s elapsedMillis=%d"),
+                            Instant.now(),
+                            safeRunId(),
+                            markerId,
+                            stage,
+                            node.pid(),
+                            exited ? Integer.toString(node.exitValue()) : "RUNNING",
+                            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos)));
+            Assertions.assertTrue(exited, "TERMINAL_WIRE_SESSION_PROBE_RESULT_DEADLINE_EXCEEDED");
             String output = new String(node.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            String stdoutShape = output.isEmpty() ? "EMPTY" : output.contains("\n") ? "MULTILINE" : "SINGLE_LINE";
+            String firstAssertion = node.exitValue() != 0
+                    ? "TERMINAL_WIRE_SESSION_PROBE_EXIT_NONZERO"
+                    : output.contains("\n") ? "TERMINAL_WIRE_SESSION_PROBE_OUTPUT_CARDINALITY_INVALID" : "NONE";
+            writeWireLifecycleLog(
+                    log,
+                    String.format(
+                            ("stage=RESULT_BEFORE_ASSERT timestampUtc=%s runId=%s markerId=%s resultStage=%s "
+                                    + "clientPid=%d exitCode=%d stdoutShape=%s firstAssertion=%s signalDiagnostic=%s"),
+                            Instant.now(),
+                            safeRunId(),
+                            markerId,
+                            stage,
+                            node.pid(),
+                            node.exitValue(),
+                            stdoutShape,
+                            firstAssertion,
+                            safeWireSignalDiagnostic(log)));
+            Assertions.assertEquals(0, node.exitValue(), "TERMINAL_WIRE_SESSION_PROBE_EXIT_NONZERO");
             Assertions.assertFalse(output.contains("\n"), "TERMINAL_WIRE_SESSION_PROBE_OUTPUT_CARDINALITY_INVALID");
             JsonNode result;
             try {
                 result = JSON.readTree(output);
             } catch (Exception invalidResult) {
-                System.out.printf(
-                        "BACKEND_ACCEPTANCE_SESSION_PROBE stage=%s markerId=%s exitCode=%d resultStatus=INVALID_JSON%n",
-                        stage, markerId, node.exitValue());
+                writeWireLifecycleLog(
+                        log,
+                        String.format(
+                                ("stage=RESULT_SHAPE_INVALID timestampUtc=%s runId=%s markerId=%s "
+                                        + "resultStage=%s clientPid=%d exitCode=%d stdoutShape=%s failureCategory=%s"),
+                                Instant.now(),
+                                safeRunId(),
+                                markerId,
+                                stage,
+                                node.pid(),
+                                node.exitValue(),
+                                stdoutShape,
+                                "TERMINAL_WIRE_SESSION_PROBE_RESULT_INVALID"));
                 throw new IllegalStateException("TERMINAL_WIRE_SESSION_PROBE_RESULT_INVALID", invalidResult);
             }
             String resultStatus = result.path("status").asText("UNKNOWN");
@@ -2027,18 +2184,23 @@ final class TerminalConnectionContractScenarios {
             String safeCloseReason = SAFE_TDS_CLOSE_REASONS.contains(closeReason) ? closeReason : "UNRECOGNIZED";
             String failureCategory = result.path("failureCategory").asText();
             if (!failureCategory.matches("TERMINAL_WIRE_[A-Z0-9_]+")) failureCategory = "UNCLASSIFIED";
-            System.out.printf(
-                    ("BACKEND_ACCEPTANCE_SESSION_PROBE stage=%s markerId=%s exitCode=%d resultStatus=%s "
-                            + "closeCode=%d closeReason=%s failureCategory=%s sessionIdPresent=%s%n"),
-                    stage,
-                    markerId,
-                    node.exitValue(),
-                    resultStatus,
-                    result.path("closeCode").asInt(-1),
-                    safeCloseReason,
-                    failureCategory,
-                    result.path("sessionId").isTextual());
-            Assertions.assertEquals(0, node.exitValue(), "TERMINAL_WIRE_SESSION_PROBE_EXIT_NONZERO");
+            writeWireLifecycleLog(
+                    log,
+                    String.format(
+                            ("stage=RESULT_PARSED timestampUtc=%s runId=%s markerId=%s resultStage=%s "
+                                    + "clientPid=%d exitCode=%d resultStatus=%s closeCode=%d closeReason=%s "
+                                    + "failureCategory=%s sessionIdPresent=%s"),
+                            Instant.now(),
+                            safeRunId(),
+                            markerId,
+                            stage,
+                            node.pid(),
+                            node.exitValue(),
+                            resultStatus,
+                            result.path("closeCode").asInt(-1),
+                            safeCloseReason,
+                            failureCategory,
+                            result.path("sessionId").isTextual()));
             Assertions.assertEquals("PASS", resultStatus, "TERMINAL_WIRE_SESSION_PROBE_CONTRACT_FAILED");
             return result;
         }

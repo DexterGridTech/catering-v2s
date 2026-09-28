@@ -1,7 +1,7 @@
-import {defineCommand} from '@catering-v2s/kernel-base-runtime'
-import {moduleName} from '../../moduleName'
+import {defineCommand} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../../moduleName';
 
-type ValidateHydratedDisplayRolePayload = Readonly<{}>
+type ValidateHydratedDisplayRolePayload = Readonly<{}>;
 
 export const validateHydratedDisplayRoleCommand = defineCommand<ValidateHydratedDisplayRolePayload>(moduleName, {
   name: 'validate-hydrated-display-role',
@@ -9,4 +9,4 @@ export const validateHydratedDisplayRoleCommand = defineCommand<ValidateHydrated
   allowNoActor: false,
   allowReentry: false,
   defaultTarget: 'local',
-})
+});

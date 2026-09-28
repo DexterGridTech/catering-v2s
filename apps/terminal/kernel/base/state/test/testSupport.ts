@@ -1,4 +1,4 @@
-import type {UnknownAction} from '@reduxjs/toolkit'
+import type {UnknownAction} from '@reduxjs/toolkit';
 import type {
   LoggerPort,
   LogWriteInput,
@@ -9,47 +9,44 @@ import type {
   PortResult,
   StateStorageEntry,
   StateStoragePort,
-} from '@catering-v2s/kernel-base-platform-ports'
-import type {TimestampMs} from '@catering-v2s/kernel-base-contracts'
+} from '@catering-v2s/kernel-base-platform-ports';
+import type {TimestampMs} from '@catering-v2s/kernel-base-contracts';
 import {
   defineStateRuntimeSlice,
   type StateJsonValue,
   type StateRuntimeSliceRegistration,
   type SyncRecordState,
-} from '../src/index'
+} from '../src/index';
 
 export interface ExampleState {
-  readonly enabled: boolean
-  readonly count: number
-  readonly entries: Readonly<Partial<Record<string, StateJsonValue>>>
+  readonly enabled: boolean;
+  readonly count: number;
+  readonly entries: Readonly<Partial<Record<string, StateJsonValue>>>;
 }
 
 export const initialExampleState: ExampleState = {
   enabled: false,
   count: 0,
   entries: {},
-}
+};
 
-export const exampleReducer = (
-  state: ExampleState = initialExampleState,
-  action: UnknownAction,
-): ExampleState => {
+export const exampleReducer = (state: ExampleState = initialExampleState, action: UnknownAction): ExampleState => {
   if (action.type === 'example/setEnabled') {
     return {
       ...state,
       enabled: Boolean((action as {readonly value?: unknown}).value),
-    }
+    };
   }
   if (action.type === 'example/setCount') {
     return {
       ...state,
       count: Number((action as {readonly value?: unknown}).value),
-    }
+    };
   }
   if (action.type === 'example/setEntry') {
-    const typed = action as {readonly key?: unknown; readonly value?: unknown}
+    const typed = action as {readonly key?: unknown; readonly value?: unknown};
     if (typeof typed.key !== 'string') {
-      return state
+      return state;
     }
     return {
       ...state,
@@ -57,26 +54,24 @@ export const exampleReducer = (
         ...state.entries,
         [typed.key]: typed.value as StateJsonValue,
       },
-    }
+    };
   }
   if (action.type === 'example/removeEntry') {
-    const typed = action as {readonly key?: unknown}
+    const typed = action as {readonly key?: unknown};
     if (typeof typed.key !== 'string') {
-      return state
+      return state;
     }
-    const nextEntries = {...state.entries}
-    Reflect.deleteProperty(nextEntries, typed.key)
+    const nextEntries = {...state.entries};
+    Reflect.deleteProperty(nextEntries, typed.key);
     return {
       ...state,
       entries: nextEntries,
-    }
+    };
   }
-  return state
-}
+  return state;
+};
 
-export const createExampleRegistration = (
-  name = 'example.state',
-): StateRuntimeSliceRegistration =>
+export const createExampleRegistration = (name = 'example.state'): StateRuntimeSliceRegistration =>
   defineStateRuntimeSlice<ExampleState>({
     name,
     reducer: exampleReducer,
@@ -89,7 +84,7 @@ export const createExampleRegistration = (
       {
         kind: 'record',
         storageKeyPrefix: 'entries',
-        getEntries: (state) => state.entries,
+        getEntries: state => state.entries,
         applyEntries: (state, entries) => ({
           ...state,
           entries,
@@ -100,57 +95,57 @@ export const createExampleRegistration = (
     sync: {
       kind: 'record',
       getEntries: (state): SyncRecordState => {
-        const entries: Record<string, ReturnType<typeof createSyncValue>> = {}
+        const entries: Record<string, ReturnType<typeof createSyncValue>> = {};
         for (const [key, value] of Object.entries(state.entries)) {
           if (value !== undefined) {
-            entries[key] = createSyncValue(value)
+            entries[key] = createSyncValue(value);
           }
         }
-        return entries
+        return entries;
       },
       applyEntries: (state, entries) => {
-        const nextEntries: Record<string, StateJsonValue> = {}
+        const nextEntries: Record<string, StateJsonValue> = {};
         for (const [key, entry] of Object.entries(entries)) {
           if (entry !== undefined && 'value' in entry && entry.value !== undefined) {
-            nextEntries[key] = entry.value
+            nextEntries[key] = entry.value;
           }
         }
         return {
           ...state,
           entries: nextEntries,
-        }
+        };
       },
     },
-  })
+  });
 
 export const createSyncValue = (value: StateJsonValue) => ({
   value,
   updatedAt: 100 as TimestampMs,
-})
+});
 
 export interface FakeStorageOptions {
-  readonly failList?: boolean
-  readonly failReadMany?: boolean
-  readonly failWrites?: readonly string[]
-  readonly failRemoves?: readonly string[]
+  readonly failList?: boolean;
+  readonly failReadMany?: boolean;
+  readonly failWrites?: readonly string[];
+  readonly failRemoves?: readonly string[];
 }
 
 export interface FakeStoragePort extends StateStoragePort {
-  readonly values: Map<string, string>
+  readonly values: Map<string, string>;
   readonly calls: {
-    readonly listKeys: string[]
-    readonly readMany: readonly string[][]
-    readonly write: StateStorageEntry[]
-    readonly remove: string[]
-  }
-  setOptions(options: FakeStorageOptions): void
+    readonly listKeys: string[];
+    readonly readMany: readonly string[][];
+    readonly write: StateStorageEntry[];
+    readonly remove: string[];
+  };
+  setOptions(options: FakeStorageOptions): void;
 }
 
 const succeeded = <TValue>(value: TValue): PortResult<TValue> => ({
   status: 'succeeded',
   value,
   completedAt: 1 as TimestampMs,
-})
+});
 
 const failed = (capability: string): PortResult<NoOutput> => ({
   status: 'failed',
@@ -161,110 +156,116 @@ const failed = (capability: string): PortResult<NoOutput> => ({
     message: `${capability} failed`,
     retryable: true,
   },
-})
+});
 
 export const createFakeStorage = (
   initialValues: Readonly<Record<string, string>> = {},
   initialOptions: FakeStorageOptions = {},
 ): FakeStoragePort => {
-  let options = initialOptions
-  const values = new Map<string, string>(Object.entries(initialValues))
+  let options = initialOptions;
+  const values = new Map<string, string>(Object.entries(initialValues));
   const calls = {
     listKeys: [] as string[],
     readMany: [] as string[][],
     write: [] as StateStorageEntry[],
     remove: [] as string[],
-  }
+  };
   return {
     values,
     calls,
-    setOptions: (nextOptions) => {
-      options = nextOptions
+    setOptions: nextOptions => {
+      options = nextOptions;
     },
     read: async ({key}) =>
       succeeded(values.has(key) ? {state: 'found', value: values.get(key) ?? ''} : {state: 'missing'}),
     write: async ({key, value}) => {
-      calls.write.push({key, value})
+      calls.write.push({key, value});
       if (options.failWrites?.includes(key)) {
-        return failed('write')
+        return failed('write');
       }
-      values.set(key, value)
-      return succeeded({completed: true})
+      values.set(key, value);
+      return succeeded({completed: true});
     },
     remove: async ({key}) => {
-      calls.remove.push(key)
+      calls.remove.push(key);
       if (options.failRemoves?.includes(key)) {
-        return failed('remove')
+        return failed('remove');
       }
-      values.delete(key)
-      return succeeded({completed: true})
+      values.delete(key);
+      return succeeded({completed: true});
     },
     readMany: async ({keys}) => {
-      calls.readMany.push([...keys])
+      calls.readMany.push([...keys]);
       if (options.failReadMany) {
-        return failed('readMany') as PortResult<readonly {readonly key: string; readonly result: {readonly state: 'missing'}}[]>
+        return failed('readMany') as PortResult<
+          readonly {readonly key: string; readonly result: {readonly state: 'missing'}}[]
+        >;
       }
-      return succeeded(keys.map((key) => ({
-        key,
-        result: values.has(key)
-          ? {state: 'found' as const, value: values.get(key) ?? ''}
-          : {state: 'missing' as const},
-      })))
+      return succeeded(
+        keys.map(key => ({
+          key,
+          result: values.has(key)
+            ? {state: 'found' as const, value: values.get(key) ?? ''}
+            : {state: 'missing' as const},
+        })),
+      );
     },
     writeMany: async ({entries}) => {
       for (const entry of entries) {
-        values.set(entry.key, entry.value)
+        values.set(entry.key, entry.value);
       }
-      return succeeded({completed: true})
+      return succeeded({completed: true});
     },
     removeMany: async ({keys}) => {
       for (const key of keys) {
-        values.delete(key)
+        values.delete(key);
       }
-      return succeeded({completed: true})
+      return succeeded({completed: true});
     },
     listKeys: async () => {
-      calls.listKeys.push('listKeys')
+      calls.listKeys.push('listKeys');
       if (options.failList) {
-        return failed('listKeys') as PortResult<readonly string[]>
+        return failed('listKeys') as PortResult<readonly string[]>;
       }
-      return succeeded([...values.keys()])
+      return succeeded([...values.keys()]);
     },
     clear: async () => {
-      values.clear()
-      return succeeded({completed: true})
+      values.clear();
+      return succeeded({completed: true});
     },
-  }
-}
+  };
+};
 
 export interface CapturedLog {
-  readonly level: 'debug' | 'info' | 'warn' | 'error'
-  readonly input: LogWriteInput
+  readonly level: 'debug' | 'info' | 'warn' | 'error';
+  readonly input: LogWriteInput;
 }
 
 export const createFakeLogger = (captured: CapturedLog[] = []): LoggerPort => {
-  const write = (level: CapturedLog['level']) => (input: LogWriteInput): LogWriteResult => {
-    captured.push({level, input})
-    return {
-      status: 'succeeded',
-      value: {
-        timestamp: 1 as TimestampMs,
-        level,
-        category: input.category,
-        event: input.event,
-        message: input.message,
-        scope: {moduleName: '@catering-v2s/kernel-base-state'},
-        context: input.context,
-        data: input.data,
-        error: input.error,
-        security: {
-          containsSensitiveRaw: false,
-          maskingMode: 'masked',
+  const write =
+    (level: CapturedLog['level']) =>
+    (input: LogWriteInput): LogWriteResult => {
+      captured.push({level, input});
+      return {
+        status: 'succeeded',
+        value: {
+          timestamp: 1 as TimestampMs,
+          level,
+          category: input.category,
+          event: input.event,
+          message: input.message,
+          scope: {moduleName: '@catering-v2s/kernel-base-state'},
+          context: input.context,
+          data: input.data,
+          error: input.error,
+          security: {
+            containsSensitiveRaw: false,
+            maskingMode: 'masked',
+          },
         },
-      },
-      completedAt: 1 as TimestampMs,
-    }
-  }
+        completedAt: 1 as TimestampMs,
+      };
+    };
   const logger: LoggerPort = {
     debug: write('debug'),
     info: write('info'),
@@ -272,6 +273,6 @@ export const createFakeLogger = (captured: CapturedLog[] = []): LoggerPort => {
     error: write('error'),
     scope: (_binding: LogScopeBinding) => logger,
     withContext: (_context: LogContext) => logger,
-  }
-  return logger
-}
+  };
+  return logger;
+};

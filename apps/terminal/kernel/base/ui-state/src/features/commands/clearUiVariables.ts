@@ -1,9 +1,9 @@
-import {defineCommand} from '@catering-v2s/kernel-base-runtime'
-import {moduleName} from '../../moduleName'
+import {defineCommand} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../../moduleName';
 
 type ClearUiVariablesPayload = Readonly<{
-  readonly keys: readonly string[]
-}>
+  readonly keys: readonly string[];
+}>;
 
 export const clearUiVariablesCommand = defineCommand<ClearUiVariablesPayload>(moduleName, {
   name: 'clear-ui-variables',
@@ -11,4 +11,4 @@ export const clearUiVariablesCommand = defineCommand<ClearUiVariablesPayload>(mo
   allowNoActor: false,
   allowReentry: false,
   defaultTarget: 'local',
-})
+});

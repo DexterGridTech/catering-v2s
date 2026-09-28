@@ -3,12 +3,17 @@
   "package": "@catering-v2s/ui-base-feature-assembly",
   "owned": {
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-feature-assembly", "runner": "vitest"},
-    "lint": {"kind": "ABSENT"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-base-feature-assembly", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
   "publicExports": [
-    "CreateFeatureAssemblyInput", "CreateFeatureAssemblyModuleInput", "FeatureAssembly",
-    "createFeatureAssembly", "createFeatureAssemblyModule",
-    "dependencyModuleNames", "devDependencyModuleNames", "moduleName"
+    "CreateFeatureAssemblyInput",
+    "CreateFeatureAssemblyModuleInput",
+    "FeatureAssembly",
+    "createFeatureAssembly",
+    "createFeatureAssemblyModule",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName"
   ]
 }

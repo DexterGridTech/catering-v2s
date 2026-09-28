@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
 import {cpSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import test from 'node:test';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const backendAcceptanceRunnerPath = path.join(root, 'scripts/test/backend-acceptance');
 const acceptanceRoot = path.join(
   root,
   'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance',
@@ -888,6 +890,28 @@ test('V-S12 restores PostgreSQL, terminates its exact listener and holds recover
   }
 });
 
+test('V-S12 focused diagnostic selects exactly the 30-second outage scenario for its business operation', () => {
+  const suite = readFileSync(suitePath, 'utf8');
+  const factoryStart = suite.indexOf('Stream<DynamicTest> terminalConnectionDatabaseOutageContracts()');
+  const factoryEnd = suite.indexOf('\n    @DynamicPropertySource', factoryStart);
+  assert.ok(factoryStart >= 0 && factoryEnd > factoryStart, 'V_S12_DIAGNOSTIC_FACTORY_BOUNDARY_MISSING');
+  const factory = suite.slice(factoryStart, factoryEnd);
+  assert.match(factory, /V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC/);
+  assert.match(factory, /BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC_OPERATION_MISMATCH/);
+  assert.match(factory, /BACKEND_ACCEPTANCE_TDS_CONTRACT_SELECTION operation=%s diagnostic=V-S12-30s/);
+  assert.match(factory, /v12DatabaseOutage30SecondDiagnostic\(this, tdsAcceptanceProcess\)/);
+  assert.match(factory, /if \(!"all"\.equals\(selectedOperation\) && !v12Diagnostic\) return Stream\.empty\(\)/);
+
+  const scenarios = readFileSync(terminalContractScenariosPath, 'utf8');
+  const diagnosticStart = scenarios.indexOf('static Stream<DynamicTest> v12DatabaseOutage30SecondDiagnostic(');
+  const diagnosticEnd = scenarios.indexOf('\n    private static DynamicTest v12DatabaseOutageTest', diagnosticStart);
+  assert.ok(diagnosticStart >= 0 && diagnosticEnd > diagnosticStart, 'V_S12_30_SECOND_DIAGNOSTIC_METHOD_MISSING');
+  const diagnostic = scenarios.slice(diagnosticStart, diagnosticEnd);
+  assert.match(diagnostic, /Stream\.of\(v12DatabaseOutageTest\(host, tds, 30\)\)/);
+  assert.doesNotMatch(diagnostic, /v12DatabaseOutageTest\(host, tds, 10\)/);
+  assert.match(scenarios, /"terminal\.connection\.vs12\.database-outage-" \+ outageSeconds/);
+});
+
 test('terminal activation HTTP routes use payload-free owner and outcome diagnostics', () => {
   const registry = JSON.parse(readFileSync(terminalRouteRegistryPath, 'utf8'));
   const routes = new Map(registry.operations.map(operation => [operation.operationId, operation]));
@@ -898,8 +922,16 @@ test('terminal activation HTTP routes use payload-free owner and outcome diagnos
       '/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel',
     ],
   ]) {
+    const route = routes.get(operationId);
+    assert.ok(route, `TERMINAL_HTTP_DIAGNOSTIC_ROUTE_MISSING:${operationId}`);
     assert.deepEqual(
-      routes.get(operationId),
+      {
+        operationId: route.operationId,
+        method: route.method,
+        path: route.path,
+        consumerFaces: route.consumerFaces,
+        owner: route.owner,
+      },
       {
         operationId,
         method: 'POST',
@@ -1019,13 +1051,17 @@ test('persistent wire-probe commands preserve child results across process-exit 
   assert.match(probe, /if \(!node\.isAlive\(\)\)[\s\S]*?CHILD_EXITED_BEFORE_WRITE/);
   assert.match(probe, /CHILD_EXITED_DURING_WRITE/);
   assert.ok(
-    probe.includes('"BACKEND_ACCEPTANCE_SESSION_PROBE stage=%s markerId=%s exitCode=%d resultStatus=%s '),
+    probe.includes('"stage=RESULT_BEFORE_ASSERT timestampUtc=%s runId=%s markerId=%s resultStage=%s "'),
     'BACKEND_ACCEPTANCE_SESSION_PROBE_RESULT_LOG_MISSING',
   );
   assert.ok(
-    probe.includes('"closeCode=%d closeReason=%s failureCategory=%s sessionIdPresent=%s%n"'),
+    probe.includes('"clientPid=%d exitCode=%d stdoutShape=%s firstAssertion=%s signalDiagnostic=%s"'),
     'BACKEND_ACCEPTANCE_SESSION_PROBE_RESULT_FIELDS_MISSING',
   );
+  assert.ok(probe.indexOf('stage=RESULT_BEFORE_ASSERT') < probe.indexOf(
+    'Assertions.assertEquals(0, node.exitValue(), "TERMINAL_WIRE_SESSION_PROBE_EXIT_NONZERO")',
+  ));
+  assert.match(probe, /writeWireLifecycleLog\(\s*log,/);
   assert.match(probe, /SAFE_TDS_CLOSE_REASONS\.contains\(closeReason\)/);
 });
 
@@ -1100,6 +1136,27 @@ test('one-shot wire-client failures log bounded safe process and signal diagnost
     /TERMINAL_WIRE_PROCESS_SIGNAL_LINE_INVALID/.test(source),
     'BACKEND_ACCEPTANCE_WIRE_SIGNAL_INVALID_MARKER_MISSING',
   );
+
+  const lifecycleLoggerStart = source.indexOf('private static void writeWireLifecycleLog(');
+  const lifecycleLoggerEnd = source.indexOf('\n    private static String probeCommandKind', lifecycleLoggerStart);
+  const probeResultStart = source.indexOf('private JsonNode awaitProbeResult(Duration timeout, String stage)');
+  const probeResultEnd = source.indexOf('\n        int pongCount()', probeResultStart);
+  assert.ok(lifecycleLoggerStart >= 0 && lifecycleLoggerEnd > lifecycleLoggerStart, 'WIRE_LIFECYCLE_LOGGER_MISSING');
+  assert.ok(probeResultStart >= 0 && probeResultEnd > probeResultStart, 'SESSION_PROBE_RESULT_WAITER_MISSING');
+  const lifecycleLogger = source.slice(lifecycleLoggerStart, lifecycleLoggerEnd);
+  const probeResult = source.slice(probeResultStart, probeResultEnd);
+  assert.match(lifecycleLogger, /Files\.writeString\(\s*stderrLog[\s\S]*StandardOpenOption\.APPEND/);
+  const parentSignalSummary = probeResult.indexOf('signalDiagnostic=%s');
+  const firstAssertionMarker = probeResult.indexOf('firstAssertion=%s');
+  const resultBeforeAssert = probeResult.indexOf('stage=RESULT_BEFORE_ASSERT');
+  const probeExitAssertion = probeResult.indexOf(
+    'Assertions.assertEquals(0, node.exitValue(), "TERMINAL_WIRE_SESSION_PROBE_EXIT_NONZERO")',
+  );
+  assert.ok(parentSignalSummary >= 0, 'SESSION_PROBE_PARENT_SIGNAL_SUMMARY_MISSING');
+  assert.ok(firstAssertionMarker >= 0 && resultBeforeAssert >= 0 && probeExitAssertion > resultBeforeAssert,
+    'SESSION_PROBE_FIRST_FAILURE_MUST_BE_PERSISTED_BEFORE_ASSERTION');
+  assert.ok(probeResult.slice(0, probeExitAssertion).includes('writeWireLifecycleLog('),
+    'SESSION_PROBE_PARENT_DIAGNOSTICS_NOT_RUN_SCOPED');
 });
 
 test('TDS records the correlated close outcome before persisting a session disconnect', () => {
@@ -1230,5 +1287,22 @@ final class UnregisteredAcceptanceScenarios {
     );
  } finally {
     rmSync(scratch, {recursive: true, force: true});
+  }
+});
+
+test('CP-05 calibration requires an explicit supported batch cardinality before remote execution', () => {
+  for (const batchCardinality of [undefined, '', '0', '21', '100.0']) {
+    const environment = {...process.env};
+    delete environment.V2S_BACKEND_ACCEPTANCE_BATCH_CARDINALITY;
+    if (batchCardinality !== undefined) {
+      environment.V2S_BACKEND_ACCEPTANCE_BATCH_CARDINALITY = batchCardinality;
+    }
+    const result = spawnSync(backendAcceptanceRunnerPath, ['--operation', 'all', '--calibration'], {
+      cwd: root,
+      env: environment,
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 2, 'invalid calibration cardinality must fail before the remote runner');
+    assert.match(result.stderr, /BACKEND_ACCEPTANCE_CALIBRATION_BATCH_CARDINALITY_REQUIRED/);
   }
 });

@@ -1,12 +1,8 @@
-import {RnrActivityIndicator, RnrView, RnrText} from '../vendor/slots';
+import {RnrActivityIndicator, RnrView, RnrText} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import {toneClassName, toneForegroundClassName} from '../foundations/toneClassName';
-import type {
-  PrimitiveBadgeProps,
-  PrimitiveFeedbackProps,
-  PrimitiveProgressProps,
-} from '../types/types';
+import type {PrimitiveBadgeProps, PrimitiveFeedbackProps, PrimitiveProgressProps} from '../types/types';
 
 export const PrimitiveSpinner = ({testID, accessibilityLabel = '正在加载'}: PrimitiveFeedbackProps) => (
   <RnrActivityIndicator
@@ -76,14 +72,30 @@ export const PrimitiveSkeleton = ({testID, accessibilityLabel = '内容加载中
   />
 );
 
-export const PrimitiveBadge = ({testID, accessibilityLabel, children, appearance = 'default', tone = 'neutral'}: PrimitiveBadgeProps) => (
+export const PrimitiveBadge = ({
+  testID,
+  accessibilityLabel,
+  children,
+  appearance = 'default',
+  tone = 'neutral',
+}: PrimitiveBadgeProps) => (
   <RnrView
     testID={assertTestID(testID)}
     accessibilityRole="text"
     accessibilityLabel={accessibilityLabel}
-    className={toneClassName(tone, appearance === 'admin-status' ? baseTokens.adminStatus : 'self-start rounded-full border px-2 py-1')}
+    className={toneClassName(
+      tone,
+      appearance === 'admin-status' ? baseTokens.adminStatus : 'self-start rounded-full border px-2 py-1',
+    )}
   >
     {appearance === 'admin-status' ? <RnrView className={toneClassName(tone, baseTokens.adminStatusDot)} /> : null}
-    <RnrText className={toneForegroundClassName(tone, appearance === 'admin-status' ? 'text-xs leading-[18px] font-semibold' : 'text-xs leading-4 font-medium')}>{children}</RnrText>
+    <RnrText
+      className={toneForegroundClassName(
+        tone,
+        appearance === 'admin-status' ? 'text-xs leading-[18px] font-semibold' : 'text-xs leading-4 font-medium',
+      )}
+    >
+      {children}
+    </RnrText>
   </RnrView>
 );

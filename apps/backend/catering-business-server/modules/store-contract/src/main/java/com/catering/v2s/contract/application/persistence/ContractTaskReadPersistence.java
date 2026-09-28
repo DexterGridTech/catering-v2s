@@ -231,31 +231,14 @@ public class ContractTaskReadPersistence {
     }
 
     public ContractPage list(UUID workspaceUuid, String key, ContractListQuery query) {
-        ContractListQuery safe = query == null ? ContractListQuery.empty() : query;
+        PageQuery page = pageQuery(query);
+        ContractListQuery safe = page.query();
         Project project = safe.projectId() == null ? null : project(workspaceUuid, key, safe.projectId());
-        if (safe.status() != null && !List.of("VALID", "INVALID").contains(safe.status()))
-            throw new ContractCommandService.ContractValidationException();
-        String normalizedStatus =
-                "VALID".equals(safe.status()) ? "ACTIVE" : "INVALID".equals(safe.status()) ? "INVALID" : null;
-        String sortKey = safe.sort() == null ? "UPDATED_AT" : safe.sort();
-        if (!List.of("CONTRACT_NO", "EFFECTIVE_FROM", "UPDATED_AT").contains(sortKey)
-                || (safe.direction() != null
-                        && !List.of(
-                                        ContractTaskReadServiceSql.SORT_DIRECTION_ASC,
-                                        ContractTaskReadServiceSql.SORT_DIRECTION_DESC)
-                                .contains(safe.direction())))
-            throw new ContractCommandService.ContractValidationException();
-        String order =
-                switch (sortKey) {
-                    case "CONTRACT_NO" -> ContractTaskReadServiceSql.CONTRACT_NO_ORDER;
-                    case "EFFECTIVE_FROM" -> ContractTaskReadServiceSql.EFFECTIVE_FROM_ORDER;
-                    default -> ContractTaskReadServiceSql.UPDATED_AT_ORDER;
-                };
-        String orderDirection = ContractTaskReadServiceSql.SORT_DIRECTION_ASC.equals(safe.direction())
-                ? ContractTaskReadServiceSql.SORT_DIRECTION_ASC
-                : ContractTaskReadServiceSql.SORT_DIRECTION_DESC;
-        int safePage = Math.max(1, safe.page());
-        int safeSize = Math.min(100, Math.max(1, safe.pageSize()));
+        String normalizedStatus = page.normalizedStatus();
+        String order = page.listOrder();
+        String orderDirection = page.direction();
+        int safePage = page.pageNumber();
+        int safeSize = page.pageSize();
         ExtensionFilterQuery.Prepared filters = prepareFilters(workspaceUuid, key, safe);
         String where =
                 ContractTaskReadServiceSql
@@ -326,14 +309,130 @@ public class ContractTaskReadPersistence {
                         safePage,
                         safeSize,
                         total,
-                        sortKey,
+                        page.sortKey(),
                         orderDirection,
                         filters.definitionRevision()),
                 items);
     }
 
     public ContractPage taskPage(UUID workspaceUuid, String key, ContractListQuery query) {
-        return list(workspaceUuid, key, query);
+        PageQuery page = pageQuery(query);
+        ContractListQuery safe = page.query();
+        ExtensionFilterQuery.Prepared filters = prepareFilters(workspaceUuid, key, safe);
+        String filterPredicate = filters.isEmpty() ? "" : " AND " + filters.predicate("c.extension_values");
+        String taskSql =
+                ContractTaskReadServiceSql
+                        .CONTRACT_TASK_READ_SERVICE_CTE_PROJECT_META_NAME_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NODE_TYPE
+                        .replace("__ORDER__", page.taskOrder())
+                        .replace("__DIRECTION__", page.direction())
+                        .replace("__EXTENSION_FILTER__", filterPredicate);
+
+        String contractPattern = like(safe.contractNo());
+        String phasePattern = like(safe.phaseName());
+        String itemPattern = like(safe.itemCode());
+        List<Object> values = new ArrayList<>(Arrays.asList(
+                safe.projectId(),
+                safe.projectId(),
+                workspaceUuid,
+                key,
+                workspaceUuid,
+                key,
+                safe.projectId(),
+                safe.projectId(),
+                safe.storeId(),
+                safe.storeId(),
+                safe.tenantId(),
+                safe.tenantId(),
+                contractPattern,
+                contractPattern,
+                phasePattern,
+                phasePattern,
+                itemPattern,
+                itemPattern,
+                safe.dateFrom(),
+                safe.dateFrom(),
+                safe.dateTo(),
+                safe.dateTo(),
+                page.normalizedStatus(),
+                page.normalizedStatus()));
+        values.addAll(filters.parameters());
+        values.add(page.pageSize());
+        values.add((page.pageNumber() - 1) * page.pageSize());
+
+        return jdbc.query(
+                taskSql,
+                statement -> {
+                    for (int index = 0; index < values.size(); index++) {
+                        statement.setObject(index + 1, values.get(index));
+                    }
+                },
+                result -> {
+                    if (!result.next()) throw new ContractCommandService.ContractNotFoundException();
+                    UUID projectId = result.getObject(26, UUID.class);
+                    if (safe.projectId() != null && projectId == null) {
+                        throw new ContractCommandService.ContractNotFoundException();
+                    }
+                    String projectName = result.getString(27);
+                    long total = result.getLong(25);
+                    List<StoreContractView> items = new ArrayList<>();
+                    do {
+                        if (result.getObject(1) != null) items.add(readView(result));
+                    } while (result.next());
+                    return new ContractPage(
+                            new ContractPageMetadata(
+                                    key,
+                                    projectId,
+                                    projectName,
+                                    page.pageNumber(),
+                                    page.pageSize(),
+                                    total,
+                                    page.sortKey(),
+                                    page.direction(),
+                                    filters.definitionRevision()),
+                            items);
+                });
+    }
+
+    private static PageQuery pageQuery(ContractListQuery query) {
+        ContractListQuery safe = query == null ? ContractListQuery.empty() : query;
+        if (safe.status() != null && !List.of("VALID", "INVALID").contains(safe.status())) {
+            throw new ContractCommandService.ContractValidationException();
+        }
+        String sortKey = safe.sort() == null ? "UPDATED_AT" : safe.sort();
+        if (!List.of("CONTRACT_NO", "EFFECTIVE_FROM", "UPDATED_AT").contains(sortKey)
+                || (safe.direction() != null
+                        && !List.of(
+                                        ContractTaskReadServiceSql.SORT_DIRECTION_ASC,
+                                        ContractTaskReadServiceSql.SORT_DIRECTION_DESC)
+                                .contains(safe.direction()))) {
+            throw new ContractCommandService.ContractValidationException();
+        }
+        String listOrder =
+                switch (sortKey) {
+                    case "CONTRACT_NO" -> ContractTaskReadServiceSql.CONTRACT_NO_ORDER;
+                    case "EFFECTIVE_FROM" -> ContractTaskReadServiceSql.EFFECTIVE_FROM_ORDER;
+                    default -> ContractTaskReadServiceSql.UPDATED_AT_ORDER;
+                };
+        String taskOrder =
+                switch (sortKey) {
+                    case "CONTRACT_NO" -> ContractTaskReadServiceSql.CONTRACT_NO_COLUMN;
+                    case "EFFECTIVE_FROM" -> ContractTaskReadServiceSql.EFFECTIVE_FROM_COLUMN;
+                    default -> ContractTaskReadServiceSql.UPDATED_AT_COLUMN;
+                };
+        String direction = ContractTaskReadServiceSql.SORT_DIRECTION_ASC.equals(safe.direction())
+                ? ContractTaskReadServiceSql.SORT_DIRECTION_ASC
+                : ContractTaskReadServiceSql.SORT_DIRECTION_DESC;
+        String normalizedStatus =
+                "VALID".equals(safe.status()) ? "ACTIVE" : "INVALID".equals(safe.status()) ? "INVALID" : null;
+        return new PageQuery(
+                safe,
+                normalizedStatus,
+                sortKey,
+                listOrder,
+                taskOrder,
+                direction,
+                Math.max(1, safe.page()),
+                Math.min(100, Math.max(1, safe.pageSize())));
     }
 
     private ExtensionFilterQuery.Prepared prepareFilters(UUID workspaceUuid, String key, ContractListQuery query) {
@@ -502,4 +601,14 @@ public class ContractTaskReadPersistence {
         }
         return values;
     }
+
+    private record PageQuery(
+            ContractListQuery query,
+            String normalizedStatus,
+            String sortKey,
+            String listOrder,
+            String taskOrder,
+            String direction,
+            int pageNumber,
+            int pageSize) {}
 }

@@ -1,4 +1,4 @@
-import {RnrPressable, RnrText, RnrView} from '../vendor/slots';
+import {RnrPressable, RnrText, RnrView} from '../foundations/nativeSlots';
 import {assertTestID} from '../foundations/assertTestID';
 import {baseTokens} from '../theme/tokens';
 import type {PrimitivePinInputProps} from '../types/types';
@@ -23,9 +23,8 @@ export const PrimitivePinInput = ({
     throw new Error('PrimitivePinInput length must be a positive integer');
   }
 
-  const interactionProps = typeof document === 'undefined'
-    ? {onTouchEnd}
-    : ({onClick} as Readonly<Record<string, unknown>>);
+  const interactionProps =
+    typeof document === 'undefined' ? {onTouchEnd} : ({onClick} as Readonly<Record<string, unknown>>);
   const visibleValue = value.slice(0, length);
 
   return (
@@ -39,27 +38,31 @@ export const PrimitivePinInput = ({
       ref={measureRef}
       {...interactionProps}
     >
-      <RnrView testID={`${testID}:cells`} className={appearance === 'login' ? baseTokens.pinInputLogin : baseTokens.pinInput}>
+      <RnrView
+        testID={`${testID}:cells`}
+        className={appearance === 'login' ? baseTokens.pinInputLogin : baseTokens.pinInput}
+      >
         {Array.from({length}, (_value, index) => {
           const hasValue = index < visibleValue.length;
           const isFocused = focusedIndex === index;
-          const cellClassName = appearance === 'login'
-            ? invalid
-              ? baseTokens.pinCellLoginInvalid
-              : isFocused
-                ? baseTokens.pinCellLoginFocused
-                : baseTokens.pinCellLogin
-            : invalid
-              ? baseTokens.pinCellInvalid
-              : isFocused
-                ? baseTokens.pinCellFocused
-                : baseTokens.pinCell;
+          const cellClassName =
+            appearance === 'login'
+              ? invalid
+                ? baseTokens.pinCellLoginInvalid
+                : isFocused
+                  ? baseTokens.pinCellLoginFocused
+                  : baseTokens.pinCellLogin
+              : invalid
+                ? baseTokens.pinCellInvalid
+                : isFocused
+                  ? baseTokens.pinCellFocused
+                  : baseTokens.pinCell;
           return (
-            <RnrView
-              key={index}
-              className={`${cellClassName}${disabled ? ` ${baseTokens.pinCellDisabled}` : ''}`}
-            >
-              <RnrText testID={`${cellTestIDPrefix}:digit:${index}`} className={appearance === 'login' ? baseTokens.pinCellLoginText : baseTokens.pinCellText}>
+            <RnrView key={index} className={`${cellClassName}${disabled ? ` ${baseTokens.pinCellDisabled}` : ''}`}>
+              <RnrText
+                testID={`${cellTestIDPrefix}:digit:${index}`}
+                className={appearance === 'login' ? baseTokens.pinCellLoginText : baseTokens.pinCellText}
+              >
                 {hasValue ? maskCharacter : ''}
               </RnrText>
             </RnrView>

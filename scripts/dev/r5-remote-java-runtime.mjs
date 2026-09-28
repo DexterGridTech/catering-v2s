@@ -15,6 +15,7 @@ export {
   remoteResourcePreflight,
   startRemoteJava,
   startRemoteTds,
+  stopAndCleanupStartedRemoteJava,
   stopRemoteJava,
   stopRemoteTds,
   syncRemoteSource,

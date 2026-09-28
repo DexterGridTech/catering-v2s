@@ -1,5 +1,5 @@
-import {describe, expect, it} from 'vitest'
-import {parseTopologyHostStatus} from '../src'
+import {describe, expect, it} from 'vitest';
+import {parseTopologyHostStatus} from '../src';
 
 const valid = Object.freeze({
   state: 'running',
@@ -13,14 +13,14 @@ const valid = Object.freeze({
     localHttpBaseUrl: 'http://127.0.0.1:43172/terminal-topology',
     localWsUrl: 'ws://127.0.0.1:43172/terminal-topology/ws',
   },
-})
+});
 
 describe('topology host status parser', () => {
   it('accepts the complete native status shape and preserves the address', () => {
-    const parsed = parseTopologyHostStatus(valid)
-    expect(parsed).toMatchObject({state: 'running', config: valid.config, address: valid.address})
-    expect(Object.isFrozen(parsed)).toBe(true)
-  })
+    const parsed = parseTopologyHostStatus(valid);
+    expect(parsed).toMatchObject({state: 'running', config: valid.config, address: valid.address});
+    expect(Object.isFrozen(parsed)).toBe(true);
+  });
 
   it.each([
     ['missing state', {...valid, state: undefined}],
@@ -29,6 +29,6 @@ describe('topology host status parser', () => {
     ['invalid address', {...valid, address: {...valid.address, wsUrl: undefined}}],
     ['invalid error field', {...valid, errorCode: 17}],
   ])('rejects %s without weakening the native boundary', (_label, candidate) => {
-    expect(parseTopologyHostStatus(candidate)).toBeUndefined()
-  })
-})
+    expect(parseTopologyHostStatus(candidate)).toBeUndefined();
+  });
+});

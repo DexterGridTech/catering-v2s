@@ -84,7 +84,13 @@ acceptsCommandId(requestId);
 
 const timestamp = nowTimestampMs();
 const nodeId = createNodeId();
-const requestStatuses: readonly RequestLifecycleStatus[] = ['started', 'completed', 'partial-failed', 'timed-out', 'error'];
+const requestStatuses: readonly RequestLifecycleStatus[] = [
+  'started',
+  'completed',
+  'partial-failed',
+  'timed-out',
+  'error',
+];
 // @ts-expect-error C-1: request status must stay inside the five-state closed union.
 const invalidRequestStatus: RequestLifecycleStatus = 'accepted';
 // @ts-expect-error C-1: command lifecycle status is the historical six-state per-command status, not the request aggregate.
@@ -109,7 +115,12 @@ const invalidRouteInstanceMode: CommandRouteContext = {instanceMode: 'primary'};
 const invalidRouteDisplayMode: CommandRouteContext = {displayMode: 'LEFT'};
 const transportConfig: TransportServerConfig = {
   selectedSpace: 'default',
-  spaces: [{name: 'default', servers: [{serverName: 'tdp', addresses: [{addressName: 'primary', baseUrl: 'https://example.invalid'}]}]}],
+  spaces: [
+    {
+      name: 'default',
+      servers: [{serverName: 'tdp', addresses: [{addressName: 'primary', baseUrl: 'https://example.invalid'}]}],
+    },
+  ],
 };
 const appError: AppError<{readonly itemId: string}> = {
   name: 'Missing',
@@ -162,10 +173,16 @@ const requestCommandSnapshot: RequestCommandSnapshot<{readonly receiptId: string
 };
 // @ts-expect-error F-4: CommandResultPatch result must preserve its declared object type.
 const invalidResultPatch: CommandResultPatch<{readonly receiptId: string}> = {...resultPatch, result: {receiptId: 1}};
-// @ts-expect-error F-4: CommandResultSnapshot result must preserve its declared object type.
-const invalidResultSnapshot: CommandResultSnapshot<{readonly receiptId: string}> = {...resultSnapshot, result: {receiptId: 1}};
-// @ts-expect-error F-4: RequestCommandSnapshot result must preserve its declared object type.
-const invalidRequestCommandSnapshot: RequestCommandSnapshot<{readonly receiptId: string}> = {...requestCommandSnapshot, result: {receiptId: 1}};
+const invalidResultSnapshot: CommandResultSnapshot<{readonly receiptId: string}> = {
+  ...resultSnapshot,
+  // @ts-expect-error F-4: CommandResultSnapshot result must preserve its declared object type.
+  result: {receiptId: 1},
+};
+const invalidRequestCommandSnapshot: RequestCommandSnapshot<{readonly receiptId: string}> = {
+  ...requestCommandSnapshot,
+  // @ts-expect-error F-4: RequestCommandSnapshot result must preserve its declared object type.
+  result: {receiptId: 1},
+};
 
 const definitions = {
   text: {key: 'text', value: 'ready'},

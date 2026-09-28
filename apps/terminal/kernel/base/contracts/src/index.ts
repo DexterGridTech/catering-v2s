@@ -90,22 +90,14 @@ export type {
 } from './types/error';
 export {renderErrorTemplate, createAppError, isAppError} from './foundations/errorTemplate';
 
-export type {
-  ParameterValueType,
-  ParameterDefinition,
-  ParameterDescriptor,
-} from './types/parameter';
+export type {ParameterValueType, ParameterDefinition, ParameterDescriptor} from './types/parameter';
 export type {
   DefineErrorInput,
   DefineParameterInput,
   ModuleErrorFactory,
   ModuleParameterFactory,
 } from './foundations/definition';
-export {
-  createModuleErrorFactory,
-  createModuleParameterFactory,
-  listDefinitions,
-} from './foundations/definition';
+export {createModuleErrorFactory, createModuleParameterFactory, listDefinitions} from './foundations/definition';
 
 export type {
   AppModuleKind,

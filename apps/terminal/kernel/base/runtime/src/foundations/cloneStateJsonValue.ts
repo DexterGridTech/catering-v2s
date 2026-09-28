@@ -1,4 +1,4 @@
-import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
+import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
 
 export type CloneStateJsonValueFailureReason =
   | 'undefined'
@@ -12,61 +12,57 @@ export type CloneStateJsonValueFailureReason =
   | 'symbol-key'
   | 'accessor-property'
   | 'serialization-failed'
-  | 'result-too-large'
+  | 'result-too-large';
 
 export type CloneStateJsonValueResult =
   | Readonly<{
-      status: 'valid'
-      value: StateJsonValue
-      bytes: number
+      status: 'valid';
+      value: StateJsonValue;
+      bytes: number;
     }>
   | Readonly<{
-      status: 'invalid'
-      reason: CloneStateJsonValueFailureReason
-      path: string
-      message: string
-    }>
+      status: 'invalid';
+      reason: CloneStateJsonValueFailureReason;
+      path: string;
+      message: string;
+    }>;
 
 type JsonObjectClone = {
-  [key: string]: StateJsonValue
-}
+  [key: string]: StateJsonValue;
+};
 
 const invalid = (
   reason: CloneStateJsonValueFailureReason,
   path: string,
   message: string,
-): CloneStateJsonValueResult => ({status: 'invalid', reason, path, message})
+): CloneStateJsonValueResult => ({status: 'invalid', reason, path, message});
 
-const pathForKey = (path: string, key: string): string =>
-  path === '$' ? `$.${key}` : `${path}.${key}`
+const pathForKey = (path: string, key: string): string => (path === '$' ? `$.${key}` : `${path}.${key}`);
 
-const pathForIndex = (path: string, index: number): string => `${path}[${index}]`
+const pathForIndex = (path: string, index: number): string => `${path}[${index}]`;
 
 const isCloneFailure = (
   value: StateJsonValue | CloneStateJsonValueResult,
 ): value is CloneStateJsonValueResult & {readonly status: 'invalid'} =>
-  typeof value === 'object'
-  && value !== null
-  && 'status' in value
-  && value.status === 'invalid'
+  typeof value === 'object' && value !== null && 'status' in value && value.status === 'invalid';
 
 function cloneArrayValue(
   value: readonly unknown[],
   path: string,
   ancestors: WeakSet<object>,
 ): StateJsonValue | CloneStateJsonValueResult {
-  const cloned: StateJsonValue[] = []
+  const cloned: StateJsonValue[] = [];
   for (let index = 0; index < value.length; index += 1) {
-    const descriptor = Object.getOwnPropertyDescriptor(value, String(index))
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
     if (descriptor === undefined || !('value' in descriptor)) {
-      const itemPath = pathForIndex(path, index)
-      return invalid('accessor-property', itemPath, `Accessor array item at ${itemPath}`)
+      const itemPath = pathForIndex(path, index);
+      return invalid('accessor-property', itemPath, `Accessor array item at ${itemPath}`);
     }
-    const child = cloneValue(descriptor.value, pathForIndex(path, index), ancestors)
-    if (isCloneFailure(child)) return child
-    cloned.push(child)
+    const child = cloneValue(descriptor.value, pathForIndex(path, index), ancestors);
+    if (isCloneFailure(child)) return child;
+    cloned.push(child);
   }
-  return Object.freeze(cloned)
+  return Object.freeze(cloned);
 }
 
 function cloneObjectValue(
@@ -74,23 +70,23 @@ function cloneObjectValue(
   path: string,
   ancestors: WeakSet<object>,
 ): StateJsonValue | CloneStateJsonValueResult {
-  const cloned: JsonObjectClone = Object.create(null) as JsonObjectClone
+  const cloned: JsonObjectClone = Object.create(null) as JsonObjectClone;
   for (const key of Object.keys(value)) {
-    const descriptor = Object.getOwnPropertyDescriptor(value, key)
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
     if (descriptor === undefined || !('value' in descriptor)) {
-      const keyPath = pathForKey(path, key)
-      return invalid('accessor-property', keyPath, `Accessor property at ${keyPath}`)
+      const keyPath = pathForKey(path, key);
+      return invalid('accessor-property', keyPath, `Accessor property at ${keyPath}`);
     }
-    const child = cloneValue(descriptor.value, pathForKey(path, key), ancestors)
-    if (isCloneFailure(child)) return child
+    const child = cloneValue(descriptor.value, pathForKey(path, key), ancestors);
+    if (isCloneFailure(child)) return child;
     Object.defineProperty(cloned, key, {
       value: child,
       enumerable: true,
       configurable: true,
       writable: false,
-    })
+    });
   }
-  return Object.freeze(cloned)
+  return Object.freeze(cloned);
 }
 
 const cloneValue = (
@@ -98,75 +94,68 @@ const cloneValue = (
   path: string,
   ancestors: WeakSet<object>,
 ): StateJsonValue | CloneStateJsonValueResult => {
-  if (value === null) return null
-  if (value === undefined) return invalid('undefined', path, `Undefined value at ${path}`)
+  if (value === null) return null;
+  if (value === undefined) return invalid('undefined', path, `Undefined value at ${path}`);
 
   switch (typeof value) {
     case 'string':
     case 'boolean':
-      return value
+      return value;
     case 'number':
-      return Number.isFinite(value)
-        ? value
-        : invalid('non-finite-number', path, `Non-finite number at ${path}`)
+      return Number.isFinite(value) ? value : invalid('non-finite-number', path, `Non-finite number at ${path}`);
     case 'function':
-      return invalid('function', path, `Function value at ${path}`)
+      return invalid('function', path, `Function value at ${path}`);
     case 'symbol':
-      return invalid('symbol', path, `Symbol value at ${path}`)
+      return invalid('symbol', path, `Symbol value at ${path}`);
     case 'bigint':
-      return invalid('bigint', path, `BigInt value at ${path}`)
+      return invalid('bigint', path, `BigInt value at ${path}`);
     case 'object':
-      break
+      break;
     default:
-      return invalid('serialization-failed', path, `Unsupported value at ${path}`)
+      return invalid('serialization-failed', path, `Unsupported value at ${path}`);
   }
 
   if (ancestors.has(value)) {
-    return invalid('circular-reference', path, `Circular reference at ${path}`)
+    return invalid('circular-reference', path, `Circular reference at ${path}`);
   }
   if (value instanceof Date) {
-    return invalid('date', path, `Date value at ${path}`)
+    return invalid('date', path, `Date value at ${path}`);
   }
 
-  const prototype = Object.getPrototypeOf(value)
+  const prototype = Object.getPrototypeOf(value);
   if (prototype !== Object.prototype && prototype !== null && !Array.isArray(value)) {
-    return invalid('non-plain-object', path, `Non-plain object at ${path}`)
+    return invalid('non-plain-object', path, `Non-plain object at ${path}`);
   }
   for (const symbolKey of Object.getOwnPropertySymbols(value)) {
-    return invalid('symbol-key', path, `Symbol key at ${path}`)
+    return invalid('symbol-key', path, `Symbol key at ${path}`);
   }
 
-  ancestors.add(value)
+  ancestors.add(value);
   try {
-    return Array.isArray(value)
-      ? cloneArrayValue(value, path, ancestors)
-      : cloneObjectValue(value, path, ancestors)
+    return Array.isArray(value) ? cloneArrayValue(value, path, ancestors) : cloneObjectValue(value, path, ancestors);
   } finally {
-    ancestors.delete(value)
+    ancestors.delete(value);
   }
-}
+};
 
-export const cloneStateJsonValue = (
-  value: unknown,
-  maxBytes: number,
-): CloneStateJsonValueResult => {
+export const cloneStateJsonValue = (value: unknown, maxBytes: number): CloneStateJsonValueResult => {
   try {
-    const cloned = cloneValue(value, '$', new WeakSet<object>())
-    if (isCloneFailure(cloned)) return cloned
-    const serialized = JSON.stringify(cloned)
+    const cloned = cloneValue(value, '$', new WeakSet<object>());
+    if (isCloneFailure(cloned)) return cloned;
+    const serialized = JSON.stringify(cloned);
     if (serialized === undefined) {
-      return invalid('serialization-failed', '$', 'Value could not be serialized as JSON')
+      return invalid('serialization-failed', '$', 'Value could not be serialized as JSON');
     }
-    const bytes = new TextEncoder().encode(serialized).byteLength
+    const bytes = new TextEncoder().encode(serialized).byteLength;
     if (bytes > maxBytes) {
-      return invalid('result-too-large', '$', `Serialized value is ${bytes} bytes; limit is ${maxBytes}`)
+      return invalid('result-too-large', '$', `Serialized value is ${bytes} bytes; limit is ${maxBytes}`);
     }
-    return Object.freeze({status: 'valid', value: cloned, bytes})
+    return Object.freeze({status: 'valid', value: cloned, bytes});
   } catch (error) {
     return invalid(
       'serialization-failed',
       '$',
       error instanceof Error ? error.message : 'Value could not be serialized as JSON',
-    )
+    );
   }
-}
+};

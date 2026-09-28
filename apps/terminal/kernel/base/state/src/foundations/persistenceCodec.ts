@@ -1,164 +1,154 @@
-import type {StateJsonObject, StateJsonValue} from '../types/value'
+import type {StateJsonObject, StateJsonValue} from '../types/value';
 
 export type JsonEncodeResult =
   | {
-      readonly status: 'succeeded'
-      readonly encoded: string
+      readonly status: 'succeeded';
+      readonly encoded: string;
     }
   | {
-      readonly status: 'failed'
-      readonly message: string
-    }
+      readonly status: 'failed';
+      readonly message: string;
+    };
 
 export type JsonDecodeResult =
   | {
-      readonly status: 'succeeded'
-      readonly value: StateJsonValue
+      readonly status: 'succeeded';
+      readonly value: StateJsonValue;
     }
   | {
-      readonly status: 'failed'
-      readonly message: string
-    }
+      readonly status: 'failed';
+      readonly message: string;
+    };
 
 const isPlainObject = (value: unknown): value is object => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false
+    return false;
   }
-  const prototype = Object.getPrototypeOf(value)
-  return prototype === Object.prototype || prototype === null
-}
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+};
 
-function validateArrayJsonValue(
-  value: readonly unknown[],
-  active: WeakSet<object>,
-): boolean {
+function validateArrayJsonValue(value: readonly unknown[], active: WeakSet<object>): boolean {
   for (let index = 0; index < value.length; index += 1) {
-    const descriptor = Object.getOwnPropertyDescriptor(value, String(index))
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
     if (descriptor === undefined || !('value' in descriptor)) {
-      return false
+      return false;
     }
     if (!validateJsonValue(descriptor.value, active)) {
-      return false
+      return false;
     }
   }
-  return true
+  return true;
 }
 
-function validateObjectJsonValue(
-  value: object,
-  active: WeakSet<object>,
-): boolean {
+function validateObjectJsonValue(value: object, active: WeakSet<object>): boolean {
   for (const key of Object.keys(value)) {
-    const descriptor = Object.getOwnPropertyDescriptor(value, key)
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
     if (descriptor === undefined || !('value' in descriptor)) {
-      return false
+      return false;
     }
     if (!validateJsonValue(descriptor.value, active)) {
-      return false
+      return false;
     }
   }
-  return true
+  return true;
 }
 
-const validateJsonValue = (
-  value: unknown,
-  active: WeakSet<object>,
-): value is StateJsonValue => {
+const validateJsonValue = (value: unknown, active: WeakSet<object>): value is StateJsonValue => {
   if (value === null) {
-    return true
+    return true;
   }
   if (typeof value === 'string' || typeof value === 'boolean') {
-    return true
+    return true;
   }
   if (typeof value === 'number') {
-    return Number.isFinite(value)
+    return Number.isFinite(value);
   }
   if (Array.isArray(value)) {
     if (
-      value.length !== Object.keys(value).length
-      || Object.getOwnPropertySymbols(value).length > 0
-      || active.has(value)
+      value.length !== Object.keys(value).length ||
+      Object.getOwnPropertySymbols(value).length > 0 ||
+      active.has(value)
     ) {
-      return false
+      return false;
     }
-    active.add(value)
+    active.add(value);
     try {
-      return validateArrayJsonValue(value, active)
+      return validateArrayJsonValue(value, active);
     } finally {
-      active.delete(value)
+      active.delete(value);
     }
   }
   if (isPlainObject(value)) {
     if (Object.getOwnPropertySymbols(value).length > 0 || active.has(value)) {
-      return false
+      return false;
     }
-    active.add(value)
+    active.add(value);
     try {
-      return validateObjectJsonValue(value, active)
+      return validateObjectJsonValue(value, active);
     } finally {
-      active.delete(value)
+      active.delete(value);
     }
   }
-  return false
-}
+  return false;
+};
 
 export const isStateJsonValue = (value: unknown): value is StateJsonValue =>
-  validateJsonValue(value, new WeakSet<object>())
+  validateJsonValue(value, new WeakSet<object>());
 
 const isStateJsonObject = (value: StateJsonValue): value is StateJsonObject =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const canonicalize = (value: StateJsonValue): StateJsonValue => {
   if (Array.isArray(value)) {
-    return value.map(canonicalize)
+    return value.map(canonicalize);
   }
   if (isStateJsonObject(value)) {
-    const objectValue = value
-    const result: {[key: string]: StateJsonValue} = {}
+    const objectValue = value;
+    const result: {[key: string]: StateJsonValue} = {};
     for (const key of Object.keys(objectValue).sort()) {
-      result[key] = canonicalize(objectValue[key])
+      result[key] = canonicalize(objectValue[key]);
     }
-    return result
+    return result;
   }
-  return value
-}
+  return value;
+};
 
-export const canonicalizeStateJsonValue = (value: StateJsonValue): StateJsonValue =>
-  canonicalize(value)
+export const canonicalizeStateJsonValue = (value: StateJsonValue): StateJsonValue => canonicalize(value);
 
 export const encodeStateJsonValue = (value: unknown): JsonEncodeResult => {
   if (!isStateJsonValue(value)) {
     return {
       status: 'failed',
       message: 'value is not JSON-safe state data',
-    }
+    };
   }
   return {
     status: 'succeeded',
     encoded: JSON.stringify(canonicalizeStateJsonValue(value)),
-  }
-}
+  };
+};
 
 export const decodeStateJsonValue = (encoded: string): JsonDecodeResult => {
   try {
-    const value: unknown = JSON.parse(encoded)
+    const value: unknown = JSON.parse(encoded);
     if (!isStateJsonValue(value)) {
       return {
         status: 'failed',
         message: 'encoded value is not JSON-safe state data',
-      }
+      };
     }
     return {
       status: 'succeeded',
       value,
-    }
+    };
   } catch (error: unknown) {
     return {
       status: 'failed',
       message: error instanceof Error ? error.message : 'invalid JSON state data',
-    }
+    };
   }
-}
+};
 
 export const createStateValueSerialization = (value: StateJsonValue): string =>
-  `json:${JSON.stringify(canonicalizeStateJsonValue(value))}`
+  `json:${JSON.stringify(canonicalizeStateJsonValue(value))}`;

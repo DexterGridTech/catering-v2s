@@ -4,113 +4,104 @@ import type {
   RequestId,
   RuntimeInstanceId,
   TimestampMs,
-} from '@catering-v2s/kernel-base-contracts'
-import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state'
-import type {RuntimeLifecycleObserver} from './journal'
+} from '@catering-v2s/kernel-base-contracts';
+import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
+import type {RuntimeLifecycleObserver} from './journal';
 
-export type CommandVisibility = 'public' | 'internal'
+export type CommandVisibility = 'public' | 'internal';
 
-export type CommandTarget = 'local' | 'peer'
+export type CommandTarget = 'local' | 'peer';
 
 /**
  * A route intent describes the semantic origin of a dispatch without naming
  * a concrete target.  The runtime resolves the final target from this intent
  * and the current topology facts at the common dispatch boundary.
  */
-export type CommandRouteIntent = 'peer-intent'
+export type CommandRouteIntent = 'peer-intent';
 
 export type CommandTargetResolverInput = Readonly<{
-  readonly payload: StateJsonValue
-  readonly routeContext: CommandRouteContext | null
-  readonly routeIntent?: CommandRouteIntent
-  readonly state: StateRoot
-}>
+  readonly payload: StateJsonValue;
+  readonly routeContext: CommandRouteContext | null;
+  readonly routeIntent?: CommandRouteIntent;
+  readonly state: StateRoot;
+}>;
 
-export type CommandTargetResolver = (
-  input: CommandTargetResolverInput,
-) => CommandTarget | undefined
+export type CommandTargetResolver = (input: CommandTargetResolverInput) => CommandTarget | undefined;
 
 /**
  * The value is deliberately private to this package.  Keeping the symbol in
  * the type module lets the factory create a real, non-forgeable definition
  * without adding a public brand value to the package root.
  */
-export const commandDefinitionBrand = Symbol('commandDefinitionBrand')
+export const commandDefinitionBrand = Symbol('commandDefinitionBrand');
 
 /** Runtime registry metadata retains the factory-created definition object. */
 export type RegisteredCommandDefinition = Readonly<{
-  definition: unknown
-  moduleName: string
-  commandName: string
-  visibility: CommandVisibility
-  timeoutMs: number
-  allowNoActor: boolean
-  allowReentry: boolean
-  defaultTarget: CommandTarget
-}>
+  definition: unknown;
+  moduleName: string;
+  commandName: string;
+  visibility: CommandVisibility;
+  timeoutMs: number;
+  allowNoActor: boolean;
+  allowReentry: boolean;
+  defaultTarget: CommandTarget;
+}>;
 
-export type CommandDefinition<
-  TPayload extends StateJsonValue = StateJsonValue,
-> = Readonly<{
-  moduleName: string
-  commandName: string
-  visibility: CommandVisibility
-  timeoutMs: number
-  allowNoActor: boolean
-  allowReentry: boolean
-  defaultTarget: CommandTarget
-  readonly [commandDefinitionBrand]: (payload: TPayload) => TPayload
-}>
+export type CommandDefinition<TPayload extends StateJsonValue = StateJsonValue> = Readonly<{
+  moduleName: string;
+  commandName: string;
+  visibility: CommandVisibility;
+  timeoutMs: number;
+  allowNoActor: boolean;
+  allowReentry: boolean;
+  defaultTarget: CommandTarget;
+  readonly [commandDefinitionBrand]: (payload: TPayload) => TPayload;
+}>;
 
 export type DefineCommandInput = Readonly<{
-  name: string
-  visibility: CommandVisibility
-  timeoutMs?: number
-  allowNoActor?: boolean
-  allowReentry?: boolean
-  defaultTarget?: CommandTarget
-}>
+  name: string;
+  visibility: CommandVisibility;
+  timeoutMs?: number;
+  allowNoActor?: boolean;
+  allowReentry?: boolean;
+  defaultTarget?: CommandTarget;
+}>;
 
-export type CommandIntent<
-  TPayload extends StateJsonValue = StateJsonValue,
-> = Readonly<{
-  definition: CommandDefinition<TPayload>
-  payload: TPayload
-}>
+export type CommandIntent<TPayload extends StateJsonValue = StateJsonValue> = Readonly<{
+  definition: CommandDefinition<TPayload>;
+  payload: TPayload;
+}>;
 
 export type CommandDispatchOptions = Readonly<{
-  requestId?: RequestId
-  commandId?: CommandId
-  parentCommandId?: CommandId
-  routeContext?: CommandRouteContext | null
-  routeIntent?: CommandRouteIntent
-  target?: CommandTarget
-  onLifecycleEvent?: RuntimeLifecycleObserver
-}>
+  requestId?: RequestId;
+  commandId?: CommandId;
+  parentCommandId?: CommandId;
+  routeContext?: CommandRouteContext | null;
+  routeIntent?: CommandRouteIntent;
+  target?: CommandTarget;
+  onLifecycleEvent?: RuntimeLifecycleObserver;
+}>;
 
 export type ActorDispatchOptions = Readonly<{
-  requestId?: RequestId
-  commandId?: CommandId
-  parentCommandId?: CommandId
-  routeContext?: CommandRouteContext | null
-  routeIntent?: CommandRouteIntent
-  target?: CommandTarget
-}>
+  requestId?: RequestId;
+  commandId?: CommandId;
+  parentCommandId?: CommandId;
+  routeContext?: CommandRouteContext | null;
+  routeIntent?: CommandRouteIntent;
+  target?: CommandTarget;
+}>;
 
-export type DispatchedCommand<
-  TPayload extends StateJsonValue = StateJsonValue,
-> = Readonly<{
-  runtimeId: RuntimeInstanceId
-  requestId: RequestId | null
-  commandId: CommandId
-  parentCommandId: CommandId | null
-  commandName: string
-  payload: TPayload
-  target: CommandTarget
-  routeContext: CommandRouteContext | null
-  dispatchedAt: TimestampMs
-}>
+export type DispatchedCommand<TPayload extends StateJsonValue = StateJsonValue> = Readonly<{
+  runtimeId: RuntimeInstanceId;
+  requestId: RequestId | null;
+  commandId: CommandId;
+  parentCommandId: CommandId | null;
+  commandName: string;
+  payload: TPayload;
+  target: CommandTarget;
+  routeContext: CommandRouteContext | null;
+  dispatchedAt: TimestampMs;
+}>;
 
-export type CommandPayloadOf<
-  TDefinition extends CommandDefinition,
-> = TDefinition extends CommandDefinition<infer TPayload> ? TPayload : never
+export type CommandPayloadOf<TDefinition extends CommandDefinition> =
+  TDefinition extends CommandDefinition<infer TPayload> ? TPayload : never;

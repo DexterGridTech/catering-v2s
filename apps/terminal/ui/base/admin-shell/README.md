@@ -18,6 +18,7 @@ public-surface focused test，不得让 README 或 invariant 漂移。
 入口手势由 `AdminLauncher` 在原生观察业务内容祖先上的触摸结束事件，在 Web 观察同一祖先上的点击事件；两种平台事件互斥绑定。
 它先兼容解析原生 RN、Web TouchEvent 与 Web MouseEvent 的窗口坐标，再用测得的窗口原点和宿主/画布比例调用
 `foundations/adminLauncher.ts#logicalPointFromWindow`，把逻辑坐标交给同一个纯手势跟踪器；96×96 阈值因此按逻辑画布而不是窗口像素判定。
+窗口原点在本节点布局、窗口尺寸、画布声明或宿主逻辑尺寸变化后重新测量，并清除跨几何变更的未完成手势；事件使用最近一次完成测量的坐标空间。
 观察器没有自己的 press responder、绝对定位覆盖层或业务控件回调，阈值以下的业务后代仍由原控件处理。
 
 使用时由 integration assembly 注入真实的 platform/runtime/display facts，并把本包的
@@ -34,8 +35,8 @@ display-context 的 request/confirm/cancel owner 驱动，确认层是 PRIMARY-o
 不在 admin-shell 持久化事实。
 
 装配后的 laptop renderer 使用 list/button 导航与 master-detail 内容区，mobile renderer 使用可换行的
-tablist/tab；详情标题通过 polite live region 通知选择变化，关闭与返回继续由既有 AdminLayer/LayerStack
-focus scope 负责恢复，不新增第二套焦点或返回管线。
+tablist/tab；详情标题通过 polite live region 通知选择变化。LayerStack 只通过 input owner 的
+suspend/restore 接缝清除焦点与键盘；关层不会隐式恢复先前字段焦点，不新增第二套焦点或返回管线。
 
 登录口令使用 `@catering-v2s/ui-base-input` 的共享 `InputSurfaceFrame` 键盘覆盖层；键盘不嵌入登录卡片，
 卡片与页面保持完整布局尺寸，由 surface presentation 与焦点避让机制统一处理。接入示例、provider 边界和

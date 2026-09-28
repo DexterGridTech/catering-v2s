@@ -26,7 +26,7 @@ ANIMATION_RULE=每 surface 由 InputSurfaceFrame 几何 owner 持有独立键盘
 
 ## 2. 可见形态、控件与帧分母
 
-所有键盘外框水平贴当前 surface 两侧、底边贴底，背景继续使用 integration 的 keyboard semantic token。外框四角直角、无左右浮卡 gutter；键帽保留原 keyboard-key/action token、键帽圆角 9/7、48/38 高、选中边框与 pressed 反馈。laptop 横向/纵向 padding 14、gap 8；mobile compact 横向/纵向 padding 10、列 gap 4、行 gap 5；最小 dense 键宽 30。四布局键帽按全宽列轨填满：`1280×800` 时 full/alpha 标准键宽 118、numeric/financial 每列 412；`360×640` 时分别为 30 与 110。计算式分别为 `floor((W−2p−9g)/10)` 与 `floor((W−2p−2g)/3)`。外框用 `keyboard-border` 分隔；顶部边缘可有原语 shadow，但不得形成四周浮卡空隙。字体沿既有 `keyboardButtonText`/`keyboardActionText` 及 compact 对应 token，backspace/complete 沿既有 icon；Shift selected 不只靠颜色，还要有可读标签/辅助技术状态。主题 RGB 不由 base 写死。此参数是后续逐控件视觉对账的几何基准，实施时仍按最终外框及真实 padding/gap 核验。
+所有键盘外框水平贴当前 surface 两侧、底边贴底，背景继续使用 integration 的 keyboard semantic token。外框四角直角、无左右浮卡 gutter；键帽保留原 keyboard-key/action token、键帽圆角 9/7、48/38 高、选中边框与 pressed 反馈。laptop 横向/纵向 padding 14、gap 8；mobile compact 横向/纵向 padding 10、列 gap 4、行 gap 5；最小 dense 键宽 30。四布局键帽按全宽列轨填满：`1280×720` 时 full/alpha 标准键宽 118、numeric/financial 每列 412；`360×640` 时分别为 30 与 110。计算式分别为 `floor((W−2p−9g)/10)` 与 `floor((W−2p−2g)/3)`。外框用 `keyboard-border` 分隔；顶部边缘可有原语 shadow，但不得形成四周浮卡空隙。字体沿既有 `keyboardButtonText`/`keyboardActionText` 及 compact 对应 token，backspace/complete 沿既有 icon；Shift selected 不只靠颜色，还要有可读标签/辅助技术状态。主题 RGB 不由 base 写死。此参数是后续逐控件视觉对账的几何基准，实施时仍按最终外框及真实 padding/gap 核验。
 
 | IA-ID | 用户任务/入口与可见控件 roster | 位置、状态、禁止项 | 最低反证档 |
 | --- | --- | --- | --- |

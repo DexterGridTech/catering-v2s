@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -39,11 +40,12 @@ class ExtensionDefinitionServiceTest {
 
     private static Flyway flyway;
     private static ExtensionDefinitionService service;
-    private static UUID workspaceId;
     private static JdbcTemplate jdbc;
     private static TransactionTemplate transactions;
     private static ExtensionDefinitionPersistence persistence;
     private static WorkspaceStatusLookup workspaceStatuses;
+    private UUID workspaceId;
+    private String groupWorkspaceKey;
 
     @BeforeAll
     static void setup() {
@@ -59,17 +61,7 @@ class ExtensionDefinitionServiceTest {
                 new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
         jdbc = new JdbcTemplate(dataSource);
         transactions = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
-        workspaceId = UUID.randomUUID();
         long now = 1_785_000_000_000L;
-        jdbc.update(
-                "INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, "
-                        + "name_normalized, operations_title, status, revision, version, created_at_epoch_millis, "
-                        + "updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, 'extension-test', "
-                        + "'Extension test', 'extension test', 'Extension test', 'ENABLED', 1, 1, ?, ?, ?)",
-                workspaceId,
-                now,
-                now,
-                now);
         workspaceStatuses = (id, key) -> jdbc.queryForObject(
                 "SELECT status FROM platform_workspace.group_workspace "
                         + "WHERE workspace_uuid=? AND group_workspace_key=?",
@@ -81,11 +73,17 @@ class ExtensionDefinitionServiceTest {
                 persistence, new ExtensionCommandReceiptService(jdbc, () -> now), actor -> {}, workspaceStatuses);
     }
 
+    @BeforeEach
+    void createIsolatedWorkspace() {
+        groupWorkspaceKey = "extension-test-" + UUID.randomUUID().toString().replace("-", "");
+        workspaceId = createWorkspace(groupWorkspaceKey);
+    }
+
     @Test
     void replacesCompleteDefinitionWithCasAndPreventsFieldTypeMutation() {
         var first = service.replace(
                 workspaceId,
-                "extension-test",
+                groupWorkspaceKey,
                 "STORE",
                 0,
                 List.of(new ExtensionDefinitionService.Field(
@@ -95,12 +93,12 @@ class ExtensionDefinitionServiceTest {
         assertTrue(first.blockers().isEmpty());
         assertThrows(
                 ExtensionDefinitionService.DefinitionVersionConflictException.class,
-                () -> service.replace(workspaceId, "extension-test", "STORE", 0, List.of()));
+                () -> service.replace(workspaceId, groupWorkspaceKey, "STORE", 0, List.of()));
         assertThrows(
                 ExtensionDefinitionService.DefinitionInvalidException.class,
                 () -> service.replace(
                         workspaceId,
-                        "extension-test",
+                        groupWorkspaceKey,
                         "STORE",
                         1,
                         List.of(new ExtensionDefinitionService.Field(
@@ -111,12 +109,12 @@ class ExtensionDefinitionServiceTest {
     void rejectsUnsupportedHostAndInvalidSelectConfiguration() {
         assertThrows(
                 ExtensionDefinitionService.DefinitionInvalidException.class,
-                () -> service.replace(workspaceId, "extension-test", "UNKNOWN_HOST", 0, List.of()));
+                () -> service.replace(workspaceId, groupWorkspaceKey, "UNKNOWN_HOST", 0, List.of()));
         assertThrows(
                 ExtensionDefinitionService.DefinitionInvalidException.class,
                 () -> service.replace(
                         workspaceId,
-                        "extension-test",
+                        groupWorkspaceKey,
                         "BRAND",
                         0,
                         List.of(new ExtensionDefinitionService.Field(
@@ -127,7 +125,7 @@ class ExtensionDefinitionServiceTest {
     void ownerAssignsHiddenStableKeysForNewFieldsAndPreservesThemAcrossReplacement() {
         var first = service.replaceDraft(
                 workspaceId,
-                "extension-test",
+                groupWorkspaceKey,
                 "CONTRACT",
                 0,
                 List.of(new ExtensionDefinitionService.DraftField(
@@ -138,7 +136,7 @@ class ExtensionDefinitionServiceTest {
         assertEquals("field_1", ownerKey);
         var replay = service.replaceDraft(
                 workspaceId,
-                "extension-test",
+                groupWorkspaceKey,
                 "CONTRACT",
                 0,
                 List.of(new ExtensionDefinitionService.DraftField(
@@ -150,7 +148,7 @@ class ExtensionDefinitionServiceTest {
                 ExtensionCommandReceiptService.ExtensionIdempotencyConflictException.class,
                 () -> service.replaceDraft(
                         workspaceId,
-                        "extension-test",
+                        groupWorkspaceKey,
                         "CONTRACT",
                         0,
                         List.of(new ExtensionDefinitionService.DraftField(
@@ -159,7 +157,7 @@ class ExtensionDefinitionServiceTest {
                         "extension-draft-key-0001"));
         var second = service.replaceDraft(
                 workspaceId,
-                "extension-test",
+                groupWorkspaceKey,
                 "CONTRACT",
                 first.version(),
                 List.of(
@@ -175,7 +173,7 @@ class ExtensionDefinitionServiceTest {
                 ExtensionDefinitionService.DefinitionInvalidException.class,
                 () -> service.replaceDraft(
                         workspaceId,
-                        "extension-test",
+                        groupWorkspaceKey,
                         "CONTRACT",
                         second.version(),
                         List.of(
@@ -232,9 +230,9 @@ class ExtensionDefinitionServiceTest {
                 null, "Transaction field", "TEXT", null, null, true, List.of(), "ENABLED", 0, null));
 
         var first = transactions.execute(status ->
-                service.replaceDraft(workspaceId, "extension-test", "PROJECT", 0, draft, AuditActor.system(), key));
+                service.replaceDraft(workspaceId, groupWorkspaceKey, "PROJECT", 0, draft, AuditActor.system(), key));
         var replay = transactions.execute(status ->
-                service.replaceDraft(workspaceId, "extension-test", "PROJECT", 0, draft, AuditActor.system(), key));
+                service.replaceDraft(workspaceId, groupWorkspaceKey, "PROJECT", 0, draft, AuditActor.system(), key));
 
         assertEquals(first, replay);
     }
@@ -337,7 +335,7 @@ class ExtensionDefinitionServiceTest {
 
     @Test
     void managementReadExposesEveryBusinessObjectBeforeFirstConfigurationWithoutWeakeningOperationsLookup() {
-        var catalog = service.listManagementDefinitions(workspaceId, "extension-test");
+        var catalog = service.listManagementDefinitions(workspaceId, groupWorkspaceKey);
         assertEquals(
                 List.of(
                         ExtensionHostTypes.BRAND,
@@ -350,23 +348,23 @@ class ExtensionDefinitionServiceTest {
                         ExtensionHostTypes.PROJECT,
                         ExtensionHostTypes.SERVICE_POINT),
                 catalog.stream().map(value -> value.hostType()).toList());
-        var brand = service.managementDefinition(workspaceId, "extension-test", "BRAND");
+        var brand = service.managementDefinition(workspaceId, groupWorkspaceKey, "BRAND");
         assertEquals(0, brand.version());
         assertTrue(brand.fields().isEmpty());
         assertThrows(
                 ExtensionDefinitionService.DefinitionNotFoundException.class,
-                () -> service.requireDefinition(workspaceId, "extension-test", "BRAND"));
+                () -> service.requireDefinition(workspaceId, groupWorkspaceKey, "BRAND"));
     }
 
     @Test
     void readbackNormalizesMissingDisplayFlagsByHostApplicability() {
         String legacyDefinition = "[{\"key\":\"legacy\",\"label\":\"Legacy\",\"type\":\"TEXT\","
                 + "\"required\":false,\"options\":[],\"status\":\"ENABLED\",\"displayOrder\":0}]";
-        persistence.insertDefinition(workspaceId, "extension-test", ExtensionHostTypes.BRAND, legacyDefinition);
-        persistence.insertDefinition(workspaceId, "extension-test", ExtensionHostTypes.REGION, legacyDefinition);
+        persistence.insertDefinition(workspaceId, groupWorkspaceKey, ExtensionHostTypes.BRAND, legacyDefinition);
+        persistence.insertDefinition(workspaceId, groupWorkspaceKey, ExtensionHostTypes.REGION, legacyDefinition);
 
-        var flat = service.managementDefinition(workspaceId, "extension-test", ExtensionHostTypes.BRAND);
-        var tree = service.managementDefinition(workspaceId, "extension-test", ExtensionHostTypes.REGION);
+        var flat = service.managementDefinition(workspaceId, groupWorkspaceKey, ExtensionHostTypes.BRAND);
+        var tree = service.managementDefinition(workspaceId, groupWorkspaceKey, ExtensionHostTypes.REGION);
 
         assertEquals(Boolean.FALSE, flat.fields().getFirst().listDisplay());
         assertEquals(Boolean.FALSE, flat.fields().getFirst().searchable());
@@ -380,7 +378,7 @@ class ExtensionDefinitionServiceTest {
                 ExtensionDefinitionService.DefinitionInvalidException.class,
                 () -> service.replace(
                         workspaceId,
-                        "extension-test",
+                        groupWorkspaceKey,
                         ExtensionHostTypes.REGION,
                         0,
                         List.of(new ExtensionDefinitionService.Field(
@@ -398,7 +396,7 @@ class ExtensionDefinitionServiceTest {
                 ExtensionDefinitionService.DefinitionInvalidException.class,
                 () -> service.replace(
                         workspaceId,
-                        "extension-test",
+                        groupWorkspaceKey,
                         ExtensionHostTypes.REGION,
                         0,
                         List.of(new ExtensionDefinitionService.Field(
@@ -459,7 +457,7 @@ class ExtensionDefinitionServiceTest {
                 ExtensionDefinitionService.DefinitionInvalidException.class,
                 () -> service.replace(
                         workspaceId,
-                        "extension-test",
+                        groupWorkspaceKey,
                         "REGION",
                         0,
                         List.of(new ExtensionDefinitionService.Field(
@@ -478,12 +476,12 @@ class ExtensionDefinitionServiceTest {
     @Test
     void platformTaskReadBoundariesPreserveManagementSemantics() {
         assertEquals(
-                8,
-                service.platformManagementDefinitions(workspaceId, "extension-test")
+                9,
+                service.platformManagementDefinitions(workspaceId, groupWorkspaceKey)
                         .size());
         assertEquals(
                 "BRAND",
-                service.platformManagementDefinition(workspaceId, "extension-test", "BRAND")
+                service.platformManagementDefinition(workspaceId, groupWorkspaceKey, "BRAND")
                         .hostType());
     }
 
@@ -491,7 +489,7 @@ class ExtensionDefinitionServiceTest {
     void sharedOwnerValueMergeKeepsTypedRequiredAndDisabledSemantics() {
         var definition = service.replace(
                 workspaceId,
-                "extension-test",
+                groupWorkspaceKey,
                 "REGION",
                 0,
                 List.of(
@@ -555,7 +553,7 @@ class ExtensionDefinitionServiceTest {
                 IllegalStateException.class,
                 () -> denied.replaceDraft(
                         workspaceId,
-                        "extension-test",
+                        groupWorkspaceKey,
                         "TENANT",
                         0,
                         List.of(),
@@ -589,7 +587,7 @@ class ExtensionDefinitionServiceTest {
         String key = "extension-corrupt-key-0001";
         List<ExtensionDefinitionService.DraftField> draft = List.of(new ExtensionDefinitionService.DraftField(
                 "receiptField", "Receipt field", "TEXT", true, List.of(), "ENABLED", 0, null));
-        service.replaceDraft(workspaceId, "extension-test", "HEAD_COMPANY", 0, draft, AuditActor.system(), key);
+        service.replaceDraft(workspaceId, groupWorkspaceKey, "HEAD_COMPANY", 0, draft, AuditActor.system(), key);
         jdbc.update(
                 "UPDATE extension.extension_command_receipt SET response_json=CAST(? AS JSONB) WHERE workspace_uuid=? "
                         + "AND idempotency_key=?",
@@ -600,7 +598,7 @@ class ExtensionDefinitionServiceTest {
         assertThrows(
                 ExtensionCommandReceiptService.ExtensionReceiptCorruptException.class,
                 () -> service.replaceDraft(
-                        workspaceId, "extension-test", "HEAD_COMPANY", 0, draft, AuditActor.system(), key));
+                        workspaceId, groupWorkspaceKey, "HEAD_COMPANY", 0, draft, AuditActor.system(), key));
     }
 
     @AfterAll

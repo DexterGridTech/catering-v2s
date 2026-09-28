@@ -22,7 +22,11 @@ import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 const call = {timeoutMs: 20};
 const storageCall = {};
 
-const expectUnavailable = <TValue>(result: PortResult<TValue> | PortAccepted<string>, port: string, capability: string): void => {
+const expectUnavailable = <TValue>(
+  result: PortResult<TValue> | PortAccepted<string>,
+  port: string,
+  capability: string,
+): void => {
   expect(result.status).toBe('unavailable');
   if (result.status === 'unavailable') {
     expect(result.port).toBe(port);
@@ -91,8 +95,18 @@ describe('D-1/D-2: usable defaults', () => {
       completedAt: expect.any(Number),
     });
     expect((await storage.write({key: 'alpha', value: 'one'})).status).toBe('succeeded');
-    expect(await storage.read({key: 'alpha'})).toMatchObject({status: 'succeeded', value: {state: 'found', value: 'one'}});
-    expect(await storage.writeMany({entries: [{key: 'beta', value: 'two'}, {key: 'gamma', value: 'three'}]})).toMatchObject({status: 'succeeded'});
+    expect(await storage.read({key: 'alpha'})).toMatchObject({
+      status: 'succeeded',
+      value: {state: 'found', value: 'one'},
+    });
+    expect(
+      await storage.writeMany({
+        entries: [
+          {key: 'beta', value: 'two'},
+          {key: 'gamma', value: 'three'},
+        ],
+      }),
+    ).toMatchObject({status: 'succeeded'});
     expect(await storage.readMany({keys: ['alpha', 'missing', 'beta']})).toMatchObject({
       status: 'succeeded',
       value: [
@@ -116,7 +130,11 @@ describe('D-3/D-4/D-5/D-6/D-7/D-8/D-9/D-10: unavailable defaults', () => {
     expectUnavailable(await unavailablePersistSecurePort.write({...input, value: 'x'}), 'persistSecure', 'write');
     expectUnavailable(await unavailablePersistSecurePort.remove(input), 'persistSecure', 'remove');
     expectUnavailable(await unavailablePersistSecurePort.readMany({keys: ['x']}), 'persistSecure', 'readMany');
-    expectUnavailable(await unavailablePersistSecurePort.writeMany({entries: [{key: 'x', value: 'x'}]}), 'persistSecure', 'writeMany');
+    expectUnavailable(
+      await unavailablePersistSecurePort.writeMany({entries: [{key: 'x', value: 'x'}]}),
+      'persistSecure',
+      'writeMany',
+    );
     expectUnavailable(await unavailablePersistSecurePort.removeMany({keys: ['x']}), 'persistSecure', 'removeMany');
     expectUnavailable(await unavailablePersistSecurePort.listKeys(storageCall), 'persistSecure', 'listKeys');
     expectUnavailable(await unavailablePersistSecurePort.clear(storageCall), 'persistSecure', 'clear');
@@ -129,8 +147,16 @@ describe('D-3/D-4/D-5/D-6/D-7/D-8/D-9/D-10: unavailable defaults', () => {
     expectUnavailable(await unavailableDevicePort.getDisplayInfo(call), 'device', 'getDisplayInfo');
     expectUnavailable(await unavailableDevicePort.getSystemStatus(call), 'device', 'getSystemStatus');
     expectUnavailable(await unavailableDevicePort.getPowerStatus(call), 'device', 'getPowerStatus');
-    expectUnavailable(await unavailableDevicePort.subscribePowerStatus({...call, listener, onError}), 'device', 'subscribePowerStatus');
-    expectUnavailable(await unavailableDevicePort.unsubscribePowerStatus({...call, subscriptionId: 'sub'}), 'device', 'unsubscribePowerStatus');
+    expectUnavailable(
+      await unavailableDevicePort.subscribePowerStatus({...call, listener, onError}),
+      'device',
+      'subscribePowerStatus',
+    );
+    expectUnavailable(
+      await unavailableDevicePort.unsubscribePowerStatus({...call, subscriptionId: 'sub'}),
+      'device',
+      'unsubscribePowerStatus',
+    );
     expect(listener).not.toHaveBeenCalled();
     expect(onError).not.toHaveBeenCalled();
   });
@@ -138,27 +164,88 @@ describe('D-3/D-4/D-5/D-6/D-7/D-8/D-9/D-10: unavailable defaults', () => {
   it('returns unavailable for every app-control method', async () => {
     const requestId = createRequestId();
     expectUnavailable(await unavailableAppControlPort.resetRuntime({...call, requestId}), 'appControl', 'resetRuntime');
-    expectUnavailable(await unavailableAppControlPort.exitApplication({...call, requestId}), 'appControl', 'exitApplication');
+    expectUnavailable(
+      await unavailableAppControlPort.exitApplication({...call, requestId}),
+      'appControl',
+      'exitApplication',
+    );
     expectUnavailable(await unavailableAppControlPort.clearHostDataCache(call), 'appControl', 'clearHostDataCache');
-    expectUnavailable(await unavailableAppControlPort.setFullscreen({...call, containerKey: 'primary', enabled: true}), 'appControl', 'setFullscreen');
-    expectUnavailable(await unavailableAppControlPort.getFullscreen({...call, containerKey: 'primary'}), 'appControl', 'getFullscreen');
-    expectUnavailable(await unavailableAppControlPort.setKioskMode({...call, enabled: true}), 'appControl', 'setKioskMode');
+    expectUnavailable(
+      await unavailableAppControlPort.setFullscreen({...call, containerKey: 'primary', enabled: true}),
+      'appControl',
+      'setFullscreen',
+    );
+    expectUnavailable(
+      await unavailableAppControlPort.getFullscreen({...call, containerKey: 'primary'}),
+      'appControl',
+      'getFullscreen',
+    );
+    expectUnavailable(
+      await unavailableAppControlPort.setKioskMode({...call, enabled: true}),
+      'appControl',
+      'setKioskMode',
+    );
     expectUnavailable(await unavailableAppControlPort.getKioskMode(call), 'appControl', 'getKioskMode');
-    expectUnavailable(await unavailableAppControlPort.showNativeLoading({...call, containerKey: 'primary', message: 'loading'}), 'appControl', 'showNativeLoading');
-    expectUnavailable(await unavailableAppControlPort.hideNativeLoading({...call, containerKey: 'primary'}), 'appControl', 'hideNativeLoading');
+    expectUnavailable(
+      await unavailableAppControlPort.showNativeLoading({...call, containerKey: 'primary', message: 'loading'}),
+      'appControl',
+      'showNativeLoading',
+    );
+    expectUnavailable(
+      await unavailableAppControlPort.hideNativeLoading({...call, containerKey: 'primary'}),
+      'appControl',
+      'hideNativeLoading',
+    );
   });
 
   it('returns unavailable for every script and connector method without fallback execution', async () => {
     const invoke = vi.fn();
     const requestId = createRequestId();
-    expectUnavailable(await unavailableScriptPort.execute({source: 'return 1', paramsJson: '{}', globalsJson: '{}', native: {kind: 'named', functionNames: ['f'], invoke}, timeoutMs: 20}), 'script', 'execute');
+    expectUnavailable(
+      await unavailableScriptPort.execute({
+        source: 'return 1',
+        paramsJson: '{}',
+        globalsJson: '{}',
+        native: {kind: 'named', functionNames: ['f'], invoke},
+        timeoutMs: 20,
+      }),
+      'script',
+      'execute',
+    );
     expectUnavailable(await unavailableScriptPort.getStats(call), 'script', 'getStats');
     expectUnavailable(await unavailableScriptPort.clearStats(call), 'script', 'clearStats');
     expect(invoke).not.toHaveBeenCalled();
-    expectUnavailable(await unavailableConnectorPort.call({requestId, channel: {channelKey: 'x'}, action: 'read', payload: {}, timeoutMs: 20}), 'connector', 'call');
-    expectUnavailable(await unavailableConnectorPort.subscribe({channel: {channelKey: 'x'}, onMessage: vi.fn(), onError: vi.fn(), timeoutMs: 20}), 'connector', 'subscribe');
-    expectUnavailable(await unavailableConnectorPort.unsubscribe({subscriptionId: 'sub', timeoutMs: 20}), 'connector', 'unsubscribe');
-    expectUnavailable(await unavailableConnectorPort.on({eventName: 'event', handler: vi.fn(), onError: vi.fn(), timeoutMs: 20}), 'connector', 'on');
+    expectUnavailable(
+      await unavailableConnectorPort.call({
+        requestId,
+        channel: {channelKey: 'x'},
+        action: 'read',
+        payload: {},
+        timeoutMs: 20,
+      }),
+      'connector',
+      'call',
+    );
+    expectUnavailable(
+      await unavailableConnectorPort.subscribe({
+        channel: {channelKey: 'x'},
+        onMessage: vi.fn(),
+        onError: vi.fn(),
+        timeoutMs: 20,
+      }),
+      'connector',
+      'subscribe',
+    );
+    expectUnavailable(
+      await unavailableConnectorPort.unsubscribe({subscriptionId: 'sub', timeoutMs: 20}),
+      'connector',
+      'unsubscribe',
+    );
+    expectUnavailable(
+      await unavailableConnectorPort.on({eventName: 'event', handler: vi.fn(), onError: vi.fn(), timeoutMs: 20}),
+      'connector',
+      'on',
+    );
   });
 
   it('returns unavailable for every hot-update, upload, and topology method', async () => {
@@ -173,16 +260,52 @@ describe('D-3/D-4/D-5/D-6/D-7/D-8/D-9/D-10: unavailable defaults', () => {
       packageSizeBytes: 1,
     };
     expectUnavailable(await unavailableHotUpdatePort.downloadPackage(hotInput), 'hotUpdate', 'downloadPackage');
-    expectUnavailable(await unavailableHotUpdatePort.writeBootMarker({...hotInput, installDirectory: '/tmp', entryFile: 'index.js', maxLaunchFailures: 1, healthCheckTimeoutMs: 10}), 'hotUpdate', 'writeBootMarker');
+    expectUnavailable(
+      await unavailableHotUpdatePort.writeBootMarker({
+        ...hotInput,
+        installDirectory: '/tmp',
+        entryFile: 'index.js',
+        maxLaunchFailures: 1,
+        healthCheckTimeoutMs: 10,
+      }),
+      'hotUpdate',
+      'writeBootMarker',
+    );
     expectUnavailable(await unavailableHotUpdatePort.readBootMarker(call), 'hotUpdate', 'readBootMarker');
     expectUnavailable(await unavailableHotUpdatePort.readActiveMarker(call), 'hotUpdate', 'readActiveMarker');
     expectUnavailable(await unavailableHotUpdatePort.readRollbackMarker(call), 'hotUpdate', 'readRollbackMarker');
     expectUnavailable(await unavailableHotUpdatePort.clearBootMarker(call), 'hotUpdate', 'clearBootMarker');
     expectUnavailable(await unavailableHotUpdatePort.confirmLoadComplete(call), 'hotUpdate', 'confirmLoadComplete');
-    expectUnavailable(await unavailableLogUploadPort.uploadLogsForDate({uploadUrl: 'https://example.invalid', logDate: '2026-08-30', surfaceIndex: 0, surfaceRole: 'primary', overwrite: false, headers: {}, timeoutMs: 20}), 'logUpload', 'uploadLogsForDate');
-    expectUnavailable(await unavailableTopologyHostPort.start({port: 8080, basePath: '/', heartbeatIntervalMs: 1000, heartbeatTimeoutMs: 3000, timeoutMs: 20}), 'topologyHost', 'start');
+    expectUnavailable(
+      await unavailableLogUploadPort.uploadLogsForDate({
+        uploadUrl: 'https://example.invalid',
+        logDate: '2026-08-30',
+        surfaceIndex: 0,
+        surfaceRole: 'primary',
+        overwrite: false,
+        headers: {},
+        timeoutMs: 20,
+      }),
+      'logUpload',
+      'uploadLogsForDate',
+    );
+    expectUnavailable(
+      await unavailableTopologyHostPort.start({
+        port: 8080,
+        basePath: '/',
+        heartbeatIntervalMs: 1000,
+        heartbeatTimeoutMs: 3000,
+        timeoutMs: 20,
+      }),
+      'topologyHost',
+      'start',
+    );
     expectUnavailable(await unavailableTopologyHostPort.stop(call), 'topologyHost', 'stop');
     expectUnavailable(await unavailableTopologyHostPort.getStatus(call), 'topologyHost', 'getStatus');
-    expectUnavailable(await unavailableTopologyHostPort.getDiagnosticsSnapshot(call), 'topologyHost', 'getDiagnosticsSnapshot');
+    expectUnavailable(
+      await unavailableTopologyHostPort.getDiagnosticsSnapshot(call),
+      'topologyHost',
+      'getDiagnosticsSnapshot',
+    );
   });
 });

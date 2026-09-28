@@ -1,5 +1,5 @@
-import type {RuntimeModule, RuntimeModuleDescriptor} from '../types/module'
-import {freezeList} from '../foundations/freezeList'
+import type {RuntimeModule, RuntimeModuleDescriptor} from '../types/module';
+import {freezeList} from '../foundations/freezeList';
 
 export const describeRuntimeModule = (module: RuntimeModule): RuntimeModuleDescriptor =>
   Object.freeze({
@@ -14,4 +14,4 @@ export const describeRuntimeModule = (module: RuntimeModule): RuntimeModuleDescr
     hasPreSetup: typeof module.preSetup === 'function',
     hasInstall: typeof module.install === 'function',
     hasReset: typeof module.onApplicationReset === 'function',
-  })
+  });

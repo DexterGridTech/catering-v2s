@@ -15,11 +15,11 @@ export interface DeviceIdentity {
 }
 
 export type DisplaySize = Readonly<{
-  readonly width: number
-  readonly height: number
-}>
+  readonly width: number;
+  readonly height: number;
+}>;
 
-export type DisplayReadiness = 'ready' | 'loading' | 'unavailable' | 'unknown'
+export type DisplayReadiness = 'ready' | 'loading' | 'unavailable' | 'unknown';
 
 /**
  * Public display facts supplied by the platform adapter.  The display
@@ -27,15 +27,15 @@ export type DisplayReadiness = 'ready' | 'loading' | 'unavailable' | 'unknown'
  * callers must not infer a missing surface from another surface's values.
  */
 export interface DisplaySurfaceInfo {
-  readonly displayId: number | null
-  readonly role: 'primary' | 'secondary' | 'unknown'
-  readonly logicalSize: DisplaySize | null
-  readonly physicalSize: DisplaySize | null
-  readonly readiness: DisplayReadiness
+  readonly displayId: number | null;
+  readonly role: 'primary' | 'secondary' | 'unknown';
+  readonly logicalSize: DisplaySize | null;
+  readonly physicalSize: DisplaySize | null;
+  readonly readiness: DisplayReadiness;
 }
 export interface DisplayInfo {
   readonly displayCount: number;
-  readonly surfaces?: readonly DisplaySurfaceInfo[]
+  readonly surfaces?: readonly DisplaySurfaceInfo[];
 }
 export interface ProcessorStatus {
   readonly logicalProcessorCount: number;
@@ -51,7 +51,9 @@ export interface StorageStatus {
   readonly availableBytes: number;
   readonly processBytes: number;
 }
-export interface NetworkStatus { readonly connected: boolean }
+export interface NetworkStatus {
+  readonly connected: boolean;
+}
 export interface PowerStatus {
   readonly source: 'external' | 'battery' | 'unknown';
   readonly charging: 'charging' | 'not-charging' | 'unknown';
@@ -70,12 +72,16 @@ export interface PowerStatusChanged {
   readonly observedAt: TimestampMs;
 }
 export type PowerStatusListener = (event: PowerStatusChanged) => void;
-export interface DeviceCall { readonly timeoutMs: number }
+export interface DeviceCall {
+  readonly timeoutMs: number;
+}
 export interface PowerStatusSubscriptionInput extends DeviceCall {
   readonly listener: PowerStatusListener;
   readonly onError: (error: PortFailure['error']) => void;
 }
-export interface PowerStatusUnsubscribeInput extends DeviceCall { readonly subscriptionId: string }
+export interface PowerStatusUnsubscribeInput extends DeviceCall {
+  readonly subscriptionId: string;
+}
 export interface DevicePort {
   getDeviceInfo(input: DeviceCall): Promise<PortResult<DeviceInfo>>;
   getDisplayInfo(input: DeviceCall): Promise<PortResult<DisplayInfo>>;

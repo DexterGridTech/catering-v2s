@@ -1,9 +1,6 @@
-import {describe, expect, it} from 'vitest'
-import type {DisplayFactsReadModel} from '@catering-v2s/kernel-base-display-context'
-import {
-  createRenderRuntimeFacts,
-  resolveDebugMode,
-} from '../src'
+import {describe, expect, it} from 'vitest';
+import type {DisplayFactsReadModel} from '@catering-v2s/kernel-base-display-context';
+import {createRenderRuntimeFacts, resolveDebugMode} from '../src';
 
 describe('render runtime facts', () => {
   it('resolves startup over packaging, including an explicit false', () => {
@@ -17,12 +14,12 @@ describe('render runtime facts', () => {
       [{startup: false}, false, 'startup'],
       [{startup: false, packaging: true}, false, 'startup'],
       [{startup: false, packaging: false}, false, 'startup'],
-    ] as const
+    ] as const;
 
     for (const [input, enabled, source] of cases) {
-      expect(resolveDebugMode(input)).toEqual({enabled, source})
+      expect(resolveDebugMode(input)).toEqual({enabled, source});
     }
-  })
+  });
 
   it('keeps production mode independent from the debug fact and freezes the transfer', () => {
     const facts = createRenderRuntimeFacts({
@@ -30,24 +27,26 @@ describe('render runtime facts', () => {
       debugMode: resolveDebugMode({packaging: true}),
       showAdminPassword: true,
       deviceIdentity: {available: true, deviceId: 'DEVICE-001'},
-      platformPortCapabilities: [{
-        port: 'device',
-        descriptorStatus: 'complete',
-        capabilities: [{capability: 'getDeviceInfo', state: 'real', source: 'adapter'}],
-      }],
-    })
+      platformPortCapabilities: [
+        {
+          port: 'device',
+          descriptorStatus: 'complete',
+          capabilities: [{capability: 'getDeviceInfo', state: 'real', source: 'adapter'}],
+        },
+      ],
+    });
 
-    expect(facts.environmentMode).toBe('PROD')
-    expect(facts.debugMode).toEqual({enabled: true, source: 'packaging'})
-    expect(facts.showAdminPassword).toBe(true)
-    expect(facts.deviceIdentity).toEqual({available: true, deviceId: 'DEVICE-001'})
-    expect(Object.isFrozen(facts)).toBe(true)
-    expect(Object.isFrozen(facts.debugMode)).toBe(true)
-    expect(Object.isFrozen(facts.deviceIdentity)).toBe(true)
-    expect(Object.isFrozen(facts.platformPortCapabilities)).toBe(true)
-    expect(Object.isFrozen(facts.platformPortCapabilities[0])).toBe(true)
-    expect(Object.isFrozen(facts.platformPortCapabilities[0]!.capabilities)).toBe(true)
-  })
+    expect(facts.environmentMode).toBe('PROD');
+    expect(facts.debugMode).toEqual({enabled: true, source: 'packaging'});
+    expect(facts.showAdminPassword).toBe(true);
+    expect(facts.deviceIdentity).toEqual({available: true, deviceId: 'DEVICE-001'});
+    expect(Object.isFrozen(facts)).toBe(true);
+    expect(Object.isFrozen(facts.debugMode)).toBe(true);
+    expect(Object.isFrozen(facts.deviceIdentity)).toBe(true);
+    expect(Object.isFrozen(facts.platformPortCapabilities)).toBe(true);
+    expect(Object.isFrozen(facts.platformPortCapabilities[0])).toBe(true);
+    expect(Object.isFrozen(facts.platformPortCapabilities[0]!.capabilities)).toBe(true);
+  });
 
   it('transfers display facts as an immutable owner read model', () => {
     const displayFacts: DisplayFactsReadModel = {
@@ -75,7 +74,7 @@ describe('render runtime facts', () => {
         },
       ],
       reasonCode: null,
-    }
+    };
 
     const facts = createRenderRuntimeFacts({
       environmentMode: 'TEST',
@@ -84,17 +83,20 @@ describe('render runtime facts', () => {
       platformPortCapabilities: [],
       displayFacts,
       surfaceCanvasSizes: {PRIMARY: {width: 1280, height: 800}, SECONDARY: {width: 960, height: 540}},
-    })
+    });
 
-    expect(facts.displayFacts).toEqual(displayFacts)
-    expect(facts.displayFacts).not.toBe(displayFacts)
-    expect(Object.isFrozen(facts.displayFacts)).toBe(true)
-    expect(Object.isFrozen(facts.displayFacts?.surfaces)).toBe(true)
-    expect(Object.isFrozen(facts.displayFacts?.surfaces[0])).toBe(true)
-    expect(facts.displayFacts?.surfaces[1]?.physicalSize).toBeNull()
-    expect(facts.displayFacts?.surfaces[1]?.readiness).toBe('unavailable')
-    expect(facts.surfaceCanvasSizes).toEqual({PRIMARY: {width: 1280, height: 800}, SECONDARY: {width: 960, height: 540}})
-    expect(Object.isFrozen(facts.surfaceCanvasSizes)).toBe(true)
-    expect(Object.isFrozen(facts.surfaceCanvasSizes?.SECONDARY)).toBe(true)
-  })
-})
+    expect(facts.displayFacts).toEqual(displayFacts);
+    expect(facts.displayFacts).not.toBe(displayFacts);
+    expect(Object.isFrozen(facts.displayFacts)).toBe(true);
+    expect(Object.isFrozen(facts.displayFacts?.surfaces)).toBe(true);
+    expect(Object.isFrozen(facts.displayFacts?.surfaces[0])).toBe(true);
+    expect(facts.displayFacts?.surfaces[1]?.physicalSize).toBeNull();
+    expect(facts.displayFacts?.surfaces[1]?.readiness).toBe('unavailable');
+    expect(facts.surfaceCanvasSizes).toEqual({
+      PRIMARY: {width: 1280, height: 800},
+      SECONDARY: {width: 960, height: 540},
+    });
+    expect(Object.isFrozen(facts.surfaceCanvasSizes)).toBe(true);
+    expect(Object.isFrozen(facts.surfaceCanvasSizes?.SECONDARY)).toBe(true);
+  });
+});

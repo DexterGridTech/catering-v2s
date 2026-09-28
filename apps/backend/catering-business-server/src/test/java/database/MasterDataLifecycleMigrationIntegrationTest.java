@@ -604,6 +604,8 @@ class MasterDataLifecycleMigrationIntegrationTest {
             statement.execute("DROP SCHEMA IF EXISTS sales_menu CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS platform_iam CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS platform_workspace CASCADE");
+            statement.execute("DROP SCHEMA IF EXISTS terminal_binding CASCADE");
+            statement.execute("DROP SCHEMA IF EXISTS terminal_connection CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS store_terminal CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS workspace_iam CASCADE");
             statement.execute("DROP TABLE IF EXISTS public.flyway_schema_history");

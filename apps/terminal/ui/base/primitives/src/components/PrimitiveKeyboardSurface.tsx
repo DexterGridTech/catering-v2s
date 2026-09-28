@@ -1,5 +1,5 @@
 import {StyleSheet} from 'react-native';
-import {RnrView} from '../vendor/slots';
+import {RnrView} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import type {PrimitiveKeyboardSurfaceProps} from '../types/types';
@@ -7,9 +7,7 @@ import type {PrimitiveKeyboardSurfaceProps} from '../types/types';
 const interactionPropsOf = (
   onTouchEnd: PrimitiveKeyboardSurfaceProps['onTouchEnd'],
   onClick: PrimitiveKeyboardSurfaceProps['onClick'],
-): Readonly<Record<string, unknown>> => typeof document === 'undefined'
-  ? {onTouchEnd}
-  : {onClick};
+): Readonly<Record<string, unknown>> => (typeof document === 'undefined' ? {onTouchEnd} : {onClick});
 
 export const PrimitiveKeyboardSurface = ({
   testID,

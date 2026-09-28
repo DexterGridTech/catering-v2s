@@ -30,13 +30,12 @@ import {fileURLToPath} from 'node:url';
 import {resolveTrustedRemoteHost} from '../dev/r5-remote-host-trust.mjs';
 import {remoteDevRootFor, remoteIdentityMatches, validateRemoteJavaControl} from '../dev/r5-remote-java.mjs';
 import {
-  cleanupRemoteJavaRoot,
   collectRemoteLog,
   remoteHttpPortPreflight,
   remoteJavaReadiness,
   remoteResourcePreflight as remoteJavaResourcePreflight,
   startRemoteJava,
-  stopRemoteJava,
+  stopAndCleanupStartedRemoteJava,
   syncRemoteSource,
   waitForRemoteBusinessReady,
 } from '../dev/r5-remote-java-runtime.mjs';
@@ -2351,18 +2350,15 @@ async function startRemoteRuntime({identity, ports, host, credentials, runDirect
       } catch (collectionError) {
         error.artifactErrors.push(`REMOTE_LOG:${errorCode(collectionError)}`);
       }
-      try {
-        await stopRemoteJava(host, remoteJava);
-      } catch (stopError) {
-        error.cleanupErrors.push(`REMOTE_JAVA:${errorCode(stopError)}`);
-      }
-    }
-    if (remoteRoot) {
-      try {
-        cleanupRemoteJavaRoot(host, remoteRoot);
-      } catch (cleanupError) {
-        error.cleanupErrors.push(`REMOTE_ROOT:${errorCode(cleanupError)}`);
-      }
+      const stopAndCleanup = await stopAndCleanupStartedRemoteJava({
+        host,
+        runId: remoteJava.runId,
+        remoteRoot,
+        remoteJava,
+      });
+      error.cleanupErrors.push(...stopAndCleanup.failures.map(errorValue => `REMOTE_JAVA:${errorCode(errorValue)}`));
+    } else if (remoteRoot) {
+      error.cleanupErrors.push('REMOTE_ROOT:R5_REMOTE_JAVA_CONTROL_REQUIRED_FOR_CLEANUP');
     }
     throw error;
   }
@@ -6728,19 +6724,15 @@ async function cleanupOwnedL2Resources(state, credentials) {
     } catch (error) {
       artifactErrors.push(`REMOTE_ARTIFACTS:${errorCode(error)}`);
     }
-    try {
-      validateRemoteJavaControl(state.remoteJava);
-      await stopRemoteJava(state.remote.host, state.remoteJava);
-    } catch (error) {
-      errors.push(`REMOTE_JAVA:${errorCode(error)}`);
-    }
-  }
-  if (state.remoteRoot) {
-    try {
-      cleanupRemoteJavaRoot(state.remote.host, state.remoteRoot);
-    } catch (error) {
-      errors.push(`REMOTE_ROOT:${errorCode(error)}`);
-    }
+    const stopAndCleanup = await stopAndCleanupStartedRemoteJava({
+      host: state.remote.host,
+      runId: state.remoteJava.runId,
+      remoteRoot: state.remoteRoot,
+      remoteJava: state.remoteJava,
+    });
+    errors.push(...stopAndCleanup.failures.map(errorValue => `REMOTE_JAVA:${errorCode(errorValue)}`));
+  } else if (state.remoteRoot) {
+    errors.push('REMOTE_ROOT:R5_REMOTE_JAVA_CONTROL_REQUIRED_FOR_CLEANUP');
   }
   errors.push(...(await stopOwnedRunProcesses(state)));
   try {

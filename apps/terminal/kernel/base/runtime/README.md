@@ -21,7 +21,7 @@ topology/adapter 包负责。
 src/
   application/   createRuntime、四阶段生命周期接线、模块 descriptor
   foundations/   拓扑解析、dispatcher、lifecycle emitter、journal、资源注册表、错误归一化
-  features/      runtime initialize、instance-mode 与 request-ledger command/actor/slice
+  features/      runtime initialize、instance-mode、request-ledger 与 system-failure reset command/actor/slice
   selectors/     instance-mode 与 request execution view selector
   types/         command、actor、execution、requestLedger、peer、journal、limits、module、runtime
   testing/       仅测试接缝：资源释放与 state 同步读取，不是生产能力；通过 `/testing` 子路径访问
@@ -93,6 +93,10 @@ reset 只能由 actor context 的 `requestApplicationReset` 登记，并在 root
 reset 会再次运行 initialize，所以每个模块的 initialize actor 必须可重复执行并自带幂等保证。
 命令已经终结并释放后才到达的 actor reset 请求没有活动 root 可绑定，会被丢弃，不会留下
 无人消费的 pending reset。
+
+渲染内容错误的 `reset-runtime-after-system-failure` 是 public、空 payload command；render UI 只负责派发。
+对应 actor 调用 `platformPorts.appControl.resetRuntime` 重启 JS runtime，不重启原生进程；port 不可用或失败时返回
+typed command outcome 并记录受限诊断，不将 reset 描述为成功。
 
 ## 5 · 部署边界与本单元范围
 

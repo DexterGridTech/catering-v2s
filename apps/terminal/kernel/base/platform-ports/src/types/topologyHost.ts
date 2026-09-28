@@ -9,11 +9,11 @@ export interface TopologyHostRuntimeConfig {
   readonly heartbeatTimeoutMs: number;
 }
 export interface TopologyHostConfig extends TopologyHostRuntimeConfig {
-  readonly timeoutMs: number
-  readonly identity?: TopologyIdentity
+  readonly timeoutMs: number;
+  readonly identity?: TopologyIdentity;
 }
 export interface TopologyHostConfigWithIdentity extends TopologyHostConfig {
-  readonly identity: TopologyIdentity
+  readonly identity: TopologyIdentity;
 }
 export interface TopologyHostAddress {
   readonly host: string;
@@ -41,7 +41,9 @@ export interface TopologyHostDiagnostics {
   readonly stats: TopologyHostStats;
   readonly capturedAt: TimestampMs;
 }
-export interface TopologyHostCall { readonly timeoutMs: number }
+export interface TopologyHostCall {
+  readonly timeoutMs: number;
+}
 export interface TopologyHostPort {
   start(input: TopologyHostConfig): Promise<PortResult<TopologyHostAddress>>;
   stop(input: TopologyHostCall): Promise<PortResult<NoOutput>>;

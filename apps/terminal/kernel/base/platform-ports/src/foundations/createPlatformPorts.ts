@@ -41,17 +41,19 @@ const createStartupTracker = (): StartupTracker | undefined => {
 
 const defaultScope: LogScope = Object.freeze({moduleName: 'platform-ports', layer: 'kernel'});
 
-const mergeScope = (scope: LogScope, binding: LogScopeBinding): LogScope => Object.freeze({
-  moduleName: binding.moduleName ?? scope.moduleName,
-  layer: binding.layer ?? scope.layer,
-  subsystem: binding.subsystem ?? scope.subsystem,
-  component: binding.component ?? scope.component,
-});
+const mergeScope = (scope: LogScope, binding: LogScopeBinding): LogScope =>
+  Object.freeze({
+    moduleName: binding.moduleName ?? scope.moduleName,
+    layer: binding.layer ?? scope.layer,
+    subsystem: binding.subsystem ?? scope.subsystem,
+    component: binding.component ?? scope.component,
+  });
 
-const mergeContext = (context: LogContext | undefined, update: LogContext): LogContext => Object.freeze({
-  ...context,
-  ...update,
-});
+const mergeContext = (context: LogContext | undefined, update: LogContext): LogContext =>
+  Object.freeze({
+    ...context,
+    ...update,
+  });
 
 const sinkFailure = (capability: string): PortFailure => ({
   status: 'failed',
@@ -71,9 +73,8 @@ const sendToConsole = (level: LogEvent['level'], event: LogEvent): void => {
   else console.error(event);
 };
 
-const startupPhaseOf = (category: string): string => category.startsWith('startup.')
-  ? category.slice('startup.'.length)
-  : category;
+const startupPhaseOf = (category: string): string =>
+  category.startsWith('startup.') ? category.slice('startup.'.length) : category;
 
 type LoggerOptions = Readonly<{
   readonly context?: LogContext;
@@ -98,16 +99,16 @@ const createLogger = (
       message: input.message,
       scope,
       context: context === undefined ? input.context : mergeContext(context, input.context ?? {}),
-      data: isStartupEvent && tracker !== undefined
-        ? {
-          ...input.data,
-          startupRunId: typeof input.data?.startupRunId === 'string'
-            ? input.data.startupRunId
-            : tracker.startupRunId,
-          phase: startupPhaseOf(input.category),
-          sequence: startupSequence ?? tracker.sequence,
-        }
-        : input.data,
+      data:
+        isStartupEvent && tracker !== undefined
+          ? {
+              ...input.data,
+              startupRunId:
+                typeof input.data?.startupRunId === 'string' ? input.data.startupRunId : tracker.startupRunId,
+              phase: startupPhaseOf(input.category),
+              sequence: startupSequence ?? tracker.sequence,
+            }
+          : input.data,
       error: input.error,
       security: {containsSensitiveRaw: false, maskingMode: 'masked'},
     });
@@ -124,8 +125,10 @@ const createLogger = (
     info: (input: LogWriteInput): LogWriteResult => write('info', input),
     warn: (input: LogWriteInput): LogWriteResult => write('warn', input),
     error: (input: LogWriteInput): LogWriteResult => write('error', input),
-    scope: (bindingInput: LogScopeBinding): LoggerPort => createLogger(binding, mergeScope(scope, bindingInput), {context, tracker}),
-    withContext: (contextInput: LogContext): LoggerPort => createLogger(binding, scope, {context: mergeContext(context, contextInput), tracker}),
+    scope: (bindingInput: LogScopeBinding): LoggerPort =>
+      createLogger(binding, mergeScope(scope, bindingInput), {context, tracker}),
+    withContext: (contextInput: LogContext): LoggerPort =>
+      createLogger(binding, scope, {context: mergeContext(context, contextInput), tracker}),
   };
   const descriptor = Reflect.get(binding, PORT_DESCRIPTOR_KEY) as PortDescriptor | undefined;
   if (descriptor !== undefined) {
@@ -139,7 +142,10 @@ const createLogger = (
   return Object.freeze(logger);
 };
 
-const readPortDescriptor = (port: string, binding: object): Readonly<{
+const readPortDescriptor = (
+  port: string,
+  binding: object,
+): Readonly<{
   readonly port: string;
   readonly descriptorStatus: 'complete' | 'missing-descriptor';
   readonly capabilities?: readonly PlatformPortCapability[];
@@ -153,9 +159,7 @@ const readPortDescriptor = (port: string, binding: object): Readonly<{
   };
 };
 
-export const describePlatformPortCapabilities = (
-  ports: PlatformPorts,
-): readonly PlatformPortCapabilitySnapshot[] => {
+export const describePlatformPortCapabilities = (ports: PlatformPorts): readonly PlatformPortCapabilitySnapshot[] => {
   const portNames = [
     'logger',
     'persistKv',
@@ -168,17 +172,21 @@ export const describePlatformPortCapabilities = (
     'logUpload',
     'topologyHost',
   ] as const;
-  return Object.freeze(portNames.map((port) => {
-    const descriptor = readPortDescriptor(port, ports[port]);
-    return Object.freeze({
-      port,
-      descriptorStatus: descriptor.descriptorStatus,
-      capabilities: Object.freeze(descriptor.capabilities ?? []),
-    });
-  }));
+  return Object.freeze(
+    portNames.map(port => {
+      const descriptor = readPortDescriptor(port, ports[port]);
+      return Object.freeze({
+        port,
+        descriptorStatus: descriptor.descriptorStatus,
+        capabilities: Object.freeze(descriptor.capabilities ?? []),
+      });
+    }),
+  );
 };
 
-const describeBindings = (bindings: PlatformPortBindings): Readonly<{
+const describeBindings = (
+  bindings: PlatformPortBindings,
+): Readonly<{
   readonly descriptorStatus: 'complete' | 'missing-descriptor';
   readonly descriptors: readonly Readonly<{
     readonly port: string;

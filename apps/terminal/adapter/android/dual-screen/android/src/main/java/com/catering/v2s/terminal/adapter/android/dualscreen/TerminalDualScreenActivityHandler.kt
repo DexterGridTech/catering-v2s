@@ -107,20 +107,25 @@ internal sealed class DisplaySnapshotReadResult {
   data class Unavailable(val reason: String) : DisplaySnapshotReadResult()
 }
 
+internal data class DisplaySnapshotCandidate(val displayId: Int, val flags: Int)
+
 internal fun readDisplaySnapshotSelection(
-  readDisplayIds: () -> List<Int>?,
+  readDisplays: () -> List<DisplaySnapshotCandidate>?,
 ): DisplaySnapshotReadResult {
-  val displayIds = try {
-    readDisplayIds()
+  val displays = try {
+    readDisplays()
   } catch (_error: Throwable) {
     return DisplaySnapshotReadResult.Unavailable("display-snapshot-failed")
   }
-  if (displayIds == null) return DisplaySnapshotReadResult.Unavailable("display-manager-unavailable")
-  val secondaryDisplayIndex = displayIds
-    .indexOfFirst { it != Display.DEFAULT_DISPLAY }
+  if (displays == null) return DisplaySnapshotReadResult.Unavailable("display-manager-unavailable")
+  val reportedDisplays = displays.filter {
+    it.displayId == Display.DEFAULT_DISPLAY || it.flags and Display.FLAG_PRESENTATION != 0
+  }
+  val secondaryDisplayIndex = reportedDisplays
+    .indexOfFirst { it.displayId != Display.DEFAULT_DISPLAY }
     .takeIf { it >= 0 }
   return DisplaySnapshotReadResult.Ready(
-    displayCount = displayIds.size,
+    displayCount = reportedDisplays.size,
     secondaryDisplayIndex = secondaryDisplayIndex,
   )
 }
@@ -633,7 +638,9 @@ internal class TerminalDualScreenActivityHandler :
       displays.forEachIndexed { index, display ->
         logDisplayMetrics("display-snapshot-entry", display, index)
       }
-      when (val selection = readDisplaySnapshotSelection { displays.map { it.displayId } }) {
+      when (val selection = readDisplaySnapshotSelection {
+        displays.map { DisplaySnapshotCandidate(it.displayId, it.flags) }
+      }) {
         is DisplaySnapshotReadResult.Unavailable -> {
           log(selection.reason)
           TerminalSurfaceHostRegistry.markUnavailable(
@@ -647,7 +654,10 @@ internal class TerminalDualScreenActivityHandler :
         is DisplaySnapshotReadResult.Ready -> {
           val snapshot = DisplaySnapshot(
             displayCount = selection.displayCount,
-            secondaryDisplay = selection.secondaryDisplayIndex?.let(displays::get),
+            secondaryDisplay = selection.secondaryDisplayIndex?.let { index ->
+              displays.filter { it.displayId == Display.DEFAULT_DISPLAY || it.flags and Display.FLAG_PRESENTATION != 0 }
+                .getOrNull(index)
+            },
           )
           log(
             "display-snapshot-read",

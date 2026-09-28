@@ -34,7 +34,7 @@ describe('operations L2 select helpers', () => {
     expect(source).toContain("await page.keyboard.press('Escape');");
   });
 
-  it('uses the active portal option with click-first keyboard fallback', () => {
+  it('waits for controlled selection before keyboard fallback without clicking the option twice', () => {
     const ownerOptionHelper = helperBody(
       'selectOperationsOption',
       '/**\n * A role-locked selector already contains an owner-confirmed fixed value.',
@@ -42,9 +42,13 @@ describe('operations L2 select helpers', () => {
     expect(ownerOptionHelper).toContain("const visibleOptions = dropdown.locator('.ant-select-item-option:visible');");
     expect(ownerOptionHelper).toContain('await option.scrollIntoViewIfNeeded();');
     expect(ownerOptionHelper).toContain('await option.click();');
-    expect(ownerOptionHelper).toContain('const retryOption = (await activeSelectDropdown(page, input))');
-    expect(ownerOptionHelper).toContain('await retryOption.scrollIntoViewIfNeeded();');
-    expect(ownerOptionHelper).toContain('await retryOption.click();');
+    const pointerClick = ownerOptionHelper.indexOf('await option.click();');
+    const committedValueWait = ownerOptionHelper.indexOf('await expect(control).toContainText(label);', pointerClick);
+    const keyboardFallback = ownerOptionHelper.indexOf('await input.focus();', pointerClick);
+    expect(committedValueWait).toBeGreaterThan(pointerClick);
+    expect(committedValueWait).toBeLessThan(keyboardFallback);
+    expect(ownerOptionHelper).not.toContain('retryOption');
+    expect(ownerOptionHelper.match(/await option\.click\(\);/g)).toHaveLength(1);
     expect(ownerOptionHelper).toContain('const activeOption = page.locator(`#${activeId}`);');
     expect(ownerOptionHelper).toContain('const activeLabel =');
     expect(ownerOptionHelper).toContain('await input.focus();');

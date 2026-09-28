@@ -101,7 +101,7 @@
 
 Dexter 于 2026-09-28 明确裁定并取代此前“非当前 surface 不显示尺寸与状态”的限制：单机双屏必须读取并显示副屏信息。此后所有真实 surface（包括非当前 surface）均显示各自的角色、应用逻辑画布分辨率、物理分辨率及就绪/可用状态；任何字段只能来自该 surface 自己的事实，不得从另一块屏复制。设备逻辑显示区域仍逐屏读取，但仅用于矩形外形比例，不显示“设备显示区域：宽×高”数值字段。
 
-术语也在此冻结：**逻辑画布就是逻辑分辨率**，其唯一值源是应用传入的逐 surface `terminalSurfaces` 声明；不得把 Android `Display.getRealMetrics()` 的像素除以 density 所得设备逻辑显示区域冒称应用逻辑分辨率。设备逻辑显示区域与物理像素是独立事实；设备逻辑显示区域仅用于矩形比例，不显示数值标签。当前两个 Android application package 的横屏 PRIMARY、SECONDARY 画布均为 `1280×800`；当前真机设备逻辑区域为 `1280×720`、物理尺寸为 `1920×1080`，不得互相覆盖。
+术语也在此冻结：**逻辑画布就是逻辑分辨率**，其唯一值源是应用传入的逐 surface `terminalSurfaces` 声明；不得把 Android `Display.getRealMetrics()` 的像素除以 density 所得设备逻辑显示区域冒称应用逻辑分辨率。设备逻辑显示区域与物理像素是独立事实；设备逻辑显示区域仅用于矩形比例，不显示数值标签。当前两个 Android application package 的横屏 PRIMARY、SECONDARY 画布均为 `1280×720`；当前真机设备逻辑区域为 `1280×720`、物理尺寸为 `1920×1080`，不得互相覆盖。
 
 ## 2. 用户与用户任务
 
@@ -305,7 +305,7 @@ Admin shell 的公共面板、导航、摘要、状态、可展开分组、比�
 
 ### 5.2 运行状态与 display facts
 
-当前 display-context 已通过公开 `DisplayInfo.surfaces[]` 为每块实际屏幕提供 `logicalSize`（Android real metrics 除以该屏 density 得到的设备逻辑显示区域）、`physicalSize`（该屏物理像素尺寸）和 readiness；旧 Admin 投影只描述当前 surface，导致已有副屏事实被 UI 隐藏。应用逻辑画布则来自 integration assembly 已解析的逐屏 `surfaceDeclarations`，不属于 display facts；应用 package 配置 `1280×800` 是这项事实的来源。此前 render runtime facts 未承载画布声明，且 Admin 把设备逻辑显示区域误标为逻辑分辨率，故本次修复补齐应用画布数据流并明确区分两种尺寸。
+当前 display-context 已通过公开 `DisplayInfo.surfaces[]` 为每块实际屏幕提供 `logicalSize`（Android real metrics 除以该屏 density 得到的设备逻辑显示区域）、`physicalSize`（该屏物理像素尺寸）和 readiness；旧 Admin 投影只描述当前 surface，导致已有副屏事实被 UI 隐藏。应用逻辑画布则来自 integration assembly 已解析的逐屏 `surfaceDeclarations`，不属于 display facts；应用 package 配置 `1280×720` 是这项事实的来源。此前 render runtime facts 未承载画布声明，且 Admin 把设备逻辑显示区域误标为逻辑分辨率，故本次修复补齐应用画布数据流并明确区分两种尺寸。
 
 需求不允许实现方：
 

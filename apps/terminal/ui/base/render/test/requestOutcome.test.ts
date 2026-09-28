@@ -1,12 +1,9 @@
-import {describe, expect, it} from 'vitest'
-import {createCommandId} from '@catering-v2s/kernel-base-contracts'
-import type {CommandAggregateStatus, CommandDispatchResult} from '@catering-v2s/kernel-base-runtime'
-import {classifyRequestResult, type RequestOutcome} from '../src/foundations/requestOutcome'
+import {describe, expect, it} from 'vitest';
+import {createCommandId} from '@catering-v2s/kernel-base-contracts';
+import type {CommandAggregateStatus, CommandDispatchResult} from '@catering-v2s/kernel-base-runtime';
+import {classifyRequestResult, type RequestOutcome} from '../src/foundations/requestOutcome';
 
-const makeResult = (
-  status: CommandAggregateStatus,
-  categories: readonly string[] = [],
-): CommandDispatchResult => ({
+const makeResult = (status: CommandAggregateStatus, categories: readonly string[] = []): CommandDispatchResult => ({
   requestId: null,
   commandId: createCommandId(),
   status,
@@ -24,7 +21,7 @@ const makeResult = (
       severity: 'MEDIUM' as const,
     },
   })),
-})
+});
 
 describe('classifyRequestResult', () => {
   const cases = [
@@ -42,20 +39,22 @@ describe('classifyRequestResult', () => {
     ['error', [], 'system-failure'],
     ['error', ['BUSINESS', 'SYSTEM'], 'system-failure'],
     ['error', ['NOT_A_KERNEL_CATEGORY'], 'system-failure'],
-  ] as const satisfies readonly (readonly [CommandAggregateStatus, readonly string[], RequestOutcome])[]
+  ] as const satisfies readonly (readonly [CommandAggregateStatus, readonly string[], RequestOutcome])[];
 
   for (const [status, categories, expected] of cases) {
     it(`${status} with categories ${categories.join(',') || 'none'} is ${expected}`, () => {
-      expect(classifyRequestResult(makeResult(status, categories))).toBe(expected)
-    })
+      expect(classifyRequestResult(makeResult(status, categories))).toBe(expected);
+    });
   }
 
   it('filters null actor errors without treating a missing error as business failure', () => {
-    const result = makeResult('error', ['BUSINESS'])
-    const [actor] = result.actorResults
-    expect(classifyRequestResult({
-      ...result,
-      actorResults: [{...actor, error: null}],
-    })).toBe('system-failure')
-  })
-})
+    const result = makeResult('error', ['BUSINESS']);
+    const [actor] = result.actorResults;
+    expect(
+      classifyRequestResult({
+        ...result,
+        actorResults: [{...actor, error: null}],
+      }),
+    ).toBe('system-failure');
+  });
+});

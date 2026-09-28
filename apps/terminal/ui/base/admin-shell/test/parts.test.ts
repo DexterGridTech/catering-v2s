@@ -1,5 +1,5 @@
-import {describe, expect, it} from 'vitest'
-import {parts} from '../src/parts/parts'
+import {describe, expect, it} from 'vitest';
+import {parts} from '../src/parts/parts';
 
 const normalizeCatalogEntry = (entry: (typeof parts)[number]['catalogEntry']) => ({
   partKey: entry.partKey,
@@ -9,16 +9,16 @@ const normalizeCatalogEntry = (entry: (typeof parts)[number]['catalogEntry']) =>
   instanceModes: entry.instanceModes,
   title: entry.title,
   description: entry.description,
-})
+});
 
 describe('admin-shell R-10a part declarations', () => {
   it('contains two non-overlapping siblings for every admin part key', () => {
-    expect(parts).toHaveLength(12)
-    const groups = new Map<string, typeof parts[number][]>()
+    expect(parts).toHaveLength(12);
+    const groups = new Map<string, (typeof parts)[number][]>();
     for (const part of parts) {
-      const siblings = groups.get(part.catalogEntry.partKey) ?? []
-      siblings.push(part)
-      groups.set(part.catalogEntry.partKey, siblings)
+      const siblings = groups.get(part.catalogEntry.partKey) ?? [];
+      siblings.push(part);
+      groups.set(part.catalogEntry.partKey, siblings);
     }
 
     expect([...groups.keys()].sort()).toEqual([
@@ -28,43 +28,43 @@ describe('admin-shell R-10a part declarations', () => {
       'admin.console.power-confirmation',
       'admin.console.runtime',
       'admin.console.topology',
-    ])
+    ]);
     for (const siblings of groups.values()) {
-      expect(siblings).toHaveLength(2)
-      expect(siblings.map(part => part.catalogEntry.surfaceForm).sort()).toEqual([
-        ['laptop'],
-        ['mobile'],
-      ])
-      expect(new Set(siblings.map(part => part.rendererBinding.rendererKey)).size).toBe(2)
-      expect(new Set(siblings.map(part => part.rendererBinding.component)).size).toBe(2)
+      expect(siblings).toHaveLength(2);
+      expect(siblings.map(part => part.catalogEntry.surfaceForm).sort()).toEqual([['laptop'], ['mobile']]);
+      expect(new Set(siblings.map(part => part.rendererBinding.rendererKey)).size).toBe(2);
+      expect(new Set(siblings.map(part => part.rendererBinding.component)).size).toBe(2);
       for (const sibling of siblings) {
-        const surfaceForm = sibling.catalogEntry.surfaceForm[0]
-        expect(sibling.rendererBinding.rendererKey).toBe(`${sibling.catalogEntry.partKey}.${surfaceForm}`)
-        expect(sibling.rendererBinding.component.name).toContain(surfaceForm === 'laptop' ? 'Laptop' : 'Mobile')
+        const surfaceForm = sibling.catalogEntry.surfaceForm[0];
+        expect(sibling.rendererBinding.rendererKey).toBe(`${sibling.catalogEntry.partKey}.${surfaceForm}`);
+        expect(sibling.rendererBinding.component.name).toContain(surfaceForm === 'laptop' ? 'Laptop' : 'Mobile');
       }
     }
-    expect(new Set(parts.map(part => part.rendererBinding.rendererKey)).size).toBe(12)
-  })
+    expect(new Set(parts.map(part => part.rendererBinding.rendererKey)).size).toBe(12);
+  });
 
   it('keeps every sibling semantic field and layer binding equal after definePart normalization', () => {
-    const groups = new Map<string, typeof parts[number][]>()
+    const groups = new Map<string, (typeof parts)[number][]>();
     for (const part of parts) {
-      const siblings = groups.get(part.catalogEntry.partKey) ?? []
-      siblings.push(part)
-      groups.set(part.catalogEntry.partKey, siblings)
+      const siblings = groups.get(part.catalogEntry.partKey) ?? [];
+      siblings.push(part);
+      groups.set(part.catalogEntry.partKey, siblings);
     }
     for (const siblings of groups.values()) {
-      const [first, second] = siblings
-      expect(normalizeCatalogEntry(first!.catalogEntry)).toEqual(normalizeCatalogEntry(second!.catalogEntry))
-      expect(first!.rendererBinding.layerTier).toBe(second!.rendererBinding.layerTier)
-      expect(first!.rendererBinding.layerGuard).toBe(second!.rendererBinding.layerGuard)
+      const [first, second] = siblings;
+      expect(normalizeCatalogEntry(first!.catalogEntry)).toEqual(normalizeCatalogEntry(second!.catalogEntry));
+      expect(first!.rendererBinding.layerTier).toBe(second!.rendererBinding.layerTier);
+      expect(first!.rendererBinding.layerGuard).toBe(second!.rendererBinding.layerGuard);
     }
-    const adminConsoleSiblings = groups.get('admin.console')!
-    expect(adminConsoleSiblings.every(part => part.rendererBinding.layerGuard === 'decisive')).toBe(true)
-    const powerConfirmationSiblings = groups.get('admin.console.power-confirmation')!
-    expect(powerConfirmationSiblings.every(part => part.rendererBinding.layerTier === 'alert')).toBe(true)
-    expect(powerConfirmationSiblings.every(part => part.rendererBinding.layerGuard === 'decisive')).toBe(true)
-    expect(parts.filter(part => !['admin.console', 'admin.console.power-confirmation'].includes(part.catalogEntry.partKey))
-      .every(part => part.rendererBinding.layerGuard === 'dismissible')).toBe(true)
-  })
-})
+    const adminConsoleSiblings = groups.get('admin.console')!;
+    expect(adminConsoleSiblings.every(part => part.rendererBinding.layerGuard === 'decisive')).toBe(true);
+    const powerConfirmationSiblings = groups.get('admin.console.power-confirmation')!;
+    expect(powerConfirmationSiblings.every(part => part.rendererBinding.layerTier === 'alert')).toBe(true);
+    expect(powerConfirmationSiblings.every(part => part.rendererBinding.layerGuard === 'decisive')).toBe(true);
+    expect(
+      parts
+        .filter(part => !['admin.console', 'admin.console.power-confirmation'].includes(part.catalogEntry.partKey))
+        .every(part => part.rendererBinding.layerGuard === 'dismissible'),
+    ).toBe(true);
+  });
+});

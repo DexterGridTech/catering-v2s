@@ -1,7 +1,10 @@
-import {fileURLToPath} from 'node:url'
-import {defineConfig} from 'vitest/config'
+import {fileURLToPath} from 'node:url';
+import {defineConfig} from 'vitest/config';
 
-const testReactNativeEntry = fileURLToPath(new URL('../../../../../tools/terminal-shared/react-native-vitest-entry.ts', import.meta.url))
+const testReactNativeEntry = fileURLToPath(
+  new URL('../../../../../tools/terminal-shared/react-native-vitest-entry.ts', import.meta.url),
+);
+const rntlSetup = fileURLToPath(new URL('../../../../../tools/terminal-shared/rntl-vitest-setup.ts', import.meta.url));
 
 export default defineConfig({
   define: {__DEV__: 'false'},
@@ -13,8 +16,8 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    setupFiles: ['./test/vitest.setup.cjs'],
+    setupFiles: ['./test/vitest.setup.cjs', rntlSetup],
     include: ['test/**/*.test.ts', 'test/**/*.test.tsx'],
     passWithNoTests: false,
   },
-})
+});

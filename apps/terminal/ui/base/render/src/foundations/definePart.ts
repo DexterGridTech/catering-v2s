@@ -1,14 +1,8 @@
-import type {ComponentType} from 'react'
-import type {
-  UiCatalogEntry,
-} from '@catering-v2s/kernel-base-ui-state'
-import type {
-  LayerGuard,
-  LayerTier,
-  RendererBinding,
-} from '../types/catalog'
+import type {ComponentType} from 'react';
+import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state';
+import type {LayerGuard, LayerTier, RendererBinding} from '../types/catalog';
 
-type RenderComponentProps = object
+type RenderComponentProps = object;
 
 type DefinePartCatalogFields = Pick<
   UiCatalogEntry,
@@ -21,69 +15,66 @@ type DefinePartCatalogFields = Pick<
   | 'surfaceForm'
   | 'title'
   | 'description'
->
+>;
 
-type DefinePartInput<TProps extends RenderComponentProps> = Readonly<DefinePartCatalogFields & {
-  readonly component: ComponentType<TProps>
-  readonly layerTier?: LayerTier
-  readonly layerGuard?: LayerGuard
-}>
+type DefinePartInput<TProps extends RenderComponentProps> = Readonly<
+  DefinePartCatalogFields & {
+    readonly component: ComponentType<TProps>;
+    readonly layerTier?: LayerTier;
+    readonly layerGuard?: LayerGuard;
+  }
+>;
 
 type DefinedPart<TProps extends RenderComponentProps> = Readonly<{
-  readonly catalogEntry: UiCatalogEntry
-  readonly rendererBinding: RendererBinding<TProps>
-}>
+  readonly catalogEntry: UiCatalogEntry;
+  readonly rendererBinding: RendererBinding<TProps>;
+}>;
 
 type DefinePartPairInput<TProps extends RenderComponentProps> = Readonly<
   Omit<DefinePartCatalogFields, 'rendererKey' | 'surfaceForm'> & {
     readonly components: Readonly<{
-      readonly laptop: ComponentType<TProps>
-      readonly mobile: ComponentType<TProps>
-    }>
-    readonly layerTier?: LayerTier
-    readonly layerGuard?: LayerGuard
+      readonly laptop: ComponentType<TProps>;
+      readonly mobile: ComponentType<TProps>;
+    }>;
+    readonly layerTier?: LayerTier;
+    readonly layerGuard?: LayerGuard;
   }
->
+>;
 
 type DefinedPartPair<TProps extends RenderComponentProps> = Readonly<{
-  readonly laptop: DefinedPart<TProps>
-  readonly mobile: DefinedPart<TProps>
-}>
+  readonly laptop: DefinedPart<TProps>;
+  readonly mobile: DefinedPart<TProps>;
+}>;
 
-const hasOwn = (value: object, property: PropertyKey): boolean =>
-  Object.prototype.hasOwnProperty.call(value, property)
+const hasOwn = (value: object, property: PropertyKey): boolean => Object.prototype.hasOwnProperty.call(value, property);
 
-const requireLayerTier = <TProps extends RenderComponentProps>(
-  input: DefinePartInput<TProps>,
-): LayerTier => {
+const requireLayerTier = <TProps extends RenderComponentProps>(input: DefinePartInput<TProps>): LayerTier => {
   if (hasOwn(input, 'layerTier') && input.layerTier === undefined) {
-    throw new Error('[ui-base-render] layerTier must not be explicitly undefined')
+    throw new Error('[ui-base-render] layerTier must not be explicitly undefined');
   }
-  const layerTier = input.layerTier ?? 'standard'
+  const layerTier = input.layerTier ?? 'standard';
   if (layerTier !== 'standard' && layerTier !== 'alert') {
-    throw new Error('[ui-base-render] layerTier is invalid')
+    throw new Error('[ui-base-render] layerTier is invalid');
   }
-  return layerTier
-}
+  return layerTier;
+};
 
-const requireLayerGuard = <TProps extends RenderComponentProps>(
-  input: DefinePartInput<TProps>,
-): LayerGuard => {
+const requireLayerGuard = <TProps extends RenderComponentProps>(input: DefinePartInput<TProps>): LayerGuard => {
   if (hasOwn(input, 'layerGuard') && input.layerGuard === undefined) {
-    throw new Error('[ui-base-render] layerGuard must not be explicitly undefined')
+    throw new Error('[ui-base-render] layerGuard must not be explicitly undefined');
   }
-  const layerGuard = input.layerGuard ?? 'dismissible'
+  const layerGuard = input.layerGuard ?? 'dismissible';
   if (layerGuard !== 'dismissible' && layerGuard !== 'decisive') {
-    throw new Error('[ui-base-render] layerGuard is invalid')
+    throw new Error('[ui-base-render] layerGuard is invalid');
   }
-  return layerGuard
-}
+  return layerGuard;
+};
 
 export const definePart = <TProps extends RenderComponentProps>(
   input: DefinePartInput<TProps>,
 ): DefinedPart<TProps> => {
-  const layerTier = requireLayerTier(input)
-  const layerGuard = requireLayerGuard(input)
+  const layerTier = requireLayerTier(input);
+  const layerGuard = requireLayerGuard(input);
   const catalogEntry: UiCatalogEntry = Object.freeze({
     partKey: input.partKey,
     rendererKey: input.rendererKey,
@@ -94,32 +85,30 @@ export const definePart = <TProps extends RenderComponentProps>(
     surfaceForm: Object.freeze([...input.surfaceForm]),
     title: input.title,
     description: input.description,
-  })
+  });
   const rendererBinding: RendererBinding<TProps> = Object.freeze({
     rendererKey: input.rendererKey,
     component: input.component,
     layerTier,
     layerGuard,
-  })
-  return Object.freeze({catalogEntry, rendererBinding})
-}
+  });
+  return Object.freeze({catalogEntry, rendererBinding});
+};
 
 export const definePartPair = <TProps extends RenderComponentProps>(
   input: DefinePartPairInput<TProps>,
 ): DefinedPartPair<TProps> => {
-  const {components, ...catalogInput} = input
-  const defineSurfacePart = (
-    surfaceForm: 'laptop' | 'mobile',
-    component: ComponentType<TProps>,
-  ): DefinedPart<TProps> => definePart({
-    ...catalogInput,
-    component,
-    rendererKey: `${input.partKey}.${surfaceForm}`,
-    surfaceForm: [surfaceForm] as const,
-  })
+  const {components, ...catalogInput} = input;
+  const defineSurfacePart = (surfaceForm: 'laptop' | 'mobile', component: ComponentType<TProps>): DefinedPart<TProps> =>
+    definePart({
+      ...catalogInput,
+      component,
+      rendererKey: `${input.partKey}.${surfaceForm}`,
+      surfaceForm: [surfaceForm] as const,
+    });
 
   return Object.freeze({
     laptop: defineSurfacePart('laptop', components.laptop),
     mobile: defineSurfacePart('mobile', components.mobile),
-  })
-}
+  });
+};

@@ -1,9 +1,9 @@
-import {SystemFailureNotice} from '@catering-v2s/ui-base-render'
-import {useAuthSystemNotice} from '../../hooks/useAuthSystemNotice'
-import type {AuthSystemNoticeProps} from '../../types/authSystemNotice'
+import {SystemFailureNotice} from '@catering-v2s/ui-base-render';
+import {useAuthSystemNotice} from '../../hooks/useAuthSystemNotice';
+import type {AuthSystemNoticeProps} from '../../types/authSystemNotice';
 
 export const AuthSystemNotice = ({operation: _operation}: AuthSystemNoticeProps) => {
-  const notice = useAuthSystemNotice()
+  const notice = useAuthSystemNotice();
   return (
     <SystemFailureNotice
       testIDPrefix="sample.auth.system-notice"
@@ -14,5 +14,5 @@ export const AuthSystemNotice = ({operation: _operation}: AuthSystemNoticeProps)
         actionsOrientation: 'row',
       }}
     />
-  )
-}
+  );
+};

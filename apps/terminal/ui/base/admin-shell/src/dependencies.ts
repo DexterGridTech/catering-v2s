@@ -9,6 +9,17 @@ import {moduleName as uiState} from '@catering-v2s/kernel-base-ui-state';
 import {moduleName as displayContext} from '@catering-v2s/kernel-base-display-context';
 import {moduleName as input} from '@catering-v2s/ui-base-input';
 
-export const dependencyModuleNames = [contracts, platformPorts, runtime, state, displayContext, topology, render, primitives, input, uiState] as const;
+export const dependencyModuleNames = [
+  contracts,
+  platformPorts,
+  runtime,
+  state,
+  displayContext,
+  topology,
+  render,
+  primitives,
+  input,
+  uiState,
+] as const;
 
 export const devDependencyModuleNames = [] as const;

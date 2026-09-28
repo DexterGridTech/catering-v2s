@@ -1,5 +1,5 @@
-export {moduleName} from './moduleName'
-export {dependencyModuleNames, devDependencyModuleNames} from './dependencies'
+export {moduleName} from './moduleName';
+export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
 
 export type {
   CommandRouteIntent,
@@ -13,8 +13,8 @@ export type {
   CommandDispatchOptions,
   ActorDispatchOptions,
   DispatchedCommand,
-} from './types/command'
-export {defineCommand, createCommand} from './foundations/defineCommand'
+} from './types/command';
+export {defineCommand, createCommand} from './foundations/defineCommand';
 
 export type {
   ActorInfo,
@@ -22,8 +22,8 @@ export type {
   ActorCommandHandler,
   ActorCommandHandlerDefinition,
   ActorDefinition,
-} from './types/actor'
-export {defineActor, onCommand} from './foundations/defineActor'
+} from './types/actor';
+export {defineActor, onCommand} from './foundations/defineActor';
 
 export type {
   LedgerError,
@@ -32,21 +32,13 @@ export type {
   CommandExecutionObservation,
   CommandAggregateStatus,
   CommandDispatchResult,
-} from './types/execution'
-export {aggregateCommandStatus} from './foundations/aggregateCommandStatus'
-export type {
-  RequestExecutionCommandView,
-  RequestExecutionView,
-} from './types/requestLedger'
-export {
-  selectRequestExecutionView,
-} from './selectors/selectRequestExecutionView'
-export {
-  selectRequestExecutionViews,
-  selectRequestExecutionCommands,
-} from './selectors/selectRequestExecutionViews'
+} from './types/execution';
+export {aggregateCommandStatus} from './foundations/aggregateCommandStatus';
+export type {RequestExecutionCommandView, RequestExecutionView} from './types/requestLedger';
+export {selectRequestExecutionView} from './selectors/selectRequestExecutionView';
+export {selectRequestExecutionViews, selectRequestExecutionCommands} from './selectors/selectRequestExecutionViews';
 
-export type {PeerDispatchOptions, PeerDispatchGateway} from './types/peer'
+export type {PeerDispatchOptions, PeerDispatchGateway} from './types/peer';
 
 export type {
   RuntimeModulePreSetupContext,
@@ -55,21 +47,18 @@ export type {
   RuntimeModuleResetInput,
   RuntimeModule,
   RuntimeModuleDescriptor,
-} from './types/module'
+} from './types/module';
 
-export type {
-  RuntimeInstanceMode,
-  SetRuntimeInstanceModePayload,
-  SetRuntimeInstanceModeResult,
-} from './types/role'
+export type {RuntimeInstanceMode, SetRuntimeInstanceModePayload, SetRuntimeInstanceModeResult} from './types/role';
 export {
   initializeCommand,
   runtimeInstanceModeChangedCommand,
   setRuntimeInstanceModeCommand,
-} from './features/commands'
-export {selectRuntimeInstanceMode} from './selectors/selectRuntimeInstanceMode'
+  resetRuntimeAfterSystemFailureCommand,
+} from './features/commands';
+export {selectRuntimeInstanceMode} from './selectors/selectRuntimeInstanceMode';
 
-export type {RuntimeLimits} from './types/limits'
+export type {RuntimeLimits} from './types/limits';
 export {
   defaultMaxCommandDepth,
   defaultMaxCommandsPerRequest,
@@ -79,13 +68,9 @@ export {
   defaultMaxJournalRecords,
   defaultCommandTimeoutMs,
   defaultRuntimeLimits,
-} from './types/limits'
+} from './types/limits';
 
-export type {
-  RuntimeJournalEvent,
-  RuntimeLifecycleObserver,
-  RuntimeJournal,
-} from './types/journal'
+export type {RuntimeJournalEvent, RuntimeLifecycleObserver, RuntimeJournal} from './types/journal';
 
 export type {
   RuntimeStatus,
@@ -93,5 +78,5 @@ export type {
   RuntimeStateInput,
   CreateRuntimeInput,
   Runtime,
-} from './types/runtime'
-export {createRuntime} from './application/createRuntime'
+} from './types/runtime';
+export {createRuntime} from './application/createRuntime';

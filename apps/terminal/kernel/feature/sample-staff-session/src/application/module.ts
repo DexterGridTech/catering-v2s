@@ -1,6 +1,6 @@
-import {createRequestId} from '@catering-v2s/kernel-base-contracts'
-import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime'
-import {runtimeModuleDependencyNames} from '../dependencies'
+import {createRequestId} from '@catering-v2s/kernel-base-contracts';
+import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
+import {runtimeModuleDependencyNames} from '../dependencies';
 import {
   bootstrapSessionCommand,
   loginCommand,
@@ -10,11 +10,11 @@ import {
   logoutSucceededCommand,
   sessionRestoredAnonymousCommand,
   sessionRestoredAuthenticatedCommand,
-} from '../features/commands/commands'
-import {createBootstrapActor, createLoginActor, createLogoutActor} from '../features/actors/actors'
-import {invalidCredentialsErrorDefinition} from '../foundations/errors'
-import {moduleKind, moduleName} from '../moduleName'
-import {sessionStateRegistration} from '../features/slices/slice'
+} from '../features/commands/commands';
+import {createBootstrapActor, createLoginActor, createLogoutActor} from '../features/actors/actors';
+import {invalidCredentialsErrorDefinition} from '../foundations/errors';
+import {moduleKind, moduleName} from '../moduleName';
+import {sessionStateRegistration} from '../features/slices/slice';
 
 const commands = [
   bootstrapSessionCommand,
@@ -25,14 +25,10 @@ const commands = [
   logoutSucceededCommand,
   sessionRestoredAuthenticatedCommand,
   sessionRestoredAnonymousCommand,
-] as const
+] as const;
 
 export const createSampleStaffSessionModule = (): RuntimeModule => {
-  const actors = [
-    createBootstrapActor(),
-    createLoginActor(),
-    createLogoutActor(),
-  ] as const
+  const actors = [createBootstrapActor(), createLoginActor(), createLogoutActor()] as const;
   return Object.freeze({
     moduleName,
     kind: moduleKind,
@@ -45,12 +41,16 @@ export const createSampleStaffSessionModule = (): RuntimeModule => {
     slices: [{name: sessionStateRegistration.name, persistIntent: sessionStateRegistration.persistIntent}],
     stateSlices: [sessionStateRegistration],
     install: async (context: RuntimeModuleContext) => {
-      const result = await context.dispatchCommand(bootstrapSessionCommand, {}, {
-        requestId: createRequestId(),
-      })
+      const result = await context.dispatchCommand(
+        bootstrapSessionCommand,
+        {},
+        {
+          requestId: createRequestId(),
+        },
+      );
       if (result.status !== 'completed') {
-        throw new Error(`[sample-staff-session] bootstrap failed: ${result.status}`)
+        throw new Error(`[sample-staff-session] bootstrap failed: ${result.status}`);
       }
     },
-  })
-}
+  });
+};

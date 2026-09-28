@@ -1,4 +1,4 @@
-import type {Reducer} from '@reduxjs/toolkit'
+import type {Reducer} from '@reduxjs/toolkit';
 import {
   applySliceSyncDiff,
   createFullSliceSyncPayload,
@@ -11,7 +11,7 @@ import {
   devDependencyModuleNames,
   moduleName,
   toWorkspaceStateDescriptors,
-} from '../src/index'
+} from '../src/index';
 import type {
   CreateStateRuntimeInput,
   CreateWorkspaceActionDispatcherInput,
@@ -54,50 +54,44 @@ import type {
   WorkspaceKey,
   WorkspaceRouteContext,
   WorkspaceStateKeys,
-} from '../src/index'
+} from '../src/index';
 
 // T-5: root action names are intentionally package-private and absent from the
 // public package root. These imports must remain compile errors.
 // @ts-expect-error root sync action type is not part of the public surface.
-import {applyAuthoritativeSyncActionType} from '../src/index'
+import {applyAuthoritativeSyncActionType} from '../src/index';
 // @ts-expect-error root reset action type is not part of the public surface.
-import {resetToOwnerInitialStateActionType} from '../src/index'
-
+import {resetToOwnerInitialStateActionType} from '../src/index';
 
 interface ExampleState {
-  readonly enabled: boolean
-  readonly entries: Readonly<Record<string, StateJsonValue>>
+  readonly enabled: boolean;
+  readonly entries: Readonly<Record<string, StateJsonValue>>;
 }
 
-const reducer: Reducer<ExampleState> = (
-  state = {enabled: false, entries: {}},
-) => state
+const reducer: Reducer<ExampleState> = (state = {enabled: false, entries: {}}) => state;
 
 const syncDescriptor: StateRuntimeSyncRecordDescriptor<ExampleState> = {
   kind: 'record',
   getEntries: (state): SyncRecordState => {
-    const entries: Record<string, SyncValueEnvelope> = {}
+    const entries: Record<string, SyncValueEnvelope> = {};
     for (const [key, value] of Object.entries(state.entries)) {
       entries[key] = {
         value,
         updatedAt: 1,
-      }
+      };
     }
-    return entries
+    return entries;
   },
   applyEntries: (state, entries): ExampleState => ({
     ...state,
-    entries: Object.entries(entries).reduce<Record<string, StateJsonValue>>(
-      (result, [key, entry]) => {
-        if (entry !== undefined && 'value' in entry && entry.value !== undefined) {
-          result[key] = entry.value
-        }
-        return result
-      },
-      {},
-    ),
+    entries: Object.entries(entries).reduce<Record<string, StateJsonValue>>((result, [key, entry]) => {
+      if (entry !== undefined && 'value' in entry && entry.value !== undefined) {
+        result[key] = entry.value;
+      }
+      return result;
+    }, {}),
   }),
-}
+};
 
 const persistence = [
   {
@@ -106,21 +100,21 @@ const persistence = [
   },
   {
     kind: 'record',
-    getEntries: (state) => state.entries,
+    getEntries: state => state.entries,
     applyEntries: (state, entries) => {
-      const nextEntries: Record<string, StateJsonValue> = {}
+      const nextEntries: Record<string, StateJsonValue> = {};
       for (const [key, value] of Object.entries(entries)) {
         if (value !== undefined) {
-          nextEntries[key] = value
+          nextEntries[key] = value;
         }
       }
-      return {...state, entries: nextEntries}
+      return {...state, entries: nextEntries};
     },
   },
 ] satisfies readonly [
   StateRuntimePersistenceDescriptor<ExampleState>,
   ...StateRuntimePersistenceDescriptor<ExampleState>[],
-]
+];
 
 const descriptor: StateRuntimeSliceDescriptor<ExampleState> = {
   name: 'example.state',
@@ -129,22 +123,22 @@ const descriptor: StateRuntimeSliceDescriptor<ExampleState> = {
   persistence,
   syncIntent: 'master-to-slave',
   sync: syncDescriptor,
-}
+};
 
-const registration = defineStateRuntimeSlice(descriptor)
-void registration
-const skipReason: StateSyncSkipReason = 'SYNC_NOT_DECLARED'
-void skipReason
-void applyAuthoritativeSyncActionType
-void resetToOwnerInitialStateActionType
+const registration = defineStateRuntimeSlice(descriptor);
+void registration;
+const skipReason: StateSyncSkipReason = 'SYNC_NOT_DECLARED';
+void skipReason;
+void applyAuthoritativeSyncActionType;
+void resetToOwnerInitialStateActionType;
 
 // @ts-expect-error owner-only declarations require a non-empty persistence tuple.
 const missingPersistence: StateRuntimeSliceDescriptor<ExampleState> = {
   name: 'example.missing-persistence',
   reducer,
   persistIntent: 'owner-only',
-}
-void missingPersistence
+};
+void missingPersistence;
 
 // @ts-expect-error never declarations cannot contain persistence descriptors.
 const forbiddenPersistence: StateRuntimeSliceDescriptor<ExampleState> = {
@@ -152,8 +146,8 @@ const forbiddenPersistence: StateRuntimeSliceDescriptor<ExampleState> = {
   reducer,
   persistIntent: 'never',
   persistence,
-}
-void forbiddenPersistence
+};
+void forbiddenPersistence;
 
 // @ts-expect-error a directional sync intent requires a sync descriptor.
 const missingSync: StateRuntimeSliceDescriptor<ExampleState> = {
@@ -161,8 +155,8 @@ const missingSync: StateRuntimeSliceDescriptor<ExampleState> = {
   reducer,
   persistIntent: 'never',
   syncIntent: 'master-to-slave',
-}
-void missingSync
+};
+void missingSync;
 
 // @ts-expect-error isolated slices cannot declare a sync descriptor.
 const forbiddenSync: StateRuntimeSliceDescriptor<ExampleState> = {
@@ -171,22 +165,22 @@ const forbiddenSync: StateRuntimeSliceDescriptor<ExampleState> = {
   persistIntent: 'never',
   syncIntent: 'isolated',
   sync: syncDescriptor,
-}
-void forbiddenSync
+};
+void forbiddenSync;
 
 // @ts-expect-error a sync envelope must contain a value or a tombstone.
 const missingSyncValue: SyncValueEnvelope = {
   updatedAt: 1,
-}
-void missingSyncValue
+};
+void missingSyncValue;
 
 const conflictingSyncValue: SyncValueEnvelope = {
   value: true,
   updatedAt: 1,
   // @ts-expect-error a sync envelope cannot contain both a value and a tombstone.
   tombstone: true,
-}
-void conflictingSyncValue
+};
+void conflictingSyncValue;
 
 // @ts-expect-error the opaque registration brand cannot be supplied by consumers.
 const forgedRegistration: StateRuntimeSliceRegistration = {
@@ -195,21 +189,17 @@ const forgedRegistration: StateRuntimeSliceRegistration = {
   syncIntent: 'isolated',
   hasPersistence: false,
   hasSync: false,
-}
-void forgedRegistration
+};
+void forgedRegistration;
 
 // @ts-expect-error the only supported workspace keys are MAIN and BRANCH.
-const unsupportedWorkspace: WorkspaceKey = 'instanceMode'
-void unsupportedWorkspace
+const unsupportedWorkspace: WorkspaceKey = 'instanceMode';
+void unsupportedWorkspace;
 
 const full = createFullSliceSyncPayload(syncDescriptor, {
   enabled: false,
   entries: {},
-})
-const applied = applySliceSyncDiff(
-  syncDescriptor,
-  {enabled: false, entries: {}},
-  full,
-)
-void full
-void applied
+});
+const applied = applySliceSyncDiff(syncDescriptor, {enabled: false, entries: {}}, full);
+void full;
+void applied;

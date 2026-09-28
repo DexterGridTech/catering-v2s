@@ -1,40 +1,100 @@
-import {PrimitiveCard, PrimitiveContainer, PrimitiveEmptyState, PrimitiveFactGrid, PrimitiveHeading, PrimitiveScrollView, PrimitiveStack, PrimitiveStatusLine, PrimitiveSurfaceMap, PrimitiveText} from '@catering-v2s/ui-base-primitives'
-import type {AdminSectionProps} from '../../types/adminSection'
-import {adminTestIds} from '../../foundations/adminTestIds'
-import {useAdminRuntimeDisplay} from '../../hooks/useAdminRuntimeDisplay'
+import {
+  PrimitiveCard,
+  PrimitiveContainer,
+  PrimitiveEmptyState,
+  PrimitiveFactGrid,
+  PrimitiveHeading,
+  PrimitiveScrollView,
+  PrimitiveStack,
+  PrimitiveStatusLine,
+  PrimitiveSurfaceMap,
+  PrimitiveText,
+} from '@catering-v2s/ui-base-primitives';
+import type {AdminSectionProps} from '../../types/adminSection';
+import {adminTestIds} from '../../foundations/adminTestIds';
+import {useAdminRuntimeDisplay} from '../../hooks/useAdminRuntimeDisplay';
 
-const sectionStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0})
-const runtimeScrollPaddingBottom = 48
-const mobileSurfaceCardStyle = Object.freeze({flexShrink: 0})
+const sectionStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0});
+const runtimeScrollPaddingBottom = 48;
+const mobileSurfaceCardStyle = Object.freeze({flexShrink: 0});
 
 /** Mobile raw display-context renderer; it keeps its own page JSX while sharing only the facts projection hook. */
 export const DisplayContextSectionMobile = ({context}: AdminSectionProps) => {
-  const {facts, status, display, displayCountLabel, overallMessage} = useAdminRuntimeDisplay({context, surfaceForm: 'mobile'})
+  const {facts, status, display, displayCountLabel, overallMessage} = useAdminRuntimeDisplay({
+    context,
+    surfaceForm: 'mobile',
+  });
 
   return (
-    <PrimitiveContainer testID={adminTestIds.runtime.section} layout="content" appearance="admin-content" bounded style={sectionStyle}>
+    <PrimitiveContainer
+      testID={adminTestIds.runtime.section}
+      layout="content"
+      appearance="admin-content"
+      bounded
+      style={sectionStyle}
+    >
       <PrimitiveScrollView testID="admin.console.runtime:scroll" contentPaddingBottom={runtimeScrollPaddingBottom}>
-        <PrimitiveHeading appearance="admin-page" testID={adminTestIds.runtime.title}>{context.catalogEntry.title}</PrimitiveHeading>
+        <PrimitiveHeading appearance="admin-page" testID={adminTestIds.runtime.title}>
+          {context.catalogEntry.title}
+        </PrimitiveHeading>
         <PrimitiveCard appearance="admin" testID="admin.console.runtime:summary-card">
-          <PrimitiveStatusLine testID={adminTestIds.runtime.overallStatus} tone={status === 'started' ? 'ok' : status === 'created' ? 'warn' : 'error'}>
+          <PrimitiveStatusLine
+            testID={adminTestIds.runtime.overallStatus}
+            tone={status === 'started' ? 'ok' : status === 'created' ? 'warn' : 'error'}
+          >
             {overallMessage}
           </PrimitiveStatusLine>
           <PrimitiveFactGrid
             testID="admin.console.runtime:facts"
             columns={1}
             items={[
-              {key: 'stage', label: '运行阶段', value: status === 'started' ? '正常' : status === 'created' ? '正在准备' : '不可用', tone: status === 'started' ? 'ok' as const : 'warn' as const},
-              {key: 'environment', testID: 'admin.console.runtime:environment', label: '环境', value: facts.environmentMode},
-              {key: 'debug', testID: 'admin.console.runtime:debug', label: '调试态', value: `${facts.debugMode.enabled ? '开启' : '关闭'} / ${facts.debugMode.source}`, tone: facts.debugMode.enabled ? 'ok' as const : 'neutral' as const},
-              {key: 'device', testID: 'admin.console.runtime:device', label: '设备', value: facts.deviceIdentity.available ? '可用' : '不可用', tone: facts.deviceIdentity.available ? 'ok' as const : 'warn' as const},
-              {key: 'display-status', testID: 'admin.console.runtime:display-status', label: '显示事实', value: display.status === 'ready' ? '已读取' : display.reason ?? '显示事实不可用', tone: display.status === 'ready' ? 'ok' as const : 'warn' as const},
-              {key: 'physical-display-count', testID: adminTestIds.runtime.physicalDisplayCount, label: '物理屏数量', value: displayCountLabel},
+              {
+                key: 'stage',
+                label: '运行阶段',
+                value: status === 'started' ? '正常' : status === 'created' ? '正在准备' : '不可用',
+                tone: status === 'started' ? ('ok' as const) : ('warn' as const),
+              },
+              {
+                key: 'environment',
+                testID: 'admin.console.runtime:environment',
+                label: '环境',
+                value: facts.environmentMode,
+              },
+              {
+                key: 'debug',
+                testID: 'admin.console.runtime:debug',
+                label: '调试态',
+                value: `${facts.debugMode.enabled ? '开启' : '关闭'} / ${facts.debugMode.source}`,
+                tone: facts.debugMode.enabled ? ('ok' as const) : ('neutral' as const),
+              },
+              {
+                key: 'device',
+                testID: 'admin.console.runtime:device',
+                label: '设备',
+                value: facts.deviceIdentity.available ? '可用' : '不可用',
+                tone: facts.deviceIdentity.available ? ('ok' as const) : ('warn' as const),
+              },
+              {
+                key: 'display-status',
+                testID: 'admin.console.runtime:display-status',
+                label: '显示事实',
+                value: display.status === 'ready' ? '已读取' : (display.reason ?? '显示事实不可用'),
+                tone: display.status === 'ready' ? ('ok' as const) : ('warn' as const),
+              },
+              {
+                key: 'physical-display-count',
+                testID: adminTestIds.runtime.physicalDisplayCount,
+                label: '物理屏数量',
+                value: displayCountLabel,
+              },
             ]}
           />
         </PrimitiveCard>
         {display.status === 'ready' ? (
           <>
-            <PrimitiveText appearance="admin-muted" testID={adminTestIds.runtime.mobileSingleSurfaceBoundary}>mobile 形态仅显示一块实际屏幕</PrimitiveText>
+            <PrimitiveText appearance="admin-muted" testID={adminTestIds.runtime.mobileSingleSurfaceBoundary}>
+              mobile 形态仅显示一块实际屏幕
+            </PrimitiveText>
             <PrimitiveStack testID="admin.console.runtime:surface-card" style={mobileSurfaceCardStyle}>
               <PrimitiveSurfaceMap
                 testID={adminTestIds.runtime.surfaceMap}
@@ -44,7 +104,9 @@ export const DisplayContextSectionMobile = ({context}: AdminSectionProps) => {
                 compact
               />
             </PrimitiveStack>
-            <PrimitiveText appearance="admin-muted" testID={adminTestIds.runtime.legend}>逻辑分辨率为应用配置的画布尺寸；矩形按设备比例绘制，物理分辨率分别读取</PrimitiveText>
+            <PrimitiveText appearance="admin-muted" testID={adminTestIds.runtime.legend}>
+              逻辑分辨率为应用配置的画布尺寸；矩形按设备比例绘制，物理分辨率分别读取
+            </PrimitiveText>
           </>
         ) : (
           <PrimitiveEmptyState testID={adminTestIds.runtime.displayFactsError} tone="warn">
@@ -53,5 +115,5 @@ export const DisplayContextSectionMobile = ({context}: AdminSectionProps) => {
         )}
       </PrimitiveScrollView>
     </PrimitiveContainer>
-  )
-}
+  );
+};

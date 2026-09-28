@@ -27,6 +27,8 @@ class RuntimeEnvironmentKeysTest {
                         RuntimeEnvironmentKeys.V2S_PLATFORM_SESSION,
                         RuntimeEnvironmentKeys.V2S_RUNTIME_DIR,
                         RuntimeEnvironmentKeys.V2S_RUNTIME_ENVIRONMENT,
+                        RuntimeEnvironmentKeys.V2S_TDS_MAX_TRACKED_SESSIONS,
+                        RuntimeEnvironmentKeys.V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS,
                         RuntimeEnvironmentKeys.V2S_TESTCONTAINERS_EXECUTION_PLANE),
                 RuntimeEnvironmentKeys.CROSS_LAYER_KEYS);
     }

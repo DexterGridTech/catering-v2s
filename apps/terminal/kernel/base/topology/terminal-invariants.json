@@ -3,8 +3,37 @@
   "package": "@catering-v2s/kernel-base-topology",
   "owned": {
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-topology", "runner": "vitest"},
-    "lint": {"kind": "ABSENT"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-base-topology", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
-  "publicExports": ["CreateTopologyModuleInput", "TopologyAdminRuntime", "TopologyDisplayChangedPayload", "TopologyEligibilityInput", "TopologyState", "areTopologyFactsEqual", "createTopologyAdminCapability", "createTopologyModule", "dependencyModuleNames", "devDependencyModuleNames", "evaluateTopologyOperation", "hasTopologySecondarySurface", "moduleKind", "moduleName", "pairByHostTopologyCommand", "reconcileTopologyHostCommand", "reconcileTopologyPeerCommand", "refreshTopologyDisplayCommand", "runtimeModuleDependencyNames", "selectTopologyFacts", "selectTopologyState", "setTopologyHostEnabledCommand", "topologyActions", "topologyDisplayChangedCommand", "topologyHostEventCommand", "topologyReasonMessages", "topologySliceName", "unpairTopologyCommand"]
+  "publicExports": [
+    "CreateTopologyModuleInput",
+    "TopologyAdminRuntime",
+    "TopologyDisplayChangedPayload",
+    "TopologyEligibilityInput",
+    "TopologyState",
+    "areTopologyFactsEqual",
+    "createTopologyAdminCapability",
+    "createTopologyModule",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "evaluateTopologyOperation",
+    "hasTopologySecondarySurface",
+    "moduleKind",
+    "moduleName",
+    "pairByHostTopologyCommand",
+    "reconcileTopologyHostCommand",
+    "reconcileTopologyPeerCommand",
+    "refreshTopologyDisplayCommand",
+    "runtimeModuleDependencyNames",
+    "selectTopologyFacts",
+    "selectTopologyState",
+    "setTopologyHostEnabledCommand",
+    "topologyActions",
+    "topologyDisplayChangedCommand",
+    "topologyHostEventCommand",
+    "topologyReasonMessages",
+    "topologySliceName",
+    "unpairTopologyCommand"
+  ]
 }

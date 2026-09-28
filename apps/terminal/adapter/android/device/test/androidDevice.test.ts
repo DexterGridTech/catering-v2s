@@ -1,38 +1,41 @@
-import type {DevicePort} from '@catering-v2s/kernel-base-platform-ports'
-import {createAndroidDevicePort} from '../src/implementations/androidDevice'
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
+import type {DevicePort} from '@catering-v2s/kernel-base-platform-ports';
+import {createAndroidDevicePort} from '../src/implementations/androidDevice';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 const {requireNativeModuleMock, eventListeners} = vi.hoisted(() => ({
   requireNativeModuleMock: vi.fn(),
   eventListeners: [] as Array<(value: unknown) => void>,
-}))
+}));
 
 vi.mock('expo-modules-core', () => ({
-  LegacyEventEmitter: class LegacyEventEmitter {
-    addListener(_eventName: string, listener: (value: unknown) => void) {
-      eventListeners.push(listener)
-      return {
-        remove: () => {
-          const index = eventListeners.indexOf(listener)
-          if (index >= 0) eventListeners.splice(index, 1)
-        },
-      }
-    }
+  requireNativeModule: (...args: unknown[]) => {
+    const module = requireNativeModuleMock(...args) as Record<string, unknown>;
+    return {
+      ...module,
+      addListener: (_eventName: string, listener: (value: unknown) => void) => {
+        eventListeners.push(listener);
+        return {
+          remove: () => {
+            const index = eventListeners.indexOf(listener);
+            if (index >= 0) eventListeners.splice(index, 1);
+          },
+        };
+      },
+    };
   },
-  requireNativeModule: requireNativeModuleMock,
-}))
+}));
 
-const nativeModule = requireNativeModuleMock
+const nativeModule = requireNativeModuleMock;
 
 describe('createAndroidDevicePort', () => {
   beforeEach(() => {
-    nativeModule.mockReset()
-    eventListeners.length = 0
-  })
+    nativeModule.mockReset();
+    eventListeners.length = 0;
+  });
 
   afterEach(() => {
-    vi.restoreAllMocks()
-  })
+    vi.restoreAllMocks();
+  });
 
   it('maps native device/display/power snapshots and forwards power events', async () => {
     nativeModule.mockReturnValue({
@@ -86,9 +89,9 @@ describe('createAndroidDevicePort', () => {
         value: {completed: true as const},
         completedAt: 126,
       })),
-    })
+    });
 
-    const port: DevicePort = createAndroidDevicePort()
+    const port: DevicePort = createAndroidDevicePort();
     await expect(port.getDeviceInfo({timeoutMs: 1_000})).resolves.toEqual({
       status: 'succeeded',
       value: {
@@ -100,7 +103,7 @@ describe('createAndroidDevicePort', () => {
         logicalProcessorCount: 8,
       },
       completedAt: 122,
-    })
+    });
     await expect(port.getDisplayInfo({timeoutMs: 1_000})).resolves.toEqual({
       status: 'succeeded',
       value: {
@@ -123,66 +126,70 @@ describe('createAndroidDevicePort', () => {
         ],
       },
       completedAt: 123,
-    })
+    });
     await expect(port.getPowerStatus({timeoutMs: 1_000})).resolves.toEqual({
       status: 'succeeded',
       value: {source: 'external', charging: 'charging', levelRatio: 0.75},
       completedAt: 124,
-    })
+    });
     await expect(port.getSystemStatus({timeoutMs: 1_000})).resolves.toMatchObject({
       status: 'unavailable',
       port: 'device',
       capability: 'getSystemStatus',
-    })
-    const events: Array<{readonly source: string; readonly charging: string}> = []
-    const errors: unknown[] = []
-    await expect(port.subscribePowerStatus({
-      timeoutMs: 1_000,
-      listener: event => events.push({source: event.status.source, charging: event.status.charging}),
-      onError: error => errors.push(error),
-    })).resolves.toMatchObject({status: 'succeeded', value: {subscriptionId: 'power-subscription'}})
-    expect(eventListeners).toHaveLength(1)
+    });
+    const events: Array<{readonly source: string; readonly charging: string}> = [];
+    const errors: unknown[] = [];
+    await expect(
+      port.subscribePowerStatus({
+        timeoutMs: 1_000,
+        listener: event => events.push({source: event.status.source, charging: event.status.charging}),
+        onError: error => errors.push(error),
+      }),
+    ).resolves.toMatchObject({status: 'succeeded', value: {subscriptionId: 'power-subscription'}});
+    expect(eventListeners).toHaveLength(1);
     eventListeners[0]?.({
       subscriptionId: 'power-subscription',
       status: {source: 'battery', charging: 'not-charging'},
       observedAt: 127,
-    })
+    });
     eventListeners[0]?.({
       subscriptionId: 'another-subscription',
       status: {source: 'external', charging: 'charging'},
       observedAt: 128,
-    })
-    eventListeners[0]?.({subscriptionId: 'power-subscription', status: {source: 'invalid'}, observedAt: 129})
+    });
+    eventListeners[0]?.({subscriptionId: 'power-subscription', status: {source: 'invalid'}, observedAt: 129});
     expect(events).toEqual([
       {source: 'external', charging: 'charging'},
       {source: 'battery', charging: 'not-charging'},
-    ])
-    expect(errors).toMatchObject([{code: 'POWER_STATUS_EVENT_INVALID'}])
-    await expect(port.unsubscribePowerStatus({
-      timeoutMs: 1_000,
-      subscriptionId: 'power-subscription',
-    })).resolves.toMatchObject({status: 'succeeded', value: {completed: true}})
-    expect(eventListeners).toHaveLength(0)
-  })
+    ]);
+    expect(errors).toMatchObject([{code: 'POWER_STATUS_EVENT_INVALID'}]);
+    await expect(
+      port.unsubscribePowerStatus({
+        timeoutMs: 1_000,
+        subscriptionId: 'power-subscription',
+      }),
+    ).resolves.toMatchObject({status: 'succeeded', value: {completed: true}});
+    expect(eventListeners).toHaveLength(0);
+  });
 
   it('turns a native bridge rejection into a typed failure instead of throwing', async () => {
     nativeModule.mockReturnValue({
       getDeviceInfo: vi.fn(async () => {
-        throw new Error('bridge disconnected')
+        throw new Error('bridge disconnected');
       }),
       getDisplayInfo: vi.fn(async () => {
-        throw new Error('bridge disconnected')
+        throw new Error('bridge disconnected');
       }),
       getPowerStatus: vi.fn(async () => {
-        throw new Error('bridge disconnected')
+        throw new Error('bridge disconnected');
       }),
       subscribePowerStatus: vi.fn(async () => {
-        throw new Error('bridge disconnected')
+        throw new Error('bridge disconnected');
       }),
       unsubscribePowerStatus: vi.fn(async () => {
-        throw new Error('bridge disconnected')
+        throw new Error('bridge disconnected');
       }),
-    })
+    });
 
     await expect(createAndroidDevicePort().getDisplayInfo({timeoutMs: 1_000})).resolves.toEqual({
       status: 'failed',
@@ -193,7 +200,7 @@ describe('createAndroidDevicePort', () => {
         message: 'device display-info bridge failed',
         retryable: true,
       },
-    })
+    });
     await expect(createAndroidDevicePort().getDeviceInfo({timeoutMs: 1_000})).resolves.toEqual({
       status: 'failed',
       port: 'device',
@@ -203,7 +210,7 @@ describe('createAndroidDevicePort', () => {
         message: 'device-info bridge failed',
         retryable: true,
       },
-    })
+    });
     await expect(createAndroidDevicePort().getPowerStatus({timeoutMs: 1_000})).resolves.toEqual({
       status: 'failed',
       port: 'device',
@@ -213,6 +220,6 @@ describe('createAndroidDevicePort', () => {
         message: 'device power-status bridge failed',
         retryable: true,
       },
-    })
-  })
-})
+    });
+  });
+});

@@ -1,11 +1,4 @@
-import type {
-  LogError,
-  LogEvent,
-  LogFields,
-  LogContext,
-  LogScope,
-  LogValue,
-} from '../types/logging';
+import type {LogError, LogEvent, LogFields, LogContext, LogScope, LogValue} from '../types/logging';
 
 type MaskCategory =
   | 'phone'
@@ -45,7 +38,8 @@ const sensitiveKeyCategory = (key: string): MaskCategory | undefined => {
   if (normalized.includes('password') || normalized.includes('passwd')) return 'password';
   if (normalized.includes('hash')) return 'hash';
   if (normalized === 'otp' || normalized.includes('onetime') || normalized.includes('verificationcode')) return 'otp';
-  if (normalized.includes('authorization') || normalized === 'bearer' || normalized.includes('authheader')) return 'authorization';
+  if (normalized.includes('authorization') || normalized === 'bearer' || normalized.includes('authheader'))
+    return 'authorization';
   if (normalized.includes('cookie')) return 'cookie';
   if (normalized.includes('token')) return 'token';
   if (normalized.includes('phone') || normalized.includes('mobile')) return 'phone';
@@ -61,7 +55,8 @@ const sensitiveKeyCategory = (key: string): MaskCategory | undefined => {
     normalized === 'body' ||
     normalized === 'requestbody' ||
     normalized === 'responsebody'
-  ) return 'payload';
+  )
+    return 'payload';
   if (normalized.includes('secret') || normalized.includes('credential')) return 'credential';
   return undefined;
 };
@@ -84,14 +79,15 @@ const valueCategory = (value: string): MaskCategory | undefined => {
   return undefined;
 };
 
-const sanitizeText = (key: string | undefined, value: string): {readonly value: string; readonly sensitive: boolean} => {
+const sanitizeText = (
+  key: string | undefined,
+  value: string,
+): {readonly value: string; readonly sensitive: boolean} => {
   if (isSafeDiagnosticValue(key, value)) return {value, sensitive: false};
   const keyCategory = key === undefined ? undefined : sensitiveKeyCategory(key);
   if (keyCategory !== undefined) return {value: redaction(keyCategory), sensitive: true};
   const category = valueCategory(value);
-  return category === undefined
-    ? {value, sensitive: false}
-    : {value: redaction(category), sensitive: true};
+  return category === undefined ? {value, sensitive: false} : {value: redaction(category), sensitive: true};
 };
 
 interface SanitizedValue {
@@ -123,7 +119,7 @@ const sanitizeValue = (key: string | undefined, value: LogValue): SanitizedValue
   if (typeof value === 'string') return sanitizeText(key, value);
   if (isLogArray(value)) {
     let sensitive = false;
-    const sanitized = value.map((entry) => {
+    const sanitized = value.map(entry => {
       const result = sanitizeValue(undefined, entry);
       sensitive ||= result.sensitive;
       return result.value;
@@ -151,7 +147,8 @@ const sanitizeError = (error: LogError | undefined): {readonly error?: LogError;
       message: message.value,
       stack: stack?.value,
     },
-    sensitive: message.sensitive || (stack?.sensitive ?? false) || (name?.sensitive ?? false) || (code?.sensitive ?? false),
+    sensitive:
+      message.sensitive || (stack?.sensitive ?? false) || (name?.sensitive ?? false) || (code?.sensitive ?? false),
   };
 };
 
@@ -164,7 +161,9 @@ const sanitizeScope = (scope: LogScope): LogScope => ({
 
 // LogContext is intentionally a closed projection: branded IDs are preserved, commandName is value-sanitized,
 // and any future field must be added here before it can reach a LogEvent.
-const sanitizeContext = (context: LogContext | undefined): {readonly context?: LogContext; readonly sensitive: boolean} => {
+const sanitizeContext = (
+  context: LogContext | undefined,
+): {readonly context?: LogContext; readonly sensitive: boolean} => {
   if (context === undefined) return {sensitive: false};
   const commandName = context.commandName === undefined ? undefined : sanitizeText('commandName', context.commandName);
   return {

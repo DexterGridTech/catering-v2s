@@ -362,7 +362,7 @@ const readCurrentProgramRun = ({repositoryRoot, runDirectory, registry}) => {
   });
 };
 
-const operationMetrics = ({
+export const operationMetrics = ({
   registryRow,
   runs,
   currentProgramResult = false,
@@ -446,7 +446,17 @@ const operationMetrics = ({
         linearObservations,
         controlledExceptionRecords,
       });
-  const {controlledBudgetException, ...readinessFields} = readiness;
+  const {controlledBudgetException: readinessControlledBudgetException, ...readinessFields} = readiness;
+  const sourceException = controlledExceptionRecords.find(record => record?.operationId === registryRow.operationId);
+  const reportControlledBudgetException = sourceException
+    ? controlledBudgetExceptionForOperation({
+        operationId: registryRow.operationId,
+        fromMax: sourceException.from,
+        toMax: sourceException.to,
+        measuredMax: maxDatabaseOperationCount,
+        records: controlledExceptionRecords,
+      })
+    : readinessControlledBudgetException;
   return Object.freeze({
     operationId: registryRow.operationId,
     method: registryRow.method,
@@ -460,7 +470,7 @@ const operationMetrics = ({
     maxUnclassifiedSqlRatio,
     category,
     budgetReadiness: Object.freeze(readinessFields),
-    ...(controlledBudgetException ? {controlledBudgetException} : {}),
+    ...(reportControlledBudgetException ? {controlledBudgetException: reportControlledBudgetException} : {}),
     ...(linearObservations.length > 0 ? {linearBudgetObservations: linearObservations} : {}),
     runs: perRun,
   });

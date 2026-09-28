@@ -7,7 +7,7 @@
       "owner": "@catering-v2s/ui-integration-sample-console",
       "runner": "vitest"
     },
-    "lint": {"kind": "ABSENT"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-integration-sample-console", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
   "publicExports": [
@@ -19,12 +19,17 @@
     "SurfaceOrientation",
     "SurfaceSize",
     "TerminalSurfaces",
-    "createSampleAssembly", "createSampleConsoleModule", "createSampleDefinedParts",
+    "createSampleAssembly",
+    "createSampleConsoleModule",
+    "createSampleDefinedParts",
     "createSurfaceForDisplayIndex",
     "dependencyModuleNames",
     "devDependencyModuleNames",
-    "moduleKind", "moduleName",
-    "getSurfaceDeclarations", "readTerminalSurfaces", "surfaceFormForOrientation",
+    "moduleKind",
+    "moduleName",
+    "getSurfaceDeclarations",
+    "readTerminalSurfaces",
+    "surfaceFormForOrientation",
     "terminalSurfaces"
   ],
   "publicExportMap": {

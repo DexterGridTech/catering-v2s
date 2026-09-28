@@ -9,7 +9,9 @@ import type {HotUpdatePort} from './hotUpdate';
 import type {LogUploadPort} from './logUpload';
 import type {TopologyHostPort} from './topologyHost';
 
-export interface LoggerConsoleBinding { readonly kind: 'console' }
+export interface LoggerConsoleBinding {
+  readonly kind: 'console';
+}
 export interface LoggerSinkBinding {
   readonly kind: 'sink';
   readonly write: (event: LogEvent) => void;

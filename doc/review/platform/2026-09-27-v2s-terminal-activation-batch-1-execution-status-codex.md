@@ -3,6 +3,110 @@
 Status source for the implementation plan. This file is intentionally outside the L2 admission
 control-plane digest so runtime evidence can be appended without invalidating the reviewed UI bytes.
 
+## Current state at 2026-09-28 19:27 UTC — R3-M1 mutation caught
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+CURRENT_SOURCE_IDENTITY=472 files; SHA256=0dca67eb5ce5353e11986bdb7318dc7fc990342591aa0dd06210a8101d5e43d8
+LATEST_CURRENT_BYTE_MANAGED_RUN=r5-tc-1790623469262-22877; 2026-09-28T19:24:29.262Z–19:26:54.684Z; overall PASS; mutation verdict PASS; business PASS; expected TDS CONTRACT FAIL; cleanup PASS
+LAST_MANAGED_PASS=r5-tc-1790623469262-22877; same interval; current business source identity MATCHED; intended red control was detected
+PRODUCTION_MUTATION=tds-registration-pending-generation-check; replaceCount=1; sourceBefore=53bca163be4744504079c13cb369dd1488b9cd550d4430ed529c97421edb7f0d; sourceAfter=5eda22ef4695b9ea1d539ef7d96092bee3804f882bfc86e4ead9b47e9aabd476; stagingSnapshot=460e6e670d1ad41f98c2605a0089129346df9dab9a67e0fef96cb07fdcfce2a6
+MUTATION_EXPECTED_SIGNAL=HTTP 200; BUSINESS PASS; TDS CONTRACT FAIL; failureCategory=TDS_VS10_REGISTRATION_RACE_RED_CONTROL; clientFailureCategory=SESSION_READY_AFTER_REVOCATION
+MUTATION_RESULT=PASS; observed HTTP=200; BUSINESS=PASS; TDS CONTRACT=FAIL as expected; sessionReadyObserved=true; expected failure sentinel TEST_TDS_REGISTRATION_RACE_PENDING_GENERATION_MUTATION_NOT_CAUGHT preserved; testExecution.expectedFailure=true
+TDS_CONTRACT=2 discovered; 1 expected PASS topology probe; 1 expected FAIL mutant; TDS process REACTIVE; RSS ready=223992 KiB, before stop=275764 KiB, budget=512 MiB; TDS cleanup=PASS
+CLEANUP=PASS; remote process/workspace/Testcontainers containers/volumes/evidence archive all PASS; firstFailure=TEST_TDS_REGISTRATION_RACE_PENDING_GENERATION_MUTATION_NOT_CAUGHT; brokenBoundary=REMOTE_TEST_EXECUTION; this sentinel is the planned caught-mutation proof, not an unhandled business failure
+SIGNAL_ATTRIBUTION=the test harness stopped its own mutant client through TerminalConnectionContractScenarios.stopOwnedClient after observing SESSION_READY; Node reported senderPid unavailable. This run does not attribute the signal to a cron/ELF process.
+REMOTE_PROCESS_SNAPSHOT=597 records, before/after Gradle; no process basename matched gconf/pkill/cron in those snapshots. Snapshot omits argv and executablePath, so it does not establish whether a cron entry or short-lived sender exists.
+NEXT=collect the three current-byte all-operation CP-05 calibration reports at cardinalities 1, 20 and 100, after checking the existing report/run chronology
+FULL_BACKEND_ACCEPTANCE=NOT_RUN; L2=NOT_RUN; RESET=NOT_RUN; ACTUAL_SEED=NOT_RUN
+NETWORK=CONNECTED; SSH_OR_ROUTE_CONFIGURATION=UNCHANGED
+```
+
+The red control intentionally makes the isolated staging copy violate
+`generationRevoked`; the real pre-registration gate then allowed `SESSION_READY` after the real
+HTTP cancellation. The test's sentinel assertion failed by design, and the managed wrapper matched
+the required HTTP/business/TDS signal, recorded the mutation verdict as PASS, and completed cleanup.
+The resulting SIGTERM is attributable to the run-owned Java acceptance test calling its own
+`stopOwnedClient` helper after the observed mutant response; it is not evidence of the earlier
+external signal sender.
+
+## Current state at 2026-09-28 19:23 UTC — first current-byte managed run passed
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+WHOLE_BATCH_6B=MATCHED; 472 files; source SHA256=0dca67eb5ce5353e11986bdb7318dc7fc990342591aa0dd06210a8101d5e43d8
+FIRST_RUN_6C=PASS; M/S/N=0/0/2; only exact operation storeTerminalActivationBusinessPrecedence --topology-preflight was admitted
+LATEST_CURRENT_BYTE_MANAGED_RUN=r5-tc-1790623047929-13909; 2026-09-28T19:17:27.929Z–19:19:32.377Z; PASS; source identity=0dca67eb5ce5353e11986bdb7318dc7fc990342591aa0dd06210a8101d5e43d8
+LAST_MANAGED_PASS=r5-tc-1790623047929-13909; 2026-09-28T19:17:27.929Z–19:19:32.377Z; current bytes MATCHED
+BUSINESS=PASS; operation=storeTerminalActivationBusinessPrecedence; scenarios=1; DB_OPERATIONS=7; hand-written business oracle
+TDS_CONTRACT=PASS; 3/3; V-S10 registration race/device cancellation, V-S12 exact 10-second outage/recovery, topology probe
+TOPOLOGY=PASS; TDS application type=REACTIVE; TDS process PID/start ticks bound; separate TDS classpath report SHA256=ae7d260cd89fcd8447ca669dfac28339e5a4143709e551be8187616021ee7c7d; business/TDS runtime artifact counts=137/75
+TDS_CAPACITY=PASS; RSS ready=234924 KiB; before stop=271840 KiB; budget=512 MiB; TDS process cleanup=PASS
+V-S12=PASS; PostgreSQL paused 10000 ms; 6 existing-session PONGs; new auth closed SERVER_ERROR in 5143 ms; listener backend PID 71 disconnected and reconnected as PID 74; same session later closed ACTIVATION_CANCELLED
+RESOURCE_PREFLIGHT=PASS; remote Testcontainers containers/volumes initially empty; remote Node 22.23.2/core modules PASS; DEV_WAS_RUNNING=false; no stop/restart
+CLEANUP=PASS; remoteProcess=PASS; workspace=PASS; containers=PASS; volumes=PASS; evidenceArchive=PASS; firstFailure=null; brokenBoundary=null
+SIGNAL_TRACE=NOT_REQUESTED; run proves owned client shutdown completed without signal, but does not identify prior external signal senders or establish malware cleanup
+NEXT=run the separately authorized R3-M1 production-predicate red control, then CP-05 cardinality 1/20/100 calibration in plan order
+L2=NOT_RUN; RESET=NOT_RUN; ACTUAL_SEED=NOT_RUN; FULL_BACKEND_ACCEPTANCE=NOT_RUN
+NETWORK=CONNECTED; SSH_OR_ROUTE_CONFIGURATION=UNCHANGED
+```
+
+The final run manifest, business result, three TDS contract results, TDS process evidence, TDS and
+wire-client logs, HTTP/DB event archives, remote process inventory and cleanup receipts were read
+after completion. The run's final manifest is PASS (`firstFailure=null`, `lastKnownGood=CLEANUP`);
+an earlier read while cleanup was in progress saw fail-closed placeholder fields with
+`finishedAt=null`, which the same run later finalized to PASS. The runner's launch-time checks
+resolved both 6c notes: DEV was absent, local/remote resource checks passed, remote Testcontainers
+inventory was empty, and archive cleanup passed.
+
+## Current state at 2026-09-28 19:16 UTC — current 6b and 6c admission
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+CP05_RECONCILIATION=MATCHED; WHOLE_BATCH_6B=MATCHED; M/S/N=0/0/0; source set=472 files; SHA256=0dca67eb5ce5353e11986bdb7318dc7fc990342591aa0dd06210a8101d5e43d8; reviewer=/root/stage1_6c_admission_retry
+FIRST_RUN_6C=PASS; M/S/N=0/0/2; reviewer=/root/stage1_6c_currentbyte_admission; exact invocation=scripts/test/backend-acceptance --operation storeTerminalActivationBusinessPrecedence --topology-preflight
+CURRENT_BYTE_NORMAL_STATIC=PASS; command=scripts/verify --validate-only; nested runId=ter-local-static-90659-1790622089030; started=2026-09-28T19:01:29.030Z; finished=2026-09-28T19:03:25.937Z; R5_VERIFY_VALIDATE_ONLY=PASS; EXECUTED=46/46; TERMINAL_STATIC=PASS; cleanup=NOT_APPLICABLE_STATIC_ONLY
+CURRENT_BYTE_NORMAL_STATIC_LOG=.runtime/r5/evidence/terminal-activation-ordinary-validate-only-20260929.log; SHA256=00212f1a3f952120df26c49d01f734c640f0e328c5ca0cc6eab97491e6e0e137; lines=919; bytes=1562020
+FIRST_CURRENT_BYTE_MANAGED_RUN=NOT_RUN; next exact command=scripts/test/backend-acceptance --operation storeTerminalActivationBusinessPrecedence --topology-preflight
+CURRENT_BYTE_LATEST_RUN=ter-local-static-90659-1790622089030; 2026-09-28T19:01:29.030Z–19:03:25.937Z; ordinary validate-only PASS 46/46; static only, no remote runtime
+LAST_MANAGED_PASS=r5-tc-1790619537737-59512; 2026-09-28 18:18:57–18:21:25 UTC; historical, predates current generated binding and plan/design repair, not current-byte proof
+LOCAL_AND_DEV_PREFLIGHT=REQUIRED_AT_MANAGED_LAUNCH; previous local resource check was PASS with 0 live managed processes/0 MiB; DEV manifest state must be read again by runner
+REMOTE_RESOURCE_PREFLIGHT=REQUIRED_INSIDE_MANAGED_INVOCATION_BEFORE_REMOTE_WORKSPACE_PREPARE
+L2=NOT_RUN; RESET=NOT_RUN; ACTUAL_SEED=NOT_RUN; FULL_BACKEND_ACCEPTANCE=NOT_RUN
+NETWORK=CONNECTED; SSH_OR_ROUTE_CONFIGURATION=UNCHANGED
+```
+
+The earlier 18:45 state below recorded aggregate `3f260...`; that source digest was not reproducible
+from current bytes and is superseded by the fresh 472-file current identity above. The reviewer
+found no change in the scoped current file evidence and separately passed 6c for only the named
+first invocation. The runner must capture DEV ownership and repeat local/remote preflight at launch;
+no runtime outcome is claimed until that run completes and its cleanup is verified.
+
+## Current state at 2026-09-28 18:45 UTC — CP-05/6b refreshed after binding repair
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+CP05_RECONCILIATION=MATCHED; WHOLE_BATCH_6B=MATCHED; M/S/N=0/0/0; source set=472 files; SHA256=3f26055416f8a1afd23c5fb6b03da95e4929dd05e03eaed5aa93ba3788359d3c
+CURRENT_BYTE_NORMAL_STATIC=PASS; command=scripts/verify --validate-only; runId=ter-local-static-90659-1790622089030; started=2026-09-28T19:01:29.030Z; finished=2026-09-28T19:03:25.937Z; exit=0; R5_VERIFY_VALIDATE_ONLY=PASS; EXECUTED=46/46; TERMINAL_STATIC=PASS; cleanup=NOT_APPLICABLE_STATIC_ONLY
+CURRENT_BYTE_NORMAL_STATIC_LOG=.runtime/r5/evidence/terminal-activation-ordinary-validate-only-20260929.log; SHA256=00212f1a3f952120df26c49d01f734c640f0e328c5ca0cc6eab97491e6e0e137; lines=919; bytes=1562020
+CURRENT_BYTE_BINDING_GENERATION=PASS; 16 JSON + 16 Java; self-test and check PASS
+FIRST_CURRENT_BYTE_MANAGED_RUN=NOT_RUN
+LATEST_MANAGED_PASS=r5-tc-1790619537737-59512; 2026-09-28 18:18:57–18:21:25 UTC; predates current generated binding and plan/design repair; not current-byte proof
+CURRENT_DEV_MANIFEST=ABSENT; V2S_RUNTIME_DIR=UNSET; DEV_WAS_RUNNING=false (last checked before static verification; recheck immediately before managed run)
+FIRST_RUN_6C=REVIEW_IN_PROGRESS; exact invocation=scripts/test/backend-acceptance --operation storeTerminalActivationBusinessPrecedence --topology-preflight
+L2=NOT_RUN; RESET=NOT_RUN; ACTUAL_SEED=NOT_RUN; FULL_BACKEND_ACCEPTANCE=NOT_RUN
+NETWORK=CONNECTED; SSH_OR_ROUTE_CONFIGURATION=UNCHANGED
+```
+
+The earlier ordinary static pass used for first status was not retained; the later evidence-capture
+run above supersedes it for current verification evidence. The log contains the nested start/finish
+events and final markers. This is static evidence only and does not establish managed topology,
+business, TDS contract, database-operation, or cleanup results.
+
 ## Current state at 2026-09-28 18:40 KST — Stage 1 reconciliation refresh
 
 ```text

@@ -3,9 +3,11 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./config/semantic-color-keys": "./config/semantic-color-keys.cjs"
   },
   "scripts": {
+    "lint": "node ../../../../../tools/terminal-shared/run-owned-lint.mjs",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
   },
@@ -17,12 +19,13 @@
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
+    "@testing-library/react-native": "14.0.1",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "~57.0.0",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-css-interop": "0.2.6",
-    "react-test-renderer": "19.2.3",
+    "test-renderer": "1.2.0",
     "typescript": "~6.0.3",
     "vitest": "4.1.10"
   }

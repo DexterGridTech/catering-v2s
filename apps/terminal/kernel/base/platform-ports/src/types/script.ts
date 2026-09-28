@@ -5,11 +5,12 @@ export interface NativeFunctionInvocation {
   readonly argsJson: string;
   readonly timeoutMs: number;
 }
-export interface NativeFunctionOutput { readonly resultJson: string }
-export type NativeFunctionDispatcher =
-  (input: NativeFunctionInvocation) => Promise<PortResult<NativeFunctionOutput>>;
+export interface NativeFunctionOutput {
+  readonly resultJson: string;
+}
+export type NativeFunctionDispatcher = (input: NativeFunctionInvocation) => Promise<PortResult<NativeFunctionOutput>>;
 export type ScriptNativeBindings =
-  | { readonly kind: 'none' }
+  | {readonly kind: 'none'}
   | {
       readonly kind: 'named';
       readonly functionNames: readonly string[];
@@ -32,7 +33,9 @@ export interface ScriptStats {
   readonly failed: number;
   readonly averageElapsedMs: number;
 }
-export interface ScriptCall { readonly timeoutMs: number }
+export interface ScriptCall {
+  readonly timeoutMs: number;
+}
 export interface ScriptPort {
   execute(input: ScriptExecutionInput): Promise<PortResult<ScriptExecutionOutput>>;
   getStats(input: ScriptCall): Promise<PortResult<ScriptStats>>;

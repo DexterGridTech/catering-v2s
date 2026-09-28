@@ -1,13 +1,13 @@
-import {createSlice, type PayloadAction} from '@reduxjs/toolkit'
-import {defineStateRuntimeSlice} from '@catering-v2s/kernel-base-state'
-import {moduleName} from '../../moduleName'
-import type {WallpaperId, WallpaperState} from '../../types/types'
+import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
+import {defineStateRuntimeSlice} from '@catering-v2s/kernel-base-state';
+import {moduleName} from '../../moduleName';
+import type {WallpaperId, WallpaperState} from '../../types/types';
 
-export const wallpaperSliceName = `${moduleName}.selection` as const
+export const wallpaperSliceName = `${moduleName}.selection` as const;
 
 const initialState: WallpaperState = {
   wallpaperId: 'none',
-}
+};
 
 const wallpaperSlice = createSlice({
   name: wallpaperSliceName,
@@ -18,19 +18,19 @@ const wallpaperSlice = createSlice({
       pendingWallpaperId: action.payload,
     }),
     confirmPending: (state): WallpaperState => {
-      if (state.pendingWallpaperId === undefined) return state
-      return {wallpaperId: state.pendingWallpaperId}
+      if (state.pendingWallpaperId === undefined) return state;
+      return {wallpaperId: state.pendingWallpaperId};
     },
     clearPending: (state): WallpaperState => ({
       wallpaperId: state.wallpaperId,
     }),
   },
-})
+});
 
 export const wallpaperStateRegistration = defineStateRuntimeSlice<WallpaperState>({
   name: wallpaperSliceName,
   reducer: wallpaperSlice.reducer,
-      persistIntent: 'owner-only',
+  persistIntent: 'owner-only',
   persistence: [
     {kind: 'field', stateKey: 'wallpaperId'},
     {
@@ -40,6 +40,6 @@ export const wallpaperStateRegistration = defineStateRuntimeSlice<WallpaperState
     },
   ],
   syncIntent: 'isolated',
-})
+});
 
-export const wallpaperActions = wallpaperSlice.actions
+export const wallpaperActions = wallpaperSlice.actions;

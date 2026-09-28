@@ -5,6 +5,7 @@ import {readPackageInvariant} from '../terminal-shared/package-invariants.mjs';
 import {assertClosedUnionConsumers} from '../terminal-shared/closed-union-consumers.mjs';
 import {
   createAnalysisProgram,
+  assertNoSyntacticDiagnostics,
   resolveAliasedSymbol,
   resolveValueExpressionSymbol,
 } from '../terminal-shared/typescript-analysis.mjs';
@@ -127,8 +128,10 @@ function packageRecordByName(packageRecords) {
 
 function boundaryTargetPackage(packageRecords, byName, filePath, moduleSpecifier, spec) {
   if (moduleSpecifier.startsWith(packageScope)) {
-    return byName.get(moduleSpecifier) ?? packageRecords.find(entry =>
-      entry.moduleName === packageNameToModuleName(moduleSpecifier, spec));
+    return (
+      byName.get(moduleSpecifier) ??
+      packageRecords.find(entry => entry.moduleName === packageNameToModuleName(moduleSpecifier, spec))
+    );
   }
   if (!moduleSpecifier.startsWith('.')) return undefined;
   return packageRecordForPath(packageRecords, path.resolve(path.dirname(filePath), moduleSpecifier));
@@ -139,7 +142,22 @@ function boundaryTsconfigFiles(packageDirectory) {
   const visit = directory => {
     if (!fs.existsSync(directory)) return;
     for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
-      if (['node_modules', '.git', 'build', 'dist', '.turbo', '.expo', '.runtime', '.gradle', '.kotlin', '.vite', 'coverage'].includes(entry.name)) continue;
+      if (
+        [
+          'node_modules',
+          '.git',
+          'build',
+          'dist',
+          '.turbo',
+          '.expo',
+          '.runtime',
+          '.gradle',
+          '.kotlin',
+          '.vite',
+          'coverage',
+        ].includes(entry.name)
+      )
+        continue;
       const entryPath = path.join(directory, entry.name);
       if (entry.isDirectory()) visit(entryPath);
       else if (entry.isFile() && /^tsconfig(?:\..+)?\.json$/.test(entry.name)) files.push(entryPath);
@@ -189,10 +207,10 @@ function declaredByField(packageJson, field, spec) {
 function unwrapStaticExpression(expression) {
   let current = expression;
   while (
-    ts.isAsExpression(current)
-    || ts.isTypeAssertionExpression(current)
-    || ts.isSatisfiesExpression(current)
-    || ts.isParenthesizedExpression(current)
+    ts.isAsExpression(current) ||
+    ts.isTypeAssertionExpression(current) ||
+    ts.isSatisfiesExpression(current) ||
+    ts.isParenthesizedExpression(current)
   ) {
     current = current.expression;
   }
@@ -344,50 +362,56 @@ function hasRuntimeDeclarationConsumption(packageDirectory) {
       if (ts.isPropertyAssignment(node)) {
         const propertyName = node.name;
         const isDependenciesProperty =
-          (ts.isIdentifier(propertyName) || ts.isStringLiteral(propertyName))
-          && propertyName.text === 'dependencies';
+          (ts.isIdentifier(propertyName) || ts.isStringLiteral(propertyName)) && propertyName.text === 'dependencies';
         if (isDependenciesProperty) {
           const initializer = node.initializer;
-          const isRuntimeArrayMap = ts.isCallExpression(initializer)
-            && ts.isPropertyAccessExpression(initializer.expression)
-            && initializer.expression.name.text === 'map'
-            && ts.isIdentifier(initializer.expression.expression)
-            && localNames.includes(initializer.expression.expression.text)
-            && initializer.arguments.length === 1;
+          const isRuntimeArrayMap =
+            ts.isCallExpression(initializer) &&
+            ts.isPropertyAccessExpression(initializer.expression) &&
+            initializer.expression.name.text === 'map' &&
+            ts.isIdentifier(initializer.expression.expression) &&
+            localNames.includes(initializer.expression.expression.text) &&
+            initializer.arguments.length === 1;
           if (isRuntimeArrayMap) {
             const callback = initializer.arguments[0];
-            const callbackBody = ts.isArrowFunction(callback)
-              ? callback.body
-              : undefined;
-            const returnedObject = callbackBody === undefined
-              ? undefined
-              : ts.isParenthesizedExpression(callbackBody)
-                ? callbackBody.expression
-                : callbackBody;
-            const callbackParameter = ts.isArrowFunction(callback)
-              && callback.parameters.length === 1
-              && ts.isIdentifier(callback.parameters[0].name)
+            const callbackBody = ts.isArrowFunction(callback) ? callback.body : undefined;
+            const returnedObject =
+              callbackBody === undefined
+                ? undefined
+                : ts.isParenthesizedExpression(callbackBody)
+                  ? callbackBody.expression
+                  : callbackBody;
+            const callbackParameter =
+              ts.isArrowFunction(callback) &&
+              callback.parameters.length === 1 &&
+              ts.isIdentifier(callback.parameters[0].name)
                 ? callback.parameters[0].name.text
                 : undefined;
-            const properties = returnedObject !== undefined && ts.isObjectLiteralExpression(returnedObject)
-              ? returnedObject.properties
-              : undefined;
-            const strictDescriptor = callbackParameter !== undefined
-              && properties !== undefined
-              && properties.length === 1
-              && ts.isPropertyAssignment(properties[0])
-              && (ts.isIdentifier(properties[0].name) || ts.isStringLiteral(properties[0].name))
-              && properties[0].name.text === 'moduleName'
-              && ts.isIdentifier(properties[0].initializer)
-              && properties[0].initializer.text === callbackParameter;
+            const properties =
+              returnedObject !== undefined && ts.isObjectLiteralExpression(returnedObject)
+                ? returnedObject.properties
+                : undefined;
+            const strictDescriptor =
+              callbackParameter !== undefined &&
+              properties !== undefined &&
+              properties.length === 1 &&
+              ts.isPropertyAssignment(properties[0]) &&
+              (ts.isIdentifier(properties[0].name) || ts.isStringLiteral(properties[0].name)) &&
+              properties[0].name.text === 'moduleName' &&
+              ts.isIdentifier(properties[0].initializer) &&
+              properties[0].initializer.text === callbackParameter;
             if (strictDescriptor) {
               consumed = true;
               return;
             }
-            throw new Error(`${filePath} dependencies must map runtimeModuleDependencyNames to exact {moduleName} descriptors without optional/opaque fields`);
+            throw new Error(
+              `${filePath} dependencies must map runtimeModuleDependencyNames to exact {moduleName} descriptors without optional/opaque fields`,
+            );
           }
           if (expressionContainsIdentifier(initializer, localNames[0])) {
-            throw new Error(`${filePath} dependencies must directly map runtimeModuleDependencyNames to exact {moduleName} descriptors`);
+            throw new Error(
+              `${filePath} dependencies must directly map runtimeModuleDependencyNames to exact {moduleName} descriptors`,
+            );
           }
         }
       }
@@ -437,8 +461,8 @@ function runRuntimeDependencyContract(context) {
       }
       continue;
     }
-    const expectedRuntimeNames = dependencyNames.filter(dependency =>
-      readDeclaredModuleKind(moduleNameToPath(dependency, root)) === 'owner',
+    const expectedRuntimeNames = dependencyNames.filter(
+      dependency => readDeclaredModuleKind(moduleNameToPath(dependency, root)) === 'owner',
     );
     if (runtimeNames === null) {
       throw new Error(`${moduleName} owner package must export runtimeModuleDependencyNames`);
@@ -446,13 +470,11 @@ function runRuntimeDependencyContract(context) {
     if (new Set(runtimeNames).size !== runtimeNames.length) {
       throw new Error(`${moduleName} runtimeModuleDependencyNames contains duplicate module names`);
     }
-    assertEqualSet(
-      `${moduleName} runtimeModuleDependencyNames`,
-      runtimeNames,
-      expectedRuntimeNames,
-    );
+    assertEqualSet(`${moduleName} runtimeModuleDependencyNames`, runtimeNames, expectedRuntimeNames);
     if (runtimeNames.length && !hasRuntimeDeclarationConsumption(packageDirectory)) {
-      throw new Error(`${moduleName} runtimeModuleDependencyNames is not consumed by a production RuntimeModule dependencies property`);
+      throw new Error(
+        `${moduleName} runtimeModuleDependencyNames is not consumed by a production RuntimeModule dependencies property`,
+      );
     }
   }
 }
@@ -472,17 +494,19 @@ function readPackageModuleName(packageDirectory, expectedModuleName) {
   const moduleNamePath = path.join(packageDirectory, 'src/moduleName.ts');
   if (!fs.existsSync(moduleNamePath)) throw new Error(`${expectedModuleName} moduleName.ts is missing`);
   const source = fs.readFileSync(moduleNamePath, 'utf8');
-  const match = source.match(
-    /^\s*export\s+const\s+moduleName\s*=\s*(['"])([^'"]+)\1\s+as\s+const\s*;\s*$/m,
-  );
+  const match = source.match(/^\s*export\s+const\s+moduleName\s*=\s*(['"])([^'"]+)\1\s+as\s+const\s*;\s*$/m);
   if (!match) throw new Error(`${expectedModuleName} moduleName.ts must export a string literal moduleName`);
   return {moduleName: match[2], filePath: moduleNamePath};
 }
 
 function assertRuntimeImport(filePath, expectedSpecifier, label) {
   const imports = collectStaticImportDeclarations(filePath);
-  if (!imports.some(importDeclaration =>
-    importDeclaration.isRuntime && moduleSpecifierMatches(importDeclaration.moduleSpecifier, expectedSpecifier))) {
+  if (
+    !imports.some(
+      importDeclaration =>
+        importDeclaration.isRuntime && moduleSpecifierMatches(importDeclaration.moduleSpecifier, expectedSpecifier),
+    )
+  ) {
     throw new Error(`${label} must have a runtime import of ${expectedSpecifier}`);
   }
 }
@@ -533,8 +557,9 @@ function workspacePatternMatches(pattern, relativePath) {
     if (patternIndex === patternSegments.length) return pathIndex === pathSegments.length;
     const segment = patternSegments[patternIndex];
     if (segment === '**') {
-      return match(patternIndex + 1, pathIndex)
-        || (pathIndex < pathSegments.length && match(patternIndex, pathIndex + 1));
+      return (
+        match(patternIndex + 1, pathIndex) || (pathIndex < pathSegments.length && match(patternIndex, pathIndex + 1))
+      );
     }
     if (pathIndex === pathSegments.length) return false;
     if (segment !== '*' && segment !== pathSegments[pathIndex]) return false;
@@ -666,8 +691,11 @@ function baseGraphDependencyViolation(sourceModuleName, targetModuleName) {
   if (targetSegments[0] === 'application' && targetSegments[1] !== 'base') {
     return `${sourceModuleName} may not depend on App package ${targetModuleName}`;
   }
-  if (sourceSegments[0] === 'application' && targetSegments[0] === 'adapter'
-    && sourceSegments[2] !== targetSegments[1]) {
+  if (
+    sourceSegments[0] === 'application' &&
+    targetSegments[0] === 'adapter' &&
+    sourceSegments[2] !== targetSegments[1]
+  ) {
     return `${sourceModuleName} may only depend on same-platform adapter ${targetModuleName}`;
   }
   return null;
@@ -684,8 +712,10 @@ function applicationAdapterDependencyViolation(sourceModuleName, targetModuleNam
 }
 
 function sourceDependencyViolation(sourceModuleName, targetModuleName) {
-  return baseGraphDependencyViolation(sourceModuleName, targetModuleName)
-    ?? applicationAdapterDependencyViolation(sourceModuleName, targetModuleName);
+  return (
+    baseGraphDependencyViolation(sourceModuleName, targetModuleName) ??
+    applicationAdapterDependencyViolation(sourceModuleName, targetModuleName)
+  );
 }
 
 function sourceLine(node, sourceFile) {
@@ -723,22 +753,15 @@ function runBaseSourceDependencyBoundary(context) {
       for (const value of boundaryTsconfigValues(tsconfig)) {
         const targetPackage = value.startsWith(packageScope)
           ? packageByName.get(value)
-          : packageRecordForPath(
-            packageRecords,
-            path.resolve(path.dirname(tsconfigPath), value.replace(/\*.*$/, '')),
-          );
+          : packageRecordForPath(packageRecords, path.resolve(path.dirname(tsconfigPath), value.replace(/\*.*$/, '')));
         inspectTarget(targetPackage, tsconfigPath, 1, `tsconfig path/reference (${value})`);
       }
     }
 
-    for (const {filePath, sourceFile, ...capability} of collectBoundaryImportCapabilities(sourcePackage.packageDirectory)) {
-      const targetPackage = boundaryTargetPackage(
-        packageRecords,
-        packageByName,
-        filePath,
-        capability.moduleName,
-        spec,
-      );
+    for (const {filePath, sourceFile, ...capability} of collectBoundaryImportCapabilities(
+      sourcePackage.packageDirectory,
+    )) {
+      const targetPackage = boundaryTargetPackage(packageRecords, packageByName, filePath, capability.moduleName, spec);
       inspectTarget(
         targetPackage,
         filePath,
@@ -807,11 +830,10 @@ function hasAncestorTypeAlias(node, aliasName) {
 function isActorDispatchProperty(checker, symbol) {
   const resolved = symbol ? resolveAliasedSymbol(checker, symbol) : null;
   return Boolean(
-    resolved?.name === 'dispatchAction'
-      && resolved.declarations?.some(declaration =>
-        ts.isPropertySignature(declaration)
-        && hasAncestorTypeAlias(declaration, 'ActorExecutionContext'),
-      ),
+    resolved?.name === 'dispatchAction' &&
+    resolved.declarations?.some(
+      declaration => ts.isPropertySignature(declaration) && hasAncestorTypeAlias(declaration, 'ActorExecutionContext'),
+    ),
   );
 }
 
@@ -840,20 +862,26 @@ function isReduxStoreType(checker, type, seen = new Set()) {
   if (!type || seen.has(type)) return false;
   seen.add(type);
 
-  const symbols = [type.aliasSymbol, type.symbol]
-    .filter(Boolean)
-    .map(symbol => resolveAliasedSymbol(checker, symbol));
-  if (symbols.some(symbol =>
-    (symbol?.name === 'Store' && symbol.declarations?.some(declaration => declarationIsFromPackage(declaration, 'redux')))
-      || (symbol?.name === 'EnhancedStore' && symbol.declarations?.some(declaration => declarationIsFromPackage(declaration, '@reduxjs/toolkit'))),
-  )) {
+  const symbols = [type.aliasSymbol, type.symbol].filter(Boolean).map(symbol => resolveAliasedSymbol(checker, symbol));
+  if (
+    symbols.some(
+      symbol =>
+        (symbol?.name === 'Store' &&
+          symbol.declarations?.some(declaration => declarationIsFromPackage(declaration, 'redux'))) ||
+        (symbol?.name === 'EnhancedStore' &&
+          symbol.declarations?.some(declaration => declarationIsFromPackage(declaration, '@reduxjs/toolkit'))),
+    )
+  ) {
     return true;
   }
 
   if (type.types?.some(candidate => isReduxStoreType(checker, candidate, seen))) return true;
   if (type.intersectionTypes?.some(candidate => isReduxStoreType(checker, candidate, seen))) return true;
-  if (typeof type.getBaseTypes === 'function'
-    && type.getBaseTypes()?.some(candidate => isReduxStoreType(checker, candidate, seen))) return true;
+  if (
+    typeof type.getBaseTypes === 'function' &&
+    type.getBaseTypes()?.some(candidate => isReduxStoreType(checker, candidate, seen))
+  )
+    return true;
   const apparent = checker.getApparentType(type);
   return apparent !== type && isReduxStoreType(checker, apparent, seen);
 }
@@ -862,7 +890,8 @@ function isStoreDispatchProperty(checker, expression) {
   if (!ts.isPropertyAccessExpression(expression) && !ts.isElementAccessExpression(expression)) return false;
   const propertyName = ts.isPropertyAccessExpression(expression)
     ? expression.name.text
-    : (ts.isStringLiteral(expression.argumentExpression) || ts.isNoSubstitutionTemplateLiteral(expression.argumentExpression))
+    : ts.isStringLiteral(expression.argumentExpression) ||
+        ts.isNoSubstitutionTemplateLiteral(expression.argumentExpression)
       ? expression.argumentExpression.text
       : null;
   if (propertyName !== 'dispatch') return false;
@@ -870,7 +899,9 @@ function isStoreDispatchProperty(checker, expression) {
 }
 
 function tr01ExceptionKey(exception) {
-  return [exception.sourceFile, exception.declarationId, exception.dispatchExpression, exception.reasonCategory].join('\u0000');
+  return [exception.sourceFile, exception.declarationId, exception.dispatchExpression, exception.reasonCategory].join(
+    '\u0000',
+  );
 }
 
 function tr01ExceptionBaseKey(exception) {
@@ -880,6 +911,7 @@ function tr01ExceptionBaseKey(exception) {
 function runTr01Boundary(context) {
   const {root, projected} = context;
   const analysis = createAnalysisProgram(root);
+  assertNoSyntacticDiagnostics(analysis, root);
   const checker = analysis.program.getTypeChecker();
   const actorPath = /(?:^|[\\/])features[\\/]actors[\\/]/;
   const packageExceptions = new Map();
@@ -888,7 +920,7 @@ function runTr01Boundary(context) {
     const packageName = moduleNameToPackageName(moduleName);
     const invariantPath = path.join(packageDirectory, 'terminal-invariants.json');
     const exceptions = fs.existsSync(invariantPath)
-      ? readPackageInvariant(packageDirectory, packageName).tr01Exceptions ?? []
+      ? (readPackageInvariant(packageDirectory, packageName).tr01Exceptions ?? [])
       : [];
     packageExceptions.set(moduleName, exceptions);
     for (const sourcePath of collectSourceFiles(packageDirectory)) {
@@ -907,7 +939,9 @@ function runTr01Boundary(context) {
         const key = tr01ExceptionKey(exception);
         const bucketKey = tr01ExceptionBaseKey(exception);
         if (exceptionBuckets.has(key)) {
-          throw new Error(`TR-01 duplicate exception declaration: ${relativeSource}:${exception.declarationId}:${exception.dispatchExpression}:${exception.reasonCategory}`);
+          throw new Error(
+            `TR-01 duplicate exception declaration: ${relativeSource}:${exception.declarationId}:${exception.dispatchExpression}:${exception.reasonCategory}`,
+          );
         }
         const bucket = exceptionBuckets.get(bucketKey) ?? [];
         bucket.push(exception);
@@ -923,16 +957,22 @@ function runTr01Boundary(context) {
         if (!typedSourceFile || identifier.text !== expectedName) return false;
         const symbol = checker.getSymbolAtLocation(identifier);
         const resolved = symbol ? resolveAliasedSymbol(checker, symbol) : null;
-        return Boolean(resolved?.declarations?.some(declaration =>
-          path.basename(declaration.getSourceFile().fileName) === 'defineActor.ts'
-          && declaration.name?.text === expectedName,
-        ));
+        return Boolean(
+          resolved?.declarations?.some(
+            declaration =>
+              path.basename(declaration.getSourceFile().fileName) === 'defineActor.ts' &&
+              declaration.name?.text === expectedName,
+          ),
+        );
       };
       const actorFactoryNames = new Set();
       const scanActorQualification = node => {
-        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)
-          && (node.expression.text === 'defineActor' || node.expression.text === 'onCommand')
-          && isRuntimeFactorySymbol(node.expression, node.expression.text)) {
+        if (
+          ts.isCallExpression(node) &&
+          ts.isIdentifier(node.expression) &&
+          (node.expression.text === 'defineActor' || node.expression.text === 'onCommand') &&
+          isRuntimeFactorySymbol(node.expression, node.expression.text)
+        ) {
           actorFactoryNames.add(node.expression.text);
         }
         ts.forEachChild(node, scanActorQualification);
@@ -944,22 +984,35 @@ function runTr01Boundary(context) {
       scanActorQualification(typedSourceFile ?? sourceFile);
       const qualificationSource = typedSourceFile ?? sourceFile;
       const exportedActorDefinition = qualificationSource.statements.some(statement => {
-        if (!ts.isVariableStatement(statement) || !statement.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)) {
+        if (
+          !ts.isVariableStatement(statement) ||
+          !statement.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)
+        ) {
           return false;
         }
         return statement.declarationList.declarations.some(declaration => {
           const type = declaration.type;
-          if (!type || !ts.isTypeReferenceNode(type) || !ts.isIdentifier(type.typeName) || type.typeName.text !== 'ActorDefinition') return false;
+          if (
+            !type ||
+            !ts.isTypeReferenceNode(type) ||
+            !ts.isIdentifier(type.typeName) ||
+            type.typeName.text !== 'ActorDefinition'
+          )
+            return false;
           const symbol = checker.getSymbolAtLocation(type.typeName);
           const resolved = symbol ? resolveAliasedSymbol(checker, symbol) : null;
-          return Boolean(resolved?.declarations?.some(candidate =>
-            path.basename(candidate.getSourceFile().fileName) === 'actor.ts'
-            && candidate.name?.text === 'ActorDefinition',
-          ));
+          return Boolean(
+            resolved?.declarations?.some(
+              candidate =>
+                path.basename(candidate.getSourceFile().fileName) === 'actor.ts' &&
+                candidate.name?.text === 'ActorDefinition',
+            ),
+          );
         });
       });
-      const isActorSource = actorPath.test(relativeSource)
-        && (exportedActorDefinition || (actorFactoryNames.has('defineActor') && actorFactoryNames.has('onCommand')));
+      const isActorSource =
+        actorPath.test(relativeSource) &&
+        (exportedActorDefinition || (actorFactoryNames.has('defineActor') && actorFactoryNames.has('onCommand')));
       const scopeStack = [];
       const scanSource = typedSourceFile ?? sourceFile;
       const functionScopeName = node => {
@@ -990,8 +1043,12 @@ function runTr01Boundary(context) {
         if (ts.isFunctionDeclaration(node) && node.name) {
           scopeStack.push(node.name.text);
           pushedScope = true;
-        } else if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)
-          && node.initializer && (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer))) {
+        } else if (
+          ts.isVariableDeclaration(node) &&
+          ts.isIdentifier(node.name) &&
+          node.initializer &&
+          (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer))
+        ) {
           scopeStack.push(node.name.text);
           pushedScope = true;
         } else if ((ts.isArrowFunction(node) || ts.isFunctionExpression(node)) && functionScopeName(node)) {
@@ -1004,42 +1061,47 @@ function runTr01Boundary(context) {
             ? expression.getText(scanSource)
             : ts.isElementAccessExpression(expression)
               ? expression.getText(scanSource)
-              : ts.isIdentifier(expression) ? expression.text : null;
+              : ts.isIdentifier(expression)
+                ? expression.text
+                : null;
           const actorDispatchCall = resolvesToActorDispatch(checker, expression);
           const propertyName = ts.isPropertyAccessExpression(expression)
             ? expression.name.text
-            : ts.isElementAccessExpression(expression)
-              && (ts.isStringLiteral(expression.argumentExpression)
-                || ts.isNoSubstitutionTemplateLiteral(expression.argumentExpression))
+            : ts.isElementAccessExpression(expression) &&
+                (ts.isStringLiteral(expression.argumentExpression) ||
+                  ts.isNoSubstitutionTemplateLiteral(expression.argumentExpression))
               ? expression.argumentExpression.text
-              : ts.isIdentifier(expression) ? expression.text : null;
-          const receiver = ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)
-            ? expression.expression
-            : null;
-          const globalLikeReceiver = Boolean(receiver && ts.isIdentifier(receiver))
-            && (receiver.text === 'globalThis' || receiver.text === 'window');
-          const namedDispatchCall = propertyName === 'dispatchAction' && !globalLikeReceiver;
-          const isReducerCall = actorDispatchCall
-            || namedDispatchCall
-            || propertyName === 'useDispatch'
-            || isStoreDispatchProperty(checker, expression);
-          if (isReducerCall) {
-            const matchingExceptionCandidates = sourceExceptions.filter(item =>
-              item.dispatchExpression === dispatchExpression
-              && scopeStack.includes(item.declarationId),
-            );
-            const matchingExceptionBaseKey = matchingExceptionCandidates.length > 0
-              ? tr01ExceptionBaseKey(matchingExceptionCandidates[0])
+              : ts.isIdentifier(expression)
+                ? expression.text
+                : null;
+          const receiver =
+            ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)
+              ? expression.expression
               : null;
-            const occurrence = matchingExceptionBaseKey === null
-              ? 0
-              : (exceptionOccurrences.get(matchingExceptionBaseKey) ?? 0);
+          const globalLikeReceiver =
+            Boolean(receiver && ts.isIdentifier(receiver)) &&
+            (receiver.text === 'globalThis' || receiver.text === 'window');
+          const namedDispatchCall = propertyName === 'dispatchAction' && !globalLikeReceiver;
+          const isReducerCall =
+            actorDispatchCall ||
+            namedDispatchCall ||
+            propertyName === 'useDispatch' ||
+            isStoreDispatchProperty(checker, expression);
+          if (isReducerCall) {
+            const matchingExceptionCandidates = sourceExceptions.filter(
+              item => item.dispatchExpression === dispatchExpression && scopeStack.includes(item.declarationId),
+            );
+            const matchingExceptionBaseKey =
+              matchingExceptionCandidates.length > 0 ? tr01ExceptionBaseKey(matchingExceptionCandidates[0]) : null;
+            const occurrence =
+              matchingExceptionBaseKey === null ? 0 : (exceptionOccurrences.get(matchingExceptionBaseKey) ?? 0);
             if (matchingExceptionBaseKey !== null) {
               exceptionOccurrences.set(matchingExceptionBaseKey, occurrence + 1);
             }
-            const matchingException = matchingExceptionBaseKey === null
-              ? undefined
-              : exceptionBuckets.get(matchingExceptionBaseKey)?.[occurrence];
+            const matchingException =
+              matchingExceptionBaseKey === null
+                ? undefined
+                : exceptionBuckets.get(matchingExceptionBaseKey)?.[occurrence];
             if (matchingException) consumedExceptions.add(tr01ExceptionKey(matchingException));
             const actorAllowed = actorDispatchCall && isActorSource && insideOnCommandHandler;
             if (!matchingException && !actorAllowed) {
@@ -1190,7 +1252,7 @@ export function runStaticChecks({root = repoRoot, batch} = {}) {
 }
 
 function printUsage() {
-  console.log('Usage: node tools/terminal-skeleton/check-static.mjs [--help]');
+  console.log('Usage: node tools/terminal-skeleton/check-static.mjs [--root <repo-root>] [--help]');
   console.log('Runs seven TER static rule gates and one separately reported scaffold hygiene check.');
 }
 
@@ -1199,7 +1261,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     printUsage();
     process.exit(0);
   }
-  const report = runStaticChecks();
+  const args = process.argv.slice(2);
+  const rootIndex = args.length === 0 ? -1 : args[0] === '--root' ? 0 : -2;
+  if (rootIndex === -2 || (rootIndex === 0 && args.length !== 2)) {
+    console.error('UNKNOWN_ARGUMENT');
+    process.exit(2);
+  }
+  if (rootIndex === 0 && !args[1]) {
+    console.error('INVALID_ROOT_ARGUMENT');
+    process.exit(2);
+  }
+  const report = runStaticChecks({root: rootIndex >= 0 ? path.resolve(args[rootIndex + 1]) : repoRoot});
   console.log(`RULE_GATES=${RULE_NAMES.length}`);
   console.log(`SUPPORT_CHECKS=${SUPPORT_CHECK_COUNT}`);
   for (const result of report.results) {

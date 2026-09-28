@@ -1,7 +1,9 @@
 import type {RequestId, TimestampMs} from '@catering-v2s/kernel-base-contracts';
 import type {NoOutput, PortResult} from './result';
 
-export interface HotUpdateCall { readonly timeoutMs: number }
+export interface HotUpdateCall {
+  readonly timeoutMs: number;
+}
 export interface HotUpdateDownloadInput extends HotUpdateCall {
   readonly packageId: string;
   readonly releaseId: string;
@@ -48,9 +50,10 @@ export interface HotUpdateMarker {
   readonly rolledBackAt?: TimestampMs;
 }
 export type HotUpdateMarkerRead =
-  | { readonly state: 'present'; readonly marker: HotUpdateMarker }
-  | { readonly state: 'absent' };
-export interface HotUpdateMarkerWrite { readonly markerPath: string }
+  {readonly state: 'present'; readonly marker: HotUpdateMarker} | {readonly state: 'absent'};
+export interface HotUpdateMarkerWrite {
+  readonly markerPath: string;
+}
 export interface HotUpdatePort {
   downloadPackage(input: HotUpdateDownloadInput): Promise<PortResult<HotUpdateInstall>>;
   writeBootMarker(input: HotUpdateMarkerInput): Promise<PortResult<HotUpdateMarkerWrite>>;

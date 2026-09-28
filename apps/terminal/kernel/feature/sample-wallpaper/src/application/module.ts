@@ -1,15 +1,15 @@
-import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime'
-import {runtimeModuleDependencyNames} from '../dependencies'
-import {createSelectionActor} from '../features/actors/actors'
-import {confirmWallpaperCommand, selectWallpaperCommand} from '../features/commands/commands'
-import {wallpaperErrorDefinitions} from '../foundations/errors'
-import {moduleKind, moduleName} from '../moduleName'
-import {wallpaperStateRegistration} from '../features/slices/slice'
+import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime';
+import {runtimeModuleDependencyNames} from '../dependencies';
+import {createSelectionActor} from '../features/actors/actors';
+import {confirmWallpaperCommand, selectWallpaperCommand} from '../features/commands/commands';
+import {wallpaperErrorDefinitions} from '../foundations/errors';
+import {moduleKind, moduleName} from '../moduleName';
+import {wallpaperStateRegistration} from '../features/slices/slice';
 
-const commands = [selectWallpaperCommand, confirmWallpaperCommand] as const
+const commands = [selectWallpaperCommand, confirmWallpaperCommand] as const;
 
 export const createSampleWallpaperModule = (): RuntimeModule => {
-  const actors = [createSelectionActor()] as const
+  const actors = [createSelectionActor()] as const;
   return Object.freeze({
     moduleName,
     kind: moduleKind,
@@ -21,5 +21,5 @@ export const createSampleWallpaperModule = (): RuntimeModule => {
     actorDefinitions: actors,
     slices: [{name: wallpaperStateRegistration.name, persistIntent: wallpaperStateRegistration.persistIntent}],
     stateSlices: [wallpaperStateRegistration],
-  })
-}
+  });
+};

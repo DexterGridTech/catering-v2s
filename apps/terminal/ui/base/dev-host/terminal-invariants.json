@@ -3,12 +3,24 @@
   "package": "@catering-v2s/ui-base-dev-host",
   "owned": {
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-dev-host", "runner": "vitest"},
-    "lint": {"kind": "ABSENT"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-base-dev-host", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
   "publicExports": [
-    "SurfaceMode", "SurfaceSize", "TerminalSurfaces", "TestExpoAppOptions", "TestExpoAssembly", "TestExpoRuntimeStatus",
-    "WebPlatformOptions", "WebStoragePortName", "createTestExpoApp", "createWebDevicePort", "createWebPlatformPorts",
-    "createWebStateStoragePort", "dependencyModuleNames", "devDependencyModuleNames", "moduleName"
+    "SurfaceMode",
+    "SurfaceSize",
+    "TerminalSurfaces",
+    "TestExpoAppOptions",
+    "TestExpoAssembly",
+    "TestExpoRuntimeStatus",
+    "WebPlatformOptions",
+    "WebStoragePortName",
+    "createTestExpoApp",
+    "createWebDevicePort",
+    "createWebPlatformPorts",
+    "createWebStateStoragePort",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName"
   ]
 }

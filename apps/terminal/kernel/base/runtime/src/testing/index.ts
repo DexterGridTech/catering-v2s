@@ -1,2 +1,2 @@
-export {releaseRuntimeForTest} from './releaseRuntimeForTest'
-export {runtimeStateSyncForTest} from './runtimeStateSyncForTest'
+export {releaseRuntimeForTest} from './releaseRuntimeForTest';
+export {runtimeStateSyncForTest} from './runtimeStateSyncForTest';

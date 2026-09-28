@@ -36,12 +36,12 @@ const keyIdOf = (definition: KeyboardKeyDefinition): string => definition.keyId;
 
 const keyboardKeyOf = (definition: KeyboardKeyDefinition, hasNextField: boolean, shift: boolean): KeyboardKey =>
   definition.kind === 'text'
-    ? {kind: 'text', text: shift ? definition.shiftedText ?? definition.text : definition.text}
+    ? {kind: 'text', text: shift ? (definition.shiftedText ?? definition.text) : definition.text}
     : definition.kind === 'complete'
       ? {kind: 'complete', hasNextField}
       : definition.kind === 'space'
         ? {kind: 'space'}
-      : {kind: definition.kind};
+        : {kind: definition.kind};
 
 const labelOf = (definition: KeyboardKeyDefinition, compact: boolean, shift: boolean): string => {
   if (definition.kind === 'text') {
@@ -96,28 +96,32 @@ const rowHeightOf = (row: KeyboardRow, compact: boolean): number => {
     return compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_KEY_CELL_HEIGHT : INPUT_LAYOUT_CONSTANTS.KEY_CELL_HEIGHT;
   }
   return (
-    grid.rowCount * (compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_KEY_CELL_HEIGHT : INPUT_LAYOUT_CONSTANTS.KEY_CELL_HEIGHT) +
-    Math.max(0, grid.rowCount - 1) *
-      (compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_ROW_GAP : INPUT_LAYOUT_CONSTANTS.ROW_GAP)
+    grid.rowCount *
+      (compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_KEY_CELL_HEIGHT : INPUT_LAYOUT_CONSTANTS.KEY_CELL_HEIGHT) +
+    Math.max(0, grid.rowCount - 1) * (compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_ROW_GAP : INPUT_LAYOUT_CONSTANTS.ROW_GAP)
   );
 };
 
 const gridColumnWidthOf = (span: number, cellWidth: number, columnGap: number): number =>
   span * cellWidth + Math.max(0, span - 1) * columnGap;
 
-const rowCellWidthOf = (input: Readonly<{
-  row: KeyboardRow;
-  frameWidth: number;
-  sharedCellWidth: number;
-  columnGap: number;
-  compact: boolean;
-}>): number => {
+const rowCellWidthOf = (
+  input: Readonly<{
+    row: KeyboardRow;
+    frameWidth: number;
+    sharedCellWidth: number;
+    columnGap: number;
+    compact: boolean;
+  }>,
+): number => {
   if (input.row.sizing === 'shared') return input.sharedCellWidth;
   const horizontalPadding = input.compact
     ? INPUT_LAYOUT_CONSTANTS.COMPACT_DOCK_PADDING_HORIZONTAL
     : INPUT_LAYOUT_CONSTANTS.DOCK_PADDING_HORIZONTAL;
   const availableWidth = input.frameWidth - horizontalPadding * 2;
-  return Math.floor((availableWidth - Math.max(0, input.row.keys.length - 1) * input.columnGap) / input.row.keys.length);
+  return Math.floor(
+    (availableWidth - Math.max(0, input.row.keys.length - 1) * input.columnGap) / input.row.keys.length,
+  );
 };
 
 type KeyboardRegionRows = {
@@ -139,7 +143,17 @@ const groupRowsByRegion = (rows: readonly KeyboardRow[]): KeyboardRegionRows[] =
 };
 
 export const VirtualKeyboard = memo(
-  ({layout, height, frameWidth, cellWidth, compact: compactOverride, shift, hasNextField, testIDSuffix, onKey}: VirtualKeyboardProps) => {
+  ({
+    layout,
+    height,
+    frameWidth,
+    cellWidth,
+    compact: compactOverride,
+    shift,
+    hasNextField,
+    testIDSuffix,
+    onKey,
+  }: VirtualKeyboardProps) => {
     const definition = getKeyboardLayout(layout);
     const compact = compactOverride ?? frameWidth <= INPUT_LAYOUT_CONSTANTS.MOBILE_SYMBOL_MAX_FRAME_WIDTH;
     const columnGap = compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_COLUMN_GAP : INPUT_LAYOUT_CONSTANTS.STANDARD_COLUMN_GAP;
@@ -151,7 +165,7 @@ export const VirtualKeyboard = memo(
       ? INPUT_LAYOUT_CONSTANTS.COMPACT_DOCK_PADDING_VERTICAL
       : INPUT_LAYOUT_CONSTANTS.DOCK_PADDING_VERTICAL;
     const regions = useMemo(() => groupRowsByRegion(definition.rows), [definition]);
-    const testIDOf = (testID: string): string => testIDSuffix === undefined ? testID : `${testID}:${testIDSuffix}`;
+    const testIDOf = (testID: string): string => (testIDSuffix === undefined ? testID : `${testID}:${testIDSuffix}`);
     const handlers = useMemo(
       () =>
         new Map(
@@ -173,7 +187,12 @@ export const VirtualKeyboard = memo(
           testID={testIDOf('ui.base.input:virtual-keyboard:content')}
           style={[
             styles.content,
-            {paddingTop: verticalPadding, paddingHorizontal: horizontalPadding, paddingBottom: verticalPadding, gap: rowGap},
+            {
+              paddingTop: verticalPadding,
+              paddingHorizontal: horizontalPadding,
+              paddingBottom: verticalPadding,
+              gap: rowGap,
+            },
           ]}
         >
           {regions.map(region => (

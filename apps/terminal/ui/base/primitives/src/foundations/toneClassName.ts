@@ -1,4 +1,4 @@
-import {cn} from '../vendor/cn';
+import {cn} from '../foundations/cn';
 import {semanticToneTokens} from '../theme/tokens';
 import type {PrimitiveTone} from '../types/types';
 

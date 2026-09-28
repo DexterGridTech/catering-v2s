@@ -1,6 +1,6 @@
-import {defineCommand} from '../../foundations/defineCommand'
-import {moduleName} from '../../moduleName'
-import type {SetRuntimeInstanceModePayload} from '../../types/role'
+import {defineCommand} from '../../foundations/defineCommand';
+import {moduleName} from '../../moduleName';
+import type {SetRuntimeInstanceModePayload} from '../../types/role';
 
 export const setRuntimeInstanceModeCommand = defineCommand<SetRuntimeInstanceModePayload>(moduleName, {
   name: 'set-instance-mode',
@@ -8,4 +8,4 @@ export const setRuntimeInstanceModeCommand = defineCommand<SetRuntimeInstanceMod
   allowNoActor: false,
   allowReentry: false,
   defaultTarget: 'local',
-})
+});

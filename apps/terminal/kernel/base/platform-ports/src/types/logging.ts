@@ -12,7 +12,9 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 export type LogMaskingMode = 'masked';
 export type LogPrimitive = string | number | boolean | null;
 export type LogValue = LogPrimitive | readonly LogValue[] | LogFields;
-export interface LogFields { readonly [key: string]: LogValue }
+export interface LogFields {
+  readonly [key: string]: LogValue;
+}
 
 export interface LogScope {
   readonly moduleName: string;

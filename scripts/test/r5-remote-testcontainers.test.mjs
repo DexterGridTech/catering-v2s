@@ -39,6 +39,7 @@ import {
   remoteGradleDistributionPath,
   remoteResourceCleanupStatus,
   remotePreflightScript,
+  remoteProcessInventoryScript,
   terminalWireEvidenceAggregationScript,
   resolveGradleHome,
   runScript,
@@ -46,6 +47,7 @@ import {
   validateEvidenceArchiveReceipt,
   validateGradleDistribution,
   validateGradleHome,
+  validateVs12DiagnosticScope,
   validateInvocationArguments,
   requiresFullPerformanceVerification,
   requiresBackendAcceptanceEvidence,
@@ -70,6 +72,7 @@ import {gzipSync} from 'node:zlib';
 const task = ':apps:backend:catering-business-server:test';
 const expectedOperationCount = BACKEND_PERFORMANCE_OPERATION_COUNTS.operations;
 const runnerSource = readFileSync(new URL('./r5-remote-testcontainers.mjs', import.meta.url), 'utf8');
+const backendAcceptanceWrapperSource = readFileSync(new URL('./backend-acceptance', import.meta.url), 'utf8');
 const wireClientSource = readFileSync(new URL('./terminal-ws-wire-client.mjs', import.meta.url), 'utf8');
 const distribution = {sha256: 'a'.repeat(64), path: remoteGradleDistributionPath('a'.repeat(64)), status: 'REUSED'};
 const captureThrown = (action, matcher) => {
@@ -97,6 +100,8 @@ const validEvidenceArchive = () => ({
     'tds-process.log',
     'tds-process-evidence.json',
     'terminal-wire-client.log',
+    'process-signal-trace.log',
+    'remote-process-identities.tsv',
   ].map((name, index) => ({
     name,
     rawBytes: 10 + index,
@@ -243,6 +248,214 @@ test('normal-run remote script emits query status before deriving cleanup marker
   assert.match(remoteScript, /container_cleanup=FAIL; if test \"\$after_container_query_status\" = PASS && cmp -s/);
 });
 
+test('signal tracing wraps only the managed Gradle child tree and emits a run-scoped artifact', () => {
+  const remoteScript = runScript({
+    remoteRoot: '/tmp/r5-tc-1789418414756-70098',
+    remoteWorkspace: '/tmp/r5-tc-1789418414756-70098/workspace',
+    remoteResults: '/tmp/r5-tc-1789418414756-70098/results',
+    distribution,
+    invocation: {extraArguments: []},
+    backendAcceptanceRunId: 'backend-acceptance-r5-tc-1789418414756-70098',
+    backendAcceptanceOperation: 'all',
+    verificationMode: 'CALIBRATION',
+    traceChildSignals: true,
+  });
+  assert.match(remoteScript, /signal_trace_requested=true/);
+  assert.match(remoteScript, /signal_trace_file="\$results\/process-signal-trace\.log"/);
+  assert.match(remoteScript, /"\$signal_trace_tool" -f -ttt -e trace=%process,%signal -e signal=SIGTERM -o "\$signal_trace_raw"/);
+  assert.match(remoteScript, /REMOTE_SIGNAL_TRACE_STATUS=%s/);
+  assert.match(remoteScript, /archive_evidence "\$results\/process-signal-trace\.log"/);
+  assert.doesNotMatch(remoteScript, /-e trace=all|-e trace=network/);
+});
+
+test('V-S12 diagnostic scope is exact and its managed script is syntax-checked before remote use', () => {
+  const runId = 'backend-acceptance-r5-tc-1789418414756-70098';
+  const common = {
+    vs12Diagnostic: true,
+    backendAcceptanceRunId: runId,
+    backendAcceptanceOperation: 'storeTerminalActivationBusinessPrecedence',
+    verificationMode: 'ACCEPTANCE',
+    traceSystemSignals: true,
+  };
+  assert.doesNotThrow(() => validateVs12DiagnosticScope(common));
+  for (const invalid of [
+    {...common, backendAcceptanceRunId: null},
+    {...common, backendAcceptanceOperation: 'all'},
+    {...common, verificationMode: 'CALIBRATION'},
+    {...common, topologyPreflight: true},
+    {...common, productionMutation: 'tds-registration-pending-generation-check'},
+    {...common, extensionScaleProof: true},
+    {...common, traceSystemSignals: false},
+  ]) {
+    assert.throws(() => validateVs12DiagnosticScope(invalid));
+  }
+  assert.doesNotThrow(() => validateVs12DiagnosticScope({...common, vs12Diagnostic: false}));
+
+  const acceptanceEnvironment = backendAcceptanceEnvironment(
+    runId,
+    'storeTerminalActivationBusinessPrecedence',
+    'ACCEPTANCE',
+    null,
+    false,
+    {maxUnauthenticatedConnections: '2', maxTrackedSessions: '4'},
+    '/usr/bin/node',
+    false,
+    true,
+  ).join('\n');
+  assert.match(acceptanceEnvironment, /V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC=true/);
+  assert.match(acceptanceEnvironment, /V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT=false/);
+  assert.match(acceptanceEnvironment, /V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY/);
+  assert.doesNotMatch(acceptanceEnvironment, /V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE=true/);
+  assert.doesNotMatch(acceptanceEnvironment, /V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF=true/);
+  assert.throws(
+    () => backendAcceptanceEnvironment(runId, 'all', 'ACCEPTANCE', null, false, null, null, false, true),
+    /BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC_ARGUMENT_INVALID/,
+  );
+
+  const remoteScript = runScript({
+    remoteRoot: '/tmp/r5-tc-1789418414756-70098',
+    remoteWorkspace: '/tmp/r5-tc-1789418414756-70098/workspace',
+    remoteResults: '/tmp/r5-tc-1789418414756-70098/results',
+    distribution,
+    invocation: {extraArguments: []},
+    backendAcceptanceRunId: runId,
+    backendAcceptanceOperation: 'storeTerminalActivationBusinessPrecedence',
+    verificationMode: 'ACCEPTANCE',
+    traceSystemSignals: true,
+    vs12Diagnostic: true,
+  });
+  const remoteSyntax = spawnSync('bash', ['-n'], {input: remoteScript, encoding: 'utf8'});
+  assert.equal(remoteSyntax.status, 0, remoteSyntax.stderr);
+  assert.match(remoteScript, /export V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC=true/);
+  assert.match(remoteScript, /signal_trace_system_requested=true/);
+  assert.match(remoteScript, /REMOTE_SIGNAL_TRACE_PREFLIGHT=%s/);
+  assert.match(remoteScript, /archive_evidence "\$results\/process-signal-trace\.log"/);
+  assert.throws(
+    () => runScript({
+      remoteRoot: '/tmp/r5-tc-1789418414756-70098',
+      remoteWorkspace: '/tmp/r5-tc-1789418414756-70098/workspace',
+      remoteResults: '/tmp/r5-tc-1789418414756-70098/results',
+      distribution,
+      invocation: {extraArguments: []},
+      backendAcceptanceRunId: runId,
+      backendAcceptanceOperation: 'storeTerminalActivationBusinessPrecedence',
+      verificationMode: 'ACCEPTANCE',
+      vs12Diagnostic: true,
+    }),
+    /R5_VS12_DIAGNOSTIC_REQUIRES_SYSTEM_SIGNAL_TRACE/,
+  );
+});
+
+test('backend-acceptance V-S12 diagnostic wrapper pins its operation, mode, and trace inputs', () => {
+  const wrapperSyntax = spawnSync('bash', ['-n', 'scripts/test/backend-acceptance'], {encoding: 'utf8'});
+  assert.equal(wrapperSyntax.status, 0, wrapperSyntax.stderr);
+  assert.match(backendAcceptanceWrapperSource, /--v-s12-diagnostic/);
+  assert.match(backendAcceptanceWrapperSource, /\$operation" != 'storeTerminalActivationBusinessPrecedence'/);
+  assert.match(backendAcceptanceWrapperSource, /export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=ACCEPTANCE/);
+  assert.match(backendAcceptanceWrapperSource, /export V2S_R5_TRACE_SYSTEM_SIGNALS=true/);
+  assert.match(backendAcceptanceWrapperSource, /unset V2S_R5_TRACE_CHILD_SIGNALS/);
+  assert.match(backendAcceptanceWrapperSource, /V2S_BACKEND_ACCEPTANCE_EXECUTION=true exec node/);
+});
+
+test('remote SIGTERM tracing self-tests, records owned-process identity, and fails closed before Gradle', () => {
+  const listener = readFileSync(new URL('./remote-signal-trace.sh', import.meta.url), 'utf8');
+  const listenerSyntax = spawnSync('bash', ['-n'], {input: listener, encoding: 'utf8'});
+  assert.equal(listenerSyntax.status, 0, listenerSyntax.stderr);
+  assert.match(listener, /events\/signal\/signal_generate/);
+  assert.match(listener, /REMOTE_SIGNAL_TRACE_SELF_TEST_EVENT_MISSING/);
+  assert.match(listener, /trap ':' EXIT/);
+  assert.match(listener, /REMOTE_SIGNAL_TRACE_SELF_TEST_TARGET_NOT_READY/);
+  assert.match(listener, /self_test_target_comm" == sleep/);
+  assert.match(listener, /senderIdentity pid=%s comm=%s source=%s ppid=%s parentComm=%s/);
+  assert.match(listener, /IFS=\$' \\t' read -r status_key status_value/);
+  assert.match(listener, /trace_comm_pattern='\^\[\[:alnum:\]_.\+ -\]\{1,16\}\$'/);
+  assert.match(listener, /\[\[ ! "\$trace_sender_comm" =~ \$trace_comm_pattern \]\]/);
+  assert.match(listener, /REMOTE_SIGNAL_TRACE_SELF_TEST_PARENT_IDENTITY_MISSING/);
+  assert.match(listener, /senderAncestor depth=%s pid=%s ppid=%s comm=%s exe=%s/);
+  assert.match(listener, /REMOTE_SIGNAL_TRACE_SELF_TEST_ANCESTRY_MISSING/);
+  assert.match(listener, /readlink "\/proc\/\$trace_ancestor_pid\/exe"/);
+  assert.doesNotMatch(listener, /\/proc\/\$trace_ancestor_pid\/cmdline/);
+  assert.match(listener, /sig == 15/);
+  assert.match(listener, /target-comm-pid/);
+
+  const remoteScript = runScript({
+    remoteRoot: '/tmp/r5-tc-1789418414756-70098',
+    remoteWorkspace: '/tmp/r5-tc-1789418414756-70098/workspace',
+    remoteResults: '/tmp/r5-tc-1789418414756-70098/results',
+    distribution,
+    invocation: {extraArguments: []},
+    backendAcceptanceRunId: 'backend-acceptance-r5-tc-1789418414756-70098',
+    backendAcceptanceOperation: 'all',
+    verificationMode: 'CALIBRATION',
+    traceSystemSignals: true,
+  });
+  const remoteSyntax = spawnSync('bash', ['-n'], {input: remoteScript, encoding: 'utf8'});
+  assert.equal(remoteSyntax.status, 0, remoteSyntax.stderr);
+  assert.match(remoteScript, /REMOTE_SIGNAL_TRACE_PREFLIGHT=%s/);
+  assert.match(remoteScript, /remote-signal-trace\.sh/);
+  assert.match(remoteScript, /remote_pid_start_ticks/);
+  assert.match(remoteScript, /REMOTE_SIGNAL_TRACE_START_TICKS=%s/);
+  assert.match(remoteScript, /signal_trace_system_requested=true/);
+  assert.match(remoteScript, /REMOTE_SIGNAL_TRACE_STOP_STATUS=%s/);
+  assert.match(remoteScript, /archive_evidence "\$results\/process-signal-trace\.log"/);
+  assert.match(remoteScript, /if test \"\$signal_trace_requested\" = true && test \"\$signal_trace_status\" != READY;/);
+  assert.ok(
+    remoteScript.indexOf('REMOTE_SIGNAL_TRACE_PREFLIGHT=%s') <
+      remoteScript.indexOf('"$gradle/bin/gradle" --no-daemon'),
+    'signal trace preflight must be emitted before the Gradle test command',
+  );
+  assert.doesNotMatch(remoteScript, /"\$signal_trace_tool" -f -ttt/);
+  assert.throws(
+    () =>
+      runScript({
+        remoteRoot: '/tmp/r5-tc-1789418414756-70098',
+        remoteWorkspace: '/tmp/r5-tc-1789418414756-70098/workspace',
+        remoteResults: '/tmp/r5-tc-1789418414756-70098/results',
+        distribution,
+        invocation: {extraArguments: []},
+        backendAcceptanceRunId: 'backend-acceptance-r5-tc-1789418414756-70098',
+        backendAcceptanceOperation: 'all',
+        verificationMode: 'CALIBRATION',
+        traceChildSignals: true,
+        traceSystemSignals: true,
+      }),
+    /R5_SIGNAL_TRACE_MODES_MUTUALLY_EXCLUSIVE/,
+  );
+});
+
+test('remote PID inventory records safe process identity fields in the base runner', () => {
+  const inventoryScript = remoteProcessInventoryScript();
+  const syntax = spawnSync('bash', ['-n'], {input: inventoryScript, encoding: 'utf8'});
+  assert.equal(syntax.status, 0, syntax.stderr);
+  assert.match(inventoryScript, /\/proc\/\$proc_dir\/stat|"\$proc_dir\/stat"/);
+  assert.match(inventoryScript, /start_ticks/);
+  assert.match(inventoryScript, /boot_id/);
+  assert.match(inventoryScript, /\bpid\b/);
+  assert.match(inventoryScript, /\bppid\b/);
+  assert.match(inventoryScript, /\buid\b/);
+  assert.match(inventoryScript, /\bcomm\b/);
+  assert.match(inventoryScript, /\bexecutable\b/);
+  assert.doesNotMatch(inventoryScript, /cmdline|environ|ps .*args/);
+
+  const remoteScript = runScript({
+    remoteRoot: '/tmp/r5-tc-1789418414756-70098',
+    remoteWorkspace: '/tmp/r5-tc-1789418414756-70098/workspace',
+    remoteResults: '/tmp/r5-tc-1789418414756-70098/results',
+    distribution,
+    invocation: {extraArguments: []},
+    backendAcceptanceRunId: 'backend-acceptance-r5-tc-1789418414756-70098',
+    backendAcceptanceOperation: 'all',
+    verificationMode: 'CALIBRATION',
+  });
+  const remoteSyntax = spawnSync('bash', ['-n'], {input: remoteScript, encoding: 'utf8'});
+  assert.equal(remoteSyntax.status, 0, remoteSyntax.stderr);
+  assert.match(remoteScript, /REMOTE_PROCESS_INVENTORY_PREFLIGHT/);
+  assert.match(remoteScript, /REMOTE_PROCESS_INVENTORY_STATUS/);
+  assert.match(remoteScript, /REMOTE_PROCESS_INVENTORY_RECORDS/);
+  assert.match(remoteScript, /backend-runtime-classpaths/);
+  assert.match(remoteScript, /archive_evidence "\$results\/remote-process-identities\.tsv"/);
+});
+
 test('recovery cleanup deletes only resources added after the run baseline', () => {
   let recoveryScript = '';
   cleanupRemoteWorkspaceDetailed('/tmp/r5-tc-1789418414756-70098', body => {
@@ -265,9 +478,12 @@ test('recovery cleanup deletes only resources added after the run baseline', () 
 
 test('runner marker parsing retains early cleanup markers beyond the stdout tail window', () => {
   const output = [
+    'REMOTE_PROCESS_INVENTORY_PREFLIGHT=CAPTURED',
     'REMOTE_TESTCONTAINERS_CONTAINER_QUERY=PASS',
     'REMOTE_TESTCONTAINERS_VOLUME_QUERY=PASS',
     'x'.repeat(40_000),
+    'REMOTE_PROCESS_INVENTORY_STATUS=CAPTURED',
+    'REMOTE_PROCESS_INVENTORY_RECORDS=512',
     'REMOTE_TESTCONTAINERS_AFTER_CONTAINER_QUERY=PASS',
     'REMOTE_TESTCONTAINERS_AFTER_VOLUME_QUERY=PASS',
     'REMOTE_TESTCONTAINERS_CONTAINERS=PASS',
@@ -275,8 +491,11 @@ test('runner marker parsing retains early cleanup markers beyond the stdout tail
     'REMOTE_EVIDENCE_ARCHIVE_STATUS=0',
   ].join('\n');
   assert.deepEqual(parseRunnerMarkers(output), {
+    REMOTE_PROCESS_INVENTORY_PREFLIGHT: 'CAPTURED',
     REMOTE_TESTCONTAINERS_CONTAINER_QUERY: 'PASS',
     REMOTE_TESTCONTAINERS_VOLUME_QUERY: 'PASS',
+    REMOTE_PROCESS_INVENTORY_STATUS: 'CAPTURED',
+    REMOTE_PROCESS_INVENTORY_RECORDS: '512',
     REMOTE_TESTCONTAINERS_AFTER_CONTAINER_QUERY: 'PASS',
     REMOTE_TESTCONTAINERS_AFTER_VOLUME_QUERY: 'PASS',
     REMOTE_TESTCONTAINERS_CONTAINERS: 'PASS',

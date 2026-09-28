@@ -57,9 +57,7 @@ describe('surface preview geometry', () => {
       stageWidth: 1920 + SURFACE_PREVIEW_CONSTANTS.surfaceGap + 1024,
       stageHeight: 1080,
     });
-    expect(geometry?.renderedWidth).toBe(
-      1200,
-    );
+    expect(geometry?.renderedWidth).toBe(1200);
   });
 
   it('fills width instead of retaining an obsolete unscaled preview mode', () => {
@@ -67,7 +65,7 @@ describe('surface preview geometry', () => {
       calculateSurfacePreviewGeometry({
         layout: 'row',
         showSecondary: true,
-      viewport: {width: 1200, height: 800},
+        viewport: {width: 1200, height: 800},
         primary,
         secondary,
       }),

@@ -1099,7 +1099,7 @@ function strictOperatingRuleDeserializer(name, properties) {
             : '!parser.currentToken().isNumeric()';
       const read =
         type === 'boolean'
-          ? 'parser.getBooleanValue()'
+          ? 'context.readValue(parser, Boolean.class)'
           : type === 'string'
             ? 'parser.getString()'
             : type === 'integer'
@@ -1433,9 +1433,12 @@ function javaWireType(
       if (strict && inlineSchema.additionalProperties === false) strictInlineNames.add(targetName);
     }
   }
-  const strictDeserializer = strict
-    ? strictWireDeserializer(name, properties, required, components, inlineTypes)
-    : strictOperatingRuleDeserializer(name, properties);
+  const strictDeserializer =
+    name === 'OrganizationStoreOperatingRuleValues'
+      ? strictOperatingRuleDeserializer(name, properties)
+      : strict
+        ? strictWireDeserializer(name, properties, required, components, inlineTypes)
+        : '';
   if (strictDeserializer) {
     return {
       name,

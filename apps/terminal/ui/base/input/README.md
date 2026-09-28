@@ -53,7 +53,7 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
   layer suspend 或后续字段获焦才是清理 owner 的边界。一次性 Shift 仅属于当前字段焦点会话；
   真正离开字段、完成收起或 scope suspend 时清除，成功插入（包括空格或 Shift 符号）后消耗，
   `maxLength` 拒绝的零字符插入和退格不消耗。
-- LayerStack 通过 render 提供的 `suspend`/`restore` 协议收起并恢复键盘，input 不反向 import render 以外的业务层；
+- LayerStack 通过 render 提供的 `suspend`/`restore` 协议通知 input owner：开层时清除 active field、收起键盘并 blur 原生输入；被覆盖的 business-scope 字段拒绝文本、选择与扫码写入。恢复只解除挂起，不隐式恢复旧焦点；弹层自身字段由当前 focus scope 正常写入。input 不反向 import render 以外的业务层；
 - surface content 的非输入点击会通过 input owner 主动清理当前 field 并收起键盘；虚拟键盘 dock 是 sibling，
   不把业务按钮或文案变成 input 特例；
 - `PrimitiveButton` 在 primitives 内用自身的 `onPressIn`/`onPressOut` 保存局部 pressed 状态并

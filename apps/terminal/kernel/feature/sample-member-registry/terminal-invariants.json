@@ -3,16 +3,29 @@
   "package": "@catering-v2s/kernel-feature-sample-member-registry",
   "owned": {
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-feature-sample-member-registry", "runner": "vitest"},
-    "lint": {"kind": "ABSENT"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-feature-sample-member-registry", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
   "ownerKind": "owner",
   "publicExports": [
-    "Member", "MemberRejectedPayload", "MemberState", "PendingMember",
-    "confirmMemberCommand", "createSampleMemberRegistryModule", "dependencyModuleNames",
-    "devDependencyModuleNames", "memberConfirmedCommand", "memberPendingCommand",
-    "memberRejectedCommand", "memberWithdrawnCommand", "moduleKind", "moduleName",
-    "rejectMemberCommand", "selectMembers", "selectPendingMember", "submitMemberCommand",
+    "Member",
+    "MemberRejectedPayload",
+    "MemberState",
+    "PendingMember",
+    "confirmMemberCommand",
+    "createSampleMemberRegistryModule",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "memberConfirmedCommand",
+    "memberPendingCommand",
+    "memberRejectedCommand",
+    "memberWithdrawnCommand",
+    "moduleKind",
+    "moduleName",
+    "rejectMemberCommand",
+    "selectMembers",
+    "selectPendingMember",
+    "submitMemberCommand",
     "withdrawMemberCommand"
   ]
 }

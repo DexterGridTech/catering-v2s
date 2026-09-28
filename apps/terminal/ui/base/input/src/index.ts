@@ -10,10 +10,6 @@ export {useInputController, useInputKeyboardState} from './contexts/context';
 export {useInputSnapshot} from './hooks/useInputSnapshot';
 export {BUSINESS_FOCUS_SCOPE_ID} from './foundations/focusScope';
 export type {InputScrollAreaProps} from './components/InputScrollArea';
-export type {
-  InputFieldOptions,
-  InputFieldResult,
-  InputSurfaceFrameProps,
-} from './types/types';
+export type {InputFieldOptions, InputFieldResult, InputSurfaceFrameProps} from './types/types';
 export type {KeyboardLayout} from './types/types';
 export type {InputRegistrationToken, InputSnapshot} from './foundations/snapshot';

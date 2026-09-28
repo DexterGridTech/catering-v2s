@@ -17,12 +17,4 @@ export type DispatchId = RuntimeId<'DispatchId'>;
 export type ProjectionId = RuntimeId<'ProjectionId'>;
 
 export type RuntimeIdKind =
-  | 'runtime'
-  | 'request'
-  | 'command'
-  | 'session'
-  | 'node'
-  | 'connection'
-  | 'envelope'
-  | 'dispatch'
-  | 'projection';
+  'runtime' | 'request' | 'command' | 'session' | 'node' | 'connection' | 'envelope' | 'dispatch' | 'projection';

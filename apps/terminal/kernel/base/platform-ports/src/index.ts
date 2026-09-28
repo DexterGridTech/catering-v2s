@@ -114,12 +114,7 @@ export type {
   HotUpdateMarkerWrite,
   HotUpdatePort,
 } from './types/hotUpdate';
-export type {
-  LogUploadInput,
-  UploadedLogFile,
-  LogUploadOutput,
-  LogUploadPort,
-} from './types/logUpload';
+export type {LogUploadInput, UploadedLogFile, LogUploadOutput, LogUploadPort} from './types/logUpload';
 export type {
   TopologyHostState,
   TopologyHostRuntimeConfig,
@@ -132,11 +127,7 @@ export type {
   TopologyHostCall,
   TopologyHostPort,
 } from './types/topologyHost';
-export type {
-  NativeLoadingCapability,
-  NativeLoadingHideResult,
-  NativeLoadingTarget,
-} from './types/nativeLoading';
+export type {NativeLoadingCapability, NativeLoadingHideResult, NativeLoadingTarget} from './types/nativeLoading';
 export type {
   LoggerConsoleBinding,
   LoggerSinkBinding,

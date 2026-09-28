@@ -1,9 +1,6 @@
 import type {PlatformPortName, PortUnavailable} from '../types/result';
 
-export const createUnavailable = (
-  port: PlatformPortName,
-  capability: string,
-): PortUnavailable => ({
+export const createUnavailable = (port: PlatformPortName, capability: string): PortUnavailable => ({
   status: 'unavailable',
   port,
   capability,

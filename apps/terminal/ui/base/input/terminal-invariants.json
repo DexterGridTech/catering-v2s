@@ -3,12 +3,29 @@
   "package": "@catering-v2s/ui-base-input",
   "owned": {
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-input", "runner": "vitest"},
-    "lint": {"kind": "ABSENT"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-base-input", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
   "publicExports": [
-    "InputFieldOptions", "InputFieldResult", "InputProvider", "InputRegistrationToken", "InputSnapshot",
-    "InputScrollArea", "InputScrollAreaProps", "InputSurfaceFrame", "InputSurfaceFrameProps", "InputKeyboard", "KeyboardLayout",
-    "VirtualKeyboard", "BUSINESS_FOCUS_SCOPE_ID", "dependencyModuleNames", "devDependencyModuleNames", "moduleName", "useInputController", "useInputField", "useInputKeyboardState", "useInputSnapshot"
+    "InputFieldOptions",
+    "InputFieldResult",
+    "InputProvider",
+    "InputRegistrationToken",
+    "InputSnapshot",
+    "InputScrollArea",
+    "InputScrollAreaProps",
+    "InputSurfaceFrame",
+    "InputSurfaceFrameProps",
+    "InputKeyboard",
+    "KeyboardLayout",
+    "VirtualKeyboard",
+    "BUSINESS_FOCUS_SCOPE_ID",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName",
+    "useInputController",
+    "useInputField",
+    "useInputKeyboardState",
+    "useInputSnapshot"
   ]
 }

@@ -1,20 +1,9 @@
 import type {AppError} from './error';
 import type {CommandId, NodeId, RequestId, SessionId, TimestampMs} from './ids';
 
-export type CommandLifecycleStatus =
-  | 'registered'
-  | 'dispatched'
-  | 'accepted'
-  | 'started'
-  | 'completed'
-  | 'error';
+export type CommandLifecycleStatus = 'registered' | 'dispatched' | 'accepted' | 'started' | 'completed' | 'error';
 
-export type RequestLifecycleStatus =
-  | 'started'
-  | 'completed'
-  | 'partial-failed'
-  | 'timed-out'
-  | 'error';
+export type RequestLifecycleStatus = 'started' | 'completed' | 'partial-failed' | 'timed-out' | 'error';
 
 export interface CommandResultPatch<TResult extends object = object> {
   readonly commandId: CommandId;

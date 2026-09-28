@@ -1,31 +1,31 @@
 export type LayoutRect = Readonly<{
-  readonly x: number
-  readonly y: number
-  readonly width: number
-  readonly height: number
-}>
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}>;
 
 export type ScrollIntoViewInput = Readonly<{
-  readonly inputRect: LayoutRect
-  readonly viewportRect: LayoutRect
-  readonly currentOffset: number
-  readonly maxScroll: number
-  readonly surfaceHeight: number
-  readonly keyboardHeight: number
-  readonly presentationOffsetY: number
-}>
+  readonly inputRect: LayoutRect;
+  readonly viewportRect: LayoutRect;
+  readonly currentOffset: number;
+  readonly maxScroll: number;
+  readonly surfaceHeight: number;
+  readonly keyboardHeight: number;
+  readonly presentationOffsetY: number;
+}>;
 
 export type VisibleVerticalIntersection = Readonly<{
-  readonly top: number
-  readonly bottom: number
-}>
+  readonly top: number;
+  readonly bottom: number;
+}>;
 
 /**
  * Fabric and browser layout values are rounded on different pixel grids. Keep
  * the visibility and requested-offset decisions in the same logical-unit
  * tolerance so a half-unit readback cannot strand a pending field.
  */
-export const INPUT_SCROLL_VISIBILITY_TOLERANCE = 0.5
+export const INPUT_SCROLL_VISIBILITY_TOLERANCE = 0.5;
 
 export const calculatePresentationOffsetY = (
   focusRect: LayoutRect,
@@ -33,40 +33,44 @@ export const calculatePresentationOffsetY = (
   keyboardHeight: number,
 ): number => {
   if (
-    !Number.isFinite(focusRect.y)
-    || !Number.isFinite(focusRect.height)
-    || !Number.isFinite(surfaceHeight)
-    || !Number.isFinite(keyboardHeight)
-    || surfaceHeight <= 0
-    || keyboardHeight <= 0
-  ) return 0
-  const boundedKeyboardHeight = Math.min(surfaceHeight, keyboardHeight)
-  const centerY = focusRect.y + focusRect.height / 2
-  const centerLine = (surfaceHeight - boundedKeyboardHeight) / 2
-  const upwardOffset = Math.min(boundedKeyboardHeight, Math.max(0, centerY - centerLine))
-  return upwardOffset === 0 ? 0 : -upwardOffset
-}
+    !Number.isFinite(focusRect.y) ||
+    !Number.isFinite(focusRect.height) ||
+    !Number.isFinite(surfaceHeight) ||
+    !Number.isFinite(keyboardHeight) ||
+    surfaceHeight <= 0 ||
+    keyboardHeight <= 0
+  )
+    return 0;
+  const boundedKeyboardHeight = Math.min(surfaceHeight, keyboardHeight);
+  const centerY = focusRect.y + focusRect.height / 2;
+  const centerLine = (surfaceHeight - boundedKeyboardHeight) / 2;
+  const upwardOffset = Math.min(boundedKeyboardHeight, Math.max(0, centerY - centerLine));
+  return upwardOffset === 0 ? 0 : -upwardOffset;
+};
 
-export const visibleVerticalIntersectionOf = (input: Readonly<{
-  readonly viewportRect: LayoutRect
-  readonly surfaceHeight: number
-  readonly keyboardHeight: number
-  readonly presentationOffsetY: number
-}>): VisibleVerticalIntersection => ({
+export const visibleVerticalIntersectionOf = (
+  input: Readonly<{
+    readonly viewportRect: LayoutRect;
+    readonly surfaceHeight: number;
+    readonly keyboardHeight: number;
+    readonly presentationOffsetY: number;
+  }>,
+): VisibleVerticalIntersection => ({
   top: Math.max(0, input.viewportRect.y + input.presentationOffsetY),
   bottom: Math.min(
     Math.max(0, input.surfaceHeight - input.keyboardHeight),
     input.viewportRect.y + input.presentationOffsetY + input.viewportRect.height,
   ),
-})
+});
 
 export const isRectInsideVisibleVerticalIntersection = (
   rect: LayoutRect,
   intersection: VisibleVerticalIntersection,
   tolerance = INPUT_SCROLL_VISIBILITY_TOLERANCE,
-): boolean => intersection.bottom > intersection.top
-  && rect.y >= intersection.top - tolerance
-  && rect.y + rect.height <= intersection.bottom + tolerance
+): boolean =>
+  intersection.bottom > intersection.top &&
+  rect.y >= intersection.top - tolerance &&
+  rect.y + rect.height <= intersection.bottom + tolerance;
 
 /**
  * Returns the smallest non-negative offset change that makes the whole input visible.
@@ -86,15 +90,16 @@ export const calculateScrollOffset = ({
     surfaceHeight,
     keyboardHeight: Math.max(0, keyboardHeight),
     presentationOffsetY,
-  })
-  if (intersection.bottom <= intersection.top) return currentOffset
+  });
+  if (intersection.bottom <= intersection.top) return currentOffset;
 
-  const displayedTop = inputRect.y + presentationOffsetY
-  const displayedBottom = displayedTop + inputRect.height
-  const delta = displayedTop < intersection.top - INPUT_SCROLL_VISIBILITY_TOLERANCE
-    ? displayedTop - intersection.top
-    : displayedBottom > intersection.bottom + INPUT_SCROLL_VISIBILITY_TOLERANCE
-      ? displayedBottom - intersection.bottom
-      : 0
-  return Math.min(Math.max(0, maxScroll), Math.max(0, currentOffset + delta))
-}
+  const displayedTop = inputRect.y + presentationOffsetY;
+  const displayedBottom = displayedTop + inputRect.height;
+  const delta =
+    displayedTop < intersection.top - INPUT_SCROLL_VISIBILITY_TOLERANCE
+      ? displayedTop - intersection.top
+      : displayedBottom > intersection.bottom + INPUT_SCROLL_VISIBILITY_TOLERANCE
+        ? displayedBottom - intersection.bottom
+        : 0;
+  return Math.min(Math.max(0, maxScroll), Math.max(0, currentOffset + delta));
+};

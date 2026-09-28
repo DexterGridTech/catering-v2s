@@ -3,9 +3,21 @@ package com.catering.v2s.terminal.application.base.android
 import android.util.Log
 import java.net.BindException
 
+internal fun topologySocketReadTimeoutMs(heartbeatTimeoutMs: Long, heartbeatIntervalMs: Long): Int {
+  require(heartbeatTimeoutMs > 0) { "heartbeatTimeoutMs must be positive" }
+  require(heartbeatIntervalMs > 0) { "heartbeatIntervalMs must be positive" }
+  val upperExclusive = Math.addExact(heartbeatTimeoutMs, heartbeatIntervalMs)
+  val timeout = heartbeatTimeoutMs + heartbeatIntervalMs / 2
+  require(timeout < upperExclusive && timeout <= Int.MAX_VALUE) {
+    "topology socket read timeout is outside NanoHTTPD's supported range"
+  }
+  return timeout.toInt()
+}
+
 object TerminalTopologyHostRegistry {
   private const val LOG_TAG = "TER-Topology"
 
+  private val lifecycleLock = Any()
   private val lock = Any()
   private var server: TerminalTopologyServer? = null
   private var config: HostConfig? = null
@@ -56,109 +68,134 @@ object TerminalTopologyHostRegistry {
       instanceMode = instanceMode,
       displayRole = displayRole,
     )
-    synchronized(lock) {
-      val existing = server
-      if (existing != null && existing.isAlive && config == nextConfig) {
-        currentState = "running"
-        return success(existing.address())
+    return synchronized(lifecycleLock) {
+      val (existing, sameConfig) = synchronized(lock) { server to (config == nextConfig) }
+      if (existing != null && existing.isAlive && sameConfig) {
+        synchronized(lock) { currentState = "running" }
+        return@synchronized success(existing.address())
       }
-      if (existing != null) {
-        existing.shutdown()
-        server = null
+      synchronized(lock) {
+        if (server === existing) server = null
+        config = nextConfig
+        currentState = "starting"
+        errorCode = null
+        errorMessage = null
       }
-      config = nextConfig
-      currentState = "starting"
-      errorCode = null
-      errorMessage = null
       try {
+        existing?.shutdown()
         val created = TerminalTopologyServer(
           config = nextConfig,
           publish = { eventName, payload -> publish(eventName, payload) },
         )
-        created.start()
+        created.start(topologySocketReadTimeoutMs(nextConfig.heartbeatTimeoutMs, nextConfig.heartbeatIntervalMs))
         created.startHeartbeat()
-        server = created
-        currentState = "running"
-        Log.i(LOG_TAG, "event=topology-host-started port=${nextConfig.port}")
-        return success(created.address())
-      } catch (error: Throwable) {
-        server = null
-        currentState = "error"
-        if (isBindFailure(error)) {
-          errorCode = "TOPOLOGY_HOST_PORT_OCCUPIED"
-          errorMessage = "topology host port is occupied"
-        } else {
-          errorCode = "TOPOLOGY_HOST_FAILED"
-          errorMessage = "topology host failed to start"
+        synchronized(lock) {
+          server = created
+          currentState = "running"
         }
-        Log.e(LOG_TAG, "event=topology-host-start-failed code=$errorCode")
-        return failure("start", errorCode!!, errorMessage!!, retryable = errorCode != "TOPOLOGY_HOST_PORT_OCCUPIED")
+        Log.i(LOG_TAG, "event=topology-host-started port=${nextConfig.port}")
+        success(created.address())
+      } catch (error: Throwable) {
+        val failureSnapshot = synchronized(lock) {
+          server = null
+          currentState = "error"
+          if (isBindFailure(error)) {
+            errorCode = "TOPOLOGY_HOST_PORT_OCCUPIED"
+            errorMessage = "topology host port is occupied"
+          } else {
+            errorCode = "TOPOLOGY_HOST_FAILED"
+            errorMessage = "topology host failed to start"
+          }
+          errorCode!! to errorMessage!!
+        }
+        Log.e(LOG_TAG, "event=topology-host-start-failed code=${failureSnapshot.first}")
+        failure("start", failureSnapshot.first, failureSnapshot.second, retryable = failureSnapshot.first != "TOPOLOGY_HOST_PORT_OCCUPIED")
       }
     }
   }
 
   fun stop(): Map<String, Any?> {
-    synchronized(lock) {
-      server?.shutdown()
-      server = null
-      currentState = "stopped"
-      errorCode = null
-      errorMessage = null
+    return synchronized(lifecycleLock) {
+      val stopping = synchronized(lock) {
+        val current = server
+        server = null
+        currentState = "stopped"
+        errorCode = null
+        errorMessage = null
+        current
+      }
+      stopping?.shutdown()
       Log.i(LOG_TAG, "event=topology-host-stopped")
-      return success(mapOf("completed" to true))
+      success(mapOf("completed" to true))
     }
   }
 
   fun sendFrame(raw: String): Map<String, Any?> {
-    synchronized(lock) {
-      val active = server
-      if (active == null || !active.isAlive) return failure("sendFrame", "TOPOLOGY_UNAVAILABLE", "topology host is not running", true)
-      return try {
-        active.sendFrame(raw)
-        success(mapOf("sent" to true))
-      } catch (_error: Throwable) {
-        failure("sendFrame", "TOPOLOGY_PEER_UNREACHABLE", "topology peer is unavailable", true)
-      }
+    val active = synchronized(lock) { server }
+    if (active == null || !active.isAlive) return failure("sendFrame", "TOPOLOGY_UNAVAILABLE", "topology host is not running", true)
+    return try {
+      active.sendFrame(raw)
+      success(mapOf("sent" to true))
+    } catch (_error: Throwable) {
+      failure("sendFrame", "TOPOLOGY_PEER_UNREACHABLE", "topology peer is unavailable", true)
     }
   }
 
-  fun closePeer(): Map<String, Any?> {
-    synchronized(lock) {
-      server?.closePeer()
-      return success(mapOf("completed" to true))
-    }
+  fun closePeer(reason: String = "TOPOLOGY_HOST_STOPPED"): Map<String, Any?> {
+    val active = synchronized(lock) { server }
+    active?.closePeer(reason)
+    return success(mapOf("completed" to true))
   }
 
-  fun status(): Map<String, Any?> = synchronized(lock) {
-    mapOf(
+  fun status(): Map<String, Any?> {
+    val snapshot = synchronized(lock) {
+      StatusSnapshot(
+        server = server,
+        state = currentState,
+        config = configMap(),
+        errorCode = errorCode,
+        errorMessage = errorMessage,
+      )
+    }
+    val address = snapshot.server?.address()
+    return mapOf(
       "status" to "succeeded",
-      "value" to statusValue(),
+      "value" to buildMap {
+        put("state", snapshot.state)
+        put("config", snapshot.config)
+        address?.let { put("address", it) }
+        snapshot.errorCode?.let { put("errorCode", it) }
+        snapshot.errorMessage?.let { put("errorMessage", it) }
+      },
       "completedAt" to System.currentTimeMillis(),
     )
   }
 
-  fun diagnostics(): Map<String, Any?> = synchronized(lock) {
-    mapOf(
+  fun diagnostics(): Map<String, Any?> {
+    val snapshot = synchronized(lock) {
+      server to mapOf(
+        "status" to currentState,
+        "config" to configMap(),
+      )
+    }
+    return mapOf(
       "status" to "succeeded",
       "value" to mapOf(
-        "status" to statusValue(),
-        "stats" to (server?.stats() ?: mapOf("sessionCount" to 0, "peerCount" to 0, "stalePeerCount" to 0)),
+        "status" to snapshot.second,
+        "stats" to (snapshot.first?.stats() ?: mapOf("sessionCount" to 0, "peerCount" to 0, "stalePeerCount" to 0)),
         "capturedAt" to System.currentTimeMillis(),
       ),
       "completedAt" to System.currentTimeMillis(),
     )
   }
 
-  private fun statusValue(): Map<String, Any?> {
-    val address = server?.address()
-    return buildMap {
-      put("state", currentState)
-      put("config", configMap())
-      if (address != null) put("address", address)
-      errorCode?.let { put("errorCode", it) }
-      errorMessage?.let { put("errorMessage", it) }
-    }
-  }
+  private data class StatusSnapshot(
+    val server: TerminalTopologyServer?,
+    val state: String,
+    val config: Map<String, Any>,
+    val errorCode: String?,
+    val errorMessage: String?,
+  )
 
   private fun configMap(): Map<String, Any> {
     val current = config ?: return emptyMap()

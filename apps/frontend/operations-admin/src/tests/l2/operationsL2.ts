@@ -218,22 +218,22 @@ export async function selectOperationsOption(
     // never hide unrelated click failures.
     if (!String(error).includes('element was detached')) throw error;
   }
-  if (label && assertSelectedValue && !(await control.innerText()).includes(label)) {
-    // A virtualized rc-select can recycle the first option node after the
-    // pointer event. Re-resolve the visible body option, never the hidden
-    // aria mirror, before the bounded keyboard fallback.
-    const retryDropdown = await activeSelectDropdown(page, input);
-    if (!(await retryDropdown.count())) await control.click();
-    const retryOption = (await activeSelectDropdown(page, input))
-      .locator('.ant-select-item-option:visible')
-      .filter({hasText: targetLabel})
-      .last();
-    if (await retryOption.count()) {
-      await retryOption.scrollIntoViewIfNeeded();
-      await retryOption.click();
+  let selectionCommitted = false;
+  if (label && assertSelectedValue) {
+    try {
+      // This is a controlled Select inside a dynamic Form.List. Its displayed
+      // value can lag the option click while Form.useWatch publishes the field
+      // update. Poll for the semantic result before falling back: clicking the
+      // same option again in multiple mode deselects it.
+      await expect(control).toContainText(label);
+      selectionCommitted = true;
+    } catch {
+      selectionCommitted = false;
     }
   }
-  if (label && assertSelectedValue && !(await control.innerText()).includes(label)) {
+  if (label && assertSelectedValue && !selectionCommitted) {
+    // Keep a keyboard fallback for virtualized Selects, but never repeat the
+    // pointer click after a possibly committed controlled selection.
     if (!(await activeSelectDropdown(page, input).then(async dropdown => (await dropdown.count()) > 0)))
       await control.click();
     await input.focus();

@@ -1,4 +1,4 @@
-import {topologyTransportConfig} from '@catering-v2s/kernel-base-contracts'
+import {topologyTransportConfig} from '@catering-v2s/kernel-base-contracts';
 import type {
   TopologyFailureReasonCode,
   TopologyDisplayRole,
@@ -6,53 +6,52 @@ import type {
   TopologyOperationEligibility,
   TopologyInstanceMode,
   SurfaceForm,
-} from '@catering-v2s/kernel-base-contracts'
+} from '@catering-v2s/kernel-base-contracts';
 
 export type TopologyEligibilityInput = Readonly<{
-  readonly operation: TopologyOperation
-  readonly surfaceForm: SurfaceForm | undefined
-  readonly displayCount: number | null
-  readonly instanceMode: TopologyInstanceMode
-  readonly displayRole: TopologyDisplayRole
-  readonly paired: boolean
-  readonly peerReachable: boolean
-}>
+  readonly operation: TopologyOperation;
+  readonly surfaceForm: SurfaceForm | undefined;
+  readonly displayCount: number | null;
+  readonly instanceMode: TopologyInstanceMode;
+  readonly displayRole: TopologyDisplayRole;
+  readonly paired: boolean;
+  readonly peerReachable: boolean;
+}>;
 
 const denied = (
   operation: TopologyOperation,
   reasonCode: Exclude<TopologyFailureReasonCode, 'allowed'>,
-): TopologyOperationEligibility => Object.freeze({operation, allowed: false, reasonCode})
+): TopologyOperationEligibility => Object.freeze({operation, allowed: false, reasonCode});
 
-export const evaluateTopologyOperation = (
-  input: TopologyEligibilityInput,
-): TopologyOperationEligibility => {
-  if (input.surfaceForm !== 'laptop') return denied(input.operation, 'TOPOLOGY_UNSUPPORTED_FORM')
-  if (input.displayCount !== 1) return denied(input.operation, 'TOPOLOGY_REQUIRES_SINGLE_SCREEN')
+export const evaluateTopologyOperation = (input: TopologyEligibilityInput): TopologyOperationEligibility => {
+  if (input.surfaceForm !== 'laptop') return denied(input.operation, 'TOPOLOGY_UNSUPPORTED_FORM');
+  if (input.displayCount !== 1) return denied(input.operation, 'TOPOLOGY_REQUIRES_SINGLE_SCREEN');
   if (input.operation === 'unpair') {
     return input.paired
       ? Object.freeze({operation: input.operation, allowed: true, reasonCode: 'allowed' as const})
-      : denied(input.operation, 'TOPOLOGY_NOT_PAIRED')
+      : denied(input.operation, 'TOPOLOGY_NOT_PAIRED');
   }
   if (input.operation === 'pair' || input.operation === 'query-host') {
-    if (input.instanceMode !== 'MASTER') return denied(input.operation, 'TOPOLOGY_REQUIRES_MASTER')
-    if (input.paired) return denied(input.operation, 'TOPOLOGY_ALREADY_PAIRED')
+    if (input.instanceMode !== 'MASTER') return denied(input.operation, 'TOPOLOGY_REQUIRES_MASTER');
+    if (input.paired) return denied(input.operation, 'TOPOLOGY_ALREADY_PAIRED');
   }
   if (input.operation === 'enable-host' && input.instanceMode !== 'MASTER') {
-    return denied(input.operation, 'TOPOLOGY_REQUIRES_MASTER')
+    return denied(input.operation, 'TOPOLOGY_REQUIRES_MASTER');
   }
   // Reachability is deliberately not an eligibility gate.  It only describes
   // whether a currently allowed peer operation can be delivered; it must not
   // change the paired/secondary semantics while reconnecting.
-  return Object.freeze({operation: input.operation, allowed: true, reasonCode: 'allowed' as const})
-}
+  return Object.freeze({operation: input.operation, allowed: true, reasonCode: 'allowed' as const});
+};
 
-export const hasTopologySecondarySurface = (input: Readonly<{
-  readonly displayCount: number | null
-  readonly instanceMode: TopologyInstanceMode
-  readonly paired: boolean
-}>): boolean => input.displayCount !== null
-  && input.displayCount >= 2
-  || (input.instanceMode === 'MASTER' && input.paired)
+export const hasTopologySecondarySurface = (
+  input: Readonly<{
+    readonly displayCount: number | null;
+    readonly instanceMode: TopologyInstanceMode;
+    readonly paired: boolean;
+  }>,
+): boolean =>
+  (input.displayCount !== null && input.displayCount >= 2) || (input.instanceMode === 'MASTER' && input.paired);
 
 export const topologyReasonMessages: Readonly<Record<TopologyFailureReasonCode, string>> = Object.freeze({
   allowed: '',
@@ -76,4 +75,4 @@ export const topologyReasonMessages: Readonly<Record<TopologyFailureReasonCode, 
   TOPOLOGY_DECODED_PAYLOAD_INVALID: '拓扑状态内容无效，正在等待下一次同步',
   TOPOLOGY_REASSEMBLY_OVERFLOW: '拓扑状态超过安全传输上限，正在等待下一次同步',
   TOPOLOGY_REASSEMBLY_TIMEOUT: '拓扑状态分片接收超时，正在等待下一次同步',
-})
+});

@@ -1,6 +1,6 @@
-import {useInputField} from '@catering-v2s/ui-base-input'
-import {PrimitiveInput, PrimitiveLabel} from '@catering-v2s/ui-base-primitives'
-import {ageFieldId} from '../hooks/useCustomerMember'
+import {useInputField} from '@catering-v2s/ui-base-input';
+import {PrimitiveInput, PrimitiveLabel} from '@catering-v2s/ui-base-primitives';
+import {ageFieldId} from '../hooks/useCustomerMember';
 
 export const CustomerMemberAgeField = ({editable}: Readonly<{readonly editable: boolean}>) => {
   const field = useInputField({
@@ -10,7 +10,7 @@ export const CustomerMemberAgeField = ({editable}: Readonly<{readonly editable: 
     keyboardKind: 'virtual',
     layout: 'numeric',
     maxLength: 3,
-  })
+  });
 
   return (
     <>
@@ -19,5 +19,5 @@ export const CustomerMemberAgeField = ({editable}: Readonly<{readonly editable: 
       </PrimitiveLabel>
       <PrimitiveInput {...field.inputProps} editable={editable} />
     </>
-  )
-}
+  );
+};

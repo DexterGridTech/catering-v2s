@@ -1,5 +1,37 @@
 # Terminal activation batch 1 · first managed run 6c admission
 
+## Current-byte admission update · 2026-09-28 19:16 UTC
+
+```text
+REVIEW_TARGET=FIRST_DYNAMIC_RUN_6C_ADMISSION
+STATUS=PASS
+M/S/N=0/0/2
+REVIEWER_KIND=FRESH_INDEPENDENT_SUBAGENT
+REVIEWER=/root/stage1_6c_currentbyte_admission
+EXACT_ADMITTED_INVOCATION=scripts/test/backend-acceptance --operation storeTerminalActivationBusinessPrecedence --topology-preflight
+BUSINESS_SCENARIO_COUNT=1; operation=storeTerminalActivationBusinessPrecedence
+WHOLE_BATCH_6B=MATCHED; source set=472 files/0dca67eb5ce5353e11986bdb7318dc7fc990342591aa0dd06210a8101d5e43d8; current report=2026-09-29-v2s-terminal-activation-batch-1-projection-binding-reconciliation-codex.md
+CURRENT_BYTE_NORMAL_STATIC=PASS; log=.runtime/r5/evidence/terminal-activation-ordinary-validate-only-20260929.log; SHA256=00212f1a3f952120df26c49d01f734c640f0e328c5ca0cc6eab97491e6e0e137; EXECUTED=46/46
+LOCAL_RESOURCE_PREFLIGHT=LAST_OBSERVED_PASS; LIVE_MANAGED_PROCESSES=0; MANAGED_RSS_MB=0; RSS_BUDGET_MB=4096; mandatory launch-time recheck
+DEV_STATE=MANDATORY_LAUNCH_TIME_MANAGED_MANIFEST_CHECK; stop only a currently owned matching DEV manifest; if absent, do not start or restart DEV
+REMOTE_PREFLIGHT=MANDATORY_INSIDE_MANAGED_INVOCATION_BEFORE_REMOTE_WORKSPACE_PREPARE
+TOPOLOGY=NOT_RUN; BUSINESS=NOT_RUN; TDS_CONTRACT=NOT_RUN; DB_OPERATIONS=NOT_RUN; CLEANUP=NOT_RUN
+NETWORK=CONNECTED; SSH_OR_ROUTE_CONFIGURATION=UNCHANGED
+```
+
+Fresh read-only reviewer `/root/stage1_6c_currentbyte_admission` issued this current-byte `PASS`
+after confirming the corrected whole-batch 6b source identity and retained ordinary static log.
+The review reports `M/S/N=0/0/2`: its two non-blocking notes require (1) the execution-status
+record to carry the corrected source identity, now recorded in its current section, and (2) a
+fresh DEV/resource/remote-resource check at the managed runner's launch boundary. The second is a
+run-time entry condition, not a claim that preflight or topology has already passed. This admission
+authorizes only the exact first invocation above; it claims no dynamic result.
+
+Current-byte latest run: ordinary `scripts/verify --validate-only`, nested run
+`ter-local-static-90659-1790622089030`, 2026-09-28 19:01:29–19:03:25 UTC, PASS 46/46; static only.
+Last managed PASS: `r5-tc-1790619537737-59512`, 2026-09-28 18:18:57–18:21:25 UTC; historical and
+not current-byte topology/business proof.
+
 ```text
 REVIEW_TARGET=FIRST_DYNAMIC_RUN_6C_ADMISSION
 REVIEWER_KIND=FRESH_INDEPENDENT_SUBAGENT

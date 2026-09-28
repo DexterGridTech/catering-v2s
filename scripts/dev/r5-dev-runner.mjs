@@ -501,7 +501,7 @@ async function stopRemoteProcess(host, control, controlPath, service) {
     '  if ps -eo pid=,pgid= | awk -v group="$expected_pgid" \'$2 == group {found=1} END {exit found ? 0 : 1}\'; then exit 45; fi',
     '  if test ! -e "$root" || test -r "$control_path"; then',
     '    printf \'%s\\n\' \'{"phase":"STOPPED","status":"PASS","alreadyStopped":true}\'',
-    `    printf '%s\\n' R5_REMOTE_PROCESS_STOP=PASS SERVICE=${service} STATUS=ALREADY_STOPPED`,
+    `    ${remoteProcessStopMarkerCommand(service, 'ALREADY_STOPPED')}`,
     '    exit 0',
     '  fi',
     '  exit 46',
@@ -519,10 +519,16 @@ async function stopRemoteProcess(host, control, controlPath, service) {
     'for _ in $(seq 1 20); do if ! ps -eo pid=,pgid= | awk -v group="$expected_pgid" \'$2 == group {found=1} END {exit found ? 0 : 1}\'; then break; fi; sleep 0.5; done',
     'if ps -eo pid=,pgid= | awk -v group="$expected_pgid" \'$2 == group {found=1} END {exit found ? 0 : 1}\'; then exit 45; fi',
     'printf \'%s\\n\' \'{"phase":"STOPPED","status":"PASS"}\' >> "$phase_path"',
-    `printf '%s\\n' R5_REMOTE_PROCESS_STOP=PASS SERVICE=${service}`,
+    remoteProcessStopMarkerCommand(service),
   ].join('\n'));
   if (!output.includes(`R5_REMOTE_PROCESS_STOP=PASS SERVICE=${service}`)) fail(`REMOTE_${service.toUpperCase()}_STOP_PROTOCOL_INVALID`);
   return output.includes(`R5_REMOTE_PROCESS_STOP=PASS SERVICE=${service} STATUS=ALREADY_STOPPED`) ? 'ALREADY_STOPPED' : 'STOPPED';
+}
+export function remoteProcessStopMarkerCommand(service, status = null) {
+  if (!['JAVA', 'TDS'].includes(service)) fail('REMOTE_PROCESS_STOP_SERVICE_INVALID');
+  if (status !== null && status !== 'ALREADY_STOPPED') fail('REMOTE_PROCESS_STOP_STATUS_INVALID');
+  const suffix = status === null ? '' : ` STATUS=${status}`;
+  return `printf '%s\\n' ${quote(`R5_REMOTE_PROCESS_STOP=PASS SERVICE=${service}${suffix}`)}`;
 }
 export async function stopRemoteJava(host, control) {
   validateRemoteJavaControl(control);

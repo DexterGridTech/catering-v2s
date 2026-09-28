@@ -1,3 +1,3 @@
-import type {AuthSystemOperation} from '../features/commands/commands'
+import type {AuthSystemOperation} from '../features/commands/commands';
 
-export type AuthSystemNoticeProps = Readonly<{readonly operation: AuthSystemOperation}>
+export type AuthSystemNoticeProps = Readonly<{readonly operation: AuthSystemOperation}>;

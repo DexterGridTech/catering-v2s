@@ -1,15 +1,12 @@
-export {dependencyModuleNames, devDependencyModuleNames} from './dependencies'
-export {moduleName, moduleKind} from './moduleName'
-export {assetsById} from './foundations/assets'
-export {WallpaperBackground} from './components/WallpaperBackground'
-export {
-  confirmWallpaperRequestedCommand,
-  wallpaperOptionSelectedCommand,
-} from './features/commands/commands'
-export {createSampleWallpaperPickerModule} from './application/module'
-export {parts} from './parts/parts'
-export {sampleWallpaperPickerAssembly} from './assembly/assembly'
-export {wallpaperOptionTestId, wallpaperPickerTestIds} from './foundations/wallpaperPickerTestIds'
-export type {WallpaperPickerAssembly} from './assembly/assembly'
-export type {WallpaperPickerCommandPayload} from './features/commands/commands'
-export type {WallpaperId} from '@catering-v2s/kernel-feature-sample-wallpaper'
+export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
+export {moduleName, moduleKind} from './moduleName';
+export {assetsById} from './foundations/assets';
+export {WallpaperBackground} from './components/WallpaperBackground';
+export {confirmWallpaperRequestedCommand, wallpaperOptionSelectedCommand} from './features/commands/commands';
+export {createSampleWallpaperPickerModule} from './application/module';
+export {parts} from './parts/parts';
+export {sampleWallpaperPickerAssembly} from './assembly/assembly';
+export {wallpaperOptionTestId, wallpaperPickerTestIds} from './foundations/wallpaperPickerTestIds';
+export type {WallpaperPickerAssembly} from './assembly/assembly';
+export type {WallpaperPickerCommandPayload} from './features/commands/commands';
+export type {WallpaperId} from '@catering-v2s/kernel-feature-sample-wallpaper';

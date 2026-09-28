@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import path from 'node:path';
 import test from 'node:test';
 import {
   assertPerformanceOperationExactSet,
@@ -9,6 +10,14 @@ import {
   backendAcceptanceRunIdForCp05,
   classifyCurrentTreeOperation,
 } from './backend-performance-cp05-reclassification.mjs';
+import {
+  buildBudgetProjection,
+  isCp05IdentityOnlyProjectionMode,
+  readCp05CalibrationReport,
+  validateBudgetRegistry,
+} from '../generate/backend-performance-budget.mjs';
+
+const repositoryRoot = path.resolve(import.meta.dirname, '..', '..');
 
 const registry = [
   {operationId: 'getThing', method: 'GET', path: '/api/things/{thingRef}', owner: 'thing', consumerFaces: ['operations-admin']},
@@ -73,6 +82,44 @@ test('registry loader aligns catalog logical paths with the mounted edge route',
     }),
   });
   assert.equal(loaded[0].routeTemplate, '/api/operations/catalog-inventory/items/{itemCode}');
+});
+
+test('ordinary acceptance registry carries the complete current CP-05 budget projection', {
+  skip: isCp05IdentityOnlyProjectionMode() ? 'identity-only mode intentionally omits measured budgets' : false,
+}, () => {
+  const registry = loadPerformanceOperationRegistry({root: repositoryRoot});
+  const calibrationReport = readCp05CalibrationReport({root: repositoryRoot}).report;
+  const expected = buildBudgetProjection({
+    operations: registry.map(({operationId}) => ({operationId})),
+    calibrationReport,
+  });
+  const expectedBudgets = Object.fromEntries(
+    expected.operations.map(({operationId, databaseOperationBudget}) => [operationId, databaseOperationBudget]),
+  );
+  const actualBudgets = Object.fromEntries(
+    registry.map(({operationId, databaseOperationBudget}) => [operationId, databaseOperationBudget]),
+  );
+
+  assert.equal(registry.length, 296);
+  assert.equal(Object.keys(actualBudgets).length, 296);
+  for (const [operationId, expectedBudget] of Object.entries(expectedBudgets)) {
+    assert.deepEqual(
+      actualBudgets[operationId],
+      expectedBudget,
+      `CP05_GENERATED_BUDGET_PROJECTION_DRIFT:${operationId}`,
+    );
+  }
+  assert.doesNotThrow(() => validateBudgetRegistry({operations: registry}));
+
+  const missingCatalogBudget = registry.map(operation =>
+    operation.operationId === 'adjustOperationsInventoryTarget'
+      ? {...operation, databaseOperationBudget: null}
+      : operation,
+  );
+  assert.throws(
+    () => validateBudgetRegistry({operations: missingCatalogBudget}),
+    /BUDGET_NULL_REJECTED:adjustOperationsInventoryTarget/,
+  );
 });
 
 test('CP-05 binds HTTP evidence to the backend-acceptance identity, never the outer managed-run identity', () => {

@@ -120,6 +120,9 @@ export const CONTROLLED_BUDGET_EXCEPTION_DECISION_SCOPE = Object.freeze({
     'patchOperationsStoreServicePoint',
   ]),
   'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-ASSET-STAGE-P3': Object.freeze(['stageStoreServicePointImage']),
+  'IMPLEMENTATION-AGENT-2026-09-29-TERMINAL-VOID-STATUS-CP05': Object.freeze([
+    'postOperationsStoreTerminalStatus',
+  ]),
 });
 
 // Source-owned controlled exception records.  Keep this in the budget
@@ -364,11 +367,49 @@ const storeServicePointBudgetExceptionRecords = Object.freeze(
   ),
 );
 
+const terminalVoidStatusBudgetExceptionRecord = Object.freeze({
+  operationId: 'postOperationsStoreTerminalStatus',
+  decisionRef: 'IMPLEMENTATION-AGENT-2026-09-29-TERMINAL-VOID-STATUS-CP05',
+  authority: 'IMPLEMENTATION_AGENT',
+  from: 18,
+  to: 23,
+  history: [
+    {
+      from: 18,
+      to: 23,
+      reason:
+        'D-39 implementation-agent decision: preserve atomic store-terminal transition and terminal-binding owner closure after three current-byte CP-05 measurements; no safe owner fan-out can be removed.',
+      decisionRef: 'IMPLEMENTATION-AGENT-2026-09-29-TERMINAL-VOID-STATUS-CP05',
+    },
+  ],
+  businessFactsPreserved: true,
+  businessFactsEvidence: [
+    'source:apps/backend/catering-business-server/src/main/java/com/catering/v2s/storeterminal/application/operations/PostOperationsStoreTerminalStatusOperation.java:23-31',
+    'source:apps/backend/catering-business-server/modules/store-terminal/src/main/java/com/catering/v2s/storeterminal/application/StoreTerminalOwnerService.java:381-432',
+    'source:apps/backend/catering-business-server/modules/terminal-binding/src/main/java/com/catering/v2s/terminalbinding/application/TerminalBindingOwnerService.java:221-249',
+    'business-facts:owner-grant-store-terminal-status-idempotency-row-lock-cas-audit-binding-revocation-notification-transaction',
+    'measurement:cp05-three-run-max:postOperationsStoreTerminalStatus:23',
+  ],
+  sharedMechanismsReused: true,
+  sharedMechanismsEvidence: [
+    'source:store-terminal:existing-owner-command-idempotency-receipt-and-audit',
+    'source:terminal-binding:existing-owner-command-row-lock-audit-and-transactional-notify',
+    'measurement:cp05-three-run-exact-operation-set:296:unclassified-sql:0',
+    'measurement:cp05-three-run-batch-cardinalities:1,20,100',
+  ],
+  rejectedAlternative:
+    '移除 terminal-binding 对 VOIDED 状态的 owner 内核验、活动绑定行锁、终止写入、审计或事务通知；会留下可认证的作废终端凭证、绕过 owner 事实，或允许 TDS 保留已撤销会话。把 binding 持久化搬入 store-terminal 会破坏模块 owner 边界。',
+  costComparison:
+    '同 workload fingerprint 的三次全目录实测基数为 1/20/100，postOperationsStoreTerminalStatus 最大值均为 23，相对原上限 18 增加 5；额外闭包仅在 VOIDED 转移时执行。没有可删除的重复 owner fan-out，故只把该固定 operation 的上限改为 23，通用 P3=20 不变。',
+  narrowScope: 'postOperationsStoreTerminalStatus',
+});
+
 export const CONTROLLED_BUDGET_EXCEPTION_RECORDS = Object.freeze([
   ...invitationAssignmentBudgetExceptionRecords,
   ...salesMenuBudgetExceptionRecords,
   ...brandCopyBudgetExceptionRecords,
   ...storeServicePointBudgetExceptionRecords,
+  terminalVoidStatusBudgetExceptionRecord,
 ]);
 
 const CONTROLLED_BUDGET_EXCEPTION_AUTHORITIES = new Set(['DEXTER', 'IMPLEMENTATION_AGENT']);

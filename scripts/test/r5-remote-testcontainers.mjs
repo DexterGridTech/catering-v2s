@@ -87,6 +87,39 @@ export const terminalWireEvidenceAggregationScript = () =>
     '  cat -- "$wire_log" >> "$wire_log_archive" || exit 1',
     'done',
   );
+export const remoteProcessInventoryScript = () =>
+  script(
+    'process_inventory_file="$results/remote-process-identities.tsv"',
+    'process_inventory_status=FAIL',
+    'capture_remote_process_inventory() {',
+    '  phase="$1"',
+    '  test -r /proc/self/stat || return 1',
+    '  boot_id="$(cat /proc/sys/kernel/random/boot_id)" || return 1',
+    '  captured_at="$(date -u +%Y-%m-%dT%H:%M:%S.%NZ)" || return 1',
+    '  printf \'snapshot\\t%s\\t%s\\t%s\\t%s\\n\' "${root##*/}" "$phase" "$captured_at" "$boot_id" >> "$process_inventory_file" || return 1',
+    '  for proc_dir in /proc/[0-9]*; do',
+    '    pid="${proc_dir##*/}"',
+    '    stat_line="$(cat "$proc_dir/stat" 2>/dev/null)" || continue',
+    '    stat_tail="${stat_line##*) }"',
+    '    read -r -a stat_fields <<< "$stat_tail"',
+    '    test "${#stat_fields[@]}" -ge 20 || continue',
+    '    state="${stat_fields[0]}"',
+    '    ppid="${stat_fields[1]}"',
+    '    start_ticks="${stat_fields[19]}"',
+    '    [[ "$pid" =~ ^[0-9]+$ && "$ppid" =~ ^[0-9]+$ && "$start_ticks" =~ ^[0-9]+$ ]] || continue',
+    '    uid="$(awk \'/^Uid:/{print $2; exit}\' "$proc_dir/status" 2>/dev/null)" || continue',
+    '    [[ "$uid" =~ ^[0-9]+$ ]] || continue',
+    '    comm="$(tr -cd \'[:alnum:]_.+-\' < "$proc_dir/comm" 2>/dev/null | cut -c1-64)" || comm=""',
+    '    executable="$(readlink "$proc_dir/exe" 2>/dev/null || true)"',
+    '    executable="${executable##*/}"',
+    '    executable="$(printf "%s" "$executable" | tr -cd \'[:alnum:]_.+-\' | cut -c1-64)"',
+    '    test -n "$comm" || comm=unknown',
+    '    test -n "$executable" || executable=unavailable',
+    '    printf \'process\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n\' "${root##*/}" "$phase" "$captured_at" "$boot_id" "$pid" "$ppid" "$uid" "$state" "$start_ticks" "$comm" "$executable" >> "$process_inventory_file" || return 1',
+    '  done',
+    '}',
+    'if : > "$process_inventory_file" && capture_remote_process_inventory BEFORE_GRADLE; then process_inventory_status=CAPTURED; fi',
+  );
 export const resolveTdsCapacityConfiguration = (configuration = loadTdsCapacityConfiguration()) =>
   validateTdsCapacityConfiguration(configuration);
 const runnerEvent = (event, fields = {}) =>
@@ -106,6 +139,8 @@ const ARCHIVED_EVIDENCE_ARTIFACTS = Object.freeze([
   'tds-process.log',
   'tds-process-evidence.json',
   'terminal-wire-client.log',
+  'process-signal-trace.log',
+  'remote-process-identities.tsv',
 ]);
 
 /**
@@ -274,11 +309,22 @@ export const backendAcceptanceEnvironment = (
   tdsCapacity = null,
   terminalWireNodePath = null,
   topologyPreflight = false,
+  vs12Diagnostic = false,
 ) => {
   if (extensionScaleProof && runId === null) throw new Error('EXTENSION_SCALE_PROOF_REQUIRES_BACKEND_ACCEPTANCE');
   const effectiveOperation = canonicalBackendAcceptanceOperation(operation, extensionScaleProof);
   if (topologyPreflight && (runId === null || effectiveOperation === 'all' || verificationMode !== 'ACCEPTANCE')) {
     throw new Error('BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT_ARGUMENT_INVALID');
+  }
+  if (
+    vs12Diagnostic &&
+    (runId === null ||
+      effectiveOperation !== 'storeTerminalActivationBusinessPrecedence' ||
+      verificationMode !== 'ACCEPTANCE' ||
+      topologyPreflight ||
+      extensionScaleProof)
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC_ARGUMENT_INVALID');
   }
   if (runId === null) return effectiveOperation === 'all' ? [] : ['export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY'];
   return [
@@ -296,6 +342,7 @@ export const backendAcceptanceEnvironment = (
         'export V2S_DB_STATEMENT_DICTIONARY="$root/results/statement-dictionary.json"',
         `export V2S_BACKEND_ACCEPTANCE_OPERATION=${quote(effectiveOperation)}`,
         `export V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT=${topologyPreflight ? 'true' : 'false'}`,
+        ...(vs12Diagnostic ? ['export V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC=true'] : []),
         `export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=${quote(verificationMode)}`,
         ...(terminalWireNodePath === null
           ? []
@@ -325,7 +372,31 @@ export const backendAcceptanceEnvironment = (
         // never by a caller-controlled diagnostic switch.
         ...(effectiveOperation === 'all' ? ['export V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE=true'] : []),
         'export CATERING_OTP_DEBUG_CODE_EXPOSURE=true',
-      ];
+  ];
+};
+
+export const validateVs12DiagnosticScope = ({
+  vs12Diagnostic,
+  backendAcceptanceRunId,
+  backendAcceptanceOperation,
+  verificationMode,
+  topologyPreflight = false,
+  productionMutation = null,
+  extensionScaleProof = false,
+  traceSystemSignals = false,
+}) => {
+  if (!vs12Diagnostic) return;
+  if (
+    backendAcceptanceRunId === null ||
+    backendAcceptanceOperation !== 'storeTerminalActivationBusinessPrecedence' ||
+    verificationMode !== 'ACCEPTANCE' ||
+    topologyPreflight ||
+    productionMutation !== null ||
+    extensionScaleProof
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC_ARGUMENT_INVALID');
+  }
+  if (!traceSystemSignals) throw new Error('R5_VS12_DIAGNOSTIC_REQUIRES_SYSTEM_SIGNAL_TRACE');
 };
 
 /**
@@ -1036,6 +1107,21 @@ export const parseAndValidateRunManifest = manifest => {
     !['PASS', 'NOT_RUN'].includes(manifest.measurementEvidence.status)
   ) {
     throw new Error('RUN_MANIFEST_MEASUREMENT_EVIDENCE_INVALID');
+  }
+  if (manifest.signalTrace !== undefined) {
+    const trace = manifest.signalTrace;
+    if (
+      !trace ||
+      typeof trace.requested !== 'boolean' ||
+      !['PENDING', 'CAPTURED', 'PASS', 'FAIL', 'UNAVAILABLE', 'NOT_REQUESTED'].includes(trace.status) ||
+      !['NONE', 'GRADLE_CHILD_TREE', 'REMOTE_HOST_SIGNAL_GENERATE'].includes(trace.scope) ||
+      trace.artifact !== 'process-signal-trace.log' ||
+      (trace.requested && trace.status === 'NOT_REQUESTED') ||
+      (!trace.requested && (trace.status !== 'NOT_REQUESTED' || trace.scope !== 'NONE')) ||
+      (trace.requested && trace.scope === 'NONE')
+    ) {
+      throw new Error('RUN_MANIFEST_SIGNAL_TRACE_INVALID');
+    }
   }
   if (backendAcceptance === null && manifest.measurementEvidence?.status === 'PASS') {
     throw new Error('RUN_MANIFEST_MEASUREMENT_WITHOUT_BACKEND_ACCEPTANCE');
@@ -1964,7 +2050,37 @@ export const runScript = ({
   tdsCapacity = null,
   terminalWireNodePath = null,
   topologyPreflight = false,
+  traceChildSignals = false,
+  traceSystemSignals = false,
+  vs12Diagnostic = false,
 }) => {
+  const signalTracingRequested = traceChildSignals || traceSystemSignals;
+  if (traceChildSignals && traceSystemSignals) throw new Error('R5_SIGNAL_TRACE_MODES_MUTUALLY_EXCLUSIVE');
+  validateVs12DiagnosticScope({
+    vs12Diagnostic,
+    backendAcceptanceRunId,
+    backendAcceptanceOperation,
+    verificationMode,
+    topologyPreflight,
+    productionMutation,
+    extensionScaleProof: invocation.extensionScaleProof === true,
+    traceSystemSignals,
+  });
+  if (
+    traceSystemSignals &&
+    !(
+      (backendAcceptanceRunId !== null &&
+        backendAcceptanceOperation === 'all' &&
+        verificationMode === 'CALIBRATION' &&
+        !vs12Diagnostic) ||
+      (vs12Diagnostic &&
+        backendAcceptanceRunId !== null &&
+        backendAcceptanceOperation === 'storeTerminalActivationBusinessPrecedence' &&
+        verificationMode === 'ACCEPTANCE')
+    )
+  ) {
+    throw new Error('R5_TRACE_SYSTEM_SIGNALS_SCOPE_INVALID');
+  }
   if (productionMutation !== null && mutationPreflight === null) {
     throw new Error('PRODUCTION_MUTATION_PREFLIGHT_REQUIRED');
   }
@@ -1983,6 +2099,7 @@ export const runScript = ({
     tdsCapacity,
     terminalWireNodePath,
     topologyPreflight,
+    vs12Diagnostic,
   );
   const mutationLines =
     productionMutation === null
@@ -2064,6 +2181,22 @@ export const runScript = ({
     `cache=${quote(remoteDependencyCache)}`,
     `task=${quote(invocation.task)}`,
     'log_file="$results/gradle.log"',
+    `signal_trace_requested=${signalTracingRequested ? 'true' : 'false'}`,
+    `signal_trace_system_requested=${traceSystemSignals ? 'true' : 'false'}`,
+    'signal_trace_file="$results/process-signal-trace.log"',
+    'signal_trace_raw="$results/process-signal-trace.raw.log"',
+    'signal_trace_status=NOT_REQUESTED',
+    'signal_trace_preflight=NOT_REQUESTED',
+    'signal_trace_tool=NONE',
+    'signal_trace_version=NONE',
+    'signal_trace_pid=""',
+    'signal_trace_pid_start_ticks=""',
+    'signal_trace_boot_id=""',
+    'signal_trace_stop_status=NOT_REQUESTED',
+    'remote_pid_start_ticks() { local pid="$1" stat_line stat_tail; stat_line="$(cat "/proc/$pid/stat" 2>/dev/null)" || return 1; stat_tail="${stat_line##*) }"; read -r -a stat_fields <<< "$stat_tail"; test "${#stat_fields[@]}" -ge 20 || return 1; printf "%s" "${stat_fields[19]}"; }',
+    'if test "$signal_trace_requested" = true && test "$signal_trace_system_requested" != true; then signal_trace_status=UNAVAILABLE; if command -v strace >/dev/null 2>&1; then signal_trace_status=READY; signal_trace_tool="$(command -v strace)"; signal_trace_version="$(strace --version | head -n 1)"; signal_trace_version="${signal_trace_version##* }"; fi; fi',
+    ...remoteProcessInventoryScript().split('\n'),
+    'printf "REMOTE_PROCESS_INVENTORY_PREFLIGHT=%s\\n" "$process_inventory_status"',
     'container_query_status=PASS',
     'if ! docker ps -aq --filter label=org.testcontainers=true | sort > "$root/before-container-ids"; then container_query_status=FAIL; fi',
     'volume_query_status=PASS',
@@ -2071,6 +2204,28 @@ export const runScript = ({
     'printf "REMOTE_TESTCONTAINERS_CONTAINER_QUERY=%s\\n" "$container_query_status"',
     'printf "REMOTE_TESTCONTAINERS_VOLUME_QUERY=%s\\n" "$volume_query_status"',
     'if test "$container_query_status" != PASS || test "$volume_query_status" != PASS; then printf "REMOTE_TESTCONTAINERS_QUERY_FAILURE=true\\n"; exit 70; fi',
+    'if test "$signal_trace_system_requested" = true; then',
+    '  signal_trace_tool=linux-tracefs-signal-generate',
+    '  signal_trace_version="$(uname -r 2>/dev/null || printf unavailable)"',
+    '  signal_trace_status=UNAVAILABLE',
+    '  signal_trace_boot_id="$(cat /proc/sys/kernel/random/boot_id 2>/dev/null || true)"',
+    '  rm -f -- "$results/process-signal-trace.ready" "$results/process-signal-trace.status" "$results/process-signal-trace-launch.log"',
+    '  bash "$workspace/scripts/test/remote-signal-trace.sh" "$root" "$results" > "$results/process-signal-trace-launch.log" 2>&1 &',
+    '  signal_trace_pid=$!',
+    '  signal_trace_identity_deadline=$((SECONDS + 2))',
+    '  while (( SECONDS < signal_trace_identity_deadline )); do signal_trace_pid_start_ticks="$(remote_pid_start_ticks "$signal_trace_pid" 2>/dev/null || true)"; test -n "$signal_trace_pid_start_ticks" && break; kill -0 "$signal_trace_pid" 2>/dev/null || break; sleep 0.05; done',
+    '  signal_trace_deadline=$((SECONDS + 8))',
+    '  while (( SECONDS < signal_trace_deadline )); do',
+    '    if test -f "$results/process-signal-trace.ready" && grep -qx READY "$results/process-signal-trace.ready"; then signal_trace_status=READY; break; fi',
+    '    if test -f "$results/process-signal-trace.status" && grep -q "status=UNAVAILABLE" "$results/process-signal-trace.status"; then break; fi',
+    '    if ! kill -0 "$signal_trace_pid" 2>/dev/null; then break; fi',
+    '    sleep 0.05',
+    '  done',
+    '  if test "$signal_trace_status" = READY && { test -z "$signal_trace_boot_id" || test -z "$signal_trace_pid_start_ticks"; }; then signal_trace_status=UNAVAILABLE; fi',
+    '  if test "$signal_trace_status" != READY; then if test -n "$signal_trace_pid_start_ticks" && test "$(cat /proc/sys/kernel/random/boot_id 2>/dev/null || true)" = "$signal_trace_boot_id" && test "$(remote_pid_start_ticks "$signal_trace_pid" 2>/dev/null || true)" = "$signal_trace_pid_start_ticks"; then kill -TERM "$signal_trace_pid" 2>/dev/null || true; signal_trace_stop_status=STOPPED; else signal_trace_stop_status=IDENTITY_UNVERIFIED; fi; wait "$signal_trace_pid" 2>/dev/null || true; fi',
+    'fi',
+    'signal_trace_preflight="$signal_trace_status"',
+    'printf "REMOTE_SIGNAL_TRACE_PREFLIGHT=%s\\n" "$signal_trace_preflight"',
     'set +e',
     '(',
     '  set -euo pipefail',
@@ -2082,13 +2237,41 @@ export const runScript = ({
     '  export V2S_GRADLE_HOME="$gradle"',
     ...acceptanceEnvironment.map(line => `  ${line}`),
     ...mutationLines,
+    '  if test "$signal_trace_requested" = true && test "$signal_trace_status" != READY; then printf "REMOTE_SIGNAL_TRACE_PREFLIGHT=UNAVAILABLE\\n"; exit 79; fi',
+    '  if test "$process_inventory_status" != CAPTURED; then printf "REMOTE_PROCESS_INVENTORY_PREFLIGHT=FAIL\\n"; exit 78; fi',
     // The managed artifact is the sole durable diagnostic after the remote
     // workspace is reclaimed. Keep the causal test stack in that artifact;
     // Gradle's default console summary otherwise reduces setup failures to a
     // class and line number, which is not enough to identify the boundary.
-    `  "$gradle/bin/gradle" --no-daemon --rerun-tasks --stacktrace "$task" ${selectorArguments}`,
+    ...(traceChildSignals
+      ? [`  "$signal_trace_tool" -f -ttt -e trace=%process,%signal -e signal=SIGTERM -o "$signal_trace_raw" "$gradle/bin/gradle" --no-daemon --rerun-tasks --stacktrace "$task" ${selectorArguments}`]
+      : [`  "$gradle/bin/gradle" --no-daemon --rerun-tasks --stacktrace "$task" ${selectorArguments}`]),
     ') 2>&1 | tee "$log_file"',
     'gradle_status=${PIPESTATUS[0]}',
+    'if test "$signal_trace_system_requested" = true; then',
+    '  if test -n "$signal_trace_pid"; then',
+    '    if kill -0 "$signal_trace_pid" 2>/dev/null; then if test -n "$signal_trace_pid_start_ticks" && test "$(cat /proc/sys/kernel/random/boot_id 2>/dev/null || true)" = "$signal_trace_boot_id" && test "$(remote_pid_start_ticks "$signal_trace_pid" 2>/dev/null || true)" = "$signal_trace_pid_start_ticks"; then kill -TERM "$signal_trace_pid" 2>/dev/null || signal_trace_stop_status=FAIL; test "$signal_trace_stop_status" = FAIL || signal_trace_stop_status=STOPPED; else signal_trace_stop_status=IDENTITY_UNVERIFIED; fi; else signal_trace_stop_status=ALREADY_EXITED; fi',
+    '    wait "$signal_trace_pid" 2>/dev/null || true',
+    '  fi',
+    '  if test -f "$results/process-signal-trace.status" && grep -q "status=CAPTURED cleanup=PASS" "$results/process-signal-trace.status"; then signal_trace_status=CAPTURED; elif test "$signal_trace_status" != UNAVAILABLE; then signal_trace_status=FAIL; fi',
+    '  if test -f "$signal_trace_file"; then',
+    '    printf "remoteListenerStatus=%s stopStatus=%s pid=%s startTicks=%s bootId=%s tool=%s version=%s\\n" "$signal_trace_status" "$signal_trace_stop_status" "$signal_trace_pid" "$signal_trace_pid_start_ticks" "$signal_trace_boot_id" "$signal_trace_tool" "$signal_trace_version" >> "$signal_trace_file"',
+    '    if test -f "$results/process-signal-trace.status"; then cat -- "$results/process-signal-trace.status" >> "$signal_trace_file"; fi',
+    '    if test -s "$results/process-signal-trace-launch.log"; then printf "listenerLaunchDiagnosticBegin\\n" >> "$signal_trace_file"; cat -- "$results/process-signal-trace-launch.log" >> "$signal_trace_file"; printf "listenerLaunchDiagnosticEnd\\n" >> "$signal_trace_file"; fi',
+    '  fi',
+    'fi',
+    'if test "$process_inventory_status" = CAPTURED; then if ! capture_remote_process_inventory AFTER_GRADLE; then process_inventory_status=FAIL; fi; fi',
+    'process_inventory_records="$(awk -F "\\t" \'$1 == "process" { count++ } END { print count + 0 }\' "$process_inventory_file" 2>/dev/null || printf 0)"',
+    'printf "REMOTE_PROCESS_INVENTORY_STATUS=%s\\n" "$process_inventory_status"',
+    'printf "REMOTE_PROCESS_INVENTORY_RECORDS=%s\\n" "$process_inventory_records"',
+    'if test "$signal_trace_system_requested" = true; then if test "$signal_trace_status" != CAPTURED && test "$signal_trace_status" != UNAVAILABLE; then signal_trace_status=FAIL; fi; elif test "$signal_trace_requested" = true; then if test "$signal_trace_status" = READY && test -s "$signal_trace_raw"; then signal_trace_status=CAPTURED; elif test "$signal_trace_status" != UNAVAILABLE; then signal_trace_status=FAIL; fi; { printf "runId=%s status=%s tool=%s version=%s\\n" "${root##*/}" "$signal_trace_status" "$signal_trace_tool" "$signal_trace_version"; if test -f "$signal_trace_raw"; then cat -- "$signal_trace_raw"; fi; } > "$signal_trace_file"; else printf "runId=%s status=NOT_REQUESTED\\n" "${root##*/}" > "$signal_trace_file"; fi',
+    'printf "REMOTE_SIGNAL_TRACE_STATUS=%s\\n" "$signal_trace_status"',
+    'printf "REMOTE_SIGNAL_TRACE_TOOL=%s\\n" "$signal_trace_tool"',
+    'printf "REMOTE_SIGNAL_TRACE_VERSION=%s\\n" "$signal_trace_version"',
+    'printf "REMOTE_SIGNAL_TRACE_STOP_STATUS=%s\\n" "$signal_trace_stop_status"',
+    'printf "REMOTE_SIGNAL_TRACE_PID=%s\\n" "$signal_trace_pid"',
+    'printf "REMOTE_SIGNAL_TRACE_START_TICKS=%s\\n" "$signal_trace_pid_start_ticks"',
+    'printf "REMOTE_SIGNAL_TRACE_BOOT_ID=%s\\n" "$signal_trace_boot_id"',
     // The remote workspace is deliberately reclaimed below.  Preserve the
     // machine-readable JUnit failure detail before that happens: Gradle's
     // console summary often retains only an exception type and line number.
@@ -2104,6 +2287,8 @@ export const runScript = ({
     '  mkdir -p "$(dirname "$target")"',
     '  cp "$file" "$target"',
     'done',
+    'classpath_report="$workspace/apps/backend/catering-business-server/build/reports/backend-acceptance/runtime-classpaths.txt"',
+    'if test -f "$classpath_report"; then cp -- "$classpath_report" "$results/backend-runtime-classpaths.txt"; fi',
     'if test -f "$root/backend-acceptance/tds/tds.log"; then cp -- "$root/backend-acceptance/tds/tds.log" "$results/tds-process.log"; fi',
     'if test -f "$root/backend-acceptance/tds/process-evidence.json"; then cp -- "$root/backend-acceptance/tds/process-evidence.json" "$results/tds-process-evidence.json"; fi',
     ...terminalWireEvidenceAggregationScript().split('\n'),
@@ -2175,6 +2360,9 @@ const marker = (output, name) => output.match(new RegExp(`(?:^|\\n)${name}=([^\\
 
 const RUNNER_MARKER_NAMES = new Set([
   'REMOTE_GRADLE_STATUS',
+  'REMOTE_PROCESS_INVENTORY_PREFLIGHT',
+  'REMOTE_PROCESS_INVENTORY_STATUS',
+  'REMOTE_PROCESS_INVENTORY_RECORDS',
   'REMOTE_TESTCONTAINERS_CONTAINER_QUERY',
   'REMOTE_TESTCONTAINERS_VOLUME_QUERY',
   'REMOTE_TESTCONTAINERS_AFTER_CONTAINER_QUERY',
@@ -2182,6 +2370,14 @@ const RUNNER_MARKER_NAMES = new Set([
   'REMOTE_TESTCONTAINERS_CONTAINERS',
   'REMOTE_TESTCONTAINERS_VOLUMES',
   'REMOTE_EVIDENCE_ARCHIVE_STATUS',
+  'REMOTE_SIGNAL_TRACE_STATUS',
+  'REMOTE_SIGNAL_TRACE_TOOL',
+  'REMOTE_SIGNAL_TRACE_VERSION',
+  'REMOTE_SIGNAL_TRACE_PREFLIGHT',
+  'REMOTE_SIGNAL_TRACE_STOP_STATUS',
+  'REMOTE_SIGNAL_TRACE_PID',
+  'REMOTE_SIGNAL_TRACE_START_TICKS',
+  'REMOTE_SIGNAL_TRACE_BOOT_ID',
   'R5_TEST_MUTATION_STATUS',
   'R5_TEST_MUTATION_ID',
   'R5_TEST_MUTATION_REPLACE_COUNT',
@@ -2231,11 +2427,38 @@ const execute = async () => {
   );
   const verificationMode = process.env.V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE ?? 'ACCEPTANCE';
   const topologyPreflight = process.env.V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT === 'true';
+  const vs12DiagnosticValue = process.env.V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC ?? 'false';
+  if (!['true', 'false'].includes(vs12DiagnosticValue)) {
+    throw new Error('BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC_VALUE_INVALID');
+  }
+  const vs12Diagnostic = vs12DiagnosticValue === 'true';
+  const traceChildSignalsValue = process.env.V2S_R5_TRACE_CHILD_SIGNALS ?? 'false';
+  if (!['true', 'false'].includes(traceChildSignalsValue)) {
+    throw new Error('R5_TRACE_CHILD_SIGNALS_VALUE_INVALID');
+  }
+  const traceChildSignals = traceChildSignalsValue === 'true';
+  const traceSystemSignalsValue = process.env.V2S_R5_TRACE_SYSTEM_SIGNALS ?? 'false';
+  if (!['true', 'false'].includes(traceSystemSignalsValue)) {
+    throw new Error('R5_TRACE_SYSTEM_SIGNALS_VALUE_INVALID');
+  }
+  const traceSystemSignals = traceSystemSignalsValue === 'true';
+  const signalTracingRequested = traceChildSignals || traceSystemSignals;
+  if (traceChildSignals && traceSystemSignals) throw new Error('R5_SIGNAL_TRACE_MODES_MUTUALLY_EXCLUSIVE');
   const requestedMutation =
     invocation.productionMutationId === undefined ? null : resolveProductionMutation(invocation.productionMutationId);
   if (!BACKEND_ACCEPTANCE_VERIFICATION_MODES.includes(verificationMode)) {
     throw new Error('BACKEND_ACCEPTANCE_VERIFICATION_MODE_INVALID');
   }
+  validateVs12DiagnosticScope({
+    vs12Diagnostic,
+    backendAcceptanceRunId,
+    backendAcceptanceOperation,
+    verificationMode,
+    topologyPreflight,
+    productionMutation: invocation.productionMutationId === undefined ? null : invocation.productionMutationId,
+    extensionScaleProof: invocation.extensionScaleProof === true,
+    traceSystemSignals,
+  });
   if (
     topologyPreflight &&
     (backendAcceptanceRunId === null || backendAcceptanceOperation === 'all' || verificationMode !== 'ACCEPTANCE')
@@ -2244,6 +2467,24 @@ const execute = async () => {
   }
   if (verificationMode === 'CALIBRATION' && (backendAcceptanceRunId === null || backendAcceptanceOperation !== 'all')) {
     throw new Error('BACKEND_ACCEPTANCE_CALIBRATION_REQUIRES_FULL_RUN');
+  }
+  if (
+    traceChildSignals &&
+    (backendAcceptanceRunId === null || backendAcceptanceOperation !== 'all' || verificationMode !== 'CALIBRATION')
+  ) {
+    throw new Error('R5_TRACE_CHILD_SIGNALS_REQUIRES_FULL_CALIBRATION');
+  }
+  if (
+    traceSystemSignals &&
+    !(
+      (backendAcceptanceRunId !== null && backendAcceptanceOperation === 'all' && verificationMode === 'CALIBRATION') ||
+      (vs12Diagnostic &&
+        backendAcceptanceRunId !== null &&
+        backendAcceptanceOperation === 'storeTerminalActivationBusinessPrecedence' &&
+        verificationMode === 'ACCEPTANCE')
+    )
+  ) {
+    throw new Error('R5_TRACE_SYSTEM_SIGNALS_SCOPE_INVALID');
   }
   if (requestedMutation !== null) {
     if (backendAcceptanceRunId === null) throw new Error('PRODUCTION_MUTATION_REQUIRES_BACKEND_ACCEPTANCE');
@@ -2317,6 +2558,21 @@ const execute = async () => {
           },
     workload: workload === null ? null : workload,
     measurementEvidence: {status: 'NOT_RUN'},
+    signalTrace: {
+      requested: signalTracingRequested,
+      status: signalTracingRequested ? 'PENDING' : 'NOT_REQUESTED',
+      scope: traceSystemSignals ? 'REMOTE_HOST_SIGNAL_GENERATE' : traceChildSignals ? 'GRADLE_CHILD_TREE' : 'NONE',
+      tool: null,
+      version: null,
+      artifact: 'process-signal-trace.log',
+    },
+    remoteProcessInventory: {
+      status: 'PENDING',
+      records: 0,
+      artifact: 'remote-process-identities.tsv',
+      fields: ['pid', 'ppid', 'uid', 'state', 'startTicks', 'comm', 'executable', 'bootId'],
+      excludes: ['argv', 'environment', 'executablePath'],
+    },
     evidenceArchive: {status: 'NOT_RUN'},
     cleanup: {
       status: 'FAIL',
@@ -2435,6 +2691,9 @@ const execute = async () => {
         tdsCapacity: manifest.resourcePreflight.tdsCapacity ?? null,
         terminalWireNodePath: manifest.resourcePreflight.nodeRuntime?.nodePath ?? null,
         topologyPreflight,
+        traceChildSignals,
+        traceSystemSignals,
+        vs12Diagnostic,
       }),
     );
     if (interruptionSignal) throw new Error(`HARNESS_INTERRUPTED:${interruptionSignal}`);
@@ -2461,12 +2720,61 @@ const execute = async () => {
     const containers = runnerMarker('REMOTE_TESTCONTAINERS_CONTAINERS');
     const volumes = runnerMarker('REMOTE_TESTCONTAINERS_VOLUMES');
     const archiveStatus = runnerMarker('REMOTE_EVIDENCE_ARCHIVE_STATUS');
+    const signalTraceStatus = runnerMarker('REMOTE_SIGNAL_TRACE_STATUS');
+    const signalTraceTool = runnerMarker('REMOTE_SIGNAL_TRACE_TOOL');
+    const signalTraceVersion = runnerMarker('REMOTE_SIGNAL_TRACE_VERSION');
+    const signalTracePreflight = runnerMarker('REMOTE_SIGNAL_TRACE_PREFLIGHT');
+    const signalTraceStopStatus = runnerMarker('REMOTE_SIGNAL_TRACE_STOP_STATUS');
+    const signalTracePid = runnerMarker('REMOTE_SIGNAL_TRACE_PID');
+    const signalTraceStartTicks = runnerMarker('REMOTE_SIGNAL_TRACE_START_TICKS');
+    const signalTraceBootId = runnerMarker('REMOTE_SIGNAL_TRACE_BOOT_ID');
+    manifest.signalTrace = {
+      requested: signalTracingRequested,
+      status: signalTracingRequested ? (signalTraceStatus ?? 'FAIL') : 'NOT_REQUESTED',
+      scope: traceSystemSignals ? 'REMOTE_HOST_SIGNAL_GENERATE' : traceChildSignals ? 'GRADLE_CHILD_TREE' : 'NONE',
+      tool: signalTraceTool ?? null,
+      version: signalTraceVersion ?? null,
+      preflight: signalTracePreflight ?? (signalTracingRequested ? 'UNAVAILABLE' : 'NOT_REQUESTED'),
+      stopStatus: signalTraceStopStatus ?? (traceSystemSignals ? 'UNAVAILABLE' : 'NOT_APPLICABLE'),
+      processIdentity:
+        traceSystemSignals && signalTracePid && signalTraceStartTicks && signalTraceBootId
+          ? {host: remoteHost, pid: signalTracePid, startTicks: signalTraceStartTicks, bootId: signalTraceBootId}
+          : null,
+      artifact: 'process-signal-trace.log',
+    };
+    const processInventoryStatus = runnerMarker('REMOTE_PROCESS_INVENTORY_STATUS');
+    const processInventoryPreflight = runnerMarker('REMOTE_PROCESS_INVENTORY_PREFLIGHT');
+    const processInventoryRecords = runnerMarker('REMOTE_PROCESS_INVENTORY_RECORDS');
+    const parsedProcessInventoryRecords = Number.parseInt(processInventoryRecords ?? '', 10);
+    manifest.remoteProcessInventory = {
+      ...manifest.remoteProcessInventory,
+      status:
+        processInventoryStatus === 'CAPTURED' && Number.isSafeInteger(parsedProcessInventoryRecords)
+          ? 'CAPTURED'
+          : 'FAIL',
+      records: Number.isSafeInteger(parsedProcessInventoryRecords) ? parsedProcessInventoryRecords : 0,
+      preflight: processInventoryPreflight === 'CAPTURED' ? 'PASS' : 'FAIL',
+      capturedAt: now(),
+    };
     const gradleFailureCode = classifyRemoteGradleFailure(gradleLog, junitFailureCode);
-    const executionPass = actualExecution.status === 'PASS' && remoteGradleStatus === '0';
+    const executionPass =
+      actualExecution.status === 'PASS' &&
+      remoteGradleStatus === '0' &&
+      manifest.remoteProcessInventory.status === 'CAPTURED' &&
+      (!signalTracingRequested || manifest.signalTrace.status === 'CAPTURED') &&
+      (!traceSystemSignals || manifest.signalTrace.stopStatus === 'STOPPED');
     const executionFailure =
-      remoteGradleStatus !== undefined && remoteGradleStatus !== '0'
+      processInventoryPreflight !== 'CAPTURED'
+        ? 'REMOTE_PROCESS_INVENTORY_PREFLIGHT_FAILED'
+        : remoteGradleStatus !== undefined && remoteGradleStatus !== '0'
         ? (gradleFailureCode ?? 'GRADLE_TEST_FAILURE_DETAILS_UNAVAILABLE')
-        : (actualExecution.reason ?? 'REMOTE_GRADLE_STATUS_UNAVAILABLE');
+        : manifest.remoteProcessInventory.status !== 'CAPTURED'
+          ? 'REMOTE_PROCESS_INVENTORY_FAILED'
+          : signalTracingRequested && manifest.signalTrace.status !== 'CAPTURED'
+            ? 'REMOTE_SIGNAL_TRACE_FAILED'
+            : traceSystemSignals && manifest.signalTrace.stopStatus !== 'STOPPED'
+              ? 'REMOTE_SIGNAL_TRACE_CLEANUP_FAILED'
+            : (actualExecution.reason ?? 'REMOTE_GRADLE_STATUS_UNAVAILABLE');
     manifest.testExecution = {
       ...actualExecution,
       status: executionPass ? 'PASS' : 'FAIL',

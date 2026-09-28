@@ -25,4 +25,11 @@ export const dependencyModuleNames = [
   featureAssembly,
 ] as const;
 export const devDependencyModuleNames = [platformPorts] as const;
-export const runtimeModuleDependencyNames = [displayContext, topology, runtime, uiState, memberRegistry, staffSession] as const;
+export const runtimeModuleDependencyNames = [
+  displayContext,
+  topology,
+  runtime,
+  uiState,
+  memberRegistry,
+  staffSession,
+] as const;

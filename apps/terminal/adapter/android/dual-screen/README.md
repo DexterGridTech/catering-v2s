@@ -10,8 +10,9 @@ JS VM、store、进程或 React 实例，也不把业务 part、catalog 或业�
 Expo SDK 57 的模块配置只注册 `TerminalDualScreenModule`；`TerminalDualScreenPackage.kt`
 按 Expo autolinking 的 `*Package.kt` 约定被加入生成的 `ExpoModulesPackageList.packagesList`，
 再由 `createReactActivityHandlers` 提供主 Activity handler。handler 在 Activity delegate 创建时
-同步读取一次 `DisplayManager.getDisplays()`，保留不可变快照：少于两块显示器时不创建副屏，
-否则选择第一个非默认显示器。
+同步读取一次 `DisplayManager.getDisplays()`，保留不可变快照；候选只包括默认显示器与带
+`Display.FLAG_PRESENTATION` 的显示器，私有或无关副屏不参与 `displayCount` 与 surface
+索引。候选不足两块时不创建副屏；否则默认显示器为 PRIMARY，剩余 presentation 显示器为 SECONDARY。
 
 同一快照同时供两条入口使用：主屏返回一个以既有 `mainComponentName`、公开 `ReactHost` 和
 RN 当前 `fabricEnabled` 为基础、只覆盖 `getLaunchOptions()` 的 delegate，送入
@@ -45,7 +46,7 @@ PRIMARY `320/320`、SECONDARY `213/320`（hardware/surface）。
 
 因此，目标 display 的 raw 分辨率与 density 只用于 carrier 的 context/资源配置和承载事实
 诊断；它不再推导业务画布声明。横屏 sample 的固定逻辑画布由 host 声明为 PRIMARY
-`1280×800`、SECONDARY `1280×800`；当前模拟器副屏的 `1280×720 physical px / 213 dpi`
+`1280×720`、SECONDARY `1280×720`；当前模拟器副屏的 `1280×720 physical px / 213 dpi`
 只是硬件显示配置，承载层再把各自画布映射到实际窗口。主屏与副屏共享
 同一个 React host/store，但各自的 surface 必须使用自己的 display/window snapshot；目标
 display hardware density diagnostics、共享 RN render density 与固定画布 scale 是独立步骤。
@@ -87,9 +88,16 @@ inset。若将来需要其他输入承载形态，必须另开 scoped keyboard/I
 host snapshot 推断为输入能力。
 
 结构：`TerminalDualScreenModule.kt` 是 Expo module 声明与 JS bridge，`TerminalDualScreenPackage.kt`
-是 Expo package 注册，`TerminalDualScreenActivityHandler.kt` 负责主屏 launch options、
+是 Expo package 注册，`TerminalDualScreenActivityHandler.kt` 负责过滤显示候选、主屏 launch options、
 Presentation、ReactSurface 生命周期、per-surface host registry 与 carrier 诊断。
 
 迭代指引：任何 carrier 改动先用当前 Expo/RN 的公开 API 和同一 host/store 反证，保留真实
 生命周期失败证据；禁止反射 RN 私有字段、增加第二实例后备路径，或借修改业务层绕过 Android
 承载问题。
+
+`TerminalDualScreenModule.OnDestroy` 仅清理该 module instance 的事件 publisher；Activity 与
+Presentation/ReactSurface 的 owner 生命周期仍由 carrier registry 管理。Expo module lifecycle
+callback 不得同步等待 JS 或跨线程任务，也不得把 carrier owner 绑定到单次 JS module 实例。
+
+JS 事件订阅直接使用 Expo module 的 `addListener(eventName, listener)` 返回值移除订阅；
+不要再经 `LegacyEventEmitter` 包装本模块事件。

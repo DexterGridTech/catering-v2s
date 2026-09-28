@@ -1,13 +1,12 @@
 import {useCallback, useRef} from 'react';
-import {calculateVirtualKeyboardMetrics, type KeyboardCapacity, type LocalFrameMetrics} from '../foundations/keyboardHeight';
+import {
+  calculateVirtualKeyboardMetrics,
+  type KeyboardCapacity,
+  type LocalFrameMetrics,
+} from '../foundations/keyboardHeight';
 import {BUSINESS_FOCUS_SCOPE_ID} from '../foundations/focusScope';
 import type {InputFieldController} from '../types/types';
-import type {
-  CommitKeyboardState,
-  KeyboardStateBase,
-  MutableFieldController,
-  MutableRef,
-} from './inputProviderTypes';
+import type {CommitKeyboardState, KeyboardStateBase, MutableFieldController, MutableRef} from './inputProviderTypes';
 
 type InputFocusControllerOptions = Readonly<{
   readonly fieldsRef: MutableRef<Map<string, MutableFieldController>>;
@@ -32,28 +31,46 @@ export const useInputFocusController = ({
 }: InputFocusControllerOptions) => {
   const focusSuspendedRef = useRef(false);
   const activeScopeIdRef = useRef<string>(BUSINESS_FOCUS_SCOPE_ID);
-  const pendingFrameRef = useRef<Readonly<{readonly fieldId: string; readonly width: number; readonly height: number; readonly layout: InputFieldController['layout']}> | null>(null);
+  const pendingFrameRef = useRef<Readonly<{
+    readonly fieldId: string;
+    readonly width: number;
+    readonly height: number;
+    readonly layout: InputFieldController['layout'];
+  }> | null>(null);
 
-  const rememberPendingFrame = useCallback((fieldId: string, layout: InputFieldController['layout']): void => {
-    const frame = frameMetricsRef.current;
-    pendingFrameRef.current = frame === null
-      ? null
-      : {fieldId, width: frame.width, height: frame.height, layout};
-  }, [frameMetricsRef]);
+  const rememberPendingFrame = useCallback(
+    (fieldId: string, layout: InputFieldController['layout']): void => {
+      const frame = frameMetricsRef.current;
+      pendingFrameRef.current = frame === null ? null : {fieldId, width: frame.width, height: frame.height, layout};
+    },
+    [frameMetricsRef],
+  );
 
-  const activateFocusScope = useCallback((scopeId: string): void => {
-    const previousScopeId = activeScopeIdRef.current;
-    if (scopeId === previousScopeId) return;
-    activeScopeIdRef.current = scopeId;
-    const current = keyboardStateRef.current;
-    const field = current.activeFieldId === null ? undefined : fieldsRef.current.get(current.activeFieldId);
-    if (field !== undefined && field.focusScopeId !== scopeId) {
-      clearBlockedField();
-      field.clearShift();
-      field.inputRef?.current?.blur();
-      commitKeyboardState({activeFieldId: null, owner: 'none', layout: current.layout});
-    }
-  }, [clearBlockedField, commitKeyboardState, fieldsRef, keyboardStateRef]);
+  const activateFocusScope = useCallback(
+    (scopeId: string): void => {
+      const previousScopeId = activeScopeIdRef.current;
+      if (scopeId === previousScopeId) return;
+      activeScopeIdRef.current = scopeId;
+      const current = keyboardStateRef.current;
+      const field = current.activeFieldId === null ? undefined : fieldsRef.current.get(current.activeFieldId);
+      if (field !== undefined && field.focusScopeId !== scopeId) {
+        clearBlockedField();
+        field.clearShift();
+        field.inputRef?.current?.blur();
+        commitKeyboardState({activeFieldId: null, owner: 'none', layout: current.layout});
+      }
+    },
+    [clearBlockedField, commitKeyboardState, fieldsRef, keyboardStateRef],
+  );
+
+  const canEditField = useCallback(
+    (fieldId: string): boolean => {
+      const field = fieldsRef.current.get(fieldId);
+      if (field === undefined || field.focusScopeId !== activeScopeIdRef.current) return false;
+      return !(focusSuspendedRef.current && field.focusScopeId === BUSINESS_FOCUS_SCOPE_ID);
+    },
+    [fieldsRef],
+  );
 
   const preflightFocusTarget = useCallback(
     (fieldId: string): boolean => {
@@ -91,10 +108,11 @@ export const useInputFocusController = ({
 
       const previousField = fieldsRef.current.get(previous.activeFieldId);
       if (
-        previousField?.keyboardKind === 'virtual'
-        && target.keyboardKind === 'virtual'
-        && previous.layout === target.layout
-      ) return true;
+        previousField?.keyboardKind === 'virtual' &&
+        target.keyboardKind === 'virtual' &&
+        previous.layout === target.layout
+      )
+        return true;
 
       // A later native blur from the old field must not clear the target commit.
       // The target's onFocus is the only place that establishes the new owner.
@@ -108,7 +126,16 @@ export const useInputFocusController = ({
       commitKeyboardState({activeFieldId: null, owner: 'none', layout: previous.layout});
       return true;
     },
-    [blockedCapacityRef, blockedFieldIdRef, commitKeyboardState, fieldsRef, frameMetricsRef, keyboardStateRef, markBlockedField, rememberPendingFrame],
+    [
+      blockedCapacityRef,
+      blockedFieldIdRef,
+      commitKeyboardState,
+      fieldsRef,
+      frameMetricsRef,
+      keyboardStateRef,
+      markBlockedField,
+      rememberPendingFrame,
+    ],
   );
 
   const handleFocus = useCallback(
@@ -132,7 +159,11 @@ export const useInputFocusController = ({
       const previousFieldId = keyboardStateRef.current.activeFieldId;
       if (previousFieldId !== null && previousFieldId !== fieldId) {
         const previous = fieldsRef.current.get(previousFieldId);
-        if (previous?.keyboardKind === 'virtual' && field.keyboardKind === 'virtual' && previous.layout !== field.layout) {
+        if (
+          previous?.keyboardKind === 'virtual' &&
+          field.keyboardKind === 'virtual' &&
+          previous.layout !== field.layout
+        ) {
           preflightFocusTarget(fieldId);
           return;
         }
@@ -152,47 +183,71 @@ export const useInputFocusController = ({
         layout: field.layout,
       });
     },
-    [blockedCapacityRef, blockedFieldIdRef, clearBlockedField, commitKeyboardState, fieldsRef, frameMetricsRef, keyboardStateRef, markBlockedField, preflightFocusTarget, rememberPendingFrame],
+    [
+      blockedCapacityRef,
+      blockedFieldIdRef,
+      clearBlockedField,
+      commitKeyboardState,
+      fieldsRef,
+      frameMetricsRef,
+      keyboardStateRef,
+      markBlockedField,
+      preflightFocusTarget,
+      rememberPendingFrame,
+    ],
   );
 
-  const completePendingFocus = useCallback((fieldId: string): boolean => {
-    if (
-      blockedFieldIdRef.current !== fieldId
-      || blockedCapacityRef.current !== null
-      || keyboardStateRef.current.owner !== 'none'
-      || keyboardStateRef.current.activeFieldId !== null
-    ) return false;
-    const field = fieldsRef.current.get(fieldId);
-    if (
-      field === undefined
-      || field.keyboardKind !== 'virtual'
-      || field.focusScopeId !== activeScopeIdRef.current
-      || (focusSuspendedRef.current && activeScopeIdRef.current === BUSINESS_FOCUS_SCOPE_ID)
-    ) {
+  const completePendingFocus = useCallback(
+    (fieldId: string): boolean => {
+      if (
+        blockedFieldIdRef.current !== fieldId ||
+        blockedCapacityRef.current !== null ||
+        keyboardStateRef.current.owner !== 'none' ||
+        keyboardStateRef.current.activeFieldId !== null
+      )
+        return false;
+      const field = fieldsRef.current.get(fieldId);
+      if (
+        field === undefined ||
+        field.keyboardKind !== 'virtual' ||
+        field.focusScopeId !== activeScopeIdRef.current ||
+        (focusSuspendedRef.current && activeScopeIdRef.current === BUSINESS_FOCUS_SCOPE_ID)
+      ) {
+        clearBlockedField();
+        return false;
+      }
+      const frame = frameMetricsRef.current;
+      const metrics = calculateVirtualKeyboardMetrics(frame, field.layout);
+      if (metrics.capacity !== 'supported') {
+        markBlockedField(fieldId, metrics.capacity);
+        return false;
+      }
+      const pendingFrame = pendingFrameRef.current;
+      if (
+        pendingFrame?.fieldId === fieldId &&
+        frame !== null &&
+        (Math.abs(pendingFrame.width - frame.width) > 0.5 ||
+          Math.abs(pendingFrame.height - frame.height) > 0.5 ||
+          pendingFrame.layout !== field.layout)
+      ) {
+        pendingFrameRef.current = {fieldId, width: frame.width, height: frame.height, layout: field.layout};
+        return false;
+      }
       clearBlockedField();
-      return false;
-    }
-    const frame = frameMetricsRef.current;
-    const metrics = calculateVirtualKeyboardMetrics(frame, field.layout);
-    if (metrics.capacity !== 'supported') {
-      markBlockedField(fieldId, metrics.capacity);
-      return false;
-    }
-    const pendingFrame = pendingFrameRef.current;
-    if (
-      pendingFrame?.fieldId === fieldId
-      && frame !== null
-      && (Math.abs(pendingFrame.width - frame.width) > 0.5
-        || Math.abs(pendingFrame.height - frame.height) > 0.5
-        || pendingFrame.layout !== field.layout)
-    ) {
-      pendingFrameRef.current = {fieldId, width: frame.width, height: frame.height, layout: field.layout};
-      return false;
-    }
-    clearBlockedField();
-    commitKeyboardState({activeFieldId: fieldId, owner: 'virtual', layout: field.layout});
-    return true;
-  }, [blockedCapacityRef, blockedFieldIdRef, clearBlockedField, commitKeyboardState, fieldsRef, frameMetricsRef, keyboardStateRef, markBlockedField]);
+      commitKeyboardState({activeFieldId: fieldId, owner: 'virtual', layout: field.layout});
+      return true;
+    },
+    [
+      blockedCapacityRef,
+      blockedFieldIdRef,
+      clearBlockedField,
+      commitKeyboardState,
+      fieldsRef,
+      frameMetricsRef,
+      keyboardStateRef,
+      markBlockedField,
+    ],
+  );
 
   const handleBlur = useCallback(
     (fieldId: string): void => {
@@ -264,7 +319,7 @@ export const useInputFocusController = ({
       current?.inputRef?.current?.blur();
       commitKeyboardState({activeFieldId: null, owner: 'none', layout: 'numeric'});
     },
-    [commitKeyboardState, fieldsRef, handleFocus, keyboardStateRef, preflightFocusTarget],
+    [commitKeyboardState, fieldsRef, handleFocus, preflightFocusTarget],
   );
 
   const notifyFocusBoundary = useCallback(
@@ -273,8 +328,10 @@ export const useInputFocusController = ({
         focusSuspendedRef.current = true;
         const current = keyboardStateRef.current;
         clearBlockedField();
-        if (current.activeFieldId !== null) fieldsRef.current.get(current.activeFieldId)?.clearShift();
+        const activeField = current.activeFieldId === null ? undefined : fieldsRef.current.get(current.activeFieldId);
+        if (activeField !== undefined) activeField.clearShift();
         commitKeyboardState({activeFieldId: null, owner: 'none', layout: current.layout});
+        activeField?.inputRef?.current?.blur();
         return;
       }
       focusSuspendedRef.current = false;
@@ -284,6 +341,7 @@ export const useInputFocusController = ({
 
   return {
     activateFocusScope,
+    canEditField,
     preflightFocusTarget,
     handleFocus,
     handleBlur,

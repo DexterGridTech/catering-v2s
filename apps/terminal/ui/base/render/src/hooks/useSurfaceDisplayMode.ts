@@ -1,3 +1,3 @@
-import {useSurfaceContext} from '../contexts/SurfaceContext'
+import {useSurfaceContext} from '../contexts/SurfaceContext';
 
-export const useSurfaceDisplayMode = () => useSurfaceContext().displayMode
+export const useSurfaceDisplayMode = () => useSurfaceContext().displayMode;

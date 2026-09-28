@@ -1,30 +1,38 @@
-import packageJson from '../../package.json'
-import {moduleName as integrationModuleName} from '../moduleName'
-import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports'
-import {definePart, type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render'
+import packageJson from '../../package.json';
+import {moduleName as integrationModuleName} from '../moduleName';
+import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
+import {definePart, type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render';
 import {
   createIntegrationAssembly,
   createStartupReadyPayload,
   createSurfaceForDisplayIndex as createSharedSurfaceForDisplayIndex,
   selectStateSyncSlices,
   type IntegrationAssembly,
-} from '@catering-v2s/ui-base-integration-assembly'
-import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk'
-import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth'
-import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry'
-import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session'
-import {createTopologyAdminCapability, createTopologyModule, resolveTopologyCommandTarget} from '@catering-v2s/kernel-base-topology'
-import {createTopologyIdentityClient, createTransportModule, type TopologyPeerChannel} from '@catering-v2s/kernel-base-transport'
-import {ADMIN_SECTION_CONTAINER_KEY, SampleSection} from '@catering-v2s/ui-base-admin-shell'
-import {createSampleConsoleModule, startupReadyCommand, type SampleConsoleReadyPayload} from '../application/module'
+} from '@catering-v2s/ui-base-integration-assembly';
+import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk';
+import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
+import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry';
+import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {
+  createTopologyAdminCapability,
+  createTopologyModule,
+  resolveTopologyCommandTarget,
+} from '@catering-v2s/kernel-base-topology';
+import {
+  createTopologyIdentityClient,
+  createTransportModule,
+  type TopologyPeerChannel,
+} from '@catering-v2s/kernel-base-transport';
+import {ADMIN_SECTION_CONTAINER_KEY, SampleSection} from '@catering-v2s/ui-base-admin-shell';
+import {createSampleConsoleModule, startupReadyCommand, type SampleConsoleReadyPayload} from '../application/module';
 import {
   getSurfaceDeclarations,
   terminalSurfaces,
   type SurfaceForm,
   type TerminalSurfaces,
-} from '../application/terminalSurfaces'
+} from '../application/terminalSurfaces';
 
-const defaultPersistenceKey = 'sample-console'
+const defaultPersistenceKey = 'sample-console';
 
 const sampleAdminTestPart = definePart({
   partKey: 'sample.console.admin-test',
@@ -37,42 +45,37 @@ const sampleAdminTestPart = definePart({
   title: '示例诊断',
   description: '由 sample-console 通过生产 catalog 注册的标题占位 section',
   component: SampleSection,
-})
+});
 
 export const createSampleDefinedParts = (includeSampleAdminSection = true) => {
-  const baseParts = [
-    ...sampleStaffAuthAssembly.parts,
-    ...sampleMemberDeskAssembly.parts,
-  ]
-  return Object.freeze(includeSampleAdminSection ? [...baseParts, sampleAdminTestPart] : baseParts)
-}
+  const baseParts = [...sampleStaffAuthAssembly.parts, ...sampleMemberDeskAssembly.parts];
+  return Object.freeze(includeSampleAdminSection ? [...baseParts, sampleAdminTestPart] : baseParts);
+};
 
-export type SampleAssembly = IntegrationAssembly
+export type SampleAssembly = IntegrationAssembly;
 
-export const createSurfaceForDisplayIndex = createSharedSurfaceForDisplayIndex
+export const createSurfaceForDisplayIndex = createSharedSurfaceForDisplayIndex;
 
 type SampleAssemblyInput = Readonly<{
-  readonly platformPorts: PlatformPorts
-  readonly nativeLoadingCapability: NativeLoadingCapability
-  readonly persistenceKey?: string
-  readonly surfaceForm: SurfaceForm
-  readonly terminalSurfaces?: TerminalSurfaces
-  readonly defaultContainerPartKeys?: Readonly<Partial<Record<string, string>>>
-  readonly environmentMode?: EnvironmentMode
-  readonly packagingDebugMode?: boolean
-  readonly startupDebugMode?: boolean
-  readonly showAdminPassword?: boolean
-  readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>
-  readonly topologyPeerChannel?: TopologyPeerChannel
-}>
+  readonly platformPorts: PlatformPorts;
+  readonly nativeLoadingCapability: NativeLoadingCapability;
+  readonly persistenceKey?: string;
+  readonly surfaceForm: SurfaceForm;
+  readonly terminalSurfaces?: TerminalSurfaces;
+  readonly defaultContainerPartKeys?: Readonly<Partial<Record<string, string>>>;
+  readonly environmentMode?: EnvironmentMode;
+  readonly packagingDebugMode?: boolean;
+  readonly startupDebugMode?: boolean;
+  readonly showAdminPassword?: boolean;
+  readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>;
+  readonly topologyPeerChannel?: TopologyPeerChannel;
+}>;
 
-export function createSampleAssembly(input: SampleAssemblyInput): Promise<SampleAssembly>
-export async function createSampleAssembly(
-  input: SampleAssemblyInput,
-): Promise<SampleAssembly> {
-  const nativeLoadingCapability = input.nativeLoadingCapability
-  const surfaceForm = input.surfaceForm
-  const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD')
+export function createSampleAssembly(input: SampleAssemblyInput): Promise<SampleAssembly>;
+export async function createSampleAssembly(input: SampleAssemblyInput): Promise<SampleAssembly> {
+  const nativeLoadingCapability = input.nativeLoadingCapability;
+  const surfaceForm = input.surfaceForm;
+  const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD');
   return createIntegrationAssembly<SampleConsoleReadyPayload>({
     appName: 'sample-console',
     errorPrefix: 'sample-console',
@@ -100,7 +103,7 @@ export async function createSampleAssembly(
     resolveCommandTarget: resolveTopologyCommandTarget,
     createTopologyAdminCapability,
     createApplicationModules: ({uiStateModule}) => {
-      const memberRegistryModule = createSampleMemberRegistryModule()
+      const memberRegistryModule = createSampleMemberRegistryModule();
       return [
         createTransportModule(),
         createTopologyModule({
@@ -119,7 +122,7 @@ export async function createSampleAssembly(
         memberRegistryModule,
         sampleStaffAuthAssembly.createModule(),
         sampleMemberDeskAssembly.createModule(),
-      ]
+      ];
     },
-  })
+  });
 }

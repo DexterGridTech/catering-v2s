@@ -1,34 +1,28 @@
-import {useCallback, useEffect, useMemo, useRef} from 'react'
-import {Animated, BackHandler, Platform, Pressable, StyleSheet, TextInput, View} from 'react-native'
-import {closeLayerCommand, selectLayers} from '@catering-v2s/kernel-base-ui-state'
-import {useRenderContext} from '../contexts/RenderContext'
-import {useSurfaceContext} from '../contexts/SurfaceContext'
-import {useSurfaceFocusBoundary} from '../contexts/SurfaceFocusBoundaryContext'
-import {dispatchWithRequestId} from '../foundations/dispatchWithRequestId'
-import {RenderFallback, resolvePart} from './resolvePart'
-import {useDispatchCommand} from '../hooks/useDispatchCommand'
-import {useRenderStatus} from '../hooks/useRenderStatus'
-import {useUiCatalogContext} from '../hooks/useUiCatalogContext'
-import {useUiStateSelector} from '../hooks/useUiStateSelector'
-import {isUiCatalogEntryAvailable} from '@catering-v2s/kernel-base-ui-state'
-import {useSurfacePresentationOffset} from '../contexts/SurfacePresentationOffsetContext'
+import {useCallback, useEffect, useMemo, useRef} from 'react';
+import {Animated, BackHandler, Platform, Pressable, StyleSheet, View} from 'react-native';
+import {closeLayerCommand, selectLayers} from '@catering-v2s/kernel-base-ui-state';
+import {useRenderContext} from '../contexts/RenderContext';
+import {useSurfaceContext} from '../contexts/SurfaceContext';
+import {useSurfaceFocusBoundary} from '../contexts/SurfaceFocusBoundaryContext';
+import {dispatchWithRequestId} from '../foundations/dispatchWithRequestId';
+import {RenderFallback, resolvePart} from './resolvePart';
+import {useDispatchCommand} from '../hooks/useDispatchCommand';
+import {useRenderStatus} from '../hooks/useRenderStatus';
+import {useUiCatalogContext} from '../hooks/useUiCatalogContext';
+import {useUiStateSelector} from '../hooks/useUiStateSelector';
+import {isUiCatalogEntryAvailable} from '@catering-v2s/kernel-base-ui-state';
+import {useSurfacePresentationOffset} from '../contexts/SurfacePresentationOffsetContext';
+import {SystemFailureBoundary} from './SystemFailureBoundary';
 
-const LAYER_STACK_TEST_ID = 'ui-base-render:layer-stack'
-const LAYER_BACKDROP_TEST_ID = 'ui-base-render:layer-backdrop'
-
-type FocusTarget = Readonly<{readonly focus?: () => void}>
-type TextInputWithFocusProbe = typeof TextInput & Readonly<{
-  readonly State?: Readonly<{
-    readonly currentlyFocusedInput?: () => FocusTarget | null
-  }>
-}>
+const LAYER_STACK_TEST_ID = 'ui-base-render:layer-stack';
+const LAYER_BACKDROP_TEST_ID = 'ui-base-render:layer-backdrop';
 
 type Layer = Readonly<{
-  readonly layerId: string
-  readonly partKey: string
-  readonly props?: unknown
-  readonly openedAt: number
-}>
+  readonly layerId: string;
+  readonly partKey: string;
+  readonly props?: unknown;
+  readonly openedAt: number;
+}>;
 
 const styles = StyleSheet.create({
   stack: {
@@ -58,81 +52,74 @@ const styles = StyleSheet.create({
   layerContent: {
     flex: 1,
   },
-})
+});
 
 const tierRank = (
   layer: Layer,
   uiCatalog: Parameters<typeof resolvePart>[0]['uiCatalog'],
   rendererCatalog: Parameters<typeof resolvePart>[0]['rendererCatalog'],
 ): number => {
-  const entry = uiCatalog.byPartKey[layer.partKey]
-  if (entry === undefined) return 0
-  return rendererCatalog.tierOf(entry.rendererKey) === 'alert' ? 1 : 0
-}
+  const entry = uiCatalog.byPartKey[layer.partKey];
+  if (entry === undefined) return 0;
+  return rendererCatalog.tierOf(entry.rendererKey) === 'alert' ? 1 : 0;
+};
 
-const compareStrings = (left: string, right: string): number =>
-  left === right ? 0 : left < right ? -1 : 1
+const compareStrings = (left: string, right: string): number => (left === right ? 0 : left < right ? -1 : 1);
 
-const compareLayers = (input: Readonly<{
-  left: Layer;
-  right: Layer;
-  uiCatalog: Parameters<typeof resolvePart>[0]['uiCatalog'];
-  rendererCatalog: Parameters<typeof resolvePart>[0]['rendererCatalog'];
-}>): number => {
-  const tierDelta = tierRank(input.left, input.uiCatalog, input.rendererCatalog)
-    - tierRank(input.right, input.uiCatalog, input.rendererCatalog)
-  if (tierDelta !== 0) return tierDelta
-  if (input.left.openedAt !== input.right.openedAt) return input.left.openedAt - input.right.openedAt
-  return compareStrings(input.left.layerId, input.right.layerId)
-}
+const compareLayers = (
+  input: Readonly<{
+    left: Layer;
+    right: Layer;
+    uiCatalog: Parameters<typeof resolvePart>[0]['uiCatalog'];
+    rendererCatalog: Parameters<typeof resolvePart>[0]['rendererCatalog'];
+  }>,
+): number => {
+  const tierDelta =
+    tierRank(input.left, input.uiCatalog, input.rendererCatalog) -
+    tierRank(input.right, input.uiCatalog, input.rendererCatalog);
+  if (tierDelta !== 0) return tierDelta;
+  if (input.left.openedAt !== input.right.openedAt) return input.left.openedAt - input.right.openedAt;
+  return compareStrings(input.left.layerId, input.right.layerId);
+};
 
 const layerGuardOf = (
   layer: Layer,
   uiCatalog: Parameters<typeof resolvePart>[0]['uiCatalog'],
   rendererCatalog: Parameters<typeof resolvePart>[0]['rendererCatalog'],
 ) => {
-  const entry = uiCatalog.byPartKey[layer.partKey]
-  if (entry === undefined) return 'decisive' as const
-  return rendererCatalog.guardOf(entry.rendererKey) ?? 'decisive'
-}
+  const entry = uiCatalog.byPartKey[layer.partKey];
+  if (entry === undefined) return 'decisive' as const;
+  return rendererCatalog.guardOf(entry.rendererKey) ?? 'decisive';
+};
 
 export const LayerStack = () => {
-  const {displayMode} = useSurfaceContext()
-  const presentationOffsetY = useSurfacePresentationOffset()
-  const notifyFocusBoundary = useSurfaceFocusBoundary()
-  const {
-    logger,
-    uiCatalog,
-    rendererCatalog,
-    layerDismissals,
-    reportPartDiagnostic,
-    clearPartDiagnostic,
-  } = useRenderContext()
-  const dispatchCommand = useDispatchCommand()
-  const runtimeStatus = useRenderStatus()
-  const catalogContext = useUiCatalogContext(displayMode)
+  const {displayMode} = useSurfaceContext();
+  const presentationOffsetY = useSurfacePresentationOffset();
+  const notifyFocusBoundary = useSurfaceFocusBoundary();
+  const {logger, uiCatalog, rendererCatalog, layerDismissals, reportPartDiagnostic, clearPartDiagnostic} =
+    useRenderContext();
+  const dispatchCommand = useDispatchCommand();
+  const runtimeStatus = useRenderStatus();
+  const catalogContext = useUiCatalogContext(displayMode);
   const layerSelector = useMemo(
     () => (root: Parameters<typeof selectLayers>[0]) => selectLayers(root, displayMode) as readonly Layer[],
     [displayMode],
-  )
-  const selectedLayers = useUiStateSelector(layerSelector)
+  );
+  const selectedLayers = useUiStateSelector(layerSelector);
   const layers = (selectedLayers ?? []).filter(layer => {
-    const entry = uiCatalog.byPartKey[layer.partKey]
-    return entry === undefined
-      || catalogContext === undefined
-      || isUiCatalogEntryAvailable(entry, null, catalogContext)
-  })
-  const orderedLayers = [...layers].sort((left, right) => compareLayers({left, right, uiCatalog, rendererCatalog}))
-  const layerSignature = orderedLayers.map(layer => layer.layerId).join('\u0000')
-  const topLayer = orderedLayers.at(-1)
-  const topLayerId = topLayer?.layerId ?? null
-  const previousLayerSignature = useRef('')
-  const previousTopLayerId = useRef<string | null>(null)
-  const focusedBeforeLayer = useRef<{readonly focus: () => void} | null>(null)
-  const topLayerFocusTarget = useRef<FocusTarget | null>(null)
+    const entry = uiCatalog.byPartKey[layer.partKey];
+    return (
+      entry === undefined || catalogContext === undefined || isUiCatalogEntryAvailable(entry, null, catalogContext)
+    );
+  });
+  const orderedLayers = [...layers].sort((left, right) => compareLayers({left, right, uiCatalog, rendererCatalog}));
+  const layerSignature = orderedLayers.map(layer => layer.layerId).join('\u0000');
+  const topLayer = orderedLayers.at(-1);
+  const topLayerId = topLayer?.layerId ?? null;
+  const previousLayerSignature = useRef('');
 
   useEffect(() => {
-    if (!__DEV__) return
+    if (!__DEV__) return;
     logger.info({
       category: 'display-diagnostics',
       event: 'render.layer-selection',
@@ -145,78 +132,61 @@ export const LayerStack = () => {
         layerIds: orderedLayers.map(layer => layer.layerId),
         topLayerId,
       },
-    })
-  }, [displayMode, logger, orderedLayers, runtimeStatus, topLayerId])
+    });
+  }, [displayMode, logger, orderedLayers, runtimeStatus, topLayerId]);
 
   useEffect(() => {
-    const hadLayers = previousLayerSignature.current.length > 0
-    const hasLayers = layerSignature.length > 0
-    if (!hadLayers && hasLayers) {
-      const focused = (TextInput as TextInputWithFocusProbe).State?.currentlyFocusedInput?.()
-      focusedBeforeLayer.current = focused !== undefined
-        && focused !== null
-        && typeof focused.focus === 'function'
-        ? {focus: focused.focus}
-        : null
-      notifyFocusBoundary('suspend')
-    }
-    if (hasLayers && (!hadLayers || previousTopLayerId.current !== topLayerId)) {
-      topLayerFocusTarget.current?.focus?.()
-    }
-    if (hadLayers && !hasLayers) {
-      notifyFocusBoundary('restore')
-      focusedBeforeLayer.current?.focus()
-      focusedBeforeLayer.current = null
-    }
-    previousLayerSignature.current = layerSignature
-    previousTopLayerId.current = topLayerId
-  }, [layerSignature, notifyFocusBoundary, topLayerId])
+    const hadLayers = previousLayerSignature.current.length > 0;
+    const hasLayers = layerSignature.length > 0;
+    if (!hadLayers && hasLayers) notifyFocusBoundary('suspend');
+    if (hadLayers && !hasLayers) notifyFocusBoundary('restore');
+    previousLayerSignature.current = layerSignature;
+  }, [layerSignature, notifyFocusBoundary]);
 
-  const topGuard = topLayer === undefined
-    ? 'dismissible' as const
-    : layerGuardOf(topLayer, uiCatalog, rendererCatalog)
-  const topLayerDismissal = topLayer === undefined
-    ? undefined
-    : layerDismissals?.[topLayer.partKey]
+  const topGuard =
+    topLayer === undefined ? ('dismissible' as const) : layerGuardOf(topLayer, uiCatalog, rendererCatalog);
+  const topLayerDismissal = topLayer === undefined ? undefined : layerDismissals?.[topLayer.partKey];
 
   const dismissTopLayer = useCallback(() => {
-    if (topLayer === undefined || topGuard !== 'dismissible') return
+    if (topLayer === undefined || topGuard !== 'dismissible') return;
     if (topLayerDismissal !== undefined) {
       try {
-        void Promise.resolve(topLayerDismissal({
-          dispatchCommand,
-          displayMode,
-          layerId: topLayer.layerId,
-        })).catch(() => undefined)
+        void Promise.resolve(
+          topLayerDismissal({
+            dispatchCommand,
+            displayMode,
+            layerId: topLayer.layerId,
+          }),
+        ).catch(() => undefined);
       } catch {
         // The feature-owned intent remains best-effort at an input boundary;
         // its command dispatcher records the actual rejection.
       }
-      return
+      return;
     }
     void dispatchWithRequestId({
       dispatchCommand,
       definition: closeLayerCommand,
       payload: {displayMode, layerId: topLayer.layerId},
-    }).catch(() => undefined)
-  }, [dispatchCommand, displayMode, topGuard, topLayer, topLayerDismissal])
+    }).catch(() => undefined);
+  }, [dispatchCommand, displayMode, topGuard, topLayer, topLayerDismissal]);
 
   useEffect(() => {
-    if (Platform?.OS === 'web' || typeof BackHandler?.addEventListener !== 'function') return undefined
+    if (Platform.OS === 'web' || typeof BackHandler?.addEventListener !== 'function') return undefined;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (topLayer === undefined) return false
-      if (topGuard === 'dismissible') dismissTopLayer()
-      return true
-    })
-    return () => subscription.remove()
-  }, [dismissTopLayer, topGuard, topLayer])
+      if (topLayer === undefined) return false;
+      if (topGuard === 'dismissible') dismissTopLayer();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [dismissTopLayer, topGuard, topLayer]);
 
   if (runtimeStatus !== 'started') {
     return (
       <View testID={LAYER_STACK_TEST_ID}>
         <RenderFallback failure={{category: 'transition', reason: 'runtime-not-started'}} />
       </View>
-    )
+    );
   }
 
   return (
@@ -234,30 +204,24 @@ export const LayerStack = () => {
           key={layer.layerId}
           testID={`ui-base-render:layer:${layer.layerId}`}
           style={[styles.layer, {pointerEvents: 'box-none'}]}
-          focusable={layer.layerId === topLayerId}
-          tabIndex={layer.layerId === topLayerId ? -1 : undefined}
-          accessibilityViewIsModal={layer.layerId === topLayerId}
-          ref={node => {
-            if (layer.layerId === topLayerId) {
-              topLayerFocusTarget.current = node
-            }
-          }}
         >
           <Animated.View style={[styles.layerContent, {transform: [{translateY: presentationOffsetY}]}]}>
-            {resolvePart({
-              placement: layer,
-              displayMode,
-              containerKey: null,
-              catalogContext: catalogContext!,
-              uiCatalog,
-              rendererCatalog,
-              reportPartDiagnostic,
-              clearPartDiagnostic,
-              elementKey: layer.layerId,
-            })}
+            <SystemFailureBoundary ownerId={`layer:${layer.layerId}`}>
+              {resolvePart({
+                placement: layer,
+                displayMode,
+                containerKey: null,
+                catalogContext: catalogContext!,
+                uiCatalog,
+                rendererCatalog,
+                reportPartDiagnostic,
+                clearPartDiagnostic,
+                elementKey: layer.layerId,
+              })}
+            </SystemFailureBoundary>
           </Animated.View>
         </View>
       ))}
     </View>
-  )
-}
+  );
+};

@@ -3,7 +3,9 @@ import type {NoOutput, PortError, PortResult} from './result';
 
 export type ConnectorScalar = string | number | boolean | null;
 export type ConnectorValue = ConnectorScalar | readonly ConnectorValue[] | ConnectorObject;
-export interface ConnectorObject { readonly [key: string]: ConnectorValue }
+export interface ConnectorObject {
+  readonly [key: string]: ConnectorValue;
+}
 export interface ConnectorChannelRef {
   readonly channelKey: string;
   readonly target?: string;
@@ -51,7 +53,9 @@ export interface ConnectorUnsubscribeInput {
   readonly subscriptionId: string;
   readonly timeoutMs: number;
 }
-export interface ConnectorSubscription { readonly subscriptionId: string }
+export interface ConnectorSubscription {
+  readonly subscriptionId: string;
+}
 export interface ConnectorPort {
   call<TRequest extends ConnectorObject, TResponse extends ConnectorValue>(
     input: ConnectorCallRequest<TRequest>,
@@ -60,7 +64,5 @@ export interface ConnectorPort {
     input: ConnectorSubscribeInput<TMessage>,
   ): Promise<PortResult<ConnectorSubscription>>;
   unsubscribe(input: ConnectorUnsubscribeInput): Promise<PortResult<NoOutput>>;
-  on<TEvent extends ConnectorValue>(
-    input: ConnectorOnInput<TEvent>,
-  ): Promise<PortResult<ConnectorSubscription>>;
+  on<TEvent extends ConnectorValue>(input: ConnectorOnInput<TEvent>): Promise<PortResult<ConnectorSubscription>>;
 }

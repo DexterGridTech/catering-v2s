@@ -51,10 +51,7 @@ function withMutations(changes, assertion) {
   }));
   try {
     for (const change of originals) {
-      fs.writeFileSync(
-        path.join(fixtureRoot, change.relativePath),
-        change.mutate(change.original),
-      );
+      fs.writeFileSync(path.join(fixtureRoot, change.relativePath), change.mutate(change.original));
     }
     assertion(runRuntimeStaticChecks({runtimePackageRoot: fixtureRoot, graphPath: fixtureGraphPath}));
   } finally {
@@ -65,10 +62,7 @@ function withMutations(changes, assertion) {
 }
 
 function removeRuntimePlannedKind(source) {
-  return source.replace(
-    /('kernel\.base\.runtime': \{\n\s+batch: 1,\n)\s+plannedKind: '[^']+',\n/,
-    '$1',
-  );
+  return source.replace(/('kernel\.base\.runtime': \{\n\s+batch: 1,\n)\s+plannedKind: '[^']+',\n/, '$1');
 }
 
 try {
@@ -87,10 +81,10 @@ try {
     path.join(fixtureRoot, 'test', 'runtime-recovery.test.ts'),
     [
       "import {createRuntime} from '../src/index'",
-      "const sharedStorage = new Map()",
+      'const sharedStorage = new Map()',
       "const firstRuntime = createRuntime({instanceMode: 'MASTER', plainStorage: sharedStorage})",
       "const secondRuntime = createRuntime({instanceMode: 'SLAVE', plainStorage: sharedStorage})",
-      "void firstRuntime; void secondRuntime; void sharedStorage; // instanceMode recovery",
+      'void firstRuntime; void secondRuntime; void sharedStorage; // instanceMode recovery',
       '',
     ].join('\n'),
   );
@@ -108,11 +102,30 @@ try {
   assertVector(cleanReport);
 
   withMutation(
+    'src/application/createInternalRuntimeModule.ts',
+    source => source.replace("visibility: 'public' as const", "visibility: 'unknown' as const"),
+    report => {
+      assertVector(report, ['command-mount-shape']);
+      assert.match(rule(report, 'command-mount-shape').error, /visibility must be internal or public/);
+    },
+  );
+
+  withMutation(
+    'src/application/createInternalRuntimeModule.ts',
+    source => source.replace("visibility: 'public' as const", "visibility: 'internal' as const"),
+    report => {
+      assertVector(report, ['command-mount-shape']);
+      assert.match(rule(report, 'command-mount-shape').error, /internal command \d+\.name must be a string literal/);
+    },
+  );
+
+  withMutation(
     'src/types/module.ts',
-    source => source.replace(
-      '  registerResource: (cleanup: () => void) => () => void\n',
-      '',
-    ),
+    source => {
+      const mutated = source.replace('  registerResource: (cleanup: () => void) => () => void;\n', '');
+      assert.notEqual(mutated, source, 'registerResource context mutation must apply');
+      return mutated;
+    },
     report => {
       assertVector(report, ['context-exact-set']);
       assert.match(rule(report, 'context-exact-set').error, /RuntimeModuleContext/);
@@ -121,10 +134,7 @@ try {
 
   withMutation(
     'src/foundations/defineActor.ts',
-    source => source.replace(
-      '  definition: CommandDefinition<TPayload>,\n',
-      '  definition: string,\n',
-    ),
+    source => source.replace('  definition: CommandDefinition<TPayload>,\n', '  definition: string,\n'),
     report => {
       assertVector(report, ['command-mount-shape']);
       assert.match(rule(report, 'command-mount-shape').error, /onCommand first parameter/);
@@ -133,10 +143,11 @@ try {
 
   withMutation(
     'src/types/actor.ts',
-    source => source.replace(
-      '  readonly [actorCommandHandlerDefinitionBrand]: true\n',
-      '',
-    ),
+    source => {
+      const mutated = source.replace('  readonly [actorCommandHandlerDefinitionBrand]: true;\n', '');
+      assert.notEqual(mutated, source, 'actor command handler brand mutation must apply');
+      return mutated;
+    },
     report => {
       assertVector(report, ['command-mount-shape']);
       assert.match(rule(report, 'command-mount-shape').error, /ActorCommandHandlerDefinition/);
@@ -145,10 +156,7 @@ try {
 
   withMutation(
     'src/application/createInternalRuntimeModule.ts',
-    source => source.replace(
-      '    kind: moduleKind,',
-      "    kind: 'toolkit',",
-    ),
+    source => source.replace('    kind: moduleKind,', "    kind: 'toolkit',"),
     report => {
       assertVector(report, ['owner-kind']);
       assert.match(rule(report, 'owner-kind').error, /src\/moduleName\.ts/);
@@ -160,23 +168,25 @@ try {
   // remains the targeted red control for a non-canonical local value.
   withMutation(
     'src/application/createInternalRuntimeModule.ts',
-    source => source
-      .replace(
-        "import {moduleKind, moduleName} from '../moduleName'",
-        "import {moduleName} from '../moduleName'\nimport * as moduleIdentity from '../moduleName'",
-      )
-      .replace('    kind: moduleKind,', '    kind: moduleIdentity.moduleKind,'),
+    source =>
+      source
+        .replace(
+          "import {moduleKind, moduleName} from '../moduleName'",
+          "import {moduleName} from '../moduleName'\nimport * as moduleIdentity from '../moduleName'",
+        )
+        .replace('    kind: moduleKind,', '    kind: moduleIdentity.moduleKind,'),
     report => assertVector(report),
   );
 
   withMutation(
     'src/application/createInternalRuntimeModule.ts',
-    source => source
-      .replace(
-        "): RuntimeModule => {\n  const actor = createSetRuntimeInstanceModeActor(onRoleChange)",
-        "): RuntimeModule => {\n  const realizedKind = moduleKind\n  const actor = createSetRuntimeInstanceModeActor(onRoleChange)",
-      )
-      .replace('    kind: moduleKind,', '    kind: realizedKind,'),
+    source =>
+      source
+        .replace(
+          '): RuntimeModule => {\n  const actor = createSetRuntimeInstanceModeActor(onRoleChange)',
+          '): RuntimeModule => {\n  const realizedKind = moduleKind\n  const actor = createSetRuntimeInstanceModeActor(onRoleChange)',
+        )
+        .replace('    kind: moduleKind,', '    kind: realizedKind,'),
     report => assertVector(report),
   );
 
@@ -231,10 +241,14 @@ try {
 
   withMutation(
     'src/types/requestLedger.ts',
-    source => source.replace(
-      '  commands: readonly CommandExecutionObservation[]\n',
-      '  commands: readonly CommandExecutionObservation[]\n  readonly payload: StateJsonValue\n',
-    ),
+    source => {
+      const mutated = source.replace(
+        '  commands: readonly CommandExecutionObservation[];\n',
+        '  commands: readonly CommandExecutionObservation[];\n  readonly payload: string;\n',
+      );
+      assert.notEqual(mutated, source, 'request ledger payload mutation must apply');
+      return mutated;
+    },
     report => {
       assertVector(report, ['ledger-record-shape']);
       assert.match(rule(report, 'ledger-record-shape').error, /RequestExecutionRecord/);
@@ -243,10 +257,8 @@ try {
 
   withMutation(
     'src/application/createInternalRuntimeModule.ts',
-    source => source.replace(
-      "      {name: `${moduleName}.cleanup-request-ledger`, visibility: 'internal' as const},\n",
-      '',
-    ),
+    source =>
+      source.replace("      {name: `${moduleName}.cleanup-request-ledger`, visibility: 'internal' as const},\n", ''),
     report => {
       assertVector(report, ['command-mount-shape']);
       assert.match(rule(report, 'command-mount-shape').error, /internal command declarations/);
@@ -255,7 +267,11 @@ try {
 
   withMutation(
     'src/index.ts',
-    source => source.replace("export {createRuntime} from './application/createRuntime'\n", ''),
+    source => {
+      const mutated = source.replace("export {createRuntime} from './application/createRuntime';\n", '');
+      assert.notEqual(mutated, source, 'createRuntime export mutation must apply');
+      return mutated;
+    },
     report => {
       assertVector(report, [], 'FAIL');
       assert.match(report.support.error, /createRuntime/);

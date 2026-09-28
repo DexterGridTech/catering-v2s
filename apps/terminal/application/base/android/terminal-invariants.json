@@ -3,7 +3,7 @@
   "package": "@catering-v2s/application-base-android",
   "owned": {
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/application-base-android", "runner": "vitest"},
-    "lint": {"kind": "ABSENT"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/application-base-android", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
   "publicExports": [

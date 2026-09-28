@@ -1,5 +1,15 @@
 import type {ReactNode, Ref} from 'react';
-import type {HostInstance, ImageResizeMode, ImageSourcePropType, ImageStyle, LayoutChangeEvent, StyleProp, TextLayoutEvent, TextStyle, ViewStyle} from 'react-native';
+import type {
+  HostInstance,
+  ImageResizeMode,
+  ImageSourcePropType,
+  ImageStyle,
+  LayoutChangeEvent,
+  StyleProp,
+  TextLayoutEvent,
+  TextStyle,
+  ViewStyle,
+} from 'react-native';
 
 export type PrimitiveTone = 'neutral' | 'ok' | 'warn' | 'error' | 'info';
 
@@ -24,7 +34,16 @@ export type PrimitiveContainerProps = PrimitiveAddressableProps &
     /** Opts a card into the elevated presentation recipe without changing the default card recipe. */
     readonly elevated?: boolean;
     /** Selects a shared presentation recipe; application colors remain theme-owned. */
-    readonly appearance?: 'default' | 'login' | 'admin-root' | 'admin-shell' | 'admin-shell-mobile' | 'admin-content' | 'admin-nav' | 'admin-card' | 'admin-inset';
+    readonly appearance?:
+      | 'default'
+      | 'login'
+      | 'admin-root'
+      | 'admin-shell'
+      | 'admin-shell-mobile'
+      | 'admin-content'
+      | 'admin-nav'
+      | 'admin-card'
+      | 'admin-inset';
   }>;
 
 export type PrimitivePinInputInteractionEvent = Readonly<{
@@ -218,7 +237,8 @@ export type PrimitiveButtonProps = PrimitiveAddressableProps &
     /** Compact mobile presentation for the shared virtual keyboard. */
     readonly compact?: boolean;
     /** Selects a shared button recipe; application colors remain theme-owned. */
-    readonly appearance?: 'default' | 'login-primary' | 'login-secondary' | 'admin-primary' | 'admin-secondary' | 'admin-icon';
+    readonly appearance?:
+      'default' | 'login-primary' | 'login-secondary' | 'admin-primary' | 'admin-secondary' | 'admin-icon';
     readonly tone?: PrimitiveTone;
     readonly onPress?: () => void;
     readonly onLayout?: (event: LayoutChangeEvent) => void;
@@ -246,26 +266,41 @@ export type PrimitiveActionsProps = PrimitiveAddressableProps &
     readonly orientation?: 'row' | 'column';
   }>;
 
-export type PrimitiveIconName = 'admin' | 'blocked' | 'check' | 'chevron-down' | 'chevron-right' | 'close' | 'info' | 'keyboard-backspace' | 'keyboard-enter' | 'link' | 'monitor' | 'refresh' | 'server';
+export type PrimitiveIconName =
+  | 'admin'
+  | 'blocked'
+  | 'check'
+  | 'chevron-down'
+  | 'chevron-right'
+  | 'close'
+  | 'info'
+  | 'keyboard-backspace'
+  | 'keyboard-enter'
+  | 'link'
+  | 'monitor'
+  | 'refresh'
+  | 'server';
 
-export type PrimitiveIconProps = PrimitiveAddressableProps & Readonly<{
-  readonly accessibilityLabel: string;
-  readonly appearance?: 'default' | 'login' | 'keyboard-action' | 'admin-shell' | 'admin-content';
-  readonly icon: PrimitiveIconName;
-  readonly size?: number;
-  /** Semantic tone for icon foreground when the icon sits in a tone badge. */
-  readonly tone?: PrimitiveTone;
-  /** Presentation-only alignment override for composite primitive composition. */
-  readonly style?: StyleProp<ViewStyle>;
-}>;
+export type PrimitiveIconProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly accessibilityLabel: string;
+    readonly appearance?: 'default' | 'login' | 'keyboard-action' | 'admin-shell' | 'admin-content';
+    readonly icon: PrimitiveIconName;
+    readonly size?: number;
+    /** Semantic tone for icon foreground when the icon sits in a tone badge. */
+    readonly tone?: PrimitiveTone;
+    /** Presentation-only alignment override for composite primitive composition. */
+    readonly style?: StyleProp<ViewStyle>;
+  }>;
 
-export type PrimitiveIconBadgeProps = PrimitiveAddressableProps & Readonly<{
-  readonly accessibilityLabel: string;
-  readonly icon: PrimitiveIconName;
-  readonly size?: number;
-  /** Optional semantic tone for a non-brand icon badge. */
-  readonly tone?: PrimitiveTone;
-}>;
+export type PrimitiveIconBadgeProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly accessibilityLabel: string;
+    readonly icon: PrimitiveIconName;
+    readonly size?: number;
+    /** Optional semantic tone for a non-brand icon badge. */
+    readonly tone?: PrimitiveTone;
+  }>;
 
 export type PrimitiveLayoutProps = PrimitiveAddressableProps &
   Readonly<{

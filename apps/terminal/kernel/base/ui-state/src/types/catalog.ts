@@ -1,33 +1,33 @@
-import type {DisplayMode, DisplayRole} from '@catering-v2s/kernel-base-display-context'
-import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime'
-import type {WorkspaceKey} from '@catering-v2s/kernel-base-state'
-import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts'
-export {isSurfaceForm} from '@catering-v2s/kernel-base-contracts'
+import type {DisplayMode, DisplayRole} from '@catering-v2s/kernel-base-display-context';
+import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
+import type {WorkspaceKey} from '@catering-v2s/kernel-base-state';
+import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts';
+export {isSurfaceForm} from '@catering-v2s/kernel-base-contracts';
 
-export type ContainerKey = string
-export type PartKey = string
-export type {SurfaceForm} from '@catering-v2s/kernel-base-contracts'
+export type ContainerKey = string;
+export type PartKey = string;
+export type {SurfaceForm} from '@catering-v2s/kernel-base-contracts';
 
 export type UiCatalogEntry = Readonly<{
-  readonly partKey: PartKey
-  readonly rendererKey: string
-  readonly containerKeys: readonly ContainerKey[]
-  readonly displayModes: readonly DisplayMode[]
-  readonly workspaces: readonly WorkspaceKey[]
-  readonly instanceModes: readonly RuntimeInstanceMode[]
-  readonly surfaceForm: readonly SurfaceForm[]
-  readonly title: string
-  readonly description: string
-}>
+  readonly partKey: PartKey;
+  readonly rendererKey: string;
+  readonly containerKeys: readonly ContainerKey[];
+  readonly displayModes: readonly DisplayMode[];
+  readonly workspaces: readonly WorkspaceKey[];
+  readonly instanceModes: readonly RuntimeInstanceMode[];
+  readonly surfaceForm: readonly SurfaceForm[];
+  readonly title: string;
+  readonly description: string;
+}>;
 
 export type UiCatalog = Readonly<{
-  readonly entries: readonly UiCatalogEntry[]
-  readonly byPartKey: Readonly<Record<PartKey, UiCatalogEntry>>
-}>
+  readonly entries: readonly UiCatalogEntry[];
+  readonly byPartKey: Readonly<Record<PartKey, UiCatalogEntry>>;
+}>;
 
 export type UiCatalogContext = Readonly<{
-  readonly displayMode: DisplayMode
-  readonly workspace: WorkspaceKey
-  readonly instanceMode: RuntimeInstanceMode
-  readonly surfaceForm: SurfaceForm
-}>
+  readonly displayMode: DisplayMode;
+  readonly workspace: WorkspaceKey;
+  readonly instanceMode: RuntimeInstanceMode;
+  readonly surfaceForm: SurfaceForm;
+}>;

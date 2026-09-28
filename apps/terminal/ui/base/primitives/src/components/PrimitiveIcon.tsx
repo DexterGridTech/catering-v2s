@@ -1,29 +1,39 @@
-import {RnrSvgIcon, RnrView, primitiveIconPaths} from '../vendor/slots'
-import {baseTokens} from '../theme/tokens'
-import {assertTestID} from '../foundations/assertTestID'
-import {toneClassName, toneForegroundClassName} from '../foundations/toneClassName'
-import type {PrimitiveIconBadgeProps, PrimitiveIconProps} from '../types/types'
+import {RnrSvgIcon, RnrView, primitiveIconPaths} from '../foundations/nativeSlots';
+import {baseTokens} from '../theme/tokens';
+import {assertTestID} from '../foundations/assertTestID';
+import {toneClassName, toneForegroundClassName} from '../foundations/toneClassName';
+import type {PrimitiveIconBadgeProps, PrimitiveIconProps} from '../types/types';
 
-export const PrimitiveIcon = ({testID, accessibilityLabel, appearance = 'default', icon, size = 44, tone, style}: PrimitiveIconProps) => (
+export const PrimitiveIcon = ({
+  testID,
+  accessibilityLabel,
+  appearance = 'default',
+  icon,
+  size = 44,
+  tone,
+  style,
+}: PrimitiveIconProps) => (
   <RnrSvgIcon
     testID={assertTestID(testID)}
     accessibilityLabel={accessibilityLabel}
     path={primitiveIconPaths[icon]}
     size={size}
     style={style}
-    className={tone !== undefined
-      ? toneForegroundClassName(tone, '')
-      : appearance === 'login'
-        ? baseTokens.iconLogin
-        : appearance === 'keyboard-action'
-          ? baseTokens.iconKeyboardAction
-          : appearance === 'admin-shell'
-            ? 'text-admin-shell-foreground'
-            : appearance === 'admin-content'
-              ? 'text-admin-content-foreground'
-              : undefined}
+    className={
+      tone !== undefined
+        ? toneForegroundClassName(tone, '')
+        : appearance === 'login'
+          ? baseTokens.iconLogin
+          : appearance === 'keyboard-action'
+            ? baseTokens.iconKeyboardAction
+            : appearance === 'admin-shell'
+              ? 'text-admin-shell-foreground'
+              : appearance === 'admin-content'
+                ? 'text-admin-content-foreground'
+                : undefined
+    }
   />
-)
+);
 
 export const PrimitiveIconBadge = ({testID, accessibilityLabel, icon, size = 16, tone}: PrimitiveIconBadgeProps) => (
   <RnrView
@@ -39,4 +49,4 @@ export const PrimitiveIconBadge = ({testID, accessibilityLabel, icon, size = 16,
       tone={tone}
     />
   </RnrView>
-)
+);

@@ -160,7 +160,7 @@ class WorkspaceEffectiveSqlCaptureTest {
                         "query"),
                 captures.stream().map(Capture::sink).toList());
         assertEquals(
-                List.of(10, 10, 1, 2, 8, 5, 2, 10, 5, 2, 2, 3, 6, 4, 1),
+                List.of(10, 10, 1, 2, 8, 5, 2, 10, 5, 1, 2, 3, 6, 4, 1),
                 captures.stream().map(Capture::parameterCount).toList());
         assertTrue(captures.stream().allMatch(capture -> !capture.sql().isBlank()));
         assertFalse(captures.stream().anyMatch(capture -> capture.sql().contains("? ?")));

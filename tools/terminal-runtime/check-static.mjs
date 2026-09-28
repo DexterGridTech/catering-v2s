@@ -77,18 +77,10 @@ function createProgram(root) {
     noEmit: true,
     baseUrl: repoRoot,
     paths: {
-      '@catering-v2s/kernel-base-contracts': [
-        'apps/terminal/kernel/base/contracts/src/index.ts',
-      ],
-      '@catering-v2s/kernel-base-platform-ports': [
-        'apps/terminal/kernel/base/platform-ports/src/index.ts',
-      ],
-      '@catering-v2s/kernel-base-state': [
-        'apps/terminal/kernel/base/state/src/index.ts',
-      ],
-      '@reduxjs/toolkit': [
-        'node_modules/@reduxjs/toolkit/dist/index.d.ts',
-      ],
+      '@catering-v2s/kernel-base-contracts': ['apps/terminal/kernel/base/contracts/src/index.ts'],
+      '@catering-v2s/kernel-base-platform-ports': ['apps/terminal/kernel/base/platform-ports/src/index.ts'],
+      '@catering-v2s/kernel-base-state': ['apps/terminal/kernel/base/state/src/index.ts'],
+      '@reduxjs/toolkit': ['node_modules/@reduxjs/toolkit/dist/index.d.ts'],
     },
   });
   return {files, program, checker: program.getTypeChecker()};
@@ -135,9 +127,11 @@ function findFunctionLike(sourceFile, functionName) {
 function findTypeDeclaration(root, typeName) {
   for (const filePath of sourceFiles(root)) {
     const sourceFile = parseSource(filePath);
-    const declaration = findDeclaration(sourceFile, statement =>
-      (ts.isTypeAliasDeclaration(statement) || ts.isInterfaceDeclaration(statement))
-      && declarationName(statement) === typeName,
+    const declaration = findDeclaration(
+      sourceFile,
+      statement =>
+        (ts.isTypeAliasDeclaration(statement) || ts.isInterfaceDeclaration(statement)) &&
+        declarationName(statement) === typeName,
     );
     if (declaration) return {declaration, sourceFile};
   }
@@ -146,12 +140,14 @@ function findTypeDeclaration(root, typeName) {
 
 function typeMembers(declaration) {
   let typeNode = ts.isTypeAliasDeclaration(declaration) ? declaration.type : declaration;
-  while (ts.isTypeReferenceNode(typeNode) && typeReferenceName(typeNode) === 'Readonly' && typeNode.typeArguments?.length === 1) {
+  while (
+    ts.isTypeReferenceNode(typeNode) &&
+    typeReferenceName(typeNode) === 'Readonly' &&
+    typeNode.typeArguments?.length === 1
+  ) {
     typeNode = typeNode.typeArguments[0];
   }
-  const members = ts.isTypeLiteralNode(typeNode) || ts.isInterfaceDeclaration(typeNode)
-    ? typeNode.members
-    : null;
+  const members = ts.isTypeLiteralNode(typeNode) || ts.isInterfaceDeclaration(typeNode) ? typeNode.members : null;
   if (!members) throw new Error(`${declarationName(declaration)} must be an object type literal or interface`);
   const names = [];
   for (const member of members) {
@@ -170,17 +166,19 @@ function assertExactNames(label, actualNames, expectedNames) {
   const missing = expected.filter(name => !actual.includes(name));
   const extra = actual.filter(name => !expected.includes(name));
   if (missing.length || extra.length || new Set(actual).size !== actual.length) {
-    throw new Error(`${label} exact member mismatch; missing=${JSON.stringify(missing)} extra=${JSON.stringify(extra)}`);
+    throw new Error(
+      `${label} exact member mismatch; missing=${JSON.stringify(missing)} extra=${JSON.stringify(extra)}`,
+    );
   }
 }
 
 function unwrapExpression(expression) {
   let current = expression;
   while (
-    ts.isParenthesizedExpression(current)
-    || ts.isAsExpression(current)
-    || ts.isTypeAssertionExpression(current)
-    || ts.isSatisfiesExpression(current)
+    ts.isParenthesizedExpression(current) ||
+    ts.isAsExpression(current) ||
+    ts.isTypeAssertionExpression(current) ||
+    ts.isSatisfiesExpression(current)
   ) {
     current = current.expression;
   }
@@ -188,9 +186,9 @@ function unwrapExpression(expression) {
 }
 
 function objectProperty(object, name) {
-  return object.properties.find(member =>
-    ts.isPropertyAssignment(member) && propertyName(member.name) === name,
-  ) ?? null;
+  return (
+    object.properties.find(member => ts.isPropertyAssignment(member) && propertyName(member.name) === name) ?? null
+  );
 }
 
 function objectReturnedByFunction(sourceFile, functionName) {
@@ -262,9 +260,11 @@ function stringProperty(object, name, label, moduleName) {
 function readModuleNameValue(root) {
   const moduleNamePath = findFile(root, path.join('src', 'moduleName.ts'));
   const source = parseSource(moduleNamePath);
-  const declaration = findDeclaration(source, statement =>
-    ts.isVariableStatement(statement)
-    && statement.declarationList.declarations.some(candidate => declarationName(candidate) === 'moduleName'),
+  const declaration = findDeclaration(
+    source,
+    statement =>
+      ts.isVariableStatement(statement) &&
+      statement.declarationList.declarations.some(candidate => declarationName(candidate) === 'moduleName'),
   )?.declarationList.declarations.find(candidate => declarationName(candidate) === 'moduleName');
   const initializer = declaration?.initializer && unwrapExpression(declaration.initializer);
   if (!initializer || !ts.isStringLiteralLike(initializer)) {
@@ -306,7 +306,11 @@ function isIdentifierNamed(node, name) {
 function hasPayloadParameterizedBrand(commandDeclaration) {
   if (!ts.isTypeAliasDeclaration(commandDeclaration)) return false;
   let typeNode = commandDeclaration.type;
-  while (ts.isTypeReferenceNode(typeNode) && typeReferenceName(typeNode) === 'Readonly' && typeNode.typeArguments?.length === 1) {
+  while (
+    ts.isTypeReferenceNode(typeNode) &&
+    typeReferenceName(typeNode) === 'Readonly' &&
+    typeNode.typeArguments?.length === 1
+  ) {
     typeNode = typeNode.typeArguments[0];
   }
   if (!ts.isTypeLiteralNode(typeNode)) return false;
@@ -319,7 +323,8 @@ function hasPayloadParameterizedBrand(commandDeclaration) {
     if (!member.type || !ts.isFunctionTypeNode(member.type)) return false;
     const parameter = member.type.parameters[0];
     if (!parameter || !parameter.type || !isIdentifierNamed(parameter.name, 'payload')) return false;
-    if (typeReferenceName(parameter.type) !== 'TPayload' || typeReferenceName(member.type.type) !== 'TPayload') return false;
+    if (typeReferenceName(parameter.type) !== 'TPayload' || typeReferenceName(member.type.type) !== 'TPayload')
+      return false;
     return true;
   }
   return false;
@@ -328,23 +333,30 @@ function hasPayloadParameterizedBrand(commandDeclaration) {
 function hasBrandedHandlerDefinition(handlerDeclaration) {
   if (!ts.isTypeAliasDeclaration(handlerDeclaration)) return false;
   let typeNode = handlerDeclaration.type;
-  while (ts.isTypeReferenceNode(typeNode) && typeReferenceName(typeNode) === 'Readonly' && typeNode.typeArguments?.length === 1) {
+  while (
+    ts.isTypeReferenceNode(typeNode) &&
+    typeReferenceName(typeNode) === 'Readonly' &&
+    typeNode.typeArguments?.length === 1
+  ) {
     typeNode = typeNode.typeArguments[0];
   }
   if (!ts.isTypeLiteralNode(typeNode)) return false;
-  if (!typeNode.members.some(member =>
-    ts.isPropertySignature(member) && member.name && propertyName(member.name) === 'definition'
-  )) return false;
+  if (
+    !typeNode.members.some(
+      member => ts.isPropertySignature(member) && member.name && propertyName(member.name) === 'definition',
+    )
+  )
+    return false;
   for (const member of typeNode.members) {
     if (!ts.isPropertySignature(member) || !member.name || !ts.isComputedPropertyName(member.name)) continue;
     const expression = member.name.expression;
     if (!isIdentifierNamed(expression, 'actorCommandHandlerDefinitionBrand')) continue;
-    return member.type?.kind === ts.SyntaxKind.TrueKeyword
-      || (
-        member.type !== undefined
-        && ts.isLiteralTypeNode(member.type)
-        && member.type.literal.kind === ts.SyntaxKind.TrueKeyword
-      );
+    return (
+      member.type?.kind === ts.SyntaxKind.TrueKeyword ||
+      (member.type !== undefined &&
+        ts.isLiteralTypeNode(member.type) &&
+        member.type.literal.kind === ts.SyntaxKind.TrueKeyword)
+    );
   }
   return false;
 }
@@ -353,8 +365,9 @@ function runCommandMountShape({root, invariant}) {
   const moduleName = readModuleNameValue(root);
   const commandPath = findFile(root, path.join('src', 'types', 'command.ts'));
   const commandSource = parseSource(commandPath);
-  const commandDeclaration = findDeclaration(commandSource, statement =>
-    ts.isTypeAliasDeclaration(statement) && declarationName(statement) === 'CommandDefinition',
+  const commandDeclaration = findDeclaration(
+    commandSource,
+    statement => ts.isTypeAliasDeclaration(statement) && declarationName(statement) === 'CommandDefinition',
   );
   if (!commandDeclaration || !hasPayloadParameterizedBrand(commandDeclaration)) {
     throw new Error('CommandDefinition must carry a payload-parameterized private brand');
@@ -362,8 +375,9 @@ function runCommandMountShape({root, invariant}) {
 
   const actorTypePath = findFile(root, path.join('src', 'types', 'actor.ts'));
   const actorTypeSource = parseSource(actorTypePath);
-  const handlerDeclaration = findDeclaration(actorTypeSource, statement =>
-    ts.isTypeAliasDeclaration(statement) && declarationName(statement) === 'ActorCommandHandlerDefinition',
+  const handlerDeclaration = findDeclaration(
+    actorTypeSource,
+    statement => ts.isTypeAliasDeclaration(statement) && declarationName(statement) === 'ActorCommandHandlerDefinition',
   );
   if (!handlerDeclaration || !hasBrandedHandlerDefinition(handlerDeclaration)) {
     throw new Error('ActorCommandHandlerDefinition must carry definition identity and a private brand');
@@ -385,11 +399,7 @@ function runCommandMountShape({root, invariant}) {
   for (const filePath of sourceFiles(root)) {
     const sourceFile = parseSource(filePath);
     function visit(node) {
-      if (
-        ts.isCallExpression(node)
-        && ts.isIdentifier(node.expression)
-        && node.expression.text === 'onCommand'
-      ) {
+      if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'onCommand') {
         foundOnCommandCall = true;
         const firstArgument = node.arguments[0];
         if (!firstArgument || ts.isStringLiteralLike(firstArgument)) {
@@ -405,42 +415,60 @@ function runCommandMountShape({root, invariant}) {
   const internalPath = findFile(root, path.join('src', 'application', 'createInternalRuntimeModule.ts'));
   const internalSource = parseSource(internalPath);
   const returned = objectReturnedByFunction(internalSource, 'createInternalRuntimeModule');
-  const commands = arrayElements(objectProperty(returned, 'commands'), 'internal module commands');
-  const commandNames = commands.map((element, index) => {
-    if (!ts.isObjectLiteralExpression(element)) throw new Error(`internal command ${index} must be an object literal`);
-    return stringProperty(element, 'name', `internal command ${index}`, moduleName);
+  const commands = arrayElements(objectProperty(returned, 'commands'), 'runtime module commands');
+  const commandEntries = commands.map((element, index) => {
+    if (!ts.isObjectLiteralExpression(element))
+      throw new Error(`runtime module command ${index} must be an object literal`);
+    const visibility = stringProperty(element, 'visibility', `runtime module command ${index}`, moduleName);
+    if (!['internal', 'public'].includes(visibility)) {
+      throw new Error(`runtime module command ${index}.visibility must be internal or public`);
+    }
+    return {element, visibility};
   });
+  const internalCommandEntries = commandEntries.filter(entry => entry.visibility === 'internal');
+  const commandNames = internalCommandEntries.map(({element}, index) =>
+    stringProperty(element, 'name', `internal command ${index}`, moduleName),
+  );
   assertExactNames('internal command declarations', commandNames, invariant.internalCommands);
 
   const definitions = arrayElements(objectProperty(returned, 'commandDefinitions'), 'internal command definitions');
-  const definitionNames = definitions.map((element, index) => {
+  const allDefinitionNames = definitions.map((element, index) => {
     if (!ts.isIdentifier(element)) throw new Error(`internal command definition ${index} must be a named definition`);
     return element.text;
   });
+  const definitionNames = allDefinitionNames.filter((_, index) => commandEntries[index]?.visibility === 'internal');
   assertExactNames('internal command definition mounts', definitionNames, invariant.internalCommandDefinitions);
   if (definitions.length !== commands.length) {
-    throw new Error(`internal command declaration/definition count mismatch; declarations=${commands.length} definitions=${definitions.length}`);
+    throw new Error(
+      `internal command declaration/definition count mismatch; declarations=${commands.length} definitions=${definitions.length}`,
+    );
   }
-  if (!internalSource.text.includes('moduleName')) throw new Error('internal module must derive command ownership from moduleName');
+  if (!internalSource.text.includes('moduleName'))
+    throw new Error('internal module must derive command ownership from moduleName');
 }
 
 function readGraphRuntimeEntry(graphPath = skeletonGraphPath) {
   if (!fs.existsSync(graphPath)) throw new Error(`Missing skeleton graph ${graphPath}`);
   const sourceFile = parseSource(graphPath);
-  const variable = findDeclaration(sourceFile, statement =>
-    ts.isVariableStatement(statement)
-    && statement.declarationList.declarations.some(declaration => declarationName(declaration) === 'skeletonGraph'),
+  const variable = findDeclaration(
+    sourceFile,
+    statement =>
+      ts.isVariableStatement(statement) &&
+      statement.declarationList.declarations.some(declaration => declarationName(declaration) === 'skeletonGraph'),
   );
-  const declaration = variable?.declarationList.declarations.find(candidate => declarationName(candidate) === 'skeletonGraph');
+  const declaration = variable?.declarationList.declarations.find(
+    candidate => declarationName(candidate) === 'skeletonGraph',
+  );
   if (!declaration?.initializer) throw new Error('skeletonGraph literal is missing');
   const initializer = unwrapExpression(declaration.initializer);
   if (!ts.isObjectLiteralExpression(initializer)) throw new Error('skeletonGraph must be an object literal');
-  const entry = initializer.properties.find(member =>
-    ts.isPropertyAssignment(member) && propertyName(member.name) === 'kernel.base.runtime',
+  const entry = initializer.properties.find(
+    member => ts.isPropertyAssignment(member) && propertyName(member.name) === 'kernel.base.runtime',
   );
   if (!entry || !ts.isPropertyAssignment(entry)) throw new Error('kernel.base.runtime skeleton entry is missing');
   const entryObject = unwrapExpression(entry.initializer);
-  if (!ts.isObjectLiteralExpression(entryObject)) throw new Error('kernel.base.runtime graph entry must be an object literal');
+  if (!ts.isObjectLiteralExpression(entryObject))
+    throw new Error('kernel.base.runtime graph entry must be an object literal');
   return {sourceFile, entryObject};
 }
 
@@ -453,19 +481,24 @@ function runOwnerKind({root, graphPath = skeletonGraphPath}) {
   const moduleKindExport = moduleSymbol
     ? checker.getExportsOfModule(moduleSymbol).find(symbol => symbol.name === 'moduleKind')
     : null;
-  const resolvedModuleKind = moduleKindExport
-    ? resolveAliasedSymbol(checker, moduleKindExport)
-    : null;
-  const moduleKindDeclaration = findDeclaration(moduleNameSource, statement =>
-    ts.isVariableStatement(statement)
-    && statement.declarationList.declarations.some(declaration => declarationName(declaration) === 'moduleKind'),
+  const resolvedModuleKind = moduleKindExport ? resolveAliasedSymbol(checker, moduleKindExport) : null;
+  const moduleKindDeclaration = findDeclaration(
+    moduleNameSource,
+    statement =>
+      ts.isVariableStatement(statement) &&
+      statement.declarationList.declarations.some(declaration => declarationName(declaration) === 'moduleKind'),
   );
   const moduleKindVariable = moduleKindDeclaration?.declarationList.declarations.find(
     declaration => declarationName(declaration) === 'moduleKind',
   );
   const moduleKindInitializer = moduleKindVariable?.initializer && unwrapExpression(moduleKindVariable.initializer);
-  if (!moduleKindVariable || !resolvedModuleKind || !moduleKindInitializer || !ts.isStringLiteral(moduleKindInitializer)
-    || !['owner', 'toolkit'].includes(moduleKindInitializer.text)) {
+  if (
+    !moduleKindVariable ||
+    !resolvedModuleKind ||
+    !moduleKindInitializer ||
+    !ts.isStringLiteral(moduleKindInitializer) ||
+    !['owner', 'toolkit'].includes(moduleKindInitializer.text)
+  ) {
     throw new Error('runtime moduleName.ts must export moduleKind as an owner/toolkit literal');
   }
   const internalPath = findFile(root, path.join('src', 'application', 'createInternalRuntimeModule.ts'));
@@ -478,12 +511,13 @@ function runOwnerKind({root, graphPath = skeletonGraphPath}) {
   }
   const resolvedKind = resolveValueExpressionSymbol(checker, kindInitializer);
   const sameModuleKind = Boolean(
-    resolvedKind
-      && resolvedKind === resolvedModuleKind
-      && resolvedKind.declarations?.some(declaration =>
-        path.resolve(declaration.getSourceFile().fileName) === path.resolve(moduleNamePath)
-        && declarationName(declaration) === 'moduleKind',
-      ),
+    resolvedKind &&
+    resolvedKind === resolvedModuleKind &&
+    resolvedKind.declarations?.some(
+      declaration =>
+        path.resolve(declaration.getSourceFile().fileName) === path.resolve(moduleNamePath) &&
+        declarationName(declaration) === 'moduleKind',
+    ),
   );
   if (!sameModuleKind) {
     throw new Error('runtime module manifest kind must reference moduleKind from src/moduleName.ts');
@@ -509,15 +543,16 @@ function runRestartPositive({root}) {
   if (!/persistIntent\s*:\s*['"]owner-only['"]/.test(roleSource.text)) {
     throw new Error('runtime role slice must use owner-only persistence');
   }
-  if (!/kind\s*:\s*['"]field['"]/.test(roleSource.text) || !/stateKey\s*:\s*['"]instanceMode['"]/.test(roleSource.text)) {
+  if (
+    !/kind\s*:\s*['"]field['"]/.test(roleSource.text) ||
+    !/stateKey\s*:\s*['"]instanceMode['"]/.test(roleSource.text)
+  ) {
     throw new Error('runtime role persistence descriptor must persist instanceMode as a field');
   }
   const recoveryTest = testFiles(root).find(filePath => {
     const text = fs.readFileSync(filePath, 'utf8');
     const runtimeCreations = [...text.matchAll(/\bcreateRuntime\s*\(/g)].length;
-    return runtimeCreations >= 2
-      && /instanceMode|instance-mode/.test(text)
-      && /plainStorage|shared|Map/.test(text);
+    return runtimeCreations >= 2 && /instanceMode|instance-mode/.test(text) && /plainStorage|shared|Map/.test(text);
   });
   if (!recoveryTest) {
     throw new Error('runtime tests must include a cross-runtime role persistence recovery case');
@@ -527,8 +562,16 @@ function runRestartPositive({root}) {
 function runLedgerRecordShape({root, invariant}) {
   const record = findTypeDeclaration(root, 'RequestExecutionRecord');
   const observation = findTypeDeclaration(root, 'CommandExecutionObservation');
-  assertExactNames('RequestExecutionRecord', typeMembers(record.declaration), invariant.ledgerRecordShape.RequestExecutionRecord);
-  assertExactNames('CommandExecutionObservation', typeMembers(observation.declaration), invariant.ledgerRecordShape.CommandExecutionObservation);
+  assertExactNames(
+    'RequestExecutionRecord',
+    typeMembers(record.declaration),
+    invariant.ledgerRecordShape.RequestExecutionRecord,
+  );
+  assertExactNames(
+    'CommandExecutionObservation',
+    typeMembers(observation.declaration),
+    invariant.ledgerRecordShape.CommandExecutionObservation,
+  );
 }
 
 function moduleSymbol(checker, sourceFile) {
@@ -538,14 +581,17 @@ function moduleSymbol(checker, sourceFile) {
 }
 
 function runPublicSupport({checker, indexSourceFile, root, invariant}) {
-  const actual = checker.getExportsOfModule(moduleSymbol(checker, indexSourceFile))
+  const actual = checker
+    .getExportsOfModule(moduleSymbol(checker, indexSourceFile))
     .map(symbol => symbol.name)
     .sort();
   const expected = [...invariant.publicExports].sort();
   const missing = expected.filter(name => !actual.includes(name));
   const extra = actual.filter(name => !expected.includes(name));
   if (missing.length || extra.length || new Set(actual).size !== actual.length) {
-    throw new Error(`runtime public export exact-set mismatch; missing=${JSON.stringify(missing)} extra=${JSON.stringify(extra)} actualCount=${actual.length}`);
+    throw new Error(
+      `runtime public export exact-set mismatch; missing=${JSON.stringify(missing)} extra=${JSON.stringify(extra)} actualCount=${actual.length}`,
+    );
   }
   for (const statement of indexSourceFile.statements) {
     if (ts.isExportDeclaration(statement) && statement.moduleSpecifier && !statement.exportClause) {

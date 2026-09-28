@@ -10,26 +10,13 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnable
 import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 import expo.modules.ReactActivityDelegateWrapper
-import expo.modules.splashscreen.SplashScreenManager
+import com.catering.v2s.terminal.application.base.android.TerminalExpoSplashScreen
 import com.catering.v2s.terminal.application.base.android.TerminalNativeLoadingRegistry
 
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     Log.i(LOG_TAG, "event=activity.onCreate phase=start app=sample-wallpaper-terminal")
-    TerminalNativeLoadingRegistry.registerApplication(application)
-    Log.i(LOG_TAG, "event=native.registry-application-registered app=sample-wallpaper-terminal")
-    // ReactRootView reports CONTENT_APPEARED when the initial loading
-    // fallback is attached.  Mark splash ownership before React starts so
-    // Expo cannot auto-hide the native splash before JS crosses the bridge.
-    SplashScreenManager.preventAutoHideCalled = true
-    Log.i(LOG_TAG, "event=expo.prevent-auto-hide-set app=sample-wallpaper-terminal value=${SplashScreenManager.preventAutoHideCalled}")
-    SplashScreenManager.registerOnActivity(this)
-    Log.i(LOG_TAG, "event=expo.activity-registered app=sample-wallpaper-terminal")
-    // The native overlay owns the visual hold until the real PRIMARY surface
-    // is ready; release Expo's content pre-draw gate so the overlay can draw
-    // when Android removes the system starting window.
-    SplashScreenManager.hide()
-    Log.i(LOG_TAG, "event=expo.content-gate-released-for-native-overlay app=sample-wallpaper-terminal")
+    TerminalExpoSplashScreen.prepareActivity(this, "sample-wallpaper-terminal")
     TerminalNativeLoadingRegistry.registerOnActivity(
       this,
       R.color.colorPrimary,

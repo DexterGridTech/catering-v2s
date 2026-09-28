@@ -29,6 +29,9 @@ const bindingsFor = (write: (event: LogEvent) => void): PlatformPortBindings => 
   topologyHost: unavailableTopologyHostPort,
 });
 
+const nonStartupEvents = (events: readonly LogEvent[]): LogEvent[] =>
+  events.filter(event => !event.category.startsWith('startup.'));
+
 const sensitiveInput: LogWriteInput = {
   category: 'security',
   event: 'fixture',
@@ -55,15 +58,27 @@ describe('L: one sanitizer for all logger entry points and environments', () => 
       const events: LogEvent[] = [];
       const ports = createPlatformPorts({
         environmentMode,
-        bindings: bindingsFor((event) => events.push(event)),
+        bindings: bindingsFor(event => events.push(event)),
       });
       const result = ports.logger.info(sensitiveInput);
       expect(result.status).toBe('succeeded');
-      expect(events).toHaveLength(1);
-      const event = events[0];
+      const userEvents = nonStartupEvents(events);
+      expect(userEvents).toHaveLength(1);
+      const event = userEvents[0];
       expect(event).toBeDefined();
       const serialized = JSON.stringify(event);
-      for (const raw of ['13800138000', 'secret-password', '0123456789abcdef0123456789abcdef', 'token-secret-value', 'sid=secret', 'abc.def.ghi', '123456', 'dexter', '127.0.0.1', 'account exists']) {
+      for (const raw of [
+        '13800138000',
+        'secret-password',
+        '0123456789abcdef0123456789abcdef',
+        'token-secret-value',
+        'sid=secret',
+        'abc.def.ghi',
+        '123456',
+        'dexter',
+        '127.0.0.1',
+        'account exists',
+      ]) {
         expect(serialized).not.toContain(raw);
       }
       expect(event?.security).toEqual({containsSensitiveRaw: true, maskingMode: 'masked'});
@@ -73,30 +88,52 @@ describe('L: one sanitizer for all logger entry points and environments', () => 
 
   it('uses the same sanitizer for every level and derived scope/context logger', () => {
     const events: LogEvent[] = [];
-    const ports = createPlatformPorts({environmentMode: 'TEST', bindings: bindingsFor((event) => events.push(event))});
+    const ports = createPlatformPorts({environmentMode: 'TEST', bindings: bindingsFor(event => events.push(event))});
     expect(ports.logger.debug(sensitiveInput).status).toBe('succeeded');
     expect(ports.logger.info(sensitiveInput).status).toBe('succeeded');
     expect(ports.logger.warn(sensitiveInput).status).toBe('succeeded');
     expect(ports.logger.error(sensitiveInput).status).toBe('succeeded');
-    expect(ports.logger.scope({moduleName: 'derived'}).withContext({commandName: 'fixture'}).info(sensitiveInput).status).toBe('succeeded');
-    expect(events).toHaveLength(5);
-    expect(events.every((event) => event.security.containsSensitiveRaw)).toBe(true);
-    expect(events.every((event) => !JSON.stringify(event).includes('13800138000'))).toBe(true);
+    expect(
+      ports.logger.scope({moduleName: 'derived'}).withContext({commandName: 'fixture'}).info(sensitiveInput).status,
+    ).toBe('succeeded');
+    const userEvents = nonStartupEvents(events);
+    expect(userEvents).toHaveLength(5);
+    expect(userEvents.every(event => event.security.containsSensitiveRaw)).toBe(true);
+    expect(userEvents.every(event => !JSON.stringify(event).includes('13800138000'))).toBe(true);
   });
 
   it('keeps non-sensitive values and reports sink failures as typed failures', () => {
     const events: LogEvent[] = [];
-    const ports = createPlatformPorts({environmentMode: 'TEST', bindings: bindingsFor((event) => events.push(event))});
-    const safe = ports.logger.info({category: 'safe', event: 'fixture', message: 'hello', data: {count: 1, status: 'ok'}, error: {message: 'safe'}});
-    expect(safe).toMatchObject({status: 'succeeded', value: {message: 'hello', data: {count: 1, status: 'ok'}, security: {containsSensitiveRaw: false}}});
+    const ports = createPlatformPorts({environmentMode: 'TEST', bindings: bindingsFor(event => events.push(event))});
+    const safe = ports.logger.info({
+      category: 'safe',
+      event: 'fixture',
+      message: 'hello',
+      data: {count: 1, status: 'ok'},
+      error: {message: 'safe'},
+    });
+    expect(safe).toMatchObject({
+      status: 'succeeded',
+      value: {message: 'hello', data: {count: 1, status: 'ok'}, security: {containsSensitiveRaw: false}},
+    });
 
-    const failing = createPlatformPorts({environmentMode: 'TEST', bindings: bindingsFor(() => { throw new Error('sink failure'); })}).logger.info({category: 'failure', event: 'fixture'});
-    expect(failing).toMatchObject({status: 'failed', port: 'logger', capability: 'info', error: {code: 'LOGGER_SINK_WRITE_FAILED'}});
+    const failing = createPlatformPorts({
+      environmentMode: 'TEST',
+      bindings: bindingsFor(() => {
+        throw new Error('sink failure');
+      }),
+    }).logger.info({category: 'failure', event: 'fixture'});
+    expect(failing).toMatchObject({
+      status: 'failed',
+      port: 'logger',
+      capability: 'info',
+      error: {code: 'LOGGER_SINK_WRITE_FAILED'},
+    });
   });
 
   it('preserves safe diagnostic hashes, versions, and balances while masking unsafe values', () => {
     const events: LogEvent[] = [];
-    const ports = createPlatformPorts({environmentMode: 'TEST', bindings: bindingsFor((event) => events.push(event))});
+    const ports = createPlatformPorts({environmentMode: 'TEST', bindings: bindingsFor(event => events.push(event))});
     const packageSha256 = 'a'.repeat(64);
     const manifestSha256 = 'b'.repeat(64);
     const result = ports.logger.info({
@@ -112,9 +149,15 @@ describe('L: one sanitizer for all logger entry points and environments', () => 
       },
     });
     expect(result.status).toBe('succeeded');
-    expect(events).toHaveLength(1);
-    const event = events[0];
-    expect(event?.data).toMatchObject({packageSha256, manifestSha256, bundleVersion: '1.2.3.4', accountBalance: '123.45'});
+    const userEvents = nonStartupEvents(events);
+    expect(userEvents).toHaveLength(1);
+    const event = userEvents[0];
+    expect(event?.data).toMatchObject({
+      packageSha256,
+      manifestSha256,
+      bundleVersion: '1.2.3.4',
+      accountBalance: '123.45',
+    });
     expect(event?.data?.unrelatedHash).toBe('[REDACTED:hash]');
     expect(event?.data?.account).toBe('[REDACTED:account]');
     expect(event?.security.containsSensitiveRaw).toBe(true);
@@ -122,7 +165,7 @@ describe('L: one sanitizer for all logger entry points and environments', () => 
 
   it('sanitizes the closed LogContext commandName through the same funnel', () => {
     const events: LogEvent[] = [];
-    const ports = createPlatformPorts({environmentMode: 'TEST', bindings: bindingsFor((event) => events.push(event))});
+    const ports = createPlatformPorts({environmentMode: 'TEST', bindings: bindingsFor(event => events.push(event))});
     const context = Object.assign({commandName: 'Bearer context-secret'}, {extra: 'Bearer extra-secret'});
     const result = ports.logger.withContext(context).info({
       category: 'context',
@@ -130,17 +173,18 @@ describe('L: one sanitizer for all logger entry points and environments', () => 
       message: 'safe',
     });
     expect(result.status).toBe('succeeded');
-    expect(events).toHaveLength(1);
-    expect(events[0]?.context?.commandName).toBe('[REDACTED:authorization]');
-    expect(events[0]?.context).not.toHaveProperty('extra');
-    expect(events[0]?.security.containsSensitiveRaw).toBe(true);
-    expect(JSON.stringify(events[0])).not.toContain('context-secret');
-    expect(JSON.stringify(events[0])).not.toContain('extra-secret');
+    const userEvents = nonStartupEvents(events);
+    expect(userEvents).toHaveLength(1);
+    expect(userEvents[0]?.context?.commandName).toBe('[REDACTED:authorization]');
+    expect(userEvents[0]?.context).not.toHaveProperty('extra');
+    expect(userEvents[0]?.security.containsSensitiveRaw).toBe(true);
+    expect(JSON.stringify(userEvents[0])).not.toContain('context-secret');
+    expect(JSON.stringify(userEvents[0])).not.toContain('extra-secret');
   });
 
   it('counts sensitive error name and code as raw-sensitive input', () => {
     const events: LogEvent[] = [];
-    const ports = createPlatformPorts({environmentMode: 'TEST', bindings: bindingsFor((event) => events.push(event))});
+    const ports = createPlatformPorts({environmentMode: 'TEST', bindings: bindingsFor(event => events.push(event))});
     const result = ports.logger.error({
       category: 'security',
       event: 'error-code',
@@ -151,9 +195,10 @@ describe('L: one sanitizer for all logger entry points and environments', () => 
       },
     });
     expect(result.status).toBe('succeeded');
-    expect(events).toHaveLength(1);
-    expect(events[0]?.security.containsSensitiveRaw).toBe(true);
-    expect(JSON.stringify(events[0])).not.toContain('raw.name.token');
-    expect(JSON.stringify(events[0])).not.toContain('sid.raw');
+    const userEvents = nonStartupEvents(events);
+    expect(userEvents).toHaveLength(1);
+    expect(userEvents[0]?.security.containsSensitiveRaw).toBe(true);
+    expect(JSON.stringify(userEvents[0])).not.toContain('raw.name.token');
+    expect(JSON.stringify(userEvents[0])).not.toContain('sid.raw');
   });
 });

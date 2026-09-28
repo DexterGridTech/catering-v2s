@@ -17,7 +17,7 @@
   `createSurfaceForDisplayIndex`，创建单一 runtime/store/catalog，并在两个 laptop surface
   都放置同一个 `WallpaperBackground`。
 - `src/application/terminalSurfaces.ts`：从本包 `package.json` 读取并校验逻辑画布；laptop 为
-  `1280×800` / `1280×800`，mobile 只有 `PRIMARY 360×640`。
+  `PRIMARY 1280×720`、`SECONDARY 1280×720`，mobile 只有 `PRIMARY 360×640`。
 - `src/features/actors/actors.ts`：唯一 placement owner。登录或恢复认证时显示主屏 picker、
   副屏 welcome；匿名或登出时显示副屏 waiting。副屏资格读取 topology 的公开事实（本机双屏或
   MASTER 已配对副机），不把物理屏 helper 当作跨机资格。

@@ -1,4 +1,4 @@
-import {RnrText} from '../vendor/slots';
+import {RnrText} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import type {PrimitiveLabelProps} from '../types/types';

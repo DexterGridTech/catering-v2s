@@ -1,13 +1,13 @@
 import {useState} from 'react';
 import type {ViewStyle} from 'react-native';
-import {RnrActivityIndicator, RnrPressable, RnrText} from '../vendor/slots';
-import {RnrGradientBackground} from '../vendor/slots';
+import {RnrActivityIndicator, RnrPressable, RnrText} from '../foundations/nativeSlots';
+import {RnrGradientBackground} from '../foundations/nativeSlots';
 import {PrimitiveIcon} from './PrimitiveIcon';
-import {cn} from '../vendor/cn';
+import {cn} from '../foundations/cn';
 import {baseTokens, buttonToneTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import type {PrimitiveButtonProps} from '../types/types';
-import {type NativeVariableValue, useNativeVariable} from '../vendor/nativeVariable';
+import {type NativeVariableValue, useNativeVariable} from '../foundations/nativeVariable';
 
 type PrimitiveButtonVariant = NonNullable<PrimitiveButtonProps['variant']>;
 
@@ -29,11 +29,21 @@ const resolveThemeColor = (value: NativeVariableValue): string | undefined => {
     : value;
 };
 
-const PrimitiveActionGradient = ({namespace, testID}: Readonly<{readonly namespace: 'login' | 'admin'; readonly testID: string}>) => {
+const PrimitiveActionGradient = ({
+  namespace,
+  testID,
+}: Readonly<{readonly namespace: 'login' | 'admin'; readonly testID: string}>) => {
   const actionStart = resolveThemeColor(useNativeVariable(`--color-${namespace}-action-start`));
   const actionEnd = resolveThemeColor(useNativeVariable(`--color-${namespace}-action-end`));
   if (actionStart === undefined || actionEnd === undefined) return null;
-  return <RnrGradientBackground gradientId={`primitive-${namespace}-action-gradient`} testID={testID} startColor={actionStart} endColor={actionEnd} />;
+  return (
+    <RnrGradientBackground
+      gradientId={`primitive-${namespace}-action-gradient`}
+      testID={testID}
+      startColor={actionStart}
+      endColor={actionEnd}
+    />
+  );
 };
 
 export const PrimitiveButton = ({
@@ -56,13 +66,22 @@ export const PrimitiveButton = ({
   const toneTokens = buttonToneTokens[tone];
   const blocked = disabled === true || busy === true;
   const keyboardSelected = selected || pressed;
-  const keyboardButtonToken = variant === 'key'
-    ? keyboardSelected
-      ? compact ? baseTokens.keyboardKeySelectedCompact : baseTokens.keyboardKeySelected
-      : compact ? baseTokens.keyboardKeyCompact : baseTokens.keyboardKey
-    : keyboardSelected
-      ? compact ? baseTokens.keyboardActionSelectedCompact : baseTokens.keyboardActionSelected
-      : compact ? baseTokens.keyboardActionCompact : baseTokens.keyboardAction;
+  const keyboardButtonToken =
+    variant === 'key'
+      ? keyboardSelected
+        ? compact
+          ? baseTokens.keyboardKeySelectedCompact
+          : baseTokens.keyboardKeySelected
+        : compact
+          ? baseTokens.keyboardKeyCompact
+          : baseTokens.keyboardKey
+      : keyboardSelected
+        ? compact
+          ? baseTokens.keyboardActionSelectedCompact
+          : baseTokens.keyboardActionSelected
+        : compact
+          ? baseTokens.keyboardActionCompact
+          : baseTokens.keyboardAction;
   return (
     <RnrPressable
       testID={assertTestID(testID)}
@@ -75,16 +94,18 @@ export const PrimitiveButton = ({
           : appearance === 'login-secondary'
             ? baseTokens.buttonLoginSecondary
             : appearance === 'admin-primary'
-              ? blocked ? baseTokens.adminButtonDisabled : baseTokens.adminButton
+              ? blocked
+                ? baseTokens.adminButtonDisabled
+                : baseTokens.adminButton
               : appearance === 'admin-secondary'
                 ? baseTokens.adminButtonSecondary
                 : appearance === 'admin-icon'
                   ? baseTokens.adminHeaderClose
-            : variant === 'key'
-              ? keyboardButtonToken
-              : variant === 'key-action'
-                ? keyboardButtonToken
-                : baseTokens.button,
+                  : variant === 'key'
+                    ? keyboardButtonToken
+                    : variant === 'key-action'
+                      ? keyboardButtonToken
+                      : baseTokens.button,
         tone === 'neutral' ? undefined : toneTokens.background,
         tone === 'neutral' ? undefined : toneTokens.border,
         blocked && !busy && 'opacity-50',
@@ -104,12 +125,20 @@ export const PrimitiveButton = ({
           testID={`${assertTestID(testID)}:gradient`}
         />
       ) : null}
-      {busy ? <RnrActivityIndicator testID={`${assertTestID(testID)}:busy-indicator`} accessibilityLabel="处理中" /> : null}
+      {busy ? (
+        <RnrActivityIndicator testID={`${assertTestID(testID)}:busy-indicator`} accessibilityLabel="处理中" />
+      ) : null}
       {icon !== undefined && !busy ? (
         <PrimitiveIcon
           testID={`${assertTestID(testID)}:icon`}
           accessibilityLabel={accessibilityLabel ?? icon}
-          appearance={appearance === 'admin-icon' ? 'admin-shell' : appearance === 'admin-primary' || appearance === 'admin-secondary' ? 'admin-content' : 'keyboard-action'}
+          appearance={
+            appearance === 'admin-icon'
+              ? 'admin-shell'
+              : appearance === 'admin-primary' || appearance === 'admin-secondary'
+                ? 'admin-content'
+                : 'keyboard-action'
+          }
           icon={icon}
           size={appearance === 'admin-icon' ? 20 : compact ? 19 : 26}
         />
@@ -122,14 +151,22 @@ export const PrimitiveButton = ({
               : appearance === 'login-secondary'
                 ? baseTokens.buttonLoginSecondaryText
                 : appearance === 'admin-primary'
-                  ? blocked ? baseTokens.adminButtonDisabledText : baseTokens.adminButtonText
+                  ? blocked
+                    ? baseTokens.adminButtonDisabledText
+                    : baseTokens.adminButtonText
                   : appearance === 'admin-secondary'
                     ? baseTokens.adminButtonSecondaryText
-                : variant === 'key-action'
-                  ? compact ? baseTokens.keyboardActionTextCompact : baseTokens.keyboardActionText
-                  : variant === 'key'
-                    ? compact ? baseTokens.keyboardButtonTextCompact : baseTokens.keyboardButtonText
-                    : tone === 'neutral' ? baseTokens.buttonText : cn(baseTokens.buttonText, toneTokens.foreground)
+                    : variant === 'key-action'
+                      ? compact
+                        ? baseTokens.keyboardActionTextCompact
+                        : baseTokens.keyboardActionText
+                      : variant === 'key'
+                        ? compact
+                          ? baseTokens.keyboardButtonTextCompact
+                          : baseTokens.keyboardButtonText
+                        : tone === 'neutral'
+                          ? baseTokens.buttonText
+                          : cn(baseTokens.buttonText, toneTokens.foreground)
           }
         >
           {children}

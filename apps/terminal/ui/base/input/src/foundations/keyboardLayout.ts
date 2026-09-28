@@ -64,31 +64,37 @@ const actionKey = (kind: 'shift' | 'space' | 'backspace' | 'complete'): Keyboard
   kind,
 });
 
-const row = (input: Readonly<{
-  keys: readonly KeyboardKeyDefinition[];
-  region: KeyboardRegion;
-  align?: 'start' | 'center';
-  sizing?: 'shared' | 'fit';
-  grid?: KeyboardGrid;
-}>): KeyboardRow => Object.freeze({
-  keys: Object.freeze([...input.keys]),
-  align: input.align ?? 'start',
-  region: input.region,
-  sizing: input.sizing ?? 'shared',
-  grid: input.grid,
-});
+const row = (
+  input: Readonly<{
+    keys: readonly KeyboardKeyDefinition[];
+    region: KeyboardRegion;
+    align?: 'start' | 'center';
+    sizing?: 'shared' | 'fit';
+    grid?: KeyboardGrid;
+  }>,
+): KeyboardRow =>
+  Object.freeze({
+    keys: Object.freeze([...input.keys]),
+    align: input.align ?? 'start',
+    region: input.region,
+    sizing: input.sizing ?? 'shared',
+    grid: input.grid,
+  });
 
-const textRow = (input: Readonly<{
-  value: string;
-  zone: 'letters' | 'digits' | 'symbols';
-  align?: 'start' | 'center';
-  sizing?: 'shared' | 'fit';
-}>): KeyboardRow => row({
-  keys: Array.from(input.value, character => textKey(character, input.zone)),
-  region: input.zone,
-  align: input.align,
-  sizing: input.sizing,
-});
+const textRow = (
+  input: Readonly<{
+    value: string;
+    zone: 'letters' | 'digits' | 'symbols';
+    align?: 'start' | 'center';
+    sizing?: 'shared' | 'fit';
+  }>,
+): KeyboardRow =>
+  row({
+    keys: Array.from(input.value, character => textKey(character, input.zone)),
+    region: input.zone,
+    align: input.align,
+    sizing: input.sizing,
+  });
 
 const compoundRow = (keys: readonly KeyboardKeyDefinition[], sizing: 'shared' | 'fit' = 'shared'): KeyboardRow =>
   row({keys, region: 'actions', align: 'start', sizing});
@@ -153,10 +159,7 @@ const definitions: Readonly<Record<KeyboardLayout, KeyboardLayoutDefinition>> = 
     layout: 'alpha',
     rows: Object.freeze([
       textRow({value: 'qwertyuiop', zone: 'letters'}),
-      compoundRow([
-        actionKey('shift'),
-        ...Array.from('asdfghjkl', character => textKey(character, 'letters')),
-      ]),
+      compoundRow([actionKey('shift'), ...Array.from('asdfghjkl', character => textKey(character, 'letters'))]),
       compoundRow([
         spaceKey,
         ...Array.from('zxcvbnm', character => textKey(character, 'letters')),

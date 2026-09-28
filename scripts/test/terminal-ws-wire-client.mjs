@@ -109,7 +109,15 @@ export function createPingMessage(sequence, clientTs = new Date().toISOString(),
 let diagnosticScenario = 'UNPARSED';
 let diagnosticMarkerId = 'UNPARSED';
 let diagnosticStage = 'PROCESS_STARTING';
+let diagnosticLastCommand = 'NONE';
+let diagnosticLastPingSequence = 'NONE';
 let terminationDiagnosticWritten = false;
+
+const diagnosticRunId = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(process.env.V2S_BACKEND_ACCEPTANCE_RUN_ID ?? '')
+  ? process.env.V2S_BACKEND_ACCEPTANCE_RUN_ID
+  : 'NONE';
+
+const diagnosticTimestamp = () => new Date().toISOString();
 
 const setDiagnosticStage = stage => {
   diagnosticStage = stage;
@@ -120,17 +128,24 @@ const installTerminationDiagnostics = () => {
     if (terminationDiagnosticWritten) return;
     terminationDiagnosticWritten = true;
     process.stderr.write(
-      'TERMINAL_WIRE_STAGE=PROCESS_SIGNAL signal=SIGTERM scenario=' + diagnosticScenario
+      'TERMINAL_WIRE_STAGE=PROCESS_SIGNAL signal=SIGTERM timestampUtc=' + diagnosticTimestamp()
+        + ' runId=' + diagnosticRunId
+        + ' scenario=' + diagnosticScenario
         + ' markerId=' + diagnosticMarkerId
         + ' stage=' + diagnosticStage
+        + ' lastCommand=' + diagnosticLastCommand
+        + ' lastPingSequence=' + diagnosticLastPingSequence
         + ' pid=' + process.pid
         + ' ppid=' + process.ppid
+        + ' senderPid=UNAVAILABLE_BY_NODE_SIGNAL_API'
         + ' exitCode=143\n',
       () => process.exit(143),
     );
   });
   process.stderr.write(
-    'TERMINAL_WIRE_STAGE=CLIENT_READY stage=PROCESS_STARTING pid=' + process.pid
+    'TERMINAL_WIRE_STAGE=CLIENT_READY timestampUtc=' + diagnosticTimestamp()
+      + ' runId=' + diagnosticRunId
+      + ' stage=PROCESS_STARTING pid=' + process.pid
       + ' ppid=' + process.ppid + '\n',
   );
 };
@@ -810,6 +825,15 @@ async function runSessionProbe(request, inputIterator) {
       if (done) throw new Error('TERMINAL_WIRE_SESSION_PROBE_CONTROL_EOF');
       setDiagnosticStage('SESSION_PROBE_COMMAND_RECEIVED');
       const command = value.trim();
+      const pingCommand = /^PING\t([1-9][0-9]{0,8})$/.exec(command);
+      const closeCommand = /^AWAIT_CLOSE\t([1-9][0-9]{2,3})\t([A-Z_]{1,48})$/.exec(command);
+      diagnosticLastCommand = pingCommand ? 'PING' : command === 'CLOSE' ? 'CLOSE' : closeCommand ? 'AWAIT_CLOSE' : 'INVALID';
+      if (pingCommand) diagnosticLastPingSequence = pingCommand[1];
+      process.stderr.write(
+        `TERMINAL_WIRE_STAGE=CONTROL_RECEIVED timestampUtc=${diagnosticTimestamp()} runId=${diagnosticRunId}`
+          + ` scenario=${request.scenario} markerId=${request.markerId} command=${diagnosticLastCommand}`
+          + ` pingSequence=${pingCommand ? pingCommand[1] : 'NONE'}\n`,
+      );
       if (Buffer.byteLength(command, 'utf8') > MAX_CONTROL_BYTES) {
         throw new Error('TERMINAL_WIRE_SESSION_PROBE_COMMAND_TOO_LARGE');
       }
@@ -820,7 +844,7 @@ async function runSessionProbe(request, inputIterator) {
         if (close !== null && close.code !== 1000) throw new Error('TERMINAL_WIRE_SESSION_PROBE_CLOSE_MISMATCH');
         return {...describeHandshake(socket), eventTypes, pongCount, clientCloseSent: 1000, sessionId};
       }
-      const expectedClose = /^AWAIT_CLOSE\t([1-9][0-9]{2,3})\t([A-Z_]{1,48})$/.exec(command);
+      const expectedClose = closeCommand;
       if (expectedClose) {
         const close = await socket.readEvent(FRAME_DEADLINE_MS);
         if (close.kind !== 'close'
@@ -842,14 +866,17 @@ async function runSessionProbe(request, inputIterator) {
           closeReason: close.reason,
         };
       }
-      const match = /^PING\t([1-9][0-9]{0,8})$/.exec(command);
-      if (!match) throw new Error('TERMINAL_WIRE_SESSION_PROBE_COMMAND_INVALID');
-      const sequence = Number(match[1]);
+      if (!pingCommand) throw new Error('TERMINAL_WIRE_SESSION_PROBE_COMMAND_INVALID');
+      const sequence = Number(pingCommand[1]);
       const ping = request.scenario === 'terminal.connection.vs3.unknown-ping-field'
         ? {...createPingMessage(sequence), futureMessageField: true}
         : createPingMessage(sequence);
       socket.sendText(JSON.stringify(ping));
       setDiagnosticStage('SESSION_PROBE_WAITING_FOR_PONG');
+      process.stderr.write(
+        `TERMINAL_WIRE_STAGE=PING_SENT timestampUtc=${diagnosticTimestamp()} runId=${diagnosticRunId}`
+          + ` scenario=${request.scenario} markerId=${request.markerId} sequence=${sequence}\n`,
+      );
       const pong = await socket.readEvent(FRAME_DEADLINE_MS);
       if (pong.kind !== 'message' || pong.type !== 'PONG') {
         throw new Error('TERMINAL_WIRE_SESSION_PROBE_PONG_MISMATCH');

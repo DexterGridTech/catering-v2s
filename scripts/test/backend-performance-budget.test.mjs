@@ -5,6 +5,7 @@ import test from 'node:test';
 import {
   BATCH_OPERATION_ID,
   CP05_CALIBRATION_BOOTSTRAP_DIGEST,
+  CONTROLLED_BUDGET_EXCEPTION_RECORDS,
   CURRENT_PROGRAM_RESULT_BUDGET_DECISION_REF,
   EXPECTED_OPERATION_COUNT,
   LINEAR_REQUEST_CARDINALITY_BUDGET,
@@ -26,7 +27,7 @@ import {
   validateRemediationBudgetChange,
   validateThreeRunMaxInputs,
 } from '../generate/backend-performance-budget.mjs';
-import {budgetReadiness} from './backend-performance-cp05-reclassification.mjs';
+import {budgetReadiness, operationMetrics} from './backend-performance-cp05-reclassification.mjs';
 import {
   assertPerformanceConnectionBudgets,
   assertPerformanceOperationBudgets,
@@ -578,6 +579,83 @@ test('CP-05 fixed blockers need a source-owned controlled exception before they 
       }),
     /PERFORMANCE_REMEDIATION_EXCEPTION_DECISION_SCOPE_MISMATCH/,
   );
+});
+
+test('D-39 admits only the measured terminal-void status operation and stays red without its exact record', () => {
+  const operationId = 'postOperationsStoreTerminalStatus';
+  const sourceRecord = CONTROLLED_BUDGET_EXCEPTION_RECORDS.find(record => record.operationId === operationId);
+  assert.ok(sourceRecord, 'D39_TERMINAL_VOID_STATUS_EXCEPTION_RECORD_MISSING');
+  assert.equal(sourceRecord.decisionRef, 'IMPLEMENTATION-AGENT-2026-09-29-TERMINAL-VOID-STATUS-CP05');
+  assert.equal(sourceRecord.authority, 'IMPLEMENTATION_AGENT');
+  assert.equal(sourceRecord.from, 18);
+  assert.equal(sourceRecord.to, 23);
+  assert.equal(sourceRecord.narrowScope, operationId);
+  assert.equal(sourceRecord.businessFactsPreserved, true);
+  assert.equal(sourceRecord.sharedMechanismsReused, true);
+  assert.doesNotThrow(() =>
+    validateControlledBudgetException({
+      operationId,
+      from: fixedBudget(18),
+      to: fixedBudget(23, sourceRecord.history),
+      measuredMax: 23,
+      exception: sourceRecord,
+    }),
+  );
+
+  const recordsWithoutD39 = CONTROLLED_BUDGET_EXCEPTION_RECORDS.filter(record => record.operationId !== operationId);
+  assert.equal(
+    controlledBudgetExceptionForOperation({
+      operationId,
+      fromMax: 18,
+      toMax: 23,
+      measuredMax: 23,
+      records: recordsWithoutD39,
+    }),
+    null,
+  );
+  assert.deepEqual(
+    budgetReadiness({
+      operationId,
+      category: 'P3',
+      maxDatabaseOperationCount: 23,
+      controlledExceptionRecords: recordsWithoutD39,
+    }),
+    {status: 'BLOCKED_ABOVE_CLASS_CEILING', ceiling: 20, measuredMax: 23},
+  );
+});
+
+test('CP-05 report retains an active D-39 exception when its operation is classified P5', () => {
+  const operationId = 'postOperationsStoreTerminalStatus';
+  const sourceRecord = CONTROLLED_BUDGET_EXCEPTION_RECORDS.find(record => record.operationId === operationId);
+  const runs = [1, 20, 100].map(batchCardinality => ({
+    runDirectory: `run-${batchCardinality}`,
+    batchCardinality,
+    events: [
+      {
+        operationId,
+        databaseOperationCount: 23,
+        operationConnectionBorrowCount: 1,
+        connectionBorrowCount: 3,
+        transactionBeginCount: 3,
+        unclassifiedSqlRatio: 0,
+      },
+    ],
+  }));
+
+  const reportOperation = operationMetrics({
+    registryRow: {
+      operationId,
+      method: 'POST',
+      routeTemplate: '/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status',
+      owner: 'store-terminal',
+      consumerFace: 'operations-admin',
+    },
+    runs,
+  });
+
+  assert.equal(reportOperation.category, 'P5');
+  assert.equal(reportOperation.budgetReadiness.status, 'READY');
+  assert.deepEqual(reportOperation.controlledBudgetException, sourceRecord);
 });
 
 test('budget projection rejects report-only controlled exceptions without the source record', () => {

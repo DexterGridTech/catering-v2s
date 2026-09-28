@@ -27,7 +27,7 @@ import org.springframework.web.servlet.HandlerMapping;
 class RequestCompletionDiagnosticInterceptorTest {
     @Test
     void generatedRouteFaceRegistryRetainsCompleteRouteDenominator() {
-        assertEquals(212, EdgeRouteFaceRegistry.load(new ObjectMapper()).size());
+        assertEquals(238, EdgeRouteFaceRegistry.load(new ObjectMapper()).size());
         assertNotNull(EdgeRouteFaceRegistry.loadExtended(new ObjectMapper())
                 .get("GET /api/operations/catalog-inventory/items/{itemCode}"));
     }

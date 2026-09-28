@@ -5,18 +5,18 @@ import {
   PrimitiveHeading,
   PrimitiveLabel,
   PrimitiveStatus,
-} from '@catering-v2s/ui-base-primitives'
-import {InputScrollArea} from '@catering-v2s/ui-base-input'
-import {StaffLoginPasscodeInput} from '../StaffLoginPasscodeInput'
-import {StaffLoginOperatorNameInput} from '../StaffLoginOperatorNameInput'
-import {StaffLoginForm} from '../StaffLoginForm'
-import {useStaffLogin} from '../../hooks/useStaffLogin'
+} from '@catering-v2s/ui-base-primitives';
+import {InputScrollArea} from '@catering-v2s/ui-base-input';
+import {StaffLoginPasscodeInput} from '../StaffLoginPasscodeInput';
+import {StaffLoginOperatorNameInput} from '../StaffLoginOperatorNameInput';
+import {StaffLoginForm} from '../StaffLoginForm';
+import {useStaffLogin} from '../../hooks/useStaffLogin';
 
-const laptopRootStyle = Object.freeze({width: '100%', maxWidth: 720, alignSelf: 'center' as const})
+const laptopRootStyle = Object.freeze({width: '100%', maxWidth: 720, alignSelf: 'center' as const});
 
 /** Laptop credential form. Command, input and failure behavior live in useStaffLogin. */
 export const StaffLogin = () => {
-  const login = useStaffLogin()
+  const login = useStaffLogin();
   return (
     <StaffLoginForm>
       <PrimitiveContainer testID="sample.auth.login" style={laptopRootStyle}>
@@ -41,5 +41,5 @@ export const StaffLogin = () => {
         {login.requestInFlight ? <PrimitiveStatus testID="sample.auth.login:loading">登录中</PrimitiveStatus> : null}
       </PrimitiveContainer>
     </StaffLoginForm>
-  )
-}
+  );
+};

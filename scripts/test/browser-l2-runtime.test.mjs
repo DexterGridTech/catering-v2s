@@ -1116,9 +1116,12 @@ test('browser L2 namespace binding is closed to the managed namespace grammar', 
 });
 
 test('browser L2 failure cleanup awaits remote cleanup and owns partial startup processes', () => {
+  assert.equal((runtimeSource.match(/stopAndCleanupStartedRemoteJava\(\{/g) ?? []).length, 2);
+  assert.doesNotMatch(runtimeSource, /cleanupRemoteJavaRoot\(/);
+  assert.match(runtimeSource, /REMOTE_ROOT:R5_REMOTE_JAVA_CONTROL_REQUIRED_FOR_CLEANUP/);
   assert.match(
     runtimeSource,
-    /async function cleanupOwnedL2Resources\(state, credentials\) \{[\s\S]*?await stopRemoteJava\(state\.remote\.host, state\.remoteJava\)[\s\S]*?cleanupRemoteJavaRoot\(state\.remote\.host, state\.remoteRoot\)[\s\S]*?await stopOwnedRunProcesses\(state\)[\s\S]*?await cleanupRemote\(state\.remote\.host, state\.identity, credentials\)/,
+    /async function cleanupOwnedL2Resources\(state, credentials\) \{[\s\S]*?stopAndCleanupStartedRemoteJava\(\{[\s\S]*?await stopOwnedRunProcesses\(state\)[\s\S]*?await cleanupRemote\(state\.remote\.host, state\.identity, credentials\)/,
   );
   assert.equal((runtimeSource.match(/errors\.push\(\.\.\.\(await cleanupRemote\(/g) ?? []).length, 1);
   assert.doesNotMatch(runtimeSource, /minio\/mc rm[^\n]*\|\| true/);

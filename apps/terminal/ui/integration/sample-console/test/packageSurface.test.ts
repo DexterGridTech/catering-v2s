@@ -1,5 +1,12 @@
 import {describe, expect, it} from 'vitest';
-import {createSampleAssembly, createSurfaceForDisplayIndex, dependencyModuleNames, devDependencyModuleNames, moduleName, terminalSurfaces} from '../src/index';
+import {
+  createSampleAssembly,
+  createSurfaceForDisplayIndex,
+  dependencyModuleNames,
+  devDependencyModuleNames,
+  moduleName,
+  terminalSurfaces,
+} from '../src/index';
 
 describe('sample-console package surface', () => {
   it('keeps the renamed module and current dependency declarations aligned', () => {
@@ -21,12 +28,12 @@ describe('sample-console package surface', () => {
       'ui.feature.sample-member-desk',
       'ui.feature.sample-staff-auth',
     ]);
-    expect([...devDependencyModuleNames]).toEqual(['ui.base.dev-host']);
+    expect([...devDependencyModuleNames].sort()).toEqual(['ui.base.dev-host', 'ui.base.primitives']);
     expect(terminalSurfaces).toEqual({
       orientations: {
         landscape: {
-          PRIMARY: {width: 1280, height: 800},
-          SECONDARY: {width: 1280, height: 800},
+          PRIMARY: {width: 1280, height: 720},
+          SECONDARY: {width: 1280, height: 720},
         },
         portrait: {
           PRIMARY: {width: 360, height: 640},

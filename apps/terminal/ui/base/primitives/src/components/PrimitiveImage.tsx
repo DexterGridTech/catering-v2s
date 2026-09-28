@@ -1,4 +1,4 @@
-import {RnrImage} from '../vendor/slots';
+import {RnrImage} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import type {PrimitiveImageProps} from '../types/types';

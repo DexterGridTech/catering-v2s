@@ -1,15 +1,15 @@
-import fs from 'node:fs'
-import path from 'node:path'
-import {fileURLToPath} from 'node:url'
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
-import ts from 'typescript'
-import {findImportCapabilityViolation} from '../terminal-shared/import-capabilities.mjs'
-import {assertExactList, readPackageInvariant} from '../terminal-shared/package-invariants.mjs'
+import ts from 'typescript';
+import {findImportCapabilityViolation} from '../terminal-shared/import-capabilities.mjs';
+import {assertExactList, readPackageInvariant} from '../terminal-shared/package-invariants.mjs';
 
-const toolDirectory = path.dirname(fileURLToPath(import.meta.url))
-export const repoRoot = path.resolve(toolDirectory, '../..')
-export const renderRoot = path.join(repoRoot, 'apps/terminal/ui/base/render')
-export const productionAdminShellRoot = path.join(repoRoot, 'apps/terminal/ui/base/admin-shell')
+const toolDirectory = path.dirname(fileURLToPath(import.meta.url));
+export const repoRoot = path.resolve(toolDirectory, '../..');
+export const renderRoot = path.join(repoRoot, 'apps/terminal/ui/base/render');
+export const productionAdminShellRoot = path.join(repoRoot, 'apps/terminal/ui/base/admin-shell');
 
 export const RENDER_STATIC_RULE_NAMES = Object.freeze([
   'render-public-surface',
@@ -22,44 +22,40 @@ export const RENDER_STATIC_RULE_NAMES = Object.freeze([
   'render-hooks-unconditional',
   'render-surface-props-required',
   'render-test-wiring',
-])
-export const RENDER_STATIC_RULE_GATES = RENDER_STATIC_RULE_NAMES.length
-export const RENDER_STATIC_SUPPORT_CHECK_COUNT = 1
+]);
+export const RENDER_STATIC_RULE_GATES = RENDER_STATIC_RULE_NAMES.length;
+export const RENDER_STATIC_SUPPORT_CHECK_COUNT = 1;
 
-const INFRASTRUCTURE_EXPORTS = Object.freeze([
-  'dependencyModuleNames',
-  'devDependencyModuleNames',
-  'moduleName',
-])
+const INFRASTRUCTURE_EXPORTS = Object.freeze(['dependencyModuleNames', 'devDependencyModuleNames', 'moduleName']);
 
 function sourceFiles(root) {
-  const sourceRoot = path.join(root, 'src')
-  const files = []
+  const sourceRoot = path.join(root, 'src');
+  const files = [];
   const visit = directory => {
-    if (!fs.existsSync(directory)) return
+    if (!fs.existsSync(directory)) return;
     for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
-      const entryPath = path.join(directory, entry.name)
-      if (entry.isDirectory()) visit(entryPath)
-      else if (entry.isFile() && /\.(?:ts|tsx)$/.test(entry.name)) files.push(entryPath)
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) visit(entryPath);
+      else if (entry.isFile() && /\.(?:ts|tsx)$/.test(entry.name)) files.push(entryPath);
     }
-  }
-  visit(sourceRoot)
-  return files.sort()
+  };
+  visit(sourceRoot);
+  return files.sort();
 }
 
 function testFiles(root) {
-  const testRoot = path.join(root, 'test')
-  const files = []
+  const testRoot = path.join(root, 'test');
+  const files = [];
   const visit = directory => {
-    if (!fs.existsSync(directory)) return
+    if (!fs.existsSync(directory)) return;
     for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
-      const entryPath = path.join(directory, entry.name)
-      if (entry.isDirectory()) visit(entryPath)
-      else if (entry.isFile() && /\.(?:ts|tsx)$/.test(entry.name)) files.push(entryPath)
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) visit(entryPath);
+      else if (entry.isFile() && /\.(?:ts|tsx)$/.test(entry.name)) files.push(entryPath);
     }
-  }
-  visit(testRoot)
-  return files.sort()
+  };
+  visit(testRoot);
+  return files.sort();
 }
 
 function parseSource(filePath) {
@@ -69,11 +65,11 @@ function parseSource(filePath) {
     ts.ScriptTarget.Latest,
     true,
     filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-  )
+  );
 }
 
 function createProgram(root) {
-  const files = sourceFiles(root)
+  const files = sourceFiles(root);
   const program = ts.createProgram(files, {
     target: ts.ScriptTarget.ES2023,
     module: ts.ModuleKind.ESNext,
@@ -92,172 +88,192 @@ function createProgram(root) {
       '@catering-v2s/kernel-base-ui-state': ['apps/terminal/kernel/base/ui-state/src/index.ts'],
       '@reduxjs/toolkit': ['node_modules/@reduxjs/toolkit/dist/index.d.ts'],
     },
-  })
-  return {program, checker: program.getTypeChecker()}
+  });
+  return {program, checker: program.getTypeChecker()};
 }
 
 function moduleSymbol(checker, sourceFile) {
-  const symbol = checker.getSymbolAtLocation(sourceFile)
-  if (!symbol) throw new Error('render src/index.ts has no module symbol')
-  return symbol
+  const symbol = checker.getSymbolAtLocation(sourceFile);
+  if (!symbol) throw new Error('render src/index.ts has no module symbol');
+  return symbol;
 }
 
 function publicExports(checker, indexSourceFile) {
-  return checker.getExportsOfModule(moduleSymbol(checker, indexSourceFile))
+  return checker
+    .getExportsOfModule(moduleSymbol(checker, indexSourceFile))
     .map(symbol => symbol.name)
-    .sort()
+    .sort();
 }
 
 function runPublicSurface({root, invariant, checker, indexSourceFile}) {
-  const actual = publicExports(checker, indexSourceFile)
-  assertExactList('render public exports', actual, invariant.publicExports)
-  assertExactList('render infrastructure exports', INFRASTRUCTURE_EXPORTS, actual.filter(name => INFRASTRUCTURE_EXPORTS.includes(name)))
-  const domain = actual.filter(name => !INFRASTRUCTURE_EXPORTS.includes(name))
-  const expectedDomain = invariant.publicExports.filter(name => !INFRASTRUCTURE_EXPORTS.includes(name))
-  assertExactList('render domain exports', domain, expectedDomain)
+  const actual = publicExports(checker, indexSourceFile);
+  assertExactList('render public exports', actual, invariant.publicExports);
+  assertExactList(
+    'render infrastructure exports',
+    INFRASTRUCTURE_EXPORTS,
+    actual.filter(name => INFRASTRUCTURE_EXPORTS.includes(name)),
+  );
+  const domain = actual.filter(name => !INFRASTRUCTURE_EXPORTS.includes(name));
+  const expectedDomain = invariant.publicExports.filter(name => !INFRASTRUCTURE_EXPORTS.includes(name));
+  assertExactList('render domain exports', domain, expectedDomain);
   if (actual.length !== invariant.publicExports.length) {
-    throw new Error(`render public export count must match invariant; expected=${invariant.publicExports.length} actual=${actual.length}`)
+    throw new Error(
+      `render public export count must match invariant; expected=${invariant.publicExports.length} actual=${actual.length}`,
+    );
   }
-  void root
+  void root;
 }
 
 function readPackageJson(root) {
-  const packagePath = path.join(root, 'package.json')
-  return JSON.parse(fs.readFileSync(packagePath, 'utf8'))
+  const packagePath = path.join(root, 'package.json');
+  return JSON.parse(fs.readFileSync(packagePath, 'utf8'));
 }
 
 function resolveAdminShellRoot(renderPackageRoot) {
-  const fixtureAdminShellRoot = path.join(renderPackageRoot, 'admin-shell')
-  if (fs.existsSync(fixtureAdminShellRoot)) return fixtureAdminShellRoot
-  const siblingAdminShellRoot = path.resolve(renderPackageRoot, '../admin-shell')
-  if (fs.existsSync(siblingAdminShellRoot)) return siblingAdminShellRoot
-  return productionAdminShellRoot
+  const fixtureAdminShellRoot = path.join(renderPackageRoot, 'admin-shell');
+  if (fs.existsSync(fixtureAdminShellRoot)) return fixtureAdminShellRoot;
+  const siblingAdminShellRoot = path.resolve(renderPackageRoot, '../admin-shell');
+  if (fs.existsSync(siblingAdminShellRoot)) return siblingAdminShellRoot;
+  return productionAdminShellRoot;
 }
 
 function runPackageBoundary({root}) {
-  const packageJson = readPackageJson(root)
-  const dependencies = packageJson.dependencies ?? {}
-  const peers = packageJson.peerDependencies ?? {}
+  const packageJson = readPackageJson(root);
+  const dependencies = packageJson.dependencies ?? {};
+  const peers = packageJson.peerDependencies ?? {};
   if (dependencies.react !== undefined || dependencies['react-native'] !== undefined) {
-    throw new Error('react and react-native must not be runtime dependencies')
+    throw new Error('react and react-native must not be runtime dependencies');
   }
   if (peers.react !== '19.2.3' || peers['react-native'] !== '0.86.3') {
-    throw new Error(`React peer boundary mismatch: ${JSON.stringify(peers)}`)
+    throw new Error(`React peer boundary mismatch: ${JSON.stringify(peers)}`);
   }
   const allDependencyNames = [
     ...Object.keys(dependencies),
     ...Object.keys(peers),
     ...Object.keys(packageJson.devDependencies ?? {}),
-  ]
+  ];
   if (allDependencyNames.includes('react-redux')) {
-    throw new Error('react-redux must not be a render package dependency')
+    throw new Error('react-redux must not be a render package dependency');
   }
   if (dependencies['use-sync-external-store'] !== '^1.6.0') {
-    throw new Error('use-sync-external-store must be a direct ^1.6.0 runtime dependency')
+    throw new Error('use-sync-external-store must be a direct ^1.6.0 runtime dependency');
   }
   if (packageJson.devDependencies?.['@types/use-sync-external-store'] !== '^0.0.6') {
-    throw new Error('@types/use-sync-external-store must be a direct ^0.0.6 devDependency')
+    throw new Error('@types/use-sync-external-store must be a direct ^0.0.6 devDependency');
   }
-  assertExactList(
-    'render runtime dependencies',
-    Object.keys(dependencies),
-    [
-      '@catering-v2s/kernel-base-platform-ports',
-      '@catering-v2s/kernel-base-contracts',
-      '@catering-v2s/kernel-base-display-context',
-      '@catering-v2s/kernel-base-runtime',
-      '@catering-v2s/kernel-base-state',
-      '@catering-v2s/kernel-base-ui-state',
-      '@catering-v2s/ui-base-primitives',
-      'use-sync-external-store',
-    ],
-  )
+  assertExactList('render runtime dependencies', Object.keys(dependencies), [
+    '@catering-v2s/kernel-base-platform-ports',
+    '@catering-v2s/kernel-base-contracts',
+    '@catering-v2s/kernel-base-display-context',
+    '@catering-v2s/kernel-base-runtime',
+    '@catering-v2s/kernel-base-state',
+    '@catering-v2s/kernel-base-ui-state',
+    '@catering-v2s/ui-base-primitives',
+    'react-error-boundary',
+    'use-sync-external-store',
+  ]);
 }
 
 function runSelectorBoundary({root}) {
   for (const filePath of sourceFiles(root)) {
-    const sourceFile = parseSource(filePath)
-    let failure
+    const sourceFile = parseSource(filePath);
+    let failure;
     const visit = node => {
-      if (failure !== undefined) return
+      if (failure !== undefined) return;
       if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
         if (node.moduleSpecifier.text.includes('useRenderSnapshot')) {
-          failure = `useRenderSnapshot import is forbidden in ${path.relative(root, filePath)}`
-          return
+          failure = `useRenderSnapshot import is forbidden in ${path.relative(root, filePath)}`;
+          return;
         }
         if (node.importClause?.namedBindings !== undefined && ts.isNamedImports(node.importClause.namedBindings)) {
-          if (node.importClause.namedBindings.elements.some(element => (element.propertyName?.text ?? element.name.text) === 'useRenderSnapshot')) {
-            failure = `useRenderSnapshot import is forbidden in ${path.relative(root, filePath)}`
-            return
+          if (
+            node.importClause.namedBindings.elements.some(
+              element => (element.propertyName?.text ?? element.name.text) === 'useRenderSnapshot',
+            )
+          ) {
+            failure = `useRenderSnapshot import is forbidden in ${path.relative(root, filePath)}`;
+            return;
           }
         }
       }
-      if (ts.isExportDeclaration(node) && node.moduleSpecifier !== undefined && ts.isStringLiteral(node.moduleSpecifier)) {
+      if (
+        ts.isExportDeclaration(node) &&
+        node.moduleSpecifier !== undefined &&
+        ts.isStringLiteral(node.moduleSpecifier)
+      ) {
         if (node.moduleSpecifier.text.includes('useRenderSnapshot')) {
-          failure = `useRenderSnapshot export is forbidden in ${path.relative(root, filePath)}`
-          return
+          failure = `useRenderSnapshot export is forbidden in ${path.relative(root, filePath)}`;
+          return;
         }
         if (node.exportClause !== undefined && ts.isNamedExports(node.exportClause)) {
-          if (node.exportClause.elements.some(element => (element.propertyName?.text ?? element.name.text) === 'useRenderSnapshot')) {
-            failure = `useRenderSnapshot export is forbidden in ${path.relative(root, filePath)}`
-            return
+          if (
+            node.exportClause.elements.some(
+              element => (element.propertyName?.text ?? element.name.text) === 'useRenderSnapshot',
+            )
+          ) {
+            failure = `useRenderSnapshot export is forbidden in ${path.relative(root, filePath)}`;
+            return;
           }
         }
       }
-      if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword
-        && node.arguments[0] !== undefined && ts.isStringLiteral(node.arguments[0])
-        && node.arguments[0].text.includes('useRenderSnapshot')) {
-        failure = `useRenderSnapshot dynamic import is forbidden in ${path.relative(root, filePath)}`
-        return
+      if (
+        ts.isCallExpression(node) &&
+        node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+        node.arguments[0] !== undefined &&
+        ts.isStringLiteral(node.arguments[0]) &&
+        node.arguments[0].text.includes('useRenderSnapshot')
+      ) {
+        failure = `useRenderSnapshot dynamic import is forbidden in ${path.relative(root, filePath)}`;
+        return;
       }
       if (ts.isIdentifier(node) && node.text === 'useRenderSnapshot') {
-        failure = `useRenderSnapshot identifier is forbidden in ${path.relative(root, filePath)}`
-        return
+        failure = `useRenderSnapshot identifier is forbidden in ${path.relative(root, filePath)}`;
+        return;
       }
-      ts.forEachChild(node, visit)
-    }
-    visit(sourceFile)
-    if (failure !== undefined) throw new Error(failure)
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+    if (failure !== undefined) throw new Error(failure);
     if (path.basename(filePath, path.extname(filePath)) === 'useRenderSnapshot') {
-      throw new Error(`obsolete useRenderSnapshot hook file is forbidden in ${path.relative(root, filePath)}`)
+      throw new Error(`obsolete useRenderSnapshot hook file is forbidden in ${path.relative(root, filePath)}`);
     }
   }
 }
 
 function runPublicContextBoundary({root}) {
-  const filePath = path.join(root, 'src/contexts/RenderContext.ts')
-  const sourceFile = parseSource(filePath)
-  const declaration = sourceFile.statements.find(statement =>
-    ts.isTypeAliasDeclaration(statement) && statement.name.text === 'RenderContextValue',
-  )
+  const filePath = path.join(root, 'src/contexts/RenderContext.ts');
+  const sourceFile = parseSource(filePath);
+  const declaration = sourceFile.statements.find(
+    statement => ts.isTypeAliasDeclaration(statement) && statement.name.text === 'RenderContextValue',
+  );
   if (declaration === undefined || !ts.isTypeAliasDeclaration(declaration)) {
-    throw new Error('RenderContextValue declaration is missing')
+    throw new Error('RenderContextValue declaration is missing');
   }
-  const typeNode = unwrapReadonly(declaration.type)
-  if (!ts.isTypeLiteralNode(typeNode)) throw new Error('RenderContextValue must be a type literal')
+  const typeNode = unwrapReadonly(declaration.type);
+  if (!ts.isTypeLiteralNode(typeNode)) throw new Error('RenderContextValue must be a type literal');
   for (const member of typeNode.members) {
-    const name = propertyText(member.name)
+    const name = propertyText(member.name);
     if (name === 'stateSource' || name === 'snapshotReader') {
-      throw new Error(`RenderContextValue must not expose ${name}`)
+      throw new Error(`RenderContextValue must not expose ${name}`);
     }
   }
 }
 
 function runAdminStatePassThrough({root}) {
-  if (!fs.existsSync(root)) throw new Error(`admin-shell source root is missing: ${root}`)
+  if (!fs.existsSync(root)) throw new Error(`admin-shell source root is missing: ${root}`);
   for (const filePath of sourceFiles(root)) {
-    const sourceFile = parseSource(filePath)
-    let failure
+    const sourceFile = parseSource(filePath);
+    let failure;
     const visit = node => {
-      if (failure !== undefined) return
+      if (failure !== undefined) return;
       if (ts.isIdentifier(node) && (node.text === 'stateRoot' || node.text === 'stateSource')) {
-        failure = `${node.text} pass-through is forbidden in ${path.relative(root, filePath)}`
-        return
+        failure = `${node.text} pass-through is forbidden in ${path.relative(root, filePath)}`;
+        return;
       }
-      ts.forEachChild(node, visit)
-    }
-    visit(sourceFile)
-    if (failure !== undefined) throw new Error(failure)
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+    if (failure !== undefined) throw new Error(failure);
   }
 }
 
@@ -300,191 +316,215 @@ function runSourceForbiddenApis({root}) {
       ],
       '@catering-v2s/kernel-base-runtime': ['Runtime', 'createRuntime', 'defineCommand', 'RuntimeModule'],
     },
-  })
+  });
   for (const filePath of sourceFiles(root)) {
-    const sourceFile = parseSource(filePath)
-    const violation = findImportCapabilityViolation(sourceFile, renderImportBoundary)
+    const sourceFile = parseSource(filePath);
+    const violation = findImportCapabilityViolation(sourceFile, renderImportBoundary);
     if (violation !== undefined) {
-      throw new Error(`${violation.importedName} imported from ${violation.moduleName} is forbidden in ${path.relative(root, filePath)}`)
+      throw new Error(
+        `${violation.importedName} imported from ${violation.moduleName} is forbidden in ${path.relative(root, filePath)}`,
+      );
     }
   }
 }
 
 function propertyText(name) {
-  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) return name.text
-  return undefined
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) return name.text;
+  return undefined;
 }
 
 function isConcreteString(node) {
-  return ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)
+  return ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node);
 }
 
 function isKeyName(name) {
-  return /^(?:default|business|known)?(?:part|container)[_-]?key$/i.test(name)
-    || /(?:part|container)[_-]?key$/i.test(name)
+  return (
+    /^(?:default|business|known)?(?:part|container)[_-]?key$/i.test(name) || /(?:part|container)[_-]?key$/i.test(name)
+  );
 }
 
 function isKeyAccess(node) {
-  if (ts.isPropertyAccessExpression(node)) return isKeyName(node.name.text)
+  if (ts.isPropertyAccessExpression(node)) return isKeyName(node.name.text);
   if (ts.isElementAccessExpression(node) && node.argumentExpression !== undefined) {
-    return isConcreteString(node.argumentExpression) && isKeyName(node.argumentExpression.text)
+    return isConcreteString(node.argumentExpression) && isKeyName(node.argumentExpression.text);
   }
-  return false
+  return false;
 }
 
 function runSourceForbiddenKeys({root}) {
   for (const filePath of sourceFiles(root)) {
-    const sourceFile = parseSource(filePath)
-    let failure
+    const sourceFile = parseSource(filePath);
+    let failure;
     const visit = node => {
-      if (failure !== undefined) return
+      if (failure !== undefined) return;
       if (ts.isPropertyAssignment(node)) {
-        const name = propertyText(node.name)
+        const name = propertyText(node.name);
         if ((name === 'partKey' || name === 'containerKey') && isConcreteString(node.initializer)) {
-          failure = `${name} literal is forbidden in ${path.relative(root, filePath)}`
-          return
+          failure = `${name} literal is forbidden in ${path.relative(root, filePath)}`;
+          return;
         }
       }
       if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer !== undefined) {
         if (isKeyName(node.name.text) && isConcreteString(node.initializer)) {
-          failure = `${node.name.text} literal is forbidden in ${path.relative(root, filePath)}`
-          return
+          failure = `${node.name.text} literal is forbidden in ${path.relative(root, filePath)}`;
+          return;
         }
       }
-      if (ts.isBinaryExpression(node) && [
-        ts.SyntaxKind.EqualsEqualsEqualsToken,
-        ts.SyntaxKind.ExclamationEqualsEqualsToken,
-        ts.SyntaxKind.EqualsEqualsToken,
-        ts.SyntaxKind.ExclamationEqualsToken,
-      ].includes(node.operatorToken.kind)) {
-        const leftKey = isKeyAccess(node.left)
-        const rightKey = isKeyAccess(node.right)
+      if (
+        ts.isBinaryExpression(node) &&
+        [
+          ts.SyntaxKind.EqualsEqualsEqualsToken,
+          ts.SyntaxKind.ExclamationEqualsEqualsToken,
+          ts.SyntaxKind.EqualsEqualsToken,
+          ts.SyntaxKind.ExclamationEqualsToken,
+        ].includes(node.operatorToken.kind)
+      ) {
+        const leftKey = isKeyAccess(node.left);
+        const rightKey = isKeyAccess(node.right);
         if ((leftKey && isConcreteString(node.right)) || (rightKey && isConcreteString(node.left))) {
-          failure = `concrete key comparison is forbidden in ${path.relative(root, filePath)}`
-          return
+          failure = `concrete key comparison is forbidden in ${path.relative(root, filePath)}`;
+          return;
         }
       }
-      ts.forEachChild(node, visit)
-    }
-    visit(sourceFile)
-    if (failure !== undefined) throw new Error(failure)
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+    if (failure !== undefined) throw new Error(failure);
   }
 }
 
 function isHookCall(node) {
-  return ts.isCallExpression(node)
-    && ts.isIdentifier(node.expression)
-    && /^use[A-Z]/.test(node.expression.text)
+  return ts.isCallExpression(node) && ts.isIdentifier(node.expression) && /^use[A-Z]/.test(node.expression.text);
 }
 
 function isDescendant(node, ancestor) {
-  let current = node
+  let current = node;
   while (current !== undefined) {
-    if (current === ancestor) return true
-    current = current.parent
+    if (current === ancestor) return true;
+    current = current.parent;
   }
-  return false
+  return false;
 }
 
 function runHooksUnconditional({root}) {
   for (const filePath of sourceFiles(root)) {
-    const sourceFile = parseSource(filePath)
-    let failure
+    const sourceFile = parseSource(filePath);
+    let failure;
     const visit = node => {
-      if (failure !== undefined) return
+      if (failure !== undefined) return;
       if (isHookCall(node)) {
-        let current = node.parent
+        let current = node.parent;
         while (current !== undefined && !ts.isSourceFile(current)) {
-          if (ts.isBinaryExpression(current) && [
-            ts.SyntaxKind.QuestionQuestionToken,
-            ts.SyntaxKind.AmpersandAmpersandToken,
-            ts.SyntaxKind.BarBarToken,
-          ].includes(current.operatorToken.kind) && isDescendant(node, current.right)) {
-            failure = `conditional hook call in ${path.relative(root, filePath)}`
-            return
+          if (
+            ts.isBinaryExpression(current) &&
+            [
+              ts.SyntaxKind.QuestionQuestionToken,
+              ts.SyntaxKind.AmpersandAmpersandToken,
+              ts.SyntaxKind.BarBarToken,
+            ].includes(current.operatorToken.kind) &&
+            isDescendant(node, current.right)
+          ) {
+            failure = `conditional hook call in ${path.relative(root, filePath)}`;
+            return;
           }
-          if (ts.isConditionalExpression(current)
-            && (isDescendant(node, current.whenTrue) || isDescendant(node, current.whenFalse))) {
-            failure = `conditional hook call in ${path.relative(root, filePath)}`
-            return
+          if (
+            ts.isConditionalExpression(current) &&
+            (isDescendant(node, current.whenTrue) || isDescendant(node, current.whenFalse))
+          ) {
+            failure = `conditional hook call in ${path.relative(root, filePath)}`;
+            return;
           }
-          if (ts.isIfStatement(current)
-            && (isDescendant(node, current.thenStatement) || (current.elseStatement !== undefined && isDescendant(node, current.elseStatement)))) {
-            failure = `conditional hook call in ${path.relative(root, filePath)}`
-            return
+          if (
+            ts.isIfStatement(current) &&
+            (isDescendant(node, current.thenStatement) ||
+              (current.elseStatement !== undefined && isDescendant(node, current.elseStatement)))
+          ) {
+            failure = `conditional hook call in ${path.relative(root, filePath)}`;
+            return;
           }
-          current = current.parent
+          current = current.parent;
         }
       }
-      ts.forEachChild(node, visit)
-    }
-    visit(sourceFile)
-    if (failure !== undefined) throw new Error(failure)
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+    if (failure !== undefined) throw new Error(failure);
   }
 }
 
 function unwrapReadonly(node) {
-  let current = node
+  let current = node;
   while (
-    ts.isTypeReferenceNode(current)
-    && current.typeName.getText() === 'Readonly'
-    && current.typeArguments?.length === 1
-  ) current = current.typeArguments[0]
-  return current
+    ts.isTypeReferenceNode(current) &&
+    current.typeName.getText() === 'Readonly' &&
+    current.typeArguments?.length === 1
+  )
+    current = current.typeArguments[0];
+  return current;
 }
 
 function runSurfacePropsRequired({root}) {
-  const propsFile = path.join(root, 'src/types/props.ts')
-  const sourceFile = parseSource(propsFile)
-  const declaration = sourceFile.statements.find(statement =>
-    ts.isTypeAliasDeclaration(statement) && statement.name.text === 'SurfaceRootProps',
-  )
-  if (!declaration || !ts.isTypeAliasDeclaration(declaration)) throw new Error('SurfaceRootProps declaration is missing')
-  const typeNode = unwrapReadonly(declaration.type)
-  if (!ts.isTypeLiteralNode(typeNode)) throw new Error('SurfaceRootProps must be a type literal')
+  const propsFile = path.join(root, 'src/types/props.ts');
+  const sourceFile = parseSource(propsFile);
+  const declaration = sourceFile.statements.find(
+    statement => ts.isTypeAliasDeclaration(statement) && statement.name.text === 'SurfaceRootProps',
+  );
+  if (!declaration || !ts.isTypeAliasDeclaration(declaration))
+    throw new Error('SurfaceRootProps declaration is missing');
+  const typeNode = unwrapReadonly(declaration.type);
+  if (!ts.isTypeLiteralNode(typeNode)) throw new Error('SurfaceRootProps must be a type literal');
   for (const required of ['displayMode', 'containerKey']) {
-    const member = typeNode.members.find(candidate => propertyText(candidate.name) === required)
-    if (!member || !ts.isPropertySignature(member)) throw new Error(`SurfaceRootProps.${required} is missing`)
-    if (member.questionToken !== undefined) throw new Error(`SurfaceRootProps.${required} must be required`)
+    const member = typeNode.members.find(candidate => propertyText(candidate.name) === required);
+    if (!member || !ts.isPropertySignature(member)) throw new Error(`SurfaceRootProps.${required} is missing`);
+    if (member.questionToken !== undefined) throw new Error(`SurfaceRootProps.${required} must be required`);
   }
 }
 
 function runTestWiring({root, invariant}) {
-  const packageJson = readPackageJson(root)
+  const packageJson = readPackageJson(root);
   if (typeof packageJson.scripts?.test !== 'string' || !packageJson.scripts.test.includes('run-owned-tests.mjs')) {
-    throw new Error('render package test script must use run-owned-tests.mjs')
+    throw new Error('render package test script must use run-owned-tests.mjs');
   }
   if (invariant.owned?.test?.kind !== 'REAL_TESTS' || invariant.owned.test.runner !== 'vitest') {
-    throw new Error('render test ownership must be REAL_TESTS/vitest')
+    throw new Error('render test ownership must be REAL_TESTS/vitest');
   }
-  const vitestConfigPath = path.join(root, 'vitest.config.ts')
-  if (!fs.existsSync(vitestConfigPath)) throw new Error('vitest.config.ts is missing')
-  const vitestConfig = fs.readFileSync(vitestConfigPath, 'utf8')
-  if (!vitestConfig.includes('test/**/*.test.tsx')) throw new Error('vitest config must include .test.tsx')
-  const tsconfig = fs.readFileSync(path.join(root, 'tsconfig.json'), 'utf8')
+  const vitestConfigPath = path.join(root, 'vitest.config.ts');
+  if (!fs.existsSync(vitestConfigPath)) throw new Error('vitest.config.ts is missing');
+  const vitestConfig = fs.readFileSync(vitestConfigPath, 'utf8');
+  if (!vitestConfig.includes('test/**/*.test.tsx')) throw new Error('vitest config must include .test.tsx');
+  const tsconfig = fs.readFileSync(path.join(root, 'tsconfig.json'), 'utf8');
   if (!tsconfig.includes('test/**/*.tsx') || !tsconfig.includes('src/**/*.tsx')) {
-    throw new Error('tsconfig must include .tsx source and test files')
+    throw new Error('tsconfig must include .tsx source and test files');
   }
-  if (!testFiles(root).some(filePath => filePath.endsWith('.tsx'))) throw new Error('no .tsx test file is collectable')
-  if (packageJson.devDependencies?.vitest !== '4.1.10') throw new Error('vitest devDependency must be 4.1.10')
-  if (packageJson.devDependencies?.['react-test-renderer'] !== '19.2.3') {
-    throw new Error('react-test-renderer devDependency must be 19.2.3')
+  if (!testFiles(root).some(filePath => filePath.endsWith('.tsx'))) throw new Error('no .tsx test file is collectable');
+  if (packageJson.devDependencies?.vitest !== '4.1.10') throw new Error('vitest devDependency must be 4.1.10');
+  if (packageJson.devDependencies?.['@testing-library/react-native'] !== '14.0.1') {
+    throw new Error('@testing-library/react-native devDependency must be 14.0.1');
+  }
+  if (packageJson.devDependencies?.['test-renderer'] !== '1.2.0') {
+    throw new Error('test-renderer devDependency must be 1.2.0');
+  }
+  if (Object.hasOwn(packageJson.devDependencies ?? {}, 'react-test-renderer')) {
+    throw new Error('legacy react-test-renderer devDependency must be absent');
   }
 }
 
 function pass(name) {
-  return {name, status: 'PASS'}
+  return {name, status: 'PASS'};
 }
 
 function fail(name, error) {
-  return {name, status: 'FAIL', error: error instanceof Error ? error.message : String(error)}
+  return {name, status: 'FAIL', error: error instanceof Error ? error.message : String(error)};
 }
 
-export function runRenderStaticChecks({renderPackageRoot = renderRoot, adminShellRoot = resolveAdminShellRoot(renderPackageRoot)} = {}) {
-  const invariant = readPackageInvariant(renderPackageRoot, '@catering-v2s/ui-base-render')
-  const {program, checker} = createProgram(renderPackageRoot)
-  const indexSourceFile = program.getSourceFile(path.join(renderPackageRoot, 'src/index.ts'))
-  if (!indexSourceFile) throw new Error('render src/index.ts is missing from TypeScript program')
+export function runRenderStaticChecks({
+  renderPackageRoot = renderRoot,
+  adminShellRoot = resolveAdminShellRoot(renderPackageRoot),
+} = {}) {
+  const invariant = readPackageInvariant(renderPackageRoot, '@catering-v2s/ui-base-render');
+  const {program, checker} = createProgram(renderPackageRoot);
+  const indexSourceFile = program.getSourceFile(path.join(renderPackageRoot, 'src/index.ts'));
+  if (!indexSourceFile) throw new Error('render src/index.ts is missing from TypeScript program');
   const checks = [
     ['render-public-surface', () => runPublicSurface({root: renderPackageRoot, invariant, checker, indexSourceFile})],
     ['render-package-boundary', () => runPackageBoundary({root: renderPackageRoot})],
@@ -496,44 +536,48 @@ export function runRenderStaticChecks({renderPackageRoot = renderRoot, adminShel
     ['render-hooks-unconditional', () => runHooksUnconditional({root: renderPackageRoot})],
     ['render-surface-props-required', () => runSurfacePropsRequired({root: renderPackageRoot})],
     ['render-test-wiring', () => runTestWiring({root: renderPackageRoot, invariant})],
-  ]
+  ];
   const results = checks.map(([name, check]) => {
     try {
-      check()
-      return pass(name)
+      check();
+      return pass(name);
     } catch (error) {
-      return fail(name, error)
+      return fail(name, error);
     }
-  })
-  let support
+  });
+  let support;
   try {
-    const testCount = testFiles(renderPackageRoot).length
-    if (testCount === 0) throw new Error('render test directory is empty')
-    support = {name: 'render-owned-test-support', status: 'PASS'}
+    const testCount = testFiles(renderPackageRoot).length;
+    if (testCount === 0) throw new Error('render test directory is empty');
+    support = {name: 'render-owned-test-support', status: 'PASS'};
   } catch (error) {
-    support = {name: 'render-owned-test-support', status: 'FAIL', error: error instanceof Error ? error.message : String(error)}
+    support = {
+      name: 'render-owned-test-support',
+      status: 'FAIL',
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
-  return {results, support}
+  return {results, support};
 }
 
 function printReport(report) {
   for (const result of report.results) {
-    console.log(`RENDER_STATIC_RULE name=${result.name} status=${result.status}`)
-    if (result.error) console.error(`RENDER_STATIC_RULE_FAILURE name=${result.name} error=${result.error}`)
+    console.log(`RENDER_STATIC_RULE name=${result.name} status=${result.status}`);
+    if (result.error) console.error(`RENDER_STATIC_RULE_FAILURE name=${result.name} error=${result.error}`);
   }
-  console.log(`RENDER_STATIC_RULE_GATES=${RENDER_STATIC_RULE_GATES}`)
-  console.log(`RENDER_STATIC_SUPPORT_CHECKS=${RENDER_STATIC_SUPPORT_CHECK_COUNT}`)
-  console.log(`RENDER_STATIC_SUPPORT=${report.support.status}`)
-  if (report.support.error) console.error(`RENDER_STATIC_SUPPORT_FAILURE error=${report.support.error}`)
+  console.log(`RENDER_STATIC_RULE_GATES=${RENDER_STATIC_RULE_GATES}`);
+  console.log(`RENDER_STATIC_SUPPORT_CHECKS=${RENDER_STATIC_SUPPORT_CHECK_COUNT}`);
+  console.log(`RENDER_STATIC_SUPPORT=${report.support.status}`);
+  if (report.support.error) console.error(`RENDER_STATIC_SUPPORT_FAILURE error=${report.support.error}`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const report = runRenderStaticChecks()
-  printReport(report)
-  const failed = report.results.filter(result => result.status !== 'PASS')
+  const report = runRenderStaticChecks();
+  printReport(report);
+  const failed = report.results.filter(result => result.status !== 'PASS');
   if (failed.length || report.support.status !== 'PASS') {
-    console.error(`TERMINAL_RENDER_STATIC=FAIL failed=${failed.map(result => result.name).join(',')}`)
-    process.exit(1)
+    console.error(`TERMINAL_RENDER_STATIC=FAIL failed=${failed.map(result => result.name).join(',')}`);
+    process.exit(1);
   }
-  console.log('TERMINAL_RENDER_STATIC=PASS')
+  console.log('TERMINAL_RENDER_STATIC=PASS');
 }

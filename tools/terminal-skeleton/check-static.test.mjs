@@ -23,8 +23,14 @@ const batchTwo = projectSkeletonGraph(spec, 2);
 assert.equal(Object.keys(spec.graph).length, 29, 'the literal skeleton specification has 29 nodes');
 assert.equal(Object.keys(batchOne).length, 13, 'batch one projects 13 nodes');
 assert.equal(Object.keys(batchTwo).length, 29, 'batch two projects 29 nodes');
-assert.equal(moduleNameToPackageName('application.android.sample-terminal'), '@catering-v2s/application-android-sample-terminal');
-assert.equal(moduleNameToPackageName('application.android.sample-wallpaper-terminal'), '@catering-v2s/application-android-sample-wallpaper-terminal');
+assert.equal(
+  moduleNameToPackageName('application.android.sample-terminal'),
+  '@catering-v2s/application-android-sample-terminal',
+);
+assert.equal(
+  moduleNameToPackageName('application.android.sample-wallpaper-terminal'),
+  '@catering-v2s/application-android-sample-wallpaper-terminal',
+);
 assert.equal(moduleNameToRelativePath('kernel.base.contracts'), 'apps/terminal/kernel/base/contracts');
 
 const help = spawnSync(process.execPath, [checkStaticPath, '--help'], {cwd: repoRoot, encoding: 'utf8'});
@@ -33,7 +39,7 @@ assert.match(help.stdout, /seven TER static rule gates/);
 
 const realStatic = spawnSync(process.execPath, [checkStaticPath], {cwd: repoRoot, encoding: 'utf8'});
 assert.equal(realStatic.status, 0, realStatic.stderr);
-  assert.match(realStatic.stdout, /RULE_GATES=7/);
+assert.match(realStatic.stdout, /RULE_GATES=7/);
 assert.match(realStatic.stdout, /SUPPORT_CHECKS=1/);
 for (const rule of [
   'GRAPH_COMPARISON',
@@ -65,7 +71,9 @@ try {
   // receiver-origin check so Store/EnhancedStore calls are analysed with the
   // same TypeScript symbols as the real tree, without copying the full cache.
   const fixtureReduxScope = path.join(fixtureRoot, 'node_modules', '@reduxjs');
+  const fixtureWorkspaceScope = path.join(fixtureRoot, 'node_modules', '@catering-v2s');
   fs.mkdirSync(fixtureReduxScope, {recursive: true});
+  fs.mkdirSync(fixtureWorkspaceScope, {recursive: true});
   for (const dependency of ['redux', 'immer', 'redux-thunk', 'reselect']) {
     fs.symlinkSync(
       path.join(repoRoot, 'node_modules', dependency),
@@ -78,6 +86,24 @@ try {
     path.join(fixtureReduxScope, 'toolkit'),
     'dir',
   );
+  const linkFixtureWorkspacePackages = directory => {
+    for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+      if (['node_modules', '.git', '.turbo', '.expo', 'build', 'dist'].includes(entry.name)) continue;
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        linkFixtureWorkspacePackages(entryPath);
+        continue;
+      }
+      if (entry.name !== 'package.json') continue;
+      const packageRoot = path.dirname(entryPath);
+      const packageJson = JSON.parse(fs.readFileSync(entryPath, 'utf8'));
+      const prefix = '@catering-v2s/';
+      if (typeof packageJson.name !== 'string' || !packageJson.name.startsWith(prefix)) continue;
+      const target = path.join(fixtureWorkspaceScope, packageJson.name.slice(prefix.length));
+      if (!fs.existsSync(target)) fs.symlinkSync(packageRoot, target, 'dir');
+    }
+  };
+  linkFixtureWorkspacePackages(path.join(fixtureRoot, 'apps/terminal'));
   const adapterRoot = path.join(fixtureRoot, 'apps/terminal/adapter/android/persist-kv');
   const applicationRoot = path.join(fixtureRoot, 'apps/terminal/application/base/android');
   const applicationNodeModulesRoot = path.join(applicationRoot, 'node_modules');
@@ -88,10 +114,15 @@ try {
   fs.mkdirSync(applicationNodeModulesRoot, {recursive: true});
   try {
     const report = runStaticChecks({root: fixtureRoot, batch: 2});
-    assert.ok(report.results.every(result => result.status === 'PASS'), 'application node_modules must only affect hygiene');
+    assert.ok(
+      report.results.every(result => result.status === 'PASS'),
+      'application node_modules must only affect hygiene',
+    );
     assert.equal(report.hygiene.status, 'FAIL');
     assert.match(report.hygiene.error, /scaffold metadata remains:/);
-    console.log(`TERMINAL_SKELETON_RED_APPLICATION_NODE_MODULES=SCAFFOLD_HYGIENE:${report.hygiene.status};${report.hygiene.error}`);
+    console.log(
+      `TERMINAL_SKELETON_RED_APPLICATION_NODE_MODULES=SCAFFOLD_HYGIENE:${report.hygiene.status};${report.hygiene.error}`,
+    );
   } finally {
     fs.rmSync(applicationNodeModulesRoot, {recursive: true, force: true});
     const restored = runStaticChecks({root: fixtureRoot, batch: 2});
@@ -119,7 +150,9 @@ try {
   }
 
   function printGateVector(label, report) {
-    console.log(`${label}=${report.results.map(result => `${result.name}:${result.status}`).join(',')};SCAFFOLD_HYGIENE=${report.hygiene.status}`);
+    console.log(
+      `${label}=${report.results.map(result => `${result.name}:${result.status}`).join(',')};SCAFFOLD_HYGIENE=${report.hygiene.status}`,
+    );
   }
 
   function withTextMutation(filePath, mutate, assertion) {
@@ -159,6 +192,33 @@ try {
     }
   }
 
+  const malformedFixturePath = path.join(fixtureRoot, 'apps/terminal/kernel/base/contracts/src/foundations/time.ts');
+  const malformedFixtureOriginal = fs.readFileSync(malformedFixturePath, 'utf8');
+  try {
+    fs.writeFileSync(malformedFixturePath, `${malformedFixtureOriginal}\nexport const malformedFixture = ;\n`);
+    const malformedRun = spawnSync(process.execPath, [checkStaticPath, '--root', fixtureRoot], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    });
+    assert.equal(malformedRun.status, 1, malformedRun.stderr);
+    assert.match(malformedRun.stdout, /RULE_TR01_REDUCER_BOUNDARY=FAIL/);
+    assert.match(
+      malformedRun.stderr,
+      /FIRST_FAILURE:tr01-reducer-boundary:TS1109 .*kernel\/base\/contracts\/src\/foundations\/time\.ts:\d+:\d+: Expression expected/,
+    );
+    console.log(
+      `TERMINAL_TYPESCRIPT_SYNTAX_RED=${malformedRun.status};${malformedRun.stderr.match(/FIRST_FAILURE:tr01-reducer-boundary:[^\n]+/)?.[0]}`,
+    );
+  } finally {
+    fs.writeFileSync(malformedFixturePath, malformedFixtureOriginal);
+  }
+  const restoredSyntaxRun = spawnSync(process.execPath, [checkStaticPath, '--root', fixtureRoot], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  });
+  assert.equal(restoredSyntaxRun.status, 0, restoredSyntaxRun.stderr);
+  console.log('TERMINAL_TYPESCRIPT_SYNTAX_RESTORE=PASS');
+
   const rootPackagePath = path.join(fixtureRoot, 'package.json');
   withJsonMutation(
     rootPackagePath,
@@ -178,12 +238,18 @@ try {
   const d1Target = '@catering-v2s/ui-feature-sample-staff-auth';
   const d1BoundaryMutations = [
     ['d1-value-import.ts', `import {moduleName} from '${d1Target}'\nvoid moduleName\n`],
-    ['d1-type-import.ts', `import type {SampleStaffAuthAssembly} from '${d1Target}'\nvoid (undefined as unknown as SampleStaffAuthAssembly)\n`],
+    [
+      'd1-type-import.ts',
+      `import type {SampleStaffAuthAssembly} from '${d1Target}'\nvoid (undefined as unknown as SampleStaffAuthAssembly)\n`,
+    ],
     ['d1-reexport.ts', `export type {SampleStaffAuthAssembly} from '${d1Target}'\n`],
     ['d1-dynamic.mjs', `export const load = () => import('${d1Target}')\n`],
     ['d1-require.cjs', `module.exports = require('${d1Target}')\n`],
     ['d1-import-equals.ts', `import feature = require('${d1Target}')\nexport {feature}\n`],
-    ['d1-relative.ts', `import {moduleName} from '../../../feature/sample-staff-auth/src/moduleName'\nvoid moduleName\n`],
+    [
+      'd1-relative.ts',
+      `import {moduleName} from '../../../feature/sample-staff-auth/src/moduleName'\nvoid moduleName\n`,
+    ],
   ];
   for (const [fileName, source] of d1BoundaryMutations) {
     const filePath = path.join(d1BoundaryTestRoot, fileName);
@@ -193,7 +259,9 @@ try {
       assertGateVector(report, ['dependency-direction']);
       assert.equal(gate(report, 'dependency-direction').status, 'FAIL', fileName);
       assert.match(gate(report, 'dependency-direction').error, /ui\.base\.render/);
-      console.log(`TERMINAL_SKELETON_RED_D1_${fileName.replaceAll('.', '_').toUpperCase()}=${gate(report, 'dependency-direction').status}`);
+      console.log(
+        `TERMINAL_SKELETON_RED_D1_${fileName.replaceAll('.', '_').toUpperCase()}=${gate(report, 'dependency-direction').status}`,
+      );
     } finally {
       fs.rmSync(filePath, {force: true});
     }
@@ -216,11 +284,12 @@ try {
   );
   withTextMutation(
     displayDependenciesPath,
-    source => replaceRequired(
-      source,
-      'export const runtimeModuleDependencyNames = [runtime] as const;',
-      'export const runtimeModuleDependencyNames = [] as const;',
-    ),
+    source =>
+      replaceRequired(
+        source,
+        'export const runtimeModuleDependencyNames = [runtime] as const;',
+        'export const runtimeModuleDependencyNames = [] as const;',
+      ),
     report => {
       assertGateVector(report, ['runtime-dependency-contract']);
       assert.match(gate(report, 'runtime-dependency-contract').error, /runtimeModuleDependencyNames mismatch/);
@@ -229,11 +298,12 @@ try {
   );
   withTextMutation(
     displayDependenciesPath,
-    source => replaceRequired(
-      source,
-      'export const dependencyModuleNames = [contracts, platformPorts, state, runtime] as const;',
-      'export const dependencyModuleNames = [contracts, platformPorts, state] as const;',
-    ),
+    source =>
+      replaceRequired(
+        source,
+        'export const dependencyModuleNames = [contracts, platformPorts, state, runtime] as const;',
+        'export const dependencyModuleNames = [contracts, platformPorts, state] as const;',
+      ),
     report => {
       assertGateVector(report, ['runtime-dependency-contract']);
       assert.match(gate(report, 'runtime-dependency-contract').error, /dependencyModuleNames mismatch/);
@@ -242,28 +312,34 @@ try {
   );
   withTextMutation(
     path.join(fixtureRoot, 'apps/terminal/kernel/base/display-context/src/application/createDisplayContextModule.ts'),
-    source => replaceRequired(
-      source,
-      'runtimeModuleDependencyNames.map((name) => ({moduleName: name}))',
-      'runtimeModuleDependencyNames.map((name) => ({moduleName: name, optional: true}))',
-    ),
+    source =>
+      replaceRequired(
+        source,
+        'runtimeModuleDependencyNames.map(name => ({moduleName: name}))',
+        'runtimeModuleDependencyNames.map(name => ({moduleName: name, optional: true}))',
+      ),
     report => {
       assertGateVector(report, ['runtime-dependency-contract']);
       assert.match(gate(report, 'runtime-dependency-contract').error, /exact \{moduleName\} descriptors/);
-      console.log(`TERMINAL_SKELETON_RED_RUNTIME_DESCRIPTOR_OPTIONAL=${gate(report, 'runtime-dependency-contract').status}`);
+      console.log(
+        `TERMINAL_SKELETON_RED_RUNTIME_DESCRIPTOR_OPTIONAL=${gate(report, 'runtime-dependency-contract').status}`,
+      );
     },
   );
   withTextMutation(
     path.join(fixtureRoot, 'apps/terminal/kernel/base/display-context/src/application/createDisplayContextModule.ts'),
-    source => replaceRequired(
-      source,
-      'runtimeModuleDependencyNames.map((name) => ({moduleName: name}))',
-      'runtimeModuleDependencyNames.map((name) => ({moduleName: name, ...{}}))',
-    ),
+    source =>
+      replaceRequired(
+        source,
+        'runtimeModuleDependencyNames.map(name => ({moduleName: name}))',
+        'runtimeModuleDependencyNames.map(name => ({moduleName: name, ...{}}))',
+      ),
     report => {
       assertGateVector(report, ['runtime-dependency-contract']);
       assert.match(gate(report, 'runtime-dependency-contract').error, /exact \{moduleName\} descriptors/);
-      console.log(`TERMINAL_SKELETON_RED_RUNTIME_DESCRIPTOR_SPREAD=${gate(report, 'runtime-dependency-contract').status}`);
+      console.log(
+        `TERMINAL_SKELETON_RED_RUNTIME_DESCRIPTOR_SPREAD=${gate(report, 'runtime-dependency-contract').status}`,
+      );
     },
   );
 
@@ -289,10 +365,9 @@ try {
   fs.writeFileSync(gitignorePath, fs.readFileSync(path.join(repoRoot, '.gitignore'), 'utf8'));
   const appPath = path.join(fixtureRoot, 'apps/terminal/application/android/sample-terminal/App.tsx');
   const appSource = fs.readFileSync(appPath, 'utf8');
-  fs.writeFileSync(
-    appPath,
-    appSource.replace(/^import .* from '\.\/src\/assembly\/platformPorts'\n/m, ''),
-  );
+  const appWithoutPlatformPorts = appSource.replace(/^import .* from '\.\/src\/assembly\/platformPorts';\n/m, '');
+  assert.notEqual(appWithoutPlatformPorts, appSource, 'App.tsx platform-ports mutation must apply');
+  fs.writeFileSync(appPath, appWithoutPlatformPorts);
   const missingAppPlatformPortsReport = runStaticChecks({root: fixtureRoot, batch: 2});
   const missingAppPlatformPortsGate = missingAppPlatformPortsReport.results.find(
     result => result.name === 'graph-comparison',
@@ -301,37 +376,29 @@ try {
   assert.match(missingAppPlatformPortsGate.error, /App\.tsx must have a runtime import/);
   fs.writeFileSync(appPath, appSource);
 
-  const uiDevHostPackagePath = path.join(
-    fixtureRoot,
-    'apps/terminal/ui/base/dev-host/package.json',
-  );
+  const uiDevHostPackagePath = path.join(fixtureRoot, 'apps/terminal/ui/base/dev-host/package.json');
   withJsonMutation(
     uiDevHostPackagePath,
     packageJson => {
       delete packageJson.dependencies['@catering-v2s/kernel-base-platform-ports'];
     },
     report => {
-      assertGateVector(report, ['graph-comparison', 'dependency-declaration-completeness', 'runtime-dependency-contract']);
+      assertGateVector(report, [
+        'graph-comparison',
+        'dependency-declaration-completeness',
+        'runtime-dependency-contract',
+      ]);
       assert.match(gate(report, 'graph-comparison').error, /ui\.base\.dev-host/);
     },
   );
 
   const fixtureGraphPath = path.join(fixtureRoot, 'apps/terminal/skeleton-graph.ts');
-  const displayModuleNamePath = path.join(
-    fixtureRoot,
-    'apps/terminal/kernel/base/display-context/src/moduleName.ts',
-  );
+  const displayModuleNamePath = path.join(fixtureRoot, 'apps/terminal/kernel/base/display-context/src/moduleName.ts');
   const displayModuleNameSource = fs.readFileSync(displayModuleNamePath, 'utf8');
   const displayGraphSource = fs.readFileSync(fixtureGraphPath, 'utf8');
 
-  const applicationBasePackagePath = path.join(
-    fixtureRoot,
-    'apps/terminal/application/base/android/package.json',
-  );
-  const applicationBaseIndexPath = path.join(
-    fixtureRoot,
-    'apps/terminal/application/base/android/src/index.ts',
-  );
+  const applicationBasePackagePath = path.join(fixtureRoot, 'apps/terminal/application/base/android/package.json');
+  const applicationBaseIndexPath = path.join(fixtureRoot, 'apps/terminal/application/base/android/src/index.ts');
   const applicationBaseGraphPattern =
     /('application\.base\.android':\s*\{\s*batch: 2,\s*plannedKind: 'toolkit',\s*dependencies: )\[([\s\S]*?)\]/;
   withMutations(
@@ -352,16 +419,16 @@ try {
         filePath: fixtureGraphPath,
         mutate: source => {
           assert.match(source, applicationBaseGraphPattern);
-          return source.replace(
-            applicationBaseGraphPattern,
-            "$1[$2'ui.feature.sample-staff-auth']",
-          );
+          return source.replace(applicationBaseGraphPattern, "$1[$2'ui.feature.sample-staff-auth']");
         },
       },
     ],
     report => {
       assertGateVector(report, ['dependency-direction', 'runtime-dependency-contract']);
-      assert.match(gate(report, 'dependency-direction').error, /application\.base\.android may not depend on ui\.feature\.sample-staff-auth/);
+      assert.match(
+        gate(report, 'dependency-direction').error,
+        /application\.base\.android may not depend on ui\.feature\.sample-staff-auth/,
+      );
       console.log(`TERMINAL_SKELETON_RED_BASE_GRAPH_FEATURE=${gate(report, 'dependency-direction').status}`);
     },
   );
@@ -392,19 +459,18 @@ try {
       },
       {
         filePath: sampleTerminalPlatformPortsPath,
-        mutate: source => `${source}\nimport {createAndroidDevicePort} from '@catering-v2s/adapter-android-device'\nvoid createAndroidDevicePort\n`,
+        mutate: source =>
+          `${source}\nimport {createAndroidDevicePort} from '@catering-v2s/adapter-android-device'\nvoid createAndroidDevicePort\n`,
       },
       {
         filePath: sampleTerminalDependenciesPath,
-        mutate: source => source
-          .replace(
-            "import {moduleName as uiIntegrationSampleConsole} from '@catering-v2s/ui-integration-sample-console';\n",
-            "import {moduleName as uiIntegrationSampleConsole} from '@catering-v2s/ui-integration-sample-console';\nimport {moduleName as adapterAndroidDevice} from '@catering-v2s/adapter-android-device';\n",
-          )
-          .replace(
-            '  uiIntegrationSampleConsole,\n',
-            '  uiIntegrationSampleConsole,\n  adapterAndroidDevice,\n',
-          ),
+        mutate: source =>
+          source
+            .replace(
+              "import {moduleName as uiIntegrationSampleConsole} from '@catering-v2s/ui-integration-sample-console';\n",
+              "import {moduleName as uiIntegrationSampleConsole} from '@catering-v2s/ui-integration-sample-console';\nimport {moduleName as adapterAndroidDevice} from '@catering-v2s/adapter-android-device';\n",
+            )
+            .replace('  uiIntegrationSampleConsole,\n', '  uiIntegrationSampleConsole,\n  adapterAndroidDevice,\n'),
       },
       {
         filePath: fixtureGraphPath,
@@ -416,17 +482,24 @@ try {
     ],
     report => {
       assertGateVector(report, ['dependency-direction']);
-      assert.match(gate(report, 'dependency-direction').error, /application\.android\.sample-terminal may not depend on adapter/);
+      assert.match(
+        gate(report, 'dependency-direction').error,
+        /application\.android\.sample-terminal may not depend on adapter/,
+      );
       console.log(`TERMINAL_SKELETON_RED_APP_ADAPTER_GRAPH=${gate(report, 'dependency-direction').status}`);
     },
   );
 
   withTextMutation(
     sampleTerminalPlatformPortsPath,
-    source => `${source}\nimport {createAndroidDevicePort} from '../../../../../adapter/android/device/src/index'\nvoid createAndroidDevicePort\n`,
+    source =>
+      `${source}\nimport {createAndroidDevicePort} from '../../../../../adapter/android/device/src/index'\nvoid createAndroidDevicePort\n`,
     report => {
       assertGateVector(report, ['dependency-direction']);
-      assert.match(gate(report, 'dependency-direction').error, /application\.android\.sample-terminal may not depend on adapter/);
+      assert.match(
+        gate(report, 'dependency-direction').error,
+        /application\.android\.sample-terminal may not depend on adapter/,
+      );
       console.log(`TERMINAL_SKELETON_RED_APP_ADAPTER_RELATIVE=${gate(report, 'dependency-direction').status}`);
     },
   );
@@ -438,21 +511,24 @@ try {
           fixtureRoot,
           'apps/terminal/kernel/base/display-context/src/application/createDisplayContextModule.ts',
         ),
-        mutate: source => source
-          .replace(
-            "import {runtimeModuleDependencyNames} from '../dependencies'",
-            "import {dependencyModuleNames} from '../dependencies'",
-          )
-          .replace(
-            'dependencies: runtimeModuleDependencyNames.map((name) => ({moduleName: name})),',
-            'dependencies: dependencyModuleNames.map((name) => ({moduleName: name})),',
-          ),
+        mutate: source =>
+          source
+            .replace(
+              "import {runtimeModuleDependencyNames} from '../dependencies'",
+              "import {dependencyModuleNames} from '../dependencies'",
+            )
+            .replace(
+              'dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),',
+              'dependencies: dependencyModuleNames.map(name => ({moduleName: name})),',
+            ),
       },
     ],
     report => {
       assertGateVector(report, ['runtime-dependency-contract']);
       assert.match(gate(report, 'runtime-dependency-contract').error, /runtimeModuleDependencyNames is not consumed/);
-      console.log(`TERMINAL_SKELETON_RED_RUNTIME_WHOLE_ARRAY_FACTORY=${gate(report, 'runtime-dependency-contract').status}`);
+      console.log(
+        `TERMINAL_SKELETON_RED_RUNTIME_WHOLE_ARRAY_FACTORY=${gate(report, 'runtime-dependency-contract').status}`,
+      );
     },
   );
 
@@ -492,28 +568,36 @@ try {
     fs.writeFileSync(
       rootPackagePath,
       JSON.stringify(
-        {...JSON.parse(crossPlatformRootPackageSource), workspaces: [
-          ...JSON.parse(crossPlatformRootPackageSource).workspaces,
-          'apps/terminal/adapter/electron/*',
-        ]},
+        {
+          ...JSON.parse(crossPlatformRootPackageSource),
+          workspaces: [...JSON.parse(crossPlatformRootPackageSource).workspaces, 'apps/terminal/adapter/electron/*'],
+        },
         null,
         2,
       ) + '\n',
     );
     const electronPackage = JSON.parse(fs.readFileSync(path.join(electronDeviceFixtureRoot, 'package.json'), 'utf8'));
     electronPackage.name = '@catering-v2s/adapter-electron-device';
-    fs.writeFileSync(path.join(electronDeviceFixtureRoot, 'package.json'), `${JSON.stringify(electronPackage, null, 2)}\n`);
+    fs.writeFileSync(
+      path.join(electronDeviceFixtureRoot, 'package.json'),
+      `${JSON.stringify(electronPackage, null, 2)}\n`,
+    );
     fs.writeFileSync(
       path.join(electronDeviceFixtureRoot, 'src/moduleName.ts'),
-      fs.readFileSync(path.join(electronDeviceFixtureRoot, 'src/moduleName.ts'), 'utf8')
+      fs
+        .readFileSync(path.join(electronDeviceFixtureRoot, 'src/moduleName.ts'), 'utf8')
         .replace('adapter.android.device', 'adapter.electron.device'),
     );
     const electronInvariantPath = path.join(electronDeviceFixtureRoot, 'terminal-invariants.json');
     const electronInvariant = JSON.parse(fs.readFileSync(electronInvariantPath, 'utf8'));
     electronInvariant.package = '@catering-v2s/adapter-electron-device';
     electronInvariant.owned.test.owner = '@catering-v2s/adapter-electron-device';
+    electronInvariant.owned.lint.owner = '@catering-v2s/adapter-electron-device';
     fs.writeFileSync(electronInvariantPath, `${JSON.stringify(electronInvariant)}\n`);
-    fs.writeFileSync(fixtureGraphPath, crossPlatformGraphSource.replaceAll('adapter.android.device', 'adapter.electron.device'));
+    fs.writeFileSync(
+      fixtureGraphPath,
+      crossPlatformGraphSource.replaceAll('adapter.android.device', 'adapter.electron.device'),
+    );
     fs.writeFileSync(
       crossPlatformAssemblyPackagePath,
       crossPlatformAssemblyPackageSource.replaceAll(
@@ -541,7 +625,9 @@ try {
       gate(crossPlatformReport, 'dependency-direction').error,
       /application\.base\.android may only depend on same-platform adapter adapter\.electron\.device/,
     );
-    console.log(`TERMINAL_SKELETON_RED_BASE_CROSS_PLATFORM_ADAPTER=${gate(crossPlatformReport, 'dependency-direction').status}`);
+    console.log(
+      `TERMINAL_SKELETON_RED_BASE_CROSS_PLATFORM_ADAPTER=${gate(crossPlatformReport, 'dependency-direction').status}`,
+    );
   } finally {
     if (fs.existsSync(androidDeviceFixtureRoot)) {
       fs.rmSync(androidDeviceFixtureRoot, {recursive: true, force: true});
@@ -554,7 +640,10 @@ try {
     fs.writeFileSync(crossPlatformAndroidPlatformPath, crossPlatformAndroidPlatformSource);
     fs.writeFileSync(path.join(androidDeviceFixtureRoot, 'package.json'), crossPlatformDevicePackageSource);
     fs.writeFileSync(path.join(androidDeviceFixtureRoot, 'src/moduleName.ts'), crossPlatformDeviceModuleNameSource);
-    fs.writeFileSync(path.join(androidDeviceFixtureRoot, 'terminal-invariants.json'), crossPlatformDeviceInvariantSource);
+    fs.writeFileSync(
+      path.join(androidDeviceFixtureRoot, 'terminal-invariants.json'),
+      crossPlatformDeviceInvariantSource,
+    );
   }
 
   // A package that has crossed the planned -> realized boundary must expose an
@@ -567,20 +656,22 @@ try {
 
     fs.writeFileSync(
       displayModuleNamePath,
-      displayModuleNameSource.replace("export const moduleKind = 'owner' as const;", "export const moduleKind = 'toolkit' as const;"),
+      displayModuleNameSource.replace(
+        "export const moduleKind = 'owner' as const;",
+        "export const moduleKind = 'toolkit' as const;",
+      ),
     );
-    assert.throws(
-      () => runStaticChecks({root: fixtureRoot, batch: 2}),
-      /real state slice requires moduleKind owner/,
-    );
+    assert.throws(() => runStaticChecks({root: fixtureRoot, batch: 2}), /real state slice requires moduleKind owner/);
 
     fs.writeFileSync(displayModuleNamePath, displayModuleNameSource);
     fs.writeFileSync(
       fixtureGraphPath,
-      fs.readFileSync(fixtureGraphPath, 'utf8').replace(
-        "  'kernel.base.display-context': {\n    batch: 1,\n",
-        "  'kernel.base.display-context': {\n    batch: 1,\n    plannedKind: 'owner',\n",
-      ),
+      fs
+        .readFileSync(fixtureGraphPath, 'utf8')
+        .replace(
+          "  'kernel.base.display-context': {\n    batch: 1,\n",
+          "  'kernel.base.display-context': {\n    batch: 1,\n    plannedKind: 'owner',\n",
+        ),
     );
     assert.throws(
       () => runStaticChecks({root: fixtureRoot, batch: 2}),
@@ -590,30 +681,24 @@ try {
     fs.writeFileSync(fixtureGraphPath, displayGraphSource);
     fs.writeFileSync(displayModuleNamePath, displayModuleNameSource);
   }
-  const displayKindPath = path.join(
-    fixtureRoot,
-    'apps/terminal/kernel/base/display-context/src/displayKind.ts',
-  );
+  const displayKindPath = path.join(fixtureRoot, 'apps/terminal/kernel/base/display-context/src/displayKind.ts');
   fs.writeFileSync(displayKindPath, "export const moduleKind = 'owner' as const;\n");
   try {
-    fs.writeFileSync(displayModuleNamePath, displayModuleNameSource.replace(
-      "export const moduleKind = 'owner' as const;",
-      "export {moduleKind} from './displayKind';",
-    ));
-    assert.throws(
-      () => runStaticChecks({root: fixtureRoot, batch: 2}),
-      /must be declared in/,
+    fs.writeFileSync(
+      displayModuleNamePath,
+      displayModuleNameSource.replace(
+        "export const moduleKind = 'owner' as const;",
+        "export {moduleKind} from './displayKind';",
+      ),
     );
+    assert.throws(() => runStaticChecks({root: fixtureRoot, batch: 2}), /must be declared in/);
   } finally {
     fs.writeFileSync(fixtureGraphPath, displayGraphSource);
     fs.writeFileSync(displayModuleNamePath, displayModuleNameSource);
     fs.rmSync(displayKindPath, {force: true});
   }
 
-  const contractsPackagePath = path.join(
-    fixtureRoot,
-    'apps/terminal/kernel/base/contracts/package.json',
-  );
+  const contractsPackagePath = path.join(fixtureRoot, 'apps/terminal/kernel/base/contracts/package.json');
   withJsonMutation(
     contractsPackagePath,
     packageJson => {
@@ -626,10 +711,7 @@ try {
     },
   );
 
-  const contractsModuleNamePath = path.join(
-    fixtureRoot,
-    'apps/terminal/kernel/base/contracts/src/moduleName.ts',
-  );
+  const contractsModuleNamePath = path.join(fixtureRoot, 'apps/terminal/kernel/base/contracts/src/moduleName.ts');
   withTextMutation(
     contractsModuleNamePath,
     source => source.replace("'kernel.base.contracts'", "'kernel.base.contracts.drift'"),
@@ -639,42 +721,27 @@ try {
     },
   );
 
-  const requestTypesPath = path.join(
-    fixtureRoot,
-    'apps/terminal/kernel/base/contracts/src/types/request.ts',
-  );
+  const requestTypesPath = path.join(fixtureRoot, 'apps/terminal/kernel/base/contracts/src/types/request.ts');
   withTextMutation(
     requestTypesPath,
-    source => source.replace(
-      '  readonly status: CommandLifecycleStatus;\n',
-      '  readonly status: string;\n',
-    ),
+    source => source.replace('  readonly status: CommandLifecycleStatus;\n', '  readonly status: string;\n'),
     report => {
       assertGateVector(report, ['graph-comparison']);
       assert.match(gate(report, 'graph-comparison').error, /RequestCommandSnapshot\.status/);
     },
   );
 
-  const registeredSliceTypesPath = path.join(
-    fixtureRoot,
-    'apps/terminal/kernel/base/state/src/types/slice.ts',
-  );
+  const registeredSliceTypesPath = path.join(fixtureRoot, 'apps/terminal/kernel/base/state/src/types/slice.ts');
   withTextMutation(
     registeredSliceTypesPath,
-    source => source.replace(
-      '  readonly persistIntent: PersistIntent\n  readonly syncIntent: SyncIntent\n  readonly hasPersistence: boolean\n',
-      '  readonly persistIntent: string\n  readonly syncIntent: SyncIntent\n  readonly hasPersistence: boolean\n',
-    ),
+    source => replaceRequired(source, '  readonly persistIntent: PersistIntent;', '  readonly persistIntent: string;'),
     report => {
       assertGateVector(report, ['graph-comparison']);
       assert.match(gate(report, 'graph-comparison').error, /StateRuntimeSliceRegistration\.persistIntent/);
     },
   );
 
-  const uiRenderPackagePath = path.join(
-    fixtureRoot,
-    'apps/terminal/ui/base/render/package.json',
-  );
+  const uiRenderPackagePath = path.join(fixtureRoot, 'apps/terminal/ui/base/render/package.json');
   withJsonMutation(
     uiRenderPackagePath,
     packageJson => {
@@ -686,10 +753,7 @@ try {
     },
   );
 
-  const persistPackagePath = path.join(
-    fixtureRoot,
-    'apps/terminal/adapter/android/persist-kv/package.json',
-  );
+  const persistPackagePath = path.join(fixtureRoot, 'apps/terminal/adapter/android/persist-kv/package.json');
   const persistDependenciesPath = path.join(
     fixtureRoot,
     'apps/terminal/adapter/android/persist-kv/src/dependencies.ts',
@@ -739,10 +803,7 @@ try {
     fs.writeFileSync(fixtureGraphPath, originalFixtureGraph);
   }
 
-  const platformPortsPackagePath = path.join(
-    fixtureRoot,
-    'apps/terminal/kernel/base/platform-ports/package.json',
-  );
+  const platformPortsPackagePath = path.join(fixtureRoot, 'apps/terminal/kernel/base/platform-ports/package.json');
   const platformPortsDependenciesPath = path.join(
     fixtureRoot,
     'apps/terminal/kernel/base/platform-ports/src/dependencies.ts',
@@ -770,8 +831,7 @@ try {
       {
         filePath: fixtureGraphPath,
         mutate: source => {
-          const pattern =
-            /('kernel\.base\.platform-ports':\s*\{[\s\S]*?dependencies:\s*)\[[^\]]*\]/;
+          const pattern = /('kernel\.base\.platform-ports':\s*\{[\s\S]*?dependencies:\s*)\[[^\]]*\]/;
           assert.match(source, pattern);
           return source.replace(pattern, "$1['kernel.base.contracts', 'ui.base.primitives']");
         },
@@ -784,10 +844,7 @@ try {
     },
   );
 
-  const contractsDependenciesPath = path.join(
-    fixtureRoot,
-    'apps/terminal/kernel/base/contracts/src/dependencies.ts',
-  );
+  const contractsDependenciesPath = path.join(fixtureRoot, 'apps/terminal/kernel/base/contracts/src/dependencies.ts');
   withTextMutation(
     fixtureGraphPath,
     source => {
@@ -837,14 +894,10 @@ try {
     },
   );
 
-  const primitivesDependenciesPath = path.join(
-    fixtureRoot,
-    'apps/terminal/ui/base/primitives/src/dependencies.ts',
-  );
+  const primitivesDependenciesPath = path.join(fixtureRoot, 'apps/terminal/ui/base/primitives/src/dependencies.ts');
   withTextMutation(
     primitivesDependenciesPath,
-    source =>
-      `import {moduleName as undeclaredContracts} from '@catering-v2s/kernel-base-contracts';\n${source}`,
+    source => `import {moduleName as undeclaredContracts} from '@catering-v2s/kernel-base-contracts';\n${source}`,
     report => {
       assertGateVector(report, ['graph-comparison', 'dependency-declaration-completeness']);
       assert.equal(gate(report, 'dependency-declaration-completeness').status, 'FAIL');
@@ -861,10 +914,7 @@ try {
     },
   );
 
-  const renderDependenciesPath = path.join(
-    fixtureRoot,
-    'apps/terminal/ui/base/render/src/dependencies.ts',
-  );
+  const renderDependenciesPath = path.join(fixtureRoot, 'apps/terminal/ui/base/render/src/dependencies.ts');
   withTextMutation(
     renderDependenciesPath,
     source => `${source}\nexport function forbiddenDispatchProbe() { dispatchAction(); }\n`,
@@ -875,10 +925,7 @@ try {
     },
   );
 
-  const actorHelperPath = path.join(
-    fixtureRoot,
-    'apps/terminal/kernel/base/runtime/src/features/actors/helpers.ts',
-  );
+  const actorHelperPath = path.join(fixtureRoot, 'apps/terminal/kernel/base/runtime/src/features/actors/helpers.ts');
   fs.writeFileSync(
     actorHelperPath,
     [
@@ -906,36 +953,57 @@ try {
   const roleDispatchText = '    context.dispatchAction(setRuntimeInstanceModeAction(payload.instanceMode))';
   withTextMutation(
     roleActorPath,
-    source => replaceRequired(source, roleDispatchText, [
-      '    const dispatch = context.dispatchAction',
-      '    dispatch(setRuntimeInstanceModeAction(payload.instanceMode))',
-    ].join('\n')),
+    source =>
+      replaceRequired(
+        source,
+        roleDispatchText,
+        [
+          '    const dispatch = context.dispatchAction',
+          '    dispatch(setRuntimeInstanceModeAction(payload.instanceMode))',
+        ].join('\n'),
+      ),
     report => assertGateVector(report),
   );
   withTextMutation(
     roleActorPath,
-    source => replaceRequired(source, roleDispatchText, [
-      '    const {dispatchAction: dispatch} = context',
-      '    dispatch(setRuntimeInstanceModeAction(payload.instanceMode))',
-    ].join('\n')),
+    source =>
+      replaceRequired(
+        source,
+        roleDispatchText,
+        [
+          '    const {dispatchAction: dispatch} = context',
+          '    dispatch(setRuntimeInstanceModeAction(payload.instanceMode))',
+        ].join('\n'),
+      ),
     report => assertGateVector(report),
   );
   withTextMutation(
     roleActorPath,
-    source => replaceRequired(source, roleDispatchText, "    context['dispatchAction'](setRuntimeInstanceModeAction(payload.instanceMode))"),
+    source =>
+      replaceRequired(
+        source,
+        roleDispatchText,
+        "    context['dispatchAction'](setRuntimeInstanceModeAction(payload.instanceMode))",
+      ),
     report => assertGateVector(report),
   );
   withTextMutation(
     roleActorPath,
-    source => `${source}\nexport const globalDispatchProbe = () => {\n  globalThis.dispatchAction({type: 'probe'})\n  globalThis['dispatchAction']({type: 'probe'})\n  window.dispatchAction({type: 'probe'})\n}\n`,
+    source =>
+      `${source}\nexport const globalDispatchProbe = () => {\n  globalThis.dispatchAction({type: 'probe'})\n  globalThis['dispatchAction']({type: 'probe'})\n  window.dispatchAction({type: 'probe'})\n}\n`,
     report => assertGateVector(report),
   );
   withTextMutation(
     roleActorPath,
-    source => replaceRequired(source, roleDispatchText, [
-      '    const helper = (dispatch: typeof context.dispatchAction) => dispatch(setRuntimeInstanceModeAction(payload.instanceMode))',
-      '    helper(context.dispatchAction)',
-    ].join('\n')),
+    source =>
+      replaceRequired(
+        source,
+        roleDispatchText,
+        [
+          '    const helper = (dispatch: typeof context.dispatchAction) => dispatch(setRuntimeInstanceModeAction(payload.instanceMode))',
+          '    helper(context.dispatchAction)',
+        ].join('\n'),
+      ),
     report => {
       assertGateVector(report, ['tr01-reducer-boundary']);
       assert.match(gate(report, 'tr01-reducer-boundary').error, /actor dispatchAction passed to helper|reducer call/);
@@ -946,7 +1014,7 @@ try {
     fixtureRoot,
     'apps/terminal/kernel/base/state/src/foundations/createStateRuntime.ts',
   );
-  const stateRuntimeReturn = '  return Object.freeze(runtime)\n';
+  const stateRuntimeReturn = '  return Object.freeze(runtime);\n';
   withTextMutation(
     stateRuntimePath,
     source => {
@@ -964,10 +1032,11 @@ try {
   );
   withTextMutation(
     stateRuntimePath,
-    source => source.replace(
-      'store.dispatch({type: resetToOwnerInitialStateActionType})',
-      'store.dispatchUnused({type: resetToOwnerInitialStateActionType})',
-    ),
+    source =>
+      source.replace(
+        'store.dispatch({type: resetToOwnerInitialStateActionType})',
+        'store.dispatchUnused({type: resetToOwnerInitialStateActionType})',
+      ),
     report => {
       assertGateVector(report, ['tr01-reducer-boundary']);
       assert.match(gate(report, 'tr01-reducer-boundary').error, /exception not consumed/);
@@ -975,13 +1044,11 @@ try {
     },
   );
 
-  const workspaceSupportPath = path.join(
-    fixtureRoot,
-    'apps/terminal/kernel/base/state/src/foundations/workspace.ts',
-  );
+  const workspaceSupportPath = path.join(fixtureRoot, 'apps/terminal/kernel/base/state/src/foundations/workspace.ts');
   withTextMutation(
     workspaceSupportPath,
-    source => `${source}\nconst unrelatedDispatchObject = {dispatch: (action: unknown) => action}\nunrelatedDispatchObject.dispatch(undefined)\n`,
+    source =>
+      `${source}\nconst unrelatedDispatchObject = {dispatch: (action: unknown) => action}\nunrelatedDispatchObject.dispatch(undefined)\n`,
     report => {
       assertGateVector(report);
       printGateVector('A2_TR01_NON_REDUX_DISPATCH_GREEN', report);

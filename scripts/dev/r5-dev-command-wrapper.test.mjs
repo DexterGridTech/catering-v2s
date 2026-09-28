@@ -4,11 +4,29 @@ import {readFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import path from "node:path";
 import test from "node:test";
-import {buildManagedDevCleanupReceipt, canCleanupRemoteJavaRoot, cleanupManagedRemoteJavaRoot, cleanupManagedRemoteRootAfterStartFailure, collectStopDiagnostics, parseRemoteRootCleanupResult, remoteTdsReadinessScript, stopAndCleanupStartedRemoteJava, validateManagedRemoteJavaBinding} from "./r5-dev-runner.mjs";
+import {buildManagedDevCleanupReceipt, canCleanupRemoteJavaRoot, cleanupManagedRemoteJavaRoot, cleanupManagedRemoteRootAfterStartFailure, collectStopDiagnostics, parseRemoteRootCleanupResult, remoteProcessStopMarkerCommand, remoteTdsReadinessScript, stopAndCleanupStartedRemoteJava, validateManagedRemoteJavaBinding} from "./r5-dev-runner.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const start = path.join(root, "scripts/dev/start");
 const runnerSource = readFileSync(path.join(root, "scripts/dev/r5-dev-runner.mjs"), "utf8");
+
+test("remote stop protocol marker preserves every field in shell output", () => {
+  const cases = [
+    ["JAVA", null, "R5_REMOTE_PROCESS_STOP=PASS SERVICE=JAVA"],
+    ["TDS", null, "R5_REMOTE_PROCESS_STOP=PASS SERVICE=TDS"],
+    ["JAVA", "ALREADY_STOPPED", "R5_REMOTE_PROCESS_STOP=PASS SERVICE=JAVA STATUS=ALREADY_STOPPED"],
+    ["TDS", "ALREADY_STOPPED", "R5_REMOTE_PROCESS_STOP=PASS SERVICE=TDS STATUS=ALREADY_STOPPED"],
+  ];
+  for (const [service, status, expected] of cases) {
+    const result = childProcess.spawnSync("bash", ["-c", remoteProcessStopMarkerCommand(service, status)], {
+      cwd: root,
+      encoding: "utf8",
+    });
+    assert.equal(result.status, 0);
+    assert.equal(result.stdout, `${expected}\n`);
+  }
+  assert.throws(() => remoteProcessStopMarkerCommand("UNKNOWN"), /REMOTE_PROCESS_STOP_SERVICE_INVALID/);
+});
 
 test("DEV start rejects every argument before it can launch managed resources", () => {
   const result = childProcess.spawnSync(start, ["--help"], {

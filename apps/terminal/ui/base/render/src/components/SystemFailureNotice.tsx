@@ -1,5 +1,5 @@
-import type {ReactNode} from 'react'
-import type {StyleProp, ViewStyle} from 'react-native'
+import type {ReactNode} from 'react';
+import type {StyleProp, ViewStyle} from 'react-native';
 import {
   PrimitiveActions,
   PrimitiveButton,
@@ -7,24 +7,24 @@ import {
   PrimitiveContainer,
   PrimitiveHeading,
   PrimitiveText,
-} from '@catering-v2s/ui-base-primitives'
+} from '@catering-v2s/ui-base-primitives';
 
 export type SystemFailureNoticePresentation = Readonly<{
-  readonly rootStyle?: StyleProp<ViewStyle>
-  readonly cardStyle?: StyleProp<ViewStyle>
-  readonly actionsOrientation?: 'row' | 'column'
-  readonly dismissButtonStyle?: StyleProp<ViewStyle>
-}>
+  readonly rootStyle?: StyleProp<ViewStyle>;
+  readonly cardStyle?: StyleProp<ViewStyle>;
+  readonly actionsOrientation?: 'row' | 'column';
+  readonly dismissButtonStyle?: StyleProp<ViewStyle>;
+}>;
 
 export type SystemFailureNoticeProps = Readonly<{
-  readonly testIDPrefix: string
-  readonly onDismiss: () => unknown
-  readonly title?: string
-  readonly message?: string
-  readonly dismissLabel?: string
-  readonly children?: ReactNode
-  readonly presentation?: SystemFailureNoticePresentation
-}>
+  readonly testIDPrefix: string;
+  readonly onDismiss: () => unknown;
+  readonly title?: string;
+  readonly message?: string;
+  readonly dismissLabel?: string;
+  readonly children?: ReactNode;
+  readonly presentation?: SystemFailureNoticePresentation;
+}>;
 
 export const SystemFailureNotice = ({
   testIDPrefix,
@@ -54,4 +54,4 @@ export const SystemFailureNotice = ({
       </PrimitiveActions>
     </PrimitiveContainer>
   </PrimitiveCenter>
-)
+);

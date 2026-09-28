@@ -1,5 +1,9 @@
 import {describe, expect, it} from 'vitest';
-import {calculateVirtualKeyboardDockWidth, calculateVirtualKeyboardMetrics, INPUT_LAYOUT_CONSTANTS} from '../src/foundations/keyboardHeight';
+import {
+  calculateVirtualKeyboardDockWidth,
+  calculateVirtualKeyboardMetrics,
+  INPUT_LAYOUT_CONSTANTS,
+} from '../src/foundations/keyboardHeight';
 
 const frame = (width: number, height: number) => ({width, height, ready: true as const});
 const PRIMARY_FRAME = frame(1280, 800);

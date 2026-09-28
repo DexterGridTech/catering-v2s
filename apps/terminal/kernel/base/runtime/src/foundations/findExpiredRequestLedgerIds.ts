@@ -1,61 +1,56 @@
-import {
-  nowTimestampMs,
-  type RequestId,
-  type RequestLifecycleStatus,
-} from '@catering-v2s/kernel-base-contracts'
-import type {StateRoot} from '@catering-v2s/kernel-base-state'
-import {selectRequestExecutionView} from '../selectors/selectRequestExecutionView'
-import {selectRuntimeInstanceMode} from '../selectors/selectRuntimeInstanceMode'
-import {readRequestLedgerState} from '../selectors/readRequestLedgerState'
-import {
-  readLiveRequestEnvelope,
-  requestLedgerSliceNameForMode,
-} from '../features/slices/requestLedger'
-import type {RuntimeLimits} from '../types/limits'
-import type {RuntimeInstanceMode} from '../types/role'
+import {nowTimestampMs, type RequestId, type RequestLifecycleStatus} from '@catering-v2s/kernel-base-contracts';
+import type {StateRoot} from '@catering-v2s/kernel-base-state';
+import {selectRequestExecutionView} from '../selectors/selectRequestExecutionView';
+import {selectRuntimeInstanceMode} from '../selectors/selectRuntimeInstanceMode';
+import {readRequestLedgerState} from '../selectors/readRequestLedgerState';
+import {readLiveRequestEnvelope, requestLedgerSliceNameForMode} from '../features/slices/requestLedger';
+import type {RuntimeLimits} from '../types/limits';
+import type {RuntimeInstanceMode} from '../types/role';
 
 const isTerminalStatus = (status: RequestLifecycleStatus): boolean => {
   switch (status) {
     case 'started':
-      return false
+      return false;
     case 'completed':
     case 'partial-failed':
     case 'timed-out':
     case 'error':
-      return true
+      return true;
     default: {
-      const exhaustive: never = status
-      throw new Error(`Unknown request lifecycle status: ${exhaustive}`)
+      const exhaustive: never = status;
+      throw new Error(`Unknown request lifecycle status: ${exhaustive}`);
     }
   }
-}
+};
 
 /**
  * Computes deletable ids from one runtime-owned ledger partition.  The peer
  * partition is consulted only through the merged view that supplies lifecycle
  * status; it is never scanned or mutated here.
  */
-export const findExpiredRequestLedgerIds = (input: Readonly<{
-  state: StateRoot
-  mode?: RuntimeInstanceMode
-  limits: Pick<RuntimeLimits, 'requestRetentionMs' | 'requestMaxResidenceMs'>
-  now?: number
-}>): readonly RequestId[] => {
-  const mode = input.mode ?? selectRuntimeInstanceMode(input.state)
-  const now = input.now ?? nowTimestampMs()
-  const ledger = readRequestLedgerState(input.state, requestLedgerSliceNameForMode(mode))
-  const requestIds: RequestId[] = []
+export const findExpiredRequestLedgerIds = (
+  input: Readonly<{
+    state: StateRoot;
+    mode?: RuntimeInstanceMode;
+    limits: Pick<RuntimeLimits, 'requestRetentionMs' | 'requestMaxResidenceMs'>;
+    now?: number;
+  }>,
+): readonly RequestId[] => {
+  const mode = input.mode ?? selectRuntimeInstanceMode(input.state);
+  const now = input.now ?? nowTimestampMs();
+  const ledger = readRequestLedgerState(input.state, requestLedgerSliceNameForMode(mode));
+  const requestIds: RequestId[] = [];
 
   for (const requestId of Object.keys(ledger ?? {})) {
-    const envelope = readLiveRequestEnvelope(ledger, requestId as RequestId)
-    if (envelope === undefined) continue
-    const age = now - envelope.updatedAt
-    const view = selectRequestExecutionView(input.state, requestId as RequestId)
-    const terminalByMergedView = view !== null && isTerminalStatus(view.status)
-    const expiredByRetention = terminalByMergedView && age > input.limits.requestRetentionMs
-    const expiredByResidence = age > input.limits.requestMaxResidenceMs
-    if (expiredByRetention || expiredByResidence) requestIds.push(requestId as RequestId)
+    const envelope = readLiveRequestEnvelope(ledger, requestId as RequestId);
+    if (envelope === undefined) continue;
+    const age = now - envelope.updatedAt;
+    const view = selectRequestExecutionView(input.state, requestId as RequestId);
+    const terminalByMergedView = view !== null && isTerminalStatus(view.status);
+    const expiredByRetention = terminalByMergedView && age > input.limits.requestRetentionMs;
+    const expiredByResidence = age > input.limits.requestMaxResidenceMs;
+    if (expiredByRetention || expiredByResidence) requestIds.push(requestId as RequestId);
   }
 
-  return Object.freeze(requestIds)
-}
+  return Object.freeze(requestIds);
+};

@@ -1,20 +1,17 @@
 import {useImperativeHandle, useRef} from 'react';
-import {RnrTextInput, type RnrTextInputRef} from '../vendor/slots';
+import {RnrTextInput, type RnrTextInputRef} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
-import type {
-  PrimitiveInputProps,
-  PrimitiveMeasureLayoutCallback,
-  PrimitiveNativeNode,
-} from '../types/types';
+import type {PrimitiveInputProps, PrimitiveMeasureLayoutCallback, PrimitiveNativeNode} from '../types/types';
 
-type MeasurableTextInputRef = RnrTextInputRef & Readonly<{
-  readonly measureLayout?: (
-    relativeToNativeNode: PrimitiveNativeNode,
-    callback: PrimitiveMeasureLayoutCallback,
-    onFail?: () => void,
-  ) => void;
-}>;
+type MeasurableTextInputRef = RnrTextInputRef &
+  Readonly<{
+    readonly measureLayout?: (
+      relativeToNativeNode: PrimitiveNativeNode,
+      callback: PrimitiveMeasureLayoutCallback,
+      onFail?: () => void,
+    ) => void;
+  }>;
 
 export const PrimitiveInput = ({
   testID,
@@ -84,7 +81,11 @@ export const PrimitiveInput = ({
       selection={selection === undefined ? undefined : {start: selection.start, end: selection.end ?? selection.start}}
       secureTextEntry={secureTextEntry}
       value={value}
-      className={appearance === 'admin' ? 'min-h-11 rounded-xl border border-admin-content-border bg-admin-inset px-3 text-sm text-admin-content-foreground' : baseTokens.input}
+      className={
+        appearance === 'admin'
+          ? 'min-h-11 rounded-xl border border-admin-content-border bg-admin-inset px-3 text-sm text-admin-content-foreground'
+          : baseTokens.input
+      }
     />
   );
 };

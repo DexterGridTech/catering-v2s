@@ -1,6 +1,6 @@
 import {forwardRef, useImperativeHandle, useRef} from 'react';
 import type {NativeScrollEvent, NativeSyntheticEvent} from 'react-native';
-import {RnrScrollView, type RnrScrollViewRef} from '../vendor/slots';
+import {RnrScrollView, type RnrScrollViewRef} from '../foundations/nativeSlots';
 import {baseLayout, baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import type {
@@ -11,14 +11,15 @@ import type {
   PrimitiveScrollViewProps,
 } from '../types/types';
 
-type ScrollViewWithNativeNodes = RnrScrollViewRef & Readonly<{
-  readonly getInnerViewRef?: () => PrimitiveNativeNode | null | undefined;
-  readonly measureLayout?: (
-    relativeToNativeNode: PrimitiveNativeNode,
-    callback: PrimitiveMeasureLayoutCallback,
-    onFail?: () => void,
-  ) => void;
-}>;
+type ScrollViewWithNativeNodes = RnrScrollViewRef &
+  Readonly<{
+    readonly getInnerViewRef?: () => PrimitiveNativeNode | null | undefined;
+    readonly measureLayout?: (
+      relativeToNativeNode: PrimitiveNativeNode,
+      callback: PrimitiveMeasureLayoutCallback,
+      onFail?: () => void,
+    ) => void;
+  }>;
 
 const scrollVelocityYOf = (event: NativeSyntheticEvent<NativeScrollEvent>): number | null => {
   const velocityY = event.nativeEvent.velocity?.y;
@@ -26,7 +27,20 @@ const scrollVelocityYOf = (event: NativeSyntheticEvent<NativeScrollEvent>): numb
 };
 
 export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, PrimitiveScrollViewProps>(
-  ({testID, children, layout = 'fill', contentPaddingBottom, onContentHeightChange, onLayout, onScrollOffsetChange, onScrollEndDrag, onMomentumScrollEnd}, ref) => {
+  (
+    {
+      testID,
+      children,
+      layout = 'fill',
+      contentPaddingBottom,
+      onContentHeightChange,
+      onLayout,
+      onScrollOffsetChange,
+      onScrollEndDrag,
+      onMomentumScrollEnd,
+    },
+    ref,
+  ) => {
     const nativeScrollViewRef = useRef<RnrScrollViewRef>(null);
     useImperativeHandle(
       ref,
@@ -60,17 +74,15 @@ export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, Primiti
       <RnrScrollView
         ref={nativeScrollViewRef}
         testID={assertTestID(testID)}
-        className={layout === 'transparent'
-          ? baseTokens.scrollTransparent
-          : baseTokens.scroll}
-        contentContainerStyle={contentPaddingBottom === undefined
-          ? {gap: baseLayout.scrollContentGap}
-          : {gap: baseLayout.scrollContentGap, paddingBottom: contentPaddingBottom}}
+        className={layout === 'transparent' ? baseTokens.scrollTransparent : baseTokens.scroll}
+        contentContainerStyle={
+          contentPaddingBottom === undefined
+            ? {gap: baseLayout.scrollContentGap}
+            : {gap: baseLayout.scrollContentGap, paddingBottom: contentPaddingBottom}
+        }
         onLayout={onLayout}
         onContentSizeChange={
-          onContentHeightChange === undefined
-            ? undefined
-            : (_width, height) => onContentHeightChange(height)
+          onContentHeightChange === undefined ? undefined : (_width, height) => onContentHeightChange(height)
         }
         onScroll={
           onScrollOffsetChange === undefined
@@ -80,10 +92,8 @@ export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, Primiti
         onScrollEndDrag={
           onScrollEndDrag === undefined
             ? undefined
-            : (event: NativeSyntheticEvent<NativeScrollEvent>) => onScrollEndDrag(
-              event.nativeEvent.contentOffset.y,
-              scrollVelocityYOf(event),
-            )
+            : (event: NativeSyntheticEvent<NativeScrollEvent>) =>
+                onScrollEndDrag(event.nativeEvent.contentOffset.y, scrollVelocityYOf(event))
         }
         onMomentumScrollEnd={
           onMomentumScrollEnd === undefined

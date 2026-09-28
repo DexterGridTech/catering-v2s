@@ -55,6 +55,7 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/store-terminal-l2-p1.test.mjs',
   'scripts/test/standards-enforcement-execution-catalog.test.mjs',
   'scripts/test/standards-enforcement-verify.test.mjs',
+  'scripts/test/ter-persist-kv-prechange-android.test.mjs',
   'scripts/test/ter-virtual-keyboard-android.test.mjs',
   'scripts/test/terminal-ws-wire-client.test.mjs',
 ]);

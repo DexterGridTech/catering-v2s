@@ -5,5 +5,5 @@ export {
   createPruneHydratedContainersActor,
   createPruneHydratedLayersActor,
   createShowScreenActor,
-} from './contentActors'
-export {createClearUiVariablesActor, createSetUiVariablesActor} from './variableActors'
+} from './contentActors';
+export {createClearUiVariablesActor, createSetUiVariablesActor} from './variableActors';

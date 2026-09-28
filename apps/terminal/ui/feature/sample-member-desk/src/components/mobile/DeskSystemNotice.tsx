@@ -1,9 +1,9 @@
-import {SystemFailureNotice} from '@catering-v2s/ui-base-render'
-import {useDeskSystemNotice} from '../../hooks/useDeskSystemNotice'
-import type {DeskSystemNoticeProps} from '../../types/memberNotices'
+import {SystemFailureNotice} from '@catering-v2s/ui-base-render';
+import {useDeskSystemNotice} from '../../hooks/useDeskSystemNotice';
+import type {DeskSystemNoticeProps} from '../../types/memberNotices';
 
 export const DeskSystemNotice = ({operation: _operation}: DeskSystemNoticeProps) => {
-  const notice = useDeskSystemNotice()
+  const notice = useDeskSystemNotice();
   return (
     <SystemFailureNotice
       testIDPrefix="sample.desk.system-notice"
@@ -15,5 +15,5 @@ export const DeskSystemNotice = ({operation: _operation}: DeskSystemNoticeProps)
         dismissButtonStyle: {width: '100%'},
       }}
     />
-  )
-}
+  );
+};

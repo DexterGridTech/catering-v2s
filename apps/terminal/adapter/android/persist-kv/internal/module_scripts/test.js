@@ -82,9 +82,7 @@ try {
   assertSupportedTestConfiguration(manifest);
 } catch (error) {
   if (error instanceof AdapterTestConfigurationError) {
-    console.error(
-      'TERMINAL_PACKAGE_TEST_CONFIGURATION_FAILURE package=' + packageName + ' code=' + error.code,
-    );
+    console.error('TERMINAL_PACKAGE_TEST_CONFIGURATION_FAILURE package=' + packageName + ' code=' + error.code);
     process.exit(1);
   }
   throw error;
@@ -109,12 +107,7 @@ if (testFiles.length === 0) {
   process.exit(0);
 }
 
-if (
-  process.stdout.isTTY
-  && !process.env.CI
-  && !process.env.EXPO_NONINTERACTIVE
-  && !args.includes('--watch')
-) {
+if (process.stdout.isTTY && !process.env.CI && !process.env.EXPO_NONINTERACTIVE && !args.includes('--watch')) {
   args.push('--watch');
 }
 

@@ -1,21 +1,18 @@
-import {
-  defineCommand,
-  type RuntimeModule,
-} from '@catering-v2s/kernel-base-runtime'
+import {defineCommand, type RuntimeModule} from '@catering-v2s/kernel-base-runtime';
 import {
   createStartupReadyActor as createSharedStartupReadyActor,
   type StartupReadyPayload,
-} from '@catering-v2s/ui-base-integration-assembly'
-import {runtimeModuleDependencyNames} from '../dependencies'
-import {createWallpaperConsolePlacementActor} from '../features/actors/actors'
-import {moduleKind, moduleName} from '../moduleName'
+} from '@catering-v2s/ui-base-integration-assembly';
+import {runtimeModuleDependencyNames} from '../dependencies';
+import {createWallpaperConsolePlacementActor} from '../features/actors/actors';
+import {moduleKind, moduleName} from '../moduleName';
 
-export type SampleWallpaperConsoleReadyPayload = StartupReadyPayload
+export type SampleWallpaperConsoleReadyPayload = StartupReadyPayload;
 
 export const startupReadyCommand = defineCommand<SampleWallpaperConsoleReadyPayload>(moduleName, {
   name: 'startup-ready',
   visibility: 'internal',
-})
+});
 
 export const createSampleWallpaperConsoleModule = (): RuntimeModule => {
   const actors = [
@@ -25,7 +22,7 @@ export const createSampleWallpaperConsoleModule = (): RuntimeModule => {
       command: startupReadyCommand,
       message: 'Primary sample2 surface readiness accepted by wallpaper console',
     }),
-  ] as const
+  ] as const;
   return Object.freeze({
     moduleName,
     kind: moduleKind,
@@ -36,5 +33,5 @@ export const createSampleWallpaperConsoleModule = (): RuntimeModule => {
     actorDefinitions: actors,
     slices: [],
     stateSlices: [],
-  })
-}
+  });
+};

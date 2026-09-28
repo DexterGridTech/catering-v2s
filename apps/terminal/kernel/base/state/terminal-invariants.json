@@ -3,11 +3,68 @@
   "package": "@catering-v2s/kernel-base-state",
   "owned": {
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-state", "runner": "vitest"},
-    "lint": {"kind": "ABSENT"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-base-state", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
   "publicExports": [
-    "CreateStateRuntimeInput", "CreateWorkspaceActionDispatcherInput", "PartitionedStateKeys", "PersistIntent", "PersistenceFailure", "PersistenceFailureKind", "PersistenceFlushMode", "PersistenceHealth", "PersistenceHealthListener", "PersistenceOperationFailed", "PersistenceOperationResult", "PersistenceOperationSucceeded", "PersistencePhase", "PersistenceProtection", "PersistenceStorageKind", "StateJsonObject", "StateJsonPrimitive", "StateJsonValue", "StateResetActor", "StateRoot", "StateRuntime", "StateRuntimePersistenceDescriptor", "StateRuntimePersistenceFieldDescriptor", "StateRuntimePersistenceRecordDescriptor", "StateRuntimeSliceDescriptor", "StateRuntimeSliceRegistration", "StateRuntimeSyncDescriptor", "StateRuntimeSyncRecordDescriptor", "StateSyncApplyResult", "StateSyncPayloadResult", "StateSyncSkipReason", "SyncDiffOptions", "SyncIntent", "SyncRecordState", "SyncStateDiff", "SyncStateDiffEntry", "SyncStateSummary", "SyncStateSummaryEntry", "SyncValueEnvelope", "ToWorkspaceStateDescriptorsInput", "WorkspaceKey", "WorkspaceRouteContext", "WorkspaceStateKeys", "applySliceSyncDiff", "createFullSliceSyncPayload", "createPartitionedActionDispatcher", "createPartitionedStateKeys", "createStateRuntime", "createSyncTombstone", "createWorkspaceActionDispatcher", "createWorkspaceStateKeys", "defineStateRuntimeSlice", "dependencyModuleNames", "devDependencyModuleNames", "moduleName", "readPartitionedState", "toPartitionedStateDescriptors", "toWorkspaceStateDescriptors"
+    "CreateStateRuntimeInput",
+    "CreateWorkspaceActionDispatcherInput",
+    "PartitionedStateKeys",
+    "PersistIntent",
+    "PersistenceFailure",
+    "PersistenceFailureKind",
+    "PersistenceFlushMode",
+    "PersistenceHealth",
+    "PersistenceHealthListener",
+    "PersistenceOperationFailed",
+    "PersistenceOperationResult",
+    "PersistenceOperationSucceeded",
+    "PersistencePhase",
+    "PersistenceProtection",
+    "PersistenceStorageKind",
+    "StateJsonObject",
+    "StateJsonPrimitive",
+    "StateJsonValue",
+    "StateResetActor",
+    "StateRoot",
+    "StateRuntime",
+    "StateRuntimePersistenceDescriptor",
+    "StateRuntimePersistenceFieldDescriptor",
+    "StateRuntimePersistenceRecordDescriptor",
+    "StateRuntimeSliceDescriptor",
+    "StateRuntimeSliceRegistration",
+    "StateRuntimeSyncDescriptor",
+    "StateRuntimeSyncRecordDescriptor",
+    "StateSyncApplyResult",
+    "StateSyncPayloadResult",
+    "StateSyncSkipReason",
+    "SyncDiffOptions",
+    "SyncIntent",
+    "SyncRecordState",
+    "SyncStateDiff",
+    "SyncStateDiffEntry",
+    "SyncStateSummary",
+    "SyncStateSummaryEntry",
+    "SyncValueEnvelope",
+    "ToWorkspaceStateDescriptorsInput",
+    "WorkspaceKey",
+    "WorkspaceRouteContext",
+    "WorkspaceStateKeys",
+    "applySliceSyncDiff",
+    "createFullSliceSyncPayload",
+    "createPartitionedActionDispatcher",
+    "createPartitionedStateKeys",
+    "createStateRuntime",
+    "createSyncTombstone",
+    "createWorkspaceActionDispatcher",
+    "createWorkspaceStateKeys",
+    "defineStateRuntimeSlice",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName",
+    "readPartitionedState",
+    "toPartitionedStateDescriptors",
+    "toWorkspaceStateDescriptors"
   ],
   "closedUnionDefinitions": {
     "WorkspaceKey": ["MAIN", "BRANCH"],
@@ -15,14 +72,59 @@
   },
   "closedUnionConsumerCount": 5,
   "closedUnionConsumers": [
-    {"union": "WorkspaceKey", "unionPackage": "@catering-v2s/kernel-base-state", "expectedSymbol": "@catering-v2s/kernel-base-state#WorkspaceKey", "sourceFile": "src/types/workspace.ts", "declarationId": "WorkspaceRouteContext", "member": "workspace"},
-    {"union": "WorkspaceKey", "unionPackage": "@catering-v2s/kernel-base-state", "expectedSymbol": "@catering-v2s/kernel-base-state#WorkspaceKey", "sourceFile": "src/types/workspace.ts", "declarationId": "ToWorkspaceStateDescriptorsInput", "member": "reducers"},
-    {"union": "WorkspaceKey", "unionPackage": "@catering-v2s/kernel-base-state", "expectedSymbol": "@catering-v2s/kernel-base-state#WorkspaceKey", "sourceFile": "src/types/workspace.ts", "declarationId": "ToWorkspaceStateDescriptorsInput", "member": "createDescriptor"},
-    {"union": "PersistIntent", "unionPackage": "@catering-v2s/kernel-base-state", "expectedSymbol": "@catering-v2s/kernel-base-state#PersistIntent", "sourceFile": "src/types/slice.ts", "declarationId": "StateRuntimeSliceRegistration", "member": "persistIntent"},
-    {"union": "PersistIntent", "unionPackage": "@catering-v2s/kernel-base-state", "expectedSymbol": "@catering-v2s/kernel-base-state#PersistIntent", "sourceFile": "src/types/slice.ts", "declarationId": "RegisteredStateRuntimeSlice", "member": "persistIntent"}
+    {
+      "union": "WorkspaceKey",
+      "unionPackage": "@catering-v2s/kernel-base-state",
+      "expectedSymbol": "@catering-v2s/kernel-base-state#WorkspaceKey",
+      "sourceFile": "src/types/workspace.ts",
+      "declarationId": "WorkspaceRouteContext",
+      "member": "workspace"
+    },
+    {
+      "union": "WorkspaceKey",
+      "unionPackage": "@catering-v2s/kernel-base-state",
+      "expectedSymbol": "@catering-v2s/kernel-base-state#WorkspaceKey",
+      "sourceFile": "src/types/workspace.ts",
+      "declarationId": "ToWorkspaceStateDescriptorsInput",
+      "member": "reducers"
+    },
+    {
+      "union": "WorkspaceKey",
+      "unionPackage": "@catering-v2s/kernel-base-state",
+      "expectedSymbol": "@catering-v2s/kernel-base-state#WorkspaceKey",
+      "sourceFile": "src/types/workspace.ts",
+      "declarationId": "ToWorkspaceStateDescriptorsInput",
+      "member": "createDescriptor"
+    },
+    {
+      "union": "PersistIntent",
+      "unionPackage": "@catering-v2s/kernel-base-state",
+      "expectedSymbol": "@catering-v2s/kernel-base-state#PersistIntent",
+      "sourceFile": "src/types/slice.ts",
+      "declarationId": "StateRuntimeSliceRegistration",
+      "member": "persistIntent"
+    },
+    {
+      "union": "PersistIntent",
+      "unionPackage": "@catering-v2s/kernel-base-state",
+      "expectedSymbol": "@catering-v2s/kernel-base-state#PersistIntent",
+      "sourceFile": "src/types/slice.ts",
+      "declarationId": "RegisteredStateRuntimeSlice",
+      "member": "persistIntent"
+    }
   ],
   "tr01Exceptions": [
-    {"sourceFile": "src/foundations/createStateRuntime.ts", "declarationId": "createStateRuntime", "dispatchExpression": "store.dispatch", "reasonCategory": "state-runtime-store-owner"},
-    {"sourceFile": "src/foundations/createStateRuntime.ts", "declarationId": "createStateRuntime", "dispatchExpression": "store.dispatch", "reasonCategory": "state-runtime-sync-owner"}
+    {
+      "sourceFile": "src/foundations/createStateRuntime.ts",
+      "declarationId": "createStateRuntime",
+      "dispatchExpression": "store.dispatch",
+      "reasonCategory": "state-runtime-store-owner"
+    },
+    {
+      "sourceFile": "src/foundations/createStateRuntime.ts",
+      "declarationId": "createStateRuntime",
+      "dispatchExpression": "store.dispatch",
+      "reasonCategory": "state-runtime-sync-owner"
+    }
   ]
 }

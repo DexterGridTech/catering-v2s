@@ -832,7 +832,16 @@ class BackendAcceptanceTest {
     Stream<DynamicTest> terminalConnectionDatabaseOutageContracts() {
         String selectedOperation =
                 System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
-        if (!"all".equals(selectedOperation)) return Stream.empty();
+        boolean v12Diagnostic = "true".equals(System.getenv("V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC"));
+        if (v12Diagnostic && !"storeTerminalActivationBusinessPrecedence".equals(selectedOperation)) {
+            throw new IllegalStateException("BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC_OPERATION_MISMATCH");
+        }
+        if (!"all".equals(selectedOperation) && !v12Diagnostic) return Stream.empty();
+        if (v12Diagnostic) {
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT_SELECTION operation=%s diagnostic=V-S12-30s%n", selectedOperation);
+            return TerminalConnectionContractScenarios.v12DatabaseOutage30SecondDiagnostic(this, tdsAcceptanceProcess);
+        }
         return TerminalConnectionContractScenarios.v12DatabaseOutageScenarios(this, tdsAcceptanceProcess);
     }
 

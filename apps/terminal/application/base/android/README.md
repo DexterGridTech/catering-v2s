@@ -32,4 +32,16 @@ no-op capability 兜底。
 入口。不要在此加入 feature、integration、runtime state 或第二条 loading bridge；
 修改后必须跑对应 static/focused/native proof。
 
+Android 启动时由 `TerminalExpoSplashScreen.prepareActivity` 在共享包内统一设置
+`SplashScreenManager.preventAutoHideCalled`，再注册 Activity；两个 App
+不得重复直接访问该未文档成员。当前只保留这一处访问，升级 `expo-splash-screen` 时必须复核。
+
+Expo 启动画面只在 `NativeLoadingCapability.hideOnce` 已释放 Activity-owned gate 后由公开的
+`SplashScreen.hide()` 释放；Activity 初始化阶段不得提前调用 `SplashScreenManager.hide()`。
+
+`TerminalNativeLoadingRegistry` 在 Android Application 进程范围持有 Activity lifecycle callbacks。
+Expo module 的 `OnCreate` 只排队注册；JS module reload / `OnDestroy` 不得注销这组 Application
+callbacks。每个 Activity 销毁时只清理该 Activity 自己的 gate。Expo `AsyncFunction` 与 lifecycle
+callback 不得在 JS 线程同步等待主线程任务。
+
 Android 的 Tailwind shared color mapping 包含全部 `keyboard-*` 语义名；两个 Android App 继续从各自 integration 的 `global.css` 读取 RGB，base config 不保存应用颜色。

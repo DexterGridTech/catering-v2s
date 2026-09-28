@@ -1,16 +1,26 @@
-import {useEffect, useMemo} from 'react'
-import {StyleSheet, View} from 'react-native'
-import {selectScreen, type ScreenPlacement} from '@catering-v2s/kernel-base-ui-state'
-import {useRenderContext} from '../contexts/RenderContext'
-import {useSurfaceContext} from '../contexts/SurfaceContext'
-import {RenderFallback, resolvePartWithStatus} from './resolvePart'
-import {useRenderStatus} from '../hooks/useRenderStatus'
-import {useUiCatalogContext} from '../hooks/useUiCatalogContext'
-import {useUiStateSelector} from '../hooks/useUiStateSelector'
-import {ScreenReadyBoundary, StartupFailurePage} from './ScreenReadyBoundary'
-import type {RenderFailure} from '../types/props'
+import {useEffect, useMemo} from 'react';
+import {StyleSheet, View} from 'react-native';
+import {selectScreen, type ScreenPlacement} from '@catering-v2s/kernel-base-ui-state';
+import {useRenderContext} from '../contexts/RenderContext';
+import {useSurfaceContext} from '../contexts/SurfaceContext';
+import {ContainerDiagnosticEffect, RenderFallback, resolvePartWithStatus} from './resolvePart';
+import {useRenderStatus} from '../hooks/useRenderStatus';
+import {useUiCatalogContext} from '../hooks/useUiCatalogContext';
+import {useUiStateSelector} from '../hooks/useUiStateSelector';
+import {ScreenReadyBoundary, StartupFailurePage} from './ScreenReadyBoundary';
+import type {RenderFailure} from '../types/props';
+import {SystemFailureBoundary, SystemFailureNoticeWithReset} from './SystemFailureBoundary';
 
-const SCREEN_CONTAINER_TEST_ID = 'ui-base-render:screen-container'
+const SCREEN_CONTAINER_TEST_ID = 'ui-base-render:screen-container';
+
+const ScreenRenderErrorFallback = ({
+  ownerId,
+  partKey,
+}: Readonly<{readonly ownerId: string; readonly partKey: string}>) => (
+  <ScreenReadyBoundary partKey={partKey} contentFailure="render-error">
+    <SystemFailureNoticeWithReset ownerId={ownerId} />
+  </ScreenReadyBoundary>
+);
 
 export const ScreenContainer = () => {
   const {
@@ -20,7 +30,7 @@ export const ScreenContainer = () => {
     surfaceHostAvailability,
     surfaceIdentity,
     defaultContainerPartKeys,
-  } = useSurfaceContext()
+  } = useSurfaceContext();
   const {
     logger,
     nativeLoadingCapability,
@@ -29,21 +39,24 @@ export const ScreenContainer = () => {
     rendererCatalog,
     reportPartDiagnostic,
     clearPartDiagnostic,
-  } = useRenderContext()
-  const runtimeStatus = useRenderStatus()
-  const catalogContext = useUiCatalogContext(displayMode)
-  const defaultPartKey = defaultContainerPartKeys?.[containerKey]
+  } = useRenderContext();
+  const runtimeStatus = useRenderStatus();
+  const catalogContext = useUiCatalogContext(displayMode);
+  const defaultPartKey = defaultContainerPartKeys?.[containerKey];
   const defaultPlacement = useMemo<ScreenPlacement | undefined>(
-    () => defaultPartKey === undefined ? undefined : {partKey: defaultPartKey},
+    () => (defaultPartKey === undefined ? undefined : {partKey: defaultPartKey}),
     [defaultPartKey],
-  )
-  const placementSelector = useMemo(() => (root: Parameters<typeof selectScreen>[0]) => {
-    const persistedPlacement = selectScreen(root, displayMode, containerKey)
-    return persistedPlacement ?? defaultPlacement
-  }, [containerKey, defaultPlacement, displayMode])
-  const placement = useUiStateSelector(placementSelector)
+  );
+  const placementSelector = useMemo(
+    () => (root: Parameters<typeof selectScreen>[0]) => {
+      const persistedPlacement = selectScreen(root, displayMode, containerKey);
+      return persistedPlacement ?? defaultPlacement;
+    },
+    [containerKey, defaultPlacement, displayMode],
+  );
+  const placement = useUiStateSelector(placementSelector);
   useEffect(() => {
-    if (!__DEV__) return
+    if (!__DEV__) return;
     logger.info({
       category: 'display-diagnostics',
       event: 'render.screen-selection',
@@ -57,52 +70,47 @@ export const ScreenContainer = () => {
         screenInstanceId: placement?.instanceId ?? null,
         fallback: placement === undefined ? 'container-empty' : null,
       },
-    })
-  }, [containerKey, displayMode, logger, placement, runtimeStatus])
-  const isTargetPrimarySurface = surfaceIdentity?.surfaceKey === nativeLoadingCapability.targetPhysicalSurface.surfaceKey
-    && surfaceIdentity.displayIndex === nativeLoadingCapability.targetPhysicalSurface.displayIndex
-    && (isHostPrimaryDisplay || surfaceHostAvailability === 'unavailable')
-  const failureStage = hasPrimarySurfaceReady ? 'runtime' as const : 'startup' as const
+    });
+  }, [containerKey, displayMode, logger, placement, runtimeStatus]);
+  const isTargetPrimarySurface =
+    surfaceIdentity?.surfaceKey === nativeLoadingCapability.targetPhysicalSurface.surfaceKey &&
+    surfaceIdentity.displayIndex === nativeLoadingCapability.targetPhysicalSurface.displayIndex &&
+    (isHostPrimaryDisplay || surfaceHostAvailability === 'unavailable');
+  const failureStage = hasPrimarySurfaceReady ? ('runtime' as const) : ('startup' as const);
 
   if (surfaceHostAvailability === 'unavailable') {
-    const failure: RenderFailure = {category: 'system', reason: 'surface-host-unavailable'}
+    const failure: RenderFailure = {category: 'system', reason: 'surface-host-unavailable'};
     return (
       <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
         {isTargetPrimarySurface ? (
-          <StartupFailurePage
-            reason={failure.reason}
-            failureStage={failureStage}
-            fallbackReason={failure.reason}
-          />
-        ) : <RenderFallback failure={failure} />}
+          <StartupFailurePage reason={failure.reason} failureStage={failureStage} fallbackReason={failure.reason} />
+        ) : (
+          <RenderFallback failure={failure} />
+        )}
       </View>
-    )
+    );
   }
   if (runtimeStatus !== 'started') {
     if (runtimeStatus === 'failed') {
-      const failure: RenderFailure = {category: 'system', reason: 'runtime-start-failed'}
+      const failure: RenderFailure = {category: 'system', reason: 'runtime-start-failed'};
       return (
         <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
           <RenderFallback failure={failure} />
           {isTargetPrimarySurface ? (
-            <StartupFailurePage
-              reason={failure.reason}
-              failureStage={failureStage}
-              fallbackReason={failure.reason}
-            />
+            <StartupFailurePage reason={failure.reason} failureStage={failureStage} fallbackReason={failure.reason} />
           ) : null}
         </View>
-      )
+      );
     }
-    const failure: RenderFailure = {category: 'transition', reason: 'runtime-not-started'}
+    const failure: RenderFailure = {category: 'transition', reason: 'runtime-not-started'};
     return (
       <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
         <RenderFallback failure={failure} />
       </View>
-    )
+    );
   }
   if (catalogContext === undefined) {
-    throw new Error('[ui-base-render] catalog context is required when runtime root is available')
+    throw new Error('[ui-base-render] catalog context is required when runtime root is available');
   }
   if (placement === undefined) {
     const failure: RenderFailure = {
@@ -111,8 +119,8 @@ export const ScreenContainer = () => {
       partKey: null,
       containerKey,
       surfaceForm: catalogContext.surfaceForm,
-    }
-    reportPartDiagnostic({
+    };
+    const diagnostic = {
       event: 'container-empty',
       data: {
         category: 'content',
@@ -122,18 +130,15 @@ export const ScreenContainer = () => {
         containerKey,
         surfaceForm: catalogContext.surfaceForm,
       },
-    })
+    } as const;
     return (
       <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
-        <ScreenReadyBoundary
-          key={`${containerKey}:container-empty`}
-          partKey={null}
-          contentFailure={failure.reason}
-        >
+        <ContainerDiagnosticEffect diagnostic={diagnostic} report={reportPartDiagnostic} />
+        <ScreenReadyBoundary key={`${containerKey}:container-empty`} partKey={null} contentFailure={failure.reason}>
           <RenderFallback failure={failure} />
         </ScreenReadyBoundary>
       </View>
-    )
+    );
   }
 
   const resolution = resolvePartWithStatus({
@@ -146,18 +151,28 @@ export const ScreenContainer = () => {
     reportPartDiagnostic,
     clearPartDiagnostic,
     elementKey: placement.instanceId ?? placement.partKey,
-  })
+  });
 
   return (
     <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
       {resolution.kind === 'resolved' ? (
-        <ScreenReadyBoundary
-          key={placement.instanceId ?? placement.partKey}
-          partKey={placement.partKey}
-          contentFailure={null}
+        <SystemFailureBoundary
+          ownerId={`screen:${containerKey}:${placement.instanceId ?? placement.partKey}`}
+          fallback={
+            <ScreenRenderErrorFallback
+              ownerId={`screen:${containerKey}:${placement.instanceId ?? placement.partKey}`}
+              partKey={placement.partKey}
+            />
+          }
         >
-          {resolution.node}
-        </ScreenReadyBoundary>
+          <ScreenReadyBoundary
+            key={placement.instanceId ?? placement.partKey}
+            partKey={placement.partKey}
+            contentFailure={null}
+          >
+            {resolution.node}
+          </ScreenReadyBoundary>
+        </SystemFailureBoundary>
       ) : resolution.failure.category === 'content' ? (
         <ScreenReadyBoundary
           key={placement.instanceId ?? placement.partKey}
@@ -175,13 +190,15 @@ export const ScreenContainer = () => {
             fallbackReason={resolution.failure.reason}
           />
         </>
-      ) : resolution.node}
+      ) : (
+        resolution.node
+      )}
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-})
+});

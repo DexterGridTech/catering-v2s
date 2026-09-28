@@ -1,5 +1,4 @@
-const clamp = (value: number, minimum: number, maximum: number): number =>
-  Math.min(maximum, Math.max(minimum, value));
+const clamp = (value: number, minimum: number, maximum: number): number => Math.min(maximum, Math.max(minimum, value));
 
 export type KeyboardHandoffFrameInput = Readonly<{
   readonly progress: number;
@@ -42,28 +41,16 @@ export const handoffFrameAt = ({
 }: KeyboardHandoffFrameInput): KeyboardHandoffFrame => {
   const progress = clamp(rawProgress, 0, 1);
   const firstPhase = progress <= 0.5;
-  const phaseProgress = firstPhase
-    ? progress * 2
-    : (progress - 0.5) * 2;
-  const outgoingVisibleHeight = firstPhase
-    ? outgoingHeight
-    : outgoingHeight * (1 - phaseProgress);
-  const incomingVisibleHeight = firstPhase
-    ? incomingHeight * phaseProgress
-    : incomingHeight;
+  const phaseProgress = firstPhase ? progress * 2 : (progress - 0.5) * 2;
+  const outgoingVisibleHeight = firstPhase ? outgoingHeight : outgoingHeight * (1 - phaseProgress);
+  const incomingVisibleHeight = firstPhase ? incomingHeight * phaseProgress : incomingHeight;
   const obstructionHeight = Math.max(outgoingVisibleHeight, incomingVisibleHeight);
   const deltaHeight = incomingHeight - outgoingHeight;
-  const offset = Math.abs(deltaHeight) > tolerance
-    ? outgoingOffset + (incomingOffset - outgoingOffset) * clamp(
-      (obstructionHeight - outgoingHeight) / deltaHeight,
-      0,
-      1,
-    )
-    : clamp(
-      outgoingOffset + (incomingOffset - outgoingOffset) * progress,
-      -obstructionHeight,
-      0,
-    );
+  const offset =
+    Math.abs(deltaHeight) > tolerance
+      ? outgoingOffset +
+        (incomingOffset - outgoingOffset) * clamp((obstructionHeight - outgoingHeight) / deltaHeight, 0, 1)
+      : clamp(outgoingOffset + (incomingOffset - outgoingOffset) * progress, -obstructionHeight, 0);
 
   return {
     outgoingVisibleHeight,
@@ -80,9 +67,7 @@ export const handoffFrameAt = ({
  * extra points are the obstruction-height plateau boundaries and, in the
  * near-equal branch, the point where offset reaches the per-frame K clamp.
  */
-export const handoffTrackOf = (
-  input: Omit<KeyboardHandoffFrameInput, 'progress'>,
-): KeyboardHandoffTrack => {
+export const handoffTrackOf = (input: Omit<KeyboardHandoffFrameInput, 'progress'>): KeyboardHandoffTrack => {
   const points = [0, 0.5, 1];
   if (input.incomingHeight > input.outgoingHeight && input.incomingHeight > 0) {
     points.push(input.outgoingHeight / (2 * input.incomingHeight));
@@ -99,12 +84,12 @@ export const handoffTrackOf = (
       const end = uniquePoints[index]!;
       const startFrame = handoffFrameAt({...input, progress: start});
       const endFrame = handoffFrameAt({...input, progress: end});
-      const startGap = input.outgoingOffset + (input.incomingOffset - input.outgoingOffset) * start
-        + startFrame.obstructionHeight;
-      const endGap = input.outgoingOffset + (input.incomingOffset - input.outgoingOffset) * end
-        + endFrame.obstructionHeight;
+      const startGap =
+        input.outgoingOffset + (input.incomingOffset - input.outgoingOffset) * start + startFrame.obstructionHeight;
+      const endGap =
+        input.outgoingOffset + (input.incomingOffset - input.outgoingOffset) * end + endFrame.obstructionHeight;
       if ((startGap < 0 && endGap > 0) || (startGap > 0 && endGap < 0)) {
-        clampCrossings.push(start + (end - start) * startGap / (startGap - endGap));
+        clampCrossings.push(start + ((end - start) * startGap) / (startGap - endGap));
       }
     }
     points.push(...clampCrossings);

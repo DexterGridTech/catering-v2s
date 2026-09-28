@@ -1,11 +1,10 @@
-import {SystemFailureNotice} from '@catering-v2s/ui-base-render'
-import type {WallpaperSystemNoticeProps} from '../../types/wallpaperSystemNotice'
-import {useWallpaperSystemNotice} from '../../hooks/useWallpaperSystemNotice'
-import {wallpaperSystemMessage} from '../../foundations/wallpaperSystemCopy'
-
+import {SystemFailureNotice} from '@catering-v2s/ui-base-render';
+import type {WallpaperSystemNoticeProps} from '../../types/wallpaperSystemNotice';
+import {useWallpaperSystemNotice} from '../../hooks/useWallpaperSystemNotice';
+import {wallpaperSystemMessage} from '../../foundations/wallpaperSystemCopy';
 
 export const WallpaperSystemNotice = ({operation, phase}: WallpaperSystemNoticeProps) => {
-  const notice = useWallpaperSystemNotice()
+  const notice = useWallpaperSystemNotice();
   return (
     <SystemFailureNotice
       testIDPrefix="sample.wallpaper.system-notice"
@@ -18,5 +17,5 @@ export const WallpaperSystemNotice = ({operation, phase}: WallpaperSystemNoticeP
         dismissButtonStyle: {width: '100%'},
       }}
     />
-  )
-}
+  );
+};

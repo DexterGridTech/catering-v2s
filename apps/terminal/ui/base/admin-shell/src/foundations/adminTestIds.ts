@@ -3,7 +3,7 @@ const sectionTestIds = Object.freeze({
   runtime: 'terminal.admin:section:runtime',
   topology: 'terminal.admin:section:topology',
   sampleConsole: 'terminal.admin:section:sample-console',
-})
+});
 
 const portsTestIds = Object.freeze({
   section: sectionTestIds.platformPorts,
@@ -16,9 +16,11 @@ const portsTestIds = Object.freeze({
     ratioBar: 'terminal.admin:ports:summary:ratio-bar',
     grid: 'terminal.admin:ports:summary-grid',
   }),
-  category: (category: string, field: 'row' | 'status' | 'count' | 'expand' | 'empty') => `terminal.admin:ports:category:${category}:${field}`,
-  item: (unitKey: string, field: 'name' | 'status' | 'reason' | 'source') => `terminal.admin:ports:item:${unitKey}:${field}`,
-})
+  category: (category: string, field: 'row' | 'status' | 'count' | 'expand' | 'empty') =>
+    `terminal.admin:ports:category:${category}:${field}`,
+  item: (unitKey: string, field: 'name' | 'status' | 'reason' | 'source') =>
+    `terminal.admin:ports:item:${unitKey}:${field}`,
+});
 
 const runtimeTestIds = Object.freeze({
   section: sectionTestIds.runtime,
@@ -26,11 +28,14 @@ const runtimeTestIds = Object.freeze({
   overallStatus: 'terminal.admin:runtime:overall-status',
   physicalDisplayCount: 'terminal.admin:runtime:physical-display-count',
   surfaceMap: 'terminal.admin:runtime:surface-map',
-  surface: (surfaceKey: string, field: 'shape' | 'aspect-ratio' | 'role' | 'current' | 'logical-size' | 'physical-size' | 'ready-state') => `terminal.admin:runtime:surface:${surfaceKey}:${field}`,
+  surface: (
+    surfaceKey: string,
+    field: 'shape' | 'aspect-ratio' | 'role' | 'current' | 'logical-size' | 'physical-size' | 'ready-state',
+  ) => `terminal.admin:runtime:surface:${surfaceKey}:${field}`,
   legend: 'terminal.admin:runtime:surface:legend',
   mobileSingleSurfaceBoundary: 'terminal.admin:runtime:mobile:single-surface-boundary',
   displayFactsError: 'terminal.admin:runtime:display-facts-error',
-})
+});
 
 const topologyTestIds = Object.freeze({
   section: sectionTestIds.topology,
@@ -77,7 +82,7 @@ const topologyTestIds = Object.freeze({
     confirm: 'terminal.admin:power-confirmation:confirm',
     cancel: 'terminal.admin:power-confirmation:cancel',
   }),
-})
+});
 
 export const adminTestIds = Object.freeze({
   launcher: 'terminal.admin:launcher',
@@ -105,10 +110,10 @@ export const adminTestIds = Object.freeze({
   runtime: runtimeTestIds,
   topology: topologyTestIds,
   section: (partKey: string): string => {
-    if (partKey === 'admin.console.platform-ports') return sectionTestIds.platformPorts
-    if (partKey === 'admin.console.runtime') return sectionTestIds.runtime
-    if (partKey === 'admin.console.topology') return sectionTestIds.topology
-    if (partKey === 'sample.console.admin-test') return sectionTestIds.sampleConsole
-    return `terminal.admin:section:${partKey}`
+    if (partKey === 'admin.console.platform-ports') return sectionTestIds.platformPorts;
+    if (partKey === 'admin.console.runtime') return sectionTestIds.runtime;
+    if (partKey === 'admin.console.topology') return sectionTestIds.topology;
+    if (partKey === 'sample.console.admin-test') return sectionTestIds.sampleConsole;
+    return `terminal.admin:section:${partKey}`;
   },
-})
+});

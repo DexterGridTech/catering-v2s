@@ -1,12 +1,5 @@
-import type {
-  ErrorCategory,
-  ErrorDefinition,
-  ErrorSeverity,
-} from '../types/error';
-import type {
-  ParameterDefinition,
-  ParameterValueType,
-} from '../types/parameter';
+import type {ErrorCategory, ErrorDefinition, ErrorSeverity} from '../types/error';
+import type {ParameterDefinition, ParameterValueType} from '../types/parameter';
 
 export interface DefineErrorInput {
   readonly name: string;
@@ -34,25 +27,26 @@ export interface ModuleParameterFactory {
 
 const createDefinitionKey = (moduleName: string, localKey: string): string => `${moduleName}.${localKey}`;
 
-export const createModuleErrorFactory = (moduleName: string): ModuleErrorFactory => (
-  localKey,
-  input,
-) => ({
-  key: createDefinitionKey(moduleName, localKey),
-  name: input.name,
-  defaultTemplate: input.defaultTemplate,
-  category: input.category,
-  severity: input.severity,
-  code: input.code,
-  moduleName,
-});
+export const createModuleErrorFactory =
+  (moduleName: string): ModuleErrorFactory =>
+  (localKey, input) => ({
+    key: createDefinitionKey(moduleName, localKey),
+    name: input.name,
+    defaultTemplate: input.defaultTemplate,
+    category: input.category,
+    severity: input.severity,
+    code: input.code,
+    moduleName,
+  });
 
-const createParameterDefinition = <TValue>(input: Readonly<{
-  moduleName: string;
-  localKey: string;
-  valueType: ParameterValueType;
-  input: DefineParameterInput<TValue>;
-}>): ParameterDefinition<TValue> => ({
+const createParameterDefinition = <TValue>(
+  input: Readonly<{
+    moduleName: string;
+    localKey: string;
+    valueType: ParameterValueType;
+    input: DefineParameterInput<TValue>;
+  }>,
+): ParameterDefinition<TValue> => ({
   key: createDefinitionKey(input.moduleName, input.localKey),
   name: input.input.name,
   defaultValue: input.input.defaultValue,

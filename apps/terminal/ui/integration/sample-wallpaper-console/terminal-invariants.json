@@ -2,8 +2,12 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/ui-integration-sample-wallpaper-console",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-integration-sample-wallpaper-console", "runner": "vitest"},
-    "lint": {"kind": "ABSENT"},
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/ui-integration-sample-wallpaper-console",
+      "runner": "vitest"
+    },
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-integration-sample-wallpaper-console", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
   "ownerKind": "owner",

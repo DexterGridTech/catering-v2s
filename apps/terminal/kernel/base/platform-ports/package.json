@@ -6,8 +6,9 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "lint": "node ../../../../../tools/terminal-shared/run-owned-lint.mjs",
     "typecheck": "tsc --project tsconfig.json --noEmit",
-    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs --dev-matrix"
   },
   "dependencies": {
     "@catering-v2s/kernel-base-contracts": "workspace:*"

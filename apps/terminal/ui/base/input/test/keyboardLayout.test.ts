@@ -10,14 +10,15 @@ describe('virtual keyboard visual row alignment', () => {
       ['shift', 'text-a', 'text-s', 'text-d', 'text-f', 'text-g', 'text-h', 'text-j', 'text-k', 'text-l'],
       ['space', 'text-z', 'text-x', 'text-c', 'text-v', 'text-b', 'text-n', 'text-m', 'backspace', 'complete'],
     ]);
-    expect(getKeyboardLayout('full').rows[0]?.keys.map(key => key.kind === 'text' ? key.shiftedText : undefined)).toEqual([
-      ':', '/', '.', '?', '&', '=', '-', '_', '%', '+',
-    ]);
+    expect(
+      getKeyboardLayout('full').rows[0]?.keys.map(key => (key.kind === 'text' ? key.shiftedText : undefined)),
+    ).toEqual([':', '/', '.', '?', '&', '=', '-', '_', '%', '+']);
     expect(getKeyboardLayout('alpha').rows.map(row => row.align)).toEqual(['start', 'start', 'start']);
     expect(getKeyboardLayout('alpha').rows.map(row => row.region)).toEqual(['letters', 'actions', 'actions']);
-    expect(getKeyboardLayout('alpha').rows[1]?.keys.map(key => key.keyId)).toEqual(
-      ['shift', ...Array.from('asdfghjkl', character => `text-${character}`)],
-    );
+    expect(getKeyboardLayout('alpha').rows[1]?.keys.map(key => key.keyId)).toEqual([
+      'shift',
+      ...Array.from('asdfghjkl', character => `text-${character}`),
+    ]);
     expect(
       getKeyboardLayout('alpha')
         .rows.at(-1)

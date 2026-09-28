@@ -1,14 +1,14 @@
-import {createSlice, type PayloadAction} from '@reduxjs/toolkit'
-import {defineStateRuntimeSlice} from '@catering-v2s/kernel-base-state'
-import {moduleName} from '../../moduleName'
-import type {SessionState} from '../../types/types'
+import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
+import {defineStateRuntimeSlice} from '@catering-v2s/kernel-base-state';
+import {moduleName} from '../../moduleName';
+import type {SessionState} from '../../types/types';
 
-export const sessionSliceName = `${moduleName}.session` as const
+export const sessionSliceName = `${moduleName}.session` as const;
 
 const initialState: SessionState = {
   status: 'anonymous',
   operatorName: null,
-}
+};
 
 const sessionSlice = createSlice({
   name: sessionSliceName,
@@ -23,7 +23,7 @@ const sessionSlice = createSlice({
       operatorName: null,
     }),
   },
-})
+});
 
 export const sessionStateRegistration = defineStateRuntimeSlice<SessionState>({
   name: sessionSliceName,
@@ -34,6 +34,6 @@ export const sessionStateRegistration = defineStateRuntimeSlice<SessionState>({
     {kind: 'field', stateKey: 'operatorName'},
   ],
   syncIntent: 'isolated',
-})
+});
 
-export const sessionActions = sessionSlice.actions
+export const sessionActions = sessionSlice.actions;

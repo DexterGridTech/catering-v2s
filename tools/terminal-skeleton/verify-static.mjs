@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 const toolDirectory = path.dirname(fileURLToPath(import.meta.url));
 const testPath = path.join(toolDirectory, 'check-static.test.mjs');
 const checkPath = path.join(toolDirectory, 'check-static.mjs');
+const formatPath = path.join(toolDirectory, '../terminal-shared/run-terminal-format.mjs');
 const contractsTestPath = path.join(toolDirectory, '../terminal-contracts/check-static.test.mjs');
 const contractsCheckPath = path.join(toolDirectory, '../terminal-contracts/check-static.mjs');
 const platformPortsTestPath = path.join(toolDirectory, '../terminal-platform-ports/check-static.test.mjs');
@@ -66,6 +67,7 @@ function run(label, command, args) {
 }
 
 debugLog('verify-static.start', {cwd: path.resolve(toolDirectory, '../..'), pid: process.pid, node: process.version});
+run('ter-format-check', process.execPath, [formatPath, '--check']);
 run('readability-model-test', process.execPath, [readabilityTestPath]);
 run('readability-real-static', process.execPath, [readabilityCheckPath]);
 run('model-test', process.execPath, [testPath]);

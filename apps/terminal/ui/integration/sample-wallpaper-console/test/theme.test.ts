@@ -1,5 +1,6 @@
-import {readFileSync} from 'node:fs'
-import {describe, expect, it} from 'vitest'
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import {describe, expect, it} from 'vitest';
 
 const expectedTokens = Object.freeze({
   canvas: [255, 255, 255],
@@ -31,92 +32,102 @@ const expectedTokens = Object.freeze({
   'keyboard-action-foreground': [248, 250, 252],
   'keyboard-border': [55, 62, 66],
   'keyboard-focus': [225, 29, 72],
-} as const)
+} as const);
+const requireFromTest = createRequire(import.meta.url);
 
 const rgb = (name: string): readonly [number, number, number] => {
-  const source = readFileSync(new URL('../theme/global.css', import.meta.url), 'utf8')
-  const match = source.match(new RegExp(`--color-${name}:\\s*(\\d+)\\s+(\\d+)\\s+(\\d+)`))
-  if (match === null) throw new Error(`missing token ${name}`)
-  return [Number(match[1]), Number(match[2]), Number(match[3])]
-}
+  const source = readFileSync(new URL('../theme/global.css', import.meta.url), 'utf8');
+  const match = source.match(new RegExp(`--color-${name}:\\s*(\\d+)\\s+(\\d+)\\s+(\\d+)`));
+  if (match === null) throw new Error(`missing token ${name}`);
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+};
 
 const luminance = (value: readonly [number, number, number]): number => {
   const channels = value.map(channel => {
-    const normalized = channel / 255
-    return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
-  })
-  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722
-}
+    const normalized = channel / 255;
+    return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+  });
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+};
 
 const hue = (value: readonly [number, number, number]): number => {
-  const channels = value.map(channel => channel / 255)
-  const max = Math.max(...channels)
-  const min = Math.min(...channels)
-  const delta = max - min
-  if (delta === 0) return 0
-  const raw = max === channels[0]
-    ? ((channels[1] - channels[2]) / delta) % 6
-    : max === channels[1]
-      ? (channels[2] - channels[0]) / delta + 2
-      : (channels[0] - channels[1]) / delta + 4
-  return (raw * 60 + 360) % 360
-}
+  const channels = value.map(channel => channel / 255);
+  const max = Math.max(...channels);
+  const min = Math.min(...channels);
+  const delta = max - min;
+  if (delta === 0) return 0;
+  const raw =
+    max === channels[0]
+      ? ((channels[1] - channels[2]) / delta) % 6
+      : max === channels[1]
+        ? (channels[2] - channels[0]) / delta + 2
+        : (channels[0] - channels[1]) / delta + 4;
+  return (raw * 60 + 360) % 360;
+};
 
 const circularHueDistance = (first: number, second: number): number => {
-  const direct = Math.abs(first - second)
-  return Math.min(direct, 360 - direct)
-}
+  const direct = Math.abs(first - second);
+  return Math.min(direct, 360 - direct);
+};
 
-const hslOf = (value: readonly [number, number, number]): Readonly<{
-  readonly hue: number
-  readonly saturation: number
-  readonly lightness: number
+const hslOf = (
+  value: readonly [number, number, number],
+): Readonly<{
+  readonly hue: number;
+  readonly saturation: number;
+  readonly lightness: number;
 }> => {
-  const channels = value.map(channel => channel / 255)
-  const max = Math.max(...channels)
-  const min = Math.min(...channels)
-  const delta = max - min
-  const lightness = (max + min) / 2
-  if (delta === 0) return {hue: 0, saturation: 0, lightness}
-  const saturation = delta / (1 - Math.abs(2 * lightness - 1))
-  return {hue: hue(value), saturation, lightness}
-}
+  const channels = value.map(channel => channel / 255);
+  const max = Math.max(...channels);
+  const min = Math.min(...channels);
+  const delta = max - min;
+  const lightness = (max + min) / 2;
+  if (delta === 0) return {hue: 0, saturation: 0, lightness};
+  const saturation = delta / (1 - Math.abs(2 * lightness - 1));
+  return {hue: hue(value), saturation, lightness};
+};
 
 describe('sample2 red application theme', () => {
   it('declares the semantic tokens and tailwind mappings', () => {
-    const css = readFileSync(new URL('../theme/global.css', import.meta.url), 'utf8')
-    const tailwind = readFileSync(new URL('../tailwind.config.cjs', import.meta.url), 'utf8')
+    const css = readFileSync(new URL('../theme/global.css', import.meta.url), 'utf8');
+    const tailwind = requireFromTest(new URL('../tailwind.config.cjs', import.meta.url).pathname) as {
+      theme: {extend: {colors: Record<string, string>}};
+    };
+    const semanticColors = requireFromTest('@catering-v2s/ui-base-primitives/config/semantic-color-keys') as Record<
+      string,
+      string
+    >;
     for (const [name, value] of Object.entries(expectedTokens)) {
-      expect(rgb(name)).toEqual(value)
-      expect(tailwind.includes(`${name}:`) || tailwind.includes(`'${name}':`)).toBe(true)
-      expect(css).toContain(`--color-${name}:`)
+      expect(rgb(name)).toEqual(value);
+      expect(tailwind.theme.extend.colors[name]).toBe(semanticColors[name]);
+      expect(css).toContain(`--color-${name}:`);
     }
-  })
+  });
 
   it('keeps red action distinct from error while preserving readable action text', () => {
-    const action = rgb('action')
-    const actionForeground = rgb('action-foreground')
-    const error = rgb('error-foreground')
+    const action = rgb('action');
+    const actionForeground = rgb('action-foreground');
+    const error = rgb('error-foreground');
     const contrast = (first: readonly [number, number, number], second: readonly [number, number, number]) => {
-      const firstL = luminance(first)
-      const secondL = luminance(second)
-      return (Math.max(firstL, secondL) + 0.05) / (Math.min(firstL, secondL) + 0.05)
-    }
-    const actionHsl = hslOf(action)
-    const hueDistance = circularHueDistance(actionHsl.hue, hue(error))
-    const luminanceDistance = Math.abs(luminance(action) - luminance(error))
-    expect(contrast(action, actionForeground)).toBeGreaterThanOrEqual(4.5)
-    expect(actionHsl.hue >= 340 || actionHsl.hue <= 20).toBe(true)
-    expect(actionHsl.saturation).toBeGreaterThanOrEqual(0.4)
-    expect(actionHsl.lightness).toBeGreaterThanOrEqual(0.25)
-    expect(actionHsl.lightness).toBeLessThanOrEqual(0.65)
-    expect(hueDistance >= 15 || luminanceDistance >= 0.15).toBe(true)
-    expect(expectedTokens['error-foreground']).toEqual([185, 28, 28])
-  })
+      const firstL = luminance(first);
+      const secondL = luminance(second);
+      return (Math.max(firstL, secondL) + 0.05) / (Math.min(firstL, secondL) + 0.05);
+    };
+    const actionHsl = hslOf(action);
+    const hueDistance = circularHueDistance(actionHsl.hue, hue(error));
+    const luminanceDistance = Math.abs(luminance(action) - luminance(error));
+    expect(contrast(action, actionForeground)).toBeGreaterThanOrEqual(4.5);
+    expect(actionHsl.hue >= 340 || actionHsl.hue <= 20).toBe(true);
+    expect(actionHsl.saturation).toBeGreaterThanOrEqual(0.4);
+    expect(actionHsl.lightness).toBeGreaterThanOrEqual(0.25);
+    expect(actionHsl.lightness).toBeLessThanOrEqual(0.65);
+    expect(hueDistance >= 15 || luminanceDistance >= 0.15).toBe(true);
+    expect(expectedTokens['error-foreground']).toEqual([185, 28, 28]);
+  });
 
   it('uses circular hue distance at the red hue wrap boundary', () => {
-    const nearWrapAction = [220, 20, 30] as const
-    const error = rgb('error-foreground')
-    expect(circularHueDistance(hue(nearWrapAction), hue(error))).toBeLessThan(15)
-  })
-})
+    const nearWrapAction = [220, 20, 30] as const;
+    const error = rgb('error-foreground');
+    expect(circularHueDistance(hue(nearWrapAction), hue(error))).toBeLessThan(15);
+  });
+});

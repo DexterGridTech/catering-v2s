@@ -60,13 +60,14 @@ export const mapLogicalPointToPreviewClientPoint = ({
   readonly scaleY: number;
 }>): SurfacePreviewPoint | null => {
   if (
-    !finite(logicalPoint.x)
-    || !finite(logicalPoint.y)
-    || !finite(previewRect.left)
-    || !finite(previewRect.top)
-    || !finitePositive(scaleX)
-    || !finitePositive(scaleY)
-  ) return null;
+    !finite(logicalPoint.x) ||
+    !finite(logicalPoint.y) ||
+    !finite(previewRect.left) ||
+    !finite(previewRect.top) ||
+    !finitePositive(scaleX) ||
+    !finitePositive(scaleY)
+  )
+    return null;
   return {
     x: previewRect.left + logicalPoint.x * scaleX,
     y: previewRect.top + logicalPoint.y * scaleY,
@@ -85,7 +86,8 @@ export const calculateSurfacePreviewGeometry = ({
     !finitePositive(viewport.height) ||
     !finitePositive(primary.width) ||
     !finitePositive(primary.height)
-  ) return null;
+  )
+    return null;
   if (showSecondary && (!finitePositive(secondary.width) || !finitePositive(secondary.height))) return null;
 
   const stageWidth =
