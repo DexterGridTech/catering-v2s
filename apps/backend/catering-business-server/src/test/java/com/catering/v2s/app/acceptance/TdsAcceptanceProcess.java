@@ -352,6 +352,14 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         Assertions.assertFalse(closed, "TDS_PROCESS_ALREADY_CLOSED");
         Assertions.assertTrue(process.isAlive(), "TDS_PROCESS_NOT_ALIVE_BEFORE_GRACEFUL_STOP");
         Assertions.assertEquals(startTicks, processStartTicks(pid), "TDS_PROCESS_IDENTITY_CHANGED_BEFORE_STOP");
+        rssBeforeStopKiB = readRssKiB(pid);
+        Assertions.assertTrue(rssBeforeStopKiB > 0, "TDS_RSS_UNAVAILABLE_BEFORE_GRACEFUL_STOP");
+        Assertions.assertTrue(
+                rssBeforeStopKiB <= tdsCapacity.rssBudgetMiB() * 1024L, "TDS_RSS_BUDGET_EXCEEDED_BEFORE_GRACEFUL_STOP");
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_TDS_PROCESS stage=PRE_STOP_RESOURCE pid=%d startTicks=%s "
+                        + "rssKiB=%d rssBudgetMiB=%d runId=%s%n",
+                pid, startTicks, rssBeforeStopKiB, tdsCapacity.rssBudgetMiB(), runId);
         process.destroy();
         gracefulStopRequested = true;
         System.out.printf(

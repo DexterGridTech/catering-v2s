@@ -70,6 +70,7 @@ const requestCompletionRecorderPath = path.join(
   'apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/diagnostic/Slf4jSecurityDiagnosticRecorder.java',
 );
 const businessBuildPath = path.join(root, 'apps/backend/catering-business-server/build.gradle.kts');
+const tdsBuildPath = path.join(root, 'apps/backend/terminal-data-server/build.gradle.kts');
 const businessDataConfigurationPath = path.join(
   root,
   'apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/BusinessDataConfiguration.java',
@@ -451,6 +452,91 @@ test('business application dependency declarations exclude the separately launch
   );
 });
 
+test('TDS acceptance launcher classpath includes compiled source-set outputs', () => {
+  const buildSource = readFileSync(tdsBuildPath, 'utf8');
+  const assertSourceSetRuntimeClasspath = source => {
+    assert.match(
+      source,
+      /val testSourceSetRuntimeClasspath = sourceSets\.getByName\("test"\)\.runtimeClasspath/,
+      'TDS_TEST_RUNTIME_SOURCE_SET_OUTPUTS_MISSING',
+    );
+    assert.match(
+      source,
+      /inputs\.files\(configurations\.named\("runtimeClasspath"\), testSourceSetRuntimeClasspath\)/,
+      'TDS_TEST_RUNTIME_CLASSPATH_INPUTS_MISSING',
+    );
+    assert.match(
+      source,
+      /tdsTestRuntimeClasspath=\$\{testSourceSetRuntimeClasspath\.files/,
+      'TDS_TEST_RUNTIME_CLASSPATH_REPORT_OMITS_SOURCE_SET_OUTPUTS',
+    );
+  };
+  assertSourceSetRuntimeClasspath(buildSource);
+
+  const dependencyOnlyMutation = buildSource
+    .replace('sourceSets.getByName("test").runtimeClasspath', 'configurations.getByName("testRuntimeClasspath")')
+    .replace('testSourceSetRuntimeClasspath.files', 'testRuntimeClasspath.files');
+  assert.notEqual(dependencyOnlyMutation, buildSource, 'TDS runtime-classpath red fixture anchor must exist');
+  assert.throws(() => assertSourceSetRuntimeClasspath(dependencyOnlyMutation), /TDS_TEST_RUNTIME_SOURCE_SET_OUTPUTS_MISSING/);
+});
+
+test('scripts/verify selects every TDS Java test exactly once', () => {
+  const verifySource = readFileSync(new URL('../../tools/verify-gates/verify.mjs', import.meta.url), 'utf8');
+  const gateStart = verifySource.indexOf("'tds-constructor-assembly'");
+  const gateEnd = verifySource.indexOf("'backend-pmd-preserve-stack-trace'", gateStart);
+  assert.ok(gateStart >= 0 && gateEnd > gateStart, 'TDS_UNIT_GATE_BOUNDARY_MISSING');
+  const gate = verifySource.slice(gateStart, gateEnd);
+  const testRoot = path.join(root, 'apps/backend/terminal-data-server/src/test/java');
+  const javaTestFiles = [];
+  const visit = directory => {
+    for (const entry of readdirSync(directory, {withFileTypes: true})) {
+      const candidate = path.join(directory, entry.name);
+      if (entry.isDirectory()) visit(candidate);
+      else if (entry.isFile() && entry.name.endsWith('Test.java')) javaTestFiles.push(candidate);
+    }
+  };
+  visit(testRoot);
+  assert.ok(javaTestFiles.length > 0, 'TDS_JAVA_TEST_INVENTORY_EMPTY');
+  for (const file of javaTestFiles) {
+    const source = readFileSync(file, 'utf8');
+    const packageName = source.match(/^package\s+([\w.]+);/m)?.[1];
+    const className = path.basename(file, '.java');
+    assert.ok(packageName, `TDS_JAVA_TEST_PACKAGE_MISSING:${path.relative(root, file)}`);
+    const qualifiedName = `${packageName}.${className}`;
+    const selectorCount = (gate.match(new RegExp(qualifiedName.split('.').join('\\.'), 'g')) ?? []).length;
+    assert.equal(selectorCount, 1, `TDS_JAVA_TEST_SELECTOR_COUNT_INVALID:${qualifiedName}:${selectorCount}`);
+  }
+});
+
+test('scripts/verify selects the owner unit test that proves D-48 audit reasons', () => {
+  const verifySource = readFileSync(new URL('../../tools/verify-gates/verify.mjs', import.meta.url), 'utf8');
+  assert.match(
+    verifySource,
+    /'terminal-binding-owner-unit'[\s\S]*?':apps:backend:catering-business-server:modules:terminal-binding:test'[\s\S]*?'com\.catering\.v2s\.terminalbinding\.application\.TerminalBindingOwnerServiceTest'/,
+    'TERMINAL_BINDING_OWNER_D48_TEST_NOT_IN_VERIFY',
+  );
+});
+
+test('scripts/verify runs the store owner unit proof through the remote managed test runner', () => {
+  const verifySource = readFileSync(new URL('../../tools/verify-gates/verify.mjs', import.meta.url), 'utf8');
+  const staticCommandsStart = verifySource.indexOf('const staticCommands = Object.freeze([');
+  const runtimeCommandsStart = verifySource.indexOf('const runtimeCommands = [', staticCommandsStart);
+  assert.ok(staticCommandsStart >= 0 && runtimeCommandsStart > staticCommandsStart, 'VERIFY_COMMAND_BOUNDARIES_MISSING');
+  const staticCommands = verifySource.slice(staticCommandsStart, runtimeCommandsStart);
+  const runtimeCommands = verifySource.slice(runtimeCommandsStart);
+  assert.doesNotMatch(staticCommands, /StoreTerminalOwnerServiceTest|store-terminal-owner-unit/);
+  assert.equal(
+    (runtimeCommands.match(/'B1-store-terminal-owner-unit'/g) ?? []).length,
+    1,
+    'STORE_TERMINAL_OWNER_D48_RUNTIME_SELECTOR_MUST_BE_UNIQUE',
+  );
+  assert.match(
+    runtimeCommands,
+    /'B1-store-terminal-owner-unit'[\s\S]*?'scripts\/test\/r5-remote-testcontainers\.mjs'[\s\S]*?':apps:backend:catering-business-server:modules:store-terminal:test'[\s\S]*?'--tests'[\s\S]*?'com\.catering\.v2s\.storeterminal\.application\.StoreTerminalOwnerServiceTest'[\s\S]*?\],\s*true/,
+    'STORE_TERMINAL_OWNER_D48_TEST_MUST_USE_REMOTE_MANAGED_RUNNER',
+  );
+});
+
 test('acceptance containers start before Spring resolves mapped-port dynamic properties', () => {
   const source = readFileSync(suitePath, 'utf8');
   assertAcceptanceContainersStartBeforeDynamicProperties(source);
@@ -636,6 +722,17 @@ test('registration-gate waits race client exit and retain credential-safe stage 
     scenariosSource,
     /return gate\.awaitObserved\(timeout,\s*wireClient\.onExit\(\)\)/,
     'TDS_REGISTRATION_GATE_CENTRAL_WAIT_MUST_RACE_CLIENT_EXIT',
+  );
+  const markerWaitStart = scenariosSource.indexOf('private static void requireWireMarker(');
+  const markerWaitEnd = scenariosSource.indexOf('\n    private static boolean awaitWireMarkerOrClientExit', markerWaitStart);
+  assert.ok(markerWaitStart >= 0 && markerWaitEnd > markerWaitStart, 'TDS_WIRE_MARKER_WAITER_MISSING');
+  const markerWait = scenariosSource.slice(markerWaitStart, markerWaitEnd);
+  assert.match(markerWait, /safeWireClientLastKnownStage\(log\)/);
+  assert.match(markerWait, /safeWireSignalDiagnostic\(log\)/);
+  assert.match(
+    markerWait,
+    /safeTdsAuthenticationTrace\(tds, tdsLogOffset\)/,
+    'TDS_WIRE_MARKER_FAILURE_MUST_RETAIN_SAFE_SERVER_AUTH_TRACE',
   );
   for (const event of [
     'event=tds_ws_accepted connectionId={} sessionId={}',
@@ -1075,6 +1172,76 @@ test('persistent wire-probe commands preserve child results across process-exit 
   ));
   assert.match(probe, /writeWireLifecycleLog\(\s*log,/);
   assert.match(probe, /SAFE_TDS_CLOSE_REASONS\.contains\(closeReason\)/);
+});
+
+test('wire client processes keep stderr isolated to their correlation marker', () => {
+  const source = readFileSync(terminalContractScenariosPath, 'utf8');
+  const wireSource = readFileSync(terminalWireClientPath, 'utf8');
+  const topologyStart = source.indexOf('static void topologyProbe(TdsAcceptanceProcess tds)');
+  const topologyEnd = source.indexOf('\n    static Stream<DynamicTest> v2AuthenticationScenarios', topologyStart);
+  const v14Start = source.indexOf('private static void v14Scenario(');
+  const v14End = source.indexOf('\n    private static void assertNegotiatedExtension', v14Start);
+  const runStart = source.indexOf('private static JsonNode runWireClient(');
+  const runEnd = source.indexOf('\n    private static void assertNegotiatedExtension', runStart);
+  const startClientStart = source.indexOf('private static Process startWireClient(');
+  const startClientEnd = source.indexOf('\n    private static SessionProbe startSessionProbe', startClientStart);
+  assert.ok(topologyStart >= 0 && topologyEnd > topologyStart, 'TOPOLOGY_PROBE_BOUNDARY_MISSING');
+  assert.ok(v14Start >= 0 && v14End > v14Start, 'V_S14_SCENARIO_BOUNDARY_MISSING');
+  assert.ok(runStart >= 0 && runEnd > runStart, 'ONE_SHOT_WIRE_CLIENT_BOUNDARY_MISSING');
+  assert.ok(startClientStart >= 0 && startClientEnd > startClientStart, 'PERSISTENT_WIRE_CLIENT_BOUNDARY_MISSING');
+
+  const topology = source.slice(topologyStart, topologyEnd);
+  const v14 = source.slice(v14Start, v14End);
+  const oneShot = source.slice(runStart, runEnd);
+  const persistent = source.slice(startClientStart, startClientEnd);
+  assert.match(topology, /String markerId = UUID\.randomUUID\(\)\.toString\(\)/);
+  assert.match(topology, /Path stderr = wireClientLog\(tds, markerId\)/);
+  assert.match(topology, /"markerId",\s*markerId/);
+  assert.match(v14, /request\.put\("markerId", markerId\)/);
+  assert.match(oneShot, /requiredWireClientMarkerId\(request\)/);
+  assert.match(oneShot, /wireClientLog\(tds,/);
+  assert.match(persistent, /requiredWireClientMarkerId\(request\)/);
+  assert.match(persistent, /terminal-wire-" \+ requestMarkerId \+ "\.log/);
+  assert.doesNotMatch(
+    source,
+    /tds\.directory\(\)\.resolve\("terminal-wire-client\.log"\)/,
+    'WIRE_CLIENT_PROCESS_MUST_NOT_APPEND_TO_SHARED_SCENARIO_LOG',
+  );
+  const markerPolicyStart = wireSource.indexOf('const requiresMarker =');
+  const markerPolicyEnd = wireSource.indexOf('\n  if (requiresMarker', markerPolicyStart);
+  assert.ok(markerPolicyStart >= 0 && markerPolicyEnd > markerPolicyStart, 'WIRE_CLIENT_MARKER_POLICY_MISSING');
+  const markerPolicy = wireSource.slice(markerPolicyStart, markerPolicyEnd);
+  for (const rule of [
+    "request.scenario === 'terminal.connection.topology-probe'",
+    'OFFER_SCENARIOS.has(request.scenario)',
+    'FRAME_SCENARIOS.has(request.scenario)',
+    'COMPRESSION_SESSION_SCENARIOS.has(request.scenario)',
+  ]) {
+    assert.ok(markerPolicy.includes(rule), `WIRE_CLIENT_MARKER_POLICY_RULE_MISSING:${rule}`);
+  }
+});
+
+test('V-S11 reports the recursive TDS output set that its secret scan reads', () => {
+  const source = readFileSync(terminalContractScenariosPath, 'utf8');
+  const start = source.indexOf('private static void v11SecretSearch(');
+  const end = source.indexOf('\n    private static List<String> secretSearchValues', start);
+  assert.ok(start >= 0 && end > start, 'V_S11_SECRET_SEARCH_BOUNDARY_MISSING');
+  const scenario = source.slice(start, end);
+  assert.match(scenario, /Files\.walk\(tds\.directory\(\)\)/);
+  for (const extension of ['.log', '.txt', '.json', '.jsonl', '.out']) {
+    assert.ok(scenario.includes(`name.endsWith("${extension}")`), `V_S11_SCAN_EXTENSION_MISSING:${extension}`);
+  }
+  assert.match(
+    source,
+    /private static final String V_S11_SEARCHED_OUTPUTS = "tds-run-directory-recursive:\*\.log,\*\.txt,\*\.json,\*\.jsonl,\*\.out";/,
+    'V_S11_SEARCHED_OUTPUT_SET_MUST_BE_EXPLICIT',
+  );
+  assert.match(
+    scenario,
+    /Map\.entry\(\s*"searchedOutputs",\s*List\.of\(V_S11_SEARCHED_OUTPUTS\)\)/,
+    'V_S11_SEARCHED_OUTPUTS_MUST_MATCH_THE_ACTUAL_SCAN',
+  );
+  assert.doesNotMatch(scenario, /terminal-wire-client\.log/);
 });
 
 test('one-shot wire-client failures log bounded safe process and signal diagnostics before asserting', () => {

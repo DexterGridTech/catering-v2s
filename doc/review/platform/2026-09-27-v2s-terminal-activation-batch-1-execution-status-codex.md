@@ -3,6 +3,35 @@
 Status source for the implementation plan. This file is intentionally outside the L2 admission
 control-plane digest so runtime evidence can be appended without invalidating the reviewed UI bytes.
 
+## Current state at 2026-09-29 10:17 UTC — full acceptance and TDS stop-resource evidence PASS
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE; NETWORK=CONNECTED; SSH_OR_ROUTE_CONFIGURATION=UNCHANGED
+PRESERVED_FIRST_FAILURE=r5-tc-1790675248577-46812; TDS_PROCESS_EVIDENCE_INVALID; Gradle=PASS; business=NOT_RUN; cleanup=PASS
+FAILURE_ROOT_CAUSE=V-S9 intentionally called requestGracefulStop() and waited for the TDS JVM to exit; rssBeforeStopKiB was sampled only later in close(), when the process was already stopped, so the evidence stayed 0 and the runner correctly rejected it
+FAILURE_REPAIR=before requestGracefulStop() sends SIGTERM, recheck PID start ticks, capture positive /proc RSS, enforce the configured budget, and emit run-scoped PRE_STOP_RESOURCE evidence; unexpected prior exit still leaves RSS unavailable and fails closed
+LATEST_CURRENT_BYTE_MANAGED_RUN=r5-tc-1790676168036-87131; 2026-09-29T09:47:28.586Z–10:13:56.128Z UTC; backend-acceptance BUSINESS/CONTRACT=198/198 PASS; TDS CONTRACT=49/49 PASS; performance operation identity=296/296; cleanup=PASS
+TDS_PROCESS_EVIDENCE=PASS; pid=2453377; startTicks=90187916; REACTIVE; rssAtReady=234832 KiB; rssBeforeStop=272084 KiB; budget=512 MiB; exitCode=143; cleanupStatus=PASS
+V-S1=PASS; unauthenticated capacity=4; permits reusable after client disconnect, credential rejection, timeout and SESSION_READY
+V-S6=PASS; latest-state identity, connection/activity/RTT/disconnect and stale-session isolation verified
+V-S9=PASS; drainElapsedMillis=8026; control session received PONG before close; new upgrade redirected without SESSION_READY
+V-S14=PASS; exactly 9 compression/frame scenarios; D-43 unknown-field handling included in TDS CONTRACT denominator
+CURRENT_BYTE_SCRIPTS_VERIFY=NOT_RECHECKED_AFTER_FINAL_ACCEPTANCE; last saved `scripts/verify` record stopped at THCL-04-node-tests with 568/574 passing and six failures in unrelated TER Android tests; one TER test file changed afterward, so the old failure is historical and current default verify is unknown
+WHOLE_BATCH_6B=PREVIOUSLY_MATCHED; reused per Dexter's no-repeat instruction; this runtime-status update does not claim a new reconciliation
+13C_LINE_BY_LINE_RECONCILIATION=OPEN; required before Dexter/Claude handoff
+FRESH_FINAL_IMPLEMENTATION_REVIEW=IN_PROGRESS; read-only independent review requested after the V-S9 evidence repair
+当前字节上的最新运行=r5-tc-1790676168036-87131; 2026-09-29T09:47:28.586Z–10:13:56.128Z UTC; BUSINESS=PASS; CLEANUP=PASS
+最后一次通过=r5-tc-1790676168036-87131; 同一时间段; 与当前运行字节一致
+NEXT=finish the exact 13c source/evidence ledger, receive the fresh implementation review, update and validate the Claude handoff
+```
+
+The first `TDS_PROCESS_EVIDENCE_INVALID` run is preserved unchanged. Its TDS process trace was
+`NOT_REQUESTED`; the TDS log itself shows the scenario-owned drain start/completion and Spring
+graceful shutdown. This establishes the test's intentional stop ordering for that run, not a general
+claim about unrelated host signals. The repaired full acceptance captured non-zero pre-stop RSS and
+passed the same runner evidence contract.
+
 ## Current state at 2026-09-29 00:03 UTC — DEV readiness cleanup and final verifier diagnosis
 
 ```text
@@ -1249,3 +1278,31 @@ claim that the current default verifier passes.
 当前字节上的最新运行：完整 seed `complete-seed-4987ef30-2993-4e97-84d7-7e7b541bd473`，Business PASS，cleanup `PASS_PRESERVED_DEV_STATE`；阶段一 backend-acceptance、TDS、V-S14、Browser L2 与 reset 均 PASS。
 
 最后一次通过：上述阶段一受管验收结果；仓库默认 `scripts/verify` 的最近记录为 THCL-04 FAIL（568/574），当前字节尚未复跑。
+
+## Current state 2026-09-29 — current-byte Browser L2 completed
+
+```text
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+BACKEND_ACCEPTANCE=r5-tc-1790676168036-87131; BUSINESS=198/198 PASS; TDS_CONTRACT=49/49 PASS; OPERATION_IDENTITY=296/296; V-S14=9/9; CLEANUP=PASS
+L2_ADMISSION=PASS; digest=4df500c2fbbd6bb4cf2509dd60ef49c74e26953d1f7fd7b74f29276405ff86b5; cases=6; control-plane=36; UI=22; files=58; unique-paths=48; bytes=2218633
+BROWSER_L2=l2-1790679019522-69383-0d9c31b8-385a-4e9e-9bc3-c1a1b79e0db4; 2026-09-29T10:53:33.779Z–10:54:37.825Z; DISCOVERED=6; SELECTED=6; RESULTS=6; BUSINESS=PASS; CLEANUP=PASS
+BROWSER_L2_CASES=terminal-list-detail,terminal-create-basic,terminal-create-configuration,terminal-edit-configuration,terminal-readonly-state,terminal-status-actions; all six ordered cases PASS
+BROWSER_L2_JOIN=COMPLETE; HTTP_COMPLETIONS=61; BACKEND_COMPLETIONS=124; DB_SECTION_ROWS=1806; INVALID_CASE_EVENTS=0; MISSING/UNEXPECTED_CONTROLS=0
+BROWSER_L2_BINDING=98844528fab6777d8db4f6adb94fce3ee1c03dfd6162a2412b63d2203ffd312f; FILES=2039; BYTES=18296962
+BROWSER_L2_CLEANUP=PASS; cleanupErrors=0; artifactErrors=0; remoteRootAbsent=true; runtimeState=FINISHED
+BROWSER_L2_LOG_REVIEW=PASS; ERROR=0; FATAL=0; EXCEPTION_MARKERS=0; Flyway WARN=2 (pre-existing columns skipped)
+FIRST_ADMISSION_COMMAND=REFUSED_BEFORE_RESOURCE_PREPARATION; omitted --suite defaulted to catalog-inventory; corrected command used --suite store-terminal
+CURRENT_BYTE_SEED_DRY_RUN=PASS; SOURCE_ITEMS=73; CREATED_ITEMS=72; EXCLUDED_ITEMS=1; MEDIA=34; TERMINALS=8; no database/remote writes
+RESET=NOT_RUN; ACTUAL_SEED=NOT_RUN; DEV=NOT_RUN; UAT=NOT_AUTHORIZED
+LATEST_REPOSITORY_DEFAULT_VERIFY=FAIL; most recent record=THCL-04-node-tests 568/574 with six TER Android Node test failures; current TER bytes remain separately owned and unverified
+NEXT=finish 13c reconciliation and handoff validator; retain current default verify as not green/not rechecked
+```
+
+Run evidence: `.runtime/browser-l2/l2-1790679019522-69383-0d9c31b8-385a-4e9e-9bc3-c1a1b79e0db4/`.
+The no-suite-selector readiness refusal is preserved above as a command-scope failure with no run id
+or resource acquisition. The corrected store-terminal run completed readiness, P1 exact-set binding,
+finalize, all six browser cases and cleanup. No reset, actual seed, DEV or UAT ran in this state.
+
+当前字节上的最新运行：Browser L2 `l2-1790679019522-69383-0d9c31b8-385a-4e9e-9bc3-c1a1b79e0db4`，6/6 BUSINESS PASS、JOIN COMPLETE、CLEANUP PASS；backend-acceptance `r5-tc-1790676168036-87131` 为 198/198、TDS 49/49、V-S14 9/9 PASS。
+
+最后一次通过：上述 Browser L2 与 backend-acceptance 均绑定本轮执行源码；仓库默认 `scripts/verify` 最近记录仍为 568/574，当前 TER 修改后未重验。

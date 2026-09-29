@@ -61,25 +61,53 @@ test('A11 target roles are identified from observed physical/logical facts and m
 
 test('A11 accepts only an App-owned protected persist-kv success marker', () => {
   assert.equal(
-    protectedMarkerOperation('I TerminalPersistKv: event=persist-kv operation=read mode=protected status=succeeded'),
+    protectedMarkerOperation(
+      'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=succeeded',
+      ['321'],
+    ),
     'read',
   );
   assert.equal(
     protectedMarkerOperation(
-      'I TerminalPersistKv: event=persist-kv operation=writeMany mode=protected status=succeeded',
+      'I/TerminalPersistKv( 321): event=persist-kv operation=writeMany mode=protected status=succeeded',
+      ['321'],
     ),
     'writeMany',
   );
   assert.equal(
-    protectedMarkerOperation('I TerminalPersistKv: event=persist-kv operation=read mode=plain status=succeeded'),
+    protectedMarkerOperation(
+      'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=plain status=succeeded',
+      ['321'],
+    ),
     null,
   );
   assert.equal(
-    protectedMarkerOperation('I TerminalPersistKv: event=persist-kv operation=read mode=protected status=failed'),
+    protectedMarkerOperation(
+      'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=failed',
+      ['321'],
+    ),
     null,
   );
   assert.equal(
-    protectedMarkerOperation('I TerminalPersistKv: event=other operation=read mode=protected status=succeeded'),
+    protectedMarkerOperation(
+      'I/TerminalPersistKv( 321): event=other operation=read mode=protected status=succeeded',
+      ['321'],
+    ),
+    null,
+  );
+  assert.equal(
+    protectedMarkerOperation(
+      'I/TerminalPersistKv( 999): event=persist-kv operation=read mode=protected status=succeeded',
+      ['321'],
+    ),
+    null,
+    'a successful log from a PID not adopted for the app must not count',
+  );
+  assert.equal(
+    protectedMarkerOperation(
+      'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=succeeded',
+      [],
+    ),
     null,
   );
 });
@@ -141,7 +169,7 @@ test('A11 builds both old APKs before the first device installation', () => {
   );
   assert.match(
     runBody,
-    /for \(const appName of Object\.keys\(APPS\)\) \{\s*manifest\.phase = `BUILD_\$\{appName\}`; save\(manifest\)\s*await runManagedBuild\(manifest, appName\)\s*\}\s*for \(const appName of Object\.keys\(APPS\)\) \{\s*for \(const role of \['dual', 'mobile'\]\)/,
+    /for \(const appName of Object\.keys\(APPS\)\) \{\s*manifest\.phase = `BUILD_\$\{appName\}`;\s*save\(manifest\);\s*await runManagedBuild\(manifest, appName\);\s*\}\s*for \(const appName of Object\.keys\(APPS\)\) \{\s*for \(const role of \['dual', 'mobile'\]\)/,
   );
   assert.ok(
     runBody.indexOf('await runManagedBuild(manifest, appName)') <
@@ -201,6 +229,6 @@ test('A11 final cleanup reconciles every recorded Gradle process tree by its sto
 
 test('A11 requires positive process readback before any app run and preserves process command stderr metadata', () => {
   assert.match(source, /'shell', 'pidof', 'system_server'.*positive-readback/s);
-  assert.match(source, /stdoutBytes: Buffer\.byteLength\(stdout\), stderrBytes: Buffer\.byteLength\(stderr\)/);
+  assert.match(source, /stdoutBytes: Buffer\.byteLength\(stdout\),\s*stderrBytes: Buffer\.byteLength\(stderr\)/);
   assert.match(source, /allowExit: \[0, 1\]/);
 });

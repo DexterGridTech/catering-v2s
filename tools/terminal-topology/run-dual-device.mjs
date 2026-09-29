@@ -21,6 +21,7 @@ import {createTcpBridge} from './tcp-bridge.mjs'
 import {submitMemberFormWithClosedKeyboard} from './member-form-submit.mjs'
 import {memberJourneyCustomerSurfaceReady, prepareMemberJourneySurface} from './member-journey-admission.mjs'
 import {evaluateHeartbeatOnlyWindow, readHeartbeatTopologyFromXml, topologyLifecycleSnapshot} from './heartbeat-window.mjs'
+import {evaluateCloseOriginAcceptance, evaluateMemberJourneyTransferAcceptance, parseTopologyPeerLogEvents, topologyAcceptanceStatusForProfiles, topologyStageOneOutcome} from './journey-acceptance.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const topologyConfigPath = path.join(repositoryRoot, 'apps/terminal/kernel/base/contracts/topology-transport.config.json')
@@ -298,6 +299,7 @@ const terminalSourceSnapshot = () => {
       'tools/terminal-topology/heartbeat-window.mjs',
       'tools/terminal-topology/member-journey-admission.mjs',
       'tools/terminal-topology/member-form-submit.mjs',
+      'tools/terminal-topology/journey-acceptance.mjs',
       'tools/terminal-topology/run-dual-device.mjs',
       'tools/terminal-topology/tcp-bridge.mjs',
       'tools/terminal-topology/android/NoIdleUiDump.java',
@@ -2556,6 +2558,7 @@ const fillStaffLogin = async target => {
 }
 
 const runMemberJourney = async (record, master, slave) => {
+  const transferLogBaselineByDirection = {}
   // A paired single-screen slave is anonymous until the master authenticates,
   // but it still owns the customer-facing logical SECONDARY surface. This
   // observation must also prove that a leftover Admin login layer is not
@@ -2585,6 +2588,11 @@ const runMemberJourney = async (record, master, slave) => {
   await tapNode(master, 'sample.desk.member-form:phone')
   await tapVirtualText(master, '01012345678')
   await waitForNode(master, 'sample.desk.member-form:phone', node => nodeText(node).includes('01012345678'))
+  transferLogBaselineByDirection['master-to-slave'] = captureTopologyPeerTimestampBaseline(
+    record,
+    [master, slave],
+    'before-alice-pending-submit',
+  )
   await submitMemberFormWithClosedKeyboard({
     tap: testId => tapNode(master, testId),
     waitForKeyboardClosed: () => waitForAbsent(master, 'ui.base.input:virtual-keyboard:complete'),
@@ -2637,6 +2645,11 @@ const runMemberJourney = async (record, master, slave) => {
   await tapNode(slave, 'ui.base.input:virtual-keyboard:text-3')
   await tapNode(slave, 'ui.base.input:virtual-keyboard:text-7')
   await tapNode(slave, 'ui.base.input:virtual-keyboard:complete')
+  transferLogBaselineByDirection['slave-to-master'] = captureTopologyPeerTimestampBaseline(
+    record,
+    [master, slave],
+    'before-bob-confirmation',
+  )
   await tapNode(slave, 'sample.desk.customer-member:confirm')
   await waitForNode(master, 'sample.desk.member-list:row')
   await observe(record, master, 'member-confirmed-on-master', ['sample.desk.member-list', 'sample.desk.member-list:row'], ['已登记会员', 'Bob', '01087654321'])
@@ -2654,6 +2667,13 @@ const runMemberJourney = async (record, master, slave) => {
   // confirmed and persisted by this journey, rather than the cancelled draft.
   await observe(record, master, 'authenticated-state-after-cold-restart', ['sample.desk.member-list', 'sample.desk.member-list:row'], ['Bob', '01087654321'])
   progress(record, 'authenticated-member-state-restored-after-cold-restart', {deviceRole: 'master', process: processIdentity(master)})
+  const logsAfterMemberJourney = Object.fromEntries([master, slave].map(target => [target.role, captureTopologyLogcat(target, record)]))
+  record.memberJourneyTransferAcceptance = evaluateMemberJourneyTransferAcceptance({
+    ...logsAfterMemberJourney,
+    steps: record.steps,
+    timeline: record.timeline,
+    afterTimestampByDirection: transferLogBaselineByDirection,
+  })
 }
 
 const ensureAdminTopology = async (record, target) => {
@@ -2858,7 +2878,7 @@ const captureFailure = async (record, targets) => {
   }
 }
 
-const captureTopologyLogcat = (target, record) => {
+const captureTopologyLogcat = (target, record, evidenceLabel = 'final') => {
   const result = adb(target, ['logcat', '-d', '-v', 'epoch', '-t', '5000'], 'topology anomaly logcat', {allowFailure: true})
   const processIds = new Set()
   const addProcessId = value => {
@@ -2876,8 +2896,23 @@ const captureTopologyLogcat = (target, record) => {
     if (processIds.size === 0) return true
     return [...processIds].some(pid => new RegExp(`\\s${pid}\\s`).test(line))
   })
-  writeText(`${target.tag}-topology-anomaly-logcat.txt`, sanitizeDiagnostic(lines.join('\n')))
+  const captured = lines.join('\n')
+  const safeEvidenceLabel = evidenceLabel.replace(/[^a-zA-Z0-9_-]/g, '-')
+  const artifactName = evidenceLabel === 'final'
+    ? `${target.tag}-topology-anomaly-logcat.txt`
+    : `${target.tag}-topology-anomaly-logcat-${safeEvidenceLabel}.txt`
+  writeText(artifactName, sanitizeDiagnostic(captured))
+  return captured
 }
+
+const captureTopologyPeerTimestampBaseline = (record, targets, label) => Object.fromEntries(targets.map(target => {
+  const events = parseTopologyPeerLogEvents(captureTopologyLogcat(target, record, `${label}-${target.role}`))
+  const latestTimestamp = Math.max(0, ...events.map(event => event.timestamp))
+  if (latestTimestamp <= 0) {
+    throw new RunnerFailure('member transfer boundary', `${label}: ${target.role} had no readable topology peer event timestamp`)
+  }
+  return [target.role, latestTimestamp]
+}))
 
 const cleanupProfile = async (record, targets) => {
   const errors = []
@@ -2974,6 +3009,7 @@ const runProfile = async profile => {
     firstFailure: null,
     lastKnownGood: null,
     brokenBoundary: null,
+    topologyAcceptance: null,
     timeline: [],
     steps: [],
     devices: {},
@@ -3013,6 +3049,20 @@ const runProfile = async profile => {
     await runSlaveUnpairCoverage(record, master, slave)
     await rePairAfterSlaveUnpair(record, master, slave)
     await runUnpairAndStop(record, master, slave)
+    const memberTransferAcceptance = profile.name !== 'sample-terminal'
+      ? Object.freeze({status: 'NOT_APPLICABLE', directions: Object.freeze([])})
+      : includeMemberJourney
+        ? record.memberJourneyTransferAcceptance ?? Object.freeze({status: 'OPEN', missing: Object.freeze(['member journey transfer evidence was not produced'])})
+        : Object.freeze({status: 'OPEN', missing: Object.freeze(['sample-terminal member journey was not included'])})
+    // UI state alone does not prove close-origin reasons. Only an explicit
+    // bounded per-origin evidence row can close this matrix.
+    const closeOriginAcceptance = evaluateCloseOriginAcceptance(record.closeOriginEvidence ?? [])
+    const applicableAcceptance = [memberTransferAcceptance, closeOriginAcceptance].filter(result => result.status !== 'NOT_APPLICABLE')
+    record.topologyAcceptance = {
+      status: applicableAcceptance.every(result => result.status === 'PASS') ? 'PASS' : 'OPEN',
+      memberStateTransfer: memberTransferAcceptance,
+      closeOrigins: closeOriginAcceptance,
+    }
     record.business = 'PASS'
   } catch (error) {
     record.business = 'FAIL'
@@ -3253,6 +3303,7 @@ const execute = async () => {
       stageTwoStatus: 'OPEN_NOT_IN_THIS_RUN',
       business: 'NOT_RUN',
       cleanup: 'NOT_RUN',
+      topologyAcceptance: 'NOT_RUN',
     }
     writeJson('run-manifest.json', manifest)
     try {
@@ -3279,22 +3330,24 @@ const execute = async () => {
       stage: '1',
       business: results.every(result => result.business === 'PASS') && sourceStable ? 'PASS' : 'FAIL',
       cleanup: results.every(result => result.cleanup === 'PASS') ? 'PASS' : 'FAIL',
+      topologyAcceptance: topologyAcceptanceStatusForProfiles(results),
       sourceDigestBefore: source.sha256,
       sourceDigestAfter: sourceAfter.sha256,
       sourceStable,
-      profiles: results.map(result => ({profile: result.profile, business: result.business, cleanup: result.cleanup, firstFailure: result.firstFailure, lastKnownGood: result.lastKnownGood, brokenBoundary: result.brokenBoundary})),
+      profiles: results.map(result => ({profile: result.profile, business: result.business, cleanup: result.cleanup, topologyAcceptance: result.topologyAcceptance, firstFailure: result.firstFailure, lastKnownGood: result.lastKnownGood, brokenBoundary: result.brokenBoundary})),
       stage2: 'OPEN_NOT_IN_THIS_RUN',
       finishedAt: new Date().toISOString(),
     }
     manifest.business = overall.business
     manifest.cleanup = overall.cleanup
+    manifest.topologyAcceptance = overall.topologyAcceptance
     manifest.finishedAt = overall.finishedAt
     manifest.sourceDigestAfter = sourceAfter.sha256
     manifest.sourceStable = sourceStable
     writeJson('run-manifest.json', manifest)
     writeJson('overall-result.json', overall)
-    console.log(`TERMINAL_TOPOLOGY_STAGE1=${overall.business} CLEANUP=${overall.cleanup} SOURCE_STABLE=${sourceStable} OUTPUT=${outputDirectory}`)
-    if (overall.business !== 'PASS' || overall.cleanup !== 'PASS') process.exitCode = 1
+    console.log(`TERMINAL_TOPOLOGY_STAGE1=${overall.business} ACCEPTANCE=${overall.topologyAcceptance} CLEANUP=${overall.cleanup} SOURCE_STABLE=${sourceStable} OUTPUT=${outputDirectory}`)
+    if (topologyStageOneOutcome(overall) !== 'PASS') process.exitCode = 1
   } finally {
     if (lockDescriptor !== null) {
       fs.closeSync(lockDescriptor)

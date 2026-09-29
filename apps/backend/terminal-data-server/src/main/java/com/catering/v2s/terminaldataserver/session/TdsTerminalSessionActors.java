@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -157,14 +158,20 @@ public final class TdsTerminalSessionActors {
     }
 
     public void connectionClosed(UUID terminalRef, String attemptId, TdsWebSocketConnection connection) {
-        Mono.<Void>fromRunnable(() -> {
-                    actors.computeIfPresent(terminalRef, (key, actor) -> {
-                        actor.connectionClosed(attemptId, connection);
-                        return actor.isIdle() ? null : actor;
-                    });
-                })
-                .subscribeOn(jdbcScheduler)
-                .subscribe();
+        Runnable close = () -> actors.computeIfPresent(terminalRef, (key, actor) -> {
+            actor.connectionClosed(attemptId, connection);
+            return actor.isIdle() ? null : actor;
+        });
+        try {
+            jdbcScheduler.schedule(close);
+        } catch (RejectedExecutionException rejected) {
+            TdsAsyncLog.enqueue(
+                    logScheduler,
+                    () -> LOGGER.warn(
+                            "event=tds_connection_closed_schedule_rejected connectionId={} fallback=inline",
+                            connection.connectionId()));
+            close.run();
+        }
     }
 
     public void revoked(UUID terminalRef, long revokedGeneration) {
@@ -360,7 +367,9 @@ public final class TdsTerminalSessionActors {
                 pending.remove(attemptId);
                 if (previous != null) {
                     String previousReason =
-                            generationRevoked(previous.generation()) ? "ACTIVATION_CANCELLED" : "SESSION_REPLACED";
+                            previous.generation() < generation || generationRevoked(previous.generation())
+                                    ? "ACTIVATION_CANCELLED"
+                                    : "SESSION_REPLACED";
                     previous.connection().close(previousReason);
                     queueDisconnect(previous, previousReason);
                 }

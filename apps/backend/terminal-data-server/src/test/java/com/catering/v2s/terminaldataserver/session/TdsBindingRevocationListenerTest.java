@@ -2,12 +2,33 @@ package com.catering.v2s.terminaldataserver.session;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import com.catering.v2s.terminaldataserver.protocol.TdsWireJsonConfiguration;
 import com.catering.v2s.terminaldataserver.session.TdsBindingRevocationListener.Revocation;
+import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
+import org.postgresql.PGConnection;
+import org.postgresql.PGNotification;
+import reactor.core.scheduler.Schedulers;
 import tools.jackson.databind.ObjectMapper;
 
 class TdsBindingRevocationListenerTest {
@@ -19,6 +40,111 @@ class TdsBindingRevocationListenerTest {
         assertThat(TdsBindingRevocationListener.parsePayload(
                         "{\"v\":1,\"terminalRef\":\"" + TERMINAL + "\",\"revokedGeneration\":2}", objectMapper))
                 .isEqualTo(new Revocation(TERMINAL, 2));
+    }
+
+    @Test
+    void listenerLoopRunsOnItsOwnThreadInsteadOfTheDatabaseWorker() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        CountDownLatch connectAttempted = new CountDownLatch(1);
+        CountDownLatch stopped = new CountDownLatch(1);
+        AtomicReference<String> listenerThreadName = new AtomicReference<>();
+        when(dataSource.getConnection()).thenAnswer(invocation -> {
+            listenerThreadName.set(Thread.currentThread().getName());
+            connectAttempted.countDown();
+            throw new SQLException("expected test connection failure");
+        });
+        TdsBindingRevocationListener listener = new TdsBindingRevocationListener(
+                dataSource,
+                mock(TdsConnectionStateRepository.class),
+                mock(TdsTerminalSessionActors.class),
+                new TdsListenerRecoveryGate("", "", ""),
+                TdsWireJsonConfiguration.createWireObjectMapper(),
+                Schedulers.immediate());
+
+        try {
+            listener.start();
+            assertThat(connectAttempted.await(2, TimeUnit.SECONDS)).isTrue();
+            listener.stop(stopped::countDown);
+            assertThat(stopped.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(listenerThreadName.get())
+                    .isEqualTo("tds-revocation-listener")
+                    .isNotEqualTo("tds-db-worker");
+        } finally {
+            if (listener.isRunning()) {
+                listener.stop(stopped::countDown);
+                stopped.await(2, TimeUnit.SECONDS);
+            }
+        }
+    }
+
+    @Test
+    void parsesAndDispatchesRevocationOnTheDedicatedListenerThread() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        Statement statement = mock(Statement.class);
+        PGConnection pgConnection = mock(PGConnection.class);
+        PGNotification notification = mock(PGNotification.class);
+        TdsConnectionStateRepository repository = mock(TdsConnectionStateRepository.class);
+        TdsTerminalSessionActors actors = mock(TdsTerminalSessionActors.class);
+        CountDownLatch notificationDispatched = new CountDownLatch(1);
+        CountDownLatch stopped = new CountDownLatch(1);
+        AtomicBoolean notificationReturned = new AtomicBoolean();
+        AtomicReference<Thread> parseThread = new AtomicReference<>();
+        AtomicReference<Thread> dispatchThread = new AtomicReference<>();
+        ObjectMapper mapper = spy(TdsWireJsonConfiguration.createWireObjectMapper());
+        doAnswer(invocation -> {
+                    parseThread.set(Thread.currentThread());
+                    return invocation.callRealMethod();
+                })
+                .when(mapper)
+                .readTree(anyString());
+
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.createStatement()).thenReturn(statement);
+        when(connection.unwrap(PGConnection.class)).thenReturn(pgConnection);
+        when(repository.readCurrentBindings(eq(connection), anyCollection())).thenReturn(Map.of());
+        when(actors.trackedBindings()).thenReturn(List.of());
+        when(notification.getName()).thenReturn("terminal_binding_events");
+        when(notification.getParameter())
+                .thenReturn("{\"v\":1,\"terminalRef\":\"" + TERMINAL + "\",\"revokedGeneration\":2}");
+        when(pgConnection.getNotifications(anyInt())).thenAnswer(invocation -> {
+            if (notificationReturned.compareAndSet(false, true)) return new PGNotification[] {notification};
+            try {
+                Thread.sleep(10_000);
+            } catch (InterruptedException stopping) {
+                Thread.currentThread().interrupt();
+            }
+            return null;
+        });
+        doAnswer(invocation -> {
+                    dispatchThread.set(Thread.currentThread());
+                    notificationDispatched.countDown();
+                    return null;
+                })
+                .when(actors)
+                .revoked(TERMINAL, 2);
+
+        TdsBindingRevocationListener listener = new TdsBindingRevocationListener(
+                dataSource,
+                repository,
+                actors,
+                new TdsListenerRecoveryGate("", "", ""),
+                mapper,
+                Schedulers.immediate());
+
+        try {
+            listener.start();
+            assertThat(notificationDispatched.await(2, TimeUnit.SECONDS)).isTrue();
+            listener.stop(stopped::countDown);
+            assertThat(stopped.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(parseThread.get()).isSameAs(dispatchThread.get());
+            assertThat(parseThread.get().getName()).isEqualTo("tds-revocation-listener");
+        } finally {
+            if (listener.isRunning()) {
+                listener.stop(stopped::countDown);
+                stopped.await(2, TimeUnit.SECONDS);
+            }
+        }
     }
 
     @Test

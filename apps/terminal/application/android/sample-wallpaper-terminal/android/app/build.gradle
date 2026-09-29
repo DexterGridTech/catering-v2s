@@ -113,17 +113,22 @@ tasks.configureEach { task ->
     }
 }
 
-// RN 0.86.3 registers the debug bundle task from its variant callback after this script configures
-// configureEach. Apply this override after variant registration so the plugin's devEnabled=false
-// default cannot win; the execution assertion keeps managed failure injection from silently vanishing.
+// Keep the managed debug APK self-contained, but never embed a Metro-dev-mode bundle: Expo 57's
+// native async-require message socket throws when __DEV__ is true for an embedded bundle. The
+// runner enables failure injection separately with EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION.
 afterEvaluate {
     tasks.named("createBundleDebugJsAndAssets").configure { task ->
-        task.devEnabled.set(true)
+        task.inputs.files(terminalWorkspaceJsInputs)
+        task.inputs.property("terDebugFailureInjection", true)
+        task.devEnabled.set(false)
         task.doFirst {
-            if (!task.devEnabled.get()) {
-                throw new GradleException("TER_DEBUG_FAILURE_INJECTION_DEV_MODE_REQUIRED")
+            if (task.devEnabled.get()) {
+                throw new GradleException("TER_DEBUG_FAILURE_INJECTION_EMBEDDED_PRODUCTION_MODE")
             }
-            project.logger.lifecycle("TER_DEBUG_FAILURE_INJECTION_BUNDLE_DEV_ENABLED")
+            if (System.getenv("EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION") != "true") {
+                throw new GradleException("TER_DEBUG_FAILURE_INJECTION_TEST_FLAG_REQUIRED")
+            }
+            project.logger.lifecycle("TER_DEBUG_FAILURE_INJECTION_EMBEDDED_PRODUCTION_MODE")
         }
     }
 }

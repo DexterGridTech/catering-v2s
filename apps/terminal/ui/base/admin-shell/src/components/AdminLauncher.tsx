@@ -122,55 +122,58 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
     surface.surfaceIdentity?.displayIndex,
     surface.surfaceIdentity?.surfaceKey,
   ]);
-  const measureOrigin = useCallback((invalidateCurrent = false) => {
-    const generation = ++measurementGenerationRef.current;
-    gestureState.current = createInitialAdminGestureState();
-    if (invalidateCurrent) geometryReadyRef.current = false;
-    requestAnimationFrame(() => {
-      if (generation !== measurementGenerationRef.current) return;
-      // The viewport update may cause the host canvas to commit its new scale
-      // after this frame; measure on the following frame, against that layout.
+  const measureOrigin = useCallback(
+    (invalidateCurrent = false) => {
+      const generation = ++measurementGenerationRef.current;
+      gestureState.current = createInitialAdminGestureState();
+      if (invalidateCurrent) geometryReadyRef.current = false;
       requestAnimationFrame(() => {
         if (generation !== measurementGenerationRef.current) return;
-        const node = nodeRef.current;
-        if (node === null) return;
-        node.measureInWindow((...measurements: [number, number, number, number]) => {
+        // The viewport update may cause the host canvas to commit its new scale
+        // after this frame; measure on the following frame, against that layout.
+        requestAnimationFrame(() => {
           if (generation !== measurementGenerationRef.current) return;
-          const [x, y, width, height] = measurements;
-          if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(width) && Number.isFinite(height)) {
-            windowMeasurementRef.current = Object.freeze({x, y, width, height});
-            geometryReadyRef.current = true;
-            logger.info({
-              category: 'admin.launcher',
-              event: 'admin.launcher-geometry-measured',
-              message: 'Admin launcher window geometry measured',
-              data: {
-                displayMode: surface.displayMode,
-                displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
-                windowRect: {x, y, width, height},
-                canvas: {width: canvasWidth, height: canvasHeight},
-                hostLogicalSize:
-                  hostLogicalWidth === null || hostLogicalHeight === null
-                    ? null
-                    : {width: hostLogicalWidth, height: hostLogicalHeight},
-                windowDimensions: {width: windowDimensions.width, height: windowDimensions.height},
-              },
-            });
-          }
+          const node = nodeRef.current;
+          if (node === null) return;
+          node.measureInWindow((...measurements: [number, number, number, number]) => {
+            if (generation !== measurementGenerationRef.current) return;
+            const [x, y, width, height] = measurements;
+            if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(width) && Number.isFinite(height)) {
+              windowMeasurementRef.current = Object.freeze({x, y, width, height});
+              geometryReadyRef.current = true;
+              logger.info({
+                category: 'admin.launcher',
+                event: 'admin.launcher-geometry-measured',
+                message: 'Admin launcher window geometry measured',
+                data: {
+                  displayMode: surface.displayMode,
+                  displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
+                  windowRect: {x, y, width, height},
+                  canvas: {width: canvasWidth, height: canvasHeight},
+                  hostLogicalSize:
+                    hostLogicalWidth === null || hostLogicalHeight === null
+                      ? null
+                      : {width: hostLogicalWidth, height: hostLogicalHeight},
+                  windowDimensions: {width: windowDimensions.width, height: windowDimensions.height},
+                },
+              });
+            }
+          });
         });
       });
-    });
-  }, [
-    canvasHeight,
-    canvasWidth,
-    hostLogicalHeight,
-    hostLogicalWidth,
-    logger,
-    surface.displayMode,
-    surface.surfaceIdentity?.displayIndex,
-    windowDimensions.height,
-    windowDimensions.width,
-  ]);
+    },
+    [
+      canvasHeight,
+      canvasWidth,
+      hostLogicalHeight,
+      hostLogicalWidth,
+      logger,
+      surface.displayMode,
+      surface.surfaceIdentity?.displayIndex,
+      windowDimensions.height,
+      windowDimensions.width,
+    ],
+  );
 
   useLayoutEffect(() => {
     measureOrigin(true);

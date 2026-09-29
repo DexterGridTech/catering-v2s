@@ -436,7 +436,7 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                 });
     }
 
-    private Mono<Void> receivePing(
+    Mono<Void> receivePing(
             TdsWebSocketConnection connection,
             WebSocketMessage message,
             AtomicLong lastSequence,
@@ -451,7 +451,6 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                     String pong = codec.pong(ping.sequence(), Instant.now());
                     return new PingResponse(ping, pong);
                 })
-                .subscribeOn(codecScheduler)
                 .flatMap(response -> {
                     Ping ping = response.ping();
                     long previous = lastSequence.get();

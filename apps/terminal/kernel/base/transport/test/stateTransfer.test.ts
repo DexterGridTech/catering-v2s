@@ -107,6 +107,35 @@ describe('topology state transfer', () => {
       payload,
     });
     expect(overflow).toMatchObject({status: 'failed', code: 'TOPOLOGY_REASSEMBLY_OVERFLOW'});
+
+    const highlyCompressedOutput = new Uint8Array(4 * 1024 * 1024).fill(0x20);
+    const highlyCompressedInput = zlibSync(highlyCompressedOutput);
+    expect(highlyCompressedOutput.length / highlyCompressedInput.length).toBeGreaterThan(100);
+    const highlyCompressedPayload = Buffer.from(highlyCompressedInput).toString('base64');
+    const bombPush = vi.spyOn(Unzlib.prototype, 'push');
+    try {
+      const compressedOverflow = createTopologyStateReassembler().accept({
+        type: 'state-full-chunk',
+        protocolVersion: 1,
+        wireId: 'compressed-expansion-overflow-wire',
+        sliceName: 'kernel.feature.sample-member-registry.members',
+        direction: 'master-to-slave',
+        revision: 2,
+        transferId: 'compressed-expansion-overflow',
+        index: 0,
+        total: 1,
+        codec: 'zlib-base64',
+        rawBytes: declaredPrefix.length,
+        encodedBytes: highlyCompressedPayload.length,
+        checksum: topologyChecksum(declaredPrefix),
+        payload: highlyCompressedPayload,
+      });
+      expect(compressedOverflow).toMatchObject({status: 'failed', code: 'TOPOLOGY_REASSEMBLY_OVERFLOW'});
+      expect(bombPush).toHaveBeenCalled();
+      expect(bombPush.mock.calls.every(([input]) => input.length <= 1024)).toBe(true);
+    } finally {
+      bombPush.mockRestore();
+    }
   });
 
   it('round trips a multi-chunk transfer with wire parsing, reordering and duplicate chunks', () => {

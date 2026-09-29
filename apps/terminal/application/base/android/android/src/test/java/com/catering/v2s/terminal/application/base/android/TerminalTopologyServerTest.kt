@@ -4,10 +4,13 @@ import java.io.DataInputStream
 import java.net.ServerSocket
 import java.net.Socket
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -50,14 +53,14 @@ class TerminalTopologyServerTest {
 
   @Test
   fun `production socket read timeout stays within the heartbeat interval window`() {
-    val heartbeatTimeoutMs = 30_000L
-    val heartbeatIntervalMs = 10_000L
+    val config = productionHeartbeatConfig()
+    assertAcceptedProductionHeartbeatConfig(config)
 
-    val readTimeoutMs = topologySocketReadTimeoutMs(heartbeatTimeoutMs, heartbeatIntervalMs)
+    val readTimeoutMs = topologySocketReadTimeoutMs(config.heartbeatTimeoutMs, config.heartbeatIntervalMs)
 
-    assertEquals(35_000, readTimeoutMs)
-    assertTrue(readTimeoutMs >= heartbeatTimeoutMs)
-    assertTrue(readTimeoutMs < heartbeatTimeoutMs + heartbeatIntervalMs)
+    assertEquals(config.heartbeatTimeoutMs + config.heartbeatIntervalMs / 2, readTimeoutMs.toLong())
+    assertTrue(readTimeoutMs >= config.heartbeatTimeoutMs)
+    assertTrue(readTimeoutMs < config.heartbeatTimeoutMs + config.heartbeatIntervalMs)
   }
 
   @Test
@@ -128,6 +131,7 @@ class TerminalTopologyServerTest {
     assertCloseReasonCase("TOPOLOGY_PEER_UNREACHABLE", expectPeerCloseHandshake = false) { _, peer ->
       peer.socket.close()
     }
+    assertLocalCloseIntentWinsOverConflictingPeerReason()
 
     val port = freePort()
     val events = CopyOnWriteArrayList<ConnectionEvent>()
@@ -246,6 +250,13 @@ class TerminalTopologyServerTest {
 
   @Test
   fun `production registry keeps a heartbeat-only socket alive for three production timeouts`() {
+    val config = productionHeartbeatConfig()
+    assertAcceptedProductionHeartbeatConfig(config)
+    val minimumDurationMs = Math.multiplyExact(config.heartbeatTimeoutMs, 3L)
+    assertEquals("TP-A7 production heartbeat window", 90_000L, minimumDurationMs)
+    val readTimeoutMs = Math.toIntExact(
+      Math.addExact(config.heartbeatTimeoutMs, Math.multiplyExact(config.heartbeatIntervalMs, 2L)),
+    )
     val port = ServerSocket(0).use { it.localPort }
     val pongCount = AtomicInteger()
     val closeReason = java.util.concurrent.atomic.AtomicReference<String?>()
@@ -257,8 +268,8 @@ class TerminalTopologyServerTest {
     val started = TerminalTopologyHostRegistry.start(
       port = port,
       basePath = "/terminal-topology",
-      heartbeatIntervalMs = 10_000L,
-      heartbeatTimeoutMs = 30_000L,
+      heartbeatIntervalMs = config.heartbeatIntervalMs,
+      heartbeatTimeoutMs = config.heartbeatTimeoutMs,
       nodeId = "jvm-heartbeat-test",
       moduleName = "application.base.android",
       displayName = "TER JVM test",
@@ -268,7 +279,7 @@ class TerminalTopologyServerTest {
     try {
       assertEquals("succeeded", started["status"])
       Socket("127.0.0.1", port).use { socket ->
-        socket.soTimeout = 115_000
+        socket.soTimeout = readTimeoutMs
         val input = DataInputStream(socket.getInputStream())
         val output = socket.getOutputStream()
         output.write(("GET /terminal-topology/ws HTTP/1.1\r\n"
@@ -282,7 +293,7 @@ class TerminalTopologyServerTest {
         assertTrue("expected production NanoWSD upgrade, got $response", response.startsWith("HTTP/1.1 101"))
 
         val startedAt = System.nanoTime()
-        val minimumNanos = java.util.concurrent.TimeUnit.SECONDS.toNanos(90)
+        val minimumNanos = TimeUnit.MILLISECONDS.toNanos(minimumDurationMs)
         while (System.nanoTime() - startedAt < minimumNanos) {
           val (opcode, payload) = readWebSocketFrame(input)
           assertTrue("server closed heartbeat-only connection early: $closeReason", opcode != 0x8)
@@ -292,7 +303,8 @@ class TerminalTopologyServerTest {
           }
         }
       }
-      assertTrue("server did not send control heartbeats", pongCount.get() >= 8)
+      val expectedMinimumPongs = (minimumDurationMs / config.heartbeatIntervalMs - 1L).coerceAtLeast(1L)
+      assertTrue("server did not send control heartbeats", pongCount.get() >= expectedMinimumPongs)
       assertEquals(null, closeReason.get())
     } finally {
       TerminalTopologyHostRegistry.stop()
@@ -327,6 +339,39 @@ class TerminalTopologyServerTest {
     )
     assertEquals("succeeded", started["status"])
   }
+
+  private fun productionHeartbeatConfig(): ProductionHeartbeatConfig {
+    val relativeConfigPath = Path.of("apps/terminal/kernel/base/contracts/topology-transport.config.json")
+    var directory: Path? = Path.of("").toAbsolutePath().normalize()
+    var configPath: Path? = null
+    while (directory != null) {
+      val candidate = directory.resolve(relativeConfigPath)
+      if (Files.isRegularFile(candidate)) {
+        configPath = candidate
+        break
+      }
+      directory = directory.parent
+    }
+    val path = configPath ?: throw AssertionError("could not locate production topology transport config")
+    val jsonText = path.toFile().readText(StandardCharsets.UTF_8)
+    val json = JSONObject(jsonText)
+    return ProductionHeartbeatConfig(
+      heartbeatIntervalMs = json.get("heartbeatIntervalMs").toString().toLong(),
+      heartbeatTimeoutMs = json.get("heartbeatTimeoutMs").toString().toLong(),
+    )
+  }
+
+  private fun assertAcceptedProductionHeartbeatConfig(config: ProductionHeartbeatConfig) {
+    // These accepted production-contract values must not be inherited silently
+    // from the file under test: a config reduction must not shorten this test.
+    assertEquals("accepted production heartbeat interval", 10_000L, config.heartbeatIntervalMs)
+    assertEquals("accepted production heartbeat timeout", 30_000L, config.heartbeatTimeoutMs)
+  }
+
+  private data class ProductionHeartbeatConfig(
+    val heartbeatIntervalMs: Long,
+    val heartbeatTimeoutMs: Long,
+  )
 
   private fun assertCloseReasonCase(
     expectedReason: String,
@@ -372,16 +417,50 @@ class TerminalTopologyServerTest {
     return byteArrayOf(0x03.toByte(), 0xE8.toByte()) + reasonBytes
   }
 
-  private fun readUntilCloseAndRespond(peer: TestWebSocket): String {
+  private fun assertLocalCloseIntentWinsOverConflictingPeerReason() {
+    val port = freePort()
+    val events = CopyOnWriteArrayList<ConnectionEvent>()
+    TerminalTopologyHostRegistry.registerPublisher { event, payload ->
+      if (event == "onTopologyConnection") events += ConnectionEvent(
+        event = payload["event"] as? String ?: "",
+        connectionId = payload["connectionId"] as? String ?: "",
+        reason = payload["reason"] as? String,
+      )
+    }
+    startRegistry(port, 10_000L, 30_000L)
+    try {
+      openWebSocket(port).use { peer ->
+        val opened = awaitValue(2_000L, "production registry did not publish open") {
+          events.firstOrNull { it.event == "open" }
+        }
+        TerminalTopologyHostRegistry.closePeer("TOPOLOGY_HOST_STOPPED")
+        val serverCloseReason = readUntilCloseAndRespond(peer, "TOPOLOGY_UNPAIRED")
+        assertEquals("TOPOLOGY_HOST_STOPPED", serverCloseReason)
+        val closed = awaitValue(2_000L, "production registry did not publish close after conflicting peer reason") {
+          events.firstOrNull { it.event == "close" && it.connectionId == opened.connectionId }
+        }
+        assertEquals("valid peer reason must not override a present local close intent", "TOPOLOGY_HOST_STOPPED", closed.reason)
+      }
+    } finally {
+      TerminalTopologyHostRegistry.stop()
+      TerminalTopologyHostRegistry.clearPublisher()
+    }
+  }
+
+  private fun readUntilCloseAndRespond(peer: TestWebSocket, responseReason: String? = null): String {
     val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(1_500L)
     while (System.nanoTime() < deadline) {
       val frame = readWebSocketFrame(peer.input)
       if (frame.first == 0x8) {
         val closeReply = frame.second.drop(2).toByteArray().toString(StandardCharsets.UTF_8)
-        try {
-          writeMaskedFrame(peer.output, 0x8, frame.second)
-        } catch (_error: java.io.IOException) {
-          // NanoWSD may already have closed the transport after publishing onClose.
+        if (responseReason == null) {
+          try {
+            writeMaskedFrame(peer.output, 0x8, frame.second)
+          } catch (_error: java.io.IOException) {
+            // NanoWSD may already have closed the transport after publishing onClose.
+          }
+        } else {
+          writeMaskedFrame(peer.output, 0x8, closePayload(responseReason))
         }
         return closeReply
       }

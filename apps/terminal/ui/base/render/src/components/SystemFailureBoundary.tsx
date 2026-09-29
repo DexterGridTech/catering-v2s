@@ -9,6 +9,14 @@ import {SystemFailureNotice} from './SystemFailureNotice';
 
 const errorNameOf = (error: unknown): string => (error instanceof Error ? error.name : 'UnknownError');
 
+export const isDebugFailureInjectionEnabled = (devMode: boolean, buildFlag: string | undefined): boolean =>
+  devMode || buildFlag === 'true';
+
+const debugFailureInjectionEnabled = isDebugFailureInjectionEnabled(
+  __DEV__,
+  process.env.EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION,
+);
+
 export function parseDebugFailureInjectionUrl(value: string | null): string | null | undefined {
   if (value === null) return undefined;
   if (value === 'ter-failure://clear') return null;
@@ -44,11 +52,11 @@ const DebugFailureInjection = ({
   readonly children: ReactNode;
   readonly logger: ReturnType<typeof useRenderContext>['logger'];
 }>) => {
-  const [ready, setReady] = useState(!__DEV__);
+  const [ready, setReady] = useState(!debugFailureInjectionEnabled);
   const [targetOwnerId, setTargetOwnerId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!__DEV__) return;
+    if (!debugFailureInjectionEnabled) return;
     let active = true;
     const applyUrl = (value: string | null, source: 'initial' | 'event') => {
       const target = parseDebugFailureInjectionUrl(value);
@@ -93,7 +101,7 @@ const DebugFailureInjection = ({
     };
   }, [logger, ownerId]);
 
-  if (!__DEV__) return children;
+  if (!debugFailureInjectionEnabled) return children;
   if (!ready) return null;
   if (targetOwnerId === ownerId) throw new Error('TER_DEBUG_FAILURE_INJECTION');
   return children;

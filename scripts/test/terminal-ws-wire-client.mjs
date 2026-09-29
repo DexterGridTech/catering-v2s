@@ -167,6 +167,7 @@ const V10_SCENARIOS = new Set([
   'terminal.connection.vs10.same-device-reactivation',
   'terminal.connection.vs10.ready-then-cancel',
   'terminal.connection.vs10.listener-revocation',
+  'terminal.connection.vs10.stale-revocation-old-session',
 ]);
 
 export const AUTH_REJECTION_CLOSE_REASONS = Object.freeze({
@@ -218,7 +219,6 @@ const SESSION_PROBE_SCENARIOS = new Set([
 ]);
 
 const SERVER_ERROR_SCENARIOS = new Set(['terminal.connection.vs12.auth-during-outage']);
-const SESSION_REPLACED_SCENARIOS = new Set(['terminal.connection.vs10.stale-revocation-old-session']);
 const TRACKED_CAPACITY_SCENARIOS = new Set(['terminal.connection.vs8.tracked-capacity']);
 
 function withUnknownMessageField(message) {
@@ -259,7 +259,6 @@ const SUPPORTED_SCENARIOS = new Set([
   ...V10_SCENARIOS,
   ...SESSION_PROBE_SCENARIOS,
   ...SERVER_ERROR_SCENARIOS,
-  ...SESSION_REPLACED_SCENARIOS,
   ...TRACKED_CAPACITY_SCENARIOS,
   ...OFFER_SCENARIOS,
   ...FRAME_SCENARIOS,
@@ -287,7 +286,6 @@ const expectedCloseForRequest = request => {
     return {code: 4000, reason: AUTH_REJECTION_CLOSE_REASONS[scenario]};
   }
   if (V10_SCENARIOS.has(scenario)) return {code: 4000, reason: 'ACTIVATION_CANCELLED'};
-  if (SESSION_REPLACED_SCENARIOS.has(scenario)) return {code: 4000, reason: 'SESSION_REPLACED'};
   if (SERVER_ERROR_SCENARIOS.has(scenario)) return {code: 4000, reason: 'SERVER_ERROR'};
   if (scenario === 'terminal.connection.frame.raw-overflow' || scenario.includes('compressed-')) {
     return {code: 1009};
@@ -367,7 +365,6 @@ export function parseControlRequest(contents) {
     (V2_AUTH_SCENARIOS.has(request.scenario) && request.scenario !== NO_FIRST_FRAME_SCENARIO) ||
     request.scenario === V1_OVERALL_AUTHENTICATION_DEADLINE_SCENARIO ||
     V10_SCENARIOS.has(request.scenario) ||
-    SESSION_REPLACED_SCENARIOS.has(request.scenario) ||
     TRACKED_CAPACITY_SCENARIOS.has(request.scenario) ||
     SESSION_PROBE_SCENARIOS.has(request.scenario) ||
     SERVER_ERROR_SCENARIOS.has(request.scenario) ||
@@ -433,11 +430,14 @@ export function parseControlRequest(contents) {
     || V2_AUTH_SCENARIOS.has(request.scenario)
     || request.scenario === V1_OVERALL_AUTHENTICATION_DEADLINE_SCENARIO
     || NO_AUTH_CLOSE_SCENARIOS.has(request.scenario)
+    || request.scenario === 'terminal.connection.topology-probe'
     || request.scenario === 'terminal.connection.auth.store-disabled-active'
-    || SESSION_REPLACED_SCENARIOS.has(request.scenario)
     || TRACKED_CAPACITY_SCENARIOS.has(request.scenario)
     || SESSION_PROBE_SCENARIOS.has(request.scenario)
-    || SERVER_ERROR_SCENARIOS.has(request.scenario);
+    || SERVER_ERROR_SCENARIOS.has(request.scenario)
+    || OFFER_SCENARIOS.has(request.scenario)
+    || FRAME_SCENARIOS.has(request.scenario)
+    || COMPRESSION_SESSION_SCENARIOS.has(request.scenario);
   if (requiresMarker && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(request.markerId ?? '')) {
     throw new Error('TERMINAL_WIRE_CONTROL_MARKER_ID_INVALID');
   }
@@ -908,7 +908,7 @@ async function runTopologyOrRace(request) {
         && eventTypes.length > 0) {
       throw new Error('TERMINAL_WIRE_REJECTED_AUTH_RECEIVED_APPLICATION_MESSAGE');
     }
-    if ((V10_SCENARIOS.has(request.scenario) || SESSION_REPLACED_SCENARIOS.has(request.scenario)) &&
+    if (V10_SCENARIOS.has(request.scenario) &&
         !(eventTypes.length === 0 || (eventTypes.length === 1 && eventTypes[0] === 'SESSION_READY'))) {
       throw new Error('TERMINAL_WIRE_SESSION_CLOSE_ORDER_INVALID');
     }
@@ -981,7 +981,7 @@ async function runSessionProbe(request, inputIterator) {
         if (eventTypes.length !== 0) throw new Error('TERMINAL_WIRE_REJECTED_AUTH_RECEIVED_APPLICATION_MESSAGE');
         return {
           ...describeHandshake(socket), eventTypes, pongCount: 0, sessionId: null,
-          closeCode: close.code, closeReason: close.reason,
+          closeCode: close.closeCode, closeReason: close.closeReason,
         };
       }
       readyMessage = await readSessionReady(socket, eventTypes, request.markerId);
@@ -1027,7 +1027,10 @@ async function runSessionProbe(request, inputIterator) {
       }
       const expectedClose = closeCommand;
       if (expectedClose) {
-        const close = await socket.readEvent(FRAME_DEADLINE_MS);
+        const closeDeadlineMs = request.scenario === 'terminal.connection.vs3.heartbeat-timeout'
+          ? readyMessage.heartbeatTimeoutMs + readyMessage.heartbeatIntervalMs + 2_000
+          : FRAME_DEADLINE_MS;
+        const close = await socket.readEvent(closeDeadlineMs);
         if (close.kind !== 'close'
             || close.code !== Number(expectedClose[1])
             || close.reason !== expectedClose[2]) {
@@ -1210,7 +1213,6 @@ async function run(request, inputIterator = null) {
       || AUTH_REJECTION_SCENARIOS.has(request.scenario)
       || request.scenario === V1_OVERALL_AUTHENTICATION_DEADLINE_SCENARIO
       || V10_SCENARIOS.has(request.scenario)
-      || SESSION_REPLACED_SCENARIOS.has(request.scenario)
       || TRACKED_CAPACITY_SCENARIOS.has(request.scenario)
       || SERVER_ERROR_SCENARIOS.has(request.scenario)) {
     return runTopologyOrRace(request);

@@ -95,8 +95,7 @@ class TerminalConnectionFrameCodecTest {
                 + "\"nested\":{\"first\":{\"second\":{\"third\":{\"enabled\":true}}}},"
                 + "\"longText\":\"" + "x".repeat(4_096) + "\","
                 + "\"longNumber\":" + "7".repeat(256) + "}";
-        String frame = validPing.substring(0, validPing.length() - 1)
-                + ",\"futureField\":" + unknownFieldValue + "}";
+        String frame = validPing.substring(0, validPing.length() - 1) + ",\"futureField\":" + unknownFieldValue + "}";
 
         assertThat(frame.getBytes(StandardCharsets.UTF_8).length)
                 .isLessThanOrEqualTo(TdsWireJsonConfiguration.MAX_WIRE_JSON_DOCUMENT_CHARS);
@@ -108,14 +107,13 @@ class TerminalConnectionFrameCodecTest {
         String validPing = "{\"type\":\"PING\",\"seq\":4,\"clientTs\":\"2026-09-26T12:00:00Z\",\"lastRttMs\":12.5}";
         assertInvalidPing(validPing + " {}");
 
-        String overDepthValue = "[".repeat(TdsWireJsonConfiguration.MAX_WIRE_JSON_DEPTH)
-                + "0" + "]".repeat(TdsWireJsonConfiguration.MAX_WIRE_JSON_DEPTH);
-        String overDepth = validPing.substring(0, validPing.length() - 1)
-                + ",\"futureField\":" + overDepthValue + "}";
+        String overDepthValue = "[".repeat(TdsWireJsonConfiguration.MAX_WIRE_JSON_DEPTH) + "0"
+                + "]".repeat(TdsWireJsonConfiguration.MAX_WIRE_JSON_DEPTH);
+        String overDepth = validPing.substring(0, validPing.length() - 1) + ",\"futureField\":" + overDepthValue + "}";
         assertInvalidPing(overDepth);
 
-        String oversized = validPing.substring(0, validPing.length() - 1)
-                + ",\"futureField\":\"" + "x".repeat(TdsWireJsonConfiguration.MAX_WIRE_JSON_DOCUMENT_CHARS) + "\"}";
+        String oversized = validPing.substring(0, validPing.length() - 1) + ",\"futureField\":\""
+                + "x".repeat(TdsWireJsonConfiguration.MAX_WIRE_JSON_DOCUMENT_CHARS) + "\"}";
         assertThatIllegalArgumentException().isThrownBy(() -> codec.ping(oversized));
     }
 

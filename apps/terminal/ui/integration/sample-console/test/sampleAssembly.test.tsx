@@ -162,7 +162,12 @@ const mount = async (
   launcherMeasuredSize: Readonly<{readonly width: number; readonly height: number}> = {width: 0, height: 0},
   inputMeasuredY = 120,
   launcherWindowOrigin: () => Readonly<{readonly x: number; readonly y: number}> = () => LAUNCHER_WINDOW_ORIGIN,
-  launcherMeasurement?: () => Readonly<{readonly x: number; readonly y: number; readonly width: number; readonly height: number}>,
+  launcherMeasurement?: () => Readonly<{
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+  }>,
 ): Promise<TestRenderer> => {
   setNativeTestRefFactory((hostName: string, props: NativeTestHostProps) => {
     const testID = props.testID;
@@ -1112,7 +1117,7 @@ describe('sample-console real assembly', () => {
     const staleMeasurement = {x: -90, y: 159, width: 1360, height: 765};
     const resizedMeasurement = {x: 40, y: 159, width: 1100, height: 618.75};
     let currentMeasurement = initialMeasurement;
-    const measurements: typeof initialMeasurement[] = [];
+    const measurements: (typeof initialMeasurement)[] = [];
     const assembly = await createSampleAssembly({
       platformPorts: createTestPlatformPorts({events}),
       persistenceKey: `sample-console-admin-viewport-settle-${Date.now()}`,
@@ -1557,6 +1562,43 @@ describe('sample-console real assembly', () => {
           actualIsHostPrimaryDisplay: false,
         },
       });
+    } finally {
+      if (renderer !== undefined) await renderer!.unmount();
+      releaseRuntimeForTest(assembly.runtime);
+    }
+  });
+
+  it('retains submitted business state underneath the admin layer', async () => {
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({displayCount: 2}),
+      persistenceKey: `sample-console-admin-submitted-business-state-${Date.now()}`,
+      surfaceForm: 'laptop',
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, LANDSCAPE_PRIMARY_FRAME)},
+    });
+    let renderer: TestRenderer | undefined;
+    try {
+      renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME);
+      await act(async () => {
+        const result = await assembly.runtime.dispatchCommand(
+          submitMemberCommand,
+          {
+            name: 'Alice',
+            phone: '010-1234-5678',
+          },
+          {requestId: createRequestId()},
+        );
+        expect(result.status).toBe('completed');
+      });
+
+      await tapLauncher(renderer);
+      expect(getNode(renderer, adminTestIds.login)).toBeDefined();
+
+      expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')).toMatchObject({
+        partKey: 'sample.desk.member-list',
+      });
+      expect(selectLayers(assembly.runtime.getState(), 'PRIMARY').map(layer => layer.layerId)).toEqual(
+        expect.arrayContaining(['sample.desk.waiting-confirm', 'admin.console.layer']),
+      );
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);

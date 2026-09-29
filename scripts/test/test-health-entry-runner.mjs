@@ -56,8 +56,12 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/standards-enforcement-execution-catalog.test.mjs',
   'scripts/test/standards-enforcement-verify.test.mjs',
   'scripts/test/ter-persist-kv-prechange-android.test.mjs',
+  'scripts/test/ter-admin-display-web.test.mjs',
   'scripts/test/ter-virtual-keyboard-android.test.mjs',
   'scripts/test/terminal-ws-wire-client.test.mjs',
+  'scripts/test/terminal-topology-device-identity.test.mjs',
+  'scripts/test/terminal-topology-heartbeat-window.test.mjs',
+  'scripts/test/terminal-topology-runner-guards.test.mjs',
 ]);
 
 const sorted = values => [...values].sort((left, right) => left.localeCompare(right));
@@ -137,7 +141,7 @@ export function selfTest(repositoryRoot = root) {
 
 export function runNodeTests({repositoryRoot = root, spawnSyncImpl = childProcess.spawnSync} = {}) {
   const entrySet = validateExplicitTestSet({root: repositoryRoot});
-  const result = spawnSyncImpl(process.execPath, ['--test', ...entrySet.declared], {
+  const result = spawnSyncImpl(process.execPath, ['--test-reporter=dot', '--test', ...entrySet.declared], {
     cwd: repositoryRoot,
     encoding: 'utf8',
     env: {...process.env},

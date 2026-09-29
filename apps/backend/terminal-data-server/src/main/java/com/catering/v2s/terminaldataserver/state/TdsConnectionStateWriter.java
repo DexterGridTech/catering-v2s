@@ -4,6 +4,7 @@ import com.catering.v2s.terminaldataserver.config.TdsRuntimeSettings;
 import com.catering.v2s.terminaldataserver.observability.TdsAsyncLog;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.Heartbeat;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -113,15 +114,18 @@ public final class TdsConnectionStateWriter implements SmartLifecycle {
                 disconnect.persisted().run();
             return true;
         } catch (RuntimeException failure) {
+            SqlFailure sqlFailure = sqlFailure(failure);
             TdsAsyncLog.enqueue(
                     logScheduler,
                     () -> LOGGER.warn(
                             ("event=tds_disconnect_write_failed sessionId={} pendingHeartbeats={} pend"
-                                    + "ingDisconnects={} failureType={}"),
+                                    + "ingDisconnects={} failureType={} sqlState={} sqlVendorCode={}"),
                             disconnect.session().sessionId(),
                             pendingHeartbeats.size(),
                             pendingDisconnects.size(),
-                            failure.getClass().getSimpleName()));
+                            failure.getClass().getSimpleName(),
+                            sqlFailure.sqlState(),
+                            sqlFailure.vendorCode()));
             return false;
         }
     }
@@ -143,17 +147,33 @@ public final class TdsConnectionStateWriter implements SmartLifecycle {
                             pendingHeartbeatCount,
                             pendingDisconnectCount));
         } catch (RuntimeException failure) {
+            SqlFailure sqlFailure = sqlFailure(failure);
             TdsAsyncLog.enqueue(
                     logScheduler,
                     () -> LOGGER.warn(
                             ("event=tds_heartbeat_write_failed count={} pendingHeartbeats={} pendingDi"
-                                    + "sconnects={} failureType={}"),
+                                    + "sconnects={} failureType={} sqlState={} sqlVendorCode={}"),
                             heartbeats.size(),
                             pendingHeartbeats.size(),
                             pendingDisconnects.size(),
-                            failure.getClass().getSimpleName()));
+                            failure.getClass().getSimpleName(),
+                            sqlFailure.sqlState(),
+                            sqlFailure.vendorCode()));
         }
     }
+
+    static SqlFailure sqlFailure(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SQLException sqlException) {
+                return new SqlFailure(
+                        sqlException.getSQLState() == null ? "NONE" : sqlException.getSQLState(),
+                        sqlException.getErrorCode());
+            }
+        }
+        return new SqlFailure("NONE", 0);
+    }
+
+    record SqlFailure(String sqlState, int vendorCode) {}
 
     int pendingHeartbeatCount() {
         return pendingHeartbeats.size();

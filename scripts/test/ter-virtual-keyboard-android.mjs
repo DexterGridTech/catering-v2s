@@ -5,6 +5,8 @@
 // Usage: prepare --run-id ID --dual-serial SERIAL --mobile-serial SERIAL;
 // build --run-id ID --app APP; launch/inspect/tap/capture/transition/insert-url-symbol-sequence --run-id ID
 // with the explicit --device dual|mobile and the action-specific IA/testID fields;
+// W7 uses w7-seed-clipboard and w7-long-press through this managed runner; only hashes and menu action IDs are persisted.
+// inject-debug-failure sends a debug-only VIEW event to an already-owned process without Activity wait;
 // diagnose-pending-launch --run-id ID resolves only the exact pending launch after host/boot/process readback;
 // inspect-resolved-launch --run-id ID reads whitelisted startup breadcrumbs for an exact resolved absent launch;
 // reinspect-resolved-launch-logs --run-id ID --intent-id EXACT rereads bounded, whitelisted logcat for one absent launch;
@@ -61,6 +63,35 @@ const W2_INPUT_PROBES = Object.freeze({
   'covered-text': 'Z',
   'scanner-text': 'SCAN',
   'overlay-host': '198.51.100.8',
+});
+const W7_CLIPBOARD_SENTINEL = 'terw7clipboard';
+const W7_PROBE_TEXT_BY_RESOURCE_ID = Object.freeze({
+  'sample.auth.login:operator-name': W7_CLIPBOARD_SENTINEL,
+  'sample.auth.login:passcode': '1111',
+  'sample.desk.customer-member:age': '123',
+  'sample.desk.member-form:name': 'terw7',
+  'sample.desk.member-form:phone': '12345678',
+  'sample.desk.member-form:keyboard-alpha-probe': 'terw7',
+  'sample.desk.member-form:keyboard-financial-probe': '12.34',
+  'terminal.admin:topology:host': '192.0.2.1',
+  'harness:full-field': 'terw7',
+});
+const W7_INPUT_RESOURCE_IDS = new Set([
+  'sample.auth.login:operator-name',
+  'sample.auth.login:passcode',
+  'sample.desk.customer-member:age',
+  'sample.desk.member-form:name',
+  'sample.desk.member-form:phone',
+  'sample.desk.member-form:keyboard-alpha-probe',
+  'sample.desk.member-form:keyboard-financial-probe',
+  'terminal.admin:topology:host',
+  'harness:full-field',
+]);
+const W7_CLIPBOARD_KEYS = Object.freeze({
+  'select-all': Object.freeze(['keycombination', 'KEYCODE_CTRL_LEFT', 'KEYCODE_A']),
+  copy: Object.freeze(['keycombination', 'KEYCODE_CTRL_LEFT', 'KEYCODE_C']),
+  paste: Object.freeze(['keycombination', 'KEYCODE_CTRL_LEFT', 'KEYCODE_V']),
+  delete: Object.freeze(['keyevent', 'KEYCODE_DEL']),
 });
 const W2_HARDWARE_KEYS = Object.freeze({
   tab: Object.freeze(['keyevent', 'KEYCODE_TAB']),
@@ -357,6 +388,22 @@ export function debugFailureInjectionIntentArgs(activity, ownerId = null) {
   return ['shell', 'am', 'start', '-W', '-n', activity, '-a', 'android.intent.action.VIEW', '-d', uri];
 }
 
+export function debugFailureInjectionRuntimeIntentArgs(activity, ownerId) {
+  if (!/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(activity ?? '')) fail('VK_ANDROID_HARNESS_ACTIVITY_INVALID');
+  if (!/^[A-Za-z0-9:._-]{1,160}$/.test(ownerId ?? '')) fail('VK_ANDROID_DEBUG_FAILURE_OWNER_INVALID');
+  return [
+    'shell',
+    'am',
+    'start',
+    '-n',
+    activity,
+    '-a',
+    'android.intent.action.VIEW',
+    '-d',
+    `ter-failure://inject/${encodeURIComponent(ownerId)}`,
+  ];
+}
+
 export function debugNativeLoadingDelayIntentArgs(activity, delayMs) {
   if (!/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(activity ?? '')) fail('VK_ANDROID_HARNESS_ACTIVITY_INVALID');
   if (!Number.isInteger(delayMs) || delayMs < 2_100 || delayMs > 4_000) fail('VK_ANDROID_NATIVE_LOADING_DELAY_INVALID');
@@ -544,6 +591,127 @@ export function w2HardwareKeyArgs(key, displayId) {
   if (!Number.isSafeInteger(displayId) || displayId < 0 || !Object.hasOwn(W2_HARDWARE_KEYS, key))
     fail('VK_ANDROID_W2_HARDWARE_KEY_INVALID');
   return ['shell', 'input', '-d', String(displayId), ...W2_HARDWARE_KEYS[key]];
+}
+
+export function w7ProbeKeyIds(resourceId) {
+  const value = W7_PROBE_TEXT_BY_RESOURCE_ID[resourceId];
+  if (typeof value !== 'string') fail('VK_ANDROID_W7_RESOURCE_ID_OUT_OF_SCOPE');
+  return Array.from(value, character => `ui.base.input:virtual-keyboard:text-${character}`);
+}
+
+export function w7ProbeTapPlan(xml, displayId, resourceId) {
+  if (!Number.isSafeInteger(displayId) || displayId < 0) fail('VK_ANDROID_W7_DISPLAY_INVALID');
+  const fieldState = parseResourceUiState(xml, resourceId, displayId);
+  const keyboard = parseResourceNode(xml, 'ui.base.input:virtual-keyboard', displayId);
+  if (fieldState?.focused !== true || !keyboard?.enabled) fail('VK_ANDROID_W7_PROBE_INPUT_NOT_READY');
+  return w7ProbeKeyIds(resourceId).map((keyId, index) => {
+    const node = parseResourceNode(xml, keyId, displayId);
+    if (!node?.enabled || node.right <= node.left || node.bottom <= node.top) {
+      fail(`VK_ANDROID_W7_PROBE_KEY_NOT_AVAILABLE_${index + 1}`);
+    }
+    return Object.freeze({
+      x: Math.floor((node.left + node.right) / 2),
+      y: Math.floor((node.top + node.bottom) / 2),
+    });
+  });
+}
+
+export function w7ClipboardKeyArgs(key, displayId) {
+  if (!Number.isSafeInteger(displayId) || displayId < 0 || !Object.hasOwn(W7_CLIPBOARD_KEYS, key))
+    fail('VK_ANDROID_W7_CLIPBOARD_ACTION_INVALID');
+  return ['shell', 'input', '-d', String(displayId), ...W7_CLIPBOARD_KEYS[key]];
+}
+
+export function w7ClearInputArgs(displayId, deleteKeyCount = 64) {
+  if (
+    !Number.isSafeInteger(displayId) ||
+    displayId < 0 ||
+    !Number.isSafeInteger(deleteKeyCount) ||
+    deleteKeyCount < 1 ||
+    deleteKeyCount > 128
+  ) {
+    fail('VK_ANDROID_W7_CLEAR_INPUT_INVALID');
+  }
+  return ['shell', 'input', '-d', String(displayId), 'keyevent', ...Array(deleteKeyCount).fill('KEYCODE_DEL')];
+}
+
+export function w7LongPressArgs(displayId, bounds, durationMs = 1_000) {
+  if (
+    !Number.isSafeInteger(displayId) ||
+    displayId < 0 ||
+    !bounds ||
+    !['left', 'top', 'right', 'bottom'].every(key => Number.isSafeInteger(bounds[key])) ||
+    bounds.left < 0 ||
+    bounds.top < 0 ||
+    bounds.right <= bounds.left ||
+    bounds.bottom <= bounds.top ||
+    !Number.isSafeInteger(durationMs) ||
+    durationMs < 750 ||
+    durationMs > 2_000
+  ) {
+    fail('VK_ANDROID_W7_LONG_PRESS_INVALID');
+  }
+  const x = Math.floor((bounds.left + bounds.right) / 2);
+  const y = Math.floor((bounds.top + bounds.bottom) / 2);
+  return [
+    'shell',
+    'input',
+    '-d',
+    String(displayId),
+    'swipe',
+    String(x),
+    String(y),
+    String(x),
+    String(y),
+    String(durationMs),
+  ];
+}
+
+export function parseTextInputContextMenu(xml, displayId) {
+  let scoped = String(xml ?? '');
+  const open = new RegExp(`<display\\s+id=["']${Number(displayId)}["'][^>]*>`).exec(scoped);
+  if (!open) fail('VK_ANDROID_CONTEXT_MENU_DISPLAY_MISSING');
+  const close = scoped.indexOf('</display>', open.index + open[0].length);
+  if (close < 0) fail('VK_ANDROID_CONTEXT_MENU_DISPLAY_MISSING');
+  scoped = scoped.slice(open.index, close + '</display>'.length);
+  const decode = value =>
+    value
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&');
+  const actionByLabel = new Map([
+    ['select all', 'SELECT_ALL'],
+    ['select', 'SELECT'],
+    ['copy', 'COPY'],
+    ['paste', 'PASTE'],
+    ['paste as plain text', 'PASTE_PLAIN_TEXT'],
+    ['cut', 'CUT'],
+    ['autofill', 'AUTOFILL'],
+    ['全选', 'SELECT_ALL'],
+    ['选择', 'SELECT'],
+    ['复制', 'COPY'],
+    ['粘贴', 'PASTE'],
+    ['粘贴为纯文本', 'PASTE_PLAIN_TEXT'],
+    ['剪切', 'CUT'],
+    ['自动填充', 'AUTOFILL'],
+  ]);
+  const actions = new Set();
+  let floatingToolbar = false;
+  for (const [match] of scoped.matchAll(/<node\b[^>]*>/g)) {
+    const resourceId = match.match(/\bresource-id="([^"]*)"/)?.[1] ?? '';
+    if (/(?:floating_toolbar|text_action_mode)/i.test(resourceId)) floatingToolbar = true;
+    const rawText = match.match(/\btext="([^"]*)"/)?.[1];
+    if (rawText === undefined) continue;
+    const action = actionByLabel.get(decode(rawText).trim().toLowerCase());
+    if (action) actions.add(action);
+  }
+  return Object.freeze({
+    visible: floatingToolbar || actions.size > 0,
+    floatingToolbar,
+    actions: Object.freeze([...actions].sort()),
+  });
 }
 
 export function parseResourceContentDescriptionHash(xml, resourceId, displayId) {
@@ -1830,6 +1998,8 @@ export async function launchWithPendingOwnership(manifest, intent, {persist, lau
     !intent.intentId
   )
     fail('VK_ANDROID_MANIFEST_APP_BINDING_INVALID');
+  const pendingW10 = manifest.persistKvW10PendingObservation;
+  if (pendingW10 && pendingW10.intentId !== intent.intentId) fail('VK_ANDROID_A11_W10_LAUNCH_INTENT_MISMATCH');
   manifest.pendingRemoteLaunches.push({...intent, startedAt: now()});
   await persist();
   const noteFailure = async (stage, failureCode) => {
@@ -1871,6 +2041,7 @@ export async function launchWithPendingOwnership(manifest, intent, {persist, lau
   }
   const resolution = resolvePendingRemoteLaunch(manifest, intent.intentId, observed);
   if (resolution !== 'PROCESS_ADOPTED') fail('VK_ANDROID_REMOTE_LAUNCH_OWNERSHIP_UNRESOLVED');
+  if (pendingW10) pendingW10.launchResolved = true;
   await persist();
   return observed;
 }
@@ -1902,19 +2073,52 @@ const STRUCTURED_RUNTIME_EVENT_FIELDS = Object.freeze({
   ]),
   'startup.ready-candidate': Object.freeze([
     ['readyPartKey', value => value === null || (typeof value === 'string' && /^[A-Za-z0-9:._-]{1,160}$/.test(value))],
-    ['contentFailure', value => value === null || ['render-error', 'missing-catalog-entry', 'incompatible-catalog-entry', 'container-empty', 'invalid-props'].includes(value)],
+    [
+      'contentFailure',
+      value =>
+        value === null ||
+        [
+          'render-error',
+          'missing-catalog-entry',
+          'incompatible-catalog-entry',
+          'container-empty',
+          'invalid-props',
+        ].includes(value),
+    ],
     ['surfaceKey', value => value === 'PRIMARY' || value === 'SECONDARY'],
     ['displayIndex', value => value === 0 || value === 1],
   ]),
   'startup.ready-hidden': Object.freeze([
     ['readyPartKey', value => value === null || (typeof value === 'string' && /^[A-Za-z0-9:._-]{1,160}$/.test(value))],
-    ['contentFailure', value => value === null || ['render-error', 'missing-catalog-entry', 'incompatible-catalog-entry', 'container-empty', 'invalid-props'].includes(value)],
+    [
+      'contentFailure',
+      value =>
+        value === null ||
+        [
+          'render-error',
+          'missing-catalog-entry',
+          'incompatible-catalog-entry',
+          'container-empty',
+          'invalid-props',
+        ].includes(value),
+    ],
     ['surfaceKey', value => value === 'PRIMARY' || value === 'SECONDARY'],
     ['displayIndex', value => value === 0 || value === 1],
   ]),
   'startup.ready-failed': Object.freeze([
     ['readyPartKey', value => value === null || (typeof value === 'string' && /^[A-Za-z0-9:._-]{1,160}$/.test(value))],
-    ['contentFailure', value => value === null || ['render-error', 'missing-catalog-entry', 'incompatible-catalog-entry', 'container-empty', 'invalid-props'].includes(value)],
+    [
+      'contentFailure',
+      value =>
+        value === null ||
+        [
+          'render-error',
+          'missing-catalog-entry',
+          'incompatible-catalog-entry',
+          'container-empty',
+          'invalid-props',
+        ].includes(value),
+    ],
     ['errorName', value => typeof value === 'string' && /^[A-Za-z_$][\w$]{0,79}$/.test(value)],
   ]),
 });
@@ -1988,6 +2192,102 @@ export function summarizeJavaScriptRuntimeErrors(logcatText, processIds) {
   return {errorCount: kinds.size, kinds: [...kinds].sort()};
 }
 
+function safeJavaScriptErrorMessage(message) {
+  const normalized = String(message ?? '')
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (
+    /\b(?:password|passwd|token|cookie|authorization|otp|phone|mobile|username|login|credential|session|account|payload|request body|response body)\b/i.test(
+      normalized,
+    )
+  ) {
+    return '[SENSITIVE_DETAIL_REDACTED]';
+  }
+  const withoutName = normalized.replace(
+    /^(?:Uncaught\s+)?(?:Invariant Violation|Error|[A-Za-z_$][\w$]*(?:Error|Exception))\s*:\s*/i,
+    '',
+  );
+  const sanitized = withoutName
+    .replace(/https?:\/\/[^\s)]+/gi, '[URL_REDACTED]')
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[EMAIL_REDACTED]')
+    .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[IP_REDACTED]')
+    .replace(/\b\+?\d[\d ().-]{7,}\d\b/g, '[NUMBER_REDACTED]')
+    .replace(/(["'`])(?:\\.|(?!\1)[^\\])*\1/g, '[VALUE_REDACTED]')
+    .replace(/\b(?:0x)?[a-f0-9]{24,}\b/gi, '[OPAQUE_ID_REDACTED]')
+    .replace(/\b[A-Za-z0-9._-]{40,}\b/g, '[OPAQUE_VALUE_REDACTED]');
+  return /^[\x20-\x7e]*$/.test(sanitized) ? sanitized.slice(0, 180) : '[DETAIL_REDACTED]';
+}
+
+export function summarizeJavaScriptRuntimeErrorDetails(logcatText, processIds) {
+  if (!Array.isArray(processIds) || processIds.some(value => !/^\d{1,10}$/.test(String(value))))
+    fail('VK_ANDROID_RUNTIME_DIAGNOSTIC_PID_FILTER_INVALID');
+  const allowedPids = new Set(processIds.map(String));
+  const lines = String(logcatText ?? '').split(/\r?\n/);
+  const targetLines = lines
+    .map((line, index) => ({index, entry: parseLogcatLine(line)}))
+    .filter(({entry}) => entry?.tag === 'ReactNativeJS' && allowedPids.has(entry.pid));
+  const errors = [];
+  const seen = new Set();
+  for (let targetIndex = 0; targetIndex < targetLines.length; targetIndex += 1) {
+    const {entry} = targetLines[targetIndex];
+    const message = entry.message;
+    if (!/(?:error|exception|fatal|invariant violation)/i.test(message)) continue;
+    const kind = /TER_DEBUG_FAILURE_INJECTION/.test(message)
+      ? 'INJECTED_FAILURE'
+      : /(?:Unable to load script|No bundle URL present)/i.test(message)
+        ? 'BUNDLE_UNAVAILABLE'
+        : /(?:Cannot find module|Unable to resolve module)/i.test(message)
+          ? 'MODULE_RESOLUTION_FAILURE'
+          : /TurboModuleRegistry|Native module .* not found/i.test(message)
+            ? 'NATIVE_MODULE_FAILURE'
+            : /Invariant Violation/i.test(message)
+              ? 'RN_INVARIANT_VIOLATION'
+              : /\bTypeError\b/i.test(message)
+                ? 'JS_TYPE_ERROR'
+                : /\bReferenceError\b/i.test(message)
+                  ? 'JS_REFERENCE_ERROR'
+                  : /\bSyntaxError\b/i.test(message)
+                    ? 'JS_SYNTAX_ERROR'
+                    : 'JS_ERROR';
+    const nameMatch = message.match(/\b(Invariant Violation|Error|[A-Za-z_$][\w$]*(?:Error|Exception))\s*:/i);
+    const errorName = nameMatch ? (nameMatch[1] === 'Invariant Violation' ? 'InvariantViolation' : nameMatch[1]) : null;
+    const safeCode = message.match(/\b(TER_[A-Z0-9_]{2,80})\b/)?.[1] ?? null;
+    const bundleFrames = [];
+    for (let frameIndex = targetIndex; frameIndex < Math.min(targetLines.length, targetIndex + 26); frameIndex += 1) {
+      const frameEntry = targetLines[frameIndex].entry;
+      if (
+        frameIndex > targetIndex &&
+        /(?:^|\b)(?:Error|[A-Za-z_$][\w$]*(?:Error|Exception))\s*:/i.test(frameEntry.message)
+      )
+        break;
+      for (const match of frameEntry.message.matchAll(/\bindex\.android\.bundle:(\d{1,8}):(\d{1,8})\b/g)) {
+        const frame = {line: Number(match[1]), column: Number(match[2])};
+        if (!bundleFrames.some(item => item.line === frame.line && item.column === frame.column)) {
+          bundleFrames.push(frame);
+          if (bundleFrames.length === 12) break;
+        }
+      }
+      if (bundleFrames.length === 12) break;
+    }
+    const record = {
+      kind,
+      errorName,
+      safeCode,
+      safeMessage: safeJavaScriptErrorMessage(message),
+      messageSha256: sha256(message),
+      bundleFrames,
+    };
+    const key = JSON.stringify(record);
+    if (!seen.has(key)) {
+      seen.add(key);
+      errors.push(record);
+      if (errors.length > 20) fail('VK_ANDROID_RUNTIME_DIAGNOSTIC_EVENT_LIMIT');
+    }
+  }
+  return {errors};
+}
+
 export function summarizeDebugFailureInjectionLogcat(logcatText, processIds, expectedOwnerId) {
   if (
     !Array.isArray(processIds) ||
@@ -2048,7 +2348,9 @@ export function resolveResolvedDebugFailureInjectionLog(manifest, intentId) {
     intent.packageName !== app.packageName ||
     !['dual', 'mobile'].includes(intent.shape) ||
     !(
-      (intent.resolution === 'PROCESS_ADOPTED' && Number.isSafeInteger(intent.processCount) && intent.processCount > 0) ||
+      (intent.resolution === 'PROCESS_ADOPTED' &&
+        Number.isSafeInteger(intent.processCount) &&
+        intent.processCount > 0) ||
       (intent.resolution === 'PROCESS_ABSENT' && intent.processCount === 0)
     ) ||
     !device ||
@@ -2074,8 +2376,7 @@ export async function collectResolvedDebugFailureInjectionLogEvidence(
   readAdbText = adbText,
 ) {
   const resolved = resolveResolvedDebugFailureInjectionLog(manifest, intentId);
-  if (!/^[A-Za-z0-9:._-]{1,160}$/.test(expectedOwnerId ?? ''))
-    fail('VK_ANDROID_DEBUG_FAILURE_LOG_FILTER_INVALID');
+  if (!/^[A-Za-z0-9:._-]{1,160}$/.test(expectedOwnerId ?? '')) fail('VK_ANDROID_DEBUG_FAILURE_LOG_FILTER_INVALID');
   const {intent, startupPid, apkSha256} = resolved;
   const device = deviceFor(manifest, intent.shape);
   const readBootId = async stage =>
@@ -2098,12 +2399,9 @@ export async function collectResolvedDebugFailureInjectionLogEvidence(
   );
   if ((await readBootId('post')) !== intent.bootId) fail('VK_ANDROID_PENDING_LAUNCH_IDENTITY_MISMATCH');
   const launchScopedLines = launchAttemptLogLines(logcat, intentId).filter(line => {
-      const entry = parseLogcatLine(line);
-      return (
-        entry?.tag === 'ReactNativeJS' &&
-        entry.pid === startupPid
-      );
-    });
+    const entry = parseLogcatLine(line);
+    return entry?.tag === 'ReactNativeJS' && entry.pid === startupPid;
+  });
   const scopedLogcat = launchScopedLines.join('\n');
   const summary = summarizeDebugFailureInjectionLogcat(scopedLogcat, [startupPid], expectedOwnerId);
   return {
@@ -2114,6 +2412,7 @@ export async function collectResolvedDebugFailureInjectionLogEvidence(
     startupPid,
     ownerId: expectedOwnerId,
     javascriptErrors: summarizeJavaScriptRuntimeErrors(scopedLogcat, [startupPid]),
+    javascriptErrorDetails: summarizeJavaScriptRuntimeErrorDetails(scopedLogcat, [startupPid]),
     ...summary,
   };
 }
@@ -2184,9 +2483,19 @@ function launchAttemptLogLines(logcatText, intentId) {
   return lines.slice(sentinelIndex + 1, nextSentinelIndex < 0 ? lines.length : nextSentinelIndex);
 }
 
-export function summarizePersistKvW10(logcatText, intentId) {
+export function summarizePersistKvW10(logcatText, intentId, appProcessIds) {
+  if (
+    !Array.isArray(appProcessIds) ||
+    appProcessIds.length === 0 ||
+    appProcessIds.some(value => !/^\d{1,10}$/.test(String(value)))
+  ) {
+    fail('VK_ANDROID_A11_W10_APP_PROCESS_FILTER_INVALID');
+  }
+  const allowedPids = new Set(appProcessIds.map(String));
   const lines = launchAttemptLogLines(logcatText, intentId);
-  const parsed = lines.map(parseLogcatLine);
+  const parsed = lines.map(parseLogcatLine).map(entry =>
+    entry && allowedPids.has(entry.pid) ? entry : null,
+  );
   const mismatchObserved = parsed.some(
     entry => entry?.tag === 'TerminalPersistKv' && entry.message.includes('PERSIST_KV_PROTECTED_KEY_MISMATCH'),
   );
@@ -3288,20 +3597,14 @@ async function buildApp(manifest, appName, buildType = 'release') {
   manifest.phase = `BUILD_${buildType.toUpperCase()}_${appName}`;
   manifest.status = 'RUNNING';
   saveManifest(manifest);
-  const buildEnvironment = buildType === 'release' ? releaseBuildEnvironment() : process.env;
-  await command(
-    manifest,
-    `build-${buildType}-${appName}`,
-    './gradlew',
-    managedGradleBuildArgs(appName, buildType),
-    {
-      cwd: androidRoot,
-      env: buildEnvironment,
-      timeoutMs: 20 * 60_000,
-      captureLog: true,
-      maxBytes: 32 * 1024 * 1024,
-    },
-  );
+  const buildEnvironment = buildType === 'debug' ? debugFailureBuildEnvironment() : releaseBuildEnvironment();
+  await command(manifest, `build-${buildType}-${appName}`, './gradlew', managedGradleBuildArgs(appName, buildType), {
+    cwd: androidRoot,
+    env: buildEnvironment,
+    timeoutMs: 20 * 60_000,
+    captureLog: true,
+    maxBytes: 32 * 1024 * 1024,
+  });
   const bytes = fs.readFileSync(apk);
   manifest.appBindings[appName] = {...createAppBuildBinding(path.relative(ROOT, apk), bytes), buildType};
   if (manifest.a11BaselineRunId) {
@@ -3316,7 +3619,23 @@ async function buildApp(manifest, appName, buildType = 'release') {
 }
 
 export function releaseBuildEnvironment(baseEnvironment = process.env) {
-  return {...baseEnvironment, NODE_ENV: 'production'};
+  return {
+    ...baseEnvironment,
+    NODE_ENV: 'production',
+    EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION: 'false',
+  };
+}
+
+export function debugFailureBuildEnvironment(baseEnvironment = process.env) {
+  return {
+    ...baseEnvironment,
+    NODE_ENV: 'production',
+    EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION: 'true',
+  };
+}
+
+export function isDebugFailureInjectionEnabled(devMode, buildFlag) {
+  return devMode === true || buildFlag === 'true';
 }
 
 async function remoteProcessIdentity(manifest, device, packageName) {
@@ -3791,6 +4110,10 @@ async function installLaunch(manifest, shape, appName, initialFailureOwnerId = n
             logcat,
             breadcrumbs.startupPid === null ? [] : [breadcrumbs.startupPid],
           );
+          diagnostic.javascriptErrorDetails = summarizeJavaScriptRuntimeErrorDetails(
+            logcat,
+            breadcrumbs.startupPid === null ? [] : [breadcrumbs.startupPid],
+          );
           diagnostic.signals = summarizeAndroidLaunchDiagnostics(
             logcat,
             app.packageName,
@@ -3829,9 +4152,7 @@ async function installLaunch(manifest, shape, appName, initialFailureOwnerId = n
   manifest.lastKnownGood = `launch-${shape}-${appName}`;
   manifest.phase = 'RUNNING_APP';
   if (manifest.persistKvW10PendingObservation?.intentId === launchIntentId) {
-    const resolved = manifest.resolvedRemoteLaunches.find(item => item.intentId === launchIntentId);
-    if (!resolved || resolved.resolution !== 'PROCESS_ADOPTED') fail('VK_ANDROID_A11_W10_LAUNCH_NOT_ADOPTED');
-    manifest.persistKvW10PendingObservation.launchResolved = true;
+    if (!manifest.persistKvW10PendingObservation.launchResolved) fail('VK_ANDROID_A11_W10_LAUNCH_NOT_ADOPTED');
   }
   saveManifest(manifest);
 }
@@ -3854,11 +4175,7 @@ async function observeA11W10(manifest, shape, appName) {
   }
   requireOwnedApp(manifest, shape, appName);
   const appProcess = await remoteProcessIdentity(manifest, device, pending.packageName);
-  if (
-    appProcess.host !== pending.serial ||
-    appProcess.bootId !== pending.bootId ||
-    appProcess.processes.length === 0
-  ) {
+  if (appProcess.host !== pending.serial || appProcess.bootId !== pending.bootId || appProcess.processes.length === 0) {
     fail('VK_ANDROID_A11_W10_APP_NOT_RUNNING');
   }
   const logcat = await adbText(
@@ -3868,7 +4185,11 @@ async function observeA11W10(manifest, shape, appName) {
     ['shell', 'logcat', '-d', '-t', '2000', '-v', 'brief', '-s', 'TER-VK-LAUNCH:I', 'TerminalPersistKv:I'],
     {maxBytes: 2 * 1024 * 1024, diagnosticOutput: 'omit'},
   );
-  const observation = summarizePersistKvW10(logcat, pending.intentId);
+  const observation = summarizePersistKvW10(
+    logcat,
+    pending.intentId,
+    appProcess.processes.map(item => String(item.pid)),
+  );
   if (observation.status !== 'PASS') fail(`VK_ANDROID_A11_W10_${observation.status}`);
   const item = {
     shape,
@@ -3941,6 +4262,45 @@ async function uiDump(manifest, device, displayId) {
   );
   saveManifest(manifest);
   return {xml, displayId};
+}
+
+async function typeW7Probe(manifest, device, displayId, resourceId, initialXml = null) {
+  const xml = initialXml ?? (await uiDump(manifest, device, displayId)).xml;
+  const keyCenters = w7ProbeTapPlan(xml, displayId, resourceId);
+
+  for (let index = 0; index < keyCenters.length; index += 1) {
+    const point = keyCenters[index];
+    await adbText(manifest, device, `${device.shape}-w7-probe-key-${index + 1}`, [
+      'shell',
+      'input',
+      '-d',
+      String(displayId),
+      'tap',
+      String(point.x),
+      String(point.y),
+    ]);
+  }
+
+  const after = await uiDump(manifest, device, displayId);
+  const observedHash = parseResourceTextHash(after.xml, resourceId, displayId);
+  const expectedValue = W7_PROBE_TEXT_BY_RESOURCE_ID[resourceId];
+  const secureField = resourceId === 'sample.auth.login:passcode';
+  const readbackMatches = secureField ? observedHash !== sha256('') : observedHash === sha256(expectedValue);
+  if (!readbackMatches) {
+    appendEvent(manifest, 'W7_INPUT_PROBE_READBACK_MISMATCH', {
+      resourceId,
+      displayId,
+      expectedSha256: sha256(expectedValue),
+      observedSha256: observedHash,
+      fieldFocused: parseResourceUiState(after.xml, resourceId, displayId)?.focused === true,
+      keyboardVisible: parseResourceNode(after.xml, 'ui.base.input:virtual-keyboard', displayId) !== null,
+      injectedKeyCount: keyCenters.length,
+      secureField,
+    });
+    saveManifest(manifest);
+    fail('VK_ANDROID_W7_PROBE_READBACK_MISMATCH');
+  }
+  return {xml: after.xml, observedHash, injectedKeyCount: keyCenters.length};
 }
 
 async function capture(
@@ -4141,6 +4501,134 @@ async function tapResource(manifest, shape, resourceId, surface = 'primary') {
   manifest.lastKnownGood = `tap:${resourceId}`;
   saveManifest(manifest);
   return {issuedAtMonotonic, completedAtMonotonic: performance.now()};
+}
+
+async function seedW7Clipboard(manifest, shape, appName, sourceResourceId, targetResourceId, surface = 'primary') {
+  requireOwnedApp(manifest, shape, appName);
+  if (sourceResourceId !== 'sample.auth.login:operator-name' || targetResourceId !== sourceResourceId) {
+    fail('VK_ANDROID_W7_CLIPBOARD_FIELDS_INVALID');
+  }
+  const device = deviceFor(manifest, shape);
+  const display = logicalDisplayFor(manifest, shape, surface);
+
+  const readSourceHash = async () => {
+    const observation = await uiDump(manifest, device, display.id);
+    return parseResourceTextHash(observation.xml, sourceResourceId, display.id);
+  };
+  await tapResource(manifest, shape, sourceResourceId, surface);
+  await adbText(manifest, device, `${shape}-w7-clipboard-empty-source`, w7ClearInputArgs(display.id));
+  if ((await readSourceHash()) !== sha256('')) fail('VK_ANDROID_W7_SOURCE_FIELD_NOT_EMPTY');
+  const seeded = await typeW7Probe(manifest, device, display.id, sourceResourceId);
+  if (seeded.observedHash !== sha256(W7_CLIPBOARD_SENTINEL)) fail('VK_ANDROID_W7_SOURCE_SENTINEL_NOT_OBSERVED');
+  await adbText(manifest, device, `${shape}-w7-clipboard-select-source`, w7ClipboardKeyArgs('select-all', display.id));
+  await adbText(manifest, device, `${shape}-w7-clipboard-copy-source`, w7ClipboardKeyArgs('copy', display.id));
+  await adbText(manifest, device, `${shape}-w7-clipboard-empty-source-before-paste`, w7ClearInputArgs(display.id));
+  if ((await readSourceHash()) !== sha256('')) fail('VK_ANDROID_W7_SOURCE_CLEAR_BEFORE_PASTE_FAILED');
+  await adbText(manifest, device, `${shape}-w7-clipboard-paste-source`, w7ClipboardKeyArgs('paste', display.id));
+  if ((await readSourceHash()) !== sha256(W7_CLIPBOARD_SENTINEL)) {
+    fail('VK_ANDROID_W7_CLIPBOARD_NONEMPTY_NOT_PROVEN');
+  }
+  await adbText(manifest, device, `${shape}-w7-clipboard-empty-source-after-paste`, w7ClearInputArgs(display.id));
+  if ((await readSourceHash()) !== sha256('')) fail('VK_ANDROID_W7_CLIPBOARD_SEED_CLEANUP_FAILED');
+
+  const proof = {
+    shape,
+    appName,
+    sourceResourceId,
+    targetResourceId,
+    displayId: display.id,
+    clipboardNonEmptyProvenBySameFieldCopyPaste: true,
+    clearMethod: 'bounded-KEYCODE_DEL-sequence',
+    sentinelSha256: sha256(W7_CLIPBOARD_SENTINEL),
+    inputFieldsRestoredEmpty: true,
+    at: now(),
+  };
+  manifest.w7ClipboardPreconditions ??= [];
+  manifest.w7ClipboardPreconditions.push(proof);
+  appendEvent(manifest, 'W7_CLIPBOARD_NONEMPTY_PROVEN_BY_CONTROLLED_PASTE', {
+    shape,
+    appName,
+    sourceResourceId,
+    targetResourceId,
+    displayId: display.id,
+    sentinelSha256: proof.sentinelSha256,
+  });
+  saveManifest(manifest);
+  process.stdout.write(`W7_CLIPBOARD_PRECONDITION=PASS\nSHAPE=${shape}\nAPP=${appName}\nVALUE_REDACTED=true\n`);
+}
+
+async function longPressW7Input(manifest, shape, appName, resourceId, state, surface = 'primary') {
+  requireOwnedApp(manifest, shape, appName);
+  if (!W7_INPUT_RESOURCE_IDS.has(resourceId)) fail('VK_ANDROID_W7_RESOURCE_ID_OUT_OF_SCOPE');
+  if (!['empty', 'existing-text'].includes(state)) fail('VK_ANDROID_W7_TEXT_STATE_INVALID');
+  const device = deviceFor(manifest, shape);
+  const display = logicalDisplayFor(manifest, shape, surface);
+  const clipboardReady = manifest.w7ClipboardPreconditions?.some(
+    item => item.shape === shape && item.appName === appName && item.displayId === display.id,
+  );
+  if (!clipboardReady) fail('VK_ANDROID_W7_CLIPBOARD_PRECONDITION_REQUIRED');
+
+  await tapResource(manifest, shape, resourceId, surface);
+  let before = await uiDump(manifest, device, display.id);
+  let textSha256 = parseResourceTextHash(before.xml, resourceId, display.id);
+  if (state === 'empty' && textSha256 !== sha256('')) fail('VK_ANDROID_W7_EXPECTED_EMPTY_FIELD');
+  if (state === 'existing-text' && textSha256 === sha256('')) {
+    const seeded = await typeW7Probe(manifest, device, display.id, resourceId, before.xml);
+    before = {xml: seeded.xml, displayId: display.id};
+    textSha256 = parseResourceTextHash(before.xml, resourceId, display.id);
+    const secureField = resourceId === 'sample.auth.login:passcode';
+    const expectedHash = sha256(W7_PROBE_TEXT_BY_RESOURCE_ID[resourceId]);
+    if (secureField ? textSha256 === sha256('') : textSha256 !== expectedHash) {
+      fail('VK_ANDROID_W7_EXISTING_TEXT_PROBE_MISMATCH');
+    }
+  }
+  const node = parseResourceNode(before.xml, resourceId, display.id);
+  if (!node?.enabled || node.right <= node.left || node.bottom <= node.top)
+    fail('VK_ANDROID_RESOURCE_NODE_NOT_ACTIONABLE');
+  const focused = parseResourceUiState(before.xml, resourceId, display.id)?.focused === true;
+  if (!focused) fail('VK_ANDROID_W7_TARGET_NOT_FOCUSED');
+
+  await adbText(
+    manifest,
+    device,
+    `${shape}-w7-long-press-${resourceId.replaceAll(':', '-')}-${state}`,
+    w7LongPressArgs(display.id, node),
+  );
+  const after = await uiDump(manifest, device, display.id);
+  const contextMenu = parseTextInputContextMenu(after.xml, display.id);
+  const observedStateSha256 = parseResourceTextHash(after.xml, resourceId, display.id);
+  if (observedStateSha256 !== textSha256) fail('VK_ANDROID_W7_FIELD_VALUE_CHANGED');
+  const observation = {
+    shape,
+    appName,
+    surface,
+    displayId: display.id,
+    resourceId,
+    state,
+    textSha256: observedStateSha256,
+    contextMenu,
+    visibleNodeCount: parseVisibleControlInventory(after.xml, display.id).length,
+    at: now(),
+  };
+  manifest.w7ContextMenuObservations ??= [];
+  manifest.w7ContextMenuObservations.push(observation);
+  appendEvent(manifest, 'W7_TEXTINPUT_LONG_PRESS_OBSERVED', {
+    shape,
+    appName,
+    surface,
+    displayId: display.id,
+    resourceId,
+    state,
+    textSha256: observedStateSha256,
+    contextMenuVisible: contextMenu.visible,
+    contextMenuActionIds: contextMenu.actions,
+    floatingToolbar: contextMenu.floatingToolbar,
+  });
+  saveManifest(manifest);
+  if (contextMenu.visible) fail('VK_ANDROID_W7_SYSTEM_CONTEXT_MENU_VISIBLE');
+  process.stdout.write(
+    `W7_LONG_PRESS=PASS\nSHAPE=${shape}\nAPP=${appName}\nFIELD=${resourceId}\nSTATE=${state}\nDISPLAY=${display.id}\nCONTEXT_MENU=ABSENT\nTEXT_VALUE_REDACTED=true\n`,
+  );
 }
 
 async function triggerAdminLauncherGesture(manifest, shape, surface = 'primary') {
@@ -4873,7 +5361,13 @@ async function sendW2TextProbe(manifest, shape, probe, surface = 'primary') {
   await adbText(manifest, device, `${shape}-w2-text-probe-${probe}`, args);
   const value = args.at(-1);
   manifest.w2InputProbes ??= [];
-  manifest.w2InputProbes.push({probe, displayId: display.id, characterCount: value.length, valueSha256: sha256(value), at: now()});
+  manifest.w2InputProbes.push({
+    probe,
+    displayId: display.id,
+    characterCount: value.length,
+    valueSha256: sha256(value),
+    at: now(),
+  });
   appendEvent(manifest, 'W2_TEXT_PROBE_SENT', {
     shape,
     probe,
@@ -4906,7 +5400,13 @@ async function authenticateAdminFromDisplayedCode(manifest, shape, appName, surf
     const current = await uiDump(manifest, device, display.id);
     const keyNode = parseResourceNode(current.xml, keyResourceId, display.id);
     if (!keyNode?.enabled) fail('VK_ANDROID_ADMIN_DEBUG_PASSWORD_KEY_NOT_ACTIONABLE');
-    await tapNodeCenter(manifest, device, display.id, keyNode, `${shape}-admin-auth-digit-${String(index + 1).padStart(2, '0')}`);
+    await tapNodeCenter(
+      manifest,
+      device,
+      display.id,
+      keyNode,
+      `${shape}-admin-auth-digit-${String(index + 1).padStart(2, '0')}`,
+    );
   }
   await tapResource(manifest, shape, 'terminal.admin:verify', surface);
   let authenticated = false;
@@ -5341,6 +5841,8 @@ async function report(manifest) {
     controlledHarnessEntries: manifest.controlledHarnessEntries ?? [],
     controlledHarnessCaptures: manifest.controlledHarnessCaptures ?? [],
     businessChecks: manifest.businessChecks ?? [],
+    w7ClipboardPreconditions: manifest.w7ClipboardPreconditions ?? [],
+    w7ContextMenuObservations: manifest.w7ContextMenuObservations ?? [],
     transitions: manifest.transitions ?? [],
     evidenceRoot: manifest.evidenceRoot,
   };
@@ -5410,6 +5912,50 @@ async function dispatch(argv) {
     saveManifest(manifest);
     return;
   }
+  if (action === 'inject-debug-failure') {
+    const app = APPS[args.app];
+    const binding = manifest.appBindings[args.app];
+    if (!app || binding?.buildType !== 'debug') fail('VK_ANDROID_DEBUG_FAILURE_REQUIRES_DEBUG_APK');
+    const owned = requireOwnedApp(manifest, args.device, args.app);
+    const device = deviceFor(manifest, args.device);
+    const before = await remoteProcessIdentity(manifest, device, app.packageName);
+    if (
+      !remoteProcessIdentityMatches(owned, before, device.serial) ||
+      before.bootId !== device.inventory?.bootId ||
+      before.processes.length === 0
+    ) {
+      fail('VK_ANDROID_DEBUG_FAILURE_PROCESS_IDENTITY_MISMATCH');
+    }
+    const output = await adbText(
+      manifest,
+      device,
+      `${args.device}-${args.app}-inject-debug-failure`,
+      debugFailureInjectionRuntimeIntentArgs(app.activity, args['failure-owner']),
+    );
+    if (!/^Starting:\s*Intent\b/m.test(output)) fail('VK_ANDROID_DEBUG_FAILURE_INJECTION_DISPATCH_FAILED');
+    const after = await remoteProcessIdentity(manifest, device, app.packageName);
+    if (
+      !remoteProcessIdentityMatches(owned, after, device.serial) ||
+      after.bootId !== device.inventory?.bootId ||
+      after.processes.length === 0
+    ) {
+      fail('VK_ANDROID_DEBUG_FAILURE_PROCESS_IDENTITY_MISMATCH');
+    }
+    appendEvent(manifest, 'DEBUG_FAILURE_INJECTION_SENT_TO_OWNED_RUNTIME', {
+      shape: args.device,
+      appName: args.app,
+      ownerId: args['failure-owner'],
+      host: device.serial,
+      bootId: device.inventory.bootId,
+      apkSha256: binding.sha256,
+      processCount: after.processes.length,
+    });
+    saveManifest(manifest);
+    process.stdout.write(
+      `DEBUG_FAILURE_INJECTION_SENT=${JSON.stringify({shape: args.device, appName: args.app, ownerId: args['failure-owner'], processCount: after.processes.length, output: output.trim()})}\n`,
+    );
+    return;
+  }
   if (action === 'inspect-debug-failure-injection')
     return inspectDebugFailureInjection(manifest, args.device, args.app, args['failure-owner']);
   if (action === 'inspect-resolved-debug-failure-injection') {
@@ -5442,8 +5988,25 @@ async function dispatch(argv) {
   if (action === 'inspect')
     return inspectResource(manifest, args.device, args['resource-id'], args.surface ?? 'primary');
   if (action === 'tap') return tapResource(manifest, args.device, args['resource-id'], args.surface ?? 'primary');
-  if (action === 'w2-input-probe')
-    return sendW2TextProbe(manifest, args.device, args.probe, args.surface ?? 'primary');
+  if (action === 'w7-seed-clipboard')
+    return seedW7Clipboard(
+      manifest,
+      args.device,
+      args.app,
+      args['source-resource-id'],
+      args['target-resource-id'],
+      args.surface ?? 'primary',
+    );
+  if (action === 'w7-long-press')
+    return longPressW7Input(
+      manifest,
+      args.device,
+      args.app,
+      args['resource-id'],
+      args.state,
+      args.surface ?? 'primary',
+    );
+  if (action === 'w2-input-probe') return sendW2TextProbe(manifest, args.device, args.probe, args.surface ?? 'primary');
   if (action === 'w2-hardware-key')
     return sendW2HardwareKey(manifest, args.device, args.key, args.surface ?? 'primary');
   if (action === 'w2-admin-auth')

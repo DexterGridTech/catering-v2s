@@ -3,7 +3,6 @@ package com.catering.v2s.terminalbinding.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -29,8 +28,10 @@ import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi.OperationsCa
 import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi.OperationsCancelGrant;
 import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi.OperationsCancelOutcome;
 import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi.OperationsCancelTarget;
+import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi.TerminalVoidCommand;
 import com.catering.v2s.terminalbinding.persistence.TerminalBindingOwnerPersistence;
 import com.catering.v2s.terminalbinding.persistence.TerminalBindingOwnerPersistence.ActivationFacts;
+import com.catering.v2s.terminalbinding.persistence.TerminalBindingOwnerPersistence.ActivationWrite;
 import com.catering.v2s.terminalbinding.persistence.TerminalBindingOwnerPersistence.LockedBinding;
 import com.catering.v2s.terminalbinding.persistence.TerminalBindingOwnerPersistence.Receipt;
 import java.util.List;
@@ -92,6 +93,62 @@ class TerminalBindingOwnerServiceTest {
     }
 
     @Test
+    void activationAfterAnEndedBindingWritesActivatedAuditReason() {
+        TerminalBindingOwnerPersistence persistence = mock(TerminalBindingOwnerPersistence.class);
+        AuditEventWriter auditWriter = mock(AuditEventWriter.class);
+        ActivationCandidate candidate = candidate();
+        LockedBinding endedBinding = new LockedBinding(
+                "ENDED", 9, DIGEST, null, 1234, 5678L, "DEVICE_CANCELLED", 9L, DIGEST, 5678L, "DEVICE_CANCELLED");
+        byte[] nextDigest = DIGEST.clone();
+        nextDigest[0] = 1;
+        when(persistence.lockLatest(WORKSPACE, GROUP_KEY, TERMINAL)).thenReturn(endedBinding);
+        when(persistence.readActivationFacts(candidate))
+                .thenReturn(new ActivationFacts("ENABLED", "ENABLED", STORE, "ENABLED", "laptop"));
+        when(persistence.reactivate(eq(WORKSPACE), eq(GROUP_KEY), eq(TERMINAL), any(byte[].class), eq(DEVICE_ID)))
+                .thenReturn(new ActivationWrite(10, 6789));
+        TerminalBindingOwnerService service = new TerminalBindingOwnerService(persistence, auditWriter);
+
+        var result = service.activateOrReplay(
+                new ActivationCommand(candidate, DEVICE_ID, nextDigest, AuditActor.terminalDevice()));
+
+        assertEquals(ActivationOutcome.ACTIVATED, result.outcome());
+        assertEquals(10, result.bindingGeneration());
+        ArgumentCaptor<AuditEvent> audit = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(auditWriter).write(audit.capture());
+        assertEquals("ACTIVATED", audit.getValue().changes().getLast().afterValue());
+        assertEquals("TERMINAL_DEVICE", audit.getValue().actor().actorType());
+        assertEquals("终端设备", audit.getValue().actor().displaySnapshot());
+        verify(persistence, never()).notifyRevoked(TERMINAL, 9);
+    }
+
+    @Test
+    void activeSameDeviceReactivationWritesReactivatedAuditReason() {
+        TerminalBindingOwnerPersistence persistence = mock(TerminalBindingOwnerPersistence.class);
+        AuditEventWriter auditWriter = mock(AuditEventWriter.class);
+        ActivationCandidate candidate = candidate();
+        byte[] nextDigest = DIGEST.clone();
+        nextDigest[0] = 1;
+        when(persistence.lockLatest(WORKSPACE, GROUP_KEY, TERMINAL)).thenReturn(activeBinding());
+        when(persistence.readActivationFacts(candidate))
+                .thenReturn(new ActivationFacts("ENABLED", "ENABLED", STORE, "ENABLED", "laptop"));
+        when(persistence.reactivate(eq(WORKSPACE), eq(GROUP_KEY), eq(TERMINAL), any(byte[].class), eq(DEVICE_ID)))
+                .thenReturn(new ActivationWrite(10, 6789));
+        TerminalBindingOwnerService service = new TerminalBindingOwnerService(persistence, auditWriter);
+
+        var result = service.activateOrReplay(
+                new ActivationCommand(candidate, DEVICE_ID, nextDigest, AuditActor.terminalDevice()));
+
+        assertEquals(ActivationOutcome.ACTIVATED, result.outcome());
+        assertEquals(10, result.bindingGeneration());
+        ArgumentCaptor<AuditEvent> audit = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(auditWriter).write(audit.capture());
+        assertEquals("REACTIVATED", audit.getValue().changes().getLast().afterValue());
+        assertEquals("TERMINAL_DEVICE", audit.getValue().actor().actorType());
+        assertEquals("终端设备", audit.getValue().actor().displaySnapshot());
+        verify(persistence).notifyRevoked(TERMINAL, 9);
+    }
+
+    @Test
     void deviceCancellationUsesOnlyCredentialPrecedenceAndWritesAuditBeforeRevocation() {
         TerminalBindingOwnerPersistence persistence = mock(TerminalBindingOwnerPersistence.class);
         AuditEventWriter auditWriter = mock(AuditEventWriter.class);
@@ -121,7 +178,7 @@ class TerminalBindingOwnerServiceTest {
                         .map(change -> change.fieldKey())
                         .toList());
         assertFalse(audit.getValue().changes().toString().contains(DEVICE_ID));
-        assertTrue(audit.getValue().changes().toString().contains("DEVICE_CANCELLED"));
+        assertEquals("DEVICE_CANCELLED", audit.getValue().changes().getLast().afterValue());
     }
 
     @Test
@@ -191,6 +248,52 @@ class TerminalBindingOwnerServiceTest {
         assertEquals(
                 "OPERATIONS_CANCELLED", audit.getValue().changes().getLast().afterValue());
         assertFalse(audit.getValue().changes().toString().contains(DEVICE_ID));
+    }
+
+    @Test
+    void rejectedOperationsCancellationIsReevaluatedWithTheSameRequestAfterGenerationChanges() {
+        TerminalBindingOwnerPersistence persistence = mock(TerminalBindingOwnerPersistence.class);
+        AuditEventWriter auditWriter = mock(AuditEventWriter.class);
+        when(persistence.findReceipt(WORKSPACE, GROUP_KEY, "request-1")).thenReturn(null, null);
+        when(persistence.lockLatest(WORKSPACE, GROUP_KEY, TERMINAL)).thenReturn(activeBinding(9), activeBinding(10));
+        when(persistence.endActive(WORKSPACE, GROUP_KEY, TERMINAL, "OPERATIONS_CANCELLED"))
+                .thenReturn(5678L);
+        TerminalBindingOwnerService service = new TerminalBindingOwnerService(persistence, auditWriter);
+        OperationsCancelCommand sameRequest = operationsCommand(authorizedGrant(9), 9, 10);
+
+        assertEquals(OperationsCancelOutcome.BINDING_CHANGED, service.cancelByOperations(sameRequest));
+        assertEquals(OperationsCancelOutcome.CANCELLED, service.cancelByOperations(sameRequest));
+
+        verify(persistence, times(2)).lockLatest(WORKSPACE, GROUP_KEY, TERMINAL);
+        verify(persistence, times(2)).findReceipt(WORKSPACE, GROUP_KEY, "request-1");
+        verify(persistence, times(1)).endActive(WORKSPACE, GROUP_KEY, TERMINAL, "OPERATIONS_CANCELLED");
+        verify(persistence, times(1))
+                .saveReceipt(eq(WORKSPACE), eq(GROUP_KEY), eq("request-1"), anyString(), anyString());
+        ArgumentCaptor<AuditEvent> audit = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(auditWriter).write(audit.capture());
+        assertEquals(
+                "OPERATIONS_CANCELLED", audit.getValue().changes().getLast().afterValue());
+        assertEquals(sameRequest.actor(), audit.getValue().actor());
+    }
+
+    @Test
+    void terminalVoidWritesTerminalVoidedAuditReasonAndActor() {
+        TerminalBindingOwnerPersistence persistence = mock(TerminalBindingOwnerPersistence.class);
+        AuditEventWriter auditWriter = mock(AuditEventWriter.class);
+        when(persistence.readTerminalStatus(WORKSPACE, GROUP_KEY, TERMINAL)).thenReturn("VOIDED");
+        when(persistence.lockLatest(WORKSPACE, GROUP_KEY, TERMINAL)).thenReturn(activeBinding());
+        when(persistence.endActive(WORKSPACE, GROUP_KEY, TERMINAL, "TERMINAL_VOIDED"))
+                .thenReturn(5678L);
+        TerminalBindingOwnerService service = new TerminalBindingOwnerService(persistence, auditWriter);
+        TerminalVoidCommand command = new TerminalVoidCommand(WORKSPACE, GROUP_KEY, TERMINAL, AuditActor.system());
+
+        service.endForTerminalVoid(command);
+
+        ArgumentCaptor<AuditEvent> audit = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(auditWriter).write(audit.capture());
+        assertEquals("TERMINAL_VOIDED", audit.getValue().changes().getLast().afterValue());
+        assertEquals(command.actor(), audit.getValue().actor());
+        verify(persistence).notifyRevoked(TERMINAL, 9L);
     }
 
     @Test
@@ -298,6 +401,10 @@ class TerminalBindingOwnerServiceTest {
     }
 
     private static LockedBinding activeBinding() {
-        return new LockedBinding("ACTIVE", 9, DIGEST, DEVICE_ID, 1234, null, null, null, null, null, null);
+        return activeBinding(9);
+    }
+
+    private static LockedBinding activeBinding(long generation) {
+        return new LockedBinding("ACTIVE", generation, DIGEST, DEVICE_ID, 1234, null, null, null, null, null, null);
     }
 }

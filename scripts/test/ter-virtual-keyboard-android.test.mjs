@@ -14,6 +14,7 @@ import {
   perControlVisualAuditRows,
   parseArgs,
   debugFailureInjectionIntentArgs,
+  debugFailureInjectionRuntimeIntentArgs,
   summarizeDebugFailureInjectionLogcat,
   debugNativeLoadingDelayIntentArgs,
   parseAndroidProcessTable,
@@ -35,6 +36,12 @@ import {
   validateA11BaselineManifest,
   validateA11W10Action,
   validateDeviceShape,
+  w7ClearInputArgs,
+  w7ClipboardKeyArgs,
+  w7ProbeKeyIds,
+  w7ProbeTapPlan,
+  w7LongPressArgs,
+  parseTextInputContextMenu,
 } from './ter-virtual-keyboard-android.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -159,7 +166,7 @@ test('A11 W10 log parser binds new and legacy namespace facts to the exact launc
     'I/TerminalPersistKv( 102): event=persist-kv operation=listKeys mode=protected namespaceVersion=2 existedBeforeOpen=false legacyNamespacePresent=true',
     'I/TerminalPersistKv( 102): event=persist-kv operation=listKeys mode=protected status=succeeded',
   ].join('\n');
-  assert.deepEqual(summarizePersistKvW10(logs, intentId), {
+  assert.deepEqual(summarizePersistKvW10(logs, intentId, ['102']), {
     status: 'PASS',
     intentObserved: true,
     namespaceVersion: 2,
@@ -169,7 +176,19 @@ test('A11 W10 log parser binds new and legacy namespace facts to the exact launc
     keyMismatchObserved: false,
   });
   const otherIntent = logs.replace(`intent=${intentId}`, 'intent=another-intent');
-  assert.equal(summarizePersistKvW10(otherIntent, intentId).status, 'LAUNCH_INTENT_NOT_FOUND');
+  assert.equal(summarizePersistKvW10(otherIntent, intentId, ['102']).status, 'LAUNCH_INTENT_NOT_FOUND');
+  const unrelatedProcessOnly = logs
+    .replaceAll('( 102)', '( 999)')
+    .replace('I/TerminalPersistKv( 100):', 'I/TerminalPersistKv( 102):');
+  assert.equal(
+    summarizePersistKvW10(unrelatedProcessOnly, intentId, ['102']).status,
+    'NEW_NAMESPACE_OBSERVATION_MISSING',
+    'a marker from a PID outside the adopted app process set must not count',
+  );
+  assert.throws(
+    () => summarizePersistKvW10(logs, intentId, []),
+    /VK_ANDROID_A11_W10_APP_PROCESS_FILTER_INVALID/,
+  );
   const cases = [
     [
       'new namespace already existed',
@@ -201,7 +220,7 @@ test('A11 W10 log parser binds new and legacy namespace facts to the exact launc
     ],
   ];
   for (const [label, value, expected] of cases)
-    assert.equal(summarizePersistKvW10(value, intentId).status, expected, label);
+    assert.equal(summarizePersistKvW10(value, intentId, ['102']).status, expected, label);
 });
 
 test('A11 W10 baseline binds the dynamically discovered devices and all four old APK markers', () => {
@@ -341,12 +360,25 @@ test('successful Gradle output binds a nonempty APK by exact bytes without requi
   assert.match(build, /createAppBuildBinding\(path\.relative\(ROOT, apk\), bytes\)/);
   assert.ok(runner.managedGradleBuildArgs('sample-terminal', 'release').includes('--rerun-tasks'));
   assert.ok(runner.managedGradleBuildArgs('sample-terminal', 'debug').includes('--rerun-tasks'));
-  assert.match(build, /buildType === 'release' \? releaseBuildEnvironment\(\) : process\.env/);
+  assert.match(build, /buildType === 'debug' \? debugFailureBuildEnvironment\(\) : releaseBuildEnvironment\(\)/);
   assert.doesNotMatch(build, /mtime|BUILD_ARTIFACT_NOT_REFRESHED/);
-  assert.deepEqual(runner.releaseBuildEnvironment({NODE_ENV: 'development', CI: '1'}), {
+  assert.deepEqual(runner.debugFailureBuildEnvironment({NODE_ENV: 'development', CI: '1'}), {
     NODE_ENV: 'production',
     CI: '1',
+    EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION: 'true',
   });
+  assert.deepEqual(
+    runner.releaseBuildEnvironment({
+      NODE_ENV: 'development',
+      CI: '1',
+      EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION: 'true',
+    }),
+    {
+      NODE_ENV: 'production',
+      CI: '1',
+      EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION: 'false',
+    },
+  );
 });
 
 test('managed Android build variant is explicit, path-bound, and cannot replace A11 release observation', () => {
@@ -457,14 +489,61 @@ test('debug failure injection uses an explicit bounded VIEW intent and remains u
       'utf8',
     );
     assert.match(gradle, /debuggableVariants\s*=\s*\[\]/);
-    assert.match(gradle, /afterEvaluate\s*\{[\s\S]*?tasks\.named\("createBundleDebugJsAndAssets"\)[\s\S]*?task\.devEnabled\.set\(true\)/);
-    assert.match(gradle, /TER_DEBUG_FAILURE_INJECTION_DEV_MODE_REQUIRED/);
-    assert.match(gradle, /TER_DEBUG_FAILURE_INJECTION_BUNDLE_DEV_ENABLED/);
+    assert.match(
+      gradle,
+      /afterEvaluate\s*\{[\s\S]*?tasks\.named\("createBundleDebugJsAndAssets"\)[\s\S]*?task\.devEnabled\.set\(false\)/,
+    );
+    assert.match(gradle, /EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION/);
+    assert.match(gradle, /TER_DEBUG_FAILURE_INJECTION_EMBEDDED_PRODUCTION_MODE/);
+    assert.match(gradle, /TER_DEBUG_FAILURE_INJECTION_TEST_FLAG_REQUIRED/);
+    assert.doesNotMatch(
+      gradle,
+      /TER_DEBUG_FAILURE_INJECTION_DEV_MODE_REQUIRED|TER_DEBUG_FAILURE_INJECTION_BUNDLE_DEV_ENABLED/,
+    );
     assert.doesNotMatch(
       gradle,
       /if\s*\(task\.name\s*==\s*"createBundleReleaseJsAndAssets"\)\s*\{[^}]*devEnabled\.set\(true\)/,
     );
   }
+});
+
+test('runtime debug failure injection targets the owned singleTask activity without waiting for activity launch', () => {
+  const activity = 'com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity';
+  assert.deepEqual(debugFailureInjectionRuntimeIntentArgs(activity, 'surface-content'), [
+    'shell',
+    'am',
+    'start',
+    '-n',
+    activity,
+    '-a',
+    'android.intent.action.VIEW',
+    '-d',
+    'ter-failure://inject/surface-content',
+  ]);
+  assert.throws(
+    () => debugFailureInjectionRuntimeIntentArgs(activity, 'surface content'),
+    /VK_ANDROID_DEBUG_FAILURE_OWNER_INVALID/,
+  );
+  assert.throws(
+    () => debugFailureInjectionRuntimeIntentArgs('not-an-activity', 'surface-content'),
+    /VK_ANDROID_HARNESS_ACTIVITY_INVALID/,
+  );
+
+  const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
+  const dispatcher = source.slice(
+    source.indexOf('async function dispatch('),
+    source.indexOf('export function selfTest()'),
+  );
+  const actionStart = dispatcher.indexOf("if (action === 'inject-debug-failure')");
+  const actionEnd = dispatcher.indexOf("if (action === 'inspect-debug-failure-injection')", actionStart);
+  assert.ok(actionStart >= 0 && actionEnd > actionStart);
+  const action = dispatcher.slice(actionStart, actionEnd);
+  assert.match(action, /binding\?\.buildType !== 'debug'/);
+  assert.match(action, /requireOwnedApp\(manifest, args\.device, args\.app\)/);
+  assert.match(action, /remoteProcessIdentityMatches\(owned, before, device\.serial\)/);
+  assert.match(action, /remoteProcessIdentityMatches\(owned, after, device\.serial\)/);
+  assert.match(action, /debugFailureInjectionRuntimeIntentArgs\(app\.activity, args\['failure-owner'\]\)/);
+  assert.doesNotMatch(action, /['"]-W['"]/);
 });
 
 test('debug injection log summary is app-PID-bound and never retains raw URLs', () => {
@@ -537,6 +616,32 @@ test('JavaScript startup failure summary classifies exact-PID errors without ret
   assert.doesNotMatch(JSON.stringify(summary), /password|secret|token|unrelated/);
 });
 
+test('JavaScript startup diagnostics keep only safe error identity and bundle source-map coordinates', () => {
+  assert.equal(typeof runner.summarizeJavaScriptRuntimeErrorDetails, 'function');
+  const summary = runner.summarizeJavaScriptRuntimeErrorDetails(
+    [
+      'E/ReactNativeJS( 22496): Error: private payload token=secret-value',
+      'I/ActivityManager( 1000): unrelated lifecycle event',
+      'E/ReactNativeJS( 22496):     at start (address at index.android.bundle:1:9876)',
+      'E/ReactNativeJS( 99999): TypeError: unrelated account phone=5551234567',
+      'E/AndroidRuntime( 22496): java.lang.IllegalStateException: native failure',
+    ].join('\n'),
+    ['22496'],
+  );
+
+  assert.equal(summary.errors.length, 1);
+  assert.equal(summary.errors[0].kind, 'JS_ERROR');
+  assert.equal(summary.errors[0].errorName, 'Error');
+  assert.equal(summary.errors[0].safeCode, null);
+  assert.equal(summary.errors[0].safeMessage, '[SENSITIVE_DETAIL_REDACTED]');
+  assert.match(summary.errors[0].messageSha256, /^[a-f0-9]{64}$/);
+  assert.deepEqual(summary.errors[0].bundleFrames, [{line: 1, column: 9876}]);
+  assert.doesNotMatch(
+    JSON.stringify(summary),
+    /private payload|secret-value|unrelated account|5551234567|IllegalStateException/,
+  );
+});
+
 test('resolved debug injection reinspection is APK, boot, launch-marker, and startup-PID bound', async () => {
   const manifest = validManifest();
   const intent = {
@@ -598,16 +703,33 @@ test('resolved debug injection reinspection is APK, boot, launch-marker, and sta
     startupPid: '321',
     ownerId: 'screen:main:sample.desk.member-list',
     javascriptErrors: {errorCount: 1, kinds: ['JS_TYPE_ERROR']},
+    javascriptErrorDetails: {
+      errors: [
+        {
+          kind: 'JS_TYPE_ERROR',
+          errorName: 'TypeError',
+          safeCode: null,
+          safeMessage: '[SENSITIVE_DETAIL_REDACTED]',
+          messageSha256: summary.javascriptErrorDetails.errors[0].messageSha256,
+          bundleFrames: [],
+        },
+      ],
+    },
     signalCount: 2,
     targetOwnerSignalCount: 2,
     targetOwnerOutcomes: ['matched', 'clear'],
     observedOwners: ['screen:main:sample.desk.member-list'],
   });
-  assert.deepEqual(calls.map(call => call.label), [
-    'dual-sample-terminal-resolved-debug-injection-pre-boot-id',
-    'dual-sample-terminal-resolved-debug-injection-logcat',
-    'dual-sample-terminal-resolved-debug-injection-post-boot-id',
-  ]);
+  assert.match(summary.javascriptErrorDetails.errors[0].messageSha256, /^[a-f0-9]{64}$/);
+  assert.doesNotMatch(JSON.stringify(summary.javascriptErrorDetails), /secret-value|password=|token=/i);
+  assert.deepEqual(
+    calls.map(call => call.label),
+    [
+      'dual-sample-terminal-resolved-debug-injection-pre-boot-id',
+      'dual-sample-terminal-resolved-debug-injection-logcat',
+      'dual-sample-terminal-resolved-debug-injection-post-boot-id',
+    ],
+  );
   assert.ok(calls.every(call => call.serial === intent.host));
   assert.deepEqual(calls[1].args, [
     'shell',
@@ -626,15 +748,16 @@ test('resolved debug injection reinspection is APK, boot, launch-marker, and sta
 
   const wrongBootCalls = [];
   await assert.rejects(
-    () => runner.collectResolvedDebugFailureInjectionLogEvidence(
-      manifest,
-      intent.intentId,
-      'screen:main:sample.desk.member-list',
-      async (_manifest, _device, label) => {
-        wrongBootCalls.push(label);
-        return 'boot-87654321';
-      },
-    ),
+    () =>
+      runner.collectResolvedDebugFailureInjectionLogEvidence(
+        manifest,
+        intent.intentId,
+        'screen:main:sample.desk.member-list',
+        async (_manifest, _device, label) => {
+          wrongBootCalls.push(label);
+          return 'boot-87654321';
+        },
+      ),
     /VK_ANDROID_PENDING_LAUNCH_IDENTITY_MISMATCH/,
   );
   assert.deepEqual(wrongBootCalls, ['dual-sample-terminal-resolved-debug-injection-pre-boot-id']);
@@ -682,7 +805,7 @@ test('native-loading main-thread injection is bounded and requires a debug launc
   assert.match(dispatcher, /args\['native-loading-delay-ms'\]/);
 });
 
-test('managed debug builds keep JS dev injection but disable the native Metro probe only for managed runs', () => {
+test('managed debug bundles use embedded production mode with explicit test injection and native dev support disabled', () => {
   for (const appName of ['sample-terminal', 'sample-wallpaper-terminal']) {
     const applicationPackageDirectory =
       appName === 'sample-terminal' ? 'com/anonymous/sampleterminal' : 'com/catering/v2s/terminal/samplewallpaper';
@@ -702,11 +825,20 @@ test('managed debug builds keep JS dev injection but disable the native Metro pr
     );
     assert.match(gradle, /terDisableNativeDevSupport/);
     assert.match(gradle, /buildConfigField\s+"boolean",\s+"TER_DISABLE_NATIVE_DEV_SUPPORT"/);
+    assert.match(gradle, /task\.devEnabled\.set\(false\)/);
+    assert.match(gradle, /TER_DEBUG_FAILURE_INJECTION_EMBEDDED_PRODUCTION_MODE/);
     assert.match(
       application,
       /useDevSupport\s*=\s*BuildConfig\.DEBUG\s*&&\s*!BuildConfig\.TER_DISABLE_NATIVE_DEV_SUPPORT/,
     );
   }
+  assert.equal(
+    runner.isDebugFailureInjectionEnabled(false, 'true'),
+    true,
+    'the managed embedded debug bundle enables only its explicit failure-injection flag',
+  );
+  assert.equal(runner.isDebugFailureInjectionEnabled(false, 'false'), false);
+  assert.equal(runner.isDebugFailureInjectionEnabled(true, undefined), true);
   assert.ok(runner.managedGradleBuildArgs('sample-terminal', 'debug').includes('-PterDisableNativeDevSupport=true'));
   assert.ok(!runner.managedGradleBuildArgs('sample-terminal', 'release').includes('-PterDisableNativeDevSupport=true'));
 });
@@ -1155,6 +1287,55 @@ test('successful pending remote launch records the resolved intent and owned pro
   assert.equal(manifest.resolvedRemoteLaunches[0].processCount, 1);
   assert.equal(manifest.ownedRemoteProcesses.length, 1);
   assert.equal(manifest.ownedRemoteProcesses[0].processes[0].pid, 8700);
+});
+
+test('W10 launch adoption and observation readiness are persisted as one transition', async () => {
+  const intent = {
+    host: 'device-dual-01',
+    bootId: 'boot-a',
+    packageName: 'com.anonymous.sampleterminal',
+    appName: 'sample-terminal',
+    shape: 'dual',
+    intentId: 'launch-w10-atomic-01',
+  };
+  const manifest = {
+    devices: {dual: {serial: intent.host}},
+    pendingRemoteLaunches: [],
+    ownedRemoteProcesses: [],
+    resolvedRemoteLaunches: [],
+    persistKvW10PendingObservation: {intentId: intent.intentId, launchResolved: false},
+  };
+  const persisted = [];
+  await runner.launchWithPendingOwnership(manifest, intent, {
+    persist: async () => {
+      persisted.push(
+        structuredClone({
+          pendingRemoteLaunches: manifest.pendingRemoteLaunches,
+          resolvedRemoteLaunches: manifest.resolvedRemoteLaunches,
+          ownedRemoteProcesses: manifest.ownedRemoteProcesses,
+          launchResolved: manifest.persistKvW10PendingObservation.launchResolved,
+        }),
+      );
+    },
+    launch: async () => {},
+    readback: async () => ({
+      host: intent.host,
+      bootId: intent.bootId,
+      processes: [{pid: 8700, startTicks: '1305669748'}],
+    }),
+  });
+
+  assert.equal(persisted.length, 2);
+  assert.equal(persisted[0].launchResolved, false);
+  assert.deepEqual(
+    persisted[0].pendingRemoteLaunches.map(item => item.intentId),
+    [intent.intentId],
+  );
+  assert.equal(persisted[1].launchResolved, true);
+  assert.deepEqual(persisted[1].pendingRemoteLaunches, []);
+  assert.equal(persisted[1].resolvedRemoteLaunches[0].intentId, intent.intentId);
+  assert.equal(persisted[1].resolvedRemoteLaunches[0].resolution, 'PROCESS_ADOPTED');
+  assert.equal(persisted[1].ownedRemoteProcesses[0].processes[0].pid, 8700);
 });
 
 test('W10 observation does not shadow the runner stdout binding with app process identity', () => {
@@ -3299,15 +3480,134 @@ test('W2 input actions use only fixed redacted probes, scoped hardware keys, and
   assert.deepEqual(runner.w2InputProbeArgs('overlay-host', 0), ['shell', 'input', '-d', '0', 'text', '198.51.100.8']);
   assert.deepEqual(runner.w2HardwareKeyArgs('tab', 0), ['shell', 'input', '-d', '0', 'keyevent', 'KEYCODE_TAB']);
   assert.deepEqual(runner.w2HardwareKeyArgs('shift-tab', 0), [
-    'shell', 'input', '-d', '0', 'keycombination', 'KEYCODE_SHIFT_LEFT', 'KEYCODE_TAB',
+    'shell',
+    'input',
+    '-d',
+    '0',
+    'keycombination',
+    'KEYCODE_SHIFT_LEFT',
+    'KEYCODE_TAB',
   ]);
   assert.deepEqual(runner.w2HardwareKeyArgs('enter', 0), ['shell', 'input', '-d', '0', 'keyevent', 'KEYCODE_ENTER']);
   assert.throws(() => runner.w2InputProbeArgs('arbitrary-user-value', 0), /VK_ANDROID_W2_INPUT_PROBE_INVALID/);
   assert.throws(() => runner.w2HardwareKeyArgs('back', 0), /VK_ANDROID_W2_HARDWARE_KEY_INVALID/);
-  const xml = '<hierarchy><display id="0"><node resource-id="terminal.admin:debug-password" text="（482913）"/></display></hierarchy>';
+  const xml =
+    '<hierarchy><display id="0"><node resource-id="terminal.admin:debug-password" text="（482913）"/></display></hierarchy>';
   assert.equal(runner.parseAdminDebugPassword(xml, 0), '482913');
-  assert.equal(JSON.stringify({codeHash: createHash('sha256').update(runner.parseAdminDebugPassword(xml, 0)).digest('hex')}).includes('482913'), false);
-  assert.throws(() => runner.parseAdminDebugPassword('<hierarchy/>', 0), /VK_ANDROID_ADMIN_DEBUG_PASSWORD_NOT_OBSERVED/);
+  assert.equal(
+    JSON.stringify({
+      codeHash: createHash('sha256').update(runner.parseAdminDebugPassword(xml, 0)).digest('hex'),
+    }).includes('482913'),
+    false,
+  );
+  assert.throws(
+    () => runner.parseAdminDebugPassword('<hierarchy/>', 0),
+    /VK_ANDROID_ADMIN_DEBUG_PASSWORD_NOT_OBSERVED/,
+  );
+});
+
+test('W7 long-press actions are display-scoped, bounded, and detect only visible selection-menu evidence', () => {
+  assert.deepEqual(w7ProbeKeyIds('sample.auth.login:operator-name'), [
+    'ui.base.input:virtual-keyboard:text-t',
+    'ui.base.input:virtual-keyboard:text-e',
+    'ui.base.input:virtual-keyboard:text-r',
+    'ui.base.input:virtual-keyboard:text-w',
+    'ui.base.input:virtual-keyboard:text-7',
+    'ui.base.input:virtual-keyboard:text-c',
+    'ui.base.input:virtual-keyboard:text-l',
+    'ui.base.input:virtual-keyboard:text-i',
+    'ui.base.input:virtual-keyboard:text-p',
+    'ui.base.input:virtual-keyboard:text-b',
+    'ui.base.input:virtual-keyboard:text-o',
+    'ui.base.input:virtual-keyboard:text-a',
+    'ui.base.input:virtual-keyboard:text-r',
+    'ui.base.input:virtual-keyboard:text-d',
+  ]);
+  assert.deepEqual(w7ProbeKeyIds('sample.auth.login:passcode'), Array(4).fill('ui.base.input:virtual-keyboard:text-1'));
+  assert.deepEqual(w7ProbeKeyIds('sample.desk.member-form:keyboard-financial-probe').slice(0, 5), [
+    'ui.base.input:virtual-keyboard:text-1',
+    'ui.base.input:virtual-keyboard:text-2',
+    'ui.base.input:virtual-keyboard:text-.',
+    'ui.base.input:virtual-keyboard:text-3',
+    'ui.base.input:virtual-keyboard:text-4',
+  ]);
+  assert.throws(() => w7ProbeKeyIds('unapproved-field'), /VK_ANDROID_W7_RESOURCE_ID_OUT_OF_SCOPE/);
+  const probeResourceId = 'sample.auth.login:operator-name';
+  const uniqueKeyIds = [...new Set(w7ProbeKeyIds(probeResourceId))];
+  const keyNodes = uniqueKeyIds
+    .map((keyId, index) => {
+      const left = index * 20;
+      return `<node resource-id="${keyId}" bounds="[${left},20][${left + 10},30]" enabled="true"/>`;
+    })
+    .join('');
+  const probeXml =
+    `<hierarchy><display id="2"><node resource-id="${probeResourceId}" text="" focused="true" enabled="true" bounds="[0,0][100,10]"/>` +
+    '<node resource-id="ui.base.input:virtual-keyboard" bounds="[0,40][200,100]" enabled="true"/>' +
+    `${keyNodes}</display></hierarchy>`;
+  const tapPlan = w7ProbeTapPlan(probeXml, 2, probeResourceId);
+  assert.equal(tapPlan.length, 14);
+  assert.deepEqual(tapPlan[0], {x: 5, y: 25});
+  assert.deepEqual(tapPlan[1], {x: 25, y: 25});
+  assert.deepEqual(tapPlan[13], {x: 245, y: 25});
+  assert.throws(() => w7ProbeTapPlan(probeXml, 2, 'missing-field'), /VK_ANDROID_W7_PROBE_INPUT_NOT_READY/);
+  assert.deepEqual(w7ClearInputArgs(2, 3), [
+    'shell',
+    'input',
+    '-d',
+    '2',
+    'keyevent',
+    'KEYCODE_DEL',
+    'KEYCODE_DEL',
+    'KEYCODE_DEL',
+  ]);
+  assert.throws(() => w7ClearInputArgs(2, 0), /VK_ANDROID_W7_CLEAR_INPUT_INVALID/);
+  assert.throws(() => w7ClearInputArgs(2, 129), /VK_ANDROID_W7_CLEAR_INPUT_INVALID/);
+  assert.deepEqual(w7ClipboardKeyArgs('select-all', 2), [
+    'shell',
+    'input',
+    '-d',
+    '2',
+    'keycombination',
+    'KEYCODE_CTRL_LEFT',
+    'KEYCODE_A',
+  ]);
+  assert.deepEqual(w7ClipboardKeyArgs('copy', 2).slice(-3), ['keycombination', 'KEYCODE_CTRL_LEFT', 'KEYCODE_C']);
+  assert.deepEqual(w7ClipboardKeyArgs('paste', 2).slice(-3), ['keycombination', 'KEYCODE_CTRL_LEFT', 'KEYCODE_V']);
+  assert.deepEqual(w7LongPressArgs(2, {left: 20, top: 40, right: 80, bottom: 100}), [
+    'shell',
+    'input',
+    '-d',
+    '2',
+    'swipe',
+    '50',
+    '70',
+    '50',
+    '70',
+    '1000',
+  ]);
+  assert.throws(() => w7ClipboardKeyArgs('arbitrary-key', 2), /VK_ANDROID_W7_CLIPBOARD_ACTION_INVALID/);
+  assert.throws(
+    () => w7LongPressArgs(2, {left: 10, top: 10, right: 10, bottom: 20}),
+    /VK_ANDROID_W7_LONG_PRESS_INVALID/,
+  );
+  assert.throws(
+    () => w7LongPressArgs(2, {left: 0, top: 0, right: 20, bottom: 20}, 500),
+    /VK_ANDROID_W7_LONG_PRESS_INVALID/,
+  );
+
+  const absent =
+    '<hierarchy><display id="0"><node resource-id="sample.auth.login:operator-name" text=""/></display>' +
+    '<display id="2"><node resource-id="sample.auth.login:operator-name" text=""/></display></hierarchy>';
+  assert.deepEqual(parseTextInputContextMenu(absent, 2), {visible: false, floatingToolbar: false, actions: []});
+  const visible =
+    '<hierarchy><display id="0"><node text="Paste"/></display>' +
+    '<display id="2"><node resource-id="android:id/floating_toolbar"/><node text="Paste"/><node text="Copy"/></display></hierarchy>';
+  assert.deepEqual(parseTextInputContextMenu(visible, 2), {
+    visible: true,
+    floatingToolbar: true,
+    actions: ['COPY', 'PASTE'],
+  });
+  assert.throws(() => parseTextInputContextMenu('<hierarchy/>', 2), /VK_ANDROID_CONTEXT_MENU_DISPLAY_MISSING/);
 });
 
 test('command diagnostics are readable, secret-redacted, and never persist raw UI hierarchy', () => {

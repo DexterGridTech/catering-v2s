@@ -7,6 +7,7 @@ import com.catering.v2s.terminaldataserver.config.TdsRuntimeSettings;
 import com.catering.v2s.terminaldataserver.session.TdsTrackedSessionLimiter;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.Heartbeat;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -89,6 +90,16 @@ class TdsConnectionStateWriterTest {
         TdsTrackedSessionLimiter.Permit replacement = limiter.tryAcquire();
         assertThat(replacement).isNotNull();
         replacement.close();
+    }
+
+    @Test
+    void extractsOnlySafeSqlFailureMetadataForRuntimeDiagnostics() {
+        SQLException sqlFailure = new SQLException("do-not-log-sensitive-detail", "23503", 7);
+
+        assertThat(TdsConnectionStateWriter.sqlFailure(new IllegalStateException("wrapper", sqlFailure)))
+                .isEqualTo(new TdsConnectionStateWriter.SqlFailure("23503", 7));
+        assertThat(TdsConnectionStateWriter.sqlFailure(new IllegalStateException("no-sql-cause")))
+                .isEqualTo(new TdsConnectionStateWriter.SqlFailure("NONE", 0));
     }
 
     private static TdsRuntimeSettings settings() {

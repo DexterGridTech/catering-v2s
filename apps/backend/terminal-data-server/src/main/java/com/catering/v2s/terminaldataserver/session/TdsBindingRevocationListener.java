@@ -21,7 +21,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.server.context.WebServerApplicationContext;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -32,6 +31,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class TdsBindingRevocationListener implements SmartLifecycle {
     private static final Logger LOGGER = LoggerFactory.getLogger(TdsBindingRevocationListener.class);
     private static final String CHANNEL = "terminal_binding_events";
+    private static final String LISTENER_THREAD_NAME = "tds-revocation-listener";
     private static final long NOTIFICATION_WAIT_MILLIS = 1_000;
     private static final long HEALTH_INTERVAL_NANOS = Duration.ofSeconds(10).toNanos();
     private static final int MAX_PAYLOAD_BYTES = 7_900;
@@ -41,14 +41,13 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
     private final TdsTerminalSessionActors actors;
     private final TdsListenerRecoveryGate listenerRecoveryGate;
     private final ObjectMapper objectMapper;
-    private final Scheduler databaseScheduler;
-    private final Scheduler codecScheduler;
     private final Scheduler logScheduler;
     private final Object lifecycleMonitor = new Object();
     private final List<Runnable> stopCallbacks = new ArrayList<>();
     private volatile boolean listenerRunning;
     private volatile boolean workerActive;
     private volatile boolean ready;
+    private volatile Thread listenerThread;
 
     public TdsBindingRevocationListener(
             DataSource dataSource,
@@ -56,16 +55,12 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
             TdsTerminalSessionActors actors,
             TdsListenerRecoveryGate listenerRecoveryGate,
             @Qualifier("tds-wire-object-mapper") ObjectMapper objectMapper,
-            @Qualifier("tds-db-worker") Scheduler databaseScheduler,
-            @Qualifier("tds-codec-worker") Scheduler codecScheduler,
             @Qualifier("tds-log-worker") Scheduler logScheduler) {
         this.dataSource = Objects.requireNonNull(dataSource, "dataSource");
         this.repository = Objects.requireNonNull(repository, "repository");
         this.actors = Objects.requireNonNull(actors, "actors");
         this.listenerRecoveryGate = Objects.requireNonNull(listenerRecoveryGate, "listenerRecoveryGate");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
-        this.databaseScheduler = Objects.requireNonNull(databaseScheduler, "databaseScheduler");
-        this.codecScheduler = Objects.requireNonNull(codecScheduler, "codecScheduler");
         this.logScheduler = Objects.requireNonNull(logScheduler, "logScheduler");
     }
 
@@ -75,14 +70,18 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
 
     @Override
     public void start() {
+        Thread thread;
         synchronized (lifecycleMonitor) {
             if (workerActive) return;
             workerActive = true;
             listenerRunning = true;
+            thread = new Thread(this::runListener, LISTENER_THREAD_NAME);
+            thread.setDaemon(true);
+            listenerThread = thread;
         }
         try {
-            databaseScheduler.schedule(this::runListener);
-        } catch (RuntimeException failure) {
+            thread.start();
+        } catch (RuntimeException | Error failure) {
             finishListener();
             throw failure;
         }
@@ -179,9 +178,7 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
             throw new SQLException("TDS_NOTIFICATION_PAYLOAD_INVALID");
         }
         try {
-            return Mono.fromCallable(() -> parsePayload(payload, objectMapper))
-                    .subscribeOn(codecScheduler)
-                    .block(Duration.ofSeconds(1));
+            return parsePayload(payload, objectMapper);
         } catch (RuntimeException failure) {
             throw new SQLException("TDS_NOTIFICATION_PAYLOAD_INVALID", failure);
         }
@@ -274,6 +271,7 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
 
     private void requestStop(Runnable callback) {
         boolean runCallbackNow = false;
+        Thread threadToStop = null;
         synchronized (lifecycleMonitor) {
             if (callback != null) {
                 if (workerActive) stopCallbacks.add(callback);
@@ -282,9 +280,11 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
             if (workerActive) {
                 listenerRunning = false;
                 ready = false;
+                threadToStop = listenerThread;
                 lifecycleMonitor.notifyAll();
             }
         }
+        if (threadToStop != null) threadToStop.interrupt();
         if (runCallbackNow) callback.run();
     }
 
@@ -294,6 +294,7 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
             listenerRunning = false;
             ready = false;
             workerActive = false;
+            listenerThread = null;
             callbacks = List.copyOf(stopCallbacks);
             stopCallbacks.clear();
             lifecycleMonitor.notifyAll();

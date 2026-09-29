@@ -172,3 +172,61 @@ UAT=NOT_RUN
 M_S_N=0/0/0
 EVIDENCE_TIER=FRESH_READ_ONLY_SOURCE_REVIEW
 ```
+
+## 2026-09-29 author snapshot refresh for fresh independent confirmation
+
+The latest independent review recomputed the current snapshot and verified the six ordered cases,
+36 control-plane paths, 22 UI paths, 48 unique paths, 2,218,633 bytes, required UI/testId/admission
+markers, and the current whole-batch 6b record. Its verdict remained OPEN because this designated
+record and the dynamic-front record still contained the older digest. The author has refreshed the
+dynamic-front record with the current digest and rerun the non-writing full-seed dry-run; a new
+independent review of this exact record and source snapshot is required before it can be marked PASS.
+
+```text
+AUTHOR_CURRENT_ADMISSION_DIGEST=4df500c2fbbd6bb4cf2509dd60ef49c74e26953d1f7fd7b74f29276405ff86b5
+POLICY_DIGEST=9e4f136958e21d6e6a2c739fc25f85d9914f508e0bf8a0ded4c4df71e482e7f
+CASE_COUNT=6
+CONTROL_PLANE_FILE_COUNT=36
+UI_FILE_COUNT=22
+FILE_COUNT=58
+UNIQUE_PATH_COUNT=48
+BYTE_COUNT=2218633
+PATH_CONTAINMENT=PASS
+WHOLE_BATCH_6B=MATCHED; FILES=472; DIGEST=0dca67eb5ce5353e11986bdb7318dc7fc990342591aa0dd06210a8101d5e43d8
+FULL_SEED_DRY_RUN=PASS; COMPONENTS=owner-command,external-collaboration-business-channel,catalog-inventory,sales-menu; SOURCE_ITEMS=73; CREATED_ITEMS=72; EXCLUDED_ITEMS=1; MEDIA=34; TERMINALS=8
+CURRENT_BYTE_INDEPENDENT_VERDICT=PENDING
+BROWSER_L2=NOT_RUN_ON_CURRENT_DIGEST
+```
+
+## 2026-09-29 fresh independent current-byte admission verdict
+
+```text
+REVIEW_TARGET=L2_SCRIPT_ADMISSION
+REVIEWER_KIND=INDEPENDENT_SUBAGENT
+REVIEWER=/root/stage1_l2_admission_verdict
+L2_ADMISSION_REVIEW_STATUS=PASS
+ADMISSION_SOURCE_DIGEST=4df500c2fbbd6bb4cf2509dd60ef49c74e26953d1f7fd7b74f29276405ff86b5
+POLICY_DIGEST=9e4f136958e21d6e6a2c739fc25f85d9914f508e0bf8a0ded4c4df71e482e7f
+CASE_COUNT=6
+CONTROL_PLANE_FILE_COUNT=36
+UI_FILE_COUNT=22
+FILE_COUNT=58
+UNIQUE_PATH_COUNT=48
+BYTE_COUNT=2218633
+PATH_CONTAINMENT=PASS
+WHOLE_BATCH_6B=MATCHED; FILES=472; DIGEST=0dca67eb5ce5353e11986bdb7318dc7fc990342591aa0dd06210a8101d5e43d8
+FULL_SEED_DRY_RUN=PASS; CURRENT_BYTES=YES; DATABASE_OR_REMOTE_WRITES=NONE
+BROWSER_L2=NOT_RUN_ON_CURRENT_DIGEST
+DEV=NOT_RUN
+RESET=NOT_RUN
+SEED=NOT_RUN
+UAT=NOT_AUTHORIZED
+M/S/N=0/0/0
+EVIDENCE_TIER=FRESH_READ_ONLY_SOURCE_REVIEW
+PURE_VALIDATOR=PASS; prospective validateAdmissionRecord matches current digest; node --test scripts/test/l2-suite-admission.test.mjs scripts/test/store-terminal-l2-p1.test.mjs; 15/15
+```
+
+Fresh reviewer `/root/stage1_l2_admission_verdict` independently recomputed the current snapshot,
+confirmed the six ordered cases and all source counts, verified path containment and required design
+markers, and returned PASS with M/S/N=0/0/0. This is static admission only; the Browser L2 runtime
+has not yet run on this digest.

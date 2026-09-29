@@ -1,10 +1,13 @@
 package com.catering.v2s.terminaldataserver.websocket;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,7 +29,10 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.NettyDataBufferFactory;
 import org.springframework.web.reactive.socket.CloseStatus;
@@ -209,6 +215,73 @@ class TdsWebSocketHandlerTransportFailureTest {
             verify(session, never()).close(new CloseStatus(4000, "NETWORK_ERROR"));
         } finally {
             message.release();
+        }
+    }
+
+    @Test
+    void pingStillRepliesWhenTheCodecSchedulerRejectsWork() throws Exception {
+        WebSocketSession session = mock(WebSocketSession.class);
+        when(session.getId()).thenReturn("ping-codec-scheduler-rejected");
+        when(session.isOpen()).thenReturn(true);
+        when(session.textMessage(anyString())).thenReturn(mock(WebSocketMessage.class));
+        when(session.close(any(CloseStatus.class))).thenReturn(Mono.empty());
+        TerminalConnectionProtocol protocol =
+                new TerminalConnectionProtocol(JsonMapper.builder().build());
+        TdsRuntimeSettings settings = TdsRuntimeSettings.from(
+                "1",
+                "1",
+                Duration.ofSeconds(30),
+                Duration.ofSeconds(90),
+                Duration.ofSeconds(15),
+                Duration.ofSeconds(5));
+        TdsWebSocketConnection connection = new TdsWebSocketConnection(
+                session, protocol, new UnauthenticatedConnectionLimiter(1).tryAcquire(), Schedulers.immediate());
+        connection.outboundMessages().subscribe(ignored -> {});
+        assertTrue(connection.sendSessionReady("SESSION_READY", null));
+        var rejectingCodecScheduler = Schedulers.fromExecutor(command -> {
+            throw new RejectedExecutionException("test codec scheduler rejection");
+        });
+        ByteBuf payload = Unpooled.copiedBuffer(
+                "{\"type\":\"PING\",\"seq\":7,\"clientTs\":\"2026-09-29T00:00:00Z\",\"lastRttMs\":12.5}",
+                StandardCharsets.UTF_8);
+        WebSocketMessage ping = new WebSocketMessage(
+                WebSocketMessage.Type.TEXT, new NettyDataBufferFactory(ByteBufAllocator.DEFAULT).wrap(payload));
+        TdsWebSocketHandler handler = new TdsWebSocketHandler(
+                settings,
+                new TerminalConnectionFrameCodec(TdsWireJsonConfiguration.createWireObjectMapper(), protocol),
+                protocol,
+                mock(TerminalCredentialVerificationApi.class),
+                new UnauthenticatedConnectionLimiter(1),
+                mock(TdsTerminalSessionActors.class),
+                mock(TdsBindingRevocationListener.class),
+                mock(TdsConnectionStateWriter.class),
+                mock(SessionRegistrationGate.class),
+                Schedulers.immediate(),
+                Schedulers.immediate(),
+                rejectingCodecScheduler,
+                Schedulers.immediate());
+
+        try {
+            handler.receivePing(
+                            connection,
+                            ping,
+                            new AtomicLong(),
+                            Sinks.many().replay().latest())
+                    .block(Duration.ofSeconds(1));
+
+            ArgumentCaptor<String> frames = ArgumentCaptor.forClass(String.class);
+            verify(session, times(2)).textMessage(frames.capture());
+            assertEquals("SESSION_READY", frames.getAllValues().getFirst());
+            var pong =
+                    JsonMapper.builder().build().readTree(frames.getAllValues().getLast());
+            assertEquals("PONG", pong.path("type").asText());
+            assertEquals(7, pong.path("seq").asLong());
+            assertEquals("open", connection.closeReasonOr("open"));
+            verify(session, never()).close(any(CloseStatus.class));
+        } finally {
+            connection.finish();
+            ping.release();
+            rejectingCodecScheduler.dispose();
         }
     }
 }

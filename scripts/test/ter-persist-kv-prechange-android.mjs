@@ -376,17 +376,29 @@ async function observeProtectedMarker(manifest, device, appName) {
   save(manifest);
   let intentSeen = false;
   let matched = null;
+  const appProcessIds = new Set();
+  const candidateMarkerLines = [];
   let buffer = '';
+  const acceptAppOwnedMarker = line => {
+    const operation = protectedMarkerOperation(line, [...appProcessIds]);
+    if (operation === null) return;
+    const pid = line.match(/^[VDIWEF]\/TerminalPersistKv\(\s*(\d+)\):/)?.[1];
+    matched = {operation, pid, line: line.trim().slice(-320)};
+  };
   const inspect = chunk => {
     buffer += chunk;
     const lines = buffer.split(/\r?\n/);
     buffer = lines.pop() ?? '';
     for (const line of lines) {
-      if (line.includes(`intent=${intentId}`) && line.includes('TER-A11')) intentSeen = true;
-      const marker = line.match(
-        /event=persist-kv operation=(read|readMany|write|writeMany|listKeys|clear) mode=protected status=succeeded/,
-      );
-      if (intentSeen && marker) matched = {operation: marker[1], line: line.trim().slice(-320)};
+      const intentMarker = line.match(/^[VDIWEF]\/TER-A11\(\s*\d+\):\s*intent=([A-Za-z0-9._-]{1,128})\s*$/);
+      if (intentMarker?.[1] === intentId) {
+        intentSeen = true;
+        continue;
+      }
+      if (!intentSeen || !/^\s*[VDIWEF]\/TerminalPersistKv\(\s*\d+\):/.test(line)) continue;
+      candidateMarkerLines.push(line);
+      if (candidateMarkerLines.length > 64) throw new Error('TER_A11_PROTECTED_MARKER_CANDIDATE_LIMIT');
+      acceptAppOwnedMarker(line);
     }
   };
   child.stdout.setEncoding('utf8');
@@ -408,6 +420,18 @@ async function observeProtectedMarker(manifest, device, appName) {
       `${device.role}-${appName}-launch`,
     );
     if (!/Status:\s*ok/.test(start.stdout)) throw new Error('TER_A11_ACTIVITY_LAUNCH_FAILED');
+    const launchedProcesses = readRemotePackageProcesses(
+      manifest,
+      device,
+      app.packageName,
+      `${device.role}-${appName}-launch-process-readback`,
+    );
+    if (launchedProcesses.length === 0) throw new Error('TER_A11_LAUNCHED_PROCESS_NOT_READABLE');
+    for (const process of launchedProcesses) appProcessIds.add(String(process.pid));
+    for (const line of candidateMarkerLines) {
+      acceptAppOwnedMarker(line);
+      if (matched) break;
+    }
     const deadline = Date.now() + 90_000;
     while (!matched && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 100));
     if (!matched) throw new Error('TER_A11_PROTECTED_MARKER_NOT_OBSERVED');
@@ -675,9 +699,18 @@ async function run(args) {
   if (manifest.status !== 'PASS') throw new Error(manifest.firstFailure?.code ?? 'TER_A11_PRECHANGE_FAILED');
 }
 
-export function protectedMarkerOperation(line) {
+export function protectedMarkerOperation(line, allowedProcessIds) {
+  if (
+    !Array.isArray(allowedProcessIds) ||
+    allowedProcessIds.length === 0 ||
+    allowedProcessIds.some(value => !/^\d{1,10}$/.test(String(value)))
+  ) {
+    return null;
+  }
+  const pid = String(line ?? '').match(/^[VDIWEF]\/TerminalPersistKv\(\s*(\d+)\):/)?.[1];
+  if (!pid || !allowedProcessIds.map(String).includes(pid)) return null;
   const match = String(line ?? '').match(
-    /event=persist-kv operation=(read|readMany|write|writeMany|listKeys|clear) mode=protected status=succeeded/,
+    /^[VDIWEF]\/TerminalPersistKv\(\s*\d+\):\s*event=persist-kv operation=(read|readMany|write|writeMany|listKeys|clear) mode=protected status=succeeded\s*$/,
   );
   return match?.[1] ?? null;
 }

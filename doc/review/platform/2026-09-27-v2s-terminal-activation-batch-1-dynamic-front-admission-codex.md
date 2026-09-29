@@ -54,3 +54,56 @@ controls/actions and no invalid case-scoped events. `l2-cleanup-manifest.json` r
 Full details and run-scoped logs are in
 `.runtime/browser-l2/l2-1790647239885-78066-4ecba04a-1016-4274-8c59-5b793be5544a/` and
 `doc/review/platform/2026-09-27-v2s-terminal-activation-batch-1-execution-status-codex.md`.
+
+## 2026-09-29 current-byte admission refresh
+
+The previous admission and Browser L2 result above remain historical for digest
+`27abd37ee8548962c49f7688393def93bc473f006088e5bedcace04f2c33fdb1`. The current six-case source
+snapshot recomputes to digest `4df500c2fbbd6bb4cf2509dd60ef49c74e26953d1f7fd7b74f29276405ff86b5`
+with policy digest `9e4f136958e21d6e6a2c739fc25f85d9914f508e0bf8ea0ded4c4df71e482e7f`, 6 cases, 36
+control-plane files, 22 UI files, 58 entries, 48 unique paths, and 2,218,633 bytes. Fresh independent
+reviewer `/root/stage1_l2_admission_verdict` recomputed the same snapshot and returned
+`L2_ADMISSION_REVIEW_STATUS=PASS`, `M/S/N=0/0/0`; the accepted reviewer block is recorded in the
+designated L2 admission review file. The current-byte six-case Browser L2 run is now admitted but
+has not yet started.
+
+The complete-seed non-writing prerequisite was rerun on 2026-09-29 after this snapshot was
+recomputed. `scripts/dev/seed --profile r5-full --dry-run` exited 0 with
+`R5_COMPLETE_SEED_DRY_RUN=PASS; COMPONENTS=owner-command,external-collaboration-business-channel,catalog-inventory,sales-menu; SOURCE_ITEMS=73; CREATED_ITEMS=72; EXCLUDED_ITEMS=1; MEDIA=34; TERMINALS=8; TERMINAL_PLAN_DIGEST=b37af605c2a9a9bda924c5455765efd569c96766b7c4e2a11768b03a5f1e4d1c`.
+The run was non-writing and created no database or managed remote resource.
+
+```text
+DYNAMIC_FRONT_ADMISSION=PASS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+WHOLE_BATCH_6B=MATCHED; DIGEST=0dca67eb5ce5353e11986bdb7318dc7fc990342591aa0dd06210a8101d5e43d8; FILES=472
+L2_ADMISSION_SOURCE_DIGEST=4df500c2fbbd6bb4cf2509dd60ef49c74e26953d1f7fd7b74f29276405ff86b5
+L2_ADMISSION_REVIEW=PASS; REVIEWER=/root/stage1_l2_admission_verdict; M/S/N=0/0/0
+FULL_SEED_DRY_RUN=PASS; CURRENT_BYTES=YES; DATABASE_OR_REMOTE_WRITES=NONE
+BROWSER_L2=ADMITTED_NOT_RUN_ON_CURRENT_ADMISSION_DIGEST
+RESET=NOT_RUN; ACTUAL_SEED=NOT_RUN; UAT=NOT_AUTHORIZED
+```
+
+## Current-byte Browser L2 result — 2026-09-29
+
+```text
+DYNAMIC_FRONT_ADMISSION=PASS
+L2_ADMISSION_SOURCE_DIGEST=4df500c2fbbd6bb4cf2509dd60ef49c74e26953d1f7fd7b74f29276405ff86b5
+BROWSER_L2_RUN=l2-1790679019522-69383-0d9c31b8-385a-4e9e-9bc3-c1a1b79e0db4
+BROWSER_L2=PASS; DISCOVERED=6; SELECTED=6; RESULTS=6; BUSINESS=PASS; JOIN=COMPLETE; CLEANUP=PASS
+CASES=terminal-list-detail,terminal-create-basic,terminal-create-configuration,terminal-edit-configuration,terminal-readonly-state,terminal-status-actions
+JOIN_COUNTS=HTTP_COMPLETIONS:61; BACKEND_COMPLETIONS:124; DB_SECTION_ROWS:1806; INVALID_CASE_EVENTS:0; MISSING_CONTROLS:0; UNEXPECTED_CONTROLS:0
+BYTE_BINDING=98844528fab6777d8db4f6adb94fce3ee1c03dfd6162a2412b63d2203ffd312f; FILES=2039; BYTES=18296962
+CLEANUP_ERRORS=0; ARTIFACT_ERRORS=0; REMOTE_ROOT_ABSENT=true; RUNTIME_STATE=FINISHED
+RESET=NOT_RUN; ACTUAL_SEED=NOT_RUN; DEV=NOT_RUN; UAT=NOT_AUTHORIZED
+```
+
+Run evidence and logs are in `.runtime/browser-l2/l2-1790679019522-69383-0d9c31b8-385a-4e9e-9bc3-c1a1b79e0db4/`.
+The execution manifest has `firstFailure=null`, all six ordered case results PASS, `lastKnownGood=L2_6_CASES_PASS`,
+and cleanup PASS. The join artifact is COMPLETE with no missing/unexpected controls and no invalid case events.
+The run-scoped logs were read: no ERROR/FATAL/exception markers; two Flyway WARN records say pre-existing
+columns were skipped as already present. Cleanup confirms the run remote root absent.
+
+The first command attempted without a suite selector and was correctly refused by the default
+`catalog-inventory` admission before remote resource preparation. The source runbook requires the
+suite-specific `--suite store-terminal` selector; after diagnosing the command boundary, the exact
+suite command completed readiness, generated-profile exact-set, finalize and all six cases on one run.

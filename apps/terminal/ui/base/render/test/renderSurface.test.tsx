@@ -234,7 +234,10 @@ describe('render surface hosts', () => {
     source.setRoot(
       rootWithContent({
         contentSets: {
-          PRIMARY: {containers: {}, layers: [{layerId: 'admin.console.layer', partKey: 'test.admin-console-layer', openedAt: 1}]},
+          PRIMARY: {
+            containers: {},
+            layers: [{layerId: 'admin.console.layer', partKey: 'test.admin-console-layer', openedAt: 1}],
+          },
           SECONDARY: {containers: {}, layers: []},
         },
       }),
@@ -254,11 +257,7 @@ describe('render surface hosts', () => {
           logger,
           ...unusedRenderProviderBindings,
         },
-        createElement(
-          SurfaceRoot,
-          {displayMode: 'PRIMARY', containerKey: 'root'},
-          createElement(BrokenSurfaceContent),
-        ),
+        createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}, createElement(BrokenSurfaceContent)),
       ),
     );
 

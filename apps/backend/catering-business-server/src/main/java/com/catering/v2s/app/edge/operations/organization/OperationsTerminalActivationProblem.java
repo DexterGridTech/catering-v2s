@@ -22,7 +22,7 @@ public final class OperationsTerminalActivationProblem extends RuntimeException 
     }
 
     public HttpStatus status() {
-        return HttpStatus.CONFLICT;
+        return "TERMINAL_BINDING_NOT_ACTIVE".equals(code) ? HttpStatus.NOT_FOUND : HttpStatus.CONFLICT;
     }
 
     public static OperationsTerminalActivationProblem notActive() {

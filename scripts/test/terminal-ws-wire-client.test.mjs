@@ -36,6 +36,7 @@ function messageFromContract(type, values) {
 const validRequest = () => ({
   scenario: 'terminal.connection.topology-probe',
   url: 'ws://127.0.0.1:49152/tdp/acceptance-probe/ws',
+  markerId: 'decf696c-41c2-4d37-9b95-83749587ddf5',
   authenticate: {
     type: 'AUTHENTICATE',
     terminalRef: '8c1f4331-67ec-497c-a56a-423aa4b81c30',
@@ -172,11 +173,109 @@ test('session-probe closure and client failures emit only safe correlated stages
   assert.doesNotMatch(probe, /TERMINAL_WIRE_STAGE=[^`]*\$\{request\.authenticate/);
 });
 
+test('Java acceptance diagnostic allowlists cover every wire-client stage', () => {
+  const wireClient = readFileSync(new URL('./terminal-ws-wire-client.mjs', import.meta.url), 'utf8');
+  const javaSource = readFileSync(
+    new URL(
+      '../../apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TerminalConnectionContractScenarios.java',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  const clientStageBlock = javaSource.match(/SAFE_WIRE_CLIENT_STAGES = Set\.of\(([\s\S]*?)\);/);
+  assert.ok(clientStageBlock, 'TERMINAL_WIRE_JAVA_CLIENT_STAGE_ALLOWLIST_MISSING');
+  const clientStages = new Set([...clientStageBlock[1].matchAll(/"([A-Z_]+)"/g)].map(match => match[1]));
+  const emittedStages = new Set(
+    [...wireClient.matchAll(/TERMINAL_WIRE_STAGE=([A-Z_]+)/g)]
+      .map(match => match[1])
+      .filter(stage => stage !== 'PROCESS_SIGNAL'),
+  );
+  assert.deepEqual(
+    [...emittedStages].filter(stage => !clientStages.has(stage)).sort(),
+    [],
+    'TERMINAL_WIRE_JAVA_CLIENT_STAGE_ALLOWLIST_DRIFT',
+  );
+
+  const signalBlockStart = javaSource.indexOf('private static final Pattern SAFE_WIRE_SIGNAL_DIAGNOSTIC');
+  const signalBlockEnd = javaSource.indexOf('private static final Pattern SAFE_WIRE_LOG_MARKER_FILE', signalBlockStart);
+  assert.ok(signalBlockStart >= 0 && signalBlockEnd > signalBlockStart, 'TERMINAL_WIRE_SIGNAL_PATTERN_BOUNDARY_MISSING');
+  const signalStageAlternatives = javaSource
+    .slice(signalBlockStart, signalBlockEnd)
+    .match(/stage=\(([\s\S]*?)\) /)?.[1];
+  assert.ok(signalStageAlternatives, 'TERMINAL_WIRE_SIGNAL_STAGE_ALLOWLIST_MISSING');
+  const signalStages = new Set(signalStageAlternatives.match(/[A-Z][A-Z_]+/g) ?? []);
+  const assignedDiagnosticStages = new Set([
+    ...(wireClient.match(/diagnosticStage = '([A-Z_]+)'/) ?? []).slice(1),
+    ...[...wireClient.matchAll(/setDiagnosticStage\('([A-Z_]+)'\)/g)].map(match => match[1]),
+  ]);
+  assert.deepEqual(
+    [...assignedDiagnosticStages].filter(stage => !signalStages.has(stage)).sort(),
+    [],
+    'TERMINAL_WIRE_SIGNAL_STAGE_ALLOWLIST_DRIFT',
+  );
+});
+
 test('terminal wire control accepts one bounded loopback protocol request', () => {
   const request = parseControlRequest(`${JSON.stringify(validRequest())}\n`);
   assert.equal(request.scenario, 'terminal.connection.topology-probe');
   assert.equal(request.url, 'ws://127.0.0.1:49152/tdp/acceptance-probe/ws');
   assert.equal(request.authenticate.type, 'AUTHENTICATE');
+});
+
+test('one-shot topology and V-S14 wire cases require isolated marker ids', () => {
+  const markerId = 'decf696c-41c2-4d37-9b95-83749587ddf5';
+  const cases = [
+    {
+      scenario: 'terminal.connection.topology-probe',
+      authenticate: true,
+      expectedClose: {code: 4000, reason: 'CREDENTIAL_INVALID'},
+    },
+    {scenario: 'terminal.connection.compression.offer-none', extensionOffer: null},
+    {scenario: 'terminal.connection.compression.offer-bare', extensionOffer: 'permessage-deflate'},
+    {
+      scenario: 'terminal.connection.compression.offer-client-max-window-bits',
+      extensionOffer: 'permessage-deflate; client_max_window_bits',
+    },
+    {
+      scenario: 'terminal.connection.compression.session-negotiated',
+      authenticate: true,
+      extensionOffer: 'permessage-deflate',
+    },
+    {scenario: 'terminal.connection.compression.session-fallback', authenticate: true, extensionOffer: null},
+    {scenario: 'terminal.connection.frame.exact-boundary', authenticate: true},
+    {scenario: 'terminal.connection.frame.raw-overflow', authenticate: true, expectedClose: {code: 1009}},
+    {
+      scenario: 'terminal.connection.frame.compressed-single-overflow',
+      authenticate: true,
+      extensionOffer: 'permessage-deflate',
+      expectedClose: {code: 1009},
+    },
+    {
+      scenario: 'terminal.connection.frame.compressed-fragmented-overflow',
+      authenticate: true,
+      extensionOffer: 'permessage-deflate',
+      expectedClose: {code: 1009},
+    },
+  ];
+
+  for (const testCase of cases) {
+    const request = {
+      scenario: testCase.scenario,
+      url: 'ws://127.0.0.1:49152/tdp/acceptance-probe/ws',
+      markerId,
+    };
+    if (testCase.authenticate) request.authenticate = validRequest().authenticate;
+    if (Object.hasOwn(testCase, 'extensionOffer')) request.extensionOffer = testCase.extensionOffer;
+    if (testCase.expectedClose) request.expectedClose = testCase.expectedClose;
+
+    assert.equal(parseControlRequest(JSON.stringify(request)).markerId, markerId, testCase.scenario);
+    delete request.markerId;
+    assert.throws(
+      () => parseControlRequest(JSON.stringify(request)),
+      /TERMINAL_WIRE_CONTROL_MARKER_ID_INVALID/,
+      testCase.scenario,
+    );
+  }
 });
 
 test('wire-client AUTHENTICATE preflight matches TDS key, UTF-8, signed generation and canonical secret bounds', () => {
@@ -429,16 +528,23 @@ test('overflow controls accept code-only 1009 without prescribing its reason tex
   );
 });
 
-test('terminal wire control accepts a marked replacement close for a stale-generation session', () => {
+test('terminal wire control expects cancellation for a replaced stale-generation session', () => {
   const request = validRequest();
   request.scenario = 'terminal.connection.vs10.stale-revocation-old-session';
   request.markerId = 'decf696c-41c2-4d37-9b95-83749587ddf5';
-  request.expectedClose = {code: 4000, reason: 'SESSION_REPLACED'};
+  request.expectedClose = {code: 4000, reason: 'ACTIVATION_CANCELLED'};
   const parsed = parseControlRequest(JSON.stringify(request));
   assert.equal(parsed.scenario, request.scenario);
   assert.equal(parsed.markerId, request.markerId);
-  assert.equal(parsed.expectedClose.reason, 'SESSION_REPLACED');
+  assert.equal(parsed.expectedClose.reason, 'ACTIVATION_CANCELLED');
 
+  request.expectedClose = {code: 4000, reason: 'SESSION_REPLACED'};
+  assert.throws(
+    () => parseControlRequest(JSON.stringify(request)),
+    /TERMINAL_WIRE_CONTROL_EXPECTED_CLOSE_INVALID/,
+  );
+
+  request.expectedClose = {code: 4000, reason: 'ACTIVATION_CANCELLED'};
   delete request.markerId;
   assert.throws(() => parseControlRequest(JSON.stringify(request)), /TERMINAL_WIRE_CONTROL_MARKER_ID_INVALID/);
 });

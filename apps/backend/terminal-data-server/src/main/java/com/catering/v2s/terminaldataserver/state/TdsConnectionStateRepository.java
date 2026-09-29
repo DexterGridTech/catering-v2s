@@ -2,15 +2,14 @@ package com.catering.v2s.terminaldataserver.state;
 
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -156,38 +155,44 @@ public class TdsConnectionStateRepository {
     public Map<BindingKey, CurrentBinding> readCurrentBindings(Connection connection, Collection<BindingKey> keys)
             throws SQLException {
         if (keys.isEmpty()) return Map.of();
-        StringBuilder requestedRows = new StringBuilder();
-        List<Object> values = new ArrayList<>(keys.size() * 2);
-        for (BindingKey key : keys) {
-            if (!requestedRows.isEmpty()) requestedRows.append(',');
-            requestedRows.append("(CAST(? AS varchar), CAST(? AS uuid))");
-            values.add(key.groupWorkspaceKey());
-            values.add(key.terminalRef());
-        }
-        String sql = "WITH requested(group_workspace_key, terminal_ref) AS (VALUES " + requestedRows + ") "
+        String sql = "WITH requested(group_workspace_key, terminal_ref) AS ("
+                + "SELECT * FROM unnest(CAST(? AS varchar[]), CAST(? AS uuid[])) "
+                + "AS requested_keys(group_workspace_key, terminal_ref)) "
                 + "SELECT requested.group_workspace_key, requested.terminal_ref, binding.workspace_uuid, "
                 + "binding.generation, binding.binding_status "
                 + "FROM requested LEFT JOIN terminal_binding.latest_binding binding "
                 + "ON binding.group_workspace_key=requested.group_workspace_key "
                 + "AND binding.terminal_ref=requested.terminal_ref";
+        String[] groupWorkspaceKeys =
+                keys.stream().map(BindingKey::groupWorkspaceKey).toArray(String[]::new);
+        UUID[] terminalRefs = keys.stream().map(BindingKey::terminalRef).toArray(UUID[]::new);
         Map<BindingKey, CurrentBinding> current = new HashMap<>();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (int index = 0; index < values.size(); index++) {
-                statement.setObject(index + 1, values.get(index));
-            }
-            try (java.sql.ResultSet rows = statement.executeQuery()) {
-                while (rows.next()) {
-                    BindingKey key = new BindingKey(
-                            rows.getString("group_workspace_key"), rows.getObject("terminal_ref", UUID.class));
-                    current.put(
-                            key,
-                            new CurrentBinding(
+        Array groupWorkspaceKeyArray = connection.createArrayOf("varchar", groupWorkspaceKeys);
+        try {
+            Array terminalRefArray = connection.createArrayOf("uuid", terminalRefs);
+            try {
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    statement.setArray(1, groupWorkspaceKeyArray);
+                    statement.setArray(2, terminalRefArray);
+                    try (java.sql.ResultSet rows = statement.executeQuery()) {
+                        while (rows.next()) {
+                            BindingKey key = new BindingKey(
+                                    rows.getString("group_workspace_key"), rows.getObject("terminal_ref", UUID.class));
+                            current.put(
                                     key,
-                                    rows.getObject("workspace_uuid", UUID.class),
-                                    rows.getObject("generation", Long.class),
-                                    rows.getString("binding_status")));
+                                    new CurrentBinding(
+                                            key,
+                                            rows.getObject("workspace_uuid", UUID.class),
+                                            rows.getObject("generation", Long.class),
+                                            rows.getString("binding_status")));
+                        }
+                    }
                 }
+            } finally {
+                terminalRefArray.free();
             }
+        } finally {
+            groupWorkspaceKeyArray.free();
         }
         return Map.copyOf(current);
     }

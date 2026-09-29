@@ -71,8 +71,6 @@ class TdsGracefulShutdownLifecycleTest {
                 mock(TdsTerminalSessionActors.class),
                 new TdsListenerRecoveryGate("", "", ""),
                 TdsWireJsonConfiguration.createWireObjectMapper(),
-                scheduler,
-                scheduler,
                 scheduler);
 
         int webServerStopPhase = WebServerApplicationContext.START_STOP_LIFECYCLE_PHASE;

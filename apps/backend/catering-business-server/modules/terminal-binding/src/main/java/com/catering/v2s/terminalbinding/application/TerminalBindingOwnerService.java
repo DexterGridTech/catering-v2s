@@ -74,8 +74,9 @@ public class TerminalBindingOwnerService implements TerminalBindingOwnerApi {
                     activationRejection(candidate, command.deviceId(), facts, current, command.secretDigest());
             if (rejection != null) return ActivationResult.rejected(rejection);
 
-            TerminalBindingAuditReason reason =
-                    current == null ? TerminalBindingAuditReason.ACTIVATED : TerminalBindingAuditReason.REACTIVATED;
+            TerminalBindingAuditReason reason = current != null && "ACTIVE".equals(current.status())
+                    ? TerminalBindingAuditReason.REACTIVATED
+                    : TerminalBindingAuditReason.ACTIVATED;
             ActivationWrite write;
             try {
                 write = current == null

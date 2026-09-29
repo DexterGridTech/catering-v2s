@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
@@ -905,7 +906,8 @@ class BackendAcceptanceTest {
 
     @Test
     void terminalConnectionGracefulShutdownRunsAfterEveryOtherTdsContractFactory() {
-        List<java.lang.reflect.Method> contractFactories = Arrays.stream(BackendAcceptanceTest.class.getDeclaredMethods())
+        List<java.lang.reflect.Method> contractFactories = Arrays.stream(
+                        BackendAcceptanceTest.class.getDeclaredMethods())
                 .filter(method -> method.isAnnotationPresent(TestFactory.class))
                 .filter(method -> method.getName().startsWith("terminalConnection"))
                 .toList();
@@ -1828,17 +1830,24 @@ class BackendAcceptanceTest {
     }
 
     void awaitLatestConnectionStateLockWaiters(int expected, Duration timeout) throws InterruptedException {
+        long startedNanos = System.nanoTime();
         long deadline = System.nanoTime() + timeout.toNanos();
         long observed = 0;
         do {
             observed = count("SELECT count(*) FROM pg_stat_activity "
                     + "WHERE datname=current_database() AND pid<>pg_backend_pid() "
                     + "AND wait_event_type='Lock' AND query ILIKE '%terminal_connection.latest_state%'");
-            if (observed >= expected) return;
+            if (observed >= expected) {
+                System.out.printf(
+                        "BACKEND_ACCEPTANCE_LATEST_STATE_LOCK waitersReady expected=%d observed=%d elapsedMillis=%d%n",
+                        expected, observed, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos));
+                return;
+            }
             Thread.sleep(50);
         } while (System.nanoTime() < deadline);
         throw new IllegalStateException(
-                "ACCEPTANCE_LATEST_STATE_LOCK_WAITERS_NOT_READY expected=" + expected + " observed=" + observed);
+                "ACCEPTANCE_LATEST_STATE_LOCK_WAITERS_NOT_READY expected=" + expected + " observed=" + observed
+                        + " elapsedMillis=" + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos));
     }
 
     void awaitTerminalRowLockWaiters(int expected, Duration timeout) throws InterruptedException {
@@ -2011,13 +2020,25 @@ class BackendAcceptanceTest {
                                OR (schemaname='organization' AND relname='store')
                                OR (schemaname='store_terminal' AND relname='terminal')
                                OR (schemaname='terminal_binding' AND relname='latest_binding')
-                        ), 0) AS business_table_scans
+                        ), 0) AS business_table_scans,
+                        COALESCE((SELECT seq_scan + idx_scan FROM pg_stat_user_tables
+                            WHERE schemaname='platform_workspace' AND relname='workspace'), 0) AS workspace_scans,
+                        COALESCE((SELECT seq_scan + idx_scan FROM pg_stat_user_tables
+                            WHERE schemaname='organization' AND relname='store'), 0) AS store_scans,
+                        COALESCE((SELECT seq_scan + idx_scan FROM pg_stat_user_tables
+                            WHERE schemaname='store_terminal' AND relname='terminal'), 0) AS terminal_scans,
+                        COALESCE((SELECT seq_scan + idx_scan FROM pg_stat_user_tables
+                            WHERE schemaname='terminal_binding' AND relname='latest_binding'), 0) AS binding_scans
                     """)) {
                 try (var rows = statement.executeQuery()) {
                     if (!rows.next()) throw new IllegalStateException("TDS_HEARTBEAT_STATISTICS_SNAPSHOT_MISSING");
                     return Map.of(
                             "latestStateUpdates", rows.getLong("latest_state_updates"),
-                            "businessTableScans", rows.getLong("business_table_scans"));
+                            "businessTableScans", rows.getLong("business_table_scans"),
+                            "workspaceScans", rows.getLong("workspace_scans"),
+                            "storeScans", rows.getLong("store_scans"),
+                            "terminalScans", rows.getLong("terminal_scans"),
+                            "bindingScans", rows.getLong("binding_scans"));
                 }
             }
         });

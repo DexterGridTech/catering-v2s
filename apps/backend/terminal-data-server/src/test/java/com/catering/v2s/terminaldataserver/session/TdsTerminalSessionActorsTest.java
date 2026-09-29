@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -98,7 +99,23 @@ class TdsTerminalSessionActorsTest {
     }
 
     @Test
-    void aVerifiedReplacementClosesOnlyThePreviousActiveSession() {
+    void sameGenerationReplacementUsesSessionReplaced() {
+        TdsWebSocketConnection previous = connection("session-1");
+        begin("attempt-1", 1, previous);
+        assertThat(register("attempt-1", 1)).isTrue();
+
+        TdsWebSocketConnection replacement = connection("session-2");
+        begin("attempt-2", 1, replacement);
+        assertThat(register("attempt-2", 1)).isTrue();
+
+        assertThat(previous.closeReasonOr("missing")).isEqualTo("SESSION_REPLACED");
+        assertThat(replacement.isAuthenticationReady()).isTrue();
+        verify(stateWriter)
+                .queueDisconnect(eq(repository.opened.getFirst()), eq("SESSION_REPLACED"), any(Runnable.class));
+    }
+
+    @Test
+    void newerVerifiedGenerationClosesTheRevokedSessionAsActivationCancelled() {
         TdsWebSocketConnection previous = connection("session-1");
         begin("attempt-1", 1, previous);
         assertThat(register("attempt-1", 1)).isTrue();
@@ -107,10 +124,10 @@ class TdsTerminalSessionActorsTest {
         begin("attempt-2", 2, replacement);
         assertThat(register("attempt-2", 2)).isTrue();
 
-        assertThat(previous.closeReasonOr("missing")).isEqualTo("SESSION_REPLACED");
+        assertThat(previous.closeReasonOr("missing")).isEqualTo("ACTIVATION_CANCELLED");
         assertThat(replacement.isAuthenticationReady()).isTrue();
         verify(stateWriter)
-                .queueDisconnect(eq(repository.opened.getFirst()), eq("SESSION_REPLACED"), any(Runnable.class));
+                .queueDisconnect(eq(repository.opened.getFirst()), eq("ACTIVATION_CANCELLED"), any(Runnable.class));
     }
 
     @Test
@@ -272,6 +289,41 @@ class TdsTerminalSessionActorsTest {
     }
 
     @Test
+    void connectionClosedFallsBackInlineWhenDatabaseSchedulerRejectsTheTask() {
+        AtomicBoolean rejectTasks = new AtomicBoolean();
+        var rejectingScheduler = Schedulers.fromExecutor(command -> {
+            if (rejectTasks.get()) throw new RejectedExecutionException("test scheduler rejection");
+            command.run();
+        });
+        actors = new TdsTerminalSessionActors(
+                repository,
+                stateWriter,
+                settings,
+                codec,
+                trackedSessionLimiter,
+                rejectingScheduler,
+                Schedulers.immediate());
+        try {
+            TdsWebSocketConnection active = connection("session-scheduler-rejects-close");
+            begin("attempt-scheduler-rejects-close", 1, active);
+            assertThat(register("attempt-scheduler-rejects-close", 1)).isTrue();
+            rejectTasks.set(true);
+
+            actors.connectionClosed(TERMINAL, "attempt-scheduler-rejects-close", active);
+
+            ArgumentCaptor<Runnable> persisted = ArgumentCaptor.forClass(Runnable.class);
+            verify(stateWriter)
+                    .queueDisconnect(eq(repository.opened.getFirst()), eq("NETWORK_ERROR"), persisted.capture());
+            persisted.getValue().run();
+            TdsTrackedSessionLimiter.Permit released = trackedSessionLimiter.tryAcquire();
+            assertThat(released).isNotNull();
+            released.close();
+        } finally {
+            rejectingScheduler.dispose();
+        }
+    }
+
+    @Test
     void recoveryReconcilesPendingVerifiedAttemptsBeforeRegistration() {
         TdsWebSocketConnection pending = connection("session-1");
         begin("attempt-1", 1, pending);
@@ -305,14 +357,16 @@ class TdsTerminalSessionActorsTest {
     }
 
     @Test
-    void recoveryBeforeCredentialResultDoesNotCloseOnMissingLowerOrDifferentIdentity() {
+    void recoveryBeforeCredentialResultAllowsMissingLowerOrDifferentIdentityToRegister() {
         BindingKey key = new BindingKey("GROUP-1", TERMINAL);
         TdsWebSocketConnection missing = connection("missing");
         begin("missing", 1, missing);
         actors.reconcile(new CurrentBinding(key, null, null, null));
+        assertThat(missing.isOpen()).isTrue();
         assertThat(actors.recordVerification(TERMINAL, "missing", verification(1))
                         .block())
                 .isTrue();
+        assertThat(missing.isOpen()).isTrue();
         assertThat(actors.register(TERMINAL, "missing", verification(1)).block())
                 .isTrue();
 
@@ -321,6 +375,7 @@ class TdsTerminalSessionActorsTest {
         actors.reconcile(new CurrentBinding(key, WORKSPACE, 1L, "ACTIVE"));
         assertThat(actors.recordVerification(TERMINAL, "lower", verification(2)).block())
                 .isTrue();
+        assertThat(lower.isOpen()).isTrue();
         assertThat(actors.register(TERMINAL, "lower", verification(2)).block()).isTrue();
 
         TdsWebSocketConnection different = connection("different");
@@ -329,11 +384,12 @@ class TdsTerminalSessionActorsTest {
         assertThat(actors.recordVerification(TERMINAL, "different", verification(3))
                         .block())
                 .isTrue();
+        assertThat(different.isOpen()).isTrue();
         assertThat(actors.register(TERMINAL, "different", verification(3)).block())
                 .isTrue();
 
-        assertThat(missing.closeReasonOr("missing")).isEqualTo("SESSION_REPLACED");
-        assertThat(lower.closeReasonOr("missing")).isEqualTo("SESSION_REPLACED");
+        assertThat(missing.closeReasonOr("missing")).isEqualTo("ACTIVATION_CANCELLED");
+        assertThat(lower.closeReasonOr("missing")).isEqualTo("ACTIVATION_CANCELLED");
         assertThat(different.isAuthenticationReady()).isTrue();
         assertThat(repository.opened).hasSize(3);
     }

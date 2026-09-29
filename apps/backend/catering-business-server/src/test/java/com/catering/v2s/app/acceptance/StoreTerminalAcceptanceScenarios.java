@@ -382,6 +382,17 @@ final class StoreTerminalAcceptanceScenarios {
         String idempotencyKey = "acceptance-terminal-cancel-" + UUID.randomUUID();
         Map<String, String> headers = Map.of("Idempotency-Key", idempotencyKey);
         String operationsPath = operationsTerminalActivationCancelPath(store.fixture(), terminalRef);
+        long auditBeforeRejectedOperationsCancel = terminalBindingAuditTotal(context, store, terminalRef);
+        BackendAcceptanceTest.Response changedGeneration = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL,
+                operationsPath,
+                store.session().cookie(),
+                Map.of("expectedBindingGeneration", 1),
+                Map.of("Idempotency-Key", "old-generation-cancel-" + UUID.randomUUID()),
+                CLIENT_FAILURE);
+        assertEquals(409, changedGeneration.status());
+        assertProblem(changedGeneration, "TERMINAL_BINDING_CHANGED");
+        assertEquals(auditBeforeRejectedOperationsCancel, terminalBindingAuditTotal(context, store, terminalRef));
         BackendAcceptanceTest.Response operationsCancelled = context.post(
                 BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL,
                 operationsPath,
@@ -390,6 +401,18 @@ final class StoreTerminalAcceptanceScenarios {
                 headers,
                 OK);
         assertEquals("CANCELLED", operationsCancelled.json().path("outcome").asText());
+        long auditAfterOperationsCancel = terminalBindingAuditTotal(context, store, terminalRef);
+        assertEquals(auditBeforeRejectedOperationsCancel + 1, auditAfterOperationsCancel);
+        BackendAcceptanceTest.Response noLongerActive = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL,
+                operationsPath,
+                store.session().cookie(),
+                Map.of("expectedBindingGeneration", 2),
+                Map.of("Idempotency-Key", "inactive-terminal-cancel-" + UUID.randomUUID()),
+                CLIENT_FAILURE);
+        assertEquals(404, noLongerActive.status());
+        assertProblem(noLongerActive, "TERMINAL_BINDING_NOT_ACTIVE");
+        assertEquals(auditAfterOperationsCancel, terminalBindingAuditTotal(context, store, terminalRef));
         BackendAcceptanceTest.Response replayed = context.post(
                 BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL,
                 operationsPath,
@@ -739,7 +762,6 @@ final class StoreTerminalAcceptanceScenarios {
         BackendAcceptanceTest.Response initial = activationAttempt(
                 context, store.fixture().groupWorkspaceKey(), code, deviceId, initialSecret, "laptop", OK);
         assertEquals(1, initial.json().path("bindingGeneration").asLong());
-        transitionTerminalStatus(context, store, terminalRef, "DISABLED");
         String nextSecret = newCredentialSecret();
         long auditBeforeVoidRace = bindingAuditCount(store.fixture(), terminalRef);
         runActivationStatusWaitQueue(
@@ -1035,7 +1057,8 @@ final class StoreTerminalAcceptanceScenarios {
             byte[] secretBytes = Base64.getUrlDecoder().decode(credentialSecret);
             String expectedDigest;
             try {
-                expectedDigest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(secretBytes));
+                expectedDigest = HexFormat.of()
+                        .formatHex(MessageDigest.getInstance("SHA-256").digest(secretBytes));
             } finally {
                 Arrays.fill(secretBytes, (byte) 0);
             }

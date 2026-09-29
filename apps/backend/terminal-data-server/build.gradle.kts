@@ -94,7 +94,8 @@ val writeBackendAcceptanceTdsClasspathReport = tasks.register("writeBackendAccep
     group = "verification"
     description = "Resolves and reports the TDS-owned runtime classpaths for backend acceptance."
     dependsOn(tasks.named("testClasses"))
-    inputs.files(configurations.named("runtimeClasspath"), configurations.named("testRuntimeClasspath"))
+    val testSourceSetRuntimeClasspath = sourceSets.getByName("test").runtimeClasspath
+    inputs.files(configurations.named("runtimeClasspath"), testSourceSetRuntimeClasspath)
     outputs.file(backendAcceptanceTdsClasspathReport)
 
     doLast {
@@ -119,7 +120,7 @@ val writeBackendAcceptanceTdsClasspathReport = tasks.register("writeBackendAccep
         val report = buildString {
             appendLine("tdsRuntimeClasspath=${runtimeArtifacts.joinToString(",")}")
             appendLine("tdsTestRuntimeArtifacts=${testRuntimeArtifacts.joinToString(",")}")
-            appendLine("tdsTestRuntimeClasspath=${testRuntimeClasspath.files
+            appendLine("tdsTestRuntimeClasspath=${testSourceSetRuntimeClasspath.files
                 .joinToString(File.pathSeparator) { it.absolutePath }}")
         }
         val reportFile = backendAcceptanceTdsClasspathReport.get().asFile
