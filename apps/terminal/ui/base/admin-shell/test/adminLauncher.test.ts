@@ -82,4 +82,22 @@ describe('admin launcher gesture', () => {
       }).state,
     ).toEqual(createInitialAdminGestureState());
   });
+
+  it('rejects a coordinate captured before the measured window origin moved', () => {
+    const previousWindowPoint = {pageX: 280, pageY: 270};
+    const previousSpace = {originX: 200, originY: 190, scaleX: 1, scaleY: 1};
+    const currentSpace = {originX: 300, originY: 290, scaleX: 1, scaleY: 1};
+    const oldPoint = logicalPointFromWindow({...previousWindowPoint, space: previousSpace});
+    expect(oldPoint).toEqual({x: 80, y: 80});
+
+    const stalePoint = logicalPointFromWindow({...previousWindowPoint, space: currentSpace});
+    expect(stalePoint).toEqual({x: -20, y: -20});
+    const result = trackAdminGesture(createInitialAdminGestureState(), {
+      x: stalePoint!.x,
+      y: stalePoint!.y,
+      atMs: 0,
+    });
+    expect(result.completed).toBe(false);
+    expect(result.state).toEqual(createInitialAdminGestureState());
+  });
 });

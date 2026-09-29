@@ -1,3 +1,4 @@
+import java.io.File
 import java.security.MessageDigest
 
 plugins {
@@ -18,6 +19,7 @@ configure<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtensio
 
 dependencies {
     implementation(project(":apps:backend:catering-business-server:modules:terminal-binding"))
+    implementation(project(":apps:backend:catering-business-server:modules:execution-context"))
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("io.projectreactor:reactor-core")
@@ -84,4 +86,47 @@ val verifyTerminalConnectionProtocolResource = tasks.register("verifyTerminalCon
 
 tasks.named("check") {
     dependsOn(verifyTerminalConnectionProtocolResource)
+}
+
+val backendAcceptanceTdsClasspathReport =
+    layout.buildDirectory.file("reports/backend-acceptance/tds-runtime-classpaths.txt")
+val writeBackendAcceptanceTdsClasspathReport = tasks.register("writeBackendAcceptanceTdsClasspathReport") {
+    group = "verification"
+    description = "Resolves and reports the TDS-owned runtime classpaths for backend acceptance."
+    dependsOn(tasks.named("testClasses"))
+    inputs.files(configurations.named("runtimeClasspath"), configurations.named("testRuntimeClasspath"))
+    outputs.file(backendAcceptanceTdsClasspathReport)
+
+    doLast {
+        val runtimeClasspath = configurations.getByName("runtimeClasspath")
+        val testRuntimeClasspath = configurations.getByName("testRuntimeClasspath")
+        fun artifactCoordinates(configuration: org.gradle.api.artifacts.Configuration): Set<String> =
+            configuration.resolvedConfiguration.resolvedArtifacts
+                .map { artifact ->
+                    val id = artifact.moduleVersion.id
+                    "${id.group}:${artifact.name}:${id.version}"
+                }
+                .toSortedSet()
+
+        val runtimeArtifacts = artifactCoordinates(runtimeClasspath)
+        val testRuntimeArtifacts = artifactCoordinates(testRuntimeClasspath)
+        check(testRuntimeArtifacts.any { artifact ->
+            artifact.startsWith("io.projectreactor.tools:blockhound:") && artifact.endsWith(":1.0.17.RELEASE")
+        }) {
+            "TDS_TEST_BLOCKHOUND_VERSION_MISMATCH:1.0.17.RELEASE"
+        }
+
+        val report = buildString {
+            appendLine("tdsRuntimeClasspath=${runtimeArtifacts.joinToString(",")}")
+            appendLine("tdsTestRuntimeArtifacts=${testRuntimeArtifacts.joinToString(",")}")
+            appendLine("tdsTestRuntimeClasspath=${testRuntimeClasspath.files
+                .joinToString(File.pathSeparator) { it.absolutePath }}")
+        }
+        val reportFile = backendAcceptanceTdsClasspathReport.get().asFile
+        reportFile.parentFile.mkdirs()
+        reportFile.writeText(report)
+        println("BACKEND_ACCEPTANCE_TDS_CLASSPATH_REPORT=${reportFile.absolutePath}")
+        println("BACKEND_ACCEPTANCE_TDS_RUNTIME_ARTIFACTS=${runtimeArtifacts.size}")
+        println("BACKEND_ACCEPTANCE_TDS_TEST_RUNTIME_ARTIFACTS=${testRuntimeArtifacts.size}")
+    }
 }

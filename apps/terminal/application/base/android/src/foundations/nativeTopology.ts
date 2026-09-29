@@ -60,19 +60,6 @@ type NativeAppControlModule = Readonly<{
   readonly resetRuntime: (requestId: string, timeoutMs: number) => Promise<NativePortResult>;
 }>;
 
-type NativeConnectionPayload = Readonly<{
-  readonly event?: unknown;
-  readonly connectionId?: unknown;
-  readonly reason?: unknown;
-  readonly code?: unknown;
-  readonly readyState?: unknown;
-}>;
-
-type NativeFramePayload = Readonly<{
-  readonly connectionId?: unknown;
-  readonly raw?: unknown;
-}>;
-
 type WebSocketLike = {
   readonly readyState: number;
   onopen: (() => void) | null;
@@ -346,7 +333,7 @@ export const createAndroidAppControlPort = (): AppControlPort => {
     resetRuntime: async ({requestId, timeoutMs}: Parameters<AppControlPort['resetRuntime']>[0]) => {
       try {
         return readNativeActionResult(await nativeAppControl().resetRuntime(requestId, timeoutMs), requestId);
-      } catch (_error) {
+      } catch {
         return bridgeFailure({
           port: 'appControl',
           capability: 'resetRuntime',

@@ -58,7 +58,6 @@ import {
   createStartupDiagnosticsWriter,
   startupRequiredGroups,
   type StartupDiagnosticsReadiness,
-  type StartupDiagnosticsWriter,
 } from './startupDiagnosticsWriter';
 
 export type IntegrationSurfaceCreationInput = Readonly<{

@@ -92,7 +92,7 @@ press/selected 状态模型。
 - `src/theme/`：只含 base 展示 token 和 `ok`/`warn`/`error`/`info` 语义 tone 映射，不含应用主题与业务文案。
 - `src/index.ts`：唯一公共面，导出控件与其 props 类型。
 - `src/dependencies.ts`：本包实际 workspace 依赖声明；本批为空。
-- `test/primitives.test.tsx`：使用 `react-test-renderer` 验证真实组件树和挂点。
+- `test/primitives.test.tsx`：使用 RNTL v14 与共享 renderer 测试 host 验证组件树和挂点；host ref 在 React commit 阶段绑定，避免在 render 阶段更新父级状态。
 - `terminal-invariants.json`：公共导出集合与测试 owner 的正本。
 
 ## 公共面

@@ -73,7 +73,14 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
     }
 
     ArmedAttempt armNextAttempt() {
-        ArmedAttempt next = new ArmedAttempt();
+        return armNextAttempt(DEFAULT_RELEASE_TIMEOUT);
+    }
+
+    ArmedAttempt armNextAttempt(Duration releaseTimeout) {
+        if (releaseTimeout == null || releaseTimeout.isNegative() || releaseTimeout.isZero()) {
+            throw new IllegalArgumentException("TDS_REGISTRATION_GATE_RELEASE_TIMEOUT_INVALID");
+        }
+        ArmedAttempt next = new ArmedAttempt(null, null, releaseTimeout);
         synchronized (attemptLock) {
             if (armed != null || held != null) {
                 throw new IllegalStateException("TDS_REGISTRATION_GATE_ALREADY_ARMED");
@@ -313,6 +320,7 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
     static final class ArmedAttempt {
         private final CompletableFuture<String> observed = new CompletableFuture<>();
         private final CompletableFuture<String> release = new CompletableFuture<>();
+        private final CompletableFuture<Boolean> clientDisconnectedBeforeRelease = new CompletableFuture<>();
         private final String expectedTerminalRef;
         private final String expectedGeneration;
         private final Duration releaseTimeout;
@@ -349,6 +357,10 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
             return observed.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
         }
 
+        boolean awaitClientDisconnectedBeforeRelease(Duration timeout) throws Exception {
+            return clientDisconnectedBeforeRelease.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        }
+
         String awaitObserved(Duration timeout, CompletableFuture<?> competingCompletion) throws Exception {
             try {
                 CompletableFuture.anyOf(observed, competingCompletion).get(timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -365,7 +377,11 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
                 if (disconnected.isCompletedExceptionally()) {
                     throw new IOException("TDS_REGISTRATION_GATE_EXTRA_INPUT");
                 }
-                if (disconnected.isDone()) return null;
+                if (disconnected.isDone()) {
+                    clientDisconnectedBeforeRelease.complete(true);
+                    return null;
+                }
+                clientDisconnectedBeforeRelease.complete(false);
                 return release.getNow(null);
             } catch (TimeoutException expired) {
                 throw new IOException("TDS_REGISTRATION_GATE_RELEASE_DEADLINE_EXCEEDED", expired);

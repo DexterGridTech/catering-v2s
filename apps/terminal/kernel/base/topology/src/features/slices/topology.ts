@@ -2,7 +2,6 @@ import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import {defineStateRuntimeSlice} from '@catering-v2s/kernel-base-state';
 import type {SurfaceForm, TopologyIdentity, TopologyLocator} from '@catering-v2s/kernel-base-contracts';
 import type {TopologyHostState} from '@catering-v2s/kernel-base-platform-ports';
-import {moduleName} from '../../moduleName';
 import {topologySliceName} from '../../selectors/selectTopologyState';
 import type {TopologyState} from '../../types/state';
 

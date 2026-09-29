@@ -68,7 +68,6 @@ class TdsTerminalSessionActorsTest {
                 codec,
                 trackedSessionLimiter,
                 Schedulers.immediate(),
-                Schedulers.immediate(),
                 Schedulers.immediate());
     }
 
@@ -140,7 +139,6 @@ class TdsTerminalSessionActorsTest {
                 codec,
                 trackedSessionLimiter,
                 Schedulers.immediate(),
-                Schedulers.immediate(),
                 Schedulers.immediate());
 
         TdsWebSocketConnection active = connection("session-active");
@@ -180,7 +178,6 @@ class TdsTerminalSessionActorsTest {
                 codec,
                 trackedSessionLimiter,
                 Schedulers.immediate(),
-                Schedulers.immediate(),
                 Schedulers.immediate());
         repository.failOpen = true;
         TdsWebSocketConnection connection = connection("session-open-fails");
@@ -205,7 +202,6 @@ class TdsTerminalSessionActorsTest {
                 settings,
                 codec,
                 trackedSessionLimiter,
-                Schedulers.immediate(),
                 Schedulers.immediate(),
                 Schedulers.immediate());
         when(codec.sessionReady(anyString(), anyString(), any(Instant.class), anyLong(), anyLong()))

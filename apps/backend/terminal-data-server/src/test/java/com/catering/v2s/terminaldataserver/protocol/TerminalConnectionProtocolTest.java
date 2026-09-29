@@ -28,7 +28,6 @@ class TerminalConnectionProtocolTest {
         assertThat(protocol.messageTypes()).containsExactlyInAnyOrder("AUTHENTICATE", "SESSION_READY", "PING", "PONG");
         assertThat(protocol.message("AUTHENTICATE").fieldNames())
                 .containsExactlyInAnyOrder("terminalRef", "terminalCredential", "deviceId", "appVersion");
-        assertThat(protocol.message("AUTHENTICATE").additionalFieldsAllowed()).isTrue();
         assertThat(protocol.message("AUTHENTICATE").firstMessage()).isTrue();
     }
 

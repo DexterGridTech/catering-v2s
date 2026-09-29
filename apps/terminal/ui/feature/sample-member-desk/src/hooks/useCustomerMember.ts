@@ -38,7 +38,7 @@ export const useCustomerMember = ({mode}: Readonly<{readonly mode: CustomerMembe
           definition: deskSystemFailureObservedCommand,
           payload: {operation},
         });
-      } catch (_error) {
+      } catch {
         // useDispatchCommand has already emitted the structured rejection diagnostic.
       }
     },

@@ -1,4 +1,3 @@
-import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime';
 import {resolveWorkspace, selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';

@@ -57,7 +57,7 @@ const readOptionalProps = (record: Record<string, unknown>): StateJsonValue | un
   try {
     assertStateJsonValue(value, 'content.props');
     return cloneAndFreezeStateJsonValue(value);
-  } catch (_error) {
+  } catch {
     return undefined;
   }
 };
@@ -288,7 +288,7 @@ const serializeLayer = (layer: LayerEntry): StateJsonObject | undefined => {
   if (layer.props !== undefined) {
     try {
       assertStateJsonValue(layer.props, 'content.layer.props');
-    } catch (_error) {
+    } catch {
       return undefined;
     }
   }
@@ -375,7 +375,7 @@ const parsePlacement = (value: StateJsonValue): ScreenPlacement | undefined => {
   if (record.props !== undefined) {
     try {
       assertStateJsonValue(record.props, 'hydrated content.props');
-    } catch (_error) {
+    } catch {
       return undefined;
     }
   }

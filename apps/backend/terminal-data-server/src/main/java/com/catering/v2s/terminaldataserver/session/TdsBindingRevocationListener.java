@@ -108,7 +108,7 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
                 backendPid = connection.unwrap(PGConnection.class).getBackendPID();
                 listenAndReconcile(connection, backendPid);
                 retryIndex = 0;
-                poll(connection);
+                poll(connection, backendPid);
             } catch (SQLException | RuntimeException failure) {
                 ready = false;
                 logWarning("tds_listener_disconnected", failure.getClass().getSimpleName(), backendPid);
@@ -136,9 +136,10 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
         logInfo("tds_listener_ready", keys.size(), backendPid);
     }
 
-    private void poll(Connection connection) throws SQLException {
+    private void poll(Connection connection, int backendPid) throws SQLException {
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
         long nextHealthCheck = System.nanoTime() + HEALTH_INTERVAL_NANOS;
+        long lastHealthCheck = System.nanoTime();
         while (listenerRunning) {
             PGNotification[] notifications = pgConnection.getNotifications((int) NOTIFICATION_WAIT_MILLIS);
             if (notifications != null) {
@@ -152,10 +153,23 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
                 }
             }
             if (System.nanoTime() >= nextHealthCheck) {
+                long probeStarted = System.nanoTime();
                 try (Statement statement = connection.createStatement()) {
                     statement.execute("SELECT 1");
                 }
-                nextHealthCheck = System.nanoTime() + HEALTH_INTERVAL_NANOS;
+                long probeFinished = System.nanoTime();
+                long intervalMillis = TimeUnit.NANOSECONDS.toMillis(probeStarted - lastHealthCheck);
+                long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(probeFinished - probeStarted);
+                TdsAsyncLog.enqueue(
+                        logScheduler,
+                        () -> LOGGER.info(
+                                "event=tds_listener_health_probe_completed "
+                                        + "backendPid={} intervalMillis={} elapsedMillis={}",
+                                backendPid,
+                                intervalMillis,
+                                elapsedMillis));
+                lastHealthCheck = probeFinished;
+                nextHealthCheck = probeFinished + HEALTH_INTERVAL_NANOS;
             }
         }
     }

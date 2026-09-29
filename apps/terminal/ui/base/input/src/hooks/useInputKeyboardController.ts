@@ -1,6 +1,5 @@
 import {useCallback} from 'react';
 import type {InputFieldController} from '../types/types';
-import type {KeyboardKey} from '../foundations/editText';
 import type {KeyboardStateBase, MutableFieldController, MutableRef} from './inputProviderTypes';
 
 type InputKeyboardControllerOptions = Readonly<{

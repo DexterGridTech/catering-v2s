@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     java
 }
@@ -84,6 +86,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
+    testImplementation("org.postgresql:postgresql:42.7.7")
     testImplementation("org.testcontainers:junit-jupiter:1.21.4")
     testImplementation("org.testcontainers:postgresql:1.21.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -91,29 +94,42 @@ dependencies {
 
 val terminalDataServerProject = rootProject.project(":apps:backend:terminal-data-server")
 val terminalDataServerBootJar = rootProject.file("apps/backend/terminal-data-server/build/libs/terminal-data-server.jar")
+val terminalDataServerClasspathReport =
+    terminalDataServerProject.layout.buildDirectory.file("reports/backend-acceptance/tds-runtime-classpaths.txt")
 val backendAcceptanceClasspathReport =
     layout.buildDirectory.file("reports/backend-acceptance/runtime-classpaths.txt")
 val verifyBackendAcceptanceRuntimeClasspaths = tasks.register("verifyBackendAcceptanceRuntimeClasspaths") {
     group = "verification"
     description = "Verifies isolated business acceptance and TDS runtime dependency graphs."
     dependsOn(":apps:backend:terminal-data-server:bootJar")
+    dependsOn(":apps:backend:terminal-data-server:writeBackendAcceptanceTdsClasspathReport")
     inputs.files(configurations.named("testRuntimeClasspath"))
+    inputs.file(terminalDataServerClasspathReport)
     outputs.file(backendAcceptanceClasspathReport)
     doLast {
         val businessClasspath = configurations.getByName("testRuntimeClasspath")
-        val tdsClasspath = terminalDataServerProject.configurations.getByName("runtimeClasspath")
         val businessArtifacts = businessClasspath.resolvedConfiguration.resolvedArtifacts
             .map { artifact ->
                 val id = artifact.moduleVersion.id
                 "${id.group}:${artifact.name}:${id.version}"
             }
             .toSortedSet()
-        val tdsArtifacts = tdsClasspath.resolvedConfiguration.resolvedArtifacts
-            .map { artifact ->
-                val id = artifact.moduleVersion.id
-                "${id.group}:${artifact.name}:${id.version}"
+        val tdsClasspathValues = terminalDataServerClasspathReport.get().asFile.readLines()
+            .mapNotNull { line ->
+                val separator = line.indexOf('=')
+                if (separator < 0) null else line.substring(0, separator) to line.substring(separator + 1)
             }
+            .toMap()
+        val tdsArtifacts = tdsClasspathValues.getValue("tdsRuntimeClasspath")
+            .split(',')
+            .filter(String::isNotBlank)
             .toSortedSet()
+        val tdsTestArtifacts = tdsClasspathValues.getValue("tdsTestRuntimeArtifacts")
+            .split(',')
+            .filter(String::isNotBlank)
+            .toSortedSet()
+        val tdsTestRuntimeClasspath = tdsClasspathValues.getValue("tdsTestRuntimeClasspath")
+        check(tdsTestRuntimeClasspath.isNotBlank()) { "TDS_TEST_RUNTIME_CLASSPATH_EMPTY" }
         val businessComponents = businessClasspath.incoming.resolutionResult.allComponents
             .map { it.id.displayName }
         check(businessArtifacts.any { it.startsWith("org.springframework.boot:spring-boot:") && it.endsWith(":4.1.0") }) {
@@ -153,11 +169,17 @@ val verifyBackendAcceptanceRuntimeClasspaths = tasks.register("verifyBackendAcce
         check(tdsArtifacts.filter { it.startsWith("io.netty:") }.all { it.endsWith(":4.2.18.Final") }) {
             "TDS_RUNTIME_NETTY_VERSION_MISMATCH"
         }
+        check(tdsTestArtifacts.any { artifact ->
+            artifact.startsWith("io.projectreactor.tools:blockhound:") && artifact.endsWith(":1.0.17.RELEASE")
+        }) {
+            "TDS_TEST_BLOCKHOUND_VERSION_MISMATCH:1.0.17.RELEASE"
+        }
         check(terminalDataServerBootJar.isFile) { "TDS_BOOT_JAR_MISSING" }
         val report = buildString {
             appendLine("schemaVersion=1")
             appendLine("businessTestRuntimeClasspath=${businessArtifacts.joinToString(",")}")
             appendLine("tdsRuntimeClasspath=${tdsArtifacts.joinToString(",")}")
+            appendLine("tdsTestRuntimeClasspath=$tdsTestRuntimeClasspath")
             appendLine("tdsBootJar=${terminalDataServerBootJar.absolutePath}")
         }
         val reportFile = backendAcceptanceClasspathReport.get().asFile

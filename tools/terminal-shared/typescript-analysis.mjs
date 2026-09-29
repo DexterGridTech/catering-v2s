@@ -129,6 +129,18 @@ export function assertNoSyntacticDiagnostics(analysis, root) {
   throw new Error(messages.join('\n'));
 }
 
+export function assertNoCompilerOptionsDiagnostics(analysis, root) {
+  const diagnostics = analysis.program.getOptionsDiagnostics();
+  if (diagnostics.length === 0) return;
+  const messages = diagnostics.map(diagnostic => {
+    const sourcePath = diagnostic.file?.fileName;
+    const location = sourcePath ? path.relative(root, sourcePath).split(path.sep).join('/') : 'compiler-options';
+    const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ');
+    return `TS${diagnostic.code} ${location}: ${message}`;
+  });
+  throw new Error(messages.join('\n'));
+}
+
 /**
  * Resolve an exported literal from a package's moduleName.ts. The returned
  * declaration must originate in that file; same-text constants in another

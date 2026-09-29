@@ -190,7 +190,7 @@ export const LayerStack = () => {
   }
 
   return (
-    <View testID={LAYER_STACK_TEST_ID} style={[styles.stack, {pointerEvents: 'box-none'}]}>
+    <View testID={LAYER_STACK_TEST_ID} pointerEvents="box-none" style={styles.stack}>
       {orderedLayers.length > 0 ? (
         <Pressable
           testID={LAYER_BACKDROP_TEST_ID}
@@ -203,7 +203,8 @@ export const LayerStack = () => {
         <View
           key={layer.layerId}
           testID={`ui-base-render:layer:${layer.layerId}`}
-          style={[styles.layer, {pointerEvents: 'box-none'}]}
+          pointerEvents="box-none"
+          style={styles.layer}
         >
           <Animated.View style={[styles.layerContent, {transform: [{translateY: presentationOffsetY}]}]}>
             <SystemFailureBoundary ownerId={`layer:${layer.layerId}`}>

@@ -21,9 +21,8 @@ export const unavailableConnectorPort: ConnectorPort = {
   ): Promise<PortResult<ConnectorSubscription>> => createUnavailable('connector', 'subscribe'),
   unsubscribe: async (_input: ConnectorUnsubscribeInput): Promise<PortResult<NoOutput>> =>
     createUnavailable('connector', 'unsubscribe'),
-  on: async <TEvent extends ConnectorValue>(
-    _input: Parameters<ConnectorPort['on']>[0],
-  ): Promise<PortResult<ConnectorSubscription>> => createUnavailable('connector', 'on'),
+  on: async (_input: Parameters<ConnectorPort['on']>[0]): Promise<PortResult<ConnectorSubscription>> =>
+    createUnavailable('connector', 'on'),
 };
 
 Object.defineProperty(unavailableConnectorPort, PORT_DESCRIPTOR_KEY, {

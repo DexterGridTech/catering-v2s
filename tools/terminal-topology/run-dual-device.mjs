@@ -8,16 +8,29 @@ import {createHash} from 'node:crypto'
 import {fileURLToPath} from 'node:url'
 import {PNG} from 'pngjs'
 import WebSocket from 'ws'
+import {
+  parseAdbEmulatorInventory,
+  parseAvdNameReply,
+  parseAvdNames,
+  resolveTopologyAvds,
+  validateLaptopDisplayShape,
+  parseWmDensityDpi,
+} from './device-identity.mjs'
+import {findImmersiveClingDismissal} from './android-ui-prompts.mjs'
+import {createTcpBridge} from './tcp-bridge.mjs'
+import {submitMemberFormWithClosedKeyboard} from './member-form-submit.mjs'
+import {memberJourneyCustomerSurfaceReady, prepareMemberJourneySurface} from './member-journey-admission.mjs'
+import {evaluateHeartbeatOnlyWindow, readHeartbeatTopologyFromXml, topologyLifecycleSnapshot} from './heartbeat-window.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const topologyConfigPath = path.join(repositoryRoot, 'apps/terminal/kernel/base/contracts/topology-transport.config.json')
 const topologyTransportConfig = JSON.parse(fs.readFileSync(topologyConfigPath, 'utf8'))
 const topologyPort = topologyTransportConfig.port
-// The Android host remains on topologyPort.  The two ADB directions share a
-// host-side bridge, so its local endpoint must not reuse topologyPort:
-// forward(local bridge -> master device topologyPort) and
-// reverse(slave device topologyPort -> local bridge) otherwise collide.
+// The slave reverse enters a runner-owned TCP bridge. A separate ADB forward
+// carries bridge traffic to the master's topology service; removing that
+// listener alone does not close already-established TCP sessions.
 const hostBridgePort = 43174
+const topologyUpstreamPort = 43175
 // The direct-pair red mutation uses the device loopback.  The runner must
 // suspend its own reverse first: Android routes loopback aliases through the
 // reverse endpoint too, which would otherwise turn a supposed failure into a
@@ -63,13 +76,14 @@ const parseArgs = () => {
   const values = new Map()
   for (let index = 2; index < process.argv.length; index += 1) {
     const value = process.argv[index]
-    if (value === '--master-serial') values.set('masterSerial', process.argv[++index])
-    else if (value === '--slave-serial') values.set('slaveSerial', process.argv[++index])
+    if (value === '--master-avd-name') values.set('masterAvdName', process.argv[++index])
+    else if (value === '--slave-avd-name') values.set('slaveAvdName', process.argv[++index])
     else if (value === '--app') values.set('app', process.argv[++index])
     else if (value === '--stage') values.set('stage', process.argv[++index])
     else if (value === '--serial') values.set('serial', process.argv[++index])
     else if (value === '--shape') values.set('shape', process.argv[++index])
     else if (value === '--output') values.set('output', process.argv[++index])
+    else if (value === '--include-member-journey') values.set('includeMemberJourney', true)
     else throw new Error(`unknown argument: ${value}`)
   }
   return values
@@ -78,24 +92,37 @@ const parseArgs = () => {
 const cli = parseArgs()
 const stage = cli.get('stage') ?? '1'
 const appSelection = cli.get('app') ?? 'sample-terminal'
-const masterSerial = cli.get('masterSerial') ?? 'emulator-5554'
-const slaveSerial = cli.get('slaveSerial') ?? 'emulator-5556'
-const stage2Serial = cli.get('serial') ?? 'emulator-5558'
+const masterAvdName = cli.get('masterAvdName')
+const slaveAvdName = cli.get('slaveAvdName')
+const stage2Serial = cli.get('serial')
 const stage2Shape = cli.get('shape') ?? 'dual'
+const includeMemberJourney = cli.get('includeMemberJourney') === true
 const selectedProfiles = appSelection === 'all'
   ? Object.values(profiles)
   : [profiles[appSelection]]
 
 if (!['1', '2'].includes(stage)) throw new Error(`invalid stage: ${stage}`)
 if (stage === '2' && !['dual', 'mobile'].includes(stage2Shape)) throw new Error(`invalid stage 2 shape: ${stage2Shape}`)
+if (stage === '1' && (typeof masterAvdName !== 'string' || typeof slaveAvdName !== 'string')) {
+  throw new Error('stage 1 requires current --master-avd-name and --slave-avd-name inputs')
+}
+if (stage === '2' && (typeof stage2Serial !== 'string' || stage2Serial.trim() === '')) {
+  throw new Error('stage 2 requires an explicitly discovered --serial input')
+}
+if (includeMemberJourney && (stage !== '1' || !selectedProfiles.some(profile => profile?.name === 'sample-terminal'))) {
+  throw new Error('--include-member-journey requires stage 1 with sample-terminal selected')
+}
 if (selectedProfiles.some(profile => profile === undefined)) throw new Error(`invalid app selection: ${appSelection}`)
+if (typeof cli.get('output') !== 'string' || cli.get('output').trim() === '') {
+  throw new Error('an explicit run-scoped --output path is required')
+}
 
 const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
-const outputDirectory = path.resolve(cli.get('output') ?? path.join(
-  repositoryRoot,
-  '.runtime/ter-dual-machine-topology/2026-09-17/cp5',
-  `stage${stage}-${timestamp}`,
-))
+const outputDirectory = path.resolve(repositoryRoot, cli.get('output'))
+const topologyEvidenceRoot = path.join(repositoryRoot, '.runtime/ter-third-party-usage-remediation') + path.sep
+if (!outputDirectory.startsWith(topologyEvidenceRoot)) {
+  throw new Error('topology output must be inside .runtime/ter-third-party-usage-remediation/<runId>/topology')
+}
 
 fs.mkdirSync(outputDirectory, {recursive: true})
 
@@ -183,9 +210,10 @@ const writeBinary = (name, value) => fs.writeFileSync(path.join(currentOutputDir
 const writeJson = (name, value) => writeText(name, `${JSON.stringify(value, null, 2)}\n`)
 
 const deviceTag = role => role === 'master' || role === 'slave' ? role : role
-const device = (role, serial, profile) => ({
+const device = (role, serial, profile, avdName = null) => ({
   role,
   serial,
+  avdName,
   tag: deviceTag(role),
   profile,
   displayWidth: null,
@@ -207,6 +235,7 @@ const device = (role, serial, profile) => ({
   remoteUiObserverDexPath: `/data/local/tmp/ter-no-idle-ui-${process.pid}-${profile.name}-${role}.dex`,
   uiRotation: 0,
   portOccupantProcess: null,
+  systemPromptDismissals: [],
 })
 
 const adb = (target, commandArgs, label, options = {}) => run(
@@ -220,6 +249,81 @@ const localRun = (command, commandArgs, label, options = {}) => run(
   commandArgs,
   {...options, label, phase: options.phase ?? 'local-observation'},
 )
+
+const discoverTopologyAvds = () => {
+  const avdResult = localRun('emulator', ['-list-avds'], 'current AVD inventory')
+  const adbResult = localRun('adb', ['devices', '-l'], 'current ADB emulator inventory')
+  const availableAvdNames = parseAvdNames(textOf(avdResult))
+  const adbEmulators = parseAdbEmulatorInventory(textOf(adbResult))
+  const activeAvds = adbEmulators
+    .filter(item => item.state === 'device')
+    .map(({serial}) => ({
+      serial,
+      avdName: parseAvdNameReply(textOf(localRun(
+        'adb', ['-s', serial, 'emu', 'avd', 'name'], `resolve current AVD for ${serial}`,
+      ))),
+    }))
+  writeText('current-avd-inventory.txt', textOf(avdResult))
+  writeText('current-adb-emulator-inventory.txt', textOf(adbResult))
+  writeJson('current-avd-serial-map.json', {availableAvdNames, adbEmulators, activeAvds})
+  return resolveTopologyAvds({
+    masterAvdName,
+    slaveAvdName,
+    availableAvdNames,
+    adbEmulators,
+    activeAvds,
+  })
+}
+
+const terminalSourceSnapshot = () => {
+  const excludedDirectories = new Set(['.expo', '.gradle', '.runtime', '.yarn', 'build', 'coverage', 'dist', 'node_modules'])
+  const files = []
+  const visit = (directory, prefix) => {
+    for (const entry of fs.readdirSync(directory, {withFileTypes: true}).sort((left, right) => left.name.localeCompare(right.name))) {
+      if (entry.isSymbolicLink()) continue
+      const relativePath = path.posix.join(prefix, entry.name)
+      const absolutePath = path.join(directory, entry.name)
+      if (entry.isDirectory()) {
+        if (!excludedDirectories.has(entry.name)) visit(absolutePath, relativePath)
+      } else if (entry.isFile()) {
+        files.push({absolutePath, relativePath})
+      }
+    }
+  }
+  visit(path.join(repositoryRoot, 'apps/terminal'), 'apps/terminal')
+  files.push(
+    ...[
+      'tools/terminal-topology/android-ui-prompts.mjs',
+      'tools/terminal-topology/device-identity.mjs',
+      'tools/terminal-topology/heartbeat-window.mjs',
+      'tools/terminal-topology/member-journey-admission.mjs',
+      'tools/terminal-topology/member-form-submit.mjs',
+      'tools/terminal-topology/run-dual-device.mjs',
+      'tools/terminal-topology/tcp-bridge.mjs',
+      'tools/terminal-topology/android/NoIdleUiDump.java',
+    ]
+      .map(relativePath => ({absolutePath: path.join(repositoryRoot, relativePath), relativePath})),
+  )
+  files.sort((left, right) => left.relativePath.localeCompare(right.relativePath))
+  const hash = createHash('sha256')
+  for (const file of files) {
+    hash.update(file.relativePath)
+    hash.update('\0')
+    hash.update(fs.readFileSync(file.absolutePath))
+    hash.update('\0')
+  }
+  return {sha256: hash.digest('hex'), fileCount: files.length}
+}
+
+const hostProcessIdentity = () => {
+  const startToken = textOf(localRun('ps', ['-o', 'lstart=', '-p', String(process.pid)], 'runner process start token')).trim()
+  const rssText = textOf(localRun('ps', ['-o', 'rss=', '-p', String(process.pid)], 'runner process RSS')).trim()
+  const rssKiB = Number(rssText)
+  if (startToken === '' || !Number.isFinite(rssKiB) || rssKiB <= 0) {
+    throw new RunnerFailure('runner process identity', 'PID start token or RSS readback is unavailable')
+  }
+  return {pid: process.pid, startToken, rssKiB}
+}
 
 const numericVersion = value => value.split('.').map(part => Number(part) || 0)
 const compareVersions = (left, right) => {
@@ -473,6 +577,12 @@ const logicalDisplays = commandText => commandText
 const captureDeviceShape = target => {
   const state = textOf(adb(target, ['get-state'], 'device state'))
   if (state.trim() !== 'device') throw new RunnerFailure(`${target.tag} device state`, `unexpected state ${state.trim()}`)
+  const currentAvdName = parseAvdNameReply(textOf(localRun(
+    'adb', ['-s', target.serial, 'emu', 'avd', 'name'], `${target.tag} current AVD identity readback`,
+  )))
+  if (currentAvdName !== target.avdName) {
+    throw new RunnerFailure(`${target.tag} AVD identity`, `expected ${target.avdName}, observed ${currentAvdName}`)
+  }
   const displaysResult = adb(target, ['shell', 'cmd', 'display', 'get-displays'], 'logical display inventory')
   const displayDump = adb(target, ['shell', 'dumpsys', 'display'], 'display manager inventory')
   const surfaces = adb(target, ['shell', 'dumpsys', 'SurfaceFlinger', '--displays'], 'SurfaceFlinger inventory')
@@ -481,10 +591,14 @@ const captureDeviceShape = target => {
   const displays = logicalDisplays(textOf(displaysResult))
   const surfaceText = textOf(surfaces)
   const virtualCount = (surfaceText.match(/^Virtual Display /gm) ?? []).length
-  if (displays.length !== 1 || displays[0]?.id !== 0 || displays[0].width <= 0 || displays[0].height <= 0) {
-    throw new RunnerFailure(`${target.tag} stage-one shape`, `expected one logical display, observed ${displays.length}`)
+  let densityDpi
+  let laptopShape
+  try {
+    densityDpi = parseWmDensityDpi(density)
+    laptopShape = validateLaptopDisplayShape({displays, virtualDisplayCount: virtualCount, densityDpi})
+  } catch (error) {
+    throw new RunnerFailure(`${target.tag} stage-one shape`, error instanceof Error ? error.message : String(error))
   }
-  if (virtualCount !== 0) throw new RunnerFailure(`${target.tag} stage-one shape`, `unexpected SurfaceFlinger virtual display count ${virtualCount}`)
   target.displayWidth = displays[0].width
   target.displayHeight = displays[0].height
   writeText(`${target.tag}-shape-get-displays.txt`, textOf(displaysResult))
@@ -493,12 +607,16 @@ const captureDeviceShape = target => {
   writeText(`${target.tag}-shape-wm-size.txt`, size)
   writeText(`${target.tag}-shape-wm-density.txt`, density)
   return {
+    avdName: target.avdName,
+    serial: target.serial,
     bootId: bootId(target),
     sdk: textOf(adb(target, ['shell', 'getprop', 'ro.build.version.sdk'], 'Android SDK readback')).trim(),
     displays,
     virtualDisplayCount: virtualCount,
     wmSize: size.trim(),
     wmDensity: density.trim(),
+    densityDpi,
+    shortestEdgeDp: laptopShape.shortestEdgeDp,
     preexistingProcess: processIdentity(target),
   }
 }
@@ -608,6 +726,30 @@ const readUi = async (target, label) => {
     const dumpFailed = dump.ok !== true
       || /(?:^|\n)\s*(?:ERROR|Exception):/i.test(dumpStdout)
     if (!dumpFailed && plainHierarchy) {
+      const immersiveCling = findImmersiveClingDismissal(windowsXml)
+      if (immersiveCling !== null) {
+        const occurrence = target.systemPromptDismissals.length + 1
+        writeText(
+          `${target.tag}-android-immersive-cling-${occurrence}-before.xml`,
+          sanitizeDiagnostic(windowsXml),
+        )
+        adb(target, [
+          'shell', 'input', 'tap', String(immersiveCling.x), String(immersiveCling.y),
+        ], 'ack exact Android immersive full-screen prompt')
+        const dismissedAt = new Date().toISOString()
+        target.systemPromptDismissals.push({
+          kind: 'android-immersive-full-screen-cling',
+          resourceId: 'android:id/ok',
+          timestamp: dismissedAt,
+        })
+        target.lastUiActionAt = Date.now()
+        target.lastUiActionSettleDelayMs = uiActionSettleDelayMs
+        target.nextUiObservationAt = Math.max(
+          target.nextUiObservationAt ?? 0,
+          target.lastUiActionAt + uiActionSettleDelayMs,
+        )
+        continue
+      }
       target.lastWindowsXml = windowsXml
       target.lastUiXml = fragment ?? windowsXml
       target.lastUiActionAt = 0
@@ -1808,8 +1950,10 @@ const stage2RunMemberJourney = async (record, target) => {
   await tapStage2Node(target, 0, 'sample.desk.member-form:phone')
   await stage2TapVirtualText(target, 0, '01012345678')
   await waitForStage2Node(target, 0, 'sample.desk.member-form:phone', node => nodeText(node).includes('01012345678'))
-  await tapStage2Node(target, 0, 'ui.base.input:virtual-keyboard:complete')
-  await tapStage2Node(target, 0, 'sample.desk.member-form:submit')
+  await submitMemberFormWithClosedKeyboard({
+    tap: testId => tapStage2Node(target, 0, testId),
+    waitForKeyboardClosed: () => waitForStage2Absent(target, 0, 'ui.base.input:virtual-keyboard:complete'),
+  })
   await waitForStage2Node(target, 0, 'sample.desk.waiting-confirm')
   await observeStage2(record, target, 0, 'local-dual-member-waiting-on-primary', ['sample.desk.member-list', 'sample.desk.waiting-confirm'], ['已提交，等待顾客确认', 'Alice', '01012345678'])
   captureStage2Screenshot(target, 0, 'local-dual-member-waiting-on-primary')
@@ -2005,7 +2149,7 @@ const openAdmin = async (record, target) => {
 
 const closeAdmin = async target => {
   await tapNode(target, 'terminal.admin:close')
-  await waitForAbsent(target, 'terminal.admin:shell')
+  await waitForAbsent(target, 'ui-base-render:layer:admin.console.layer')
 }
 
 const openTopology = async (record, target) => {
@@ -2058,14 +2202,25 @@ const endpointRequest = (method, pathName, body = undefined) => new Promise((res
   request.end()
 })
 
-const ensureForward = (master, record) => {
+let topologyBridge = null
+
+const ensureForward = async (master, record) => {
   const forwards = textOf(localRun('adb', ['forward', '--list'], 'ADB forward inventory', {allowFailure: true}))
-  if (new RegExp(`\\btcp:${hostBridgePort}\\b`).test(forwards)) {
-    throw new RunnerFailure('ADB topology forward preflight', `host bridge port ${hostBridgePort} already has a pre-existing forward`)
+  if (new RegExp(`\\btcp:${topologyUpstreamPort}\\b`).test(forwards)) {
+    throw new RunnerFailure('ADB topology forward preflight', `topology upstream port ${topologyUpstreamPort} already has a pre-existing forward`)
   }
-  adb(master, ['forward', `tcp:${hostBridgePort}`, `tcp:${topologyPort}`], 'create owned topology forward')
+  adb(master, ['forward', `tcp:${topologyUpstreamPort}`, `tcp:${topologyPort}`], 'create owned topology upstream forward')
   record.resources.forwardOwned = true
-  record.resources.forward = `tcp:${hostBridgePort}->tcp:${topologyPort}`
+  record.resources.forward = `tcp:${topologyUpstreamPort}->tcp:${topologyPort}`
+  topologyBridge = createTcpBridge({
+    listenHost: '127.0.0.1',
+    listenPort: hostBridgePort,
+    targetHost: '127.0.0.1',
+    targetPort: topologyUpstreamPort,
+  })
+  const address = await topologyBridge.listen()
+  record.resources.bridge = {host: address.host, port: address.port, upstreamPort: topologyUpstreamPort, activeConnections: 0}
+  appendCommandLog({phase: 'device-observation', deviceRole: null, label: 'start owned topology TCP bridge', command: 'node:net.createServer', argumentCount: 0, status: 0, result: 'passed', timedOut: false, stdoutBytes: 0, stderr: '', durationMs: 0})
 }
 
 const ensureReverse = (slave, record) => {
@@ -2092,6 +2247,27 @@ const restoreOwnedReverseAfterPairFailure = (slave, record) => {
   adb(slave, ['reverse', `tcp:${topologyPort}`, `tcp:${hostBridgePort}`], 'restore owned slave topology reverse after direct-pair failure')
   record.resources.reverseSuspended = false
   appendCommandLog({phase: 'device-mutation', deviceRole: slave.role, label: 'restore owned slave topology reverse after direct-pair failure', command: 'adb', argumentCount: 5, status: 0, result: 'passed', timedOut: false, stdoutBytes: 0, stderr: '', durationMs: 0})
+}
+
+const interruptTopologyBridge = (record, reason) => {
+  if (topologyBridge === null || record.resources.bridge === null) {
+    throw new RunnerFailure('disconnect/reconnect', 'owned topology TCP bridge is not active')
+  }
+  const closedConnections = topologyBridge.pause()
+  if (closedConnections < 1) throw new RunnerFailure('disconnect/reconnect', 'no established topology TCP session was available to interrupt')
+  record.resources.bridge.activeConnections = topologyBridge.activeConnections
+  record.resources.bridge.lastInterruption = {reason, closedConnections, at: new Date().toISOString()}
+  appendCommandLog({phase: 'device-mutation', deviceRole: null, label: 'interrupt established topology TCP sessions', command: 'runner-owned TCP bridge pause', argumentCount: 0, status: 0, result: 'passed', timedOut: false, stdoutBytes: 0, stderr: '', durationMs: 0})
+}
+
+const resumeTopologyBridge = (record, reason) => {
+  if (topologyBridge === null || record.resources.bridge === null) {
+    throw new RunnerFailure('disconnect/reconnect', 'owned topology TCP bridge is not active')
+  }
+  topologyBridge.resume()
+  record.resources.bridge.resumedAt = new Date().toISOString()
+  record.resources.bridge.resumeReason = reason
+  appendCommandLog({phase: 'device-mutation', deviceRole: null, label: 'resume topology TCP sessions', command: 'runner-owned TCP bridge resume', argumentCount: 0, status: 0, result: 'passed', timedOut: false, stdoutBytes: 0, stderr: '', durationMs: 0})
 }
 
 const startPortOccupant = async (target, record) => {
@@ -2282,7 +2458,7 @@ const pairDevices = async (record, master, slave) => {
   await captureAdminFrame(record, master, 'IA-19', 'host-retry-starting', ['terminal.admin:topology:host-service:state'], [], {timeoutMs: 2_000})
   await assertTopologyValue(record, master, 'master-host-running', 'terminal.admin:topology:host-service:state', '运行中')
   await captureAdminFrame(record, master, 'IA-20', 'host-ready', ['terminal.admin:topology:host-service', 'terminal.admin:topology:host-service:state', 'terminal.admin:topology:host-ip'], [], {required: true})
-  ensureForward(master, record)
+  await ensureForward(master, record)
   ensureReverse(slave, record)
   await probeEndpointBoundary(record)
   progress(record, 'master-host-started-via-enable-slave-chain', {deviceRole: 'master', process: processIdentity(master)})
@@ -2380,14 +2556,20 @@ const fillStaffLogin = async target => {
 }
 
 const runMemberJourney = async (record, master, slave) => {
-  await closeAdmin(master)
   // A paired single-screen slave is anonymous until the master authenticates,
   // but it still owns the customer-facing logical SECONDARY surface. This
-  // observation prevents a missing placement from being mistaken for a
-  // normal pre-authentication state.
-  await waitForNode(slave, 'sample.desk.customer-welcome')
-  await observe(record, slave, 'anonymous-paired-slave-customer-surface', ['sample.desk.customer-welcome'], ['欢迎，请等待店员操作'])
-  progress(record, 'paired-anonymous-slave-renders-customer-surface', {deviceRole: 'slave'})
+  // observation must also prove that a leftover Admin login layer is not
+  // covering the customer surface before any customer control is tapped.
+  await prepareMemberJourneySurface({
+    master,
+    slave,
+    closeAdmin,
+    assertCustomerSurface: async target => {
+      await waitForNode(target, 'sample.desk.customer-welcome', (_node, xml) => memberJourneyCustomerSurfaceReady(xml))
+      await observe(record, target, 'anonymous-paired-slave-customer-surface', ['sample.desk.customer-welcome'], ['欢迎，请等待店员操作'])
+      progress(record, 'paired-anonymous-slave-renders-customer-surface', {deviceRole: 'slave'})
+    },
+  })
   await fillStaffLogin(master)
   await observe(record, master, 'member-list-before-registration', ['sample.desk.member-list'], ['已登记会员'])
   const masterList = await readUi(master, 'find member add control')
@@ -2403,8 +2585,10 @@ const runMemberJourney = async (record, master, slave) => {
   await tapNode(master, 'sample.desk.member-form:phone')
   await tapVirtualText(master, '01012345678')
   await waitForNode(master, 'sample.desk.member-form:phone', node => nodeText(node).includes('01012345678'))
-  await tapNode(master, 'ui.base.input:virtual-keyboard:complete')
-  await tapNode(master, 'sample.desk.member-form:submit')
+  await submitMemberFormWithClosedKeyboard({
+    tap: testId => tapNode(master, testId),
+    waitForKeyboardClosed: () => waitForAbsent(master, 'ui.base.input:virtual-keyboard:complete'),
+  })
   await waitForNode(master, 'sample.desk.waiting-confirm')
   await observe(record, master, 'member-waiting-on-master', ['sample.desk.member-list', 'sample.desk.waiting-confirm'], ['已提交，等待顾客确认', 'Alice', '01012345678'])
   await waitForNode(slave, 'sample.desk.customer-member')
@@ -2440,8 +2624,10 @@ const runMemberJourney = async (record, master, slave) => {
   await tapNode(master, 'sample.desk.member-form:phone')
   await tapVirtualText(master, '01087654321')
   await waitForNode(master, 'sample.desk.member-form:phone', node => nodeText(node).includes('01087654321'))
-  await tapNode(master, 'ui.base.input:virtual-keyboard:complete')
-  await tapNode(master, 'sample.desk.member-form:submit')
+  await submitMemberFormWithClosedKeyboard({
+    tap: testId => tapNode(master, testId),
+    waitForKeyboardClosed: () => waitForAbsent(master, 'ui.base.input:virtual-keyboard:complete'),
+  })
   await waitForNode(master, 'sample.desk.waiting-confirm')
   await waitForNode(slave, 'sample.desk.customer-member')
   await observe(record, master, 'second-member-waiting-after-cancel', ['sample.desk.waiting-confirm'], ['Bob', '01087654321'])
@@ -2478,21 +2664,103 @@ const ensureAdminTopology = async (record, target) => {
 }
 
 const runDisconnectRecovery = async (record, master, slave) => {
-  if (!record.resources.forwardOwned) throw new RunnerFailure('disconnect/reconnect', 'owned forward was not created')
+  if (!record.resources.forwardOwned || topologyBridge === null) throw new RunnerFailure('disconnect/reconnect', 'owned topology bridge was not created')
   await ensureAdminTopology(record, master)
   await ensureAdminTopology(record, slave)
-  adb(master, ['forward', '--remove', `tcp:${hostBridgePort}`], 'remove topology forward for disconnect')
-  record.resources.forwardOwned = false
+  interruptTopologyBridge(record, 'disconnect/reconnect acceptance')
   await assertTopologyValue(record, slave, 'paired-during-disconnect', 'terminal.admin:topology:pair-state', '已配对')
   await assertTopologyValue(record, slave, 'unreachable-during-disconnect', 'terminal.admin:topology:reachability', '重连中')
   await observe(record, master, 'master-paired-during-disconnect', ['terminal.admin:topology:pair-state', 'terminal.admin:topology:reachability'], ['已配对', '重连中'])
   await captureAdminFrame(record, master, 'IA-25', 'master-paired-reconnecting', ['terminal.admin:topology:pairing', 'terminal.admin:topology:reachability', 'terminal.admin:topology:counterparty', 'terminal.admin:topology:unpair'], ['重连中'], {required: true})
   await captureAdminFrame(record, slave, 'IA-28', 'slave-paired-reconnecting', ['terminal.admin:topology:pairing', 'terminal.admin:topology:reachability', 'terminal.admin:topology:counterparty', 'terminal.admin:topology:unpair'], ['重连中'], {required: true})
   progress(record, 'disconnect-preserves-paired-and-secondary-semantics', {deviceRole: 'slave'})
-  ensureForward(master, record)
+  resumeTopologyBridge(record, 'restore peer transport after reconnecting state observation')
   await assertTopologyValue(record, slave, 'reachable-after-reconnect', 'terminal.admin:topology:reachability', '可达')
   await assertTopologyValue(record, master, 'master-reachable-after-reconnect', 'terminal.admin:topology:reachability', '可达')
   progress(record, 'reconnect-full-recovery', {deviceRole: 'slave'})
+}
+
+const readHeartbeatTopology = async target => {
+  const xml = await readUi(target, 'TP-A7 heartbeat window topology snapshot')
+  return readHeartbeatTopologyFromXml(xml)
+}
+
+const readHeartbeatLifecycle = target => {
+  const process = processIdentity(target)
+  if (process.pid === null || process.startTicks === null) {
+    throw new RunnerFailure('TP-A7 process identity', `${target.role} process identity was not readable`)
+  }
+  const result = adb(target, ['logcat', '-d', '-v', 'epoch', '-t', '5000'], 'TP-A7 peer lifecycle log snapshot')
+  const pidPattern = new RegExp(`\\s${process.pid}\\s`)
+  const lines = textOf(result).split('\n').filter(line => pidPattern.test(line) && line.includes('topology.peer.'))
+  return Object.freeze({
+    process: Object.freeze({pid: process.pid, startTicks: process.startTicks}),
+    events: topologyLifecycleSnapshot(lines.join('\n')),
+  })
+}
+
+const runHeartbeatOnlyWindow = async (record, master, slave) => {
+  await ensureAdminTopology(record, master)
+  await ensureAdminTopology(record, slave)
+  const targets = [master, slave]
+  const startTopology = Object.fromEntries(await Promise.all(targets.map(async target => [target.role, await readHeartbeatTopology(target)])))
+  if (startTopology.master.role !== 'MASTER' || startTopology.slave.role !== 'SLAVE' ||
+      startTopology.master.pairState !== 'PAIRED' || startTopology.slave.pairState !== 'PAIRED' ||
+      startTopology.master.reachability !== 'REACHABLE' || startTopology.slave.reachability !== 'REACHABLE') {
+    throw new RunnerFailure('TP-A7 window admission', 'both laptop endpoints must begin paired and reachable in opposite roles')
+  }
+  const startLifecycle = Object.fromEntries(targets.map(target => [target.role, readHeartbeatLifecycle(target)]))
+  const minimumWindowMs = topologyTransportConfig.heartbeatTimeoutMs * 3
+  const startedAt = new Date().toISOString()
+  const startedMonotonicMs = Number(process.hrtime.bigint()) / 1_000_000
+  progress(record, 'tp-a7-heartbeat-only-window-started', {
+    startedAt,
+    heartbeatIntervalMs: topologyTransportConfig.heartbeatIntervalMs,
+    heartbeatTimeoutMs: topologyTransportConfig.heartbeatTimeoutMs,
+    minimumWindowMs,
+    startTopology,
+    processIdentities: Object.fromEntries(targets.map(target => [target.role, startLifecycle[target.role].process])),
+  })
+
+  // No UI, synchronization, recovery, or network-control operation is issued
+  // while the production heartbeat runs on its own.
+  await sleep(minimumWindowMs)
+
+  const endedMonotonicMs = Number(process.hrtime.bigint()) / 1_000_000
+  const endedAt = new Date().toISOString()
+  const endTopology = Object.fromEntries(await Promise.all(targets.map(async target => [target.role, await readHeartbeatTopology(target)])))
+  const endLifecycle = Object.fromEntries(targets.map(target => [target.role, readHeartbeatLifecycle(target)]))
+  const outcome = evaluateHeartbeatOnlyWindow({
+    startedMonotonicMs,
+    endedMonotonicMs,
+    heartbeatIntervalMs: topologyTransportConfig.heartbeatIntervalMs,
+    heartbeatTimeoutMs: topologyTransportConfig.heartbeatTimeoutMs,
+    startProcesses: Object.fromEntries(targets.map(target => [target.role, startLifecycle[target.role].process])),
+    endProcesses: Object.fromEntries(targets.map(target => [target.role, endLifecycle[target.role].process])),
+    startTopology,
+    endTopology,
+    startLifecycle: Object.fromEntries(targets.map(target => [target.role, startLifecycle[target.role].events])),
+    endLifecycle: Object.fromEntries(targets.map(target => [target.role, endLifecycle[target.role].events])),
+  })
+  record.heartbeatOnlyWindow = {startedAt, endedAt, ...outcome, startTopology, endTopology,
+    startLifecycle: Object.fromEntries(targets.map(target => [target.role, startLifecycle[target.role].events])),
+    endLifecycle: Object.fromEntries(targets.map(target => [target.role, endLifecycle[target.role].events])),
+    nonHeartbeatBusinessActionsDuringWindow: 0,
+  }
+  writeJson('tp-a7-heartbeat-only-window.json', record.heartbeatOnlyWindow)
+  if (outcome.status !== 'PASS') {
+    throw new RunnerFailure('TP-A7 heartbeat-only window', `heartbeat-only acceptance failed: ${outcome.violations.join(',')}`)
+  }
+  progress(record, 'tp-a7-heartbeat-only-window-passed', {
+    startedAt,
+    endedAt,
+    elapsedMs: outcome.elapsedMs,
+    heartbeatIntervalMs: outcome.heartbeatIntervalMs,
+    heartbeatTimeoutMs: outcome.heartbeatTimeoutMs,
+    minimumWindowMs: outcome.minimumWindowMs,
+    startTopology,
+    endTopology,
+  })
 }
 
 const runSlaveUnpairCoverage = async (record, master, slave) => {
@@ -2568,7 +2836,7 @@ const runUnpairAndStop = async (record, master, slave) => {
   await waitForNode(master, 'terminal.admin:topology:action:host-enable', node => node.enabled, 10_000)
   progress(record, 'master-unpair-order-and-host-stop', {deviceRole: 'master', hostService: 'absent', recoveryAction: 'terminal.admin:topology:action:host-enable'})
 
-  adb(master, ['forward', '--remove', `tcp:${hostBridgePort}`], 'remove topology forward after host stop', {allowFailure: true})
+  adb(master, ['forward', '--remove', `tcp:${topologyUpstreamPort}`], 'remove topology upstream forward after host stop', {allowFailure: true})
   record.resources.forwardOwned = false
 }
 
@@ -2650,16 +2918,25 @@ const cleanupProfile = async (record, targets) => {
     const process = processIdentity(target)
     if (process.pid !== null) errors.push(`${target.tag} package PID remains`)
   }
+  if (topologyBridge !== null) {
+    try {
+      await topologyBridge.close()
+      topologyBridge = null
+      appendCommandLog({phase: 'cleanup', deviceRole: null, label: 'close owned topology TCP bridge', command: 'node:net.Server.close', argumentCount: 0, status: 0, result: 'passed', timedOut: false, stdoutBytes: 0, stderr: '', durationMs: 0})
+    } catch (error) {
+      errors.push(`owned topology TCP bridge cleanup: ${sanitizeDiagnostic(error instanceof Error ? error.message : String(error))}`)
+    }
+  }
   if (record.resources.forwardOwned) {
-    const removed = adb(targets[0], ['forward', '--remove', `tcp:${hostBridgePort}`], 'cleanup owned topology forward', {allowFailure: true})
-    if (removed.status !== 0) errors.push('owned topology forward removal')
+    const removed = adb(targets[0], ['forward', '--remove', `tcp:${topologyUpstreamPort}`], 'cleanup owned topology upstream forward', {allowFailure: true})
+    if (removed.status !== 0) errors.push('owned topology upstream forward removal')
   }
   if (record.resources.reverseOwned) {
     const removed = adb(targets[1], ['reverse', '--remove', `tcp:${topologyPort}`], 'cleanup owned slave topology reverse', {allowFailure: true})
     if (removed.status !== 0) errors.push('owned topology reverse removal')
   }
   const forwards = textOf(localRun('adb', ['forward', '--list'], 'cleanup forward inventory', {allowFailure: true}))
-  if (new RegExp(`\\btcp:${hostBridgePort}\\b`).test(forwards)) errors.push('topology forward remains')
+  if (new RegExp(`\\btcp:${topologyUpstreamPort}\\b`).test(forwards)) errors.push('topology upstream forward remains')
   const reverses = textOf(adb(targets[1], ['reverse', '--list'], 'cleanup reverse inventory', {allowFailure: true}))
   if (new RegExp(`\\btcp:${topologyPort}\\b`).test(reverses)) errors.push('topology reverse remains')
   record.resources.forwardOwned = false
@@ -2682,8 +2959,14 @@ const runProfile = async profile => {
     profile: profile.name,
     packageName: profile.packageName,
     activity: profile.activity,
+    masterAvdName,
+    slaveAvdName,
     masterSerial,
     slaveSerial,
+    sourceDigest: topologyRunBindings.sourceDigest,
+    sourceFileCount: topologyRunBindings.sourceFileCount,
+    hostProcess: topologyRunBindings.hostProcess,
+    apkSourceBinding: topologyRunBindings.apkSourceBinding,
     emulatorOwnership: 'PREEXISTING_NOT_RUNNER_OWNED',
     startedAt: new Date().toISOString(),
     business: 'NOT_RUN',
@@ -2694,12 +2977,12 @@ const runProfile = async profile => {
     timeline: [],
     steps: [],
     devices: {},
-    resources: {forward: null, forwardOwned: false, reverse: null, reverseOwned: false, reverseSuspended: false, portOccupant: null},
+    resources: {forward: null, forwardOwned: false, reverse: null, reverseOwned: false, reverseSuspended: false, bridge: null, portOccupant: null},
     endpoint: null,
     roleOccupancy: null,
   }
-  const master = device('master', masterSerial, profile)
-  const slave = device('slave', slaveSerial, profile)
+  const master = device('master', masterSerial, profile, masterAvdName)
+  const slave = device('slave', slaveSerial, profile, slaveAvdName)
   const targets = [master, slave]
   try {
     if (stage !== '1') throw new RunnerFailure('stage gate', 'stage 2 is held until Dexter starts the corresponding single-device dual-screen and mobile virtual machines')
@@ -2724,7 +3007,8 @@ const runProfile = async profile => {
     record.devices.slave.coldLaunchProcess = await coldLaunch(slave)
     progress(record, 'both-release-apps-cold-launched', {profile: profile.name})
     await pairDevices(record, master, slave)
-    if (profile.memberJourney) await runMemberJourney(record, master, slave)
+    await runHeartbeatOnlyWindow(record, master, slave)
+    if (includeMemberJourney && profile.name === 'sample-terminal') await runMemberJourney(record, master, slave)
     await runDisconnectRecovery(record, master, slave)
     await runSlaveUnpairCoverage(record, master, slave)
     await rePairAfterSlaveUnpair(record, master, slave)
@@ -2736,6 +3020,10 @@ const runProfile = async profile => {
     record.brokenBoundary = failureBoundaryOf(error, record.lastKnownGood)
     await captureFailure(record, targets)
   } finally {
+    record.systemPromptDismissals = {
+      master: master.systemPromptDismissals,
+      slave: slave.systemPromptDismissals,
+    }
     finalizeFrameEvidence(record, master)
     for (const target of targets) captureTopologyLogcat(target, record)
     await cleanupProfile(record, targets)
@@ -2904,52 +3192,115 @@ const executeStage2 = async () => {
 // sequentially while retaining separate evidence directories.
 let currentOutputDirectory = outputDirectory
 let uiObserverDexPath = null
+let masterSerial = null
+let slaveSerial = null
+let topologyRunBindings = null
+
+const topologyLockPath = path.join(repositoryRoot, '.runtime/ter-third-party-usage-remediation/topology-run.lock')
+
+const acquireTopologyLock = () => {
+  fs.mkdirSync(path.dirname(topologyLockPath), {recursive: true})
+  const descriptor = fs.openSync(topologyLockPath, 'wx', 0o600)
+  fs.writeFileSync(descriptor, `${JSON.stringify({pid: process.pid, startedAt: new Date().toISOString()})}\n`)
+  return descriptor
+}
 
 const execute = async () => {
-  if (stage === '2') {
-    await executeStage2()
-    return
-  }
-  const manifest = {
-    tool: 'tools/terminal-topology/run-dual-device.mjs',
-    stage: '1',
-    appSelection,
-    masterSerial,
-    slaveSerial,
-    productionTopologyPort: topologyPort,
-    hostBridgePort,
-    topologyBasePath,
-    emulatorOwnership: 'PREEXISTING_NOT_RUNNER_OWNED',
-    selectedProfiles: selectedProfiles.map(profile => ({name: profile.name, packageName: profile.packageName, apk: path.relative(repositoryRoot, profile.apk)})),
-    startedAt: new Date().toISOString(),
-    stageTwoStatus: 'OPEN_WAITING_FOR_DEXTER_VM',
-  }
-  writeJson('run-manifest.json', manifest)
+  let lockDescriptor = null
   try {
-    uiObserverDexPath = buildUiObserverDex()
-  } catch (error) {
-    writeText('no-idle-ui-observer-build-failure.txt', sanitizeDiagnostic(error instanceof Error ? error.stack ?? error.message : String(error)))
-    console.error(`TERMINAL_TOPOLOGY_STAGE1=FAIL OBSERVER_BUILD=FAIL OUTPUT=${outputDirectory}`)
-    process.exitCode = 1
-    return
+    lockDescriptor = acquireTopologyLock()
+    localRun('bash', [path.join(repositoryRoot, 'scripts/env/check-runtime-resource-budget'), '--profile', 'ter-validation-with-dev'], 'topology resource budget preflight', {phase: 'preflight'})
+    if (stage === '2') {
+      await executeStage2()
+      return
+    }
+
+    const avdMapping = discoverTopologyAvds()
+    masterSerial = avdMapping.master.serial
+    slaveSerial = avdMapping.slave.serial
+    const source = terminalSourceSnapshot()
+    const hostProcess = hostProcessIdentity()
+    const apkSourceBinding = Object.fromEntries(selectedProfiles.map(profile => [profile.name, localApkBinding(profile)]))
+    topologyRunBindings = {
+      sourceDigest: source.sha256,
+      sourceFileCount: source.fileCount,
+      hostProcess,
+      apkSourceBinding,
+    }
+    const manifest = {
+      kind: 'ter-third-party-topology-run-manifest',
+      runId: path.basename(path.dirname(outputDirectory)),
+      tool: 'tools/terminal-topology/run-dual-device.mjs',
+      stage: '1',
+      appSelection,
+      includeMemberJourney,
+      masterAvdName,
+      slaveAvdName,
+      avdMapping,
+      masterSerial,
+      slaveSerial,
+      processes: [{pid: hostProcess.pid, startToken: hostProcess.startToken}],
+      sourceDigest: source.sha256,
+      sourceFileCount: source.fileCount,
+      apkSourceBinding,
+      productionTopologyPort: topologyPort,
+      hostBridgePort,
+      topologyUpstreamPort,
+      topologyBasePath,
+      emulatorOwnership: 'PREEXISTING_NOT_RUNNER_OWNED',
+      selectedProfiles: selectedProfiles.map(profile => ({name: profile.name, packageName: profile.packageName, apk: path.relative(repositoryRoot, profile.apk)})),
+      startedAt: new Date().toISOString(),
+      stageTwoStatus: 'OPEN_NOT_IN_THIS_RUN',
+      business: 'NOT_RUN',
+      cleanup: 'NOT_RUN',
+    }
+    writeJson('run-manifest.json', manifest)
+    try {
+      uiObserverDexPath = buildUiObserverDex()
+    } catch (error) {
+      writeText('no-idle-ui-observer-build-failure.txt', sanitizeDiagnostic(error instanceof Error ? error.stack ?? error.message : String(error)))
+      manifest.business = 'FAIL'
+      manifest.cleanup = 'PASS'
+      manifest.firstFailure = 'observer dex build failed before device launch'
+      writeJson('run-manifest.json', manifest)
+      console.error(`TERMINAL_TOPOLOGY_STAGE1=FAIL OBSERVER_BUILD=FAIL OUTPUT=${outputDirectory}`)
+      process.exitCode = 1
+      return
+    }
+    const results = []
+    for (const profile of selectedProfiles) {
+      const profileResult = await runProfile(profile)
+      results.push(profileResult)
+      writeJson(`${profile.name}-result.json`, profileResult)
+    }
+    const sourceAfter = terminalSourceSnapshot()
+    const sourceStable = source.sha256 === sourceAfter.sha256
+    const overall = {
+      stage: '1',
+      business: results.every(result => result.business === 'PASS') && sourceStable ? 'PASS' : 'FAIL',
+      cleanup: results.every(result => result.cleanup === 'PASS') ? 'PASS' : 'FAIL',
+      sourceDigestBefore: source.sha256,
+      sourceDigestAfter: sourceAfter.sha256,
+      sourceStable,
+      profiles: results.map(result => ({profile: result.profile, business: result.business, cleanup: result.cleanup, firstFailure: result.firstFailure, lastKnownGood: result.lastKnownGood, brokenBoundary: result.brokenBoundary})),
+      stage2: 'OPEN_NOT_IN_THIS_RUN',
+      finishedAt: new Date().toISOString(),
+    }
+    manifest.business = overall.business
+    manifest.cleanup = overall.cleanup
+    manifest.finishedAt = overall.finishedAt
+    manifest.sourceDigestAfter = sourceAfter.sha256
+    manifest.sourceStable = sourceStable
+    writeJson('run-manifest.json', manifest)
+    writeJson('overall-result.json', overall)
+    console.log(`TERMINAL_TOPOLOGY_STAGE1=${overall.business} CLEANUP=${overall.cleanup} SOURCE_STABLE=${sourceStable} OUTPUT=${outputDirectory}`)
+    if (overall.business !== 'PASS' || overall.cleanup !== 'PASS') process.exitCode = 1
+  } finally {
+    if (lockDescriptor !== null) {
+      fs.closeSync(lockDescriptor)
+      fs.unlinkSync(topologyLockPath)
+    }
   }
-  const results = []
-  for (const profile of selectedProfiles) {
-    const profileResult = await runProfile(profile)
-    results.push(profileResult)
-    writeJson(`${profile.name}-result.json`, profileResult)
-  }
-  const overall = {
-    stage: '1',
-    business: results.every(result => result.business === 'PASS') ? 'PASS' : 'FAIL',
-    cleanup: results.every(result => result.cleanup === 'PASS') ? 'PASS' : 'FAIL',
-    profiles: results.map(result => ({profile: result.profile, business: result.business, cleanup: result.cleanup, firstFailure: result.firstFailure, lastKnownGood: result.lastKnownGood, brokenBoundary: result.brokenBoundary})),
-    stage2: 'OPEN_WAITING_FOR_DEXTER_VM',
-    finishedAt: new Date().toISOString(),
-  }
-  writeJson('overall-result.json', overall)
-  console.log(`TERMINAL_TOPOLOGY_STAGE1=${overall.business} CLEANUP=${overall.cleanup} STAGE2=OPEN OUTPUT=${outputDirectory}`)
-  if (overall.business !== 'PASS' || overall.cleanup !== 'PASS') process.exitCode = 1
 }
 
 await execute()

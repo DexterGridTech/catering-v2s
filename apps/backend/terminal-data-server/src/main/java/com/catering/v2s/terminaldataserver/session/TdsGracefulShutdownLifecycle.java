@@ -86,7 +86,7 @@ public final class TdsGracefulShutdownLifecycle implements SmartLifecycle {
         TdsAsyncLog.enqueue(
                 logScheduler,
                 () -> LOGGER.info(
-                        "event=tds_drain_started drainWindowMillis={}",
+                        "event=tds_drain_started readiness=REFUSING_TRAFFIC admission=REFUSED drainWindowMillis={}",
                         settings.drainWindow().toMillis()));
         Mono<Boolean> drainStart = actors.beginDrain();
         Mono.defer(() -> drainStart)

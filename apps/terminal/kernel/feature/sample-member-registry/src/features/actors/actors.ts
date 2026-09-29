@@ -11,7 +11,7 @@ import {
   submitMemberCommand,
   withdrawMemberCommand,
 } from '../commands/commands';
-import {createInvalidMemberPayloadError, createNoPendingMemberError} from '../../foundations/errors';
+import {createInvalidMemberPayloadError} from '../../foundations/errors';
 import {moduleName} from '../../moduleName';
 import {selectPendingMember} from '../../selectors/selectors';
 import {memberActions} from '../slices/slice';

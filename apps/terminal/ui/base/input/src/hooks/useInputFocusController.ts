@@ -141,8 +141,14 @@ export const useInputFocusController = ({
   const handleFocus = useCallback(
     (fieldId: string): void => {
       const field = fieldsRef.current.get(fieldId);
-      if (field === undefined || field.focusScopeId !== activeScopeIdRef.current) return;
-      if (focusSuspendedRef.current && activeScopeIdRef.current === BUSINESS_FOCUS_SCOPE_ID) return;
+      if (field === undefined) return;
+      if (
+        field.focusScopeId !== activeScopeIdRef.current ||
+        (focusSuspendedRef.current && activeScopeIdRef.current === BUSINESS_FOCUS_SCOPE_ID)
+      ) {
+        field.inputRef?.current?.blur();
+        return;
+      }
       if (field.keyboardKind === 'virtual') {
         const metrics = calculateVirtualKeyboardMetrics(frameMetricsRef.current, field.layout);
         if (metrics.capacity !== 'supported') {

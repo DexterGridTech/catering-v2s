@@ -4,11 +4,8 @@ import {
   readTerminalSurfaces as readSharedTerminalSurfaces,
   surfaceFormForOrientation as sharedSurfaceFormForOrientation,
   type PortraitSurfaceDeclarations,
-  type SurfaceCreationInput,
   type SurfaceDeclarations,
   type SurfaceForm,
-  type SurfaceOrientation,
-  type SurfaceSize,
   type TerminalSurfaces,
 } from '@catering-v2s/ui-base-integration-assembly';
 

@@ -310,6 +310,7 @@ export const backendAcceptanceEnvironment = (
   terminalWireNodePath = null,
   topologyPreflight = false,
   vs12Diagnostic = false,
+  vs8Diagnostic = false,
 ) => {
   if (extensionScaleProof && runId === null) throw new Error('EXTENSION_SCALE_PROOF_REQUIRES_BACKEND_ACCEPTANCE');
   const effectiveOperation = canonicalBackendAcceptanceOperation(operation, extensionScaleProof);
@@ -325,6 +326,17 @@ export const backendAcceptanceEnvironment = (
       extensionScaleProof)
   ) {
     throw new Error('BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC_ARGUMENT_INVALID');
+  }
+  if (
+    vs8Diagnostic &&
+    (runId === null ||
+      effectiveOperation !== 'storeTerminalActivationBusinessPrecedence' ||
+      verificationMode !== 'ACCEPTANCE' ||
+      topologyPreflight ||
+      extensionScaleProof ||
+      vs12Diagnostic)
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_ARGUMENT_INVALID');
   }
   if (runId === null) return effectiveOperation === 'all' ? [] : ['export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY'];
   return [
@@ -343,6 +355,7 @@ export const backendAcceptanceEnvironment = (
         `export V2S_BACKEND_ACCEPTANCE_OPERATION=${quote(effectiveOperation)}`,
         `export V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT=${topologyPreflight ? 'true' : 'false'}`,
         ...(vs12Diagnostic ? ['export V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC=true'] : []),
+        ...(vs8Diagnostic ? ['export V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC=true'] : []),
         `export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=${quote(verificationMode)}`,
         ...(terminalWireNodePath === null
           ? []
@@ -866,7 +879,12 @@ export function classifyGradleTestExecution(log, expectedTask) {
 
 export function firstGradleFailureCode(log) {
   if (typeof log !== 'string') return null;
-  return log.match(/(?:^|\r?\n)Error:\s+([A-Z][A-Z0-9_]*(?::[A-Z0-9_.-]+)*)/)?.[1] ?? null;
+  const marker = log.match(/(?:^|\r?\n)Error:\s+([A-Z][A-Z0-9_]*(?::[A-Z0-9_.-]+)*)/)?.[1];
+  if (marker) return marker;
+  if (/Resolution of the configuration '[^']+' was attempted without an exclusive lock\./.test(log)) {
+    return 'GRADLE_UNSAFE_CONFIGURATION_RESOLUTION';
+  }
+  return null;
 }
 
 const decodeXml = value =>
@@ -2053,6 +2071,7 @@ export const runScript = ({
   traceChildSignals = false,
   traceSystemSignals = false,
   vs12Diagnostic = false,
+  vs8Diagnostic = false,
 }) => {
   const signalTracingRequested = traceChildSignals || traceSystemSignals;
   if (traceChildSignals && traceSystemSignals) throw new Error('R5_SIGNAL_TRACE_MODES_MUTUALLY_EXCLUSIVE');
@@ -2066,6 +2085,19 @@ export const runScript = ({
     extensionScaleProof: invocation.extensionScaleProof === true,
     traceSystemSignals,
   });
+  if (
+    vs8Diagnostic &&
+    (backendAcceptanceRunId === null ||
+      backendAcceptanceOperation !== 'storeTerminalActivationBusinessPrecedence' ||
+      verificationMode !== 'ACCEPTANCE' ||
+      topologyPreflight ||
+      productionMutation !== null ||
+      invocation.extensionScaleProof === true ||
+      vs12Diagnostic ||
+      traceSystemSignals)
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_ARGUMENT_INVALID');
+  }
   if (
     traceSystemSignals &&
     !(
@@ -2100,6 +2132,7 @@ export const runScript = ({
     terminalWireNodePath,
     topologyPreflight,
     vs12Diagnostic,
+    vs8Diagnostic,
   );
   const mutationLines =
     productionMutation === null
@@ -2432,6 +2465,25 @@ const execute = async () => {
     throw new Error('BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC_VALUE_INVALID');
   }
   const vs12Diagnostic = vs12DiagnosticValue === 'true';
+  const vs8DiagnosticValue = process.env.V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC ?? 'false';
+  if (!['true', 'false'].includes(vs8DiagnosticValue)) {
+    throw new Error('BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_VALUE_INVALID');
+  }
+  const vs8Diagnostic = vs8DiagnosticValue === 'true';
+  if (vs8Diagnostic && vs12Diagnostic) {
+    throw new Error('BACKEND_ACCEPTANCE_DIAGNOSTIC_MODES_MUTUALLY_EXCLUSIVE');
+  }
+  if (
+    vs8Diagnostic &&
+    (backendAcceptanceRunId === null ||
+      backendAcceptanceOperation !== 'storeTerminalActivationBusinessPrecedence' ||
+      verificationMode !== 'ACCEPTANCE' ||
+      topologyPreflight ||
+      invocation.extensionScaleProof === true ||
+      invocation.productionMutationId !== undefined)
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_ARGUMENT_INVALID');
+  }
   const traceChildSignalsValue = process.env.V2S_R5_TRACE_CHILD_SIGNALS ?? 'false';
   if (!['true', 'false'].includes(traceChildSignalsValue)) {
     throw new Error('R5_TRACE_CHILD_SIGNALS_VALUE_INVALID');
@@ -2694,6 +2746,7 @@ const execute = async () => {
         traceChildSignals,
         traceSystemSignals,
         vs12Diagnostic,
+        vs8Diagnostic,
       }),
     );
     if (interruptionSignal) throw new Error(`HARNESS_INTERRUPTED:${interruptionSignal}`);

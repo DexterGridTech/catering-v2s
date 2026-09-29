@@ -24,7 +24,6 @@ export default function App({displayIndex, surfaceForm}: AppProps) {
       surfaceForm={surfaceForm}
       createAssembly={createSampleTerminalAssembly}
       renderSurface={(assembly, nextDisplayIndex) => createSurfaceForDisplayIndex(assembly, nextDisplayIndex)}
-      nativeLoadingCapability={nativeLoadingCapability}
       renderFailurePage={({reason, displayIndex}) => (
         <StandaloneStartupFailurePage
           reason={reason}

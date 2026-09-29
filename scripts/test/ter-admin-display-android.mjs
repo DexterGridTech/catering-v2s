@@ -37,6 +37,7 @@ const files = [
   'apps/terminal/ui/base/admin-shell/src/components/AdminLauncher.tsx',
   'apps/terminal/ui/base/primitives/src/components/PrimitiveAdmin.tsx',
   'apps/terminal/adapter/android/device/android/src/main/java/com/catering/v2s/terminal/adapter/android/device/TerminalDeviceModule.kt',
+  'scripts/env/check-runtime-resource-budget',
 ]
 const sourceSha256 = createHash('sha256').update(files.map(file => `${file}\0${fs.readFileSync(path.join(root, file))}`).join('\0')).digest('hex')
 const manifestPath = path.join(runRoot, 'run-manifest.json')
@@ -95,7 +96,11 @@ let buildIdentity = null
 let launched = false
 try {
   manifest.phase = 'RESOURCE_PREFLIGHT'; save()
-  const budget = spawnSync(path.join(root, 'scripts/env/check-runtime-resource-budget'), [path.join(root, '.runtime')], {cwd: root, encoding: 'utf8'})
+  const budget = spawnSync(
+    path.join(root, 'scripts/env/check-runtime-resource-budget'),
+    ['--profile', 'ter-validation-with-dev', path.join(root, '.runtime')],
+    {cwd: root, encoding: 'utf8'},
+  )
   fs.writeFileSync(path.join(runRoot, 'resource-preflight.log'), `${budget.stdout ?? ''}${budget.stderr ?? ''}`, {mode: 0o600})
   if (budget.status !== 0) throw new Error(`RESOURCE_PREFLIGHT_FAILED:${budget.status}`)
   const state = adb(['get-state'], 'device-state').toString('utf8').trim()

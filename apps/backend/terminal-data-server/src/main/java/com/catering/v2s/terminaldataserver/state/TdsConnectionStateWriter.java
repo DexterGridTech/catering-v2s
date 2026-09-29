@@ -129,8 +129,19 @@ public final class TdsConnectionStateWriter implements SmartLifecycle {
     private void flushHeartbeats(Collection<Heartbeat> heartbeats) {
         if (heartbeats.isEmpty()) return;
         try {
-            repository.writeHeartbeats(heartbeats);
+            int updated = repository.writeHeartbeats(heartbeats);
             heartbeats.forEach(heartbeat -> pendingHeartbeats.remove(heartbeat.session(), heartbeat));
+            int pendingHeartbeatCount = pendingHeartbeats.size();
+            int pendingDisconnectCount = pendingDisconnects.size();
+            TdsAsyncLog.enqueue(
+                    logScheduler,
+                    () -> LOGGER.info(
+                            "event=tds_heartbeat_write_completed requested={} updated={} pendingHeartbeats={} "
+                                    + "pendingDisconnects={}",
+                            heartbeats.size(),
+                            updated,
+                            pendingHeartbeatCount,
+                            pendingDisconnectCount));
         } catch (RuntimeException failure) {
             TdsAsyncLog.enqueue(
                     logScheduler,

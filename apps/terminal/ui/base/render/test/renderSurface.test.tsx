@@ -1,6 +1,6 @@
 import {act, render, type RenderResult} from '@testing-library/react-native';
 import {createElement, Fragment, type ComponentType, type ReactElement} from 'react';
-import {Animated, BackHandler, StyleSheet, TextInput, View} from 'react-native';
+import {Animated, BackHandler, StyleSheet, Text, TextInput, View} from 'react-native';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort} from '@catering-v2s/kernel-base-platform-ports';
 import {defineCommand, type Runtime} from '@catering-v2s/kernel-base-runtime';
@@ -42,8 +42,11 @@ import {
 
 vi.mock('react-native', async importOriginal => {
   const actual = await importOriginal<typeof import('react-native')>();
-  const {withNativeTestHosts} = await import('../../../../../../tools/terminal-shared/rntl-native-test-host');
-  return withNativeTestHosts(actual);
+  const [{withNativeTestHosts}, reactRuntime] = await Promise.all([
+    import('../../../../../../tools/terminal-shared/rntl-native-test-host'),
+    import('react'),
+  ]);
+  return withNativeTestHosts(actual, reactRuntime);
 });
 
 (globalThis as {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true;
@@ -217,6 +220,55 @@ const createHostSource = (initial: SurfaceHostSnapshot | null) => {
 };
 
 describe('render surface hosts', () => {
+  it('keeps the admin layer mounted when surface-owned content fails', async () => {
+    const source = createSource();
+    const {logger} = createLogger();
+    const AdminConsoleLayer: ComponentType<object> = () =>
+      createElement(View, {testID: 'admin-console-layer'}, createElement(Text, null, 'Admin console'));
+    const adminLayer = part({
+      partKey: 'test.admin-console-layer',
+      rendererKey: 'test.admin-console-layer.renderer',
+      component: AdminConsoleLayer,
+      containerKeys: [],
+    });
+    source.setRoot(
+      rootWithContent({
+        contentSets: {
+          PRIMARY: {containers: {}, layers: [{layerId: 'admin.console.layer', partKey: 'test.admin-console-layer', openedAt: 1}]},
+          SECONDARY: {containers: {}, layers: []},
+        },
+      }),
+    );
+    source.setStatus('started');
+    const BrokenSurfaceContent: ComponentType<object> = () => {
+      throw new Error('surface-owned-render-failure');
+    };
+
+    const renderer = await mount(
+      createElement(
+        RenderProvider,
+        {
+          stateSource: source.stateSource,
+          uiCatalog: createUiCatalog([adminLayer.catalogEntry]),
+          rendererCatalog: createRendererCatalog([adminLayer.rendererBinding]),
+          logger,
+          ...unusedRenderProviderBindings,
+        },
+        createElement(
+          SurfaceRoot,
+          {displayMode: 'PRIMARY', containerKey: 'root'},
+          createElement(BrokenSurfaceContent),
+        ),
+      ),
+    );
+
+    expect(renderer.getByTestId('ui-base-render:system-failure:surface-content')).toBeTruthy();
+    expect(renderer.getByTestId('admin-console-layer')).toBeTruthy();
+    await act(async () => {
+      await renderer.unmount();
+    });
+  });
+
   it('stamps each surface dispatch with its local route context', async () => {
     const source = createSource();
     const {logger} = createLogger();
@@ -1131,9 +1183,7 @@ describe('render surface hosts', () => {
     expect(layerStackStyle).not.toHaveProperty('padding');
     expect(layerStackStyle).not.toHaveProperty('transform');
     expect(StyleSheet.flatten(backdrop.props.style)).not.toHaveProperty('transform');
-    expect(layerStack.props.style).toEqual(
-      expect.arrayContaining([expect.objectContaining({pointerEvents: 'box-none'})]),
-    );
+    expect(layerStack.props.pointerEvents).toBe('box-none');
     const layerSurfaces = queryRenderedTree(
       renderer,
       node =>
@@ -1142,6 +1192,7 @@ describe('render surface hosts', () => {
         node.props.testID.startsWith('ui-base-render:layer:'),
     );
     expect(layerSurfaces).toHaveLength(4);
+    expect(layerSurfaces.every(layer => layer.props.pointerEvents === 'box-none')).toBe(true);
     const layerStyle = StyleSheet.flatten(layerSurfaces[0]!.props.style);
     expect(layerStyle).toMatchObject({
       position: 'absolute',
@@ -1149,7 +1200,6 @@ describe('render surface hosts', () => {
       right: 0,
       bottom: 0,
       left: 0,
-      pointerEvents: 'box-none',
     });
     expect(layerStyle).not.toHaveProperty('alignItems');
     expect(layerStyle).not.toHaveProperty('justifyContent');

@@ -16,6 +16,7 @@ production_mutation=''
 extension_scale_proof=false
 topology_preflight=false
 v12_diagnostic=false
+v8_diagnostic=false
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --calibration)
@@ -56,6 +57,14 @@ while [[ "$#" -gt 0 ]]; do
         exit 2
       }
       v12_diagnostic=true
+      shift
+      ;;
+    --v-s8-diagnostic)
+      [[ "$v8_diagnostic" == false ]] || {
+        printf '%s\n' 'BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_ARGUMENT_INVALID' >&2
+        exit 2
+      }
+      v8_diagnostic=true
       shift
       ;;
     *)
@@ -107,6 +116,11 @@ if [[ "$v12_diagnostic" == true && ( "$operation" != 'storeTerminalActivationBus
   exit 2
 fi
 
+if [[ "$v8_diagnostic" == true && ( "$operation" != 'storeTerminalActivationBusinessPrecedence' || "$calibration" == true || "$production_mutation" != '' || "$extension_scale_proof" == true || "$topology_preflight" == true || "$v12_diagnostic" == true ) ]]; then
+  printf '%s\n' 'BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_ARGUMENT_INVALID' >&2
+  exit 2
+fi
+
 if [[ "$calibration" == true ]]; then
   case "${V2S_BACKEND_ACCEPTANCE_BATCH_CARDINALITY:-}" in
     1|20|100) ;;
@@ -126,6 +140,12 @@ if [[ "$v12_diagnostic" == true ]]; then
   unset V2S_R5_TRACE_CHILD_SIGNALS
 else
   unset V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC
+fi
+if [[ "$v8_diagnostic" == true ]]; then
+  export V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC=true
+  export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=ACCEPTANCE
+else
+  unset V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC
 fi
 if [[ "$calibration" == true ]]; then
   export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=CALIBRATION

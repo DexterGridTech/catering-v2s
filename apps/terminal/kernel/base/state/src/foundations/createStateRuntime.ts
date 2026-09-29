@@ -5,7 +5,6 @@ import type {
   StateSyncApplyResult,
   StateSyncPayloadResult,
 } from '../types/runtime';
-import type {StateRoot} from '../types/runtime';
 import type {RegisteredStateRuntimeSlice} from '../types/slice';
 import {getRegisteredStateRuntimeSlice} from './defineStateRuntimeSlice';
 import {

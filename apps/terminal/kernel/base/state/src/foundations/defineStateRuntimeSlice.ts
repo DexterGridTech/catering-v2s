@@ -1,10 +1,5 @@
 import type {Reducer, UnknownAction} from '@reduxjs/toolkit';
-import type {
-  PersistIntent,
-  PersistenceFlushMode,
-  PersistenceProtection,
-  StateRuntimePersistenceDescriptor,
-} from '../types/persistence';
+import type {StateRuntimePersistenceDescriptor} from '../types/persistence';
 import type {StateJsonValue} from '../types/value';
 import type {
   StateRuntimeSliceDescriptor,

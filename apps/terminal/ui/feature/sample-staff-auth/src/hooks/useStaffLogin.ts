@@ -20,7 +20,7 @@ export const useStaffLogin = () => {
         definition: authSystemFailureObservedCommand,
         payload: {operation: 'login'},
       });
-    } catch (_error) {
+    } catch {
       // useDispatchCommand has already emitted the structured rejection diagnostic.
     }
   }, [dispatchCommand]);

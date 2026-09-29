@@ -32,7 +32,7 @@ const readStateJsonValue = (value: unknown): StateJsonValue | undefined => {
   try {
     assertStateJsonValue(value, 'ui-variable.value');
     return cloneAndFreezeStateJsonValue(value);
-  } catch (_error) {
+  } catch {
     return undefined;
   }
 };

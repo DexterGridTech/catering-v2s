@@ -4,7 +4,7 @@ import {moduleName} from '../../moduleName';
 import {validateHydratedDisplayRoleCommand} from '../commands/validateHydratedDisplayRole';
 import {setDisplayRoleAction} from '../slices/displayRole';
 import {selectDisplayRole} from '../../selectors/selectDisplayRole';
-import {createDisplayError, logDisplayDiagnostic} from '../../foundations/displayErrors';
+import {logDisplayDiagnostic} from '../../foundations/displayErrors';
 import {readDisplayInfo, toDisplayInfoDiagnostic} from '../../foundations/displayDevice';
 import {persistDisplayRole} from '../../foundations/persistDisplayRole';
 

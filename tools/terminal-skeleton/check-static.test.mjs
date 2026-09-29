@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import ts from 'typescript';
 import {
   repoRoot,
   skeletonGraphPath,
@@ -13,6 +14,7 @@ import {
   moduleNameToRelativePath,
 } from './graph-model.mjs';
 import {runStaticChecks} from './check-static.mjs';
+import {assertNoCompilerOptionsDiagnostics} from '../terminal-shared/typescript-analysis.mjs';
 
 const toolDirectory = path.dirname(fileURLToPath(import.meta.url));
 const checkStaticPath = path.join(toolDirectory, 'check-static.mjs');
@@ -32,6 +34,16 @@ assert.equal(
   '@catering-v2s/application-android-sample-wallpaper-terminal',
 );
 assert.equal(moduleNameToRelativePath('kernel.base.contracts'), 'apps/terminal/kernel/base/contracts');
+
+const invalidOptionsProgram = ts.createProgram([], {
+  module: 999,
+  moduleResolution: ts.ModuleResolutionKind.Bundler,
+});
+assert.throws(
+  () => assertNoCompilerOptionsDiagnostics({program: invalidOptionsProgram}, repoRoot),
+  /TS5095 compiler-options:/,
+  'the TypeScript checker rejects invalid compiler options through the public Program API',
+);
 
 const help = spawnSync(process.execPath, [checkStaticPath, '--help'], {cwd: repoRoot, encoding: 'utf8'});
 assert.equal(help.status, 0, help.stderr);

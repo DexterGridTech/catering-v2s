@@ -252,7 +252,7 @@ async function main() {
   if (mode === 'red-fixtures') return runRedFixtures();
   const budget = spawnSync(
     path.join(repositoryRoot, 'scripts/env/check-runtime-resource-budget'),
-    [path.join(repositoryRoot, '.runtime')],
+    ['--profile', 'ter-validation-with-dev', path.join(repositoryRoot, '.runtime')],
     {cwd: repositoryRoot, encoding: 'utf8'},
   );
   process.stdout.write(budget.stdout ?? '');
@@ -396,7 +396,7 @@ async function main() {
 async function runA9LockRedFixture() {
   const budget = spawnSync(
     path.join(repositoryRoot, 'scripts/env/check-runtime-resource-budget'),
-    [path.join(repositoryRoot, '.runtime')],
+    ['--profile', 'ter-validation-with-dev', path.join(repositoryRoot, '.runtime')],
     {cwd: repositoryRoot, encoding: 'utf8'},
   );
   process.stdout.write(budget.stdout ?? '');
@@ -580,7 +580,7 @@ async function runA9LockRedFixture() {
 async function runRedFixtures() {
   const budget = spawnSync(
     path.join(repositoryRoot, 'scripts/env/check-runtime-resource-budget'),
-    [path.join(repositoryRoot, '.runtime')],
+    ['--profile', 'ter-validation-with-dev', path.join(repositoryRoot, '.runtime')],
     {cwd: repositoryRoot, encoding: 'utf8'},
   );
   process.stdout.write(budget.stdout ?? '');

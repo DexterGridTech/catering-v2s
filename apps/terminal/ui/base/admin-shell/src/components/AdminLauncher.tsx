@@ -76,6 +76,10 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
   const {logger} = useRenderContext();
   const hostLogicalSize = surface.hostLogicalSize;
   const windowDimensions = useWindowDimensions();
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
+  const hostLogicalWidth = hostLogicalSize?.width ?? null;
+  const hostLogicalHeight = hostLogicalSize?.height ?? null;
   const hasAdminLayerSelector = useMemo(
     () => (root: Parameters<typeof selectLayers>[0]) =>
       selectLayers(root, surface.displayMode).some(layer => layer.layerId === ADMIN_CONSOLE_LAYER_ID),
@@ -91,6 +95,8 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
     readonly height: number;
   }> | null>(null);
   const nodeRef = useRef<View>(null);
+  const measurementGenerationRef = useRef(0);
+  const geometryReadyRef = useRef(false);
 
   useEffect(() => {
     logger.info({
@@ -116,18 +122,58 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
     surface.surfaceIdentity?.displayIndex,
     surface.surfaceIdentity?.surfaceKey,
   ]);
-  const measureOrigin = useCallback(() => {
+  const measureOrigin = useCallback((invalidateCurrent = false) => {
+    const generation = ++measurementGenerationRef.current;
     gestureState.current = createInitialAdminGestureState();
-    nodeRef.current?.measureInWindow((...measurements: [number, number, number, number]) => {
-      const [x, y, width, height] = measurements;
-      if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(width) && Number.isFinite(height)) {
-        windowMeasurementRef.current = Object.freeze({x, y, width, height});
-      }
+    if (invalidateCurrent) geometryReadyRef.current = false;
+    requestAnimationFrame(() => {
+      if (generation !== measurementGenerationRef.current) return;
+      // The viewport update may cause the host canvas to commit its new scale
+      // after this frame; measure on the following frame, against that layout.
+      requestAnimationFrame(() => {
+        if (generation !== measurementGenerationRef.current) return;
+        const node = nodeRef.current;
+        if (node === null) return;
+        node.measureInWindow((...measurements: [number, number, number, number]) => {
+          if (generation !== measurementGenerationRef.current) return;
+          const [x, y, width, height] = measurements;
+          if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(width) && Number.isFinite(height)) {
+            windowMeasurementRef.current = Object.freeze({x, y, width, height});
+            geometryReadyRef.current = true;
+            logger.info({
+              category: 'admin.launcher',
+              event: 'admin.launcher-geometry-measured',
+              message: 'Admin launcher window geometry measured',
+              data: {
+                displayMode: surface.displayMode,
+                displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
+                windowRect: {x, y, width, height},
+                canvas: {width: canvasWidth, height: canvasHeight},
+                hostLogicalSize:
+                  hostLogicalWidth === null || hostLogicalHeight === null
+                    ? null
+                    : {width: hostLogicalWidth, height: hostLogicalHeight},
+                windowDimensions: {width: windowDimensions.width, height: windowDimensions.height},
+              },
+            });
+          }
+        });
+      });
     });
-  }, []);
+  }, [
+    canvasHeight,
+    canvasWidth,
+    hostLogicalHeight,
+    hostLogicalWidth,
+    logger,
+    surface.displayMode,
+    surface.surfaceIdentity?.displayIndex,
+    windowDimensions.height,
+    windowDimensions.width,
+  ]);
 
   useLayoutEffect(() => {
-    measureOrigin();
+    measureOrigin(true);
   }, [
     canvas.height,
     canvas.width,
@@ -137,6 +183,14 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
     windowDimensions.height,
     windowDimensions.width,
   ]);
+
+  useEffect(
+    () => () => {
+      measurementGenerationRef.current += 1;
+      geometryReadyRef.current = false;
+    },
+    [],
+  );
 
   const open = useCallback(() => {
     logger.info({
@@ -214,6 +268,22 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
 
   const handleLauncherEvent = useCallback(
     (event: unknown) => {
+      if (!geometryReadyRef.current) {
+        gestureState.current = createInitialAdminGestureState();
+        logger.warn({
+          category: 'admin.launcher',
+          event: 'admin.launcher-gesture-rejected',
+          message: 'Admin launcher gesture arrived before fresh geometry was measured',
+          data: {
+            displayMode: surface.displayMode,
+            displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
+            isHostPrimaryDisplay: surface.isHostPrimaryDisplay,
+            hasAdminLayer,
+            reason: 'geometry-not-ready',
+          },
+        });
+        return;
+      }
       const eventPoint = adminLauncherPointFromEvent(event);
       const eventRecord =
         typeof event === 'object' && event !== null ? (event as Readonly<{readonly stopPropagation?: unknown}>) : null;
@@ -250,6 +320,19 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
         atMs: Date.now(),
       });
       gestureState.current = result.state;
+      logger.info({
+        category: 'admin.launcher',
+        event: 'admin.launcher-gesture-progress',
+        message: 'Admin launcher gesture coordinate evaluated',
+        data: {
+          displayMode: surface.displayMode,
+          displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
+          logicalPoint: point,
+          repetitions: result.state.repetitions,
+          completed: result.completed,
+          geometryMeasured: windowMeasurementRef.current !== null,
+        },
+      });
       if (result.completed) {
         const stopPropagation = eventRecord?.stopPropagation;
         if (typeof stopPropagation === 'function') {
@@ -280,7 +363,7 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
       ref={nodeRef}
       testID={adminTestIds.launcher}
       style={styles.observer}
-      onLayout={measureOrigin}
+      onLayout={() => measureOrigin(true)}
       {...launcherEventProps}
     >
       {children}

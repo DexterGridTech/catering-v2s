@@ -37,7 +37,6 @@ import {
 import {createTopologySlice} from '../features/slices/topology';
 import {topologySliceName} from '../selectors/selectTopologyState';
 import type {TopologyState} from '../types/state';
-import {topologyPeerWsUrl} from '../foundations/topologyPeerWsUrl';
 import {createTopologyPeerCommandController} from './createTopologyPeerCommandController';
 import {createTopologyStateSyncController} from './createTopologyStateSyncController';
 import type {TopologyPeerLog} from './topologyModuleTypes';

@@ -5,6 +5,7 @@ import {createServer} from 'node:net';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {
+  AUTH_REJECTION_CLOSE_REASONS,
   classifyWireFailureForDiagnostics,
   createPingMessage,
   deflateMessage,
@@ -331,6 +332,89 @@ test('terminal wire control accepts only the bounded V-S10 close-revocation cont
   assert.throws(() => parseControlRequest(JSON.stringify(request)), /TERMINAL_WIRE_CONTROL_SCHEMA_INVALID/);
 });
 
+test('V-S1 overall authentication deadline uses an explicit bounded server-close wait', () => {
+  const request = validRequest();
+  request.scenario = 'terminal.connection.vs1.overall-authentication-deadline';
+  request.markerId = 'decf696c-41c2-4d37-9b95-83749587ddf5';
+  request.expectedClose = {code: 4000, reason: 'AUTHENTICATION_TIMEOUT'};
+  request.serverCloseTimeoutMs = 20_000;
+  const parsed = parseControlRequest(JSON.stringify(request));
+  assert.equal(parsed.expectedClose.reason, 'AUTHENTICATION_TIMEOUT');
+  assert.equal(parsed.serverCloseTimeoutMs, 20_000);
+
+  request.serverCloseTimeoutMs = 14_999;
+  assert.throws(
+    () => parseControlRequest(JSON.stringify(request)),
+    /TERMINAL_WIRE_CONTROL_SERVER_CLOSE_TIMEOUT_INVALID/,
+  );
+  request.serverCloseTimeoutMs = 20_000;
+  request.scenario = 'terminal.connection.topology-probe';
+  assert.throws(
+    () => parseControlRequest(JSON.stringify(request)),
+    /TERMINAL_WIRE_CONTROL_SERVER_CLOSE_TIMEOUT_INVALID/,
+  );
+});
+
+test('V-S2 auth controls have a closed expected-reason matrix shared with Java acceptance scenarios', () => {
+  const javaSource = readFileSync(
+    new URL(
+      '../../apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TerminalConnectionContractScenarios.java',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  const javaFactoryStart = javaSource.indexOf('static Stream<DynamicTest> v2AuthenticationScenarios(');
+  const javaFactoryEnd = javaSource.indexOf('\n    private static void v2AuthenticationRejection', javaFactoryStart);
+  assert.ok(javaFactoryStart >= 0 && javaFactoryEnd > javaFactoryStart, 'V-S2_JAVA_FACTORY_BOUNDARY_MISSING');
+  const javaFactory = javaSource.slice(javaFactoryStart, javaFactoryEnd);
+  const scenarios = [
+    ...Object.keys(AUTH_REJECTION_CLOSE_REASONS),
+    'terminal.connection.auth.no-first-frame-timeout',
+    'terminal.connection.auth.store-disabled-active',
+  ];
+  assert.equal(scenarios.length, 15);
+  for (const scenario of scenarios) {
+    assert.ok(javaFactory.includes(`"${scenario}"`), `V-S2_JAVA_SCENARIO_NOT_REGISTERED:${scenario}`);
+    const request = validRequest();
+    request.scenario = scenario;
+    request.markerId = 'decf696c-41c2-4d37-9b95-83749587ddf5';
+    if (scenario === 'terminal.connection.auth.no-first-frame-timeout') {
+      delete request.authenticate;
+      request.expectedClose = {code: 4000, reason: 'AUTHENTICATION_TIMEOUT'};
+      const parsed = parseControlRequest(JSON.stringify(request));
+      assert.equal(parsed.authenticate, null);
+      assert.equal(parsed.expectedClose.reason, 'AUTHENTICATION_TIMEOUT');
+    } else if (scenario === 'terminal.connection.auth.store-disabled-active') {
+      request.expectedClose = null;
+      assert.equal(parseControlRequest(JSON.stringify(request)).expectedClose, null);
+    } else {
+      const reason = AUTH_REJECTION_CLOSE_REASONS[scenario];
+      request.expectedClose = {code: 4000, reason};
+      assert.equal(parseControlRequest(JSON.stringify(request)).expectedClose.reason, reason);
+    }
+  }
+  assert.throws(
+    () => parseControlRequest(JSON.stringify({
+      scenario: 'terminal.connection.auth.no-first-frame-timeout',
+      markerId: 'decf696c-41c2-4d37-9b95-83749587ddf5',
+      url: 'ws://127.0.0.1:49152/tdp/acceptance-probe/ws',
+      expectedClose: {code: 4000, reason: 'CREDENTIAL_INVALID'},
+    })),
+    /TERMINAL_WIRE_CONTROL_EXPECTED_CLOSE_INVALID/,
+  );
+  const noFrameWithAuth = {
+    scenario: 'terminal.connection.auth.no-first-frame-timeout',
+    markerId: 'decf696c-41c2-4d37-9b95-83749587ddf5',
+    url: 'ws://127.0.0.1:49152/tdp/acceptance-probe/ws',
+    authenticate: validRequest().authenticate,
+    expectedClose: {code: 4000, reason: 'AUTHENTICATION_TIMEOUT'},
+  };
+  assert.throws(
+    () => parseControlRequest(JSON.stringify(noFrameWithAuth)),
+    /TERMINAL_WIRE_CONTROL_AUTHENTICATE_FORBIDDEN/,
+  );
+});
+
 test('overflow controls accept code-only 1009 without prescribing its reason text', () => {
   const request = validRequest();
   request.scenario = 'terminal.connection.frame.raw-overflow';
@@ -370,6 +454,37 @@ test('session probes require a bounded marker id and accept only the probe comma
 
   delete request.markerId;
   assert.throws(() => parseControlRequest(JSON.stringify(request)), /TERMINAL_WIRE_CONTROL_MARKER_ID_INVALID/);
+});
+
+test('deferred-auth scenario close expectations follow the request mode, not only the scenario id', () => {
+  const request = validRequest();
+  request.scenario = 'terminal.connection.vs4.failed-second-auth';
+  request.markerId = 'decf696c-41c2-4d37-9b95-83749587ddf5';
+  request.expectedClose = null;
+  assert.equal(parseControlRequest(JSON.stringify(request)).expectedClose, null);
+
+  request.deferAuthentication = true;
+  request.expectedClose = {code: 4000, reason: 'CREDENTIAL_INVALID'};
+  assert.equal(
+    parseControlRequest(JSON.stringify(request)).expectedClose.reason,
+    'CREDENTIAL_INVALID',
+  );
+
+  request.scenario = 'terminal.connection.vs1.admission-hold';
+  request.expectedClose = null;
+  assert.equal(parseControlRequest(JSON.stringify(request)).expectedClose, null);
+
+  request.expectedClose = {code: 4000, reason: 'CREDENTIAL_INVALID'};
+  assert.equal(
+    parseControlRequest(JSON.stringify(request)).expectedClose.reason,
+    'CREDENTIAL_INVALID',
+  );
+
+  request.expectedClose = {code: 4000, reason: 'AUTHENTICATION_TIMEOUT'};
+  assert.throws(
+    () => parseControlRequest(JSON.stringify(request)),
+    /TERMINAL_WIRE_CONTROL_EXPECTED_CLOSE_INVALID/,
+  );
 });
 
 test('database outage authentication expects SERVER_ERROR without a session-ready marker', () => {

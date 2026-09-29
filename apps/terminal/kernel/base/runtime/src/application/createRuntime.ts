@@ -7,19 +7,16 @@ import {
 } from '@catering-v2s/kernel-base-contracts';
 import {
   createStateRuntime,
-  type PersistenceOperationResult,
   type StateJsonValue,
   type StateRoot,
   type StateRuntime,
 } from '@catering-v2s/kernel-base-state';
-import type {PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import {defaultCommandTimeoutMs, defaultRuntimeLimits, type RuntimeLimits} from '../types/limits';
 import type {CommandDefinition, CommandDispatchOptions, RegisteredCommandDefinition} from '../types/command';
 import type {CommandDispatchResult} from '../types/execution';
 import type {Runtime, CreateRuntimeInput, RuntimeStatus, RuntimeSubscriptionListener} from '../types/runtime';
 import type {RuntimeUnknownAction, RuntimeStore} from '../types/runtime';
 import type {RuntimeModule, RuntimeRoleChangeSignal} from '../types/module';
-import type {RuntimeJournalEvent} from '../types/journal';
 import {moduleName} from '../moduleName';
 import {initializeCommand} from '../features/commands';
 import {createInternalRuntimeModule} from './createInternalRuntimeModule';

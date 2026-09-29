@@ -1,5 +1,6 @@
 package com.catering.v2s.terminaldataserver.websocket;
 
+import com.catering.v2s.platform.identity.GroupWorkspaceKey;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
@@ -31,7 +32,6 @@ import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.util.UriUtils;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Scheduler;
@@ -40,8 +40,6 @@ import reactor.core.scheduler.Scheduler;
 @Component
 public final class TdsWebSocketHandler implements WebSocketHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(TdsWebSocketHandler.class);
-    private static final String GROUP_WORKSPACE_KEY = "[A-Za-z0-9][A-Za-z0-9_-]{0,63}";
-
     private final TdsRuntimeSettings settings;
     private final TerminalConnectionFrameCodec codec;
     private final TerminalConnectionProtocol protocol;
@@ -105,13 +103,12 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                 new AtomicReference<>(TdsAuthenticationFailureDiagnostics.Stage.AUTHENTICATION_FRAME_DECODE);
         AtomicLong lastPingSequence = new AtomicLong();
         Sinks.One<Void> stopHeartbeatWatch = Sinks.one();
+        Sinks.One<Void> firstFrameResolved = Sinks.one();
         Sinks.Many<Long> heartbeatEvents = Sinks.many().replay().latest();
 
         Mono<Void> receive = session.receive()
-                .timeout(
-                        Mono.delay(settings.authenticationFirstFrameTimeout()),
-                        ignored -> Flux.never(),
-                        Flux.error(new AuthenticationTimeoutException()))
+                .doOnNext(ignored -> firstFrameResolved.tryEmitEmpty())
+                .doFinally(ignored -> firstFrameResolved.tryEmitEmpty())
                 .index()
                 .concatMap(indexed -> {
                     WebSocketMessage message = indexed.getT2();
@@ -146,8 +143,6 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                     }
                 })
                 .then()
-                .onErrorResume(
-                        AuthenticationTimeoutException.class, ignored -> close(connection, "AUTHENTICATION_TIMEOUT"))
                 .onErrorResume(failure -> {
                     TdsAuthenticationFailureDiagnostics.Diagnostic diagnostic =
                             TdsAuthenticationFailureDiagnostics.describe(failure, authenticationStage.get());
@@ -173,6 +168,19 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                     completeHeartbeatSinks(connection, heartbeatEvents, stopHeartbeatWatch);
                 });
 
+        Mono<Void> firstFrameDeadline = Mono.delay(settings.authenticationFirstFrameTimeout())
+                .takeUntilOther(firstFrameResolved.asMono())
+                .flatMap(ignored -> {
+                    TdsAsyncLog.enqueue(
+                            logScheduler,
+                            () -> LOGGER.info(
+                                    "event=tds_ws_first_frame_deadline_expired connectionId={} timeoutMillis={}",
+                                    connection.connectionId(),
+                                    settings.authenticationFirstFrameTimeout().toMillis()));
+                    return connection.closeAsync("AUTHENTICATION_TIMEOUT");
+                })
+                .then();
+
         Mono<Void> heartbeatTimeout = heartbeatEvents
                 .asFlux()
                 .switchMap(ignored -> Mono.delay(settings.heartbeatTimeout()))
@@ -181,7 +189,7 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                 .takeUntilOther(stopHeartbeatWatch.asMono())
                 .then();
 
-        return Mono.when(session.send(connection.outboundMessages()), receive, heartbeatTimeout)
+        return Mono.when(session.send(connection.outboundMessages()), receive, heartbeatTimeout, firstFrameDeadline)
                 .doOnSubscribe(ignored -> TdsAsyncLog.enqueue(
                         logScheduler,
                         () -> LOGGER.info(
@@ -526,7 +534,7 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
         if (segments.length != 4 || !"tdp".equals(segments[1]) || !"ws".equals(segments[3])) return null;
         try {
             String decoded = UriUtils.decode(segments[2], StandardCharsets.UTF_8);
-            if (!decoded.matches(GROUP_WORKSPACE_KEY)) return null;
+            if (!GroupWorkspaceKey.isValid(decoded)) return null;
             return decoded;
         } catch (IllegalArgumentException malformedPath) {
             return null;
@@ -536,10 +544,6 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
     private record AttemptReference(UUID terminalRef, String attemptId) {}
 
     private record PingResponse(Ping ping, String pong) {}
-
-    private static final class AuthenticationTimeoutException extends RuntimeException {
-        private static final long serialVersionUID = 1L;
-    }
 
     private static final class MalformedAuthenticationException extends RuntimeException {
         private static final long serialVersionUID = 1L;

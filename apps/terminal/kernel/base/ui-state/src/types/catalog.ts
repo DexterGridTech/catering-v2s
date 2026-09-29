@@ -1,4 +1,4 @@
-import type {DisplayMode, DisplayRole} from '@catering-v2s/kernel-base-display-context';
+import type {DisplayMode} from '@catering-v2s/kernel-base-display-context';
 import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {WorkspaceKey} from '@catering-v2s/kernel-base-state';
 import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts';

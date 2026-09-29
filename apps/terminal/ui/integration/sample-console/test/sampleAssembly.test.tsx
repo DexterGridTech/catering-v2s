@@ -1,6 +1,6 @@
 import {act, fireEvent, render, waitFor, type RenderResult} from '@testing-library/react-native';
 import type {ReactElement} from 'react';
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {StyleSheet} from 'react-native';
 import {
   advanceAnimatedTimingsForTests,
@@ -59,8 +59,11 @@ import {
 
 vi.mock('react-native', async importOriginal => {
   const actual = await importOriginal<typeof import('react-native')>();
-  const {withNativeTestHosts} = await import('../../../../../../tools/terminal-shared/rntl-native-test-host');
-  return withNativeTestHosts(actual);
+  const [{withNativeTestHosts}, reactRuntime] = await Promise.all([
+    import('../../../../../../tools/terminal-shared/rntl-native-test-host'),
+    import('react'),
+  ]);
+  return withNativeTestHosts(actual, reactRuntime);
 });
 
 type TestSampleAssemblyInput = Omit<
@@ -159,14 +162,19 @@ const mount = async (
   launcherMeasuredSize: Readonly<{readonly width: number; readonly height: number}> = {width: 0, height: 0},
   inputMeasuredY = 120,
   launcherWindowOrigin: () => Readonly<{readonly x: number; readonly y: number}> = () => LAUNCHER_WINDOW_ORIGIN,
+  launcherMeasurement?: () => Readonly<{readonly x: number; readonly y: number; readonly width: number; readonly height: number}>,
 ): Promise<TestRenderer> => {
   setNativeTestRefFactory((hostName: string, props: NativeTestHostProps) => {
     const testID = props.testID;
     if (testID === adminTestIds.launcher) {
       return {
         measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => {
-          const origin = launcherWindowOrigin();
-          callback(origin.x, origin.y, launcherMeasuredSize.width, launcherMeasuredSize.height);
+          const measurement = launcherMeasurement?.() ?? {
+            ...launcherWindowOrigin(),
+            width: launcherMeasuredSize.width,
+            height: launcherMeasuredSize.height,
+          };
+          callback(measurement.x, measurement.y, measurement.width, measurement.height);
         },
       };
     }
@@ -438,7 +446,17 @@ const findTextInput = (renderer: TestRenderer, testID: string): TestNode => {
   return input;
 };
 
-afterEach(resetNativeTestRefFactory);
+beforeEach(() => {
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    callback(Date.now());
+    return 0;
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  resetNativeTestRefFactory();
+});
 
 describe('sample-console real assembly', () => {
   it('waits for PRIMARY surface measurement when resolved layout arrives first', async () => {
@@ -474,10 +492,7 @@ describe('sample-console real assembly', () => {
       expect(events.filter(event => event.event === 'startup.complete')).toHaveLength(1);
       expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false);
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -514,10 +529,7 @@ describe('sample-console real assembly', () => {
       });
       expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false);
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -538,9 +550,7 @@ describe('sample-console real assembly', () => {
       expect(events.filter(event => event.event === 'startup.ready-dispatch-failed')).toHaveLength(1);
       expect(events.find(event => event.event === 'startup.ready-dispatch-failed')?.data?.errorName).toBe('Error');
 
-      await act(async () => {
-        renderer!.unmount();
-      });
+      await renderer!.unmount();
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME);
       await reportPrimaryReadyLayout(renderer, PORTRAIT_PRIMARY_FRAME);
       expect(events.filter(event => event.event === 'startup.ready-dispatch-failed')).toHaveLength(1);
@@ -550,10 +560,7 @@ describe('sample-console real assembly', () => {
         events.filter(event => event.event === 'startup.ready-dispatch-result').map(event => event.data?.status),
       ).toEqual(['error', 'completed']);
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -597,10 +604,7 @@ describe('sample-console real assembly', () => {
       );
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -636,10 +640,7 @@ describe('sample-console real assembly', () => {
         }
       }
     } finally {
-      for (const renderer of renderers)
-        await act(async () => {
-          renderer.unmount();
-        });
+      for (const renderer of renderers) await renderer.unmount();
       for (const assembly of assemblies) releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -729,14 +730,8 @@ describe('sample-console real assembly', () => {
       expect(secondRunId).not.toBe(sharedPlatformRunId);
       expect(secondRunId).not.toBe(firstRunId);
     } finally {
-      if (firstRenderer !== undefined)
-        await act(async () => {
-          firstRenderer!.unmount();
-        });
-      if (secondRenderer !== undefined)
-        await act(async () => {
-          secondRenderer!.unmount();
-        });
+      if (firstRenderer !== undefined) await firstRenderer!.unmount();
+      if (secondRenderer !== undefined) await secondRenderer!.unmount();
       releaseRuntimeForTest(firstAssembly.runtime);
       releaseRuntimeForTest(secondAssembly.runtime);
     }
@@ -986,14 +981,8 @@ describe('sample-console real assembly', () => {
         accessibilityLiveRegion: 'polite',
       });
     } finally {
-      if (laptopRenderer !== undefined)
-        await act(async () => {
-          laptopRenderer!.unmount();
-        });
-      if (mobileRenderer !== undefined)
-        await act(async () => {
-          mobileRenderer!.unmount();
-        });
+      if (laptopRenderer !== undefined) await laptopRenderer!.unmount();
+      if (mobileRenderer !== undefined) await mobileRenderer!.unmount();
       releaseRuntimeForTest(laptopAssembly.runtime);
       releaseRuntimeForTest(mobileAssembly.runtime);
     }
@@ -1040,10 +1029,7 @@ describe('sample-console real assembly', () => {
       await tapLauncher(renderer, 5, 95, 95);
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1074,14 +1060,8 @@ describe('sample-console real assembly', () => {
       await tapLauncher(reducedRenderer, 5, 100, 100);
       expect(queryNodes(reducedRenderer, adminTestIds.login)).toHaveLength(0);
     } finally {
-      if (enlargedRenderer !== undefined)
-        await act(async () => {
-          enlargedRenderer!.unmount();
-        });
-      if (reducedRenderer !== undefined)
-        await act(async () => {
-          reducedRenderer!.unmount();
-        });
+      if (enlargedRenderer !== undefined) await enlargedRenderer!.unmount();
+      if (reducedRenderer !== undefined) await reducedRenderer!.unmount();
       releaseRuntimeForTest(enlargedAssembly.runtime);
       releaseRuntimeForTest(reducedAssembly.runtime);
     }
@@ -1121,10 +1101,88 @@ describe('sample-console real assembly', () => {
       }
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
-      if (renderer !== undefined)
+      if (renderer !== undefined) await renderer!.unmount();
+      releaseRuntimeForTest(assembly.runtime);
+    }
+  });
+
+  it('measures launcher coordinates after the resized host layout has settled', async () => {
+    const events: LogEvent[] = [];
+    const initialMeasurement = {x: 100, y: 200, width: 1280, height: 720};
+    const staleMeasurement = {x: -90, y: 159, width: 1360, height: 765};
+    const resizedMeasurement = {x: 40, y: 159, width: 1100, height: 618.75};
+    let currentMeasurement = initialMeasurement;
+    const measurements: typeof initialMeasurement[] = [];
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({events}),
+      persistenceKey: `sample-console-admin-viewport-settle-${Date.now()}`,
+      surfaceForm: 'laptop',
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true)},
+    });
+    let renderer: TestRenderer | undefined;
+    const pendingFrames: FrameRequestCallback[] = [];
+    const initialFrames: FrameRequestCallback[] = [];
+    try {
+      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+        initialFrames.push(callback);
+        return initialFrames.length;
+      });
+      renderer = await mount(
+        createSurfaceForDisplayIndex(assembly, 0),
+        LANDSCAPE_PRIMARY_FRAME,
+        true,
+        LANDSCAPE_PRIMARY_FRAME,
+        120,
+        () => ({x: currentMeasurement.x, y: currentMeasurement.y}),
+        () => {
+          measurements.push(currentMeasurement);
+          return currentMeasurement;
+        },
+      );
+      await act(async () => {
+        while (initialFrames.length > 0) initialFrames.shift()?.(0);
+      });
+      const launcher = getNode(renderer, adminTestIds.launcher) as unknown as Readonly<{
+        readonly props: Readonly<{readonly onLayout: (event: unknown) => void}>;
+      }>;
+      measurements.length = 0;
+      currentMeasurement = staleMeasurement;
+      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+        pendingFrames.push(callback);
+        return pendingFrames.length;
+      });
+      await act(async () => {
+        launcher.props.onLayout({nativeEvent: {layout: LANDSCAPE_PRIMARY_FRAME}});
+      });
+      const firstFrame = pendingFrames.shift();
+      if (firstFrame === undefined) throw new Error('Launcher measurement did not schedule its first frame');
+      await act(async () => {
+        firstFrame(1);
+        // SurfaceCanvas commits the new scale/position after the viewport update.
+        currentMeasurement = resizedMeasurement;
+      });
+      const settledFrame = pendingFrames.shift();
+      if (settledFrame !== undefined) {
         await act(async () => {
-          renderer!.unmount();
+          settledFrame(2);
         });
+      }
+      expect(measurements.at(-1)).toEqual(resizedMeasurement);
+
+      for (let index = 0; index < 5; index += 1) {
+        await act(async () => {
+          pressLauncher(renderer!, 2, 2, undefined, {
+            x: currentMeasurement.x,
+            y: currentMeasurement.y,
+          });
+          await new Promise(resolve => setTimeout(resolve, 0));
+        });
+      }
+      expect(getNode(renderer, adminTestIds.login)).toBeDefined();
+      expect(events.some(event => event.event === 'admin.launcher-open-requested')).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1171,10 +1229,7 @@ describe('sample-console real assembly', () => {
       }
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1248,10 +1303,7 @@ describe('sample-console real assembly', () => {
       }
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1279,10 +1331,7 @@ describe('sample-console real assembly', () => {
       await tapWebLauncher(renderer, 2);
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
       if (previousDocument === undefined) delete globalWithDocument.document;
       else Object.defineProperty(globalWithDocument, 'document', {configurable: true, value: previousDocument});
@@ -1359,10 +1408,7 @@ describe('sample-console real assembly', () => {
       });
       expect(findTextInput(renderer, 'sample.desk.member-form:phone').props.value).toBe('34');
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1393,10 +1439,7 @@ describe('sample-console real assembly', () => {
       ).toBe(true);
       expect(events.some(event => JSON.stringify(event).includes('123456'))).toBe(false);
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1442,10 +1485,7 @@ describe('sample-console real assembly', () => {
       await waitForAdminContent(renderer);
       expect(getNode(renderer, adminTestIds.shell)).toBeDefined();
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1471,10 +1511,7 @@ describe('sample-console real assembly', () => {
       expect(queryNodes(renderer, adminTestIds.debugPassword)).toHaveLength(0);
       expect(renderer.getByText('请输入动态口令')).toBeDefined();
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1491,10 +1528,7 @@ describe('sample-console real assembly', () => {
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 1));
       expect(queryNodes(renderer, adminTestIds.launcher)).toHaveLength(0);
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1524,10 +1558,7 @@ describe('sample-console real assembly', () => {
         },
       });
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1547,31 +1578,27 @@ describe('sample-console real assembly', () => {
     try {
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME);
       let businessSettled = false;
-      let businessPromise!: ReturnType<typeof assembly.runtime.dispatchCommand>;
-      act(() => {
-        businessPromise = assembly.runtime.dispatchCommand(
+      const businessPromise = assembly.runtime
+        .dispatchCommand(
           submitMemberCommand,
           {
             name: 'Alice',
             phone: '010-1234-5678',
           },
           {requestId: createRequestId()},
-        ).then(result => {
+        )
+        .then(result => {
           businessSettled = true;
           return result;
         });
-      });
       await Promise.resolve();
       expect(businessSettled).toBe(false);
 
       await tapLauncher(renderer);
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
 
-      let result!: Awaited<typeof businessPromise>;
-      await act(async () => {
-        releaseDisplayInfo();
-        result = await businessPromise;
-      });
+      releaseDisplayInfo();
+      const result = await businessPromise;
       expect(result.status).toBe('completed');
       expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')).toMatchObject({
         partKey: 'sample.desk.member-list',
@@ -1581,10 +1608,7 @@ describe('sample-console real assembly', () => {
       );
     } finally {
       releaseDisplayInfo();
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1614,10 +1638,7 @@ describe('sample-console real assembly', () => {
       expect(persistedValues.join('\n')).toContain('admin.console.layer');
       expect(persistedValues.join('\n')).not.toContain('sample.console.admin-test');
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1673,14 +1694,8 @@ describe('sample-console real assembly', () => {
       });
       expect(getNode(secondRenderer, adminTestIds.login)).toBeDefined();
     } finally {
-      if (firstRenderer !== undefined)
-        await act(async () => {
-          firstRenderer!.unmount();
-        });
-      if (secondRenderer !== undefined)
-        await act(async () => {
-          secondRenderer!.unmount();
-        });
+      if (firstRenderer !== undefined) await firstRenderer!.unmount();
+      if (secondRenderer !== undefined) await secondRenderer!.unmount();
       if (firstAssembly !== undefined) releaseRuntimeForTest(firstAssembly.runtime);
       if (secondAssembly !== undefined) releaseRuntimeForTest(secondAssembly.runtime);
     }
@@ -1755,10 +1770,7 @@ describe('sample-console real assembly', () => {
       const canvas = getNode(renderer, 'ui-base-render:surface-host-canvas');
       expect(canvas.props.style).toEqual(expect.arrayContaining([expect.objectContaining({width: 1280, height: 720})]));
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1832,10 +1844,7 @@ describe('sample-console real assembly', () => {
       expect(getNode(renderer, 'sample.auth.login')).toBeDefined();
       expect(getNode(renderer, 'sample.auth.login:submit')).toBeDefined();
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1889,10 +1898,7 @@ describe('sample-console real assembly', () => {
       });
       expect(translatedNodes.length).toBeGreaterThan(0);
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -1921,10 +1927,7 @@ describe('sample-console real assembly', () => {
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 1), LANDSCAPE_SECONDARY_FRAME);
       expect(getNode(renderer, 'sample.desk.customer-welcome')).toBeDefined();
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -2071,10 +2074,7 @@ describe('sample-console real assembly', () => {
       expect(selectPendingMember(assembly.runtime.getState())).toBeNull();
       expect(selectMembers(assembly.runtime.getState())).toEqual(membersBeforeLateConfirm);
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -2116,10 +2116,7 @@ describe('sample-console real assembly', () => {
       );
       expect(selectPendingMember(assembly.runtime.getState())).toBeNull();
     } finally {
-      if (secondaryRenderer !== undefined)
-        await act(async () => {
-          secondaryRenderer!.unmount();
-        });
+      if (secondaryRenderer !== undefined) await secondaryRenderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -2158,10 +2155,7 @@ describe('sample-console real assembly', () => {
         phone: '010-1234-5678',
       });
     } finally {
-      if (secondaryRenderer !== undefined)
-        await act(async () => {
-          secondaryRenderer!.unmount();
-        });
+      if (secondaryRenderer !== undefined) await secondaryRenderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });

@@ -2,22 +2,42 @@ package com.catering.v2s.app.acceptance;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import org.postgresql.PGConnection;
+import org.postgresql.PGNotification;
 
 /** Real HTTP business oracles for the store-terminal aggregate. */
 final class StoreTerminalAcceptanceScenarios {
+    private static final ObjectMapper JSON = new ObjectMapper();
     private static final Set<Integer> OK = Set.of(200);
     private static final Set<Integer> CREATED = Set.of(201);
     private static final Set<Integer> CLIENT_FAILURE = Set.of(400, 403, 404, 409, 422);
@@ -35,6 +55,7 @@ final class StoreTerminalAcceptanceScenarios {
     enum ConnectionStatusOnlyChange {
         TERMINAL_DISABLED,
         GROUP_WORKSPACE_DISABLED,
+        STORE_DISABLED,
         STORE_VOIDED
     }
 
@@ -162,41 +183,33 @@ final class StoreTerminalAcceptanceScenarios {
                         OK);
                 assertEquals("DISABLED", disabled.json().path("status").asText());
             }
-            case STORE_VOIDED -> {
-                BackendAcceptanceTest.Fixture statusActor =
-                        host.projectUserFixture(fixture.fixture(), Set.of("BC-ORG-STORE-EDIT", "BC-ORG-STORE-STATUS"));
-                host.completeInvitation(context, statusActor);
-                BackendAcceptanceTest.Session statusSession =
-                        selectStore(context, statusActor, host.login(context, statusActor));
-                String path =
-                        "/api/operations/group-workspaces/" + fixture.fixture().groupWorkspaceKey()
-                                + "/organization/stores/" + fixture.fixture().storeId() + "/status";
-                BackendAcceptanceTest.Response disabled = context.post(
-                        BackendAcceptanceTest.OPERATIONS_ORGANIZATION_STORE_STATUS,
-                        path,
-                        statusSession.cookie(),
-                        Map.of(
-                                "targetStatus",
-                                "DISABLED",
-                                "expectedVersion",
-                                host.organizationStoreVersion(fixture.fixture().storeId())),
-                        idempotency(),
-                        OK);
-                assertEquals("DISABLED", disabled.json().path("status").asText());
-                BackendAcceptanceTest.Response voided = context.post(
-                        BackendAcceptanceTest.OPERATIONS_ORGANIZATION_STORE_STATUS,
-                        path,
-                        statusSession.cookie(),
-                        Map.of(
-                                "targetStatus",
-                                "VOIDED",
-                                "expectedVersion",
-                                host.organizationStoreVersion(fixture.fixture().storeId())),
-                        idempotency(),
-                        OK);
-                assertEquals("VOIDED", voided.json().path("status").asText());
-            }
+            case STORE_DISABLED -> transitionStoreStatus(context, fixture, "DISABLED");
+            case STORE_VOIDED -> transitionStoreStatus(context, fixture, "VOIDED");
         }
+    }
+
+    private void transitionStoreStatus(
+            BackendAcceptanceTest.ScenarioContext context, ConnectionFixture fixture, String targetStatus)
+            throws Exception {
+        BackendAcceptanceTest.Fixture statusActor =
+                host.projectUserFixture(fixture.fixture(), Set.of("BC-ORG-STORE-EDIT", "BC-ORG-STORE-STATUS"));
+        host.completeInvitation(context, statusActor);
+        BackendAcceptanceTest.Session statusSession =
+                selectStore(context, statusActor, host.login(context, statusActor));
+        String path = "/api/operations/group-workspaces/" + fixture.fixture().groupWorkspaceKey()
+                + "/organization/stores/" + fixture.fixture().storeId() + "/status";
+        BackendAcceptanceTest.Response changed = context.post(
+                BackendAcceptanceTest.OPERATIONS_ORGANIZATION_STORE_STATUS,
+                path,
+                statusSession.cookie(),
+                Map.of(
+                        "targetStatus",
+                        targetStatus,
+                        "expectedVersion",
+                        host.organizationStoreVersion(fixture.fixture().storeId())),
+                idempotency(),
+                OK);
+        assertEquals(targetStatus, changed.json().path("status").asText());
     }
 
     @AcceptanceScenario(
@@ -405,12 +418,442 @@ final class StoreTerminalAcceptanceScenarios {
     }
 
     @AcceptanceScenario(
+            id = "storeTerminalConcurrentDeviceActivation",
+            module = "TERMINAL_BINDING",
+            operation = "storeTerminalConcurrentDeviceActivation")
+    void storeTerminalConcurrentDeviceActivation(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminalRef = create(context, store, "双实例并发激活终端", "59000007");
+        String activationCode =
+                readDetail(context, store, terminalRef).path("activationCode").asText();
+        BackendAcceptanceTest.ScenarioContext secondContext =
+                host.new ScenarioContext(null, "performance.normal-path", host.secondBusinessPort());
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService callers = Executors.newFixedThreadPool(2);
+        String firstDevice = "concurrent-device-a-" + UUID.randomUUID();
+        String secondDevice = "concurrent-device-b-" + UUID.randomUUID();
+
+        try {
+            Future<BackendAcceptanceTest.Response> first = callers.submit(() -> {
+                ready.countDown();
+                if (!start.await(10, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("ACTIVATION_RACE_START_TIMEOUT");
+                }
+                return context.post(
+                        BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                        terminalActivationPath(store.fixture()),
+                        null,
+                        activationBody(activationCode, firstDevice, newCredentialSecret()),
+                        Set.of(200, 409));
+            });
+            Future<BackendAcceptanceTest.Response> second = callers.submit(() -> {
+                ready.countDown();
+                if (!start.await(10, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("ACTIVATION_RACE_START_TIMEOUT");
+                }
+                return secondContext.post(
+                        BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                        terminalActivationPath(store.fixture()),
+                        null,
+                        activationBody(activationCode, secondDevice, newCredentialSecret()),
+                        Set.of(200, 409));
+            });
+            assertTrue(ready.await(10, TimeUnit.SECONDS), "ACTIVATION_RACE_CALLERS_NOT_READY");
+            start.countDown();
+
+            BackendAcceptanceTest.Response firstResult = first.get(30, TimeUnit.SECONDS);
+            BackendAcceptanceTest.Response secondResult = second.get(30, TimeUnit.SECONDS);
+            assertNotEquals(firstResult.status(), secondResult.status(), "ACTIVATION_RACE_DID_NOT_SELECT_ONE_WINNER");
+            BackendAcceptanceTest.Response loser = firstResult.status() == 200 ? secondResult : firstResult;
+            assertProblem(loser, "TERMINAL_BINDING_ALREADY_BOUND");
+            JsonNode detail = readDetail(context, store, terminalRef);
+            assertEquals("ACTIVE", detail.path("binding").path("status").asText());
+            assertEquals(1, detail.path("binding").path("generation").asLong());
+            assertEquals(1, terminalBindingAuditTotal(context, store, terminalRef));
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TERMINAL_ACTIVATION_RACE status=PASS "
+                            + "primaryPort=%d secondaryPort=%d winnerStatus=%d loserProblem=%s%n",
+                    host.primaryBusinessPort(),
+                    host.secondBusinessPort(),
+                    firstResult.status() == 200 ? firstResult.status() : secondResult.status(),
+                    loser.problemCode());
+        } finally {
+            callers.shutdownNow();
+            if (!callers.awaitTermination(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("ACTIVATION_RACE_CALLERS_CLEANUP_FAILED");
+            }
+        }
+    }
+
+    @AcceptanceScenario(
+            id = "storeTerminalActivationReplayAfterLostResponse",
+            module = "TERMINAL_BINDING",
+            operation = "storeTerminalActivationReplayAfterLostResponse")
+    void storeTerminalActivationReplayAfterLostResponse(BackendAcceptanceTest.ScenarioContext context)
+            throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminalRef = create(context, store, "激活成功应答丢失重试", "59000008");
+        String activationCode =
+                readDetail(context, store, terminalRef).path("activationCode").asText();
+        String deviceId = "lost-response-device-" + UUID.randomUUID();
+        String secret = newCredentialSecret();
+        byte[] sameRequest = JSON.writeValueAsBytes(activationBody(activationCode, deviceId, secret));
+        String activationPath = terminalActivationPath(store.fixture());
+        long auditBefore = terminalBindingAuditTotal(context, store, terminalRef);
+
+        Socket droppedResponse = context.postWithoutReadingResponse(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION, activationPath, sameRequest);
+        droppedResponse.close();
+        awaitActiveBindingGeneration(store, terminalRef, 1);
+
+        BackendAcceptanceTest.ScenarioContext otherAddress =
+                host.new ScenarioContext(null, "performance.normal-path", host.secondBusinessPort());
+        try (Connection notifications = openTerminalBindingNotificationConnection()) {
+            assertNoReplayNotification(notifications, terminalRef, "V-B13_INITIAL_ACTIVATION_EMITTED_REVOCATION");
+            TerminalBindingReplayState activeState = readTerminalBindingReplayState(store, terminalRef);
+            long replayAuditCount = auditBefore + 1;
+            BackendAcceptanceTest.Response commandRetry = context.postSerializedJson(
+                    BackendAcceptanceTest.TERMINAL_ACTIVATION, activationPath, sameRequest, OK);
+            assertEquals(1, commandRetry.json().path("bindingGeneration").asLong());
+            assertReplayHasNoEffects(
+                    notifications, store, terminalRef, replayAuditCount, activeState, "V-B13_SAME_COMMAND_RETRY");
+            BackendAcceptanceTest.Response executorRetry = otherAddress.postSerializedJson(
+                    BackendAcceptanceTest.TERMINAL_ACTIVATION, activationPath, sameRequest, OK);
+            assertEquals(1, executorRetry.json().path("bindingGeneration").asLong());
+            assertReplayHasNoEffects(
+                    notifications, store, terminalRef, replayAuditCount, activeState, "V-B13_OTHER_ADDRESS_RETRY");
+
+            transitionTerminalStatus(context, store, terminalRef, "DISABLED");
+            TerminalBindingReplayState disabledTerminalState = readTerminalBindingReplayState(store, terminalRef);
+            BackendAcceptanceTest.Response retryAfterTerminalDisable = context.postSerializedJson(
+                    BackendAcceptanceTest.TERMINAL_ACTIVATION, activationPath, sameRequest, OK);
+            assertEquals(
+                    1,
+                    retryAfterTerminalDisable.json().path("bindingGeneration").asLong());
+            assertReplayHasNoEffects(
+                    notifications,
+                    store,
+                    terminalRef,
+                    replayAuditCount,
+                    disabledTerminalState,
+                    "V-B13_SAME_COMMAND_RETRY_AFTER_TERMINAL_DISABLE");
+            BackendAcceptanceTest.Response addressRetryAfterTerminalDisable = otherAddress.postSerializedJson(
+                    BackendAcceptanceTest.TERMINAL_ACTIVATION, activationPath, sameRequest, OK);
+            assertEquals(
+                    1,
+                    addressRetryAfterTerminalDisable
+                            .json()
+                            .path("bindingGeneration")
+                            .asLong());
+            assertReplayHasNoEffects(
+                    notifications,
+                    store,
+                    terminalRef,
+                    replayAuditCount,
+                    disabledTerminalState,
+                    "V-B13_OTHER_ADDRESS_RETRY_AFTER_TERMINAL_DISABLE");
+        }
+
+        StoreContext workspaceStore = enabledStore(context);
+        UUID workspaceTerminalRef = create(context, workspaceStore, "集团停用后激活重试", "59000009");
+        String workspaceActivationCode = readDetail(context, workspaceStore, workspaceTerminalRef)
+                .path("activationCode")
+                .asText();
+        String workspaceDeviceId = "lost-response-workspace-device-" + UUID.randomUUID();
+        String workspaceSecret = newCredentialSecret();
+        byte[] workspaceRequest =
+                JSON.writeValueAsBytes(activationBody(workspaceActivationCode, workspaceDeviceId, workspaceSecret));
+        String workspacePath = terminalActivationPath(workspaceStore.fixture());
+        long workspaceAuditBefore = bindingAuditCount(workspaceStore.fixture(), workspaceTerminalRef);
+        Socket droppedWorkspaceResponse = context.postWithoutReadingResponse(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION, workspacePath, workspaceRequest);
+        droppedWorkspaceResponse.close();
+        awaitActiveBindingGeneration(workspaceStore, workspaceTerminalRef, 1);
+        try (Connection notifications = openTerminalBindingNotificationConnection()) {
+            assertNoReplayNotification(
+                    notifications, workspaceTerminalRef, "V-B13_GROUP_INITIAL_ACTIVATION_EMITTED_REVOCATION");
+            long replayWorkspaceAuditCount = workspaceAuditBefore + 1;
+            performConnectionStatusOnlyChange(
+                    context,
+                    new ConnectionFixture(
+                            workspaceStore.fixture(),
+                            workspaceStore.session(),
+                            workspaceTerminalRef,
+                            workspaceActivationCode,
+                            workspaceDeviceId,
+                            workspaceSecret,
+                            1),
+                    ConnectionStatusOnlyChange.GROUP_WORKSPACE_DISABLED);
+            TerminalBindingReplayState disabledWorkspaceState =
+                    readTerminalBindingReplayState(workspaceStore, workspaceTerminalRef);
+            BackendAcceptanceTest.Response retryAfterWorkspaceDisable = context.postSerializedJson(
+                    BackendAcceptanceTest.TERMINAL_ACTIVATION, workspacePath, workspaceRequest, OK);
+            assertEquals(
+                    1,
+                    retryAfterWorkspaceDisable.json().path("bindingGeneration").asLong());
+            assertReplayHasNoEffects(
+                    notifications,
+                    workspaceStore,
+                    workspaceTerminalRef,
+                    replayWorkspaceAuditCount,
+                    disabledWorkspaceState,
+                    "V-B13_SAME_COMMAND_RETRY_AFTER_GROUP_DISABLE");
+            BackendAcceptanceTest.Response addressRetryAfterWorkspaceDisable = otherAddress.postSerializedJson(
+                    BackendAcceptanceTest.TERMINAL_ACTIVATION, workspacePath, workspaceRequest, OK);
+            assertEquals(
+                    1,
+                    addressRetryAfterWorkspaceDisable
+                            .json()
+                            .path("bindingGeneration")
+                            .asLong());
+            assertReplayHasNoEffects(
+                    notifications,
+                    workspaceStore,
+                    workspaceTerminalRef,
+                    replayWorkspaceAuditCount,
+                    disabledWorkspaceState,
+                    "V-B13_OTHER_ADDRESS_RETRY_AFTER_GROUP_DISABLE");
+        }
+
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_TERMINAL_ACTIVATION_REPLAY status=PASS "
+                        + "retryAddressPort=%d retryForms=SECOND_COMMAND_AND_OTHER_ADDRESS "
+                        + "terminalDisable=REPLAY groupDisable=REPLAY notificationChecks=PASS%n",
+                host.secondBusinessPort());
+    }
+
+    private static Connection openTerminalBindingNotificationConnection() throws SQLException {
+        Connection connection = DriverManager.getConnection(
+                BackendAcceptanceTest.POSTGRES.getJdbcUrl(),
+                BackendAcceptanceTest.POSTGRES.getUsername(),
+                BackendAcceptanceTest.POSTGRES.getPassword());
+        boolean listening = false;
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("LISTEN terminal_binding_events");
+            listening = true;
+            return connection;
+        } finally {
+            if (!listening) connection.close();
+        }
+    }
+
+    private void assertReplayHasNoEffects(
+            Connection notifications,
+            StoreContext store,
+            UUID terminalRef,
+            long auditBefore,
+            TerminalBindingReplayState stateBefore,
+            String marker)
+            throws SQLException {
+        assertEquals(stateBefore, readTerminalBindingReplayState(store, terminalRef), marker + "_BINDING_ROW_CHANGED");
+        assertEquals(auditBefore, bindingAuditCount(store.fixture(), terminalRef), marker + "_AUDIT_WRITTEN");
+        assertNoReplayNotification(notifications, terminalRef, marker + "_NOTIFICATION_WRITTEN");
+    }
+
+    private void assertNoReplayNotification(Connection connection, UUID terminalRef, String marker)
+            throws SQLException {
+        PGNotification[] notifications = connection.unwrap(PGConnection.class).getNotifications(250);
+        if (notifications == null) return;
+        String terminalMarker = "\"terminalRef\":\"" + terminalRef + "\"";
+        for (PGNotification notification : notifications) {
+            if ("terminal_binding_events".equals(notification.getName())
+                    && notification.getParameter() != null
+                    && notification.getParameter().contains(terminalMarker)) {
+                assertFalse(true, marker);
+            }
+        }
+    }
+
+    private TerminalBindingReplayState readTerminalBindingReplayState(StoreContext store, UUID terminalRef) {
+        return new TerminalBindingReplayState(host.text(
+                "SELECT generation::text || ':' || binding_status || ':' || activated_at_epoch_millis::text "
+                        + "|| ':' || xmin::text FROM terminal_binding.latest_binding "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=?",
+                store.fixture().workspaceUuid(),
+                store.fixture().groupWorkspaceKey(),
+                terminalRef));
+    }
+
+    private record TerminalBindingReplayState(String rowStamp) {}
+
+    @AcceptanceScenario(
+            id = "storeTerminalActivationLifecycleLockInterleavings",
+            module = "TERMINAL_BINDING",
+            operation = "storeTerminalActivationLifecycleLockInterleavings")
+    void storeTerminalActivationLifecycleLockInterleavings(BackendAcceptanceTest.ScenarioContext context)
+            throws Exception {
+        runActivationDisableInterleaving(context, true);
+        runActivationDisableInterleaving(context, false);
+        runActivationVoidInterleaving(context, true);
+        runActivationVoidInterleaving(context, false);
+    }
+
+    private void runActivationDisableInterleaving(
+            BackendAcceptanceTest.ScenarioContext context, boolean activationFirst) throws Exception {
+        StoreContext store = enabledStore(context);
+        String name = "激活与停用行锁交错";
+        String externalId = activationFirst ? "59000010" : "59000011";
+        UUID terminalRef = create(context, store, name, externalId);
+        String code =
+                readDetail(context, store, terminalRef).path("activationCode").asText();
+        String deviceId = "disable-race-device-" + UUID.randomUUID();
+        String secret = newCredentialSecret();
+        long auditBefore = bindingAuditCount(store.fixture(), terminalRef);
+        runActivationStatusWaitQueue(context, store, terminalRef, code, deviceId, secret, "DISABLED", activationFirst);
+
+        long bindingRows = host.count(
+                "SELECT count(*) FROM terminal_binding.latest_binding "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=?",
+                store.fixture().workspaceUuid(),
+                store.fixture().groupWorkspaceKey(),
+                terminalRef);
+        if (activationFirst) {
+            assertEquals(1L, bindingRows, "V-B6_ACTIVATION_BEFORE_DISABLE_BINDING_MISSING");
+            assertEquals(
+                    "ACTIVE",
+                    host.text(
+                            "SELECT binding_status FROM terminal_binding.latest_binding "
+                                    + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=?",
+                            store.fixture().workspaceUuid(),
+                            store.fixture().groupWorkspaceKey(),
+                            terminalRef),
+                    "V-B6_DISABLE_MUST_NOT_END_BINDING");
+            assertEquals(auditBefore + 1, bindingAuditCount(store.fixture(), terminalRef));
+        } else {
+            assertEquals(0L, bindingRows, "V-B6_ACTIVATION_AFTER_DISABLE_MUST_NOT_BIND");
+            assertEquals(auditBefore, bindingAuditCount(store.fixture(), terminalRef));
+        }
+    }
+
+    private void runActivationVoidInterleaving(BackendAcceptanceTest.ScenarioContext context, boolean activationFirst)
+            throws Exception {
+        StoreContext store = enabledStore(context);
+        String name = "激活与作废行锁交错";
+        String externalId = activationFirst ? "59000012" : "59000013";
+        UUID terminalRef = create(context, store, name, externalId);
+        String code =
+                readDetail(context, store, terminalRef).path("activationCode").asText();
+        String deviceId = "void-race-device-" + UUID.randomUUID();
+        String initialSecret = newCredentialSecret();
+        BackendAcceptanceTest.Response initial = activationAttempt(
+                context, store.fixture().groupWorkspaceKey(), code, deviceId, initialSecret, "laptop", OK);
+        assertEquals(1, initial.json().path("bindingGeneration").asLong());
+        transitionTerminalStatus(context, store, terminalRef, "DISABLED");
+        String nextSecret = newCredentialSecret();
+        long auditBeforeVoidRace = bindingAuditCount(store.fixture(), terminalRef);
+        runActivationStatusWaitQueue(
+                context, store, terminalRef, code, deviceId, nextSecret, "VOIDED", activationFirst);
+
+        assertEquals(
+                "VOIDED",
+                host.text(
+                        "SELECT status FROM store_terminal.terminal "
+                                + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=?",
+                        store.fixture().workspaceUuid(),
+                        store.fixture().groupWorkspaceKey(),
+                        terminalRef),
+                "V-B6_VOID_INTERLEAVING_TERMINAL_STATUS_INVALID");
+        assertEquals(
+                "ENDED",
+                host.text(
+                        "SELECT binding_status FROM terminal_binding.latest_binding "
+                                + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=?",
+                        store.fixture().workspaceUuid(),
+                        store.fixture().groupWorkspaceKey(),
+                        terminalRef),
+                "V-B6_VOID_MUST_END_CURRENT_BINDING");
+        assertEquals(
+                activationFirst ? 2 : 1,
+                host.count(
+                        "SELECT generation FROM terminal_binding.latest_binding "
+                                + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=?",
+                        store.fixture().workspaceUuid(),
+                        store.fixture().groupWorkspaceKey(),
+                        terminalRef),
+                "V-B6_VOID_INTERLEAVING_GENERATION_INVALID");
+        assertEquals(
+                auditBeforeVoidRace + (activationFirst ? 2 : 1),
+                bindingAuditCount(store.fixture(), terminalRef),
+                "V-B6_VOID_INTERLEAVING_AUDIT_COUNT_INVALID");
+    }
+
+    private void runActivationStatusWaitQueue(
+            BackendAcceptanceTest.ScenarioContext context,
+            StoreContext store,
+            UUID terminalRef,
+            String activationCode,
+            String deviceId,
+            String secret,
+            String targetStatus,
+            boolean activationFirst)
+            throws Exception {
+        BackendAcceptanceTest.ScenarioContext activationContext =
+                host.new ScenarioContext(null, "performance.normal-path", host.primaryBusinessPort());
+        BackendAcceptanceTest.ScenarioContext statusContext =
+                host.new ScenarioContext(null, "performance.normal-path", host.secondBusinessPort());
+        ExecutorService callers = Executors.newFixedThreadPool(2);
+        try (var lock = host.holdTerminalRowLockForAcceptance(store.fixture(), terminalRef)) {
+            Future<BackendAcceptanceTest.Response> activation = null;
+            Future<?> status = null;
+            if (activationFirst) {
+                activation = callers.submit(() -> activationContext.post(
+                        BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                        terminalActivationPath(store.fixture()),
+                        null,
+                        activationBody(activationCode, deviceId, secret),
+                        Map.of(),
+                        Set.of(200, 403, 409, 422)));
+                host.awaitTerminalRowLockWaiters(1, java.time.Duration.ofSeconds(10));
+                status = callers.submit(() -> {
+                    transitionTerminalStatus(statusContext, store, terminalRef, targetStatus);
+                    return null;
+                });
+                host.awaitTerminalRowLockWaiters(2, java.time.Duration.ofSeconds(10));
+            } else {
+                status = callers.submit(() -> {
+                    transitionTerminalStatus(statusContext, store, terminalRef, targetStatus);
+                    return null;
+                });
+                host.awaitTerminalRowLockWaiters(1, java.time.Duration.ofSeconds(10));
+                activation = callers.submit(() -> activationContext.post(
+                        BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                        terminalActivationPath(store.fixture()),
+                        null,
+                        activationBody(activationCode, deviceId, secret),
+                        Map.of(),
+                        Set.of(200, 403, 409, 422)));
+                host.awaitTerminalRowLockWaiters(2, java.time.Duration.ofSeconds(10));
+            }
+            lock.commit();
+            BackendAcceptanceTest.Response activationResponse = activation.get(30, TimeUnit.SECONDS);
+            status.get(30, TimeUnit.SECONDS);
+            if (activationFirst) {
+                assertEquals(200, activationResponse.status(), "V-B6_ACTIVATION_FIRST_MUST_COMMIT");
+            } else if ("VOIDED".equals(targetStatus)) {
+                assertProblem(activationResponse, "STORE_TERMINAL_VOIDED_IMMUTABLE");
+            } else {
+                assertProblem(activationResponse, "STORE_TERMINAL_DISABLED");
+            }
+        } finally {
+            callers.shutdownNow();
+            if (!callers.awaitTermination(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("ACTIVATION_STATUS_RACE_CALLERS_CLEANUP_FAILED");
+            }
+        }
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_ACTIVATION_STATUS_RACE status=PASS target=%s order=%s terminalRef=%s%n",
+                targetStatus, activationFirst ? "ACTIVATION_THEN_STATUS" : "STATUS_THEN_ACTIVATION", terminalRef);
+    }
+
+    @AcceptanceScenario(
             id = "storeTerminalActivationBusinessPrecedence",
             module = "TERMINAL_BINDING",
             operation = "storeTerminalActivationBusinessPrecedence")
     void storeTerminalActivationBusinessPrecedence(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         StoreContext store = enabledStore(context);
-        UUID terminalRef = create(context, store, "激活业务判定终端", "59000002");
+        String searchMarker = "SEARCHABLE_SAFE_MARKER_" + UUID.randomUUID();
+        UUID terminalRef = create(context, store, searchMarker, null);
         String activationCode =
                 readDetail(context, store, terminalRef).path("activationCode").asText();
         String deviceId = "terminal-device-" + UUID.randomUUID();
@@ -443,6 +886,7 @@ final class StoreTerminalAcceptanceScenarios {
                 Map.of(),
                 OK);
         assertEquals(1, firstActivation.json().path("bindingGeneration").asLong());
+        assertActivationSecretsNotSearchable(store, terminalRef, searchMarker, activationCode, deviceId, secret);
 
         BackendAcceptanceTest.Fixture statusActor =
                 host.projectUserFixture(store.fixture(), Set.of("BC-ORG-STORE-EDIT", "BC-ORG-STORE-STATUS"));
@@ -504,6 +948,108 @@ final class StoreTerminalAcceptanceScenarios {
         assertEquals("ACTIVE", detail.path("binding").path("status").asText());
         assertEquals(2, detail.path("binding").path("generation").asLong());
         assertEquals(2, terminalBindingAuditTotal(context, store, terminalRef));
+    }
+
+    private void assertActivationSecretsNotSearchable(
+            StoreContext store,
+            UUID terminalRef,
+            String searchMarker,
+            String activationCode,
+            String deviceId,
+            String credentialSecret)
+            throws Exception {
+        String runDirectoryValue = System.getenv("V2S_BACKEND_ACCEPTANCE_RUN_DIRECTORY");
+        assertTrue(runDirectoryValue != null && !runDirectoryValue.isBlank(), "V-B1_RUN_DIRECTORY_MISSING");
+        Path runDirectory = Path.of(runDirectoryValue).toAbsolutePath().normalize();
+        assertTrue(Files.isDirectory(runDirectory), "V-B1_RUN_DIRECTORY_INVALID");
+        Path markerFile = runDirectory.resolve("secret-search-marker-" + UUID.randomUUID() + ".txt");
+        Files.writeString(markerFile, searchMarker + "\n", StandardCharsets.UTF_8);
+        try {
+            String credential = "1." + credentialSecret;
+            List<String> protectedValues = List.of(
+                    credentialSecret,
+                    credential,
+                    Base64.getEncoder().encodeToString(credentialSecret.getBytes(StandardCharsets.UTF_8)),
+                    Base64.getEncoder().encodeToString(credential.getBytes(StandardCharsets.UTF_8)),
+                    HexFormat.of().formatHex(credentialSecret.getBytes(StandardCharsets.UTF_8)),
+                    activationCode,
+                    deviceId);
+            boolean markerFound = false;
+            try (var paths = Files.walk(runDirectory)) {
+                for (Path path : paths.filter(Files::isRegularFile).toList()) {
+                    String name = path.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
+                    if (!(name.endsWith(".log")
+                            || name.endsWith(".txt")
+                            || name.endsWith(".json")
+                            || name.endsWith(".jsonl")
+                            || name.endsWith(".xml")
+                            || name.endsWith(".out"))) continue;
+                    String contents = Files.readString(path, StandardCharsets.UTF_8);
+                    markerFound |= contents.contains(searchMarker);
+                    assertNoProtectedValues(contents, protectedValues, "V-B1_SECRET_IN_RUN_OUTPUT");
+                }
+            }
+            assertTrue(markerFound, "V-B1_MARKER_SEARCH_DID_NOT_FIND_SENTINEL");
+
+            String storeAudit = host.text(
+                    "SELECT COALESCE(string_agg(changes_json::text, ' '), '') "
+                            + "FROM store_terminal.audit_event WHERE entity_ref_text=?",
+                    terminalRef.toString());
+            String bindingAudit = host.text(
+                    "SELECT COALESCE(string_agg(changes_json::text, ' '), '') "
+                            + "FROM terminal_binding.audit_event WHERE entity_ref_text=?",
+                    terminalRef.toString());
+            String storeReceipts = host.text(
+                    "SELECT COALESCE(string_agg(COALESCE(response_json::text, ''), ' '), '') "
+                            + "FROM store_terminal.command_receipt WHERE workspace_uuid=? AND group_workspace_key=?",
+                    store.fixture().workspaceUuid(),
+                    store.fixture().groupWorkspaceKey());
+            String bindingReceipts = host.text(
+                    "SELECT COALESCE(string_agg(response_json::text, ' '), '') "
+                            + "FROM terminal_binding.command_receipt WHERE workspace_uuid=? AND group_workspace_key=?",
+                    store.fixture().workspaceUuid(),
+                    store.fixture().groupWorkspaceKey());
+            for (String searchable : List.of(storeAudit, bindingAudit, storeReceipts, bindingReceipts)) {
+                assertNoProtectedValues(searchable, protectedValues, "V-B1_SECRET_IN_AUDIT_OR_RECEIPT");
+            }
+
+            assertEquals(
+                    1L,
+                    host.count(
+                            "SELECT count(*) FROM store_terminal.terminal "
+                                    + "WHERE terminal_ref=? AND activation_code=?",
+                            terminalRef,
+                            activationCode),
+                    "V-B1_ACTIVATION_CODE_NOT_OWNED_BY_TERMINAL_ROW");
+            String terminalNonCodeFields = host.text(
+                    "SELECT name || '|' || name_normalized || '|' || configuration::text "
+                            + "FROM store_terminal.terminal WHERE terminal_ref=?",
+                    terminalRef);
+            assertFalse(terminalNonCodeFields.contains(activationCode), "V-B1_ACTIVATION_CODE_OUTSIDE_ITS_OWNER_FIELD");
+            String digest = host.text(
+                    "SELECT encode(credential_digest, 'hex') FROM terminal_binding.latest_binding "
+                            + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=?",
+                    store.fixture().workspaceUuid(),
+                    store.fixture().groupWorkspaceKey(),
+                    terminalRef);
+            byte[] secretBytes = Base64.getUrlDecoder().decode(credentialSecret);
+            String expectedDigest;
+            try {
+                expectedDigest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(secretBytes));
+            } finally {
+                Arrays.fill(secretBytes, (byte) 0);
+            }
+            assertEquals(expectedDigest, digest, "V-B1_STORED_CREDENTIAL_IS_NOT_SHA256_DIGEST");
+            assertNoProtectedValues(digest, protectedValues, "V-B1_RAW_CREDENTIAL_IN_BINDING_ROW");
+        } finally {
+            Files.deleteIfExists(markerFile);
+        }
+    }
+
+    private static void assertNoProtectedValues(String contents, List<String> protectedValues, String assertion) {
+        for (String protectedValue : protectedValues) {
+            assertFalse(contents.contains(protectedValue), assertion);
+        }
     }
 
     @AcceptanceScenario(
@@ -2351,6 +2897,35 @@ final class StoreTerminalAcceptanceScenarios {
                 .json()
                 .path("total")
                 .asLong();
+    }
+
+    private void awaitActiveBindingGeneration(StoreContext store, UUID terminalRef, long generation)
+            throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        long matches = 0;
+        do {
+            matches = host.count(
+                    "SELECT count(*) FROM terminal_binding.latest_binding "
+                            + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=? "
+                            + "AND generation=? AND binding_status='ACTIVE'",
+                    store.fixture().workspaceUuid(),
+                    store.fixture().groupWorkspaceKey(),
+                    terminalRef,
+                    generation);
+            if (matches == 1) return;
+            Thread.sleep(100);
+        } while (System.nanoTime() < deadline);
+        assertEquals(1L, matches, "V-B13_FIRST_ACTIVATION_COMMIT_NOT_VISIBLE");
+    }
+
+    private long bindingAuditCount(BackendAcceptanceTest.Fixture fixture, UUID terminalRef) {
+        return host.count(
+                "SELECT count(*) FROM terminal_binding.audit_event "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? "
+                        + "AND entity_type='TERMINAL_BINDING' AND entity_ref_text=?",
+                fixture.workspaceUuid(),
+                fixture.groupWorkspaceKey(),
+                terminalRef.toString());
     }
 
     private void transitionTerminalStatus(

@@ -23,7 +23,7 @@ export const useMemberForm = () => {
         definition: deskSystemFailureObservedCommand,
         payload: {operation: 'submit-member'},
       });
-    } catch (_error) {
+    } catch {
       // useDispatchCommand has already emitted the structured rejection diagnostic.
     }
   }, [dispatchCommand]);

@@ -68,7 +68,7 @@ public class StoreTerminalOwnerService implements StoreTerminalOwnerApi {
     private static final AuditChangePolicy REPLACED = new AuditChangePolicy(
             AuditEntityTypes.STORE_TERMINAL,
             "TERMINAL_REPLACED",
-            Set.of("name", "deviceType", "printers", "functions", "ranges", "scenes"));
+            Set.of("name", "printers", "functions", "ranges", "scenes"));
     private static final AuditChangePolicy STATUS_CHANGED =
             new AuditChangePolicy(AuditEntityTypes.STORE_TERMINAL, "TERMINAL_STATUS_CHANGED", Set.of("status"));
 

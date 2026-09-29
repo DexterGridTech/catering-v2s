@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     api(project(":apps:backend:catering-business-server:modules:audit-model"))
+    implementation(project(":apps:backend:catering-business-server:modules:execution-context"))
     implementation(project(":apps:backend:catering-business-server:modules:foundation"))
     implementation("org.springframework.boot:spring-boot-starter-jdbc:4.1.0")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.19.1")

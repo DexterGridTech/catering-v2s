@@ -247,7 +247,7 @@ const callNative = async <TCapability extends Capability>(
   try {
     const native = loadNativeModule();
     return parseNativeResult(expected, await operation(native));
-  } catch (_error) {
+  } catch {
     return bridgeFailure(expected);
   }
 };

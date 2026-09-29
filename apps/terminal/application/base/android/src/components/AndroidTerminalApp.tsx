@@ -1,6 +1,5 @@
 import {useEffect, useState, type ReactElement} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import type {NativeLoadingCapability} from '@catering-v2s/kernel-base-platform-ports';
 
 export type AndroidSurfaceForm = 'laptop' | 'mobile';
 
@@ -9,7 +8,6 @@ export type AndroidTerminalAppProps<TAssembly> = Readonly<{
   readonly surfaceForm?: AndroidSurfaceForm;
   readonly createAssembly: (input: Readonly<{readonly surfaceForm: AndroidSurfaceForm}>) => Promise<TAssembly>;
   readonly renderSurface: (assembly: TAssembly, displayIndex: 0 | 1) => ReactElement;
-  readonly nativeLoadingCapability: NativeLoadingCapability;
   readonly loadingTestID?: string;
   readonly loadingMessage?: string;
   readonly loadingBackgroundColor?: string;
@@ -31,7 +29,6 @@ export const AndroidTerminalApp = <TAssembly,>({
   surfaceForm = 'laptop',
   createAssembly,
   renderSurface,
-  nativeLoadingCapability,
   loadingTestID = 'application.base.android:loading',
   loadingMessage = '正在启动终端…',
   loadingBackgroundColor = '#f1f5f9',

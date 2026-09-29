@@ -40,6 +40,10 @@ const operationsStoreTerminalPathsPath = path.join(
   'contracts/openapi/paths/operations-admin/store-terminals.paths.json',
 );
 const terminalBindingSchemasPath = path.join(root, 'contracts/openapi-source/terminal-binding.schemas.json');
+const groupWorkspaceKeyPolicyPath = path.join(
+  root,
+  'apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/identity/GroupWorkspaceKey.java',
+);
 const workspaceAdministrationServicePath = path.join(
   root,
   'apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java',
@@ -620,7 +624,7 @@ test('registration-gate waits race client exit and retain credential-safe stage 
   assert.match(brokerSource, /TDS_REGISTRATION_GATE_OBSERVATION_DEADLINE_EXCEEDED/);
   assert.equal(
     (scenariosSource.match(/awaitRegistrationGateObservation\(/g) ?? []).length,
-    6,
+    8,
     'TDS_REGISTRATION_GATE_WAIT_CALLSITE_DENOMINATOR_MISMATCH',
   );
   assert.equal(
@@ -803,6 +807,12 @@ test('terminal activation and TDS routes agree on the workspace key grammar', ()
     'TERMINAL_ACTIVATION_RESULT_GROUP_WORKSPACE_KEY_GRAMMAR_MISMATCH',
   );
 
+  const groupWorkspaceKeyPolicy = readFileSync(groupWorkspaceKeyPolicyPath, 'utf8');
+  assert.match(
+    groupWorkspaceKeyPolicy,
+    /value\.matches\("\[A-Za-z0-9\]\[A-Za-z0-9_-\]\{0,63\}"\)/,
+    'TERMINAL_GROUP_WORKSPACE_KEY_POLICY_GRAMMAR_MISMATCH',
+  );
   for (const sourcePath of [
     workspaceAdministrationServicePath,
     terminalBindingOwnerApiPath,
@@ -810,9 +820,11 @@ test('terminal activation and TDS routes agree on the workspace key grammar', ()
     activateTerminalOperationPath,
     tdsWebSocketHandlerPath,
   ]) {
+    const source = readFileSync(sourcePath, 'utf8');
     assert.ok(
-      readFileSync(sourcePath, 'utf8').includes(javaPattern),
-      `TERMINAL_GROUP_WORKSPACE_KEY_RUNTIME_GRAMMAR_MISMATCH:${path.relative(root, sourcePath)}`,
+      source.includes('import com.catering.v2s.platform.identity.GroupWorkspaceKey;')
+        && source.includes('GroupWorkspaceKey.isValid('),
+      `TERMINAL_GROUP_WORKSPACE_KEY_RUNTIME_POLICY_NOT_REUSED:${path.relative(root, sourcePath)}`,
     );
   }
   const wireClientSource = readFileSync(terminalWireClientPath, 'utf8');

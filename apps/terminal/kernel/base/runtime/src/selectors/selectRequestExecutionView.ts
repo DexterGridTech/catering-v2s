@@ -7,7 +7,6 @@ import {
   peerRequestLedgerSliceNameForMode,
   readLiveRequestEnvelope,
   requestLedgerSliceNameForMode,
-  type RuntimeRequestLedgerState,
 } from '../features/slices/requestLedger';
 import {selectRuntimeInstanceMode} from './selectRuntimeInstanceMode';
 import {readRequestLedgerState} from './readRequestLedgerState';

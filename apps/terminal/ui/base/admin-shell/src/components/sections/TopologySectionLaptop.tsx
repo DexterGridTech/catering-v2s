@@ -66,16 +66,6 @@ const resultMessage = (operation: TopologyOperation, result: TopologyAdminComman
 const roleLabel = (facts: TopologyFacts | undefined): string =>
   facts?.instanceMode === 'SLAVE' ? '副机' : facts?.instanceMode === 'MASTER' ? '主机' : '角色未提供';
 
-const hostStateLabel = (facts: TopologyFacts | undefined, busy: TopologyOperation | null): string => {
-  if (busy === 'enable-host' && facts?.hostActual === 'running') return '正在关闭';
-  if (busy === 'enable-host') return '正在开启';
-  if (facts?.hostActual === 'starting') return '正在开启';
-  if (facts?.hostActual === 'running') return '服务已开启';
-  if (facts?.hostActual === 'stopping') return '正在关闭';
-  if (facts?.hostActual === 'error') return '服务开启失败';
-  return '服务未开启';
-};
-
 export const TopologySectionLaptop = ({context}: AdminSectionProps) => {
   const pageAvailability =
     context.topologyCapability?.getPageAvailability() ??

@@ -48,8 +48,11 @@ import {
 
 vi.mock('react-native', async importOriginal => {
   const actual = await importOriginal<typeof import('react-native')>();
-  const {withNativeTestHosts} = await import('../../../../../../tools/terminal-shared/rntl-native-test-host');
-  return withNativeTestHosts(actual);
+  const [{withNativeTestHosts}, reactRuntime] = await Promise.all([
+    import('../../../../../../tools/terminal-shared/rntl-native-test-host'),
+    import('react'),
+  ]);
+  return withNativeTestHosts(actual, reactRuntime);
 });
 
 type TestWallpaperConsoleAssemblyInput = Omit<
@@ -366,18 +369,9 @@ describe('sample2 wallpaper console assembly', () => {
       );
       expect(() => createSurfaceForDisplayIndex(mobile, 1)).toThrow(/unavailable for mobile/);
     } finally {
-      if (laptopPrimary !== undefined)
-        await act(async () => {
-          laptopPrimary!.unmount();
-        });
-      if (laptopSecondary !== undefined)
-        await act(async () => {
-          laptopSecondary!.unmount();
-        });
-      if (mobilePrimary !== undefined)
-        await act(async () => {
-          mobilePrimary!.unmount();
-        });
+      if (laptopPrimary !== undefined) await laptopPrimary.unmount();
+      if (laptopSecondary !== undefined) await laptopSecondary.unmount();
+      if (mobilePrimary !== undefined) await mobilePrimary.unmount();
       releaseRuntimeForTest(laptop.runtime);
       releaseRuntimeForTest(mobile.runtime);
     }
@@ -431,10 +425,7 @@ describe('sample2 wallpaper console assembly', () => {
       expect(complete?.data).toHaveProperty('primaryContentFailure');
       expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false);
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -472,10 +463,7 @@ describe('sample2 wallpaper console assembly', () => {
       });
       expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false);
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -497,9 +485,7 @@ describe('sample2 wallpaper console assembly', () => {
       expect(events.filter(event => event.event === 'startup.ready-dispatch-failed')).toHaveLength(1);
       expect(events.find(event => event.event === 'startup.ready-dispatch-failed')?.data?.errorName).toBe('Error');
 
-      await act(async () => {
-        renderer!.unmount();
-      });
+      await renderer!.unmount();
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 0));
       await measurePrimarySurface(renderer);
       await reportPrimaryReadyLayout(renderer, PRIMARY_FRAME);
@@ -510,10 +496,7 @@ describe('sample2 wallpaper console assembly', () => {
         events.filter(event => event.event === 'startup.ready-dispatch-result').map(event => event.data?.status),
       ).toEqual(['error', 'completed']);
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -568,10 +551,7 @@ describe('sample2 wallpaper console assembly', () => {
         }
       }
     } finally {
-      for (const renderer of renderers)
-        await act(async () => {
-          renderer.unmount();
-        });
+      for (const renderer of renderers) await renderer.unmount();
       for (const assembly of assemblies) releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -632,10 +612,7 @@ describe('sample2 wallpaper console assembly', () => {
         );
       }
     } finally {
-      for (const renderer of renderers)
-        await act(async () => {
-          renderer.unmount();
-        });
+      for (const renderer of renderers) await renderer.unmount();
       for (const assembly of assemblies) releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -830,10 +807,8 @@ describe('sample2 wallpaper console assembly', () => {
       expect(queryNodes(primary, wallpaperPickerTestIds.root)).toHaveLength(0);
 
       const firstSource = getNode(primary, 'sample.wallpaper.background').props.source;
-      await act(async () => {
-        primary!.unmount();
-        secondary!.unmount();
-      });
+      await primary.unmount();
+      await secondary.unmount();
       primary = undefined;
       secondary = undefined;
 
@@ -845,14 +820,8 @@ describe('sample2 wallpaper console assembly', () => {
       expect(nextPrimarySource).not.toBe(firstSource);
       expect(nextPrimarySource).toBe(getNode(secondary, 'sample.wallpaper.background').props.source);
     } finally {
-      if (primary !== undefined)
-        await act(async () => {
-          primary!.unmount();
-        });
-      if (secondary !== undefined)
-        await act(async () => {
-          secondary!.unmount();
-        });
+      if (primary !== undefined) await primary.unmount();
+      if (secondary !== undefined) await secondary.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -873,9 +842,7 @@ describe('sample2 wallpaper console assembly', () => {
       await assembly.runtime.dispatchCommand(sessionRestoredAnonymousCommand, {}, dispatchOptions());
       waiting = await mount(createSurfaceForDisplayIndex(assembly, 1));
       expect(containerFor(waiting, 'sample.wallpaper-console.waiting').props.className).toContain('flex-1 p-6 gap-4');
-      await act(async () => {
-        waiting!.unmount();
-      });
+      await waiting.unmount();
       waiting = undefined;
 
       await assembly.runtime.dispatchCommand(loginSucceededCommand, {operatorName: 'Alice'}, dispatchOptions());
@@ -884,18 +851,9 @@ describe('sample2 wallpaper console assembly', () => {
       expect(containerFor(primary, wallpaperPickerTestIds.root).props.className).toContain('flex-1 p-6 gap-4');
       expect(containerFor(secondary, 'sample.wallpaper-console.welcome').props.className).toContain('flex-1 p-6 gap-4');
     } finally {
-      if (waiting !== undefined)
-        await act(async () => {
-          waiting!.unmount();
-        });
-      if (primary !== undefined)
-        await act(async () => {
-          primary!.unmount();
-        });
-      if (secondary !== undefined)
-        await act(async () => {
-          secondary!.unmount();
-        });
+      if (waiting !== undefined) await waiting.unmount();
+      if (primary !== undefined) await primary.unmount();
+      if (secondary !== undefined) await secondary.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -921,10 +879,7 @@ describe('sample2 wallpaper console assembly', () => {
       expect(getNode(renderer, wallpaperPickerTestIds.root)).toBeDefined();
       expect(selectLayers(assembly.runtime.getState(), 'PRIMARY')).toEqual([]);
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       releaseRuntimeForTest(assembly.runtime);
     }
   });
@@ -993,10 +948,7 @@ describe('sample2 wallpaper console assembly', () => {
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
       expect(getNode(renderer, wallpaperPickerTestIds.confirm).props.disabled).toBe(false);
     } finally {
-      if (renderer !== undefined)
-        await act(async () => {
-          renderer!.unmount();
-        });
+      if (renderer !== undefined) await renderer!.unmount();
       if (firstAssembly !== undefined) releaseRuntimeForTest(firstAssembly.runtime);
       if (secondAssembly !== undefined) releaseRuntimeForTest(secondAssembly.runtime);
     }

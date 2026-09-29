@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import com.catering.v2s.terminalbinding.domain.TerminalCredentialDigest;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HashSet;
@@ -88,17 +89,34 @@ class TerminalConnectionFrameCodecTest {
     }
 
     @Test
-    void rejectsTrailingJsonAndInputsBeyondJacksonWireConstraints() {
+    void ignoresUnknownStructuredFieldsWithinTheWireLimit() {
+        String validPing = "{\"type\":\"PING\",\"seq\":4,\"clientTs\":\"2026-09-26T12:00:00Z\",\"lastRttMs\":12.5}";
+        String unknownFieldValue = "{\"items\":[" + "1,".repeat(63) + "1],"
+                + "\"nested\":{\"first\":{\"second\":{\"third\":{\"enabled\":true}}}},"
+                + "\"longText\":\"" + "x".repeat(4_096) + "\","
+                + "\"longNumber\":" + "7".repeat(256) + "}";
+        String frame = validPing.substring(0, validPing.length() - 1)
+                + ",\"futureField\":" + unknownFieldValue + "}";
+
+        assertThat(frame.getBytes(StandardCharsets.UTF_8).length)
+                .isLessThanOrEqualTo(TdsWireJsonConfiguration.MAX_WIRE_JSON_DOCUMENT_CHARS);
+        assertThat(codec.ping(frame).sequence()).isEqualTo(4);
+    }
+
+    @Test
+    void keepsTrailingJsonNestingAndMessageSizeBounds() {
         String validPing = "{\"type\":\"PING\",\"seq\":4,\"clientTs\":\"2026-09-26T12:00:00Z\",\"lastRttMs\":12.5}";
         assertInvalidPing(validPing + " {}");
 
-        String manyUnknownFields = validPing.substring(0, validPing.length() - 1)
-                + ",\"x1\":0,\"x2\":0,\"x3\":0,\"x4\":0,\"x5\":0,\"x6\":0,\"x7\":0,\"x8\":0,"
-                + "\"x9\":0,\"x10\":0,\"x11\":0,\"x12\":0,\"x13\":0,\"x14\":0,\"x15\":0,\"x16\":0}";
-        assertInvalidPing(manyUnknownFields);
+        String overDepthValue = "[".repeat(TdsWireJsonConfiguration.MAX_WIRE_JSON_DEPTH)
+                + "0" + "]".repeat(TdsWireJsonConfiguration.MAX_WIRE_JSON_DEPTH);
+        String overDepth = validPing.substring(0, validPing.length() - 1)
+                + ",\"futureField\":" + overDepthValue + "}";
+        assertInvalidPing(overDepth);
 
-        String nestedUnknownField = validPing.substring(0, validPing.length() - 1) + ",\"x\":{\"y\":{}}}";
-        assertInvalidPing(nestedUnknownField);
+        String oversized = validPing.substring(0, validPing.length() - 1)
+                + ",\"futureField\":\"" + "x".repeat(TdsWireJsonConfiguration.MAX_WIRE_JSON_DOCUMENT_CHARS) + "\"}";
+        assertThatIllegalArgumentException().isThrownBy(() -> codec.ping(oversized));
     }
 
     @Test

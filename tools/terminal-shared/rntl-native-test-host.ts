@@ -1,68 +1,49 @@
-import {Component, createElement, forwardRef, type ForwardedRef} from 'react';
-
 export type NativeTestHostProps = Readonly<Record<string, unknown>>;
 export type NativeTestRefFactory = (hostName: string, props: NativeTestHostProps) => unknown;
 
 let refFactory: NativeTestRefFactory = () => ({});
+let nativeHandlesByRef = new WeakMap<object, unknown>();
 
 export const setNativeTestRefFactory = (factory: NativeTestRefFactory): void => {
   refFactory = factory;
+  nativeHandlesByRef = new WeakMap<object, unknown>();
 };
 
 export const resetNativeTestRefFactory = (): void => {
   refFactory = () => ({});
+  nativeHandlesByRef = new WeakMap<object, unknown>();
 };
 
-export const createNativeTestHost = (hostName: string, statics: Readonly<Record<string, unknown>> = {}) => {
-  type HostInstanceProps = NativeTestHostProps & {forwardedRef: ForwardedRef<unknown>};
-
-  class NativeTestHostInstance extends Component<HostInstanceProps> {
-    private nativeHandle: unknown;
-
-    componentDidMount(): void {
-      const {forwardedRef: _forwardedRef, ...props} = this.props;
-      this.nativeHandle = refFactory(hostName, props);
-      this.assignRef(this.props.forwardedRef, this.nativeHandle);
-    }
-
-    componentDidUpdate(previousProps: HostInstanceProps): void {
-      if (previousProps.forwardedRef !== this.props.forwardedRef) {
-        this.assignRef(previousProps.forwardedRef, null);
-        this.assignRef(this.props.forwardedRef, this.nativeHandle);
-      }
-    }
-
-    componentWillUnmount(): void {
-      this.assignRef(this.props.forwardedRef, null);
-    }
-
-    render() {
-      const {forwardedRef: _forwardedRef, ...props} = this.props;
-      return createElement(hostName, props);
-    }
-
-    private assignRef(ref: ForwardedRef<unknown>, value: unknown): void {
-      if (typeof ref === 'function') ref(value);
-      else if (ref !== null) ref.current = value;
-    }
-  }
-
+export const createNativeTestHost = (
+  hostName: string,
+  reactRuntime: unknown,
+  statics: Readonly<Record<string, unknown>> = {},
+) => {
+  const {createElement, forwardRef, useImperativeHandle} = reactRuntime as typeof import('react');
   return Object.assign(
-    forwardRef<unknown, NativeTestHostProps>((props, ref) =>
-      createElement(NativeTestHostInstance, {...props, forwardedRef: ref}),
-    ),
+    forwardRef<unknown, NativeTestHostProps>((props, ref) => {
+      useImperativeHandle(ref, () => {
+        const refKey = ref as object;
+        if (!nativeHandlesByRef.has(refKey)) nativeHandlesByRef.set(refKey, refFactory(hostName, props));
+        return nativeHandlesByRef.get(refKey);
+      }, [ref]);
+      return createElement(hostName, props);
+    }),
     statics,
   );
 };
 
-export const withNativeTestHosts = <TModule extends Readonly<Record<string, unknown>>>(module: TModule) => ({
+export const withNativeTestHosts = <TModule extends Readonly<Record<string, unknown>>>(
+  module: TModule,
+  reactRuntime: unknown,
+) => ({
   ...module,
-  View: createNativeTestHost('View'),
-  TextInput: createNativeTestHost('TextInput', {
+  View: createNativeTestHost('View', reactRuntime),
+  TextInput: createNativeTestHost('TextInput', reactRuntime, {
     State: (module.TextInput as {readonly State?: unknown}).State,
   }),
-  ScrollView: createNativeTestHost('ScrollView'),
-  Pressable: createNativeTestHost('Pressable'),
-  Image: createNativeTestHost('Image'),
-  VirtualizedList: createNativeTestHost('VirtualizedList'),
+  ScrollView: createNativeTestHost('ScrollView', reactRuntime),
+  Pressable: createNativeTestHost('Pressable', reactRuntime),
+  Image: createNativeTestHost('Image', reactRuntime),
+  VirtualizedList: createNativeTestHost('VirtualizedList', reactRuntime),
 });

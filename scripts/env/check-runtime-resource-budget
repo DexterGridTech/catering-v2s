@@ -9,16 +9,29 @@ if [[ "${1:-}" == "--profile" ]]; then
 fi
 runtime="${1:-$root/.runtime}"
 max_rss_mb=2048
-allowed_live_prefix=''
+allowed_live_prefixes=('')
+allowed_exact_manifest=''
+allowed_exact_kind=''
 case "$profile" in
   default)
     ;;
   admin-validation-with-ter)
-    # TER is an explicitly allowed independent workload while the management
-    # backend/frontend is validated. The allowance is path-bound and keeps a
-    # finite aggregate RSS budget; unrelated live trees still fail closed.
+    # DEV and TER own separate resource gates. Exclude only the recognized TER
+    # run roots from this DEV check; never include their RSS in the DEV budget.
     max_rss_mb=4096
-    allowed_live_prefix="$runtime/ter-virtual-keyboard-android/"
+    allowed_live_prefixes=(
+      "$runtime/ter-virtual-keyboard-android/"
+      "$runtime/ter-admin-display/"
+      "$runtime/ter-third-party-usage-remediation/"
+    )
+    ;;
+  ter-validation-with-dev)
+    # TER and the managed R5 DEV runtime have independent resource gates.
+    # Exclude only the exact R5 DEV manifest from this TER check; backend-
+    # acceptance and other R5 run trees remain subject to fail-closed checks.
+    max_rss_mb=4096
+    allowed_exact_manifest="$runtime/r5/run-manifest.json"
+    allowed_exact_kind='r5-dev-run-manifest'
     ;;
   *)
     echo 'STATUS=FAIL'
@@ -28,32 +41,62 @@ case "$profile" in
 esac
 if [[ "${1:-}" == "--self-test" ]]; then
   temp="$(mktemp -d)"; trap 'rm -rf "$temp"' EXIT
-  mkdir -p "$temp/r" "$temp/ter-virtual-keyboard-android/r"; token="$(ps -o lstart= -p "$$" | canonical_start_token)"
-  SELF_PID="$$" SELF_TOKEN="$token" node - "$temp/r/run-manifest.json" <<'NODE'
-const fs=require('fs');fs.writeFileSync(process.argv[2],JSON.stringify({runId:'red',processes:[{pid:+process.env.SELF_PID,startToken:process.env.SELF_TOKEN}]}));
+  mkdir -p "$temp/unrelated" "$temp/ter-virtual-keyboard-android/r" "$temp/ter-admin-display/r" "$temp/r5"
+  token="$(ps -o lstart= -p "$$" | canonical_start_token)"
+  self_rss_kib="$(ps -o rss= -p "$$" | xargs)"
+  [[ "$self_rss_kib" =~ ^[0-9]+$ && "$self_rss_kib" -gt 0 ]] || { echo 'STATUS=FAIL'; exit 1; }
+  write_fixture_manifest() {
+    local target="$1"
+    local kind="${2:-resource-profile-red}"
+    mkdir -p "$(dirname "$target")"
+    SELF_PID="$$" SELF_TOKEN="$token" SELF_KIND="$kind" node - "$target" <<'NODE'
+const fs=require('fs');fs.writeFileSync(process.argv[2],JSON.stringify({kind:process.env.SELF_KIND,runId:'resource-profile-red',processes:[{pid:+process.env.SELF_PID,startToken:process.env.SELF_TOKEN}]}));
 NODE
-  SELF_PID="$$" SELF_TOKEN="$token" node - "$temp/ter-virtual-keyboard-android/r/run-manifest.json" <<'NODE'
-const fs=require('fs');fs.writeFileSync(process.argv[2],JSON.stringify({runId:'ter-red',processes:[{pid:+process.env.SELF_PID,startToken:process.env.SELF_TOKEN}]}));
-NODE
+  }
+  write_fixture_manifest "$temp/unrelated/run-manifest.json"
+  write_fixture_manifest "$temp/ter-virtual-keyboard-android/r/run-manifest.json"
+  write_fixture_manifest "$temp/ter-admin-display/r/run-manifest.json"
   if "$0" "$temp" >/dev/null; then echo 'STATUS=FAIL'; exit 1; fi
-  rm -rf "$temp/r"
-  if ! "$0" --profile admin-validation-with-ter "$temp" >/dev/null; then echo 'STATUS=FAIL'; exit 1; fi
+  rm -f "$temp/unrelated/run-manifest.json"
+  dev_output="$("$0" --profile admin-validation-with-ter "$temp")"
+  if ! grep -Fx 'LIVE_MANAGED_PROCESSES=0' <<<"$dev_output" >/dev/null ||
+    ! grep -Fx 'EXCLUDED_LIVE_MANAGED_PROCESSES=1' <<<"$dev_output" >/dev/null ||
+    ! grep -Fx 'OWNED_MANAGED_RSS_MB=0' <<<"$dev_output" >/dev/null; then
+    echo 'STATUS=FAIL'; exit 1
+  fi
+  rm -rf "$temp/ter-virtual-keyboard-android" "$temp/ter-admin-display"
+  write_fixture_manifest "$temp/r5/run-manifest.json" 'r5-dev-run-manifest'
+  ter_output="$("$0" --profile ter-validation-with-dev "$temp")"
+  if ! grep -Fx 'LIVE_MANAGED_PROCESSES=0' <<<"$ter_output" >/dev/null ||
+    ! grep -Fx 'EXCLUDED_LIVE_MANAGED_PROCESSES=1' <<<"$ter_output" >/dev/null ||
+    ! grep -Fx 'OWNED_MANAGED_RSS_MB=0' <<<"$ter_output" >/dev/null; then
+    echo 'STATUS=FAIL'; exit 1
+  fi
+  write_fixture_manifest "$temp/r5/run-manifest.json" 'unexpected-kind'
+  if "$0" --profile ter-validation-with-dev "$temp" >/dev/null; then echo 'STATUS=FAIL'; exit 1; fi
+  write_fixture_manifest "$temp/r5/run-manifest.json" 'r5-dev-run-manifest'
+  write_fixture_manifest "$temp/unrelated/run-manifest.json"
+  if "$0" --profile ter-validation-with-dev "$temp" >/dev/null; then echo 'STATUS=FAIL'; exit 1; fi
+  write_fixture_manifest "$temp/r5/run-manifest.json" 'r5-dev-run-manifest'
+  write_fixture_manifest "$temp/unrelated/run-manifest.json"
+  if "$0" --profile ter-validation-with-dev "$temp" >/dev/null; then echo 'STATUS=FAIL'; exit 1; fi
   [[ "$(printf 'Sun Aug  9 11:09:26 2026   ' | canonical_start_token)" == 'Sun Aug 9 11:09:26 2026' ]] || { echo 'STATUS=FAIL'; exit 1; }
-  echo 'STATUS=PASS'; echo 'RED_LIVE_MANAGED_PROCESS=PASS'; echo 'RED_TER_PARALLEL_PROFILE=PASS'; echo 'RED_START_TOKEN_INTERNAL_SPACE_PRESERVED=PASS'; exit 0
+  echo 'STATUS=PASS'; echo 'RED_UNRELATED_LIVE_PROCESS=PASS'; echo 'DEV_TER_INDEPENDENT_PROFILES=PASS'; echo 'RED_WRONG_DEV_MANIFEST_KIND=PASS'; echo 'RED_FOREIGN_MANIFEST_ALIAS=PASS'; echo 'RED_START_TOKEN_INTERNAL_SPACE_PRESERVED=PASS'; exit 0
 fi
 [[ -d "$runtime" ]] || { echo 'STATUS=PASS'; echo 'LIVE_MANAGED_PROCESSES=0'; exit 0; }
-live=0; rss=0
-while IFS=$'\t' read -r pid token file; do
+live=0; excluded_live=0; rss=0
+while IFS=$'\t' read -r pid token allowed file; do
   [[ -n "$pid" ]] || continue
   if kill -0 "$pid" 2>/dev/null && [[ "$(ps -o lstart= -p "$pid" | canonical_start_token)" == "$(printf '%s' "$token" | canonical_start_token)" ]]; then
-    value="$(ps -o rss= -p "$pid" | xargs)"; rss=$((rss+${value:-0}))
-    if [[ -n "$allowed_live_prefix" && "$file" == "$allowed_live_prefix"* ]]; then
-      echo "ALLOWED_LIVE_PROCESS=pid=$pid rssKiB=${value:-0} manifest=$file profile=$profile"
+    if ((allowed)); then
+      excluded_live=$((excluded_live+1))
+      echo "INDEPENDENT_LIVE_PROCESS=pid=$pid manifest=$file profile=$profile"
     else
+      value="$(ps -o rss= -p "$pid" | xargs)"; rss=$((rss+${value:-0}))
       live=$((live+1)); echo "LIVE_PROCESS=pid=$pid rssKiB=${value:-0} manifest=$file"
     fi
   fi
-done < <(RUNTIME="$runtime" node -e 'const fs=require("fs"),path=require("path");const walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):(e.name==="run-manifest.json"||e.name==="manifest.json")?[path.join(d,e.name)]:[]);const seen=new Set();for(const f of walk(process.env.RUNTIME)){try{const m=JSON.parse(fs.readFileSync(f));for(const p of m.processes||[])if(Number.isInteger(p.pid)&&typeof p.startToken==="string"){const key=`${p.pid}\u0000${p.startToken.trim().replace(/\\s+/g," ")}`;if(!seen.has(key)){seen.add(key);console.log([p.pid,p.startToken,f].join("\t"));}}}catch{}}')
-mb=$(((rss+1023)/1024)); echo "LIVE_MANAGED_PROCESSES=$live"; echo "MANAGED_RSS_MB=$mb"; echo "RESOURCE_PROFILE=$profile"; echo "RESOURCE_RSS_BUDGET_MB=$max_rss_mb"
+done < <(RUNTIME="$runtime" ALLOWED_PREFIXES="$(printf '%s\n' "${allowed_live_prefixes[@]}")" ALLOWED_EXACT_MANIFEST="$allowed_exact_manifest" ALLOWED_EXACT_KIND="$allowed_exact_kind" node -e 'const fs=require("fs"),path=require("path");const walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):(e.name==="run-manifest.json"||e.name==="manifest.json")?[path.join(d,e.name)]:[]);const prefixes=(process.env.ALLOWED_PREFIXES||"").split("\n").filter(Boolean),groups=new Map();for(const f of walk(process.env.RUNTIME)){try{const m=JSON.parse(fs.readFileSync(f));for(const p of m.processes||[])if(Number.isInteger(p.pid)&&typeof p.startToken==="string"){const token=p.startToken.trim().replace(/\\s+/g," "),key=`${p.pid}\u0000${token}`,refs=groups.get(key)||{pid:p.pid,token,refs:[]};refs.refs.push({file:f,kind:m.kind||""});groups.set(key,refs);}}catch{}}for(const g of groups.values()){const allowed=g.refs.every(ref=>prefixes.some(prefix=>ref.file.startsWith(prefix))||(ref.file===process.env.ALLOWED_EXACT_MANIFEST&&ref.kind===process.env.ALLOWED_EXACT_KIND));const files=g.refs.map(ref=>ref.file).join(",");console.log([g.pid,g.token,allowed?1:0,files].join("\t"));}')
+mb=$(((rss+1023)/1024)); echo "LIVE_MANAGED_PROCESSES=$live"; echo "EXCLUDED_LIVE_MANAGED_PROCESSES=$excluded_live"; echo "OWNED_MANAGED_RSS_MB=$mb"; echo "RESOURCE_PROFILE=$profile"; echo "OWNED_RESOURCE_RSS_BUDGET_MB=$max_rss_mb"
 if ((live>0 || mb>max_rss_mb)); then echo 'STATUS=FAIL'; echo 'FAILURE=MANAGED_RESOURCE_BUDGET_EXCEEDED'; exit 1; fi
 echo 'STATUS=PASS'

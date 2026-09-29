@@ -97,7 +97,7 @@ const sourceDigest = () => {
 const runPreflight = manifest => {
   const result = spawnSync(
     path.join(ROOT, 'scripts/env/check-runtime-resource-budget'),
-    ['--profile', 'admin-validation-with-ter', path.join(ROOT, '.runtime')],
+    ['--profile', 'ter-validation-with-dev', path.join(ROOT, '.runtime')],
     {cwd: ROOT, encoding: 'utf8', timeout: 30_000},
   );
   const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;

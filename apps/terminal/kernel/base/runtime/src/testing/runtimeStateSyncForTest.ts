@@ -1,9 +1,4 @@
-import type {
-  StateRuntime,
-  StateSyncApplyResult,
-  StateSyncPayloadResult,
-  SyncStateDiff,
-} from '@catering-v2s/kernel-base-state';
+import type {StateSyncApplyResult, StateSyncPayloadResult, SyncStateDiff} from '@catering-v2s/kernel-base-state';
 import type {Runtime} from '../types/runtime';
 import {readRuntimeStateSyncAccessor} from '../foundations/runtimeStateSyncAccessorRegistry';
 

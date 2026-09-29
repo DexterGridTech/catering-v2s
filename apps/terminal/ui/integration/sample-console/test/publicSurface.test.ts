@@ -1,5 +1,5 @@
 import * as ts from 'typescript';
-import {existsSync, readFileSync} from 'node:fs';
+import {existsSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
@@ -7,7 +7,6 @@ import packageJson from '../package.json';
 import invariant from '../terminal-invariants.json';
 
 type ImportBinding = Readonly<{name: string; typeOnly: boolean}>;
-type SourceFileWithParserDiagnostics = ts.SourceFile & Readonly<{readonly parseDiagnostics: readonly ts.Diagnostic[]}>;
 type ImportRecord = Readonly<{
   moduleSpecifier: string;
   sideEffectOnly: boolean;
@@ -48,19 +47,29 @@ const sortBindings = (bindings: readonly ImportBinding[]): readonly ImportBindin
     left.name < right.name ? -1 : left.name > right.name ? 1 : Number(left.typeOnly) - Number(right.typeOnly),
   );
 
-const parserDiagnosticsOf = (sourceFile: ts.SourceFile): readonly ts.Diagnostic[] =>
-  (sourceFile as SourceFileWithParserDiagnostics).parseDiagnostics;
+const readSourceFile = (filePath: string): ts.SourceFile => {
+  const program = ts.createProgram({
+    rootNames: [filePath],
+    options: {
+      allowJs: true,
+      noEmit: true,
+      noResolve: true,
+      target: ts.ScriptTarget.Latest,
+      jsx: ts.JsxEmit.Preserve,
+    },
+  });
+  const sourceFile = program.getSourceFile(filePath);
+  if (sourceFile === undefined) throw new Error('missing source file: ' + filePath);
+  const diagnostics = program.getSyntacticDiagnostics(sourceFile);
+  if (diagnostics.length > 0) {
+    const message = ts.flattenDiagnosticMessageText(diagnostics[0].messageText, ' ');
+    throw new Error('invalid TypeScript source: ' + filePath + ': ' + message);
+  }
+  return sourceFile;
+};
 
 const readImports = (filePath: string): readonly ImportRecord[] => {
-  const scriptKind = filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
-  const sourceFile = ts.createSourceFile(
-    filePath,
-    readFileSync(filePath, 'utf8'),
-    ts.ScriptTarget.Latest,
-    true,
-    scriptKind,
-  );
-  if (parserDiagnosticsOf(sourceFile).length > 0) throw new Error('invalid TypeScript import source: ' + filePath);
+  const sourceFile = readSourceFile(filePath);
   return sourceFile.statements.flatMap(statement => {
     if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) return [];
     const clause = statement.importClause;
@@ -82,14 +91,7 @@ const readImports = (filePath: string): readonly ImportRecord[] => {
 };
 
 const readGlobalCssPaths = (filePath: string): readonly string[] => {
-  const sourceFile = ts.createSourceFile(
-    filePath,
-    readFileSync(filePath, 'utf8'),
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.JS,
-  );
-  if (parserDiagnosticsOf(sourceFile).length > 0) throw new Error('invalid Metro config source: ' + filePath);
+  const sourceFile = readSourceFile(filePath);
   const values: string[] = [];
   const visit = (node: ts.Node): void => {
     if (

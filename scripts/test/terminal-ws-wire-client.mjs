@@ -169,15 +169,68 @@ const V10_SCENARIOS = new Set([
   'terminal.connection.vs10.listener-revocation',
 ]);
 
+export const AUTH_REJECTION_CLOSE_REASONS = Object.freeze({
+  'terminal.connection.auth.never-registered': 'CREDENTIAL_INVALID',
+  'terminal.connection.auth.wrong-secret': 'CREDENTIAL_INVALID',
+  'terminal.connection.auth.active-device-mismatch': 'CREDENTIAL_INVALID',
+  'terminal.connection.auth.ended-different-device': 'ACTIVATION_CANCELLED',
+  'terminal.connection.auth.group-path-mismatch': 'CREDENTIAL_INVALID',
+  'terminal.connection.auth.cancelled': 'ACTIVATION_CANCELLED',
+  'terminal.connection.auth.terminal-voided': 'ACTIVATION_CANCELLED',
+  'terminal.connection.auth.store-voided': 'ACTIVATION_CANCELLED',
+  'terminal.connection.auth.group-disabled': 'GROUP_WORKSPACE_DISABLED',
+  'terminal.connection.auth.terminal-disabled': 'TERMINAL_DISABLED',
+  'terminal.connection.auth.revoked-group-disabled': 'ACTIVATION_CANCELLED',
+  'terminal.connection.auth.unknown-store-voided': 'CREDENTIAL_INVALID',
+  'terminal.connection.auth.revoked-terminal-disabled': 'ACTIVATION_CANCELLED',
+});
+const AUTH_REJECTION_SCENARIOS = new Set(Object.keys(AUTH_REJECTION_CLOSE_REASONS));
+const NO_FIRST_FRAME_SCENARIO = 'terminal.connection.auth.no-first-frame-timeout';
+const V1_OVERALL_AUTHENTICATION_DEADLINE_SCENARIO =
+  'terminal.connection.vs1.overall-authentication-deadline';
+const V2_AUTH_SCENARIOS = new Set([...AUTH_REJECTION_SCENARIOS, NO_FIRST_FRAME_SCENARIO]);
+const NO_AUTH_CLOSE_REASONS = Object.freeze({
+  'terminal.connection.vs1.admission-rejected': 'NODE_BUSY',
+  'terminal.connection.vs9.drain-reject': 'REDIRECT_TO_NEXT_NODE',
+});
+const NO_AUTH_CLOSE_SCENARIOS = new Set(Object.keys(NO_AUTH_CLOSE_REASONS));
+const DEFERRED_AUTH_SCENARIOS = new Set([
+  'terminal.connection.vs1.admission-hold',
+  'terminal.connection.vs4.failed-second-auth',
+]);
+
 const SESSION_PROBE_SCENARIOS = new Set([
+  'terminal.connection.vs1.admission-hold',
   'terminal.connection.vs10.status-only-probe',
   'terminal.connection.vs12.database-outage-probe',
   'terminal.connection.vs1.unknown-auth-field',
+  'terminal.connection.vs3.heartbeat-timeout',
+  'terminal.connection.vs3.heartbeat-persistent',
   'terminal.connection.vs3.unknown-ping-field',
+  'terminal.connection.vs4.failed-second-auth',
+  'terminal.connection.vs4.session-takeover',
+  'terminal.connection.vs4.disconnected-before-register',
+  'terminal.connection.vs6.latest-state-identity',
+  'terminal.connection.vs9.draining-session',
+  'terminal.connection.vs8.load-probe',
+  'terminal.connection.vs11.secret-search',
+  'terminal.connection.auth.store-disabled-active',
 ]);
 
 const SERVER_ERROR_SCENARIOS = new Set(['terminal.connection.vs12.auth-during-outage']);
 const SESSION_REPLACED_SCENARIOS = new Set(['terminal.connection.vs10.stale-revocation-old-session']);
+const TRACKED_CAPACITY_SCENARIOS = new Set(['terminal.connection.vs8.tracked-capacity']);
+
+function withUnknownMessageField(message) {
+  return {
+    ...message,
+    futureMessageField: {
+      items: Array.from({length: 64}, (_, index) => index),
+      nested: {first: {second: {third: {enabled: true}}}},
+      longText: 'x'.repeat(4096),
+    },
+  };
+}
 
 const OFFER_SCENARIOS = new Set([
   'terminal.connection.compression.offer-none',
@@ -199,17 +252,40 @@ const COMPRESSION_SESSION_SCENARIOS = new Set([
 
 const SUPPORTED_SCENARIOS = new Set([
   'terminal.connection.topology-probe',
+  V1_OVERALL_AUTHENTICATION_DEADLINE_SCENARIO,
+  ...V2_AUTH_SCENARIOS,
+  ...NO_AUTH_CLOSE_SCENARIOS,
+  'terminal.connection.auth.store-disabled-active',
   ...V10_SCENARIOS,
   ...SESSION_PROBE_SCENARIOS,
   ...SERVER_ERROR_SCENARIOS,
   ...SESSION_REPLACED_SCENARIOS,
+  ...TRACKED_CAPACITY_SCENARIOS,
   ...OFFER_SCENARIOS,
   ...FRAME_SCENARIOS,
   ...COMPRESSION_SESSION_SCENARIOS,
 ]);
 
-const expectedCloseForScenario = scenario => {
+const expectedCloseForRequest = request => {
+  const {scenario} = request;
   if (scenario === 'terminal.connection.topology-probe') return {code: 4000, reason: 'CREDENTIAL_INVALID'};
+  if (scenario === V1_OVERALL_AUTHENTICATION_DEADLINE_SCENARIO) {
+    return {code: 4000, reason: 'AUTHENTICATION_TIMEOUT'};
+  }
+  if (scenario === NO_FIRST_FRAME_SCENARIO) return {code: 4000, reason: 'AUTHENTICATION_TIMEOUT'};
+  if (Object.hasOwn(NO_AUTH_CLOSE_REASONS, scenario)) {
+    return {code: 4000, reason: NO_AUTH_CLOSE_REASONS[scenario]};
+  }
+  if (TRACKED_CAPACITY_SCENARIOS.has(scenario)) return {code: 4000, reason: 'NODE_BUSY'};
+  if (DEFERRED_AUTH_SCENARIOS.has(scenario)
+      && request.deferAuthentication === true
+      && request.expectedClose !== undefined
+      && request.expectedClose !== null) {
+    return {code: 4000, reason: 'CREDENTIAL_INVALID'};
+  }
+  if (Object.hasOwn(AUTH_REJECTION_CLOSE_REASONS, scenario)) {
+    return {code: 4000, reason: AUTH_REJECTION_CLOSE_REASONS[scenario]};
+  }
   if (V10_SCENARIOS.has(scenario)) return {code: 4000, reason: 'ACTIVATION_CANCELLED'};
   if (SESSION_REPLACED_SCENARIOS.has(scenario)) return {code: 4000, reason: 'SESSION_REPLACED'};
   if (SERVER_ERROR_SCENARIOS.has(scenario)) return {code: 4000, reason: 'SERVER_ERROR'};
@@ -239,6 +315,8 @@ export function parseControlRequest(contents) {
     'expectedClose',
     'markerId',
     'extensionOffer',
+    'deferAuthentication',
+    'serverCloseTimeoutMs',
   ]);
   if (!request || typeof request !== 'object' || Array.isArray(request)
       || Object.keys(request).some(field => !allowedControlFields.has(field))
@@ -264,6 +342,21 @@ export function parseControlRequest(contents) {
   ) {
     throw new Error('TERMINAL_WIRE_CONTROL_TARGET_INVALID');
   }
+  if (request.scenario === NO_FIRST_FRAME_SCENARIO && request.authenticate !== undefined) {
+    throw new Error('TERMINAL_WIRE_CONTROL_AUTHENTICATE_FORBIDDEN');
+  }
+  if (request.deferAuthentication !== undefined
+      && (typeof request.deferAuthentication !== 'boolean'
+        || !DEFERRED_AUTH_SCENARIOS.has(request.scenario))) {
+    throw new Error('TERMINAL_WIRE_CONTROL_DEFER_AUTHENTICATION_INVALID');
+  }
+  if (request.serverCloseTimeoutMs !== undefined
+      && (request.scenario !== 'terminal.connection.vs1.overall-authentication-deadline'
+        || !Number.isSafeInteger(request.serverCloseTimeoutMs)
+        || request.serverCloseTimeoutMs < 15_000
+        || request.serverCloseTimeoutMs > 30_000)) {
+    throw new Error('TERMINAL_WIRE_CONTROL_SERVER_CLOSE_TIMEOUT_INVALID');
+  }
 
   if (request.extensionOffer !== undefined && request.extensionOffer !== null && !EXTENSION_OFFERS.has(request.extensionOffer)) {
     throw new Error('TERMINAL_WIRE_CONTROL_EXTENSION_OFFER_INVALID');
@@ -271,8 +364,11 @@ export function parseControlRequest(contents) {
 
   const requiresAuthentication =
     request.scenario === 'terminal.connection.topology-probe' ||
+    (V2_AUTH_SCENARIOS.has(request.scenario) && request.scenario !== NO_FIRST_FRAME_SCENARIO) ||
+    request.scenario === V1_OVERALL_AUTHENTICATION_DEADLINE_SCENARIO ||
     V10_SCENARIOS.has(request.scenario) ||
     SESSION_REPLACED_SCENARIOS.has(request.scenario) ||
+    TRACKED_CAPACITY_SCENARIOS.has(request.scenario) ||
     SESSION_PROBE_SCENARIOS.has(request.scenario) ||
     SERVER_ERROR_SCENARIOS.has(request.scenario) ||
     COMPRESSION_SESSION_SCENARIOS.has(request.scenario) ||
@@ -316,7 +412,7 @@ export function parseControlRequest(contents) {
     authenticate = Object.freeze({...auth});
   }
 
-  const expectedClose = expectedCloseForScenario(request.scenario);
+  const expectedClose = expectedCloseForRequest(request);
   if (expectedClose) {
     const close = request.expectedClose;
     const closeFields = close && typeof close === 'object' && !Array.isArray(close)
@@ -334,7 +430,12 @@ export function parseControlRequest(contents) {
   }
 
   const requiresMarker = V10_SCENARIOS.has(request.scenario)
+    || V2_AUTH_SCENARIOS.has(request.scenario)
+    || request.scenario === V1_OVERALL_AUTHENTICATION_DEADLINE_SCENARIO
+    || NO_AUTH_CLOSE_SCENARIOS.has(request.scenario)
+    || request.scenario === 'terminal.connection.auth.store-disabled-active'
     || SESSION_REPLACED_SCENARIOS.has(request.scenario)
+    || TRACKED_CAPACITY_SCENARIOS.has(request.scenario)
     || SESSION_PROBE_SCENARIOS.has(request.scenario)
     || SERVER_ERROR_SCENARIOS.has(request.scenario);
   if (requiresMarker && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(request.markerId ?? '')) {
@@ -360,9 +461,11 @@ export function parseControlRequest(contents) {
     scenario: request.scenario,
     url: url.toString(),
     authenticate,
+    deferAuthentication: request.deferAuthentication === true,
     extensionOffer: request.extensionOffer ?? null,
     expectedClose,
     markerId: requiresMarker ? request.markerId : null,
+    serverCloseTimeoutMs: request.serverCloseTimeoutMs ?? FRAME_DEADLINE_MS,
   });
 }
 
@@ -740,9 +843,15 @@ async function waitForServerClose(socket, timeoutMs = CLIENT_CLOSE_DEADLINE_MS) 
   }
 }
 
-async function expectServerClose(socket, expected, eventTypes = [], onMessage = () => {}) {
+async function expectServerClose(
+  socket,
+  expected,
+  eventTypes = [],
+  onMessage = () => {},
+  timeoutMs = FRAME_DEADLINE_MS,
+) {
   for (;;) {
-    const event = await socket.readEvent();
+    const event = await socket.readEvent(timeoutMs);
     if (event.kind === 'close') {
       setDiagnosticStage('SERVER_CLOSE_RECEIVED');
       process.stderr.write(
@@ -781,14 +890,23 @@ async function runTopologyOrRace(request) {
     const eventTypes = [];
     let sessionId = null;
     setDiagnosticStage('WAITING_FOR_SERVER_CLOSE');
-    const close = await expectServerClose(socket, request.expectedClose, eventTypes, event => {
-      if (event.type === 'SESSION_READY' && request.markerId) {
-        sessionId = event.message.sessionId;
-        process.stderr.write(`TERMINAL_WIRE_SESSION_READY markerId=${request.markerId} sessionId=${sessionId}\n`);
-      }
-    });
-    if (request.scenario === 'terminal.connection.topology-probe' && eventTypes.length > 0) {
-      throw new Error('TERMINAL_WIRE_TOPOLOGY_PROBE_RECEIVED_APPLICATION_MESSAGE');
+    const close = await expectServerClose(
+      socket,
+      request.expectedClose,
+      eventTypes,
+      event => {
+        if (event.type === 'SESSION_READY' && request.markerId) {
+          sessionId = event.message.sessionId;
+          process.stderr.write(`TERMINAL_WIRE_SESSION_READY markerId=${request.markerId} sessionId=${sessionId}\n`);
+        }
+      },
+      request.serverCloseTimeoutMs,
+    );
+    if ((request.scenario === 'terminal.connection.topology-probe'
+            || request.scenario === V1_OVERALL_AUTHENTICATION_DEADLINE_SCENARIO
+            || AUTH_REJECTION_SCENARIOS.has(request.scenario))
+        && eventTypes.length > 0) {
+      throw new Error('TERMINAL_WIRE_REJECTED_AUTH_RECEIVED_APPLICATION_MESSAGE');
     }
     if ((V10_SCENARIOS.has(request.scenario) || SESSION_REPLACED_SCENARIOS.has(request.scenario)) &&
         !(eventTypes.length === 0 || (eventTypes.length === 1 && eventTypes[0] === 'SESSION_READY'))) {
@@ -800,23 +918,82 @@ async function runTopologyOrRace(request) {
   }
 }
 
+async function runNoFirstFrame(request) {
+  setDiagnosticStage('WEBSOCKET_CONNECTING');
+  const socket = await RawWebSocketClient.connect(request.url, null);
+  try {
+    setDiagnosticStage('WEBSOCKET_OPEN');
+    process.stderr.write(`TERMINAL_WIRE_STAGE=WEBSOCKET_OPEN scenario=${request.scenario}\n`);
+    const eventTypes = [];
+    setDiagnosticStage('WAITING_FOR_SERVER_CLOSE');
+    const close = await expectServerClose(socket, request.expectedClose, eventTypes);
+    if (eventTypes.length > 0) throw new Error('TERMINAL_WIRE_NO_FIRST_FRAME_RECEIVED_APPLICATION_MESSAGE');
+    return {...describeHandshake(socket), ...close, sessionId: null};
+  } finally {
+    socket.destroy();
+  }
+}
+
 async function runSessionProbe(request, inputIterator) {
   const socket = await RawWebSocketClient.connect(request.url, null);
   const eventTypes = [];
   try {
-    const authenticate = request.scenario === 'terminal.connection.vs1.unknown-auth-field'
-      ? {...request.authenticate, futureMessageField: true}
-      : request.authenticate;
-    socket.sendText(JSON.stringify(authenticate));
-    const ready = await socket.readEvent(FRAME_DEADLINE_MS);
-    if (ready.kind !== 'message' || ready.type !== 'SESSION_READY') {
-      throw new Error('TERMINAL_WIRE_SESSION_READY_MISSING');
+    let readyMessage = null;
+    let sessionId = null;
+    if (request.deferAuthentication) {
+      setDiagnosticStage('WEBSOCKET_OPEN');
+      process.stderr.write(`TERMINAL_WIRE_OPEN markerId=${request.markerId}\n`);
+      const {value, done} = await inputIterator.next();
+      if (done) throw new Error('TERMINAL_WIRE_SESSION_PROBE_CONTROL_EOF');
+      const command = value.trim();
+      if (command === 'CLOSE') {
+        socket.sendClose(1000, '');
+        const close = await waitForServerClose(socket);
+        return {
+          ...describeHandshake(socket), eventTypes, pongCount: 0, clientCloseSent: 1000,
+          serverCloseReceived: close !== null, sessionId: null,
+        };
+      }
+      const closeCommand = /^AWAIT_CLOSE\t([1-9][0-9]{2,3})\t([A-Z_]{1,48})$/.exec(command);
+      if (closeCommand) {
+        const close = await socket.readEvent(FRAME_DEADLINE_MS);
+        if (close.kind !== 'close'
+            || close.code !== Number(closeCommand[1])
+            || close.reason !== closeCommand[2]) {
+          throw new Error('TERMINAL_WIRE_SESSION_PROBE_CLOSE_MISMATCH');
+        }
+        socket.sendClose(close.code, close.reason);
+        socket.socket.end();
+        return {
+          ...describeHandshake(socket), eventTypes, pongCount: 0, sessionId: null,
+          closeCode: close.code, closeReason: close.reason,
+        };
+      }
+      if (command !== 'AUTHENTICATE') throw new Error('TERMINAL_WIRE_SESSION_PROBE_COMMAND_INVALID');
+      const authenticate = request.scenario === 'terminal.connection.vs1.unknown-auth-field'
+        ? withUnknownMessageField(request.authenticate)
+        : request.authenticate;
+      socket.sendText(JSON.stringify(authenticate));
+      setDiagnosticStage('AUTHENTICATE_SENT');
+      process.stderr.write(`TERMINAL_WIRE_STAGE=AUTHENTICATE_SENT markerId=${request.markerId}\n`);
+      if (request.expectedClose) {
+        const close = await expectServerClose(socket, request.expectedClose, eventTypes);
+        if (eventTypes.length !== 0) throw new Error('TERMINAL_WIRE_REJECTED_AUTH_RECEIVED_APPLICATION_MESSAGE');
+        return {
+          ...describeHandshake(socket), eventTypes, pongCount: 0, sessionId: null,
+          closeCode: close.code, closeReason: close.reason,
+        };
+      }
+      readyMessage = await readSessionReady(socket, eventTypes, request.markerId);
+      sessionId = readyMessage.sessionId;
+    } else {
+      const authenticate = request.scenario === 'terminal.connection.vs1.unknown-auth-field'
+        ? withUnknownMessageField(request.authenticate)
+        : request.authenticate;
+      socket.sendText(JSON.stringify(authenticate));
+      readyMessage = await readSessionReady(socket, eventTypes, request.markerId);
+      sessionId = readyMessage.sessionId;
     }
-    const sessionId = ready.message.sessionId;
-    if (typeof sessionId !== 'string' || sessionId.length === 0) throw new Error('TERMINAL_WIRE_SESSION_ID_MISSING');
-    eventTypes.push(ready.type);
-    process.stderr.write(`TERMINAL_WIRE_SESSION_READY markerId=${request.markerId} sessionId=${sessionId}\n`);
-    setDiagnosticStage('SESSION_PROBE_READY');
 
     let pongCount = 0;
     for (;;) {
@@ -825,7 +1002,7 @@ async function runSessionProbe(request, inputIterator) {
       if (done) throw new Error('TERMINAL_WIRE_SESSION_PROBE_CONTROL_EOF');
       setDiagnosticStage('SESSION_PROBE_COMMAND_RECEIVED');
       const command = value.trim();
-      const pingCommand = /^PING\t([1-9][0-9]{0,8})$/.exec(command);
+      const pingCommand = /^PING\t([1-9][0-9]{0,8})(?:\t((?:0|[1-9][0-9]{0,5})(?:\.[0-9]{1,3})?))?$/.exec(command);
       const closeCommand = /^AWAIT_CLOSE\t([1-9][0-9]{2,3})\t([A-Z_]{1,48})$/.exec(command);
       diagnosticLastCommand = pingCommand ? 'PING' : command === 'CLOSE' ? 'CLOSE' : closeCommand ? 'AWAIT_CLOSE' : 'INVALID';
       if (pingCommand) diagnosticLastPingSequence = pingCommand[1];
@@ -842,7 +1019,11 @@ async function runSessionProbe(request, inputIterator) {
         socket.sendClose(1000, '');
         const close = await waitForServerClose(socket);
         if (close !== null && close.code !== 1000) throw new Error('TERMINAL_WIRE_SESSION_PROBE_CLOSE_MISMATCH');
-        return {...describeHandshake(socket), eventTypes, pongCount, clientCloseSent: 1000, sessionId};
+        return {
+          ...describeHandshake(socket), eventTypes, pongCount, clientCloseSent: 1000, sessionId,
+          heartbeatIntervalMs: readyMessage.heartbeatIntervalMs,
+          heartbeatTimeoutMs: readyMessage.heartbeatTimeoutMs,
+        };
       }
       const expectedClose = closeCommand;
       if (expectedClose) {
@@ -864,13 +1045,19 @@ async function runSessionProbe(request, inputIterator) {
           sessionId,
           closeCode: close.code,
           closeReason: close.reason,
+          heartbeatIntervalMs: readyMessage.heartbeatIntervalMs,
+          heartbeatTimeoutMs: readyMessage.heartbeatTimeoutMs,
         };
       }
       if (!pingCommand) throw new Error('TERMINAL_WIRE_SESSION_PROBE_COMMAND_INVALID');
       const sequence = Number(pingCommand[1]);
+      const lastRttMs = pingCommand[2] === undefined ? 0 : Number(pingCommand[2]);
+      if (!Number.isFinite(lastRttMs) || lastRttMs < 0) {
+        throw new Error('TERMINAL_WIRE_SESSION_PROBE_RTT_INVALID');
+      }
       const ping = request.scenario === 'terminal.connection.vs3.unknown-ping-field'
-        ? {...createPingMessage(sequence), futureMessageField: true}
-        : createPingMessage(sequence);
+        ? withUnknownMessageField(createPingMessage(sequence, new Date().toISOString(), lastRttMs))
+        : createPingMessage(sequence, new Date().toISOString(), lastRttMs);
       socket.sendText(JSON.stringify(ping));
       setDiagnosticStage('SESSION_PROBE_WAITING_FOR_PONG');
       process.stderr.write(
@@ -892,13 +1079,27 @@ async function runSessionProbe(request, inputIterator) {
   }
 }
 
+async function readSessionReady(socket, eventTypes, markerId) {
+  const ready = await socket.readEvent(FRAME_DEADLINE_MS);
+  if (ready.kind !== 'message' || ready.type !== 'SESSION_READY') {
+    throw new Error('TERMINAL_WIRE_SESSION_READY_MISSING');
+  }
+  const sessionId = ready.message.sessionId;
+  if (typeof sessionId !== 'string' || sessionId.length === 0) {
+    throw new Error('TERMINAL_WIRE_SESSION_ID_MISSING');
+  }
+  eventTypes.push(ready.type);
+  process.stderr.write(`TERMINAL_WIRE_SESSION_READY markerId=${markerId} sessionId=${sessionId}\n`);
+  setDiagnosticStage('SESSION_PROBE_READY');
+  return ready.message;
+}
+
 async function runOffer(request) {
   const socket = await RawWebSocketClient.connect(request.url, request.extensionOffer);
   try {
     const handshake = describeHandshake(socket);
     socket.sendClose(1000, '');
     const close = await waitForServerClose(socket);
-    if (close !== null && close.code !== 1000) throw new Error('TERMINAL_WIRE_OFFER_CLOSE_MISMATCH');
     socket.socket.end();
     return {...handshake, eventTypes: [], clientCloseSent: 1000, serverCloseReceived: close !== null};
   } finally {
@@ -1002,10 +1203,15 @@ async function runProtocolFailure(request) {
 }
 
 async function run(request, inputIterator = null) {
+  if (request.scenario === NO_FIRST_FRAME_SCENARIO) return runNoFirstFrame(request);
+  if (NO_AUTH_CLOSE_SCENARIOS.has(request.scenario)) return runNoFirstFrame(request);
   if (SESSION_PROBE_SCENARIOS.has(request.scenario)) return runSessionProbe(request, inputIterator);
   if (request.scenario === 'terminal.connection.topology-probe'
+      || AUTH_REJECTION_SCENARIOS.has(request.scenario)
+      || request.scenario === V1_OVERALL_AUTHENTICATION_DEADLINE_SCENARIO
       || V10_SCENARIOS.has(request.scenario)
       || SESSION_REPLACED_SCENARIOS.has(request.scenario)
+      || TRACKED_CAPACITY_SCENARIOS.has(request.scenario)
       || SERVER_ERROR_SCENARIOS.has(request.scenario)) {
     return runTopologyOrRace(request);
   }

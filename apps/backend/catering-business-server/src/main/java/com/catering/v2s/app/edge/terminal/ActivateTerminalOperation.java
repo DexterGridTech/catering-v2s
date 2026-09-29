@@ -3,12 +3,12 @@ package com.catering.v2s.app.edge.terminal;
 import com.catering.v2s.app.edge.generated.wire.TerminalActivationRequest;
 import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.platform.identity.GroupWorkspaceKey;
 import com.catering.v2s.storeterminal.api.StoreTerminalOwnerApi;
 import com.catering.v2s.storeterminal.domain.ActivationCode;
 import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi;
-import com.catering.v2s.terminalbinding.domain.TerminalCredentialDigest;
+import com.catering.v2s.terminalbinding.api.TerminalCredentialParser;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Objects;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -37,9 +37,12 @@ public class ActivateTerminalOperation {
             throw invalidRequest();
         }
         requireText(request.appVersion(), 64, "appVersion");
-        byte[] secret = decodeSecret(request.credentialSecret());
-        byte[] digest = TerminalCredentialDigest.sha256(secret);
-        Arrays.fill(secret, (byte) 0);
+        byte[] digest;
+        try {
+            digest = TerminalCredentialParser.parseSecretDigest(request.credentialSecret());
+        } catch (IllegalArgumentException malformed) {
+            throw invalidRequest(malformed);
+        }
         try {
             StoreTerminalOwnerApi.ActivationCandidate storeCandidate =
                     storeTerminals.lockActivationCandidate(groupWorkspaceKey, activationCode, surfaceForm);
@@ -68,31 +71,13 @@ public class ActivateTerminalOperation {
         return ActivationCode.of(value);
     }
 
-    private static byte[] decodeSecret(String value) {
-        if (value == null || !value.matches("[A-Za-z0-9_-]{43}")) throw invalidRequest();
-        try {
-            byte[] decoded = Base64.getUrlDecoder().decode(value);
-            if (decoded.length != 32
-                    || !Base64.getUrlEncoder()
-                            .withoutPadding()
-                            .encodeToString(decoded)
-                            .equals(value)) {
-                Arrays.fill(decoded, (byte) 0);
-                throw invalidRequest();
-            }
-            return decoded;
-        } catch (IllegalArgumentException malformed) {
-            throw invalidRequest(malformed);
-        }
-    }
-
     private static String requireText(String value, int maxLength, String field) {
         if (value == null || value.isBlank() || value.length() > maxLength) throw invalidRequest();
         return value;
     }
 
     private static String requireGroupWorkspaceKey(String value) {
-        if (value == null || !value.matches("[A-Za-z0-9][A-Za-z0-9_-]{0,63}")) throw invalidRequest();
+        if (!GroupWorkspaceKey.isValid(value)) throw invalidRequest();
         return value;
     }
 

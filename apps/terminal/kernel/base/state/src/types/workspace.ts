@@ -1,5 +1,5 @@
 import type {Reducer, UnknownAction} from '@reduxjs/toolkit';
-import type {StateRuntimeSliceDescriptor, StateRuntimeSliceRegistration} from './slice';
+import type {StateRuntimeSliceDescriptor} from './slice';
 
 export type WorkspaceKey = 'MAIN' | 'BRANCH';
 

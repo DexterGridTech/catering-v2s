@@ -99,6 +99,7 @@ describe('LayerStack filtered hydration behavior', () => {
 
     expect(renderer.queryAllByTestId('ui-base-render:layer-backdrop')).toHaveLength(0);
     expect(renderer.queryAllByTestId('ui-base-render:layer:stale-mobile-layer')).toHaveLength(0);
+    expect(renderer.getByTestId('ui-base-render:layer-stack').props.pointerEvents).toBe('box-none');
     await renderer.unmount();
   });
 });

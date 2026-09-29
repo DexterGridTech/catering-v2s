@@ -27,8 +27,11 @@ import {
 
 vi.mock('react-native', async importOriginal => {
   const actual = await importOriginal<typeof import('react-native')>();
-  const {withNativeTestHosts} = await import('../../../../../../tools/terminal-shared/rntl-native-test-host');
-  return withNativeTestHosts(actual);
+  const [{withNativeTestHosts}, reactRuntime] = await Promise.all([
+    import('../../../../../../tools/terminal-shared/rntl-native-test-host'),
+    import('react'),
+  ]);
+  return withNativeTestHosts(actual, reactRuntime);
 });
 
 const topologyFacts = Object.freeze({

@@ -32,7 +32,7 @@ export const useMemberList = () => {
         definition: deskSystemFailureObservedCommand,
         payload: {operation: 'logout'},
       });
-    } catch (_error) {
+    } catch {
       // useDispatchCommand has already emitted the structured rejection diagnostic.
     }
   }, [dispatchCommand]);

@@ -5,6 +5,7 @@ import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.platform.asset.api.WorkspaceLogoAssetCommand;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
+import com.catering.v2s.platform.identity.GroupWorkspaceKey;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationPage;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationPageRequest;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
@@ -359,8 +360,7 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
     }
 
     private static String requiredKey(String value) {
-        if (value == null || !value.matches("[A-Za-z0-9][A-Za-z0-9_-]{0,63}"))
-            throw new WorkspaceInputInvalidException();
+        if (!GroupWorkspaceKey.isValid(value)) throw new WorkspaceInputInvalidException();
         return value;
     }
 

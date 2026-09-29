@@ -3,6 +3,76 @@
 Status source for the implementation plan. This file is intentionally outside the L2 admission
 control-plane digest so runtime evidence can be appended without invalidating the reviewed UI bytes.
 
+## Current state at 2026-09-29 00:03 UTC — DEV readiness cleanup and final verifier diagnosis
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE; NETWORK=CONNECTED; SSH_OR_ROUTE_CONFIGURATION=UNCHANGED
+FIRST_DEV_START_FAILURE=r5-dev-1790638885785-22885-cf558c40-fe61-46ee-a469-9dec06a9499d; TDS readiness WebSocket probe used `/`, which does not match the TDS `/tdp/*/ws` route; failure retained; cleanup=PASS
+DEV_READINESS_REPAIR=PASS; `scripts/dev/r5-dev-runner.mjs` now probes `/tdp/dev-readiness-probe/ws`; its focused test binds the route to the actual TDS mapping and checks safe failure diagnostics
+LATEST_CURRENT_BYTE_MANAGED_RUN=r5-dev-1790639351387-35289-b212b257-3400-42c5-80d4-aefe9dd423ef; 2026-09-28T23:49:11.387Z–23:50:56.282Z; DEV readiness/business=PASS; cleanup=PASS
+LAST_MANAGED_PASS=same DEV run; TDS RSS=107896 KiB / 512 MiB; application type=REACTIVE; WebSocket readiness probe PASS; remote Java/TDS, tunnels and Vite processes stopped; post-stop managed resource inventory=0 processes / 0 MiB
+DEV_LOG_EVIDENCE=.runtime/r5/dev/r5-dev-1790639351387-35289-b212b257-3400-42c5-80d4-aefe9dd423ef/{business-server.log,tds-server.log}; TDS accepted the routed handshake and finished its handler; readiness probe did not send an auth frame and produced no credential/session/write event
+DEV_FOCUSED_PROOF=PASS; `node --check` on runner/test; `node --test scripts/dev/r5-dev-command-wrapper.test.mjs` 17/17; Prettier check PASS
+CURRENT_BYTE_SCRIPTS_VERIFY=FAIL; command=`scripts/verify`; static phase including terminal-static PASS; first runtime failure=`THCL-04-node-tests`; log=.runtime/r5/evidence/terminal-activation-final-scripts-verify-20260929.log; SHA256=9909da36dc155f38ccb410236e201a7f32c3775a6f6704a315679a077818ef77
+VERIFY_FAILURE_DIAGNOSTICS=IMPROVED; tools/verify-gates/verify.mjs now records run id, command label, status, signal, spawn error code, output byte counts and elapsed time; `scripts/test/standards-enforcement-verify.test.mjs` 7/7 PASS; formatting PASS
+LATEST_CURRENT_BYTE_FOCUSED_RUN=r5-verify-54026-1790640084004; THCL-04 diagnostic execution status=1, signal=null, spawnError=null, stdoutBytes=150611, stderrBytes=0, duration=1941 ms; 574 tests: 568 PASS / 6 FAIL
+THCL_FAILURES=OUT_OF_STAGE_1_TER_ANDROID_TESTS; `scripts/test/ter-persist-kv-prechange-android.test.mjs` and `scripts/test/ter-virtual-keyboard-android.test.mjs`; no Stage-1 TDS/DEV assertion failed. These files and their owning TER production scripts were left unchanged.
+LATEST_CURRENT_BYTE_NONMANAGED_PASS=7/7 `scripts/test/standards-enforcement-verify.test.mjs` plus `node --check` and Prettier checks on the verifier diagnostic change
+V-S14=9_SCENARIOS; D-43=UNKNOWN_FIELDS_IGNORED_LANDED
+BACKEND_ACCEPTANCE=PASS; 195/195 CONTRACT+BUSINESS; TDS CONTRACT=24/24; V-S12 30-second outage and V-S14 9 scenarios included; cleanup PASS (run `r5-tc-1790633725653-92605`)
+BROWSER_L2=PASS; 6/6 cases; cleanup PASS (run `l2-1790637818421-93210-98cf9a94-58ce-46bf-a414-1aee4f225ae6`)
+SEED_DRY_RUN=PASS; run after the recorded Browser L2 run; no reset or actual seed performed
+L2_ENTRY_ORDER=NONCONFORMING; the saved 6/6 L2 run predates the full seed dry-run prerequisite, so preserve it as observed behavior only and do not count it as the final admissible L2 evidence
+L2_EVIDENCE_REMEDIATION=after a current-byte whole-batch 6b MATCHED, run the same six-case managed Browser L2 again with all four dynamic-front admission records already PASS; report the earlier run unchanged
+NEXT=preserve the unrelated TER THCL failure; complete current-byte whole-batch 6b, the post-prerequisite L2 run, 13c, fresh REVIEW_TARGET=IMPLEMENTATION, then issue the Claude static-review handoff
+```
+
+The first DEV readiness failure was caused by the probe path, not connectivity. Network access stayed
+enabled throughout; no network or SSH routing configuration was changed. The corrected readiness run
+used the route TDS actually serves and then completed the managed stop with all cleanup fields PASS.
+
+The final full `scripts/verify` attempt stopped at its first runtime entry. The THCL diagnostic rerun
+captured six failures in the two unrelated TER Android test files named above; the recorded result
+does not attribute them to the terminal-activation batch. The batch's focused DEV diagnostics and
+verifier-diagnostics proof pass, but the repository-wide default verifier remains red until that
+TER-owned test mismatch is handled. No Stage-1 application source was changed after the successful
+managed DEV run.
+
+The saved Browser L2 execution returned 6/6 PASS, but this execution occurred before the required
+complete-seed dry-run PASS. It remains historical observed output and is not counted as the final
+admissible L2 evidence. The seed dry-run now passes; after the current-byte whole-batch 6b review,
+repeat the same six-case managed L2 with all admission prerequisites already recorded PASS.
+
+## Current state at 2026-09-28 23:34 UTC — selector repair and complete Browser L2 pass
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE; NETWORK=CONNECTED; SSH_OR_ROUTE_CONFIGURATION=UNCHANGED
+L2_ADMISSION_REVIEW=PASS; reviewer=/root/store_terminal_l2_final_admission; M/S/N=0/0/0; admissionDigest=7813036e9c7ebce5fc49139c8708b8e51b7a198915758b45a5bbd88b133801bb; cases=6; controlPlane=36; UI=22; bytes=2169585
+L2_ADMISSION_VALIDATOR_FIX=PASS; newest review block binds reviewer kind, PASS and current digest; historical-PASS/current-OPEN red fixture rejects; node --test scripts/test/l2-suite-admission.test.mjs scripts/test/store-terminal-l2-admission.test.mjs = 6/6
+CURRENT_SOURCE_BYTE_BINDING=run-scoped; files=2033; bytes=18122586; SHA256=db9a65f4a2489d1cd785bd6c90f61a0dece9b19025855d4d6e4dc3ab58420342
+L2_READINESS=PASS; run=l2-1790637818421-93210-98cf9a94-58ce-46bf-a414-1aee4f225ae6; activeCaseIds=6; run-scoped P1 profile exact-set/run binding PASS
+L2_P1_GENERATOR_CHECK=PASS; STORE_TERMINAL_L2_P1=PASS; CASES=0; MODE=FRAMEWORK_ONLY; READINESS=NONE
+L2_FINALIZE=PASS; same run; files=2033; bytes=18122586; binding digest matches readiness
+LATEST_CURRENT_BYTE_MANAGED_RUN=l2-1790637818421-93210-98cf9a94-58ce-46bf-a414-1aee4f225ae6; 2026-09-28T23:25:25.861Z–23:26:32.068Z; BROWSER_L2=PASS; 6/6 cases; BUSINESS=PASS; CLEANUP=PASS
+LAST_MANAGED_PASS=l2-1790637818421-93210-98cf9a94-58ce-46bf-a414-1aee4f225ae6; same interval; source binding and L2 admission digest match current bytes
+PLAYWRIGHT=6 expected; 0 unexpected; 0 flaky; duration=47414.227ms; all six exact active IDs executed
+L2_FIRST_FAILURE_PRESERVED=l2-1790634520256-8717-d0b03cae-f28e-4bd1-8d22-4d62fb5e880c; terminal-create-configuration; PLAYWRIGHT_ASSERTION; lastKnownGood=L2_CASES_2_PASS; later cleanup recovery PASS
+L2_FAILURE_ROOT_CAUSE=operationsL2 selector helper made an immediate controlled-value read then clicked the same multiple-select option twice; repaired to await semantic selection after one pointer click before keyboard fallback; helper regression and current full L2 pass
+EXPECTED_NEGATIVE_BROWSER_LOG=one ERROR in terminal-status-actions from the declared failNextStatusMutation HTTP 409 case; scenario asserted the status-problem surface and passed
+L2_CLEANUP=PASS; firstFailure=null; brokenBoundary=null; cleanupErrors=[]; artifactErrors=[]; manifest=.runtime/browser-l2/l2-1790637818421-93210-98cf9a94-58ce-46bf-a414-1aee4f225ae6/l2-execution-manifest.json; cleanup=.runtime/browser-l2/l2-1790637818421-93210-98cf9a94-58ce-46bf-a414-1aee4f225ae6/l2-cleanup-manifest.json
+V-S14=9_SCENARIOS; D-43=UNKNOWN_FIELDS_IGNORED_LANDED
+NEXT=finish remaining authorized batch-1 runtime checks and D-34 reset/seed entry review, then complete final whole-batch reconciliation, 13c and implementation review before delivery
+```
+
+The earlier `terminal-create-configuration` failure remains recorded above under its original run and
+was not rewritten. The current run's 409 console error is the scenario's explicitly injected negative
+status response, not an unexplained application failure. Readiness, the run-scoped P1 profile,
+repository byte binding, Playwright result, diagnostic events and cleanup manifest were read back;
+the current run has no failure or artifact errors. This L2 result is separate from backend-acceptance
+evidence and does not claim reset, seed, DEV, UAT, deployment or device operation.
+
 ## Current state at 2026-09-28 19:27 UTC — R3-M1 mutation caught
 
 ```text
@@ -1118,3 +1188,64 @@ claim topology, business, TDS CONTRACT, DB operations, or cleanup results.
 当前字节上的最新运行：身份静态验证 46/46 PASS（exec session 94966）；尚无修复后受管运行。
 
 最后一次通过：静态验证是当前字节；最后一个受管 PASS `r5-tc-1790586025608-67247` 属于修复前字节。
+
+## Current state 2026-09-29 02:03 UTC — full acceptance and Browser L2 PASS
+
+```text
+IMPLEMENTATION=AUTHORIZED_IN_PROGRESS
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+WHOLE_BATCH_6B=EXISTING_MATCHED_RECORD_REUSED; NOT_REPEATED
+L2_ADMISSION=PASS; digest=27abd37ee8548962c49f7688393def93bc473f006088e5bedcace04f2c33fdb1; cases=6; control-plane=36; UI=22; files=58; unique-paths=48; bytes=2170957
+LATEST_BACKEND_ACCEPTANCE=r5-tc-1790645813448-70364; 2026-09-29T01:36:53.456Z–01:45:24.117Z; BUSINESS=PASS 195/195; TDS_CONTRACT=PASS 39/39; V-S14=PASS 9/9; CLEANUP=PASS
+BROWSER_L2_RUN=l2-1790647239885-78066-4ecba04a-1016-4274-8c59-5b793be5544a; 2026-09-29T02:02:25.034Z–02:03:35.980Z; DISCOVERED=6; SELECTED=6; RESULTS=6; BUSINESS=PASS; CLEANUP=PASS
+BROWSER_L2_CASES=terminal-list-detail,terminal-create-basic,terminal-create-configuration,terminal-edit-configuration,terminal-readonly-state,terminal-status-actions; all six ordered cases PASS
+BROWSER_L2_JOIN=COMPLETE; HTTP_COMPLETIONS=64; BACKEND_COMPLETIONS=124; DB_SECTION_ROWS=1806; MISSING/UNEXPECTED_CONTROL_OR_ACTION=0; INVALID_CASE_SCOPED_EVENTS=0
+BROWSER_L2_BINDING=3723b1f8a4a25741e9fa4881e784ddecc650012c450f203fef020d507664ca44; FILES=2033; BYTES=18142165
+BROWSER_L2_CLEANUP=PASS; cleanupErrors=0; artifactErrors=0; remoteRootAbsent=true; runtimeState=FINISHED
+CURRENT_BYTE_SEED_DRY_RUN=PASS; SOURCE_ITEMS=73; CREATED_ITEMS=72; EXCLUDED_ITEMS=1; MEDIA=34; TERMINALS=8; no database/remote writes
+RESET=NOT_RUN; ACTUAL_SEED=NOT_RUN; DEV=NOT_RUN; UAT=NOT_AUTHORIZED
+NEXT=verify exact current DEV ownership and reset target; then managed reset → managed DEV start → explicit full seed, with separate business/cleanup/readback evidence
+```
+
+Run evidence: `.runtime/browser-l2/l2-1790647239885-78066-4ecba04a-1016-4274-8c59-5b793be5544a/`.
+The join artifact reports all six cases `COMPLETE`; Playwright errors are empty; the remote server,
+Playwright stderr, HTTP/asset tunnel and operations-admin Vite logs were read and had no error/fatal,
+uncaught-exception or first-failure markers. Cleanup evidence is in `l2-cleanup-manifest.json` and
+the final result is in `l2-execution-manifest.json`.
+
+The first current-byte L2 admission attempt was preserved as
+`L2_SCRIPT_ADMISSION_SOURCE_DRIFT`: its digest predated the implementation-plan V-S2 note. The
+independent reviewer recomputed the same current snapshot, the record was refreshed without changing
+the L2 source set, and `validateAdmission()` then returned `PASS`. No Browser L2 case was run before
+admission passed. No whole-batch reconciliation was repeated.
+
+当前字节上的最新运行：Browser L2 `l2-1790647239885-78066-4ecba04a-1016-4274-8c59-5b793be5544a`，6/6 BUSINESS PASS、JOIN COMPLETE、CLEANUP PASS；backend-acceptance `r5-tc-1790645813448-70364` 195/195 与 TDS 39/39 PASS。
+
+最后一次通过：上述 Browser L2 与 backend-acceptance 都绑定本轮执行源码；seed dry-run PASS（非受管、只读，无 run id）。
+
+## Current state 2026-09-29 — Stage 1 acceptance results and Claude static-review handoff
+
+```text
+SCOPE=STAGE_1_ONLY; TER_TERMINAL_OPTIMIZATION=OUT_OF_SCOPE
+WHOLE_BATCH_6B=EXISTING_MATCHED_RECORD_REUSED; NOT_REPEATED
+BACKEND_ACCEPTANCE=r5-tc-1790645813448-70364; 2026-09-29T01:36:53.456Z–01:45:24.117Z; BUSINESS=PASS 195/195; TDS_CONTRACT=PASS 39/39; V-S14=PASS 9/9; V-S12=PASS; CLEANUP=PASS
+BROWSER_L2=l2-1790647239885-78066-4ecba04a-1016-4274-8c59-5b793be5544a; 2026-09-29T02:02:25.034Z–02:03:35.980Z; BUSINESS=PASS 6/6; JOIN=COMPLETE; CLEANUP=PASS
+RESET=r5-reset-a0b71a32-9024-40c9-a8a8-bc51cf1ebe88; BUSINESS=PASS_DATABASE_ABSENT_READBACK; CLEANUP=PASS_NO_PERSISTENT_RESET_PROCESS
+DEV=r5-dev-1790648010692-82038-02ad66e5-6750-47b1-a639-e10feef89ede; READINESS=PASS; REMOTE_JAVA_AND_TDS=PASS; WEBSOCKET_READINESS=PASS; TDS_RSS=104716_KIB/512_MIB
+ACTUAL_SEED=complete-seed-4987ef30-2993-4e97-84d7-7e7b541bd473; 2026-09-29T02:18:45.139Z–02:22:50.821Z; BUSINESS=PASS; CLEANUP=PASS_PRESERVED_DEV_STATE; seed stages=4/4; store-terminal post-step=PASS (create/detail/list=8/8/7)
+LATEST_REPOSITORY_DEFAULT_VERIFY=FAIL; command=scripts/verify; first failure=THCL-04-node-tests; log=.runtime/r5/evidence/terminal-activation-final-scripts-verify-20260929.log; SHA256=9909da36dc155f38ccb410236e201a7f32c3775a6f6704a315679a077818ef77
+THCL_DIAGNOSTIC=r5-verify-54026-1790640084004; 574 tests; 568 PASS / 6 FAIL; failures are in scripts/test/ter-persist-kv-prechange-android.test.mjs and scripts/test/ter-virtual-keyboard-android.test.mjs, outside Stage 1
+VERIFY_CURRENT_BYTE_STATUS=NOT_RECHECKED_AFTER_SEPARATE_TER_WORK; ter-virtual-keyboard-android.test.mjs has since changed; do not claim repository-default verify is green
+CLAUDE_STATIC_REVIEW=REQUESTED; no additional dynamic run or whole-batch reconciliation performed for this handoff
+```
+
+The acceptance evidence above is recorded in the corresponding managed run manifests and logs;
+the full seed report is `.runtime/r5/seed/complete/complete-seed-4987ef30-2993-4e97-84d7-7e7b541bd473/seed-report.md`.
+The repository-default verifier remains explicitly unresolved: its last diagnostic run had six
+failures in TER Android Node tests, and one of those test files was subsequently changed by the
+separate TER work. This status is not evidence of a Stage 1 TDS/backend failure, and it is not a
+claim that the current default verifier passes.
+
+当前字节上的最新运行：完整 seed `complete-seed-4987ef30-2993-4e97-84d7-7e7b541bd473`，Business PASS，cleanup `PASS_PRESERVED_DEV_STATE`；阶段一 backend-acceptance、TDS、V-S14、Browser L2 与 reset 均 PASS。
+
+最后一次通过：上述阶段一受管验收结果；仓库默认 `scripts/verify` 的最近记录为 THCL-04 FAIL（568/574），当前字节尚未复跑。

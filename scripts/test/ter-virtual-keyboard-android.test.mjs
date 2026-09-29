@@ -14,6 +14,7 @@ import {
   perControlVisualAuditRows,
   parseArgs,
   debugFailureInjectionIntentArgs,
+  summarizeDebugFailureInjectionLogcat,
   debugNativeLoadingDelayIntentArgs,
   parseAndroidProcessTable,
   parseLogicalDisplays,
@@ -338,7 +339,8 @@ test('successful Gradle output binds a nonempty APK by exact bytes without requi
     source.indexOf('async function remoteProcessIdentity('),
   );
   assert.match(build, /createAppBuildBinding\(path\.relative\(ROOT, apk\), bytes\)/);
-  assert.match(build, /'--rerun-tasks'/);
+  assert.ok(runner.managedGradleBuildArgs('sample-terminal', 'release').includes('--rerun-tasks'));
+  assert.ok(runner.managedGradleBuildArgs('sample-terminal', 'debug').includes('--rerun-tasks'));
   assert.match(build, /buildType === 'release' \? releaseBuildEnvironment\(\) : process\.env/);
   assert.doesNotMatch(build, /mtime|BUILD_ARTIFACT_NOT_REFRESHED/);
   assert.deepEqual(runner.releaseBuildEnvironment({NODE_ENV: 'development', CI: '1'}), {
@@ -439,6 +441,203 @@ test('debug failure injection uses an explicit bounded VIEW intent and remains u
   assert.match(dispatcher, /action === 'clear-failure-injection'/);
   assert.match(dispatcher, /binding\?\.buildType !== 'debug'/);
   assert.match(dispatcher, /debugFailureInjectionIntentArgs\(app\.activity\)/);
+  assert.match(dispatcher, /action === 'inspect-debug-failure-injection'/);
+  const logInspector = source.slice(
+    source.indexOf('async function inspectDebugFailureInjection('),
+    source.indexOf('function launchAttemptLogLines('),
+  );
+  assert.match(logInspector, /requireOwnedApp\(manifest, shape, appName\)/);
+  assert.match(logInspector, /remoteProcessIdentityMatches\(owned, observed, device\.serial\)/);
+  assert.match(logInspector, /'ReactNativeJS:V'/);
+  assert.match(logInspector, /diagnosticOutput: 'omit'/);
+
+  for (const appName of ['sample-terminal', 'sample-wallpaper-terminal']) {
+    const gradle = fs.readFileSync(
+      path.join(root, 'apps/terminal/application/android', appName, 'android/app/build.gradle'),
+      'utf8',
+    );
+    assert.match(gradle, /debuggableVariants\s*=\s*\[\]/);
+    assert.match(gradle, /afterEvaluate\s*\{[\s\S]*?tasks\.named\("createBundleDebugJsAndAssets"\)[\s\S]*?task\.devEnabled\.set\(true\)/);
+    assert.match(gradle, /TER_DEBUG_FAILURE_INJECTION_DEV_MODE_REQUIRED/);
+    assert.match(gradle, /TER_DEBUG_FAILURE_INJECTION_BUNDLE_DEV_ENABLED/);
+    assert.doesNotMatch(
+      gradle,
+      /if\s*\(task\.name\s*==\s*"createBundleReleaseJsAndAssets"\)\s*\{[^}]*devEnabled\.set\(true\)/,
+    );
+  }
+});
+
+test('debug injection log summary is app-PID-bound and never retains raw URLs', () => {
+  const logcat = [
+    'I/ReactNativeJS( 4100): {"level":"info","category":"runtime.system-failure","event":"runtime.system-failure.debug-injection-resolution","message":"TER_DEBUG_FAILURE_INJECTION_RESOLUTION source=initial owner=screen:main:sample.desk.member-list outcome=matched","scope":{"moduleName":"ui-base-render"}}',
+    'I/ReactNativeJS( 4200): {"level":"info","category":"runtime.system-failure","event":"runtime.system-failure.debug-injection-resolution","message":"TER_DEBUG_FAILURE_INJECTION_RESOLUTION source=initial owner=screen:main:sample.desk.member-list outcome=other-owner","scope":{"moduleName":"ui-base-render"}}',
+    'I/ReactNativeJS( 4100): {"message":"ter-failure://inject/private"}',
+  ].join('\n');
+  const summary = summarizeDebugFailureInjectionLogcat(logcat, ['4100'], 'screen:main:sample.desk.member-list');
+
+  assert.deepEqual(summary, {
+    signalCount: 1,
+    targetOwnerSignalCount: 1,
+    targetOwnerOutcomes: ['matched'],
+    observedOwners: ['screen:main:sample.desk.member-list'],
+  });
+  assert.doesNotMatch(JSON.stringify(summary), /ter-failure:\/\//);
+  assert.throws(() => summarizeDebugFailureInjectionLogcat(logcat, [], 'screen:main:sample.desk.member-list'));
+});
+
+test('startup failure summary retains only allowlisted structured runtime events for the exact app PID', () => {
+  const logcat = [
+    '1790658953.100 11338 11338 I ReactNativeJS: {"level":"info","category":"runtime.system-failure","event":"runtime.system-failure.debug-injection-resolution","message":"TER_DEBUG_FAILURE_INJECTION_RESOLUTION source=initial owner=screen:main:sample.desk.member-list outcome=matched","data":{"ownerId":"screen:main:sample.desk.member-list","source":"initial","urlPresent":true,"outcome":"matched","rawUrl":"ter-failure://inject/private"}}',
+    '1790658953.200 11338 11338 E ReactNativeJS: {"level":"error","category":"runtime.system-failure","event":"runtime.system-failure.render-failed","message":"A rendered terminal region failed","data":{"ownerId":"screen:main:sample.desk.member-list","errorName":"Error","exceptionMessage":"private payload"}}',
+    '1790658953.300 11338 11338 I ReactNativeJS: {"level":"info","category":"startup.ready-candidate","event":"startup.ready-candidate","message":"Visible PRIMARY content failure completed its first layout","data":{"readyPartKey":"sample.desk.member-list","contentFailure":"render-error","surfaceKey":"PRIMARY","displayIndex":0,"layoutWidth":1280,"rawPayload":"private payload"}}',
+    '1790658953.400 11999 11999 E ReactNativeJS: {"event":"runtime.system-failure.render-failed","data":{"ownerId":"screen:main:sample.desk.member-list","errorName":"OtherProcessError"}}',
+  ].join('\n');
+
+  const summary = runner.summarizeStructuredRuntimeDiagnostics(logcat, ['11338']);
+
+  assert.deepEqual(summary, {
+    eventCount: 3,
+    events: [
+      {
+        event: 'debug-injection-resolution',
+        ownerId: 'screen:main:sample.desk.member-list',
+        source: 'initial',
+        outcome: 'matched',
+        urlPresent: true,
+      },
+      {
+        event: 'render-failed',
+        ownerId: 'screen:main:sample.desk.member-list',
+        errorName: 'Error',
+      },
+      {
+        event: 'startup-ready-candidate',
+        readyPartKey: 'sample.desk.member-list',
+        contentFailure: 'render-error',
+        surfaceKey: 'PRIMARY',
+        displayIndex: 0,
+      },
+    ],
+  });
+  assert.doesNotMatch(JSON.stringify(summary), /ter-failure:|private payload|rawPayload|rawUrl/);
+});
+
+test('JavaScript startup failure summary classifies exact-PID errors without retaining raw messages', () => {
+  assert.equal(typeof runner.summarizeJavaScriptRuntimeErrors, 'function');
+  const summary = runner.summarizeJavaScriptRuntimeErrors(
+    [
+      'E/ReactNativeJS( 22496): TypeError: password=secret token=secret-value',
+      'E/ReactNativeJS( 22496): Error: TER_DEBUG_FAILURE_INJECTION',
+      'E/ReactNativeJS( 99999): Invariant Violation: unrelated app',
+      'E/AndroidRuntime( 22496): java.lang.IllegalStateException: native',
+    ].join('\n'),
+    ['22496'],
+  );
+  assert.deepEqual(summary, {errorCount: 2, kinds: ['INJECTED_FAILURE', 'JS_TYPE_ERROR']});
+  assert.doesNotMatch(JSON.stringify(summary), /password|secret|token|unrelated/);
+});
+
+test('resolved debug injection reinspection is APK, boot, launch-marker, and startup-PID bound', async () => {
+  const manifest = validManifest();
+  const intent = {
+    intentId: 'dual-sample-terminal-debug-epoch-01',
+    shape: 'dual',
+    appName: 'sample-terminal',
+    packageName: 'com.anonymous.sampleterminal',
+    host: 'emulator-5554',
+    bootId: 'boot-12345678',
+    startedAt: '2026-09-29T04:59:32.749Z',
+    resolvedAt: '2026-09-29T04:59:52.656Z',
+    resolution: 'PROCESS_ABSENT',
+    processCount: 0,
+  };
+  manifest.appBindings['sample-terminal'] = {
+    apkPath: 'apps/terminal/application/android/sample-terminal/android/app/build/outputs/apk/debug/app-debug.apk',
+    bytes: 123,
+    sha256: 'b'.repeat(64),
+    buildType: 'debug',
+  };
+  manifest.resolvedRemoteLaunches = [intent];
+  manifest.launchDiagnostics = [
+    {
+      intentId: intent.intentId,
+      shape: intent.shape,
+      appName: intent.appName,
+      packageName: intent.packageName,
+      host: intent.host,
+      bootId: intent.bootId,
+      startupPid: '321',
+    },
+  ];
+
+  const calls = [];
+  const briefLogcat = [
+    'I/ReactNativeJS( 321): Error: unrelated earlier event',
+    'I/TER-VK-LAUNCH( 999): intent=other-launch',
+    'I/ReactNativeJS( 654): TER_DEBUG_FAILURE_INJECTION_RESOLUTION source=initial owner=screen:main:sample.desk.member-list outcome=matched',
+    `I/TER-VK-LAUNCH( 999): intent=${intent.intentId}`,
+    'E/ReactNativeJS( 321): TypeError: password=secret token=secret-value',
+    'I/ReactNativeJS( 321): TER_DEBUG_FAILURE_INJECTION_RESOLUTION source=initial owner=screen:main:sample.desk.member-list outcome=matched',
+    'I/ReactNativeJS( 321): TER_DEBUG_FAILURE_INJECTION_RESOLUTION source=event owner=screen:main:sample.desk.member-list outcome=clear',
+  ].join('\n');
+  const summary = await runner.collectResolvedDebugFailureInjectionLogEvidence(
+    manifest,
+    intent.intentId,
+    'screen:main:sample.desk.member-list',
+    async (_manifest, device, label, args, options) => {
+      calls.push({serial: device.serial, label, args, options});
+      return label.endsWith('boot-id') ? intent.bootId : briefLogcat;
+    },
+  );
+
+  assert.deepEqual(summary, {
+    intentId: intent.intentId,
+    host: intent.host,
+    bootId: intent.bootId,
+    apkSha256: 'b'.repeat(64),
+    startupPid: '321',
+    ownerId: 'screen:main:sample.desk.member-list',
+    javascriptErrors: {errorCount: 1, kinds: ['JS_TYPE_ERROR']},
+    signalCount: 2,
+    targetOwnerSignalCount: 2,
+    targetOwnerOutcomes: ['matched', 'clear'],
+    observedOwners: ['screen:main:sample.desk.member-list'],
+  });
+  assert.deepEqual(calls.map(call => call.label), [
+    'dual-sample-terminal-resolved-debug-injection-pre-boot-id',
+    'dual-sample-terminal-resolved-debug-injection-logcat',
+    'dual-sample-terminal-resolved-debug-injection-post-boot-id',
+  ]);
+  assert.ok(calls.every(call => call.serial === intent.host));
+  assert.deepEqual(calls[1].args, [
+    'shell',
+    'logcat',
+    '-d',
+    '-t',
+    '2000',
+    '-v',
+    'brief',
+    '-s',
+    'TER-VK-LAUNCH:I',
+    'ReactNativeJS:V',
+  ]);
+  assert.equal(calls[1].options?.diagnosticOutput, 'omit');
+  assert.equal(JSON.stringify(summary).includes('ter-failure://'), false);
+
+  const wrongBootCalls = [];
+  await assert.rejects(
+    () => runner.collectResolvedDebugFailureInjectionLogEvidence(
+      manifest,
+      intent.intentId,
+      'screen:main:sample.desk.member-list',
+      async (_manifest, _device, label) => {
+        wrongBootCalls.push(label);
+        return 'boot-87654321';
+      },
+    ),
+    /VK_ANDROID_PENDING_LAUNCH_IDENTITY_MISMATCH/,
+  );
+  assert.deepEqual(wrongBootCalls, ['dual-sample-terminal-resolved-debug-injection-pre-boot-id']);
 });
 
 test('native-loading main-thread injection is bounded and requires a debug launch', () => {
@@ -481,6 +680,35 @@ test('native-loading main-thread injection is bounded and requires a debug launc
   assert.match(installer, /debugNativeLoadingDelayIntentArgs\(app\.activity, Number\(nativeLoadingDelayMs\)\)/);
   assert.match(installer, /nativeLoadingDelayMs !== null && initialFailureOwnerId !== null/);
   assert.match(dispatcher, /args\['native-loading-delay-ms'\]/);
+});
+
+test('managed debug builds keep JS dev injection but disable the native Metro probe only for managed runs', () => {
+  for (const appName of ['sample-terminal', 'sample-wallpaper-terminal']) {
+    const applicationPackageDirectory =
+      appName === 'sample-terminal' ? 'com/anonymous/sampleterminal' : 'com/catering/v2s/terminal/samplewallpaper';
+    const gradle = fs.readFileSync(
+      path.join(root, 'apps/terminal/application/android', appName, 'android/app/build.gradle'),
+      'utf8',
+    );
+    const application = fs.readFileSync(
+      path.join(
+        root,
+        'apps/terminal/application/android',
+        appName,
+        `android/app/src/main/java/${applicationPackageDirectory}`,
+        'MainApplication.kt',
+      ),
+      'utf8',
+    );
+    assert.match(gradle, /terDisableNativeDevSupport/);
+    assert.match(gradle, /buildConfigField\s+"boolean",\s+"TER_DISABLE_NATIVE_DEV_SUPPORT"/);
+    assert.match(
+      application,
+      /useDevSupport\s*=\s*BuildConfig\.DEBUG\s*&&\s*!BuildConfig\.TER_DISABLE_NATIVE_DEV_SUPPORT/,
+    );
+  }
+  assert.ok(runner.managedGradleBuildArgs('sample-terminal', 'debug').includes('-PterDisableNativeDevSupport=true'));
+  assert.ok(!runner.managedGradleBuildArgs('sample-terminal', 'release').includes('-PterDisableNativeDevSupport=true'));
 });
 
 test('report retains the full IA by app by VM-shape by surface observation denominator without visual false PASS', () => {
@@ -898,6 +1126,45 @@ test('pending remote launch survives a failed readback so cleanup cannot report 
   assert.deepEqual(order, ['persist:1', 'launch:1', 'readback:1']);
   assert.equal(manifest.pendingRemoteLaunches.length, 1);
   assert.equal(manifest.ownedRemoteProcesses.length, 0);
+});
+
+test('successful pending remote launch records the resolved intent and owned process exactly once', async () => {
+  const manifest = {devices: {dual: {serial: 'emulator-5554'}}, pendingRemoteLaunches: [], ownedRemoteProcesses: []};
+  const intent = {
+    host: 'emulator-5554',
+    bootId: 'boot-a',
+    packageName: 'com.anonymous.sampleterminal',
+    appName: 'sample-terminal',
+    shape: 'dual',
+    intentId: 'launch-adopted-01',
+  };
+  await runner.launchWithPendingOwnership(manifest, intent, {
+    persist: async () => {},
+    launch: async () => {},
+    readback: async () => ({
+      host: intent.host,
+      bootId: intent.bootId,
+      processes: [{pid: 8700, startTicks: '1305669748'}],
+    }),
+  });
+
+  assert.deepEqual(manifest.pendingRemoteLaunches, []);
+  assert.equal(manifest.resolvedRemoteLaunches?.length, 1);
+  assert.equal(manifest.resolvedRemoteLaunches[0].intentId, intent.intentId);
+  assert.equal(manifest.resolvedRemoteLaunches[0].resolution, 'PROCESS_ADOPTED');
+  assert.equal(manifest.resolvedRemoteLaunches[0].processCount, 1);
+  assert.equal(manifest.ownedRemoteProcesses.length, 1);
+  assert.equal(manifest.ownedRemoteProcesses[0].processes[0].pid, 8700);
+});
+
+test('W10 observation does not shadow the runner stdout binding with app process identity', () => {
+  const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
+  const observation = source.slice(
+    source.indexOf('async function observeA11W10('),
+    source.indexOf('function screenshotPath('),
+  );
+  assert.doesNotMatch(observation, /\b(?:const|let|var)\s+process\b/);
+  assert.match(observation, /process\.stdout\.write\(/);
 });
 
 test('managed cleanup recovers only runner-recorded invalidated app ownership on the same host and boot', () => {
@@ -1439,10 +1706,12 @@ test('launch crash diagnostics expose only package-bound failure facts and recon
     action,
     /summarizeAndroidLaunchDiagnostics\(logcat, intent\.packageName, breadcrumbs\.startupPid, intent\.intentId\)/,
   );
-  assert.match(action, /'AndroidRuntime:E', 'ReactNativeJS:E'/);
-  assert.match(action, /'TER-VK-LAUNCH:I', 'TER-Splash:I'/);
-  assert.match(action, /'ActivityManager:I', 'ActivityTaskManager:I'/);
+  assert.match(action, /'AndroidRuntime:E',\s*'ReactNativeJS:V'/);
+  assert.match(action, /'TER-VK-LAUNCH:I',\s*'TER-Splash:I'/);
+  assert.match(action, /'ActivityManager:I',\s*'ActivityTaskManager:I'/);
   assert.match(action, /diagnosticOutput: 'omit'/);
+  assert.match(action, /summarizeStructuredRuntimeDiagnostics\(\s*logcat,/);
+  assert.match(action, /runtimeEvents,/);
   assert.match(action, /resolvePendingRemoteLaunch\(manifest, intent\.intentId, observed\)/);
   assert.match(source, /action === 'diagnose-pending-launch'/);
 });
@@ -1590,7 +1859,7 @@ test('launch breadcrumb diagnostics expose only whitelisted TER-Splash stages fo
     /summarizeAndroidLaunchDiagnostics\(logcat, intent\.packageName, breadcrumbs\.startupPid, intent\.intentId\)/,
   );
   assert.match(inspection, /'TER-Splash:I'/);
-  assert.match(inspection, /'TER-VK-LAUNCH:I', 'TER-Splash:I'/);
+  assert.match(inspection, /'TER-VK-LAUNCH:I',\s*'TER-Splash:I'/);
   assert.match(inspection, /diagnosticOutput: 'omit'/);
   const resolvedProcessTableRead = inspection.slice(
     inspection.indexOf('const processTableText ='),
@@ -1599,8 +1868,8 @@ test('launch breadcrumb diagnostics expose only whitelisted TER-Splash stages fo
   assert.match(resolvedProcessTableRead, /'shell', 'ps', '-A', '-o', 'PID,NAME'/);
   assert.match(resolvedProcessTableRead, /diagnosticOutput: 'sanitized'/);
   assert.doesNotMatch(resolvedProcessTableRead, /diagnosticOutput: 'omit'/);
-  assert.match(inspection, /'ActivityManager:I', 'ActivityTaskManager:I'/);
-  assert.match(inspection, /'DEBUG:F', 'libc:F', 'crash_dump32:F', 'crash_dump64:F', 'tombstoned:F'/);
+  assert.match(inspection, /'ActivityManager:I',\s*'ActivityTaskManager:I'/);
+  assert.match(inspection, /'DEBUG:F',\s*'libc:F',\s*'crash_dump32:F',\s*'crash_dump64:F',\s*'tombstoned:F'/);
   assert.match(inspection, /'shell', 'ps', '-A', '-o', 'PID,NAME'/);
   assert.match(inspection, /parseAndroidProcessTable\(processTableText, intent\.packageName\)/);
   assert.doesNotMatch(inspection, /remoteProcessIdentity\(|am', 'start|force-stop/);
@@ -1610,15 +1879,17 @@ test('launch breadcrumb diagnostics expose only whitelisted TER-Splash stages fo
   );
   assert.match(installer, /onLaunchFailure: async \(\{intentId, stage, failureCode\}\)/);
   assert.match(installer, /launch-intent-marker/);
-  assert.match(installer, /'shell', 'log', '-p', 'i', '-t', 'TER-VK-LAUNCH'/);
+  assert.match(installer, /'shell',\s*'log',\s*'-p',\s*'i',\s*'-t',\s*'TER-VK-LAUNCH'/);
   assert.ok(installer.indexOf('launch-intent-marker') < installer.indexOf("'shell', 'am', 'start'"));
   assert.match(installer, /launch-failure-logcat/);
-  assert.match(installer, /'TER-VK-LAUNCH:I', 'TER-Splash:I'/);
-  assert.match(installer, /'ActivityManager:I', 'ActivityTaskManager:I'/);
-  assert.match(installer, /'DEBUG:F', 'libc:F', 'crash_dump32:F', 'crash_dump64:F', 'tombstoned:F'/);
+  assert.match(installer, /'TER-VK-LAUNCH:I',\s*'TER-Splash:I'/);
+  assert.match(installer, /'ReactNativeJS:V'/);
+  assert.match(installer, /summarizeStructuredRuntimeDiagnostics\(\s*logcat,/);
+  assert.match(installer, /'ActivityManager:I',\s*'ActivityTaskManager:I'/);
+  assert.match(installer, /'DEBUG:F',\s*'libc:F',\s*'crash_dump32:F',\s*'crash_dump64:F',\s*'tombstoned:F'/);
   assert.match(
     installer,
-    /summarizeAndroidLaunchDiagnostics\(logcat, app\.packageName, breadcrumbs\.startupPid, intentId\)/,
+    /summarizeAndroidLaunchDiagnostics\(\s*logcat,\s*app\.packageName,\s*breadcrumbs\.startupPid,\s*intentId,?\s*\)/,
   );
   assert.match(installer, /summarizeAppLaunchBreadcrumbs\(logcat, appName, intentId\)/);
   assert.match(installer, /appendEvent\(manifest, 'REMOTE_LAUNCH_FAILURE_LOG_CAPTURED'/);
@@ -2999,7 +3270,7 @@ test('cleanup recovery never skips the full repository runtime resource inventor
   assert.equal(runner.runtimeResourceRoot('/workspace/repo'), path.join('/workspace/repo', '.runtime'));
   assert.deepEqual(runner.terResourcePreflightArgs('/workspace/repo'), [
     '--profile',
-    'admin-validation-with-ter',
+    'ter-validation-with-dev',
     '/workspace/repo/.runtime',
   ]);
 });
@@ -3015,6 +3286,28 @@ test('ADB command validation rejects destructive argument vectors independent of
     /VK_ANDROID_FORBIDDEN_DEVICE_COMMAND/,
   );
   assert.equal(runner.validateAdbArgs(['-s', 'emulator-5554', 'shell', 'input', 'tap', '10', '20']), true);
+});
+
+test('W2 input actions use only fixed redacted probes, scoped hardware keys, and parse admin code without exposing it', () => {
+  assert.equal(typeof runner.w2InputProbeArgs, 'function');
+  assert.equal(typeof runner.w2HardwareKeyArgs, 'function');
+  assert.equal(typeof runner.parseAdminDebugPassword, 'function');
+  assert.deepEqual(runner.w2InputProbeArgs('staff-name', 0), ['shell', 'input', '-d', '0', 'text', 'STAFFPROBE']);
+  assert.deepEqual(runner.w2InputProbeArgs('staff-passcode', 0), ['shell', 'input', '-d', '0', 'text', '1111']);
+  assert.deepEqual(runner.w2InputProbeArgs('covered-text', 0), ['shell', 'input', '-d', '0', 'text', 'Z']);
+  assert.deepEqual(runner.w2InputProbeArgs('scanner-text', 0), ['shell', 'input', '-d', '0', 'text', 'SCAN']);
+  assert.deepEqual(runner.w2InputProbeArgs('overlay-host', 0), ['shell', 'input', '-d', '0', 'text', '198.51.100.8']);
+  assert.deepEqual(runner.w2HardwareKeyArgs('tab', 0), ['shell', 'input', '-d', '0', 'keyevent', 'KEYCODE_TAB']);
+  assert.deepEqual(runner.w2HardwareKeyArgs('shift-tab', 0), [
+    'shell', 'input', '-d', '0', 'keycombination', 'KEYCODE_SHIFT_LEFT', 'KEYCODE_TAB',
+  ]);
+  assert.deepEqual(runner.w2HardwareKeyArgs('enter', 0), ['shell', 'input', '-d', '0', 'keyevent', 'KEYCODE_ENTER']);
+  assert.throws(() => runner.w2InputProbeArgs('arbitrary-user-value', 0), /VK_ANDROID_W2_INPUT_PROBE_INVALID/);
+  assert.throws(() => runner.w2HardwareKeyArgs('back', 0), /VK_ANDROID_W2_HARDWARE_KEY_INVALID/);
+  const xml = '<hierarchy><display id="0"><node resource-id="terminal.admin:debug-password" text="（482913）"/></display></hierarchy>';
+  assert.equal(runner.parseAdminDebugPassword(xml, 0), '482913');
+  assert.equal(JSON.stringify({codeHash: createHash('sha256').update(runner.parseAdminDebugPassword(xml, 0)).digest('hex')}).includes('482913'), false);
+  assert.throws(() => runner.parseAdminDebugPassword('<hierarchy/>', 0), /VK_ANDROID_ADMIN_DEBUG_PASSWORD_NOT_OBSERVED/);
 });
 
 test('command diagnostics are readable, secret-redacted, and never persist raw UI hierarchy', () => {
@@ -3090,10 +3383,12 @@ test('binary command output is omitted from structured diagnostic logs', () => {
   assert.equal(binaryRecord.stdoutBytes, 5);
   assert.equal(binaryRecord.stdout, '[RAW_OUTPUT_OMITTED]');
   const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
-  const diagnosticCall =
-    source.match(/appendCommandLog\(manifest, commandDiagnosticRecord\(\{([\s\S]*?)\}\)\)/)?.[1] ?? '';
-  assert.match(diagnosticCall, /\bstdout,\s*stderr\b/);
-  assert.doesNotMatch(diagnosticCall, /\bstdout:\s*stdoutText/);
+  const diagnosticRecord = source.slice(
+    source.indexOf('export function commandDiagnosticRecord('),
+    source.indexOf('function commandDiagnosticLogContent('),
+  );
+  assert.match(diagnosticRecord, /stdout,\s*stderr,/);
+  assert.match(diagnosticRecord, /stdout: persisted\(stdout\),\s*stderr: persisted\(stderr\)/);
 });
 
 test('omitted command output stays omitted in runtime and evidence capture logs', () => {
@@ -3301,8 +3596,8 @@ test('URL symbol taps use the shifted-state nodes only after confirming unchange
   );
   assert.match(action, /shiftedShift\.selected/);
   assert.match(action, /sameResourceNodeBounds\(item\.node, keys\[index\]\.node\)/);
-  assert.match(action, /tapNodeCenter\(manifest, device, display\.id, shiftedKeys\[index\]\.node/);
-  assert.match(action, /tapNodeCenter\(manifest, device, display\.id, shiftedShift/);
+  assert.match(action, /tapNodeCenter\(\s*manifest,\s*device,\s*display\.id,\s*shiftedKeys\[index\]\.node/);
+  assert.match(action, /tapNodeCenter\(\s*manifest,\s*device,\s*display\.id,\s*shiftedShift/);
 });
 
 test('screenshot proof requires an app window identity scoped to its logical display and file dimensions', () => {

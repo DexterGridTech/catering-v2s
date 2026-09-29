@@ -9,8 +9,10 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -27,6 +29,11 @@ final class TdsAcceptanceProcess implements AutoCloseable {
             Pattern.compile("event=tds_listener_ready targetCount=\\d+ backendPid=(\\d+)");
     private static final Duration STARTUP_DEADLINE = Duration.ofSeconds(60);
     private static final Duration SHUTDOWN_DEADLINE = Duration.ofSeconds(15);
+    static final long ACCEPTANCE_HEARTBEAT_INTERVAL_MILLIS = 10_000;
+    static final long ACCEPTANCE_HEARTBEAT_TIMEOUT_MILLIS = 60_000;
+    static final long ACCEPTANCE_DRAIN_WINDOW_MILLIS = 8_000;
+    static final long VS8_STATE_WRITE_INTERVAL_MILLIS = 15_000;
+    private static final long DEFAULT_ACCEPTANCE_STATE_WRITE_INTERVAL_MILLIS = 1_000;
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final String runId;
@@ -42,7 +49,9 @@ final class TdsAcceptanceProcess implements AutoCloseable {
     private final String bootJarSha256;
     private final int port;
     private final TdsCapacity tdsCapacity;
+    private final long stateWriteIntervalMillis;
     private final long rssAtReadyKiB;
+    private boolean gracefulStopRequested;
     private long rssBeforeStopKiB;
     private boolean closed;
 
@@ -60,6 +69,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
             String bootJarSha256,
             int port,
             TdsCapacity tdsCapacity,
+            long stateWriteIntervalMillis,
             long rssAtReadyKiB) {
         this.runId = runId;
         this.directory = directory;
@@ -74,6 +84,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         this.bootJarSha256 = bootJarSha256;
         this.port = port;
         this.tdsCapacity = tdsCapacity;
+        this.stateWriteIntervalMillis = stateWriteIntervalMillis;
         this.rssAtReadyKiB = rssAtReadyKiB;
     }
 
@@ -99,6 +110,19 @@ final class TdsAcceptanceProcess implements AutoCloseable {
 
         String maxUnauthenticated = requiredEnvironment("V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS");
         String maxTracked = requiredEnvironment("V2S_TDS_MAX_TRACKED_SESSIONS");
+        String vs8DiagnosticValue = System.getenv().getOrDefault("V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC", "false");
+        Assertions.assertTrue(
+                "true".equals(vs8DiagnosticValue) || "false".equals(vs8DiagnosticValue),
+                "BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_VALUE_INVALID");
+        boolean vs8Diagnostic = "true".equals(vs8DiagnosticValue);
+        String tdsTestRuntimeClasspath = vs8Diagnostic ? readTdsTestRuntimeClasspath(classpathReport) : null;
+        Assertions.assertFalse(
+                vs8Diagnostic
+                        && !"storeTerminalActivationBusinessPrecedence"
+                                .equals(System.getenv("V2S_BACKEND_ACCEPTANCE_OPERATION")),
+                "BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_OPERATION_MISMATCH");
+        long stateWriteIntervalMillis =
+                vs8Diagnostic ? VS8_STATE_WRITE_INTERVAL_MILLIS : DEFAULT_ACCEPTANCE_STATE_WRITE_INTERVAL_MILLIS;
         Path capacityConfiguration = AcceptanceRepositoryPaths.resolveRegularFile(
                 "scripts/env/tds-dev-capacity.json",
                 "TDS_CAPACITY_CONFIG_MISSING",
@@ -123,19 +147,32 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         String javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java")
                 .toAbsolutePath()
                 .toString();
-        ProcessBuilder builder = new ProcessBuilder(
-                javaExecutable,
-                "-jar",
-                bootJar.toString(),
-                "--server.port=" + requestedPort,
-                "--spring.main.web-application-type=reactive",
-                "--v2s.tds.state-write-interval-ms=1000",
-                "--" + REGISTRATION_GATE_PROPERTY + "=" + registrationGateBroker.socketPath(),
-                "--" + LISTENER_GATE_PROPERTY + "=" + registrationGateBroker.socketPath());
+        List<String> command = new ArrayList<>();
+        command.add(javaExecutable);
+        if (vs8Diagnostic) {
+            command.add("-XX:+AllowRedefinitionToAddDeleteMethods");
+            command.add("-cp");
+            command.add(tdsTestRuntimeClasspath);
+            command.add("com.catering.v2s.terminaldataserver.config.TdsAcceptanceBlockHoundLauncher");
+        } else {
+            command.add("-jar");
+            command.add(bootJar.toString());
+        }
+        command.add("--server.port=" + requestedPort);
+        command.add("--spring.main.web-application-type=reactive");
+        command.add("--v2s.tds.state-write-interval-ms=" + stateWriteIntervalMillis);
+        command.add("--v2s.tds.heartbeat-interval-ms=" + ACCEPTANCE_HEARTBEAT_INTERVAL_MILLIS);
+        command.add("--v2s.tds.heartbeat-timeout-ms=" + ACCEPTANCE_HEARTBEAT_TIMEOUT_MILLIS);
+        command.add("--v2s.tds.drain-window-ms=" + ACCEPTANCE_DRAIN_WINDOW_MILLIS);
+        command.add("--v2s.tds.acceptance.blockhound-probe-enabled=" + vs8Diagnostic);
+        command.add("--" + REGISTRATION_GATE_PROPERTY + "=" + registrationGateBroker.socketPath());
+        command.add("--" + LISTENER_GATE_PROPERTY + "=" + registrationGateBroker.socketPath());
+        ProcessBuilder builder = new ProcessBuilder(command);
         builder.directory(Path.of(System.getProperty("user.dir")).toFile());
         builder.redirectErrorStream(true);
         builder.redirectOutput(logPath.toFile());
         Map<String, String> environment = builder.environment();
+        environment.clear();
         environment.put("SPRING_DATASOURCE_URL", postgres.getJdbcUrl());
         environment.put("SPRING_DATASOURCE_USERNAME", postgres.getUsername());
         environment.put("SPRING_DATASOURCE_PASSWORD", postgres.getPassword());
@@ -174,14 +211,17 @@ final class TdsAcceptanceProcess implements AutoCloseable {
                     bootJarSha256,
                     port,
                     tdsCapacity,
+                    stateWriteIntervalMillis,
                     rssAtReadyKiB);
             owned.writeEvidence("READY", "NOT_RUN", null);
             System.out.printf(
                     ("BACKEND_ACCEPTANCE_TDS_PROCESS stage=READY pid=%d startTicks=%s port=%d "
-                            + "appType=REACTIVE runId=%s logPath=%s registrationGateSocket=%s%n"),
+                            + "stateWriteIntervalMillis=%d appType=REACTIVE runId=%s "
+                            + "logPath=%s registrationGateSocket=%s%n"),
                     pid,
                     startTicks,
                     owned.port,
+                    stateWriteIntervalMillis,
                     runId,
                     logPath,
                     registrationGateBroker.socketPath());
@@ -212,6 +252,26 @@ final class TdsAcceptanceProcess implements AutoCloseable {
 
     String websocketBaseUrl() {
         return "ws://127.0.0.1:" + port;
+    }
+
+    String httpBaseUrl() {
+        return "http://127.0.0.1:" + port;
+    }
+
+    int maxUnauthenticatedConnections() {
+        return tdsCapacity.maxUnauthenticatedConnections();
+    }
+
+    int maxTrackedSessions() {
+        return tdsCapacity.maxTrackedSessions();
+    }
+
+    long stateWriteIntervalMillis() {
+        return stateWriteIntervalMillis;
+    }
+
+    boolean processAlive() {
+        return process.isAlive();
     }
 
     Path directory() {
@@ -272,9 +332,9 @@ final class TdsAcceptanceProcess implements AutoCloseable {
     void awaitLogMarker(String first, String second, Duration timeout, String failureCode) throws Exception {
         long deadline = System.nanoTime() + timeout.toNanos();
         while (System.nanoTime() < deadline) {
-            if (!process.isAlive()) throw new IllegalStateException("TDS_PROCESS_EXITED_BEFORE_LOG_MARKER");
             String log = Files.readString(logPath, StandardCharsets.UTF_8);
             if (log.contains(first) && log.contains(second)) return;
+            if (!process.isAlive()) throw new IllegalStateException("TDS_PROCESS_EXITED_BEFORE_LOG_MARKER");
             TimeUnit.MILLISECONDS.sleep(50);
         }
         throw new IllegalStateException(failureCode);
@@ -286,6 +346,26 @@ final class TdsAcceptanceProcess implements AutoCloseable {
 
     String logContents() throws IOException {
         return Files.readString(logPath, StandardCharsets.UTF_8);
+    }
+
+    void requestGracefulStop() throws IOException {
+        Assertions.assertFalse(closed, "TDS_PROCESS_ALREADY_CLOSED");
+        Assertions.assertTrue(process.isAlive(), "TDS_PROCESS_NOT_ALIVE_BEFORE_GRACEFUL_STOP");
+        Assertions.assertEquals(startTicks, processStartTicks(pid), "TDS_PROCESS_IDENTITY_CHANGED_BEFORE_STOP");
+        process.destroy();
+        gracefulStopRequested = true;
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_TDS_PROCESS stage=GRACEFUL_STOP_REQUESTED pid=%d startTicks=%s runId=%s%n",
+                pid, startTicks, runId);
+    }
+
+    int awaitProcessExit(Duration timeout) throws Exception {
+        Assertions.assertTrue(
+                timeout != null && !timeout.isNegative() && !timeout.isZero(), "TDS_PROCESS_EXIT_TIMEOUT_INVALID");
+        if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
+            throw new IllegalStateException("TDS_PROCESS_GRACEFUL_EXIT_DEADLINE_EXCEEDED");
+        }
+        return process.exitValue();
     }
 
     private static int awaitReady(Process process, Path logPath) throws Exception {
@@ -314,6 +394,12 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         evidence.put("exitCode", exitCode);
         evidence.put("applicationType", "REACTIVE");
         evidence.put("port", port);
+        evidence.put("stateWriteIntervalMillis", stateWriteIntervalMillis);
+        evidence.put(
+                "launchMode",
+                "true".equals(System.getenv("V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC"))
+                        ? "TDS_TEST_RUNTIME_CLASSPATH_WITH_BLOCKHOUND"
+                        : "TDS_BOOT_JAR");
         evidence.put("runtimeClasspathReportSha256", runtimeClasspathSha256);
         evidence.put("bootJarSha256", bootJarSha256);
         evidence.put("rssBudgetMiB", tdsCapacity.rssBudgetMiB());
@@ -333,12 +419,13 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         if (closed) return;
         closed = true;
         if (process.isAlive() && processStartTicks(pid).equals(startTicks)) rssBeforeStopKiB = readRssKiB(pid);
-        boolean gracefullyRequested = false;
+        boolean gracefullyRequested = gracefulStopRequested;
         boolean terminated = !process.isAlive();
         Exception cleanupFailure = null;
         if (!terminated && processStartTicks(pid).equals(startTicks)) {
             process.destroy();
             gracefullyRequested = true;
+            gracefulStopRequested = true;
             terminated = process.waitFor(SHUTDOWN_DEADLINE.toMillis(), TimeUnit.MILLISECONDS);
         }
         if (!terminated && process.isAlive() && processStartTicks(pid).equals(startTicks)) {
@@ -422,6 +509,28 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         Assertions.assertFalse(
                 businessLine.contains("apps:backend:terminal-data-server"),
                 "BACKEND_ACCEPTANCE_TDS_ON_BUSINESS_TEST_RUNTIME_CLASSPATH");
+        String tdsTestLine = value.lines()
+                .filter(line -> line.startsWith("tdsTestRuntimeClasspath="))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("TDS_TEST_RUNTIME_CLASSPATH_REPORT_MISSING"));
+        Assertions.assertTrue(
+                tdsTestLine.contains("blockhound-1.0.17.RELEASE.jar"),
+                "TDS_TEST_BLOCKHOUND_RUNTIME_CLASSPATH_MISSING:1.0.17.RELEASE");
+    }
+
+    private static String readTdsTestRuntimeClasspath(Path report) throws IOException {
+        String prefix = "tdsTestRuntimeClasspath=";
+        String line = Files.readString(report, StandardCharsets.UTF_8)
+                .lines()
+                .filter(value -> value.startsWith(prefix))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("TDS_TEST_RUNTIME_CLASSPATH_REPORT_MISSING"));
+        String classpath = line.substring(prefix.length());
+        Assertions.assertFalse(classpath.isBlank(), "TDS_TEST_RUNTIME_CLASSPATH_EMPTY");
+        Assertions.assertTrue(
+                classpath.contains("blockhound-1.0.17.RELEASE.jar"),
+                "TDS_TEST_BLOCKHOUND_RUNTIME_CLASSPATH_MISSING:1.0.17.RELEASE");
+        return classpath;
     }
 
     private static void requireRemoteAcceptance() {

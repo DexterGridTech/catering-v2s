@@ -174,7 +174,7 @@ export const createAndroidDevicePort = (): DevicePort => {
       try {
         const native = requireNativeModule<NativeDeviceModule>('TerminalDevice');
         return await native.getDeviceInfo(timeoutMs);
-      } catch (_error) {
+      } catch {
         return deviceInfoBridgeFailure();
       }
     },
@@ -182,14 +182,14 @@ export const createAndroidDevicePort = (): DevicePort => {
       try {
         const native = requireNativeModule<NativeDeviceModule>('TerminalDevice');
         return mapNativeResult(await native.getDisplayInfo(timeoutMs));
-      } catch (_error) {
+      } catch {
         return bridgeFailure();
       }
     },
     getPowerStatus: async ({timeoutMs}: DeviceCall) => {
       try {
         return await getNativeModule().getPowerStatus(timeoutMs);
-      } catch (_error) {
+      } catch {
         return powerStatusBridgeFailure(
           'getPowerStatus',
           'DEVICE_POWER_STATUS_BRIDGE_FAILED',
@@ -221,7 +221,7 @@ export const createAndroidDevicePort = (): DevicePort => {
         try {
           const initial = await getNativeModule().getPowerStatus(timeoutMs);
           reportInitialPowerStatus(initial, listener, onError);
-        } catch (_error) {
+        } catch {
           onError({
             code: 'DEVICE_POWER_STATUS_INITIAL_READ_BRIDGE_FAILED',
             message: 'device power-status initial read bridge failed',
@@ -229,7 +229,7 @@ export const createAndroidDevicePort = (): DevicePort => {
           });
         }
         return result;
-      } catch (_error) {
+      } catch {
         nativeEventSubscription.remove();
         return powerStatusBridgeFailure(
           'subscribePowerStatus',
@@ -246,7 +246,7 @@ export const createAndroidDevicePort = (): DevicePort => {
           nativeSubscriptions.delete(subscriptionId);
         }
         return result;
-      } catch (_error) {
+      } catch {
         return powerStatusBridgeFailure(
           'unsubscribePowerStatus',
           'DEVICE_POWER_STATUS_UNSUBSCRIPTION_BRIDGE_FAILED',

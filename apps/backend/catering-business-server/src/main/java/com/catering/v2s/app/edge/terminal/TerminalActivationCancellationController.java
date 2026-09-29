@@ -4,6 +4,8 @@ import com.catering.v2s.app.edge.generated.wire.TerminalActivationCancellationRe
 import com.catering.v2s.app.edge.generated.wire.TerminalActivationCancellationResult;
 import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi.DeviceCancelOutcome;
+import com.catering.v2s.terminalbinding.api.TerminalCredentialContext;
+import com.catering.v2s.terminalbinding.api.TerminalCredentialParser;
 import com.catering.v2s.terminalbinding.application.CancelTerminalActivationOperation;
 import java.util.List;
 import java.util.Objects;
@@ -21,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation")
 public final class TerminalActivationCancellationController {
+    private static final String AUTHORIZATION_PREFIX = "Terminal ";
+
     private final CancelTerminalActivationOperation cancellation;
 
     public TerminalActivationCancellationController(CancelTerminalActivationOperation cancellation) {
@@ -38,12 +42,24 @@ public final class TerminalActivationCancellationController {
                 || request.deviceId().length() > 128) {
             throw new InvalidEdgeRequestException("terminal cancellation request is invalid");
         }
-        DeviceCancelOutcome outcome = cancellation.execute(
-                groupWorkspaceKey,
-                terminalRef,
-                request.deviceId(),
-                authorizationValues == null ? List.of() : authorizationValues);
+        TerminalCredentialContext credential = parseCredentialContext(authorizationValues);
+        if (credential == null) throw new TerminalDeviceCredentialProblem();
+        DeviceCancelOutcome outcome;
+        try (credential) {
+            outcome = cancellation.execute(groupWorkspaceKey, terminalRef, request.deviceId(), credential);
+        }
         if (outcome == DeviceCancelOutcome.CREDENTIAL_INVALID) throw new TerminalDeviceCredentialProblem();
         return ResponseEntity.ok(new TerminalActivationCancellationResult(outcome.name()));
+    }
+
+    private static TerminalCredentialContext parseCredentialContext(List<String> authorizationValues) {
+        if (authorizationValues == null || authorizationValues.size() != 1) return null;
+        String authorization = authorizationValues.getFirst();
+        if (authorization == null || !authorization.startsWith(AUTHORIZATION_PREFIX)) return null;
+        try {
+            return TerminalCredentialParser.parseCredential(authorization.substring(AUTHORIZATION_PREFIX.length()));
+        } catch (IllegalArgumentException malformed) {
+            return null;
+        }
     }
 }

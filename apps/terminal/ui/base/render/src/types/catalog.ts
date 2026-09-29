@@ -1,5 +1,4 @@
 import type {ComponentType} from 'react';
-import type {UiCatalog, UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state';
 
 export type LayerTier = 'standard' | 'alert';
 export type LayerGuard = 'dismissible' | 'decisive';

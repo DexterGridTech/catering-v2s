@@ -13,9 +13,22 @@ export function parseDebugFailureInjectionUrl(value: string | null): string | nu
   if (value === null) return undefined;
   if (value === 'ter-failure://clear') return null;
   const match = /^ter-failure:\/\/inject\/([^/?#]+)$/.exec(value);
-  if (!match) return undefined;
+  if (match) {
+    try {
+      const ownerId = decodeURIComponent(match[1] ?? '');
+      return /^[A-Za-z0-9:._-]{1,160}$/.test(ownerId) ? ownerId : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   try {
-    const ownerId = decodeURIComponent(match[1] ?? '');
+    const url = new URL(value);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined;
+    const owners = url.searchParams.getAll('terFailureOwner');
+    if (owners.length !== 1) return undefined;
+    const ownerId = owners[0] ?? '';
+    if (ownerId === 'clear') return null;
     return /^[A-Za-z0-9:._-]{1,160}$/.test(ownerId) ? ownerId : undefined;
   } catch {
     return undefined;
@@ -25,28 +38,60 @@ export function parseDebugFailureInjectionUrl(value: string | null): string | nu
 const DebugFailureInjection = ({
   ownerId,
   children,
-}: Readonly<{readonly ownerId: string; readonly children: ReactNode}>) => {
+  logger,
+}: Readonly<{
+  readonly ownerId: string;
+  readonly children: ReactNode;
+  readonly logger: ReturnType<typeof useRenderContext>['logger'];
+}>) => {
   const [ready, setReady] = useState(!__DEV__);
   const [targetOwnerId, setTargetOwnerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!__DEV__) return;
     let active = true;
-    const applyUrl = (value: string | null) => {
+    const applyUrl = (value: string | null, source: 'initial' | 'event') => {
       const target = parseDebugFailureInjectionUrl(value);
-      if (!active || target === undefined) return;
-      setTargetOwnerId(target);
+      if (!active) return;
+      const outcome =
+        value === null
+          ? 'no-url'
+          : target === undefined
+            ? 'unrecognized'
+            : target === null
+              ? 'clear'
+              : target === ownerId
+                ? 'matched'
+                : 'other-owner';
+      logger.info({
+        category: 'runtime.system-failure',
+        event: 'runtime.system-failure.debug-injection-resolution',
+        message: `TER_DEBUG_FAILURE_INJECTION_RESOLUTION source=${source} owner=${ownerId} outcome=${outcome}`,
+        data: {ownerId, source, urlPresent: value !== null, outcome},
+      });
+      if (target !== undefined) setTargetOwnerId(target);
       setReady(true);
     };
-    const subscription = Linking.addEventListener('url', event => applyUrl(event.url));
-    void Linking.getInitialURL().then(applyUrl, () => {
-      if (active) setReady(true);
-    });
+    const subscription = Linking.addEventListener('url', event => applyUrl(event.url, 'event'));
+    void Linking.getInitialURL().then(
+      value => applyUrl(value, 'initial'),
+      () => {
+        if (active) {
+          logger.warn({
+            category: 'runtime.system-failure',
+            event: 'runtime.system-failure.debug-injection-read-failed',
+            message: `TER_DEBUG_FAILURE_INJECTION_READ_FAILED source=initial owner=${ownerId}`,
+            data: {ownerId, source: 'initial'},
+          });
+          setReady(true);
+        }
+      },
+    );
     return () => {
       active = false;
       subscription.remove();
     };
-  }, []);
+  }, [logger, ownerId]);
 
   if (!__DEV__) return children;
   if (!ready) return null;
@@ -94,7 +139,9 @@ export const SystemFailureBoundary = ({
       onError={onError}
       fallbackRender={() => fallback ?? <SystemFailureNoticeWithReset ownerId={ownerId} />}
     >
-      <DebugFailureInjection ownerId={ownerId}>{children}</DebugFailureInjection>
+      <DebugFailureInjection ownerId={ownerId} logger={logger}>
+        {children}
+      </DebugFailureInjection>
     </ErrorBoundary>
   );
 };

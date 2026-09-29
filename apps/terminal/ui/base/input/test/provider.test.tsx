@@ -30,8 +30,11 @@ import {
 
 vi.mock('react-native', async importOriginal => {
   const actual = await importOriginal<typeof import('react-native')>();
-  const {withNativeTestHosts} = await import('../../../../../../tools/terminal-shared/rntl-native-test-host');
-  return withNativeTestHosts(actual);
+  const [{withNativeTestHosts}, reactRuntime] = await Promise.all([
+    import('../../../../../../tools/terminal-shared/rntl-native-test-host'),
+    import('react'),
+  ]);
+  return withNativeTestHosts(actual, reactRuntime);
 });
 
 const TEST_FRAME = {width: 960, height: 540} as const;
@@ -1849,5 +1852,52 @@ describe('input provider', () => {
     await act(() => {
       renderer.unmount();
     });
+  });
+
+  it('rejects native focus moved into covered business fields while a layer is open', async () => {
+    let boundary: SurfaceFocusBoundaryListener | undefined;
+    let businessField: InputFieldResult | undefined;
+    let snapshot: (() => ReturnType<ReturnType<typeof useInputSnapshot>>) | undefined;
+    let keyboardState: ReturnType<typeof useInputKeyboardState> | undefined;
+    const focusHarness = createNativeFocusHarness();
+    const renderer = await mountWithNodeMock(
+      <InputSurfaceFrame>
+        <BoundaryProbe onReady={value => (boundary = value)} />
+        <SnapshotProbe onReady={value => (snapshot = value)} />
+        <StateProbe onState={value => (keyboardState = value)} />
+        <Field
+          fieldId="covered-business-focus"
+          testID="sample:owner-covered-focus"
+          onReady={value => (businessField = value)}
+        />
+        <Field
+          fieldId="overlay-focus"
+          testID="sample:owner-overlay-focus"
+          focusScopeId="admin.console"
+          onReady={() => undefined}
+        />
+      </InputSurfaceFrame>,
+      focusHarness.nativeRefFactory,
+    );
+    const businessChange = businessField?.inputProps.onChangeText;
+    if (businessChange === undefined) throw new Error('covered field change callback was not registered');
+
+    await focusNativeHarnessAndFinish(renderer, focusHarness, 'sample:owner-covered-focus');
+    await act(() => businessChange('before-layer'));
+    await act(() => boundary?.('suspend'));
+
+    // Tab, reverse Tab, or a scanner's Tab/Enter suffix can move native focus
+    // even though the layer is not a modal focus trap. The input owner must
+    // reject and blur a covered business field in every such case.
+    for (const navigationAttempt of ['Tab', 'Shift+Tab', 'scanner Tab/Enter suffix']) {
+      await act(() => focusHarness.focus('sample:owner-covered-focus'));
+      expect(focusHarness.isFocused('sample:owner-covered-focus'), navigationAttempt).toBe(false);
+      expect(keyboardState?.activeFieldId, navigationAttempt).toBeNull();
+      expect(keyboardState?.owner, navigationAttempt).toBe('none');
+      await act(() => businessChange(`covered-${navigationAttempt}`));
+      expect(snapshot?.().fields['covered-business-focus']?.value, navigationAttempt).toBe('before-layer');
+    }
+
+    await act(() => renderer.unmount());
   });
 });

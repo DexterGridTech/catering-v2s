@@ -3,7 +3,6 @@ import type {
   PrimitiveInputHandle,
   PrimitiveInputProps,
   PrimitiveInputSelection,
-  PrimitiveInputSelectionChangeEvent,
 } from '@catering-v2s/ui-base-primitives';
 import type {EditResult, EditState, KeyboardKey} from '../foundations/editText';
 import type {KeyboardCapacity, LocalFrameMetrics} from '../foundations/keyboardHeight';

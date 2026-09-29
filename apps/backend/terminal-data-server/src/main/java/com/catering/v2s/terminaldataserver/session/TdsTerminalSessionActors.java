@@ -11,7 +11,6 @@ import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.Cu
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateWriter;
 import com.catering.v2s.terminaldataserver.websocket.TdsWebSocketConnection;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,7 +40,6 @@ public final class TdsTerminalSessionActors {
     private final TerminalConnectionFrameCodec codec;
     private final TdsTrackedSessionLimiter trackedSessionLimiter;
     private final Scheduler jdbcScheduler;
-    private final Scheduler codecScheduler;
     private final Scheduler logScheduler;
     private final ConcurrentHashMap<UUID, TerminalActor> actors = new ConcurrentHashMap<>();
     private final Object admissionMonitor = new Object();
@@ -55,7 +53,6 @@ public final class TdsTerminalSessionActors {
             TerminalConnectionFrameCodec codec,
             TdsTrackedSessionLimiter trackedSessionLimiter,
             @Qualifier("tds-db-worker") Scheduler jdbcScheduler,
-            @Qualifier("tds-codec-worker") Scheduler codecScheduler,
             @Qualifier("tds-log-worker") Scheduler logScheduler) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.stateWriter = Objects.requireNonNull(stateWriter, "stateWriter");
@@ -63,7 +60,6 @@ public final class TdsTerminalSessionActors {
         this.codec = Objects.requireNonNull(codec, "codec");
         this.trackedSessionLimiter = Objects.requireNonNull(trackedSessionLimiter, "trackedSessionLimiter");
         this.jdbcScheduler = Objects.requireNonNull(jdbcScheduler, "jdbcScheduler");
-        this.codecScheduler = Objects.requireNonNull(codecScheduler, "codecScheduler");
         this.logScheduler = Objects.requireNonNull(logScheduler, "logScheduler");
     }
 
@@ -337,14 +333,12 @@ public final class TdsTerminalSessionActors {
 
                 String sessionReady;
                 try {
-                    sessionReady = Mono.fromCallable(() -> codec.sessionReady(
-                                    connection.sessionId(),
-                                    settings.nodeId(),
-                                    identity.connectedAt(),
-                                    settings.heartbeatInterval().toMillis(),
-                                    settings.heartbeatTimeout().toMillis()))
-                            .subscribeOn(codecScheduler)
-                            .block(Duration.ofSeconds(1));
+                    sessionReady = codec.sessionReady(
+                            connection.sessionId(),
+                            settings.nodeId(),
+                            identity.connectedAt(),
+                            settings.heartbeatInterval().toMillis(),
+                            settings.heartbeatTimeout().toMillis());
                 } catch (RuntimeException failure) {
                     abandonOpenedSession(attemptId, connection, identity, trackedPermit);
                     throw failure;
@@ -491,7 +485,15 @@ public final class TdsTerminalSessionActors {
         }
 
         private void queueDisconnect(ActiveSession session, String closeReason) {
-            stateWriter.queueDisconnect(session.identity(), closeReason, session.trackedPermit()::close);
+            stateWriter.queueDisconnect(session.identity(), closeReason, () -> {
+                session.trackedPermit().close();
+                TdsAsyncLog.enqueue(
+                        logScheduler,
+                        () -> LOGGER.info(
+                                "event=tds_tracked_session_permit_released sessionId={} closeReason={}",
+                                session.identity().sessionId(),
+                                closeReason));
+            });
         }
 
         private void abandonOpenedSession(
@@ -503,7 +505,14 @@ public final class TdsTerminalSessionActors {
             ActiveSession previous = active;
             active = null;
             connection.close("SERVER_ERROR");
-            stateWriter.queueDisconnect(identity, "SERVER_ERROR", trackedPermit::close);
+            stateWriter.queueDisconnect(identity, "SERVER_ERROR", () -> {
+                trackedPermit.close();
+                TdsAsyncLog.enqueue(
+                        logScheduler,
+                        () -> LOGGER.info(
+                                "event=tds_tracked_session_permit_released sessionId={} closeReason=SERVER_ERROR",
+                                identity.sessionId()));
+            });
             if (previous != null) {
                 previous.connection().close("SERVER_ERROR");
                 queueDisconnect(previous, "SERVER_ERROR");

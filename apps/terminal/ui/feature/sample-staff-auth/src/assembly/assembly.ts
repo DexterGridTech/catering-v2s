@@ -1,4 +1,3 @@
-import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
 import type {UiVariableDeclaration} from '@catering-v2s/kernel-base-ui-state';
 import {createFeatureAssembly, type FeatureAssembly} from '@catering-v2s/ui-base-feature-assembly';

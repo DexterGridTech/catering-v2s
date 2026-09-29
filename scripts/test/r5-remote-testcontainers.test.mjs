@@ -357,6 +357,59 @@ test('backend-acceptance V-S12 diagnostic wrapper pins its operation, mode, and 
   assert.match(backendAcceptanceWrapperSource, /V2S_BACKEND_ACCEPTANCE_EXECUTION=true exec node/);
 });
 
+test('backend-acceptance V-S8 diagnostic is a single-operation test-runtime TDS run', () => {
+  const runId = 'backend-acceptance-run-vs8-12345678';
+  const environment = backendAcceptanceEnvironment(
+    runId,
+    'storeTerminalActivationBusinessPrecedence',
+    'ACCEPTANCE',
+    null,
+    false,
+    {maxUnauthenticatedConnections: '4', maxTrackedSessions: '8'},
+    '/usr/bin/node',
+    false,
+    false,
+    true,
+  ).join('\n');
+  assert.match(environment, /V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC=true/);
+  assert.match(environment, /V2S_BACKEND_ACCEPTANCE_OPERATION='storeTerminalActivationBusinessPrecedence'/);
+  assert.doesNotMatch(environment, /V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC=true/);
+  assert.doesNotMatch(environment, /V2S_R5_TRACE_SYSTEM_SIGNALS=true/);
+  for (const invalid of [
+    () => backendAcceptanceEnvironment(null, 'storeTerminalActivationBusinessPrecedence', 'ACCEPTANCE', null,
+      false, null, null, false, false, true),
+    () => backendAcceptanceEnvironment(runId, 'all', 'ACCEPTANCE', null, false, null, null, false, false, true),
+    () => backendAcceptanceEnvironment(runId, 'storeTerminalActivationBusinessPrecedence', 'CALIBRATION', null,
+      false, null, null, false, false, true),
+    () => backendAcceptanceEnvironment(runId, 'storeTerminalActivationBusinessPrecedence', 'ACCEPTANCE', null,
+      false, null, null, true, false, true),
+    () => backendAcceptanceEnvironment(runId, 'storeTerminalActivationBusinessPrecedence', 'ACCEPTANCE', null,
+      false, null, null, false, true, true),
+  ]) {
+    assert.throws(invalid, /BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_ARGUMENT_INVALID/);
+  }
+
+  const remoteScript = runScript({
+    remoteRoot: '/tmp/r5-tc-vs8/workspace',
+    remoteWorkspace: '/tmp/r5-tc-vs8/workspace',
+    remoteResults: '/tmp/r5-tc-vs8/results',
+    distribution,
+    invocation: {extraArguments: []},
+    backendAcceptanceRunId: runId,
+    backendAcceptanceOperation: 'storeTerminalActivationBusinessPrecedence',
+    verificationMode: 'ACCEPTANCE',
+    vs8Diagnostic: true,
+  });
+  const remoteSyntax = spawnSync('bash', ['-n'], {input: remoteScript, encoding: 'utf8'});
+  assert.equal(remoteSyntax.status, 0, remoteSyntax.stderr);
+  assert.match(remoteScript, /export V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC=true/);
+
+  const wrapperSyntax = spawnSync('bash', ['-n', 'scripts/test/backend-acceptance'], {encoding: 'utf8'});
+  assert.equal(wrapperSyntax.status, 0, wrapperSyntax.stderr);
+  assert.match(backendAcceptanceWrapperSource, /--v-s8-diagnostic/);
+  assert.match(backendAcceptanceWrapperSource, /V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC=true/);
+});
+
 test('remote SIGTERM tracing self-tests, records owned-process identity, and fails closed before Gradle', () => {
   const listener = readFileSync(new URL('./remote-signal-trace.sh', import.meta.url), 'utf8');
   const listenerSyntax = spawnSync('bash', ['-n'], {input: listener, encoding: 'utf8'});
@@ -1684,6 +1737,9 @@ test('failed pre-test Gradle output preserves its structured first failure witho
   const log = `> Task :apps:backend:catering-business-server:modules:catalog:processResources\nError: BUDGET_NOT_READY_CP05_BLOCKED:25\nBUILD FAILED`;
   assert.equal(firstGradleFailureCode(log), 'BUDGET_NOT_READY_CP05_BLOCKED:25');
   assert.equal(firstGradleFailureCode('Error: ordinary build failure'), null);
+  const unsafeResolution = `> Task :apps:backend:catering-business-server:verifyBackendAcceptanceRuntimeClasspaths FAILED\n> Resolution of the configuration ':apps:backend:terminal-data-server:testRuntimeClasspath' was attempted without an exclusive lock. This is unsafe and not allowed.`;
+  assert.equal(firstGradleFailureCode(unsafeResolution), 'GRADLE_UNSAFE_CONFIGURATION_RESOLUTION');
+  assert.equal(classifyRemoteGradleFailure(unsafeResolution, null), 'GRADLE_UNSAFE_CONFIGURATION_RESOLUTION');
   assert.equal(requiresBackendAcceptanceEvidence('backend-acceptance-run', false), false);
   assert.equal(requiresBackendAcceptanceEvidence('backend-acceptance-run', true), true);
   assert.equal(requiresBackendAcceptanceEvidence(null, true), false);

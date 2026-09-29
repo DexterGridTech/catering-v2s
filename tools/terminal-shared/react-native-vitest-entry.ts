@@ -100,6 +100,13 @@ const Easing = {
 const TextInput = Object.assign((props: Readonly<Record<string, unknown>>) => createElement('TextInput', props), {
   State: {currentlyFocusedInput: (): {focus: () => void} | null => null},
 });
+const Linking = {
+  getInitialURL: async (): Promise<string | null> => null,
+  addEventListener: (_eventName: 'url', _listener: (event: Readonly<{readonly url: string}>) => void) => ({
+    remove: () => undefined,
+  }),
+};
+const PixelRatio = {get: () => 1, getFontScale: () => 1};
 type TestPlatformOS = 'android' | 'ios' | 'web';
 let testPlatformOS: TestPlatformOS = 'android';
 const Platform = Object.freeze({
@@ -144,7 +151,9 @@ export {
   Easing,
   Image,
   Keyboard,
+  Linking,
   Path,
+  PixelRatio,
   Platform,
   Pressable,
   ScrollView,

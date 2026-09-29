@@ -13,11 +13,11 @@ import tools.jackson.databind.json.JsonMapper;
 @Configuration(proxyBeanMethods = false)
 public class TdsWireJsonConfiguration {
     static final int MAX_WIRE_JSON_DOCUMENT_CHARS = 65_536;
-    static final int MAX_WIRE_JSON_TOKENS = 32;
-    static final int MAX_WIRE_JSON_DEPTH = 2;
-    static final int MAX_WIRE_JSON_STRING_CHARS = 128;
-    static final int MAX_WIRE_JSON_NAME_CHARS = 64;
-    static final int MAX_WIRE_JSON_NUMBER_CHARS = 128;
+    static final int MAX_WIRE_JSON_TOKENS = MAX_WIRE_JSON_DOCUMENT_CHARS;
+    static final int MAX_WIRE_JSON_DEPTH = 64;
+    static final int MAX_WIRE_JSON_STRING_CHARS = MAX_WIRE_JSON_DOCUMENT_CHARS;
+    static final int MAX_WIRE_JSON_NAME_CHARS = MAX_WIRE_JSON_DOCUMENT_CHARS;
+    static final int MAX_WIRE_JSON_NUMBER_CHARS = MAX_WIRE_JSON_DOCUMENT_CHARS;
 
     @Bean("tds-wire-object-mapper")
     ObjectMapper tdsWireObjectMapper() {

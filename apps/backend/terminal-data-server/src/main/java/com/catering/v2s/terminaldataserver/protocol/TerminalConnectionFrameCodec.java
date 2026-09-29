@@ -1,16 +1,15 @@
 package com.catering.v2s.terminaldataserver.protocol;
 
+import com.catering.v2s.terminalbinding.api.TerminalCredentialContext;
+import com.catering.v2s.terminalbinding.api.TerminalCredentialParser;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Credential;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -21,7 +20,6 @@ import tools.jackson.databind.node.ObjectNode;
 /** Validates and serializes the closed JSON message shapes declared by the shared protocol. */
 @Component
 public final class TerminalConnectionFrameCodec {
-    private static final Pattern CREDENTIAL = Pattern.compile("([1-9][0-9]*)\\.([A-Za-z0-9_-]{43})");
     private static final long MAX_SAFE_INTEGER = 9_007_199_254_740_991L;
 
     private final ObjectMapper objectMapper;
@@ -45,13 +43,22 @@ public final class TerminalConnectionFrameCodec {
         if (!terminalRef.toString().equalsIgnoreCase(terminalRefText)) throw invalidMessage();
         String deviceId = requiredUtf8Text(message, "deviceId", 1, 128);
         String appVersion = requiredUtf8Text(message, "appVersion", 1, 64);
-        CredentialParts parts = credentialParts(requiredUtf8Text(message, "terminalCredential", 1, 128));
+        String serializedCredential = requiredUtf8Text(message, "terminalCredential", 1, 128);
+        TerminalCredentialContext parsed;
         try {
-            return new Authenticate(
-                    Credential.fromSecret(groupWorkspaceKey, terminalRef, parts.generation(), parts.secret(), deviceId),
-                    appVersion);
-        } finally {
-            Arrays.fill(parts.secret(), (byte) 0);
+            parsed = TerminalCredentialParser.parseCredential(serializedCredential);
+        } catch (IllegalArgumentException malformed) {
+            throw invalidMessage();
+        }
+        try (parsed) {
+            byte[] digest = parsed.secretDigest();
+            try {
+                return new Authenticate(
+                        new Credential(groupWorkspaceKey, terminalRef, parsed.generation(), digest, deviceId),
+                        appVersion);
+            } finally {
+                Arrays.fill(digest, (byte) 0);
+            }
         }
     }
 
@@ -120,37 +127,10 @@ public final class TerminalConnectionFrameCodec {
             Set<String> actual = new HashSet<>();
             message.propertyNames().forEach(actual::add);
             if (!actual.containsAll(expected)) throw invalidMessage();
-            if (!definition.additionalFieldsAllowed() && !actual.equals(expected)) throw invalidMessage();
             return message;
         } catch (JacksonException malformed) {
             throw invalidMessage();
         }
-    }
-
-    private static CredentialParts credentialParts(String value) {
-        Matcher matcher = CREDENTIAL.matcher(value);
-        if (!matcher.matches()) throw invalidMessage();
-        long generation;
-        try {
-            generation = Long.parseLong(matcher.group(1));
-        } catch (NumberFormatException malformed) {
-            throw invalidMessage();
-        }
-        byte[] secret;
-        try {
-            secret = Base64.getUrlDecoder().decode(matcher.group(2));
-        } catch (IllegalArgumentException malformed) {
-            throw invalidMessage();
-        }
-        if (secret.length != 32
-                || !Base64.getUrlEncoder()
-                        .withoutPadding()
-                        .encodeToString(secret)
-                        .equals(matcher.group(2))) {
-            Arrays.fill(secret, (byte) 0);
-            throw invalidMessage();
-        }
-        return new CredentialParts(generation, secret);
     }
 
     private static String requiredUtf8Text(JsonNode parent, String name, int minimumBytes, int maximumBytes) {
@@ -191,8 +171,6 @@ public final class TerminalConnectionFrameCodec {
     private static IllegalArgumentException invalidMessage() {
         return new IllegalArgumentException("TDS_WS_MESSAGE_INVALID");
     }
-
-    private record CredentialParts(long generation, byte[] secret) {}
 
     public record Authenticate(Credential credential, String appVersion) {}
 

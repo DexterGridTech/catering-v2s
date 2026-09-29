@@ -46,7 +46,7 @@ export const useWallpaperPicker = () => {
           definition: wallpaperSystemFailureObservedCommand,
           payload: {operation, phase},
         });
-      } catch (_error) {
+      } catch {
         // useDispatchCommand has already emitted the structured rejection diagnostic.
       }
     },

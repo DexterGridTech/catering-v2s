@@ -1,5 +1,6 @@
 package com.catering.v2s.terminaldataserver.websocket;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -22,7 +23,9 @@ import io.netty.buffer.Unpooled;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.NettyDataBufferFactory;
@@ -32,10 +35,66 @@ import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 import tools.jackson.databind.json.JsonMapper;
 
 class TdsWebSocketHandlerTransportFailureTest {
+    @Test
+    void firstFrameDeadlineSendsApplicationCloseBeforeReceiveEnds() {
+        WebSocketSession session = mock(WebSocketSession.class);
+        HandshakeInfo handshakeInfo = mock(HandshakeInfo.class);
+        TdsTerminalSessionActors sessionActors = mock(TdsTerminalSessionActors.class);
+        TdsBindingRevocationListener revocationListener = mock(TdsBindingRevocationListener.class);
+        Sinks.Many<WebSocketMessage> inbound = Sinks.many().unicast().onBackpressureBuffer();
+        CopyOnWriteArrayList<String> events = new CopyOnWriteArrayList<>();
+        when(session.getId()).thenReturn("first-frame-deadline-session");
+        when(session.getHandshakeInfo()).thenReturn(handshakeInfo);
+        when(handshakeInfo.getUri()).thenReturn(URI.create("ws://localhost/tdp/group-key/ws"));
+        when(session.receive()).thenReturn(inbound.asFlux().doOnCancel(() -> events.add("receive-cancel")));
+        when(session.close(any(CloseStatus.class))).thenAnswer(invocation -> {
+            CloseStatus status = invocation.getArgument(0);
+            events.add("close:" + status.getCode() + ":" + status.getReason());
+            inbound.tryEmitComplete();
+            return Mono.empty();
+        });
+        when(sessionActors.isDraining()).thenReturn(false);
+        when(revocationListener.isReady()).thenReturn(true);
+        when(session.send(any())).thenAnswer(invocation -> {
+            @SuppressWarnings("unchecked")
+            Publisher<WebSocketMessage> outbound = invocation.getArgument(0);
+            return Flux.from(outbound).then();
+        });
+
+        TerminalConnectionProtocol protocol =
+                new TerminalConnectionProtocol(JsonMapper.builder().build());
+        TdsRuntimeSettings settings = TdsRuntimeSettings.from(
+                "1",
+                "1",
+                Duration.ofSeconds(30),
+                Duration.ofSeconds(90),
+                Duration.ofSeconds(15),
+                Duration.ofSeconds(5));
+        TdsWebSocketHandler handler = new TdsWebSocketHandler(
+                settings,
+                new TerminalConnectionFrameCodec(TdsWireJsonConfiguration.createWireObjectMapper(), protocol),
+                protocol,
+                mock(TerminalCredentialVerificationApi.class),
+                new UnauthenticatedConnectionLimiter(1),
+                sessionActors,
+                revocationListener,
+                mock(TdsConnectionStateWriter.class),
+                mock(SessionRegistrationGate.class),
+                Schedulers.immediate(),
+                Schedulers.immediate(),
+                Schedulers.immediate(),
+                Schedulers.immediate());
+
+        handler.handle(session).block(Duration.ofSeconds(12));
+
+        assertEquals(List.of("close:4000:AUTHENTICATION_TIMEOUT"), events);
+    }
+
     @Test
     void transportReceiveFailureDoesNotEmitApplicationNetworkErrorClose() {
         WebSocketSession session = mock(WebSocketSession.class);

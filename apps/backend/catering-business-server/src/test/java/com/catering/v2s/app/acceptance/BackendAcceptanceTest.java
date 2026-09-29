@@ -27,7 +27,9 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -38,7 +40,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -49,9 +57,12 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -79,6 +90,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, matches = "\\S+")
 @Execution(ExecutionMode.SAME_THREAD)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(classes = CateringV2sApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(BackendAcceptanceMetricsConfiguration.class)
@@ -695,6 +707,14 @@ class BackendAcceptanceTest {
     private TdsAcceptanceProcess tdsAcceptanceProcess;
     private boolean registrationRaceRedControlCaught;
 
+    int secondBusinessPort() {
+        return secondBusinessPort;
+    }
+
+    int primaryBusinessPort() {
+        return port;
+    }
+
     @BeforeAll
     void startSecondBusinessContextAndProveSharedTopology() throws Exception {
         requireRemoteExecution();
@@ -793,9 +813,88 @@ class BackendAcceptanceTest {
         }
     }
 
-    @Test
-    void terminalConnectionTopologyContractProbe() throws Exception {
-        TerminalConnectionContractScenarios.topologyProbe(tdsAcceptanceProcess);
+    @TestFactory
+    @Order(1)
+    Stream<DynamicTest> terminalConnectionTopologyContractProbe() {
+        return Stream.of(DynamicTest.dynamicTest(
+                "terminal.connection.vs1.database-only-configuration-startup",
+                () -> TerminalConnectionContractScenarios.topologyProbe(tdsAcceptanceProcess)));
+    }
+
+    @TestFactory
+    @Order(2)
+    Stream<DynamicTest> terminalConnectionAdmissionContracts() {
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
+        if (!"all".equals(selectedOperation)) return Stream.empty();
+        return TerminalConnectionContractScenarios.v1AdmissionScenarios(this, tdsAcceptanceProcess);
+    }
+
+    @TestFactory
+    @Order(3)
+    Stream<DynamicTest> terminalConnectionHeartbeatContracts() {
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
+        if (!"all".equals(selectedOperation)) return Stream.empty();
+        return TerminalConnectionContractScenarios.v3HeartbeatScenarios(this, tdsAcceptanceProcess);
+    }
+
+    @TestFactory
+    @Order(4)
+    Stream<DynamicTest> terminalConnectionSessionOwnershipContracts() {
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
+        if (!"all".equals(selectedOperation)) return Stream.empty();
+        return TerminalConnectionContractScenarios.v4SessionOwnershipScenarios(this, tdsAcceptanceProcess);
+    }
+
+    @TestFactory
+    @Order(5)
+    Stream<DynamicTest> terminalConnectionLatestStateContracts() {
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
+        if (!"all".equals(selectedOperation)) return Stream.empty();
+        return TerminalConnectionContractScenarios.v6LatestStateScenarios(this, tdsAcceptanceProcess);
+    }
+
+    @TestFactory
+    @Order(6)
+    Stream<DynamicTest> terminalConnectionThroughputContracts() {
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
+        boolean vs8Diagnostic = "true".equals(System.getenv("V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC"));
+        if (vs8Diagnostic && !"storeTerminalActivationBusinessPrecedence".equals(selectedOperation)) {
+            throw new IllegalStateException("BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_OPERATION_MISMATCH");
+        }
+        if (!vs8Diagnostic) return Stream.empty();
+        return TerminalConnectionContractScenarios.v8HeartbeatBoundsScenarios(this, tdsAcceptanceProcess);
+    }
+
+    @TestFactory
+    @Order(13)
+    Stream<DynamicTest> terminalConnectionGracefulShutdownContracts() {
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
+        if (!"all".equals(selectedOperation)) return Stream.empty();
+        return TerminalConnectionContractScenarios.v9GracefulShutdownScenarios(this, tdsAcceptanceProcess);
+    }
+
+    @TestFactory
+    @Order(7)
+    Stream<DynamicTest> terminalConnectionSecretSearchContracts() {
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
+        if (!"all".equals(selectedOperation)) return Stream.empty();
+        return TerminalConnectionContractScenarios.v11SecretSearchScenarios(this, tdsAcceptanceProcess);
+    }
+
+    @TestFactory
+    @Order(8)
+    Stream<DynamicTest> terminalConnectionAuthenticationContracts() {
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
+        if (!"all".equals(selectedOperation)) return Stream.empty();
+        return TerminalConnectionContractScenarios.v2AuthenticationScenarios(this, tdsAcceptanceProcess);
     }
 
     @Test
@@ -804,7 +903,31 @@ class BackendAcceptanceTest {
         assertFalse(registrationRaceRedControlCaught, "TDS_REGISTRATION_RACE_PENDING_GENERATION_MUTATION_NOT_CAUGHT");
     }
 
+    @Test
+    void terminalConnectionGracefulShutdownRunsAfterEveryOtherTdsContractFactory() {
+        List<java.lang.reflect.Method> contractFactories = Arrays.stream(BackendAcceptanceTest.class.getDeclaredMethods())
+                .filter(method -> method.isAnnotationPresent(TestFactory.class))
+                .filter(method -> method.getName().startsWith("terminalConnection"))
+                .toList();
+        java.lang.reflect.Method gracefulShutdown = contractFactories.stream()
+                .filter(method -> method.getName().equals("terminalConnectionGracefulShutdownContracts"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("TDS_GRACEFUL_SHUTDOWN_FACTORY_MISSING"));
+        Order gracefulShutdownOrder = gracefulShutdown.getAnnotation(Order.class);
+        assertNotNull(gracefulShutdownOrder, "TDS_GRACEFUL_SHUTDOWN_ORDER_MISSING");
+        for (java.lang.reflect.Method contractFactory : contractFactories) {
+            Order order = contractFactory.getAnnotation(Order.class);
+            assertNotNull(order, "TDS_CONTRACT_FACTORY_ORDER_MISSING:" + contractFactory.getName());
+            if (contractFactory != gracefulShutdown) {
+                assertTrue(
+                        order.value() < gracefulShutdownOrder.value(),
+                        "TDS_GRACEFUL_SHUTDOWN_FACTORY_MUST_RUN_LAST:" + contractFactory.getName());
+            }
+        }
+    }
+
     @TestFactory
+    @Order(9)
     Stream<DynamicTest> terminalConnectionRevocationRaceContracts() {
         String selectedOperation =
                 System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
@@ -813,6 +936,7 @@ class BackendAcceptanceTest {
     }
 
     @TestFactory
+    @Order(10)
     Stream<DynamicTest> terminalConnectionCompressionContracts() {
         String selectedOperation =
                 System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
@@ -821,6 +945,7 @@ class BackendAcceptanceTest {
     }
 
     @TestFactory
+    @Order(11)
     Stream<DynamicTest> terminalConnectionForwardCompatibleMessageContracts() {
         String selectedOperation =
                 System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
@@ -829,6 +954,7 @@ class BackendAcceptanceTest {
     }
 
     @TestFactory
+    @Order(12)
     Stream<DynamicTest> terminalConnectionDatabaseOutageContracts() {
         String selectedOperation =
                 System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
@@ -1649,6 +1775,90 @@ class BackendAcceptanceTest {
         return jdbc.queryForObject(sql, Long.class, args);
     }
 
+    Connection holdTerminalRowLockForAcceptance(Fixture fixture, UUID terminalRef) throws SQLException {
+        if (jdbc.getDataSource() == null) throw new IllegalStateException("ACCEPTANCE_DATASOURCE_MISSING");
+        Connection connection = jdbc.getDataSource().getConnection();
+        connection.setAutoCommit(false);
+        try (PreparedStatement statement =
+                connection.prepareStatement("SELECT terminal_ref FROM store_terminal.terminal "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=? FOR UPDATE")) {
+            statement.setObject(1, fixture.workspaceUuid());
+            statement.setString(2, fixture.groupWorkspaceKey());
+            statement.setObject(3, terminalRef);
+            try (ResultSet rows = statement.executeQuery()) {
+                if (!rows.next() || !terminalRef.equals(rows.getObject(1, UUID.class))) {
+                    throw new IllegalStateException("ACCEPTANCE_TERMINAL_ROW_LOCK_TARGET_MISSING");
+                }
+            }
+            return connection;
+        } catch (SQLException | RuntimeException failure) {
+            try {
+                connection.rollback();
+            } finally {
+                connection.close();
+            }
+            throw failure;
+        }
+    }
+
+    Connection holdLatestConnectionStateRowLockForAcceptance(Fixture fixture, UUID terminalRef) throws SQLException {
+        if (jdbc.getDataSource() == null) throw new IllegalStateException("ACCEPTANCE_DATASOURCE_MISSING");
+        Connection connection = jdbc.getDataSource().getConnection();
+        connection.setAutoCommit(false);
+        try (PreparedStatement statement =
+                connection.prepareStatement("SELECT terminal_ref FROM terminal_connection.latest_state "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=? FOR UPDATE")) {
+            statement.setObject(1, fixture.workspaceUuid());
+            statement.setString(2, fixture.groupWorkspaceKey());
+            statement.setObject(3, terminalRef);
+            try (ResultSet rows = statement.executeQuery()) {
+                if (!rows.next() || !terminalRef.equals(rows.getObject(1, UUID.class))) {
+                    throw new IllegalStateException("ACCEPTANCE_LATEST_STATE_LOCK_TARGET_MISSING");
+                }
+            }
+            return connection;
+        } catch (SQLException | RuntimeException failure) {
+            try {
+                connection.rollback();
+            } finally {
+                connection.close();
+            }
+            throw failure;
+        }
+    }
+
+    void awaitLatestConnectionStateLockWaiters(int expected, Duration timeout) throws InterruptedException {
+        long deadline = System.nanoTime() + timeout.toNanos();
+        long observed = 0;
+        do {
+            observed = count("SELECT count(*) FROM pg_stat_activity "
+                    + "WHERE datname=current_database() AND pid<>pg_backend_pid() "
+                    + "AND wait_event_type='Lock' AND query ILIKE '%terminal_connection.latest_state%'");
+            if (observed >= expected) return;
+            Thread.sleep(50);
+        } while (System.nanoTime() < deadline);
+        throw new IllegalStateException(
+                "ACCEPTANCE_LATEST_STATE_LOCK_WAITERS_NOT_READY expected=" + expected + " observed=" + observed);
+    }
+
+    void awaitTerminalRowLockWaiters(int expected, Duration timeout) throws InterruptedException {
+        long deadline = System.nanoTime() + timeout.toNanos();
+        long observed = 0;
+        do {
+            observed = count("SELECT count(*) FROM pg_stat_activity "
+                    + "WHERE datname=current_database() AND pid<>pg_backend_pid() "
+                    + "AND wait_event_type='Lock' AND query ILIKE '%store_terminal.terminal%' ");
+            if (observed >= expected) {
+                System.out.printf(
+                        "BACKEND_ACCEPTANCE_TERMINAL_LOCK waitersReady expected=%d observed=%d%n", expected, observed);
+                return;
+            }
+            Thread.sleep(50);
+        } while (System.nanoTime() < deadline);
+        throw new IllegalStateException(
+                "ACCEPTANCE_TERMINAL_LOCK_WAITERS_NOT_READY expected=" + expected + " observed=" + observed);
+    }
+
     long organizationStoreVersion(UUID storeId) {
         return jdbc.queryForObject("SELECT version FROM organization.store WHERE id=?", Long.class, storeId);
     }
@@ -1783,6 +1993,36 @@ class BackendAcceptanceTest {
         return jdbc.queryForMap(sql, args);
     }
 
+    Map<String, Object> tdsHeartbeatStatisticsSnapshot() {
+        return jdbc.execute((org.springframework.jdbc.core.ConnectionCallback<Map<String, Object>>) connection -> {
+            try (var refresh = connection.createStatement()) {
+                refresh.execute("SELECT pg_stat_clear_snapshot()");
+            }
+            try (var statement = connection.prepareStatement(
+                    """
+                    SELECT
+                        COALESCE((
+                            SELECT n_tup_upd FROM pg_stat_user_tables
+                            WHERE schemaname='terminal_connection' AND relname='latest_state'
+                        ), 0) AS latest_state_updates,
+                        COALESCE((
+                            SELECT SUM(seq_scan + idx_scan) FROM pg_stat_user_tables
+                            WHERE (schemaname='platform_workspace' AND relname='workspace')
+                               OR (schemaname='organization' AND relname='store')
+                               OR (schemaname='store_terminal' AND relname='terminal')
+                               OR (schemaname='terminal_binding' AND relname='latest_binding')
+                        ), 0) AS business_table_scans
+                    """)) {
+                try (var rows = statement.executeQuery()) {
+                    if (!rows.next()) throw new IllegalStateException("TDS_HEARTBEAT_STATISTICS_SNAPSHOT_MISSING");
+                    return Map.of(
+                            "latestStateUpdates", rows.getLong("latest_state_updates"),
+                            "businessTableScans", rows.getLong("business_table_scans"));
+                }
+            }
+        });
+    }
+
     private void writeDiscovery(int discovered, int selected, String operation) {
         try {
             Files.writeString(
@@ -1898,6 +2138,42 @@ class BackendAcceptanceTest {
         Response post(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)
                 throws Exception {
             return send(route, "POST", path, cookie, requestJson(body), null, expected);
+        }
+
+        Response postSerializedJson(RouteIdentity route, String path, byte[] body, Set<Integer> expected)
+                throws Exception {
+            return send(route, "POST", path, null, body, null, Map.of(), expected);
+        }
+
+        Socket postWithoutReadingResponse(RouteIdentity route, String path, byte[] body) throws Exception {
+            Socket socket = new Socket();
+            try {
+                socket.connect(new java.net.InetSocketAddress("127.0.0.1", targetPort), 5_000);
+                socket.setSoLinger(true, 0);
+                String headers = "POST " + path + " HTTP/1.1\r\n"
+                        + "Host: 127.0.0.1:" + targetPort + "\r\n"
+                        + "Accept: application/json\r\n"
+                        + "Content-Type: application/json\r\n"
+                        + "Connection: keep-alive\r\n"
+                        + "Content-Length: " + body.length + "\r\n"
+                        + "X-Correlation-Id: " + correlationId + "\r\n"
+                        + "X-Backend-Acceptance-Run-Id: "
+                        + requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_RUN_ID) + "\r\n"
+                        + "X-Backend-Acceptance-Secret: "
+                        + requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_SECRET) + "\r\n"
+                        + "X-Backend-Acceptance-Operation-Id: " + route.operationId() + "\r\n"
+                        + "X-Backend-Acceptance-Route-Template: " + route.routeTemplate() + "\r\n"
+                        + "X-Backend-Acceptance-Measurement-Scenario-Id: " + measurementScenarioId + "\r\n"
+                        + "X-Request-Id: " + UUID.randomUUID() + "\r\n\r\n";
+                OutputStream output = socket.getOutputStream();
+                output.write(headers.getBytes(StandardCharsets.UTF_8));
+                output.write(body);
+                output.flush();
+                return socket;
+            } catch (Exception failure) {
+                socket.close();
+                throw failure;
+            }
         }
 
         Response postCoverageOnly(

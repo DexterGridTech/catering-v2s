@@ -3,7 +3,6 @@ const path = require('node:path')
 const Module = require('node:module')
 const {transformSync} = require('@babel/core')
 
-global.__DEV__ = false
 global.IS_REACT_ACT_ENVIRONMENT = true
 global.RN$registerCallableModule = () => undefined
 global.ErrorUtils = {

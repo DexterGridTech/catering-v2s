@@ -1,5 +1,6 @@
 package com.catering.v2s.terminalbinding.api;
 
+import com.catering.v2s.platform.identity.GroupWorkspaceKey;
 import com.catering.v2s.terminalbinding.domain.TerminalCredentialDigest;
 import java.util.Arrays;
 import java.util.Objects;
@@ -92,7 +93,7 @@ public interface TerminalCredentialVerificationApi {
     }
 
     private static String requiredGroupWorkspaceKey(String value) {
-        if (value == null || !value.matches("[A-Za-z0-9][A-Za-z0-9_-]{0,63}")) {
+        if (!GroupWorkspaceKey.isValid(value)) {
             throw new IllegalArgumentException("groupWorkspaceKey is invalid");
         }
         return value;

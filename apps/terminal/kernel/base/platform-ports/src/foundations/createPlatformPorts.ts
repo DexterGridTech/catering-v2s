@@ -116,7 +116,7 @@ const createLogger = (
       if (binding.kind === 'sink') binding.write(event);
       else sendToConsole(level, event);
       return {status: 'succeeded', value: event, completedAt: nowTimestampMs()};
-    } catch (_error) {
+    } catch {
       return sinkFailure(level);
     }
   };

@@ -142,3 +142,33 @@ same digest/counts, checked the ordered six cases, current helper and validator 
 returned `L2_ADMISSION_REVIEW_STATUS=PASS`, `M/S/N=0/0/0`. This is static admission only; Browser L2,
 DEV, reset, seed, UAT and dynamic business results remain unrun on these bytes. The direct current
 record/gate test run passed 6/6 after the independent verdict was recorded.
+
+## 2026-09-29 current-byte admission confirmation
+
+The following fresh read-only verdict binds the unchanged six-case L2 source set to the current
+admission digest. Since the prior verdict, the only changed control-plane input was the implementation
+plan's V-S2 WebSocket authentication note; the independent reviewer confirmed that it changes no L2
+case, fixture, UI behavior, or execution order. The reviewer recomputed the digest and counts below.
+
+```text
+REVIEW_TARGET=L2_SCRIPT_ADMISSION
+REVIEWER_KIND=INDEPENDENT_SUBAGENT
+REVIEWER=/root/store_terminal_l2_final_admission
+L2_ADMISSION_REVIEW_STATUS=PASS
+ADMISSION_SOURCE_DIGEST=27abd37ee8548962c49f7688393def93bc473f006088e5bedcace04f2c33fdb1
+POLICY_DIGEST=9e4f136958e21d6e6a2c739fc25f85d9914f508e0bf8ea0ded4c4df71e482e7f
+CASE_COUNT=6
+CONTROL_PLANE_FILE_COUNT=36
+UI_FILE_COUNT=22
+FILE_COUNT=58
+UNIQUE_PATH_COUNT=48
+BYTE_COUNT=2170957
+PATH_CONTAINMENT=PASS
+BROWSER_L2=NOT_RUN
+DEV=NOT_RUN
+RESET=NOT_RUN
+SEED=NOT_RUN
+UAT=NOT_RUN
+M_S_N=0/0/0
+EVIDENCE_TIER=FRESH_READ_ONLY_SOURCE_REVIEW
+```

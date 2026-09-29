@@ -20,8 +20,8 @@ const SurfaceRootContent = ({children}: Readonly<{readonly children?: ReactNode}
           {children}
           <ScreenContainer />
         </Animated.View>
-        <LayerStack />
       </SystemFailureBoundary>
+      <LayerStack />
     </View>
   );
 };

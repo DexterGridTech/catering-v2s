@@ -63,7 +63,7 @@ export const useTrackedCommand = (): TrackedCommand => {
         }
         try {
           await input.onRejected?.(error);
-        } catch (_observerError) {
+        } catch {
           // Rejection observers are best-effort and must not change CONSUME semantics.
         }
         return undefined;

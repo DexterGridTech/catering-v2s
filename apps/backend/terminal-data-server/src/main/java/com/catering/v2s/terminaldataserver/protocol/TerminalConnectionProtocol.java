@@ -48,8 +48,7 @@ public final class TerminalConnectionProtocol {
                     requiredText(messageNode, "direction"),
                     messageNode.path("firstMessage").asBoolean(false),
                     messageNode.path("maxSerializedUtf8Bytes").asInt(0),
-                    Set.copyOf(fieldNames),
-                    true);
+                    Set.copyOf(fieldNames));
             if (loadedMessages.putIfAbsent(type, definition) != null) {
                 throw invalidContract("duplicate message type");
             }
@@ -177,12 +176,7 @@ public final class TerminalConnectionProtocol {
     }
 
     public record MessageDefinition(
-            String type,
-            String direction,
-            boolean firstMessage,
-            int maxSerializedUtf8Bytes,
-            Set<String> fieldNames,
-            boolean additionalFieldsAllowed) {}
+            String type, String direction, boolean firstMessage, int maxSerializedUtf8Bytes, Set<String> fieldNames) {}
 
     public record Close(int code, String reason) {}
 }

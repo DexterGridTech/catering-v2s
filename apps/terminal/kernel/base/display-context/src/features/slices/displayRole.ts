@@ -1,12 +1,7 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import {defineStateRuntimeSlice, type StateRuntimeSliceRegistration} from '@catering-v2s/kernel-base-state';
 import {moduleName} from '../../moduleName';
-import {
-  isDisplayRole,
-  type DisplayRole,
-  type DisplayRoleState,
-  type PendingPowerConfirmation,
-} from '../../types/display';
+import {isDisplayRole, type DisplayRoleState, type PendingPowerConfirmation} from '../../types/display';
 
 export const displayRoleSliceName = `${moduleName}.display-role` as const;
 

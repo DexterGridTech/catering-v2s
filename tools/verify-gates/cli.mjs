@@ -1325,6 +1325,8 @@ function terminology(base = root) {
 }
 function logging(base = root) {
   const files = sourceFiles(`${appRoot}/src/main`, base)
+    .concat(sourceFiles(`${appRoot}/modules`, base).filter(file => /\/modules\/[^/]+\/src\/main\//.test(file)))
+    .concat(sourceFiles('apps/backend/terminal-data-server/src/main', base))
     .concat(sourceFiles('apps/frontend/platform-admin/src', base))
     .concat(sourceFiles('apps/frontend/operations-admin/src', base))
     .concat(sourceFiles('libraries', base))
@@ -3143,6 +3145,33 @@ final class R4BudgetIncompleteSelectStarSql {
       process.stdout.write(
         'R11_FRONTEND_DATE_RED=PASS\nR11_STATUS_CONFIRM_DANGER_RED=PASS\nR11_STATUS_CONFIRM_BARE_DANGER_RED=PASS\nR11_DATE_FIELD_FALLBACK_RED=PASS\nR11_FRONTEND_LIFECYCLE_RED=PASS\nR11_BACKEND_PARSER_RED=PASS\nR11_ADVISORY_RED=PASS\nR11_REUSE_SELF_TEST=PASS\n',
       );
+      return;
+    }
+    if (action === 'logging') {
+      const fixtures = [
+        [
+          `${appRoot}/modules/terminal-binding/src/main/java/com/catering/v2s/terminalbinding/LoggingGateMutation.java`,
+          'R4_LOGGING_TERMINAL_BINDING_RED=PASS',
+        ],
+        [
+          'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/LoggingGateMutation.java',
+          'R4_LOGGING_TDS_RED=PASS',
+        ],
+      ];
+      for (const [relative, marker] of fixtures) {
+        write(relative, 'final class LoggingGateMutation { void leak() { System.out.println("secret"); } }\n');
+        let detected = false;
+        try {
+          actions[action](scratch);
+        } catch (error) {
+          detected = String(error).includes('R4_LOGGING_FREE_CONSOLE') && String(error).includes(relative);
+        } finally {
+          fs.rmSync(path.join(scratch, relative), {force: true});
+        }
+        if (!detected) fail('R4_LOGGING_SELF_TEST_NOT_DETECTED', relative);
+        process.stdout.write(`${marker}\n`);
+      }
+      process.stdout.write('R4_LOGGING_SELF_TEST=PASS\n');
       return;
     }
     let red = false;

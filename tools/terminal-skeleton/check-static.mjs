@@ -5,6 +5,7 @@ import {readPackageInvariant} from '../terminal-shared/package-invariants.mjs';
 import {assertClosedUnionConsumers} from '../terminal-shared/closed-union-consumers.mjs';
 import {
   createAnalysisProgram,
+  assertNoCompilerOptionsDiagnostics,
   assertNoSyntacticDiagnostics,
   resolveAliasedSymbol,
   resolveValueExpressionSymbol,
@@ -911,6 +912,7 @@ function tr01ExceptionBaseKey(exception) {
 function runTr01Boundary(context) {
   const {root, projected} = context;
   const analysis = createAnalysisProgram(root);
+  assertNoCompilerOptionsDiagnostics(analysis, root);
   assertNoSyntacticDiagnostics(analysis, root);
   const checker = analysis.program.getTypeChecker();
   const actorPath = /(?:^|[\\/])features[\\/]actors[\\/]/;
