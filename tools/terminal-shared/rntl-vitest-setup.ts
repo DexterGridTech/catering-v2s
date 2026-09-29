@@ -1,5 +1,6 @@
 import {afterAll, afterEach, beforeAll, expect} from 'vitest';
 import {resetNativeTestRefFactory} from './rntl-native-test-host';
+import {cleanupRntlTestCase} from './rntl-test-cleanup';
 
 type RntlTestGlobals = typeof globalThis & {
   expect?: typeof expect;
@@ -33,8 +34,7 @@ beforeAll(() => {
 
 afterEach(async () => {
   const {cleanup} = await import('@testing-library/react-native');
-  await cleanup();
-  resetNativeTestRefFactory();
+  await cleanupRntlTestCase(cleanup, resetNativeTestRefFactory);
 });
 
 afterAll(() => {

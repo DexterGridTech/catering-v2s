@@ -51,7 +51,7 @@ describe('platform-ports startup diagnostics', () => {
       return;
     }
 
-    expect(first.startupRunId).toBeDefined();
+    expect(first.startupRunId, 'DEV_STARTUP_RUN_ID_MISSING').toBeDefined();
     expect(second.startupRunId).toBeDefined();
     expect(first.startupRunId).not.toBe(second.startupRunId);
   });
@@ -88,7 +88,10 @@ describe('platform-ports startup diagnostics', () => {
       });
 
       const events = startupEventsFrom(info.mock.calls);
-      expect(events.map(event => event.category)).toEqual([
+      expect(
+        events.map(event => event.category),
+        'DEV_STARTUP_EVENT_SEQUENCE_MISMATCH',
+      ).toEqual([
         'startup.ports',
         'startup.modules',
         'startup.slices',

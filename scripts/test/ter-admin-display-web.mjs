@@ -8,9 +8,14 @@ import {readProcessTable, snapshotProcessTree, terminateOwnedProcessTree} from '
 import {
   ADMIN_SHELL_FRAME_SELECTOR,
   EXPECTED_ADMIN_SHELL_COLOR_BY_INTEGRATION,
+  WEB_TEXTINPUT_CONTEXTMENU_UNREACHED_CONSUMERS,
+  additionalTextInputContextMenuTargets,
   classifyAdminLauncherFailureRecoveryLog,
+  hasStartupContentFailureReadiness,
   expectedTextInputProbeCount,
   expectedTextInputProbeIds,
+  isExpectedRuntimeLogEvent,
+  launcherGeometryMatches,
   WEB_LAYER_OWNER_COVERAGE,
   WEB_SCENARIOS,
   applyWebSourceRecheckFailure,
@@ -22,6 +27,7 @@ import {
   createExpoWebLaunchSpec,
   fetchExpoWebReadiness,
   hashWebSourceFiles,
+  parseJsonEventsAfterByteOffset,
   parseListeningProcessIds,
   pipeExpoOutput,
   releaseManagedWebRunLock,
@@ -113,48 +119,59 @@ const pageErrorNames = [];
 const waitForLauncherGeometryAfter = async (filePath, byteOffset, targetRect, targetViewport, timeoutMs) => {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const content = fs.readFileSync(filePath, 'utf8');
-    const tail = content.slice(byteOffset);
-    for (const line of tail.split('\n')) {
-      if (!line.includes('"event": "admin.launcher-geometry-measured"')) continue;
-      const viewport = line.match(/"windowDimensions":\s*\{([^}]*)\}/)?.[1];
-      const rect = line.match(/"windowRect":\s*\{([^}]*)\}/)?.[1];
-      const viewportWidth = Number(viewport?.match(/"width":\s*([\d.]+)/)?.[1]);
-      const viewportHeight = Number(viewport?.match(/"height":\s*([\d.]+)/)?.[1]);
-      const measuredWidth = Number(rect?.match(/"width":\s*([\d.]+)/)?.[1]);
-      const measuredHeight = Number(rect?.match(/"height":\s*([\d.]+)/)?.[1]);
-      if (
-        viewportWidth === targetViewport.width &&
-        viewportHeight === targetViewport.height &&
-        Math.abs(measuredWidth - targetRect.width) <= 1 &&
-        Math.abs(measuredHeight - targetRect.height) <= 1
-      ) return line;
-    }
+    const events = parseJsonEventsAfterByteOffset(fs.readFileSync(filePath), byteOffset);
+    const measured = events.find(event => launcherGeometryMatches(event, targetRect, targetViewport));
+    if (measured !== undefined) return measured;
     await new Promise(resolve => setTimeout(resolve, 50));
   }
   throw new Error(
     `WEB_LAUNCHER_GEOMETRY_DID_NOT_MATCH_VISIBLE_PRIMARY:${targetViewport.width}x${targetViewport.height}:${targetRect.width}x${targetRect.height}`,
   );
 };
-const waitForLogEvent = async (filePath, event, timeoutMs) => {
+const waitForLogEvent = async (filePath, event, byteOffset, timeoutMs, predicate = () => true) => {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    if (fs.readFileSync(filePath, 'utf8').includes(`"event": "${event}"`)) return;
+    const events = parseJsonEventsAfterByteOffset(fs.readFileSync(filePath), byteOffset);
+    const matched = events.find(value => isExpectedRuntimeLogEvent(value, event) && predicate(value));
+    if (matched !== undefined) return matched;
     await new Promise(resolve => setTimeout(resolve, 50));
   }
   throw new Error(`WEB_EXPECTED_LOG_EVENT_MISSING:${event}`);
 };
 const observeAdminLauncherAfterFailure = async (targetBounds, failureNotice) => {
-  const logOffset = fs.statSync(logPath).size;
-  for (let index = 0; index < 5; index += 1) {
-    await page.mouse.click(
-      targetBounds.x + Math.min(24, targetBounds.width / 4),
-      targetBounds.y + Math.min(24, targetBounds.height / 4),
-    );
+  const events = parseJsonEventsAfterByteOffset(fs.readFileSync(logPath), 0);
+  const latestPrimaryLayerSelection = [...events]
+    .reverse()
+    .find(event => isExpectedRuntimeLogEvent(event, 'render.layer-selection') && event.data?.displayMode === 'PRIMARY');
+  if (latestPrimaryLayerSelection === undefined || !Array.isArray(latestPrimaryLayerSelection.data?.layerIds)) {
+    return Object.freeze({
+      status: 'OPEN',
+      openRequests: 0,
+      completedResults: 0,
+      reason: 'WEB_PRIMARY_LAYER_SELECTION_READBACK_MISSING',
+    });
   }
+  const adminLayerMounted = latestPrimaryLayerSelection.data.layerIds.includes('admin.console.layer');
+  if (adminLayerMounted) {
+    await failureNotice.waitFor({state: 'visible', timeout: 5_000});
+    return classifyAdminLauncherFailureRecoveryLog(events.map(value => JSON.stringify(value)).join('\n'), {
+      adminLayerMounted,
+      failureOwner,
+    });
+  }
+  const logOffset = fs.statSync(logPath).size;
+  await page.mouse.click(
+    targetBounds.x + Math.min(24, targetBounds.width / 4),
+    targetBounds.y + Math.min(24, targetBounds.height / 4),
+  );
   await page.getByTestId('terminal.admin:login').waitFor({state: 'visible', timeout: 10_000});
   await failureNotice.waitFor({state: 'visible', timeout: 5_000});
-  return classifyAdminLauncherFailureRecoveryLog(fs.readFileSync(logPath, 'utf8').slice(logOffset));
+  return classifyAdminLauncherFailureRecoveryLog(
+    parseJsonEventsAfterByteOffset(fs.readFileSync(logPath), logOffset)
+      .map(value => JSON.stringify(value))
+      .join('\n'),
+    {failureOwner},
+  );
 };
 try {
   currentProcessIdentity = readProcessTable().find(entry => entry.pid === process.pid);
@@ -185,18 +202,19 @@ try {
   if (budget.error) throw new Error(`RESOURCE_PREFLIGHT_SPAWN_FAILED:${budget.error.code ?? budget.error.name}`);
   if (budget.status !== 0) throw new Error(`RESOURCE_PREFLIGHT_FAILED:${budget.status}`);
 
-  const listenerPreflight = spawnSync(
-    'lsof',
-    ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-t'],
-    {cwd: root, encoding: 'utf8'},
-  );
+  const listenerPreflight = spawnSync('lsof', ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-t'], {
+    cwd: root,
+    encoding: 'utf8',
+  });
   if (listenerPreflight.error) {
     manifest.portPreflight = {
       status: 'ERROR',
       errorCode: listenerPreflight.error.code ?? listenerPreflight.error.name,
     };
     save();
-    throw new Error(`WEB_PORT_LISTENER_PREFLIGHT_SPAWN_FAILED:${listenerPreflight.error.code ?? listenerPreflight.error.name}`);
+    throw new Error(
+      `WEB_PORT_LISTENER_PREFLIGHT_SPAWN_FAILED:${listenerPreflight.error.code ?? listenerPreflight.error.name}`,
+    );
   }
   const occupiedListenerPids = parseListeningProcessIds(
     listenerPreflight.stdout,
@@ -209,16 +227,16 @@ try {
     exitCode: listenerPreflight.status,
     stderr: String(listenerPreflight.stderr ?? '').trim(),
   };
-  fs.writeFileSync(
-    path.join(runRoot, 'port-preflight.json'),
-    `${JSON.stringify(manifest.portPreflight)}\n`,
-    {mode: 0o600},
-  );
+  fs.writeFileSync(path.join(runRoot, 'port-preflight.json'), `${JSON.stringify(manifest.portPreflight)}\n`, {
+    mode: 0o600,
+  });
   save();
   if (occupiedListenerPids.length > 0) throw new Error('WEB_PORT_ALREADY_IN_USE');
 
   expoLog = fs.createWriteStream(logPath, {flags: 'wx', mode: 0o600});
-  expoLog.on('error', error => { expoLogError = error; });
+  expoLog.on('error', error => {
+    expoLogError = error;
+  });
   const expoLaunch = createExpoWebLaunchSpec(integrationRoot, port);
   expo = spawn(expoLaunch.command, expoLaunch.args, expoLaunch.options);
   const expoSpawnError = await awaitManagedChildSpawn(expo);
@@ -258,18 +276,19 @@ try {
       continue;
     }
     if (response.ok) {
-      const listenerReadback = spawnSync(
-        'lsof',
-        ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-t'],
-        {cwd: root, encoding: 'utf8'},
-      );
+      const listenerReadback = spawnSync('lsof', ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-t'], {
+        cwd: root,
+        encoding: 'utf8',
+      });
       if (listenerReadback.error) {
         manifest.portReadback = {
           status: 'ERROR',
           errorCode: listenerReadback.error.code ?? listenerReadback.error.name,
         };
         save();
-        throw new Error(`WEB_PORT_LISTENER_READBACK_SPAWN_FAILED:${listenerReadback.error.code ?? listenerReadback.error.name}`);
+        throw new Error(
+          `WEB_PORT_LISTENER_READBACK_SPAWN_FAILED:${listenerReadback.error.code ?? listenerReadback.error.name}`,
+        );
       }
       const ownedProcessTree = snapshotProcessTree({
         pid: manifest.process.pid,
@@ -295,11 +314,9 @@ try {
             .map(process => process.pid),
           failure: error instanceof Error ? error.message : 'UNKNOWN',
         };
-        fs.writeFileSync(
-          path.join(runRoot, 'port-readback.json'),
-          `${JSON.stringify(manifest.portReadback)}\n`,
-          {mode: 0o600},
-        );
+        fs.writeFileSync(path.join(runRoot, 'port-readback.json'), `${JSON.stringify(manifest.portReadback)}\n`, {
+          mode: 0o600,
+        });
         save();
         throw error;
       }
@@ -312,11 +329,9 @@ try {
         exitCode: listenerReadback.status,
         stderr: String(listenerReadback.stderr ?? '').trim(),
       };
-      fs.writeFileSync(
-        path.join(runRoot, 'port-readback.json'),
-        `${JSON.stringify(manifest.portReadback)}\n`,
-        {mode: 0o600},
-      );
+      fs.writeFileSync(path.join(runRoot, 'port-readback.json'), `${JSON.stringify(manifest.portReadback)}\n`, {
+        mode: 0o600,
+      });
       manifest.webListenerPids = listenerPids;
       manifest.webListenerOwned = 'PASS';
       save();
@@ -345,11 +360,7 @@ try {
       'screen:main:sample.desk.member-list',
       'screen:main:sample.desk.member-form',
     ]);
-    if (
-      integrationName !== 'sample-console' ||
-      failureOwner === null ||
-      !allowedFailureOwners.has(failureOwner)
-    ) {
+    if (integrationName !== 'sample-console' || failureOwner === null || !allowedFailureOwners.has(failureOwner)) {
       throw new Error('WEB_SCREEN_ERROR_MEMBER_JOURNEY_SCOPE_INVALID');
     }
     const tapKey = async (keyId, testIDSuffix = '') => {
@@ -375,11 +386,18 @@ try {
     const failureNotice = page.getByTestId(`ui-base-render:system-failure:${failureOwner}`);
     const dismissButton = page.getByTestId(`ui-base-render:system-failure:${failureOwner}:dismiss`);
     await failureNotice.waitFor({state: 'visible', timeout: 10_000});
-    if (await page.getByText('知道了', {exact: true}).count() !== 1) {
+    if ((await page.getByText('知道了', {exact: true}).count()) !== 1) {
       throw new Error('WEB_SCREEN_ERROR_NOTICE_BUTTON_COUNT_MISMATCH');
     }
+    const resetLogOffset = fs.statSync(logPath).size;
     await dismissButton.click();
-    await waitForLogEvent(logPath, 'runtime.system-failure.reset-unavailable', 10_000);
+    await waitForLogEvent(
+      logPath,
+      'runtime.system-failure.reset-unavailable',
+      resetLogOffset,
+      10_000,
+      event => event.data?.portStatus === 'unavailable',
+    );
     await failureNotice.waitFor({state: 'visible', timeout: 5_000});
     const launcherRecovery = await observeAdminLauncherAfterFailure(bounds, failureNotice);
     if (pageErrorNames.length) throw new Error(`WEB_PAGE_ERRORS:${JSON.stringify(pageErrorNames)}`);
@@ -395,7 +413,8 @@ try {
     manifest.screenshotPath = path.relative(root, screenshotPath);
     manifest.business = launcherRecovery.status === 'PASS' ? 'PASS' : 'OPEN';
     if (launcherRecovery.status !== 'PASS') {
-      manifest.openReason = 'WEB_ADMIN_LAUNCHER_NOT_PROVEN_USABLE_AFTER_MEMBER_SCREEN_FAILURE';
+      manifest.openReason =
+        launcherRecovery.reason ?? 'WEB_ADMIN_LAUNCHER_NOT_PROVEN_USABLE_AFTER_MEMBER_SCREEN_FAILURE';
     }
   } else if (webScenario === 'screen-error-secondary-journey') {
     const secondaryOwners = new Map([
@@ -451,11 +470,18 @@ try {
     const failureNotice = page.getByTestId(`ui-base-render:system-failure:${failureOwner}`);
     const dismissButton = page.getByTestId(`ui-base-render:system-failure:${failureOwner}:dismiss`);
     await failureNotice.waitFor({state: 'visible', timeout: 15_000});
-    if (await page.getByText('知道了', {exact: true}).count() !== 1) {
+    if ((await page.getByText('知道了', {exact: true}).count()) !== 1) {
       throw new Error('WEB_SCREEN_ERROR_SECONDARY_NOTICE_BUTTON_COUNT_MISMATCH');
     }
+    const resetLogOffset = fs.statSync(logPath).size;
     await dismissButton.click();
-    await waitForLogEvent(logPath, 'runtime.system-failure.reset-unavailable', 10_000);
+    await waitForLogEvent(
+      logPath,
+      'runtime.system-failure.reset-unavailable',
+      resetLogOffset,
+      10_000,
+      event => event.data?.portStatus === 'unavailable',
+    );
     await failureNotice.waitFor({state: 'visible', timeout: 5_000});
     await page.getByTestId(`${integrationName}:test-expo:root`).evaluate(root => {
       for (const element of root.querySelectorAll('*')) {
@@ -478,10 +504,7 @@ try {
     ) {
       throw new Error('WEB_SECONDARY_SCREEN_PRIMARY_ORIGIN_NOT_RESTORED');
     }
-    const launcherRecovery = await observeAdminLauncherAfterFailure(
-      primaryBoundsAfterSecondaryNotice,
-      failureNotice,
-    );
+    const launcherRecovery = await observeAdminLauncherAfterFailure(primaryBoundsAfterSecondaryNotice, failureNotice);
     if (pageErrorNames.length) throw new Error(`WEB_PAGE_ERRORS:${JSON.stringify(pageErrorNames)}`);
     manifest.webObserved = {
       failureOwner,
@@ -497,7 +520,8 @@ try {
     manifest.screenshotPath = path.relative(root, screenshotPath);
     manifest.business = launcherRecovery.status === 'PASS' ? 'PASS' : 'OPEN';
     if (launcherRecovery.status !== 'PASS') {
-      manifest.openReason = 'WEB_ADMIN_LAUNCHER_NOT_PROVEN_USABLE_AFTER_SECONDARY_SCREEN_FAILURE';
+      manifest.openReason =
+        launcherRecovery.reason ?? 'WEB_ADMIN_LAUNCHER_NOT_PROVEN_USABLE_AFTER_SECONDARY_SCREEN_FAILURE';
     }
   } else if (webScenario === 'layer-error-production-journey') {
     const target = failureOwner === null ? undefined : WEB_LAYER_OWNER_COVERAGE[failureOwner];
@@ -513,7 +537,7 @@ try {
     const tapKey = async (keyId, testIDSuffix = '') => {
       await page.getByTestId(`ui.base.input:virtual-keyboard:${keyId}${testIDSuffix}`).click({timeout: 5_000});
     };
-    const loginStaff = async (accepted) => {
+    const loginStaff = async accepted => {
       const operatorName = page.getByTestId('sample.auth.login:operator-name');
       await operatorName.click();
       await tapKey('shift');
@@ -526,7 +550,9 @@ try {
     };
     const openDualPreview = async () => {
       await page.getByTestId(`${integrationName}:test-expo:surface-mode:dual`).click();
-      await page.getByTestId(`${integrationName}:test-expo:surface:SECONDARY`).waitFor({state: 'visible', timeout: 10_000});
+      await page
+        .getByTestId(`${integrationName}:test-expo:surface:SECONDARY`)
+        .waitFor({state: 'visible', timeout: 10_000});
     };
     const openMemberForm = async () => {
       await page.getByTestId('sample.desk.member-list:empty-action').click();
@@ -579,20 +605,21 @@ try {
     const failureNotice = page.getByTestId(`ui-base-render:system-failure:${failureOwner}`);
     const dismissButton = page.getByTestId(`ui-base-render:system-failure:${failureOwner}:dismiss`);
     await failureNotice.waitFor({state: 'visible', timeout: 15_000});
-    if (await page.getByText('知道了', {exact: true}).count() !== 1) {
+    if ((await page.getByText('知道了', {exact: true}).count()) !== 1) {
       throw new Error('WEB_LAYER_ERROR_NOTICE_BUTTON_COUNT_MISMATCH');
     }
+    const resetLogOffset = fs.statSync(logPath).size;
     await dismissButton.click();
-    await waitForLogEvent(logPath, 'runtime.system-failure.reset-unavailable', 10_000);
+    await waitForLogEvent(
+      logPath,
+      'runtime.system-failure.reset-unavailable',
+      resetLogOffset,
+      10_000,
+      event => event.data?.portStatus === 'unavailable',
+    );
     await failureNotice.waitFor({state: 'visible', timeout: 5_000});
-    let adminLauncherWhileFailure;
-    if (failureOwner !== 'layer:admin.console.layer') {
-      const primaryBounds = await currentPrimaryBounds();
-      adminLauncherWhileFailure = await observeAdminLauncherAfterFailure(primaryBounds, failureNotice);
-    } else {
-      const currentBounds = await currentPrimaryBounds();
-      adminLauncherWhileFailure = await observeAdminLauncherAfterFailure(currentBounds, failureNotice);
-    }
+    const primaryBounds = await currentPrimaryBounds();
+    const adminLauncherWhileFailure = await observeAdminLauncherAfterFailure(primaryBounds, failureNotice);
     if (pageErrorNames.length) throw new Error(`WEB_PAGE_ERRORS:${JSON.stringify(pageErrorNames)}`);
     manifest.webObserved = {
       failureOwner,
@@ -606,7 +633,8 @@ try {
     manifest.screenshotPath = path.relative(root, screenshotPath);
     if (adminLauncherWhileFailure.status === 'OPEN') {
       manifest.business = 'OPEN';
-      manifest.openReason = 'WEB_ADMIN_LAUNCHER_NOT_PROVEN_USABLE_WHILE_ADMIN_LAYER_FAILURE_PERSISTS';
+      manifest.openReason =
+        adminLauncherWhileFailure.reason ?? 'WEB_ADMIN_LAUNCHER_NOT_PROVEN_USABLE_WHILE_ADMIN_LAYER_FAILURE_PERSISTS';
     } else {
       manifest.business = 'PASS';
     }
@@ -660,6 +688,41 @@ try {
       await observeContextMenu('terminal.admin:topology:host');
       return {status: 'PASS'};
     };
+    const openAdminConsole = async () => {
+      for (let index = 0; index < 5; index += 1) {
+        await page.mouse.click(bounds.x + Math.min(24, bounds.width / 4), bounds.y + Math.min(24, bounds.height / 4));
+      }
+      await page.getByTestId('terminal.admin:login').waitFor({state: 'visible', timeout: 10_000});
+      const pin = (await page.getByTestId('terminal.admin:debug-password').innerText()).match(/\d{6}/)?.[0];
+      if (pin === undefined) throw new Error('WEB_ADMIN_DEBUG_PASSWORD_READBACK_MISSING');
+      for (const digit of pin) await tapKey(`text-${digit}`);
+      await page.getByTestId('terminal.admin:verify').click();
+    };
+    const observeAdditionalContextMenuTargets = async () => {
+      let topologyHostInput;
+      for (const testID of additionalTextInputContextMenuTargets({integrationName, surfaceForm})) {
+        if (testID === 'terminal.admin:topology:host') {
+          await openAdminConsole();
+          topologyHostInput = await observeTopologyHostInput();
+        } else {
+          await observeContextMenu(testID);
+        }
+      }
+      if (surfaceForm === 'mobile') topologyHostInput = await observeTopologyHostInput();
+      return topologyHostInput;
+    };
+    const textInputWebObservations = topologyHostInput => ({
+      clipboardPrecondition: 'NON_EMPTY',
+      textInputCount: contextMenuObservations.length / 2,
+      textInputObservations: contextMenuObservations,
+      nonTextInputAdminPinSkipped: true,
+      notReachedProductionConsumers: WEB_TEXTINPUT_CONTEXTMENU_UNREACHED_CONSUMERS.filter(
+        consumer => consumer.integrationName === integrationName,
+      ),
+      ...(topologyHostInput === undefined ? {} : {topologyHostInput}),
+      contextMenuPrevented: 'PASS',
+      observationKind: 'RNW_CONTEXTMENU_EVENT',
+    });
     if (webScenario === 'textinput-contextmenu') {
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
       const clipboardValue = await page.evaluate(async () => {
@@ -708,25 +771,7 @@ try {
       await addMember.click();
 
       if (webScenario === 'textinput-contextmenu') {
-        for (const testID of [
-          'sample.desk.member-form:name',
-          'sample.desk.member-form:phone',
-          'sample.desk.member-form:keyboard-alpha-probe',
-          'sample.desk.member-form:keyboard-financial-probe',
-        ]) await observeContextMenu(testID);
-
-        let topologyHostInput;
-        if (integrationName === 'sample-console') {
-          for (let index = 0; index < 5; index += 1) {
-            await page.mouse.click(bounds.x + Math.min(24, bounds.width / 4), bounds.y + Math.min(24, bounds.height / 4));
-          }
-          await page.getByTestId('terminal.admin:login').waitFor({state: 'visible', timeout: 10_000});
-          const pin = (await page.getByTestId('terminal.admin:debug-password').innerText()).match(/\d{6}/)?.[0];
-          if (pin === undefined) throw new Error('WEB_ADMIN_DEBUG_PASSWORD_READBACK_MISSING');
-          for (const digit of pin) await tapKey(`text-${digit}`);
-          await page.getByTestId('terminal.admin:verify').click();
-          topologyHostInput = await observeTopologyHostInput();
-        }
+        const topologyHostInput = await observeAdditionalContextMenuTargets();
         const observedTextInputCount = contextMenuObservations.length / 2;
         const expectedTextInputCount = expectedTextInputProbeCount({integrationName, surfaceForm});
         const probeMismatch = textInputProbeMismatch(
@@ -738,86 +783,69 @@ try {
             `WEB_TEXTINPUT_CONTEXTMENU_PROBE_MISMATCH:${probeMismatch ?? 'COUNT'}:${observedTextInputCount}:${expectedTextInputCount}`,
           );
         }
-        manifest.webObserved = {
-          clipboardPrecondition: 'NON_EMPTY',
-          textInputCount: observedTextInputCount,
-          emptyAndExistingTextStates: contextMenuObservations.length,
-          nonTextInputAdminPinSkipped: true,
-          ...(integrationName === 'sample-console' ? {topologyHostInput} : {}),
-          contextMenuPrevented: 'PASS',
-          observationKind: 'RNW_CONTEXTMENU_EVENT',
-        };
+        manifest.webObserved = textInputWebObservations(topologyHostInput);
         manifest.pageErrorNames = pageErrorNames;
         if (pageErrorNames.length) throw new Error(`WEB_PAGE_ERRORS:${JSON.stringify(pageErrorNames)}`);
         await page.screenshot({path: screenshotPath, fullPage: true});
         manifest.screenshotPath = path.relative(root, screenshotPath);
         manifest.business = 'PASS';
       } else {
+        const name = page.getByTestId('sample.desk.member-form:name');
+        await name.waitFor({state: 'visible', timeout: 10_000});
+        await name.click();
+        await tapKey('text-x');
+        const symbols = [':', '/', '.', '?', '&', '=', '-', '_', '%', '+'];
+        for (const [index, symbol] of symbols.entries()) {
+          const digit = '1234567890'[index];
+          await tapKey('shift');
+          const keyId = `ui.base.input:virtual-keyboard:text-${digit}`;
+          const visibleLabel = await page.getByTestId(keyId).innerText();
+          if (visibleLabel !== symbol) {
+            throw new Error(`WEB_KEYBOARD_URL_SYMBOL_LABEL_MISMATCH:${index}:${JSON.stringify(visibleLabel)}`);
+          }
+          await tapKey(`text-${digit}`);
+          if ((await name.inputValue()) !== `x${symbols.slice(0, index + 1).join('')}`) {
+            throw new Error(`WEB_KEYBOARD_URL_SYMBOL_INSERTION_MISMATCH:${index}`);
+          }
+          manifest.keyboardJourney.urlSymbolsMatched = index + 1;
+          save();
+        }
 
-    const name = page.getByTestId('sample.desk.member-form:name');
-    await name.waitFor({state: 'visible', timeout: 10_000});
-    await name.click();
-    await tapKey('text-x');
-    const symbols = [':', '/', '.', '?', '&', '=', '-', '_', '%', '+'];
-    for (const [index, symbol] of symbols.entries()) {
-      const digit = '1234567890'[index];
-      await tapKey('shift');
-      const keyId = `ui.base.input:virtual-keyboard:text-${digit}`;
-      const visibleLabel = await page.getByTestId(keyId).innerText();
-      if (visibleLabel !== symbol) {
-        throw new Error(`WEB_KEYBOARD_URL_SYMBOL_LABEL_MISMATCH:${index}:${JSON.stringify(visibleLabel)}`);
-      }
-      await tapKey(`text-${digit}`);
-      if ((await name.inputValue()) !== `x${symbols.slice(0, index + 1).join('')}`) {
-        throw new Error(`WEB_KEYBOARD_URL_SYMBOL_INSERTION_MISMATCH:${index}`);
-      }
-      manifest.keyboardJourney.urlSymbolsMatched = index + 1;
-      save();
-    }
+        const alphaProbe = page.getByTestId('sample.desk.member-form:keyboard-alpha-probe');
+        await alphaProbe.click();
+        await tapKey('text-a');
+        await tapKey('shift');
+        await tapKey('text-b');
+        await tapKey('space');
+        await tapKey('text-c');
+        if ((await alphaProbe.inputValue()) !== 'aB c') throw new Error('WEB_KEYBOARD_ALPHA_SHIFT_SPACE_MISMATCH');
 
-    const alphaProbe = page.getByTestId('sample.desk.member-form:keyboard-alpha-probe');
-    await alphaProbe.click();
-    await tapKey('text-a');
-    await tapKey('shift');
-    await tapKey('text-b');
-    await tapKey('space');
-    await tapKey('text-c');
-    if ((await alphaProbe.inputValue()) !== 'aB c') throw new Error('WEB_KEYBOARD_ALPHA_SHIFT_SPACE_MISMATCH');
+        const financialProbe = page.getByTestId('sample.desk.member-form:keyboard-financial-probe');
+        await financialProbe.click();
+        await tapKey('text-1');
+        await tapKey('text-.');
+        await tapKey('text-2');
+        if ((await financialProbe.inputValue()) !== '1.2') throw new Error('WEB_KEYBOARD_FINANCIAL_INSERTION_MISMATCH');
+        for (let index = 0; index < 3; index += 1) await tapKey('backspace');
+        for (const keyId of ['text--', 'text-1', 'text-.', 'text-2']) await tapKey(keyId);
+        if ((await financialProbe.inputValue()) !== '-1.2') throw new Error('WEB_KEYBOARD_FINANCIAL_SIGN_MISMATCH');
 
-    const financialProbe = page.getByTestId('sample.desk.member-form:keyboard-financial-probe');
-    await financialProbe.click();
-    await tapKey('text-1');
-    await tapKey('text-.');
-    await tapKey('text-2');
-    if ((await financialProbe.inputValue()) !== '1.2') throw new Error('WEB_KEYBOARD_FINANCIAL_INSERTION_MISMATCH');
-    for (let index = 0; index < 3; index += 1) await tapKey('backspace');
-    for (const keyId of ['text--', 'text-1', 'text-.', 'text-2']) await tapKey(keyId);
-    if ((await financialProbe.inputValue()) !== '-1.2') throw new Error('WEB_KEYBOARD_FINANCIAL_SIGN_MISMATCH');
-
-    manifest.webObserved = {
-      loginViaVirtualKeys: 'PASS',
-      urlSymbolCount: symbols.length,
-      urlSymbolLabelMatchesInsertedValues: 'PASS',
-      alphaShiftAndSpaceInsertion: 'PASS',
-      financialAsciiInsertion: 'PASS',
-    };
-    manifest.pageErrorNames = pageErrorNames;
-    if (pageErrorNames.length) throw new Error(`WEB_PAGE_ERRORS:${JSON.stringify(pageErrorNames)}`);
-    await page.screenshot({path: screenshotPath, fullPage: true});
-    manifest.screenshotPath = path.relative(root, screenshotPath);
-    manifest.business = 'PASS';
+        manifest.webObserved = {
+          loginViaVirtualKeys: 'PASS',
+          urlSymbolCount: symbols.length,
+          urlSymbolLabelMatchesInsertedValues: 'PASS',
+          alphaShiftAndSpaceInsertion: 'PASS',
+          financialAsciiInsertion: 'PASS',
+        };
+        manifest.pageErrorNames = pageErrorNames;
+        if (pageErrorNames.length) throw new Error(`WEB_PAGE_ERRORS:${JSON.stringify(pageErrorNames)}`);
+        await page.screenshot({path: screenshotPath, fullPage: true});
+        manifest.screenshotPath = path.relative(root, screenshotPath);
+        manifest.business = 'PASS';
       }
     } else if (webScenario === 'textinput-contextmenu') {
       await page.getByTestId('sample.wallpaper.picker').waitFor({state: 'visible', timeout: 15_000});
-      for (let index = 0; index < 5; index += 1) {
-        await page.mouse.click(bounds.x + Math.min(24, bounds.width / 4), bounds.y + Math.min(24, bounds.height / 4));
-      }
-      await page.getByTestId('terminal.admin:login').waitFor({state: 'visible', timeout: 10_000});
-      const pin = (await page.getByTestId('terminal.admin:debug-password').innerText()).match(/\d{6}/)?.[0];
-      if (pin === undefined) throw new Error('WEB_ADMIN_DEBUG_PASSWORD_READBACK_MISSING');
-      for (const digit of pin) await tapKey(`text-${digit}`);
-      await page.getByTestId('terminal.admin:verify').click();
-      const topologyHostInput = await observeTopologyHostInput();
+      const topologyHostInput = await observeAdditionalContextMenuTargets();
       const observedTextInputCount = contextMenuObservations.length / 2;
       const expectedTextInputCount = expectedTextInputProbeCount({integrationName, surfaceForm});
       const probeMismatch = textInputProbeMismatch(
@@ -829,15 +857,7 @@ try {
           `WEB_TEXTINPUT_CONTEXTMENU_PROBE_MISMATCH:${probeMismatch ?? 'COUNT'}:${observedTextInputCount}:${expectedTextInputCount}`,
         );
       }
-      manifest.webObserved = {
-        clipboardPrecondition: 'NON_EMPTY',
-        textInputCount: observedTextInputCount,
-        emptyAndExistingTextStates: contextMenuObservations.length,
-        nonTextInputAdminPinSkipped: true,
-        topologyHostInput,
-        contextMenuPrevented: 'PASS',
-        observationKind: 'RNW_CONTEXTMENU_EVENT',
-      };
+      manifest.webObserved = textInputWebObservations(topologyHostInput);
       manifest.pageErrorNames = pageErrorNames;
       if (pageErrorNames.length) throw new Error(`WEB_PAGE_ERRORS:${JSON.stringify(pageErrorNames)}`);
       await page.screenshot({path: screenshotPath, fullPage: true});
@@ -924,7 +944,7 @@ try {
         throw new Error('WEB_OVERLAY_CLOSE_CHANGED_COVERED_VALUES');
       }
       const keyboardKeys = page.locator('[data-testid^="ui.base.input:virtual-keyboard:"]');
-      if (await keyboardKeys.count() > 0 && await keyboardKeys.first().isVisible()) {
+      if ((await keyboardKeys.count()) > 0 && (await keyboardKeys.first().isVisible())) {
         throw new Error('WEB_OVERLAY_CLOSE_LEFT_KEYBOARD_VISIBLE');
       }
       await coveredOperator.click();
@@ -947,27 +967,25 @@ try {
     const dismissButton = page.getByTestId(`ui-base-render:system-failure:${failureOwner}:dismiss`);
     await failureNotice.waitFor({state: 'visible', timeout: 10_000});
     if (failureOwner === 'screen:main:sample.auth.login') {
-      const readinessLog = fs.readFileSync(logPath, 'utf8');
-      const startupComplete = readinessLog.split('\n').find(line =>
-        line.includes('"event": "startup.complete"') &&
-        line.includes('"primaryContentFailure": "render-error"') &&
-        line.includes('"primaryRealReady": false'),
-      );
-      const loadingReleased = readinessLog.split('\n').some(line =>
-        line.includes('"event": "startup.ready-hidden"') &&
-        line.includes('"contentFailure": "render-error"'),
-      );
-      if (startupComplete === undefined || !loadingReleased) {
+      const startupEvents = parseJsonEventsAfterByteOffset(fs.readFileSync(logPath), 0);
+      if (!hasStartupContentFailureReadiness(startupEvents)) {
         throw new Error('WEB_STARTUP_CONTENT_FAILURE_READINESS_MISMATCH');
       }
       manifest.startupContentFailure = 'PASS';
       manifest.startupLoadingReleasedWithoutRealReady = 'PASS';
     }
-    if (await page.getByText('知道了', {exact: true}).count() !== 1) {
+    if ((await page.getByText('知道了', {exact: true}).count()) !== 1) {
       throw new Error('WEB_SYSTEM_FAILURE_NOTICE_BUTTON_COUNT_MISMATCH');
     }
+    const resetLogOffset = fs.statSync(logPath).size;
     await dismissButton.click();
-    await waitForLogEvent(logPath, 'runtime.system-failure.reset-unavailable', 10_000);
+    await waitForLogEvent(
+      logPath,
+      'runtime.system-failure.reset-unavailable',
+      resetLogOffset,
+      10_000,
+      event => event.data?.portStatus === 'unavailable',
+    );
     await failureNotice.waitFor({state: 'visible', timeout: 5_000});
     const launcherRecovery = await observeAdminLauncherAfterFailure(bounds, failureNotice);
     if (pageErrorNames.length) throw new Error(`WEB_PAGE_ERRORS:${JSON.stringify(pageErrorNames)}`);
@@ -979,7 +997,7 @@ try {
     manifest.screenshotPath = path.relative(root, screenshotPath);
     manifest.business = launcherRecovery.status === 'PASS' ? 'PASS' : 'OPEN';
     if (launcherRecovery.status !== 'PASS') {
-      manifest.openReason = 'WEB_ADMIN_LAUNCHER_NOT_PROVEN_USABLE_AFTER_SYSTEM_FAILURE';
+      manifest.openReason = launcherRecovery.reason ?? 'WEB_ADMIN_LAUNCHER_NOT_PROVEN_USABLE_AFTER_SYSTEM_FAILURE';
     }
   } else {
     for (let index = 0; index < 5; index += 1) {
@@ -1003,7 +1021,7 @@ try {
     const primaryHeight = page.getByTestId('terminal.admin:runtime:surface-map:surface:PRIMARY:logic-height');
     await primaryWidth.waitFor({state: 'visible', timeout: 15_000});
     const shellFrame = page.locator(ADMIN_SHELL_FRAME_SELECTOR);
-    if (await shellFrame.count() !== 1) throw new Error('WEB_ADMIN_SHELL_FRAME_COUNT_MISMATCH');
+    if ((await shellFrame.count()) !== 1) throw new Error('WEB_ADMIN_SHELL_FRAME_COUNT_MISMATCH');
     await shellFrame.waitFor({state: 'visible', timeout: 10_000});
     const shellColor = await shellFrame.evaluate(element => ({
       testID: element.getAttribute('data-testid'),
@@ -1014,7 +1032,9 @@ try {
     const observed = {
       primaryLogicalWidth: await primaryWidth.innerText(),
       primaryLogicalHeight: await primaryHeight.innerText(),
-      primaryReadiness: await page.getByTestId('terminal.admin:runtime:surface-map:surface:PRIMARY:inside:0').innerText(),
+      primaryReadiness: await page
+        .getByTestId('terminal.admin:runtime:surface-map:surface:PRIMARY:inside:0')
+        .innerText(),
       deviceDisplayAreaLabelCount: await page.getByText(/设备显示区域：/).count(),
       secondaryCardCount: await page.getByTestId('terminal.admin:runtime:surface-map:surface:SECONDARY:card').count(),
       adminShellFrameTestID: shellColor.testID,
@@ -1030,10 +1050,7 @@ try {
     if (observed.primaryReadiness !== '已就绪' || observed.deviceDisplayAreaLabelCount !== 0) {
       throw new Error(`WEB_RUNTIME_DISPLAY_AREA_LABEL_PRESENT_OR_READINESS_MISSING:${JSON.stringify(observed)}`);
     }
-    if (
-      shellColor.token !== expectedShellColor.token ||
-      shellColor.computed !== expectedShellColor.computed
-    ) {
+    if (shellColor.token !== expectedShellColor.token || shellColor.computed !== expectedShellColor.computed) {
       throw new Error(`WEB_ADMIN_SHELL_SEMANTIC_COLOR_MISMATCH:${JSON.stringify(observed)}`);
     }
     if (observed.secondaryCardCount !== 0) throw new Error('WEB_SECONDARY_ADAPTER_FACTS_UNEXPECTEDLY_PRESENT');
@@ -1050,13 +1067,7 @@ try {
     );
     const resizedBounds = await page.getByTestId(surfaceTestIdPrefix).boundingBox();
     if (resizedBounds === null) throw new Error('ADMIN_LAUNCHER_RESIZED_BOUNDS_UNAVAILABLE');
-    await waitForLauncherGeometryAfter(
-      logPath,
-      geometryLogOffset,
-      resizedBounds,
-      {width: 1180, height: 760},
-      10_000,
-    );
+    await waitForLauncherGeometryAfter(logPath, geometryLogOffset, resizedBounds, {width: 1180, height: 760}, 10_000);
     for (let index = 0; index < 5; index += 1) {
       await page.mouse.click(
         resizedBounds.x + Math.min(24, resizedBounds.width / 4),
@@ -1064,9 +1075,9 @@ try {
       );
     }
     await page.getByTestId('terminal.admin:login').waitFor({state: 'visible', timeout: 10_000});
-    const resizedOpenRequests = fs.readFileSync(logPath, 'utf8').slice(geometryLogOffset)
-      .split('\n')
-      .filter(line => line.includes('"event": "admin.launcher-open-requested"')).length;
+    const resizedOpenRequests = parseJsonEventsAfterByteOffset(fs.readFileSync(logPath), geometryLogOffset).filter(
+      event => isExpectedRuntimeLogEvent(event, 'admin.launcher-open-requested'),
+    ).length;
     if (resizedOpenRequests !== 1) throw new Error(`WEB_RESIZED_LAUNCHER_OPEN_COUNT:${resizedOpenRequests}`);
     manifest.geometryAfterViewportResize = 'PASS';
     await page.screenshot({path: screenshotPath, fullPage: true});
@@ -1086,11 +1097,13 @@ try {
       manifest.failureScreenshotError = screenshotError instanceof Error ? screenshotError.name : 'UnknownError';
     }
     try {
-      manifest.pageDiagnostics = await page.locator('[data-testid]').evaluateAll(elements => elements.map(element => ({
-        testID: element.getAttribute('data-testid'),
-        tagName: element.tagName,
-        visible: element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden',
-      })));
+      manifest.pageDiagnostics = await page.locator('[data-testid]').evaluateAll(elements =>
+        elements.map(element => ({
+          testID: element.getAttribute('data-testid'),
+          tagName: element.tagName,
+          visible: element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden',
+        })),
+      );
     } catch (diagnosticError) {
       manifest.pageDiagnosticsFailure = diagnosticError instanceof Error ? diagnosticError.name : 'UnknownError';
     }
@@ -1178,6 +1191,8 @@ process.stdout.write(
   `TER_ADMIN_DISPLAY_WEB business=${manifest.business} cleanup=${manifest.cleanup} sourceStable=${manifest.sourceStable} runId=${runId} sourceSha256=${sourceSha256}\n`,
 );
 if (manifest.business !== 'PASS' || manifest.cleanup !== 'PASS') {
-  process.stderr.write(`TER_ADMIN_DISPLAY_WEB_FAILURE=${manifest.firstFailure ?? manifest.openReason ?? manifest.cleanupFailures?.[0] ?? 'CLEANUP_FAILED'}\n`);
+  process.stderr.write(
+    `TER_ADMIN_DISPLAY_WEB_FAILURE=${manifest.firstFailure ?? manifest.openReason ?? manifest.cleanupFailures?.[0] ?? 'CLEANUP_FAILED'}\n`,
+  );
   process.exitCode = 1;
 }

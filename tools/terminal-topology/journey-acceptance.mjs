@@ -61,7 +61,11 @@ const exactCloseOriginEvidence = evidence => {
 
 const valueFor = (block, key) => {
   const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const match = block.match(new RegExp(`\\b${escapedKey}:\\s*(?:'([^']*)'|"([^"]*)"|(-?\\d+)|(null|true|false|undefined))`))
+  const match = block.match(
+    new RegExp(
+      `(?:^|\\n)(?:[^\\n]*?ReactNativeJS:[ \\t]*)?[ \\t]*${escapedKey}:[ \\t]*(?:'([^']*)'|"([^"]*)"|(-?\\d+)|(null|true|false|undefined))`,
+    ),
+  )
   if (match === null) return undefined
   if (match[1] !== undefined) return match[1]
   if (match[2] !== undefined) return match[2]
@@ -70,7 +74,9 @@ const valueFor = (block, key) => {
 }
 
 export const parseTopologyPeerLogEvents = logcat => {
-  const markers = [...String(logcat).matchAll(/timestamp:\s*(\d+)/g)]
+  const markers = [
+    ...String(logcat).matchAll(/(?:^|\n)(?:[^\n]*?ReactNativeJS:[ \t]*)?[ \t]*\{[ \t]*timestamp:[ \t]*(\d+)/g),
+  ]
   return markers.flatMap((marker, index) => {
     const start = marker.index
     const end = markers[index + 1]?.index ?? String(logcat).length

@@ -28,6 +28,15 @@ android {
   }
 }
 
+// The JVM socket tests read production topology timing from this checkout only;
+// do not discover matching config files by searching parent/sibling directories.
+tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
+  systemProperty 'ter.repositoryRoot', rootProject.projectDir.toPath()
+    .resolve('../../../../../../')
+    .toFile()
+    .canonicalPath
+}
+
 dependencies {
   implementation("com.facebook.react:react-android")
   // Compile against Expo's single autolinked splash-screen implementation;

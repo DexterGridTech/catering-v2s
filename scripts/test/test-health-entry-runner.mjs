@@ -7,6 +7,7 @@ import {fileURLToPath} from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const explicitScriptTestRoots = Object.freeze(['scripts/dev', 'scripts/generate', 'scripts/test']);
+const nodeTestOutputMaxBufferBytes = 64 * 1024 * 1024;
 
 // This is intentionally an explicit file list. The recursive scan below is only
 // the denominator check: a new scripts test file or directory must be added here
@@ -62,6 +63,8 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/terminal-topology-device-identity.test.mjs',
   'scripts/test/terminal-topology-heartbeat-window.test.mjs',
   'scripts/test/terminal-topology-runner-guards.test.mjs',
+  'scripts/test/terminal-owned-test-report.test.mjs',
+  'scripts/test/test-health-entry-runner.test.mjs',
 ]);
 
 const sorted = values => [...values].sort((left, right) => left.localeCompare(right));
@@ -135,7 +138,7 @@ export function selfTest(repositoryRoot = root) {
   const broadFrontendGlob = ['src/', ['**', '/*.test.mjs'].join('')].join('');
   assertSelfTest(!source.includes(broadNodeGlob) && !source.includes(broadFrontendGlob), 'BROAD_GLOB');
   process.stdout.write(
-    `THCL_NODE_TEST_ENTRY_SELF_TEST=PASS\nDISCOVERED_TEST_FILES=${current.count}\nEXECUTED_TEST_FILES=${current.count}\nRED_MISSING_ENTRY=PASS\nRED_DUPLICATE_ENTRY=PASS\nRED_BROAD_GLOB=PASS\n`,
+    `THCL_NODE_TEST_ENTRY_SELF_TEST=PASS\nDISCOVERED_TEST_FILES=${current.count}\nEXECUTED_TEST_FILES=0\nRED_MISSING_ENTRY=PASS\nRED_DUPLICATE_ENTRY=PASS\nRED_BROAD_GLOB=PASS\n`,
   );
 }
 
@@ -145,6 +148,7 @@ export function runNodeTests({repositoryRoot = root, spawnSyncImpl = childProces
     cwd: repositoryRoot,
     encoding: 'utf8',
     env: {...process.env},
+    maxBuffer: nodeTestOutputMaxBufferBytes,
   });
   process.stdout.write(result?.stdout || '');
   process.stderr.write(result?.stderr || '');

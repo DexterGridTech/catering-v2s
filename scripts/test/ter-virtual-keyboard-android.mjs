@@ -2493,9 +2493,7 @@ export function summarizePersistKvW10(logcatText, intentId, appProcessIds) {
   }
   const allowedPids = new Set(appProcessIds.map(String));
   const lines = launchAttemptLogLines(logcatText, intentId);
-  const parsed = lines.map(parseLogcatLine).map(entry =>
-    entry && allowedPids.has(entry.pid) ? entry : null,
-  );
+  const parsed = lines.map(parseLogcatLine).map(entry => (entry && allowedPids.has(entry.pid) ? entry : null));
   const mismatchObserved = parsed.some(
     entry => entry?.tag === 'TerminalPersistKv' && entry.message.includes('PERSIST_KV_PROTECTED_KEY_MISMATCH'),
   );

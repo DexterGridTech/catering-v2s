@@ -12,9 +12,11 @@ import {
   EXPECTED_ADMIN_SHELL_COLOR_BY_INTEGRATION,
   EXPECTED_TEXTINPUT_PROBE_COUNT,
   EXPECTED_TEXTINPUT_PROBE_IDS,
+  WEB_TEXTINPUT_CONTEXTMENU_UNREACHED_CONSUMERS,
   WEB_LAYER_OWNER_COVERAGE,
   WEB_RUNNER_FIXED_SOURCE_FILES,
   WEB_SCENARIOS,
+  additionalTextInputContextMenuTargets,
   applyWebSourceRecheckFailure,
   applyWebSourceSnapshot,
   acquireManagedWebRunLock,
@@ -27,9 +29,13 @@ import {
   expectedTextInputProbeIds,
   enumerateWebLayerOwnerCoverage,
   fetchExpoWebReadiness,
+  hasStartupContentFailureReadiness,
   hashWebSourceFiles,
+  isExpectedRuntimeLogEvent,
+  launcherGeometryMatches,
   pipeExpoOutput,
   parseListeningProcessIds,
+  parseJsonEventsAfterByteOffset,
   releaseManagedWebRunLock,
   sendProtectedInputKeyboardProbe,
   sourceSnapshotsMatch,
@@ -39,6 +45,76 @@ import {
 } from './ter-admin-display-web-contract.mjs';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const runtimeLogEvent = (event, data = {}, {category, moduleName = 'platform-ports', layer = 'kernel'} = {}) => ({
+  timestamp: 1790740000000,
+  level: 'info',
+  category: category ?? event,
+  event,
+  scope: {moduleName, layer},
+  data,
+  security: {containsSensitiveRaw: false, maskingMode: 'masked'},
+});
+const TEXTINPUT_CONSUMER_SOURCE = Object.freeze({
+  'sample.auth.login:operator-name':
+    'apps/terminal/ui/feature/sample-staff-auth/src/components/StaffLoginOperatorNameInput.tsx',
+  'sample.auth.login:passcode': 'apps/terminal/ui/feature/sample-staff-auth/src/components/StaffLoginPasscodeInput.tsx',
+  'sample.desk.customer-member:age':
+    'apps/terminal/ui/feature/sample-member-desk/src/components/CustomerMemberAgeField.tsx',
+  'sample.desk.member-form:name':
+    'apps/terminal/ui/feature/sample-member-desk/src/components/MemberFormScrollContent.tsx',
+  'sample.desk.member-form:phone':
+    'apps/terminal/ui/feature/sample-member-desk/src/components/MemberFormScrollContent.tsx',
+  'sample.desk.member-form:keyboard-alpha-probe':
+    'apps/terminal/ui/feature/sample-member-desk/src/components/MemberFormScrollContent.tsx',
+  'sample.desk.member-form:keyboard-financial-probe':
+    'apps/terminal/ui/feature/sample-member-desk/src/components/MemberFormScrollContent.tsx',
+  'terminal.admin:topology:host': 'apps/terminal/ui/base/admin-shell/src/components/sections/TopologySectionLaptop.tsx',
+});
+const TEXTINPUT_CONSUMER_BINDING = Object.freeze({
+  'sample.auth.login:operator-name': 'testID: operatorNameFieldId',
+  'sample.auth.login:passcode': 'testID: passcodeFieldId',
+  'sample.desk.customer-member:age': 'testID: ageFieldId',
+  'sample.desk.member-form:name': "testID: 'sample.desk.member-form:name'",
+  'sample.desk.member-form:phone': "testID: 'sample.desk.member-form:phone'",
+  'sample.desk.member-form:keyboard-alpha-probe': "testID: 'sample.desk.member-form:keyboard-alpha-probe'",
+  'sample.desk.member-form:keyboard-financial-probe': "testID: 'sample.desk.member-form:keyboard-financial-probe'",
+  'terminal.admin:topology:host': 'testID: topologyIds.host',
+});
+const TEXTINPUT_PRODUCTION_CONSUMER_FILES = Object.freeze([
+  {
+    path: TEXTINPUT_CONSUMER_SOURCE['sample.auth.login:operator-name'],
+    required: ['useInputField', 'testID: operatorNameFieldId', "layout: 'full'"],
+  },
+  {
+    path: TEXTINPUT_CONSUMER_SOURCE['sample.auth.login:passcode'],
+    required: ['useInputField', 'testID: passcodeFieldId', "layout: 'full'"],
+  },
+  {
+    path: 'apps/terminal/ui/feature/sample-member-desk/src/components/CustomerMemberAgeField.tsx',
+    required: ['useInputField', 'testID: ageFieldId', "layout: 'numeric'"],
+  },
+  {
+    path: TEXTINPUT_CONSUMER_SOURCE['sample.desk.member-form:name'],
+    required: [
+      "testID: 'sample.desk.member-form:name'",
+      "testID: 'sample.desk.member-form:phone'",
+      "testID: 'sample.desk.member-form:keyboard-alpha-probe'",
+      "testID: 'sample.desk.member-form:keyboard-financial-probe'",
+    ],
+  },
+  {
+    path: TEXTINPUT_CONSUMER_SOURCE['terminal.admin:topology:host'],
+    required: ['useInputField', 'testID: topologyIds.host'],
+  },
+  {
+    path: 'apps/terminal/application/android/sample-terminal/src/components/controlledKeyboardHarness.tsx',
+    required: ['useInputField', "testID: 'harness:full-field'", "layout: 'full'"],
+  },
+  {
+    path: 'apps/terminal/application/android/sample-wallpaper-terminal/src/components/controlledKeyboardHarness.tsx',
+    required: ['useInputField', "testID: 'harness:full-field'", "layout: 'full'"],
+  },
+]);
 
 function temporaryDirectory(t) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ter-admin-display-web-test-'));
@@ -57,30 +133,42 @@ test('WEB scenario registry rejects mismatched integration and surface before th
     'keyboard-overlay-ownership',
     'textinput-contextmenu',
   ]);
-  assert.equal(webScenarioScopeError({
-    integrationName: 'sample-console',
-    webScenario: 'keyboard-login',
-    surfaceForm: 'laptop',
-    failureOwner: null,
-  }), 'WEB_KEYBOARD_JOURNEY_SCOPE_INVALID');
-  assert.equal(webScenarioScopeError({
-    integrationName: 'sample-console',
-    webScenario: 'keyboard-login',
-    surfaceForm: 'mobile',
-    failureOwner: null,
-  }), 'WEB_KEYBOARD_JOURNEY_SCOPE_INVALID');
-  assert.equal(webScenarioScopeError({
-    integrationName: 'sample-wallpaper-console',
-    webScenario: 'keyboard-login',
-    surfaceForm: 'mobile',
-    failureOwner: null,
-  }), null);
-  assert.equal(webScenarioScopeError({
-    integrationName: 'sample-console',
-    webScenario: 'screen-error-secondary-journey',
-    surfaceForm: 'mobile',
-    failureOwner: 'screen:main:sample.desk.customer-member',
-  }), 'WEB_SCREEN_ERROR_SECONDARY_JOURNEY_SCOPE_INVALID');
+  assert.equal(
+    webScenarioScopeError({
+      integrationName: 'sample-console',
+      webScenario: 'keyboard-login',
+      surfaceForm: 'laptop',
+      failureOwner: null,
+    }),
+    'WEB_KEYBOARD_JOURNEY_SCOPE_INVALID',
+  );
+  assert.equal(
+    webScenarioScopeError({
+      integrationName: 'sample-console',
+      webScenario: 'keyboard-login',
+      surfaceForm: 'mobile',
+      failureOwner: null,
+    }),
+    'WEB_KEYBOARD_JOURNEY_SCOPE_INVALID',
+  );
+  assert.equal(
+    webScenarioScopeError({
+      integrationName: 'sample-wallpaper-console',
+      webScenario: 'keyboard-login',
+      surfaceForm: 'mobile',
+      failureOwner: null,
+    }),
+    null,
+  );
+  assert.equal(
+    webScenarioScopeError({
+      integrationName: 'sample-console',
+      webScenario: 'screen-error-secondary-journey',
+      surfaceForm: 'mobile',
+      failureOwner: 'screen:main:sample.desk.customer-member',
+    }),
+    'WEB_SCREEN_ERROR_SECONDARY_JOURNEY_SCOPE_INVALID',
+  );
 });
 
 test('WEB scenario admission matrix matches each actual integration and surface consumer', () => {
@@ -99,16 +187,28 @@ test('WEB scenario admission matrix matches each actual integration and surface 
     ['screen-error-member-journey', 'sample-console', 'mobile', 'screen:main:sample.desk.member-form'],
     ['screen-error-secondary-journey', 'sample-console', 'laptop', 'screen:main:sample.desk.customer-member'],
     ['screen-error-secondary-journey', 'sample-console', 'laptop', 'screen:main:sample.desk.customer-welcome'],
-    ['screen-error-secondary-journey', 'sample-wallpaper-console', 'laptop', 'screen:main:sample.wallpaper-console.waiting'],
-    ['screen-error-secondary-journey', 'sample-wallpaper-console', 'laptop', 'screen:main:sample.wallpaper-console.welcome'],
+    [
+      'screen-error-secondary-journey',
+      'sample-wallpaper-console',
+      'laptop',
+      'screen:main:sample.wallpaper-console.waiting',
+    ],
+    [
+      'screen-error-secondary-journey',
+      'sample-wallpaper-console',
+      'laptop',
+      'screen:main:sample.wallpaper-console.welcome',
+    ],
     ...enumerateWebLayerOwnerCoverage()
       .filter(row => row.status === 'WEB_REACHABLE')
-      .flatMap(row => row.surfaceForms.map(surfaceForm => [
-        'layer-error-production-journey',
-        row.integrationName,
-        surfaceForm,
-        row.owner,
-      ])),
+      .flatMap(row =>
+        row.surfaceForms.map(surfaceForm => [
+          'layer-error-production-journey',
+          row.integrationName,
+          surfaceForm,
+          row.owner,
+        ]),
+      ),
     ['keyboard-login', 'sample-wallpaper-console', 'laptop', null],
     ['keyboard-login', 'sample-wallpaper-console', 'mobile', null],
     ['keyboard-member-journey', 'sample-console', 'laptop', null],
@@ -121,8 +221,11 @@ test('WEB scenario admission matrix matches each actual integration and surface 
     ['textinput-contextmenu', 'sample-wallpaper-console', 'mobile', null],
   ];
   for (const [webScenario, integrationName, surfaceForm, failureOwner] of validRows) {
-    assert.equal(webScenarioScopeError({integrationName, webScenario, surfaceForm, failureOwner}), null,
-      `WEB_SCENARIO_EXPECTED_ADMITTED:${[webScenario, integrationName, surfaceForm, failureOwner].join('|')}`);
+    assert.equal(
+      webScenarioScopeError({integrationName, webScenario, surfaceForm, failureOwner}),
+      null,
+      `WEB_SCENARIO_EXPECTED_ADMITTED:${[webScenario, integrationName, surfaceForm, failureOwner].join('|')}`,
+    );
   }
   const keyOf = ([webScenario, integrationName, surfaceForm, failureOwner]) =>
     `${webScenario}|${integrationName}|${surfaceForm}|${failureOwner ?? '<none>'}`;
@@ -145,8 +248,11 @@ test('WEB scenario admission matrix matches each actual integration and surface 
         for (const failureOwner of failureOwners) {
           const row = [webScenario, integrationName, surfaceForm, failureOwner];
           const result = webScenarioScopeError({integrationName, webScenario, surfaceForm, failureOwner});
-          assert.equal(result === null, allowed.has(keyOf(row)),
-            `WEB_SCENARIO_ADMISSION_MISMATCH:${keyOf(row)}:${result ?? 'ADMITTED'}`);
+          assert.equal(
+            result === null,
+            allowed.has(keyOf(row)),
+            `WEB_SCENARIO_ADMISSION_MISMATCH:${keyOf(row)}:${result ?? 'ADMITTED'}`,
+          );
         }
       }
     }
@@ -188,33 +294,57 @@ test('W4 layer inventory expands to all 14 integration-owner pairs without conve
     'sample-console|layer:sample.desk.discard-confirm',
     'sample-console|layer:sample.desk.withdraw-confirm',
   ].sort();
-  assert.deepEqual(rows.filter(row => row.status === 'OPEN').map(pairKey).sort(), expectedOpenPairs);
-  assert.deepEqual(rows.filter(row => row.status === 'WEB_REACHABLE').map(pairKey).sort(), expectedReachablePairs);
+  assert.deepEqual(
+    rows
+      .filter(row => row.status === 'OPEN')
+      .map(pairKey)
+      .sort(),
+    expectedOpenPairs,
+  );
+  assert.deepEqual(
+    rows
+      .filter(row => row.status === 'WEB_REACHABLE')
+      .map(pairKey)
+      .sort(),
+    expectedReachablePairs,
+  );
   assert.ok(rows.filter(row => row.status === 'OPEN').every(row => row.reason?.length > 0));
-  assert.equal(webScenarioScopeError({
-    integrationName: 'sample-wallpaper-console',
-    webScenario: 'layer-error-production-journey',
-    surfaceForm: 'laptop',
-    failureOwner: 'layer:sample.wallpaper.system-notice',
-  }), 'WEB_LAYER_ERROR_OWNER_WEB_TRIGGER_OPEN:layer:sample.wallpaper.system-notice');
-  assert.equal(webScenarioScopeError({
-    integrationName: 'sample-console',
-    webScenario: 'layer-error-production-journey',
-    surfaceForm: 'mobile',
-    failureOwner: 'layer:sample.desk.withdraw-confirm',
-  }), 'WEB_LAYER_ERROR_PRODUCTION_JOURNEY_SCOPE_INVALID');
-  assert.equal(webScenarioScopeError({
-    integrationName: 'sample-console',
-    webScenario: 'layer-error-production-journey',
-    surfaceForm: 'mobile',
-    failureOwner: 'layer:sample.desk.registry-notice',
-  }), 'WEB_LAYER_ERROR_PRODUCTION_JOURNEY_SCOPE_INVALID');
-  assert.equal(webScenarioScopeError({
-    integrationName: 'sample-console',
-    webScenario: 'layer-error-production-journey',
-    surfaceForm: 'laptop',
-    failureOwner: 'layer:sample.desk.registry-notice',
-  }), null);
+  assert.equal(
+    webScenarioScopeError({
+      integrationName: 'sample-wallpaper-console',
+      webScenario: 'layer-error-production-journey',
+      surfaceForm: 'laptop',
+      failureOwner: 'layer:sample.wallpaper.system-notice',
+    }),
+    'WEB_LAYER_ERROR_OWNER_WEB_TRIGGER_OPEN:layer:sample.wallpaper.system-notice',
+  );
+  assert.equal(
+    webScenarioScopeError({
+      integrationName: 'sample-console',
+      webScenario: 'layer-error-production-journey',
+      surfaceForm: 'mobile',
+      failureOwner: 'layer:sample.desk.withdraw-confirm',
+    }),
+    'WEB_LAYER_ERROR_PRODUCTION_JOURNEY_SCOPE_INVALID',
+  );
+  assert.equal(
+    webScenarioScopeError({
+      integrationName: 'sample-console',
+      webScenario: 'layer-error-production-journey',
+      surfaceForm: 'mobile',
+      failureOwner: 'layer:sample.desk.registry-notice',
+    }),
+    'WEB_LAYER_ERROR_PRODUCTION_JOURNEY_SCOPE_INVALID',
+  );
+  assert.equal(
+    webScenarioScopeError({
+      integrationName: 'sample-console',
+      webScenario: 'layer-error-production-journey',
+      surfaceForm: 'laptop',
+      failureOwner: 'layer:sample.desk.registry-notice',
+    }),
+    null,
+  );
 });
 
 test('admin-shell runtime color oracle is distinct and exact for each integration', () => {
@@ -249,12 +379,39 @@ test('W9 color oracle selects the registered outer shell frame, not the white co
       path.join(repositoryRoot, 'apps/terminal/ui/base/admin-shell/src/components', component),
       'utf8',
     );
-    assert.match(source, new RegExp(`<PrimitiveContainer\\s+testID=\\{adminFrameTestId\\([\\s\\S]*?appearance="${shellAppearance}"`));
-    assert.match(source, /<PrimitiveContainer\s+testID=\{adminTestIds\.panel\.frame\}[\s\S]*?appearance="admin-content"/);
+    assert.match(
+      source,
+      new RegExp(`<PrimitiveContainer\\s+testID=\\{adminFrameTestId\\([\\s\\S]*?appearance="${shellAppearance}"`),
+    );
+    assert.match(
+      source,
+      /<PrimitiveContainer\s+testID=\{adminTestIds\.panel\.frame\}[\s\S]*?appearance="admin-content"/,
+    );
   }
 });
 
 test('TextInput context-menu run has an exact per-integration and per-surface denominator', () => {
+  assert.equal(TEXTINPUT_PRODUCTION_CONSUMER_FILES.length, 7, 'TP-B5 path denominator must remain complete');
+  assert.deepEqual(WEB_TEXTINPUT_CONTEXTMENU_UNREACHED_CONSUMERS, [
+    {
+      integrationName: 'sample-console',
+      testID: 'sample.desk.customer-member:age',
+      status: 'NOT_REACHED_BY_THIS_SCENARIO',
+      reason: 'textinput-contextmenu does not submit the member form to mount CustomerMemberAgeField',
+    },
+  ]);
+  assert.equal(
+    TEXTINPUT_CONSUMER_SOURCE['sample.desk.customer-member:age'],
+    'apps/terminal/ui/feature/sample-member-desk/src/components/CustomerMemberAgeField.tsx',
+  );
+  assert.equal(TEXTINPUT_CONSUMER_BINDING['sample.desk.customer-member:age'], 'testID: ageFieldId');
+  assert.equal(
+    Object.values(EXPECTED_TEXTINPUT_PROBE_IDS).some(forms =>
+      Object.values(forms).some(ids => ids.includes('sample.desk.customer-member:age')),
+    ),
+    false,
+    'the explicitly unreached age field must not be presented as a runtime-observed field',
+  );
   assert.deepEqual(EXPECTED_TEXTINPUT_PROBE_COUNT, {
     'sample-console': {laptop: 7, mobile: 6},
     'sample-wallpaper-console': {laptop: 3, mobile: 2},
@@ -264,6 +421,34 @@ test('TextInput context-menu run has an exact per-integration and per-surface de
       assert.equal(expectedTextInputProbeCount({integrationName, surfaceForm}), expected);
     }
   }
+  assert.deepEqual(additionalTextInputContextMenuTargets({integrationName: 'sample-console', surfaceForm: 'laptop'}), [
+    'sample.desk.member-form:name',
+    'sample.desk.member-form:phone',
+    'sample.desk.member-form:keyboard-alpha-probe',
+    'sample.desk.member-form:keyboard-financial-probe',
+    'terminal.admin:topology:host',
+  ]);
+  assert.deepEqual(additionalTextInputContextMenuTargets({integrationName: 'sample-console', surfaceForm: 'mobile'}), [
+    'sample.desk.member-form:name',
+    'sample.desk.member-form:phone',
+    'sample.desk.member-form:keyboard-alpha-probe',
+    'sample.desk.member-form:keyboard-financial-probe',
+  ]);
+  assert.deepEqual(
+    additionalTextInputContextMenuTargets({integrationName: 'sample-wallpaper-console', surfaceForm: 'laptop'}),
+    ['terminal.admin:topology:host'],
+  );
+  assert.deepEqual(
+    additionalTextInputContextMenuTargets({integrationName: 'sample-wallpaper-console', surfaceForm: 'mobile'}),
+    [],
+  );
+  const runnerSource = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
+  assert.match(
+    runnerSource,
+    /for \(const testID of additionalTextInputContextMenuTargets\(\{integrationName, surfaceForm\}\)\)/,
+  );
+  assert.match(runnerSource, /if \(testID === 'terminal\.admin:topology:host'\)/);
+  assert.match(runnerSource, /textInputObservations: contextMenuObservations/);
   assert.throws(() => expectedTextInputProbeCount({integrationName: 'unknown', surfaceForm: 'laptop'}), {
     message: 'TER_ADMIN_DISPLAY_WEB_TEXTINPUT_SCOPE_INVALID',
   });
@@ -294,30 +479,69 @@ test('TextInput context-menu run has an exact per-integration and per-surface de
   });
   for (const [integrationName, forms] of Object.entries(EXPECTED_TEXTINPUT_PROBE_IDS)) {
     for (const [surfaceForm, ids] of Object.entries(forms)) {
-      assert.equal(expectedTextInputProbeIds({integrationName, surfaceForm}).length, expectedTextInputProbeCount({
-        integrationName,
-        surfaceForm,
-      }));
+      assert.equal(
+        expectedTextInputProbeIds({integrationName, surfaceForm}).length,
+        expectedTextInputProbeCount({
+          integrationName,
+          surfaceForm,
+        }),
+      );
     }
   }
-  const appSources = collectWebSourceFiles(repositoryRoot)
-    .filter(file => file.startsWith('apps/terminal/') && /\.[cm]?[jt]sx?$/.test(file))
-    .filter(file => !/(^|\/)(test|__tests__)(\/|$)|\.(test|spec)\./.test(file));
-  const appSourceText = appSources.map(file => [file, fs.readFileSync(path.join(repositoryRoot, file), 'utf8')]);
-  const allExpectedIds = new Set(Object.values(EXPECTED_TEXTINPUT_PROBE_IDS)
-    .flatMap(forms => Object.values(forms).flat()));
-  for (const expectedId of allExpectedIds) {
+  const consumerSource = new Map();
+  for (const {path: sourcePath, required} of TEXTINPUT_PRODUCTION_CONSUMER_FILES) {
+    const source = fs.readFileSync(path.join(repositoryRoot, sourcePath), 'utf8');
+    for (const requiredSnippet of required) {
+      assert.ok(
+        source.includes(requiredSnippet),
+        `TEXTINPUT_PRODUCTION_CONSUMER_CONTRACT_MISSING:${sourcePath}:${requiredSnippet}`,
+      );
+    }
+    consumerSource.set(sourcePath, source);
+  }
+  const staffLoginHook = fs.readFileSync(
+    path.join(repositoryRoot, 'apps/terminal/ui/feature/sample-staff-auth/src/hooks/useStaffLogin.ts'),
+    'utf8',
+  );
+  assert.ok(staffLoginHook.includes("operatorNameFieldId = 'sample.auth.login:operator-name'"));
+  assert.ok(staffLoginHook.includes("passcodeFieldId = 'sample.auth.login:passcode'"));
+  const memberHook = fs.readFileSync(
+    path.join(repositoryRoot, 'apps/terminal/ui/feature/sample-member-desk/src/hooks/useCustomerMember.ts'),
+    'utf8',
+  );
+  assert.ok(memberHook.includes("ageFieldId = 'sample.desk.customer-member:age'"));
+  const adminTestIds = fs.readFileSync(
+    path.join(repositoryRoot, 'apps/terminal/ui/base/admin-shell/src/foundations/adminTestIds.ts'),
+    'utf8',
+  );
+  assert.ok(adminTestIds.includes("host: 'terminal.admin:topology:host'"));
+  for (const expectedId of new Set(
+    Object.values(EXPECTED_TEXTINPUT_PROBE_IDS).flatMap(forms => Object.values(forms).flat()),
+  )) {
+    const sourcePath = TEXTINPUT_CONSUMER_SOURCE[expectedId];
+    assert.ok(sourcePath, `WEB_TEXTINPUT_DENOMINATOR_OWNER_MISSING:${expectedId}`);
+    const source = consumerSource.get(sourcePath);
     assert.ok(
-      appSourceText.some(([, source]) => source.includes(expectedId)),
-      `WEB_TEXTINPUT_DENOMINATOR_ID_NOT_IN_PRODUCTION_SOURCE:${expectedId}`,
+      source?.includes(TEXTINPUT_CONSUMER_BINDING[expectedId]),
+      `WEB_TEXTINPUT_DENOMINATOR_ID_NOT_IN_OWNING_SOURCE:${expectedId}:${sourcePath}`,
     );
   }
   const expectedIds = expectedTextInputProbeIds({integrationName: 'sample-console', surfaceForm: 'laptop'});
   const validObservations = expectedIds.flatMap(testID => [
-    {testID, state: 'empty'},
-    {testID, state: 'existing-text'},
+    {testID, state: 'empty', contextMenuPrevented: true},
+    {testID, state: 'existing-text', contextMenuPrevented: true},
   ]);
   assert.equal(textInputProbeMismatch(validObservations, expectedIds), null);
+  assert.equal(
+    textInputProbeMismatch(
+      validObservations.map((observation, index) =>
+        index === 0 ? {...observation, contextMenuPrevented: false} : observation,
+      ),
+      expectedIds,
+    ),
+    'WEB_TEXTINPUT_CONTEXTMENU_OBSERVATION_INVALID',
+    'a field observation must prove that the context-menu event was actually prevented',
+  );
   assert.equal(
     textInputProbeMismatch(
       validObservations.filter(observation => observation.testID !== expectedIds[0]),
@@ -326,59 +550,323 @@ test('TextInput context-menu run has an exact per-integration and per-surface de
     'WEB_TEXTINPUT_CONTEXTMENU_FIELD_SET_MISMATCH',
   );
   assert.equal(
-    textInputProbeMismatch([...validObservations, {testID: expectedIds[0], state: 'empty'}], expectedIds),
+    textInputProbeMismatch(
+      [...validObservations, {testID: expectedIds[0], state: 'empty', contextMenuPrevented: true}],
+      expectedIds,
+    ),
     'WEB_TEXTINPUT_CONTEXTMENU_DUPLICATE_STATE',
   );
   assert.equal(
-    textInputProbeMismatch(validObservations.filter(item => item.state !== 'existing-text'), expectedIds),
+    textInputProbeMismatch(
+      validObservations.filter(item => item.state !== 'existing-text'),
+      expectedIds,
+    ),
     'WEB_TEXTINPUT_CONTEXTMENU_STATE_COUNT_MISMATCH',
   );
 });
 
-test('persistent admin-layer failure is OPEN unless a fresh launcher request completes', () => {
+test('persistent admin-layer failure requires either a fresh launcher request or proven self-owner launch', () => {
   const noRequest = classifyAdminLauncherFailureRecoveryLog('');
   assert.deepEqual(noRequest, {status: 'OPEN', openRequests: 0, completedResults: 0});
-  const failedRequest = classifyAdminLauncherFailureRecoveryLog([
-    JSON.stringify({event: 'admin.launcher-open-requested'}),
-    JSON.stringify({event: 'admin.launcher-open-result', data: {status: 'failed'}}),
-  ].join('\n'));
+  assert.deepEqual(classifyAdminLauncherFailureRecoveryLog('', {adminLayerMounted: true}), {
+    status: 'OPEN',
+    openRequests: 0,
+    completedResults: 0,
+    reason: 'ADMIN_LAYER_REMAINS_MOUNTED_LAUNCHER_REENTRY_NOT_APPLICABLE',
+  });
+  const selfOwnerBoundaryEvents = [
+    runtimeLogEvent('admin.launcher-open-requested', {}, {category: 'admin.launcher'}),
+    runtimeLogEvent('admin.launcher-open-result', {status: 'completed'}, {category: 'admin.launcher'}),
+    runtimeLogEvent(
+      'runtime.system-failure.reset-unavailable',
+      {portStatus: 'unavailable'},
+      {category: 'runtime.system-failure'},
+    ),
+    runtimeLogEvent(
+      'render.layer-selection',
+      {displayMode: 'PRIMARY', layerCount: 1, layerIds: ['admin.console.layer']},
+      {category: 'display-diagnostics'},
+    ),
+  ].map(event =>
+    event.event === 'runtime.system-failure.reset-unavailable'
+      ? {...event, context: {commandName: 'kernel.base.runtime.reset-runtime-after-system-failure'}}
+      : event,
+  );
+  assert.deepEqual(
+    classifyAdminLauncherFailureRecoveryLog(selfOwnerBoundaryEvents.map(event => JSON.stringify(event)).join('\n'), {
+      adminLayerMounted: true,
+      failureOwner: 'layer:admin.console.layer',
+    }),
+    {
+      status: 'PASS',
+      openRequests: 1,
+      completedResults: 1,
+      reason: 'OPENED_BOUNDARY_OWNER',
+    },
+  );
+  const forgedLayerSelectionEvents = selfOwnerBoundaryEvents.map(event =>
+    event.event === 'render.layer-selection' ? {...event, scope: {moduleName: 'unrelated', layer: 'kernel'}} : event,
+  );
+  assert.deepEqual(
+    classifyAdminLauncherFailureRecoveryLog(forgedLayerSelectionEvents.map(event => JSON.stringify(event)).join('\n'), {
+      adminLayerMounted: true,
+      failureOwner: 'layer:admin.console.layer',
+    }),
+    {
+      status: 'OPEN',
+      openRequests: 1,
+      completedResults: 1,
+      reason: 'ADMIN_LAYER_REMAINS_MOUNTED_LAUNCHER_REENTRY_NOT_APPLICABLE',
+    },
+    'a layer-selection event from another logger cannot close active-layer readback',
+  );
+  assert.deepEqual(
+    classifyAdminLauncherFailureRecoveryLog(
+      selfOwnerBoundaryEvents
+        .slice(0, -1)
+        .map(event => JSON.stringify(event))
+        .join('\n'),
+      {adminLayerMounted: true, failureOwner: 'layer:admin.console.layer'},
+    ),
+    {
+      status: 'OPEN',
+      openRequests: 1,
+      completedResults: 1,
+      reason: 'ADMIN_LAYER_REMAINS_MOUNTED_LAUNCHER_REENTRY_NOT_APPLICABLE',
+    },
+    'a successful initial dispatch without a post-reset active-layer readback must remain OPEN',
+  );
+  const fakeTextOnly = classifyAdminLauncherFailureRecoveryLog(
+    [
+      JSON.stringify({event: 'admin.launcher-open-requested'}),
+      JSON.stringify({event: 'admin.launcher-open-result', data: {status: 'completed'}}),
+    ].join('\n'),
+  );
+  assert.deepEqual(fakeTextOnly, {status: 'OPEN', openRequests: 0, completedResults: 0});
+  const wrongOwnerEvents = classifyAdminLauncherFailureRecoveryLog(
+    [
+      JSON.stringify(runtimeLogEvent('admin.launcher-open-requested', {}, {category: 'fixture'})),
+      JSON.stringify(runtimeLogEvent('admin.launcher-open-result', {status: 'completed'}, {category: 'fixture'})),
+    ].join('\n'),
+  );
+  assert.deepEqual(wrongOwnerEvents, {status: 'OPEN', openRequests: 0, completedResults: 0});
+  const failedRequest = classifyAdminLauncherFailureRecoveryLog(
+    [
+      JSON.stringify(runtimeLogEvent('admin.launcher-open-requested', {}, {category: 'admin.launcher'})),
+      JSON.stringify(runtimeLogEvent('admin.launcher-open-result', {status: 'failed'}, {category: 'admin.launcher'})),
+    ].join('\n'),
+  );
   assert.deepEqual(failedRequest, {status: 'OPEN', openRequests: 1, completedResults: 0});
-  const completedRequest = classifyAdminLauncherFailureRecoveryLog([
-    JSON.stringify({event: 'admin.launcher-open-requested'}),
-    JSON.stringify({event: 'admin.launcher-open-result', data: {status: 'completed'}}),
-  ].join('\n'));
+  const completedRequest = classifyAdminLauncherFailureRecoveryLog(
+    [
+      JSON.stringify(runtimeLogEvent('admin.launcher-open-requested', {}, {category: 'admin.launcher'})),
+      JSON.stringify(
+        runtimeLogEvent('admin.launcher-open-result', {status: 'completed'}, {category: 'admin.launcher'}),
+      ),
+    ].join('\n'),
+  );
   assert.deepEqual(completedRequest, {status: 'PASS', openRequests: 1, completedResults: 1});
-  const unmatchedResult = classifyAdminLauncherFailureRecoveryLog([
-    JSON.stringify({event: 'admin.launcher-open-requested'}),
-    JSON.stringify({event: 'admin.launcher-open-result', data: {status: 'completed'}}),
-    JSON.stringify({event: 'admin.launcher-open-result', data: {status: 'failed'}}),
-  ].join('\n'));
+  const unmatchedResult = classifyAdminLauncherFailureRecoveryLog(
+    [
+      JSON.stringify(runtimeLogEvent('admin.launcher-open-requested', {}, {category: 'admin.launcher'})),
+      JSON.stringify(
+        runtimeLogEvent('admin.launcher-open-result', {status: 'completed'}, {category: 'admin.launcher'}),
+      ),
+      JSON.stringify(runtimeLogEvent('admin.launcher-open-result', {status: 'failed'}, {category: 'admin.launcher'})),
+    ].join('\n'),
+  );
   assert.deepEqual(unmatchedResult, {status: 'OPEN', openRequests: 1, completedResults: 1});
-  const resultBeforeRequest = classifyAdminLauncherFailureRecoveryLog([
-    JSON.stringify({event: 'admin.launcher-open-result', data: {status: 'completed'}}),
-    JSON.stringify({event: 'admin.launcher-open-requested'}),
-  ].join('\n'));
+  const resultBeforeRequest = classifyAdminLauncherFailureRecoveryLog(
+    [
+      JSON.stringify(
+        runtimeLogEvent('admin.launcher-open-result', {status: 'completed'}, {category: 'admin.launcher'}),
+      ),
+      JSON.stringify(runtimeLogEvent('admin.launcher-open-requested', {}, {category: 'admin.launcher'})),
+    ].join('\n'),
+  );
   assert.deepEqual(resultBeforeRequest, {status: 'OPEN', openRequests: 1, completedResults: 1});
-  const duplicatedRequests = classifyAdminLauncherFailureRecoveryLog([
-    JSON.stringify({event: 'admin.launcher-open-requested'}),
-    JSON.stringify({event: 'admin.launcher-open-result', data: {status: 'completed'}}),
-    JSON.stringify({event: 'admin.launcher-open-requested'}),
-    JSON.stringify({event: 'admin.launcher-open-result', data: {status: 'completed'}}),
-  ].join('\n'));
+  const duplicatedRequests = classifyAdminLauncherFailureRecoveryLog(
+    [
+      JSON.stringify(runtimeLogEvent('admin.launcher-open-requested', {}, {category: 'admin.launcher'})),
+      JSON.stringify(
+        runtimeLogEvent('admin.launcher-open-result', {status: 'completed'}, {category: 'admin.launcher'}),
+      ),
+      JSON.stringify(runtimeLogEvent('admin.launcher-open-requested', {}, {category: 'admin.launcher'})),
+      JSON.stringify(
+        runtimeLogEvent('admin.launcher-open-result', {status: 'completed'}, {category: 'admin.launcher'}),
+      ),
+    ].join('\n'),
+  );
   assert.deepEqual(duplicatedRequests, {status: 'OPEN', openRequests: 2, completedResults: 2});
   const source = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
+  const contractSource = fs.readFileSync(
+    path.join(repositoryRoot, 'scripts/test/ter-admin-display-web-contract.mjs'),
+    'utf8',
+  );
   assert.match(source, /WEB_ADMIN_LAUNCHER_NOT_PROVEN_USABLE_WHILE_ADMIN_LAYER_FAILURE_PERSISTS/);
+  assert.match(contractSource, /ADMIN_LAYER_REMAINS_MOUNTED_LAUNCHER_REENTRY_NOT_APPLICABLE/);
+  assert.match(source, /data\?\.portStatus === 'unavailable'/);
+  assert.match(source, /isExpectedRuntimeLogEvent\(event, 'render\.layer-selection'\)/);
   assert.match(source, /manifest\.business = 'OPEN'/);
   assert.doesNotMatch(source, /adminLauncherRemainedUsable:\s*true/);
-  assert.equal((source.match(/observeAdminLauncherAfterFailure\(/g) ?? []).length, 5);
+  assert.match(source, /isExpectedRuntimeLogEvent\(event, 'admin\.launcher-open-requested'\)/);
+  const helperStart = source.indexOf('const observeAdminLauncherAfterFailure = async (');
+  const helperEnd = source.indexOf('\ntry {', helperStart);
+  assert.ok(helperStart >= 0 && helperEnd > helperStart, 'launcher observation helper must be present and bounded');
+  const helperSource = source.slice(helperStart, helperEnd);
+  assert.equal((helperSource.match(/page\.mouse\.click\(/g) ?? []).length, 1);
+  assert.doesNotMatch(helperSource, /\b(?:for|while)\s*\(/);
+  assert.match(helperSource, /parseJsonEventsAfterByteOffset\(fs\.readFileSync\(logPath\), 0\)/);
+  assert.doesNotMatch(helperSource, /ui-base-render:layer:admin\.console\.layer.*isVisible/);
+  assert.equal(
+    (source.match(/observeAdminLauncherAfterFailure\(/g) ?? []).length,
+    4,
+    'each supported Web launcher-recovery path must perform exactly one observation',
+  );
+});
+
+test('WEB startup failure and launcher geometry checks require owned structured runtime events', () => {
+  const startupRunId = 'startup-run-7';
+  const complete = runtimeLogEvent(
+    'startup.complete',
+    {startupRunId, primaryContentFailure: 'render-error', primaryRealReady: false},
+    {category: 'startup.complete'},
+  );
+  const hidden = runtimeLogEvent(
+    'startup.ready-hidden',
+    {startupRunId, contentFailure: 'render-error'},
+    {category: 'startup.ready-hidden'},
+  );
+  assert.equal(hasStartupContentFailureReadiness([complete, hidden]), true);
+  assert.equal(
+    hasStartupContentFailureReadiness([hidden, complete]),
+    false,
+    'readiness cannot be assembled from events observed in the wrong lifecycle order',
+  );
+  assert.equal(hasStartupContentFailureReadiness([{event: 'startup.complete', data: complete.data}, hidden]), false);
+  assert.equal(
+    hasStartupContentFailureReadiness([complete, {...hidden, data: {...hidden.data, startupRunId: 'other-run'}}]),
+    false,
+  );
+  assert.equal(
+    hasStartupContentFailureReadiness([complete, {...hidden, scope: {moduleName: 'unrelated', layer: 'kernel'}}]),
+    false,
+  );
+
+  const geometry = runtimeLogEvent(
+    'admin.launcher-geometry-measured',
+    {windowRect: {x: 1, y: 2, width: 480, height: 360}, windowDimensions: {width: 1180, height: 760}},
+    {category: 'admin.launcher'},
+  );
+  const expectedGeometry = {x: 2, y: 2, width: 481, height: 360};
+  assert.equal(launcherGeometryMatches(geometry, expectedGeometry, {width: 1180, height: 760}), true);
+  assert.equal(
+    launcherGeometryMatches({...geometry, category: 'fixture'}, expectedGeometry, {width: 1180, height: 760}),
+    false,
+  );
+  assert.equal(
+    launcherGeometryMatches({event: geometry.event, data: geometry.data}, expectedGeometry, {width: 1180, height: 760}),
+    false,
+  );
+  assert.equal(
+    launcherGeometryMatches(
+      {...geometry, data: {...geometry.data, windowRect: {...geometry.data.windowRect, x: 12}}},
+      expectedGeometry,
+      {width: 1180, height: 760},
+    ),
+    false,
+    'stale position must fail even when launcher size and viewport still match',
+  );
+  assert.equal(
+    launcherGeometryMatches(geometry, {...expectedGeometry, y: 4}, {width: 1180, height: 760}),
+    false,
+    'stale vertical position must fail after ancestor movement',
+  );
+
+  const runnerSource = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
+  const geometryStart = runnerSource.indexOf('const waitForLauncherGeometryAfter =');
+  const geometryEnd = runnerSource.indexOf('\nconst waitForLogEvent =', geometryStart);
+  assert.ok(geometryStart >= 0 && geometryEnd > geometryStart);
+  assert.match(runnerSource.slice(geometryStart, geometryEnd), /parseJsonEventsAfterByteOffset/);
+  assert.doesNotMatch(runnerSource.slice(geometryStart, geometryEnd), /line\.includes\(/);
+  const startupStart = runnerSource.indexOf('const startupEvents = parseJsonEventsAfterByteOffset');
+  const startupEnd = runnerSource.indexOf('if (!hasStartupContentFailureReadiness(startupEvents))', startupStart);
+  assert.ok(startupStart >= 0 && startupEnd > startupStart);
+  assert.match(runnerSource.slice(startupStart, startupEnd), /parseJsonEventsAfterByteOffset/);
+  const countStart = runnerSource.indexOf('const resizedOpenRequests =');
+  const countEnd = runnerSource.indexOf('\n    if (resizedOpenRequests', countStart);
+  assert.ok(countStart >= 0 && countEnd > countStart);
+  assert.match(runnerSource.slice(countStart, countEnd), /parseJsonEventsAfterByteOffset/);
+  assert.match(runnerSource.slice(countStart, countEnd), /isExpectedRuntimeLogEvent/);
+  assert.doesNotMatch(runnerSource.slice(countStart, countEnd), /line\.includes\(/);
+});
+
+test('WEB log event readback uses fresh complete JSONL records after a byte offset', () => {
+  const resetEvent = {
+    timestamp: 1790740000000,
+    level: 'error',
+    category: 'runtime.system-failure',
+    event: 'runtime.system-failure.reset-unavailable',
+    context: {commandName: 'kernel.base.runtime.reset-runtime-after-system-failure'},
+    scope: {moduleName: 'platform-ports', layer: 'kernel'},
+    data: {portStatus: 'unavailable'},
+    security: {containsSensitiveRaw: false, maskingMode: 'masked'},
+  };
+  const earlier = Buffer.from(
+    `Web  ERROR  ${JSON.stringify({...resetEvent, event: 'runtime.system-failure.reset-accepted', data: {portStatus: 'accepted'}})}\n先前日志\n`,
+  );
+  const later = Buffer.from(`Web  ERROR  ${JSON.stringify(resetEvent)}\n`);
+  const forgedMinimal = Buffer.from(
+    'Web LOG fixture {"event":"runtime.system-failure.reset-unavailable","data":{"portStatus":"unavailable"}}\n',
+  );
+  const combined = Buffer.concat([earlier, forgedMinimal, later, Buffer.from('Web ERROR {"event":"partial')]);
+  assert.deepEqual(parseJsonEventsAfterByteOffset(combined, earlier.length), [resetEvent]);
+  assert.deepEqual(parseJsonEventsAfterByteOffset(combined, 0), [
+    {...resetEvent, event: 'runtime.system-failure.reset-accepted', data: {portStatus: 'accepted'}},
+    resetEvent,
+  ]);
+  assert.equal(isExpectedRuntimeLogEvent(resetEvent, 'runtime.system-failure.reset-unavailable'), true);
+  assert.equal(
+    isExpectedRuntimeLogEvent({...resetEvent, category: 'fixture'}, 'runtime.system-failure.reset-unavailable'),
+    false,
+    'the event name alone cannot satisfy the runtime owner log contract',
+  );
+  const reactNativeWebConsoleRecord = Buffer.from(
+    'Web  ERROR  {"category": "runtime.system-failure", "context": {"commandName": "kernel.base.runtime.reset-runtime-after-system-failure", "connectionId": undefined}, "data": {"portStatus": "unavailable"}, "error": undefined, "event": "runtime.system-failure.reset-unavailable", "level": "error", "message": "literal undefined: undefined stays text", "scope": {"component": undefined, "layer": "kernel", "moduleName": "platform-ports", "subsystem": undefined}, "security": {"containsSensitiveRaw": false, "maskingMode": "masked"}, "timestamp": 1790740000000}\n',
+  );
+  const normalizedExpoEvents = parseJsonEventsAfterByteOffset(reactNativeWebConsoleRecord, 0);
+  assert.equal(normalizedExpoEvents.length, 1, 'actual Expo console object formatting must be machine-readable');
+  assert.equal(normalizedExpoEvents[0].context.connectionId, null);
+  assert.equal(normalizedExpoEvents[0].error, null);
+  assert.equal(normalizedExpoEvents[0].message, 'literal undefined: undefined stays text');
+  assert.equal(
+    isExpectedRuntimeLogEvent(normalizedExpoEvents[0], 'runtime.system-failure.reset-unavailable'),
+    true,
+    'runtime owner is verified by the platform-port logger plus exact reset command context',
+  );
+  assert.equal(
+    isExpectedRuntimeLogEvent(
+      {...resetEvent, scope: {moduleName: 'fixture', layer: 'kernel'}},
+      'runtime.system-failure.reset-unavailable',
+    ),
+    false,
+  );
+  const midRecordOffset = earlier.indexOf(Buffer.from('"event"')) + 2;
+  assert.deepEqual(parseJsonEventsAfterByteOffset(Buffer.concat([earlier, later]), midRecordOffset), [resetEvent]);
+  assert.throws(() => parseJsonEventsAfterByteOffset(combined, combined.length + 1), /WEB_LOG_BYTE_OFFSET_INVALID/);
+
+  const runnerSource = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
+  const waitStart = runnerSource.indexOf('const waitForLogEvent =');
+  const waitEnd = runnerSource.indexOf('\nconst observeAdminLauncherAfterFailure', waitStart);
+  assert.ok(waitStart >= 0 && waitEnd > waitStart, 'log event wait helper must exist and be bounded');
+  assert.match(runnerSource.slice(waitStart, waitEnd), /isExpectedRuntimeLogEvent\(value, event\)/);
 });
 
 test('W2 sends pointer probe, Tab, Shift+Tab, scanner suffix, and Enter in order', async () => {
   const observed = [];
-  const keyboard = Object.fromEntries(['type', 'press', 'down', 'up'].map(method => [
-    method,
-    async value => observed.push([method, value]),
-  ]));
+  const keyboard = Object.fromEntries(
+    ['type', 'press', 'down', 'up'].map(method => [method, async value => observed.push([method, value])]),
+  );
   await sendProtectedInputKeyboardProbe(keyboard);
   assert.deepEqual(observed, [
     ['type', 'Z'],
@@ -409,12 +897,16 @@ test('Expo launch opts into CI mode without unsupported non-interactive flag', (
 
 test('Expo readiness requests are individually bounded by an aborting timeout', async () => {
   let observedSignal;
-  const request = fetchExpoWebReadiness((_url, {signal}) => {
-    observedSignal = signal;
-    return new Promise((_resolve, reject) => {
-      signal.addEventListener('abort', () => reject(signal.reason), {once: true});
-    });
-  }, 'http://127.0.0.1:8093/', 5);
+  const request = fetchExpoWebReadiness(
+    (_url, {signal}) => {
+      observedSignal = signal;
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(signal.reason), {once: true});
+      });
+    },
+    'http://127.0.0.1:8093/',
+    5,
+  );
 
   await assert.rejects(request, error => error?.name === 'TimeoutError');
   assert.equal(observedSignal.aborted, true);
@@ -478,26 +970,31 @@ test('Expo readiness requires an exclusively free port and a listener owned by t
   assert.throws(() => assertManagedWebListenerOwnership([900], ownedTree), {
     message: 'WEB_PORT_LISTENER_NOT_OWNED_BY_RUNNER',
   });
-  assert.throws(() => assertManagedWebListenerOwnership([501], [
-    {pid: 501, ownershipUnverified: true},
-  ]), {
+  assert.throws(() => assertManagedWebListenerOwnership([501], [{pid: 501, ownershipUnverified: true}]), {
     message: 'WEB_PORT_LISTENER_NOT_OWNED_BY_RUNNER',
   });
   assert.throws(() => assertManagedWebListenerOwnership([], ownedTree), {
     message: 'WEB_PORT_LISTENER_NOT_OBSERVED',
   });
-  assert.deepEqual(verifyExpoWebListenerOwnership({
-    stdout: '501\n',
-    status: 0,
-    ownedProcessTree: ownedTree,
-  }), [501]);
-  assert.throws(() => verifyExpoWebListenerOwnership({
-    stdout: '900\n',
-    status: 0,
-    ownedProcessTree: ownedTree,
-  }), {
-    message: 'WEB_PORT_LISTENER_NOT_OWNED_BY_RUNNER',
-  });
+  assert.deepEqual(
+    verifyExpoWebListenerOwnership({
+      stdout: '501\n',
+      status: 0,
+      ownedProcessTree: ownedTree,
+    }),
+    [501],
+  );
+  assert.throws(
+    () =>
+      verifyExpoWebListenerOwnership({
+        stdout: '900\n',
+        status: 0,
+        ownedProcessTree: ownedTree,
+      }),
+    {
+      message: 'WEB_PORT_LISTENER_NOT_OWNED_BY_RUNNER',
+    },
+  );
 
   const runner = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
   assert.ok(runner.indexOf("'WEB_PORT_ALREADY_IN_USE'") < runner.indexOf('expo = spawn('));
@@ -517,7 +1014,8 @@ test('source inventory contains all tracked and active app files plus runner inp
     'yarn.lock',
     'scripts/test/ter-admin-display-web.mjs',
     'scripts/test/ter-admin-display-web-contract.mjs',
-  ]) assert.ok(files.includes(expected), `WEB_SOURCE_INVENTORY_MISSING:${expected}`);
+  ])
+    assert.ok(files.includes(expected), `WEB_SOURCE_INVENTORY_MISSING:${expected}`);
   assert.equal(files.length, new Set(files).size);
   assert.throws(() => collectWebSourceFiles(repositoryRoot, () => '../outside.ts'), {
     message: 'TER_ADMIN_DISPLAY_WEB_SOURCE_PATH_INVALID',
@@ -624,15 +1122,19 @@ test('invalid scenario/integration pair fails before run directory, resource pre
   const runId = `scope-invalid-${process.pid}-${Date.now()}`;
   const runRoot = path.join(repositoryRoot, '.runtime/ter-admin-display', runId);
   assert.equal(fs.existsSync(runRoot), false);
-  const result = childProcess.spawnSync(process.execPath, [
-    path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'),
-    runId,
-    '18993',
-    '-',
-    'sample-console',
-    'keyboard-login',
-    'laptop',
-  ], {cwd: repositoryRoot, encoding: 'utf8'});
+  const result = childProcess.spawnSync(
+    process.execPath,
+    [
+      path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'),
+      runId,
+      '18993',
+      '-',
+      'sample-console',
+      'keyboard-login',
+      'laptop',
+    ],
+    {cwd: repositoryRoot, encoding: 'utf8'},
+  );
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /WEB_KEYBOARD_JOURNEY_SCOPE_INVALID/);
   assert.equal(fs.existsSync(runRoot), false);

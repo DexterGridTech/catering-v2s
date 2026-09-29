@@ -26,7 +26,24 @@ describe('native loading Application lifecycle ownership', () => {
   it('keeps Activity callbacks process-owned across Expo module destruction and removes only destroyed Activities', () => {
     expect(/OnCreate\s*\{[\s\S]*?TerminalNativeLoadingRegistry::registerApplication/.test(moduleSource)).toBe(true);
     expect(/OnDestroy\s*\{/.test(moduleSource)).toBe(false);
-    expect(/onActivityDestroyed\(activity: Activity\)[\s\S]*?removeOnMain\(activity\)/.test(registrySource)).toBe(true);
+    const destroyedCallback = registrySource.slice(
+      registrySource.indexOf('override fun onActivityDestroyed'),
+      registrySource.indexOf('override fun onActivityStarted'),
+    );
+    const removeGate = registrySource.slice(
+      registrySource.indexOf('private fun removeOnMain'),
+      registrySource.indexOf('private fun removeListener'),
+    );
+    const removeListener = registrySource.slice(
+      registrySource.indexOf('private fun removeListener'),
+      registrySource.indexOf('private fun checkMainThread'),
+    );
+    expect(destroyedCallback).toContain('removeOnMain(activity)');
+    expect(removeGate).toContain('gateIndex.remove(activity)');
+    expect(removeGate.indexOf('gateIndex.remove(activity)')).toBeLessThan(removeGate.indexOf('removeListener(gate)'));
+    expect(removeListener).toContain('removeOnPreDrawListener(gate.listener)');
+    expect(removeListener).toContain('(overlay.parent as? ViewGroup)?.removeView(overlay)');
+    expect(removeListener).toContain('gate.loadingOverlay = null');
     expect(/registeredApplication === application/.test(registrySource)).toBe(true);
     expect(/registerActivityLifecycleCallbacks\(lifecycleCallbacks\)/.test(registrySource)).toBe(true);
     expect(

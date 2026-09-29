@@ -134,7 +134,7 @@ const adb = (manifest, serial, args, label, {allowExit = [0], timeout = 30_000} 
   appendEvent(manifest, 'ADB_COMMAND', record);
   save(manifest);
   if (!allowExit.includes(result.status)) throw new Error(`TER_A11_ADB_FAILED:${label}:${result.status ?? 'spawn'}`);
-  return {stdout, stderr};
+  return {stdout, stderr, status: result.status, error: result.error ?? null};
 };
 const processIdentity = pid => {
   const row = readProcessTable().find(item => item.pid === pid);
@@ -324,21 +324,27 @@ async function runManagedBuild(manifest, appName) {
   save(manifest);
 }
 
+function readRemoteProcessIds(manifest, device, processName, label) {
+  const lookup = adb(manifest, device.serial, ['shell', 'pidof', processName], `${label}-pidof`, {allowExit: [0, 1]});
+  let deviceState = null;
+  if (
+    lookup.status === 1 &&
+    lookup.error == null &&
+    lookup.stdout.trim().length === 0 &&
+    lookup.stderr.trim().length === 0
+  ) {
+    deviceState = adb(manifest, device.serial, ['get-state'], `${label}-pidof-empty-device-state`);
+  }
+  return parseRemotePackagePidof(lookup, deviceState);
+}
+
 function readRemotePackageProcesses(manifest, device, packageName, label) {
-  const lookup = adb(manifest, device.serial, ['shell', 'pidof', packageName], `${label}-pidof`, {allowExit: [0, 1]});
-  const pids = lookup.stdout
-    .trim()
-    .split(/\s+/)
-    .filter(value => /^\d+$/.test(value));
+  const pids = readRemoteProcessIds(manifest, device, packageName, label);
   return pids.map(pid => {
     const stat = adb(manifest, device.serial, ['shell', 'cat', `/proc/${pid}/stat`], `${label}-stat-${pid}`);
     const cmdline = adb(manifest, device.serial, ['shell', 'cat', `/proc/${pid}/cmdline`], `${label}-cmdline-${pid}`);
-    const fields = stat.stdout
-      .slice(stat.stdout.lastIndexOf(')') + 1)
-      .trim()
-      .split(/\s+/);
-    const startTicks = fields[19];
-    if (!/^\d+$/.test(startTicks ?? '') || !cmdline.stdout.includes(packageName))
+    const startTicks = parseRemoteProcStatStartTicks(stat.stdout, pid);
+    if (!remotePackageCmdlineMatches(cmdline.stdout, packageName))
       throw new Error('TER_A11_REMOTE_PROCESS_IDENTITY_INVALID');
     return {pid: Number(pid), startTicks};
   });
@@ -376,14 +382,22 @@ async function observeProtectedMarker(manifest, device, appName) {
   save(manifest);
   let intentSeen = false;
   let matched = null;
+  let observerFailureCode = null;
   const appProcessIds = new Set();
   const candidateMarkerLines = [];
   let buffer = '';
-  const acceptAppOwnedMarker = line => {
-    const operation = protectedMarkerOperation(line, [...appProcessIds]);
-    if (operation === null) return;
-    const pid = line.match(/^[VDIWEF]\/TerminalPersistKv\(\s*(\d+)\):/)?.[1];
-    matched = {operation, pid, line: line.trim().slice(-320)};
+  const evaluateNamespaceReadback = () => {
+    if (appProcessIds.size === 0 || matched || observerFailureCode) return;
+    const observation = protectedNamespaceReadbackFromLines(candidateMarkerLines, [...appProcessIds]);
+    if (observation?.status === 'missing') {
+      observerFailureCode = 'TER_A11_OLD_NAMESPACE_NOT_PRESENT_BEFORE_LAUNCH';
+      return;
+    }
+    if (observation?.status === 'failed') {
+      observerFailureCode = 'TER_A11_PROTECTED_NAMESPACE_OPEN_FAILED';
+      return;
+    }
+    if (observation?.status === 'confirmed') matched = observation;
   };
   const inspect = chunk => {
     buffer += chunk;
@@ -397,14 +411,21 @@ async function observeProtectedMarker(manifest, device, appName) {
       }
       if (!intentSeen || !/^\s*[VDIWEF]\/TerminalPersistKv\(\s*\d+\):/.test(line)) continue;
       candidateMarkerLines.push(line);
-      if (candidateMarkerLines.length > 64) throw new Error('TER_A11_PROTECTED_MARKER_CANDIDATE_LIMIT');
-      acceptAppOwnedMarker(line);
+      if (candidateMarkerLines.length > 64) {
+        observerFailureCode = 'TER_A11_PROTECTED_MARKER_CANDIDATE_LIMIT';
+        child.kill('SIGTERM');
+        return;
+      }
+      evaluateNamespaceReadback();
     }
   };
   child.stdout.setEncoding('utf8');
   child.stdout.on('data', inspect);
   child.stderr.setEncoding('utf8');
   child.stderr.on('data', inspect);
+  child.on('error', () => {
+    observerFailureCode ??= 'TER_A11_LOGCAT_READ_FAILED';
+  });
   const timeout = setTimeout(() => child.kill('SIGTERM'), 90_000);
   try {
     adb(
@@ -428,21 +449,30 @@ async function observeProtectedMarker(manifest, device, appName) {
     );
     if (launchedProcesses.length === 0) throw new Error('TER_A11_LAUNCHED_PROCESS_NOT_READABLE');
     for (const process of launchedProcesses) appProcessIds.add(String(process.pid));
-    for (const line of candidateMarkerLines) {
-      acceptAppOwnedMarker(line);
-      if (matched) break;
-    }
+    evaluateNamespaceReadback();
+    if (observerFailureCode) throw new Error(observerFailureCode);
     const deadline = Date.now() + 90_000;
-    while (!matched && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 100));
+    while (!matched && !observerFailureCode && Date.now() < deadline)
+      await new Promise(resolve => setTimeout(resolve, 100));
+    if (observerFailureCode) throw new Error(observerFailureCode);
     if (!matched) throw new Error('TER_A11_PROTECTED_MARKER_NOT_OBSERVED');
     const watcher = manifest.logcatWatchers.at(-1);
     watcher.state = 'MATCHED';
     watcher.finishedAt = now();
-    watcher.observation = {operation: matched.operation, eventLine: matched.line};
+    watcher.observation = {
+      operation: matched.operation,
+      namespaceVersion: matched.namespaceVersion,
+      existedBeforeOpen: matched.existedBeforeOpen,
+      legacyNamespacePresent: matched.legacyNamespacePresent,
+      preOpenLine: matched.preOpenLine,
+      resultLine: matched.resultLine,
+    };
     appendEvent(manifest, 'PROTECTED_MARKER_OBSERVED', {
       deviceRole: device.role,
       appName,
       operation: matched.operation,
+      namespaceVersion: matched.namespaceVersion,
+      existedBeforeOpen: matched.existedBeforeOpen,
     });
     save(manifest);
     return matched;
@@ -524,6 +554,8 @@ async function installObserveAndStop(manifest, device, appName) {
   owned.startedAt = now();
   save(manifest);
   const marker = await observeProtectedMarker(manifest, device, appName);
+  if (marker.status !== 'confirmed' || marker.existedBeforeOpen !== true)
+    throw new Error('TER_A11_OLD_NAMESPACE_PRECONDITION_UNPROVEN');
   const launched = readRemotePackageProcesses(manifest, device, app.packageName, `owned-${device.role}-${appName}`);
   if (!launched.length) throw new Error('TER_A11_LAUNCHED_PROCESS_NOT_READABLE');
   owned.processes = launched;
@@ -546,6 +578,11 @@ async function installObserveAndStop(manifest, device, appName) {
     sourceDigest: manifest.sourceDigest,
     apkSha256: build.apkSha256,
     markerOperation: marker.operation,
+    oldNamespaceExistedBeforeOpen: marker.existedBeforeOpen,
+    namespaceVersion: marker.namespaceVersion,
+    legacyNamespacePresent: marker.legacyNamespacePresent,
+    preOpenLine: marker.preOpenLine,
+    resultLine: marker.resultLine,
     status: 'CONFIRMED',
     confirmedAt: now(),
   });
@@ -597,13 +634,13 @@ async function run(args) {
     const roles = await discoverDevices(manifest);
     manifest.devices = roles;
     for (const device of Object.values(roles)) {
-      const system = adb(
+      const systemServerPids = readRemoteProcessIds(
         manifest,
-        device.serial,
-        ['shell', 'pidof', 'system_server'],
+        device,
+        'system_server',
         `${device.role}-system-server-positive-readback`,
-      ).stdout.trim();
-      if (!/^\d+(?:\s+\d+)*$/.test(system)) throw new Error('TER_A11_PROCESS_READBACK_POSITIVE_PREFLIGHT_FAILED');
+      );
+      if (systemServerPids.length === 0) throw new Error('TER_A11_PROCESS_READBACK_POSITIVE_PREFLIGHT_FAILED');
       manifest.lastKnownGood = `positive-system-server-${device.role}`;
     }
     manifest.status = 'READY';
@@ -660,26 +697,29 @@ async function run(args) {
           ['shell', 'am', 'force-stop', owned.packageName],
           `cleanup-${owned.deviceRole}-${owned.appName}-force-stop`,
         );
-        const identityNow = adb(
+        const identityNow = readRemotePackageProcesses(
           manifest,
-          owned.serial,
-          ['shell', 'pidof', owned.packageName],
-          `cleanup-${owned.deviceRole}-${owned.appName}-pidof`,
-          {allowExit: [0, 1]},
-        )
-          .stdout.trim()
-          .split(/\s+/)
-          .filter(value => /^\d+$/.test(value));
+          {serial: owned.serial},
+          owned.packageName,
+          `cleanup-${owned.deviceRole}-${owned.appName}`,
+        );
         if (identityNow.length === 0) {
           owned.cleanup = 'PASS';
           owned.stoppedAt = now();
         } else {
-          owned.cleanup = 'FAIL';
-          manifest.cleanup = 'FAIL';
+          throw new Error('TER_A11_APP_PROCESS_REMAINS_AFTER_FORCE_STOP');
         }
       } catch {
         owned.cleanup = 'FAIL';
         manifest.cleanup = 'FAIL';
+        if (manifest.firstFailure === null) {
+          recordFailure(manifest, 'TER_A11_APP_CLEANUP_READBACK_FAILED', `cleanup-${owned.deviceRole}-${owned.appName}`);
+        } else {
+          appendEvent(manifest, 'CLEANUP_FAILURE', {
+            code: 'TER_A11_APP_CLEANUP_READBACK_FAILED',
+            stage: `cleanup-${owned.deviceRole}-${owned.appName}`,
+          });
+        }
       }
       save(manifest);
     }
@@ -700,6 +740,11 @@ async function run(args) {
 }
 
 export function protectedMarkerOperation(line, allowedProcessIds) {
+  const result = protectedMarkerResult(line, allowedProcessIds);
+  return result?.status === 'succeeded' ? result.operation : null;
+}
+
+export function protectedMarkerResult(line, allowedProcessIds) {
   if (
     !Array.isArray(allowedProcessIds) ||
     allowedProcessIds.length === 0 ||
@@ -707,12 +752,61 @@ export function protectedMarkerOperation(line, allowedProcessIds) {
   ) {
     return null;
   }
-  const pid = String(line ?? '').match(/^[VDIWEF]\/TerminalPersistKv\(\s*(\d+)\):/)?.[1];
+  const text = String(line ?? '');
+  const pid = text.match(/^\s*[VDIWEF]\/TerminalPersistKv\(\s*(\d+)\):/)?.[1];
   if (!pid || !allowedProcessIds.map(String).includes(pid)) return null;
-  const match = String(line ?? '').match(
-    /^[VDIWEF]\/TerminalPersistKv\(\s*\d+\):\s*event=persist-kv operation=(read|readMany|write|writeMany|listKeys|clear) mode=protected status=succeeded\s*$/,
+  const match = text.match(
+    /^\s*[VDIWEF]\/TerminalPersistKv\(\s*\d+\):\s*event=persist-kv operation=(read|readMany|write|writeMany|listKeys|clear) mode=protected status=(succeeded|failed|unavailable)(?: code=[A-Z0-9_]+)?\s*$/,
   );
-  return match?.[1] ?? null;
+  if (!match) return null;
+  return {pid, operation: match[1], status: match[2], line: text.trim().slice(-320)};
+}
+
+export function parseRemotePackagePidof(pidof, deviceState = null) {
+  const stdout = String(pidof?.stdout ?? '').trim();
+  const stderr = String(pidof?.stderr ?? '').trim();
+  if (pidof?.error != null) throw new Error('TER_A11_PIDOF_EXECUTION_FAILED');
+  if (pidof?.status === 0) {
+    const pids = stdout.length === 0 ? [] : stdout.split(/\s+/);
+    if (stderr.length > 0 || pids.length === 0 || pids.some(pid => !/^\d+$/.test(pid) || Number(pid) <= 0)) {
+      throw new Error('TER_A11_PIDOF_SUCCESS_OUTPUT_INVALID');
+    }
+    return pids;
+  }
+  if (pidof?.status === 1 && stdout.length === 0 && stderr.length === 0) {
+    if (
+      deviceState?.status === 0 &&
+      deviceState.error == null &&
+      String(deviceState.stdout ?? '').trim() === 'device' &&
+      String(deviceState.stderr ?? '').trim() === ''
+    ) {
+      return [];
+    }
+    throw new Error('TER_A11_PIDOF_EMPTY_REQUIRES_CONNECTED_DEVICE');
+  }
+  throw new Error(`TER_A11_PIDOF_READBACK_FAILED:${stderr || stdout || `exit=${pidof?.status ?? 'unknown'}`}`);
+}
+
+export function parseRemoteProcStatStartTicks(value, expectedPid) {
+  const stat = String(value ?? '').trim();
+  const expected = String(expectedPid ?? '');
+  if (!/^[1-9]\d*$/.test(expected)) throw new Error('TER_A11_REMOTE_PROCESS_IDENTITY_INVALID');
+  const actualPid = stat.match(/^([1-9]\d*)\s+\(/)?.[1];
+  const endOfComm = stat.lastIndexOf(')');
+  const fields = endOfComm < 0 ? [] : stat.slice(endOfComm + 1).trim().split(/\s+/);
+  const startTicks = fields[19];
+  if (actualPid !== expected || !/^\d+$/.test(startTicks ?? ''))
+    throw new Error('TER_A11_REMOTE_PROCESS_IDENTITY_INVALID');
+  return startTicks;
+}
+
+export function remotePackageCmdlineMatches(value, packageName) {
+  if (typeof packageName !== 'string' || packageName.length === 0) return false;
+  const processName = String(value ?? '').split('\0', 1)[0];
+  return (
+    processName === packageName ||
+    (processName.startsWith(`${packageName}:`) && processName.length > packageName.length + 1)
+  );
 }
 
 export function protectedNamespaceObservation(line) {
@@ -726,6 +820,48 @@ export function protectedNamespaceObservation(line) {
     existedBeforeOpen: match[3] === 'true',
     legacyNamespacePresent: match[4] == null ? null : match[4] === 'true',
   };
+}
+
+export function protectedNamespaceReadbackFromLines(lines, allowedProcessIds) {
+  if (
+    !Array.isArray(lines) ||
+    !Array.isArray(allowedProcessIds) ||
+    allowedProcessIds.length === 0 ||
+    allowedProcessIds.some(value => !/^\d{1,10}$/.test(String(value)))
+  ) {
+    return null;
+  }
+
+  let firstOpen = null;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = String(lines[index] ?? '');
+    const pid = line.match(/^\s*[VDIWEF]\/TerminalPersistKv\(\s*(\d+)\):/)?.[1];
+    const observation = protectedNamespaceObservation(line);
+    if (pid && allowedProcessIds.map(String).includes(pid) && observation) {
+      firstOpen = {index, pid, observation, line: line.trim().slice(-320)};
+      break;
+    }
+  }
+  if (!firstOpen) return {status: 'pending'};
+
+  const {operation, namespaceVersion, existedBeforeOpen, legacyNamespacePresent} = firstOpen.observation;
+  const base = {
+    pid: firstOpen.pid,
+    operation,
+    namespaceVersion,
+    existedBeforeOpen,
+    legacyNamespacePresent,
+    preOpenLine: firstOpen.line,
+  };
+  if (!existedBeforeOpen) return {...base, status: 'missing'};
+
+  for (let index = firstOpen.index + 1; index < lines.length; index += 1) {
+    const result = protectedMarkerResult(lines[index], allowedProcessIds);
+    if (result?.pid !== firstOpen.pid || result.operation !== operation) continue;
+    if (result.status === 'succeeded') return {...base, status: 'confirmed', resultLine: result.line};
+    return {...base, status: 'failed', resultLine: result.line};
+  }
+  return {...base, status: 'pending'};
 }
 
 export function classifyObservedDeviceForTest(input) {

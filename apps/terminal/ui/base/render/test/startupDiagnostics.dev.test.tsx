@@ -82,7 +82,7 @@ describe('render startup diagnostics', () => {
       await renderer.unmount();
       return;
     }
-    expect(partsEvents).toHaveLength(1);
+    expect(partsEvents, 'DEV_RENDER_PARTS_FACT_MISSING').toHaveLength(1);
     expect(partsEvents[0]?.data).toMatchObject({
       count: 2,
       missingRendererKeys: ['startup.renderer.missing'],

@@ -64,31 +64,26 @@ class TerminalTopologyServerTest {
   }
 
   @Test
-  fun `production registry keeps frames arriving just before heartbeat timeout alive`() {
+  fun `production registry keeps a heartbeat-only control-pong socket alive`() {
     val port = freePort()
     val timeoutMs = 1_000L
     val intervalMs = 200L
-    startRegistry(port, intervalMs, timeoutMs)
     try {
+      startRegistry(port, intervalMs, timeoutMs)
       openWebSocket(port).use { connection ->
         val endAt = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(2_300L)
-        var nextApplicationFrameAt = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs * 9 / 10)
-        var sentFrames = 0
+        var pongCount = 0
         while (System.nanoTime() < endAt) {
           val (opcode, payload) = readWebSocketFrame(connection.input)
-          assertTrue("server closed while the peer sent recent frames", opcode != 0x8)
-          if (opcode == 0x9) writeMaskedFrame(connection.output, 0xA, payload)
-          if (System.nanoTime() >= nextApplicationFrameAt) {
-            writeMaskedFrame(connection.output, 0x1, "heartbeat-window".toByteArray(StandardCharsets.UTF_8))
-            sentFrames += 1
-            nextApplicationFrameAt += TimeUnit.MILLISECONDS.toNanos(timeoutMs * 9 / 10)
-          }
+          assertTrue("server closed while the peer replied to control pings", opcode != 0x8)
+          assertEquals("heartbeat-only window emitted a non-control frame", 0x9, opcode)
+          writeMaskedFrame(connection.output, 0xA, payload)
+          pongCount += 1
         }
-        assertTrue("expected multiple frames just before the heartbeat timeout", sentFrames >= 2)
+        assertTrue("expected multiple control Ping/Pong exchanges", pongCount >= 5)
       }
     } finally {
-      TerminalTopologyHostRegistry.stop()
-      TerminalTopologyHostRegistry.clearPublisher()
+      stopRegistryAndClearPublisher()
     }
   }
 
@@ -142,8 +137,8 @@ class TerminalTopologyServerTest {
         reason = payload["reason"] as? String,
       )
     }
-    startRegistry(port, 10_000L, 30_000L)
     try {
+      startRegistry(port, 10_000L, 30_000L)
       openWebSocket(port).use { accepted ->
         val priorEvents = events.size
         openWebSocket(port).use {
@@ -159,8 +154,7 @@ class TerminalTopologyServerTest {
         assertTrue(accepted.socket.isConnected)
       }
     } finally {
-      TerminalTopologyHostRegistry.stop()
-      TerminalTopologyHostRegistry.clearPublisher()
+      stopRegistryAndClearPublisher()
     }
   }
 
@@ -179,19 +173,19 @@ class TerminalTopologyServerTest {
         )
       }
     }
-    val started = TerminalTopologyHostRegistry.start(
-      port = port,
-      basePath = "/terminal-topology",
-      heartbeatIntervalMs = intervalMs,
-      heartbeatTimeoutMs = timeoutMs,
-      nodeId = "jvm-cycle-test",
-      moduleName = "application.base.android",
-      displayName = "TER JVM test",
-      instanceMode = "MASTER",
-      displayRole = "CHIEF",
-    )
-    assertEquals("succeeded", started["status"])
     try {
+      val started = TerminalTopologyHostRegistry.start(
+        port = port,
+        basePath = "/terminal-topology",
+        heartbeatIntervalMs = intervalMs,
+        heartbeatTimeoutMs = timeoutMs,
+        nodeId = "jvm-cycle-test",
+        moduleName = "application.base.android",
+        displayName = "TER JVM test",
+        instanceMode = "MASTER",
+        displayRole = "CHIEF",
+      )
+      assertEquals("succeeded", started["status"])
       awaitCondition(2_000L, "NanoHTTPD listener/heartbeat threads did not start") {
         topologyThreadCount() >= 2
       }
@@ -243,8 +237,7 @@ class TerminalTopologyServerTest {
       }
       assertEquals("topology request/heartbeat thread count changed", baseline, topologyThreadCount())
     } finally {
-      TerminalTopologyHostRegistry.stop()
-      TerminalTopologyHostRegistry.clearPublisher()
+      stopRegistryAndClearPublisher()
     }
   }
 
@@ -254,9 +247,7 @@ class TerminalTopologyServerTest {
     assertAcceptedProductionHeartbeatConfig(config)
     val minimumDurationMs = Math.multiplyExact(config.heartbeatTimeoutMs, 3L)
     assertEquals("TP-A7 production heartbeat window", 90_000L, minimumDurationMs)
-    val readTimeoutMs = Math.toIntExact(
-      Math.addExact(config.heartbeatTimeoutMs, Math.multiplyExact(config.heartbeatIntervalMs, 2L)),
-    )
+    val readTimeoutMs = topologySocketReadTimeoutMs(config.heartbeatTimeoutMs, config.heartbeatIntervalMs)
     val port = ServerSocket(0).use { it.localPort }
     val pongCount = AtomicInteger()
     val closeReason = java.util.concurrent.atomic.AtomicReference<String?>()
@@ -265,18 +256,18 @@ class TerminalTopologyServerTest {
         closeReason.set(payload["reason"] as? String)
       }
     }
-    val started = TerminalTopologyHostRegistry.start(
-      port = port,
-      basePath = "/terminal-topology",
-      heartbeatIntervalMs = config.heartbeatIntervalMs,
-      heartbeatTimeoutMs = config.heartbeatTimeoutMs,
-      nodeId = "jvm-heartbeat-test",
-      moduleName = "application.base.android",
-      displayName = "TER JVM test",
-      instanceMode = "MASTER",
-      displayRole = "CHIEF",
-    )
     try {
+      val started = TerminalTopologyHostRegistry.start(
+        port = port,
+        basePath = "/terminal-topology",
+        heartbeatIntervalMs = config.heartbeatIntervalMs,
+        heartbeatTimeoutMs = config.heartbeatTimeoutMs,
+        nodeId = "jvm-heartbeat-test",
+        moduleName = "application.base.android",
+        displayName = "TER JVM test",
+        instanceMode = "MASTER",
+        displayRole = "CHIEF",
+      )
       assertEquals("succeeded", started["status"])
       Socket("127.0.0.1", port).use { socket ->
         socket.soTimeout = readTimeoutMs
@@ -297,18 +288,16 @@ class TerminalTopologyServerTest {
         while (System.nanoTime() - startedAt < minimumNanos) {
           val (opcode, payload) = readWebSocketFrame(input)
           assertTrue("server closed heartbeat-only connection early: $closeReason", opcode != 0x8)
-          if (opcode == 0x9) {
-            writeMaskedFrame(output, 0xA, payload)
-            pongCount.incrementAndGet()
-          }
+          assertEquals("heartbeat-only window emitted a non-control frame", 0x9, opcode)
+          writeMaskedFrame(output, 0xA, payload)
+          pongCount.incrementAndGet()
         }
       }
       val expectedMinimumPongs = (minimumDurationMs / config.heartbeatIntervalMs - 1L).coerceAtLeast(1L)
       assertTrue("server did not send control heartbeats", pongCount.get() >= expectedMinimumPongs)
       assertEquals(null, closeReason.get())
     } finally {
-      TerminalTopologyHostRegistry.stop()
-      TerminalTopologyHostRegistry.clearPublisher()
+      stopRegistryAndClearPublisher()
     }
   }
 
@@ -326,33 +315,48 @@ class TerminalTopologyServerTest {
   }
 
   private fun startRegistry(port: Int, intervalMs: Long, timeoutMs: Long) {
-    val started = TerminalTopologyHostRegistry.start(
-      port = port,
-      basePath = "/terminal-topology",
-      heartbeatIntervalMs = intervalMs,
-      heartbeatTimeoutMs = timeoutMs,
-      nodeId = "jvm-window-test",
-      moduleName = "application.base.android",
-      displayName = "TER JVM test",
-      instanceMode = "MASTER",
-      displayRole = "CHIEF",
-    )
-    assertEquals("succeeded", started["status"])
+    try {
+      val started = TerminalTopologyHostRegistry.start(
+        port = port,
+        basePath = "/terminal-topology",
+        heartbeatIntervalMs = intervalMs,
+        heartbeatTimeoutMs = timeoutMs,
+        nodeId = "jvm-window-test",
+        moduleName = "application.base.android",
+        displayName = "TER JVM test",
+        instanceMode = "MASTER",
+        displayRole = "CHIEF",
+      )
+      assertEquals("succeeded", started["status"])
+    } catch (failure: Throwable) {
+      try {
+        TerminalTopologyHostRegistry.stop()
+      } finally {
+        TerminalTopologyHostRegistry.clearPublisher()
+      }
+      throw failure
+    }
+  }
+
+  private fun stopRegistryAndClearPublisher() {
+    try {
+      TerminalTopologyHostRegistry.stop()
+    } finally {
+      TerminalTopologyHostRegistry.clearPublisher()
+    }
   }
 
   private fun productionHeartbeatConfig(): ProductionHeartbeatConfig {
-    val relativeConfigPath = Path.of("apps/terminal/kernel/base/contracts/topology-transport.config.json")
-    var directory: Path? = Path.of("").toAbsolutePath().normalize()
-    var configPath: Path? = null
-    while (directory != null) {
-      val candidate = directory.resolve(relativeConfigPath)
-      if (Files.isRegularFile(candidate)) {
-        configPath = candidate
-        break
-      }
-      directory = directory.parent
-    }
-    val path = configPath ?: throw AssertionError("could not locate production topology transport config")
+    val repositoryRoot = Path.of(
+      System.getProperty("ter.repositoryRoot")
+        ?: throw AssertionError("missing explicit TER repository root for production topology config"),
+    ).toRealPath()
+    assertTrue("TER repository root marker missing", Files.isRegularFile(repositoryRoot.resolve("AGENTS.md")))
+    assertTrue("TER project-memory root marker missing", Files.isRegularFile(repositoryRoot.resolve("project-memory/index.md")))
+    val configPath = repositoryRoot.resolve("apps/terminal/kernel/base/contracts/topology-transport.config.json").normalize()
+    assertTrue("production topology config escaped the TER repository", configPath.startsWith(repositoryRoot))
+    val path = configPath.toRealPath()
+    assertTrue("production topology config symlink escaped the TER repository", path.startsWith(repositoryRoot))
     val jsonText = path.toFile().readText(StandardCharsets.UTF_8)
     val json = JSONObject(jsonText)
     return ProductionHeartbeatConfig(
@@ -388,8 +392,8 @@ class TerminalTopologyServerTest {
         reason = payload["reason"] as? String,
       )
     }
-    startRegistry(port, 10_000L, 30_000L)
     try {
+      startRegistry(port, 10_000L, 30_000L)
       openWebSocket(port).use { peer ->
         val opened = awaitValue(2_000L, "production registry did not publish open") {
           events.firstOrNull { it.event == "open" }
@@ -407,8 +411,7 @@ class TerminalTopologyServerTest {
         assertEquals("close origin mapped incorrectly; events=$events", expectedReason, closed.reason)
       }
     } finally {
-      TerminalTopologyHostRegistry.stop()
-      TerminalTopologyHostRegistry.clearPublisher()
+      stopRegistryAndClearPublisher()
     }
   }
 
@@ -427,8 +430,8 @@ class TerminalTopologyServerTest {
         reason = payload["reason"] as? String,
       )
     }
-    startRegistry(port, 10_000L, 30_000L)
     try {
+      startRegistry(port, 10_000L, 30_000L)
       openWebSocket(port).use { peer ->
         val opened = awaitValue(2_000L, "production registry did not publish open") {
           events.firstOrNull { it.event == "open" }
@@ -442,8 +445,7 @@ class TerminalTopologyServerTest {
         assertEquals("valid peer reason must not override a present local close intent", "TOPOLOGY_HOST_STOPPED", closed.reason)
       }
     } finally {
-      TerminalTopologyHostRegistry.stop()
-      TerminalTopologyHostRegistry.clearPublisher()
+      stopRegistryAndClearPublisher()
     }
   }
 

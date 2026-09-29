@@ -185,10 +185,7 @@ test('A11 W10 log parser binds new and legacy namespace facts to the exact launc
     'NEW_NAMESPACE_OBSERVATION_MISSING',
     'a marker from a PID outside the adopted app process set must not count',
   );
-  assert.throws(
-    () => summarizePersistKvW10(logs, intentId, []),
-    /VK_ANDROID_A11_W10_APP_PROCESS_FILTER_INVALID/,
-  );
+  assert.throws(() => summarizePersistKvW10(logs, intentId, []), /VK_ANDROID_A11_W10_APP_PROCESS_FILTER_INVALID/);
   const cases = [
     [
       'new namespace already existed',

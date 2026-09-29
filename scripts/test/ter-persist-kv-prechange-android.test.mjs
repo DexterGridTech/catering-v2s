@@ -7,8 +7,13 @@ import {fileURLToPath} from 'node:url';
 import {
   classifyObservedDeviceForTest,
   finishBuildLogStreams,
+  parseRemotePackagePidof,
+  parseRemoteProcStatStartTicks,
+  remotePackageCmdlineMatches,
   protectedMarkerOperation,
+  protectedMarkerResult,
   protectedNamespaceObservation,
+  protectedNamespaceReadbackFromLines,
   resolveTargetRolesForTest,
 } from './ter-persist-kv-prechange-android.mjs';
 
@@ -75,10 +80,9 @@ test('A11 accepts only an App-owned protected persist-kv success marker', () => 
     'writeMany',
   );
   assert.equal(
-    protectedMarkerOperation(
-      'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=plain status=succeeded',
-      ['321'],
-    ),
+    protectedMarkerOperation('I/TerminalPersistKv( 321): event=persist-kv operation=read mode=plain status=succeeded', [
+      '321',
+    ]),
     null,
   );
   assert.equal(
@@ -89,10 +93,9 @@ test('A11 accepts only an App-owned protected persist-kv success marker', () => 
     null,
   );
   assert.equal(
-    protectedMarkerOperation(
-      'I/TerminalPersistKv( 321): event=other operation=read mode=protected status=succeeded',
-      ['321'],
-    ),
+    protectedMarkerOperation('I/TerminalPersistKv( 321): event=other operation=read mode=protected status=succeeded', [
+      '321',
+    ]),
     null,
   );
   assert.equal(
@@ -139,6 +142,82 @@ test('A11 parses namespace pre-open state without accepting incomplete or unrela
   );
 });
 
+test('A11 requires the first app-owned protected namespace open and its matching operation to prove the old namespace', () => {
+  const lines = [
+    'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=succeeded',
+    'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected namespaceVersion=2 existedBeforeOpen=true legacyNamespacePresent=false',
+    'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=succeeded',
+  ];
+  assert.deepEqual(protectedNamespaceReadbackFromLines(lines.slice(0, 1), ['321']), {status: 'pending'});
+  assert.deepEqual(protectedNamespaceReadbackFromLines(lines, ['321']), {
+    pid: '321',
+    operation: 'read',
+    namespaceVersion: 2,
+    existedBeforeOpen: true,
+    legacyNamespacePresent: false,
+    preOpenLine: lines[1],
+    status: 'confirmed',
+    resultLine: lines[2],
+  });
+  assert.deepEqual(
+    protectedMarkerResult('I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=failed code=PERSIST_KV_OPERATION_FAILED', ['321']),
+    {
+      pid: '321',
+      operation: 'read',
+      status: 'failed',
+      line: 'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=failed code=PERSIST_KV_OPERATION_FAILED',
+    },
+  );
+});
+
+test('A11 never lets a later successful open rescue a first fresh namespace', () => {
+  const lines = [
+    'I/TerminalPersistKv( 321): event=persist-kv operation=listKeys mode=protected namespaceVersion=2 existedBeforeOpen=false legacyNamespacePresent=false',
+    'I/TerminalPersistKv( 321): event=persist-kv operation=listKeys mode=protected status=succeeded',
+    'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected namespaceVersion=2 existedBeforeOpen=true legacyNamespacePresent=false',
+    'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=succeeded',
+  ];
+  assert.equal(protectedNamespaceReadbackFromLines(lines, ['321']).status, 'missing');
+});
+
+test('A11 does not pair another process, another operation, or a failed call with the first namespace open', () => {
+  const firstOpen = 'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected namespaceVersion=2 existedBeforeOpen=true';
+  assert.equal(
+    protectedNamespaceReadbackFromLines(
+      [firstOpen, 'I/TerminalPersistKv( 999): event=persist-kv operation=read mode=protected status=succeeded'],
+      ['321'],
+    ).status,
+    'pending',
+  );
+  assert.equal(
+    protectedNamespaceReadbackFromLines(
+      [firstOpen, 'I/TerminalPersistKv( 321): event=persist-kv operation=listKeys mode=protected status=succeeded'],
+      ['321'],
+    ).status,
+    'pending',
+  );
+  assert.equal(
+    protectedNamespaceReadbackFromLines(
+      [firstOpen, 'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=failed code=PERSIST_KV_OPERATION_FAILED'],
+      ['321'],
+    ).status,
+    'failed',
+  );
+});
+
+test('A11 runner requires the first app-owned protected open to predate this launch', () => {
+  const observeBody = source.slice(
+    source.indexOf('async function observeProtectedMarker'),
+    source.indexOf('\nasync function installObserveAndStop'),
+  );
+  const installBody = source.slice(
+    source.indexOf('async function installObserveAndStop'),
+    source.indexOf('\nasync function run('),
+  );
+  assert.match(observeBody, /protectedNamespaceReadbackFromLines\(/);
+  assert.match(installBody, /oldNamespaceExistedBeforeOpen:\s*marker\.existedBeforeOpen/);
+});
+
 test('A11 installs the old APK without clearing data and records run ownership before launch observation', () => {
   const installBody = source.slice(
     source.indexOf('async function installObserveAndStop'),
@@ -159,7 +238,13 @@ test('A11 installs the old APK without clearing data and records run ownership b
     source.indexOf('\n  process.stdout.write', source.indexOf('async function run(')),
   );
   assert.match(finalizer, /\['shell', 'am', 'force-stop', owned\.packageName\]/);
-  assert.match(finalizer, /cleanup-\$\{owned\.deviceRole\}-\$\{owned\.appName\}-pidof/);
+  assert.match(
+    finalizer,
+    /readRemotePackageProcesses\(\s*manifest,\s*\{serial: owned\.serial\},\s*owned\.packageName,\s*`cleanup-\$\{owned\.deviceRole\}-\$\{owned\.appName\}`/,
+  );
+  assert.match(finalizer, /TER_A11_APP_PROCESS_REMAINS_AFTER_FORCE_STOP/);
+  assert.match(finalizer, /TER_A11_APP_CLEANUP_READBACK_FAILED/);
+  assert.doesNotMatch(finalizer, /\.filter\(value => \/\^\\d\+\$\/\.test\(value\)\)/);
 });
 
 test('A11 builds both old APKs before the first device installation', () => {
@@ -228,7 +313,105 @@ test('A11 final cleanup reconciles every recorded Gradle process tree by its sto
 });
 
 test('A11 requires positive process readback before any app run and preserves process command stderr metadata', () => {
-  assert.match(source, /'shell', 'pidof', 'system_server'.*positive-readback/s);
+  const runBody = source.slice(
+    source.indexOf('async function run('),
+    source.indexOf('\nexport function protectedMarkerOperation'),
+  );
+  const positiveReadback = runBody.search(/readRemoteProcessIds\(\s*manifest,\s*device,\s*'system_server'/);
+  const appRun = runBody.indexOf('await installObserveAndStop');
+  assert.ok(positiveReadback >= 0 && appRun > positiveReadback);
+  assert.match(source, /function readRemoteProcessIds\([\s\S]*?return parseRemotePackagePidof\(lookup, deviceState\)/);
+  assert.match(source, /systemServerPids\.length === 0/);
+  assert.match(source, /parseRemotePackagePidof\(lookup, deviceState\)/);
+  assert.match(source, /remotePackageCmdlineMatches\(cmdline\.stdout, packageName\)/);
+  assert.doesNotMatch(source, /cmdline\.stdout\.includes\(packageName\)/);
   assert.match(source, /stdoutBytes: Buffer\.byteLength\(stdout\),\s*stderrBytes: Buffer\.byteLength\(stderr\)/);
-  assert.match(source, /allowExit: \[0, 1\]/);
+  assert.match(source, /\['get-state'\], `\$\{label\}-pidof-empty-device-state`/);
+});
+
+test('A11 PID readback distinguishes a connected app absence from transport and output failures', () => {
+  assert.deepEqual(parseRemotePackagePidof({status: 0, stdout: '321 654\n', stderr: ''}), ['321', '654']);
+  assert.deepEqual(
+    parseRemotePackagePidof({status: 1, stdout: '', stderr: ''}, {status: 0, stdout: 'device', stderr: ''}),
+    [],
+  );
+  assert.throws(
+    () => parseRemotePackagePidof({status: 1, stdout: '', stderr: ''}),
+    /PIDOF_EMPTY_REQUIRES_CONNECTED_DEVICE/,
+  );
+  assert.throws(
+    () =>
+      parseRemotePackagePidof(
+        {status: 1, stdout: '', stderr: ''},
+        {status: 1, stdout: '', stderr: 'error: device offline'},
+      ),
+    /PIDOF_EMPTY_REQUIRES_CONNECTED_DEVICE/,
+  );
+  assert.throws(
+    () => parseRemotePackagePidof({status: 1, stdout: '', stderr: 'error: device offline'}),
+    /PIDOF_READBACK_FAILED/,
+  );
+  assert.throws(
+    () => parseRemotePackagePidof({status: 0, stdout: '', stderr: ''}),
+    /PIDOF_SUCCESS_OUTPUT_INVALID/,
+  );
+  assert.throws(
+    () => parseRemotePackagePidof({status: 0, stdout: '321 unknown', stderr: ''}),
+    /PIDOF_SUCCESS_OUTPUT_INVALID/,
+  );
+  assert.throws(
+    () => parseRemotePackagePidof({status: 0, stdout: '321', stderr: 'pidof: transient read warning'}),
+    /PIDOF_SUCCESS_OUTPUT_INVALID/,
+  );
+  assert.throws(
+    () => parseRemotePackagePidof({status: null, stdout: '', stderr: '', error: {code: 'ETIMEDOUT'}}),
+    /PIDOF_EXECUTION_FAILED/,
+  );
+});
+
+test('A11 process start token is accepted only for the exact PID queried', () => {
+  assert.equal(
+    parseRemoteProcStatStartTicks(
+      '321 (com.catering.sample) S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 987654 20',
+      321,
+    ),
+    '987654',
+  );
+  assert.throws(
+    () =>
+      parseRemoteProcStatStartTicks(
+        '654 (com.catering.sample) S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 987654 20',
+        321,
+      ),
+    /REMOTE_PROCESS_IDENTITY_INVALID/,
+  );
+  assert.throws(
+    () => parseRemoteProcStatStartTicks('321 (com.catering.sample)', 321),
+    /REMOTE_PROCESS_IDENTITY_INVALID/,
+  );
+  assert.throws(
+    () =>
+      parseRemoteProcStatStartTicks(
+        '321 (com.catering.sample) S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 987654 20',
+        undefined,
+      ),
+    /REMOTE_PROCESS_IDENTITY_INVALID/,
+  );
+  assert.throws(
+    () =>
+      parseRemoteProcStatStartTicks(
+        '0 (com.catering.sample) S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 987654 20',
+        0,
+      ),
+    /REMOTE_PROCESS_IDENTITY_INVALID/,
+  );
+});
+
+test('A11 cmdline readback binds the first process token to the exact package or its Android process suffix', () => {
+  assert.equal(remotePackageCmdlineMatches('com.catering.sample\0--start\0', 'com.catering.sample'), true);
+  assert.equal(remotePackageCmdlineMatches('com.catering.sample:sync\0--start\0', 'com.catering.sample'), true);
+  assert.equal(remotePackageCmdlineMatches('com.catering.sample:\0--start\0', 'com.catering.sample'), false);
+  assert.equal(remotePackageCmdlineMatches('com.catering.sample.extra\0', 'com.catering.sample'), false);
+  assert.equal(remotePackageCmdlineMatches('worker\0com.catering.sample\0', 'com.catering.sample'), false);
+  assert.equal(remotePackageCmdlineMatches('', 'com.catering.sample'), false);
 });

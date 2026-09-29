@@ -32,7 +32,10 @@ describe('runtime startup diagnostics', () => {
         expect(startup).toHaveLength(0);
         return;
       }
-      expect(startup.map(event => event.category)).toEqual(
+      expect(
+        startup.map(event => event.category),
+        'DEV_STARTUP_RUNTIME_FACTS_MISSING',
+      ).toEqual(
         expect.arrayContaining([
           'startup.ports',
           'startup.modules',
@@ -116,7 +119,10 @@ describe('runtime startup diagnostics', () => {
       releaseRuntimeForTest(runtime);
       return;
     }
-    expect(events.some(event => event.category === 'startup.failed')).toBe(true);
+    expect(
+      events.some(event => event.category === 'startup.failed'),
+      'DEV_STARTUP_FAILURE_FACT_MISSING',
+    ).toBe(true);
     expect(events.some(event => event.category === 'startup.complete')).toBe(false);
     releaseRuntimeForTest(runtime);
   });

@@ -2,10 +2,22 @@ import {createElement, useCallback, useState} from 'react';
 import {View} from 'react-native';
 import {render, screen} from '@testing-library/react-native';
 import {describe, expect, it, vi} from 'vitest';
+import {cleanupRntlTestCase} from '../../../../../../tools/terminal-shared/rntl-test-cleanup';
 
 const RESIDUAL_TEST_ID = 'rntl-cleanup-isolation:previous-case';
 
 describe('RNTL shared setup cleanup isolation', () => {
+  it('resets per-test native refs even when RNTL cleanup throws', async () => {
+    const cleanupError = new Error('fixture cleanup failure');
+    const reset = vi.fn();
+    await expect(
+      cleanupRntlTestCase(async () => {
+        throw cleanupError;
+      }, reset),
+    ).rejects.toBe(cleanupError);
+    expect(reset).toHaveBeenCalledOnce();
+  });
+
   it('mounts a tree that must not leak into the following test case', async () => {
     await render(createElement(View, {testID: RESIDUAL_TEST_ID}));
     expect(screen.getByTestId(RESIDUAL_TEST_ID)).toBeDefined();

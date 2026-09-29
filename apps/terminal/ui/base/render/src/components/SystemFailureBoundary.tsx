@@ -7,6 +7,14 @@ import {useDispatchCommand} from '../hooks/useDispatchCommand';
 import {useRenderContext} from '../contexts/RenderContext';
 import {SystemFailureNotice} from './SystemFailureNotice';
 
+// Expo inlines this public build flag. Keep its type local to this source
+// module so downstream workspace typechecks do not depend on @types/node.
+declare const process: {
+  readonly env: {
+    readonly EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION?: string;
+  };
+};
+
 const errorNameOf = (error: unknown): string => (error instanceof Error ? error.name : 'UnknownError');
 
 export const isDebugFailureInjectionEnabled = (devMode: boolean, buildFlag: string | undefined): boolean =>

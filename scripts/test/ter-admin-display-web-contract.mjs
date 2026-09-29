@@ -52,12 +52,18 @@ export const EXPECTED_TEXTINPUT_PROBE_IDS = Object.freeze({
       'sample.auth.login:passcode',
       'terminal.admin:topology:host',
     ]),
-    mobile: Object.freeze([
-      'sample.auth.login:operator-name',
-      'sample.auth.login:passcode',
-    ]),
+    mobile: Object.freeze(['sample.auth.login:operator-name', 'sample.auth.login:passcode']),
   }),
 });
+
+export const WEB_TEXTINPUT_CONTEXTMENU_UNREACHED_CONSUMERS = Object.freeze([
+  Object.freeze({
+    integrationName: 'sample-console',
+    testID: 'sample.desk.customer-member:age',
+    status: 'NOT_REACHED_BY_THIS_SCENARIO',
+    reason: 'textinput-contextmenu does not submit the member form to mount CustomerMemberAgeField',
+  }),
+]);
 
 export function expectedTextInputProbeCount({integrationName, surfaceForm}) {
   const count = EXPECTED_TEXTINPUT_PROBE_COUNT[integrationName]?.[surfaceForm];
@@ -71,10 +77,21 @@ export function expectedTextInputProbeIds({integrationName, surfaceForm}) {
   return ids;
 }
 
+export function additionalTextInputContextMenuTargets({integrationName, surfaceForm}) {
+  const loginProbeIds = new Set(['sample.auth.login:operator-name', 'sample.auth.login:passcode']);
+  return Object.freeze(
+    expectedTextInputProbeIds({integrationName, surfaceForm}).filter(testID => !loginProbeIds.has(testID)),
+  );
+}
+
 export function textInputProbeMismatch(observations, expectedIds) {
   const statesById = new Map();
   for (const observation of observations) {
-    if (typeof observation?.testID !== 'string' || typeof observation?.state !== 'string') {
+    if (
+      typeof observation?.testID !== 'string' ||
+      typeof observation?.state !== 'string' ||
+      observation?.contextMenuPrevented !== true
+    ) {
       return 'WEB_TEXTINPUT_CONTEXTMENU_OBSERVATION_INVALID';
     }
     const states = statesById.get(observation.testID) ?? new Set();
@@ -87,39 +104,235 @@ export function textInputProbeMismatch(observations, expectedIds) {
   if (actualIds.length !== requiredIds.length || actualIds.some((id, index) => id !== requiredIds[index])) {
     return 'WEB_TEXTINPUT_CONTEXTMENU_FIELD_SET_MISMATCH';
   }
-  if ([...statesById.values()].some(states =>
-    states.size !== 2 || !states.has('empty') || !states.has('existing-text'),
-  )) {
+  if (
+    [...statesById.values()].some(states => states.size !== 2 || !states.has('empty') || !states.has('existing-text'))
+  ) {
     return 'WEB_TEXTINPUT_CONTEXTMENU_STATE_COUNT_MISMATCH';
   }
   return null;
 }
 
-export function classifyAdminLauncherFailureRecoveryLog(logText) {
-  const events = String(logText).split(/\r?\n/).flatMap(line => {
-    try {
-      const value = JSON.parse(line);
-      return value !== null && typeof value === 'object' ? [value] : [];
-    } catch {
-      return [];
-    }
-  });
+export function classifyAdminLauncherFailureRecoveryLog(
+  logText,
+  {adminLayerMounted = false, failureOwner = null} = {},
+) {
+  const events = String(logText)
+    .split(/\r?\n/)
+    .flatMap(line => {
+      try {
+        const value = JSON.parse(line);
+        return isStructuredRuntimeLogEvent(value) ? [value] : [];
+      } catch {
+        return [];
+      }
+    });
   const requestIndexes = [];
   const resultEvents = [];
   events.forEach((event, index) => {
-    if (event.event === 'admin.launcher-open-requested') requestIndexes.push(index);
-    if (event.event === 'admin.launcher-open-result') resultEvents.push({event, index});
+    if (isExpectedRuntimeLogEvent(event, 'admin.launcher-open-requested')) requestIndexes.push(index);
+    if (isExpectedRuntimeLogEvent(event, 'admin.launcher-open-result')) resultEvents.push({event, index});
   });
   const openRequests = requestIndexes.length;
   const results = resultEvents.map(entry => entry.event);
   const completedResults = results.filter(event => event.data?.status === 'completed').length;
-  const exactlyOneOrderedRequest = openRequests === 1 && resultEvents.length === 1 &&
-    resultEvents[0].index > requestIndexes[0];
+  const exactlyOneOrderedRequest =
+    openRequests === 1 && resultEvents.length === 1 && resultEvents[0].index > requestIndexes[0];
+  if (adminLayerMounted) {
+    const resetUnavailableIndexes = events.flatMap((event, index) =>
+      isExpectedRuntimeLogEvent(event, 'runtime.system-failure.reset-unavailable') &&
+      event.data?.portStatus === 'unavailable'
+        ? [index]
+        : [],
+    );
+    const latestResetUnavailableIndex = resetUnavailableIndexes.at(-1) ?? -1;
+    const adminLayerSelectedAfterReset = events.some(
+      (event, index) =>
+        index > latestResetUnavailableIndex &&
+        isExpectedRuntimeLogEvent(event, 'render.layer-selection') &&
+        event.data?.displayMode === 'PRIMARY' &&
+        Array.isArray(event.data?.layerIds) &&
+        event.data.layerIds.includes('admin.console.layer'),
+    );
+    if (
+      failureOwner === 'layer:admin.console.layer' &&
+      exactlyOneOrderedRequest &&
+      completedResults === 1 &&
+      resetUnavailableIndexes.length === 1 &&
+      latestResetUnavailableIndex > resultEvents[0].index &&
+      adminLayerSelectedAfterReset
+    ) {
+      return Object.freeze({
+        status: 'PASS',
+        openRequests,
+        completedResults,
+        reason: 'OPENED_BOUNDARY_OWNER',
+      });
+    }
+    return Object.freeze({
+      status: 'OPEN',
+      openRequests,
+      completedResults,
+      reason: 'ADMIN_LAYER_REMAINS_MOUNTED_LAUNCHER_REENTRY_NOT_APPLICABLE',
+    });
+  }
   return Object.freeze({
     status: exactlyOneOrderedRequest && completedResults === 1 ? 'PASS' : 'OPEN',
     openRequests,
     completedResults,
   });
+}
+
+export function parseJsonEventsAfterByteOffset(bytes, byteOffset) {
+  if (!Buffer.isBuffer(bytes) || !Number.isSafeInteger(byteOffset) || byteOffset < 0 || byteOffset > bytes.length) {
+    throw new Error('WEB_LOG_BYTE_OFFSET_INVALID');
+  }
+  let tail = bytes.subarray(byteOffset).toString('utf8');
+  if (byteOffset > 0 && bytes[byteOffset - 1] !== 0x0a) {
+    const nextLineStart = tail.indexOf('\n');
+    if (nextLineStart < 0) return [];
+    tail = tail.slice(nextLineStart + 1);
+  }
+  const lines = tail.split(/\r?\n/);
+  if (!tail.endsWith('\n') && !tail.endsWith('\r')) lines.pop();
+  return lines.flatMap(line => {
+    try {
+      const jsonStart = line.indexOf('{');
+      const jsonEnd = line.lastIndexOf('}');
+      if (jsonStart < 0 || jsonEnd < jsonStart) return [];
+      const value = JSON.parse(normalizeConsoleUndefinedValues(line.slice(jsonStart, jsonEnd + 1)));
+      return isStructuredRuntimeLogEvent(value) ? [value] : [];
+    } catch {
+      return [];
+    }
+  });
+}
+
+function normalizeConsoleUndefinedValues(value) {
+  let normalized = '';
+  let inString = false;
+  let escaped = false;
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    if (inString) {
+      normalized += character;
+      if (escaped) escaped = false;
+      else if (character === '\\') escaped = true;
+      else if (character === '"') inString = false;
+      continue;
+    }
+    if (character === '"') {
+      inString = true;
+      normalized += character;
+      continue;
+    }
+    if (value.startsWith('undefined', index)) {
+      const previous = value[index - 1];
+      const next = value[index + 'undefined'.length];
+      const isTokenStart = previous === undefined || !/[A-Za-z0-9_$]/u.test(previous);
+      const isTokenEnd = next === undefined || !/[A-Za-z0-9_$]/u.test(next);
+      if (isTokenStart && isTokenEnd) {
+        normalized += 'null';
+        index += 'undefined'.length - 1;
+        continue;
+      }
+    }
+    normalized += character;
+  }
+  return normalized;
+}
+
+export function isStructuredRuntimeLogEvent(value) {
+  const validLayers = new Set(['kernel', 'ui', 'adapter', 'application']);
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Number.isFinite(value.timestamp) &&
+    ['debug', 'info', 'warn', 'error'].includes(value.level) &&
+    typeof value.category === 'string' &&
+    value.category.length > 0 &&
+    typeof value.event === 'string' &&
+    value.event.length > 0 &&
+    value.scope !== null &&
+    typeof value.scope === 'object' &&
+    !Array.isArray(value.scope) &&
+    typeof value.scope.moduleName === 'string' &&
+    value.scope.moduleName.length > 0 &&
+    (value.scope.layer === undefined || validLayers.has(value.scope.layer)) &&
+    value.security !== null &&
+    typeof value.security === 'object' &&
+    typeof value.security.containsSensitiveRaw === 'boolean' &&
+    value.security.maskingMode === 'masked'
+  );
+}
+
+export function isExpectedRuntimeLogEvent(value, expectedEvent) {
+  if (!isStructuredRuntimeLogEvent(value) || value.event !== expectedEvent) return false;
+  const expectedOwner = {
+    'runtime.system-failure.reset-unavailable': {category: 'runtime.system-failure', moduleName: 'platform-ports'},
+    'startup.complete': {category: 'startup.complete', moduleName: 'platform-ports'},
+    'startup.ready-hidden': {category: 'startup.ready-hidden', moduleName: 'platform-ports'},
+    'admin.launcher-geometry-measured': {category: 'admin.launcher', moduleName: 'platform-ports'},
+    'admin.launcher-open-requested': {category: 'admin.launcher', moduleName: 'platform-ports'},
+    'admin.launcher-open-result': {category: 'admin.launcher', moduleName: 'platform-ports'},
+    'render.layer-selection': {category: 'display-diagnostics', moduleName: 'platform-ports'},
+  }[expectedEvent];
+  if (expectedOwner === undefined) return true;
+  const ownerMatches =
+    value.category === expectedOwner.category &&
+    value.scope.moduleName === expectedOwner.moduleName &&
+    value.scope.layer === 'kernel';
+  if (expectedEvent === 'runtime.system-failure.reset-unavailable') {
+    return ownerMatches && value.context?.commandName === 'kernel.base.runtime.reset-runtime-after-system-failure';
+  }
+  return ownerMatches;
+}
+
+export function launcherGeometryMatches(value, targetRect, targetViewport) {
+  if (!isExpectedRuntimeLogEvent(value, 'admin.launcher-geometry-measured')) return false;
+  const rect = value.data?.windowRect;
+  const viewport = value.data?.windowDimensions;
+  return (
+    rect !== null &&
+    typeof rect === 'object' &&
+    viewport !== null &&
+    typeof viewport === 'object' &&
+    Number.isFinite(rect.x) &&
+    Number.isFinite(rect.y) &&
+    Number.isFinite(rect.width) &&
+    Number.isFinite(rect.height) &&
+    Number.isFinite(targetRect.x) &&
+    Number.isFinite(targetRect.y) &&
+    Number.isFinite(viewport.width) &&
+    Number.isFinite(viewport.height) &&
+    viewport.width === targetViewport.width &&
+    viewport.height === targetViewport.height &&
+    Math.abs(rect.x - targetRect.x) <= 1 &&
+    Math.abs(rect.y - targetRect.y) <= 1 &&
+    Math.abs(rect.width - targetRect.width) <= 1 &&
+    Math.abs(rect.height - targetRect.height) <= 1
+  );
+}
+
+export function hasStartupContentFailureReadiness(events) {
+  const completeIndex = events.findIndex(
+    event =>
+      isExpectedRuntimeLogEvent(event, 'startup.complete') &&
+      event.data?.primaryContentFailure === 'render-error' &&
+      event.data?.primaryRealReady === false &&
+      typeof event.data?.startupRunId === 'string' &&
+      event.data.startupRunId.length > 0,
+  );
+  if (completeIndex < 0) return false;
+  const complete = events[completeIndex];
+  return events
+    .slice(completeIndex + 1)
+    .some(
+      event =>
+        isExpectedRuntimeLogEvent(event, 'startup.ready-hidden') &&
+        event.data?.contentFailure === 'render-error' &&
+        event.data?.startupRunId === complete.data.startupRunId,
+    );
 }
 
 export function verifyExpoWebListenerOwnership({stdout, status, stderr = '', ownedProcessTree}) {
@@ -199,25 +412,25 @@ export const WEB_LAYER_OWNER_COVERAGE = Object.freeze({
 });
 
 export function enumerateWebLayerOwnerCoverage() {
-  return Object.freeze(Object.entries(WEB_LAYER_OWNER_COVERAGE).flatMap(([owner, entry]) => {
-    const integrations = entry.integrations === 'both'
-      ? ['sample-console', 'sample-wallpaper-console']
-      : [entry.integrations];
-    return integrations.map(integrationName => Object.freeze({
-      integrationName,
-      owner,
-      journey: entry.journey,
-      surfaceForms: entry.surfaceForms,
-      status: entry.status,
-      reason: entry.reason ?? null,
-    }));
-  }));
+  return Object.freeze(
+    Object.entries(WEB_LAYER_OWNER_COVERAGE).flatMap(([owner, entry]) => {
+      const integrations =
+        entry.integrations === 'both' ? ['sample-console', 'sample-wallpaper-console'] : [entry.integrations];
+      return integrations.map(integrationName =>
+        Object.freeze({
+          integrationName,
+          owner,
+          journey: entry.journey,
+          surfaceForms: entry.surfaceForms,
+          status: entry.status,
+          reason: entry.reason ?? null,
+        }),
+      );
+    }),
+  );
 }
 
-const memberScreenOwners = new Set([
-  'screen:main:sample.desk.member-list',
-  'screen:main:sample.desk.member-form',
-]);
+const memberScreenOwners = new Set(['screen:main:sample.desk.member-list', 'screen:main:sample.desk.member-form']);
 
 const secondaryScreenOwnerIntegrations = Object.freeze({
   'screen:main:sample.desk.customer-welcome': 'sample-console',
@@ -259,9 +472,7 @@ export function webScenarioScopeError({integrationName, webScenario, surfaceForm
   }
 
   if (webScenario === 'keyboard-member-journey') {
-    return integrationName === 'sample-console' && failureOwner === null
-      ? null
-      : 'WEB_KEYBOARD_JOURNEY_SCOPE_INVALID';
+    return integrationName === 'sample-console' && failureOwner === null ? null : 'WEB_KEYBOARD_JOURNEY_SCOPE_INVALID';
   }
   if (webScenario === 'keyboard-login') {
     return integrationName === 'sample-wallpaper-console' && failureOwner === null
@@ -269,9 +480,7 @@ export function webScenarioScopeError({integrationName, webScenario, surfaceForm
       : 'WEB_KEYBOARD_JOURNEY_SCOPE_INVALID';
   }
   if (webScenario === 'keyboard-overlay-ownership') {
-    return integrationName === 'sample-console' && failureOwner === null
-      ? null
-      : 'WEB_KEYBOARD_JOURNEY_SCOPE_INVALID';
+    return integrationName === 'sample-console' && failureOwner === null ? null : 'WEB_KEYBOARD_JOURNEY_SCOPE_INVALID';
   }
   if (webScenario === 'textinput-contextmenu') {
     return failureOwner === null ? null : 'WEB_KEYBOARD_JOURNEY_SCOPE_INVALID';
@@ -344,16 +553,21 @@ export const WEB_RUNNER_FIXED_SOURCE_FILES = Object.freeze([
   'scripts/test/ter-admin-display-web.mjs',
 ]);
 
-export function collectWebSourceFiles(repositoryRoot, listAppFiles = () => execFileSync(
-  'git',
-  ['ls-files', '-co', '--exclude-standard', '--', 'apps/terminal'],
-  {cwd: repositoryRoot, encoding: 'utf8'},
-)) {
+export function collectWebSourceFiles(
+  repositoryRoot,
+  listAppFiles = () =>
+    execFileSync('git', ['ls-files', '-co', '--exclude-standard', '--', 'apps/terminal'], {
+      cwd: repositoryRoot,
+      encoding: 'utf8',
+    }),
+) {
   const appFiles = String(listAppFiles())
     .split(/\r?\n/)
     .map(file => file.trim())
     .filter(Boolean);
-  const files = [...new Set([...appFiles, ...WEB_RUNNER_FIXED_SOURCE_FILES])].sort((left, right) => left.localeCompare(right));
+  const files = [...new Set([...appFiles, ...WEB_RUNNER_FIXED_SOURCE_FILES])].sort((left, right) =>
+    left.localeCompare(right),
+  );
   if (files.length !== appFiles.length + WEB_RUNNER_FIXED_SOURCE_FILES.length) {
     throw new Error('TER_ADMIN_DISPLAY_WEB_SOURCE_INVENTORY_DUPLICATE');
   }
@@ -386,9 +600,11 @@ export function hashWebSourceFiles(repositoryRoot, files) {
 }
 
 export function sourceSnapshotsMatch(before, after) {
-  return before.sha256 === after.sha256 &&
+  return (
+    before.sha256 === after.sha256 &&
     before.files.length === after.files.length &&
-    before.files.every((file, index) => file === after.files[index]);
+    before.files.every((file, index) => file === after.files[index])
+  );
 }
 
 export function applyWebSourceSnapshot(manifest, before, after) {
@@ -463,10 +679,12 @@ export function assertManagedWebListenerOwnership(listenerPids, ownedProcessTree
   if (!Array.isArray(listenerPids) || listenerPids.length === 0 || !Array.isArray(ownedProcessTree)) {
     throw new Error('WEB_PORT_LISTENER_NOT_OBSERVED');
   }
-  const ownedPids = new Set(ownedProcessTree
-    .filter(process => process?.ownershipUnverified !== true)
-    .map(process => process?.pid)
-    .filter(pid => Number.isInteger(pid) && pid > 0));
+  const ownedPids = new Set(
+    ownedProcessTree
+      .filter(process => process?.ownershipUnverified !== true)
+      .map(process => process?.pid)
+      .filter(pid => Number.isInteger(pid) && pid > 0),
+  );
   if (listenerPids.some(pid => !ownedPids.has(pid))) {
     throw new Error('WEB_PORT_LISTENER_NOT_OWNED_BY_RUNNER');
   }

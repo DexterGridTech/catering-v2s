@@ -55,6 +55,13 @@ const taskOwnedUntracked = [
   'tools/terminal-shared/run-owned-lint.mjs',
 ];
 const cpDToolFiles = [
+  'scripts/test/ter-admin-display-web-contract.mjs',
+  'scripts/test/ter-admin-display-web.mjs',
+  'scripts/test/ter-admin-display-web.test.mjs',
+  'scripts/test/test-health-entry-runner.mjs',
+  'scripts/test/terminal-owned-test-report.test.mjs',
+  'scripts/test/terminal-topology-heartbeat-window.test.mjs',
+  'scripts/test/terminal-topology-runner-guards.test.mjs',
   'scripts/test/ter-virtual-keyboard-android.mjs',
   'scripts/test/ter-virtual-keyboard-android.test.mjs',
   'scripts/test/ter-persist-kv-prechange-android.mjs',
@@ -82,6 +89,10 @@ const cpDToolFiles = [
   'tools/terminal-skeleton/check-static.test.mjs',
   'tools/terminal-skeleton/verify-static.mjs',
   'tools/terminal-shared/run-terminal-format.mjs',
+  'tools/terminal-shared/vitest-json-report.mjs',
+  'tools/terminal-topology/heartbeat-window.mjs',
+  'tools/terminal-topology/run-dual-device.mjs',
+  'tools/terminal-topology/role-occupancy-probe.mjs',
 ];
 const supportedExtensions = /\.(?:css|json|js|mjs|ts|tsx)$/;
 const files = [...new Set([...tracked.stdout.split('\0'), ...taskOwnedUntracked, ...cpDToolFiles])]

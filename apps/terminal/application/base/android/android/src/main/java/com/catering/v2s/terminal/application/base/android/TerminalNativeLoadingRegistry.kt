@@ -50,6 +50,33 @@ internal suspend fun <T> runNativeLoadingOnMainThread(
 }
 
 /**
+ * Keeps the Activity-identity and public-token views of the same gates in sync.
+ * Callers serialize access with the owning registry lock.
+ */
+internal class NativeLoadingGateIndex<Owner : Any, Gate : Any>(
+  private val tokenOf: (Gate) -> String,
+) {
+  private val byOwner = IdentityHashMap<Owner, Gate>()
+  private val byToken = mutableMapOf<String, Gate>()
+
+  fun forOwner(owner: Owner): Gate? = byOwner[owner]
+
+  fun forToken(token: String): Gate? = byToken[token]
+
+  fun put(owner: Owner, gate: Gate) {
+    byOwner[owner] = gate
+    byToken[tokenOf(gate)] = gate
+  }
+
+  fun remove(owner: Owner): Gate? {
+    val gate = byOwner.remove(owner) ?: return null
+    val token = tokenOf(gate)
+    if (byToken[token] === gate) byToken.remove(token)
+    return gate
+  }
+}
+
+/**
  * Holds the native pre-draw gate for each concrete Activity instance. The
  * Expo splash manager keeps a process-wide flag, so its flag alone cannot
  * protect a newly recreated Activity after an earlier hide. This registry is
@@ -60,8 +87,7 @@ object TerminalNativeLoadingRegistry {
   private const val MAIN_QUEUE_TIMEOUT_MS = 2_000L
   private val mainHandler = Handler(Looper.getMainLooper())
   private val lock = Any()
-  private val gatesByActivity = IdentityHashMap<Activity, Gate>()
-  private val gatesByToken = mutableMapOf<String, Gate>()
+  private val gateIndex = NativeLoadingGateIndex<Activity, Gate> { it.token }
   private var registeredApplication: Application? = null
   private var nextToken = 0L
   private var loadingOverlayConfig: LoadingOverlayConfig? = null
@@ -134,7 +160,7 @@ object TerminalNativeLoadingRegistry {
   @JvmStatic
   fun attachLoadingOverlay(activity: Activity) {
     checkMainThread()
-    val gate = synchronized(lock) { gatesByActivity[activity] } ?: run {
+    val gate = synchronized(lock) { gateIndex.forOwner(activity) } ?: run {
       Log.i(LOG_TAG, "event=native.loading-overlay-skipped reason=gate-unavailable")
       return
     }
@@ -161,7 +187,7 @@ object TerminalNativeLoadingRegistry {
   }
 
   suspend fun releaseHide(activityInstanceId: String): Map<String, Any?> = dispatchToMainThread("releaseHide") {
-    val gate = synchronized(lock) { gatesByToken[activityInstanceId] }
+    val gate = synchronized(lock) { gateIndex.forToken(activityInstanceId) }
       ?: throw IllegalStateException("native loading Activity instance is unavailable")
     synchronized(lock) { gate.released = true }
     Log.i(LOG_TAG, "event=native.release-hide activity=$activityInstanceId")
@@ -175,7 +201,7 @@ object TerminalNativeLoadingRegistry {
   private fun installOnMain(activity: Activity): Gate? {
     check(Looper.myLooper() === Looper.getMainLooper())
     synchronized(lock) {
-      gatesByActivity[activity]?.let {
+      gateIndex.forOwner(activity)?.let {
         attachLoadingOverlayOnMain(it)
         return it
       }
@@ -217,7 +243,7 @@ object TerminalNativeLoadingRegistry {
       true
     }
     synchronized(lock) {
-      gatesByActivity[activity]?.let { return it }
+      gateIndex.forOwner(activity)?.let { return it }
       nextToken += 1
       gate = Gate(
         token = "native-splash-activity-$nextToken",
@@ -225,8 +251,7 @@ object TerminalNativeLoadingRegistry {
         contentView = contentView,
         listener = listener,
       )
-      gatesByActivity[activity] = gate
-      gatesByToken[gate.token] = gate
+      gateIndex.put(activity, gate)
     }
     contentView.viewTreeObserver.addOnPreDrawListener(listener)
     Log.i(LOG_TAG, "event=native.gate-installed activity=${gate.token}")
@@ -310,7 +335,7 @@ object TerminalNativeLoadingRegistry {
   private fun removeOnMain(activity: Activity) {
     check(Looper.myLooper() === Looper.getMainLooper())
     val gate = synchronized(lock) {
-      gatesByActivity.remove(activity)?.also { gatesByToken.remove(it.token) }
+      gateIndex.remove(activity)
     } ?: return
     removeListener(gate)
     Log.i(LOG_TAG, "event=native.gate-removed activity=${gate.token}")
