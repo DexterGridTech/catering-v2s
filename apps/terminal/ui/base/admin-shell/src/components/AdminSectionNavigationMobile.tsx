@@ -14,7 +14,7 @@ export const AdminSectionNavigationMobile = ({
 }>) => {
   const [open, setOpen] = useState(false);
   const options = sections.map(section => ({value: section.partKey, label: section.title}));
-  const value = selectedPartKey ?? options[0]?.value ?? '';
+  const value = selectedPartKey ?? '';
   return (
     <PrimitiveDropdownSelect
       testID="terminal.admin:navigation"

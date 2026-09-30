@@ -1,7 +1,5 @@
 package com.catering.v2s.terminaldataserver.websocket;
 
-import com.catering.v2s.terminaldataserver.session.TdsConnectionCapacityLimiter;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -20,6 +18,7 @@ import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionProtocol;
 import com.catering.v2s.terminaldataserver.session.SessionRegistrationGate;
 import com.catering.v2s.terminaldataserver.session.TdsBindingRevocationListener;
+import com.catering.v2s.terminaldataserver.session.TdsConnectionCapacityLimiter;
 import com.catering.v2s.terminaldataserver.session.TdsTerminalSessionActors;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateWriter;
 import io.netty.buffer.ByteBuf;
@@ -237,7 +236,10 @@ class TdsWebSocketHandlerTransportFailureTest {
                 Duration.ofSeconds(15),
                 Duration.ofSeconds(5));
         TdsWebSocketConnection connection = new TdsWebSocketConnection(
-                session, protocol, new TdsConnectionCapacityLimiter(1, 1).tryAcquireUnauthenticated(), Schedulers.immediate());
+                session,
+                protocol,
+                new TdsConnectionCapacityLimiter(1, 1).tryAcquireUnauthenticated(),
+                Schedulers.immediate());
         connection.outboundMessages().subscribe(ignored -> {});
         assertTrue(connection.sendSessionReady("SESSION_READY", null));
         var rejectingCodecScheduler = Schedulers.fromExecutor(command -> {

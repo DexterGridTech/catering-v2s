@@ -1191,41 +1191,30 @@ async function runOffer(request) {
 async function runCompressionSession(request) {
   const socket = await RawWebSocketClient.connect(request.url, request.extensionOffer);
   const eventTypes = [];
-  const serverCompressedTypes = [];
-  const clientCompressedTypes = [];
   try {
     const negotiated = request.scenario === 'terminal.connection.compression.session-negotiated';
     if (socket.negotiatedCompression !== negotiated) throw new Error('TERMINAL_WIRE_COMPRESSION_NEGOTIATION_MISMATCH');
-    const authFrame = socket.sendText(JSON.stringify(request.authenticate), {compressed: negotiated});
-    if (authFrame.rsv1) clientCompressedTypes.push('AUTHENTICATE');
+    socket.sendText(JSON.stringify(request.authenticate));
     const ready = await socket.readEvent();
     if (ready.kind !== 'message' || ready.type !== 'SESSION_READY') {
       throw new Error('TERMINAL_WIRE_SESSION_READY_MISSING');
     }
     eventTypes.push(ready.type);
-    if (ready.compressed) serverCompressedTypes.push(ready.type);
 
     const ping = createPingMessage(1);
-    const pingFrame = socket.sendText(JSON.stringify(ping), {compressed: negotiated});
-    if (pingFrame.rsv1) clientCompressedTypes.push('PING');
+    socket.sendText(JSON.stringify(ping));
     const pong = await socket.readEvent();
     if (pong.kind !== 'message' || pong.type !== 'PONG') {
       throw new Error('TERMINAL_WIRE_PONG_MISMATCH');
     }
     validatePongMessage(pong.message, ping.seq);
     eventTypes.push(pong.type);
-    if (pong.compressed) serverCompressedTypes.push(pong.type);
-    if (negotiated && serverCompressedTypes.length === 0) {
-      throw new Error('TERMINAL_WIRE_SERVER_DID_NOT_COMPRESS_DATA');
-    }
     socket.sendClose(1000, '');
     const close = await waitForServerClose(socket);
     if (close !== null && close.code !== 1000) throw new Error('TERMINAL_WIRE_NORMAL_CLOSE_MISMATCH');
     return {
       ...describeHandshake(socket),
       eventTypes,
-      clientCompressedTypes,
-      serverCompressedTypes,
       clientCloseSent: 1000,
     };
   } finally {

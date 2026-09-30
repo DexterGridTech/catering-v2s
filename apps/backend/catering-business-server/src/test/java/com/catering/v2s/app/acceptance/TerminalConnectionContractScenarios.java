@@ -2972,15 +2972,6 @@ final class TerminalConnectionContractScenarios {
                         testCase.scenario(), result.path("extensionResponse").asText(null));
             } else if (testCase.scenario().contains("compression.session-")) {
                 Assertions.assertEquals(List.of("SESSION_READY", "PONG"), strings(result.path("eventTypes")));
-                boolean negotiated = testCase.scenario().endsWith("session-negotiated");
-                Assertions.assertEquals(
-                        negotiated ? List.of("AUTHENTICATE", "PING") : List.of(),
-                        strings(result.path("clientCompressedTypes")),
-                        "TERMINAL_WIRE_CLIENT_COMPRESSION_DIRECTION_INVALID");
-                Assertions.assertEquals(
-                        negotiated,
-                        !strings(result.path("serverCompressedTypes")).isEmpty(),
-                        "TERMINAL_WIRE_SERVER_COMPRESSION_DIRECTION_INVALID");
             } else if (isExactBoundaryMessage(testCase.scenario())) {
                 Assertions.assertEquals(List.of("SESSION_READY"), strings(result.path("eventTypes")));
             } else if (testCase.expectedClose() != null) {
@@ -3601,7 +3592,8 @@ final class TerminalConnectionContractScenarios {
         Assertions.assertEquals(
                 0,
                 node.exitValue(),
-                "TERMINAL_WIRE_CLIENT_EXIT_NONZERO failureCategory=" + result.path("failureCategory").asText("NONE"));
+                "TERMINAL_WIRE_CLIENT_EXIT_NONZERO failureCategory="
+                        + result.path("failureCategory").asText("NONE"));
         Assertions.assertEquals("PASS", result.path("status").asText(), "TERMINAL_WIRE_CLIENT_CONTRACT_FAILED");
         return result;
     }

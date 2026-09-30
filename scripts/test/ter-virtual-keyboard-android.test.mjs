@@ -419,7 +419,10 @@ test('managed Android build variant is explicit, path-bound, and cannot replace 
   assert.match(build, /manifest\.a11BaselineRunId && buildType !== 'release'/);
 });
 
-test('debug failure injection uses an explicit bounded VIEW intent and remains unavailable to release bindings', () => {
+test('debug failure injection defaults off for local embedded bundles and remains opt-in for managed debug builds', () => {
+  assert.equal(runner.isDebugFailureInjectionEnabled(false, undefined), false);
+  assert.equal(runner.isDebugFailureInjectionEnabled(false, 'false'), false);
+  assert.equal(runner.isDebugFailureInjectionEnabled(false, 'true'), true);
   assert.deepEqual(
     debugFailureInjectionIntentArgs(
       'com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity',
@@ -492,7 +495,13 @@ test('debug failure injection uses an explicit bounded VIEW intent and remains u
     );
     assert.match(gradle, /EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION/);
     assert.match(gradle, /TER_DEBUG_FAILURE_INJECTION_EMBEDDED_PRODUCTION_MODE/);
-    assert.match(gradle, /TER_DEBUG_FAILURE_INJECTION_TEST_FLAG_REQUIRED/);
+    assert.match(
+      gradle,
+      /def debugFailureInjectionEnabled\s*=\s*System\.getenv\("EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION"\)\s*==\s*"true"/,
+    );
+    assert.match(gradle, /task\.inputs\.property\("terDebugFailureInjection", debugFailureInjectionEnabled\)/);
+    assert.match(gradle, /if\s*\(debugFailureInjectionEnabled\)/);
+    assert.doesNotMatch(gradle, /TER_DEBUG_FAILURE_INJECTION_TEST_FLAG_REQUIRED/);
     assert.doesNotMatch(
       gradle,
       /TER_DEBUG_FAILURE_INJECTION_DEV_MODE_REQUIRED|TER_DEBUG_FAILURE_INJECTION_BUNDLE_DEV_ENABLED/,

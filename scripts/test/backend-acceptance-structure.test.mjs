@@ -1167,9 +1167,11 @@ test('D-46 focused selector runs nine V-S14 cases and the wire secret unit test'
   const runner = readFileSync(backendAcceptanceRunnerPath, 'utf8');
   const remoteRunner = readFileSync(path.join(root, 'scripts/test/r5-remote-testcontainers.mjs'), 'utf8');
   assert.match(runner, /--d46-focused/);
+  assert.match(runner, /if \[\[ "\$d46_focused" == true && \( "\$calibration" == true/);
   assert.match(
     runner,
-    /if \[\[ "\$d46_focused" == true && \( "\$operation" != 'all'[\s\S]*?BACKEND_ACCEPTANCE_D46_SELECTION_ARGUMENT_INVALID/,
+    /if \[\[ "\$operation" != 'all' \]\]; then\s+runner_arguments\+=\(--tests com\.catering\.v2s\.app\.acceptance\.BackendAcceptanceTest\)/,
+    'D46_COMBINED_SELECTION_MUST_RUN_THE_SELECTED_BUSINESS_FACTORY',
   );
   assert.match(
     runner,
@@ -1187,7 +1189,10 @@ test('D-46 focused selector runs nine V-S14 cases and the wire secret unit test'
   const factoryEnd = suite.indexOf('\n    @TestFactory', factoryStart + 1);
   assert.ok(factoryStart >= 0 && factoryEnd > factoryStart, 'V_S14_FACTORY_BOUNDARY_MISSING');
   const factory = suite.slice(factoryStart, factoryEnd);
-  assert.match(factory, /if \(!\"all\"\.equals\(selectedOperation\)\) return Stream\.empty\(\)/);
+  assert.match(
+    factory,
+    /boolean d46Focused = \"true\"\.equals\(System\.getenv\(\"V2S_BACKEND_ACCEPTANCE_D46_FOCUSED\"\)\);\s+if \(!\"all\"\.equals\(selectedOperation\) && !d46Focused\) return Stream\.empty\(\)/,
+  );
   assert.match(factory, /TerminalConnectionContractScenarios\.v14Scenarios\(this, tdsAcceptanceProcess\)/);
 
   const scenariosSource = readFileSync(terminalContractScenariosPath, 'utf8');
@@ -1210,10 +1215,10 @@ test('D-46 focused selector runs nine V-S14 cases and the wire secret unit test'
 
   const invalidOperation = spawnSync(
     backendAcceptanceRunnerPath,
-    ['--operation', 'storeTerminalActivationBusinessPrecedence', '--d46-focused'],
+    ['--operation', 'storeTerminalActivationBusinessPrecedence', '--d46-focused', '--v-s12-diagnostic'],
     {cwd: root, env: process.env, encoding: 'utf8'},
   );
-  assert.equal(invalidOperation.status, 2, 'D-46 selector must fail before remote execution for a non-all operation');
+  assert.equal(invalidOperation.status, 2, 'D-46 selector must reject overlapping diagnostics before remote execution');
   assert.match(invalidOperation.stderr, /BACKEND_ACCEPTANCE_D46_SELECTION_ARGUMENT_INVALID/);
 });
 
@@ -1474,7 +1479,9 @@ test('one-shot wire-client failures log bounded safe process and signal diagnost
     assert.ok(logger.includes(field), `BACKEND_ACCEPTANCE_WIRE_RESULT_FIELD_MISSING:${field}`);
   }
   const resultLog = waiter.indexOf('logWireClientResult(');
-  const exitAssertion = waiter.indexOf('Assertions.assertEquals(0, node.exitValue(), "TERMINAL_WIRE_CLIENT_EXIT_NONZERO")');
+  const exitAssertion = waiter.search(
+    /Assertions\.assertEquals\(\s*0,\s*node\.exitValue\(\),\s*"TERMINAL_WIRE_CLIENT_EXIT_NONZERO/,
+  );
   assert.ok(resultLog >= 0 && exitAssertion > resultLog, 'BACKEND_ACCEPTANCE_WIRE_RESULT_MUST_LOG_BEFORE_ASSERTION');
   assert.ok(
     /logWireClientResult\(node,\s*stderrLog,/.test(waiter),

@@ -25,12 +25,13 @@ import com.catering.v2s.terminaldataserver.websocket.TdsWebSocketConnection;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -105,13 +106,15 @@ class TdsTerminalSessionActorsTest {
         TdsWebSocketConnection connection = connection("session-revoked-during-open");
         begin("attempt-revoked-during-open", 1, connection);
         Verification currentVerification = verification(1);
-        assertThat(actors.recordVerification(TERMINAL, "attempt-revoked-during-open", currentVerification).block())
+        assertThat(actors.recordVerification(TERMINAL, "attempt-revoked-during-open", currentVerification)
+                        .block())
                 .isTrue();
         repository.openEntered = new CountDownLatch(1);
         repository.openRelease = new CountDownLatch(1);
 
         CompletableFuture<Boolean> registration = CompletableFuture.supplyAsync(
-                () -> actors.register(TERMINAL, "attempt-revoked-during-open", currentVerification).block());
+                () -> actors.register(TERMINAL, "attempt-revoked-during-open", currentVerification)
+                        .block());
         try {
             assertThat(repository.openEntered.await(2, TimeUnit.SECONDS)).isTrue();
             CompletableFuture<Void> revocation = CompletableFuture.runAsync(() -> actors.revoked(TERMINAL, 1));
@@ -122,7 +125,66 @@ class TdsTerminalSessionActorsTest {
 
         assertThat(registration.get(2, TimeUnit.SECONDS)).isFalse();
         assertThat(connection.closeReasonOr("missing")).isEqualTo("ACTIVATION_CANCELLED");
-        verify(stateWriter).queueDisconnect(eq(repository.opened.getFirst()), eq("ACTIVATION_CANCELLED"), any(Runnable.class));
+        verify(stateWriter)
+                .queueDisconnect(eq(repository.opened.getFirst()), eq("ACTIVATION_CANCELLED"), any(Runnable.class));
+    }
+
+    @Test
+    void inFlightRegistrationRetainsThePerTerminalActorAndLockAfterRevocation() throws Exception {
+        TdsWebSocketConnection oldConnection = connection("session-in-flight-old");
+        begin("attempt-in-flight-old", 1, oldConnection);
+        Verification oldVerification = verification(1);
+        assertThat(actors.recordVerification(TERMINAL, "attempt-in-flight-old", oldVerification)
+                        .block())
+                .isTrue();
+
+        repository.blockedSessionId = "session-in-flight-old";
+        repository.blockedOpenEntered = new CountDownLatch(1);
+        repository.blockedOpenRelease = new CountDownLatch(1);
+        repository.concurrentOpenEntered = new CountDownLatch(1);
+        CompletableFuture<Boolean> oldRegistration =
+                CompletableFuture.supplyAsync(() -> actors.register(TERMINAL, "attempt-in-flight-old", oldVerification)
+                        .block());
+        CompletableFuture<Boolean> replacementRegistration = null;
+        boolean actorRetainedAfterRevocation = false;
+        boolean replacementReachedRepositoryBeforeRelease = false;
+
+        try {
+            assertThat(repository.blockedOpenEntered.await(2, TimeUnit.SECONDS)).isTrue();
+            actors.revoked(TERMINAL, 1);
+            actorRetainedAfterRevocation = actors.trackedActorCount() == 1;
+
+            TdsWebSocketConnection replacement = connection("session-in-flight-new");
+            begin("attempt-in-flight-new", 2, replacement);
+            Verification replacementVerification = verification(2);
+            assertThat(actors.recordVerification(TERMINAL, "attempt-in-flight-new", replacementVerification)
+                            .block())
+                    .isTrue();
+            CountDownLatch replacementCallStarted = new CountDownLatch(1);
+            replacementRegistration = CompletableFuture.supplyAsync(() -> {
+                replacementCallStarted.countDown();
+                return actors.register(TERMINAL, "attempt-in-flight-new", replacementVerification)
+                        .block();
+            });
+            assertThat(replacementCallStarted.await(2, TimeUnit.SECONDS)).isTrue();
+            replacementReachedRepositoryBeforeRelease =
+                    repository.concurrentOpenEntered.await(100, TimeUnit.MILLISECONDS);
+        } finally {
+            repository.blockedOpenRelease.countDown();
+        }
+
+        assertThat(oldRegistration.get(2, TimeUnit.SECONDS)).isFalse();
+        assertThat(replacementRegistration).isNotNull();
+        assertThat(replacementRegistration.get(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(actorRetainedAfterRevocation).isTrue();
+        assertThat(replacementReachedRepositoryBeforeRelease).isFalse();
+        assertThat(repository.opened)
+                .extracting(SessionIdentity::sessionId)
+                .containsExactly("session-in-flight-old", "session-in-flight-new");
+        assertThat(repository.opened.get(0).sequence())
+                .isLessThan(repository.opened.get(1).sequence());
+        verify(stateWriter)
+                .queueDisconnect(eq(repository.opened.get(0)), eq("ACTIVATION_CANCELLED"), any(Runnable.class));
     }
 
     @Test
@@ -463,7 +525,8 @@ class TdsTerminalSessionActorsTest {
         when(session.isOpen()).thenAnswer(ignored -> open.get());
         when(session.close(any(CloseStatus.class))).thenReturn(Mono.empty());
         when(session.textMessage(anyString())).thenReturn(mock(WebSocketMessage.class));
-        return new TdsWebSocketConnection(session, protocol, limiter.tryAcquireUnauthenticated(), Schedulers.immediate());
+        return new TdsWebSocketConnection(
+                session, protocol, limiter.tryAcquireUnauthenticated(), Schedulers.immediate());
     }
 
     private static Verification verification(long generation) {
@@ -487,11 +550,15 @@ class TdsTerminalSessionActorsTest {
     }
 
     private static final class RecordingRepository extends TdsConnectionStateRepository {
-        private final List<SessionIdentity> opened = new ArrayList<>();
+        private final List<SessionIdentity> opened = Collections.synchronizedList(new ArrayList<>());
         private final AtomicLong sequence = new AtomicLong();
         private boolean failOpen;
         private volatile CountDownLatch openEntered;
         private volatile CountDownLatch openRelease;
+        private volatile String blockedSessionId;
+        private volatile CountDownLatch blockedOpenEntered;
+        private volatile CountDownLatch blockedOpenRelease;
+        private volatile CountDownLatch concurrentOpenEntered;
 
         private RecordingRepository() {
             super(mock(JdbcTemplate.class));
@@ -500,6 +567,23 @@ class TdsTerminalSessionActorsTest {
         @Override
         public SessionIdentity open(Verification verification, String nodeId, String sessionId) {
             if (failOpen) throw new IllegalStateException("database unavailable");
+            if (sessionId.equals(blockedSessionId)) {
+                CountDownLatch entered = blockedOpenEntered;
+                CountDownLatch release = blockedOpenRelease;
+                if (entered != null && release != null) {
+                    entered.countDown();
+                    try {
+                        if (!release.await(2, TimeUnit.SECONDS)) {
+                            throw new IllegalStateException("test blocked open timed out");
+                        }
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException("test blocked open interrupted", interrupted);
+                    }
+                }
+            } else if (blockedSessionId != null && concurrentOpenEntered != null) {
+                concurrentOpenEntered.countDown();
+            }
             CountDownLatch entered = openEntered;
             CountDownLatch release = openRelease;
             if (entered != null && release != null) {

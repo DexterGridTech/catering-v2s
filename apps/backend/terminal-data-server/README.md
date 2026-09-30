@@ -10,8 +10,8 @@
 - 由终端凭证首帧完成设备认证；不使用登录用户或用户会话权限。
 - 只调用 `terminal-binding` 提供的凭证验证 API；绑定事实仍由业务后端 owner 管理。
 - 使用业务应用创建的共享 PostgreSQL schema；TDS 不运行 Flyway、seed 或 reset。
-- WebSocket 只协商 RFC 7692 `permessage-deflate`；解压后的单消息上限为 65,536 bytes，且解压过程中即累计限长。
-- 服务端数据消息低于 128 bytes 不压缩，128 bytes 起压缩；小型 JSON `PONG` 保持明文，WebSocket opcode 控制帧始终明文。双方均不跨消息保留压缩上下文。
+- 使用 Reactor Netty 原生 RFC 7692 `permessage-deflate`；只在客户端提出 WebSocket 扩展时协商。未提出扩展的连接保持未压缩。
+- 原生 inflater 的解压 buffer 上限为 65,536 bytes，WebSocket 聚合器另将整条解压后消息限制为 65,536 bytes；任一上限超出都在进入协议解析前以共享协议关闭码 1009 关闭。压缩上下文遵循 Reactor Netty 的配置默认值；不在此承诺小消息压缩阈值、控制帧压缩细节或协议违规关闭原因。
 
 ## 结构
 

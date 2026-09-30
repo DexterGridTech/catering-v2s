@@ -39,12 +39,12 @@ const AdminPanelNormalStateLaptop = () => (
         testID="terminal.admin:panel:normal:facts"
         columns={2}
         items={[
-          {key: 'current-tab', label: '当前 tab', value: '平台端口'},
+          {key: 'current-tab', label: '当前页面', value: '未选择'},
           {key: 'content-area', label: '内容区', value: '可滚动'},
         ]}
       />
       <PrimitiveText appearance="admin-muted" testID="terminal.admin:panel:normal:hint">
-        关闭入口固定在右上角；selector 固定在内容顶部。
+        选择左侧导航项后显示对应管理内容。
       </PrimitiveText>
     </PrimitiveCard>
   </PrimitiveScrollView>

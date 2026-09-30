@@ -1069,6 +1069,20 @@ test('backend acceptance supplies every non-production server prerequisite and s
     assert.match(environment, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
   assert.doesNotMatch(environment, /V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY/);
+  const d46Environment = backendAcceptanceEnvironment(
+    'backend-acceptance-run-12345678',
+    'storeTerminalDeviceActivationProtocols',
+    'ACCEPTANCE',
+    null,
+    false,
+    null,
+    '/usr/bin/node',
+    false,
+    false,
+    false,
+    true,
+  );
+  assert.ok(d46Environment.includes('export V2S_BACKEND_ACCEPTANCE_D46_FOCUSED=true'));
   const topologyPreflightEnvironment = backendAcceptanceEnvironment(
     'backend-acceptance-run-12345678',
     'storeTerminalActivationBusinessPrecedence',
@@ -1389,7 +1403,7 @@ test('TDS-only acceptance scope archives TDS evidence without inventing a busine
     business: 'NOT_APPLICABLE',
     backendAcceptance: {
       runId: 'backend-acceptance-r5-tc-1786638000000-123',
-      operation: 'tds-contract-only',
+      operation: 'all',
       scope: 'TDS_CONTRACT_ONLY',
     },
     workload: null,
@@ -1408,7 +1422,7 @@ test('TDS-only acceptance scope cannot run without the exact V-S14 selector', ()
     () =>
       runScript({
         backendAcceptanceRunId: 'backend-acceptance-r5-tc-1786638000000-123',
-        backendAcceptanceOperation: 'tds-contract-only',
+        backendAcceptanceOperation: 'all',
         verificationMode: 'ACCEPTANCE',
         invocation: {extraArguments: [], extensionScaleProof: false, productionMutationId: undefined},
         tdsContractOnly: true,

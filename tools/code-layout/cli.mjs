@@ -40,6 +40,7 @@ const allowedRepositoryRootDirectories = new Set([
   "scripts",
   "tools",
 ]);
+const allowedEmptyLocalRootDirectories = new Set(["rive"]);
 const scenarioName = /(?:^|[-_])(?:D\d{2}-S\d{2}|R\d+(?:J\d+|U\d+))/;
 const flowIdentifier = /(?:^|[._-])(?:(?:r|u|j|jg|pkg)\d+[a-z0-9_-]*|g-\d+[a-z0-9_-]*)(?=$|[._-])/i;
 
@@ -98,6 +99,15 @@ function validateBackendJavaPackagePaths(root, reasons) {
 function validate(root) {
   const reasons = [];
   for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    if (allowedEmptyLocalRootDirectories.has(entry.name)) {
+      const allowedPath = path.join(root, entry.name);
+      if (!entry.isDirectory()
+        || entry.isSymbolicLink()
+        || fs.readdirSync(allowedPath).length !== 0) {
+        reasons.push(`REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:${entry.name}`);
+      }
+      continue;
+    }
     if (entry.isDirectory() && !allowedRepositoryRootDirectories.has(entry.name)) {
       reasons.push(`REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:${entry.name}`);
     }
@@ -217,12 +227,43 @@ function selfTest() {
     fs.mkdirSync(path.join(repositoryRoot, ".turbo/cache"), { recursive: true });
     fs.mkdirSync(path.join(repositoryRoot, ".playwright-cli"), { recursive: true });
     fs.writeFileSync(path.join(repositoryRoot, ".playwright-cli/page.yml"), "snapshot: local\n");
-    validate(repositoryRoot);
+    fs.mkdirSync(path.join(repositoryRoot, "rive"));
+    if (!validate(repositoryRoot).includes("CODE_LAYOUT=PASS")) fail("APPROVED_EMPTY_RIVE_ROOT_NOT_ACCEPTED");
+    fs.mkdirSync(path.join(repositoryRoot, ".local-tool/prompts"), { recursive: true });
+    expectFailure(
+      repositoryRoot,
+      (fixture) => fs.mkdirSync(path.join(fixture, ".local-tool/prompts"), { recursive: true }),
+      "REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:.local-tool",
+    );
+    fs.rmSync(path.join(repositoryRoot, ".local-tool"), { recursive: true, force: true });
+    expectFailure(
+      repositoryRoot,
+      (fixture) => fs.writeFileSync(path.join(fixture, "rive/graph.riv"), "local asset\n"),
+      "REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:rive",
+    );
+    fs.rmSync(path.join(repositoryRoot, "rive/graph.riv"), { force: true });
+    fs.writeFileSync(path.join(repositoryRoot, "rive-target.riv"), "local asset\n");
+    expectFailure(
+      repositoryRoot,
+      (fixture) => fs.symlinkSync(path.join(fixture, "rive-target.riv"), path.join(fixture, "rive/linked.riv")),
+      "REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:rive",
+    );
     expectFailure(repositoryRoot, (fixture) => {
       fs.mkdirSync(path.join(fixture, "components/common"), { recursive: true });
+      fs.writeFileSync(path.join(fixture, "components/common/index.ts"), "export {}\n");
     }, "REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:components");
   } finally {
     fs.rmSync(repositoryRoot, { recursive: true, force: true });
+  }
+
+  const linkedRiveRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-code-layout-"));
+  const riveLinkTarget = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-code-layout-rive-target-"));
+  try {
+    fs.symlinkSync(riveLinkTarget, path.join(linkedRiveRoot, "rive"), "dir");
+    expectFailure(linkedRiveRoot, () => {}, "REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:rive");
+  } finally {
+    fs.rmSync(linkedRiveRoot, { recursive: true, force: true });
+    fs.rmSync(riveLinkTarget, { recursive: true, force: true });
   }
 
   const runtimeCacheRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-code-layout-"));
@@ -302,6 +343,11 @@ function selfTest() {
     "CONTRACT_REGISTRY_ALLOWED=PASS",
     "RED_FIXTURE_CONTRACT_CLASSIFICATION=PASS",
     "RED_FIXTURE_REPOSITORY_ROOT_ALLOWLIST=PASS",
+    "GREEN_FIXTURE_ALLOWED_EMPTY_RIVE_ROOT=PASS",
+    "RED_FIXTURE_UNKNOWN_EMPTY_LOCAL_ROOT_DIRECTORY=PASS",
+    "RED_FIXTURE_POPULATED_RIVE_ROOT=PASS",
+    "RED_FIXTURE_SYMLINK_IN_RIVE_ROOT=PASS",
+    "RED_FIXTURE_SYMLINK_RIVE_ROOT=PASS",
     "GREEN_FIXTURE_IGNORED_PLAYWRIGHT_CAPTURE=PASS",
     "GREEN_FIXTURE_IGNORED_RUNTIME_CACHE=PASS",
     "RED_FIXTURE_PRODUCTION_RED_FIXTURE=PASS",

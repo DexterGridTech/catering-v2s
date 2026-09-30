@@ -117,18 +117,19 @@ tasks.configureEach { task ->
 // native async-require message socket throws when __DEV__ is true for an embedded bundle. The
 // runner enables failure injection separately with EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION.
 afterEvaluate {
+    def debugFailureInjectionEnabled =
+        System.getenv("EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION") == "true"
     tasks.named("createBundleDebugJsAndAssets").configure { task ->
         task.inputs.files(terminalWorkspaceJsInputs)
-        task.inputs.property("terDebugFailureInjection", true)
+        task.inputs.property("terDebugFailureInjection", debugFailureInjectionEnabled)
         task.devEnabled.set(false)
         task.doFirst {
             if (task.devEnabled.get()) {
                 throw new GradleException("TER_DEBUG_FAILURE_INJECTION_EMBEDDED_PRODUCTION_MODE")
             }
-            if (System.getenv("EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION") != "true") {
-                throw new GradleException("TER_DEBUG_FAILURE_INJECTION_TEST_FLAG_REQUIRED")
+            if (debugFailureInjectionEnabled) {
+                project.logger.lifecycle("TER_DEBUG_FAILURE_INJECTION_EMBEDDED_PRODUCTION_MODE")
             }
-            project.logger.lifecycle("TER_DEBUG_FAILURE_INJECTION_EMBEDDED_PRODUCTION_MODE")
         }
     }
 }

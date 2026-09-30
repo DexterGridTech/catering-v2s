@@ -130,7 +130,7 @@ if [[ "$v8_diagnostic" == true && ( "$operation" != 'storeTerminalActivationBusi
   exit 2
 fi
 
-if [[ "$d46_focused" == true && ( "$operation" != 'all' || "$calibration" == true || "$production_mutation" != '' || "$extension_scale_proof" == true || "$topology_preflight" == true || "$v12_diagnostic" == true || "$v8_diagnostic" == true ) ]]; then
+if [[ "$d46_focused" == true && ( "$calibration" == true || "$production_mutation" != '' || "$extension_scale_proof" == true || "$topology_preflight" == true || "$v12_diagnostic" == true || "$v8_diagnostic" == true ) ]]; then
   printf '%s\n' 'BACKEND_ACCEPTANCE_D46_SELECTION_ARGUMENT_INVALID' >&2
   exit 2
 fi
@@ -165,20 +165,26 @@ if [[ "$calibration" == true ]]; then
   export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=CALIBRATION
 fi
 
-runner_arguments=(
-  :apps:backend:catering-business-server:test
-  --tests
-)
+runner_arguments=(:apps:backend:catering-business-server:test)
 if [[ "$d46_focused" == true ]]; then
-  runner_arguments+=(com.catering.v2s.app.acceptance.BackendAcceptanceTest.terminalConnectionCompressionContracts)
+  if [[ "$operation" != 'all' ]]; then
+    runner_arguments+=(--tests com.catering.v2s.app.acceptance.BackendAcceptanceTest)
+  fi
+  runner_arguments+=(--tests com.catering.v2s.app.acceptance.BackendAcceptanceTest.terminalConnectionCompressionContracts)
   runner_arguments+=(--tests com.catering.v2s.app.edge.generated.wire.TerminalActivationSecretToStringTest)
-  export V2S_BACKEND_ACCEPTANCE_OPERATION=tds-contract-only
-  export V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_ONLY=true
+  export V2S_BACKEND_ACCEPTANCE_D46_FOCUSED=true
+  if [[ "$operation" == 'all' ]]; then
+    export V2S_BACKEND_ACCEPTANCE_OPERATION=all
+    export V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_ONLY=true
+  else
+    unset V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_ONLY
+  fi
   export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=ACCEPTANCE
   printf '%s\n' 'BACKEND_ACCEPTANCE_D46_SELECTION=V-S14_AND_WIRE_SECRET_UNIT'
 else
   unset V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_ONLY
-  runner_arguments+=(com.catering.v2s.app.acceptance.BackendAcceptanceTest)
+  unset V2S_BACKEND_ACCEPTANCE_D46_FOCUSED
+  runner_arguments+=(--tests com.catering.v2s.app.acceptance.BackendAcceptanceTest)
 fi
 if [[ -n "$production_mutation" ]]; then
   runner_arguments+=(--production-mutation "$production_mutation")

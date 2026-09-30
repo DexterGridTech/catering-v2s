@@ -858,7 +858,7 @@ describe('sample-console real assembly', () => {
     expect(secondaryMemberParts).toEqual(['sample.desk.customer-welcome', 'sample.desk.customer-member']);
   });
 
-  it('keeps exactly the three canonical admin pages available in both laptop and mobile', async () => {
+  it('shows built-in and integration-registered admin pages in laptop and mobile', async () => {
     const laptopAssembly = await createSampleAssembly({
       platformPorts: createTestPlatformPorts(),
       persistenceKey: `sample-console-admin-laptop-filter-${Date.now()}`,
@@ -881,10 +881,20 @@ describe('sample-console real assembly', () => {
         adminTestIds.sections.platformPorts,
         adminTestIds.sections.runtime,
         adminTestIds.sections.topology,
+        adminTestIds.sections.sampleConsole,
+      ]) {
+        const sectionButton = queryNodes(laptopRenderer, sectionTestID).find(node => node.type === 'Pressable')!;
+        expect(sectionButton.props.accessibilityState).toMatchObject({selected: false});
+      }
+      expect(getNode(laptopRenderer, 'terminal.admin:panel:normal:title')).toBeDefined();
+      expect(queryNodes(laptopRenderer, adminTestIds.ports.title)).toHaveLength(0);
+      for (const sectionTestID of [
+        adminTestIds.sections.platformPorts,
+        adminTestIds.sections.runtime,
+        adminTestIds.sections.topology,
       ]) {
         expect(getNode(laptopRenderer, sectionTestID)).toBeDefined();
       }
-      expect(queryNodes(laptopRenderer, adminTestIds.sections.sampleConsole)).toHaveLength(0);
       const laptopShell = getNode(laptopRenderer, adminTestIds.shell);
       const laptopShellStyle = StyleSheet.flatten(laptopShell.props.style);
       expect(laptopShellStyle).toMatchObject({flex: 1, width: '100%'});
@@ -938,11 +948,22 @@ describe('sample-console real assembly', () => {
         accessibilityRole: 'header',
         accessibilityLiveRegion: 'polite',
       });
+      await act(async () => {
+        await press(laptopRenderer!, adminTestIds.sections.sampleConsole);
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
+      expect(getNode(laptopRenderer, 'sample.console.admin-test:title')).toBeDefined();
+      expect(
+        queryNodes(laptopRenderer, adminTestIds.sections.sampleConsole).find(node => node.type === 'Pressable')
+          ?.props.accessibilityState,
+      ).toMatchObject({selected: true});
 
       mobileRenderer = await mount(createSurfaceForDisplayIndex(mobileAssembly, 0), PORTRAIT_PRIMARY_FRAME);
       await tapLauncher(mobileRenderer);
       await authenticateAdmin(mobileRenderer);
       expect(getNode(mobileRenderer, 'terminal.admin:navigation')).toBeDefined();
+      expect(getNode(mobileRenderer, 'terminal.admin:panel:normal:title')).toBeDefined();
+      expect(queryNodesByType(mobileRenderer, 'Text').some(node => node.props.children === '平台端口')).toBe(false);
       const mobileShell = getNode(mobileRenderer, adminTestIds.shell);
       const mobileShellStyle = StyleSheet.flatten(mobileShell.props.style);
       expect(mobileShellStyle).toMatchObject({flex: 1, width: '100%'});
@@ -961,7 +982,7 @@ describe('sample-console real assembly', () => {
       for (const partKey of ['admin.console.platform-ports', 'admin.console.runtime', 'admin.console.topology']) {
         expect(getNode(mobileRenderer, `terminal.admin:navigation:option:${partKey}`)).toBeDefined();
       }
-      expect(queryNodes(mobileRenderer, 'terminal.admin:navigation:option:sample.console.admin-test')).toHaveLength(0);
+      expect(getNode(mobileRenderer, 'terminal.admin:navigation:option:sample.console.admin-test')).toBeDefined();
       await act(async () => {
         await press(mobileRenderer!, 'terminal.admin:navigation:option:admin.console.platform-ports');
         await new Promise(resolve => setTimeout(resolve, 0));
@@ -985,6 +1006,15 @@ describe('sample-console real assembly', () => {
         accessibilityRole: 'header',
         accessibilityLiveRegion: 'polite',
       });
+      await act(async () => {
+        await press(mobileRenderer!, 'terminal.admin:navigation:trigger');
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
+      await act(async () => {
+        await press(mobileRenderer!, 'terminal.admin:navigation:option:sample.console.admin-test');
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
+      expect(getNode(mobileRenderer, 'sample.console.admin-test:title')).toBeDefined();
     } finally {
       if (laptopRenderer !== undefined) await laptopRenderer!.unmount();
       if (mobileRenderer !== undefined) await mobileRenderer!.unmount();

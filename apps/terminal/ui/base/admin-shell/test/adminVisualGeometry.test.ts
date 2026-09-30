@@ -262,7 +262,7 @@ describe('admin visual contract', () => {
     expect(button).toContain('--color-${namespace}-action-end');
   });
 
-  it('keeps the four known false-green regressions mechanically visible', () => {
+  it('keeps layout and integration-navigation regression signals mechanically visible', () => {
     const adminShell = read('src/components/AdminShellFrameLaptop.tsx');
     const navigation = read('src/components/AdminSectionNavigationLaptop.tsx');
     const primitiveAdmin = read('../primitives/src/components/PrimitiveAdmin.tsx');
@@ -271,6 +271,7 @@ describe('admin visual contract', () => {
     expect(navigation).toContain('adminGeometry.navigationList');
     expect(primitiveAdmin).toContain(':card');
     expect(primitiveAdmin).not.toContain('style={{aspectRatio: surface.aspectRatio}}');
-    expect(selection).not.toContain('pageKey: undefined');
+    expect(selection).toContain('for (const entry of entries)');
+    expect(selection).toContain('projectedPartKeys.has(entry.partKey)');
   });
 });

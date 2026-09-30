@@ -942,7 +942,8 @@ class BackendAcceptanceTest {
     Stream<DynamicTest> terminalConnectionCompressionContracts() {
         String selectedOperation =
                 System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
-        if (!"all".equals(selectedOperation)) return Stream.empty();
+        boolean d46Focused = "true".equals(System.getenv("V2S_BACKEND_ACCEPTANCE_D46_FOCUSED"));
+        if (!"all".equals(selectedOperation) && !d46Focused) return Stream.empty();
         return TerminalConnectionContractScenarios.v14Scenarios(this, tdsAcceptanceProcess);
     }
 

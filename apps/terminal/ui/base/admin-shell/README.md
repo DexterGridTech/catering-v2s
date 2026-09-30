@@ -26,6 +26,10 @@ public-surface focused test，不得让 README 或 invariant 漂移。
 再修改本包的呈现；不得引入业务 feature import、持久化认证、第二个注册表或新的
 navigation/input owner。
 
+导航固定优先显示本包的平台端口、运行状态与双机拓扑页；同一 catalog 中由 integration 注册到
+`admin.sections` 的其他可用 part 也会追加为可见页面，并由该 catalog 的 renderer 打开。业务包应通过
+integration assembly 注册自己的 admin section，不要在 admin-shell 内为业务页面写专属分支。
+
 运行状态页中的“逻辑分辨率”指每个 surface 的应用逻辑画布声明；设备逻辑显示区域仅用于该屏矩形比例，物理像素尺寸来自同一 surface 的 display facts。主屏和副屏都必须逐屏显示各自的逻辑分辨率、物理尺寸与状态，不因当前渲染屏而省略或借用数值。
 
 拓扑 section 只接收 `TopologyAdminCapability` 这一窄能力：事实由 capability 读取，配对、解绑和

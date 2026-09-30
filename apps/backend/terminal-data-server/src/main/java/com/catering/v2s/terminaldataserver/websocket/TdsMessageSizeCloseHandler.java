@@ -38,8 +38,7 @@ final class TdsMessageSizeCloseHandler extends ChannelInboundHandlerAdapter {
                         overflowCloseCode,
                         maxMessageBytes,
                         failure instanceof TooLongFrameException ? "message_aggregator" : "native_decompressor"));
-        context.writeAndFlush(new CloseWebSocketFrame(overflowCloseCode, ""))
-                .addListener(ChannelFutureListener.CLOSE);
+        context.writeAndFlush(new CloseWebSocketFrame(overflowCloseCode, "")).addListener(ChannelFutureListener.CLOSE);
     }
 
     static boolean isMessageTooLarge(Throwable failure, int maxMessageBytes) {

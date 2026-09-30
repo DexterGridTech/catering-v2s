@@ -4,6 +4,8 @@ import android.app.Activity
 import android.app.Application
 import android.app.Presentation
 import android.content.Context
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.content.res.Configuration
 import android.content.pm.ActivityInfo
 import android.hardware.display.DisplayManager
@@ -1005,7 +1007,12 @@ private class TerminalPresentation(
     logDisplayMetrics("presentation-display", display, 1)
     window?.let { presentationWindow ->
       applyImmersiveWindow(presentationWindow)
+      // React's secondary surface can take several seconds to produce its first
+      // frame. Do not expose AppCompat DayNight's black window background during
+      // that interval; the terminal canvas itself is opaque white on both forms.
+      presentationWindow.setBackgroundDrawable(ColorDrawable(Color.WHITE))
       presentationWindow.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+      Log.i(LOG_TAG, "event=secondary-presentation-background color=#FFFFFF source=terminal-canvas")
       logConfiguration(
         "presentation-window-configuration",
         presentationWindow.context.resources.configuration,

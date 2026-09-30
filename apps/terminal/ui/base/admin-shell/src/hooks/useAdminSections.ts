@@ -25,12 +25,9 @@ export const useAdminSections = ({catalog, context}: UseAdminSectionsInput): Adm
     [catalog, context],
   );
   const [requestedPartKey, setRequestedPartKey] = useState<string | null>(null);
-  const selectedPartKey =
-    requestedPartKey !== null && sections.some(section => section.partKey === requestedPartKey)
-      ? requestedPartKey
-      : (sections[0]?.partKey ?? null);
   const selectedSection =
     requestedPartKey === null ? undefined : sections.find(section => section.partKey === requestedPartKey);
+  const selectedPartKey = selectedSection?.partKey ?? null;
   const selectSection = useCallback(
     (partKey: string) => {
       if (sections.some(section => section.partKey === partKey)) setRequestedPartKey(partKey);

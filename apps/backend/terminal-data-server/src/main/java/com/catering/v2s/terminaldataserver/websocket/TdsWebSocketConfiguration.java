@@ -22,8 +22,7 @@ public class TdsWebSocketConfiguration implements WebFluxConfigurer {
     private final Scheduler logScheduler;
 
     public TdsWebSocketConfiguration(
-            TerminalConnectionProtocol protocol,
-            @Qualifier("tds-log-worker") Scheduler logScheduler) {
+            TerminalConnectionProtocol protocol, @Qualifier("tds-log-worker") Scheduler logScheduler) {
         this.protocol = protocol;
         this.logScheduler = logScheduler;
         ReactorNettyRequestUpgradeStrategy upgradeStrategy =
@@ -46,8 +45,8 @@ public class TdsWebSocketConfiguration implements WebFluxConfigurer {
 
     @Bean
     NettyServerCustomizer tdsWebSocketPipelineCustomizer() {
-        return server -> server.doOnChannelInit((observer, channel, remoteAddress) ->
-                TdsWebSocketPipelineInstaller.install(
+        return server ->
+                server.doOnChannelInit((observer, channel, remoteAddress) -> TdsWebSocketPipelineInstaller.install(
                         channel.pipeline(),
                         protocol.maxCompleteDecompressedMessageBytes(),
                         protocol.oversizedMessageCloseCode(),

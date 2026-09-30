@@ -22,7 +22,6 @@ class MainActivity : ReactActivity() {
       R.color.colorPrimary,
       R.drawable.splashscreen_logo,
     )
-    Log.i(LOG_TAG, "event=native.activity-registered app=sample-terminal")
     Log.i(LOG_TAG, "event=activity.onCreate phase=before-super app=sample-terminal")
     super.onCreate(null)
     Log.i(LOG_TAG, "event=activity.onCreate phase=after-super app=sample-terminal")

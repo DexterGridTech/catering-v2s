@@ -136,11 +136,15 @@ public final class TdsTerminalSessionActors {
 
     public Mono<Boolean> register(UUID terminalRef, String attemptId, Verification verification) {
         return Mono.fromCallable(() -> {
-                    TerminalActor actor = actors.get(terminalRef);
+                    TerminalActor actor = actors.computeIfPresent(terminalRef, (key, current) -> {
+                        current.registrationStarted();
+                        return current;
+                    });
                     if (actor == null) return false;
                     try {
                         return actor.register(attemptId, verification);
                     } finally {
+                        actor.registrationFinished();
                         removeIfIdle(terminalRef, actor);
                     }
                 })
@@ -210,6 +214,7 @@ public final class TdsTerminalSessionActors {
         private final Map<String, PendingAttempt> pending = new HashMap<>();
         private ActiveSession active;
         private long revokedThroughGeneration;
+        private int registrationsInFlight;
 
         private TerminalActor(UUID terminalRef) {
             this.terminalRef = terminalRef;
@@ -513,7 +518,22 @@ public final class TdsTerminalSessionActors {
 
         private boolean isIdle() {
             synchronized (monitor) {
-                return pending.isEmpty() && active == null;
+                return pending.isEmpty() && active == null && registrationsInFlight == 0;
+            }
+        }
+
+        private void registrationStarted() {
+            synchronized (monitor) {
+                registrationsInFlight++;
+            }
+        }
+
+        private void registrationFinished() {
+            synchronized (monitor) {
+                if (registrationsInFlight < 1) {
+                    throw new IllegalStateException("TDS_REGISTRATION_LIFECYCLE_INVALID");
+                }
+                registrationsInFlight--;
             }
         }
 
@@ -573,5 +593,5 @@ public final class TdsTerminalSessionActors {
             long generation,
             TdsWebSocketConnection connection,
             SessionIdentity identity,
-                TdsConnectionCapacityLimiter.Permit trackedPermit) {}
+            TdsConnectionCapacityLimiter.Permit trackedPermit) {}
 }

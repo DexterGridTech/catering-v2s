@@ -147,7 +147,6 @@ const ARCHIVED_EVIDENCE_ARTIFACTS = Object.freeze([
   'process-signal-trace.log',
   'remote-process-identities.tsv',
 ]);
-const TDS_CONTRACT_ONLY_OPERATION = 'tds-contract-only';
 const TDS_CONTRACT_ONLY_EVIDENCE_ARTIFACTS = Object.freeze(
   ARCHIVED_EVIDENCE_ARTIFACTS.filter(name => name !== 'backend-acceptance-result.jsonl'),
 );
@@ -320,6 +319,7 @@ export const backendAcceptanceEnvironment = (
   topologyPreflight = false,
   vs12Diagnostic = false,
   vs8Diagnostic = false,
+  d46Focused = false,
 ) => {
   if (extensionScaleProof && runId === null) throw new Error('EXTENSION_SCALE_PROOF_REQUIRES_BACKEND_ACCEPTANCE');
   const effectiveOperation = canonicalBackendAcceptanceOperation(operation, extensionScaleProof);
@@ -365,6 +365,7 @@ export const backendAcceptanceEnvironment = (
         `export V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT=${topologyPreflight ? 'true' : 'false'}`,
         ...(vs12Diagnostic ? ['export V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC=true'] : []),
         ...(vs8Diagnostic ? ['export V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC=true'] : []),
+        ...(d46Focused ? ['export V2S_BACKEND_ACCEPTANCE_D46_FOCUSED=true'] : []),
         `export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=${quote(verificationMode)}`,
         ...(terminalWireNodePath === null
           ? []
@@ -1132,7 +1133,7 @@ export const parseAndValidateRunManifest = manifest => {
   }
   if (
     tdsContractOnly &&
-    (backendAcceptance.operation !== TDS_CONTRACT_ONLY_OPERATION ||
+    (backendAcceptance.operation !== 'all' ||
       manifest.business !== 'NOT_APPLICABLE' ||
       manifest.workload !== null ||
       manifest.measurementEvidence?.status !== 'NOT_RUN')
@@ -1190,7 +1191,7 @@ export const parseAndValidateRunManifest = manifest => {
   if (manifest.productionMutation !== undefined && manifest.productionMutation !== null) {
     validateProductionMutationReceipt(manifest.productionMutation);
   }
-  if (backendAcceptance?.operation === 'all') {
+  if (backendAcceptance?.operation === 'all' && !tdsContractOnly) {
     if (
       !manifest.workload ||
       manifest.workload.schemaVersion !== 1 ||
@@ -2095,6 +2096,7 @@ export const runScript = ({
   vs12Diagnostic = false,
   vs8Diagnostic = false,
   tdsContractOnly = false,
+  d46Focused = false,
 }) => {
   const signalTracingRequested = traceChildSignals || traceSystemSignals;
   if (traceChildSignals && traceSystemSignals) throw new Error('R5_SIGNAL_TRACE_MODES_MUTUALLY_EXCLUSIVE');
@@ -2122,13 +2124,24 @@ export const runScript = ({
     throw new Error('BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_ARGUMENT_INVALID');
   }
   if (
-    tdsContractOnly &&
+    d46Focused &&
     (backendAcceptanceRunId === null ||
-      backendAcceptanceOperation !== TDS_CONTRACT_ONLY_OPERATION ||
       verificationMode !== 'ACCEPTANCE' ||
       !invocation.extraArguments.includes(
         'com.catering.v2s.app.acceptance.BackendAcceptanceTest.terminalConnectionCompressionContracts',
       ) ||
+      !invocation.extraArguments.includes(
+        'com.catering.v2s.app.edge.generated.wire.TerminalActivationSecretToStringTest',
+      ))
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_D46_FOCUSED_SCOPE_INVALID');
+  }
+  if (
+    tdsContractOnly &&
+    (backendAcceptanceRunId === null ||
+      !d46Focused ||
+      backendAcceptanceOperation !== 'all' ||
+      verificationMode !== 'ACCEPTANCE' ||
       productionMutation !== null ||
       invocation.extensionScaleProof === true)
   ) {
@@ -2169,6 +2182,7 @@ export const runScript = ({
     topologyPreflight,
     vs12Diagnostic,
     vs8Diagnostic,
+    d46Focused,
   );
   const mutationLines =
     productionMutation === null
@@ -2500,10 +2514,29 @@ const execute = async () => {
     throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_ONLY_VALUE_INVALID');
   }
   const tdsContractOnly = tdsContractOnlyValue === 'true';
+  const d46FocusedValue = process.env.V2S_BACKEND_ACCEPTANCE_D46_FOCUSED ?? 'false';
+  if (!['true', 'false'].includes(d46FocusedValue)) {
+    throw new Error('BACKEND_ACCEPTANCE_D46_FOCUSED_VALUE_INVALID');
+  }
+  const d46Focused = d46FocusedValue === 'true';
+  if (
+    d46Focused &&
+    (backendAcceptanceRunId === null ||
+      verificationMode !== 'ACCEPTANCE' ||
+      !invocation.extraArguments.includes(
+        'com.catering.v2s.app.acceptance.BackendAcceptanceTest.terminalConnectionCompressionContracts',
+      ) ||
+      !invocation.extraArguments.includes(
+        'com.catering.v2s.app.edge.generated.wire.TerminalActivationSecretToStringTest',
+      ))
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_D46_FOCUSED_SCOPE_INVALID');
+  }
   if (
     tdsContractOnly &&
     (backendAcceptanceRunId === null ||
-      backendAcceptanceOperation !== TDS_CONTRACT_ONLY_OPERATION ||
+      !d46Focused ||
+      backendAcceptanceOperation !== 'all' ||
       verificationMode !== 'ACCEPTANCE' ||
       !invocation.extraArguments.includes(
         'com.catering.v2s.app.acceptance.BackendAcceptanceTest.terminalConnectionCompressionContracts',
@@ -2605,12 +2638,11 @@ const execute = async () => {
       throw new Error('PRODUCTION_MUTATION_TOPOLOGY_PREFLIGHT_REQUIRED');
     }
   }
-  const exactSetRequired = requiresFullPerformanceVerification(backendAcceptanceRunId, backendAcceptanceOperation);
-  const activeBudgetRequired = requiresActiveBudgetVerification(
-    backendAcceptanceRunId,
-    backendAcceptanceOperation,
-    verificationMode,
-  );
+  const exactSetRequired =
+    !tdsContractOnly && requiresFullPerformanceVerification(backendAcceptanceRunId, backendAcceptanceOperation);
+  const activeBudgetRequired =
+    !tdsContractOnly &&
+    requiresActiveBudgetVerification(backendAcceptanceRunId, backendAcceptanceOperation, verificationMode);
   const performanceOperationRegistry = exactSetRequired ? loadPerformanceOperationRegistry({root}) : null;
   // An ACCEPTANCE all run consumes the checked-in generated budget projection.
   // Reject an identity-only or malformed projection before acquiring resources or
@@ -2808,6 +2840,7 @@ const execute = async () => {
         vs12Diagnostic,
         vs8Diagnostic,
         tdsContractOnly,
+        d46Focused,
       }),
     );
     if (interruptionSignal) throw new Error(`HARNESS_INTERRUPTED:${interruptionSignal}`);

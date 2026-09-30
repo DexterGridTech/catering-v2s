@@ -2,6 +2,7 @@ package com.catering.v2s.terminal.application.base.android
 
 import android.app.Activity
 import android.app.Application
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -76,6 +77,18 @@ internal class NativeLoadingGateIndex<Owner : Any, Gate : Any>(
   }
 }
 
+internal class NativeLoadingFadeAfterFrame {
+  private var scheduled = false
+
+  @Synchronized
+  fun schedule(registerFrameCommit: (Runnable) -> Unit, fade: Runnable): Boolean {
+    if (scheduled) return false
+    scheduled = true
+    registerFrameCommit(fade)
+    return true
+  }
+}
+
 /**
  * Holds the native pre-draw gate for each concrete Activity instance. The
  * Expo splash manager keeps a process-wide flag, so its flag alone cannot
@@ -107,6 +120,7 @@ object TerminalNativeLoadingRegistry {
     var blockedLogged: Boolean = false,
     var coveredLogged: Boolean = false,
     var releasedLogged: Boolean = false,
+    val fadeAfterFrame: NativeLoadingFadeAfterFrame = NativeLoadingFadeAfterFrame(),
     var loadingOverlay: View? = null,
   )
 
@@ -191,7 +205,6 @@ object TerminalNativeLoadingRegistry {
       ?: throw IllegalStateException("native loading Activity instance is unavailable")
     synchronized(lock) { gate.released = true }
     Log.i(LOG_TAG, "event=native.release-hide activity=$activityInstanceId")
-    fadeOutLoadingOverlayOnMain(gate)
     mapOf(
       "activityInstanceId" to activityInstanceId,
       "hidden" to true,
@@ -237,6 +250,27 @@ object TerminalNativeLoadingRegistry {
       if (!released && covered) return@OnPreDrawListener true
       if (!released) return@OnPreDrawListener false
       if (logReleased) Log.i(LOG_TAG, "event=native.pre-draw-released activity=${gate.token}")
+      if (logReleased) {
+        Log.i(LOG_TAG, "event=native.loading-overlay-fade-deferred reason=first-released-frame-commit activity=${gate.token}")
+        gate.fadeAfterFrame.schedule(
+          registerFrameCommit = { fade ->
+            val observer = gate.contentView.viewTreeObserver
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && observer.isAlive) {
+              observer.registerFrameCommitCallback {
+                mainHandler.post {
+                  Log.i(LOG_TAG, "event=native.loading-overlay-frame-committed activity=${gate.token}")
+                  fade.run()
+                }
+              }
+            } else {
+              // Older Android versions do not expose frame-commit callbacks.
+              // Keep the native cover for one additional display-frame turn.
+              gate.contentView.postOnAnimation(fade)
+            }
+          },
+          fade = Runnable { fadeOutLoadingOverlayOnMain(gate) },
+        )
+      }
       if (gate.contentView.viewTreeObserver.isAlive) {
         gate.contentView.viewTreeObserver.removeOnPreDrawListener(gate.listener)
       }

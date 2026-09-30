@@ -19,8 +19,7 @@ class TdsNativeDecompressionLimitTest {
     @Test
     void nativeNettyInflaterStopsAtItsConfiguredOutputAllocationLimit() {
         byte[] compressed = compress(new byte[MAX_DECOMPRESSED_BYTES + 1]);
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new JdkZlibDecoder(ZlibWrapper.NONE, MAX_DECOMPRESSED_BYTES));
+        EmbeddedChannel channel = new EmbeddedChannel(new JdkZlibDecoder(ZlibWrapper.NONE, MAX_DECOMPRESSED_BYTES));
         try {
             assertThatThrownBy(() -> channel.writeInbound(Unpooled.wrappedBuffer(compressed)))
                     .isInstanceOf(DecompressionException.class)

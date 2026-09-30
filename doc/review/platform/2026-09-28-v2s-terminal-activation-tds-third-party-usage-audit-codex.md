@@ -6,10 +6,25 @@ SCOPE=apps/backend/terminal-data-server 全部生产代码、测试代码、其�
 AUTHORITY=本任务中 Codex 主 agent 只读核验官方资料并独立完成修正；未委托子 agent
 EVIDENCE=官方版本文档、发布源码、当前 TDS 源码和 Gradle 已解析依赖图；本记录不声称测试通过
 THIRD_PARTY_SOURCE_AUDIT=CLOSED
+PRE_D46_IMPLEMENTATION_DETAILS=HISTORICAL
+CURRENT_COMPRESSION_AUDIT=D46_SECTION_BELOW
 DYNAMIC_TDS_PROOF=NOT_RUN_BY_THIS_AUDIT
 ```
 
-## 结论
+## D-46 当前实现与官方行为核验（2026-09-30）
+
+本节覆盖 D-46 替换自有 PMD 实现后的当前字节。下方从“D-46 之前的审计”起均为 2026-09-28 快照；其中出现的 `TdsBoundedPmdDecoder`、`TdsPmdOfferGate`、`TdsPmdCompressionHandler`、`TdsReservedBitsGate`、手写 `Inflater`、128 字节压缩阈值及其 pipeline 描述均属历史实现，不表示当前源码仍包含这些类或行为。
+
+- **实际解析版本**：D-46 受管运行的 `backend-runtime-classpaths.txt` 记录 TDS runtimeClasspath 为 Reactor Netty `1.3.7`、Netty `4.2.18.Final`（全部 Netty 模块均为该版本）。证据文件：`.runtime/r5/evidence/remote-testcontainers/r5-tc-1790749796132-99308/backend-runtime-classpaths.txt`。版本以运行时解析图为准，不以 build 文件请求版本代替。
+- **启用和解压上界**：[`TdsWebSocketConfiguration`](../../../apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketConfiguration.java) 使用 `WebsocketServerSpec.builder().compress(true)` 并设置 `maxDecompressionBufferSize(65_536)`。Reactor Netty 1.3.7 发布源码说明压缩默认关闭；启用后，只有客户端请求带 WebSocket extensions 才启用协商；解压 buffer 默认值为无上限（0），该配置限制解压消息/帧 buffer 的字节数。[`WebsocketSpec.java` 1.3.7](https://github.com/reactor/reactor-netty/blob/v1.3.7/reactor-netty-http/src/main/java/reactor/netty/http/websocket/WebsocketSpec.java#L96-L154)、[`WebsocketServerSpec.java` 1.3.7](https://github.com/reactor/reactor-netty/blob/v1.3.7/reactor-netty-http/src/main/java/reactor/netty/http/server/WebsocketServerSpec.java#L25-L94)。
+- **逐帧与完整消息限制**：Reactor Netty 1.3.7 明确 `maxFramePayloadLength` 在压缩开启时限制压缩后的帧数据。当前 TDS 让 Reactor Netty/Netty 协商的 PMD decoder 限制 inflate 输出 buffer，再由 [`TdsWebSocketPipelineInstaller`](../../../apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketPipelineInstaller.java) 将 `WebSocketFrameAggregator(65_536)` 放在 `ReactiveBridge` 前，限制分片聚合后的整条解压消息。这是两个独立关口：单次解压分配上界与完整消息累计上界。Netty 4.2.18.Final 的 [`PerMessageDeflateDecoder`](https://github.com/netty/netty/blob/netty-4.2.18.Final/codec-http/src/main/java/io/netty/handler/codec/http/websocketx/extensions/compression/PerMessageDeflateDecoder.java#L25-L50) 将 allocation cap 交给压缩 decoder；[`DeflateDecoder`](https://github.com/netty/netty/blob/netty-4.2.18.Final/codec-http/src/main/java/io/netty/handler/codec/http/websocketx/extensions/compression/DeflateDecoder.java#L102-L129) 将其传给 `ZlibCodecFactory` 并为每个解压帧读取输出；[`ZlibDecoder.prepareDecompressBuffer`](https://github.com/netty/netty/blob/netty-4.2.18.Final/codec-compression/src/main/java/io/netty/handler/codec/compression/ZlibDecoder.java#L54-L74) 不允许 buffer 超过最大 allocation，满时在解压路径抛错。Netty 的 [`JdkZlibDecoder`](https://github.com/netty/netty/blob/netty-4.2.18.Final/codec-compression/src/main/java/io/netty/handler/codec/compression/JdkZlibDecoder.java#L236-L289) 在 inflate 过程中逐步准备受限输出 buffer，而不是先完整解压后再检查。
+- **超限关闭及应用边界**：[`TdsMessageSizeCloseHandler`](../../../apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsMessageSizeCloseHandler.java) 将 native 解压上界错误和聚合器 `TooLongFrameException` 映射为共享协议 1009。聚合器在 WebFlux `ReactiveBridge` 之前，因此超限消息不会进入 JSON 解析、认证、会话登记或写库路径；关闭原因文字不作承诺。
+- **focused 与受管 wire proof**：`TdsNativeDecompressionLimitTest` 驱动 Netty 4.2.18.Final 的 JDK inflater，输入展开到 65,537 字节的压缩数据，断言在 65,536 字节 cap 处抛错且输出不超过 cap。受管 run `r5-tc-1790749796132-99308` 的 V-S14 九个场景全部通过：裸 PMD、`client_max_window_bits`、无 offer、协商/回退、精确边界、raw 超限、单帧与分片压缩超限。此证明覆盖真实 TDS 线路，不声称测量进程内存。
+- **容量口径与上下文**：每连接压缩状态和有界解压/聚合缓冲按批次一详设的容量预算计入。当前代码没有覆盖 `compressionAllowServerNoContext` 或 `compressionPreferredClientNoContext`；Reactor Netty 1.3.7 builder 对两项均默认为 `false`，对应实现不强制无上下文接管，D-42 也不要求验收检查协商参数。bounded output 和线路消息上界由 focused/managed proofs 分别验证；进程 RSS 是独立容量证据。
+
+## D-46 之前的审计（2026-09-28 历史快照）
+
+以下内容记录自有 PMD 代码退役前逐项检查 TDS 生产/测试源码、wire client 和 build 配置的结果。未在 D-46 当前节复核的文件分母与动态记录只代表 2026-09-28 的历史字节，不可冒充当前实现或当前运行证据：
 
 逐项检查 TDS 生产/测试源码、wire client 和 build 配置中会影响协议、资源、安全、线程、生命周期、可执行包或验证结果的第三方行为。以下是核实后已经完成的修复与选择。此版本/来源复核完成后才继续下一次验证；历史运行仍按原字节和证据档位记录：
 
@@ -73,7 +88,7 @@ ArchUnit 调整后另作三项只读依赖解析：`dependencyInsight --configur
 
 ## 生产 API 用法核对
 
-| 库与本仓用法 | 官方语义 / 最佳实践 | 当前实现与处置 |
+| 库与本仓用法 | 官方语义 / 最佳实践 | 2026-09-28 快照中的实现与处置 |
 | --- | --- | --- |
 | Gradle 构建插件：TDS 应用 Spring Boot Gradle plugin 与 dependency-management plugin；根构建把 Spotless/Palantir formatter 配置应用于全部 Java 子项目 | Boot Gradle plugin 与 Java plugin 配合生成可执行 `BootJar`；dependency-management 插件的 `imports.mavenBom` 管理未写版本的依赖；Spotless 把配置的 formatter steps 用于检查/格式化其 target 集合 | 根 buildscript 固定 Boot plugin 4.1.0、dependency-management 1.1.7；TDS 明确导入 Reactor 2025.0.7 与 Netty 4.2.18 BOM 并固定 `bootJar` main class/文件名。根 Spotless 7.0.2 对 Java 子项目使用 Palantir Java Format 2.39.0；未依赖这些插件的未记录默认行为来实现运行时逻辑。格式门实际结果在 execution-status 记录。 |
 | Gradle PMD 插件与 PMD Java 规则：根构建把 Gradle `pmd` plugin 配置应用于 Java 子项目；TDS 选择 `PreserveStackTrace` | Gradle 9.7.0 的 PMD plugin 为生产/测试 source set 建立 `pmdMain`、`pmdTest`，并把 PMD tasks 接入 Java `check`；PMD 7.17.0 规则保留 catch 到的原异常因果链，不只保留 message | 根构建固定 PMD 7.17.0、只加载 `tools/verify-gates/preserve-stack-trace.xml` 并 fail-on-violation；该 ruleset 只引用 PMD 内置 `category/java/bestpractices.xml/PreserveStackTrace`。TDS 的普通 `check` 触发其 `pmdMain` 与 `pmdTest`；特定 `backendPmdPreserveStackTrace` 任务只显式列业务后端，所以不把那一任务误记成 TDS PMD 证据。 |
@@ -97,7 +112,7 @@ ArchUnit 调整后另作三项只读依赖解析：`dependencyInsight --configur
 | Spring Boot 日志实现与桥接：starter logging 选择 Logback；Spring Framework 经 Commons Logging API；Log4j API 与 JUL 分别可桥接到 SLF4J | Boot 4.1.0 的版本源码按 classpath 选择 Logback，并以默认 ConsoleAppender、INFO root level 配置；`LogbackLoggingSystem` 只在 JUL root 没有 handler 或仅有一个 `ConsoleHandler` 时安装 `SLF4JBridgeHandler`。Commons Logging 1.3.6 的默认发现器在看到 `log4j-to-slf4j` 提供的 `SLF4JProvider` 标记时选择其 `Slf4jLogFactory`；Log4j-to-SLF4J 将 Log4j API 调用转入 SLF4J。SLF4J 官方说明 JUL bridge 对 disabled 日志也可能产生转换成本；Boot 默认 Logback 初始化会在 bridge 已安装时加 `LevelChangePropagator` 并设 `resetJUL=true`，将 Logback level 同步到 JUL，降低该成本。 | runtimeClasspath 解析出 Logback classic/core 1.5.34、Log4j-to-SLF4J 2.25.4、JUL-to-SLF4J 2.0.18 与 Commons Logging 1.3.6；dependencyInsight 显示 Commons Logging 由 Spring Core 7.0.8 请求、Log4j/JUL 桥由 Boot starter logging 带入，`log4j-slf4j2-impl` 反向桥不存在。仓内 TDS、terminal-binding 和其资源中没有 Commons Logging factory 覆盖配置；TDS 源码无 Logback/Log4j/JUL/Commons Logging API 调用，也无自定义 Logback 配置；TDS 业务日志走 SLF4J 参数化 API 与有界异步队列。JUL bridge 的安装是 Boot 启动时的条件行为，不以 classpath 中存在 JAR 推断为每次都安装。 |
 | Spring Boot YAML 加载：starter 带入 SnakeYAML 2.6，读取仓内 `application.yml` | Boot 4.1.0 的 `OriginTrackedYamlLoader` 使用 SnakeYAML `SafeConstructor`，关闭重复 key；该版本还把 collection alias 数设为 `Integer.MAX_VALUE`。SnakeYAML 2.6 `SafeConstructor` 只构造标准 Java 类型。Boot 的 YAML 加载属于部署配置路径，不能拿来解析终端或数据库不可信 JSON | TDS 的 YAML 文件只承载部署配置；协议帧与 PostgreSQL payload 均明确走受限 Jackson 3 JSON mapper。没有直接 SnakeYAML API 调用。此处依赖 Boot 默认 loader；只有当 YAML 输入进入不可信用户边界时才需要另行限定 alias 资源。 |
 
-### 已解析但不是 TDS 直接 API 用法的传递依赖
+### 历史快照：已解析但不是 TDS 直接 API 用法的传递依赖
 
 当前 runtimeClasspath 还带入 `io.micrometer:micrometer-observation`/`micrometer-commons:1.17.0`。TDS 源码没有 Micrometer import、ObservationRegistry bean、Actuator 或自定义 metrics recorder；本报告不把依赖存在误报成 TDS 指标行为。`jakarta.annotation-api:3.0.0`、JSpecify 与 Reactor Netty 带入的 HTTP/2、HTTP/3/QUIC、DNS/native transport 模块同样没有 TDS 源码直接调用或显式开启的行为；Netty 版本由同一 4.2.18.Final BOM 锁定，TDS 只配置 HTTP/1.1 WebSocket 所需的 pipeline。它们是上游模块的运行闭包，具体是否随 BootJar 发布由构建产物/受管运行闭环验证，本审计不声称这些可选功能被启用。
 
@@ -105,7 +120,7 @@ ArchUnit 调整后另作三项只读依赖解析：`dependencyInsight --configur
 
 ## 测试及 wire-client API 核对
 
-| 库/API | 官方语义 / 本仓用法 | 当前状态 |
+| 库/API | 官方语义 / 本仓用法 | 2026-09-28 快照中的状态 |
 | --- | --- | --- |
 | JUnit Jupiter 6.0.3 | 自动发现扩展默认关闭，需显式设置 `junit.jupiter.extensions.autodetection.enabled=true` 并通过服务提供者文件注册 | Gradle 测试任务设置该 property；`META-INF/services` 指向 TDS BlockHound extension。 |
 | BlockHound 1.0.17 | instrumentation 必须在相关代码执行前安装；其目标是检测 Reactor 非阻塞线程上的阻塞调用，不应靠全局宽泛 allowlist 消除错误 | TDS JUnit extension 在测试前仅安装一次；未配置阻塞豁免；测试故意在 `Schedulers.parallel()` 调用阻塞 API 并断言被检测。 |
@@ -115,7 +130,7 @@ ArchUnit 调整后另作三项只读依赖解析：`dependencyInsight --configur
 | Node 22.23.2 core modules 与 globals：`crypto.createHash/randomBytes`、`net.createConnection`、`zlib.deflateRawSync/inflateRawSync`、`readline.createInterface`、`perf_hooks.performance.now`、`path.resolve`、`url.fileURLToPath`；另用 `Buffer`、WHATWG `URL`、`setTimeout/clearTimeout` 与 `process` globals | `randomBytes` 为 mask/key 的 CSPRNG；`performance.now` 提供单调 deadline 时基；zlib raw DEFLATE 的 `flush/finishFlush` 与 PMD 尾部按 RFC 7692 处理，`maxOutputLength` 限制同步 inflate 的返回输出；同步压缩/解压会阻塞 Node event loop，适用于受控、短生命周期且输入/输出有上界的验收驱动，不适用于 TDS 生产数据面；超时计时器只有在同步工作结束后才可运行，因此真实超时还须在工作前后用单调时钟检查；连接失败应销毁 socket；URL 转本地文件路径使用 `fileURLToPath`。Node v22.23.2 的 [`process` signal events/exit](https://nodejs.org/download/release/v22.23.2/docs/api/process.html) 规定自定义 `SIGTERM` listener 接管默认处理；[`Writable.write` callback](https://nodejs.org/download/release/v22.23.2/docs/api/stream.html) 可用于等待该诊断写入完成，因此客户端只在 stderr 写回调后以 POSIX 常规 `128+15=143` 退出 | 唯一 wire-client 入口为 `scripts/test/terminal-ws-wire-client.mjs:3-9,11-39,52-70,155-269,271-625,626-661,694-846,918-997`。该 client 是远端一次场景进程，inflate 的 `maxOutputLength` 为消息上限 + 1，压缩源由固定测试消息产生；连接、读取、解压均受单场景消息/帧上限，deadline 在阻塞调用前后通过 `performance.now()` 核验。收到 `SIGTERM` 时只写受限场景/阶段、marker、PID/PPID 和退出码，并等待 stderr callback 后退出；业务父进程只接受同一闭格式并在结果、cleanup 摘要中记录信号与 marker，不复制原始输出。远端 Node 版本预检与模块清单位于 `scripts/test/r5-remote-testcontainers.mjs:1289-1328`；配套结构测试比较源码 import 和预检清单。 |
 | Reactive Streams 1.0.4 / Reactor `BaseSubscriber`：取消路径 focused test 使用零需求订阅者 | Reactive Streams 的 `Subscription.cancel()` 取消上游；Reactor `BaseSubscriber` 的默认 `hookOnSubscribe` 会请求无界，因此测试必须覆写该 hook 且不调用 `request`，才能真实保留队列项后触发取消/丢弃 | 新增测试直接使用测试类路径已有的 `reactive-streams:1.0.4` 类型，在 `hookOnSubscribe` 不请求元素；加入元素后取消并断言底层 Netty 引用计数释放。用例已纳入 `tds-constructor-assembly`，按真实 sink/订阅行为证明，不等待或模拟队列内部实现。 |
 
-## 详设/计划需保持的判据
+## D-46 之前的详设/计划判据（历史；当前以 D-46 详设与计划为准）
 
 - PMD 协商仅支持 RFC 7692；协议握手门读原始 Netty headers。流水线顺序以详设为准：`HttpCodec → TdsPmdOfferGate → TdsPmdCompressionHandler → negotiated decoder/encoder → WebSocketFrameAggregator(65_536) → TdsReservedBitsGate → ReactiveBridge`。
 - `maxAllocation` 不得再被称为消息总上限；累计 decoded output 必须在 inflate 过程中受 65,536 bytes 限制，超限 1009，畸形压缩/非法 RSV 1002，且在解析/认证/登记/写库前关闭。
@@ -187,7 +202,7 @@ rg -n 'spring-boot-gradle-plugin|dependency-management-plugin|com\.diffplug\.spo
 
 该盘点只证明“使用了哪个版本及其官方语义”；每个本仓装配位置、资源所有权、close 映射和真实端到端行为仍由详设中的 focused proof / managed acceptance 证明。对尚未运行的 proof 保持未验证，不以此审计替代动态结果。
 
-## 官方资料
+## D-46 之前使用的官方资料（历史清单）
 
 官方站点可能通过 `current`、`release` 或仅含次版本号的 URL 展示较新的补丁版。本轮遇到 Spring Boot 4.1 与 Netty 4.2 页面标题/响应版本不完全等于项目补丁版，因此不把这些别名链接作为版本证据；下列 Boot/Netty/SLF4J/ArchUnit/构建插件语义以官方发布的精确版本 source JAR 为准，按坐标和源码类复核。Maven Central URLs 均指发布方上传的不可变版本归档。
 

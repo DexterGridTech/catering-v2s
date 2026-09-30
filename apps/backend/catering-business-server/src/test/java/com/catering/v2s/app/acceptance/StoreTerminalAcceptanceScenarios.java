@@ -2917,7 +2917,9 @@ final class StoreTerminalAcceptanceScenarios {
 
     private long terminalBindingAuditTotal(
             BackendAcceptanceTest.ScenarioContext context, StoreContext store, UUID terminalRef) throws Exception {
-        return terminalBindingAuditHistory(context, store, terminalRef).path("total").asLong();
+        return terminalBindingAuditHistory(context, store, terminalRef)
+                .path("total")
+                .asLong();
     }
 
     private JsonNode terminalBindingAuditHistory(

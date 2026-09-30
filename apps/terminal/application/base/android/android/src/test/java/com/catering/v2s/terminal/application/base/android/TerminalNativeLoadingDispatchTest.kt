@@ -13,6 +13,32 @@ import java.util.concurrent.TimeUnit
 
 class TerminalNativeLoadingDispatchTest {
   @Test
+  fun `loading fade waits for the committed frame and is scheduled only once`() {
+    val fadeAfterFrame = NativeLoadingFadeAfterFrame()
+    var committedFrame: Runnable? = null
+    var fadeStarted = false
+
+    assertTrue(
+      fadeAfterFrame.schedule(
+        registerFrameCommit = { committedFrame = it },
+        fade = Runnable { fadeStarted = true },
+      ),
+    )
+    assertFalse(fadeStarted)
+    assertFalse(
+      fadeAfterFrame.schedule(
+        registerFrameCommit = { committedFrame = it },
+        fade = Runnable { fadeStarted = true },
+      ),
+    )
+    assertFalse(fadeStarted)
+
+    committedFrame?.run()
+
+    assertTrue(fadeStarted)
+  }
+
+  @Test
   fun `queued main work times out with a typed sanitized diagnostic`() {
     val executor = Executors.newSingleThreadScheduledExecutor()
     try {

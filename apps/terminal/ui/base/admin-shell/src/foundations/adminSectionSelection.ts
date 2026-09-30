@@ -58,13 +58,20 @@ const specFor = (template: (typeof canonicalPageTemplates)[number], entry: UiCat
 export const selectAdminPageProjections = (entries: readonly UiCatalogEntry[]): readonly AdminPageProjection[] => {
   const byPartKey = new Map(entries.map(entry => [entry.partKey, entry] as const));
   const pages: AdminPageProjection[] = [];
+  const projectedPartKeys = new Set<string>();
 
   for (const template of canonicalPageTemplates) {
+    for (const partKey of template.sourcePartKeys) projectedPartKeys.add(partKey);
     const entry = template.sourcePartKeys
       .map(rawKey => byPartKey.get(rawKey))
       .find((candidate): candidate is UiCatalogEntry => candidate !== undefined);
     if (entry === undefined) continue;
     pages.push(Object.freeze({pageKey: template.key, entry, spec: specFor(template, entry)}));
+  }
+
+  for (const entry of entries) {
+    if (projectedPartKeys.has(entry.partKey)) continue;
+    pages.push(Object.freeze({pageKey: undefined, entry, spec: undefined}));
   }
 
   return Object.freeze(pages);

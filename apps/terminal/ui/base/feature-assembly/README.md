@@ -13,11 +13,14 @@
 
 ## 结构
 
+- `src/types/featureAssembly.ts`：描述 feature module 与 assembly 的公开类型。
+- `src/foundations/createFeatureAssemblyModule.ts`：校验 owner module，并派生冻结的 runtime module 描述。
+- `src/foundations/createFeatureAssembly.ts`：组合 feature 的 parts、可选 variables 与 module 工厂。
 - `src/moduleName.ts`：公开模块身份。
 - `src/dependencies.ts`：workspace runtime 依赖声明。
-- `src/index.ts`：导出 `createFeatureAssemblyModule`、`createFeatureAssembly` 及公共类型。
+- `src/index.ts`：唯一公共出口，只重导出工厂、类型与包身份。
 - `terminal-invariants.json`：公开面与包边界不变量。
-- `test/featureAssembly.test.ts`：模块 owner 校验与依赖快照测试。
+- `test/featureAssembly.test.ts`：从公共入口验证 assembly 保留 feature identity 并生成 owner module。
 
 ## 用法
 

@@ -12,8 +12,8 @@ import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionProtocol;
 import com.catering.v2s.terminaldataserver.session.SessionRegistrationGate;
 import com.catering.v2s.terminaldataserver.session.TdsBindingRevocationListener;
-import com.catering.v2s.terminaldataserver.session.TdsTerminalSessionActors;
 import com.catering.v2s.terminaldataserver.session.TdsConnectionCapacityLimiter;
+import com.catering.v2s.terminaldataserver.session.TdsTerminalSessionActors;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateWriter;
 import java.net.URI;

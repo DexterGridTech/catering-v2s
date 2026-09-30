@@ -17,8 +17,8 @@ class TdsMessageSizeCloseHandlerTest {
 
     @Test
     void mapsNativeDecompressionAndAggregateLimitFailuresToTheSharedCloseCode() {
-        assertOverflowClosesWithProtocolCode(new DecompressionException(
-                "Decompression buffer has reached maximum size: 65536"));
+        assertOverflowClosesWithProtocolCode(
+                new DecompressionException("Decompression buffer has reached maximum size: 65536"));
         assertOverflowClosesWithProtocolCode(new TooLongFrameException("message length exceeds 65536"));
     }
 

@@ -2320,6 +2320,26 @@
         },
         {
           "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "project-memory/operations/test-closed-loop.md",
+          "anchor": "- Focused Gradle/JUnit selection is not proven by `BUILD SUCCESSFUL` or a successful parent `@TestFactory`: a scoped factory can return zero dynamic children while its container completes normally. For each focused managed run, verify the selected child case identities/count and required result artifacts for that scope; an empty selection or missing required artifact is a harness failure, not a pass. Keep business scenarios and TDS contract cases separate, and do not require a business result for a TDS-only scope."
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/backend-acceptance-structure.test.mjs",
+          "anchor": "test('D-46 focused selector runs nine V-S14 cases and the wire secret unit test', () => {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "scripts/test/r5-remote-testcontainers.test.mjs",
+          "anchor": "test('TDS CONTRACT evidence stays separate from backend business scenario results', () => {"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
+          "path": "tools/verify-gates/verify.mjs",
+          "anchor": "    'tds-compression-focused',"
+        },
+        {
+          "assertionKey": "FAILURE_TAXONOMY_IS_TYPED",
           "path": "scripts/test/backend-acceptance-structure.test.mjs",
           "anchor": "test('registration-gate waits race client exit and retain credential-safe stage diagnostics', () => {"
         },

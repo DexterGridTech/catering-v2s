@@ -67,7 +67,7 @@ describe('useAdminSections', () => {
     ]);
   });
 
-  it('keeps the raw selection local and rejects unknown keys without choosing a form fallback', async () => {
+  it('starts with no page selected and rejects unknown keys without choosing a fallback', async () => {
     const catalog = createUiCatalog([
       entry('admin.console.runtime', '运行状态'),
       entry('admin.console.topology', '双机拓扑'),
@@ -85,7 +85,7 @@ describe('useAdminSections', () => {
       'admin.console.runtime',
       'admin.console.topology',
     ]);
-    expect(state?.selectedPartKey).toBe('admin.console.runtime');
+    expect(state?.selectedPartKey).toBeNull();
     expect(state?.selectedSection).toBeUndefined();
 
     await act(() => {
@@ -101,7 +101,7 @@ describe('useAdminSections', () => {
     await renderer.unmount();
   });
 
-  it('freezes the user navigation denominator at the three approved pages', () => {
+  it('keeps built-in pages ordered and appends integration-registered admin sections', () => {
     const catalog = createUiCatalog([
       entry('admin.console.platform-ports', '平台端口'),
       entry('admin.console.runtime', '运行状态'),
@@ -114,11 +114,17 @@ describe('useAdminSections', () => {
       'platform-ports',
       'runtime',
       'topology',
+      undefined,
     ]);
     expect(selectAdminPageProjections(catalog.entries).map(page => page.entry.partKey)).toEqual([
       'admin.console.platform-ports',
       'admin.console.runtime',
       'admin.console.topology',
+      'sample.console.admin-test',
     ]);
+    expect(selectAdminPageProjections(catalog.entries)[3]).toMatchObject({
+      entry: expect.objectContaining({title: '示例诊断'}),
+      spec: undefined,
+    });
   });
 });
