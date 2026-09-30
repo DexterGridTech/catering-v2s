@@ -653,14 +653,14 @@ test('stage-one runner cannot exit as accepted while business, acceptance, or cl
 test('topology PID readback distinguishes no process from ADB failure and malformed output', () => {
   assert.deepEqual(parsePidofResult({status: 0, stdout: '101 202\n', stderr: ''}), ['101', '202']);
   assert.deepEqual(
-    parsePidofResult(
-      {status: 1, stdout: '', stderr: ''},
-      {status: 0, stdout: 'device\n', stderr: ''},
-    ),
+    parsePidofResult({status: 1, stdout: '', stderr: ''}, {status: 0, stdout: 'device\n', stderr: ''}),
     [],
   );
   assert.throws(() => parsePidofResult({status: 0, stdout: '', stderr: ''}), /PIDOF_SUCCESS_OUTPUT_INVALID/);
-  assert.throws(() => parsePidofResult({status: 0, stdout: '101 unexpected', stderr: ''}), /PIDOF_SUCCESS_OUTPUT_INVALID/);
+  assert.throws(
+    () => parsePidofResult({status: 0, stdout: '101 unexpected', stderr: ''}),
+    /PIDOF_SUCCESS_OUTPUT_INVALID/,
+  );
   assert.throws(
     () => parsePidofResult({status: 0, stdout: '101', stderr: 'pidof: transient read warning'}),
     /PIDOF_SUCCESS_OUTPUT_INVALID/,
@@ -668,10 +668,7 @@ test('topology PID readback distinguishes no process from ADB failure and malfor
   assert.throws(() => parsePidofResult({status: 1, stdout: '', stderr: ''}), /DEVICE_STATE_READBACK_FAILED/);
   assert.throws(
     () =>
-      parsePidofResult(
-        {status: 1, stdout: '', stderr: ''},
-        {status: 1, stdout: '', stderr: 'error: device offline'},
-      ),
+      parsePidofResult({status: 1, stdout: '', stderr: ''}, {status: 1, stdout: '', stderr: 'error: device offline'}),
     /DEVICE_STATE_READBACK_FAILED|PIDOF_READBACK_FAILED/,
   );
   assert.throws(
@@ -679,7 +676,13 @@ test('topology PID readback distinguishes no process from ADB failure and malfor
     /PIDOF_READBACK_FAILED/,
   );
   assert.throws(
-    () => parsePidofResult({status: null, stdout: '', stderr: '', error: Object.assign(new Error('spawn failed'), {code: 'ENOENT'})}),
+    () =>
+      parsePidofResult({
+        status: null,
+        stdout: '',
+        stderr: '',
+        error: Object.assign(new Error('spawn failed'), {code: 'ENOENT'}),
+      }),
     /PIDOF_EXECUTION_FAILED:ENOENT/,
   );
   assert.equal(

@@ -92,6 +92,8 @@ const layerGuardOf = (
   return rendererCatalog.guardOf(entry.rendererKey) ?? 'decisive';
 };
 
+const ResolvedLayer = (input: Parameters<typeof resolvePart>[0]) => resolvePart(input);
+
 export const LayerStack = () => {
   const {displayMode} = useSurfaceContext();
   const presentationOffsetY = useSurfacePresentationOffset();
@@ -208,17 +210,17 @@ export const LayerStack = () => {
         >
           <Animated.View style={[styles.layerContent, {transform: [{translateY: presentationOffsetY}]}]}>
             <SystemFailureBoundary ownerId={`layer:${layer.layerId}`}>
-              {resolvePart({
-                placement: layer,
-                displayMode,
-                containerKey: null,
-                catalogContext: catalogContext!,
-                uiCatalog,
-                rendererCatalog,
-                reportPartDiagnostic,
-                clearPartDiagnostic,
-                elementKey: layer.layerId,
-              })}
+              <ResolvedLayer
+                placement={layer}
+                displayMode={displayMode}
+                containerKey={null}
+                catalogContext={catalogContext!}
+                uiCatalog={uiCatalog}
+                rendererCatalog={rendererCatalog}
+                reportPartDiagnostic={reportPartDiagnostic}
+                clearPartDiagnostic={clearPartDiagnostic}
+                elementKey={layer.layerId}
+              />
             </SystemFailureBoundary>
           </Animated.View>
         </View>

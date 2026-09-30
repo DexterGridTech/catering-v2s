@@ -713,7 +713,11 @@ async function run(args) {
         owned.cleanup = 'FAIL';
         manifest.cleanup = 'FAIL';
         if (manifest.firstFailure === null) {
-          recordFailure(manifest, 'TER_A11_APP_CLEANUP_READBACK_FAILED', `cleanup-${owned.deviceRole}-${owned.appName}`);
+          recordFailure(
+            manifest,
+            'TER_A11_APP_CLEANUP_READBACK_FAILED',
+            `cleanup-${owned.deviceRole}-${owned.appName}`,
+          );
         } else {
           appendEvent(manifest, 'CLEANUP_FAILURE', {
             code: 'TER_A11_APP_CLEANUP_READBACK_FAILED',
@@ -793,7 +797,13 @@ export function parseRemoteProcStatStartTicks(value, expectedPid) {
   if (!/^[1-9]\d*$/.test(expected)) throw new Error('TER_A11_REMOTE_PROCESS_IDENTITY_INVALID');
   const actualPid = stat.match(/^([1-9]\d*)\s+\(/)?.[1];
   const endOfComm = stat.lastIndexOf(')');
-  const fields = endOfComm < 0 ? [] : stat.slice(endOfComm + 1).trim().split(/\s+/);
+  const fields =
+    endOfComm < 0
+      ? []
+      : stat
+          .slice(endOfComm + 1)
+          .trim()
+          .split(/\s+/);
   const startTicks = fields[19];
   if (actualPid !== expected || !/^\d+$/.test(startTicks ?? ''))
     throw new Error('TER_A11_REMOTE_PROCESS_IDENTITY_INVALID');

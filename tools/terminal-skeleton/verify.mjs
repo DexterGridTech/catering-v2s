@@ -258,6 +258,24 @@ export function assertTurboDryRun(report, taskName, expected = expectedTaskOwner
       `Turbo dry-run ${taskName} executable owner mismatch; missing=${JSON.stringify(missing)} extra=${JSON.stringify(extra)}`,
     );
   }
+  if (taskName === 'test') {
+    const missingSharedRunnerInput = report.tasks
+      .filter(task => task.command !== nonExecutableTaskCommand)
+      .filter(
+        task =>
+          !Object.keys(task.inputs ?? {}).some(
+            inputPath =>
+              inputPath === 'tools/terminal-shared/run-owned-tests.mjs' ||
+              inputPath.endsWith('/tools/terminal-shared/run-owned-tests.mjs'),
+          ),
+      )
+      .map(task => task.package);
+    if (missingSharedRunnerInput.length) {
+      throw new Error(
+        `Turbo dry-run test shared runner input missing; packages=${JSON.stringify(sorted(missingSharedRunnerInput))}`,
+      );
+    }
+  }
   return {
     packageCount: report.packages.length,
     taskCount: report.tasks.length,

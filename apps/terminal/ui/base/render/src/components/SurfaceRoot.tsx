@@ -21,7 +21,9 @@ const SurfaceRootContent = ({children}: Readonly<{readonly children?: ReactNode}
           <ScreenContainer />
         </Animated.View>
       </SystemFailureBoundary>
-      <LayerStack />
+      <SystemFailureBoundary ownerId="surface-layers">
+        <LayerStack />
+      </SystemFailureBoundary>
     </View>
   );
 };

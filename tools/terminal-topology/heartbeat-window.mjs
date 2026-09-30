@@ -27,12 +27,10 @@ export const topologyPeerEventsBetweenMarkers = (logcat, {startMarker, endMarker
 
   const pid = String(processId);
   const processLine = new RegExp(`^\\s*\\d+(?:\\.\\d+)?\\s+${pid}\\s+\\d+\\s+[VDIWEF]\\s+ReactNativeJS:\\s?(.*)$`);
-  const messages = lines
-    .slice(startIndexes[0] + 1, endIndexes[0])
-    .flatMap(line => {
-      const match = line.match(processLine);
-      return match === null ? [] : [match[1]];
-    });
+  const messages = lines.slice(startIndexes[0] + 1, endIndexes[0]).flatMap(line => {
+    const match = line.match(processLine);
+    return match === null ? [] : [match[1]];
+  });
   const records = [];
   for (const message of messages) {
     if (/^\{\s*timestamp:/.test(message) || records.length === 0) records.push([]);
@@ -385,7 +383,8 @@ export const evaluateHeartbeatOnlyWindow = input => {
   const heartbeatTrafficObserved = validPeerEvents && heartbeatPeerTrafficObserved(values.peerEventsDuringWindow);
   const nonHeartbeatPeerEventCount = validPeerEvents
     ? ['master', 'slave'].reduce(
-        (count, role) => count + values.peerEventsDuringWindow[role].filter(event => !isHeartbeatPeerEvent(role, event)).length,
+        (count, role) =>
+          count + values.peerEventsDuringWindow[role].filter(event => !isHeartbeatPeerEvent(role, event)).length,
         0,
       )
     : null;

@@ -8,6 +8,7 @@ import {
   assertOwnedTaskContracts,
   assertPackageLintMarkers,
   assertPackageTestMarkers,
+  assertTurboDryRun,
   expectedTaskOwners,
 } from './verify.mjs';
 
@@ -95,6 +96,26 @@ const fixtureCopyFilter = sourcePath => {
 
 assert.deepEqual(expectedTaskOwners('test', 2).sort(), expectedTestPackages);
 assert.deepEqual(expectedLintPackages.length, 29);
+const turboTestDryRunFixture = {
+  packages: ['@catering-v2s/ui-base-render'],
+  tasks: [
+    {
+      task: 'test',
+      directory: 'apps/terminal/ui/base/render',
+      package: '@catering-v2s/ui-base-render',
+      command: 'node run-owned-tests.mjs',
+      inputs: {'../../../../../tools/terminal-shared/run-owned-tests.mjs': 'fixture-hash'},
+    },
+  ],
+};
+assert.doesNotThrow(() => assertTurboDryRun(turboTestDryRunFixture, 'test', ['@catering-v2s/ui-base-render']));
+assert.throws(
+  () =>
+    assertTurboDryRun({...turboTestDryRunFixture, tasks: [{...turboTestDryRunFixture.tasks[0], inputs: {}}]}, 'test', [
+      '@catering-v2s/ui-base-render',
+    ]),
+  /shared runner input missing.*ui-base-render/,
+);
 assert.equal(assertOwnedTaskContracts('lint').length, expectedLintPackages.length);
 assert.equal(
   assertPackageLintMarkers(validLintMarkers.join('\n'), expectedLintPackages).length,

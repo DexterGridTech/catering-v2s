@@ -160,7 +160,10 @@ test('A11 requires the first app-owned protected namespace open and its matching
     resultLine: lines[2],
   });
   assert.deepEqual(
-    protectedMarkerResult('I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=failed code=PERSIST_KV_OPERATION_FAILED', ['321']),
+    protectedMarkerResult(
+      'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=failed code=PERSIST_KV_OPERATION_FAILED',
+      ['321'],
+    ),
     {
       pid: '321',
       operation: 'read',
@@ -181,7 +184,8 @@ test('A11 never lets a later successful open rescue a first fresh namespace', ()
 });
 
 test('A11 does not pair another process, another operation, or a failed call with the first namespace open', () => {
-  const firstOpen = 'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected namespaceVersion=2 existedBeforeOpen=true';
+  const firstOpen =
+    'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected namespaceVersion=2 existedBeforeOpen=true';
   assert.equal(
     protectedNamespaceReadbackFromLines(
       [firstOpen, 'I/TerminalPersistKv( 999): event=persist-kv operation=read mode=protected status=succeeded'],
@@ -198,7 +202,10 @@ test('A11 does not pair another process, another operation, or a failed call wit
   );
   assert.equal(
     protectedNamespaceReadbackFromLines(
-      [firstOpen, 'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=failed code=PERSIST_KV_OPERATION_FAILED'],
+      [
+        firstOpen,
+        'I/TerminalPersistKv( 321): event=persist-kv operation=read mode=protected status=failed code=PERSIST_KV_OPERATION_FAILED',
+      ],
       ['321'],
     ).status,
     'failed',
@@ -351,10 +358,7 @@ test('A11 PID readback distinguishes a connected app absence from transport and 
     () => parseRemotePackagePidof({status: 1, stdout: '', stderr: 'error: device offline'}),
     /PIDOF_READBACK_FAILED/,
   );
-  assert.throws(
-    () => parseRemotePackagePidof({status: 0, stdout: '', stderr: ''}),
-    /PIDOF_SUCCESS_OUTPUT_INVALID/,
-  );
+  assert.throws(() => parseRemotePackagePidof({status: 0, stdout: '', stderr: ''}), /PIDOF_SUCCESS_OUTPUT_INVALID/);
   assert.throws(
     () => parseRemotePackagePidof({status: 0, stdout: '321 unknown', stderr: ''}),
     /PIDOF_SUCCESS_OUTPUT_INVALID/,

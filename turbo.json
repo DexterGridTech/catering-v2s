@@ -4,7 +4,9 @@
     "typecheck": {
       "dependsOn": ["^typecheck"]
     },
-    "test": {},
+    "test": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tools/terminal-shared/**"]
+    },
     "lint": {
       "cache": false
     },

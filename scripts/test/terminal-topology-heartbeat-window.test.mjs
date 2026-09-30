@@ -35,9 +35,7 @@ const baseline = Object.freeze({
       {event: 'topology.peer.frame-received', messageType: 'ping'},
       {event: 'topology.peer.frame-sent', messageType: 'pong'},
     ],
-    slave: [
-      {event: 'topology.peer.frame-received', messageType: 'pong'},
-    ],
+    slave: [{event: 'topology.peer.frame-received', messageType: 'pong'}],
   },
 });
 
@@ -80,10 +78,7 @@ test('heartbeat-only window does not confuse rolling lifecycle-log eviction with
     ...baseline,
     peerEventsDuringWindow: {
       ...baseline.peerEventsDuringWindow,
-      slave: [
-        ...baseline.peerEventsDuringWindow.slave,
-        {event: 'topology.peer.loss', messageType: null},
-      ],
+      slave: [...baseline.peerEventsDuringWindow.slave, {event: 'topology.peer.loss', messageType: null}],
     },
   });
   assert.equal(disconnected.status, 'FAIL');
@@ -93,14 +88,14 @@ test('heartbeat-only window does not confuse rolling lifecycle-log eviction with
 test('heartbeat-only event window requires intact markers and detects app-level peer traffic', () => {
   const logs = [
     '1727700000.000  9  9 I TER_TOPOLOGY_A7: start-marker',
-    "1727700001.000  101  101 I ReactNativeJS: { timestamp: 1727700001000,",
+    '1727700001.000  101  101 I ReactNativeJS: { timestamp: 1727700001000,',
     "1727700001.000  101  101 I ReactNativeJS:   event: 'topology.peer.frame-received',",
     "1727700001.000  101  101 I ReactNativeJS:   data: { messageType: 'ping' } }",
-    "1727700002.000  101  101 I ReactNativeJS: { timestamp: 1727700002000,",
+    '1727700002.000  101  101 I ReactNativeJS: { timestamp: 1727700002000,',
     "1727700002.000  101  101 I ReactNativeJS:   event: 'topology.peer.frame-sent',",
     "1727700002.000  101  101 I ReactNativeJS:   data: { messageType: 'state-full' } }",
     '1727700003.000  9  9 I TER_TOPOLOGY_A7: end-marker',
-    "1727700004.000  101  101 I ReactNativeJS: { timestamp: 1727700004000,",
+    '1727700004.000  101  101 I ReactNativeJS: { timestamp: 1727700004000,',
     "1727700004.000  101  101 I ReactNativeJS:   event: 'topology.peer.frame-sent',",
     "1727700004.000  101  101 I ReactNativeJS:   data: { messageType: 'pong' } }",
   ].join('\n');
@@ -161,7 +156,7 @@ test('TP-A7 marker extraction survives more than 5000 unrelated buffered rows wi
   const end = '1727700100.000  9  9 I TER_TOPOLOGY_A7: end-marker';
   const noisyRows = Array.from({length: 5_001}, (_, index) => `1727700001.${index}  9  9 I Noise: row-${index}`);
   const heartbeatRows = [
-    "1727700002.000  101  101 I ReactNativeJS: { timestamp: 1727700002000,",
+    '1727700002.000  101  101 I ReactNativeJS: { timestamp: 1727700002000,',
     "1727700002.000  101  101 I ReactNativeJS:   event: 'topology.peer.frame-received',",
     "1727700002.000  101  101 I ReactNativeJS:   data: { messageType: 'ping' } }",
   ];
@@ -192,10 +187,7 @@ test('heartbeat-only window rejects missing or role-inverted ping/pong traffic',
     },
   });
   assert.equal(wrongDirection.status, 'FAIL');
-  assert.deepEqual(wrongDirection.violations, [
-    'non-heartbeat-peer-activity-observed',
-    'heartbeat-traffic-unobserved',
-  ]);
+  assert.deepEqual(wrongDirection.violations, ['non-heartbeat-peer-activity-observed', 'heartbeat-traffic-unobserved']);
 });
 
 test('heartbeat-only window rejects a short interval, lifecycle transition, process restart, or state change', () => {
@@ -207,10 +199,7 @@ test('heartbeat-only window rejects a short interval, lifecycle transition, proc
     ...baseline,
     peerEventsDuringWindow: {
       ...baseline.peerEventsDuringWindow,
-      master: [
-        ...baseline.peerEventsDuringWindow.master,
-        {event: 'topology.peer.loss', messageType: null},
-      ],
+      master: [...baseline.peerEventsDuringWindow.master, {event: 'topology.peer.loss', messageType: null}],
     },
   });
   assert.equal(reconnect.status, 'FAIL');

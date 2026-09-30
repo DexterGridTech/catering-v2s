@@ -35,11 +35,10 @@ function createAndroidTestModule(t) {
 }
 
 function runOwnedTestPackage(packageRoot) {
-  return spawnSync(
-    process.execPath,
-    [path.join(repositoryRoot, 'tools/terminal-shared/run-owned-tests.mjs')],
-    {cwd: packageRoot, encoding: 'utf8'},
-  );
+  return spawnSync(process.execPath, [path.join(repositoryRoot, 'tools/terminal-shared/run-owned-tests.mjs')], {
+    cwd: packageRoot,
+    encoding: 'utf8',
+  });
 }
 
 function report(testResults, overrides = {}) {
@@ -135,7 +134,7 @@ test('rejects a test root symlink that escapes the repository', t => {
   const packageRoot = createOwnedTestPackage(t);
   const externalRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ter-test-root-escape-'));
   t.after(() => fs.rmSync(externalRoot, {recursive: true, force: true}));
-  fs.writeFileSync(path.join(packageRoot, 'vitest.config.ts'), "export default {test: {globals: true}};\n");
+  fs.writeFileSync(path.join(packageRoot, 'vitest.config.ts'), 'export default {test: {globals: true}};\n');
   fs.writeFileSync(path.join(externalRoot, 'outside.test.ts'), "test('outside', () => expect(true).toBe(true));\n");
   fs.symlinkSync(externalRoot, path.join(packageRoot, 'test'), 'dir');
 
@@ -154,7 +153,7 @@ test('rejects a nested test-source symlink outside the repository instead of sil
   t.after(() => fs.rmSync(externalRoot, {recursive: true, force: true}));
   const testRoot = path.join(packageRoot, 'test');
   fs.mkdirSync(testRoot);
-  fs.writeFileSync(path.join(packageRoot, 'vitest.config.ts'), "export default {test: {globals: true}};\n");
+  fs.writeFileSync(path.join(packageRoot, 'vitest.config.ts'), 'export default {test: {globals: true}};\n');
   fs.writeFileSync(path.join(testRoot, 'owned.test.ts'), "test('owned', () => expect(true).toBe(true));\n");
   const externalTest = path.join(externalRoot, 'outside.test.ts');
   fs.writeFileSync(externalTest, "test('outside', () => expect(true).toBe(true));\n");
@@ -176,7 +175,7 @@ test('rejects a Vitest config symlink that resolves outside the repository', t =
   fs.mkdirSync(path.join(packageRoot, 'test'));
   fs.writeFileSync(path.join(packageRoot, 'test/owned.test.ts'), "test('owned', () => expect(true).toBe(true));\n");
   const externalConfig = path.join(externalRoot, 'vitest.config.ts');
-  fs.writeFileSync(externalConfig, "export default {test: {globals: true}};\n");
+  fs.writeFileSync(externalConfig, 'export default {test: {globals: true}};\n');
   fs.symlinkSync(externalConfig, path.join(packageRoot, 'vitest.config.ts'));
 
   const result = runOwnedTestPackage(packageRoot);
@@ -216,10 +215,7 @@ test('rejects a nested Android Kotlin test-source symlink outside the repository
     'package sample.owned\nclass OwnedTest { @Test fun owned() {} }\n',
   );
   const externalTest = path.join(externalRoot, 'ExternalTest.kt');
-  fs.writeFileSync(
-    externalTest,
-    'package sample.external\nclass ExternalTest { @Test fun hiddenFromCensus() {} }\n',
-  );
+  fs.writeFileSync(externalTest, 'package sample.external\nclass ExternalTest { @Test fun hiddenFromCensus() {} }\n');
   fs.symlinkSync(externalTest, path.join(testRoot, 'ExternalTest.kt'));
 
   assert.throws(

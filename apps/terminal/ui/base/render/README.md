@@ -79,10 +79,15 @@ render 只发出生命周期事件，不读取 input 的 active field 或 keyboa
 `SurfaceRoot` 可选接收 `renderContentFrame({content})`。默认路径仍将 assembly children、
 `ScreenContainer` 与 `LayerStack` 放在一个 `flex: 1` content subtree；frame consumer 可以把这个
 content subtree 与自己的底部 sibling 放入同一 surface frame，而不让 render 反向依赖 input。
-每个已解析 screen、每个 LayerStack layer 与 SurfaceRoot content 子树均由独立 `react-error-boundary`
-边界保护。边界只记录 owner ID 与 error name，并显示唯一 `SystemFailureNotice`；“知道了”只派发
-runtime reset command，由 runtime actor 调用 `appControl.resetRuntime`。首屏错误以 `contentFailure=render-error`
-完成 startup readiness，但不报告真实业务 part ready；AdminLauncher 位于 outer boundary 外。
+已解析 screen 由 screen 边界保护；每个 layer 的边界必须包住一个后代组件，由该组件在自身 render
+期间调用 `resolvePart`，不能在 `LayerStack` 的 map 回调里先求值再把结果交给边界。另有
+`surface-layers` 边界直接包住 `LayerStack`，捕获排序、选择器及子边界建立前的同步 render 异常；它与
+`surface-content` 边界是同级区域，失败只替换整个 layer stack，不卸载 screen/content。当前两个
+integration 在 `renderContentFrame` 内把 `AdminLauncher` 放在 `SurfaceRoot` 提供的 `content` 外围，
+所以此 fallback 不会卸载或封锁管理入口。
+两层边界均只记录 owner ID 与 error name，并显示唯一 `SystemFailureNotice`；“知道了”只派发 runtime
+reset command，由 runtime actor 调用 `appControl.resetRuntime`。首屏错误以 `contentFailure=render-error`
+完成 startup readiness，但不报告真实业务 part ready。
 当 assembly 在 `RenderProvider`/`SurfaceRoot` 建立前被拒绝时，App 只能把失败原因与物理
 `displayIndex` 交给 `StandaloneStartupFailurePage`；该页面仍由本包拥有固定 failure testID、
 文案与 alert 语义，并只对物理 PRIMARY 调用注入的 `NativeLoadingCapability.hideOnce('startup-failure')`。
