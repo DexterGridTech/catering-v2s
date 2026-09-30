@@ -9,6 +9,18 @@ public record TerminalActivationRequest(
     String appVersion,
     String credentialSecret
 ) {
+  @Override
+  public String toString() {
+    return "TerminalActivationRequest["
+        + "redacted=" + "[REDACTED]"
+        + ", deviceId=" + deviceId
+        + ", surfaceForm=" + surfaceForm
+        + ", appVersion=" + appVersion
+        + ", redacted=" + "[REDACTED]"
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<TerminalActivationRequest> {
     @Override
     public TerminalActivationRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

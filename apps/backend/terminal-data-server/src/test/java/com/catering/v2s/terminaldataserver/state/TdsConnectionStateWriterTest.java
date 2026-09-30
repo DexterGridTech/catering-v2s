@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.catering.v2s.terminaldataserver.config.TdsRuntimeSettings;
-import com.catering.v2s.terminaldataserver.session.TdsTrackedSessionLimiter;
+import com.catering.v2s.terminaldataserver.session.TdsConnectionCapacityLimiter;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.Heartbeat;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
 import java.sql.SQLException;
@@ -65,8 +65,8 @@ class TdsConnectionStateWriterTest {
                 Duration.ofSeconds(15),
                 Duration.ofSeconds(10));
         TdsConnectionStateWriter writer = new TdsConnectionStateWriter(repository, settings, scheduler, scheduler);
-        TdsTrackedSessionLimiter limiter = new TdsTrackedSessionLimiter(settings);
-        TdsTrackedSessionLimiter.Permit trackedPermit = limiter.tryAcquire();
+        TdsConnectionCapacityLimiter limiter = new TdsConnectionCapacityLimiter(2, 1);
+        TdsConnectionCapacityLimiter.Permit trackedPermit = limiter.tryAcquireTrackedSession();
         boolean[] disconnectPersisted = {false};
 
         writer.queueDisconnect(identity("one"), "NETWORK_ERROR", () -> {
@@ -80,14 +80,14 @@ class TdsConnectionStateWriterTest {
         assertThat(writer.pendingDisconnectCount()).isEqualTo(1);
         assertThat(writer.pendingHeartbeatCount()).isEqualTo(1);
         assertThat(disconnectPersisted[0]).isFalse();
-        assertThat(limiter.tryAcquire()).isNull();
+        assertThat(limiter.tryAcquireTrackedSession()).isNull();
 
         repository.failDisconnect = false;
         writer.flush();
 
         assertThat(repository.writes).containsExactly("disconnect:one", "disconnect:one", "heartbeat:two:4.0");
         assertThat(disconnectPersisted[0]).isTrue();
-        TdsTrackedSessionLimiter.Permit replacement = limiter.tryAcquire();
+        TdsConnectionCapacityLimiter.Permit replacement = limiter.tryAcquireTrackedSession();
         assertThat(replacement).isNotNull();
         replacement.close();
     }

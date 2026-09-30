@@ -2,6 +2,7 @@ package com.catering.v2s.terminaldataserver.websocket;
 
 import com.catering.v2s.terminaldataserver.observability.TdsAsyncLog;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionProtocol;
+import com.catering.v2s.terminaldataserver.session.TdsConnectionCapacityLimiter;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,7 +24,7 @@ public final class TdsWebSocketConnection {
 
     private final WebSocketSession session;
     private final TerminalConnectionProtocol protocol;
-    private final UnauthenticatedConnectionLimiter.Permit unauthenticatedPermit;
+    private final TdsConnectionCapacityLimiter.Permit unauthenticatedPermit;
     private final Scheduler logScheduler;
     private final String sessionId;
     private final Object outboundMonitor = new Object();
@@ -39,7 +40,7 @@ public final class TdsWebSocketConnection {
     public TdsWebSocketConnection(
             WebSocketSession session,
             TerminalConnectionProtocol protocol,
-            UnauthenticatedConnectionLimiter.Permit unauthenticatedPermit,
+            TdsConnectionCapacityLimiter.Permit unauthenticatedPermit,
             @Qualifier("tds-log-worker") Scheduler logScheduler) {
         this.session = session;
         this.protocol = protocol;

@@ -7,6 +7,16 @@ public record PlatformAdminCredentialResetRequest(
     Long expectedVersion,
     String idempotencyKey
 ) {
+  @Override
+  public String toString() {
+    return "PlatformAdminCredentialResetRequest["
+        + "redacted=" + "[REDACTED]"
+        + ", expectedVersion=" + expectedVersion
+        + ", idempotencyKey=" + idempotencyKey
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<PlatformAdminCredentialResetRequest> {
     @Override
     public PlatformAdminCredentialResetRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

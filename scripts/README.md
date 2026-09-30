@@ -92,6 +92,10 @@ Testcontainers/HTTP/TDS 进程生命周期入口与共享支撑；TDS CONTRACT �
 `BackendAcceptanceScenarioCatalog` 自动发现；不得在本入口文件
 冻结场景数量、业务域清单或场景文件清单。
 
+批次一 D-46 清理可用 `scripts/test/backend-acceptance --operation all --d46-focused` 只选择
+`BackendAcceptanceTest.terminalConnectionCompressionContracts` 的九个 V-S14 WebSocket CONTRACT 场景与
+`TerminalActivationSecretToStringTest`；它仍走同一受管远端 Testcontainers/TDS 生命周期，不运行其他业务 operation 或 TDS factory。
+
 首次验证获批 topology 时，可在一个精确业务 operation 上附加 `--topology-preflight`。该入口在所选业务场景之前，启动同一个受管 TDS/双业务上下文生命周期，先用真实业务 HTTP 取消激活扣住真实凭证核验结果、验证 R3-M1 登记竞态，再执行一次真实 V-S12 10 秒 PostgreSQL 停库与恢复；两项结果分别写 TDS `CONTRACT`，不加入业务场景分母。该选项不能与 `all`、`--calibration` 或 extension scale proof 一起使用；唯一可配合的 production mutation 是下述 TDS 登记竞态红控制。
 
 详设要求验证移除 TDS 登记代次检查时上述竞态必须变红。正向 topology 通过后、CP-05 标定前，使用 `scripts/test/backend-acceptance --operation storeTerminalActivationBusinessPrecedence --topology-preflight --production-mutation tds-registration-pending-generation-check` 执行受管远端红控制。runner 只在远端临时工作树中把 `TerminalActor.generationRevoked` 的返回值改成 `false`，验证真实取消激活 HTTP 成功、TDS `terminal.connection.vs10.device-cancel` 契约在 `SESSION_READY` 后以 `TDS_VS10_REGISTRATION_RACE_RED_CONTROL` 失败、选定业务场景仍通过且资源清理通过；此突变模式不重复 10 秒停库。红控制被测试捕获后，runner 总体结果为 PASS；若 TDS 契约没有按预期变红或清理失败，则运行 FAIL。该 mutation ID、输入路径、替换字面量与 operation 组合均为闭集，调用方不能传入任意源编辑。

@@ -14,6 +14,23 @@ public record StoreServicePointCreateRequest(
     tools.jackson.databind.JsonNode extensionValues,
     tools.jackson.databind.JsonNode extensionRuleRevision
 ) {
+  @Override
+  public String toString() {
+    return "StoreServicePointCreateRequest["
+        + "name=" + name
+        + ", code=" + code
+        + ", pointType=" + pointType
+        + ", seatCapacity=" + seatCapacity
+        + ", tableShape=" + tableShape
+        + ", reservable=" + reservable
+        + ", imageAssetRef=" + imageAssetRef
+        + ", redacted=" + "[REDACTED]"
+        + ", extensionValues=" + extensionValues
+        + ", extensionRuleRevision=" + extensionRuleRevision
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreServicePointCreateRequest> {
     @Override
     public StoreServicePointCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

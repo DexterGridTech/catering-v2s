@@ -6,6 +6,7 @@ public record WorkspaceAccountStatusTransitionRequest(
     WorkspaceAccountStatus targetStatus,
     Long expectedVersion
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<WorkspaceAccountStatusTransitionRequest> {
     @Override
     public WorkspaceAccountStatusTransitionRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

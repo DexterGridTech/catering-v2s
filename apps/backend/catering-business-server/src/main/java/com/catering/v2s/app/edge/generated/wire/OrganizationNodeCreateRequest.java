@@ -8,6 +8,7 @@ public record OrganizationNodeCreateRequest(
     String notes,
     tools.jackson.databind.JsonNode extensionValues
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<OrganizationNodeCreateRequest> {
     @Override
     public OrganizationNodeCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

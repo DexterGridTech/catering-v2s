@@ -11,6 +11,20 @@ public record GroupWorkspaceCreateRequest(
     String notes,
     String idempotencyKey
 ) {
+  @Override
+  public String toString() {
+    return "GroupWorkspaceCreateRequest["
+        + "groupWorkspaceKey=" + groupWorkspaceKey
+        + ", name=" + name
+        + ", operationsTitle=" + operationsTitle
+        + ", logoAssetRef=" + logoAssetRef
+        + ", redacted=" + "[REDACTED]"
+        + ", notes=" + notes
+        + ", idempotencyKey=" + idempotencyKey
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<GroupWorkspaceCreateRequest> {
     @Override
     public GroupWorkspaceCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

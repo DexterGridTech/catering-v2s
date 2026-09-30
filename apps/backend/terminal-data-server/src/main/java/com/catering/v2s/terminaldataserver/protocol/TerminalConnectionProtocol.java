@@ -24,6 +24,10 @@ public final class TerminalConnectionProtocol {
     private final int maxFramePayloadBytes;
     private final int maxDecompressedMessageBytes;
     private final int maxCompleteDecompressedMessageBytes;
+    private final int oversizedMessageCloseCode;
+    private final int protocolVersion;
+    private final String endpointMethod;
+    private final String endpointPath;
 
     @Autowired
     public TerminalConnectionProtocol(ObjectMapper objectMapper) {
@@ -34,6 +38,15 @@ public final class TerminalConnectionProtocol {
     }
 
     private TerminalConnectionProtocol(JsonNode contract) {
+        protocolVersion = requiredPositiveInteger(contract, "protocolVersion");
+        if (protocolVersion != 1) throw invalidContract("unsupported protocol version");
+        JsonNode endpoint = requiredObject(contract, "endpoint");
+        endpointMethod = requiredText(endpoint, "method");
+        endpointPath = requiredText(endpoint, "path");
+        if (!"GET".equals(endpointMethod) || !endpointPath.matches("/tdp/\\{groupWorkspaceKey}/ws")) {
+            throw invalidContract("WebSocket endpoint is unsupported");
+        }
+
         JsonNode messageNodes = requiredArray(contract, "messages");
         Map<String, MessageDefinition> loadedMessages = new HashMap<>();
         for (JsonNode messageNode : messageNodes) {
@@ -75,6 +88,10 @@ public final class TerminalConnectionProtocol {
         maxFramePayloadBytes = requiredPositiveInteger(limits, "maxFramePayloadBytes");
         maxDecompressedMessageBytes = requiredPositiveInteger(limits, "maxDecompressedMessageBytes");
         maxCompleteDecompressedMessageBytes = requiredPositiveInteger(limits, "maxCompleteDecompressedMessageBytes");
+        oversizedMessageCloseCode = requiredPositiveInteger(limits, "overflowCloseCode");
+        if (!standardCloseCodes.contains(oversizedMessageCloseCode)) {
+            throw invalidContract("overflow close code is not a declared standard close code");
+        }
     }
 
     public MessageDefinition message(String type) {
@@ -109,6 +126,22 @@ public final class TerminalConnectionProtocol {
         return standardCloseCodes;
     }
 
+    public int protocolVersion() {
+        return protocolVersion;
+    }
+
+    public String endpointMethod() {
+        return endpointMethod;
+    }
+
+    public String endpointPath() {
+        return endpointPath;
+    }
+
+    public String webSocketRoutePattern() {
+        return endpointPath.replace("{groupWorkspaceKey}", "*");
+    }
+
     public int maxFramePayloadBytes() {
         return maxFramePayloadBytes;
     }
@@ -119,6 +152,10 @@ public final class TerminalConnectionProtocol {
 
     public int maxCompleteDecompressedMessageBytes() {
         return maxCompleteDecompressedMessageBytes;
+    }
+
+    public int oversizedMessageCloseCode() {
+        return oversizedMessageCloseCode;
     }
 
     private static JsonNode loadContract(ObjectMapper objectMapper) {

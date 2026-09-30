@@ -6,6 +6,7 @@ public record StoreTerminalPrinterBinding(
     java.util.UUID printerRef,
     String printerClientKey
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreTerminalPrinterBinding> {
     @Override
     public StoreTerminalPrinterBinding deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

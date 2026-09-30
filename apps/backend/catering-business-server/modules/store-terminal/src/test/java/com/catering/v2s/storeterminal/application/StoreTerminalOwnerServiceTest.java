@@ -201,6 +201,8 @@ class StoreTerminalOwnerServiceTest {
         ArgumentCaptor<AuditEvent> audit = ArgumentCaptor.forClass(AuditEvent.class);
         verify(harness.auditEvents(), times(1)).write(audit.capture());
         assertEquals("TERMINAL_CREATED", audit.getValue().action());
+        assertTrue(audit.getValue().changes().stream()
+                .anyMatch(change -> change.fieldKey().equals("deviceType") && change.afterValue().equals("laptop")));
         AuditChange activationChange = audit.getValue().changes().stream()
                 .filter(change -> change.fieldKey().equals("activationCode"))
                 .findFirst()
@@ -698,6 +700,7 @@ class StoreTerminalOwnerServiceTest {
         ArgumentCaptor<AuditEvent> audit = ArgumentCaptor.forClass(AuditEvent.class);
         verify(auditEvents, times(1)).write(audit.capture());
         assertEquals("TERMINAL_REPLACED", audit.getValue().action());
+        assertFalse(audit.getValue().changes().stream().anyMatch(change -> change.fieldKey().equals("deviceType")));
         ArgumentCaptor<String> requestHash = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> responseJson = ArgumentCaptor.forClass(String.class);
         verify(persistence)

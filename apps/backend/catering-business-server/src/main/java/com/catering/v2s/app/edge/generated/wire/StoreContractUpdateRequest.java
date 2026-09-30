@@ -13,6 +13,7 @@ public record StoreContractUpdateRequest(
     java.util.List<StoreContractItem> items,
     String phaseNameSnapshot
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreContractUpdateRequest> {
     @Override
     public StoreContractUpdateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

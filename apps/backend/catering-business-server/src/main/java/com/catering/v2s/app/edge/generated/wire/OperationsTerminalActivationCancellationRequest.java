@@ -5,6 +5,7 @@ package com.catering.v2s.app.edge.generated.wire;
 public record OperationsTerminalActivationCancellationRequest(
     Long expectedBindingGeneration
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<OperationsTerminalActivationCancellationRequest> {
     @Override
     public OperationsTerminalActivationCancellationRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

@@ -1237,6 +1237,7 @@ function strictWireDeserializer(name, properties, required, components, inlineTy
   const recordFields = properties
     .map(([property]) => `    ${javaTypes.get(property)} ${javaIdentifier(property)}`)
     .join(',\n');
+  const toStringMethod = javaWireToString(name, properties);
   const deserializationBody =
     properties.length === 0
       ? `      tools.jackson.core.JsonToken token = parser.nextToken();
@@ -1273,6 +1274,7 @@ ${missingChecks}
 public record ${name}(
 ${recordFields}
 ) {
+${toStringMethod ? `${toStringMethod}\n\n` : ''}
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<${name}> {
     @Override
     public ${name} deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)
@@ -1285,6 +1287,36 @@ ${deserializationBody}
   }
 }
 `;
+}
+const SENSITIVE_WIRE_PROPERTIES = new Set([
+  'activationCode',
+  'bindGrant',
+  'credentialSecret',
+  'currentPassword',
+  'imageBindGrant',
+  'invitationToken',
+  'logoBindGrant',
+  'newPassword',
+  'password',
+  'passwordResetGrant',
+  'verificationGrant',
+]);
+
+function javaWireToString(name, properties) {
+  if (!properties.some(([property]) => SENSITIVE_WIRE_PROPERTIES.has(property))) return '';
+  const values = properties
+    .map(([property], index) => {
+      const sensitive = SENSITIVE_WIRE_PROPERTIES.has(property);
+      const label = sensitive ? 'redacted=' : `${property}=`;
+      return `        + ${javaString(`${index === 0 ? '' : ', '}${label}`)} + ${sensitive ? '"[REDACTED]"' : `${javaIdentifier(property)}`}`;
+    })
+    .join('\n');
+  return `  @Override
+  public String toString() {
+    return ${javaString(`${name}[`)}
+${values}
+        + "]";
+  }`;
 }
 function propertySchemaType(properties, property) {
   return properties.find(([name]) => name === property)?.[1]?.type;
@@ -1470,7 +1502,8 @@ function javaWireType(
   const strictUnknownAnnotation = strictUnknownRequest
     ? '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)\n'
     : '';
-  const source = `// Generated from accepted R5 OpenAPI components; do not edit.\npackage com.catering.v2s.app.edge.generated.wire;\n\n${strictUnknownAnnotation}public record ${name}(\n${fields.join(',\n')}\n) {}\n`;
+  const toStringMethod = javaWireToString(name, properties);
+  const source = `// Generated from accepted R5 OpenAPI components; do not edit.\npackage com.catering.v2s.app.edge.generated.wire;\n\n${strictUnknownAnnotation}public record ${name}(\n${fields.join(',\n')}\n) {${toStringMethod ? `\n${toStringMethod}\n` : ''}}\n`;
   return {name, source};
 }
 function strictWireSchemaNames(operations, components) {

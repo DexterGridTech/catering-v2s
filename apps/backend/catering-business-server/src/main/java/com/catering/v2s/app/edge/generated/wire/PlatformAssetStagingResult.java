@@ -8,4 +8,16 @@ public record PlatformAssetStagingResult(
     @com.fasterxml.jackson.annotation.JsonProperty(value = "contentType", required = true) String contentType,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "sizeBytes", required = true) Long sizeBytes,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "sha256", required = true) String sha256
-) {}
+) {
+  @Override
+  public String toString() {
+    return "PlatformAssetStagingResult["
+        + "assetRef=" + assetRef
+        + ", redacted=" + "[REDACTED]"
+        + ", expiresAt=" + expiresAt
+        + ", contentType=" + contentType
+        + ", sizeBytes=" + sizeBytes
+        + ", sha256=" + sha256
+        + "]";
+  }
+}

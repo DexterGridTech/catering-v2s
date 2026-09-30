@@ -12,6 +12,21 @@ public record GroupWorkspaceDisplayUpdateRequest(
     Long expectedVersion,
     String idempotencyKey
 ) {
+  @Override
+  public String toString() {
+    return "GroupWorkspaceDisplayUpdateRequest["
+        + "name=" + name
+        + ", operationsTitle=" + operationsTitle
+        + ", notes=" + notes
+        + ", logoIntent=" + logoIntent
+        + ", logoAssetRef=" + logoAssetRef
+        + ", redacted=" + "[REDACTED]"
+        + ", expectedVersion=" + expectedVersion
+        + ", idempotencyKey=" + idempotencyKey
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<GroupWorkspaceDisplayUpdateRequest> {
     @Override
     public GroupWorkspaceDisplayUpdateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

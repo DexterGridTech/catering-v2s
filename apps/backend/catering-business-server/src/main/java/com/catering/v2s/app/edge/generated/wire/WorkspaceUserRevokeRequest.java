@@ -5,6 +5,7 @@ package com.catering.v2s.app.edge.generated.wire;
 public record WorkspaceUserRevokeRequest(
     Long expectedVersion
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<WorkspaceUserRevokeRequest> {
     @Override
     public WorkspaceUserRevokeRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

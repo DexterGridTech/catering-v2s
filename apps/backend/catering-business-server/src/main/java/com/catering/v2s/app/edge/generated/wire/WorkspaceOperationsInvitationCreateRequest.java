@@ -8,6 +8,7 @@ public record WorkspaceOperationsInvitationCreateRequest(
     java.util.List<String> roleIds,
     String idempotencyKey
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<WorkspaceOperationsInvitationCreateRequest> {
     @Override
     public WorkspaceOperationsInvitationCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

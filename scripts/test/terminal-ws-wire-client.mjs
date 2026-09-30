@@ -2,7 +2,7 @@
 
 import {createHash, randomBytes} from 'node:crypto';
 import {createConnection} from 'node:net';
-import {deflateRawSync, inflateRawSync, constants as zlibConstants} from 'node:zlib';
+import {createInflateRaw, deflateRawSync, inflateRawSync, constants as zlibConstants} from 'node:zlib';
 import {createInterface} from 'node:readline';
 import {performance} from 'node:perf_hooks';
 import path from 'node:path';
@@ -152,7 +152,11 @@ const installTerminationDiagnostics = () => {
 
 export const classifyWireFailureForDiagnostics = failure => {
   const message = failure instanceof Error ? failure.message : '';
-  return /^TERMINAL_WIRE_[A-Z0-9_]+$/.test(message) ? message : 'TERMINAL_WIRE_CLIENT_FAILED';
+  if (/^TERMINAL_WIRE_[A-Z0-9_]+$/.test(message)) return message;
+  const code = failure instanceof Error && typeof failure.code === 'string' ? failure.code : '';
+  return /^Z_[A-Z0-9_]+$/.test(code) || /^ERR_ZLIB_[A-Z0-9_]+$/.test(code)
+    ? `TERMINAL_WIRE_NODE_${code}`
+    : 'TERMINAL_WIRE_CLIENT_FAILED';
 };
 
 const EXTENSION_OFFERS = new Set([
@@ -562,6 +566,7 @@ class RawWebSocketClient {
     this.reader = reader;
     this.negotiatedCompression = negotiatedCompression;
     this.extensionResponse = extensionResponse;
+    this.inflater = negotiatedCompression ? new ContextTakeoverInflater() : null;
     this.fragment = null;
   }
 
@@ -621,10 +626,12 @@ class RawWebSocketClient {
     }
   }
 
-  sendFrame(opcode, payload, {fin = true, rsv = 0} = {}) {
+  sendFrame(opcode, payload, {fin = true, rsv1 = false} = {}) {
     const bytes = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
-    if (rsv < 0 || rsv > 7 || !Number.isInteger(rsv)) throw new Error('TERMINAL_WIRE_RSV_INVALID');
-    if ([8, 9, 10].includes(opcode) && (!fin || bytes.length > 125)) {
+    if (![0, 1, 2, 8, 9, 10].includes(opcode)) throw new Error('TERMINAL_WIRE_OPCODE_INVALID');
+    if (rsv1 && opcode !== 1) throw new Error('TERMINAL_WIRE_COMPRESSED_FRAME_INVALID');
+    if (rsv1 && !this.negotiatedCompression) throw new Error('TERMINAL_WIRE_COMPRESSION_NOT_NEGOTIATED');
+    if ([8, 9, 10].includes(opcode) && (!fin || bytes.length > 125 || rsv1)) {
       throw new Error('TERMINAL_WIRE_CONTROL_FRAME_INVALID');
     }
     const mask = randomBytes(4);
@@ -642,20 +649,19 @@ class RawWebSocketClient {
     }
     const masked = Buffer.allocUnsafe(bytes.length);
     for (let index = 0; index < bytes.length; index++) masked[index] = bytes[index] ^ mask[index & 3];
-    const first = Buffer.from([(fin ? 0x80 : 0) | (rsv << 4) | opcode]);
+    const first = Buffer.from([(fin ? 0x80 : 0) | (rsv1 ? 0x40 : 0) | opcode]);
     this.socket.write(Buffer.concat([first, lengthBytes, mask, masked]));
     return Object.freeze({opcode, rsv1: (first[0] & 0x40) !== 0, payloadBytes: bytes.length});
   }
 
-  sendText(text, {compressed = false, rsv = 0} = {}) {
+  sendText(text, {compressed = false} = {}) {
     const plain = Buffer.from(text, 'utf8');
     let payload = plain;
     if (compressed) {
       if (!this.negotiatedCompression) throw new Error('TERMINAL_WIRE_COMPRESSION_NOT_NEGOTIATED');
       payload = deflateMessage(plain);
-      rsv |= 4;
     }
-    const frame = this.sendFrame(1, payload, {rsv});
+    const frame = this.sendFrame(1, payload, {rsv1: compressed});
     return Object.freeze({...frame, compressed});
   }
 
@@ -663,7 +669,7 @@ class RawWebSocketClient {
     if (!this.negotiatedCompression) throw new Error('TERMINAL_WIRE_COMPRESSION_NOT_NEGOTIATED');
     const payload = deflateMessage(Buffer.from(text, 'utf8'));
     const split = Math.max(1, Math.floor(payload.length / 2));
-    this.sendFrame(1, payload.subarray(0, split), {fin: false, rsv: 4});
+    this.sendFrame(1, payload.subarray(0, split), {fin: false, rsv1: true});
     this.sendFrame(0, payload.subarray(split), {fin: true});
     return Object.freeze({wireBytes: payload.length, fragments: 2});
   }
@@ -707,7 +713,25 @@ class RawWebSocketClient {
       const current = this.fragment;
       this.fragment = null;
       let payload = Buffer.concat(current.parts, current.bytes);
-      if (current.compressed) payload = inflateMessage(payload);
+      if (current.compressed) {
+        const compressedBytes = payload.length;
+        const wireTailPresent = compressedBytes >= DEFLATE_TAIL.length
+          && payload.subarray(-DEFLATE_TAIL.length).equals(DEFLATE_TAIL);
+        try {
+          payload = await this.inflater.inflate(payload);
+        } catch (failure) {
+          const code = failure instanceof Error && typeof failure.code === 'string'
+            && (/^Z_[A-Z0-9_]+$/.test(failure.code) || /^ERR_ZLIB_[A-Z0-9_]+$/.test(failure.code))
+            ? failure.code
+            : 'UNCLASSIFIED';
+          process.stderr.write(
+            `TERMINAL_WIRE_STAGE=SERVER_DECOMPRESSION_FAILED scenario=${diagnosticScenario}`
+              + ` markerId=${diagnosticMarkerId} code=${code} compressedBytes=${compressedBytes}`
+              + ` fragments=${current.parts.length} wireTailPresent=${wireTailPresent}\n`,
+          );
+          throw failure;
+        }
+      }
       if (payload.length > MAX_MESSAGE_BYTES) throw new Error('TERMINAL_WIRE_SERVER_MESSAGE_TOO_LARGE');
       const text = payload.toString('utf8');
       if (!Buffer.from(text, 'utf8').equals(payload)) throw new Error('TERMINAL_WIRE_SERVER_UTF8_INVALID');
@@ -753,6 +777,7 @@ class RawWebSocketClient {
   }
 
   destroy() {
+    this.inflater?.close();
     this.socket.destroy();
   }
 }
@@ -817,6 +842,59 @@ export function inflateMessage(payload) {
     finishFlush: zlibConstants.Z_SYNC_FLUSH,
     maxOutputLength: MAX_MESSAGE_BYTES + 1,
   });
+}
+
+export class ContextTakeoverInflater {
+  constructor(maxOutputBytes = MAX_MESSAGE_BYTES) {
+    this.maxOutputBytes = maxOutputBytes;
+    this.stream = createInflateRaw({chunkSize: 16 * 1024});
+    this.currentMessage = null;
+    this.failure = null;
+    this.stream.on('data', chunk => {
+      const current = this.currentMessage;
+      if (current === null) return this.fail(new Error('TERMINAL_WIRE_INFLATER_OUTPUT_WITHOUT_MESSAGE'));
+      if (current.outputBytes + chunk.length > this.maxOutputBytes) {
+        return this.fail(new Error('TERMINAL_WIRE_SERVER_MESSAGE_TOO_LARGE'));
+      }
+      current.outputBytes += chunk.length;
+      current.chunks.push(Buffer.from(chunk));
+    });
+    this.stream.on('error', failure => this.fail(failure));
+  }
+
+  inflate(payload) {
+    if (this.failure !== null) return Promise.reject(this.failure);
+    if (this.currentMessage !== null) return Promise.reject(new Error('TERMINAL_WIRE_INFLATER_CONCURRENT_MESSAGE'));
+    return new Promise((resolve, reject) => {
+      const current = {chunks: [], outputBytes: 0, reject, resolve};
+      this.currentMessage = current;
+      const failIfCurrent = failure => {
+        if (this.currentMessage === current) this.fail(failure);
+      };
+      this.stream.write(Buffer.concat([payload, DEFLATE_TAIL]), writeError => {
+        if (writeError) return failIfCurrent(writeError);
+        this.stream.flush(zlibConstants.Z_SYNC_FLUSH, flushError => {
+          if (flushError) return failIfCurrent(flushError);
+          if (this.currentMessage !== current) return;
+          this.currentMessage = null;
+          resolve(Buffer.concat(current.chunks, current.outputBytes));
+        });
+      });
+    });
+  }
+
+  fail(failure) {
+    if (this.failure !== null) return;
+    this.failure = failure;
+    const current = this.currentMessage;
+    this.currentMessage = null;
+    current?.reject(failure);
+    this.stream.destroy(failure);
+  }
+
+  close() {
+    this.stream.destroy();
+  }
 }
 
 function authJson(authenticate, {padBytes = 0} = {}) {

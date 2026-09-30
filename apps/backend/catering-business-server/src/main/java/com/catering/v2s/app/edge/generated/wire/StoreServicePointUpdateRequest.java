@@ -16,6 +16,25 @@ public record StoreServicePointUpdateRequest(
     tools.jackson.databind.JsonNode extensionRuleRevision,
     Long expectedVersion
 ) {
+  @Override
+  public String toString() {
+    return "StoreServicePointUpdateRequest["
+        + "name=" + name
+        + ", code=" + code
+        + ", pointType=" + pointType
+        + ", status=" + status
+        + ", seatCapacity=" + seatCapacity
+        + ", tableShape=" + tableShape
+        + ", reservable=" + reservable
+        + ", imageAssetRef=" + imageAssetRef
+        + ", redacted=" + "[REDACTED]"
+        + ", extensionValues=" + extensionValues
+        + ", extensionRuleRevision=" + extensionRuleRevision
+        + ", expectedVersion=" + expectedVersion
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreServicePointUpdateRequest> {
     @Override
     public StoreServicePointUpdateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

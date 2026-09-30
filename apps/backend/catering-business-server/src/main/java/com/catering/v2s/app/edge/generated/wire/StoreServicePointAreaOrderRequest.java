@@ -6,6 +6,7 @@ public record StoreServicePointAreaOrderRequest(
     StoreServicePointOrderDirection direction,
     Long expectedVersion
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreServicePointAreaOrderRequest> {
     @Override
     public StoreServicePointAreaOrderRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

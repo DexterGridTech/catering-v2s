@@ -2101,13 +2101,13 @@
         },
         {
           "assertionKey": "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION",
-          "path": "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/session/TdsTrackedSessionLimiter.java",
-          "anchor": "    public TdsTrackedSessionLimiter(TdsRuntimeSettings settings) {"
+          "path": "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/session/TdsConnectionCapacityLimiter.java",
+          "anchor": "    public TdsConnectionCapacityLimiter(TdsRuntimeSettings settings) {"
         },
         {
           "assertionKey": "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION",
-          "path": "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/UnauthenticatedConnectionLimiter.java",
-          "anchor": "    public UnauthenticatedConnectionLimiter(TdsRuntimeSettings settings) {"
+          "path": "apps/backend/terminal-data-server/src/test/java/com/catering/v2s/terminaldataserver/session/TdsConnectionCapacityLimiterTest.java",
+          "anchor": "    void keepsUnauthenticatedAndTrackedSessionPoolsIndependentAndReleasesPermitsOnce() {"
         },
         {
           "assertionKey": "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION",
@@ -2144,10 +2144,10 @@
         "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TdsAcceptanceProcess.java",
         "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TerminalConnectionContractScenarios.java",
         "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/protocol/TerminalConnectionProtocol.java",
-        "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/session/TdsTrackedSessionLimiter.java",
-        "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/UnauthenticatedConnectionLimiter.java",
+        "apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/session/TdsConnectionCapacityLimiter.java",
         "apps/backend/terminal-data-server/src/test/java/architecture/TdsModuleBoundariesTest.java",
         "apps/backend/terminal-data-server/src/test/java/com/catering/v2s/terminaldataserver/protocol/TerminalConnectionProtocolTest.java",
+        "apps/backend/terminal-data-server/src/test/java/com/catering/v2s/terminaldataserver/session/TdsConnectionCapacityLimiterTest.java",
         "doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md",
         "doc/decisions/2026-07-27-v2s-identified-finding-generalization-and-prevention.md",
         "doc/decisions/2026-08-08-v2s-catalog-inventory-scope-specific-write-capabilities.md",

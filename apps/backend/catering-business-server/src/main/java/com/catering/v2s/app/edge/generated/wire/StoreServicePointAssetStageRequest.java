@@ -8,6 +8,7 @@ public record StoreServicePointAssetStageRequest(
     String contentDigest,
     String content
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreServicePointAssetStageRequest> {
     @Override
     public StoreServicePointAssetStageRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

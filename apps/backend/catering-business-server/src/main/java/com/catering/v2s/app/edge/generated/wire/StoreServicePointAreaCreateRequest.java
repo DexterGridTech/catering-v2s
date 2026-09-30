@@ -7,6 +7,7 @@ public record StoreServicePointAreaCreateRequest(
     String code,
     StoreServicePointAreaType areaType
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreServicePointAreaCreateRequest> {
     @Override
     public StoreServicePointAreaCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

@@ -7,4 +7,15 @@ public record SalesMenuAssetStageReadback(
     @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) String status,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "version", required = true) Long version,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "target", required = true) SalesMenuAssetTargetReadback target
-) {}
+) {
+  @Override
+  public String toString() {
+    return "SalesMenuAssetStageReadback["
+        + "assetRef=" + assetRef
+        + ", redacted=" + "[REDACTED]"
+        + ", status=" + status
+        + ", version=" + version
+        + ", target=" + target
+        + "]";
+  }
+}

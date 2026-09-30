@@ -11,6 +11,7 @@ public record TenantCreateRequest(
     tools.jackson.databind.JsonNode extensionValues,
     Long expectedExtensionRuleRevision
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<TenantCreateRequest> {
     @Override
     public TenantCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

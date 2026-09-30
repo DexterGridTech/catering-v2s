@@ -6,4 +6,14 @@ public record StoreServicePointAssetStageReadback(
     @com.fasterxml.jackson.annotation.JsonProperty(value = "bindGrant", required = true) String bindGrant,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) String status,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "version", required = true) Long version
-) {}
+) {
+  @Override
+  public String toString() {
+    return "StoreServicePointAssetStageReadback["
+        + "assetRef=" + assetRef
+        + ", redacted=" + "[REDACTED]"
+        + ", status=" + status
+        + ", version=" + version
+        + "]";
+  }
+}

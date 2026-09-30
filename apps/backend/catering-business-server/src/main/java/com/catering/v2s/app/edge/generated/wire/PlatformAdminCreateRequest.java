@@ -9,6 +9,18 @@ public record PlatformAdminCreateRequest(
     String password,
     String idempotencyKey
 ) {
+  @Override
+  public String toString() {
+    return "PlatformAdminCreateRequest["
+        + "loginName=" + loginName
+        + ", userName=" + userName
+        + ", mobile=" + mobile
+        + ", redacted=" + "[REDACTED]"
+        + ", idempotencyKey=" + idempotencyKey
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<PlatformAdminCreateRequest> {
     @Override
     public PlatformAdminCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

@@ -5,6 +5,7 @@ package com.catering.v2s.app.edge.generated.wire;
 public record SalesMenuAssetReleaseRequest(
     Long expectedAssetVersion
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<SalesMenuAssetReleaseRequest> {
     @Override
     public SalesMenuAssetReleaseRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

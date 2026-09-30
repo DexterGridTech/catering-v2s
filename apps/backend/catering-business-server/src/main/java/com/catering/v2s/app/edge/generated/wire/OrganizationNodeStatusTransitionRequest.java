@@ -6,6 +6,7 @@ public record OrganizationNodeStatusTransitionRequest(
     String targetStatus,
     Long expectedVersion
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<OrganizationNodeStatusTransitionRequest> {
     @Override
     public OrganizationNodeStatusTransitionRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

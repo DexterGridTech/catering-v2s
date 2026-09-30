@@ -86,7 +86,7 @@ class TerminalBindingOwnerServiceTest {
         assertEquals(ActivationOutcome.GROUP_WORKSPACE_DISABLED, result.outcome());
         verify(persistence, never())
                 .insertFirstActive(
-                        any(UUID.class), anyString(), any(UUID.class), any(UUID.class), any(byte[].class), anyString());
+                        any(UUID.class), anyString(), any(UUID.class), any(byte[].class), anyString());
         verify(persistence, never())
                 .reactivate(any(UUID.class), anyString(), any(UUID.class), any(byte[].class), anyString());
         verifyNoInteractions(auditWriter);

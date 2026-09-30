@@ -99,7 +99,7 @@ public class TerminalBindingOwnerPersistence {
     }
 
     public ActivationWrite insertFirstActive(
-            UUID workspaceUuid, String groupKey, UUID storeRef, UUID terminalRef, byte[] digest, String deviceId) {
+            UUID workspaceUuid, String groupKey, UUID terminalRef, byte[] digest, String deviceId) {
         List<ActivationWrite> rows = jdbc.query(
                 """
                 WITH activation_clock AS (

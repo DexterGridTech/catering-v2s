@@ -7,6 +7,16 @@ public record PlatformCurrentPasswordChangeRequest(
     String newPassword,
     Long expectedSessionVersion
 ) {
+  @Override
+  public String toString() {
+    return "PlatformCurrentPasswordChangeRequest["
+        + "redacted=" + "[REDACTED]"
+        + ", redacted=" + "[REDACTED]"
+        + ", expectedSessionVersion=" + expectedSessionVersion
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<PlatformCurrentPasswordChangeRequest> {
     @Override
     public PlatformCurrentPasswordChangeRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

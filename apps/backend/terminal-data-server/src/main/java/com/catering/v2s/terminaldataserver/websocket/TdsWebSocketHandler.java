@@ -13,6 +13,7 @@ import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionProtocol;
 import com.catering.v2s.terminaldataserver.session.SessionRegistrationGate;
 import com.catering.v2s.terminaldataserver.session.TdsBindingRevocationListener;
 import com.catering.v2s.terminaldataserver.session.TdsTerminalSessionActors;
+import com.catering.v2s.terminaldataserver.session.TdsConnectionCapacityLimiter;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateWriter;
 import java.net.URI;
@@ -44,7 +45,7 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
     private final TerminalConnectionFrameCodec codec;
     private final TerminalConnectionProtocol protocol;
     private final TerminalCredentialVerificationApi credentialVerification;
-    private final UnauthenticatedConnectionLimiter limiter;
+    private final TdsConnectionCapacityLimiter capacityLimiter;
     private final TdsTerminalSessionActors sessionActors;
     private final TdsBindingRevocationListener revocationListener;
     private final TdsConnectionStateWriter stateWriter;
@@ -59,7 +60,7 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
             TerminalConnectionFrameCodec codec,
             TerminalConnectionProtocol protocol,
             TerminalCredentialVerificationApi credentialVerification,
-            UnauthenticatedConnectionLimiter limiter,
+            TdsConnectionCapacityLimiter capacityLimiter,
             TdsTerminalSessionActors sessionActors,
             TdsBindingRevocationListener revocationListener,
             TdsConnectionStateWriter stateWriter,
@@ -72,7 +73,7 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
         this.codec = codec;
         this.protocol = protocol;
         this.credentialVerification = credentialVerification;
-        this.limiter = limiter;
+        this.capacityLimiter = capacityLimiter;
         this.sessionActors = sessionActors;
         this.revocationListener = revocationListener;
         this.stateWriter = stateWriter;
@@ -87,7 +88,7 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
     public Mono<Void> handle(WebSocketSession session) {
         if (sessionActors.isDraining()) return close(session, "REDIRECT_TO_NEXT_NODE");
         if (!revocationListener.isReady()) return close(session, "SERVER_ERROR");
-        UnauthenticatedConnectionLimiter.Permit permit = limiter.tryAcquire();
+        TdsConnectionCapacityLimiter.Permit permit = capacityLimiter.tryAcquireUnauthenticated();
         if (permit == null) return close(session, "NODE_BUSY");
 
         String groupWorkspaceKey = groupWorkspaceKey(session.getHandshakeInfo().getUri());
@@ -220,8 +221,8 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
             AtomicReference<AttemptReference> attemptReference,
             AtomicReference<TdsAuthenticationFailureDiagnostics.Stage> authenticationStage,
             Sinks.Many<Long> heartbeatEvents) {
-        if (message.getPayload().readableByteCount() > settings.maxMessageBytes()) {
-            return closeStandard(connection, 1009);
+        if (message.getPayload().readableByteCount() > protocol.maxCompleteDecompressedMessageBytes()) {
+            return closeStandard(connection, protocol.oversizedMessageCloseCode());
         }
         if (message.getType() != WebSocketMessage.Type.TEXT) return close(connection, "UNKNOWN");
 
@@ -441,8 +442,8 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
             WebSocketMessage message,
             AtomicLong lastSequence,
             Sinks.Many<Long> heartbeatEvents) {
-        if (message.getPayload().readableByteCount() > settings.maxMessageBytes()) {
-            return closeStandard(connection, 1009);
+        if (message.getPayload().readableByteCount() > protocol.maxCompleteDecompressedMessageBytes()) {
+            return closeStandard(connection, protocol.oversizedMessageCloseCode());
         }
         if (!connection.isAuthenticationReady() || message.getType() != WebSocketMessage.Type.TEXT)
             return close(connection, "UNKNOWN");

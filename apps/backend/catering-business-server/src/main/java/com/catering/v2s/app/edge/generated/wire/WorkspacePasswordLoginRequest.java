@@ -6,6 +6,15 @@ public record WorkspacePasswordLoginRequest(
     String loginName,
     String password
 ) {
+  @Override
+  public String toString() {
+    return "WorkspacePasswordLoginRequest["
+        + "loginName=" + loginName
+        + ", redacted=" + "[REDACTED]"
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<WorkspacePasswordLoginRequest> {
     @Override
     public WorkspacePasswordLoginRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

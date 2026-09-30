@@ -5,6 +5,14 @@ package com.catering.v2s.app.edge.generated.wire;
 public record OperationsPasswordRecoveryCompleteRequest(
     String newPassword
 ) {
+  @Override
+  public String toString() {
+    return "OperationsPasswordRecoveryCompleteRequest["
+        + "redacted=" + "[REDACTED]"
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<OperationsPasswordRecoveryCompleteRequest> {
     @Override
     public OperationsPasswordRecoveryCompleteRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

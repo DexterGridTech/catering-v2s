@@ -9,6 +9,7 @@ public record SalesMenuAssetStageRequest(
     String contentDigest,
     String content
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<SalesMenuAssetStageRequest> {
     @Override
     public SalesMenuAssetStageRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

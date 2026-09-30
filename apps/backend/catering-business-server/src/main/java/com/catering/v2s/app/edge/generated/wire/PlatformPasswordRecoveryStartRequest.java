@@ -6,6 +6,7 @@ public record PlatformPasswordRecoveryStartRequest(
     String loginName,
     String mobile
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<PlatformPasswordRecoveryStartRequest> {
     @Override
     public PlatformPasswordRecoveryStartRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

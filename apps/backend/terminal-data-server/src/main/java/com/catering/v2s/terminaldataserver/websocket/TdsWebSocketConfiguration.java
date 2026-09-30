@@ -1,6 +1,6 @@
 package com.catering.v2s.terminaldataserver.websocket;
 
-import com.catering.v2s.terminaldataserver.config.TdsRuntimeSettings;
+import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionProtocol;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.reactor.netty.NettyServerCustomizer;
@@ -14,22 +14,23 @@ import org.springframework.web.reactive.socket.server.upgrade.ReactorNettyReques
 import reactor.core.scheduler.Scheduler;
 import reactor.netty.http.server.WebsocketServerSpec;
 
-/** Owns the TDS WebSocket route, bounded wire settings and raw Netty pipeline guards. */
+/** Owns the TDS WebSocket route, native compression bounds, and message-limit close mapping. */
 @Configuration(proxyBeanMethods = false)
 public class TdsWebSocketConfiguration implements WebFluxConfigurer {
-    private final TdsRuntimeSettings settings;
+    private final TerminalConnectionProtocol protocol;
     private final WebSocketService webSocketService;
     private final Scheduler logScheduler;
 
-    public TdsWebSocketConfiguration(TdsRuntimeSettings settings, @Qualifier("tds-log-worker") Scheduler logScheduler) {
-        this.settings = settings;
+    public TdsWebSocketConfiguration(
+            TerminalConnectionProtocol protocol,
+            @Qualifier("tds-log-worker") Scheduler logScheduler) {
+        this.protocol = protocol;
         this.logScheduler = logScheduler;
         ReactorNettyRequestUpgradeStrategy upgradeStrategy =
                 new ReactorNettyRequestUpgradeStrategy(() -> WebsocketServerSpec.builder()
-                        // Compression is installed by TdsWebSocketPipelineInstaller with the bounded PMD-only
-                        // handshaker. Reactor Netty's built-in handler also enables deflate-frame.
-                        .compress(false)
-                        .maxFramePayloadLength(settings.maxFramePayloadBytes()));
+                        .compress(true)
+                        .maxDecompressionBufferSize(protocol.maxDecompressedMessageBytes())
+                        .maxFramePayloadLength(protocol.maxFramePayloadBytes()));
         this.webSocketService = new HandshakeWebSocketService(upgradeStrategy);
     }
 
@@ -40,12 +41,16 @@ public class TdsWebSocketConfiguration implements WebFluxConfigurer {
 
     @Bean
     SimpleUrlHandlerMapping tdsWebSocketHandlerMapping(TdsWebSocketHandler handler) {
-        return new SimpleUrlHandlerMapping(Map.of("/tdp/*/ws", handler), -1);
+        return new SimpleUrlHandlerMapping(Map.of(protocol.webSocketRoutePattern(), handler), -1);
     }
 
     @Bean
     NettyServerCustomizer tdsWebSocketPipelineCustomizer() {
         return server -> server.doOnChannelInit((observer, channel, remoteAddress) ->
-                TdsWebSocketPipelineInstaller.install(channel.pipeline(), settings.maxMessageBytes(), logScheduler));
+                TdsWebSocketPipelineInstaller.install(
+                        channel.pipeline(),
+                        protocol.maxCompleteDecompressedMessageBytes(),
+                        protocol.oversizedMessageCloseCode(),
+                        logScheduler));
     }
 }

@@ -22,12 +22,14 @@ import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.Cu
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateWriter;
 import com.catering.v2s.terminaldataserver.websocket.TdsWebSocketConnection;
-import com.catering.v2s.terminaldataserver.websocket.UnauthenticatedConnectionLimiter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,8 +54,8 @@ class TdsTerminalSessionActorsTest {
     private final TerminalConnectionProtocol protocol = mock(TerminalConnectionProtocol.class);
     private final TdsRuntimeSettings settings = TdsRuntimeSettings.from(
             "2", "16", Duration.ofSeconds(30), Duration.ofSeconds(90), Duration.ofSeconds(15), Duration.ofSeconds(10));
-    private final UnauthenticatedConnectionLimiter limiter = new UnauthenticatedConnectionLimiter(settings);
-    private TdsTrackedSessionLimiter trackedSessionLimiter = new TdsTrackedSessionLimiter(16);
+    private final TdsConnectionCapacityLimiter limiter = new TdsConnectionCapacityLimiter(2, 16);
+    private TdsConnectionCapacityLimiter trackedSessionLimiter = new TdsConnectionCapacityLimiter(2, 16);
     private TdsTerminalSessionActors actors;
 
     @BeforeEach
@@ -96,6 +98,31 @@ class TdsTerminalSessionActorsTest {
         assertThat(repository.opened).isEmpty();
         assertThat(connection.closeReasonOr("missing")).isEqualTo("ACTIVATION_CANCELLED");
         assertThat(actors.trackedActorCount()).isZero();
+    }
+
+    @Test
+    void revocationDoesNotWaitForSynchronousSessionOpenHoldingTheActorMonitor() throws Exception {
+        TdsWebSocketConnection connection = connection("session-revoked-during-open");
+        begin("attempt-revoked-during-open", 1, connection);
+        Verification currentVerification = verification(1);
+        assertThat(actors.recordVerification(TERMINAL, "attempt-revoked-during-open", currentVerification).block())
+                .isTrue();
+        repository.openEntered = new CountDownLatch(1);
+        repository.openRelease = new CountDownLatch(1);
+
+        CompletableFuture<Boolean> registration = CompletableFuture.supplyAsync(
+                () -> actors.register(TERMINAL, "attempt-revoked-during-open", currentVerification).block());
+        try {
+            assertThat(repository.openEntered.await(2, TimeUnit.SECONDS)).isTrue();
+            CompletableFuture<Void> revocation = CompletableFuture.runAsync(() -> actors.revoked(TERMINAL, 1));
+            revocation.get(1, TimeUnit.SECONDS);
+        } finally {
+            repository.openRelease.countDown();
+        }
+
+        assertThat(registration.get(2, TimeUnit.SECONDS)).isFalse();
+        assertThat(connection.closeReasonOr("missing")).isEqualTo("ACTIVATION_CANCELLED");
+        verify(stateWriter).queueDisconnect(eq(repository.opened.getFirst()), eq("ACTIVATION_CANCELLED"), any(Runnable.class));
     }
 
     @Test
@@ -148,7 +175,7 @@ class TdsTerminalSessionActorsTest {
 
     @Test
     void trackedCapacityRejectsOnlyCandidateAndReleasesPermitAfterDisconnectPersistence() {
-        trackedSessionLimiter = new TdsTrackedSessionLimiter(1);
+        trackedSessionLimiter = new TdsConnectionCapacityLimiter(2, 1);
         actors = new TdsTerminalSessionActors(
                 repository,
                 stateWriter,
@@ -176,7 +203,7 @@ class TdsTerminalSessionActorsTest {
         ArgumentCaptor<Runnable> persisted = ArgumentCaptor.forClass(Runnable.class);
         verify(stateWriter)
                 .queueDisconnect(eq(repository.opened.getFirst()), eq("ACTIVATION_CANCELLED"), persisted.capture());
-        assertThat(trackedSessionLimiter.tryAcquire()).isNull();
+        assertThat(trackedSessionLimiter.tryAcquireTrackedSession()).isNull();
         persisted.getValue().run();
 
         TdsWebSocketConnection next = connection("session-next");
@@ -187,7 +214,7 @@ class TdsTerminalSessionActorsTest {
 
     @Test
     void releasesTrackedPermitWhenOpeningSessionStateFails() {
-        trackedSessionLimiter = new TdsTrackedSessionLimiter(1);
+        trackedSessionLimiter = new TdsConnectionCapacityLimiter(2, 1);
         actors = new TdsTerminalSessionActors(
                 repository,
                 stateWriter,
@@ -205,14 +232,14 @@ class TdsTerminalSessionActorsTest {
         assertThat(connection.closeReasonOr("missing")).isEqualTo("SERVER_ERROR");
         assertThat(repository.opened).isEmpty();
         verify(stateWriter, never()).queueDisconnect(any(), anyString(), any(Runnable.class));
-        TdsTrackedSessionLimiter.Permit released = trackedSessionLimiter.tryAcquire();
+        TdsConnectionCapacityLimiter.Permit released = trackedSessionLimiter.tryAcquireTrackedSession();
         assertThat(released).isNotNull();
         released.close();
     }
 
     @Test
     void keepsTrackedPermitUntilOpenedSessionDisconnectIsPersistedAfterCodecFailure() {
-        trackedSessionLimiter = new TdsTrackedSessionLimiter(1);
+        trackedSessionLimiter = new TdsConnectionCapacityLimiter(2, 1);
         actors = new TdsTerminalSessionActors(
                 repository,
                 stateWriter,
@@ -231,9 +258,9 @@ class TdsTerminalSessionActorsTest {
         assertThat(connection.closeReasonOr("missing")).isEqualTo("SERVER_ERROR");
         ArgumentCaptor<Runnable> persisted = ArgumentCaptor.forClass(Runnable.class);
         verify(stateWriter).queueDisconnect(eq(repository.opened.getFirst()), eq("SERVER_ERROR"), persisted.capture());
-        assertThat(trackedSessionLimiter.tryAcquire()).isNull();
+        assertThat(trackedSessionLimiter.tryAcquireTrackedSession()).isNull();
         persisted.getValue().run();
-        TdsTrackedSessionLimiter.Permit released = trackedSessionLimiter.tryAcquire();
+        TdsConnectionCapacityLimiter.Permit released = trackedSessionLimiter.tryAcquireTrackedSession();
         assertThat(released).isNotNull();
         released.close();
     }
@@ -315,7 +342,7 @@ class TdsTerminalSessionActorsTest {
             verify(stateWriter)
                     .queueDisconnect(eq(repository.opened.getFirst()), eq("NETWORK_ERROR"), persisted.capture());
             persisted.getValue().run();
-            TdsTrackedSessionLimiter.Permit released = trackedSessionLimiter.tryAcquire();
+            TdsConnectionCapacityLimiter.Permit released = trackedSessionLimiter.tryAcquireTrackedSession();
             assertThat(released).isNotNull();
             released.close();
         } finally {
@@ -436,7 +463,7 @@ class TdsTerminalSessionActorsTest {
         when(session.isOpen()).thenAnswer(ignored -> open.get());
         when(session.close(any(CloseStatus.class))).thenReturn(Mono.empty());
         when(session.textMessage(anyString())).thenReturn(mock(WebSocketMessage.class));
-        return new TdsWebSocketConnection(session, protocol, limiter.tryAcquire(), Schedulers.immediate());
+        return new TdsWebSocketConnection(session, protocol, limiter.tryAcquireUnauthenticated(), Schedulers.immediate());
     }
 
     private static Verification verification(long generation) {
@@ -463,6 +490,8 @@ class TdsTerminalSessionActorsTest {
         private final List<SessionIdentity> opened = new ArrayList<>();
         private final AtomicLong sequence = new AtomicLong();
         private boolean failOpen;
+        private volatile CountDownLatch openEntered;
+        private volatile CountDownLatch openRelease;
 
         private RecordingRepository() {
             super(mock(JdbcTemplate.class));
@@ -471,6 +500,17 @@ class TdsTerminalSessionActorsTest {
         @Override
         public SessionIdentity open(Verification verification, String nodeId, String sessionId) {
             if (failOpen) throw new IllegalStateException("database unavailable");
+            CountDownLatch entered = openEntered;
+            CountDownLatch release = openRelease;
+            if (entered != null && release != null) {
+                entered.countDown();
+                try {
+                    if (!release.await(2, TimeUnit.SECONDS)) throw new IllegalStateException("test open timed out");
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("test open interrupted", interrupted);
+                }
+            }
             SessionIdentity identity = new SessionIdentity(
                     verification.workspaceUuid(),
                     verification.groupWorkspaceKey(),

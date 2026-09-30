@@ -15,4 +15,23 @@ public record StoreTerminalDetail(
     @com.fasterxml.jackson.annotation.JsonProperty(value = "areaReferences", required = true) java.util.List<StoreTerminalAreaReference> areaReferences,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "tagReferences", required = true) java.util.List<StoreTerminalTagReference> tagReferences,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "binding", required = true) StoreTerminalBinding binding
-) {}
+) {
+  @Override
+  public String toString() {
+    return "StoreTerminalDetail["
+        + "terminalRef=" + terminalRef
+        + ", storeRef=" + storeRef
+        + ", name=" + name
+        + ", deviceType=" + deviceType
+        + ", status=" + status
+        + ", version=" + version
+        + ", createdAt=" + createdAt
+        + ", updatedAt=" + updatedAt
+        + ", redacted=" + "[REDACTED]"
+        + ", configuration=" + configuration
+        + ", areaReferences=" + areaReferences
+        + ", tagReferences=" + tagReferences
+        + ", binding=" + binding
+        + "]";
+  }
+}

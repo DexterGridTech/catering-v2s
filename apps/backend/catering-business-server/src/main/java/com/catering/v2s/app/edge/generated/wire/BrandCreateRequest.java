@@ -10,6 +10,7 @@ public record BrandCreateRequest(
     tools.jackson.databind.JsonNode extensionValues,
     Long expectedExtensionRuleRevision
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<BrandCreateRequest> {
     @Override
     public BrandCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

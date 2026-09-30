@@ -39,7 +39,7 @@ public final class TdsTerminalSessionActors {
     private final TdsConnectionStateWriter stateWriter;
     private final TdsRuntimeSettings settings;
     private final TerminalConnectionFrameCodec codec;
-    private final TdsTrackedSessionLimiter trackedSessionLimiter;
+    private final TdsConnectionCapacityLimiter capacityLimiter;
     private final Scheduler jdbcScheduler;
     private final Scheduler logScheduler;
     private final ConcurrentHashMap<UUID, TerminalActor> actors = new ConcurrentHashMap<>();
@@ -52,14 +52,14 @@ public final class TdsTerminalSessionActors {
             TdsConnectionStateWriter stateWriter,
             TdsRuntimeSettings settings,
             TerminalConnectionFrameCodec codec,
-            TdsTrackedSessionLimiter trackedSessionLimiter,
+            TdsConnectionCapacityLimiter capacityLimiter,
             @Qualifier("tds-db-worker") Scheduler jdbcScheduler,
             @Qualifier("tds-log-worker") Scheduler logScheduler) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.stateWriter = Objects.requireNonNull(stateWriter, "stateWriter");
         this.settings = Objects.requireNonNull(settings, "settings");
         this.codec = Objects.requireNonNull(codec, "codec");
-        this.trackedSessionLimiter = Objects.requireNonNull(trackedSessionLimiter, "trackedSessionLimiter");
+        this.capacityLimiter = Objects.requireNonNull(capacityLimiter, "capacityLimiter");
         this.jdbcScheduler = Objects.requireNonNull(jdbcScheduler, "jdbcScheduler");
         this.logScheduler = Objects.requireNonNull(logScheduler, "logScheduler");
     }
@@ -206,6 +206,7 @@ public final class TdsTerminalSessionActors {
     private final class TerminalActor {
         private final UUID terminalRef;
         private final Object monitor = new Object();
+        private final Object registrationLock = new Object();
         private final Map<String, PendingAttempt> pending = new HashMap<>();
         private ActiveSession active;
         private long revokedThroughGeneration;
@@ -288,99 +289,122 @@ public final class TdsTerminalSessionActors {
         }
 
         private boolean register(String attemptId, Verification verification) {
-            TdsWebSocketConnection connection;
-            long generation;
-            synchronized (monitor) {
-                PendingAttempt attempt = pending.get(attemptId);
-                if (attempt == null) return false;
-                connection = attempt.connection;
-                generation = attempt.generation;
-                if (draining.get()) {
-                    pending.remove(attemptId);
-                    connection.close("REDIRECT_TO_NEXT_NODE");
-                    return false;
-                }
-                if (verification == null || verification.outcome() != Outcome.VERIFIED) {
-                    throw new IllegalArgumentException("TDS_SESSION_VERIFICATION_INVALID");
-                }
-                if (!terminalRef.equals(verification.terminalRef())
-                        || !attempt.groupWorkspaceKey.equals(verification.groupWorkspaceKey())
-                        || !Objects.equals(attempt.workspaceUuid, verification.workspaceUuid())
-                        || generation != verification.generation()) {
-                    pending.remove(attemptId);
-                    connection.close("CREDENTIAL_INVALID");
-                    return false;
-                }
-                if (generationRevoked(generation)) {
-                    pending.remove(attemptId);
-                    connection.close("ACTIVATION_CANCELLED");
-                    return false;
-                }
-                if (!connection.isOpen()) {
-                    pending.remove(attemptId);
-                    return false;
+            synchronized (registrationLock) {
+                PendingAttempt attempt;
+                TdsWebSocketConnection connection;
+                long generation;
+                TdsConnectionCapacityLimiter.Permit trackedPermit;
+                synchronized (monitor) {
+                    attempt = pending.get(attemptId);
+                    if (attempt == null) return false;
+                    connection = attempt.connection;
+                    generation = attempt.generation;
+                    if (draining.get()) {
+                        pending.remove(attemptId);
+                        connection.close("REDIRECT_TO_NEXT_NODE");
+                        return false;
+                    }
+                    if (verification == null || verification.outcome() != Outcome.VERIFIED) {
+                        throw new IllegalArgumentException("TDS_SESSION_VERIFICATION_INVALID");
+                    }
+                    if (!terminalRef.equals(verification.terminalRef())
+                            || !attempt.groupWorkspaceKey.equals(verification.groupWorkspaceKey())
+                            || !Objects.equals(attempt.workspaceUuid, verification.workspaceUuid())
+                            || generation != verification.generation()) {
+                        pending.remove(attemptId);
+                        connection.close("CREDENTIAL_INVALID");
+                        return false;
+                    }
+                    if (generationRevoked(generation)) {
+                        pending.remove(attemptId);
+                        connection.close("ACTIVATION_CANCELLED");
+                        return false;
+                    }
+                    if (!connection.isOpen()) {
+                        pending.remove(attemptId);
+                        return false;
+                    }
+
+                    trackedPermit = capacityLimiter.tryAcquireTrackedSession();
+                    if (trackedPermit == null) {
+                        pending.remove(attemptId);
+                        connection.close("NODE_BUSY");
+                        return false;
+                    }
                 }
 
-                TdsTrackedSessionLimiter.Permit trackedPermit = trackedSessionLimiter.tryAcquire();
-                if (trackedPermit == null) {
-                    pending.remove(attemptId);
-                    connection.close("NODE_BUSY");
-                    return false;
-                }
-
+                // Opening the row is synchronous JDBC. Keep it outside the actor monitor so a
+                // concurrent revocation can remove this pending attempt and close its socket.
                 SessionIdentity identity;
                 try {
                     identity = repository.open(verification, settings.nodeId(), connection.sessionId());
                 } catch (RuntimeException failure) {
-                    pending.remove(attemptId);
-                    trackedPermit.close();
-                    connection.close("SERVER_ERROR");
+                    synchronized (monitor) {
+                        if (pending.get(attemptId) == attempt) pending.remove(attemptId);
+                        trackedPermit.close();
+                        connection.close("SERVER_ERROR");
+                    }
                     throw failure;
                 }
 
-                String sessionReady;
-                try {
-                    sessionReady = codec.sessionReady(
-                            connection.sessionId(),
-                            settings.nodeId(),
-                            identity.connectedAt(),
-                            settings.heartbeatInterval().toMillis(),
-                            settings.heartbeatTimeout().toMillis());
-                } catch (RuntimeException failure) {
-                    abandonOpenedSession(attemptId, connection, identity, trackedPermit);
-                    throw failure;
-                }
-                boolean sent;
-                try {
-                    sent = connection.sendSessionReady(sessionReady, identity);
-                } catch (RuntimeException failure) {
-                    abandonOpenedSession(attemptId, connection, identity, trackedPermit);
-                    throw failure;
-                }
-                if (!sent) {
-                    abandonOpenedSession(attemptId, connection, identity, trackedPermit);
-                    return false;
-                }
+                synchronized (monitor) {
+                    if (pending.get(attemptId) != attempt
+                            || draining.get()
+                            || generationRevoked(generation)
+                            || !connection.isOpen()) {
+                        String closeReason = draining.get()
+                                ? "REDIRECT_TO_NEXT_NODE"
+                                : generationRevoked(generation)
+                                        ? "ACTIVATION_CANCELLED"
+                                        : connection.closeReasonOr("NETWORK_ERROR");
+                        abandonOpenedSession(attemptId, connection, identity, trackedPermit, closeReason);
+                        return false;
+                    }
 
-                ActiveSession previous = active;
-                active = new ActiveSession(generation, connection, identity, trackedPermit);
-                pending.remove(attemptId);
-                if (previous != null) {
-                    String previousReason =
-                            previous.generation() < generation || generationRevoked(previous.generation())
-                                    ? "ACTIVATION_CANCELLED"
-                                    : "SESSION_REPLACED";
-                    previous.connection().close(previousReason);
-                    queueDisconnect(previous, previousReason);
-                }
-                TdsAsyncLog.enqueue(
-                        logScheduler,
-                        () -> LOGGER.info(
-                                "event=tds_session_registered connectionId={} sessionId={} generation={}",
-                                connection.connectionId(),
+                    String sessionReady;
+                    try {
+                        sessionReady = codec.sessionReady(
                                 connection.sessionId(),
-                                generation));
-                return true;
+                                settings.nodeId(),
+                                identity.connectedAt(),
+                                settings.heartbeatInterval().toMillis(),
+                                settings.heartbeatTimeout().toMillis());
+                    } catch (RuntimeException failure) {
+                        abandonOpenedSession(attemptId, connection, identity, trackedPermit, "SERVER_ERROR");
+                        throw failure;
+                    }
+                    boolean sent;
+                    try {
+                        sent = connection.sendSessionReady(sessionReady, identity);
+                    } catch (RuntimeException failure) {
+                        abandonOpenedSession(attemptId, connection, identity, trackedPermit, "SERVER_ERROR");
+                        throw failure;
+                    }
+                    if (!sent) {
+                        abandonOpenedSession(attemptId, connection, identity, trackedPermit, "SERVER_ERROR");
+                        return false;
+                    }
+
+                    ActiveSession previous = active;
+                    active = new ActiveSession(generation, connection, identity, trackedPermit);
+                    pending.remove(attemptId);
+                    if (previous != null) {
+                        String previousReason =
+                                previous.generation() < generation || generationRevoked(previous.generation())
+                                        ? "ACTIVATION_CANCELLED"
+                                        : "SESSION_REPLACED";
+                        previous.connection().close(previousReason);
+                        queueDisconnect(previous, previousReason);
+                    }
+                    TdsAsyncLog.enqueue(
+                            logScheduler,
+                            () -> LOGGER.info(
+                                    "event=tds_session_registered connectionId={} sessionId={} generation={}",
+                                    connection.connectionId(),
+                                    connection.sessionId(),
+                                    generation));
+                    return true;
+                }
             }
         }
 
@@ -509,22 +533,24 @@ public final class TdsTerminalSessionActors {
                 String attemptId,
                 TdsWebSocketConnection connection,
                 SessionIdentity identity,
-                TdsTrackedSessionLimiter.Permit trackedPermit) {
+                TdsConnectionCapacityLimiter.Permit trackedPermit,
+                String closeReason) {
             pending.remove(attemptId);
             ActiveSession previous = active;
             active = null;
-            connection.close("SERVER_ERROR");
-            stateWriter.queueDisconnect(identity, "SERVER_ERROR", () -> {
+            connection.close(closeReason);
+            stateWriter.queueDisconnect(identity, closeReason, () -> {
                 trackedPermit.close();
                 TdsAsyncLog.enqueue(
                         logScheduler,
                         () -> LOGGER.info(
-                                "event=tds_tracked_session_permit_released sessionId={} closeReason=SERVER_ERROR",
-                                identity.sessionId()));
+                                "event=tds_tracked_session_permit_released sessionId={} closeReason={}",
+                                identity.sessionId(),
+                                closeReason));
             });
             if (previous != null) {
-                previous.connection().close("SERVER_ERROR");
-                queueDisconnect(previous, "SERVER_ERROR");
+                previous.connection().close(closeReason);
+                queueDisconnect(previous, closeReason);
             }
         }
     }
@@ -547,5 +573,5 @@ public final class TdsTerminalSessionActors {
             long generation,
             TdsWebSocketConnection connection,
             SessionIdentity identity,
-            TdsTrackedSessionLimiter.Permit trackedPermit) {}
+                TdsConnectionCapacityLimiter.Permit trackedPermit) {}
 }

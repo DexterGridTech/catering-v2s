@@ -15,6 +15,7 @@ public record BusinessChannelTemplateCreateRequest(
     BusinessChannelTemplateStoreVisibilityScope storeVisibilityScope,
     java.util.List<java.util.UUID> visibleStoreRefs
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<BusinessChannelTemplateCreateRequest> {
     @Override
     public BusinessChannelTemplateCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

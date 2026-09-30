@@ -5,6 +5,7 @@ package com.catering.v2s.app.edge.generated.wire;
 public record PlatformPasswordRecoveryOtpVerifyRequest(
     String code
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<PlatformPasswordRecoveryOtpVerifyRequest> {
     @Override
     public PlatformPasswordRecoveryOtpVerifyRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

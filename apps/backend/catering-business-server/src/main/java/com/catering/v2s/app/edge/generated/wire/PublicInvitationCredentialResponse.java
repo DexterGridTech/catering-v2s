@@ -8,4 +8,16 @@ public record PublicInvitationCredentialResponse(
     @com.fasterxml.jackson.annotation.JsonProperty(value = "loginNameReady", required = true) Boolean loginNameReady,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "passwordReady", required = true) Boolean passwordReady,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "nextStep", required = true) String nextStep
-) {}
+) {
+  @Override
+  public String toString() {
+    return "PublicInvitationCredentialResponse["
+        + "redacted=" + "[REDACTED]"
+        + ", accountExists=" + accountExists
+        + ", userNameReady=" + userNameReady
+        + ", loginNameReady=" + loginNameReady
+        + ", passwordReady=" + passwordReady
+        + ", nextStep=" + nextStep
+        + "]";
+  }
+}

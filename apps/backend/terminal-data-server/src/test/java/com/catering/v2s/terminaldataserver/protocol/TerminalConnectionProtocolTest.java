@@ -33,6 +33,10 @@ class TerminalConnectionProtocolTest {
 
     @Test
     void loadsApplicationAndStandardCloseTuplesFromTheSharedResource() {
+        assertThat(protocol.protocolVersion()).isEqualTo(1);
+        assertThat(protocol.endpointMethod()).isEqualTo("GET");
+        assertThat(protocol.endpointPath()).isEqualTo("/tdp/{groupWorkspaceKey}/ws");
+        assertThat(protocol.webSocketRoutePattern()).isEqualTo("/tdp/*/ws");
         assertThat(protocol.applicationCloseReasons())
                 .containsExactlyInAnyOrder(
                         "ACTIVATION_CANCELLED",
@@ -59,6 +63,7 @@ class TerminalConnectionProtocolTest {
         assertThat(protocol.maxFramePayloadBytes()).isEqualTo(65_536);
         assertThat(protocol.maxDecompressedMessageBytes()).isEqualTo(65_536);
         assertThat(protocol.maxCompleteDecompressedMessageBytes()).isEqualTo(65_536);
+        assertThat(protocol.oversizedMessageCloseCode()).isEqualTo(1009);
         assertThat(protocol.standardCloseCodes()).containsExactlyInAnyOrder(1002, 1009);
     }
 }

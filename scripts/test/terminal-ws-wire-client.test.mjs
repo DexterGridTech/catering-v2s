@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 import {createServer} from 'node:net';
+import {createDeflateRaw, constants as zlibConstants} from 'node:zlib';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {
   AUTH_REJECTION_CLOSE_REASONS,
+  ContextTakeoverInflater,
   classifyWireFailureForDiagnostics,
   createPingMessage,
   deflateMessage,
@@ -149,6 +151,12 @@ test('wire diagnostics preserve safe markers and redact unrecognized close reaso
   );
   assert.equal(
     classifyWireFailureForDiagnostics(new Error('terminalCredential=secret-value')),
+    'TERMINAL_WIRE_CLIENT_FAILED',
+  );
+  const zlibFailure = Object.assign(new Error('untrusted failure details'), {code: 'Z_BUF_ERROR'});
+  assert.equal(classifyWireFailureForDiagnostics(zlibFailure), 'TERMINAL_WIRE_NODE_Z_BUF_ERROR');
+  assert.equal(
+    classifyWireFailureForDiagnostics(Object.assign(new Error('details'), {code: 'credential=secret'})),
     'TERMINAL_WIRE_CLIENT_FAILED',
   );
   assert.equal(safeCloseReasonForDiagnostics('ACTIVATION_CANCELLED'), 'ACTIVATION_CANCELLED');
@@ -614,6 +622,38 @@ test('terminal wire PMD payloads round-trip within the decoded-message bound', (
 
   const bomb = deflateMessage(Buffer.alloc(64 * 65_536, 0x41));
   assert.throws(() => inflateMessage(bomb));
+});
+
+test('wire client carries negotiated server context takeover across compressed messages', async () => {
+  const deflater = createDeflateRaw();
+  const compressedChunks = [];
+  deflater.on('data', chunk => compressedChunks.push(Buffer.from(chunk)));
+  const inflater = new ContextTakeoverInflater();
+  const tail = Buffer.from([0x00, 0x00, 0xff, 0xff]);
+  const compress = async text => {
+    const start = compressedChunks.length;
+    await new Promise((resolve, reject) => {
+      deflater.write(Buffer.from(text));
+      deflater.flush(zlibConstants.Z_SYNC_FLUSH, error => error ? reject(error) : resolve());
+    });
+    const output = Buffer.concat(compressedChunks.slice(start));
+    assert.ok(output.subarray(-tail.length).equals(tail), 'TERMINAL_WIRE_ZLIB_SYNC_FLUSH_TAIL_MISSING');
+    return output.subarray(0, -tail.length);
+  };
+
+  try {
+    const firstMessage = JSON.stringify({type: 'SESSION_READY', sessionId: 'session-marker', repeated: 'shared'});
+    const secondMessage = JSON.stringify({type: 'PONG', seq: 1, sessionId: 'session-marker', repeated: 'shared'});
+    const firstPayload = await compress(firstMessage);
+    const secondPayload = await compress(secondMessage);
+
+    assert.equal((await inflater.inflate(firstPayload)).toString(), firstMessage);
+    assert.throws(() => inflateMessage(secondPayload), error => error.code === 'Z_DATA_ERROR');
+    assert.equal((await inflater.inflate(secondPayload)).toString(), secondMessage);
+  } finally {
+    inflater.close();
+    deflater.destroy();
+  }
 });
 
 test('recognizes PMD without requiring particular negotiated response parameters', () => {

@@ -10,6 +10,7 @@ public record BusinessChannelCreateRequest(
     String channelName,
     java.util.UUID bindingRef
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<BusinessChannelCreateRequest> {
     @Override
     public BusinessChannelCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

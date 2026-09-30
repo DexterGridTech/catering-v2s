@@ -6,6 +6,7 @@ public record SalesMenuCreateRequest(
     java.util.UUID channelRef,
     String name
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<SalesMenuCreateRequest> {
     @Override
     public SalesMenuCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

@@ -8,6 +8,17 @@ public record PublicInvitationCredentialRequest(
     String loginName,
     String password
 ) {
+  @Override
+  public String toString() {
+    return "PublicInvitationCredentialRequest["
+        + "redacted=" + "[REDACTED]"
+        + ", userName=" + userName
+        + ", loginName=" + loginName
+        + ", redacted=" + "[REDACTED]"
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<PublicInvitationCredentialRequest> {
     @Override
     public PublicInvitationCredentialRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

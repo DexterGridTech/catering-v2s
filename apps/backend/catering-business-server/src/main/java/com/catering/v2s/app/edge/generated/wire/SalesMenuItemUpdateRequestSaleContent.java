@@ -8,6 +8,7 @@ public record SalesMenuItemUpdateRequestSaleContent(
     java.util.List<SalesMenuSkuPrice> skuPrices,
     java.util.List<SalesMenuItemUpdateRequestSaleContentOrderOptionSelectionsItem> orderOptionSelections
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<SalesMenuItemUpdateRequestSaleContent> {
     @Override
     public SalesMenuItemUpdateRequestSaleContent deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

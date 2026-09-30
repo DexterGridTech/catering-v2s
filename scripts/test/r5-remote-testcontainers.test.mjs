@@ -1325,8 +1325,13 @@ test('failed Gradle execution preserves its first failure without requiring busi
   );
   assert.match(
     runnerSource,
-    /if \(backendAcceptanceRunId !== null\) \{[\s\S]*?requiresBackendAcceptanceTdsContract\(backendAcceptanceRunId,\s*requestedMutation\?\.evidenceType\)/,
-    'FOCUSED_NON_ACCEPTANCE_TASK_MUST_NOT_REQUIRE_ACCEPTANCE_TDS_ARTIFACTS',
+    /if \(backendAcceptanceRunId !== null && !tdsContractOnly\) \{[\s\S]*?requiresBackendAcceptanceTdsContract\(backendAcceptanceRunId,\s*requestedMutation\?\.evidenceType\)/,
+    'BUSINESS_ACCEPTANCE_REQUIRES_TDS_CONTRACT_EVIDENCE',
+  );
+  assert.match(
+    runnerSource,
+    /backendAcceptanceRunId !== null &&\s*tdsContractOnly &&\s*manifest\.backendAcceptance\?\.tdsContract !== 'PASS'/,
+    'TDS_ONLY_SCOPE_REQUIRES_TDS_CONTRACT_EVIDENCE',
   );
 });
 
@@ -1361,6 +1366,54 @@ test('manifest evidence archive receipt requires the exact managed artifact set'
         artifacts: [...validEvidenceArchive().artifacts, validEvidenceArchive().artifacts[0]],
       }),
     /RUN_MANIFEST_EVIDENCE_ARCHIVE_ARTIFACT_INVALID/,
+  );
+});
+
+test('TDS-only acceptance scope archives TDS evidence without inventing a business result', () => {
+  const allArtifacts = validEvidenceArchive();
+  const tdsArtifacts = allArtifacts.artifacts.filter(row => row.name !== 'backend-acceptance-result.jsonl');
+  const tdsOnlyArchive = {...allArtifacts, artifacts: tdsArtifacts};
+  assert.deepEqual(
+    validateEvidenceArchiveReceipt(
+      tdsOnlyArchive,
+      allArtifacts.artifacts.map(row => row.name).filter(name => name !== 'backend-acceptance-result.jsonl'),
+    ),
+    tdsOnlyArchive,
+  );
+  assert.throws(
+    () => validateEvidenceArchiveReceipt({...tdsOnlyArchive, artifacts: tdsArtifacts.slice(1)}, tdsArtifacts.map(row => row.name)),
+    /RUN_MANIFEST_EVIDENCE_ARCHIVE_NOT_CLOSED/,
+  );
+  const manifest = {
+    ...validManifest(),
+    business: 'NOT_APPLICABLE',
+    backendAcceptance: {
+      runId: 'backend-acceptance-r5-tc-1786638000000-123',
+      operation: 'tds-contract-only',
+      scope: 'TDS_CONTRACT_ONLY',
+    },
+    workload: null,
+    measurementEvidence: {status: 'NOT_RUN'},
+    evidenceArchive: tdsOnlyArchive,
+  };
+  assert.deepEqual(parseAndValidateRunManifest(manifest), manifest);
+  assert.throws(
+    () => parseAndValidateRunManifest({...manifest, business: 'PASS'}),
+    /RUN_MANIFEST_TDS_CONTRACT_ONLY_SCOPE_INVALID/,
+  );
+});
+
+test('TDS-only acceptance scope cannot run without the exact V-S14 selector', () => {
+  assert.throws(
+    () =>
+      runScript({
+        backendAcceptanceRunId: 'backend-acceptance-r5-tc-1786638000000-123',
+        backendAcceptanceOperation: 'tds-contract-only',
+        verificationMode: 'ACCEPTANCE',
+        invocation: {extraArguments: [], extensionScaleProof: false, productionMutationId: undefined},
+        tdsContractOnly: true,
+      }),
+    /BACKEND_ACCEPTANCE_TDS_CONTRACT_ONLY_SCOPE_INVALID/,
   );
 });
 

@@ -6,6 +6,7 @@ public record WorkspaceRoleStatusTransitionRequest(
     WorkspaceRoleStatus targetStatus,
     Long expectedVersion
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<WorkspaceRoleStatusTransitionRequest> {
     @Override
     public WorkspaceRoleStatusTransitionRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

@@ -6,6 +6,7 @@ public record SalesMenuItemUpdateRequestSaleContentOrderOptionSelectionsItem(
     java.util.UUID definitionRef,
     java.util.List<java.util.UUID> selectedValueRefs
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<SalesMenuItemUpdateRequestSaleContentOrderOptionSelectionsItem> {
     @Override
     public SalesMenuItemUpdateRequestSaleContentOrderOptionSelectionsItem deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

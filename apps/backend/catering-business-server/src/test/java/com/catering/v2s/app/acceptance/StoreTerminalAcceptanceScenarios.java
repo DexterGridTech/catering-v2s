@@ -403,6 +403,13 @@ final class StoreTerminalAcceptanceScenarios {
         assertEquals("CANCELLED", operationsCancelled.json().path("outcome").asText());
         long auditAfterOperationsCancel = terminalBindingAuditTotal(context, store, terminalRef);
         assertEquals(auditBeforeRejectedOperationsCancel + 1, auditAfterOperationsCancel);
+        JsonNode auditHistory = terminalBindingAuditHistory(context, store, terminalRef);
+        assertTrue(
+                hasTerminalBindingAuditReason(auditHistory, "终端设备", "DEVICE_CANCELLED"),
+                "BUSINESS: device cancellation audit records its actor and reason");
+        assertTrue(
+                hasTerminalBindingAuditReason(auditHistory, "Acceptance Operator", "OPERATIONS_CANCELLED"),
+                "BUSINESS: operations cancellation audit records the authenticated operator and its reason");
         BackendAcceptanceTest.Response noLongerActive = context.post(
                 BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL,
                 operationsPath,
@@ -2910,6 +2917,11 @@ final class StoreTerminalAcceptanceScenarios {
 
     private long terminalBindingAuditTotal(
             BackendAcceptanceTest.ScenarioContext context, StoreContext store, UUID terminalRef) throws Exception {
+        return terminalBindingAuditHistory(context, store, terminalRef).path("total").asLong();
+    }
+
+    private JsonNode terminalBindingAuditHistory(
+            BackendAcceptanceTest.ScenarioContext context, StoreContext store, UUID terminalRef) throws Exception {
         return context.get(
                         BackendAcceptanceTest.OPERATIONS_AUDIT_HISTORY,
                         "/api/operations/audit-history?groupWorkspaceKey="
@@ -2917,9 +2929,19 @@ final class StoreTerminalAcceptanceScenarios {
                                 + terminalRef + "&page=1&pageSize=20",
                         store.session().cookie(),
                         OK)
-                .json()
-                .path("total")
-                .asLong();
+                .json();
+    }
+
+    private static boolean hasTerminalBindingAuditReason(JsonNode history, String actorDisplay, String reason) {
+        for (JsonNode item : history.path("items")) {
+            String actualActor = item.path("actorDisplayName").asText();
+            if (actorDisplay != null && !actorDisplay.equals(actualActor)) continue;
+            for (JsonNode change : item.path("changes")) {
+                if ("reason".equals(change.path("fieldKey").asText())
+                        && reason.equals(change.path("afterValue").asText())) return true;
+            }
+        }
+        return false;
     }
 
     private void awaitActiveBindingGeneration(StoreContext store, UUID terminalRef, long generation)

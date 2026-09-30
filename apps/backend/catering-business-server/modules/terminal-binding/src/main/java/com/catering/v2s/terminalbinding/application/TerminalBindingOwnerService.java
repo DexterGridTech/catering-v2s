@@ -83,7 +83,6 @@ public class TerminalBindingOwnerService implements TerminalBindingOwnerApi {
                         ? persistence.insertFirstActive(
                                 candidate.workspaceUuid(),
                                 candidate.groupWorkspaceKey(),
-                                candidate.storeRef(),
                                 candidate.terminalRef(),
                                 command.secretDigest(),
                                 command.deviceId())

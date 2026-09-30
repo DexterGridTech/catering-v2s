@@ -5,6 +5,7 @@ package com.catering.v2s.app.edge.generated.wire;
 public record PublicInvitationOtpSendRequest(
     String mobile
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<PublicInvitationOtpSendRequest> {
     @Override
     public PublicInvitationOtpSendRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

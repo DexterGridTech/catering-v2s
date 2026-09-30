@@ -6,6 +6,7 @@ public record SalesMenuRenameRequest(
     String name,
     Long expectedVersion
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<SalesMenuRenameRequest> {
     @Override
     public SalesMenuRenameRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

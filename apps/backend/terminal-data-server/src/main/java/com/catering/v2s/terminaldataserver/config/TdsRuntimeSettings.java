@@ -12,11 +12,8 @@ public record TdsRuntimeSettings(
         Duration authenticationFirstFrameTimeout,
         Duration authenticationOverallTimeout,
         Duration drainWindow,
-        String nodeId,
-        int maxFramePayloadBytes,
-        int maxMessageBytes) {
+        String nodeId) {
 
-    public static final int MAX_MESSAGE_BYTES = 65_536;
     public static final Duration AUTHENTICATION_FIRST_FRAME_TIMEOUT = Duration.ofSeconds(10);
     public static final Duration AUTHENTICATION_OVERALL_TIMEOUT = Duration.ofSeconds(15);
     public static final Duration MAX_DRAIN_WINDOW = Duration.ofSeconds(10);
@@ -59,9 +56,6 @@ public record TdsRuntimeSettings(
         if (nodeId == null || nodeId.isBlank() || nodeId.length() > 128) {
             throw new IllegalArgumentException("nodeId is invalid");
         }
-        if (maxFramePayloadBytes != MAX_MESSAGE_BYTES || maxMessageBytes != MAX_MESSAGE_BYTES) {
-            throw new IllegalArgumentException("WebSocket frame/message bounds are invalid");
-        }
     }
 
     public static int parseUnauthenticatedConnectionLimit(String value) {
@@ -102,8 +96,6 @@ public record TdsRuntimeSettings(
                 AUTHENTICATION_FIRST_FRAME_TIMEOUT,
                 AUTHENTICATION_OVERALL_TIMEOUT,
                 drainWindow,
-                SINGLE_NODE_ID,
-                MAX_MESSAGE_BYTES,
-                MAX_MESSAGE_BYTES);
+                SINGLE_NODE_ID);
     }
 }

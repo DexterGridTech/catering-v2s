@@ -53,6 +53,11 @@ const remoteGradleDistributionPrefix = '/tmp/catering-v2s-r5-gradle-distribution
 const remoteHostTrust = resolveTrustedRemoteHost(process.env);
 const remoteHost = remoteHostTrust.host;
 const backendAcceptanceSelector = 'com.catering.v2s.app.acceptance.BackendAcceptanceTest';
+const hasBackendAcceptanceSelector = extraArguments =>
+  extraArguments.some(
+    argument =>
+      argument === backendAcceptanceSelector || argument.startsWith(`${backendAcceptanceSelector}.`),
+  );
 const EXPECTED_OPERATION_COUNT = BACKEND_PERFORMANCE_OPERATION_COUNTS.operations;
 
 const now = () => new Date().toISOString();
@@ -142,6 +147,10 @@ const ARCHIVED_EVIDENCE_ARTIFACTS = Object.freeze([
   'process-signal-trace.log',
   'remote-process-identities.tsv',
 ]);
+const TDS_CONTRACT_ONLY_OPERATION = 'tds-contract-only';
+const TDS_CONTRACT_ONLY_EVIDENCE_ARTIFACTS = Object.freeze(
+  ARCHIVED_EVIDENCE_ARTIFACTS.filter(name => name !== 'backend-acceptance-result.jsonl'),
+);
 
 /**
  * A production mutation is applied only after the source has been copied to the
@@ -481,7 +490,7 @@ export const readEvidenceArtifact = (directory, name, {requireArchive = false} =
   return raw.toString('utf8');
 };
 
-export const validateEvidenceArchiveReceipt = receipt => {
+export const validateEvidenceArchiveReceipt = (receipt, requiredArtifacts = ARCHIVED_EVIDENCE_ARTIFACTS) => {
   if (!receipt || receipt.status !== 'PASS') throw new Error('RUN_MANIFEST_EVIDENCE_ARCHIVE_REQUIRED');
   if (typeof receipt.indexPath !== 'string' || receipt.indexPath.trim() === '') {
     throw new Error('RUN_MANIFEST_EVIDENCE_ARCHIVE_INDEX_REQUIRED');
@@ -504,7 +513,7 @@ export const validateEvidenceArchiveReceipt = receipt => {
     }
     names.add(artifact.name);
   }
-  const missing = ARCHIVED_EVIDENCE_ARTIFACTS.filter(name => !names.has(name));
+  const missing = requiredArtifacts.filter(name => !names.has(name));
   if (missing.length > 0) throw new Error(`RUN_MANIFEST_EVIDENCE_ARCHIVE_NOT_CLOSED:${missing.join(',')}`);
   return receipt;
 };
@@ -1110,6 +1119,7 @@ export const parseAndValidateRunManifest = manifest => {
   if (!['PASS', 'FAIL', 'NOT_RUN'].includes(manifest.testExecution.status))
     throw new Error('RUN_MANIFEST_TEST_EXECUTION_INVALID');
   const backendAcceptance = manifest.backendAcceptance;
+  const tdsContractOnly = backendAcceptance?.scope === 'TDS_CONTRACT_ONLY';
   if (
     backendAcceptance !== null &&
     (!backendAcceptance ||
@@ -1119,6 +1129,15 @@ export const parseAndValidateRunManifest = manifest => {
       backendAcceptance.operation.trim() === '')
   ) {
     throw new Error('RUN_MANIFEST_BACKEND_ACCEPTANCE_IDENTITY_INVALID');
+  }
+  if (
+    tdsContractOnly &&
+    (backendAcceptance.operation !== TDS_CONTRACT_ONLY_OPERATION ||
+      manifest.business !== 'NOT_APPLICABLE' ||
+      manifest.workload !== null ||
+      manifest.measurementEvidence?.status !== 'NOT_RUN')
+  ) {
+    throw new Error('RUN_MANIFEST_TDS_CONTRACT_ONLY_SCOPE_INVALID');
   }
   if (
     manifest.measurementEvidence !== undefined &&
@@ -1188,7 +1207,10 @@ export const parseAndValidateRunManifest = manifest => {
     throw new Error('RUN_MANIFEST_CALIBRATION_REQUIRES_FULL_BACKEND_ACCEPTANCE');
   }
   if (backendAcceptance !== null && manifest.status === 'PASS')
-    validateEvidenceArchiveReceipt(manifest.evidenceArchive);
+    validateEvidenceArchiveReceipt(
+      manifest.evidenceArchive,
+      tdsContractOnly ? TDS_CONTRACT_ONLY_EVIDENCE_ARTIFACTS : ARCHIVED_EVIDENCE_ARTIFACTS,
+    );
   validateCleanupReceipt(manifest.cleanup);
   if (!['PASS', 'FAIL'].includes(manifest.status)) throw new Error('RUN_MANIFEST_STATUS_INVALID');
   return manifest;
@@ -2072,6 +2094,7 @@ export const runScript = ({
   traceSystemSignals = false,
   vs12Diagnostic = false,
   vs8Diagnostic = false,
+  tdsContractOnly = false,
 }) => {
   const signalTracingRequested = traceChildSignals || traceSystemSignals;
   if (traceChildSignals && traceSystemSignals) throw new Error('R5_SIGNAL_TRACE_MODES_MUTUALLY_EXCLUSIVE');
@@ -2097,6 +2120,19 @@ export const runScript = ({
       traceSystemSignals)
   ) {
     throw new Error('BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_ARGUMENT_INVALID');
+  }
+  if (
+    tdsContractOnly &&
+    (backendAcceptanceRunId === null ||
+      backendAcceptanceOperation !== TDS_CONTRACT_ONLY_OPERATION ||
+      verificationMode !== 'ACCEPTANCE' ||
+      !invocation.extraArguments.includes(
+        'com.catering.v2s.app.acceptance.BackendAcceptanceTest.terminalConnectionCompressionContracts',
+      ) ||
+      productionMutation !== null ||
+      invocation.extensionScaleProof === true)
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_ONLY_SCOPE_INVALID');
   }
   if (
     traceSystemSignals &&
@@ -2451,7 +2487,7 @@ const execute = async () => {
   const directory = path.join(evidence, runId);
   const backendAcceptanceRunId =
     process.env.V2S_BACKEND_ACCEPTANCE_EXECUTION === 'true' &&
-    invocation.extraArguments.includes(backendAcceptanceSelector)
+    hasBackendAcceptanceSelector(invocation.extraArguments)
       ? `backend-acceptance-${runId}`
       : null;
   const backendAcceptanceOperation = canonicalBackendAcceptanceOperation(
@@ -2459,6 +2495,24 @@ const execute = async () => {
     invocation.extensionScaleProof === true,
   );
   const verificationMode = process.env.V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE ?? 'ACCEPTANCE';
+  const tdsContractOnlyValue = process.env.V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_ONLY ?? 'false';
+  if (!['true', 'false'].includes(tdsContractOnlyValue)) {
+    throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_ONLY_VALUE_INVALID');
+  }
+  const tdsContractOnly = tdsContractOnlyValue === 'true';
+  if (
+    tdsContractOnly &&
+    (backendAcceptanceRunId === null ||
+      backendAcceptanceOperation !== TDS_CONTRACT_ONLY_OPERATION ||
+      verificationMode !== 'ACCEPTANCE' ||
+      !invocation.extraArguments.includes(
+        'com.catering.v2s.app.acceptance.BackendAcceptanceTest.terminalConnectionCompressionContracts',
+      ) ||
+      invocation.productionMutationId !== undefined ||
+      invocation.extensionScaleProof === true)
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_ONLY_SCOPE_INVALID');
+  }
   const topologyPreflight = process.env.V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT === 'true';
   const vs12DiagnosticValue = process.env.V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC ?? 'false';
   if (!['true', 'false'].includes(vs12DiagnosticValue)) {
@@ -2593,7 +2647,13 @@ const execute = async () => {
     testExecution: {status: 'NOT_RUN'},
     business: backendAcceptanceRunId === null ? 'NOT_APPLICABLE' : 'NOT_RUN',
     backendAcceptance:
-      backendAcceptanceRunId === null ? null : {runId: backendAcceptanceRunId, operation: backendAcceptanceOperation},
+      backendAcceptanceRunId === null
+        ? null
+        : {
+            runId: backendAcceptanceRunId,
+            operation: backendAcceptanceOperation,
+            ...(tdsContractOnly ? {scope: 'TDS_CONTRACT_ONLY'} : {}),
+          },
     productionMutation:
       requestedMutation === null
         ? null
@@ -2747,6 +2807,7 @@ const execute = async () => {
         traceSystemSignals,
         vs12Diagnostic,
         vs8Diagnostic,
+        tdsContractOnly,
       }),
     );
     if (interruptionSignal) throw new Error(`HARNESS_INTERRUPTED:${interruptionSignal}`);
@@ -2893,13 +2954,17 @@ const execute = async () => {
     }
     beginBoundary('BUSINESS_EVIDENCE');
     const requiresAcceptanceArtifacts =
-      requiresBackendAcceptanceEvidence(backendAcceptanceRunId, executionPass) ||
+      (!tdsContractOnly && requiresBackendAcceptanceEvidence(backendAcceptanceRunId, executionPass)) ||
       (requestedMutation !== null && acceptanceArtifactsAvailable);
-    if (requiresAcceptanceArtifacts) {
+    const requiresTdsContractOnlyArtifacts = tdsContractOnly && executionPass;
+    if (requiresAcceptanceArtifacts || requiresTdsContractOnlyArtifacts) {
       const archiveRows = parseEvidenceArchiveIndex(
         readFileSync(path.join(directory, 'evidence-artifacts.tsv'), 'utf8'),
       );
-      for (const name of ARCHIVED_EVIDENCE_ARTIFACTS) {
+      const requiredArtifacts = tdsContractOnly
+        ? TDS_CONTRACT_ONLY_EVIDENCE_ARTIFACTS
+        : ARCHIVED_EVIDENCE_ARTIFACTS;
+      for (const name of requiredArtifacts) {
         readEvidenceArtifact(directory, name, {requireArchive: true});
         if (existsSync(path.join(directory, name))) throw new Error(`EVIDENCE_ARTIFACT_RAW_PRESENT:${name}`);
       }
@@ -2914,9 +2979,6 @@ const execute = async () => {
           archiveSha256: row.archiveSha256,
         })),
       };
-      backendAcceptanceResult = parseBackendAcceptanceResult(
-        readEvidenceArtifact(directory, 'backend-acceptance-result.jsonl', {requireArchive: true}),
-      );
       tdsContractResult = parseTdsContractResult(
         readEvidenceArtifact(directory, 'tds-contract-result.jsonl', {requireArchive: true}),
       );
@@ -2928,14 +2990,21 @@ const execute = async () => {
       manifest.backendAcceptance.tdsContract = tdsContractResult.summary.directFailures === 0 ? 'PASS' : 'FAIL';
       manifest.backendAcceptance.tdsContractScenarios = tdsContractResult.summary;
       manifest.backendAcceptance.tdsProcess = tdsProcessEvidence;
-      manifest.business = backendAcceptanceResult.summary.directFailures === 0 ? 'PASS' : 'FAIL';
-      if (manifest.business === 'PASS') markLastKnownGood('BUSINESS_EVIDENCE');
+      if (tdsContractOnly) {
+        manifest.business = 'NOT_APPLICABLE';
+      } else {
+        backendAcceptanceResult = parseBackendAcceptanceResult(
+          readEvidenceArtifact(directory, 'backend-acceptance-result.jsonl', {requireArchive: true}),
+        );
+        manifest.business = backendAcceptanceResult.summary.directFailures === 0 ? 'PASS' : 'FAIL';
+        if (manifest.business === 'PASS') markLastKnownGood('BUSINESS_EVIDENCE');
+      }
     }
     if (!executionPass && requestedMutation === null) throw new Error(executionFailure);
     if (remoteGradleStatus !== '0' && requestedMutation === null) throw new Error(executionFailure);
     if (archiveStatus !== '0') throw new Error('REMOTE_EVIDENCE_ARCHIVE_FAILED');
     if (manifest.cleanup.status !== 'PASS') throw new Error('REMOTE_TESTCONTAINERS_RESOURCE_NOT_RECLAIMED');
-    if (backendAcceptanceRunId !== null) {
+    if (backendAcceptanceRunId !== null && !tdsContractOnly) {
       if (backendAcceptanceResult?.summary.stubOnly > 0) throw new Error('BACKEND_ACCEPTANCE_STUB_BUSINESS_NOT_ALLOWED');
       if (requiresBackendAcceptanceTdsContract(backendAcceptanceRunId, requestedMutation?.evidenceType)) {
         if (manifest.backendAcceptance?.tdsContract !== 'PASS') {
@@ -2946,7 +3015,14 @@ const execute = async () => {
         throw new Error('BACKEND_ACCEPTANCE_SCENARIO_FAILURE');
       }
     }
-    if (backendAcceptanceRunId !== null) {
+    if (
+      backendAcceptanceRunId !== null &&
+      tdsContractOnly &&
+      manifest.backendAcceptance?.tdsContract !== 'PASS'
+    ) {
+      throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_FAILED');
+    }
+    if (backendAcceptanceRunId !== null && !tdsContractOnly) {
       beginBoundary('MEASUREMENT_EVIDENCE');
       measurementEvidence = parseHttpRequestEvents(
         readEvidenceArtifact(directory, 'http-request-events.jsonl', {requireArchive: true}),

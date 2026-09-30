@@ -1,5 +1,7 @@
 package com.catering.v2s.terminaldataserver.websocket;
 
+import com.catering.v2s.terminaldataserver.session.TdsConnectionCapacityLimiter;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -86,7 +88,7 @@ class TdsWebSocketHandlerTransportFailureTest {
                 new TerminalConnectionFrameCodec(TdsWireJsonConfiguration.createWireObjectMapper(), protocol),
                 protocol,
                 mock(TerminalCredentialVerificationApi.class),
-                new UnauthenticatedConnectionLimiter(1),
+                new TdsConnectionCapacityLimiter(1, 1),
                 sessionActors,
                 revocationListener,
                 mock(TdsConnectionStateWriter.class),
@@ -134,7 +136,7 @@ class TdsWebSocketHandlerTransportFailureTest {
                 new TerminalConnectionFrameCodec(TdsWireJsonConfiguration.createWireObjectMapper(), protocol),
                 protocol,
                 mock(com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.class),
-                new UnauthenticatedConnectionLimiter(1),
+                new TdsConnectionCapacityLimiter(1, 1),
                 sessionActors,
                 revocationListener,
                 mock(TdsConnectionStateWriter.class),
@@ -196,7 +198,7 @@ class TdsWebSocketHandlerTransportFailureTest {
                 new TerminalConnectionFrameCodec(TdsWireJsonConfiguration.createWireObjectMapper(), protocol),
                 protocol,
                 credentialVerification,
-                new UnauthenticatedConnectionLimiter(1),
+                new TdsConnectionCapacityLimiter(1, 1),
                 sessionActors,
                 revocationListener,
                 mock(TdsConnectionStateWriter.class),
@@ -235,7 +237,7 @@ class TdsWebSocketHandlerTransportFailureTest {
                 Duration.ofSeconds(15),
                 Duration.ofSeconds(5));
         TdsWebSocketConnection connection = new TdsWebSocketConnection(
-                session, protocol, new UnauthenticatedConnectionLimiter(1).tryAcquire(), Schedulers.immediate());
+                session, protocol, new TdsConnectionCapacityLimiter(1, 1).tryAcquireUnauthenticated(), Schedulers.immediate());
         connection.outboundMessages().subscribe(ignored -> {});
         assertTrue(connection.sendSessionReady("SESSION_READY", null));
         var rejectingCodecScheduler = Schedulers.fromExecutor(command -> {
@@ -251,7 +253,7 @@ class TdsWebSocketHandlerTransportFailureTest {
                 new TerminalConnectionFrameCodec(TdsWireJsonConfiguration.createWireObjectMapper(), protocol),
                 protocol,
                 mock(TerminalCredentialVerificationApi.class),
-                new UnauthenticatedConnectionLimiter(1),
+                new TdsConnectionCapacityLimiter(1, 1),
                 mock(TdsTerminalSessionActors.class),
                 mock(TdsBindingRevocationListener.class),
                 mock(TdsConnectionStateWriter.class),

@@ -7,6 +7,7 @@ public record PlatformAdminStatusTransitionRequest(
     Long expectedVersion,
     String idempotencyKey
 ) {
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<PlatformAdminStatusTransitionRequest> {
     @Override
     public PlatformAdminStatusTransitionRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

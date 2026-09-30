@@ -6,6 +6,15 @@ public record LoginRequest(
     String accountName,
     String password
 ) {
+  @Override
+  public String toString() {
+    return "LoginRequest["
+        + "accountName=" + accountName
+        + ", redacted=" + "[REDACTED]"
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<LoginRequest> {
     @Override
     public LoginRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionProtocol;
+import com.catering.v2s.terminaldataserver.session.TdsConnectionCapacityLimiter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
@@ -30,11 +31,11 @@ class TdsWebSocketConnectionTest {
         WebSocketSession session = mock(WebSocketSession.class);
         when(session.getId()).thenReturn("oversized-session");
         when(session.close(any(CloseStatus.class))).thenReturn(Mono.empty());
-        UnauthenticatedConnectionLimiter limiter = new UnauthenticatedConnectionLimiter(1);
+        TdsConnectionCapacityLimiter limiter = new TdsConnectionCapacityLimiter(1, 1);
         TdsWebSocketConnection connection = new TdsWebSocketConnection(
                 session,
                 new TerminalConnectionProtocol(JsonMapper.builder().build()),
-                limiter.tryAcquire(),
+                limiter.tryAcquireUnauthenticated(),
                 Schedulers.immediate());
 
         connection.closeStandardAsync(1009).block();
@@ -50,8 +51,8 @@ class TdsWebSocketConnectionTest {
         WebSocketMessage message = new WebSocketMessage(
                 WebSocketMessage.Type.TEXT, new NettyDataBufferFactory(ByteBufAllocator.DEFAULT).wrap(payload));
         when(session.textMessage(anyString())).thenReturn(message);
-        UnauthenticatedConnectionLimiter limiter = new UnauthenticatedConnectionLimiter(1);
-        UnauthenticatedConnectionLimiter.Permit permit = limiter.tryAcquire();
+        TdsConnectionCapacityLimiter limiter = new TdsConnectionCapacityLimiter(1, 1);
+        TdsConnectionCapacityLimiter.Permit permit = limiter.tryAcquireUnauthenticated();
         TdsWebSocketConnection connection = new TdsWebSocketConnection(
                 session, new TerminalConnectionProtocol(JsonMapper.builder().build()), permit, Schedulers.immediate());
         BaseSubscriber<WebSocketMessage> subscriber = new BaseSubscriber<>() {

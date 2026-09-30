@@ -22,6 +22,14 @@ const tdsWebSocketHandlerPath = path.join(
   root,
   'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketHandler.java',
 );
+const tdsWebSocketConfigurationPath = path.join(
+  root,
+  'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketConfiguration.java',
+);
+const tdsWebSocketPipelineInstallerPath = path.join(
+  root,
+  'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsWebSocketPipelineInstaller.java',
+);
 const tdsSessionActorsPath = path.join(
   root,
   'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/session/TdsTerminalSessionActors.java',
@@ -81,6 +89,81 @@ export function assertNoTerminalDataServerDependencyInBusinessApp(source) {
   const dependencyDeclaration =
     /^\s*(?:api|implementation|compileOnly|runtimeOnly|testImplementation|testCompileOnly|testRuntimeOnly)\s*\(\s*project\(\s*["']:\s*apps\s*:\s*backend\s*:\s*terminal-data-server["']/m;
   assert.doesNotMatch(source, dependencyDeclaration, 'BACKEND_ACCEPTANCE_TDS_ON_BUSINESS_TEST_RUNTIME_CLASSPATH');
+}
+
+export function assertNativeTdsCompressionWiring(configuration, pipeline, closeHandler) {
+  assert.match(
+    configuration,
+    /\.compress\(true\)\s*\.maxDecompressionBufferSize\(protocol\.maxDecompressedMessageBytes\(\)\)/,
+    'TDS_NATIVE_PMD_INFLATE_BOUND_MISSING',
+  );
+  assert.match(
+    configuration,
+    /protocol\.maxCompleteDecompressedMessageBytes\(\),\s*protocol\.oversizedMessageCloseCode\(\),\s*logScheduler/,
+    'TDS_MESSAGE_LIMITS_MUST_COME_FROM_SHARED_PROTOCOL',
+  );
+  assert.match(
+    pipeline,
+    /addBefore\(\s*NettyPipeline\.ReactiveBridge,\s*MESSAGE_AGGREGATOR,\s*new WebSocketFrameAggregator\(maxMessageBytes\)\)/,
+    'TDS_DECODED_MESSAGE_AGGREGATOR_POSITION_INVALID',
+  );
+  assert.match(
+    pipeline,
+    /addAfter\(\s*MESSAGE_AGGREGATOR,[\s\S]*MESSAGE_SIZE_CLOSE_HANDLER/,
+    'TDS_MESSAGE_SIZE_CLOSE_HANDLER_POSITION_INVALID',
+  );
+  assert.match(
+    closeHandler,
+    /new CloseWebSocketFrame\(overflowCloseCode, ""\)/,
+    'TDS_MESSAGE_LIMIT_CLOSE_MUST_USE_SHARED_PROTOCOL_CODE',
+  );
+}
+
+export function assertTdsProtocolReadsSharedBounds(source) {
+  assert.match(
+    source,
+    /protocolVersion\s*=\s*requiredPositiveInteger\(contract, "protocolVersion"\)/,
+    'TDS_PROTOCOL_VERSION_NOT_READ_FROM_CONTRACT',
+  );
+  assert.match(
+    source,
+    /endpointMethod\s*=\s*requiredText\(endpoint, "method"\)/,
+    'TDS_PROTOCOL_ENDPOINT_METHOD_NOT_READ_FROM_CONTRACT',
+  );
+  assert.match(
+    source,
+    /endpointPath\s*=\s*requiredText\(endpoint, "path"\)/,
+    'TDS_PROTOCOL_ENDPOINT_PATH_NOT_READ_FROM_CONTRACT',
+  );
+  assert.match(
+    source,
+    /maxFramePayloadBytes\s*=\s*requiredPositiveInteger\(limits, "maxFramePayloadBytes"\)/,
+    'TDS_PROTOCOL_FRAME_LIMIT_NOT_READ_FROM_CONTRACT',
+  );
+  assert.match(
+    source,
+    /maxDecompressedMessageBytes\s*=\s*requiredPositiveInteger\(limits, "maxDecompressedMessageBytes"\)/,
+    'TDS_PROTOCOL_DECOMPRESSION_LIMIT_NOT_READ_FROM_CONTRACT',
+  );
+  assert.match(
+    source,
+    /maxCompleteDecompressedMessageBytes\s*=\s*requiredPositiveInteger\(limits, "maxCompleteDecompressedMessageBytes"\)/,
+    'TDS_PROTOCOL_MESSAGE_LIMIT_NOT_READ_FROM_CONTRACT',
+  );
+  assert.match(
+    source,
+    /oversizedMessageCloseCode\s*=\s*requiredPositiveInteger\(limits, "overflowCloseCode"\)/,
+    'TDS_PROTOCOL_OVERFLOW_CLOSE_NOT_READ_FROM_CONTRACT',
+  );
+  assert.match(
+    source,
+    /standardCloseCodes\.contains\(oversizedMessageCloseCode\)/,
+    'TDS_PROTOCOL_OVERFLOW_CLOSE_NOT_IN_STANDARD_CLOSE_SET',
+  );
+  assert.ok(
+    source.includes('return endpointPath.replace("{groupWorkspaceKey}", "*")'),
+    'TDS_WEBSOCKET_ROUTE_NOT_DERIVED_FROM_CONTRACT',
+  );
 }
 
 function assertAcceptanceContainersStartBeforeDynamicProperties(source) {
@@ -506,6 +589,65 @@ test('scripts/verify selects every TDS Java test exactly once', () => {
     const selectorCount = (gate.match(new RegExp(qualifiedName.split('.').join('\\.'), 'g')) ?? []).length;
     assert.equal(selectorCount, 1, `TDS_JAVA_TEST_SELECTOR_COUNT_INVALID:${qualifiedName}:${selectorCount}`);
   }
+});
+
+test('TDS uses Reactor Netty native compression with both inflation and complete-message bounds', () => {
+  const configuration = readFileSync(tdsWebSocketConfigurationPath, 'utf8');
+  const pipeline = readFileSync(tdsWebSocketPipelineInstallerPath, 'utf8');
+  const closeHandler = readFileSync(
+    path.join(root, 'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/websocket/TdsMessageSizeCloseHandler.java'),
+    'utf8',
+  );
+  assertNativeTdsCompressionWiring(configuration, pipeline, closeHandler);
+
+  const missingInflateBound = configuration.replace(
+    '.maxDecompressionBufferSize(protocol.maxDecompressedMessageBytes())',
+    '',
+  );
+  assert.notEqual(missingInflateBound, configuration, 'native decompression red fixture anchor must exist');
+  assert.throws(
+    () => assertNativeTdsCompressionWiring(missingInflateBound, pipeline, closeHandler),
+    /TDS_NATIVE_PMD_INFLATE_BOUND_MISSING/,
+  );
+
+  const aggregatorMovedBeforeNativeDecoder = pipeline.replace(
+    'pipeline.addBefore(\n                    NettyPipeline.ReactiveBridge, MESSAGE_AGGREGATOR',
+    'pipeline.addAfter(\n                    NettyPipeline.HttpCodec, MESSAGE_AGGREGATOR',
+  );
+  assert.notEqual(aggregatorMovedBeforeNativeDecoder, pipeline, 'aggregator-order red fixture anchor must exist');
+  assert.throws(
+    () => assertNativeTdsCompressionWiring(configuration, aggregatorMovedBeforeNativeDecoder, closeHandler),
+    /TDS_DECODED_MESSAGE_AGGREGATOR_POSITION_INVALID/,
+  );
+
+  const hardcodedOverflowClose = closeHandler.replace(
+    'new CloseWebSocketFrame(overflowCloseCode, "")',
+    'new CloseWebSocketFrame(1009, "")',
+  );
+  assert.notEqual(hardcodedOverflowClose, closeHandler, 'shared close-code red fixture anchor must exist');
+  assert.throws(
+    () => assertNativeTdsCompressionWiring(configuration, pipeline, hardcodedOverflowClose),
+    /TDS_MESSAGE_LIMIT_CLOSE_MUST_USE_SHARED_PROTOCOL_CODE/,
+  );
+});
+
+test('TDS consumes version, endpoint, byte limits, and overflow close from the shared protocol', () => {
+  const protocolPath = path.join(
+    root,
+    'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/protocol/TerminalConnectionProtocol.java',
+  );
+  const protocolSource = readFileSync(protocolPath, 'utf8');
+  assertTdsProtocolReadsSharedBounds(protocolSource);
+
+  const hardcodedDecodedLimit = protocolSource.replace(
+    'maxDecompressedMessageBytes = requiredPositiveInteger(limits, "maxDecompressedMessageBytes");',
+    'maxDecompressedMessageBytes = 65_536;',
+  );
+  assert.notEqual(hardcodedDecodedLimit, protocolSource, 'shared decompression limit red fixture anchor must exist');
+  assert.throws(
+    () => assertTdsProtocolReadsSharedBounds(hardcodedDecodedLimit),
+    /TDS_PROTOCOL_DECOMPRESSION_LIMIT_NOT_READ_FROM_CONTRACT/,
+  );
 });
 
 test('scripts/verify selects the owner unit test that proves D-48 audit reasons', () => {
@@ -1019,6 +1161,60 @@ test('V-S12 focused diagnostic selects exactly the 30-second outage scenario for
   assert.match(diagnostic, /Stream\.of\(v12DatabaseOutageTest\(host, tds, 30\)\)/);
   assert.doesNotMatch(diagnostic, /v12DatabaseOutageTest\(host, tds, 10\)/);
   assert.match(scenarios, /"terminal\.connection\.vs12\.database-outage-" \+ outageSeconds/);
+});
+
+test('D-46 focused selector runs nine V-S14 cases and the wire secret unit test', () => {
+  const runner = readFileSync(backendAcceptanceRunnerPath, 'utf8');
+  const remoteRunner = readFileSync(path.join(root, 'scripts/test/r5-remote-testcontainers.mjs'), 'utf8');
+  assert.match(runner, /--d46-focused/);
+  assert.match(
+    runner,
+    /if \[\[ "\$d46_focused" == true && \( "\$operation" != 'all'[\s\S]*?BACKEND_ACCEPTANCE_D46_SELECTION_ARGUMENT_INVALID/,
+  );
+  assert.match(
+    runner,
+    /BackendAcceptanceTest\.terminalConnectionCompressionContracts\)[\s\S]*?--tests com\.catering\.v2s\.app\.edge\.generated\.wire\.TerminalActivationSecretToStringTest[\s\S]*?V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=ACCEPTANCE/,
+  );
+  assert.ok(
+    remoteRunner.includes(
+      'argument === backendAcceptanceSelector || argument.startsWith(`${backendAcceptanceSelector}.`)',
+    ),
+    'R5_RUNNER_MUST_RECOGNIZE_BACKEND_ACCEPTANCE_METHOD_SELECTORS',
+  );
+
+  const suite = readFileSync(suitePath, 'utf8');
+  const factoryStart = suite.indexOf('Stream<DynamicTest> terminalConnectionCompressionContracts()');
+  const factoryEnd = suite.indexOf('\n    @TestFactory', factoryStart + 1);
+  assert.ok(factoryStart >= 0 && factoryEnd > factoryStart, 'V_S14_FACTORY_BOUNDARY_MISSING');
+  const factory = suite.slice(factoryStart, factoryEnd);
+  assert.match(factory, /if \(!\"all\"\.equals\(selectedOperation\)\) return Stream\.empty\(\)/);
+  assert.match(factory, /TerminalConnectionContractScenarios\.v14Scenarios\(this, tdsAcceptanceProcess\)/);
+
+  const scenariosSource = readFileSync(terminalContractScenariosPath, 'utf8');
+  const scenarioStart = scenariosSource.indexOf('static Stream<DynamicTest> v14Scenarios(');
+  const scenarioEnd = scenariosSource.indexOf('\n    static Stream<DynamicTest> forwardCompatibleMessageFieldScenarios(', scenarioStart);
+  assert.ok(scenarioStart >= 0 && scenarioEnd > scenarioStart, 'V_S14_SCENARIO_BOUNDARY_MISSING');
+  const scenarioBlock = scenariosSource.slice(scenarioStart, scenarioEnd);
+  const selected = [...scenarioBlock.matchAll(/new WireCase\(\s*\"([^\"]+)\"/g)].map(match => match[1]);
+  assert.deepEqual(selected, [
+    'terminal.connection.compression.offer-none',
+    'terminal.connection.compression.offer-bare',
+    'terminal.connection.compression.offer-client-max-window-bits',
+    'terminal.connection.compression.session-negotiated',
+    'terminal.connection.compression.session-fallback',
+    'terminal.connection.frame.exact-boundary',
+    'terminal.connection.frame.raw-overflow',
+    'terminal.connection.frame.compressed-single-overflow',
+    'terminal.connection.frame.compressed-fragmented-overflow',
+  ], 'V_S14_CASES_MUST_MATCH_THE_AUTHORIZED_NINE');
+
+  const invalidOperation = spawnSync(
+    backendAcceptanceRunnerPath,
+    ['--operation', 'storeTerminalActivationBusinessPrecedence', '--d46-focused'],
+    {cwd: root, env: process.env, encoding: 'utf8'},
+  );
+  assert.equal(invalidOperation.status, 2, 'D-46 selector must fail before remote execution for a non-all operation');
+  assert.match(invalidOperation.stderr, /BACKEND_ACCEPTANCE_D46_SELECTION_ARGUMENT_INVALID/);
 });
 
 test('terminal activation HTTP routes use payload-free owner and outcome diagnostics', () => {

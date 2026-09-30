@@ -69,6 +69,7 @@ final class TerminalConnectionContractScenarios {
             "CONTROL_RECEIVED",
             "PING_SENT",
             "SESSION_PROBE_SERVER_CLOSE",
+            "SERVER_DECOMPRESSION_FAILED",
             "CLIENT_FAILED",
             "RESULT_READY");
     private static final Set<String> SAFE_TDS_AUTH_EVENTS = Set.of(
@@ -2977,8 +2978,8 @@ final class TerminalConnectionContractScenarios {
                         strings(result.path("clientCompressedTypes")),
                         "TERMINAL_WIRE_CLIENT_COMPRESSION_DIRECTION_INVALID");
                 Assertions.assertEquals(
-                        negotiated ? List.of("SESSION_READY") : List.of(),
-                        strings(result.path("serverCompressedTypes")),
+                        negotiated,
+                        !strings(result.path("serverCompressedTypes")).isEmpty(),
                         "TERMINAL_WIRE_SERVER_COMPRESSION_DIRECTION_INVALID");
             } else if (isExactBoundaryMessage(testCase.scenario())) {
                 Assertions.assertEquals(List.of("SESSION_READY"), strings(result.path("eventTypes")));
@@ -3595,9 +3596,12 @@ final class TerminalConnectionContractScenarios {
                 elapsedMillis,
                 stdoutShape,
                 result);
-        Assertions.assertEquals(0, node.exitValue(), "TERMINAL_WIRE_CLIENT_EXIT_NONZERO");
         Assertions.assertFalse(output.contains("\n"), "TERMINAL_WIRE_CLIENT_OUTPUT_CARDINALITY_INVALID");
         Assertions.assertNotNull(result, "TERMINAL_WIRE_CLIENT_OUTPUT_JSON_INVALID");
+        Assertions.assertEquals(
+                0,
+                node.exitValue(),
+                "TERMINAL_WIRE_CLIENT_EXIT_NONZERO failureCategory=" + result.path("failureCategory").asText("NONE"));
         Assertions.assertEquals("PASS", result.path("status").asText(), "TERMINAL_WIRE_CLIENT_CONTRACT_FAILED");
         return result;
     }

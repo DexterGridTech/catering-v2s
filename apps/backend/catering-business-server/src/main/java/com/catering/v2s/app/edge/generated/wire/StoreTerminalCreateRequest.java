@@ -8,6 +8,17 @@ public record StoreTerminalCreateRequest(
     String activationCode,
     StoreTerminalConfigurationInput configuration
 ) {
+  @Override
+  public String toString() {
+    return "StoreTerminalCreateRequest["
+        + "name=" + name
+        + ", deviceType=" + deviceType
+        + ", redacted=" + "[REDACTED]"
+        + ", configuration=" + configuration
+        + "]";
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreTerminalCreateRequest> {
     @Override
     public StoreTerminalCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)
