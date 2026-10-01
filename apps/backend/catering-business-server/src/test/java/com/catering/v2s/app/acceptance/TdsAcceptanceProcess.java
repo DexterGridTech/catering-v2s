@@ -50,6 +50,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
     private final int port;
     private final TdsCapacity tdsCapacity;
     private final long stateWriteIntervalMillis;
+    private final TdsStartConfiguration startConfiguration;
     private final long rssAtReadyKiB;
     private boolean gracefulStopRequested;
     private long rssBeforeStopKiB;
@@ -70,6 +71,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
             int port,
             TdsCapacity tdsCapacity,
             long stateWriteIntervalMillis,
+            TdsStartConfiguration startConfiguration,
             long rssAtReadyKiB) {
         this.runId = runId;
         this.directory = directory;
@@ -85,10 +87,13 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         this.port = port;
         this.tdsCapacity = tdsCapacity;
         this.stateWriteIntervalMillis = stateWriteIntervalMillis;
+        this.startConfiguration = startConfiguration;
         this.rssAtReadyKiB = rssAtReadyKiB;
     }
 
-    static TdsAcceptanceProcess start(PostgreSQLContainer<?> postgres) throws Exception {
+    static TdsAcceptanceProcess start(PostgreSQLContainer<?> postgres, TdsStartConfiguration startConfiguration)
+            throws Exception {
+        Assertions.assertNotNull(startConfiguration, "TDS_START_CONFIGURATION_REQUIRED");
         requireRemoteAcceptance();
         String runId = requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_ID");
         Path acceptanceDirectory = Path.of(requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_DIRECTORY"))
@@ -161,6 +166,13 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         command.add("--server.port=" + requestedPort);
         command.add("--spring.main.web-application-type=reactive");
         command.add("--v2s.tds.state-write-interval-ms=" + stateWriteIntervalMillis);
+        if (startConfiguration.nodeIdOverride() != null) {
+            command.add("--v2s.tds.node-id=" + startConfiguration.nodeIdOverride());
+        }
+        if (startConfiguration.readinessWithdrawalWaitMsOverride() != null) {
+            command.add(
+                    "--v2s.tds.readiness-withdrawal-wait-ms=" + startConfiguration.readinessWithdrawalWaitMsOverride());
+        }
         command.add("--v2s.tds.heartbeat-interval-ms=" + ACCEPTANCE_HEARTBEAT_INTERVAL_MILLIS);
         command.add("--v2s.tds.heartbeat-timeout-ms=" + ACCEPTANCE_HEARTBEAT_TIMEOUT_MILLIS);
         command.add("--v2s.tds.drain-window-ms=" + ACCEPTANCE_DRAIN_WINDOW_MILLIS);
@@ -212,16 +224,20 @@ final class TdsAcceptanceProcess implements AutoCloseable {
                     port,
                     tdsCapacity,
                     stateWriteIntervalMillis,
+                    startConfiguration,
                     rssAtReadyKiB);
             owned.writeEvidence("READY", "NOT_RUN", null);
             System.out.printf(
                     ("BACKEND_ACCEPTANCE_TDS_PROCESS stage=READY pid=%d startTicks=%s port=%d "
-                            + "stateWriteIntervalMillis=%d appType=REACTIVE runId=%s "
+                            + "stateWriteIntervalMillis=%d nodeId=%s readinessWithdrawalWaitMillis=%d "
+                            + "appType=REACTIVE runId=%s "
                             + "logPath=%s registrationGateSocket=%s%n"),
                     pid,
                     startTicks,
                     owned.port,
                     stateWriteIntervalMillis,
+                    startConfiguration.effectiveNodeId(),
+                    startConfiguration.effectiveReadinessWithdrawalWaitMs(),
                     runId,
                     logPath,
                     registrationGateBroker.socketPath());
@@ -268,6 +284,14 @@ final class TdsAcceptanceProcess implements AutoCloseable {
 
     long stateWriteIntervalMillis() {
         return stateWriteIntervalMillis;
+    }
+
+    String nodeId() {
+        return startConfiguration.effectiveNodeId();
+    }
+
+    long readinessWithdrawalWaitMillis() {
+        return startConfiguration.effectiveReadinessWithdrawalWaitMs();
     }
 
     boolean processAlive() {
@@ -403,6 +427,8 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         evidence.put("applicationType", "REACTIVE");
         evidence.put("port", port);
         evidence.put("stateWriteIntervalMillis", stateWriteIntervalMillis);
+        evidence.put("nodeId", startConfiguration.effectiveNodeId());
+        evidence.put("readinessWithdrawalWaitMillis", startConfiguration.effectiveReadinessWithdrawalWaitMs());
         evidence.put(
                 "launchMode",
                 "true".equals(System.getenv("V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC"))
@@ -494,6 +520,32 @@ final class TdsAcceptanceProcess implements AutoCloseable {
     }
 
     private record TdsCapacity(int rssBudgetMiB, int maxUnauthenticatedConnections, int maxTrackedSessions) {}
+
+    record TdsStartConfiguration(String nodeIdOverride, Long readinessWithdrawalWaitMsOverride) {
+        static final String DEFAULT_NODE_ID = "terminal-data-server";
+        static final long DEFAULT_READINESS_WITHDRAWAL_WAIT_MS = 3_000;
+        static final String VS15_CONTRACT_SCENARIO_ID = "terminal.connection.vs15.readiness-withdrawal-and-drain";
+        static final String VS15_NODE_ID = "vs15-acceptance-node";
+        static final long VS15_READINESS_WITHDRAWAL_WAIT_MS = 4_000;
+
+        static TdsStartConfiguration forContractScenario(String scenario) {
+            if (scenario == null || scenario.isBlank()) return new TdsStartConfiguration(null, null);
+            if (VS15_CONTRACT_SCENARIO_ID.equals(scenario)) {
+                return new TdsStartConfiguration(VS15_NODE_ID, VS15_READINESS_WITHDRAWAL_WAIT_MS);
+            }
+            throw new IllegalArgumentException("BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_UNKNOWN");
+        }
+
+        String effectiveNodeId() {
+            return nodeIdOverride == null ? DEFAULT_NODE_ID : nodeIdOverride;
+        }
+
+        long effectiveReadinessWithdrawalWaitMs() {
+            return readinessWithdrawalWaitMsOverride == null
+                    ? DEFAULT_READINESS_WITHDRAWAL_WAIT_MS
+                    : readinessWithdrawalWaitMsOverride;
+        }
+    }
 
     private static void validateRuntimeClasspathReport(Path report) throws Exception {
         Assertions.assertTrue(Files.isRegularFile(report), "BACKEND_ACCEPTANCE_CLASSPATH_REPORT_MISSING");

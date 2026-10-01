@@ -530,6 +530,73 @@ describe('P/R/F/H/C/M/X groups: persistence runtime', () => {
     expect(plainStorage.values.get('unrelated')).toBe('2');
   });
 
+  it('C-1b reset retains only registered owner-declared state and clears other owners and orphan keys', async () => {
+    const retainedSliceName = 'kernel.base.server-config.configuration';
+    const otherSliceName = 'kernel.base.other-owner.preferences';
+    const retainedKey = createPersistenceFieldKey({
+      persistenceKey: 'terminal',
+      sliceName: retainedSliceName,
+      storageKey: 'enabled',
+    });
+    const otherKey = createPersistenceFieldKey({
+      persistenceKey: 'terminal',
+      sliceName: otherSliceName,
+      storageKey: 'enabled',
+    });
+    const orphanKey = `${createPersistenceNamespacePrefix('terminal')}unregistered/orphan`;
+    const plainStorage = createFakeStorage({[otherKey]: 'true', [orphanKey]: '"orphan"'});
+    const protectedStorage = createFakeStorage({[retainedKey]: 'true'});
+    const retainedRegistration = defineStateRuntimeSlice<ExampleState>({
+      name: retainedSliceName,
+      reducer: exampleReducer,
+      resetIntent: 'retain',
+      persistIntent: 'owner-only',
+      persistence: [{kind: 'field', stateKey: 'enabled', protection: 'protected'}],
+      syncIntent: 'isolated',
+    });
+    const otherRegistration = defineStateRuntimeSlice<ExampleState>({
+      name: otherSliceName,
+      reducer: exampleReducer,
+      persistIntent: 'owner-only',
+      persistence: [{kind: 'field', stateKey: 'enabled'}],
+      syncIntent: 'isolated',
+    });
+    const runtime = await createStateRuntime({
+      runtimeName: 'reset-retention-test',
+      environmentMode: 'TEST',
+      slices: [retainedRegistration, otherRegistration],
+      logger: createFakeLogger(),
+      plainStorage,
+      protectedStorage,
+      persistenceKey: 'terminal',
+      persistenceDebounceMs: 0,
+    });
+
+    expect(runtime.getState()[retainedSliceName]).toMatchObject({enabled: true});
+    expect(runtime.getState()[otherSliceName]).toMatchObject({enabled: true});
+    runtime.getStore().dispatch({type: 'example/setCount', value: 9});
+    runtime.getStore().dispatch({type: 'example/setEntry', key: 'transient', value: 'discard-me'});
+    const result = await runtime.getResetActor().handleResetCommand();
+
+    expect(result.status).toBe('succeeded');
+    expect(runtime.getState()[retainedSliceName]).toMatchObject({enabled: true, count: 0, entries: {}});
+    expect(runtime.getState()[otherSliceName]).toMatchObject({enabled: false});
+    expect(protectedStorage.values.get(retainedKey)).toBe('true');
+    expect(plainStorage.values.has(otherKey)).toBe(false);
+    expect(plainStorage.values.has(orphanKey)).toBe(false);
+  });
+
+  it('C-1c retain intent requires an owner-declared persistent scope', () => {
+    expect(() =>
+      defineStateRuntimeSlice<ExampleState>({
+        name: 'invalid-retained-owner',
+        reducer: exampleReducer,
+        resetIntent: 'retain',
+        persistIntent: 'never',
+      }),
+    ).toThrow('retain requires persisted owner state');
+  });
+
   it('C-2 does not reset memory when storage deletion fails', async () => {
     const plainStorage = createFakeStorage({[recordKey('a')]: '1'}, {failRemoves: [recordKey('a')]});
     const {runtime} = await createRuntime({plainStorage});

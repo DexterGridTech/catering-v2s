@@ -8,6 +8,7 @@ public record StoreTerminalSceneSelection(
     java.util.List<StoreTerminalPrinterBinding> printers
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreTerminalSceneSelection> {
     @Override
     public StoreTerminalSceneSelection deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

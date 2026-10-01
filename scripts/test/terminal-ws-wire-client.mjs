@@ -206,6 +206,7 @@ const DEFERRED_AUTH_SCENARIOS = new Set([
 
 const SESSION_PROBE_SCENARIOS = new Set([
   'terminal.connection.vs1.admission-hold',
+  'terminal.connection.vs1.default-node-id',
   'terminal.connection.vs10.status-only-probe',
   'terminal.connection.vs12.database-outage-probe',
   'terminal.connection.vs1.unknown-auth-field',
@@ -217,6 +218,7 @@ const SESSION_PROBE_SCENARIOS = new Set([
   'terminal.connection.vs4.disconnected-before-register',
   'terminal.connection.vs6.latest-state-identity',
   'terminal.connection.vs9.draining-session',
+  'terminal.connection.vs15.readiness-withdrawal-and-drain',
   'terminal.connection.vs8.load-probe',
   'terminal.connection.vs11.secret-search',
   'terminal.connection.auth.store-disabled-active',
@@ -1170,7 +1172,10 @@ async function readSessionReady(socket, eventTypes, markerId) {
     throw new Error('TERMINAL_WIRE_SESSION_ID_MISSING');
   }
   eventTypes.push(ready.type);
-  process.stderr.write(`TERMINAL_WIRE_SESSION_READY markerId=${markerId} sessionId=${sessionId}\n`);
+  const nodeIdBase64 = Buffer.from(ready.message.nodeId, 'utf8').toString('base64url');
+  process.stderr.write(
+    `TERMINAL_WIRE_SESSION_READY markerId=${markerId} sessionId=${sessionId} nodeIdBase64=${nodeIdBase64}\n`,
+  );
   setDiagnosticStage('SESSION_PROBE_READY');
   return ready.message;
 }

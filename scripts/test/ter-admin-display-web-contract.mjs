@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 
 export const WEB_SCENARIOS = Object.freeze([
   'admin-runtime',
+  'platform-ports-smoke',
   'screen-error-member-journey',
   'screen-error-secondary-journey',
   'layer-error-production-journey',
@@ -13,6 +14,15 @@ export const WEB_SCENARIOS = Object.freeze([
   'keyboard-overlay-ownership',
   'textinput-contextmenu',
 ]);
+
+export function parsePlatformPortsSummaryCount(text, expectedLabel) {
+  if (typeof text !== 'string' || typeof expectedLabel !== 'string' || expectedLabel.length === 0) return null;
+  const normalized = text.trim().replace(/\s+/g, ' ');
+  const prefix = `${expectedLabel} `;
+  if (!normalized.startsWith(prefix)) return null;
+  const count = normalized.slice(prefix.length);
+  return /^(0|[1-9]\d*)$/.test(count) ? Number(count) : null;
+}
 
 export const EXPECTED_ADMIN_SHELL_COLOR_BY_INTEGRATION = Object.freeze({
   'sample-console': Object.freeze({token: '16 29 49', computed: 'rgb(16, 29, 49)'}),
@@ -458,6 +468,12 @@ export function webScenarioScopeError({integrationName, webScenario, surfaceForm
     return surfaceForm === 'laptop' && secondaryScreenOwnerIntegrations[failureOwner] === integrationName
       ? null
       : 'WEB_SCREEN_ERROR_SECONDARY_JOURNEY_SCOPE_INVALID';
+  }
+
+  if (webScenario === 'platform-ports-smoke') {
+    return integrationName === 'sample-console' && surfaceForm === 'laptop' && failureOwner === null
+      ? null
+      : 'WEB_PLATFORM_PORTS_SMOKE_SCOPE_INVALID';
   }
 
   if (webScenario === 'layer-error-production-journey') {

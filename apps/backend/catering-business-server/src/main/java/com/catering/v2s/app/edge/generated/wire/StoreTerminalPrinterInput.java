@@ -13,6 +13,7 @@ public record StoreTerminalPrinterInput(
     tools.jackson.databind.JsonNode connectionParameter
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreTerminalPrinterInput> {
     @Override
     public StoreTerminalPrinterInput deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

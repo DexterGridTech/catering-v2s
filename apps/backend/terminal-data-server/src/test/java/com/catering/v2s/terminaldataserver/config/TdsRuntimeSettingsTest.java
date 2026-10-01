@@ -73,6 +73,24 @@ class TdsRuntimeSettingsTest {
                     assertThat(settings.heartbeatInterval()).isEqualTo(Duration.ofSeconds(30));
                     assertThat(settings.heartbeatTimeout()).isEqualTo(Duration.ofSeconds(90));
                     assertThat(settings.stateWriteInterval()).isEqualTo(Duration.ofSeconds(15));
+                    assertThat(settings.nodeId()).isEqualTo(TdsRuntimeSettings.SINGLE_NODE_ID);
+                    assertThat(settings.readinessWithdrawalWait())
+                            .isEqualTo(TdsRuntimeSettings.DEFAULT_READINESS_WITHDRAWAL_WAIT);
+                });
+    }
+
+    @Test
+    void bindsNodeIdentityAndReadinessWithdrawalWaitOverrides() {
+        contextRunner(Map.of(
+                        "V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS", "7",
+                        "V2S_TDS_MAX_TRACKED_SESSIONS", "11",
+                        "V2S_TDS_NODE_ID", "tds-test-node",
+                        "V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS", "4000"))
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    TdsRuntimeSettings settings = context.getBean(TdsRuntimeSettings.class);
+                    assertThat(settings.nodeId()).isEqualTo("tds-test-node");
+                    assertThat(settings.readinessWithdrawalWait()).isEqualTo(Duration.ofSeconds(4));
                 });
     }
 
@@ -118,5 +136,33 @@ class TdsRuntimeSettingsTest {
                         Duration.ofSeconds(90),
                         Duration.ofSeconds(15),
                         Duration.ofSeconds(11)));
+    }
+
+    @Test
+    void rejectsInvalidNodeIdentityAndReadinessWithdrawalWait() {
+        for (String nodeId : new String[] {null, "", "  ", "x".repeat(129)}) {
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> TdsRuntimeSettings.from(
+                            "1",
+                            "1",
+                            Duration.ofSeconds(30),
+                            Duration.ofSeconds(90),
+                            Duration.ofSeconds(15),
+                            Duration.ofSeconds(10),
+                            nodeId,
+                            Duration.ofSeconds(3)));
+        }
+        for (Duration wait : new Duration[] {null, Duration.ofMillis(1_999), Duration.ofMillis(10_001)}) {
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> TdsRuntimeSettings.from(
+                            "1",
+                            "1",
+                            Duration.ofSeconds(30),
+                            Duration.ofSeconds(90),
+                            Duration.ofSeconds(15),
+                            Duration.ofSeconds(10),
+                            TdsRuntimeSettings.SINGLE_NODE_ID,
+                            wait));
+        }
     }
 }

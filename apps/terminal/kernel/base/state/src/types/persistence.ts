@@ -2,6 +2,9 @@ import type {StateJsonValue} from './value';
 
 export type PersistIntent = 'never' | 'owner-only';
 
+/** Owner-declared behavior for its state when the application reset command runs. */
+export type StateResetIntent = 'clear' | 'retain';
+
 export type PersistenceProtection = 'plain' | 'protected';
 
 export type PersistenceFlushMode = 'immediate' | 'debounced';

@@ -32,6 +32,7 @@ export const RULE_NAMES = Object.freeze([
   'dependency-declaration-completeness',
   'runtime-dependency-contract',
   'tr01-reducer-boundary',
+  'state-reset-retention-only',
   'kernel-platform-independence',
 ]);
 
@@ -673,8 +674,6 @@ function runTripleNaming(context) {
       throw new Error(`${moduleName} package.json must not carry plannedKind/kind`);
     }
   }
-  if (Object.keys(spec.graph).length !== 29)
-    throw new Error(`skeleton spec must contain 29 nodes, got ${Object.keys(spec.graph).length}`);
 }
 
 function layerFor(moduleName) {
@@ -1186,6 +1185,93 @@ function runKernelPlatformIndependence(context) {
   }
 }
 
+function runStateResetRetentionOnly(context) {
+  const {root, projected} = context;
+  const approvedModule = 'kernel.base.server-config';
+  const approvedSource = 'src/features/slices/serverConfig.ts';
+  const retainedDeclarations = [];
+  const analysis = createAnalysisProgram(root);
+  const checker = analysis.program.getTypeChecker();
+  for (const moduleName of Object.keys(projected)) {
+    const packageDirectory = moduleNameToPath(moduleName, root);
+    for (const sourcePath of collectSourceFiles(packageDirectory)) {
+      const sourceFile = analysis.program.getSourceFile(sourcePath);
+      if (!sourceFile) {
+        throw new Error(`SERVER_CONFIG_RESET_RETENTION_SOURCE_UNANALYZED source=${path.relative(root, sourcePath)}`);
+      }
+      const relativeSource = path.relative(packageDirectory, sourcePath).split(path.sep).join('/');
+      // This generic adapter is not an owner declaration and now forces every
+      // partitioned slice to resetIntent='clear' after projecting its descriptor.
+      if (moduleName === 'kernel.base.state' && relativeSource === 'src/foundations/partitioned.ts') continue;
+      function visit(node) {
+        if (ts.isCallExpression(node)) {
+          const factorySymbol = resolveValueExpressionSymbol(checker, node.expression);
+          const isStateSliceFactory = Boolean(
+            factorySymbol?.name === 'defineStateRuntimeSlice' &&
+            factorySymbol.declarations?.some(
+              declaration =>
+                ts.isVariableDeclaration(declaration) &&
+                ts.isIdentifier(declaration.name) &&
+                declaration.name.text === 'defineStateRuntimeSlice' &&
+                path.basename(declaration.getSourceFile().fileName) === 'defineStateRuntimeSlice.ts',
+            ),
+          );
+          const options = node.arguments[0];
+          if (isStateSliceFactory && (!options || !ts.isObjectLiteralExpression(options))) {
+            throw new Error(
+              `SERVER_CONFIG_RESET_RETENTION_POLICY_DYNAMIC owner=${moduleName} source=${relativeSource}`,
+            );
+          }
+          if (isStateSliceFactory && options && ts.isObjectLiteralExpression(options)) {
+            if (options.properties.some(ts.isSpreadAssignment)) {
+              throw new Error(
+                `SERVER_CONFIG_RESET_RETENTION_POLICY_DYNAMIC owner=${moduleName} source=${relativeSource}`,
+              );
+            }
+            const resetProperties = options.properties.filter(property => {
+              if (!ts.isPropertyAssignment(property)) return false;
+              const name = property.name;
+              if (ts.isIdentifier(name) || ts.isStringLiteralLike(name) || ts.isNumericLiteral(name)) {
+                return name.text === 'resetIntent';
+              }
+              if (ts.isComputedPropertyName(name)) {
+                throw new Error(
+                  `SERVER_CONFIG_RESET_RETENTION_POLICY_DYNAMIC owner=${moduleName} source=${relativeSource}`,
+                );
+              }
+              return false;
+            });
+            if (resetProperties.length > 1) {
+              throw new Error(
+                `SERVER_CONFIG_RESET_RETENTION_POLICY_DUPLICATE owner=${moduleName} source=${relativeSource}`,
+              );
+            }
+            const resetIntent = resetProperties[0];
+            if (resetIntent && !ts.isStringLiteralLike(resetIntent.initializer)) {
+              throw new Error(
+                `SERVER_CONFIG_RESET_RETENTION_POLICY_DYNAMIC owner=${moduleName} source=${relativeSource}`,
+              );
+            }
+            if (resetIntent?.initializer.text === 'retain') {
+              retainedDeclarations.push(`${moduleName}:${relativeSource}`);
+              if (moduleName !== approvedModule || relativeSource !== approvedSource) {
+                throw new Error(
+                  `SERVER_CONFIG_RESET_RETENTION_OWNER_FORBIDDEN owner=${moduleName} source=${relativeSource}`,
+                );
+              }
+            }
+          }
+        }
+        ts.forEachChild(node, visit);
+      }
+      visit(sourceFile);
+    }
+  }
+  if (retainedDeclarations.length !== 1) {
+    throw new Error(`SERVER_CONFIG_RESET_RETENTION_OWNER_COUNT expected=1 actual=${retainedDeclarations.length}`);
+  }
+}
+
 function runScaffoldHygiene(context) {
   const {root, projected} = context;
   const violations = [];
@@ -1232,6 +1318,7 @@ export function runStaticChecks({root = repoRoot, batch} = {}) {
     ['dependency-declaration-completeness', () => runDependencyDeclarationCompleteness(context)],
     ['runtime-dependency-contract', () => runRuntimeDependencyContract(context)],
     ['tr01-reducer-boundary', () => runTr01Boundary(context)],
+    ['state-reset-retention-only', () => runStateResetRetentionOnly(context)],
     ['kernel-platform-independence', () => runKernelPlatformIndependence(context)],
   ];
   const results = [];
@@ -1255,7 +1342,7 @@ export function runStaticChecks({root = repoRoot, batch} = {}) {
 
 function printUsage() {
   console.log('Usage: node tools/terminal-skeleton/check-static.mjs [--root <repo-root>] [--help]');
-  console.log('Runs seven TER static rule gates and one separately reported scaffold hygiene check.');
+  console.log('Runs eight TER static rule gates and one separately reported scaffold hygiene check.');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

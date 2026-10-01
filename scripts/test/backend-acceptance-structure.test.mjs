@@ -1378,7 +1378,9 @@ test('persistent wire-probe commands preserve child results across process-exit 
 test('wire client processes keep stderr isolated to their correlation marker', () => {
   const source = readFileSync(terminalContractScenariosPath, 'utf8');
   const wireSource = readFileSync(terminalWireClientPath, 'utf8');
-  const topologyStart = source.indexOf('static void topologyProbe(TdsAcceptanceProcess tds)');
+  const topologyStart = source.indexOf(
+    'static void topologyProbe(BackendAcceptanceTest host, TdsAcceptanceProcess tds)',
+  );
   const topologyEnd = source.indexOf('\n    static Stream<DynamicTest> v2AuthenticationScenarios', topologyStart);
   const v14Start = source.indexOf('private static void v14Scenario(');
   const v14End = source.indexOf('\n    private static void assertNegotiatedExtension', v14Start);
@@ -1687,4 +1689,108 @@ test('CP-05 calibration requires an explicit supported batch cardinality before 
     assert.equal(result.status, 2, 'invalid calibration cardinality must fail before the remote runner');
     assert.match(result.stderr, /BACKEND_ACCEPTANCE_CALIBRATION_BATCH_CARDINALITY_REQUIRED/);
   }
+});
+
+test('V-S15 acceptance selector is closed, remote-scoped and selects only its Java TDS contract factory', () => {
+  const runner = readFileSync(backendAcceptanceRunnerPath, 'utf8');
+  const remoteRunner = readFileSync(path.join(root, 'scripts/test/r5-remote-testcontainers.mjs'), 'utf8');
+  const suite = readFileSync(suitePath, 'utf8');
+  const tdsProcess = readFileSync(tdsProcessPath, 'utf8');
+  const scenarioSource = readFileSync(terminalContractScenariosPath, 'utf8');
+  const lifecycle = readFileSync(
+    path.join(
+      root,
+      'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/session/TdsGracefulShutdownLifecycle.java',
+    ),
+    'utf8',
+  );
+  const selector = 'terminal.connection.vs15.readiness-withdrawal-and-drain';
+
+  assert.match(runner, /--tds-contract-scenario/);
+  assert.match(runner, /BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/);
+  assert.match(runner, /export V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO=/);
+  assert.match(remoteRunner, /V_S15_TDS_CONTRACT_SCENARIO = 'terminal\.connection\.vs15\.readiness-withdrawal-and-drain'/);
+  assert.match(remoteRunner, /tdsContractScenarioResult = 'PASS'/);
+  assert.match(suite, /Stream<DynamicTest> terminalConnectionV15ReadinessWithdrawalContracts\(\)/);
+  assert.match(suite, /selectedTdsContractScenario\(\) != null\) return Stream\.empty\(\)/);
+  assert.match(suite, /TdsStartConfiguration\.VS15_CONTRACT_SCENARIO_ID,\s*selectedScenario/);
+  assert.match(suite, /System\.getenv\(RuntimeEnvironmentKeys\.V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO\)/);
+  assert.doesNotMatch(suite, /assertEquals\(\s*RuntimeEnvironmentKeys\.V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO,\s*selectedScenario/);
+  assert.match(suite, /V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT/);
+  assert.match(tdsProcess, /VS15_CONTRACT_SCENARIO_ID = "terminal\.connection\.vs15\.readiness-withdrawal-and-drain"/);
+  assert.match(tdsProcess, /VS15_CONTRACT_SCENARIO_ID\.equals\(scenario\)/);
+  assert.doesNotMatch(tdsProcess, /RuntimeEnvironmentKeys\.V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO\.equals\(scenario\)/);
+  assert.match(tdsProcess, /VS15_NODE_ID = "vs15-acceptance-node"/);
+  assert.match(tdsProcess, /DEFAULT_NODE_ID = "terminal-data-server"/);
+  assert.match(tdsProcess, /DEFAULT_READINESS_WITHDRAWAL_WAIT_MS = 3_000/);
+  assert.match(tdsProcess, /new TdsStartConfiguration\(VS15_NODE_ID, VS15_READINESS_WITHDRAWAL_WAIT_MS\)/);
+  assert.match(tdsProcess, /BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_UNKNOWN/);
+  assert.match(scenarioSource, new RegExp(selector.replaceAll('.', '\\.')));
+  assert.match(scenarioSource, /awaitReadinessWithdrawal\(tds, Duration\.ofSeconds\(10\)\)/);
+  assert.match(scenarioSource, /long readinessObservedNanos = System\.nanoTime\(\)/);
+  assert.match(scenarioSource, /drainStartedNanos - readinessObservedNanos/);
+  assert.match(
+    scenarioSource,
+    /withdrawalElapsedMillis\s*>=\s*TdsAcceptanceProcess\.TdsStartConfiguration[\s\S]{0,180}VS15_READINESS_WITHDRAWAL_WAIT_MS/,
+  );
+  assert.doesNotMatch(scenarioSource, /readinessWithdrawn\s*=\s*log\.indexOf/);
+  assert.match(scenarioSource, /admissionRefused >= 0 && drainStarted > admissionRefused/);
+  assert.doesNotMatch(scenarioSource, /readinessWithdrawn >= 0 && admissionRefused > readinessWithdrawn/);
+  assert.match(scenarioSource, /active\.nodeId\(\)/);
+  assert.match(scenarioSource, /waiting\.nodeId\(\)/);
+  const drainTransitionStart = lifecycle.indexOf('Mono<Boolean> drain = actors.beginDrain();');
+  const drainTransitionEnd = lifecycle.indexOf('return drain.flatMap(hasActiveSessions -> {', drainTransitionStart);
+  assert.ok(drainTransitionStart >= 0 && drainTransitionEnd > drainTransitionStart);
+  const drainTransition = lifecycle.slice(drainTransitionStart, drainTransitionEnd);
+  const refusalMarker = drainTransition.indexOf('event=tds_admission_refused readiness=REFUSING_TRAFFIC');
+  const startedMarker = drainTransition.indexOf('event=tds_drain_started');
+  assert.ok(refusalMarker > 0 && startedMarker > refusalMarker);
+  assert.equal(
+    (drainTransition.match(/TdsAsyncLog\.enqueue\(/g) ?? []).length,
+    1,
+    'the lifecycle must enqueue the two ordered phase markers as one log task',
+  );
+  assert.ok(drainTransition.indexOf('TdsAsyncLog.enqueue(') > 0);
+  assert.match(scenarioSource, /"event=tds_admission_refused readiness=REFUSING_TRAFFIC"/);
+  assert.match(scenarioSource, /"event=tds_drain_started"/);
+  assert.match(scenarioSource, /admissionRefused >= 0 && drainStart > admissionRefused/);
+  assert.match(scenarioSource, /V-S9_ADMISSION_DRAIN_LOG_ORDER_INVALID/);
+  assert.match(scenarioSource, /drainComplete >= 0/);
+  assert.doesNotMatch(scenarioSource, /drainComplete > drainStart/);
+  assert.match(
+    scenarioSource,
+    /DEFAULT_READINESS_WITHDRAWAL_WAIT_MS\s*\+\s*TdsAcceptanceProcess\.ACCEPTANCE_DRAIN_WINDOW_MILLIS\s*\+\s*2_000/,
+    'the retained V-S9 all-operation scenario must budget the default withdrawal plus drain window and observer tolerance',
+  );
+
+  const missingTopology = spawnSync(
+    'bash',
+    [
+      backendAcceptanceRunnerPath,
+      '--operation',
+      'storeTerminalActivationBusinessPrecedence',
+      '--tds-contract-scenario',
+      selector,
+    ],
+    {cwd: root, encoding: 'utf8'},
+  );
+  assert.equal(missingTopology.status, 2);
+  assert.match(missingTopology.stderr, /BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/);
+  assert.doesNotMatch(missingTopology.stderr, /R5_TESTCONTAINERS/);
+
+  const unknownScenario = spawnSync(
+    'bash',
+    [
+      backendAcceptanceRunnerPath,
+      '--operation',
+      'storeTerminalActivationBusinessPrecedence',
+      '--topology-preflight',
+      '--tds-contract-scenario',
+      'terminal.connection.vs15.unknown',
+    ],
+    {cwd: root, encoding: 'utf8'},
+  );
+  assert.equal(unknownScenario.status, 2);
+  assert.match(unknownScenario.stderr, /BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/);
+  assert.doesNotMatch(unknownScenario.stderr, /R5_TESTCONTAINERS/);
 });

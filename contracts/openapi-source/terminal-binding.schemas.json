@@ -3,7 +3,7 @@
     "schemas": {
       "TerminalActivationRequest": {
         "type": "object",
-        "additionalProperties": false,
+        "additionalProperties": true,
         "required": ["activationCode", "deviceId", "surfaceForm", "appVersion", "credentialSecret"],
         "properties": {
           "activationCode": {"type": "string", "minLength": 8, "maxLength": 8, "pattern": "^[0-9]{8}$"},
@@ -31,7 +31,7 @@
       },
       "TerminalActivationCancellationRequest": {
         "type": "object",
-        "additionalProperties": false,
+        "additionalProperties": true,
         "required": ["deviceId"],
         "properties": {
           "deviceId": {"type": "string", "minLength": 1, "maxLength": 128}

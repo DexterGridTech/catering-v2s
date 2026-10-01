@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.terminaldataserver.config.TdsRuntimeSettings;
@@ -23,7 +24,7 @@ import reactor.core.scheduler.Schedulers;
 
 class TdsGracefulShutdownLifecycleTest {
     @Test
-    void readinessChangesBeforeDrainAndTheWebServerStopsAfterTheDrainWindow() throws Exception {
+    void readinessWithdrawsBeforeAdmissionClosesAndTheWebServerStopsAfterDrain() throws Exception {
         TdsTerminalSessionActors actors = mock(TdsTerminalSessionActors.class);
         ApplicationContext applicationContext = mock(ApplicationContext.class);
         TdsRuntimeSettings settings = TdsRuntimeSettings.from(
@@ -32,7 +33,9 @@ class TdsGracefulShutdownLifecycleTest {
                 Duration.ofSeconds(30),
                 Duration.ofSeconds(90),
                 Duration.ofSeconds(15),
-                Duration.ofMillis(100));
+                Duration.ofMillis(100),
+                TdsRuntimeSettings.SINGLE_NODE_ID,
+                Duration.ofSeconds(2));
         when(actors.beginDrain()).thenReturn(Mono.just(true));
         when(actors.finishDrain()).thenReturn(Mono.empty());
         TdsGracefulShutdownLifecycle lifecycle =
@@ -42,12 +45,14 @@ class TdsGracefulShutdownLifecycleTest {
         lifecycle.start();
         lifecycle.stop(stopped::countDown);
 
-        var shutdownOrder = inOrder(actors, applicationContext);
-        shutdownOrder.verify(actors).refuseNewConnections();
+        verifyNoInteractions(actors);
+        assertThat(stopped.await(250, TimeUnit.MILLISECONDS)).isFalse();
+
+        var shutdownOrder = inOrder(applicationContext, actors);
         shutdownOrder.verify(applicationContext).publishEvent(any(AvailabilityChangeEvent.class));
+        assertThat(stopped.await(3, TimeUnit.SECONDS)).isTrue();
+        shutdownOrder.verify(actors).refuseNewConnections();
         shutdownOrder.verify(actors).beginDrain();
-        assertThat(stopped.await(25, TimeUnit.MILLISECONDS)).isFalse();
-        assertThat(stopped.await(2, TimeUnit.SECONDS)).isTrue();
         shutdownOrder.verify(actors).finishDrain();
         assertThat(lifecycle.isRunning()).isFalse();
         assertThat(lifecycle.getPhase()).isGreaterThan(WebServerApplicationContext.GRACEFUL_SHUTDOWN_PHASE);
@@ -62,7 +67,9 @@ class TdsGracefulShutdownLifecycleTest {
                 Duration.ofSeconds(30),
                 Duration.ofSeconds(90),
                 Duration.ofSeconds(15),
-                Duration.ofSeconds(10));
+                Duration.ofSeconds(10),
+                TdsRuntimeSettings.SINGLE_NODE_ID,
+                Duration.ofSeconds(2));
         TdsConnectionStateWriter stateWriter =
                 new TdsConnectionStateWriter(mock(TdsConnectionStateRepository.class), settings, scheduler, scheduler);
         TdsBindingRevocationListener listener = new TdsBindingRevocationListener(

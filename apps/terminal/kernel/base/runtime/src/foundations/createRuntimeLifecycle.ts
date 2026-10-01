@@ -25,6 +25,7 @@ type RuntimeLifecycleInput = Readonly<{
   installPeerDispatchGateway: (gateway: PeerDispatchGateway) => void;
   dispatchAction: (action: RuntimeUnknownAction) => RuntimeUnknownAction;
   registerResource: (cleanup: () => void) => () => void;
+  registerAsyncResource: (cleanup: () => Promise<void>) => () => void;
 }>;
 
 const requireStateRuntime = (input: RuntimeLifecycleInput): StateRuntime => {
@@ -47,6 +48,7 @@ const createModuleContext = (input: RuntimeLifecycleInput, module: RuntimeModule
     subscribeState: (listener: () => void): (() => void) =>
       createStateSubscription(stateRuntime.getStore(), listener, input.registerResource),
     registerResource: input.registerResource,
+    registerAsyncResource: input.registerAsyncResource,
     createFullSyncPayload: (sliceName: string) => stateRuntime.createFullSyncPayload(sliceName),
     applyAuthoritativeSync: (sliceName: string, payload: import('@catering-v2s/kernel-base-state').SyncStateDiff) =>
       stateRuntime.applyAuthoritativeSync(sliceName, payload),

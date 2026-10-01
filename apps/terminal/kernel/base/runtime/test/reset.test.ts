@@ -53,6 +53,45 @@ describe('runtime reset boundary', () => {
     expect(runtime.status).toBe('started');
   });
 
+  it('runs resets requested by a long-lived actor callback after its parent command has completed', async () => {
+    const connect = defineCommand<Readonly<{}>>('test.reset.detached', {name: 'connect', visibility: 'internal'});
+    const event = defineCommand<Readonly<{}>>('test.reset.detached', {name: 'event', visibility: 'internal'});
+    let dispatchEvent: (() => Promise<unknown>) | undefined;
+    let resetCount = 0;
+    const connectActor = defineActor('test.reset.detached', 'connect', [
+      onCommand(connect, context => {
+        dispatchEvent = () => context.dispatchCommand(event, {});
+        return null;
+      }),
+    ]);
+    const eventActor = defineActor('test.reset.detached', 'event', [
+      onCommand(event, context => {
+        context.requestApplicationReset('detached-event');
+        return null;
+      }),
+    ]);
+    const module = moduleFor('test.reset.detached', [connect, event], [connectActor, eventActor], {
+      stateSlices: [createTestSlice('test.reset.detached.state', 0)],
+      onApplicationReset: () => {
+        resetCount += 1;
+      },
+    });
+    const runtime = createRuntime(createTestRuntimeInput({modules: [module]}));
+    await runtime.start();
+    runtime.getStore().dispatch({type: 'test/increment'});
+    expect(Reflect.get(runtime.getState()['test.reset.detached.state'] ?? {}, 'value')).toBe(1);
+
+    const connected = await runtime.dispatchCommand(connect, {});
+    expect(connected.status).toBe('completed');
+    expect(dispatchEvent).toBeDefined();
+    const dispatched = (await dispatchEvent!()) as {status?: string};
+
+    expect(dispatched.status).toBe('completed');
+    expect(resetCount).toBe(1);
+    expect(Reflect.get(runtime.getState()['test.reset.detached.state'] ?? {}, 'value')).toBe(0);
+    expect(runtime.status).toBe('started');
+  });
+
   it('X-2 ignores duplicate reasons and reset requests raised during reset', async () => {
     const request = defineCommand<Readonly<{}>>('test.reset.ignored', {name: 'request', visibility: 'internal'});
     const during = defineCommand<Readonly<{}>>('test.reset.ignored', {name: 'during', visibility: 'internal'});

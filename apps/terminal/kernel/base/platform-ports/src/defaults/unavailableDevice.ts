@@ -4,6 +4,9 @@ import type {
   DevicePort,
   DeviceInfo,
   DisplayInfo,
+  NetworkStatus,
+  NetworkStatusSubscriptionInput,
+  NetworkStatusUnsubscribeInput,
   PowerStatus,
   PowerStatusSubscriptionInput,
   PowerStatusUnsubscribeInput,
@@ -19,6 +22,13 @@ export const unavailableDevicePort: DevicePort = {
     createUnavailable('device', 'getDisplayInfo'),
   getSystemStatus: async (_input: DeviceCall): Promise<PortResult<SystemStatus>> =>
     createUnavailable('device', 'getSystemStatus'),
+  getNetworkStatus: async (_input: DeviceCall): Promise<PortResult<NetworkStatus>> =>
+    createUnavailable('device', 'getNetworkStatus'),
+  subscribeNetworkStatus: async (
+    _input: NetworkStatusSubscriptionInput,
+  ): Promise<PortResult<{readonly subscriptionId: string}>> => createUnavailable('device', 'subscribeNetworkStatus'),
+  unsubscribeNetworkStatus: async (_input: NetworkStatusUnsubscribeInput): Promise<PortResult<NoOutput>> =>
+    createUnavailable('device', 'unsubscribeNetworkStatus'),
   getPowerStatus: async (_input: DeviceCall): Promise<PortResult<PowerStatus>> =>
     createUnavailable('device', 'getPowerStatus'),
   subscribePowerStatus: async (
@@ -36,6 +46,9 @@ Object.defineProperty(unavailableDevicePort, PORT_DESCRIPTOR_KEY, {
         'getDeviceInfo',
         'getDisplayInfo',
         'getSystemStatus',
+        'getNetworkStatus',
+        'subscribeNetworkStatus',
+        'unsubscribeNetworkStatus',
         'getPowerStatus',
         'subscribePowerStatus',
         'unsubscribePowerStatus',

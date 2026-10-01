@@ -47,6 +47,7 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/catalog-inventory-seed-identity.test.mjs',
   'scripts/test/extension-field-contract-structure.test.mjs',
   'scripts/test/edge-operation-projections.test.mjs',
+  'scripts/test/edge-codegen-terminal-unknown-fields.test.mjs',
   'scripts/test/frontend-idempotency-boundary.test.mjs',
   'scripts/test/frontend-transport-cache-lifecycle.test.mjs',
   'scripts/test/managed-run-summary.test.mjs',
@@ -64,6 +65,8 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/terminal-topology-heartbeat-window.test.mjs',
   'scripts/test/terminal-topology-runner-guards.test.mjs',
   'scripts/test/terminal-owned-test-report.test.mjs',
+  'scripts/test/terminal-client-generation.test.mjs',
+  'scripts/test/terminal-client-dev-acceptance.test.mjs',
   'scripts/test/test-health-entry-runner.test.mjs',
 ]);
 

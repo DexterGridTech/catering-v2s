@@ -1,5 +1,5 @@
 import type {Reducer, UnknownAction} from '@reduxjs/toolkit';
-import type {StateRuntimeSliceDescriptor} from './slice';
+import type {StateRuntimeSliceDescriptorWithoutResetIntent} from './slice';
 
 export type WorkspaceKey = 'MAIN' | 'BRANCH';
 
@@ -24,5 +24,5 @@ export interface ToWorkspaceStateDescriptorsInput<TState extends object> {
     workspace: WorkspaceKey,
     sliceName: string,
     reducer: Reducer<TState>,
-  ) => StateRuntimeSliceDescriptor<TState>;
+  ) => StateRuntimeSliceDescriptorWithoutResetIntent<TState>;
 }

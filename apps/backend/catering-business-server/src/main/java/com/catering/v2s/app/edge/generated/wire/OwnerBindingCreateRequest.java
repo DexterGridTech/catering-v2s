@@ -11,6 +11,7 @@ public record OwnerBindingCreateRequest(
     tools.jackson.databind.JsonNode externalOwnerId
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<OwnerBindingCreateRequest> {
     @Override
     public OwnerBindingCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

@@ -53,6 +53,7 @@ const remoteGradleDistributionPrefix = '/tmp/catering-v2s-r5-gradle-distribution
 const remoteHostTrust = resolveTrustedRemoteHost(process.env);
 const remoteHost = remoteHostTrust.host;
 const backendAcceptanceSelector = 'com.catering.v2s.app.acceptance.BackendAcceptanceTest';
+export const V_S15_TDS_CONTRACT_SCENARIO = 'terminal.connection.vs15.readiness-withdrawal-and-drain';
 const hasBackendAcceptanceSelector = extraArguments =>
   extraArguments.some(
     argument =>
@@ -320,11 +321,26 @@ export const backendAcceptanceEnvironment = (
   vs12Diagnostic = false,
   vs8Diagnostic = false,
   d46Focused = false,
+  tdsContractScenario = null,
 ) => {
   if (extensionScaleProof && runId === null) throw new Error('EXTENSION_SCALE_PROOF_REQUIRES_BACKEND_ACCEPTANCE');
   const effectiveOperation = canonicalBackendAcceptanceOperation(operation, extensionScaleProof);
   if (topologyPreflight && (runId === null || effectiveOperation === 'all' || verificationMode !== 'ACCEPTANCE')) {
     throw new Error('BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT_ARGUMENT_INVALID');
+  }
+  if (
+    tdsContractScenario !== null &&
+    (tdsContractScenario !== V_S15_TDS_CONTRACT_SCENARIO ||
+      runId === null ||
+      effectiveOperation !== 'storeTerminalActivationBusinessPrecedence' ||
+      verificationMode !== 'ACCEPTANCE' ||
+      !topologyPreflight ||
+      vs12Diagnostic ||
+      vs8Diagnostic ||
+      d46Focused ||
+      extensionScaleProof)
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID');
   }
   if (
     vs12Diagnostic &&
@@ -363,6 +379,9 @@ export const backendAcceptanceEnvironment = (
         'export V2S_DB_STATEMENT_DICTIONARY="$root/results/statement-dictionary.json"',
         `export V2S_BACKEND_ACCEPTANCE_OPERATION=${quote(effectiveOperation)}`,
         `export V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT=${topologyPreflight ? 'true' : 'false'}`,
+        ...(tdsContractScenario === null
+          ? ['unset V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO']
+          : [`export V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO=${quote(tdsContractScenario)}`]),
         ...(vs12Diagnostic ? ['export V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC=true'] : []),
         ...(vs8Diagnostic ? ['export V2S_BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC=true'] : []),
         ...(d46Focused ? ['export V2S_BACKEND_ACCEPTANCE_D46_FOCUSED=true'] : []),
@@ -1130,6 +1149,19 @@ export const parseAndValidateRunManifest = manifest => {
       backendAcceptance.operation.trim() === '')
   ) {
     throw new Error('RUN_MANIFEST_BACKEND_ACCEPTANCE_IDENTITY_INVALID');
+  }
+  if (backendAcceptance !== null && backendAcceptance.tdsContractScenario != null) {
+    if (
+      backendAcceptance.tdsContractScenario !== V_S15_TDS_CONTRACT_SCENARIO ||
+      backendAcceptance.operation !== 'storeTerminalActivationBusinessPrecedence' ||
+      backendAcceptance.topologyPreflight !== true ||
+      manifest.verificationMode !== 'ACCEPTANCE' ||
+      (backendAcceptance.tdsContractScenarioResult !== undefined &&
+        backendAcceptance.tdsContractScenarioResult !== 'PASS') ||
+      (manifest.status === 'PASS' && backendAcceptance.tdsContractScenarioResult !== 'PASS')
+    ) {
+      throw new Error('RUN_MANIFEST_TDS_CONTRACT_SCENARIO_SCOPE_INVALID');
+    }
   }
   if (
     tdsContractOnly &&
@@ -2097,6 +2129,7 @@ export const runScript = ({
   vs8Diagnostic = false,
   tdsContractOnly = false,
   d46Focused = false,
+  tdsContractScenario = null,
 }) => {
   const signalTracingRequested = traceChildSignals || traceSystemSignals;
   if (traceChildSignals && traceSystemSignals) throw new Error('R5_SIGNAL_TRACE_MODES_MUTUALLY_EXCLUSIVE');
@@ -2148,6 +2181,22 @@ export const runScript = ({
     throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_ONLY_SCOPE_INVALID');
   }
   if (
+    tdsContractScenario !== null &&
+    (tdsContractScenario !== V_S15_TDS_CONTRACT_SCENARIO ||
+      backendAcceptanceRunId === null ||
+      backendAcceptanceOperation !== 'storeTerminalActivationBusinessPrecedence' ||
+      verificationMode !== 'ACCEPTANCE' ||
+      !topologyPreflight ||
+      productionMutation !== null ||
+      invocation.extensionScaleProof === true ||
+      vs12Diagnostic ||
+      vs8Diagnostic ||
+      tdsContractOnly ||
+      d46Focused)
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID');
+  }
+  if (
     traceSystemSignals &&
     !(
       (backendAcceptanceRunId !== null &&
@@ -2183,6 +2232,7 @@ export const runScript = ({
     vs12Diagnostic,
     vs8Diagnostic,
     d46Focused,
+    tdsContractScenario,
   );
   const mutationLines =
     productionMutation === null
@@ -2547,6 +2597,21 @@ const execute = async () => {
     throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_ONLY_SCOPE_INVALID');
   }
   const topologyPreflight = process.env.V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT === 'true';
+  const tdsContractScenario = process.env.V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO ?? null;
+  if (
+    tdsContractScenario !== null &&
+    (tdsContractScenario !== V_S15_TDS_CONTRACT_SCENARIO ||
+      backendAcceptanceRunId === null ||
+      backendAcceptanceOperation !== 'storeTerminalActivationBusinessPrecedence' ||
+      verificationMode !== 'ACCEPTANCE' ||
+      !topologyPreflight ||
+      tdsContractOnly ||
+      d46Focused ||
+      invocation.productionMutationId !== undefined ||
+      invocation.extensionScaleProof === true)
+  ) {
+    throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID');
+  }
   const vs12DiagnosticValue = process.env.V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC ?? 'false';
   if (!['true', 'false'].includes(vs12DiagnosticValue)) {
     throw new Error('BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC_VALUE_INVALID');
@@ -2559,6 +2624,9 @@ const execute = async () => {
   const vs8Diagnostic = vs8DiagnosticValue === 'true';
   if (vs8Diagnostic && vs12Diagnostic) {
     throw new Error('BACKEND_ACCEPTANCE_DIAGNOSTIC_MODES_MUTUALLY_EXCLUSIVE');
+  }
+  if (tdsContractScenario !== null && (vs12Diagnostic || vs8Diagnostic)) {
+    throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID');
   }
   if (
     vs8Diagnostic &&
@@ -2684,6 +2752,8 @@ const execute = async () => {
         : {
             runId: backendAcceptanceRunId,
             operation: backendAcceptanceOperation,
+            topologyPreflight,
+            tdsContractScenario,
             ...(tdsContractOnly ? {scope: 'TDS_CONTRACT_ONLY'} : {}),
           },
     productionMutation:
@@ -2835,6 +2905,7 @@ const execute = async () => {
         tdsCapacity: manifest.resourcePreflight.tdsCapacity ?? null,
         terminalWireNodePath: manifest.resourcePreflight.nodeRuntime?.nodePath ?? null,
         topologyPreflight,
+        tdsContractScenario,
         traceChildSignals,
         traceSystemSignals,
         vs12Diagnostic,
@@ -3015,6 +3086,13 @@ const execute = async () => {
       tdsContractResult = parseTdsContractResult(
         readEvidenceArtifact(directory, 'tds-contract-result.jsonl', {requireArchive: true}),
       );
+      if (tdsContractScenario !== null) {
+        const selectedRows = tdsContractResult.rows.filter(row => row.operation === tdsContractScenario);
+        if (selectedRows.length !== 1 || selectedRows[0].contract !== 'PASS' || selectedRows[0].status !== 'PASS') {
+          throw new Error('BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_RESULT_MISMATCH');
+        }
+        manifest.backendAcceptance.tdsContractScenarioResult = 'PASS';
+      }
       const tdsProcessEvidence = parseTdsProcessEvidence({
         processEvidence: readEvidenceArtifact(directory, 'tds-process-evidence.json', {requireArchive: true}),
         processLog: readEvidenceArtifact(directory, 'tds-process.log', {requireArchive: true}),

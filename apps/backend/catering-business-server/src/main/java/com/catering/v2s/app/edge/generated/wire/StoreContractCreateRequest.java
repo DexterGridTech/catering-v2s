@@ -15,6 +15,7 @@ public record StoreContractCreateRequest(
     String phaseNameSnapshot
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreContractCreateRequest> {
     @Override
     public StoreContractCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

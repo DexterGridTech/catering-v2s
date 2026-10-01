@@ -63,6 +63,10 @@ export function validateRemoteTdsControl(value) {
     throw new Error('R5_REMOTE_TDS_CONTROL_KERNEL_IDENTITY_INVALID');
   }
   if (!sha256Pattern.test(value.commandSha256)) throw new Error('R5_REMOTE_TDS_CONTROL_COMMAND_DIGEST_INVALID');
+  if (!['tds-a', 'tds-b', 'tds-c'].includes(value.instanceName) ||
+      typeof value.nodeId !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(value.nodeId)) {
+    throw new Error('R5_REMOTE_TDS_CONTROL_NODE_IDENTITY_INVALID');
+  }
   if (!Number.isInteger(value.websocketPort) || value.websocketPort < 1024 || value.websocketPort > 65535) {
     throw new Error('R5_REMOTE_TDS_CONTROL_WEBSOCKET_PORT_INVALID');
   }
@@ -127,6 +131,8 @@ export function remoteTdsIdentityMatches(expected, actual) {
       && expected.bootId === actual.bootId
       && expected.processStartTicks === actual.processStartTicks
       && expected.commandSha256 === actual.commandSha256
+      && expected.instanceName === actual.instanceName
+      && expected.nodeId === actual.nodeId
       && expected.websocketPort === actual.websocketPort
       && expected.rssBudgetMiB === actual.rssBudgetMiB;
   } catch {
@@ -166,6 +172,8 @@ export function remoteJavaSelfTest() {
     bootId: '0123456789abcdef0123456789abcdef',
     processStartTicks: 2027,
     commandSha256: 'b'.repeat(64),
+    instanceName: 'tds-a',
+    nodeId: 'terminal-data-server',
     websocketPort: 18083,
     rssBudgetMiB: 512,
     phase: 'READY',

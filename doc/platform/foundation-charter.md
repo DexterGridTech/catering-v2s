@@ -32,7 +32,7 @@
 多 history 会让「当前 schema 是什么」失去唯一答案。
 **违反后果**:一次跨模块写变成需要补偿逻辑的分布式问题,而当前阶段没有任何东西需要这个代价。
 
-已接受的 terminal service-shape decision 允许一个独立受管的单节点 `terminal-data-server` WebSocket transport runtime。它是辅助传输进程，不拥有业务 deployable、事实写入或 Flyway history，因此不改变上述三个业务底座不变量，也不是 TDP。
+已接受的 terminal service-shape decision 允许独立受管的 `terminal-data-server` WebSocket transport runtime。按 D-44，批次二 DEV 可部署三个独立实例并经两个 HAProxy WebSocket 入口接入；该拓扑不增加业务 deployable，也不实现批次三的跨节点会话协调。TDS 是辅助传输进程，不拥有业务 deployable、事实写入或 Flyway history，因此不改变上述三个业务底座不变量，也不是 TDP。
 
 ### 1-B · 模块 owner 主权
 

@@ -137,6 +137,19 @@ describe('createAndroidDevicePort', () => {
       port: 'device',
       capability: 'getSystemStatus',
     });
+    await expect(port.getNetworkStatus({timeoutMs: 1_000})).resolves.toMatchObject({
+      status: 'unavailable',
+      port: 'device',
+      capability: 'getNetworkStatus',
+    });
+    await expect(
+      port.subscribeNetworkStatus({timeoutMs: 1_000, listener: vi.fn(), onError: vi.fn()}),
+    ).resolves.toMatchObject({status: 'unavailable', port: 'device', capability: 'subscribeNetworkStatus'});
+    await expect(port.unsubscribeNetworkStatus({timeoutMs: 1_000, subscriptionId: 'network'})).resolves.toMatchObject({
+      status: 'unavailable',
+      port: 'device',
+      capability: 'unsubscribeNetworkStatus',
+    });
     const events: Array<{readonly source: string; readonly charging: string}> = [];
     const errors: unknown[] = [];
     await expect(

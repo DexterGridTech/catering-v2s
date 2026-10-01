@@ -12,11 +12,15 @@ public record TdsRuntimeSettings(
         Duration authenticationFirstFrameTimeout,
         Duration authenticationOverallTimeout,
         Duration drainWindow,
+        Duration readinessWithdrawalWait,
         String nodeId) {
 
     public static final Duration AUTHENTICATION_FIRST_FRAME_TIMEOUT = Duration.ofSeconds(10);
     public static final Duration AUTHENTICATION_OVERALL_TIMEOUT = Duration.ofSeconds(15);
     public static final Duration MAX_DRAIN_WINDOW = Duration.ofSeconds(10);
+    public static final Duration MIN_READINESS_WITHDRAWAL_WAIT = Duration.ofSeconds(2);
+    public static final Duration MAX_READINESS_WITHDRAWAL_WAIT = Duration.ofSeconds(10);
+    public static final Duration DEFAULT_READINESS_WITHDRAWAL_WAIT = Duration.ofSeconds(3);
     public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofSeconds(30);
     public static final Duration DEFAULT_HEARTBEAT_TIMEOUT = Duration.ofSeconds(90);
     public static final Duration DEFAULT_STATE_WRITE_INTERVAL = Duration.ofSeconds(15);
@@ -53,6 +57,11 @@ public record TdsRuntimeSettings(
                 || drainWindow.compareTo(MAX_DRAIN_WINDOW) > 0) {
             throw new IllegalArgumentException("drainWindow is invalid");
         }
+        if (readinessWithdrawalWait == null
+                || readinessWithdrawalWait.compareTo(MIN_READINESS_WITHDRAWAL_WAIT) < 0
+                || readinessWithdrawalWait.compareTo(MAX_READINESS_WITHDRAWAL_WAIT) > 0) {
+            throw new IllegalArgumentException("readinessWithdrawalWait is invalid");
+        }
         if (nodeId == null || nodeId.isBlank() || nodeId.length() > 128) {
             throw new IllegalArgumentException("nodeId is invalid");
         }
@@ -87,6 +96,26 @@ public record TdsRuntimeSettings(
             Duration heartbeatTimeout,
             Duration stateWriteInterval,
             Duration drainWindow) {
+        return from(
+                maxUnauthenticatedConnections,
+                maxTrackedSessions,
+                heartbeatInterval,
+                heartbeatTimeout,
+                stateWriteInterval,
+                drainWindow,
+                SINGLE_NODE_ID,
+                DEFAULT_READINESS_WITHDRAWAL_WAIT);
+    }
+
+    public static TdsRuntimeSettings from(
+            String maxUnauthenticatedConnections,
+            String maxTrackedSessions,
+            Duration heartbeatInterval,
+            Duration heartbeatTimeout,
+            Duration stateWriteInterval,
+            Duration drainWindow,
+            String nodeId,
+            Duration readinessWithdrawalWait) {
         return new TdsRuntimeSettings(
                 parseUnauthenticatedConnectionLimit(maxUnauthenticatedConnections),
                 parseTrackedSessionLimit(maxTrackedSessions),
@@ -96,6 +125,7 @@ public record TdsRuntimeSettings(
                 AUTHENTICATION_FIRST_FRAME_TIMEOUT,
                 AUTHENTICATION_OVERALL_TIMEOUT,
                 drainWindow,
-                SINGLE_NODE_ID);
+                readinessWithdrawalWait,
+                nodeId);
     }
 }

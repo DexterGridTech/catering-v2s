@@ -36,6 +36,7 @@ import {
   pipeExpoOutput,
   parseListeningProcessIds,
   parseJsonEventsAfterByteOffset,
+  parsePlatformPortsSummaryCount,
   releaseManagedWebRunLock,
   sendProtectedInputKeyboardProbe,
   sourceSnapshotsMatch,
@@ -125,6 +126,7 @@ function temporaryDirectory(t) {
 test('WEB scenario registry rejects mismatched integration and surface before the managed run starts', () => {
   assert.deepEqual(WEB_SCENARIOS, [
     'admin-runtime',
+    'platform-ports-smoke',
     'screen-error-member-journey',
     'screen-error-secondary-journey',
     'layer-error-production-journey',
@@ -169,10 +171,29 @@ test('WEB scenario registry rejects mismatched integration and surface before th
     }),
     'WEB_SCREEN_ERROR_SECONDARY_JOURNEY_SCOPE_INVALID',
   );
+  assert.equal(
+    webScenarioScopeError({
+      integrationName: 'sample-wallpaper-console',
+      webScenario: 'platform-ports-smoke',
+      surfaceForm: 'laptop',
+      failureOwner: null,
+    }),
+    'WEB_PLATFORM_PORTS_SMOKE_SCOPE_INVALID',
+  );
+  assert.equal(
+    webScenarioScopeError({
+      integrationName: 'sample-console',
+      webScenario: 'platform-ports-smoke',
+      surfaceForm: 'mobile',
+      failureOwner: null,
+    }),
+    'WEB_PLATFORM_PORTS_SMOKE_SCOPE_INVALID',
+  );
 });
 
 test('WEB scenario admission matrix matches each actual integration and surface consumer', () => {
   const validRows = [
+    ['platform-ports-smoke', 'sample-console', 'laptop', null],
     ['admin-runtime', 'sample-console', 'laptop', null],
     ['admin-runtime', 'sample-console', 'mobile', null],
     ['admin-runtime', 'sample-wallpaper-console', 'laptop', null],
@@ -345,6 +366,29 @@ test('W4 layer inventory expands to all 14 integration-owner pairs without conve
     }),
     null,
   );
+});
+
+test('V-T17 Expo Web smoke reads the network capability rows and transport state on the existing admin page', () => {
+  const runner = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
+  assert.match(runner, /webScenario === 'platform-ports-smoke'/);
+  assert.match(runner, /terminal\.admin:ports:item:device:\$\{capability\}:status/);
+  for (const capability of ['getNetworkStatus', 'subscribeNetworkStatus', 'unsubscribeNetworkStatus']) {
+    assert.ok(runner.includes(capability), `WEB_PLATFORM_PORTS_NETWORK_CAPABILITY_MISSING:${capability}`);
+  }
+  assert.match(runner, /WEB_PLATFORM_PORTS_NETWORK_CAPABILITY_NOT_UNAVAILABLE/);
+  assert.match(runner, /transport\.connection\.network-status-bridge-unavailable/);
+  assert.match(runner, /WEB_PLATFORM_PORTS_TRANSPORT_CONNECTION_ACTIVITY_OBSERVED/);
+  assert.match(runner, /WEB_PLATFORM_PORTS_SUMMARY_TOTAL_MISMATCH/);
+  assert.match(runner, /screenshotPath/);
+});
+
+test('V-T17 parses visible platform-port fact labels plus values instead of treating the full row as a number', () => {
+  assert.equal(parsePlatformPortsSummaryCount('可用\n18', '可用'), 18);
+  assert.equal(parsePlatformPortsSummaryCount('  未声明   0  ', '未声明'), 0);
+  assert.equal(parsePlatformPortsSummaryCount('不可用\n36', '不可用'), 36);
+  assert.equal(parsePlatformPortsSummaryCount('不可用\n36', '可用'), null);
+  assert.equal(parsePlatformPortsSummaryCount('可用\n十八', '可用'), null);
+  assert.equal(parsePlatformPortsSummaryCount('可用\n18 多余', '可用'), null);
 });
 
 test('admin-shell runtime color oracle is distinct and exact for each integration', () => {

@@ -10,6 +10,7 @@ public record StoreServicePointAreaUpdateRequest(
     Long expectedVersion
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreServicePointAreaUpdateRequest> {
     @Override
     public StoreServicePointAreaUpdateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

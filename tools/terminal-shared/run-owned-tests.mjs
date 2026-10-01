@@ -114,6 +114,9 @@ async function main() {
   }
 
   assertRepositoryInput(path.join(packageRoot, 'vitest.config.ts'), 'vitest.config.ts');
+  const unhandledDiagnosticsReporter = path.join(toolRoot, 'vitest-unhandled-diagnostics-reporter.mjs');
+  assertRepositoryInput(unhandledDiagnosticsReporter, 'vitest-unhandled-diagnostics-reporter.mjs');
+  const relativeUnhandledDiagnosticsReporter = path.relative(packageRoot, unhandledDiagnosticsReporter);
   const vitestPath = path.join(repositoryRoot, 'node_modules/.bin/vitest');
   const packageNodeModules = path.join(packageRoot, 'node_modules');
   const vitestCacheDirectories = [path.join(packageNodeModules, '.vite'), path.join(packageNodeModules, '.vite-temp')];
@@ -131,7 +134,14 @@ async function main() {
     try {
       result = spawnSync(
         vitestPath,
-        ['run', '--config', 'vitest.config.ts', '--reporter=json', `--outputFile=${reportPath}`],
+        [
+          'run',
+          '--config',
+          'vitest.config.ts',
+          '--reporter=json',
+          `--reporter=${relativeUnhandledDiagnosticsReporter}`,
+          `--outputFile=${reportPath}`,
+        ],
         {
           cwd: packageRoot,
           env: {...process.env, TERMINAL_TEST_DEV_MODE: mode === 'DEV' ? 'true' : 'false'},

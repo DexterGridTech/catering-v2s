@@ -7,6 +7,7 @@ public record ExternalSystemStatusRequest(
     Long expectedVersion
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<ExternalSystemStatusRequest> {
     @Override
     public ExternalSystemStatusRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

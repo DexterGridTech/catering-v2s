@@ -10,6 +10,7 @@ public record WorkspaceRoleCreateRequest(
     java.util.List<String> pageAccessKeys
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<WorkspaceRoleCreateRequest> {
     @Override
     public WorkspaceRoleCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

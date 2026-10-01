@@ -23,7 +23,13 @@ function safeFailureLine(value) {
 }
 
 export function summarizeVitestFailureReport(report) {
-  if (!Array.isArray(report?.testResults)) return 'VITEST_FAILURE_DETAILS_UNAVAILABLE';
+  if (!Array.isArray(report?.testResults)) {
+    const keys =
+      Object.keys(report ?? {})
+        .sort()
+        .join(',') || 'none';
+    return `VITEST_FAILURE_REPORT_SHAPE keys=${keys}`;
+  }
   const failedAssertions = report.testResults.flatMap(file => {
     if (!Array.isArray(file?.assertionResults)) return [];
     return file.assertionResults
@@ -38,7 +44,9 @@ export function summarizeVitestFailureReport(report) {
     const failedFiles = report.testResults
       .filter(file => file?.status === 'failed')
       .map(file => ({file: path.basename(file.name ?? 'unknown-test-file'), detail: safeFailureLine(file.message)}));
-    if (failedFiles.length === 0) return 'VITEST_FAILURE_DETAILS_UNAVAILABLE';
+    if (failedFiles.length === 0) {
+      return `VITEST_FAILURE_REPORT_NO_FAILED_ITEMS files=${report.testResults.length} success=${String(report.success)} total=${String(report.numTotalTests)} failed=${String(report.numFailedTests)} pending=${String(report.numPendingTests)}`;
+    }
     return failedFiles
       .slice(0, 10)
       .map(({file, detail}) => `VITEST_FAILED_FILE file=${file}${detail ? ` detail=${detail}` : ''}`)

@@ -29,6 +29,20 @@ export function collectOwnedSourceFiles(sourceDirectory) {
   return result.sort();
 }
 
+function lintDiagnostics(reports, root) {
+  return reports.flatMap(report =>
+    report.messages
+      .filter(message => message.severity > 0)
+      .map(message => ({
+        file: path.relative(root, report.filePath),
+        line: message.line,
+        column: message.column,
+        ruleId: message.ruleId,
+        message: message.message,
+      })),
+  );
+}
+
 function main() {
   const startedAt = performance.now();
   const packageRoot = process.cwd();
@@ -96,7 +110,14 @@ function main() {
     return;
   }
   if (result.error || result.status !== 0 || errors || warnings) {
-    fail('eslint-reported-violations', {...fields, status: result.status, stderr: result.stderr?.trim()});
+    const diagnostics = lintDiagnostics(reports, repositoryRoot);
+    fail('eslint-reported-violations', {
+      ...fields,
+      status: result.status,
+      findings: diagnostics.slice(0, 20),
+      omittedFindings: Math.max(0, diagnostics.length - 20),
+      stderr: result.stderr?.trim(),
+    });
     return;
   }
 

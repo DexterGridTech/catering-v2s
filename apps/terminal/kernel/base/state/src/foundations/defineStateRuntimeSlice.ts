@@ -176,12 +176,16 @@ export const defineStateRuntimeSlice = <TState extends object>(
   assertNonEmptyString(descriptor.name, 'defineStateRuntimeSlice', 'name');
   assertFunction(descriptor.reducer, `${descriptor.name}.reducer`);
   const persistence = assertPersistenceDeclaration(descriptor);
+  if (descriptor.resetIntent === 'retain' && persistence.length === 0) {
+    throw new Error(`[defineStateRuntimeSlice] ${descriptor.name} retain requires persisted owner state`);
+  }
   const sync = assertSyncDeclaration(descriptor);
   const registeredPersistence = persistence.map(makeRegisteredPersistence);
   const registration: StateRuntimeSliceRegistration = Object.freeze({
     [stateRuntimeSliceRegistrationBrand]: true as true,
     name: descriptor.name,
     persistIntent: descriptor.persistIntent,
+    resetIntent: descriptor.resetIntent ?? 'clear',
     syncIntent: descriptor.syncIntent ?? 'isolated',
     hasPersistence: registeredPersistence.length > 0,
     hasSync: sync !== undefined,
@@ -191,6 +195,7 @@ export const defineStateRuntimeSlice = <TState extends object>(
     name: descriptor.name,
     reducer: makeRegisteredReducer(descriptor.reducer),
     persistIntent: descriptor.persistIntent,
+    resetIntent: descriptor.resetIntent ?? 'clear',
     syncIntent: descriptor.syncIntent ?? 'isolated',
     persistence: registeredPersistence,
     sync: sync === undefined ? undefined : makeRegisteredSync(sync),

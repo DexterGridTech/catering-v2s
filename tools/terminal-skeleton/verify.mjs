@@ -321,11 +321,15 @@ function runTurboDryRun(taskName) {
   debugLog('phase.finish', {phase: `turbo-dry-${taskName}`, outcome: 'PASS'});
 }
 
-function exportArtifactPaths(applicationDirectory) {
-  return ['.expo', 'dist'].map(relativePath => path.join(applicationDirectory, relativePath));
+export function exportArtifactPaths(applicationDirectory) {
+  return [path.join(applicationDirectory, 'dist')];
 }
 
-function cleanupExportArtifacts(paths) {
+export function preexistingExportArtifacts(applicationDirectory) {
+  return exportArtifactPaths(applicationDirectory).filter(artifactPath => fs.existsSync(artifactPath));
+}
+
+export function cleanupExportArtifacts(paths) {
   for (const artifactPath of paths) fs.rmSync(artifactPath, {recursive: true, force: true});
   const remaining = paths.filter(artifactPath => fs.existsSync(artifactPath));
   if (remaining.length) throw new Error(`application export cleanup left artifacts: ${remaining.join(', ')}`);
@@ -375,7 +379,7 @@ function main() {
   }
   const applicationDirectory = path.join(repoRoot, 'apps/terminal/application/android/sample-terminal');
   const exportArtifacts = exportArtifactPaths(applicationDirectory);
-  const preexistingArtifacts = exportArtifacts.filter(artifactPath => fs.existsSync(artifactPath));
+  const preexistingArtifacts = preexistingExportArtifacts(applicationDirectory);
   if (preexistingArtifacts.length) {
     debugLog('phase.finish', {
       phase: 'application-export-preflight',

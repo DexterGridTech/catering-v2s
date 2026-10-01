@@ -16,6 +16,10 @@ import {
   type DisplayInfo,
   type LogEvent,
   type NoOutput,
+  type NetworkStatus,
+  type NetworkStatusChanged,
+  type NetworkStatusSubscriptionInput,
+  type NetworkStatusUnsubscribeInput,
   type PlatformPorts,
   type PortFailure,
   type PortResult,
@@ -74,11 +78,16 @@ export class FakeDevicePort implements DevicePort {
   unsubscribeError: Error | null = null;
   readonly calls = {
     getDisplayInfo: [] as DeviceCall[],
+    getNetworkStatus: [] as DeviceCall[],
+    subscribeNetworkStatus: [] as NetworkStatusSubscriptionInput[],
+    unsubscribeNetworkStatus: [] as NetworkStatusUnsubscribeInput[],
     subscribePowerStatus: [] as PowerStatusSubscriptionInput[],
     unsubscribePowerStatus: [] as PowerStatusUnsubscribeInput[],
   };
   private listener: ((event: PowerStatusChanged) => void) | null = null;
   private onError: ((error: PortFailure['error']) => void) | null = null;
+  private networkListener: ((event: NetworkStatusChanged) => void) | null = null;
+  private networkOnError: ((error: PortFailure['error']) => void) | null = null;
 
   async getDeviceInfo(): Promise<PortResult<never>> {
     return unavailable('getDeviceInfo');
@@ -96,6 +105,29 @@ export class FakeDevicePort implements DevicePort {
 
   async getPowerStatus(): Promise<PortResult<never>> {
     return unavailable('getPowerStatus');
+  }
+
+  async getNetworkStatus(input: DeviceCall): Promise<PortResult<NetworkStatus>> {
+    this.calls.getNetworkStatus.push(input);
+    return unavailable('getNetworkStatus');
+  }
+
+  async subscribeNetworkStatus(
+    input: NetworkStatusSubscriptionInput,
+  ): Promise<PortResult<{readonly subscriptionId: string}>> {
+    this.calls.subscribeNetworkStatus.push(input);
+    if (this.subscribeError !== null) throw this.subscribeError;
+    if (this.subscribeResult.status === 'succeeded') {
+      this.networkListener = input.listener;
+      this.networkOnError = input.onError;
+    }
+    return this.subscribeResult;
+  }
+
+  async unsubscribeNetworkStatus(input: NetworkStatusUnsubscribeInput): Promise<PortResult<NoOutput>> {
+    this.calls.unsubscribeNetworkStatus.push(input);
+    if (this.unsubscribeError !== null) throw this.unsubscribeError;
+    return this.unsubscribeResult;
   }
 
   async subscribePowerStatus(
@@ -121,6 +153,14 @@ export class FakeDevicePort implements DevicePort {
       status: {source, charging: 'unknown'},
       observedAt: completedAt,
     });
+  }
+
+  emitNetwork(connected: boolean): void {
+    this.networkListener?.({status: {connected}, observedAt: completedAt});
+  }
+
+  reportNetworkError(code = 'NETWORK_STATUS_TEST_ERROR'): void {
+    this.networkOnError?.({code, message: code, retryable: true});
   }
 
   reportError(code = 'POWER_STATUS_TEST_ERROR'): void {

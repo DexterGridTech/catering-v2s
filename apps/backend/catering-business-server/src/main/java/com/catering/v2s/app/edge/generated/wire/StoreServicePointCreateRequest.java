@@ -31,6 +31,7 @@ public record StoreServicePointCreateRequest(
   }
 
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreServicePointCreateRequest> {
     @Override
     public StoreServicePointCreateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

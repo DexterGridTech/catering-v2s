@@ -18,6 +18,7 @@ topology_preflight=false
 v12_diagnostic=false
 v8_diagnostic=false
 d46_focused=false
+tds_contract_scenario=''
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --calibration)
@@ -76,12 +77,30 @@ while [[ "$#" -gt 0 ]]; do
       d46_focused=true
       shift
       ;;
+    --tds-contract-scenario)
+      [[ -z "$tds_contract_scenario" && -n "${2:-}" ]] || {
+        printf '%s\n' 'BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_ARGUMENT_INVALID' >&2
+        exit 2
+      }
+      tds_contract_scenario="$2"
+      shift 2
+      ;;
     *)
       printf '%s\n' 'BACKEND_ACCEPTANCE_ARGUMENT_INVALID' >&2
       exit 2
       ;;
   esac
 done
+
+if [[ -n "$tds_contract_scenario" && \
+      ( "$tds_contract_scenario" != 'terminal.connection.vs15.readiness-withdrawal-and-drain' || \
+        "$operation" != 'storeTerminalActivationBusinessPrecedence' || \
+        "$topology_preflight" != true || "$calibration" == true || \
+        -n "$production_mutation" || "$extension_scale_proof" == true || \
+        "$v12_diagnostic" == true || "$v8_diagnostic" == true || "$d46_focused" == true ) ]]; then
+  printf '%s\n' 'BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID' >&2
+  exit 2
+fi
 
 if [[ "$topology_preflight" == true && ( "$calibration" == true || "$extension_scale_proof" == true ) ]]; then
   printf '%s\n' 'BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT_ARGUMENT_INVALID' >&2
@@ -147,6 +166,11 @@ fi
 
 export V2S_BACKEND_ACCEPTANCE_OPERATION="$operation"
 export V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT="$topology_preflight"
+if [[ -n "$tds_contract_scenario" ]]; then
+  export V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO="$tds_contract_scenario"
+else
+  unset V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO
+fi
 if [[ "$v12_diagnostic" == true ]]; then
   export V2S_BACKEND_ACCEPTANCE_VS12_DIAGNOSTIC=true
   export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=ACCEPTANCE

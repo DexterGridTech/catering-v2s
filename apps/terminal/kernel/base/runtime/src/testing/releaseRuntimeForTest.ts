@@ -9,3 +9,7 @@ import {readRuntimeResourceRegistry} from '../foundations/runtimeResourceAccesso
  * Production has no registry-wide drain: resources that remain registered live until process exit.
  */
 export const releaseRuntimeForTest = (runtime: Runtime): number => readRuntimeResourceRegistry(runtime)?.release() ?? 0;
+
+/** Awaits module-owned asynchronous resources for tests that install async lifecycle owners. */
+export const releaseRuntimeForTestAsync = async (runtime: Runtime): Promise<number> =>
+  (await readRuntimeResourceRegistry(runtime)?.releaseAsync()) ?? 0;

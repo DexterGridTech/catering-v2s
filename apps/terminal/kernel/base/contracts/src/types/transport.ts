@@ -14,9 +14,18 @@ export interface TransportServerAddress {
   readonly timeoutMs?: number;
 }
 
+export interface TransportHttpProxy {
+  readonly protocol: 'http';
+  readonly host: string;
+  readonly port: number;
+  readonly username?: string;
+  readonly password?: string;
+}
+
 export interface TransportServerDefinition {
   readonly serverName: string;
   readonly addresses: readonly TransportServerAddress[];
+  readonly proxy?: TransportHttpProxy;
 }
 
 export interface TransportServerConfigSpace {
@@ -37,6 +46,7 @@ export interface TransportServerAddressOverride {
 
 export interface TransportServerOverride {
   readonly addresses?: readonly TransportServerAddressOverride[];
+  readonly proxy?: TransportHttpProxy | null;
 }
 
 export interface ResolveTransportServerConfigOptions {

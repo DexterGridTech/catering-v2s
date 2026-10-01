@@ -10,6 +10,7 @@ public record StoreTerminalFunctionInput(
     java.util.List<StoreTerminalSceneSelection> scenes
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreTerminalFunctionInput> {
     @Override
     public StoreTerminalFunctionInput deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

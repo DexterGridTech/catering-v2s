@@ -1,6 +1,6 @@
 # catering-v2s 标准动作
 
-本目录是 v2s 仓内动作的唯一入口。当前任务与授权只来自 Dexter 在会话中的明确指派；历史 review、plan、evidence 与 decision 不能替代当前授权。`catering-business-server` 仍是唯一业务 deployable；按已接受的 terminal service-shape decision，本批 `terminal-data-server` 可运行独立受管的单节点 WebSocket transport，不是 TDP、业务 owner 或第二业务 deployable，不运行 Flyway/seed，也不提供业务写 API。
+本目录是 v2s 仓内动作的唯一入口。当前任务与授权只来自 Dexter 在会话中的明确指派；历史 review、plan、evidence 与 decision 不能替代当前授权。`catering-business-server` 仍是唯一业务 deployable；按已接受的 terminal service-shape decision 与 D-44，批次二 DEV 可运行三个独立受管的 `terminal-data-server` WebSocket transport 实例，经两个 HAProxy 入口接入。TDS 不是 TDP、业务 owner 或第二业务 deployable，不运行 Flyway/seed，也不提供业务写 API；跨节点会话协调仍属批次三。
 
 获批 UI-bearing Journey 的交互设计先执行 `doc/decisions/2026-07-25-v2s-frontend-asset-carry-over-first.md`：逐屏盘点 all-v2 对应页并以带 `path@hash` 的静态摹本/截图为线框基线；仅当没有对应页才新画。未来实现才按 manifest 显式搬运页面、组件、shell/foundation，generated wire 始终按 v2s edge OpenAPI 重生成。本条不授权任何实现，也不允许 Heritage runtime/build fallback。
 
@@ -142,8 +142,8 @@ endpoint 分组、API 调用数、HTTP/数据库 average/min/max、关联缺口�
 `node scripts/dev/r5-complete-seed-executor.mjs --render-existing <.../seed-report.json>` 重生成同目录
 Markdown，不会重新执行 seed。
 
-- **DEV**：受信远端非生产主机启动业务 Spring Boot 与单独受管的 TDS 进程，与 PostgreSQL/对象存储同侧；本机只启动 `platform-admin` 与 `operations-admin` Vite，经受管 tunnel 转发业务 Java HTTP、资产和唯一 TDS WebSocket 端口。禁止 PostgreSQL tunnel、本机 Java/TDS fallback、远端 Vite/浏览器。start/restart 可 additive Flyway，绝不 seed。manifest 分别记录业务与 TDS 身份、日志、readiness、端口及 cleanup。
-- **当前受管浏览器 L2**：Spring Boot 与本批 TDS 若由该 run topology 启动，均在受信远端非生产主机运行；远端先为本 run 预检互不冲突的 HTTP、TDS WebSocket 端口；本机只启动两个 Web Vite 与 Playwright，tunnel 仅转发远端 Java HTTP、资产和 TDS WebSocket 端口。每 run 使用隔离的远端数据库/资产 namespace；runner 必须保留远端 Java/TDS 端口、PID/PGID/boot id/start ticks/command digest、远端日志与 readiness，以及本机 Vite/Playwright/tunnel identity，并分别证明业务结果与两侧 cleanup。不得启动本地 Spring/TDS、不得建立 PostgreSQL tunnel。
+- **DEV**：受信远端非生产主机启动业务 Spring Boot 与三个独立受管 TDS 实例，并与 PostgreSQL/对象存储同侧；三个 TDS 节点只绑定远端 loopback，经两个 HAProxy WebSocket 入口接入。本机只启动 `platform-admin` 与 `operations-admin` Vite，经受管 tunnel 转发业务 Java HTTP、资产及这两个 HAProxy 入口；不得转发 TDS 节点端口。禁止 PostgreSQL tunnel、本机 Java/TDS fallback、远端 Vite/浏览器。start/restart 可 additive Flyway，绝不 seed。manifest 分别记录业务、三个 TDS 节点、HAProxy、每条转发映射的身份、日志、readiness、端口及 cleanup。
+- **当前受管浏览器 L2**：拓扑以 `doc/platform/browser-l2-execution-standard.md` 与该 L2 的明确授权为准，不继承批次二 DEV 的三 TDS/两 HAProxy 部署要求；本批 §3a 为 N/A，不新增 L2 场景。任何获准 L2 的 Spring Boot、TDS 与中间件均在受信远端非生产主机，端口和转发只按该 L2 当前批准拓扑及 run manifest 建立；本机只启动两个 Web Vite 与 Playwright。每 run 使用隔离的远端数据库/资产 namespace；runner 必须保留远端进程/端口、PID/PGID/boot id/start ticks/command digest、远端日志与 readiness，以及本机 Vite/Playwright/tunnel identity，并分别证明业务结果与两侧 cleanup。不得启动本地 Spring/TDS、不得建立 PostgreSQL tunnel。
 - **后续 UAT**：仅在 Dexter 单独授权后，应用与浏览器执行面均部署并运行在远端；本机 runtime、DEV 数据库或静态检查不能替代 UAT。
 
 远端 Testcontainers 保持其 JVM/Docker 同平面的技术验证边界，不能被解释为上述浏览器 L2 或 UAT。
@@ -202,17 +202,29 @@ TERMINAL_DATA_SERVER=REMOTE_TRUSTED_NON_PRODUCTION_HOST
 TDS_WEBSOCKET=MANAGED_REMOTE_SSH_TUNNEL
 ```
 
-具体映射由 `scripts/dev/r5-dev-runner.mjs` 的受管 runner 建立：Java 的 JDBC/对象存储 endpoint
-指向远端同机地址，不经过本机；本机只建立 Java HTTP、资产与单一 TDS WebSocket 端口三个受管
-forward，分别供 Vite proxy、浏览器资产访问与 TER/验收连接。TDS 与业务 Java 都在同一受信远端
-非生产主机运行，TDS 是独立受管进程；PostgreSQL 不经过本机。manifest 必须记录远端 Java 与 TDS
-各自的 trusted host、boot id、PID、start ticks、command digest、runtime/classpath digest、日志与
-readiness，以及本机两个 Vite 和三个 tunnel 的 PID/start token、端口映射和 cleanup。若 runner 仍
-spawn 本机 Gradle、启动本机 TDS 或建立 PostgreSQL forward，start 必须以拓扑不匹配失败，不得
-fallback。
-本段定义获准拓扑，不表示当前 runner 已实现或运行通过；CP-06 必须让 `r5-dev-runner.mjs` 的
-manifest 与启动 stdout 逐项输出上述身份和 tunnel 字段，并以当前受管运行证据证明。文档存在不能
-冒充 runtime topology proof。
+获准的批次二 DEV 映射由 `scripts/dev/r5-dev-runner.mjs` 的受管 runner 建立：Java 的
+JDBC/对象存储 endpoint 指向远端同机地址，不经过本机；本机只建立 Java HTTP、资产以及两个
+HAProxy WebSocket 入口的受管转发，分别供 Vite proxy、浏览器资产访问与 TER/验收连接。三个 TDS
+节点与业务 Java 都在同一受信远端非生产主机运行，节点端口只绑定远端 loopback；HAProxy 按批次二
+配置将两个入口路由到受管节点，PostgreSQL 不经过本机。manifest 必须记录远端 Java、每个 TDS 节点、
+HAProxy 的 trusted host、boot id、PID、start ticks、command digest、runtime/classpath 或 image/config
+digest、日志与 readiness，以及本机 Vite、tunnel process identity 和每条端口映射与 cleanup。若 runner
+仍 spawn 本机 Gradle、启动本机 TDS、直接转发 TDS 节点端口或建立 PostgreSQL forward，start 必须
+以拓扑不匹配失败，不得 fallback。
+本段描述 D-44/D-45 批次二 DEV 拓扑，不表示当前 runner 已实现或运行通过；实施计划 CP-05 必须让
+`r5-dev-runner.mjs` 的 manifest 与启动 stdout 逐项输出上述身份和转发字段，并以当前受管运行证据证明。
+文档存在不能冒充 runtime topology proof。浏览器 L2 使用其独立标准与获准拓扑，不因该 DEV 描述自动启动。
+
+若 DEV start 在写出主 `run-manifest.json` 前失败，并留下绑定该 runId 的 `terminal-<runId>.json`，只可用
+`scripts/dev/cleanup-failed-start <runId>` 恢复该失败 run 的 remote-root cleanup。该入口要求本机进程、远端 Java 与所有已登记 TDS 均已有停止 readback，核对 remote host boot id，并在发现任何仍活跃进程或容器时拒绝删除；它只写追加的 cleanup recovery 证据，不改写原始 first failure。
+
+当前 Node 受管入口的 catalog 登记 5 个场景：`terminal.client.multi-instance-isolation` 双 composition 隔离测试，以及 CP-06 加入的 `terminal.dev.lifecycle-and-compression`、`terminal.dev.entry-address-failover`、`terminal.dev.two-device-rebind`、`terminal.dev.three-node-two-entry-handoff` 四个 DEV 场景。CP-05 阶段当时只登记双 composition 测试；这里描述的是当前 catalog。每次只选择一个精确场景。运行前先通过 `scripts/dev/start` 启动当前 R5 DEV，再执行：
+
+```bash
+node scripts/test/terminal-client-dev-acceptance.mjs --scenario terminal.client.multi-instance-isolation
+```
+
+入口只接受 catalog 中一个精确场景；不支持 `all`、任意文件路径或直接 TDS 节点地址。它校验当前 DEV manifest 的本机 PID/start-token 与远端 TDS/HAProxy manifest 绑定，按仓内 TER package 实际解析的 Node/Vitest/Undici 版本启动唯一测试文件及精确 test-name pattern，并把业务结果、Vitest 日志和子进程清理写入独立 run manifest。实际远端 TDS/HAProxy 活性与拓扑由受管 DEV start/preflight 探测，不由该 catalog 校验代替。执行期间会持有 DEV/acceptance 互斥锁；`scripts/dev/start` 与 `scripts/dev/stop` 在锁有效时拒绝变更 DEV。`--self-test` 仅验证本地入口和包解析，不连接远端或运行 DEV 场景。Node 的进程/RSS 资源门使用 `scripts/env/check-runtime-resource-budget --profile ter-validation-with-dev .runtime`；不把 DEV 进程计入 TER 自身 RSS，但 acceptance 自己的进程仍受 TER 预算约束。
 
 `reset` 不依赖本机 `psql`、`V2S_DEV_DATABASE_ADMIN_URL` 或管理员秘密。它先复用
 `r5-dev-environment` 的远端 host hash、非生产检查和精确 namespace 数据库派生，再以

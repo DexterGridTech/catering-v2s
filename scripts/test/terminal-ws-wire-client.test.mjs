@@ -24,6 +24,11 @@ const terminalProtocol = JSON.parse(readFileSync(
   'utf8',
 ));
 const protocolMessages = new Map(terminalProtocol.messages.map(message => [message.type, message]));
+const wireClientSource = readFileSync(new URL('./terminal-ws-wire-client.mjs', import.meta.url), 'utf8');
+const terminalAcceptanceSource = readFileSync(
+  new URL('../../apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TerminalConnectionContractScenarios.java', import.meta.url),
+  'utf8',
+);
 
 function messageFromContract(type, values) {
   const definition = protocolMessages.get(type);
@@ -228,6 +233,38 @@ test('terminal wire control accepts one bounded loopback protocol request', () =
   assert.equal(request.scenario, 'terminal.connection.topology-probe');
   assert.equal(request.url, 'ws://127.0.0.1:49152/tdp/acceptance-probe/ws');
   assert.equal(request.authenticate.type, 'AUTHENTICATE');
+});
+
+test('V-S15 is accepted as an authenticated interactive session probe', () => {
+  const control = validRequest();
+  control.scenario = 'terminal.connection.vs15.readiness-withdrawal-and-drain';
+  delete control.expectedClose;
+
+  const request = parseControlRequest(`${JSON.stringify(control)}\n`);
+
+  assert.equal(request.scenario, control.scenario);
+  assert.equal(request.markerId, control.markerId);
+  assert.equal(request.authenticate.terminalRef, control.authenticate.terminalRef);
+  assert.equal(request.expectedClose, null);
+});
+
+test('V-S1 default-node-id probe is registered across the acceptance-to-wire-client boundary', () => {
+  const scenario = 'terminal.connection.vs1.default-node-id';
+  const sessionProbeSet = /const SESSION_PROBE_SCENARIOS = new Set\(\[([\s\S]*?)\n\]\);/.exec(wireClientSource)?.[1];
+  assert.ok(sessionProbeSet, 'TERMINAL_WIRE_SESSION_PROBE_SCENARIO_SET_MISSING');
+  assert.ok(sessionProbeSet.includes(`'${scenario}'`), 'V_S1_DEFAULT_NODE_ID_WIRE_PROBE_UNREGISTERED');
+  assert.match(
+    terminalAcceptanceSource,
+    /startSessionProbe\(\s*tds,\s*fixture,\s*"terminal\.connection\.vs1\.default-node-id"/,
+    'V_S1_DEFAULT_NODE_ID_ACCEPTANCE_WIRE_PROBE_DRIFT',
+  );
+
+  const control = validRequest();
+  control.scenario = scenario;
+  delete control.expectedClose;
+  const request = parseControlRequest(JSON.stringify(control));
+  assert.equal(request.scenario, scenario);
+  assert.equal(request.expectedClose, null);
 });
 
 test('one-shot topology and V-S14 wire cases require isolated marker ids', () => {

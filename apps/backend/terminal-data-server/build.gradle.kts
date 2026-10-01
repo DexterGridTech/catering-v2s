@@ -22,6 +22,7 @@ dependencies {
     implementation(project(":apps:backend:catering-business-server:modules:execution-context"))
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.projectreactor:reactor-core")
     implementation("io.projectreactor.netty:reactor-netty-core")
     implementation("io.projectreactor.netty:reactor-netty-http")
@@ -50,6 +51,10 @@ tasks.withType<Test>().configureEach {
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     mainClass.set("com.catering.v2s.terminaldataserver.TerminalDataServerApplication")
     archiveFileName.set("terminal-data-server.jar")
+}
+
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    mainClass.set("com.catering.v2s.terminaldataserver.TerminalDataServerApplication")
 }
 
 val terminalConnectionProtocolSource =

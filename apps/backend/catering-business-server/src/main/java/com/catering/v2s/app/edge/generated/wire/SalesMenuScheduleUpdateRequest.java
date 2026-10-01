@@ -7,6 +7,7 @@ public record SalesMenuScheduleUpdateRequest(
     Long expectedVersion
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<SalesMenuScheduleUpdateRequest> {
     @Override
     public SalesMenuScheduleUpdateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

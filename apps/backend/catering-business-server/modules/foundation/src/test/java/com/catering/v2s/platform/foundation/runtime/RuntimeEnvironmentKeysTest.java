@@ -14,6 +14,7 @@ class RuntimeEnvironmentKeysTest {
                         RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_RESULT,
                         RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_RUN_ID,
                         RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_SECRET,
+                        RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO,
                         RuntimeEnvironmentKeys.V2S_CATALOG_TEST_FAULTS,
                         RuntimeEnvironmentKeys.V2S_DB_OPERATIONS_EVENTS,
                         RuntimeEnvironmentKeys.V2S_DB_OPERATIONS_HMAC_KEY,
@@ -29,6 +30,8 @@ class RuntimeEnvironmentKeysTest {
                         RuntimeEnvironmentKeys.V2S_RUNTIME_ENVIRONMENT,
                         RuntimeEnvironmentKeys.V2S_TDS_MAX_TRACKED_SESSIONS,
                         RuntimeEnvironmentKeys.V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS,
+                        RuntimeEnvironmentKeys.V2S_TDS_NODE_ID,
+                        RuntimeEnvironmentKeys.V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS,
                         RuntimeEnvironmentKeys.V2S_TESTCONTAINERS_EXECUTION_PLANE),
                 RuntimeEnvironmentKeys.CROSS_LAYER_KEYS);
     }

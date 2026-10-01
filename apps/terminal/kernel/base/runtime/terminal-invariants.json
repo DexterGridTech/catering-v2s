@@ -86,6 +86,7 @@
     "flushPersistence",
     "subscribeState",
     "registerResource",
+    "registerAsyncResource",
     "createFullSyncPayload",
     "applyAuthoritativeSync",
     "dispatchCommand",

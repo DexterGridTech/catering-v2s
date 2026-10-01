@@ -8,6 +8,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 public record TdsRuntimeProperties(
         String maxUnauthenticatedConnections,
         String maxTrackedSessions,
+        @DefaultValue("terminal-data-server") String nodeId,
+        @DefaultValue("3000") long readinessWithdrawalWaitMs,
         @DefaultValue("30000") long heartbeatIntervalMs,
         @DefaultValue("90000") long heartbeatTimeoutMs,
         @DefaultValue("15000") long stateWriteIntervalMs,

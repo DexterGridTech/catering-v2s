@@ -77,6 +77,30 @@ export const createStateRuntime = async (input: CreateStateRuntimeInput): Promis
   }
 
   const slices = resolveSlices(input);
+  const retainedSlices = slices
+    .filter(slice => slice.resetIntent === 'retain')
+    .map(slice => ({
+      name: slice.name,
+      retainPersistedState: (initialState: object, currentState: object): object =>
+        slice.persistence.reduce((retained, descriptor) => {
+          if (descriptor.kind === 'field') {
+            const value = descriptor.readField(currentState);
+            if (descriptor.shouldPersist !== undefined && !descriptor.shouldPersist(value, currentState))
+              return retained;
+            return descriptor.writeField(retained, value);
+          }
+          const entries = descriptor.getEntries(currentState);
+          const persistedEntries = Object.fromEntries(
+            Object.entries(entries).filter(
+              ([key, value]) =>
+                value !== undefined &&
+                (descriptor.shouldPersistEntry === undefined ||
+                  descriptor.shouldPersistEntry(key, value, currentState)),
+            ),
+          );
+          return descriptor.applyEntries(retained, persistedEntries);
+        }, initialState),
+    }));
   const hydrated = await hydrateStateRuntime({
     persistenceKey: input.persistenceKey,
     slices,
@@ -94,6 +118,7 @@ export const createStateRuntime = async (input: CreateStateRuntimeInput): Promis
   const store = createStateStore({
     reducers: createReducers(slices),
     preloadedState: hydrated.preloadedState,
+    retainedSlices,
     environmentMode: input.environmentMode,
     storeEnhancers: input.storeEnhancers,
   });
@@ -168,9 +193,12 @@ export const createStateRuntime = async (input: CreateStateRuntimeInput): Promis
     getResetActor: () => ({
       handleResetCommand: () => {
         cancelDebounce();
-        return hydrated.engine.reset(() => {
-          store.dispatch({type: resetToOwnerInitialStateActionType});
-        });
+        return hydrated.engine.reset(
+          () => store.getState(),
+          () => {
+            store.dispatch({type: resetToOwnerInitialStateActionType});
+          },
+        );
       },
     }),
     createFullSyncPayload: (sliceName: string): StateSyncPayloadResult => {

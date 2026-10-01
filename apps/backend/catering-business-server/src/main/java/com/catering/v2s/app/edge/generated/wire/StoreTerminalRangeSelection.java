@@ -8,6 +8,7 @@ public record StoreTerminalRangeSelection(
     java.util.List<java.util.UUID> refs
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreTerminalRangeSelection> {
     @Override
     public StoreTerminalRangeSelection deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

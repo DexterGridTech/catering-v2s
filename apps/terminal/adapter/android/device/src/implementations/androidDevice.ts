@@ -262,6 +262,17 @@ export const createAndroidDevicePort = (): DevicePort => {
         Object.freeze({capability: 'getDeviceInfo', state: 'real' as const, source: 'adapter' as const}),
         Object.freeze({capability: 'getDisplayInfo', state: 'real' as const, source: 'adapter' as const}),
         Object.freeze({capability: 'getSystemStatus', state: 'unavailable' as const, source: 'default' as const}),
+        Object.freeze({capability: 'getNetworkStatus', state: 'unavailable' as const, source: 'default' as const}),
+        Object.freeze({
+          capability: 'subscribeNetworkStatus',
+          state: 'unavailable' as const,
+          source: 'default' as const,
+        }),
+        Object.freeze({
+          capability: 'unsubscribeNetworkStatus',
+          state: 'unavailable' as const,
+          source: 'default' as const,
+        }),
         Object.freeze({capability: 'getPowerStatus', state: 'real' as const, source: 'adapter' as const}),
         Object.freeze({capability: 'subscribePowerStatus', state: 'real' as const, source: 'adapter' as const}),
         Object.freeze({capability: 'unsubscribePowerStatus', state: 'real' as const, source: 'adapter' as const}),

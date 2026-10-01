@@ -20,6 +20,7 @@ export interface AppModuleActorDescriptor {
 export interface AppModuleSliceDescriptor {
   readonly name: string;
   readonly persistIntent?: 'never' | 'owner-only';
+  readonly resetIntent?: 'clear' | 'retain';
 }
 
 export interface AppModule {

@@ -21,7 +21,9 @@ public class TdsSettingsConfiguration {
                 Duration.ofMillis(properties.heartbeatIntervalMs()),
                 Duration.ofMillis(properties.heartbeatTimeoutMs()),
                 Duration.ofMillis(properties.stateWriteIntervalMs()),
-                Duration.ofMillis(properties.drainWindowMs()));
+                Duration.ofMillis(properties.drainWindowMs()),
+                properties.nodeId(),
+                Duration.ofMillis(properties.readinessWithdrawalWaitMs()));
     }
 
     @Bean(name = "tds-db-worker", destroyMethod = "dispose")

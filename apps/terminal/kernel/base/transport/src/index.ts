@@ -10,6 +10,9 @@ export {
 } from './foundations/createTransportRetryController';
 export {createTransportHeartbeat} from './foundations/createTransportHeartbeat';
 export {createTransportWebSocketController} from './foundations/createTransportWebSocketController';
+export {createTransportNetworkStatusBridge} from './foundations/createTransportNetworkStatusBridge';
+export {createTransportConnectionOwner, transportReconnectDelayMs} from './foundations/createTransportConnectionOwner';
+export type {TransportConnectionOwner} from './foundations/createTransportConnectionOwner';
 export {
   createTopologyStateReassembler,
   createTopologyStateTransferPlan,
@@ -54,3 +57,35 @@ export type {
   TransportSocketEvent,
   TransportWebSocketController,
 } from './foundations/createTransportWebSocketController';
+export type {
+  TransportCommandGateway,
+  TransportConnection,
+  TransportConnectionEvent,
+  TransportManagedConnection,
+  TransportNetworkStatusBridge,
+  TransportNetworkStatusChanged,
+  TransportNetworkStatusDispatch,
+  TransportNetworkTransition,
+  TransportReconnectPolicy,
+  TransportStartInput,
+} from './types/runtimeControl';
+export type {
+  TransportHttpAttemptResult,
+  TransportHttpExecutionResult,
+  TransportHttpRequest,
+  TransportModuleOptions,
+  TransportNetworkAdapter,
+  TransportNetworkSnapshot,
+} from './types/runtimeControl';
+export {
+  transportInvalidCommand,
+  transportHttpAddressAvailableCommand,
+  transportHttpRequestCommand,
+  transportNetworkStatusChangedCommand,
+  transportReadyCommand,
+  transportReadyTimeoutCommand,
+  transportRetryDueCommand,
+  transportStablePeriodElapsedCommand,
+  transportStartCommand,
+  transportStopCommand,
+} from './features/commands/transportCommands';

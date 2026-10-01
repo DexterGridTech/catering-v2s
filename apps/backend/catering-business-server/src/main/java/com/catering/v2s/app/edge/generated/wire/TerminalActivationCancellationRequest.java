@@ -6,6 +6,32 @@ public record TerminalActivationCancellationRequest(
     String deviceId
 ) {
 
+  private static boolean skipUnknownJsonValue(tools.jackson.core.JsonParser parser)
+          throws tools.jackson.core.JacksonException {
+    tools.jackson.core.JsonToken token = parser.currentToken();
+    if (token == tools.jackson.core.JsonToken.START_OBJECT) {
+      java.util.Set<String> names = new java.util.HashSet<>();
+      token = parser.nextToken();
+      while (token != null && token != tools.jackson.core.JsonToken.END_OBJECT) {
+        if (token != tools.jackson.core.JsonToken.PROPERTY_NAME || !names.add(parser.currentName())) return false;
+        token = parser.nextToken();
+        if (token == null || !skipUnknownJsonValue(parser)) return false;
+        token = parser.nextToken();
+      }
+      return token == tools.jackson.core.JsonToken.END_OBJECT;
+    }
+    if (token == tools.jackson.core.JsonToken.START_ARRAY) {
+      token = parser.nextToken();
+      while (token != null && token != tools.jackson.core.JsonToken.END_ARRAY) {
+        if (!skipUnknownJsonValue(parser)) return false;
+        token = parser.nextToken();
+      }
+      return token == tools.jackson.core.JsonToken.END_ARRAY;
+    }
+    return token != null;
+  }
+
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<TerminalActivationCancellationRequest> {
     @Override
     public TerminalActivationCancellationRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)
@@ -27,8 +53,8 @@ public record TerminalActivationCancellationRequest(
         switch (property) {
           case "deviceId" -> deviceId = context.readValue(parser, String.class);
           default -> {
-            parser.skipChildren();
-            return context.reportInputMismatch(TerminalActivationCancellationRequest.class, "unknown property " + property);
+            if (!skipUnknownJsonValue(parser))
+              return context.reportInputMismatch(TerminalActivationCancellationRequest.class, "unknown property contains malformed or duplicate JSON");
           }
         }
         token = parser.nextToken();

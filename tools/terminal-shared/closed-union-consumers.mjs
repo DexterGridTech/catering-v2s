@@ -91,12 +91,16 @@ function targetType(declaration, memberPath, checker, sourceFile) {
     const property = checker.getPropertyOfType(declared, segments[0]);
     if (!property) return null;
     const propertyDeclaration = property.valueDeclaration ?? property.declarations?.[0] ?? declaration;
-    let current = checker.getTypeOfSymbolAtLocation(property, propertyDeclaration);
+    let current = propertyDeclaration.type
+      ? checker.getTypeFromTypeNode(propertyDeclaration.type)
+      : checker.getTypeOfSymbolAtLocation(property, propertyDeclaration);
     for (const segment of segments.slice(1)) {
       const nested = checker.getPropertyOfType(current, segment);
       if (nested) {
         const nestedDeclaration = nested.valueDeclaration ?? nested.declarations?.[0] ?? propertyDeclaration;
-        current = checker.getTypeOfSymbolAtLocation(nested, nestedDeclaration);
+        current = nestedDeclaration.type
+          ? checker.getTypeFromTypeNode(nestedDeclaration.type)
+          : checker.getTypeOfSymbolAtLocation(nested, nestedDeclaration);
         continue;
       }
       const signatures = current.getCallSignatures?.() ?? [];
@@ -199,7 +203,8 @@ function assertClosedUnionDefinitionRows(entries, analysis, definitions) {
         continue;
       }
       const type = targetType(declaration, row.member, analysis.program.getTypeChecker(), sourceFile);
-      const symbols = unionSymbols(type, analysis.program.getTypeChecker());
+      const checker = analysis.program.getTypeChecker();
+      const symbols = unionSymbols(type, checker);
       
       const unionSymbol = symbols.get(row.union);
       const values = unionSymbol
@@ -209,7 +214,7 @@ function assertClosedUnionDefinitionRows(entries, analysis, definitions) {
           .sort()
         : [];
       if (!unionSymbol || JSON.stringify(values) !== JSON.stringify(definition.values)) {
-        failures.push(`${entry.packageName}:${row.declarationId}.${row.member} must resolve to ${expectedSymbol}; actual=${analysis.program.getTypeChecker().typeToString(type)}`);
+        failures.push(`${entry.packageName}:${row.declarationId}.${row.member} must resolve to ${expectedSymbol}; actual=${checker.typeToString(type)}`);
       }
     }
   }

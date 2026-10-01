@@ -28,6 +28,10 @@ import {
   type LogUploadPort,
   type LogUploadInput,
   type NoOutput,
+  type NetworkStatusChanged,
+  type NetworkStatusListener,
+  type NetworkStatusSubscriptionInput,
+  type NetworkStatusUnsubscribeInput,
   type PlatformPortBindings,
   type PlatformPorts,
   type PortActionResult,
@@ -235,10 +239,21 @@ const completeDevice: DevicePort = {
   getDeviceInfo: async () => completeResult(emptyDeviceInfo),
   getDisplayInfo: async () => completeResult(emptyDisplayInfo),
   getSystemStatus: async () => completeResult(emptySystemStatus),
+  getNetworkStatus: async () => completeResult(emptySystemStatus.network),
+  subscribeNetworkStatus: async () => completeResult({subscriptionId: 'network-fixture'}),
+  unsubscribeNetworkStatus: async () => completeResult(noOutput),
   getPowerStatus: async () => completeResult(emptySystemStatus.power),
   subscribePowerStatus: async () => completeResult({subscriptionId: 'fixture'}),
   unsubscribePowerStatus: async () => completeResult(noOutput),
 };
+const networkChanged: NetworkStatusChanged = {status: emptySystemStatus.network, observedAt: timestamp};
+const networkListener: NetworkStatusListener = (_event: NetworkStatusChanged): void => {};
+const networkSubscription: NetworkStatusSubscriptionInput = {
+  timeoutMs: 1_000,
+  listener: networkListener,
+  onError: () => {},
+};
+const networkUnsubscribe: NetworkStatusUnsubscribeInput = {timeoutMs: 1_000, subscriptionId: 'network'};
 const completeAppControl: AppControlPort = {
   resetRuntime: async input => ({
     status: 'accepted',
@@ -569,6 +584,10 @@ async function exercisePublicCalls(): Promise<void> {
   consumeResult(writeLog);
   await device.getDeviceInfo(deviceCall);
   await device.getSystemStatus(deviceCall);
+  await device.getNetworkStatus(deviceCall);
+  await device.subscribeNetworkStatus(networkSubscription);
+  await device.unsubscribeNetworkStatus(networkUnsubscribe);
+  void networkChanged;
   const scriptResult = await script.execute({...scriptInput, native: namedBindings});
   if (scriptResult.status === 'succeeded') {
     const resultJson: string = scriptResult.value.resultJson;

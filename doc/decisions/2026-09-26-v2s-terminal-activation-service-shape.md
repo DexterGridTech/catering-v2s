@@ -1,6 +1,6 @@
 ---
 id: decisions.v2s-terminal-activation-service-shape
-title: v2s terminal activation and single-node TDS service shape
+title: v2s terminal activation and TDS service shape
 type: decision
 status: ACCEPTED
 scope: terminal activation batch 1
@@ -19,11 +19,11 @@ source: doc/plans/platform/2026-09-25-v2s-terminal-activation-and-connection-req
 design: doc/plans/platform/2026-09-26-v2s-terminal-activation-and-connection-implementation-design-codex.md
 ---
 
-# v2s terminal activation and single-node TDS service shape
+# v2s terminal activation and TDS service shape
 
 ## 1. State and authority
 
-Dexter accepted this batch-1 implementation shape on 2026-09-26 under requirements D-4, D-33 and D-34. `implementationAuthority=true` authorizes the batch-1 work and required validation described by the current detailed design and plan, subject to their CP, dynamic-run, reset/seed, and L2 entry conditions. This acceptance supersedes only the statements listed below; batch-2 terminal work and batch-3 Doris/multi-node work remain outside this decision.
+Dexter accepted this batch-1 implementation shape on 2026-09-26 under requirements D-4, D-33 and D-34. The `implementationAuthority=true` metadata records that original batch-1 authorization. Requirement D-44 later assigned the three-instance DEV deployment and two HAProxy WebSocket entries to batch 2; that deployment topology does not add cross-node session coordination, which remains batch 3 with Doris. Dexter's 2026-09-30 instruction separately authorizes the current batch-2 design remediation, implementation and validation. Read this decision together with those later scoped rulings; this paragraph does not extend the original batch-1 authorization.
 
 ## 2. Decision
 
@@ -78,9 +78,11 @@ The single WebSocket endpoint is `GET /tdp/{groupWorkspaceKey}/ws`; the single W
 
 ## 6. Supersede ledger
 
-This ledger is intentionally local. The front-matter supersedes list points only to decision-document section anchors; it does not claim to replace AGENTS.md, platform standards, project-memory assertions, acceptance standards, seed policy or the terminal standard. Where those owning sources need a synchronized wording change, this table names the exact file and line range and the narrow amendment authorized by Dexter's acceptance. Apply those local edits only as each owning source is reached in this batch.
+This ledger is intentionally local. The front-matter supersedes list points only to decision-document section anchors; it does not claim to replace AGENTS.md, platform standards, project-memory assertions, acceptance standards, seed policy or the terminal standard. Table line numbers identify the batch-1 synchronization locations as originally recorded, not guaranteed current offsets. The table records that synchronization and the narrow later D-44 topology clarification; it does not itself authorize edits. The current Dexter instruction authorizes the batch-2 implementation and its scoped governance updates; apply local edits only in the named owning sources and preserve unrelated rules.
 
 ### 6.1 Decision anchors
+
+The 2026-07-24 root ADR is a hash-bound local frozen asset. Keep its file bytes and both heritage hash pins unchanged. This accepted decision carries the exact anchor-level supersede effects below; synchronize current governance sources without editing that frozen artifact.
 
 | Existing decision source and exact location | Local disposition after this decision is accepted | Exact effect and preserved rule |
 |---|---|---|
@@ -97,23 +99,29 @@ The root ADR's §3.7 one-database/one-Flyway clauses at lines 125–137 are pres
 
 | Owning source and exact current location | Batch-1 synchronization and remaining implementation disposition |
 |---|---|
-| AGENTS.md lines 44, 48 and 56; line 83 | Preserve one business deployable, one database, one Flyway history, no MQ/outbox/TDP and remote Java/DB placement. The placeholder sentence at line 56 and remote tunnel boundary are amended; line 83 now distinguishes business HTTP scenarios from protocol-only WebSocket CONTRACT executed against a separately managed TDS process. Keep remote-only, no PostgreSQL tunnel, no local Java, DEV/seed/reset and acceptance boundaries. |
-| PLATFORM-BLUEPRINT.md lines 5–7, 47–51 and 55–63 | Preserve one business app, one DB, one Flyway, no TDP/MQ/outbox and managed remote execution. TDS is stated as an auxiliary WebSocket runtime and its port is included in the managed Java/asset tunnel; business owner rules remain unchanged. |
-| doc/platform/README.md lines 18–20 | Preserve current delivery topology and the prohibition on future TDP. Clarify that the approved TDS runtime is not TDP and is not a new business owner. |
-| scripts/README.md lines 3, 70–89, 127–129, 178–190 | Preserve unique backend-acceptance entry and scenario ownership. The placeholder sentence and target remote topology are amended, including TDS readiness/process/port/manifest/cleanup fields. Tunnel forwards Java HTTP, assets and the one TDS WS port only; PostgreSQL remains remote-only. `r5-dev-runner.mjs` implementation and runtime proof remain CP-06 work. |
+| AGENTS.md lines 44, 48 and 56; line 83 | Preserve one business deployable, one database, one Flyway history, no MQ/outbox/TDP and remote Java/DB placement. The placeholder sentence and remote tunnel boundary are synchronized. D-44 permits three independent TDS DEV instances behind two HAProxy WebSocket entries; node ports remain remote-loopback-only and cross-node session coordination remains batch 3. Line 83 distinguishes business HTTP scenarios from protocol-only WebSocket CONTRACT. Keep no PostgreSQL tunnel, no local Java, DEV/seed/reset and acceptance boundaries. |
+| PLATFORM-BLUEPRINT.md lines 5–7, 47–51 and 55–63 | Preserve one business app, one DB, one Flyway, no TDP/MQ/outbox and managed remote execution. State the D-44 three-instance DEV topology and two managed HAProxy WebSocket entries without implying cross-node session coordination; business owner rules remain unchanged. |
+| doc/platform/README.md lines 18–20 | Preserve current delivery topology and the prohibition on future TDP. Clarify the approved auxiliary TDS runtime and D-44 DEV topology; it is not a new business owner or business deployable. |
+| scripts/README.md lines 3, 70–89, 127–129, 178–190 | Preserve unique backend-acceptance entry and scenario ownership. The placeholder sentence and target remote topology are synchronized, including TDS readiness/process/port/manifest/cleanup fields. Batch-2 DEV has three TDS instances behind two HAProxy WS entries; PostgreSQL remains remote-only. `r5-dev-runner.mjs` implementation and runtime proof are assigned to CP-05 in the batch-2 plan. |
 | doc/platform/foundation-charter.md §1-A lines 27–34 and §2-D lines 250–254 | Preserve ONE_BUSINESS_DEPLOYABLE, ONE_DB_MULTI_SCHEMA, ONE_FLYWAY_HISTORY and the bans on normal polling, MQ and generic outbox. TDS remains an auxiliary transport runtime, not a second business deployable; LISTEN/NOTIFY is only the specified transactional wake-up. |
-| HANDOFF.md line 25, RUNTIME_DB_ROLE_ISOLATION | Preserve the security-review requirement for schema-scoped runtime credentials. The separate TDS process does not waive, defer or satisfy that requirement; its credential and allowed schema access remain a tracked security concern. |
+| HANDOFF.md | Explicitly excluded by Dexter's current instruction: do not read or modify this file in batch 2. No HANDOFF content is used as an implementation source or authority. |
 | project-memory/kernel/02-service-shape-and-owner.md lines 14–18 and project-memory/required-inventory.json lines 965–973 | Keep ONE_BUSINESS_DEPLOYABLE and its required assertion intact. TDS is an auxiliary non-business app and is not counted as a second business deployable. |
-| project-memory/decisions/distributed-topology-is-not-current.md lines 14–18 and project-memory/required-inventory.json lines 203–211 | Keep NO_MQ_OUTBOX_TDP and its required assertion intact. TDS is explicitly distinct from TDP; no retired topology, outbox or internal OpenAPI client is revived. |
+| project-memory/decisions/distributed-topology-is-not-current.md lines 14–18 and project-memory/required-inventory.json lines 203–211 | Keep NO_MQ_OUTBOX_TDP, NO_INTERNAL_OPENAPI_CLIENT and NO_DISTRIBUTED_DEFAULTS assertions. D-44's explicitly approved TDS deployment topology is allowed; it does not revive a broker, outbox, durable queue, internal client, cross-node session coordination or topic sync. |
 | doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json line 55 | Keep tdp=FORBIDDEN. The batch adds no TDS identity, binding or credential to DEV seed. |
 | doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md lines 14–29, 35–61 and 84–89 | The active standard now adds the separately managed TDS WebSocket CONTRACT boundary and Java scenario-id executor, while keeping BackendAcceptanceTest.java as the sole shared lifecycle entry and store-terminal scenarios as the business owner group. |
 | doc/platform/terminal-coding-standard.md TR-09 exception, lines 325–373 | Do not broaden the kernel.base.state exception. D-16 requires server-config to return in batch 2 and be retained on reset. Batch 2 must state that retained-state boundary in its own owning design and update the TR-09 server-config exception text there; the kernel.base.state exception remains unchanged. |
-| scripts/dev/r5-dev-runner.mjs lines 702–720, 791–899 | Extend the managed topology, identity-bound start/stop/readiness, and tunnel allowlist to include the one TDS process and WS port. Replace manifest topology value HTTP_AND_ASSET_ONLY with an explicit TDS-aware value and preserve exact process identity, source/run manifest, remote logs, readiness and cleanup. No local TDS, database tunnel or unmanaged port-based cleanup. |
+| scripts/dev/r5-dev-runner.mjs lines 702–720, 791–899 | Extend the managed topology, identity-bound start/stop/readiness, and tunnel allowlist for three TDS processes and two HAProxy WebSocket entries. Replace manifest topology value HTTP_AND_ASSET_ONLY with an explicit TDS-aware value and preserve exact process identity, source/run manifest, remote logs, readiness and cleanup. No local TDS, database tunnel or unmanaged port-based cleanup. |
 
 ### 6.3 Batch ownership
 
-R-12 is closed by batch: batch 1 owns terminal-binding, business HTTP activation/cancellation, TDS server, shared HTTP/WS protocol and matching static/runtime gate wiring. Batch 2 owns server-config, terminal-data-client, transport, state, DevicePort and TER API generation; the historical tcp-control/tdp-sync activation/connection duties move to terminal-data-client, while topic synchronization stays deferred. Batch 3 owns Doris and multi-node coordination. This decision keeps server-config in the current release under D-11; implementation remains in batch 2 under D-16 unless Dexter changes that assignment.
+R-12 is closed by batch. Batch 1 owns terminal-binding, business HTTP activation/cancellation, single-node TDS protocol and shared HTTP/WS contract. Batch 2 owns `server-config`, `terminal-data-client`, transport, state, DevicePort, TER API generation, TDS multi-instance deployment, node identity/readiness, and remove-before-drain routing; the historical `tcp-control`/`tdp-sync` activation and connection duties move to `terminal-data-client`, while topic synchronization stays deferred. Batch 3 owns cross-node session coordination, cross-node replacement/topic synchronization, and Doris. This decision keeps `server-config` in the current release under D-11; implementation remains in batch 2 under D-16 unless Dexter changes that assignment.
 
 ## 7. Boundaries
 
 This decision does not introduce a general edge/BFF module, a second business deployable, message broker, outbox, Redis, periodic business-state polling, TDP, Doris, multi-node session coordination, a public dashboard, or a device UI. `server-config` is not deleted or cancelled; it remains an explicit batch-2 owner package per D-11/D-31.
+
+## 8. Dexter 2026-10-01 history-storage amendment
+
+Dexter ruled: “绑定历史不需要写Doris，数量很少，就在PostgreSQL里就好了，连接历史，需要写Doris，后面需要统计”. Binding history is owned and written by the business backend in PostgreSQL; use existing owner audit/persistence facts where sufficient rather than duplicate history. TDS writes connection, disconnection reasons and per-heartbeat round-trip history to Doris for future statistics. PostgreSQL retains latest connection state. This supersedes only the earlier requirement for both apps to write binding/connection history through a shared Doris writer. Bounded retry/discard applies to Doris connection history, not PostgreSQL binding history. Preserve owner transaction and audit guarantees.
+
+This is a product storage-scope amendment for batch 3, not authorization to implement or run batch 3 now. Future statistics APIs/UI remain outside this amendment. Doris feasibility, managed DEV/acceptance lifecycle, reset coverage and cross-node session coordination remain required. The authoritative synchronized requirements are R-6.5/R-6.6 and V-B9 in the requirement source, with the dated ruling recorded in §11.25.

@@ -1,0 +1,28 @@
+{
+  "name": "@catering-v2s/kernel-base-terminal-data-client",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "node ../../../../../tools/terminal-shared/run-owned-lint.mjs",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
+  },
+  "dependencies": {
+    "@catering-v2s/kernel-base-contracts": "workspace:*",
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*",
+    "@catering-v2s/kernel-base-runtime": "workspace:*",
+    "@catering-v2s/kernel-base-state": "workspace:*",
+    "@catering-v2s/kernel-base-transport": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "undici": "8.11.2",
+    "vitest": "4.1.10"
+  }
+}

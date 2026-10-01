@@ -15,6 +15,7 @@ import {
   onCommand,
   selectRuntimeInstanceMode,
   type Runtime,
+  type RuntimeModuleContext,
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime';
 import {releaseRuntimeForTest, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing';
@@ -71,6 +72,7 @@ import {
   createTopologySession,
   createTopologyStateTransferPlan,
   moduleName as transportModuleName,
+  type TopologySession,
 } from '@catering-v2s/kernel-base-transport';
 import {moduleName as displayContextModuleName} from '@catering-v2s/kernel-base-display-context';
 import type {
@@ -79,6 +81,7 @@ import type {
   TopologyPeerChannelEvent,
 } from '@catering-v2s/kernel-base-transport';
 import {evaluateTopologyOperation, hasTopologySecondarySurface} from '../src/foundations/evaluateTopologyOperation';
+import {createTopologyStateSyncController} from '../src/application/createTopologyStateSyncController';
 import {serializeTopologyWireMessage} from '@catering-v2s/kernel-base-contracts';
 
 const base = {
@@ -145,18 +148,6 @@ const readMultiChunkMembers = (): TestMembersState =>
       'utf8',
     ),
   ) as TestMembersState;
-
-const randomText = (length: number, seed = 90_210): string => {
-  let value = seed >>> 0;
-  let output = '';
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-  for (let index = 0; index < length; index += 1) {
-    value = Math.imul(value ^ (value >>> 13), 0x5bd1e995) >>> 0;
-    value = (value + 0x6d2b79f5) >>> 0;
-    output += alphabet[value & 63];
-  }
-  return output;
-};
 
 const succeeded = <TValue>(value: TValue): PortResult<TValue> =>
   Object.freeze({
@@ -642,46 +633,65 @@ describe('topology pairing facts', () => {
   });
 
   it('locks a deterministic sender payload failure until the members reference changes', async () => {
-    const host = new FakeTopologyHost();
-    const peer = new FakePeerChannel();
-    const membersModule = createTestMembersModule() as RuntimeModule &
-      Readonly<{readonly getSyncBuildCount: () => number}>;
-    const {runtime} = createTopologyRuntime({host, peer, extraModules: [membersModule]});
-    await runtime.start();
-    try {
-      const members = Array.from({length: 43_000}, (_, index) => ({
-        memberId: `MOV${String(index).padStart(8, '0')}`,
-        name: randomText(256, 90_210 + index),
-      }));
-      runtime.getStore().dispatch({type: 'test/set-members', payload: {members, pending: null}});
-      peer.emit({type: 'open', connectionId: 'deterministic-lock-1'});
-      peer.emit({
-        type: 'message',
-        connectionId: 'deterministic-lock-1',
-        raw: JSON.stringify({
-          type: 'hello',
-          protocolVersion: 1,
-          moduleName: 'ui.integration.sample-console',
-          wireId: 'deterministic-lock-peer-hello',
-          nodeId: 'node-slave',
-          displayName: '副机',
-          instanceMode: 'SLAVE',
-          displayRole: 'VICE',
-        }),
-      });
-      await waitForReconciliation();
-      expect(selectTopologyFacts(runtime.getState())).toMatchObject({
-        payloadFailure: {code: 'TOPOLOGY_REASSEMBLY_OVERFLOW', deterministic: true},
-        peerReachable: true,
-      });
-      const buildsAfterFailure = membersModule.getSyncBuildCount();
-      runtime.getStore().dispatch(topologyActions.setDisplayCount(1));
-      await waitForReconciliation();
-      expect(membersModule.getSyncBuildCount()).toBe(buildsAfterFailure);
-      expect(peer.sentFrames.some(raw => JSON.parse(raw).type === 'state-full-chunk')).toBe(false);
-    } finally {
-      releaseRuntimeForTest(runtime);
-    }
+    const members = Object.freeze({members: Object.freeze([{memberId: 'MOV00000001', name: '会员'}]), pending: null});
+    let state = {
+      'kernel.base.runtime.instance-mode': {instanceMode: 'MASTER'},
+      [topologySliceName]: Object.freeze({}),
+      [membersSyncSliceName]: members,
+    };
+    const context = {
+      getState: () => state,
+      createFullSyncPayload: vi.fn((sliceName: string) => ({
+        status: 'ready' as const,
+        sliceName,
+        payload: {mode: 'authoritative' as const, replaceMissing: true as const, entries: []},
+      })),
+    } as unknown as RuntimeModuleContext;
+    const overflow = Object.freeze({
+      status: 'failed' as const,
+      code: 'TOPOLOGY_REASSEMBLY_OVERFLOW' as const,
+      retryable: false as const,
+      deterministic: true as const,
+    });
+    const session = {sendStateFull: vi.fn(async () => overflow)} as unknown as TopologySession;
+    const failures: Array<{readonly code: string; readonly deterministic: boolean}> = [];
+    const controller = createTopologyStateSyncController({
+      stateSyncSlices: [{name: membersSyncSliceName, syncIntent: 'master-to-slave'}],
+      getSession: () => session,
+      isPeerAccepted: () => true,
+      getConnectionId: () => 'deterministic-lock-1',
+      dispatchPayloadFailure: (_context, failure) => failures.push(failure),
+      clearPayloadFailure: () => {},
+      log: () => {},
+    });
+
+    controller.sendStateSnapshots(context);
+    await waitForReconciliation();
+    expect(failures).toEqual([
+      {
+        code: 'TOPOLOGY_REASSEMBLY_OVERFLOW',
+        deterministic: true,
+        sliceName: membersSyncSliceName,
+        revision: 1,
+      },
+    ]);
+
+    state = {...state, [topologySliceName]: Object.freeze({displayCount: 1})};
+    controller.sendStateSnapshots(context);
+    await waitForReconciliation();
+    expect(session.sendStateFull).toHaveBeenCalledOnce();
+
+    state = {
+      ...state,
+      [membersSyncSliceName]: Object.freeze({
+        members: Object.freeze([{memberId: 'MOV00000002', name: '新会员'}]),
+        pending: null,
+      }),
+    };
+    controller.sendStateSnapshots(context);
+    await waitForReconciliation();
+    expect(session.sendStateFull).toHaveBeenCalledTimes(2);
+    expect(failures).toHaveLength(2);
   });
 
   it('keeps membersSyncRevision unchanged when a transfer write fails and retries the same revision after reconnect', async () => {

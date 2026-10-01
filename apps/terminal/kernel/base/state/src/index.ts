@@ -5,6 +5,7 @@ export type {StateJsonPrimitive, StateJsonValue, StateJsonObject} from './types/
 
 export type {
   PersistIntent,
+  StateResetIntent,
   PersistenceProtection,
   PersistenceFlushMode,
   PersistenceStorageKind,

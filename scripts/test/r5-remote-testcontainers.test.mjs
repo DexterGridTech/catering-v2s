@@ -12,6 +12,7 @@ import {
   validateTdsCapacityConfiguration,
 } from '../env/tds-capacity-configuration.mjs';
 import {
+  V_S15_TDS_CONTRACT_SCENARIO,
   backendAcceptanceEnvironment,
   canonicalBackendAcceptanceOperation,
   classifyRemoteGradleFailure,
@@ -1069,6 +1070,45 @@ test('backend acceptance supplies every non-production server prerequisite and s
     assert.match(environment, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
   assert.doesNotMatch(environment, /V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY/);
+  const vs15Environment = backendAcceptanceEnvironment(
+    'backend-acceptance-run-vs15-12345678',
+    'storeTerminalActivationBusinessPrecedence',
+    'ACCEPTANCE',
+    null,
+    false,
+    {maxUnauthenticatedConnections: '2', maxTrackedSessions: '4'},
+    '/usr/bin/node',
+    true,
+    false,
+    false,
+    false,
+    V_S15_TDS_CONTRACT_SCENARIO,
+  ).join('\n');
+  assert.match(
+    vs15Environment,
+    /export V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO='terminal\.connection\.vs15\.readiness-withdrawal-and-drain'/,
+  );
+  const vs15RemoteScript = runScript({
+    remoteRoot: '/tmp/r5-tc-vs15-123',
+    remoteWorkspace: '/tmp/r5-tc-vs15-123/workspace',
+    remoteResults: '/tmp/r5-tc-vs15-123/results',
+    distribution,
+    invocation: {extraArguments: [], extensionScaleProof: false, productionMutationId: undefined},
+    backendAcceptanceRunId: 'backend-acceptance-run-vs15-12345678',
+    backendAcceptanceOperation: 'storeTerminalActivationBusinessPrecedence',
+    verificationMode: 'ACCEPTANCE',
+    topologyPreflight: true,
+    tdsContractScenario: V_S15_TDS_CONTRACT_SCENARIO,
+  });
+  assert.match(vs15RemoteScript, /V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO=/);
+  assert.throws(
+    () => backendAcceptanceEnvironment(
+      'backend-acceptance-run-vs15-12345678',
+      'storeTerminalActivationBusinessPrecedence',
+      'ACCEPTANCE', null, false, null, null, false, false, false, false, V_S15_TDS_CONTRACT_SCENARIO,
+    ),
+    /BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/,
+  );
   const d46Environment = backendAcceptanceEnvironment(
     'backend-acceptance-run-12345678',
     'storeTerminalDeviceActivationProtocols',
@@ -1143,6 +1183,34 @@ test('backend acceptance supplies every non-production server prerequisite and s
   assert.throws(
     () => backendAcceptanceEnvironment(null, 'typed-filter-validation-and-recovery', 'ACCEPTANCE', null, true),
     /EXTENSION_SCALE_PROOF_REQUIRES_BACKEND_ACCEPTANCE/,
+  );
+});
+
+test('selected V-S15 TDS contract identity is closed and bound to topology-preflight manifest fields', () => {
+  const base = {
+    ...validManifest(),
+    status: 'FAIL',
+    backendAcceptance: {
+      runId: 'backend-acceptance-r5-tc-1786638000000-123',
+      operation: 'storeTerminalActivationBusinessPrecedence',
+      topologyPreflight: true,
+      tdsContractScenario: V_S15_TDS_CONTRACT_SCENARIO,
+    },
+  };
+  assert.deepEqual(parseAndValidateRunManifest(base), base);
+  assert.throws(
+    () => parseAndValidateRunManifest({
+      ...base,
+      backendAcceptance: {...base.backendAcceptance, topologyPreflight: false},
+    }),
+    /RUN_MANIFEST_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/,
+  );
+  assert.throws(
+    () => parseAndValidateRunManifest({
+      ...base,
+      backendAcceptance: {...base.backendAcceptance, tdsContractScenario: 'terminal.connection.vs9.graceful'},
+    }),
+    /RUN_MANIFEST_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/,
   );
 });
 

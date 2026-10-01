@@ -63,6 +63,7 @@ import {
   type TimestampMs,
   type TransportRequestContext,
   type TransportServerAddress,
+  type TransportHttpProxy,
   type TransportServerAddressOverride,
   type TransportServerConfig,
   type TransportServerConfigSpace,
@@ -122,6 +123,7 @@ const transportConfig: TransportServerConfig = {
     },
   ],
 };
+const transportProxy: TransportHttpProxy = {protocol: 'http', host: 'proxy.example.test', port: 8080};
 const appError: AppError<{readonly itemId: string}> = {
   name: 'Missing',
   message: 'item A-1 is missing',

@@ -96,7 +96,7 @@
     },
     {
       "path": "contracts/openapi-source/terminal-binding.schemas.json",
-      "sha256": "11511b1e16085d2408809746bf05ea7c67add3fa600fe1e2022482bf9fb3dfd4"
+      "sha256": "965ee65a49dc2e2b6d61f8904a515eb6d7dbe07b08b6a7897a08a09509fa0c62"
     },
     {
       "path": "contracts/openapi-source/sales-menu.schemas.json",

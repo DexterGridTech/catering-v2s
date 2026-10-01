@@ -71,7 +71,12 @@ export interface PowerStatusChanged {
   readonly status: PowerStatus;
   readonly observedAt: TimestampMs;
 }
+export interface NetworkStatusChanged {
+  readonly status: NetworkStatus;
+  readonly observedAt: TimestampMs;
+}
 export type PowerStatusListener = (event: PowerStatusChanged) => void;
+export type NetworkStatusListener = (event: NetworkStatusChanged) => void;
 export interface DeviceCall {
   readonly timeoutMs: number;
 }
@@ -82,10 +87,20 @@ export interface PowerStatusSubscriptionInput extends DeviceCall {
 export interface PowerStatusUnsubscribeInput extends DeviceCall {
   readonly subscriptionId: string;
 }
+export interface NetworkStatusSubscriptionInput extends DeviceCall {
+  readonly listener: NetworkStatusListener;
+  readonly onError: (error: PortFailure['error']) => void;
+}
+export interface NetworkStatusUnsubscribeInput extends DeviceCall {
+  readonly subscriptionId: string;
+}
 export interface DevicePort {
   getDeviceInfo(input: DeviceCall): Promise<PortResult<DeviceInfo>>;
   getDisplayInfo(input: DeviceCall): Promise<PortResult<DisplayInfo>>;
   getSystemStatus(input: DeviceCall): Promise<PortResult<SystemStatus>>;
+  getNetworkStatus(input: DeviceCall): Promise<PortResult<NetworkStatus>>;
+  subscribeNetworkStatus(input: NetworkStatusSubscriptionInput): Promise<PortResult<{readonly subscriptionId: string}>>;
+  unsubscribeNetworkStatus(input: NetworkStatusUnsubscribeInput): Promise<PortResult<NoOutput>>;
   getPowerStatus(input: DeviceCall): Promise<PortResult<PowerStatus>>;
   subscribePowerStatus(input: PowerStatusSubscriptionInput): Promise<PortResult<{readonly subscriptionId: string}>>;
   unsubscribePowerStatus(input: PowerStatusUnsubscribeInput): Promise<PortResult<NoOutput>>;

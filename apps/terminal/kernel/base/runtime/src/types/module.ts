@@ -74,6 +74,7 @@ export type RuntimeModuleContext = Readonly<{
   flushPersistence: () => Promise<PersistenceOperationResult>;
   subscribeState: (listener: () => void) => () => void;
   registerResource: (cleanup: () => void) => () => void;
+  registerAsyncResource: (cleanup: () => Promise<void>) => () => void;
   createFullSyncPayload: (sliceName: string) => StateSyncPayloadResult;
   applyAuthoritativeSync: (sliceName: string, payload: SyncStateDiff) => StateSyncApplyResult;
   dispatchCommand: RuntimeModuleDispatch;

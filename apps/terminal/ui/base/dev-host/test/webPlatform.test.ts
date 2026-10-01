@@ -12,6 +12,26 @@ describe('ui.base.dev-host Web platform bindings', () => {
     expect(resolveSecondarySurfaceAvailable(await readDisplayInfo(device))).toBe(true);
   });
 
+  it('keeps network observation unavailable in the Web host', async () => {
+    const device = createWebDevicePort(() => 'single');
+    await expect(device.getNetworkStatus({timeoutMs: 1_000})).resolves.toMatchObject({
+      status: 'unavailable',
+      capability: 'getNetworkStatus',
+    });
+    await expect(
+      device.subscribeNetworkStatus({timeoutMs: 1_000, listener: () => {}, onError: () => {}}),
+    ).resolves.toMatchObject({
+      status: 'unavailable',
+      capability: 'subscribeNetworkStatus',
+    });
+    await expect(device.unsubscribeNetworkStatus({timeoutMs: 1_000, subscriptionId: 'network'})).resolves.toMatchObject(
+      {
+        status: 'unavailable',
+        capability: 'unsubscribeNetworkStatus',
+      },
+    );
+  });
+
   it('keeps secure persistence unavailable in the Web host', async () => {
     const storage = {
       length: 0,

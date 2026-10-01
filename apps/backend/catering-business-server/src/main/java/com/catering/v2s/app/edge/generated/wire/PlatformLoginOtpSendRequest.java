@@ -6,6 +6,7 @@ public record PlatformLoginOtpSendRequest(
     String mobile
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<PlatformLoginOtpSendRequest> {
     @Override
     public PlatformLoginOtpSendRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

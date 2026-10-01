@@ -7,6 +7,7 @@ public record SalesMenuManualRestoreRequestTarget(
     java.util.UUID targetRef
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<SalesMenuManualRestoreRequestTarget> {
     @Override
     public SalesMenuManualRestoreRequestTarget deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

@@ -154,6 +154,13 @@ final class StoreTerminalAcceptanceScenarios {
         }
     }
 
+    void assertConnectionFixtureInactive(BackendAcceptanceTest.ScenarioContext context, ConnectionFixture fixture)
+            throws Exception {
+        JsonNode detail =
+                readDetail(context, new StoreContext(fixture.fixture(), fixture.session()), fixture.terminalRef());
+        assertEquals("INACTIVE", detail.path("binding").path("status").asText());
+    }
+
     void performConnectionStatusOnlyChange(
             BackendAcceptanceTest.ScenarioContext context, ConnectionFixture fixture, ConnectionStatusOnlyChange change)
             throws Exception {
@@ -3011,6 +3018,177 @@ final class StoreTerminalAcceptanceScenarios {
         assertEquals(before.path("version").asLong(), after.path("version").asLong());
         assertEquals(before.path("binding"), after.path("binding"));
         assertEquals(auditBefore, terminalBindingAuditTotal(context, store, terminalRef));
+    }
+
+    @AcceptanceScenario(
+            id = "storeTerminalActivationUnknownFields",
+            module = "TERMINAL_BINDING",
+            operation = "storeTerminalActivationUnknownFields")
+    void storeTerminalActivationUnknownFields(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID forwardCompatibleTerminal = create(context, store, "Terminal unknown-field compatibility", null);
+        String forwardCompatibleCode = readDetail(context, store, forwardCompatibleTerminal)
+                .path("activationCode")
+                .asText();
+        String deviceId = "terminal-unknown-fields-device-" + UUID.randomUUID();
+        String secret = newCredentialSecret();
+
+        UUID baselineTerminal = create(context, store, "Terminal known-field baseline", null);
+        String baselineCode = readDetail(context, store, baselineTerminal)
+                .path("activationCode")
+                .asText();
+        String baselineDeviceId = "terminal-known-fields-device-" + UUID.randomUUID();
+        String baselineSecret = newCredentialSecret();
+        BackendAcceptanceTest.Response baselineActivation = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(store.fixture()),
+                null,
+                activationBody(baselineCode, baselineDeviceId, baselineSecret),
+                Map.of(),
+                OK);
+        assertEquals(
+                baselineTerminal.toString(),
+                baselineActivation.json().path("terminalRef").asText());
+        assertEquals(1, baselineActivation.json().path("bindingGeneration").asLong());
+        assertFalse(
+                baselineActivation.raw().contains(baselineSecret),
+                "BUSINESS: known-field baseline activation does not return the credential secret");
+
+        Map<String, Object> unknownActivation =
+                new LinkedHashMap<>(activationBody(forwardCompatibleCode, deviceId, secret));
+        addUnknownTerminalFields(unknownActivation);
+        Map<String, Object> invalidKnownField = new LinkedHashMap<>(unknownActivation);
+        invalidKnownField.put("deviceId", "");
+        BackendAcceptanceTest.Response invalidActivation = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(store.fixture()),
+                null,
+                invalidKnownField,
+                Map.of(),
+                CLIENT_FAILURE);
+        assertProblem(invalidActivation, "PLATFORM_COMMON_VALIDATION_FAILED");
+        assertEquals(
+                "INACTIVE",
+                readDetail(context, store, forwardCompatibleTerminal)
+                        .path("binding")
+                        .path("status")
+                        .asText());
+
+        BackendAcceptanceTest.Response activated = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(store.fixture()),
+                null,
+                unknownActivation,
+                Map.of(),
+                OK);
+        assertEquals(
+                forwardCompatibleTerminal.toString(),
+                activated.json().path("terminalRef").asText());
+        assertEquals(1, activated.json().path("bindingGeneration").asLong());
+        assertEquals(baselineActivation.status(), activated.status());
+        assertEquals(
+                baselineActivation.json().path("storeRef"), activated.json().path("storeRef"));
+        assertFalse(
+                activated.raw().contains(secret),
+                "BUSINESS: activation response does not contain the credential secret");
+
+        UUID strictOperationsTerminal = create(context, store, "Terminal strict operations DTO", null);
+        String strictOperationsCode = readDetail(context, store, strictOperationsTerminal)
+                .path("activationCode")
+                .asText();
+        String strictOperationsDevice = "terminal-strict-operations-device-" + UUID.randomUUID();
+        String strictOperationsSecret = newCredentialSecret();
+        BackendAcceptanceTest.Response strictOperationsActivation = context.post(
+                BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                terminalActivationPath(store.fixture()),
+                null,
+                activationBody(strictOperationsCode, strictOperationsDevice, strictOperationsSecret),
+                Map.of(),
+                OK);
+        assertEquals(
+                1, strictOperationsActivation.json().path("bindingGeneration").asLong());
+        long operationsAuditBefore = terminalBindingAuditTotal(context, store, strictOperationsTerminal);
+        Map<String, Object> unknownOperationsCancel = new LinkedHashMap<>();
+        unknownOperationsCancel.put("expectedBindingGeneration", 1);
+        unknownOperationsCancel.put("futureArray", List.of("future", 1));
+        unknownOperationsCancel.put("futureObject", Map.of("nested", true));
+        unknownOperationsCancel.put("futureText", "x".repeat(1024));
+        BackendAcceptanceTest.Response operationsCancel = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL,
+                operationsTerminalActivationCancelPath(store.fixture(), strictOperationsTerminal),
+                store.session().cookie(),
+                unknownOperationsCancel,
+                Map.of("Idempotency-Key", "terminal-unknown-fields-" + UUID.randomUUID()),
+                CLIENT_FAILURE);
+        assertProblem(operationsCancel, "PLATFORM_COMMON_VALIDATION_FAILED");
+        assertEquals(
+                "ACTIVE",
+                readDetail(context, store, strictOperationsTerminal)
+                        .path("binding")
+                        .path("status")
+                        .asText());
+        assertEquals(operationsAuditBefore, terminalBindingAuditTotal(context, store, strictOperationsTerminal));
+
+        Map<String, Object> unknownDeviceCancel = new LinkedHashMap<>();
+        unknownDeviceCancel.put("deviceId", deviceId);
+        addUnknownTerminalFields(unknownDeviceCancel);
+        BackendAcceptanceTest.Response deviceCancel = context.post(
+                BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
+                terminalActivationCancelPath(store.fixture(), forwardCompatibleTerminal),
+                null,
+                unknownDeviceCancel,
+                Map.of("Authorization", terminalCredential(1, secret)),
+                OK);
+        assertEquals("CANCELLED", deviceCancel.json().path("outcome").asText());
+        assertEquals(
+                "INACTIVE",
+                readDetail(context, store, forwardCompatibleTerminal)
+                        .path("binding")
+                        .path("status")
+                        .asText());
+        assertEquals(
+                "ACTIVE",
+                readDetail(context, store, baselineTerminal)
+                        .path("binding")
+                        .path("status")
+                        .asText());
+
+        BackendAcceptanceTest.Response baselineCancel = context.post(
+                BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
+                terminalActivationCancelPath(store.fixture(), strictOperationsTerminal),
+                null,
+                Map.of("deviceId", strictOperationsDevice),
+                Map.of("Authorization", terminalCredential(1, strictOperationsSecret)),
+                OK);
+        assertEquals("CANCELLED", baselineCancel.json().path("outcome").asText());
+        assertEquals(
+                deviceCancel.json().path("outcome").asText(),
+                baselineCancel.json().path("outcome").asText());
+        BackendAcceptanceTest.Response knownFieldBaselineCancel = context.post(
+                BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
+                terminalActivationCancelPath(store.fixture(), baselineTerminal),
+                null,
+                Map.of("deviceId", baselineDeviceId),
+                Map.of("Authorization", terminalCredential(1, baselineSecret)),
+                OK);
+        assertEquals(deviceCancel.status(), knownFieldBaselineCancel.status());
+        assertEquals(
+                deviceCancel.json().path("outcome"),
+                knownFieldBaselineCancel.json().path("outcome"));
+        assertEquals(
+                "INACTIVE",
+                readDetail(context, store, baselineTerminal)
+                        .path("binding")
+                        .path("status")
+                        .asText());
+        System.out.printf(("BACKEND_ACCEPTANCE_TERMINAL_UNKNOWN_FIELDS status=PASS activation=IGNORED "
+                + "deviceCancel=IGNORED operationsCancel=REJECTED knownField=STRICT%n"));
+    }
+
+    private static void addUnknownTerminalFields(Map<String, Object> body) {
+        body.put("futureArray", List.of("future", 1, true));
+        body.put("futureObject", Map.of("nested", Map.of("future", "value")));
+        body.put("futureText", "x".repeat(1024));
     }
 
     private BackendAcceptanceTest.Response activationAttempt(

@@ -1,6 +1,7 @@
 import type {Reducer, UnknownAction} from '@reduxjs/toolkit';
 import type {
   PersistIntent,
+  StateResetIntent,
   PersistenceFlushMode,
   PersistenceProtection,
   StateRuntimePersistenceDescriptor,
@@ -36,13 +37,22 @@ export type StateRuntimeSyncDeclaration<TState extends object> =
 export type StateRuntimeSliceDescriptor<TState extends object> = {
   readonly name: string;
   readonly reducer: Reducer<TState, UnknownAction>;
+  readonly resetIntent?: StateResetIntent;
 } & StateRuntimePersistenceDeclaration<TState> &
   StateRuntimeSyncDeclaration<TState>;
+
+export type StateRuntimeSliceDescriptorWithoutResetIntent<TState extends object> =
+  StateRuntimeSliceDescriptor<TState> extends infer Descriptor
+    ? Descriptor extends object
+      ? Omit<Descriptor, 'resetIntent'>
+      : never
+    : never;
 
 export interface StateRuntimeSliceRegistration {
   readonly [stateRuntimeSliceRegistrationBrand]: true;
   readonly name: string;
   readonly persistIntent: PersistIntent;
+  readonly resetIntent: StateResetIntent;
   readonly syncIntent: SyncIntent;
   readonly hasPersistence: boolean;
   readonly hasSync: boolean;
@@ -101,6 +111,7 @@ export interface RegisteredStateRuntimeSlice {
   readonly name: string;
   readonly reducer: (state: object | undefined, action: UnknownAction) => object;
   readonly persistIntent: PersistIntent;
+  readonly resetIntent: StateResetIntent;
   readonly syncIntent: SyncIntent;
   readonly persistence: readonly RegisteredStateRuntimePersistence[];
   readonly sync?: RegisteredStateRuntimeSync;

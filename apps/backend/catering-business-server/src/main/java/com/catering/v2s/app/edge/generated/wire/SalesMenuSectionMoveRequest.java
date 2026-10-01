@@ -7,6 +7,7 @@ public record SalesMenuSectionMoveRequest(
     Long expectedVersion
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<SalesMenuSectionMoveRequest> {
     @Override
     public SalesMenuSectionMoveRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

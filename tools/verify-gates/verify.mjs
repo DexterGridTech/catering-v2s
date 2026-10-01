@@ -44,8 +44,8 @@ const staticCommands = Object.freeze([
   [
     'frontend-architecture',
     'scripts/check/frontend-architecture',
-    [],
-    ['R5_FRONTEND_TERMINAL_FACE_RED=PASS', 'R5_FRONTEND_ARCHITECTURE=PASS'],
+    ['--self-test'],
+    ['R5_FRONTEND_TERMINAL_FACE_RED=PASS', 'R5_TERMINAL_GENERATED_FACE_RED=PASS', 'R5_FRONTEND_ARCHITECTURE=PASS'],
   ],
   ['frontend-format', 'yarn', ['format:check'], ['All matched files use Prettier code style!']],
   ['name-code-density', 'node', ['scripts/check/name-code-density.mjs'], ['NAME_CODE_DENSITY=PASS']],
@@ -54,6 +54,12 @@ const staticCommands = Object.freeze([
     'node',
     ['scripts/generate/r5-edge-materialize.mjs', '--self-test'],
     ['R5_EDGE_MATERIALIZE_SELF_TEST=PASS'],
+  ],
+  [
+    'terminal-client-api-self-test',
+    'node',
+    ['scripts/generate/terminal-client-api.mjs', '--self-test'],
+    ['TERMINAL_CLIENT_API_SELF_TEST=PASS', 'RED_ZERO_SELECTOR=PASS', 'RED_WRONG_FACE=PASS', 'RED_GENERATED_DRIFT=PASS', 'RED_MULTIPLE_TARGET_ASSIGNMENT=PASS', 'RED_DUPLICATE_ASSIGNMENT=PASS', 'RED_NON_OWNER_TARGET=PASS', 'RED_SELECTOR_MISMATCH=PASS', 'RED_OUTPUT_ESCAPE=PASS', 'RED_ROOT_ESCAPE=PASS', 'RED_SYMLINK_ESCAPE=PASS'],
   ],
   [
     'heritage-registry',

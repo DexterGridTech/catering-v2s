@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/kernel-base-server-config",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-server-config", "runner": "vitest"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-base-server-config", "runner": "eslint"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "clearServerOverrideCommand",
+    "createServerConfigModule",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "EffectiveServerConfigView",
+    "moduleKind",
+    "moduleName",
+    "ProxyPasswordInput",
+    "restoreServerDefaultsCommand",
+    "runtimeModuleDependencyNames",
+    "selectServerConfigSpaceCommand",
+    "selectServerConfiguration",
+    "ServerConfigAddressInput",
+    "ServerConfigDefaults",
+    "ServerConfigProxyInput",
+    "SetServerOverridePayload",
+    "setServerOverrideCommand"
+  ]
+}

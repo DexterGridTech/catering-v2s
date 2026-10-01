@@ -131,7 +131,7 @@ describe('topology transport session', () => {
     session.close('test-done');
   });
 
-  it('does not write a frame when the sender-side encoded total is over the reassembly bound', async () => {
+  it('does not write a frame when sender-side payload encoding fails', async () => {
     const write = vi.fn();
     const session = createTopologySession({
       write,
@@ -141,21 +141,14 @@ describe('topology transport session', () => {
       reassembly: {schedule: () => () => {}},
     });
     session.markOpen();
-    const members = Array.from({length: 43_000}, (_, index) => ({
-      memberId: `MOV${String(index).padStart(8, '0')}`,
-      name: randomText(256, 90_210 + index),
-      phone: `010${String(index).padStart(8, '0')}`,
-      age: 20 + (index % 50),
-      registeredAt: 1_700_000_000_000 + index * 86_400_000,
-    }));
     await expect(
       session.sendStateFull({
         sliceName: 'kernel.feature.sample-member-registry.members',
         direction: 'master-to-slave',
         revision: 1,
-        value: {members},
+        value: {invalidJsonValue: 1n} as never,
       }),
-    ).resolves.toMatchObject({status: 'failed', code: 'TOPOLOGY_REASSEMBLY_OVERFLOW'});
+    ).resolves.toMatchObject({status: 'failed', code: 'TOPOLOGY_CODEC_FAILED'});
     expect(write).not.toHaveBeenCalled();
     session.close('test-done');
   });

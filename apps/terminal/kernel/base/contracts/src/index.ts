@@ -121,6 +121,7 @@ export type {CommandRouteContext} from './types/command';
 export type {
   TransportRequestContext,
   TransportServerAddress,
+  TransportHttpProxy,
   TransportServerDefinition,
   TransportServerConfigSpace,
   TransportServerConfig,

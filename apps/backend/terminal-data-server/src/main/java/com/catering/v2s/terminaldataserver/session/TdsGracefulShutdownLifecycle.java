@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
-/** Marks the node unavailable, gives active sessions a bounded PONG window, and then redirects them. */
+/** Withdraws readiness, allows the load balancer to drain, then rejects and redirects sessions. */
 @Component
 public final class TdsGracefulShutdownLifecycle implements SmartLifecycle {
     private static final Logger LOGGER = LoggerFactory.getLogger(TdsGracefulShutdownLifecycle.class);
@@ -80,22 +80,33 @@ public final class TdsGracefulShutdownLifecycle implements SmartLifecycle {
         }
         if (!beginStop) return;
 
-        long drainStartedNanos = System.nanoTime();
-        actors.refuseNewConnections();
         AvailabilityChangeEvent.publish(applicationContext, ReadinessState.REFUSING_TRAFFIC);
         TdsAsyncLog.enqueue(
                 logScheduler,
                 () -> LOGGER.info(
-                        "event=tds_drain_started readiness=REFUSING_TRAFFIC admission=REFUSED drainWindowMillis={}",
+                        "event=tds_readiness_withdrawn admission=OPEN withdrawalWaitMillis={} drainWindowMillis={}",
+                        settings.readinessWithdrawalWait().toMillis(),
                         settings.drainWindow().toMillis()));
-        Mono<Boolean> drainStart = actors.beginDrain();
-        Mono.defer(() -> drainStart)
-                .flatMap(hasActiveSessions -> {
-                    long remainingNanos = settings.drainWindow().toNanos() - (System.nanoTime() - drainStartedNanos);
-                    return hasActiveSessions && remainingNanos > 0
-                            ? Mono.delay(Duration.ofNanos(remainingNanos)).then()
-                            : Mono.empty();
-                })
+        Mono.delay(settings.readinessWithdrawalWait())
+                .then(Mono.defer(() -> {
+                    actors.refuseNewConnections();
+                    long drainStartedNanos = System.nanoTime();
+                    Mono<Boolean> drain = actors.beginDrain();
+                    // Emit both markers in one ordered log task, after beginDrain has made its
+                    // synchronous admission/session transition, so acceptance can observe the
+                    // production phase boundary without racing separate log-worker tasks.
+                    TdsAsyncLog.enqueue(logScheduler, () -> {
+                        LOGGER.info("event=tds_admission_refused readiness=REFUSING_TRAFFIC");
+                        LOGGER.info("event=tds_drain_started");
+                    });
+                    return drain.flatMap(hasActiveSessions -> {
+                        long remainingNanos =
+                                settings.drainWindow().toNanos() - (System.nanoTime() - drainStartedNanos);
+                        return hasActiveSessions && remainingNanos > 0
+                                ? Mono.delay(Duration.ofNanos(remainingNanos)).then()
+                                : Mono.empty();
+                    });
+                }))
                 .then(Mono.defer(actors::finishDrain))
                 .doOnError(failure -> TdsAsyncLog.enqueue(
                         logScheduler,

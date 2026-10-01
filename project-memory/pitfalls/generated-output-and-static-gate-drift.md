@@ -16,6 +16,10 @@ sourceRefs: ["doc/plans/platform/2026-08-18-v2s-unified-list-pagination-implemen
 - **失败模式**：生成的 OpenAPI/Java/TypeScript 与当前 owner 语义不一致，或 materializer 已经把源文件判为 drift；直接编辑 generated 文件或给 consumer 加 fallback 会把问题藏在下一次生成之后。
 - **根因**：没有先确认 owning source 链；v2s 对 Heritage 的适配差异没有用 source catalog 的显式 override 表达，或者只更新了代码却没有重跑 materialize/codegen。
 - **最小解**：先改 owning schema/catalog/override，运行受控 materialize，再运行 codegen；以生成检查、编译和现有业务 consumer proof 共同确认，不手改 generated 输出。
+- **失败模式**：静态门的负夹具直接篡改 generated 输出，却要求下游闭包校验报告特定 drift 标记；producer 的 generated-output 校验会先拦截，导致目标判据根本没有执行。
+- **根因**：夹具改变了派生结果，却没有保持 producer 输入与派生结果一致，因而越过了应被测试的边界。
+- **最小解**：若要证明 consumer/跨投影闭包，改 owning input，并在隔离夹具中经该 producer 重生成输出；若要证明 producer 自身的 drift guard，才直接改 generated 输出并断言 producer 的 drift 标记。两类负例不可互换。
+- **适用范围**：只适用于同时存在 producer 输出校验与下游生成集合对账的静态门 self-test；反例是纯粹测试 producer 是否拒绝手改产物，此时直接变异 generated 输出正是目标。
 - **失败模式**：机械文本门把测试断言中用于检查禁用形状的字符串误认为生产 SQL，或者兼容集合仍保留已被合法删除的旧路径。
 - **根因**：门的判定式是文本形状而不是语法树，同时 expected compatibility set 没有在源码变更后重新取数。
 - **最小解**：保留门的真实不变量与 red self-test，调整测试断言的字符串构造以避免同一禁止 token 被误识别，并按当前源码重取兼容集合；不得通过删除门或放宽正则掩盖真实 SQL。

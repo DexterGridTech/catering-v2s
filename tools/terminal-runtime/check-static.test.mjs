@@ -133,6 +133,19 @@ try {
   );
 
   withMutation(
+    'src/types/module.ts',
+    source => {
+      const mutated = source.replace('  registerAsyncResource: (cleanup: () => Promise<void>) => () => void;\n', '');
+      assert.notEqual(mutated, source, 'registerAsyncResource context mutation must apply');
+      return mutated;
+    },
+    report => {
+      assertVector(report, ['context-exact-set']);
+      assert.match(rule(report, 'context-exact-set').error, /RuntimeModuleContext/);
+    },
+  );
+
+  withMutation(
     'src/foundations/defineActor.ts',
     source => source.replace('  definition: CommandDefinition<TPayload>,\n', '  definition: string,\n'),
     report => {

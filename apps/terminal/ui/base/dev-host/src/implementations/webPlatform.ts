@@ -80,6 +80,17 @@ export const createWebDevicePort = (
         Object.freeze({capability: 'getDeviceInfo', state: 'unavailable' as const, source: 'default' as const}),
         Object.freeze({capability: 'getDisplayInfo', state: 'real' as const, source: 'web' as const}),
         Object.freeze({capability: 'getSystemStatus', state: 'unavailable' as const, source: 'default' as const}),
+        Object.freeze({capability: 'getNetworkStatus', state: 'unavailable' as const, source: 'default' as const}),
+        Object.freeze({
+          capability: 'subscribeNetworkStatus',
+          state: 'unavailable' as const,
+          source: 'default' as const,
+        }),
+        Object.freeze({
+          capability: 'unsubscribeNetworkStatus',
+          state: 'unavailable' as const,
+          source: 'default' as const,
+        }),
         Object.freeze({capability: 'getPowerStatus', state: 'unavailable' as const, source: 'default' as const}),
         Object.freeze({capability: 'subscribePowerStatus', state: 'unavailable' as const, source: 'default' as const}),
         Object.freeze({

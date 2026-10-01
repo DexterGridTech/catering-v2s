@@ -72,7 +72,7 @@ export const toPartitionedStateDescriptors = <K extends string, TState extends o
     if (descriptor.name !== stateKey) {
       throw new Error(`[toPartitionedStateDescriptors] descriptor name mismatch for ${partition}`);
     }
-    return defineStateRuntimeSlice(descriptor);
+    return defineStateRuntimeSlice({...descriptor, resetIntent: 'clear'});
   });
   return Object.freeze(registrations);
 };

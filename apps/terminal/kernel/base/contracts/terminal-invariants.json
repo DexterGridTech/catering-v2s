@@ -74,6 +74,7 @@
     "TopologyWireMessage",
     "TransportRequestContext",
     "TransportServerAddress",
+    "TransportHttpProxy",
     "TransportServerAddressOverride",
     "TransportServerConfig",
     "TransportServerConfigSpace",

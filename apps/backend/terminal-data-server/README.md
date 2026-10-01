@@ -2,7 +2,7 @@
 
 ## 定位
 
-`terminal-data-server` 是单节点 WebSocket 传输运行时，承载终端连接、会话、心跳与 PostgreSQL 最新连接状态。它是独立受管进程，不是业务 HTTP deployable。
+`terminal-data-server` 是 WebSocket 传输运行时，承载终端连接、会话、心跳与 PostgreSQL 最新连接状态。它是独立受管进程，不是业务 HTTP deployable。批次二 DEV 可启动三个互相独立的 TDS 实例，通过两个 HAProxy WebSocket 入口接入；TDS 实例间不做跨节点会话协调，该能力仍属批次三。
 
 ## 作用
 
@@ -25,6 +25,8 @@
 ## 用法
 
 DEV 和 backend-acceptance 共用仓内配置文件 [`scripts/env/tds-dev-capacity.json`](../../../scripts/env/tds-dev-capacity.json)。受管 runner 每次启动前读取并校验它，再把两个连接上限注入 TDS；`TdsAcceptanceProcess` 也会核对注入值与配置文件一致。不要在 shell 环境里另外覆盖这两个容量值。
+
+节点身份与负载均衡摘除等待属于 TDS 进程配置：`V2S_TDS_NODE_ID` 默认 `terminal-data-server`，非空且最长 128 个字符；`V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS` 默认 `3000`，只接受 2000～10000 毫秒。它们也可在 `application.yml` 的 `v2s.tds.node-id`、`v2s.tds.readiness-withdrawal-wait-ms` 配置。真实 TDS 启动由受管 runner 注入环境变量；V-S15 acceptance 可覆盖为独有节点号与 4000 毫秒。服务关停时先将 readiness 置为非就绪，等待该摘除间隔，期间仍接入新会话；等待结束后拒绝新连接并在 drain window 内关闭活动会话。readiness 由同一 WebFlux 端口上的 `/actuator/health/readiness` 提供，管理入口只暴露 `health`，隐藏 details/components，并关闭额外的 `/livez`、`/readyz` 路径。
 
 当前初始 DEV 配置为：
 

@@ -146,6 +146,17 @@ describe('D-3/D-4/D-5/D-6/D-7/D-8/D-9/D-10: unavailable defaults', () => {
     expectUnavailable(await unavailableDevicePort.getDeviceInfo(call), 'device', 'getDeviceInfo');
     expectUnavailable(await unavailableDevicePort.getDisplayInfo(call), 'device', 'getDisplayInfo');
     expectUnavailable(await unavailableDevicePort.getSystemStatus(call), 'device', 'getSystemStatus');
+    expectUnavailable(await unavailableDevicePort.getNetworkStatus(call), 'device', 'getNetworkStatus');
+    expectUnavailable(
+      await unavailableDevicePort.subscribeNetworkStatus({...call, listener, onError}),
+      'device',
+      'subscribeNetworkStatus',
+    );
+    expectUnavailable(
+      await unavailableDevicePort.unsubscribeNetworkStatus({...call, subscriptionId: 'network-sub'}),
+      'device',
+      'unsubscribeNetworkStatus',
+    );
     expectUnavailable(await unavailableDevicePort.getPowerStatus(call), 'device', 'getPowerStatus');
     expectUnavailable(
       await unavailableDevicePort.subscribePowerStatus({...call, listener, onError}),

@@ -13,6 +13,7 @@ public record OperationsPasswordRecoveryCompleteRequest(
   }
 
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<OperationsPasswordRecoveryCompleteRequest> {
     @Override
     public OperationsPasswordRecoveryCompleteRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

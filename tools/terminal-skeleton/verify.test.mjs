@@ -9,7 +9,10 @@ import {
   assertPackageLintMarkers,
   assertPackageTestMarkers,
   assertTurboDryRun,
+  cleanupExportArtifacts,
+  exportArtifactPaths,
   expectedTaskOwners,
+  preexistingExportArtifacts,
 } from './verify.mjs';
 
 const toolsDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -17,12 +20,32 @@ const repoRoot = path.resolve(toolsDirectory, '../..');
 const verifyPath = path.join(toolsDirectory, 'verify.mjs');
 const fixtureDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'terminal-verify-marker-'));
 
+const applicationExportFixture = fs.mkdtempSync(path.join(os.tmpdir(), 'terminal-verify-export-'));
+try {
+  const expoLogPath = path.join(applicationExportFixture, '.expo/dev/logs/start.log');
+  fs.mkdirSync(path.dirname(expoLogPath), {recursive: true});
+  fs.writeFileSync(expoLogPath, 'developer state');
+  assert.deepEqual(exportArtifactPaths(applicationExportFixture), [path.join(applicationExportFixture, 'dist')]);
+  assert.deepEqual(preexistingExportArtifacts(applicationExportFixture), []);
+
+  const distPath = path.join(applicationExportFixture, 'dist');
+  fs.mkdirSync(distPath);
+  assert.deepEqual(preexistingExportArtifacts(applicationExportFixture), [distPath]);
+  cleanupExportArtifacts(exportArtifactPaths(applicationExportFixture));
+  assert.equal(fs.existsSync(distPath), false);
+  assert.equal(fs.readFileSync(expoLogPath, 'utf8'), 'developer state');
+} finally {
+  fs.rmSync(applicationExportFixture, {recursive: true, force: true});
+}
+
 const expectedTestPackages = [
   '@catering-v2s/application-base-android',
   '@catering-v2s/kernel-base-contracts',
   '@catering-v2s/kernel-base-platform-ports',
   '@catering-v2s/kernel-base-state',
   '@catering-v2s/kernel-base-runtime',
+  '@catering-v2s/kernel-base-server-config',
+  '@catering-v2s/kernel-base-terminal-data-client',
   '@catering-v2s/kernel-base-display-context',
   '@catering-v2s/kernel-base-topology',
   '@catering-v2s/kernel-base-transport',
@@ -52,6 +75,8 @@ const realTestPackages = [
   '@catering-v2s/kernel-base-platform-ports',
   '@catering-v2s/kernel-base-state',
   '@catering-v2s/kernel-base-runtime',
+  '@catering-v2s/kernel-base-server-config',
+  '@catering-v2s/kernel-base-terminal-data-client',
   '@catering-v2s/kernel-base-display-context',
   '@catering-v2s/kernel-base-topology',
   '@catering-v2s/kernel-base-transport',
@@ -91,11 +116,35 @@ const fixtureCopyFilter = sourcePath => {
   const relativePath = path.relative(terminalSourceDirectory, sourcePath);
   return !relativePath
     .split(path.sep)
-    .some(segment => ['node_modules', '.expo', 'dist', '.vite', '.vite-temp'].includes(segment));
+    .some(segment =>
+      [
+        'node_modules',
+        '.expo',
+        '.gradle',
+        '.kotlin',
+        '.runtime',
+        '.turbo',
+        '.vite',
+        '.vite-temp',
+        'build',
+        'coverage',
+        'dist',
+      ].includes(segment),
+    );
 };
 
+assert.equal(fixtureCopyFilter(path.join(terminalSourceDirectory, 'kernel/base/contracts/src/index.ts')), true);
+for (const generatedSegment of ['.gradle', '.kotlin', '.runtime', '.turbo', 'build', 'coverage', 'dist']) {
+  assert.equal(
+    fixtureCopyFilter(
+      path.join(terminalSourceDirectory, 'application/android/sample-terminal', generatedSegment, 'output'),
+    ),
+    false,
+  );
+}
+
 assert.deepEqual(expectedTaskOwners('test', 2).sort(), expectedTestPackages);
-assert.deepEqual(expectedLintPackages.length, 29);
+assert.deepEqual(expectedLintPackages.length, 31);
 const turboTestDryRunFixture = {
   packages: ['@catering-v2s/ui-base-render'],
   tasks: [
@@ -236,26 +285,37 @@ try {
   );
   fs.writeFileSync(runtimePackageJsonPath, originalRuntimePackageJson);
 
-  const runtimeTestDirectory = path.join(ownershipFixture, 'apps/terminal/kernel/base/runtime/test');
-  fs.rmSync(runtimeTestDirectory, {recursive: true, force: true});
-  const runnerPath = path.join(repoRoot, 'tools/terminal-shared/run-owned-tests.mjs');
-  const noTestsRun = spawnSync(process.execPath, [runnerPath], {
-    cwd: path.dirname(runtimePackageJsonPath),
-    encoding: 'utf8',
-  });
-  assert.equal(noTestsRun.status, 0, noTestsRun.stderr);
-  assert.match(noTestsRun.stdout, /kind=NO_TEST_FILES package=@catering-v2s\/kernel-base-runtime/);
-  const expected = expectedTaskOwners('test', 2, {root: ownershipFixture});
-  const cleanMarkers = validMarkerLines
-    .join('\n')
-    .replace(
-      'kind=REAL_TESTS package=@catering-v2s/kernel-base-runtime',
-      noTestsRun.stdout.trim().replace('TERMINAL_PACKAGE_TEST=PASS ', ''),
+  const noTestsFixture = fs.mkdtempSync(path.join(terminalSourceDirectory, '.runtime/no-tests-'));
+  try {
+    fs.copyFileSync(
+      path.join(terminalSourceDirectory, 'kernel/base/runtime/package.json'),
+      path.join(noTestsFixture, 'package.json'),
     );
-  assert.throws(
-    () => assertPackageTestMarkers(cleanMarkers, expected, {root: ownershipFixture, batch: 2}),
-    /marker kind mismatch.*kernel-base-runtime/,
-  );
+    const runnerPath = path.join(repoRoot, 'tools/terminal-shared/run-owned-tests.mjs');
+    const noTestsRun = spawnSync(process.execPath, [runnerPath], {
+      cwd: noTestsFixture,
+      encoding: 'utf8',
+    });
+    assert.equal(noTestsRun.status, 2, noTestsRun.stderr);
+    assert.match(
+      noTestsRun.stderr,
+      /TERMINAL_PACKAGE_TEST_FAILURE package=@catering-v2s\/kernel-base-runtime reason=no-test-files/,
+    );
+    assert.doesNotMatch(`${noTestsRun.stdout}\n${noTestsRun.stderr}`, /TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES/);
+    const expected = expectedTaskOwners('test', 2, {root: ownershipFixture});
+    const cleanMarkers = validMarkerLines
+      .join('\n')
+      .replace(
+        'kind=REAL_TESTS package=@catering-v2s/kernel-base-runtime',
+        'TERMINAL_PACKAGE_TEST=PASS kind=NO_TEST_FILES package=@catering-v2s/kernel-base-runtime',
+      );
+    assert.throws(
+      () => assertPackageTestMarkers(cleanMarkers, expected, {root: ownershipFixture, batch: 2}),
+      /marker kind mismatch.*kernel-base-runtime/,
+    );
+  } finally {
+    fs.rmSync(noTestsFixture, {recursive: true, force: true});
+  }
 } finally {
   fs.rmSync(ownershipFixture, {recursive: true, force: true});
 }

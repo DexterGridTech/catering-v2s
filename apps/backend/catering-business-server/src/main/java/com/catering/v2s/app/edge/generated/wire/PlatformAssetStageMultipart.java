@@ -8,6 +8,7 @@ public record PlatformAssetStageMultipart(
     String file
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<PlatformAssetStageMultipart> {
     @Override
     public PlatformAssetStageMultipart deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

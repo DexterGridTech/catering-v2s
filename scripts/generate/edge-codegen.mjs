@@ -1205,7 +1205,7 @@ public record ${name}(
 }
 `;
 }
-function strictWireDeserializer(name, properties, required, components, inlineTypes) {
+function strictWireDeserializer(name, properties, required, components, inlineTypes, ignoreUnknownProperties = false) {
   if (properties.length === 0) return strictEmptyObjectDeserializer(name);
   const javaTypes = new Map();
   const nullableProperties = new Set(
@@ -1260,8 +1260,11 @@ function strictWireDeserializer(name, properties, required, components, inlineTy
         switch (property) {
 ${fields}
           default -> {
-            parser.skipChildren();
-            return context.reportInputMismatch(${name}.class, "unknown property " + property);
+${ignoreUnknownProperties
+  ? `            if (!skipUnknownJsonValue(parser))
+              return context.reportInputMismatch(${name}.class, "unknown property contains malformed or duplicate JSON");`
+  : `            parser.skipChildren();
+            return context.reportInputMismatch(${name}.class, "unknown property " + property);`}
           }
         }
         token = parser.nextToken();
@@ -1270,11 +1273,40 @@ ${fields}
         return context.reportInputMismatch(${name}.class, "object must end with END_OBJECT");
 ${missingChecks}
       return new ${name}(${constructorArgs});`;
+  const unknownValueReader = ignoreUnknownProperties
+    ? `  private static boolean skipUnknownJsonValue(tools.jackson.core.JsonParser parser)
+          throws tools.jackson.core.JacksonException {
+    tools.jackson.core.JsonToken token = parser.currentToken();
+    if (token == tools.jackson.core.JsonToken.START_OBJECT) {
+      java.util.Set<String> names = new java.util.HashSet<>();
+      token = parser.nextToken();
+      while (token != null && token != tools.jackson.core.JsonToken.END_OBJECT) {
+        if (token != tools.jackson.core.JsonToken.PROPERTY_NAME || !names.add(parser.currentName())) return false;
+        token = parser.nextToken();
+        if (token == null || !skipUnknownJsonValue(parser)) return false;
+        token = parser.nextToken();
+      }
+      return token == tools.jackson.core.JsonToken.END_OBJECT;
+    }
+    if (token == tools.jackson.core.JsonToken.START_ARRAY) {
+      token = parser.nextToken();
+      while (token != null && token != tools.jackson.core.JsonToken.END_ARRAY) {
+        if (!skipUnknownJsonValue(parser)) return false;
+        token = parser.nextToken();
+      }
+      return token == tools.jackson.core.JsonToken.END_ARRAY;
+    }
+    return token != null;
+  }
+
+`
+    : '';
   return `@tools.jackson.databind.annotation.JsonDeserialize(using = ${name}.Deserializer.class)
 public record ${name}(
 ${recordFields}
 ) {
 ${toStringMethod ? `${toStringMethod}\n\n` : ''}
+${unknownValueReader}
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<${name}> {
     @Override
     public ${name} deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)
@@ -1437,6 +1469,7 @@ function javaWireType(
   inlineTypes = new Map(),
   strictNames = new Set(),
   strictInlineNames = new Set(),
+  ignoreUnknownNames = new Set(),
 ) {
   schema = resolvedSchema(schema, components, new Set([name]));
   if (Array.isArray(schema.enum)) {
@@ -1455,6 +1488,7 @@ function javaWireType(
   const properties = Object.entries(schema.properties || {});
   const required = new Set(schema.required || []);
   const strict = strictNames.has(name) || strictInlineNames.has(name);
+  const ignoreUnknown = ignoreUnknownNames.has(name);
   for (const [property, propertySchema] of properties) {
     const resolved = resolvedSchema(propertySchema, components, new Set([name]));
     const inlineName = `${name}${pascal(property)}`;
@@ -1468,8 +1502,8 @@ function javaWireType(
   const strictDeserializer =
     name === 'OrganizationStoreOperatingRuleValues'
       ? strictOperatingRuleDeserializer(name, properties)
-      : strict
-        ? strictWireDeserializer(name, properties, required, components, inlineTypes)
+      : strict || ignoreUnknown
+        ? strictWireDeserializer(name, properties, required, components, inlineTypes, ignoreUnknown)
         : '';
   if (strictDeserializer) {
     return {
@@ -1530,9 +1564,19 @@ function strictWireSchemaNames(operations, components) {
   }
   return strictNames;
 }
+function terminalUnknownRequestSchemaNames(operations, components) {
+  const names = new Set();
+  for (const operation of operations) {
+    if (operation.face !== 'terminal' || operation.requestSchema === 'NoBody') continue;
+    const schema = components.get(operation.requestSchema);
+    if (schema?.type === 'object' && schema.additionalProperties === true) names.add(operation.requestSchema);
+  }
+  return names;
+}
 function wireJavaOutputs(base = root, operations = load(base).operations) {
   const components = generatedWireComponents(base);
   const strictNames = strictWireSchemaNames(operations, components);
+  const ignoreUnknownNames = terminalUnknownRequestSchemaNames(operations, components);
   const strictInlineNames = new Set();
   const inlineTypes = new Map();
   const named = [...components.entries()].filter(
@@ -1540,12 +1584,12 @@ function wireJavaOutputs(base = root, operations = load(base).operations) {
       Array.isArray(schema.enum) || schema.type === 'object' || schema.properties || Array.isArray(schema.allOf),
   );
   const output = named.map(([name, schema]) => {
-    const wire = javaWireType(name, schema, components, inlineTypes, strictNames, strictInlineNames);
+    const wire = javaWireType(name, schema, components, inlineTypes, strictNames, strictInlineNames, ignoreUnknownNames);
     return [`${targets.wireJavaRoot}/${wire.name}.java`, wire.source];
   });
   for (const [name, schema] of inlineTypes) {
     if (components.has(name)) fail('R5_EDGE_WIRE_INLINE_NAME_CONFLICT', name);
-    const wire = javaWireType(name, schema, components, inlineTypes, strictNames, strictInlineNames);
+    const wire = javaWireType(name, schema, components, inlineTypes, strictNames, strictInlineNames, ignoreUnknownNames);
     output.push([`${targets.wireJavaRoot}/${wire.name}.java`, wire.source]);
   }
   return output;

@@ -15,6 +15,7 @@ public record LoginRequest(
   }
 
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<LoginRequest> {
     @Override
     public LoginRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

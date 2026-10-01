@@ -15,6 +15,7 @@ public record ExtensionDefinitionUpdateRequestDefinitionsItem(
     String displaySuffix
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<ExtensionDefinitionUpdateRequestDefinitionsItem> {
     @Override
     public ExtensionDefinitionUpdateRequestDefinitionsItem deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

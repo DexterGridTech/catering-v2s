@@ -7,6 +7,7 @@ public record StoreTerminalConfigurationInput(
     java.util.List<StoreTerminalFunctionInput> functions
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreTerminalConfigurationInput> {
     @Override
     public StoreTerminalConfigurationInput deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

@@ -28,6 +28,7 @@ import {
   fetchExpoWebReadiness,
   hashWebSourceFiles,
   parseJsonEventsAfterByteOffset,
+  parsePlatformPortsSummaryCount,
   parseListeningProcessIds,
   pipeExpoOutput,
   releaseManagedWebRunLock,
@@ -962,6 +963,82 @@ try {
       manifest.screenshotPath = path.relative(root, screenshotPath);
       manifest.business = 'PASS';
     }
+  } else if (webScenario === 'platform-ports-smoke') {
+    for (let index = 0; index < 5; index += 1) {
+      await page.mouse.click(bounds.x + Math.min(24, bounds.width / 4), bounds.y + Math.min(24, bounds.height / 4));
+    }
+    await page.getByTestId('terminal.admin:login').waitFor({state: 'visible', timeout: 10_000});
+    const pin = (await page.getByTestId('terminal.admin:debug-password').innerText()).match(/\d{6}/)?.[0];
+    if (pin === undefined) throw new Error('WEB_PLATFORM_PORTS_DEBUG_PASSWORD_MISSING');
+    for (const digit of pin) await page.getByTestId(`ui.base.input:virtual-keyboard:text-${digit}`).click();
+    await page.getByTestId('terminal.admin:verify').click();
+    await page.getByTestId('terminal.admin:section:platform-ports').click();
+
+    const overallStatus = page.getByTestId('terminal.admin:ports:overall-status');
+    await overallStatus.waitFor({state: 'visible', timeout: 15_000});
+    const countFor = async (testId, label) => {
+      const text = (await page.getByTestId(testId).innerText()).trim();
+      const count = parsePlatformPortsSummaryCount(text, label);
+      if (count === null) throw new Error(`WEB_PLATFORM_PORTS_COUNT_INVALID:${testId}`);
+      return count;
+    };
+    const counts = {
+      available: await countFor('terminal.admin:ports:summary:available', '可用'),
+      unavailable: await countFor('terminal.admin:ports:summary:unavailable', '不可用'),
+      undeclared: await countFor('terminal.admin:ports:summary:undeclared', '未声明'),
+    };
+    const totalText = (await page.getByTestId('admin.console.platform-ports:total').innerText()).trim();
+    const totalMatch = /^共 (0|[1-9]\d*) 项能力单位$/.exec(totalText);
+    if (totalMatch === null) throw new Error('WEB_PLATFORM_PORTS_TOTAL_LABEL_INVALID');
+    const total = Number(totalMatch[1]);
+    if (total < 1 || counts.available + counts.unavailable + counts.undeclared !== total) {
+      throw new Error('WEB_PLATFORM_PORTS_SUMMARY_TOTAL_MISMATCH');
+    }
+    if ((await overallStatus.innerText()).trim() !== '能力状态总览') {
+      throw new Error('WEB_PLATFORM_PORTS_STATUS_LABEL_INVALID');
+    }
+
+    await page.getByTestId('terminal.admin:ports:category:device:expand').click();
+    const networkCapabilities = ['getNetworkStatus', 'subscribeNetworkStatus', 'unsubscribeNetworkStatus'];
+    for (const capability of networkCapabilities) {
+      const status = page.getByTestId(`terminal.admin:ports:item:device:${capability}:status`);
+      await status.waitFor({state: 'visible', timeout: 5_000});
+      const value = (await status.innerText()).trim();
+      if (value !== '不可用') throw new Error(`WEB_PLATFORM_PORTS_NETWORK_CAPABILITY_NOT_UNAVAILABLE:${capability}`);
+    }
+    const transportEvents = parseJsonEventsAfterByteOffset(fs.readFileSync(logPath), 0).filter(event =>
+      event.event.startsWith('transport.connection.'),
+    );
+    if (!transportEvents.some(event => event.event === 'transport.connection.network-status-bridge-unavailable')) {
+      throw new Error('WEB_PLATFORM_PORTS_TRANSPORT_NETWORK_BRIDGE_UNAVAILABLE_NOT_OBSERVED');
+    }
+    if (
+      transportEvents.some(event =>
+        [
+          'transport.connection.socket-opened',
+          'transport.connection.connection-ready',
+          'transport.connection.connect-attempt-failed',
+          'transport.connection.retry-scheduled',
+          'transport.connection.network-recovery-expedited',
+        ].includes(event.event),
+      )
+    ) {
+      throw new Error('WEB_PLATFORM_PORTS_TRANSPORT_CONNECTION_ACTIVITY_OBSERVED');
+    }
+    if (pageErrorNames.length) throw new Error(`WEB_PAGE_ERRORS:${JSON.stringify(pageErrorNames)}`);
+
+    manifest.webObserved = {
+      page: 'admin.console.platform-ports',
+      overallStatus: '能力状态总览',
+      counts,
+      total,
+      networkCapabilities: Object.fromEntries(networkCapabilities.map(capability => [capability, '不可用'])),
+      transport: {networkBridge: 'unavailable', connectionActivity: 'none'},
+    };
+    manifest.pageErrorNames = pageErrorNames;
+    await page.screenshot({path: screenshotPath, fullPage: true});
+    manifest.screenshotPath = path.relative(root, screenshotPath);
+    manifest.business = 'PASS';
   } else if (failureOwner !== null) {
     const failureNotice = page.getByTestId(`ui-base-render:system-failure:${failureOwner}`);
     const dismissButton = page.getByTestId(`ui-base-render:system-failure:${failureOwner}:dismiss`);

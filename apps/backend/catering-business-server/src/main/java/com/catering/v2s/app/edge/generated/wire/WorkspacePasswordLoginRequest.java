@@ -15,6 +15,7 @@ public record WorkspacePasswordLoginRequest(
   }
 
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<WorkspacePasswordLoginRequest> {
     @Override
     public WorkspacePasswordLoginRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

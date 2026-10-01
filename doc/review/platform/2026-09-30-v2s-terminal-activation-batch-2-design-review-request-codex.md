@@ -1,65 +1,80 @@
-# 终端激活与长连接 · 批次二详设/计划 Claude 评审交接
+# 批次二详设与实施计划 · Claude 静态复评交接
+
+```text
+REVIEW_TARGET=DESIGN
+REVIEW_KIND=DEXTER_RELAYED_CLAUDE_REREVIEW
+REVIEW_STATUS=READY_FOR_DEXTER_RELAY
+SCOPE=CURRENT_BATCH_2_DESIGN_AND_PLAN_BYTES
+PRIOR_INDEPENDENT_DESIGN_CYCLE=CLOSED_NOT_REOPENED
+PRIOR_CLAUDE_VERDICT=NO_GO_M0_S2_N2_ON_PRE_REPAIR_BYTES
+AUTHOR_REPAIR=FOUR_CONFIRMED_DOCUMENT_FINDINGS_REPAIRED
+INDEPENDENT_VERDICT_COVERS_CURRENT_BYTES=false
+DYNAMIC_EVIDENCE=NOT_RUN
+IMPLEMENTATION_AUTHORITY=false
+```
 
 ## 背景
 
-批次二详设与实施计划已按 Dexter 授权编写。独立 DESIGN cycle `TERMINAL-ACTIVATION-BATCH-2-DESIGN-2026-09-30` Round 1 为 `NO-GO, M/S/N=1/0/0`；唯一 finding 是已接受 Journey 第 48、54 行对凭证持久化住址的冲突表述，以及初稿误将 Journey 纳入实施修改全集。作者已确认并从批次范围移除 Journey/decision 写入，保留来源漂移记录和 CP-01 写入前的 owner/Dexter 处理门。Round 2 独立 reviewer 给出 `GO, M/S/N=0/0/0, ROUND_FINAL_DECISION=SELF_DECIDED`。本次交接请求 Claude 再独立评审设计与计划，不代表实施授权。
+Claude 对批次二详设与实施计划的 fresh 静态复评结论为 `NO-GO`，`M/S/N=0/2/2`，评审记录见 `doc/review/platform/2026-09-30-v2s-terminal-activation-batch-2-fresh-static-rereview-codex.md`。主 agent 逐条重开当前详设、计划、原需求、项目规范与 owning source，四项均核验为 `CONFIRMED`，并按最小修正同步修改两份目标文档：CP-06 不再包含整批动态验收；补齐 canonical schema 到物化、后端 DTO 与 TER 生成的链路；明确配置 provider 注入 transport adapter 的边界；把 reset/seed/L2 准入改为仅对实际获授权动作适用。本轮只改了详设、实施计划和本交接文件，没有改需求、Journey、decision、源码、依赖或生成物，也没有执行动态验证。
+
+此前的独立子 agent `REVIEW_TARGET=DESIGN` cycle 已关闭，本请求不重开该 cycle，也不是其第三轮。请 Claude 对当前修改后的字节独立复评；当前字节尚无独立 verdict。
 
 ## 评审目标
 
-独立判断批次二技术方案是否简单、可维护且能按当前源码落地；核验需求到 owner、命令/selectors、state 保留、Node 注入式 HTTP/WebSocket 代理与 PMD、TDS readiness/node shutdown、受管 DEV topology、acceptance channel 和 Batch 2/3 边界是否一致。特别判断 Journey 凭证住址 source drift 的处理是否清楚且不会使实施者越权修改 accepted source。
+判断四项修正是否真正消除原执行阻断与矛盾，且没有引入新的阶段、来源、owner 或准入冲突。以原始需求、当前规范和 owning source 为准；不要把作者的 `CONFIRMED` 分类或本交接中的修订摘要当作事实。
 
 ## 需阅读文件
 
-- `doc/plans/platform/2026-09-30-v2s-terminal-activation-batch-2-implementation-design-codex.md`：批次二方案、模块/接口、验证证据和未决边界。
-- `doc/plans/platform/2026-09-30-v2s-terminal-activation-batch-2-implementation-plan-codex.md`：按 CP 分阶段的修改全集、focused proof、进入条件和收口。
-- `doc/plans/platform/2026-09-25-v2s-terminal-activation-and-connection-requirements-claude.md`：需求正本与 D-37～D-51 裁决；按原阅读顺序。
-- `doc/decisions/2026-09-26-v2s-terminal-activation-and-connection-journey.md`：已接受用户/设备 Journey，尤其第 48、54 行凭证住址来源漂移。
-- `doc/decisions/2026-09-26-v2s-terminal-activation-service-shape.md`：批次归属、D-16、服务边界与 R-12 同步范围。
-- `contracts/protocol/terminal-connection-protocol.json`：设备与 TDS 共享协议。
-- `doc/review/platform/2026-09-30-v2s-terminal-activation-batch-2-design-review-r1-codex.md`：Round 1 独立 finding 与作者处置。
-- `doc/review/platform/2026-09-30-v2s-terminal-activation-batch-2-design-review-r2-codex.md`：Round 2 独立结论、DR1 关闭状态及其边界。
-- `doc/review/platform/2026-09-30-v2s-terminal-activation-batch-2-design-review-r2-input-checklist-codex.md`：Round 2 reviewer 实际输入清单与留痕限制。
-- `doc/platform/third-party-library-usage-standard.md`：第三方精确版本与官方依据核验规范。
-- `doc/platform/terminal-coding-standard.md`：TER transport、state 与 device 端边界。
-- `doc/platform/implementation-task-template.md`：未来 CP 与实施验收组织方式。
+请从 catering-v2s 仓库根先读规范、原始需求与当前目标字节，形成自己的判断，再读上一轮评审及相关生成链源码：
+
+- `AGENTS.md`、`PLATFORM-BLUEPRINT.md`、`doc/platform/README.md`、`scripts/README.md`：仓库执行入口与边界。
+- `doc/platform/implementation-task-template.md`、`doc/platform/review-standard.md`、`doc/decisions/templates/implementation-design-template.md`：阶段对账、动态前准入和详设要求。
+- `doc/plans/platform/2026-09-25-v2s-terminal-activation-and-connection-requirements-claude.md`：批次二原始需求与判据。
+- `doc/decisions/2026-09-26-v2s-terminal-activation-and-connection-journey.md`、`doc/decisions/2026-09-26-v2s-terminal-activation-service-shape.md`：已接受的边界与裁决。
+- `doc/plans/platform/2026-09-30-v2s-terminal-activation-batch-2-implementation-design-codex.md`、`doc/plans/platform/2026-09-30-v2s-terminal-activation-batch-2-implementation-plan-codex.md`：本次复评的当前目标字节。
+- `doc/review/platform/2026-09-30-v2s-terminal-activation-batch-2-fresh-static-rereview-codex.md`：上一轮 `0/2/2` findings 与证据。
+- `contracts/openapi-source/terminal-binding.schemas.json`、`contracts/openapi/components/terminal-binding/terminal-binding.schemas.json`、`doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json`、`scripts/generate/r5-edge-materialize.mjs`、`scripts/generate/edge-codegen.mjs`：schema 输入、materialize、catalog hash 与 codegen 的实际生成链。
 
 ## 独立核验重点
 
-- `server-config` 是否确为本期 Batch 2；`terminal-data-client/state` 是否是唯一终端凭证持久身份 owner，server-config 是否只保留环境/服务覆盖配置与受保护代理信息。
-- 激活、取消激活是否经 `terminal-data-client` command→actor；激活态、连接态、连接延迟是否由专门 selectors 读取，并有实际使用路径与测试。
-- state reset 是否只按 R-9.6 精确保留 server-config，不构成第二 credential store。
-- Node 注入式 client 的 standalone Undici 与 Node bundled Undici 是否明确区分；实际版本/API、ProxyAgent dispatcher、PMD 协商与解压上界是否有精确版本的一手官方依据；是否确实由系统代理处理 TCP/TLS 而没有自写 CONNECT。
-- TDS Actuator readiness、可配置 nodeId、先摘除再 drain 的时序，三实例/两 HAProxy 入口的受管拓扑与 manifest 证据是否匹配 V-S15/V-E6；不把 batch 3 的 Doris/跨节点 takeover/topic sync 放进来。
-- `V-B15` 是否仍为 acceptance scenario key 而不是 HTTP operation identity；`V-S9/V-S15` 是否在对应执行面和通道可运行；验收场景的 `CONTRACT`、`BUSINESS`、`TOPOLOGY_PREFLIGHT` 是否彼此隔离。
-- D-41 仓库内输入闭包与 root/symlink escape 红例是否进入生成/检查器门。
-- 对 R1 finding `DR1` 的处理是否足以关闭越权修改：若 Journey 仍冲突，是否明确先由 Journey owner 修订或 Dexter 裁定，不由本批实施者自行改 accepted source，也不引入第二凭证库。
+1. **S-1 阶段依赖环**：核 CP-06 是否仅负责判据/场景闭包、runner 接线、focused proof 和阶段内静态检查；CP-01～06 各自阶段对账完成后，整批 6b 是否明确位于所有整体验收之前；动态结果、cleanup、13c 与整批 implementation review 是否已从 CP-06 退出条件移开。检查总览、CP-06、6b、动态准入、批次完成定义有无残余双向依赖。
+2. **S-2 生成源链**：确认计划从 `contracts/openapi-source/terminal-binding.schemas.json` 与 catalog SHA 开始，按 `r5-edge-materialize` → `edge-codegen` → TER generation 执行，并有 canonical/source/materialized component/两个 terminal DTO/TER operation descriptor 的对账。确认没有把 materialized component 或生成 DTO 当成编辑源；只对 `TerminalActivationRequest` 与 `TerminalActivationCancellationRequest` 容忍未知字段，运营后台及其他 DTO 仍严格拒绝；判据能发现源、hash、物化输出与生成输出任一处漂移。
+3. **N-1 配置快照边界**：确认 TER composition 通过 server-config owner API 解析配置，并将 provider 注入 transport network adapter；`terminal-data-client` 可调用 transport 公开通用 command，但不读取 server-config selector、snapshot、slice/state 或 persistence；transport 也不绕过 owner。核对 CP-03、跨 owner 矩阵、声明—传递—消费表和实施计划一致。
+4. **N-2 条件式准入**：确认本批无 UI action 时 §3a `N/A_WITH_REASON`，没有要求空分母 admission 或虚构 DEV seed dry-run；backend-acceptance 及不 reset/seed 的 DEV 不被这些前置条件阻断；CP 阶段对账、整批 6b、每次受管运行资源身份/预算/cleanup 仍保留。只有实际获授权的 reset/seed/L2 动作才执行适用准入；真实 L2 才要求实际控件分母 admission，完整 seed dry-run 只在确实计划 seed 时要求。
 
-目前没有动态证据；本任务的 build、test、generation、scripts/verify、DEV、Testcontainers、reset、seed、L2、UAT 与部署均未获授权，也未执行。
+本轮没有运行生成、编译、测试、`scripts/verify`、Node/Vitest、backend-acceptance、DEV、Testcontainers、reset、seed、L2、UAT 或部署。请勿把计划中的验证提升为 PASS。
 
 ## 期望结论
 
-请明确给出 `GO` 或 `NO-GO` 与 `M/S/N`。每条 finding 写明仓库相对路径和准确行号、事实/推论/产品判断、影响、可验收的最小修正以及是否需要 Dexter 裁决。若某判据只是未来动态验证，应指出详设中的具体可执行证据，不要将计划描述写成已通过事实。
+请针对当前详设与计划给出明确 `GO` 或 `NO-GO`，以及 `M/S/N` 数量。每条 finding 写明目标文件/章节或条款与精确行号、性质、仓库证据、影响、可验收的最小修正和是否需要 Dexter 产品裁决；区分静态事实、推论和未验证项。若四项均关闭，也请说明核验依据；不要以旧评审计数代替本轮结论。
 
 ## 可直接复制给 Claude 的话术
 
 ```text
-您好 Claude，烦请独立评审《终端激活与长连接》批次二详设与实施计划。
+您好 Claude，烦请对《终端激活与长连接》批次二当前详设与实施计划做一次独立静态复评。
 
-背景：批次二详设与实施计划已按 Dexter 授权完成。独立 DESIGN cycle Round 1 为 NO-GO，M/S/N=1/0/0；唯一 finding 指出 Journey 第 48、54 行的凭证持久化住址冲突和初稿误将 accepted Journey 放入实施修改全集。作者已移除该写入承诺，保留来源漂移与 CP-01 前置处理门。fresh 独立 reviewer 的 Round 2 最终结论为 GO，M/S/N=0/0/0，ROUND_FINAL_DECISION=SELF_DECIDED。请你从原始需求和当前源码独立判断，不沿用上述结论。
+背景：你上一轮对这两份文档的复评结论为 NO-GO，M/S/N=0/2/2，完整 finding 与证据在 `doc/review/platform/2026-09-30-v2s-terminal-activation-batch-2-fresh-static-rereview-codex.md`。主 agent 逐条重开 owning source 与原始需求后，四项均确认，并已只修改当前详设和实施计划。此前的独立子 agent DESIGN cycle 已关闭，本次不重开该 cycle，也不是第三轮；请只对当前字节独立判断。
 
-目标：核验批次二架构、状态所有权、命令与 selectors、代理/压缩客户端、TDS readiness 与受管拓扑、场景证据和批次边界是否合理且可执行。
+目标：确认 S-1 阶段依赖、S-2 canonical→materialize→codegen→TER 生成链、N-1 配置 provider 注入边界、N-2 条件式 reset/seed/L2 准入是否已最小且一致地修正，并检查相邻条款是否还有同根矛盾。
 
 请从 catering-v2s 仓库根阅读：
-- `doc/plans/platform/2026-09-30-v2s-terminal-activation-batch-2-implementation-design-codex.md`：批次二详设全文；
-- `doc/plans/platform/2026-09-30-v2s-terminal-activation-batch-2-implementation-plan-codex.md`：批次二实施计划全文；
-- `doc/plans/platform/2026-09-25-v2s-terminal-activation-and-connection-requirements-claude.md`：需求正本及裁决；
-- `doc/decisions/2026-09-26-v2s-terminal-activation-and-connection-journey.md` 与 `doc/decisions/2026-09-26-v2s-terminal-activation-service-shape.md`：已接受 Journey 与服务形态；
-- `contracts/protocol/terminal-connection-protocol.json`：共享 TDS/TER 协议；
-- `doc/platform/third-party-library-usage-standard.md`、`doc/platform/terminal-coding-standard.md`、`doc/platform/implementation-task-template.md`：第三方依据、TER 边界及实施阶段要求。
+- `AGENTS.md`、`PLATFORM-BLUEPRINT.md`、`doc/platform/README.md`、`scripts/README.md`；
+- `doc/platform/implementation-task-template.md`、`doc/platform/review-standard.md`、`doc/decisions/templates/implementation-design-template.md`；
+- `doc/plans/platform/2026-09-25-v2s-terminal-activation-and-connection-requirements-claude.md`；
+- `doc/decisions/2026-09-26-v2s-terminal-activation-and-connection-journey.md`、`doc/decisions/2026-09-26-v2s-terminal-activation-service-shape.md`；
+- `doc/plans/platform/2026-09-30-v2s-terminal-activation-batch-2-implementation-design-codex.md`、`doc/plans/platform/2026-09-30-v2s-terminal-activation-batch-2-implementation-plan-codex.md`；
+- `contracts/openapi-source/terminal-binding.schemas.json`、`contracts/openapi/components/terminal-binding/terminal-binding.schemas.json`、`doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json`、`scripts/generate/r5-edge-materialize.mjs`、`scripts/generate/edge-codegen.mjs`；
+- `doc/review/platform/2026-09-30-v2s-terminal-activation-batch-2-fresh-static-rereview-codex.md`，用于核对前轮 finding，不作为当前结论。
 
-请重点独立核验：`server-config` 配置保留与 `terminal-data-client/state` 唯一凭证住址；激活/取消激活 command→actor 与状态 selectors；Undici exact-version WebSocket/ProxyAgent/PMD 行为及系统代理边界；TDS readiness/nodeId/先摘除再 drain；三 TDS/双 HAProxy 受管 DEV 拓扑；V-B15、V-S9、V-S15 的执行面和证据通道；D-41 仓内路径闭包；R1 DR1 来源漂移处置；批次三排除项。
+请重点核验：
+1. CP-06 的实际退出条件与实现阶段边界；全部 CP `MATCHED` 后 6b 是否单独完成并先于整体验收；全篇是否还有动态结果/cleanup/13c/最终 review 回流到 CP-06 的循环。
+2. canonical schema 与 catalog SHA 是否是唯一输入，`r5-edge-materialize`、`edge-codegen`、TER generation 的实际调用链和三方对账是否充分；仅两个终端请求兼容未知字段、运营后台及其他 DTO 保持严格的边界是否明确。
+3. composition、server-config、transport、terminal-data-client 的配置读取路径：允许调用 transport 公开通用 command；禁止 client 直接读 server-config selector/snapshot/state/persistence；确认表格和正文没有互相矛盾。
+4. §3a N/A 时是否避免空分母 admission 与无条件 seed dry-run，同时保留 CP/6b、资源身份/预算/cleanup，并仅对实际获授权的 reset/seed/L2 执行相应准入。
 
-烦请给出明确 `GO` 或 `NO-GO` 与 `M/S/N`。每条 finding 请写准确路径与行号、性质、证据、影响、最小可验收修正及是否需要 Dexter 裁决，并区分静态设计与未执行的动态验证。
+本轮没有运行生成、构建、测试、verify、backend-acceptance、DEV、reset、seed、L2、UAT 或部署。请明确区分设计中计划的证据与当前已经获得的证据。
 
-授权边界：本次只请求批次二详设与实施计划的独立静态评审。GO/NO-GO 不授权源码实现、依赖/锁文件修改、构建、测试、生成、scripts/verify、DEV、Testcontainers、reset、seed、L2、UAT、部署或批次三。谢谢。
+烦请给出当前字节的 `GO` 或 `NO-GO` 与 `M/S/N`。每条 finding 请列目标文件/章节或条款与精确行号、性质、证据、影响、可验收的最小修正及是否需要 Dexter 产品裁决；检查通过的 finding 也请简述证据。
+
+授权边界：本次只请求批次二详设与实施计划的独立静态复评，不重开此前关闭的独立 DESIGN cycle。该评审不授权修改需求、Journey、decision、源码、依赖或锁文件，不授权生成、编译、测试、`scripts/verify`、DEV、Testcontainers、reset、seed、L2、UAT、部署或批次三。谢谢。
 ```

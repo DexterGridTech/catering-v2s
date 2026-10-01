@@ -12,6 +12,8 @@ public final class RuntimeEnvironmentKeys {
     public static final String V2S_BACKEND_ACCEPTANCE_RESULT = "V2S_BACKEND_ACCEPTANCE_RESULT";
     public static final String V2S_BACKEND_ACCEPTANCE_RUN_ID = "V2S_BACKEND_ACCEPTANCE_RUN_ID";
     public static final String V2S_BACKEND_ACCEPTANCE_SECRET = "V2S_BACKEND_ACCEPTANCE_SECRET";
+    public static final String V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO =
+            "V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO";
     public static final String V2S_CATALOG_TEST_FAULTS = "V2S_CATALOG_TEST_FAULTS";
     public static final String V2S_DB_OPERATIONS_EVENTS = "V2S_DB_OPERATIONS_EVENTS";
     public static final String V2S_DB_OPERATIONS_HMAC_KEY = "V2S_DB_OPERATIONS_HMAC_KEY";
@@ -27,6 +29,8 @@ public final class RuntimeEnvironmentKeys {
     public static final String V2S_RUNTIME_ENVIRONMENT = "V2S_RUNTIME_ENVIRONMENT";
     public static final String V2S_TDS_MAX_TRACKED_SESSIONS = "V2S_TDS_MAX_TRACKED_SESSIONS";
     public static final String V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS = "V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS";
+    public static final String V2S_TDS_NODE_ID = "V2S_TDS_NODE_ID";
+    public static final String V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS = "V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS";
     public static final String V2S_TESTCONTAINERS_EXECUTION_PLANE = "V2S_TESTCONTAINERS_EXECUTION_PLANE";
 
     public static final Set<String> CROSS_LAYER_KEYS = Set.of(
@@ -34,6 +38,7 @@ public final class RuntimeEnvironmentKeys {
             V2S_BACKEND_ACCEPTANCE_RESULT,
             V2S_BACKEND_ACCEPTANCE_RUN_ID,
             V2S_BACKEND_ACCEPTANCE_SECRET,
+            V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO,
             V2S_CATALOG_TEST_FAULTS,
             V2S_DB_OPERATIONS_EVENTS,
             V2S_DB_OPERATIONS_HMAC_KEY,
@@ -49,6 +54,8 @@ public final class RuntimeEnvironmentKeys {
             V2S_RUNTIME_ENVIRONMENT,
             V2S_TDS_MAX_TRACKED_SESSIONS,
             V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS,
+            V2S_TDS_NODE_ID,
+            V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS,
             V2S_TESTCONTAINERS_EXECUTION_PLANE);
 
     static {

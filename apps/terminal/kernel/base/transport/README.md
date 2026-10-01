@@ -1,45 +1,34 @@
-# `kernel.base.transport` · TER 拓扑传输边界
+# `kernel.base.transport` · TER 通信机制 owner
 
 ## 定位
 
-这是 `owner` 包，负责一个拓扑连接的帧边界、协议 session、连接身份、传输地址解析、受界限的重试/取消与 connection-token 调度。它依赖
-`kernel.base.contracts`、`kernel.base.platform-ports`、`kernel.base.runtime` 和
-`kernel.base.state`，由 `kernel.base.topology` 使用；它不是业务状态 owner，也不是命令路由 owner。
+这是 TER 的通用传输 owner。它持有自己的 runtime commands 和 actor，负责连接生命周期、地址轮转、首选地址、退避与随机量、网络恢复触发、取消和连接资源释放。它不持有终端业务状态，也不解析 TDS 业务协议。
+
+本包依赖 `contracts`、`platform-ports`、`runtime` 与 `state`。它不依赖 `server-config` 或 `terminal-data-client`。
 
 ## 作用与边界
 
-判别式是：凡是“把受约束的拓扑帧安全地送入/送出一个连接”的机制放在本包；凡是“这个命令该由
-本地还是对端执行、哪些 state 可以同步、配对是否成立”的事实与策略留在 topology、runtime 和
-各自业务 owner。`routeContext` 不进入 wire，members 的同步白名单也不由本包推导。
-
-本包不提供认证、多副机、离线队列或永不放弃的业务策略；它提供当前已消费的 ordered address failover、
-sticky preferred address、bounded retry、cancellation、heartbeat 和 connection-token/WebSocket profile 原语，
-拓扑 owner 决定何时使用它们。本批不新增通用 limiter 消费者，也不把未接线的 profile 形态写成已接线能力。heartbeat controller 只负责按配置发出
-序号化 ping、接收 pong 进度与报告超时，不解释业务消息；当前 native/topology 仍拥有实际 wire
-ping/pong 的连接接线。业务语义仍由 topology/runtime owner
-决定。
+- transport 提供通信机制；使用方给出重试参数，报告连接 ready、invalid，并通过 stop 叫停。无限重连由 transport 执行，何时停止由使用方决定。
+- `terminal-data-client` 独占终端凭证、激活/取消激活、TDS 认证首帧、`SESSION_READY`、`PING/PONG`、seq、RTT、心跳超时和业务关闭原因。transport 只收发原始字节和通用连接事件。
+- `start` 可携带协议 owner 提供的 opaque `endpointPathAndQuery`。terminal-data-client 按共享协议构造 `/tdp/{encodedGroupWorkspaceKey}/ws`；transport 只拒绝绝对 URL、origin-relative 双斜杠、反斜杠、fragment 与控制字符，不解释路径业务语义。composition 注入的 network adapter 将其与配置地址的 origin 组合后建连，地址切换时路径保持一致。
+- `server-config` 拥有服务地址和代理配置及代理密码。TER composition 通过其内部网络装配 API 提供 snapshot provider，并注入 `TransportNetworkAdapter`。transport 每次新连接尝试读取当前快照；既不依赖 server-config，也不直接读它的 selector、state 或 persistence。代理密码只短暂到达 network adapter，不进入 selector、日志或 connection event。
+- `TransportConnection.send/subscribe` 是通用原始通道；start/ready/invalid/stop、HTTP 执行、HTTP 地址可用信号与网络变化由 transport command/actor 承载。socket 回调不直接改变 transport 状态或触发重连。HTTP request 对 transport 不透明；它只按调用方给的送达分类与 `safeRetryable` 执行地址尝试和时限，不读响应 body、不解释 status 或业务错误码。
+- topology 可以继续使用既有拓扑协议 primitives；拓扑字段、方向、大小和 fail-closed parser 的 owner 仍是 `contracts/src/foundations/topologyWire.ts`。TDS 业务消息不进入该 parser。
 
 ## 结构
 
 ```text
 src/
-  moduleName.ts       包命名与 kind
-  dependencies.ts     runtime module dependency metadata
-  application/        transport module owner
-  foundations/        地址解析、frame/session、retry/limit 与连接调度纯机制
-  types/              仅本包的 transport 形状
+  application/        runtime module、命令 gateway 和 owner 装配
+  features/           transport commands 与 connection actor
+  foundations/        地址、退避、network bridge、WebSocket 等纯机制
+  types/              通用 transport 形状
   index.ts            唯一公开面
 ```
 
-线上 message 字段、方向、大小和 fail-closed parser 的唯一 owner 是
-`kernel.base.contracts/src/foundations/topologyWire.ts`；transport 通过公开 contracts API 消费它。
-固定端口、base path、心跳、调用超时和重连边界的唯一配置源是
-`kernel-base-contracts/topology-transport.config.json`，TS 代码、runner 和 Android host 的
-运行时入口不得重新声明这些值。
-
 ## 用法
 
-最小公开装配是：
+不需要 TDS 连接的现有 topology 装配仍可创建空配置模块：
 
 ```ts
 import {createTransportModule} from '@catering-v2s/kernel-base-transport'
@@ -47,19 +36,21 @@ import {createTransportModule} from '@catering-v2s/kernel-base-transport'
 const transportModule = createTransportModule()
 ```
 
-地址和连接能力通过公开的 `createTransportAddressSelector`、`runWithBoundedTransportRetry`、
-`createTransportHeartbeat` 与 `createTransportWebSocketController` 暴露；identity client 使用
-contracts 的 `TransportServerConfig` 解析候选地址并把成功地址置为 sticky 首选。当前拓扑只有
-一个真实网络消费者，通用多地址行为由本包 focused tests 证明，不冒充为本批设备行为已验证。
+TER 长连接 composition 按以下方向装配：
 
-模块只声明 transport 的 runtime 依赖；业务装配再把它与 topology module 一起注册。不得从业务包
-直接构造 native listener 或绕过 contracts 解析原始帧。
+```ts
+const transportModule = createTransportModule({networkAdapter})
+const terminalDataClient = createTerminalDataClientModule({transport: transportModule.commandGateway, ...deps})
+```
+
+`networkAdapter.readSnapshot(serverName)` 必须调用 composition 注入的 server-config 网络 provider；`connect` 和 `sendHttp` 只收到本次地址、代理设置与必要的连接/请求参数。`connect` 以地址的 scheme/authority 为 origin，并使用可选 `endpointPathAndQuery` 作为目标 path/query；不得让它覆盖 origin。`commandGateway` 的 start/ready/invalid/stop、`executeHttp` 与 `reportHttpAddressAvailable` 均 dispatch transport owner command。terminal-data-client 解析 HTTP 契约后才决定是否报告某地址可用；transport 只更新该服务的易失首选地址，不知道业务结果类型。client 不读取或持有 server-config snapshot。
+
+本包仍公开 `createTransportAddressSelector`、`runWithBoundedTransportRetry`、`createTransportHeartbeat` 与 `createTransportWebSocketController`，供现有 topology primitives 使用。其机制不能替代终端 client 的业务状态和协议处理。
 
 ## 在这个包上迭代时
 
-1. 先确认新增字段属于 contracts 还是 transport；协议字段必须先改 contracts 类型、parser、golden
-   vectors 和 invariant，再改本包消费。
-2. 不得把 `routeContext`、业务 state、目标角色或原始敏感 payload 写入帧。
-3. 改完至少运行本包 typecheck、owned test 与 `node tools/terminal-contracts/check-static.mjs`；涉及
-   graph 或依赖时同步 package、skeleton graph、invariants 和 census。
-4. 连接关闭必须释放本包拥有的 session 资源；断线重连策略不得偷偷变成业务层的“放弃重试”。
+1. 先确认新增字段属于共享 contracts 还是本包通用 transport；TDS 消息与业务错误码不属于 transport。
+2. transport 只接收通用连接参数和状态信号；不得记录原始 payload、Authorization 或代理密码。
+3. 网络状态订阅先读取种子，读取失败时以首个通知作种子；同值去重，跃迁只派发 transport command；订阅回调不直接重连。
+4. 连接关闭必须释放本包拥有的 socket、订阅和 timer；ready 前的失败轮转到下一个地址，ready 后重连沿用当前有效配置中的首选地址。
+5. 修改后运行本包 typecheck、owned tests 和适用静态门；若修改依赖、包图或 public exports，同步 package、skeleton graph 与 `terminal-invariants.json`。

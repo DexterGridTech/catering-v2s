@@ -1,5 +1,5 @@
 import type {UnknownAction} from '@reduxjs/toolkit';
-import type {StateRuntimeSliceDescriptor} from './slice';
+import type {StateRuntimeSliceDescriptorWithoutResetIntent} from './slice';
 
 export type PartitionedStateKeys<K extends string> = Readonly<Record<K, string>>;
 
@@ -11,5 +11,5 @@ export interface CreatePartitionedActionDispatcherInput<K extends string, TActio
 export interface ToPartitionedStateDescriptorsInput<K extends string, TState extends object> {
   readonly keys: readonly K[];
   readonly stateKeys: PartitionedStateKeys<K>;
-  readonly createDescriptor: (partition: K, stateKey: string) => StateRuntimeSliceDescriptor<TState>;
+  readonly createDescriptor: (partition: K, stateKey: string) => StateRuntimeSliceDescriptorWithoutResetIntent<TState>;
 }

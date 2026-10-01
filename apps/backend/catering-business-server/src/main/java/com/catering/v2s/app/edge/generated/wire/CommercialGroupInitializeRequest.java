@@ -9,6 +9,7 @@ public record CommercialGroupInitializeRequest(
     tools.jackson.databind.JsonNode extensionValues
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<CommercialGroupInitializeRequest> {
     @Override
     public CommercialGroupInitializeRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

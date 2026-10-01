@@ -7,6 +7,7 @@ public record PlatformLoginOtpVerifyRequest(
     String code
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<PlatformLoginOtpVerifyRequest> {
     @Override
     public PlatformLoginOtpVerifyRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

@@ -162,6 +162,11 @@ runtime.applyAuthoritativeSync('kernel.feature.cart', incoming);
 **未注册或未声明 `sync` 的 slice 一律返回 `skipped` 并 warn**，不会被写。
 **本包不决定方向、不发送、不接收、不重传** —— 那些是 `topology` 的事。
 
+`resetIntent` 默认为 `clear`。唯一当前保留者是 `server-config`：owner 用 `retain` 声明后，
+state runtime 仅把其实际持久化 descriptors 对应的值保留在内存与存储中；该 slice 的其它运行期字段回到初始值。
+reset 会先 flush，再删除同一 namespace 中其它已注册键与未注册 orphan；flush、枚举或删除失败时不派发根级 reset。
+调用方不能选择保留哪些 owner。保留例外与完整失败语义见 `doc/platform/terminal-coding-standard.md` 的 TR-09。
+
 ---
 
 ## 6 · 七个非显然的取舍 —— 光看代码得不到

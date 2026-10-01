@@ -29,6 +29,22 @@ export const skeletonGraph = {
     dependencies: ['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.state', 'kernel.base.runtime'],
     devDependencies: [],
   },
+  'kernel.base.server-config': {
+    batch: 2,
+    dependencies: ['kernel.base.contracts', 'kernel.base.runtime', 'kernel.base.state'],
+    devDependencies: ['kernel.base.platform-ports'],
+  },
+  'kernel.base.terminal-data-client': {
+    batch: 2,
+    dependencies: [
+      'kernel.base.contracts',
+      'kernel.base.platform-ports',
+      'kernel.base.runtime',
+      'kernel.base.state',
+      'kernel.base.transport',
+    ],
+    devDependencies: [],
+  },
   'kernel.base.topology': {
     batch: 2,
     dependencies: [

@@ -771,7 +771,9 @@ class BackendAcceptanceTest {
                         .isEmpty(),
                 "BACKEND_ACCEPTANCE_SECOND_CONTEXT_RAN_FLYWAY");
 
-        tdsAcceptanceProcess = TdsAcceptanceProcess.start(POSTGRES);
+        String tdsContractScenario = System.getenv(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO);
+        tdsAcceptanceProcess = TdsAcceptanceProcess.start(
+                POSTGRES, TdsAcceptanceProcess.TdsStartConfiguration.forContractScenario(tdsContractScenario));
         if ("true".equals(System.getenv("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT"))) {
             System.out.printf(
                     "BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT stage=START runId=%s operation=%s%n",
@@ -817,9 +819,10 @@ class BackendAcceptanceTest {
     @TestFactory
     @Order(1)
     Stream<DynamicTest> terminalConnectionTopologyContractProbe() {
+        if (selectedTdsContractScenario() != null) return Stream.empty();
         return Stream.of(DynamicTest.dynamicTest(
                 "terminal.connection.vs1.database-only-configuration-startup",
-                () -> TerminalConnectionContractScenarios.topologyProbe(tdsAcceptanceProcess)));
+                () -> TerminalConnectionContractScenarios.topologyProbe(this, tdsAcceptanceProcess)));
     }
 
     @TestFactory
@@ -873,11 +876,36 @@ class BackendAcceptanceTest {
 
     @TestFactory
     @Order(13)
+    Stream<DynamicTest> terminalConnectionV15ReadinessWithdrawalContracts() {
+        String selectedScenario = selectedTdsContractScenario();
+        if (selectedScenario == null) return Stream.empty();
+        assertEquals(
+                TdsAcceptanceProcess.TdsStartConfiguration.VS15_CONTRACT_SCENARIO_ID,
+                selectedScenario,
+                "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_UNKNOWN");
+        assertEquals(
+                "storeTerminalActivationBusinessPrecedence",
+                System.getenv(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION),
+                "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_OPERATION_INVALID");
+        assertEquals(
+                "true",
+                System.getenv("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT"),
+                "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_TOPOLOGY_PREFLIGHT_REQUIRED");
+        return TerminalConnectionContractScenarios.v15ReadinessWithdrawalScenarios(this, tdsAcceptanceProcess);
+    }
+
+    @TestFactory
+    @Order(14)
     Stream<DynamicTest> terminalConnectionGracefulShutdownContracts() {
         String selectedOperation =
                 System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
         if (!"all".equals(selectedOperation)) return Stream.empty();
         return TerminalConnectionContractScenarios.v9GracefulShutdownScenarios(this, tdsAcceptanceProcess);
+    }
+
+    private static String selectedTdsContractScenario() {
+        String selected = System.getenv(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO);
+        return selected == null || selected.isBlank() ? null : selected;
     }
 
     @TestFactory

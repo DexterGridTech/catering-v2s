@@ -16,22 +16,28 @@ import {
   validateVitestExpectedSingleFailure,
   validateVitestJsonReport,
 } from '../../tools/terminal-shared/vitest-json-report.mjs';
+import {formatUnhandledDiagnostics} from '../../tools/terminal-shared/vitest-unhandled-diagnostics-reporter.mjs';
 
 const prodFile = '/repo/package/test/ordinary.test.ts';
 const devFile = '/repo/package/test/probe.dev.test.tsx';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const runtimeFixtureRoot = path.join(repositoryRoot, 'apps/terminal/.runtime/test-fixtures');
+
+function createRuntimeFixture(t, prefix) {
+  fs.mkdirSync(runtimeFixtureRoot, {recursive: true});
+  const fixtureRoot = fs.mkdtempSync(path.join(runtimeFixtureRoot, prefix));
+  t.after(() => fs.rmSync(fixtureRoot, {recursive: true, force: true}));
+  return fixtureRoot;
+}
 
 function createOwnedTestPackage(t) {
-  const packageRoot = fs.mkdtempSync(path.join(repositoryRoot, 'apps/terminal/.test-runner-fixture-'));
-  t.after(() => fs.rmSync(packageRoot, {recursive: true, force: true}));
+  const packageRoot = createRuntimeFixture(t, 'test-runner-');
   fs.writeFileSync(path.join(packageRoot, 'package.json'), JSON.stringify({name: '@ter/test-runner-fixture'}));
   return packageRoot;
 }
 
 function createAndroidTestModule(t) {
-  const moduleRoot = fs.mkdtempSync(path.join(repositoryRoot, 'apps/terminal/.android-test-census-'));
-  t.after(() => fs.rmSync(moduleRoot, {recursive: true, force: true}));
-  return moduleRoot;
+  return createRuntimeFixture(t, 'android-test-census-');
 }
 
 function runOwnedTestPackage(packageRoot) {
@@ -318,7 +324,37 @@ test('failed Vitest reports retain the failing test and a bounded redacted diagn
   assert.match(summary, /passcode=\[REDACTED\]/);
   assert.match(summary, /\[REDACTED_NUMBER\]/);
   assert.doesNotMatch(summary, /secret|01012345678|stack line/);
-  assert.equal(summarizeVitestFailureReport({success: false, testResults: []}), 'VITEST_FAILURE_DETAILS_UNAVAILABLE');
+  assert.equal(
+    summarizeVitestFailureReport({
+      success: false,
+      numTotalTests: 0,
+      numFailedTests: 0,
+      numPendingTests: 0,
+      testResults: [],
+    }),
+    'VITEST_FAILURE_REPORT_NO_FAILED_ITEMS files=0 success=false total=0 failed=0 pending=0',
+  );
+  assert.equal(summarizeVitestFailureReport({success: false}), 'VITEST_FAILURE_REPORT_SHAPE keys=success');
+});
+
+test('unhandled Vitest diagnostics retain safe location metadata without messages or payloads', () => {
+  const lines = formatUnhandledDiagnostics(
+    [
+      {
+        name: 'Error',
+        code: 'UNDICI_SOCKET_CLOSED',
+        message: 'credentialSecret=fixture-secret',
+        stack:
+          'Error: credentialSecret=fixture-secret\n    at closeSocket (apps/terminal/kernel/base/terminal-data-client/test/undiciNodeTransport.test.ts:231:9)',
+      },
+    ],
+    'failed',
+  );
+  assert.deepEqual(lines, [
+    'VITEST_RUN_END reason=failed unhandled=1',
+    'VITEST_UNHANDLED_ERROR index=0 type=Error code=UNDICI_SOCKET_CLOSED frames=undiciNodeTransport.test.ts:231:9',
+  ]);
+  assert.doesNotMatch(lines.join('\n'), /credentialSecret|fixture-secret|message=/);
 });
 
 test('process readback accepts only the known ps no-match shape for an exact PID query', () => {

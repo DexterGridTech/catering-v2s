@@ -3,7 +3,7 @@
     "schemas": {
       "TerminalActivationRequest": {
         "type": "object",
-        "additionalProperties": false,
+        "additionalProperties": true,
         "required": [
           "activationCode",
           "deviceId",
@@ -76,7 +76,7 @@
       },
       "TerminalActivationCancellationRequest": {
         "type": "object",
-        "additionalProperties": false,
+        "additionalProperties": true,
         "required": [
           "deviceId"
         ],

@@ -329,6 +329,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
       return stateRuntime.getStore().dispatch(action);
     },
     registerResource: resources.register,
+    registerAsyncResource: resources.registerAsync,
   });
 
   const runReset = async (reason: string | undefined, rootCommandId: CommandId): Promise<void> => {
@@ -416,7 +417,16 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
         closeRuntimeSubscriptions();
         // A failed runtime is terminal. Release module-owned resources before
         // an outer owner creates a replacement runtime for recovery.
-        resources.release();
+        try {
+          await resources.releaseAsync();
+        } catch {
+          logger.error({
+            category: 'runtime.lifecycle',
+            event: 'runtime.resource.release-failed',
+            message: 'One or more runtime resources failed to release',
+            data: {status: 'failed'},
+          });
+        }
         logger.error({
           category: 'runtime.lifecycle',
           event: 'runtime.start.failed',

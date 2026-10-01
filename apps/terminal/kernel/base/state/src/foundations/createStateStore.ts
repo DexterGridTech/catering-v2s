@@ -8,6 +8,10 @@ export const resetToOwnerInitialStateActionType = '@@catering-v2s/state/RESET_TO
 export interface CreateStateStoreInput {
   readonly reducers: Readonly<Record<string, Reducer<object, UnknownAction>>>;
   readonly preloadedState: StateRoot;
+  readonly retainedSlices: readonly Readonly<{
+    name: string;
+    retainPersistedState: (initialState: object, currentState: object) => object;
+  }>[];
   readonly environmentMode: EnvironmentMode;
   readonly storeEnhancers?: readonly StoreEnhancer[];
 }
@@ -33,7 +37,17 @@ export const createStateStore = (input: CreateStateStoreInput) => {
       };
     }
     if (action.type === resetToOwnerInitialStateActionType) {
-      return combinedReducer(undefined, action);
+      const resetState = combinedReducer(undefined, action);
+      const retainedState = Object.fromEntries(
+        input.retainedSlices.flatMap(slice => {
+          const currentSlice = state?.[slice.name];
+          const initialSlice = resetState[slice.name];
+          return currentSlice === undefined || initialSlice === undefined
+            ? []
+            : [[slice.name, slice.retainPersistedState(initialSlice, currentSlice)]];
+        }),
+      );
+      return {...resetState, ...retainedState};
     }
     return combinedReducer(state, action);
   };

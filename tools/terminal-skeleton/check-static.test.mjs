@@ -12,6 +12,7 @@ import {
   projectSkeletonGraph,
   moduleNameToPackageName,
   moduleNameToRelativePath,
+  readPackageCensus,
 } from './graph-model.mjs';
 import {runStaticChecks} from './check-static.mjs';
 import {assertNoCompilerOptionsDiagnostics} from '../terminal-shared/typescript-analysis.mjs';
@@ -22,9 +23,16 @@ const spec = readSkeletonSpec(skeletonGraphPath);
 const batchOne = projectSkeletonGraph(spec, 1);
 const batchTwo = projectSkeletonGraph(spec, 2);
 
-assert.equal(Object.keys(spec.graph).length, 29, 'the literal skeleton specification has 29 nodes');
+assert.deepEqual(
+  readPackageCensus(repoRoot)
+    .filter(entry => entry.relativePath !== 'apps/terminal')
+    .map(entry => entry.package.name)
+    .sort(),
+  Object.keys(spec.graph).map(moduleNameToPackageName).sort(),
+  'every TER module package must have exactly one graph node',
+);
 assert.equal(Object.keys(batchOne).length, 13, 'batch one projects 13 nodes');
-assert.equal(Object.keys(batchTwo).length, 29, 'batch two projects 29 nodes');
+assert.equal(Object.keys(batchTwo).length, Object.keys(spec.graph).length);
 assert.equal(
   moduleNameToPackageName('application.android.sample-terminal'),
   '@catering-v2s/application-android-sample-terminal',
@@ -47,11 +55,11 @@ assert.throws(
 
 const help = spawnSync(process.execPath, [checkStaticPath, '--help'], {cwd: repoRoot, encoding: 'utf8'});
 assert.equal(help.status, 0, help.stderr);
-assert.match(help.stdout, /seven TER static rule gates/);
+assert.match(help.stdout, /eight TER static rule gates/);
 
 const realStatic = spawnSync(process.execPath, [checkStaticPath], {cwd: repoRoot, encoding: 'utf8'});
 assert.equal(realStatic.status, 0, realStatic.stderr);
-assert.match(realStatic.stdout, /RULE_GATES=7/);
+assert.match(realStatic.stdout, /RULE_GATES=8/);
 assert.match(realStatic.stdout, /SUPPORT_CHECKS=1/);
 for (const rule of [
   'GRAPH_COMPARISON',
@@ -60,6 +68,7 @@ for (const rule of [
   'DEPENDENCY_DECLARATION_COMPLETENESS',
   'RUNTIME_DEPENDENCY_CONTRACT',
   'TR01_REDUCER_BOUNDARY',
+  'STATE_RESET_RETENTION_ONLY',
   'KERNEL_PLATFORM_INDEPENDENCE',
 ]) {
   assert.match(realStatic.stdout, new RegExp(`RULE_${rule}=PASS`));
@@ -74,7 +83,22 @@ try {
       const relative = path.relative(repoRoot, source);
       if (!relative) return true;
       const segments = relative.split(path.sep);
-      const excludedSegments = new Set(['.git', '.runtime', 'node_modules', '.turbo', '.expo', 'build', 'dist']);
+      const excludedSegments = new Set([
+        '.git',
+        '.runtime',
+        '.yarn',
+        '.cache',
+        '.gradle',
+        '.kotlin',
+        'node_modules',
+        '.turbo',
+        '.expo',
+        '.vite',
+        '.vite-temp',
+        'build',
+        'coverage',
+        'dist',
+      ]);
       return !segments.some(segment => excludedSegments.has(segment));
     },
   });
@@ -203,6 +227,70 @@ try {
       for (const change of originals) fs.writeFileSync(change.filePath, change.original);
     }
   }
+
+  const secondRetainerPath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/display-context/src/features/slices/displayRole.ts',
+  );
+  withTextMutation(
+    secondRetainerPath,
+    source =>
+      `${source}\n// red fixture: a non-config owner must not retain state on reset\ndefineStateRuntimeSlice({resetIntent: 'retain'});\n`,
+    report => {
+      assertGateVector(report, ['state-reset-retention-only']);
+      assert.match(gate(report, 'state-reset-retention-only').error, /SERVER_CONFIG_RESET_RETENTION_OWNER_FORBIDDEN/);
+      console.log('TERMINAL_SKELETON_RED_SECOND_RESET_RETENTION_OWNER=PASS');
+    },
+  );
+  const restoredRetentionReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  assertGateVector(restoredRetentionReport);
+  console.log('TERMINAL_SKELETON_RED_SECOND_RESET_RETENTION_OWNER_RESTORE=PASS');
+
+  withTextMutation(
+    secondRetainerPath,
+    source =>
+      `${source}\n// red fixture: dynamic retention declarations cannot evade owner enforcement\ndefineStateRuntimeSlice({['resetIntent']: 'retain'});\n`,
+    report => {
+      assertGateVector(report, ['state-reset-retention-only']);
+      assert.match(gate(report, 'state-reset-retention-only').error, /SERVER_CONFIG_RESET_RETENTION_POLICY_DYNAMIC/);
+      console.log('TERMINAL_SKELETON_RED_DYNAMIC_RESET_RETENTION_POLICY=PASS');
+    },
+  );
+  const restoredDynamicRetentionReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  assertGateVector(restoredDynamicRetentionReport);
+  console.log('TERMINAL_SKELETON_RED_DYNAMIC_RESET_RETENTION_POLICY_RESTORE=PASS');
+
+  withTextMutation(
+    secondRetainerPath,
+    source =>
+      `${source}\nimport {defineStateRuntimeSlice as makeStateSlice} from '@catering-v2s/kernel-base-state';\nmakeStateSlice({resetIntent: 'retain'});\n`,
+    report => {
+      assertGateVector(report, ['state-reset-retention-only']);
+      assert.match(gate(report, 'state-reset-retention-only').error, /SERVER_CONFIG_RESET_RETENTION_OWNER_FORBIDDEN/);
+      console.log('TERMINAL_SKELETON_RED_ALIASED_RESET_RETENTION_OWNER=PASS');
+    },
+  );
+  const restoredAliasedRetentionReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  assertGateVector(restoredAliasedRetentionReport);
+  console.log('TERMINAL_SKELETON_RED_ALIASED_RESET_RETENTION_OWNER_RESTORE=PASS');
+
+  const resetIntentTypePath = path.join(fixtureRoot, 'apps/terminal/kernel/base/state/src/types/slice.ts');
+  withTextMutation(
+    resetIntentTypePath,
+    source =>
+      source.replace(
+        'readonly resetIntent?: StateResetIntent;',
+        "readonly resetIntent?: StateResetIntent | 'unexpected-retention-mode';",
+      ),
+    report => {
+      assertGateVector(report, ['graph-comparison']);
+      assert.match(gate(report, 'graph-comparison').error, /closed union consumer mismatch/);
+      console.log('TERMINAL_SKELETON_RED_RESET_INTENT_UNION_WIDEN=PASS');
+    },
+  );
+  const restoredResetIntentUnionReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  assertGateVector(restoredResetIntentUnionReport);
+  console.log('TERMINAL_SKELETON_RED_RESET_INTENT_UNION_WIDEN_RESTORE=PASS');
 
   const malformedFixturePath = path.join(fixtureRoot, 'apps/terminal/kernel/base/contracts/src/foundations/time.ts');
   const malformedFixtureOriginal = fs.readFileSync(malformedFixturePath, 'utf8');
@@ -405,6 +493,23 @@ try {
   );
 
   const fixtureGraphPath = path.join(fixtureRoot, 'apps/terminal/skeleton-graph.ts');
+  withTextMutation(
+    fixtureGraphPath,
+    source => {
+      const entry = /  'kernel\.base\.server-config': \{[\s\S]*?\n  \},\n/;
+      assert.match(source, entry, 'the real server-config package must have a graph entry');
+      return source.replace(entry, '');
+    },
+    report => {
+      assertGateVector(report, ['graph-comparison', 'state-reset-retention-only']);
+      assert.match(gate(report, 'graph-comparison').error, /server-config/);
+      assert.match(
+        gate(report, 'state-reset-retention-only').error,
+        /SERVER_CONFIG_RESET_RETENTION_OWNER_COUNT expected=1 actual=0/,
+      );
+      console.log('TERMINAL_SKELETON_RED_OMITTED_REAL_PACKAGE=PASS');
+    },
+  );
   const displayModuleNamePath = path.join(fixtureRoot, 'apps/terminal/kernel/base/display-context/src/moduleName.ts');
   const displayModuleNameSource = fs.readFileSync(displayModuleNamePath, 'utf8');
   const displayGraphSource = fs.readFileSync(fixtureGraphPath, 'utf8');

@@ -12,6 +12,7 @@ public record OrganizationNodeUpdateRequest(
     tools.jackson.databind.JsonNode extensionValues
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<OrganizationNodeUpdateRequest> {
     @Override
     public OrganizationNodeUpdateRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

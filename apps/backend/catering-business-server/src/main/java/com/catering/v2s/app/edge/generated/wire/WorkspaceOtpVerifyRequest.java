@@ -7,6 +7,7 @@ public record WorkspaceOtpVerifyRequest(
     String code
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<WorkspaceOtpVerifyRequest> {
     @Override
     public WorkspaceOtpVerifyRequest deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

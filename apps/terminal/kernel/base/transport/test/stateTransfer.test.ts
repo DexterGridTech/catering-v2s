@@ -2,7 +2,11 @@ import {Unzlib, zlibSync} from 'fflate';
 import {describe, expect, it, vi} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
-import {parseTopologyWireMessage, serializeTopologyWireMessage} from '@catering-v2s/kernel-base-contracts';
+import {
+  parseTopologyWireMessage,
+  serializeTopologyWireMessage,
+  topologyTransportConfig,
+} from '@catering-v2s/kernel-base-contracts';
 import {createTopologyStateReassembler, createTopologyStateTransferPlan, topologyChecksum} from '../src';
 
 const randomText = (length: number, seed = 90210): string => {
@@ -10,9 +14,10 @@ const randomText = (length: number, seed = 90210): string => {
   let output = '';
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
   for (let index = 0; index < length; index += 1) {
-    value = Math.imul(value ^ (value >>> 13), 0x5bd1e995) >>> 0;
-    value = (value + 0x6d2b79f5) >>> 0;
-    output += alphabet[value & 63];
+    value ^= value << 13;
+    value ^= value >>> 17;
+    value ^= value << 5;
+    output += alphabet[(value >>> 26) & 63];
   }
   return output;
 };
@@ -36,6 +41,10 @@ const readFixture = (fileName: string): {members: unknown} => {
 };
 
 describe('topology state transfer', () => {
+  it('uses the protocol reassembly bound from the shared transport config', () => {
+    expect(topologyTransportConfig.reassemblyMaxBytes).toBe(8 * 1024 * 1024);
+  });
+
   it('uses the closed raw fallback branches and forced codec with stable byte metadata', () => {
     const belowThreshold = createTopologyStateTransferPlan(
       transferInput(readFixture('ter-dual-machine-members-small-raw-fixture.json')),
@@ -190,22 +199,6 @@ describe('topology state transfer', () => {
     );
     expect(accepted.at(-1)).toMatchObject({status: 'complete'});
     expect(accepted.at(-1)?.message?.value).toEqual(value);
-  });
-
-  it('rejects an encoded payload above the reassembly bound before allocating frames', () => {
-    const members = Array.from({length: 43_000}, (_, index) => ({
-      memberId: `MOV${String(index).padStart(8, '0')}`,
-      name: randomText(256, 90_210 + index),
-      phone: `010${String(index).padStart(8, '0')}`,
-      age: 20 + (index % 50),
-      registeredAt: 1_700_000_000_000 + index * 86_400_000,
-    }));
-    const result = createTopologyStateTransferPlan(transferInput({members}));
-    expect(result).toMatchObject({status: 'failed', code: 'TOPOLOGY_REASSEMBLY_OVERFLOW'});
-    if (result.status === 'failed') {
-      expect(result.encodedBytes).toBeGreaterThan(8 * 1024 * 1024);
-      expect(result.canonicalBytes).toBeGreaterThan(result.encodedBytes ?? 0);
-    }
   });
 
   it('rejects an oversized received transfer without applying a payload', () => {

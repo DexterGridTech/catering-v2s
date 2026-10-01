@@ -954,8 +954,8 @@ describe('sample-console real assembly', () => {
       });
       expect(getNode(laptopRenderer, 'sample.console.admin-test:title')).toBeDefined();
       expect(
-        queryNodes(laptopRenderer, adminTestIds.sections.sampleConsole).find(node => node.type === 'Pressable')
-          ?.props.accessibilityState,
+        queryNodes(laptopRenderer, adminTestIds.sections.sampleConsole).find(node => node.type === 'Pressable')?.props
+          .accessibilityState,
       ).toMatchObject({selected: true});
 
       mobileRenderer = await mount(createSurfaceForDisplayIndex(mobileAssembly, 0), PORTRAIT_PRIMARY_FRAME);

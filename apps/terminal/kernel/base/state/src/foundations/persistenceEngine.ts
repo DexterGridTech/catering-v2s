@@ -114,8 +114,8 @@ export class PersistenceEngine {
     return this.#queue;
   }
 
-  reset(dispatchReset: () => void): Promise<PersistenceOperationResult> {
-    this.#queue = this.#queue.catch(() => undefined).then(() => this.#resetNow(dispatchReset));
+  reset(getCurrentState: () => StateRoot, dispatchReset: () => void): Promise<PersistenceOperationResult> {
+    this.#queue = this.#queue.catch(() => undefined).then(() => this.#resetNow(getCurrentState, dispatchReset));
     return this.#queue;
   }
 
@@ -434,9 +434,18 @@ export class PersistenceEngine {
     };
   }
 
-  async #resetNow(dispatchReset: () => void): Promise<PersistenceOperationResult> {
+  async #resetNow(getCurrentState: () => StateRoot, dispatchReset: () => void): Promise<PersistenceOperationResult> {
+    const flushed = await this.#flushNow(getCurrentState(), 'all');
+    if (flushed.status === 'failed') return flushed;
+
+    const retainedEntries = this.#entries.filter(entry =>
+      this.#slices.some(slice => slice.name === entry.sliceName && slice.resetIntent === 'retain'),
+    );
+    const isRetainedKey = (key: string): boolean =>
+      retainedEntries.some(entry => key === entry.key || (entry.prefix !== undefined && key.startsWith(entry.prefix)));
     const removedKeys: string[] = [];
     const failures: PersistenceFailure[] = [];
+    const retainedKeysByStorage = new Map<PersistenceStorageKind, Set<string>>();
     for (const storageKind of storageKinds) {
       const listed = await this.#storagePorts[storageKind].listKeys({});
       if (!isSucceeded(listed)) {
@@ -444,7 +453,9 @@ export class PersistenceEngine {
         continue;
       }
       const prefix = createPersistenceNamespacePrefix(this.#persistenceKey);
-      for (const key of listed.value.filter(candidate => candidate.startsWith(prefix)).sort()) {
+      const namespacedKeys = listed.value.filter(candidate => candidate.startsWith(prefix));
+      retainedKeysByStorage.set(storageKind, new Set(namespacedKeys.filter(isRetainedKey)));
+      for (const key of namespacedKeys.filter(candidate => !isRetainedKey(candidate)).sort()) {
         const failure = await this.#removeKey('reset', storageKind, key);
         if (failure === undefined) {
           removedKeys.push(key);
@@ -467,8 +478,10 @@ export class PersistenceEngine {
     }
     dispatchReset();
     for (const storageKind of storageKinds) {
+      const retainedKeys = retainedKeysByStorage.get(storageKind) ?? new Set<string>();
+      const previousCache = this.#storageState.get(storageKind)?.cache ?? new Map<string, string>();
       this.#storageState.set(storageKind, {
-        cache: new Map<string, string>(),
+        cache: new Map([...previousCache].filter(([key]) => retainedKeys.has(key))),
         dirty: new Set<string>(),
         blocked: false,
         rebaselineAttempted: false,

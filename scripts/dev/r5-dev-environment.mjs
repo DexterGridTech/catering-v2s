@@ -37,10 +37,16 @@ function effectiveEnvironment(env, tdsCapacity) {
     V2S_DEV_DATABASE_URL: env.V2S_DEV_DATABASE_URL ?? `jdbc:postgresql://127.0.0.1:5432/${expectedDatabase}`,
     V2S_DEV_REMOTE_HTTP_PORT: env.V2S_DEV_REMOTE_HTTP_PORT ?? "8080",
     V2S_DEV_REMOTE_ASSET_PORT: env.V2S_DEV_REMOTE_ASSET_PORT ?? "19000",
-    V2S_DEV_REMOTE_TDS_PORT: env.V2S_DEV_REMOTE_TDS_PORT ?? "18083",
+    V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT: env.V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT ?? "18083",
+    V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT: env.V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT ?? "18087",
+    V2S_DEV_REMOTE_TDS_A_PORT: env.V2S_DEV_REMOTE_TDS_A_PORT ?? "18084",
+    V2S_DEV_REMOTE_TDS_B_PORT: env.V2S_DEV_REMOTE_TDS_B_PORT ?? "18085",
+    V2S_DEV_REMOTE_TDS_C_PORT: env.V2S_DEV_REMOTE_TDS_C_PORT ?? "18086",
     V2S_DEV_ASSET_ROOT: env.V2S_DEV_ASSET_ROOT ?? "s3://catering-v2s-r5-assets",
     V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS: tdsCapacity.maxUnauthenticatedConnections,
     V2S_TDS_MAX_TRACKED_SESSIONS: tdsCapacity.maxTrackedSessions,
+    V2S_TDS_NODE_ID: env.V2S_TDS_NODE_ID ?? "tds",
+    V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS: env.V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS ?? "3000",
   };
 }
 function validate(input, mode) {
@@ -61,13 +67,22 @@ function validate(input, mode) {
   if (parsedDatabaseUrl.hostname === "127.0.0.1" && [25432, 25433, 25434, 25435].includes(Number(parsedDatabaseUrl.port))) fail("R5_DEV_LEGACY_POSTGRES_TUNNEL_FORBIDDEN");
   validPort(env.V2S_DEV_REMOTE_HTTP_PORT, "R5_DEV_REMOTE_HTTP_PORT_INVALID");
   validPort(env.V2S_DEV_REMOTE_ASSET_PORT, "R5_DEV_REMOTE_ASSET_PORT_INVALID");
-  validPort(env.V2S_DEV_REMOTE_TDS_PORT, "R5_DEV_REMOTE_TDS_PORT_INVALID");
-  if (new Set([env.V2S_DEV_REMOTE_HTTP_PORT, env.V2S_DEV_REMOTE_ASSET_PORT, env.V2S_DEV_REMOTE_TDS_PORT]).size !== 3) fail("R5_DEV_REMOTE_PORT_COLLISION");
+  const remoteTdsPorts = [
+    env.V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT,
+    env.V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT,
+    env.V2S_DEV_REMOTE_TDS_A_PORT,
+    env.V2S_DEV_REMOTE_TDS_B_PORT,
+    env.V2S_DEV_REMOTE_TDS_C_PORT,
+  ].map(value => validPort(value, "R5_DEV_REMOTE_TDS_PORT_INVALID"));
+  if (new Set([env.V2S_DEV_REMOTE_HTTP_PORT, env.V2S_DEV_REMOTE_ASSET_PORT, ...remoteTdsPorts]).size !== 7) fail("R5_DEV_REMOTE_PORT_COLLISION");
   if (mode === "start") {
     for (const key of ["V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS", "V2S_TDS_MAX_TRACKED_SESSIONS"]) {
       const value = env[key];
       if (!/^[1-9][0-9]{0,9}$/.test(String(value ?? "")) || Number(value) > 2147483647) fail(`R5_DEV_${key}_REQUIRED_OR_INVALID`);
     }
+    if (typeof env.V2S_TDS_NODE_ID !== "string" || !/^[A-Za-z0-9._-]{1,126}$/.test(env.V2S_TDS_NODE_ID)) fail("R5_DEV_TDS_NODE_ID_INVALID");
+    const withdrawalWait = env.V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS;
+    if (!/^[1-9][0-9]{0,4}$/.test(String(withdrawalWait ?? "")) || Number(withdrawalWait) < 2000 || Number(withdrawalWait) > 10000) fail("R5_DEV_TDS_READINESS_WITHDRAWAL_WAIT_INVALID");
   }
   const assetRoot = env.V2S_DEV_ASSET_ROOT ?? "";
   if (!assetRoot || productionLike(assetRoot)) fail("R5_DEV_ASSET_ROOT_INVALID");
@@ -87,10 +102,16 @@ function main() {
     const valid = { V2S_DEV_NAMESPACE: "v2s-dev-alpha", V2S_DEV_PROFILE: "r5-full", V2S_RUNTIME_ENVIRONMENT: "non-production", V2S_DEV_REMOTE_HOST: "catering-remote-dev", V2S_DEV_DATABASE_URL: "jdbc:postgresql://catering-remote-dev/catering_v2s_dev_alpha", V2S_DEV_ASSET_ROOT: "s3://dev-assets", ...Object.fromEntries(requiredSecrets.map((name) => [name, "test-only"])) };
     Object.assign(valid, hostTrustEnvironment(valid));
     validate(valid, "seed");
+    let nodeIdRed = false;
+    try { validate({ ...valid, V2S_TDS_NODE_ID: " " }, "start"); } catch (error) { nodeIdRed = error.code === "R5_DEV_TDS_NODE_ID_INVALID"; }
+    if (!nodeIdRed) fail("R5_DEV_TDS_NODE_ID_SELF_TEST_RED_NOT_DETECTED");
+    let withdrawalWaitRed = false;
+    try { validate({ ...valid, V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS: "1999" }, "start"); } catch (error) { withdrawalWaitRed = error.code === "R5_DEV_TDS_READINESS_WITHDRAWAL_WAIT_INVALID"; }
+    if (!withdrawalWaitRed) fail("R5_DEV_TDS_READINESS_WITHDRAWAL_WAIT_SELF_TEST_RED_NOT_DETECTED");
     let red = false;
     try { validate({ ...valid, V2S_DEV_REMOTE_HOST_SHA256: "0".repeat(64) }, "start"); } catch (error) { red = error.code === "R5_DEV_REMOTE_HOST_BINDING_INVALID"; }
     if (!red) fail("R5_DEV_ENVIRONMENT_SELF_TEST_RED_NOT_DETECTED");
-    process.stdout.write("R5_DEV_ENVIRONMENT_SELF_TEST=PASS; remote-host-binding=RED(R5_DEV_REMOTE_HOST_BINDING_INVALID)\n");
+    process.stdout.write("R5_DEV_ENVIRONMENT_SELF_TEST=PASS; remote-host-binding=RED(R5_DEV_REMOTE_HOST_BINDING_INVALID); tds-node-id=RED(R5_DEV_TDS_NODE_ID_INVALID); tds-withdrawal-wait=RED(R5_DEV_TDS_READINESS_WITHDRAWAL_WAIT_INVALID)\n");
     return;
   }
   const result = validate(process.env, mode === "check" ? "start" : mode);

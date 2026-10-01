@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "terminal-client-generation-policy",
+  "face": "terminal",
+  "operationCatalog": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
+  "openApiPathsRoot": "contracts/openapi/paths",
+  "canonicalSchemas": "contracts/openapi-source/terminal-binding.schemas.json",
+  "targets": [
+    {
+      "targetPackage": "apps/terminal/kernel/base/terminal-data-client",
+      "tags": ["terminal-binding"],
+      "includeOperationIds": [],
+      "excludeOperationIds": [],
+      "output": "apps/terminal/kernel/base/terminal-data-client/src/generated/terminalApi.ts"
+    }
+  ]
+}

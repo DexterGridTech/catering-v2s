@@ -186,24 +186,33 @@ export const createCommandActorDispatcher = (input: ActorDispatcherDependencies)
             childPayload: TChildPayload,
             childOptions: ActorDispatchOptions = {},
           ): Promise<CommandDispatchResult> => {
-            const childParent = childOptions.parentCommandId ?? command.commandId;
+            const parentCommandActive = input.getCommandChain(command.commandId) !== undefined;
+            const childParent = parentCommandActive ? (childOptions.parentCommandId ?? command.commandId) : undefined;
             if (childOptions.parentCommandId !== undefined && childOptions.parentCommandId !== command.commandId) {
               return Promise.reject(new Error('Actor child parentCommandId must equal current commandId'));
             }
             if (
+              parentCommandActive &&
               command.requestId !== null &&
               childOptions.requestId !== undefined &&
               childOptions.requestId !== command.requestId
             ) {
               return Promise.reject(new Error('Actor child requestId must inherit the current requestId'));
             }
-            const childRequestId = childOptions.requestId ?? command.requestId ?? undefined;
+            // Timers and transport callbacks can outlive the actor command that
+            // registered them. Dispatch those events as new roots instead of
+            // attaching them to a command chain that has already been released.
+            const childRequestId =
+              childOptions.requestId ?? (parentCommandActive ? (command.requestId ?? undefined) : undefined);
             const childRouteContext =
-              childOptions.routeContext === undefined ? command.routeContext : childOptions.routeContext;
-            const childAncestors = freezeList([
-              ...actorAncestors,
-              Object.freeze({actorKey, commandName: command.commandName}),
-            ]);
+              childOptions.routeContext === undefined
+                ? parentCommandActive
+                  ? command.routeContext
+                  : null
+                : childOptions.routeContext;
+            const childAncestors = parentCommandActive
+              ? freezeList([...actorAncestors, Object.freeze({actorKey, commandName: command.commandName})])
+              : [];
             return input.dispatchInternal({
               definition: childDefinition,
               payload: childPayload,

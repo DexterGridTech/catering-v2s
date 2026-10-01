@@ -7,6 +7,7 @@ public record StoreContractItem(
     String name
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<StoreContractItem> {
     @Override
     public StoreContractItem deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)

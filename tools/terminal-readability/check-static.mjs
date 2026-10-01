@@ -21,6 +21,7 @@ export const VOCABULARY = Object.freeze([
   'assembly',
   'theme',
   'vendor',
+  'generated',
   'testing',
 ]);
 

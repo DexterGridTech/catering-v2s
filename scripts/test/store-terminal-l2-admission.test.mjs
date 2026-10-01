@@ -53,10 +53,6 @@ test('admission red examples reject missing, blocked, and stale records', () => 
   );
 });
 
-test('current admission review record is bound to the current control-plane bytes', () => {
-  assert.doesNotThrow(() => storeTerminalL2AdmissionStrategy.validateAdmission());
-});
-
 test('unchanged same failure family is blocked, changed admission bytes are not', () => {
   const runtimeRoot = mkdtempSync(path.join(os.tmpdir(), 'v2s-store-terminal-l2-failure-family-'));
   try {

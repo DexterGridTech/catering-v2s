@@ -352,9 +352,13 @@ owner 自己在 reducer 里接"，只是把同一个外部写入拆成二十份�
 1. **写侧只有同步落地这一条路径**。恢复（hydrate）不在例外内 ——
    它必须走 `preloadedState` 在 store 构造时注入，store 对外可见时状态已就位，
    **不存在运行期的外部写**；
-2. **重置（reset）不在例外内**，因为它根本不是外部写入：
-   根级 reset 把 `undefined` 交给 combineReducers，
-   **每个 owner 的 reducer 各自返回自己的初始值**，没有任何外来数据被注入；
+2. **根级重置（reset）默认清除各 owner 状态**：把 `undefined` 交给 combineReducers，
+   **每个 owner 的 reducer 各自返回自己的初始值**。唯一的窄例外是已接受的 D-16：
+   `server-config` 可以在自己的持久化 slice 上声明 `resetIntent: 'retain'`，只保留其
+   `persistence` descriptor 实际会落盘的字段与记录；不声明为持久化的运行期状态仍回到初始值。
+   state runtime 必须先 flush 当前状态，再按这组 descriptor 保留对应存储键并删除其它 namespace 键
+   （包括未注册 orphan）；失败时不得派发根级 reset。发起方不得选择或扩大保留范围，除
+   `server-config` 外其它 owner 仍清空；不得增加第二份配置或凭证存储。
 3. **只能写声明了 `sync` 描述符的 slice**。没声明的 slice 即使出现在载荷里也必须跳过并记录原因；
 4. **不得导出"写任意 slice"的 API**；读侧不得导出**为读取具名他包 slice 提供的便捷访问器**。
 
@@ -974,6 +978,7 @@ screen 的 `containerKey` 在 definition 里（`primaryRootContainer` / `seconda
 | `assembly/` | 装配：把 module、catalog、surface 拼起来 | 业务逻辑 |
 | `theme/` | 设计 token | 组件 |
 | `vendor/` | 外部代码的仓内拷贝，原样保留不改写 | 自己写的代码 |
+| `generated/` | 仓内生成器的输出；必须能追溯到唯一生产者与输入 | 手工维护的业务逻辑 |
 | `testing/` | 把生产设施暴露给测试的逃生口 | 测试本身（去 `test/`）、生产逻辑 |
 
 `features/` 的直接子目录只允许 `actors/`、`commands/`、`slices/`、`variables/`；更深层目录由所属

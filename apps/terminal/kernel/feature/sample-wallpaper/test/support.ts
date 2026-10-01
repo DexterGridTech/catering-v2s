@@ -1,5 +1,6 @@
 import {
   createPlatformPorts,
+  unavailableDevicePort,
   type LogEvent,
   type PortResult,
   type StateStoragePort,
@@ -84,7 +85,7 @@ export const createTestRuntime = (modules: readonly RuntimeModule[], plainStorag
         logger: createLoggerBinding(),
         persistKv: plainStorage,
         persistSecure: createMemoryStorageForTest(),
-        device: {} as never,
+        device: unavailableDevicePort,
         appControl: {} as never,
         script: {} as never,
         connector: {} as never,

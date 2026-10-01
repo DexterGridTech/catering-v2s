@@ -76,6 +76,7 @@ export const createExampleRegistration = (name = 'example.state'): StateRuntimeS
     name,
     reducer: exampleReducer,
     persistIntent: 'owner-only',
+    resetIntent: 'clear',
     persistence: [
       {
         kind: 'field',

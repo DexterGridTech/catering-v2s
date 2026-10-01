@@ -7,6 +7,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import ts from 'typescript';
 import {findJavaSelectStarViolations, findJavaSqlConstructionUnknowns} from './sql-shape.mjs';
+import {check as checkTerminalClientApi} from '../../scripts/generate/terminal-client-api.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const skip = new Set(['.git', 'node_modules', '.gradle', 'build', 'dist']);
@@ -1072,6 +1073,41 @@ function frontend(base = root) {
     operation.consumerFaces.some(face => frontendGeneratedFaces.has(face)),
   );
   assertOperationsEqual(registryOperations, generated, 'R5_FRONTEND_GENERATED_FACE_DRIFT');
+  const terminalRegistryOperations = allRegistryOperations.filter(operation => operation.consumerFaces.includes('terminal'));
+  const terminalRegistryIds = terminalRegistryOperations.map(operation => operation.operationId).sort();
+  const terminalIdsMarker = 'export const TERMINAL_OPERATION_IDS = ';
+  const terminalClientApi = checkTerminalClientApi(base);
+  if (!terminalClientApi.outputs.length) fail('R5_TERMINAL_GENERATED_FACE_FILE_MISSING');
+  const terminalGeneratedIds = [];
+  const sameIds = (left, right) => left.length === right.length && left.every((value, index) => value === right[index]);
+  for (const output of terminalClientApi.outputs) {
+    assertFile(output.output, 'R5_TERMINAL_GENERATED_FACE_FILE_MISSING', base);
+    const terminalGeneratedSource = read(output.output, base);
+    const terminalIdsStart = terminalGeneratedSource.indexOf(terminalIdsMarker);
+    if (terminalIdsStart < 0) fail('R5_TERMINAL_GENERATED_FACE_SYMBOL_MISSING', output.output);
+    const terminalIdsRemainder = terminalGeneratedSource.slice(terminalIdsStart + terminalIdsMarker.length);
+    const terminalIdsEnd = terminalIdsRemainder.indexOf('] as const;');
+    if (terminalIdsEnd < 0) fail('R5_TERMINAL_GENERATED_FACE_SYMBOL_INVALID', output.output);
+    let outputIds;
+    try {
+      outputIds = JSON.parse(terminalIdsRemainder.slice(0, terminalIdsEnd + 1));
+    } catch {
+      fail('R5_TERMINAL_GENERATED_FACE_SYMBOL_INVALID', output.output);
+    }
+    if (!sameIds([...outputIds].sort(), [...output.operationIds].sort()))
+      fail('R5_TERMINAL_GENERATED_FACE_DRIFT', output.output);
+    terminalGeneratedIds.push(...outputIds);
+  }
+  const sortedGeneratedIds = [...terminalGeneratedIds].sort();
+  if (new Set(sortedGeneratedIds).size !== sortedGeneratedIds.length)
+    fail('R5_TERMINAL_GENERATED_FACE_DUPLICATE_ASSIGNMENT');
+  if (!sameIds(terminalRegistryIds, sortedGeneratedIds))
+    fail('R5_TERMINAL_GENERATED_FACE_DRIFT');
+  const terminalProjection = terminalClientApi.operationIds;
+  const sortedTerminalProjection = [...terminalProjection].sort();
+  if (!sameIds(terminalRegistryIds, [...sortedTerminalProjection].sort()))
+    fail('R5_TERMINAL_POLICY_EDGE_FACE_DRIFT');
+  process.stdout.write('R5_TERMINAL_GENERATED_FACE_RECONCILIATION=PASS\n');
   const terminalOnlyOperation = allRegistryOperations.find(operation =>
     operation.consumerFaces.length > 0 && operation.consumerFaces.every(face => face === 'terminal'),
   );
@@ -1301,6 +1337,12 @@ function openapi(base = root) {
   });
   if (result.status !== 0) fail('R4_OPENAPI_GENERATED_DRIFT', (result.stdout || result.stderr).trim());
   generatedRouteOperations(base);
+  const terminalApi = spawnSync(process.execPath, [path.join(base, 'scripts/generate/terminal-client-api.mjs'), '--check'], {
+    cwd: base,
+    encoding: 'utf8',
+  });
+  if (terminalApi.status !== 0)
+    fail('R5_TERMINAL_CLIENT_API_GENERATED_DRIFT', (terminalApi.stdout || terminalApi.stderr).trim());
   process.stdout.write('R5_OPENAPI_CONTRACTS=PASS\n');
 }
 function traceability(base = root) {
@@ -1560,7 +1602,7 @@ function runtimeEnvironmentKeys(base = root) {
     policy?.schemaVersion !== 1 ||
     policy?.kind !== 'runtime-environment-keys' ||
     !Array.isArray(keys) ||
-    keys.length !== 20 ||
+    keys.length !== 23 ||
     new Set(keys).size !== keys.length ||
     keys.some(key => typeof key !== 'string' || !/^V2S_[A-Z0-9_]+$/.test(key))
   ) {
@@ -1568,15 +1610,15 @@ function runtimeEnvironmentKeys(base = root) {
   }
   const javaSource = read(javaPath, base);
   const javaDeclarations = [
-    ...javaSource.matchAll(/public static final String (V2S_[A-Z0-9_]+) = "(V2S_[A-Z0-9_]+)";/g),
+    ...javaSource.matchAll(/public static final String (V2S_[A-Z0-9_]+) =\s*"(V2S_[A-Z0-9_]+)";/g),
   ];
   const javaNames = new Set(javaDeclarations.map(match => match[1]));
   const javaValues = new Set(javaDeclarations.map(match => match[2]));
   const keySet = new Set(keys);
   if (
-    javaDeclarations.length !== 20 ||
-    javaNames.size !== 20 ||
-    javaValues.size !== 20 ||
+    javaDeclarations.length !== 23 ||
+    javaNames.size !== 23 ||
+    javaValues.size !== 23 ||
     [...javaNames].some(name => !keySet.has(name)) ||
     [...javaValues].some(value => !keySet.has(value))
   ) {
@@ -1588,16 +1630,24 @@ function runtimeEnvironmentKeys(base = root) {
     /@ConfigurationProperties\s*\(\s*"v2s\.tds"\s*\)/.test(tdsPropertiesSource) &&
     /public\s+record\s+TdsRuntimeProperties\s*\(/.test(tdsPropertiesSource) &&
     /\bString\s+maxUnauthenticatedConnections\b/.test(tdsPropertiesSource) &&
-    /\bString\s+maxTrackedSessions\b/.test(tdsPropertiesSource);
+    /\bString\s+maxTrackedSessions\b/.test(tdsPropertiesSource) &&
+    /\bString\s+nodeId\b/.test(tdsPropertiesSource) &&
+    /\blong\s+readinessWithdrawalWaitMs\b/.test(tdsPropertiesSource);
   const tdsSettingsClosed =
     /@EnableConfigurationProperties\s*\(\s*TdsRuntimeProperties\.class\s*\)/.test(tdsSettingsSource) &&
     /TdsRuntimeSettings\.from\s*\(\s*properties\.maxUnauthenticatedConnections\(\)\s*,\s*properties\.maxTrackedSessions\(\)/.test(
       tdsSettingsSource,
-    );
+    ) &&
+    /properties\.nodeId\(\)/.test(tdsSettingsSource) &&
+    /properties\.readinessWithdrawalWaitMs\(\)/.test(tdsSettingsSource);
   if (!tdsPropertiesClosed || !tdsSettingsClosed) {
     const missingKey = !/\bString\s+maxUnauthenticatedConnections\b/.test(tdsPropertiesSource)
       ? 'V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS'
-      : 'V2S_TDS_MAX_TRACKED_SESSIONS';
+      : !/\bString\s+maxTrackedSessions\b/.test(tdsPropertiesSource)
+        ? 'V2S_TDS_MAX_TRACKED_SESSIONS'
+        : !/\bString\s+nodeId\b/.test(tdsPropertiesSource)
+          ? 'V2S_TDS_NODE_ID'
+          : 'V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS';
     fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE', missingKey);
   }
   const scriptFiles = [...sourceFiles('scripts', base), ...sourceFiles('tools', base)].filter(file =>
@@ -1961,6 +2011,27 @@ function selfTest(action) {
       writeScratch(scratch, relative, content);
     };
     if (action === 'frontend') {
+      const routeRegistryPath = `${appRoot}/src/main/resources/generated/edge-route-face-registry.json`;
+      const routeRegistryOriginal = read(routeRegistryPath, scratch);
+      const routeRegistry = JSON.parse(routeRegistryOriginal);
+      const terminalOperationIndex = routeRegistry.operations.findIndex(operation =>
+        operation.operationId === 'cancelTerminalActivation' && operation.consumerFaces?.includes('terminal'),
+      );
+      if (terminalOperationIndex < 0) fail('R5_TERMINAL_GENERATED_FACE_SELF_TEST_FIXTURE_MISSING');
+      routeRegistry.operations.splice(terminalOperationIndex, 1);
+      routeRegistry.closure.operations -= 1;
+      routeRegistry.closure.faceCounts.terminal -= 1;
+      write(routeRegistryPath, `${JSON.stringify(routeRegistry, null, 2)}\n`);
+      let terminalGeneratedFaceRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        terminalGeneratedFaceRed = String(error).includes('R5_TERMINAL_GENERATED_FACE_DRIFT');
+      }
+      if (!terminalGeneratedFaceRed) fail('R5_TERMINAL_GENERATED_FACE_SELF_TEST_NOT_DETECTED');
+      write(routeRegistryPath, routeRegistryOriginal);
+      process.stdout.write('R5_TERMINAL_GENERATED_FACE_RED=PASS\n');
+
       const presentationSource =
         'apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx';
       const presentationOriginal = read(presentationSource, scratch);
@@ -2969,6 +3040,27 @@ final class R4BudgetIncompleteSelectStarSql {
         'apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/runtime/RuntimeEnvironmentKeys.java';
       const javaOriginal = read(javaPath, scratch);
       const firstKey = policy.crossLayerKeys[0];
+      const compactDeclaration = `public static final String ${firstKey} = "${firstKey}";`;
+      if (!javaOriginal.includes(compactDeclaration)) {
+        fail('R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_FORMAT_FIXTURE_MISSING');
+      }
+      write(
+        javaPath,
+        javaOriginal.replace(
+          compactDeclaration,
+          `public static final String ${firstKey} =\n            "${firstKey}";`,
+        ),
+      );
+      let wrappedJavaPass = false;
+      try {
+        actions[action](scratch);
+        wrappedJavaPass = true;
+      } catch {
+        wrappedJavaPass = false;
+      }
+      if (!wrappedJavaPass) fail('R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_WRAPPED_DECLARATION_REJECTED');
+      write(javaPath, javaOriginal);
+
       write(javaPath, javaOriginal.replace(`= "${firstKey}";`, `= "${firstKey}_MUTATED";`));
       let javaRed = false;
       try {
@@ -2981,28 +3073,32 @@ final class R4BudgetIncompleteSelectStarSql {
 
       const tdsPropertiesPath =
         'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsRuntimeProperties.java';
-      const tdsPropertiesOriginal = read(tdsPropertiesPath, scratch);
-      const trackedProperty = /\bString\s+maxTrackedSessions\b/g;
-      const trackedPropertyMatches = [...tdsPropertiesOriginal.matchAll(trackedProperty)];
-      if (trackedPropertyMatches.length !== 1) {
-        fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_SELF_TEST_MUTATION_TARGET_INVALID');
+      const tdsSettingsPath =
+        'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsSettingsConfiguration.java';
+      const tdsConfigMutations = [
+        [tdsPropertiesPath, /\bString\s+maxTrackedSessions\b/g, 'String maxTrackedSessionsMutated'],
+        [tdsPropertiesPath, /\bString\s+nodeId\b/g, 'String nodeIdMutated'],
+        [tdsPropertiesPath, /\blong\s+readinessWithdrawalWaitMs\b/g, 'long readinessWithdrawalWaitMsMutated'],
+        [tdsSettingsPath, /properties\.nodeId\(\)/g, 'properties.nodeIdMutated()'],
+        [tdsSettingsPath, /properties\.readinessWithdrawalWaitMs\(\)/g, 'properties.readinessWithdrawalWaitMsMutated()'],
+      ];
+      for (const [relative, expression, replacement] of tdsConfigMutations) {
+        const original = read(relative, scratch);
+        const matches = [...original.matchAll(expression)];
+        if (matches.length !== 1) {
+          fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_SELF_TEST_MUTATION_TARGET_INVALID', relative);
+        }
+        write(relative, original.replace(expression, replacement));
+        let detected = false;
+        try {
+          actions[action](scratch);
+        } catch (error) {
+          detected = String(error).includes('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE');
+        } finally {
+          write(relative, original);
+        }
+        if (!detected) fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_SELF_TEST_NOT_DETECTED', relative);
       }
-      const tdsPropertiesMutated = tdsPropertiesOriginal.replace(
-        trackedProperty,
-        'String maxTrackedSessionsMutated',
-      );
-      if (tdsPropertiesMutated === tdsPropertiesOriginal) {
-        fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_SELF_TEST_MUTATION_NOT_APPLIED');
-      }
-      write(tdsPropertiesPath, tdsPropertiesMutated);
-      let tdsConfigRed = false;
-      try {
-        actions[action](scratch);
-      } catch (error) {
-        tdsConfigRed = String(error).includes('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE');
-      }
-      if (!tdsConfigRed) fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_SELF_TEST_NOT_DETECTED');
-      write(tdsPropertiesPath, tdsPropertiesOriginal);
 
       const changedScripts = [];
       for (const file of [...sourceFiles('scripts', scratch), ...sourceFiles('tools', scratch)].filter(entry =>

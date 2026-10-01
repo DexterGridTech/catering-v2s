@@ -7,6 +7,8 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
+  realpathSync,
+  renameSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -22,6 +24,16 @@ import {
   readProcessTable,
 } from './managed-process-tree.mjs';
 import {refreshManagedDiagnosticFiles} from './managed-diagnostic-protocol.mjs';
+import {assertNoActiveTerminalClientAcceptance} from './terminal-client-dev-acceptance-lock.mjs';
+import {
+  createHaproxyConfiguration,
+  HAPROXY_IMAGE_TAG,
+  HAPROXY_MEMORY_BUDGET_MIB,
+  TDS_CLUSTER_NODE_NAMES,
+  remoteHaproxyIdentityMatches,
+  validateManagedTdsCluster,
+  validateRemoteHaproxyControl,
+} from './r5-managed-terminal-topology.mjs';
 import {
   isOwnedRemoteDevRoot,
   remoteDevRootFor,
@@ -41,10 +53,10 @@ const manifestPath = path.join(runtime, 'run-manifest.json');
 const readinessProgressPath = path.join(runtime, `readiness-${process.pid}.jsonl`);
 const portLockPath = path.join(root, '.runtime/r5/managed-port-lock');
 const defaultTunnelPortPairs = Object.freeze([
-  {http: '28080', asset: '29000', tds: '28180'},
-  {http: '28081', asset: '29002', tds: '28181'},
-  {http: '28082', asset: '29004', tds: '28182'},
-  {http: '28083', asset: '29006', tds: '28183'},
+  {http: '28080', asset: '29000', tds: '28180', tdsSecondary: '28181'},
+  {http: '28081', asset: '29002', tds: '28182', tdsSecondary: '28183'},
+  {http: '28082', asset: '29004', tds: '28184', tdsSecondary: '28185'},
+  {http: '28083', asset: '29006', tds: '28186', tdsSecondary: '28187'},
 ]);
 const pidAlive = pid => {
   try {
@@ -75,6 +87,11 @@ const run = (command, args, options = {}) => {
     fail(`${command}:${(result.stderr || result.stdout || 'FAILED').trim().replace(/\s+/g, '_').slice(0, 160)}`);
   return result.stdout;
 };
+function writeJsonAtomically(filePath, value) {
+  const temporaryPath = `${filePath}.${process.pid}.tmp`;
+  writeFileSync(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, {flag: 'wx', mode: 0o600});
+  renameSync(temporaryPath, filePath);
+}
 const remoteResult = (host, script, input) =>
   spawnSync('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', host, 'bash', '-s'], {
     cwd: root,
@@ -90,25 +107,32 @@ const remoteRootGuard = rootValue => {
   if (!isOwnedRemoteDevRoot(rootValue)) fail('REMOTE_ROOT_IDENTITY_INVALID');
   return rootValue;
 };
-export function remoteResourcePreflight(host, remoteRoot) {
+export function remoteResourcePreflight(host, remoteRoot, {minimumMemoryMiB = 512} = {}) {
   remoteRootGuard(remoteRoot);
+  if (!Number.isInteger(minimumMemoryMiB) || minimumMemoryMiB < 512) fail('REMOTE_RESOURCE_MEMORY_BUDGET_INVALID');
   const output = remoteExec(
     host,
     [
       'set -euo pipefail',
       `root=${quote(remoteRoot)}`,
+      `minimum_memory_kib=${minimumMemoryMiB * 1024}`,
       'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
       'test ! -e "$root"',
       'command -v java >/dev/null',
       'command -v ps >/dev/null',
       'command -v sha256sum >/dev/null',
+      'command -v docker >/dev/null',
+      'command -v curl >/dev/null',
+      'command -v python3 >/dev/null',
+      'managed_container_ids=$(docker ps -aq --filter "label=com.catering-v2s.remote-root")',
+      'if test -n "$managed_container_ids"; then printf "%s\\n" "REMOTE_MANAGED_CONTAINER_RESIDUE=$(printf "%s\\n" "$managed_container_ids" | tr "\\n" ",")" >&2; exit 74; fi',
       "java_major=$(java -version 2>&1 | sed -n 's/.*version \"\\([0-9][0-9]*\\).*/\\1/p' | head -n 1)",
       "mem_available_kib=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)",
       'cpu_count=$(getconf _NPROCESSORS_ONLN)',
       "tmp_available_kib=$(df -Pk /tmp | awk 'NR == 2 {print $4}')",
       'boot_id=$(cat /proc/sys/kernel/random/boot_id)',
       'test "${java_major:-0}" -ge 17',
-      'test "${mem_available_kib:-0}" -ge 524288',
+      'test "${mem_available_kib:-0}" -ge "$minimum_memory_kib"',
       'test "${cpu_count:-0}" -ge 2',
       'test "${tmp_available_kib:-0}" -ge 2097152',
       'printf \'%s\\n\' "{\\"schemaVersion\\":1,\\"kind\\":\\"r5-dev-remote-resource-snapshot\\",\\"host\\":\\"REMOTE_HOST\\",\\"bootId\\":\\"$boot_id\\",\\"remoteRoot\\":\\"$root\\",\\"javaMajor\\":$java_major,\\"cpuCount\\":$cpu_count,\\"memoryAvailableMiB\\":$((mem_available_kib / 1024)),\\"tmpAvailableMiB\\":$((tmp_available_kib / 1024)),\\"remoteRootAbsent\\":true,\\"observedAt\\":\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\"}"',
@@ -410,9 +434,19 @@ export async function startRemoteJava(
 }
 export async function startRemoteTds(
   host,
-  {runId, remoteRoot, env, credential, websocketPort = env.environment.V2S_DEV_REMOTE_TDS_PORT},
+  {
+    runId,
+    remoteRoot,
+    env,
+    credential,
+    instanceName = 'tds-a',
+    websocketPort = env.environment.V2S_DEV_REMOTE_TDS_A_PORT,
+    nodeId = env.environment.V2S_TDS_NODE_ID ?? 'terminal-data-server',
+    readinessWithdrawalWaitMs = env.environment.V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS ?? '3000',
+  },
 ) {
   remoteRootGuard(remoteRoot);
+  if (!['tds-a', 'tds-b', 'tds-c'].includes(instanceName)) fail('REMOTE_TDS_INSTANCE_NAME_INVALID');
   if (
     !/^\d{4,5}$/.test(String(websocketPort)) ||
     Number(websocketPort) < 1024 ||
@@ -422,6 +456,11 @@ export async function startRemoteTds(
     fail('REMOTE_TDS_WEBSOCKET_PORT_INVALID');
   const maxUnauthenticated = env.environment.V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS;
   const maxTracked = env.environment.V2S_TDS_MAX_TRACKED_SESSIONS;
+  if (typeof nodeId !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(nodeId))
+    fail('REMOTE_TDS_NODE_ID_INVALID');
+  if (!/^[1-9][0-9]{0,4}$/.test(String(readinessWithdrawalWaitMs)) ||
+      Number(readinessWithdrawalWaitMs) < 2000 || Number(readinessWithdrawalWaitMs) > 10000)
+    fail('REMOTE_TDS_READINESS_WITHDRAWAL_WAIT_INVALID');
   const rssBudgetMiB = env.tdsCapacity?.rssBudgetMiB;
   for (const [key, value] of [
     ['V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS', maxUnauthenticated],
@@ -433,10 +472,10 @@ export async function startRemoteTds(
   if (!Number.isSafeInteger(rssBudgetMiB) || rssBudgetMiB < 1) fail('REMOTE_TDS_RSS_BUDGET_INVALID');
   const remoteWorkspace = `${remoteRoot}/workspace`;
   const remoteResults = `${remoteRoot}/results`;
-  const remoteEnvFile = `${remoteRoot}/tds.env`;
-  const remoteControlPath = `${remoteResults}/tds-control.json`;
-  const remoteLog = `${remoteResults}/tds-server.log`;
-  const remotePhase = `${remoteResults}/tds-phase.jsonl`;
+  const remoteEnvFile = `${remoteRoot}/${instanceName}.env`;
+  const remoteControlPath = `${remoteResults}/${instanceName}-control.json`;
+  const remoteLog = `${remoteResults}/${instanceName}.log`;
+  const remotePhase = `${remoteResults}/${instanceName}-phase.jsonl`;
   const values = {
     SPRING_DATASOURCE_URL: env.environment.V2S_DEV_DATABASE_URL,
     SPRING_DATASOURCE_USERNAME:
@@ -449,6 +488,8 @@ export async function startRemoteTds(
     V2S_DEV_NAMESPACE: env.namespace,
     V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS: String(maxUnauthenticated),
     V2S_TDS_MAX_TRACKED_SESSIONS: String(maxTracked),
+    V2S_TDS_NODE_ID: nodeId,
+    V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS: String(readinessWithdrawalWaitMs),
   };
   for (const [name, value] of Object.entries(values)) {
     if (!/^[A-Z][A-Z0-9_]{1,127}$/.test(name) || typeof value !== 'string' || !value || /[\u0000\r\n]/.test(value))
@@ -489,16 +530,504 @@ export async function startRemoteTds(
       'command_sha256=$(printf "%s" "$command_line" | sha256sum | awk \'{print $1}\')',
       'test -n "$pgid" -a -n "$process_start_ticks" -a -n "$command_sha256"',
       'tmp="$control_path.$$.tmp"',
-      `printf '%s\\n' "{\\"schemaVersion\\":1,\\"kind\\":\\"r5-dev-remote-tds-control\\",\\"runId\\":\\"$run_id\\",\\"remoteRoot\\":\\"$root\\",\\"pid\\":$pid,\\"pgid\\":$pgid,\\"bootId\\":\\"$boot_id\\",\\"processStartTicks\\":$process_start_ticks,\\"commandSha256\\":\\"$command_sha256\\",\\"websocketPort\\":$websocket_port,\\"rssBudgetMiB\\":${rssBudgetMiB},\\"phase\\":\\"STARTING\\",\\"controlPath\\":\\"$control_path\\",\\"logPath\\":\\"$log_file\\",\\"phasePath\\":\\"$phase_file\\"}" > "$tmp"`,
+      `printf '%s\\n' "{\\"schemaVersion\\":1,\\"kind\\":\\"r5-dev-remote-tds-control\\",\\"runId\\":\\"$run_id\\",\\"remoteRoot\\":\\"$root\\",\\"instanceName\\":\\"${instanceName}\\",\\"nodeId\\":\\"${nodeId}\\",\\"pid\\":$pid,\\"pgid\\":$pgid,\\"bootId\\":\\"$boot_id\\",\\"processStartTicks\\":$process_start_ticks,\\"commandSha256\\":\\"$command_sha256\\",\\"websocketPort\\":$websocket_port,\\"rssBudgetMiB\\":${rssBudgetMiB},\\"phase\\":\\"STARTING\\",\\"controlPath\\":\\"$control_path\\",\\"logPath\\":\\"$log_file\\",\\"phasePath\\":\\"$phase_file\\"}" > "$tmp"`,
       'chmod 600 "$tmp"; mv "$tmp" "$control_path"',
       'printf \'%s\\n\' \'{"phase":"STARTING","status":"PASS"}\' >> "$phase_file"',
       'cat "$control_path"',
     ].join('\n'),
   );
   const control = validateRemoteTdsControl(JSON.parse(output.trim()));
-  if (control.runId !== runId || control.remoteRoot !== remoteRoot || control.websocketPort !== Number(websocketPort))
+  if (control.runId !== runId || control.remoteRoot !== remoteRoot || control.instanceName !== instanceName ||
+      control.nodeId !== nodeId || control.websocketPort !== Number(websocketPort))
     fail('REMOTE_TDS_CONTROL_BINDING_INVALID');
   return {...control, workspace: remoteWorkspace, envFile: remoteEnvFile};
+}
+export function haproxyImageDigestLookupScript(tag = HAPROXY_IMAGE_TAG) {
+  if (tag !== HAPROXY_IMAGE_TAG) fail('REMOTE_HAPROXY_IMAGE_TAG_UNSUPPORTED');
+  return [
+    'set -euo pipefail',
+    'command -v docker >/dev/null',
+    `image_ref=docker.io/library/haproxy:${quote(tag)}`,
+    'docker pull "$image_ref" >/dev/null',
+    'printf "%s\\n" REMOTE_HAPROXY_PULL=PASS',
+    'repo_digests=$(docker image inspect --format \'{{range .RepoDigests}}{{println .}}{{end}}\' "$image_ref")',
+    'digest=$(printf "%s\\n" "$repo_digests" | python3 -c \'import re,sys; pattern=re.compile(r"(?:docker[.]io/)?(?:library/)?haproxy@(sha256:[a-f0-9]{64})"); matches=(pattern.fullmatch(line.strip()) for line in sys.stdin); print(next((match.group(1) for match in matches if match), ""))\')',
+    'if test -z "$digest"; then safe_repo_digests=$(printf "%s\\n" "$repo_digests" | tr "\\n" "," | tr -cd "A-Za-z0-9:./@,_-"); printf "REMOTE_HAPROXY_PULL=PASS REMOTE_HAPROXY_REPODIGESTS=%s\\n" "${safe_repo_digests:-EMPTY}" >&2; printf "%s\\n" REMOTE_HAPROXY_DIGEST_UNAVAILABLE >&2; exit 65; fi',
+    'test "${#digest}" -eq 71',
+    'printf "%s\\n" "$digest"',
+  ].join('\n');
+}
+export async function resolveRemoteHaproxyDigest(host) {
+  const output = remoteExec(host, haproxyImageDigestLookupScript()).trim().split(/\r?\n/);
+  if (output.length !== 2 || output[0] !== 'REMOTE_HAPROXY_PULL=PASS') fail('REMOTE_HAPROXY_PULL_UNVERIFIED');
+  const digest = output[1];
+  if (!/^sha256:[a-f0-9]{64}$/.test(digest)) fail('REMOTE_HAPROXY_DIGEST_INVALID');
+  return digest;
+}
+export async function startRemoteHaproxy(host, {
+  runId,
+  remoteRoot,
+  hostBootId,
+  entryPorts,
+  nodePorts,
+  imageDigest,
+}) {
+  remoteRootGuard(remoteRoot);
+  if (remoteRoot !== remoteDevRootFor(runId) || !/^[0-9a-f-]{16,128}$/i.test(hostBootId ?? ''))
+    fail('REMOTE_HAPROXY_ROOT_BINDING_INVALID');
+  if (!/^sha256:[a-f0-9]{64}$/.test(imageDigest ?? '')) fail('REMOTE_HAPROXY_DIGEST_INVALID');
+  const config = createHaproxyConfiguration({entryOnePort: Number(entryPorts.one), entryTwoPort: Number(entryPorts.two), nodePorts});
+  const configSha256 = crypto.createHash('sha256').update(config).digest('hex');
+  const imageRef = `library/haproxy@${imageDigest}`;
+  const configPath = `${remoteRoot}/results/haproxy.cfg`;
+  const logPath = `${remoteRoot}/results/haproxy.log`;
+  const controlPath = `${remoteRoot}/results/haproxy-control.json`;
+  const controlSocketDirectory = `${remoteRoot}/results/haproxy-control`;
+  const controlSocketPath = `${controlSocketDirectory}/admin.sock`;
+  const containerName = `r5-tds-lb-${runId.slice(-12)}`;
+  const configBase64 = Buffer.from(config, 'utf8').toString('base64');
+  const boot = quote(hostBootId);
+  const rootValue = quote(remoteRoot);
+  const runIdValue = quote(runId);
+  const imageValue = quote(imageRef);
+  const nameValue = quote(containerName);
+  const configHashValue = quote(configSha256);
+  const configPathValue = quote(configPath);
+  const logPathValue = quote(logPath);
+  const controlPathValue = quote(controlPath);
+  const controlSocketDirectoryValue = quote(controlSocketDirectory);
+  const output = remoteExec(host, [
+    'set -euo pipefail',
+    'command -v docker >/dev/null',
+    `root=${rootValue}`,
+    `run_id=${runIdValue}`,
+    `expected_boot_id=${boot}`,
+    `image_ref=${imageValue}`,
+    `container_name=${nameValue}`,
+    `config_sha256=${configHashValue}`,
+    `config_path=${configPathValue}`,
+    `log_path=${logPathValue}`,
+    `control_path=${controlPathValue}`,
+    `control_socket_directory=${controlSocketDirectoryValue}`,
+    `memory_budget_mib=${HAPROXY_MEMORY_BUDGET_MIB}`,
+    'container_id=""',
+    'cleanup_partial_haproxy() {',
+    '  status=$?',
+    '  trap - ERR',
+    '  if test -n "$container_id"; then',
+    '    observed=$(docker inspect -f \'{{.Id}}|{{index .Config.Labels "com.catering-v2s.run-id"}}|{{index .Config.Labels "com.catering-v2s.remote-root"}}|{{index .Config.Labels "com.catering-v2s.host-boot-id"}}|{{index .Config.Labels "com.catering-v2s.image-ref"}}|{{index .Config.Labels "com.catering-v2s.config-sha256"}}\' "$container_id" 2>/dev/null || true)',
+    '    expected="$container_id|$run_id|$root|$expected_boot_id|$image_ref|$config_sha256"',
+    '    if test "$observed" = "$expected"; then docker rm -f "$container_id" >/dev/null 2>&1 || true; fi',
+    '  fi',
+    '  exit "$status"',
+    '}',
+    'trap cleanup_partial_haproxy ERR',
+    'test -d "$root/results"',
+    'mkdir -m 700 -p "$control_socket_directory"',
+    'actual_boot_id=$(cat /proc/sys/kernel/random/boot_id)',
+    'test "$actual_boot_id" = "$expected_boot_id"',
+    'docker pull "$image_ref" >/dev/null',
+    `printf '%s' ${quote(configBase64)} | base64 -d > "$config_path.tmp"`,
+    'chmod 600 "$config_path.tmp"; mv "$config_path.tmp" "$config_path"',
+    'actual_config_sha256=$(sha256sum "$config_path" | awk \'{print $1}\')',
+    'test "$actual_config_sha256" = "$config_sha256"',
+    'docker run --rm --network host --memory="${memory_budget_mib}m" --user "$(id -u):$(id -g)" --mount "type=bind,src=$config_path,dst=/usr/local/etc/haproxy/haproxy.cfg,readonly" --mount "type=bind,src=$control_socket_directory,dst=/run/haproxy-control" --entrypoint haproxy "$image_ref" -c -f /usr/local/etc/haproxy/haproxy.cfg >/dev/null',
+    'container_id=$(docker run --detach --network host --memory="${memory_budget_mib}m" --user "$(id -u):$(id -g)" --name "$container_name" --label "com.catering-v2s.run-id=$run_id" --label "com.catering-v2s.remote-root=$root" --label "com.catering-v2s.host-boot-id=$expected_boot_id" --label "com.catering-v2s.image-ref=$image_ref" --label "com.catering-v2s.config-sha256=$config_sha256" --mount "type=bind,src=$config_path,dst=/usr/local/etc/haproxy/haproxy.cfg,readonly" --mount "type=bind,src=$control_socket_directory,dst=/run/haproxy-control" --entrypoint haproxy "$image_ref" -W -db -f /usr/local/etc/haproxy/haproxy.cfg)',
+    'case "$container_id" in *[!a-f0-9]*|"") printf "%s\\n" REMOTE_HAPROXY_CONTAINER_ID_INVALID >&2; exit 65 ;; esac',
+    'test "${#container_id}" -ge 12 -a "${#container_id}" -le 64',
+    'container_image_id=$(docker inspect -f \'{{.Image}}\' "$container_id")',
+    'container_image_ref=$(docker inspect -f \'{{.Config.Image}}\' "$container_id")',
+    'container_running=$(docker inspect -f \'{{.State.Running}}\' "$container_id")',
+    'test "$container_image_ref" = "$image_ref" -a "$container_running" = true',
+    'tmp="$control_path.$$.tmp"',
+    `printf '%s\\n' "{\\"schemaVersion\\":1,\\"kind\\":\\"r5-dev-remote-haproxy-control\\",\\"runId\\":\\"$run_id\\",\\"remoteRoot\\":\\"$root\\",\\"hostBootId\\":\\"$expected_boot_id\\",\\"containerId\\":\\"$container_id\\",\\"containerImageId\\":\\"$container_image_id\\",\\"imageRef\\":\\"$image_ref\\",\\"imageDigest\\":\\"${imageDigest.slice('sha256:'.length)}\\",\\"configSha256\\":\\"$config_sha256\\",\\"memoryBudgetMiB\\":$memory_budget_mib,\\"entryPorts\\":{\\"one\\":${Number(entryPorts.one)},\\"two\\":${Number(entryPorts.two)}},\\"nodePorts\\":{\\"a\\":${Number(nodePorts.a)},\\"b\\":${Number(nodePorts.b)},\\"c\\":${Number(nodePorts.c)}},\\"phase\\":\\"READY\\",\\"configPath\\":\\"$config_path\\",\\"logPath\\":\\"$log_path\\",\\"controlPath\\":\\"$control_path\\",\\"controlSocketPath\\":\\"${controlSocketPath}\\"}" > "$tmp"`,
+    'chmod 600 "$tmp"; mv "$tmp" "$control_path"',
+    'docker inspect -f \'{{.Id}} {{.Image}} {{.Config.Image}} {{.State.Running}} {{index .Config.Labels "com.catering-v2s.run-id"}} {{index .Config.Labels "com.catering-v2s.remote-root"}} {{index .Config.Labels "com.catering-v2s.host-boot-id"}} {{index .Config.Labels "com.catering-v2s.image-ref"}} {{index .Config.Labels "com.catering-v2s.config-sha256"}}\' "$container_id"',
+    'cat "$control_path"',
+    'trap - ERR',
+  ].join('\n'));
+  const lines = output.trim().split('\n');
+  let control;
+  try { control = validateRemoteHaproxyControl(JSON.parse(lines.at(-1))); }
+  catch { fail('REMOTE_HAPROXY_CONTROL_INVALID'); }
+  if (control.runId !== runId || control.remoteRoot !== remoteRoot || control.hostBootId !== hostBootId ||
+      control.imageDigest !== imageDigest.slice('sha256:'.length) || control.configSha256 !== configSha256 ||
+      !lines.some(line => line.startsWith(`${control.containerId} `))) fail('REMOTE_HAPROXY_CONTROL_BINDING_INVALID');
+  return control;
+}
+export function validateManagedRemoteHaproxyBinding(manifest) {
+  const control = validateRemoteHaproxyControl(manifest?.remoteHaproxy);
+  if (control.runId !== manifest?.runId) throw new Error('R5_DEV_REMOTE_HAPROXY_RUN_ID_MISMATCH');
+  if (control.remoteRoot !== manifest?.remoteDiagnostic?.remoteRoot || control.remoteRoot !== remoteDevRootFor(manifest?.runId))
+    throw new Error('R5_DEV_REMOTE_HAPROXY_ROOT_BINDING_MISMATCH');
+  if (control.hostBootId !== manifest?.remoteResources?.bootId) throw new Error('R5_DEV_REMOTE_HAPROXY_BOOT_ID_MISMATCH');
+  return control;
+}
+function verifyRemoteHaproxyContainer(host, control) {
+  validateRemoteHaproxyControl(control);
+  const actualControl = readRemoteHaproxyControl(host, control.remoteRoot);
+  if (!remoteHaproxyIdentityMatches(control, actualControl)) fail('REMOTE_HAPROXY_CONTROL_IDENTITY_MISMATCH');
+  const output = remoteExec(host, [
+    'set -euo pipefail',
+    `container_id=${quote(control.containerId)}`,
+    `run_id=${quote(control.runId)}`,
+    `remote_root=${quote(control.remoteRoot)}`,
+    `host_boot_id=${quote(control.hostBootId)}`,
+    `image_ref=${quote(control.imageRef)}`,
+    `config_sha256=${quote(control.configSha256)}`,
+    'docker inspect -f \'{{.Id}} {{.Image}} {{.Config.Image}} {{index .Config.Labels "com.catering-v2s.run-id"}} {{index .Config.Labels "com.catering-v2s.remote-root"}} {{index .Config.Labels "com.catering-v2s.host-boot-id"}} {{index .Config.Labels "com.catering-v2s.image-ref"}} {{index .Config.Labels "com.catering-v2s.config-sha256"}} {{.State.Running}}\' "$container_id"',
+  ].join('\n')).trim();
+  const [containerId, containerImageId, imageRef, runId, remoteRoot, hostBootId, labeledImageRef, configSha256, running] = output.split(/\s+/);
+  if (containerId !== control.containerId || containerImageId !== control.containerImageId || imageRef !== control.imageRef ||
+      runId !== control.runId || remoteRoot !== control.remoteRoot || hostBootId !== control.hostBootId ||
+      labeledImageRef !== control.imageRef || configSha256 !== control.configSha256 ||
+      control.hostBootId !== hostBootId || !['true', 'false'].includes(running)) fail('REMOTE_HAPROXY_IDENTITY_MISMATCH');
+  return {running: running === 'true'};
+}
+export function remoteHaproxyIngressReadinessScript(control, nodes) {
+  validateRemoteHaproxyControl(control);
+  if (!Array.isArray(nodes) || nodes.length !== TDS_CLUSTER_NODE_NAMES.length) fail('REMOTE_HAPROXY_TDS_NODE_SET_INVALID');
+  return [
+    'set -euo pipefail',
+    `entry_one=${control.entryPorts?.one ?? ''}`,
+    `entry_two=${control.entryPorts?.two ?? ''}`,
+    ...nodes.map((node, index) => `node_port_${index}=${node.websocketPort}`),
+    'probe_status() { curl --silent --show-error --max-time 3 --output /dev/null --write-out "%{http_code}" "$1"; }',
+    'test "$(probe_status "http://127.0.0.1:$entry_one/actuator")" = 403',
+    'test "$(probe_status "http://127.0.0.1:$entry_one/actuator/health")" = 403',
+    'test "$(probe_status "http://127.0.0.1:$entry_two/actuator")" = 403',
+    'test "$(probe_status "http://127.0.0.1:$entry_two/actuator/health")" = 403',
+    ...nodes.map((_, index) => `test "$(probe_status "http://127.0.0.1:$node_port_${index}/actuator/health/readiness")" = 200`),
+    `printf '%s\\n' "{\\"runId\\":\\"${control.runId}\\",\\"haproxyContainerId\\":\\"${control.containerId}\\",\\"actuatorRootDenied\\":true,\\"actuatorHealthDenied\\":true,\\"tdsReadinessCount\\":${nodes.length},\\"status\\":\\"PASS\\"}"`,
+  ].join('\n');
+}
+export async function remoteHaproxyIngressReadiness(host, control, nodes) {
+  verifyRemoteHaproxyContainer(host, control);
+  const script = remoteHaproxyIngressReadinessScript(control, nodes);
+  // The entry listener ports are run-scoped manifest values, not container defaults.
+  return JSON.parse(remoteExec(host, script).trim());
+}
+
+function remoteHaproxyCli(host, control, command) {
+  validateRemoteHaproxyControl(control);
+  const allowed = new Set([
+    'show servers state',
+    'set server terminal_nodes_ab/tds-a state drain',
+    'set server terminal_nodes_ab/tds-a state ready',
+    'set server terminal_nodes_ab/tds-b state drain',
+    'set server terminal_nodes_ab/tds-b state ready',
+  ]);
+  if (!allowed.has(command)) fail('REMOTE_HAPROXY_COMMAND_NOT_ALLOWLISTED');
+  const socketPath = control.controlSocketPath;
+  if (socketPath !== `${control.remoteRoot}/results/haproxy-control/admin.sock`)
+    fail('REMOTE_HAPROXY_SOCKET_PATH_INVALID');
+  const output = remoteExec(host, [
+    'set -euo pipefail',
+    `socket_path=${quote(socketPath)}`,
+    `command_text=${quote(command)}`,
+    'python3 - "$socket_path" "$command_text" <<\'PY\'',
+    'import socket,sys',
+    'sock=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM); sock.settimeout(4)',
+    'sock.connect(sys.argv[1]); sock.sendall((sys.argv[2]+"\\n").encode()); sock.shutdown(socket.SHUT_WR)',
+    'chunks=[]; size=0',
+    'while True:',
+    ' data=sock.recv(8192)',
+    ' if not data: break',
+    ' size+=len(data)',
+    ' if size>131072: raise SystemExit("HAPROXY_ADMIN_RESPONSE_LIMIT")',
+    ' chunks.append(data)',
+    'sock.close(); sys.stdout.buffer.write(b"".join(chunks))',
+    'PY',
+  ].join('\n'));
+  if (output.length > 131_072 || /\b(?:ERROR|Unknown command|Permission denied)\b/i.test(output))
+    fail('REMOTE_HAPROXY_COMMAND_FAILED');
+  return output;
+}
+
+export function haproxyServerAdminState(output, backendName, serverName) {
+  if (typeof output !== 'string' || !['terminal_nodes_ab'].includes(backendName) ||
+      !['tds-a', 'tds-b'].includes(serverName)) fail('REMOTE_HAPROXY_STATE_INPUT_INVALID');
+  const lines = output.split(/\r?\n/).filter(Boolean);
+  const headerLine = lines.find(line => line.startsWith('#') && line.includes('srv_admin_state'));
+  if (!headerLine) fail('REMOTE_HAPROXY_STATE_HEADER_MISSING');
+  const headers = headerLine.replace(/^#\s*/, '').trim().split(/\s+/);
+  const backendIndex = headers.indexOf('be_name');
+  const serverIndex = headers.indexOf('srv_name');
+  const adminIndex = headers.indexOf('srv_admin_state');
+  if ([backendIndex, serverIndex, adminIndex].some(index => index < 0)) fail('REMOTE_HAPROXY_STATE_COLUMNS_MISSING');
+  const row = lines.find(line => !line.startsWith('#') && line.trim().split(/\s+/)[backendIndex] === backendName &&
+    line.trim().split(/\s+/)[serverIndex] === serverName);
+  if (!row) fail('REMOTE_HAPROXY_STATE_SERVER_MISSING');
+  const token = row.trim().split(/\s+/)[adminIndex];
+  const hexadecimal = /^0x[0-9a-f]+$/i.test(token ?? '');
+  const decimal = /^(?:0|[1-9][0-9]*)$/.test(token ?? '');
+  if (!hexadecimal && !decimal) fail('REMOTE_HAPROXY_ADMIN_STATE_INVALID');
+  const flags = Number.parseInt(token, hexadecimal ? 16 : 10);
+  if (!Number.isSafeInteger(flags) || flags < 0) fail('REMOTE_HAPROXY_ADMIN_STATE_INVALID');
+  return flags;
+}
+
+async function setManagedHaproxyServerState(host, haproxy, serverName, state) {
+  if (!['tds-a', 'tds-b'].includes(serverName) || !['drain', 'ready'].includes(state))
+    fail('REMOTE_HAPROXY_SERVER_STATE_INPUT_INVALID');
+  verifyRemoteHaproxyContainer(host, haproxy);
+  remoteHaproxyCli(host, haproxy, `set server terminal_nodes_ab/${serverName} state ${state}`);
+  const flags = haproxyServerAdminState(remoteHaproxyCli(host, haproxy, 'show servers state'), 'terminal_nodes_ab', serverName);
+  const draining = (flags & 0x08) !== 0;
+  if (draining !== (state === 'drain')) fail('REMOTE_HAPROXY_SERVER_STATE_READBACK_MISMATCH');
+  return Object.freeze({serverName, state, adminFlags: `0x${flags.toString(16).padStart(2, '0')}`});
+}
+
+async function forceStopRemoteTds(host, control) {
+  validateRemoteTdsControl(control);
+  const output = remoteExec(host, [
+    'set -euo pipefail',
+    `root=${quote(control.remoteRoot)}`,
+    `pid=${control.pid}`,
+    `expected_pgid=${control.pgid}`,
+    `expected_boot_id=${quote(control.bootId)}`,
+    `expected_start_ticks=${control.processStartTicks}`,
+    `expected_command_sha256=${quote(control.commandSha256)}`,
+    'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
+    'if test -r "/proc/$pid/stat"; then',
+    ' actual_pgid=$(ps -o pgid= -p "$pid" | tr -d " ")',
+    ' actual_boot_id=$(cat /proc/sys/kernel/random/boot_id)',
+    ' actual_start_ticks=$(awk \'{print $22}\' "/proc/$pid/stat")',
+    ' actual_command_line=$(tr "\\0" " " < "/proc/$pid/cmdline" | sed "s/[[:space:]]*$//")',
+    ' actual_command_sha256=$(printf "%s" "$actual_command_line" | sha256sum | awk \'{print $1}\')',
+    ' test "$actual_pgid" = "$expected_pgid" -a "$actual_boot_id" = "$expected_boot_id" -a "$actual_start_ticks" = "$expected_start_ticks" -a "$actual_command_sha256" = "$expected_command_sha256"',
+    ' kill -KILL -- -"$expected_pgid"',
+    'fi',
+    'for _ in $(seq 1 20); do if ! ps -eo pid=,pgid= | awk -v group="$expected_pgid" \'$2 == group {found=1} END {exit found ? 0 : 1}\'; then break; fi; sleep 0.5; done',
+    'if ps -eo pid=,pgid= | awk -v group="$expected_pgid" \'$2 == group {found=1} END {exit found ? 0 : 1}\'; then exit 45; fi',
+    'printf "%s\\n" R5_REMOTE_TDS_FORCE_STOP=PASS',
+  ].join('\n'));
+  if (output.trim() !== 'R5_REMOTE_TDS_FORCE_STOP=PASS') fail('REMOTE_TDS_FORCE_STOP_READBACK_INVALID');
+}
+
+export function remoteTdsManagedProcessStateScript(control) {
+  validateRemoteTdsControl(control);
+  return [
+    'set -euo pipefail',
+    `root=${quote(control.remoteRoot)}`,
+    `pid=${control.pid}`,
+    `expected_pgid=${control.pgid}`,
+    `expected_boot_id=${quote(control.bootId)}`,
+    `expected_start_ticks=${control.processStartTicks}`,
+    `expected_command_sha256=${quote(control.commandSha256)}`,
+    'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
+    'test "$(cat /proc/sys/kernel/random/boot_id)" = "$expected_boot_id"',
+    'if ! test -r "/proc/$pid/stat"; then',
+    '  if ps -eo pid=,pgid= | awk -v group="$expected_pgid" \'$2 == group {found=1} END {exit found ? 0 : 1}\'; then exit 45; fi',
+    '  printf "%s\\n" R5_REMOTE_TDS_STATE=STOPPED; exit 0',
+    'fi',
+    'actual_pgid=$(ps -o pgid= -p "$pid" | tr -d " ")',
+    'actual_start_ticks=$(awk \'{print $22}\' "/proc/$pid/stat")',
+    'actual_command_line=$(tr "\\0" " " < "/proc/$pid/cmdline" | sed "s/[[:space:]]*$//")',
+    'actual_command_sha256=$(printf "%s" "$actual_command_line" | sha256sum | awk \'{print $1}\')',
+    'test "$actual_pgid" = "$expected_pgid" -a "$actual_start_ticks" = "$expected_start_ticks" -a "$actual_command_sha256" = "$expected_command_sha256"',
+    'printf "%s\\n" R5_REMOTE_TDS_STATE=RUNNING',
+  ].join('\n');
+}
+
+function remoteTdsManagedProcessState(host, control) {
+  const output = remoteExec(host, remoteTdsManagedProcessStateScript(control)).trim();
+  if (output === 'R5_REMOTE_TDS_STATE=STOPPED') return 'STOPPED';
+  if (output === 'R5_REMOTE_TDS_STATE=RUNNING') return 'RUNNING';
+  fail('REMOTE_TDS_MANAGED_PROCESS_STATE_INVALID');
+}
+
+async function restartRemoteTdsFromSavedEnvironment(host, control, progressPath, onControlUpdated = () => {}) {
+  validateRemoteTdsControl(control);
+  const rootValue = quote(control.remoteRoot);
+  const instance = quote(control.instanceName);
+  const nodeId = quote(control.nodeId);
+  const port = String(control.websocketPort);
+  const rss = String(control.rssBudgetMiB);
+  const output = remoteExec(host, [
+    'set -euo pipefail',
+    `root=${rootValue}`,
+    `instance=${instance}`,
+    `expected_node_id=${nodeId}`,
+    `websocket_port=${port}`,
+    `rss_budget_mib=${rss}`,
+    'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
+    'workspace="$root/workspace"; results="$root/results"; env_file="$root/$instance.env"; control_path="$results/$instance-control.json"; log_file="$results/$instance.log"; phase_file="$results/$instance-phase.jsonl"',
+    'test -d "$workspace" -a -r "$env_file" -a -r "$control_path" -a -r "$log_file"',
+    'old_pgid=$(python3 -c \'import json,sys; print(json.load(open(sys.argv[1]))["pgid"])\' "$control_path")',
+    'if ps -eo pid=,pgid= | awk -v group="$old_pgid" \'$2 == group {found=1} END {exit found ? 0 : 1}\'; then exit 46; fi',
+    'if ss -ltnH "sport = :$websocket_port" | grep -q .; then exit 47; fi',
+    'test "$(cat /proc/sys/kernel/random/boot_id)" = ' + quote(control.bootId),
+    '( cd "$workspace"; set -a; . "$env_file"; set +a; exec nohup ./gradlew --no-daemon :apps:backend:terminal-data-server:bootRun ) >> "$log_file" 2>&1 < /dev/null &',
+    'pid=$!; sleep 1; test -r "/proc/$pid/stat"',
+    'pgid=$(ps -o pgid= -p "$pid" | tr -d " "); boot_id=$(cat /proc/sys/kernel/random/boot_id); process_start_ticks=$(awk \'{print $22}\' "/proc/$pid/stat")',
+    'command_line=$(tr "\\0" " " < "/proc/$pid/cmdline" | sed "s/[[:space:]]*$//"); command_sha256=$(printf "%s" "$command_line" | sha256sum | awk \'{print $1}\')',
+    'test -n "$pgid" -a -n "$process_start_ticks" -a -n "$command_sha256"',
+    'tmp="$control_path.$$.tmp"',
+    `printf '%s\\n' "{\\"schemaVersion\\":1,\\"kind\\":\\"r5-dev-remote-tds-control\\",\\"runId\\":\\"${control.runId}\\",\\"remoteRoot\\":\\"$root\\",\\"instanceName\\":\\"$instance\\",\\"nodeId\\":\\"$expected_node_id\\",\\"pid\\":$pid,\\"pgid\\":$pgid,\\"bootId\\":\\"$boot_id\\",\\"processStartTicks\\":$process_start_ticks,\\"commandSha256\\":\\"$command_sha256\\",\\"websocketPort\\":$websocket_port,\\"rssBudgetMiB\\":$rss_budget_mib,\\"phase\\":\\"STARTING\\",\\"controlPath\\":\\"$control_path\\",\\"logPath\\":\\"$log_file\\",\\"phasePath\\":\\"$phase_file\\"}" > "$tmp"`,
+    'chmod 600 "$tmp"; mv "$tmp" "$control_path"; printf \'%s\\n\' \'{"phase":"RESTARTING","status":"PASS"}\' >> "$phase_file"; cat "$control_path"',
+  ].join('\n'));
+  const updated = validateRemoteTdsControl(JSON.parse(output.trim()));
+  if (updated.runId !== control.runId || updated.instanceName !== control.instanceName || updated.nodeId !== control.nodeId ||
+      updated.websocketPort !== control.websocketPort || updated.bootId !== control.bootId) fail('REMOTE_TDS_RESTART_IDENTITY_MISMATCH');
+  onControlUpdated(updated);
+  return waitForRemoteTdsReady(host, updated, progressPath).then(() => updated);
+}
+
+function resolveManagedAcceptanceManifest(manifestPath, runId) {
+  const actualPath = realpathSync(manifestPath);
+  if (actualPath !== realpathSync(manifestPathDefault()) || actualPath !== path.join(runtime, 'run-manifest.json'))
+    fail('TERMINAL_ACCEPTANCE_DEV_MANIFEST_NOT_CANONICAL');
+  const manifest = JSON.parse(readFileSync(actualPath, 'utf8'));
+  if (
+    manifest?.kind !== 'r5-dev-run-manifest' ||
+    typeof manifest.runId !== 'string' ||
+    !Array.isArray(manifest.processes) ||
+    manifest.processes.length < 3 ||
+    !Array.isArray(manifest.remoteTdsNodes) ||
+    manifest.remoteTdsNodes.length !== TDS_CLUSTER_NODE_NAMES.length ||
+    !manifest.remoteHaproxy
+  ) fail('TERMINAL_ACCEPTANCE_DEV_MANIFEST_INVALID');
+  const processTable = readProcessTable();
+  for (const expected of manifest.processes) {
+    if (!Number.isInteger(expected.pid) || !Number.isInteger(expected.pgid) || typeof expected.startToken !== 'string' ||
+        !processTable.some(actual => actual.pid === expected.pid && actual.pgid === expected.pgid &&
+          actual.startToken === canonicalStartToken(expected.startToken)))
+      fail('TERMINAL_ACCEPTANCE_DEV_LOCAL_PROCESS_IDENTITY_MISMATCH');
+  }
+  validateManagedRemoteJavaBinding(manifest);
+  for (const node of manifest.remoteTdsNodes) validateManagedRemoteTdsNodeBinding(manifest, node);
+  validateManagedRemoteHaproxyBinding(manifest);
+  if (manifest.runId !== runId) fail('TERMINAL_ACCEPTANCE_DEV_RUN_ID_MISMATCH');
+  const trustedEnvironment = environment('start');
+  if (trustedEnvironment.environment.V2S_DEV_REMOTE_HOST !== manifest.remoteHostTrust?.host ||
+      trustedEnvironment.environment.V2S_DEV_REMOTE_HOST_SHA256 !== manifest.remoteHostTrust?.fingerprint ||
+      trustedEnvironment.expectedDatabase !== manifest.database?.replace(/^jdbc:postgresql:\/\/[^/]+\//, '').split('?')[0] ||
+      manifest.remoteResources?.host !== manifest.remoteHostTrust?.host ||
+      manifest.remoteResources?.bootId !== manifest.remoteTdsNodes?.[0]?.bootId)
+    fail('TERMINAL_ACCEPTANCE_DEV_TRUST_BINDING_MISMATCH');
+  const database = /^jdbc:postgresql:\/\/[^/]+\/([a-z][a-z0-9_]{2,62})(?:\?.*)?$/.exec(manifest.database ?? '')?.[1];
+  if (!database || manifest.topology?.java !== 'REMOTE_TRUSTED_HOST' || manifest.topology?.database !== 'REMOTE_LOCALHOST')
+    fail('TERMINAL_ACCEPTANCE_DEV_DATABASE_BINDING_INVALID');
+  const host = manifest.remoteHostTrust?.host;
+  if (typeof host !== 'string' || !host) fail('TERMINAL_ACCEPTANCE_DEV_HOST_MISSING');
+  return {actualPath, manifest, database, host};
+}
+
+export const TERMINAL_ACCEPTANCE_DEV_ACTIONS = Object.freeze([
+  'drain-stop-a',
+  'drain-force-stop-b',
+  'restart-a',
+  'restart-b',
+  'ensure-ready-a',
+  'ensure-ready-b',
+]);
+
+export function readManagedTdsLatestState({manifestPath, runId, terminalRef} = {}) {
+  if (typeof terminalRef !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(terminalRef))
+    fail('TERMINAL_ACCEPTANCE_TERMINAL_REF_INVALID');
+  const resolved = resolveManagedAcceptanceManifest(manifestPath ?? manifestPathDefault(), runId);
+  const sql = `SELECT COALESCE(json_agg(row_to_json(current_state)), '[]'::json) FROM (SELECT group_workspace_key, terminal_ref::text, node_id, session_id, session_sequence, connected_at_epoch_millis, disconnected_at_epoch_millis, last_activity_at_epoch_millis, last_rtt_ms, close_reason FROM terminal_connection.latest_state WHERE terminal_ref='${terminalRef}') current_state`;
+  const script = [
+    'set -euo pipefail',
+    `expected_boot_id=${quote(resolved.manifest.remoteResources?.bootId ?? '')}`,
+    'test "$(cat /proc/sys/kernel/random/boot_id)" = "$expected_boot_id"',
+    `printf %s ${quote(sql)} | docker exec -i catering-postgres psql -U catering -d ${quote(resolved.database)} -v ON_ERROR_STOP=1 -Atq`,
+  ].join('\n');
+  const output = remoteExec(resolved.host, script).trim();
+  const states = JSON.parse(output);
+  if (!Array.isArray(states) || states.length > 1) fail('TERMINAL_ACCEPTANCE_TDS_STATE_READBACK_INVALID');
+  return states[0] ?? null;
+}
+
+function manifestPathDefault() {
+  return path.join(runtime, 'run-manifest.json');
+}
+
+export async function executeManagedTerminalDevAction({manifestPath, runId, action} = {}) {
+  if (!TERMINAL_ACCEPTANCE_DEV_ACTIONS.includes(action)) fail('TERMINAL_ACCEPTANCE_DEV_ACTION_NOT_ALLOWLISTED');
+  const resolved = resolveManagedAcceptanceManifest(manifestPath ?? manifestPathDefault(), runId);
+  const manifest = resolved.manifest;
+  const nodes = manifest.remoteTdsNodes;
+  const byName = name => {
+    const value = nodes.find(node => node.instanceName === name);
+    if (!value) fail('TERMINAL_ACCEPTANCE_TDS_NODE_MISSING');
+    return value;
+  };
+  const haproxy = validateManagedRemoteHaproxyBinding(manifest);
+  let result;
+  if (action === 'drain-stop-a') {
+    const state = await setManagedHaproxyServerState(resolved.host, haproxy, 'tds-a', 'drain');
+    const stopped = await stopRemoteTds(resolved.host, byName('tds-a'));
+    result = {action, server: state, stop: stopped};
+  } else if (action === 'drain-force-stop-b') {
+    const state = await setManagedHaproxyServerState(resolved.host, haproxy, 'tds-b', 'drain');
+    await forceStopRemoteTds(resolved.host, byName('tds-b'));
+    result = {action, server: state, stop: 'FORCE_STOPPED'};
+  } else if (action === 'restart-a' || action === 'restart-b') {
+    const instanceName = action === 'restart-a' ? 'tds-a' : 'tds-b';
+    const old = byName(instanceName);
+    const index = nodes.findIndex(node => node.instanceName === instanceName);
+    const persistUpdatedControl = updated => {
+      nodes[index] = {...updated, localLogPath: old.localLogPath};
+      writeJsonAtomically(resolved.actualPath, manifest);
+    };
+    const updated = await restartRemoteTdsFromSavedEnvironment(resolved.host, old, readinessProgressPath, persistUpdatedControl);
+    const ready = await setManagedHaproxyServerState(resolved.host, haproxy, instanceName, 'ready');
+    result = {action, nodeId: updated.nodeId, ready};
+  } else if (action === 'ensure-ready-a' || action === 'ensure-ready-b') {
+    const instanceName = action === 'ensure-ready-a' ? 'tds-a' : 'tds-b';
+    const old = byName(instanceName);
+    await setManagedHaproxyServerState(resolved.host, haproxy, instanceName, 'drain');
+    if (remoteTdsManagedProcessState(resolved.host, old) === 'RUNNING') {
+      const probe = remoteTdsReadiness(resolved.host, old);
+      if (remoteTdsIdentityMatches(old, probe) && probe.readyMarkerSeen === true && probe.databaseListenerReady === true &&
+          probe.listenerReady === true && probe.rssWithinBudget === true) {
+        const ready = await setManagedHaproxyServerState(resolved.host, haproxy, instanceName, 'ready');
+        result = {action, nodeId: old.nodeId, state: 'ALREADY_READY', ready};
+      } else {
+        await stopRemoteTds(resolved.host, old);
+      }
+    }
+    if (!result) {
+      const index = nodes.findIndex(node => node.instanceName === instanceName);
+      const persistUpdatedControl = updated => {
+        nodes[index] = {...updated, localLogPath: old.localLogPath};
+        writeJsonAtomically(resolved.actualPath, manifest);
+      };
+      const updated = await restartRemoteTdsFromSavedEnvironment(resolved.host, old, readinessProgressPath, persistUpdatedControl);
+      const ready = await setManagedHaproxyServerState(resolved.host, haproxy, instanceName, 'ready');
+      result = {action, nodeId: updated.nodeId, state: 'RESTARTED', ready};
+    }
+  }
+  manifest.terminalAcceptanceActions ??= [];
+  manifest.terminalAcceptanceActions.push({action, at: new Date().toISOString(), result});
+  if (manifest.terminalAcceptanceActions.length > 32) manifest.terminalAcceptanceActions.splice(0, manifest.terminalAcceptanceActions.length - 32);
+  writeJsonAtomically(resolved.actualPath, manifest);
+  return Object.freeze(result);
+}
+export function collectRemoteHaproxyLog(host, control, targetPath) {
+  verifyRemoteHaproxyContainer(host, control);
+  const output = remoteExec(host, `set -euo pipefail\ndocker logs ${quote(control.containerId)} 2>&1`);
+  mkdirSync(path.dirname(targetPath), {recursive: true, mode: 0o700});
+  writeFileSync(targetPath, output, {mode: 0o600});
+  return targetPath;
+}
+export async function stopRemoteHaproxy(host, control) {
+  const {running} = verifyRemoteHaproxyContainer(host, control);
+  const result = remoteExec(host, [
+    'set -euo pipefail',
+    `container_id=${quote(control.containerId)}`,
+    `run_id=${quote(control.runId)}`,
+    `control_path=${quote(control.controlPath)}`,
+    'state=$(docker inspect -f \'{{.State.Running}}\' "$container_id")',
+    'if test "$state" = true; then docker stop --time 10 "$container_id" >/dev/null; else test "$state" = false; fi',
+    'docker rm "$container_id" >/dev/null',
+    'if docker ps -aq --filter "label=com.catering-v2s.run-id=$run_id" | grep -q .; then printf "%s\\n" REMOTE_HAPROXY_RUN_RESOURCE_REMAINS >&2; exit 66; fi',
+    'printf "%s\\n" R5_REMOTE_HAPROXY_STOP=PASS',
+  ].join('\n')).trim();
+  if (result !== 'R5_REMOTE_HAPROXY_STOP=PASS') fail('REMOTE_HAPROXY_STOP_FAILED');
+  return running ? 'STOPPED' : 'ALREADY_STOPPED';
 }
 function readRemoteJavaControl(host, remoteRoot) {
   remoteRootGuard(remoteRoot);
@@ -512,6 +1041,43 @@ function readRemoteJavaControl(host, remoteRoot) {
     ].join('\n'),
   );
   return validateRemoteJavaControl(JSON.parse(output.trim()));
+}
+function readRemoteTdsControl(host, remoteRoot, instanceName) {
+  remoteRootGuard(remoteRoot);
+  if (!['tds-a', 'tds-b', 'tds-c'].includes(instanceName)) fail('REMOTE_TDS_INSTANCE_NAME_INVALID');
+  const controlPath = `${remoteRoot}/results/${instanceName}-control.json`;
+  const output = remoteExec(
+    host,
+    [
+      'set -euo pipefail',
+      `root=${quote(remoteRoot)}`,
+      `control_path=${quote(controlPath)}`,
+      'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
+      'test "${control_path#"$root"/}" != "$control_path"',
+      'cat "$control_path"',
+    ].join('\n'),
+  );
+  const control = validateRemoteTdsControl(JSON.parse(output.trim()));
+  if (control.remoteRoot !== remoteRoot || control.instanceName !== instanceName) fail('REMOTE_TDS_CONTROL_BINDING_INVALID');
+  return control;
+}
+function readRemoteHaproxyControl(host, remoteRoot) {
+  remoteRootGuard(remoteRoot);
+  const controlPath = `${remoteRoot}/results/haproxy-control.json`;
+  const output = remoteExec(
+    host,
+    [
+      'set -euo pipefail',
+      `root=${quote(remoteRoot)}`,
+      `control_path=${quote(controlPath)}`,
+      'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
+      'test "${control_path#"$root"/}" != "$control_path"',
+      'cat "$control_path"',
+    ].join('\n'),
+  );
+  const control = validateRemoteHaproxyControl(JSON.parse(output.trim()));
+  if (control.remoteRoot !== remoteRoot) fail('REMOTE_HAPROXY_CONTROL_ROOT_BINDING_INVALID');
+  return control;
 }
 export function remoteJavaReadiness(host, control) {
   validateRemoteJavaControl(control);
@@ -552,6 +1118,8 @@ export function remoteTdsReadinessScript(control) {
     `expected_boot_id=${quote(control.bootId)}`,
     `expected_start_ticks=${control.processStartTicks}`,
     `expected_command_sha256=${quote(control.commandSha256)}`,
+    `instance_name=${quote(control.instanceName)}`,
+    `node_id=${quote(control.nodeId)}`,
     `rss_budget_kib=${control.rssBudgetMiB * 1024}`,
     'test -r "/proc/$pid/stat"',
     'actual_pgid=$(ps -o pgid= -p "$pid" | tr -d " ")',
@@ -566,7 +1134,7 @@ export function remoteTdsReadinessScript(control) {
     'if grep -Fq "event=tds_listener_ready" "$log_file"; then database_listener=true; else database_listener=false; fi',
     'if ss -ltnH "sport = :$websocket_port" | grep -q .; then listener=true; else listener=false; fi',
     'rss_within_budget=true; if test "$rss_kib" -gt "$rss_budget_kib"; then rss_within_budget=false; fi',
-    'printf \'%s\\n\' "{\\"pid\\":$pid,\\"pgid\\":$actual_pgid,\\"bootId\\":\\"$actual_boot_id\\",\\"processStartTicks\\":$actual_start_ticks,\\"commandSha256\\":\\"$actual_command_sha256\\",\\"remoteRoot\\":\\"$root\\",\\"websocketPort\\":$websocket_port,\\"rssBudgetMiB\\":$((rss_budget_kib / 1024)),\\"readyMarkerSeen\\":$ready,\\"databaseListenerReady\\":$database_listener,\\"listenerReady\\":$listener,\\"rssKiB\\":$rss_kib,\\"rssWithinBudget\\":$rss_within_budget}"',
+    'printf \'%s\\n\' "{\\"pid\\":$pid,\\"pgid\\":$actual_pgid,\\"bootId\\":\\"$actual_boot_id\\",\\"processStartTicks\\":$actual_start_ticks,\\"commandSha256\\":\\"$actual_command_sha256\\",\\"remoteRoot\\":\\"$root\\",\\"instanceName\\":\\"$instance_name\\",\\"nodeId\\":\\"$node_id\\",\\"websocketPort\\":$websocket_port,\\"rssBudgetMiB\\":$((rss_budget_kib / 1024)),\\"readyMarkerSeen\\":$ready,\\"databaseListenerReady\\":$database_listener,\\"listenerReady\\":$listener,\\"rssKiB\\":$rss_kib,\\"rssWithinBudget\\":$rss_within_budget}"',
   ].join('\n');
 }
 export function remoteTdsReadiness(host, control) {
@@ -711,6 +1279,8 @@ export function cleanupRemoteJavaRoot(host, remoteRoot) {
       'set -euo pipefail',
       `root=${quote(remoteRoot)}`,
       'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
+      'container_ids=$(docker ps -aq --filter "label=com.catering-v2s.remote-root=$root")',
+      'if test -n "$container_ids"; then printf "%s\\n" "REMOTE_ACTIVE_CONTAINER_COUNT=$(printf "%s\\n" "$container_ids" | wc -l | tr -d " ")" "REMOTE_ACTIVE_CONTAINER_IDS=$(printf "%s" "$container_ids" | tr "\\n" ",")" >&2; exit 48; fi',
       'rm -rf -- "$root"',
       'test ! -e "$root"',
     ].join('\n'),
@@ -725,18 +1295,24 @@ export function parseRemoteRootCleanupResult(remoteRoot, result) {
   const remoteRootAbsent = cleanupMarker(output, 'R5_REMOTE_ROOT_ABSENT') === 'true';
   const activeProcessCount = cleanupMarker(output, 'REMOTE_ACTIVE_PROCESS_COUNT');
   const unknownProcessCount = cleanupMarker(output, 'REMOTE_UNKNOWN_PROCESS_COUNT');
+  const activeContainerCount = cleanupMarker(output, 'REMOTE_ACTIVE_CONTAINER_COUNT');
   return Object.freeze({
-    status: result?.status === 0 && remoteRootAbsent ? 'PASS' : 'FAIL',
+    status: result?.status === 0 && remoteRootAbsent && activeProcessCount === '0' &&
+      unknownProcessCount === '0' && activeContainerCount === '0' ? 'PASS' : 'FAIL',
     remoteRoot,
     remoteRootPresent: cleanupMarker(output, 'R5_REMOTE_ROOT_PRESENT'),
     remoteRootAbsent,
     activeProcessCount,
     activeProcessPids: cleanupMarker(output, 'REMOTE_ACTIVE_PROCESS_PIDS'),
+    activeContainerCount,
+    activeContainerIds: cleanupMarker(output, 'REMOTE_ACTIVE_CONTAINER_IDS'),
     unknownProcessCount,
     unknownProcessPids: cleanupMarker(output, 'REMOTE_UNKNOWN_PROCESS_PIDS'),
     failure:
       result?.status !== 0
-        ? unknownProcessCount && unknownProcessCount !== '0'
+        ? activeContainerCount && activeContainerCount !== '0'
+          ? 'REMOTE_CONTAINERS_REMAIN'
+          : unknownProcessCount && unknownProcessCount !== '0'
           ? 'REMOTE_PROCESS_INSPECTION_UNAVAILABLE'
           : compact(result?.stderr || result?.stdout)
         : remoteRootAbsent
@@ -744,15 +1320,32 @@ export function parseRemoteRootCleanupResult(remoteRoot, result) {
           : 'REMOTE_ROOT_CLEANUP_READBACK_INVALID',
   });
 }
-export function cleanupRemoteRootWithoutJavaControl(host, remoteRoot) {
+export function remoteRootCleanupScript(remoteRoot, expectedBootId) {
   remoteRootGuard(remoteRoot);
-  const result = remoteResult(
-    host,
-    [
+  if (!/^[0-9a-f-]{16,128}$/i.test(expectedBootId ?? '')) fail('REMOTE_ROOT_CLEANUP_BOOT_ID_INVALID');
+  return [
       'set -euo pipefail',
       `root=${quote(remoteRoot)}`,
+      `expected_boot_id=${quote(expectedBootId)}`,
       'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
-      'if test ! -e "$root"; then printf "%s\\n" R5_REMOTE_ROOT_ABSENT=true; exit 0; fi',
+      'actual_boot_id=$(cat /proc/sys/kernel/random/boot_id)',
+      'test "$actual_boot_id" = "$expected_boot_id"',
+      'container_ids=$(docker ps -aq --filter "label=com.catering-v2s.remote-root=$root")',
+      'container_count=0; test -z "$container_ids" || container_count=$(printf "%s\\n" "$container_ids" | wc -l | tr -d " ")',
+      'container_ids_csv=""',
+      'if test -n "$container_ids"; then container_ids_csv=$(printf "%s\\n" "$container_ids" | tr "\\n" ","); fi',
+      'if test ! -e "$root"; then',
+      '  printf "R5_REMOTE_ROOT_PRESENT=false\\n"',
+      '  printf "REMOTE_ACTIVE_PROCESS_COUNT=0\\n"',
+      '  printf "REMOTE_ACTIVE_PROCESS_PIDS=\\n"',
+      '  printf "REMOTE_ACTIVE_CONTAINER_COUNT=%s\\n" "$container_count"',
+      '  printf "REMOTE_ACTIVE_CONTAINER_IDS=%s\\n" "$container_ids_csv"',
+      '  printf "REMOTE_UNKNOWN_PROCESS_COUNT=0\\n"',
+      '  printf "REMOTE_UNKNOWN_PROCESS_PIDS=\\n"',
+      '  if test "$container_count" -ne 0; then exit 48; fi',
+      '  printf "R5_REMOTE_ROOT_ABSENT=true\\n"',
+      '  exit 0',
+      'fi',
       'if ! ps -eo pid=,args= > "$root/.process-table"; then exit 47; fi',
       'active_process_count=0',
       'active_process_pids=""',
@@ -767,18 +1360,27 @@ export function cleanupRemoteRootWithoutJavaControl(host, remoteRoot) {
       '  pid="${proc##*/}"',
       '  if ! cwd=$(readlink "$proc/cwd" 2>/dev/null); then unknown_process_count=$((unknown_process_count + 1)); unknown_process_pids="${unknown_process_pids}${pid},"; continue; fi',
       '  case "$cwd" in',
-      '    "$root"|"$root"/*) case ",$active_process_pids," in *,"$pid,*) ;; *) active_process_count=$((active_process_count + 1)); active_process_pids="${active_process_pids}${pid}," ;; esac ;;',
+      '    "$root"|"$root"/*) active_process_count=$((active_process_count + 1)); active_process_pids="${active_process_pids}${pid}," ;;',
       '  esac',
       'done',
       'rm -f -- "$root/.process-table"',
-      'printf "%s\\n" "R5_REMOTE_ROOT_PRESENT=true" "REMOTE_ACTIVE_PROCESS_COUNT=$active_process_count" "REMOTE_ACTIVE_PROCESS_PIDS=${active_process_pids%,}" "REMOTE_UNKNOWN_PROCESS_COUNT=$unknown_process_count" "REMOTE_UNKNOWN_PROCESS_PIDS=${unknown_process_pids%,}"',
+      'printf "R5_REMOTE_ROOT_PRESENT=true\\n"',
+      'printf "REMOTE_ACTIVE_PROCESS_COUNT=%s\\n" "$active_process_count"',
+      'printf "REMOTE_ACTIVE_PROCESS_PIDS=%s\\n" "${active_process_pids%,}"',
+      'printf "REMOTE_ACTIVE_CONTAINER_COUNT=%s\\n" "$container_count"',
+      'printf "REMOTE_ACTIVE_CONTAINER_IDS=%s\\n" "$container_ids_csv"',
+      'printf "REMOTE_UNKNOWN_PROCESS_COUNT=%s\\n" "$unknown_process_count"',
+      'printf "REMOTE_UNKNOWN_PROCESS_PIDS=%s\\n" "${unknown_process_pids%,}"',
       'if test "$active_process_count" -ne 0; then exit 45; fi',
+      'if test "$container_count" -ne 0; then exit 48; fi',
       'if test "$unknown_process_count" -ne 0; then exit 46; fi',
       'rm -rf -- "$root"',
       'test ! -e "$root"',
-      'printf "%s\\n" R5_REMOTE_ROOT_ABSENT=true',
-    ].join('\n'),
-  );
+      'printf "R5_REMOTE_ROOT_ABSENT=true\\n"',
+  ].join('\n');
+}
+export function cleanupRemoteRootWithoutJavaControl(host, remoteRoot, expectedBootId) {
+  const result = remoteResult(host, remoteRootCleanupScript(remoteRoot, expectedBootId));
   const detail = parseRemoteRootCleanupResult(remoteRoot, result);
   if (detail.status !== 'PASS') {
     const error = new Error(detail.failure || 'REMOTE_ROOT_CLEANUP_FAILED');
@@ -824,12 +1426,20 @@ export function validateManagedRemoteJavaBinding(manifest) {
   return control;
 }
 export function validateManagedRemoteTdsBinding(manifest) {
-  const control = validateRemoteTdsControl(manifest?.remoteTds);
+  const control = validateRemoteTdsControl(manifest?.remoteTds ?? manifest?.remoteTdsNodes?.[0]);
   if (control.runId !== manifest?.runId) throw new Error('R5_DEV_REMOTE_TDS_RUN_ID_MISMATCH');
   if (control.remoteRoot !== manifest?.remoteDiagnostic?.remoteRoot)
     throw new Error('R5_DEV_REMOTE_TDS_ROOT_BINDING_MISMATCH');
   if (control.remoteRoot !== remoteDevRootFor(manifest?.runId))
     throw new Error('R5_DEV_REMOTE_TDS_DERIVED_ROOT_MISMATCH');
+  return control;
+}
+export function validateManagedRemoteTdsNodeBinding(manifest, value) {
+  const control = validateRemoteTdsControl(value);
+  if (control.runId !== manifest?.runId) throw new Error(`R5_DEV_REMOTE_TDS_RUN_ID_MISMATCH:${control.instanceName}`);
+  if (control.remoteRoot !== manifest?.remoteDiagnostic?.remoteRoot || control.remoteRoot !== remoteDevRootFor(manifest?.runId))
+    throw new Error(`R5_DEV_REMOTE_TDS_ROOT_BINDING_MISMATCH:${control.instanceName}`);
+  if (control.bootId !== manifest?.remoteResources?.bootId) throw new Error(`R5_DEV_REMOTE_TDS_BOOT_ID_MISMATCH:${control.instanceName}`);
   return control;
 }
 export function canCleanupRemoteJavaRoot({controlValid, remoteJavaStopStatus} = {}) {
@@ -897,12 +1507,16 @@ export function buildManagedDevCleanupReceipt({
   remoteJavaStopStatus,
   remoteTdsControlStatus = 'NOT_APPLICABLE',
   remoteTdsStopStatus = 'NOT_APPLICABLE',
+  remoteHaproxyControlStatus = 'NOT_APPLICABLE',
+  remoteHaproxyStopStatus = 'NOT_APPLICABLE',
+  remoteTdsNodeStatuses = [],
   remoteJavaRootCleanupStatus,
   failedProcessCount = 0,
 } = {}) {
   const remoteJavaStopped = ['STOPPED', 'ALREADY_STOPPED'].includes(remoteJavaStopStatus);
   const remoteTdsStopped = ['STOPPED', 'ALREADY_STOPPED'].includes(remoteTdsStopStatus);
-  return Object.freeze({
+  const remoteHaproxyStopped = ['STOPPED', 'ALREADY_STOPPED'].includes(remoteHaproxyStopStatus);
+  const receipt = {
     status: cleanupStatus,
     failedProcessCount,
     localProcess: localProcessStatus,
@@ -922,8 +1536,20 @@ export function buildManagedDevCleanupReceipt({
           ? 'PASS'
           : 'FAIL',
     remoteTdsStop: remoteTdsStopStatus,
+    remoteHaproxyControl: remoteHaproxyControlStatus,
+    remoteHaproxy:
+      remoteHaproxyControlStatus === 'NOT_APPLICABLE'
+        ? 'NOT_APPLICABLE'
+        : remoteHaproxyControlStatus === 'PASS' && remoteHaproxyStopped
+          ? 'PASS'
+          : 'FAIL',
+    remoteHaproxyStop: remoteHaproxyStopStatus,
     remoteJavaRoot: remoteJavaRootCleanupStatus,
-  });
+  };
+  if (remoteTdsNodeStatuses.length > 0) {
+    receipt.remoteTdsNodes = Object.freeze(remoteTdsNodeStatuses.map(value => Object.freeze({...value})));
+  }
+  return Object.freeze(receipt);
 }
 const terminalManifestPathFor = runId => path.join(runtime, `terminal-${runId}.json`);
 const safeFailure = error =>
@@ -1006,6 +1632,7 @@ function selectTunnelPorts() {
   const requestedHttp = process.env.V2S_DEV_LOCAL_HTTP_PORT;
   const requestedAsset = process.env.V2S_DEV_LOCAL_ASSET_PORT;
   const requestedTds = process.env.V2S_DEV_LOCAL_TDS_PORT;
+  const requestedTdsSecondary = process.env.V2S_DEV_LOCAL_TDS_SECONDARY_PORT;
   if (Boolean(requestedHttp) !== Boolean(requestedAsset)) fail('R5_DEV_LOCAL_PORT_PAIR_INCOMPLETE');
   if (requestedHttp && requestedAsset) {
     if (!/^\d{4,5}$/.test(requestedHttp) || !/^\d{4,5}$/.test(requestedAsset) || requestedHttp === requestedAsset)
@@ -1015,20 +1642,27 @@ function selectTunnelPorts() {
       value =>
         /^\d{4,5}$/.test(value) && value !== requestedHttp && value !== requestedAsset && !listenerPids(value).length,
     );
+    const matchingDefault = defaultTunnelPortPairs.find(value => value.tds === tds);
+    const secondaryCandidates = requestedTdsSecondary
+      ? [requestedTdsSecondary]
+      : [...(matchingDefault ? [matchingDefault.tdsSecondary] : []), ...defaultTunnelPortPairs.map(value => value.tdsSecondary)];
+    const tdsSecondary = secondaryCandidates.find(value =>
+      /^\d{4,5}$/.test(value) && value !== tds && value !== requestedHttp && value !== requestedAsset && !listenerPids(value).length,
+    );
     if (
-      !tds ||
-      ['5174', '5175'].includes(tds) ||
+      !tds || !tdsSecondary ||
+      [tds, tdsSecondary].some(value => ['5174', '5175'].includes(value)) ||
       [requestedHttp, requestedAsset].some(value => ['5174', '5175'].includes(value)) ||
       listenerPids(requestedHttp).length ||
       listenerPids(requestedAsset).length
     )
       fail('R5_DEV_LOCAL_PORT_ALREADY_OCCUPIED');
-    return {http: requestedHttp, asset: requestedAsset, tds};
+    return {http: requestedHttp, asset: requestedAsset, tds, tdsSecondary};
   }
-  if (requestedTds) fail('R5_DEV_LOCAL_PORT_PAIR_INCOMPLETE');
+  if (requestedTds || requestedTdsSecondary) fail('R5_DEV_LOCAL_PORT_PAIR_INCOMPLETE');
   const selected = defaultTunnelPortPairs.find(
-    ({http, asset, tds}) =>
-      ![http, asset, tds].some(port => ['5174', '5175'].includes(port) || listenerPids(port).length > 0),
+    ({http, asset, tds, tdsSecondary}) =>
+      ![http, asset, tds, tdsSecondary].some(port => ['5174', '5175'].includes(port) || listenerPids(port).length > 0),
   );
   if (!selected) fail('R5_DEV_TUNNEL_PORT_PAIR_UNAVAILABLE');
   return selected;
@@ -1209,7 +1843,9 @@ async function openTunnel(env, ports) {
     '-L',
     `${ports.asset}:127.0.0.1:${env.environment.V2S_DEV_REMOTE_ASSET_PORT}`,
     '-L',
-    `${ports.tds}:127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_PORT}`,
+    `${ports.tds}:127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT}`,
+    '-L',
+    `${ports.tdsSecondary}:127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT}`,
     env.environment.V2S_DEV_REMOTE_HOST,
   ];
   const tunnel = spawn(command[0], command.slice(1), {cwd: root, detached: true, stdio: ['ignore', 'ignore', logFd]});
@@ -1230,13 +1866,16 @@ async function openTunnel(env, ports) {
       const httpListeners = listenerPids(ports.http);
       const assetListeners = listenerPids(ports.asset);
       const tdsListeners = listenerPids(ports.tds);
+      const tdsSecondaryListeners = listenerPids(ports.tdsSecondary);
       if (
         httpListeners.length === 1 &&
         assetListeners.length === 1 &&
         tdsListeners.length === 1 &&
+        tdsSecondaryListeners.length === 1 &&
         httpListeners[0] === value.pid &&
         assetListeners[0] === value.pid &&
-        tdsListeners[0] === value.pid
+        tdsListeners[0] === value.pid &&
+        tdsSecondaryListeners[0] === value.pid
       )
         return value;
       await delay(200);
@@ -1368,6 +2007,7 @@ async function start() {
     'admin-validation-with-ter',
     path.join(root, '.runtime'),
   ]);
+  assertNoActiveTerminalClientAcceptance({lockPath: path.join(root, '.runtime/terminal-client-dev-acceptance.lock')});
   if (existsSync(manifestPath)) {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
     if ((manifest.processes ?? []).some(value => pidAlive(value.pid))) fail('MANAGED_RUN_ALREADY_ACTIVE');
@@ -1392,10 +2032,23 @@ async function start() {
   const credential = credentials();
   const runId = `r5-dev-${Date.now()}-${process.pid}-${crypto.randomUUID()}`;
   const remoteRoot = remoteDevRootFor(runId);
-  const remoteResources = remoteResourcePreflight(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot);
+  const remoteResources = remoteResourcePreflight(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot, {
+    minimumMemoryMiB: Math.max(2048, env.tdsCapacity.rssBudgetMiB * TDS_CLUSTER_NODE_NAMES.length + HAPROXY_MEMORY_BUDGET_MIB),
+  });
+  const tdsNodeSpecs = TDS_CLUSTER_NODE_NAMES.map(name => ({
+    instanceName: `tds-${name}`,
+    nodeId: `${env.environment.V2S_TDS_NODE_ID}-${name}`,
+    websocketPort: Number(env.environment[`V2S_DEV_REMOTE_TDS_${name.toUpperCase()}_PORT`]),
+  }));
+  const remoteTdsEntryPorts = {
+    one: Number(env.environment.V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT),
+    two: Number(env.environment.V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT),
+  };
+  const remoteTdsNodePorts = Object.fromEntries(tdsNodeSpecs.map(({instanceName, websocketPort}) => [instanceName.slice(-1), websocketPort]));
   const remotePorts = assertRemotePortsAvailable(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot, [
     env.environment.V2S_DEV_REMOTE_HTTP_PORT,
-    env.environment.V2S_DEV_REMOTE_TDS_PORT,
+    ...Object.values(remoteTdsEntryPorts),
+    ...Object.values(remoteTdsNodePorts),
   ]);
   const remoteEvidenceDirectory = path.join(runtime, 'dev', runId);
   const seedEventsPath = path.join(runtime, 'evidence', 'seed-request-events.jsonl');
@@ -1436,12 +2089,21 @@ async function start() {
   let processes = [];
   let remoteJava = null;
   let remoteJavaLogPath = null;
-  let remoteTds = null;
-  let remoteTdsLogPath = null;
+  const remoteTdsNodes = [];
+  const remoteTdsReadinessResults = [];
+  const remoteTdsLogPaths = {};
+  let remoteHaproxy = null;
+  let remoteHaproxyLogPath = null;
   let remoteRootMayExist = false;
+  let remoteJavaStartAttempted = false;
+  const remoteTdsStartAttempted = new Set();
+  let remoteHaproxyStartAttempted = false;
   let lastKnownGood = 'REMOTE_RESOURCE_PREFLIGHT';
   let brokenBoundary = 'REMOTE_SOURCE_SYNC';
   try {
+    brokenBoundary = 'REMOTE_HAPROXY_IMAGE_DIGEST';
+    const haproxyDigest = await resolveRemoteHaproxyDigest(env.environment.V2S_DEV_REMOTE_HOST);
+    lastKnownGood = 'REMOTE_HAPROXY_IMAGE_RESOLVED';
     remoteRootMayExist = true;
     brokenBoundary = 'REMOTE_SOURCE_SYNC';
     await syncRemoteSource(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot);
@@ -1454,6 +2116,7 @@ async function start() {
     processes = [tunnel];
     lastKnownGood = 'TUNNEL_READY';
     brokenBoundary = 'REMOTE_JAVA_CONTROL';
+    remoteJavaStartAttempted = true;
     remoteJava = await startRemoteJava(env.environment.V2S_DEV_REMOTE_HOST, {
       runId,
       remoteRoot,
@@ -1466,9 +2129,52 @@ async function start() {
     brokenBoundary = 'REMOTE_HOST_IDENTITY';
     if (remoteJava.bootId !== remoteResources.bootId) fail('REMOTE_HOST_REBOOTED_DURING_START');
     brokenBoundary = 'REMOTE_TDS_CONTROL';
-    remoteTds = await startRemoteTds(env.environment.V2S_DEV_REMOTE_HOST, {runId, remoteRoot, env, credential});
-    lastKnownGood = 'REMOTE_TDS_CONTROL_READY';
-    if (remoteTds.bootId !== remoteResources.bootId) fail('REMOTE_HOST_REBOOTED_DURING_TDS_START');
+    for (const spec of tdsNodeSpecs) {
+      remoteTdsStartAttempted.add(spec.instanceName);
+      const remoteTds = await startRemoteTds(env.environment.V2S_DEV_REMOTE_HOST, {
+        runId,
+        remoteRoot,
+        env,
+        credential,
+        ...spec,
+      });
+      remoteTdsNodes.push(remoteTds);
+      if (remoteTds.bootId !== remoteResources.bootId) fail(`REMOTE_HOST_REBOOTED_DURING_TDS_START:${spec.instanceName}`);
+
+      // Each TDS bootRun shares the remote workspace's Gradle output tree.
+      // Wait until this node finishes its build and reports ready before the
+      // next bootRun can compile into that same tree.
+      brokenBoundary = `REMOTE_TDS_READINESS:${spec.instanceName}`;
+      const readiness = await waitForRemoteTdsReady(env.environment.V2S_DEV_REMOTE_HOST, remoteTds, readinessProgressPath);
+      remoteTdsReadinessResults.push(readiness);
+      lastKnownGood = `REMOTE_TDS_READY:${spec.instanceName}`;
+    }
+    lastKnownGood = 'REMOTE_TDS_CLUSTER_READY';
+    brokenBoundary = 'REMOTE_TDS_CLUSTER_READINESS';
+    const validatedCluster = validateManagedTdsCluster({
+      runId,
+      remoteRoot,
+      nodes: remoteTdsNodes,
+      entryPorts: remoteTdsEntryPorts,
+      hostBootId: remoteResources.bootId,
+    });
+    const aggregateTdsRssKiB = remoteTdsReadinessResults.reduce((total, value) => total + value.rssKiB, 0);
+    const aggregateTdsBudgetMiB = remoteTdsNodes.reduce((total, value) => total + value.rssBudgetMiB, 0);
+    if (aggregateTdsRssKiB > aggregateTdsBudgetMiB * 1024) fail('REMOTE_TDS_CLUSTER_AGGREGATE_RSS_BUDGET_EXCEEDED');
+    brokenBoundary = 'REMOTE_HAPROXY_CONTROL';
+    remoteHaproxyStartAttempted = true;
+    remoteHaproxy = await startRemoteHaproxy(env.environment.V2S_DEV_REMOTE_HOST, {
+      runId,
+      remoteRoot,
+      hostBootId: remoteResources.bootId,
+      entryPorts: remoteTdsEntryPorts,
+      nodePorts: remoteTdsNodePorts,
+      imageDigest: haproxyDigest,
+    });
+    if (remoteHaproxy.hostBootId !== remoteResources.bootId) fail('REMOTE_HOST_REBOOTED_DURING_HAPROXY_START');
+    brokenBoundary = 'REMOTE_HAPROXY_INGRESS';
+    const haproxyReadiness = await remoteHaproxyIngressReadiness(env.environment.V2S_DEV_REMOTE_HOST, remoteHaproxy, remoteTdsNodes);
+    lastKnownGood = 'REMOTE_HAPROXY_AND_TDS_INGRESS_READY';
     const commands = [
       {
         name: 'platform-admin',
@@ -1515,13 +2221,8 @@ async function start() {
       remoteJava,
       readinessProgressPath,
     );
-    brokenBoundary = 'REMOTE_TDS_READINESS';
-    const remoteTdsReadiness = await waitForRemoteTdsReady(
-      env.environment.V2S_DEV_REMOTE_HOST,
-      remoteTds,
-      readinessProgressPath,
-    );
     const tdsWebSocketProbe = probeLocalTdsWebSocket(buildTdsWebSocketProbeUrl(tunnelPorts.tds));
+    const tdsSecondaryWebSocketProbe = probeLocalTdsWebSocket(buildTdsWebSocketProbeUrl(tunnelPorts.tdsSecondary));
     lastKnownGood = 'REMOTE_READINESS';
     brokenBoundary = 'VITE_READINESS';
     const viteReadiness = {};
@@ -1535,19 +2236,27 @@ async function start() {
     brokenBoundary = 'LOG_COLLECTION';
     remoteJavaLogPath = path.join(remoteEvidenceDirectory, 'business-server.log');
     collectRemoteLog(env.environment.V2S_DEV_REMOTE_HOST, remoteJava, remoteJavaLogPath);
-    remoteTdsLogPath = path.join(remoteEvidenceDirectory, 'tds-server.log');
-    collectRemoteTdsLog(env.environment.V2S_DEV_REMOTE_HOST, remoteTds, remoteTdsLogPath);
+    for (const remoteTds of remoteTdsNodes) {
+      const localLogPath = path.join(remoteEvidenceDirectory, `${remoteTds.instanceName}.log`);
+      collectRemoteTdsLog(env.environment.V2S_DEV_REMOTE_HOST, remoteTds, localLogPath);
+      remoteTdsLogPaths[remoteTds.instanceName] = localLogPath;
+    }
+    remoteHaproxyLogPath = path.join(remoteEvidenceDirectory, 'haproxy.log');
+    collectRemoteHaproxyLog(env.environment.V2S_DEV_REMOTE_HOST, remoteHaproxy, remoteHaproxyLogPath);
     lastKnownGood = 'LOG_COLLECTION';
     brokenBoundary = 'MANIFEST_WRITE';
     const readiness = {
       remoteJava: remoteReadiness,
-      remoteTds: remoteTdsReadiness,
-      tdsWebSocketProbe,
+      remoteTdsNodes: remoteTdsReadinessResults,
+      remoteTdsCluster: validatedCluster,
+      remoteHaproxy: haproxyReadiness,
+      tdsWebSocketProbes: {entryOne: tdsWebSocketProbe, entryTwo: tdsSecondaryWebSocketProbe},
       vite: viteReadiness,
       tunnel: {
         httpPort: tunnelPorts.http,
         assetPort: tunnelPorts.asset,
-        tdsPort: tunnelPorts.tds,
+        tdsEntryOnePort: tunnelPorts.tds,
+        tdsEntryTwoPort: tunnelPorts.tdsSecondary,
         listenerOwner: tunnel.pid,
       },
     };
@@ -1561,8 +2270,9 @@ async function start() {
           topology: {
             java: 'REMOTE_TRUSTED_HOST',
             tds: 'REMOTE_TRUSTED_HOST',
+            haproxy: 'REMOTE_TRUSTED_HOST_HOST_NETWORK_LOOPBACK_ONLY',
             database: 'REMOTE_LOCALHOST',
-            tunnel: 'HTTP_ASSET_AND_TDS_WEBSOCKET',
+            tunnel: 'HTTP_ASSET_AND_TWO_TDS_HAPROXY_WEBSOCKET_ENTRIES',
           },
           tdsCapacity: env.tdsCapacity,
           portLock,
@@ -1571,7 +2281,11 @@ async function start() {
           localHttpBaseUrl: `http://127.0.0.1:${tunnelPorts.http}`,
           remoteHttpBaseUrl: `http://127.0.0.1:${env.environment.V2S_DEV_REMOTE_HTTP_PORT}`,
           localTdsWebSocketBaseUrl: `ws://127.0.0.1:${tunnelPorts.tds}`,
-          remoteTdsWebSocketBaseUrl: `ws://127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_PORT}`,
+          localTdsEntryTwoWebSocketBaseUrl: `ws://127.0.0.1:${tunnelPorts.tdsSecondary}`,
+          remoteTdsEntryWebSocketBaseUrls: {
+            one: `ws://127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT}`,
+            two: `ws://127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT}`,
+          },
           assetBaseUrl: `http://127.0.0.1:${tunnelPorts.asset}`,
           seedEventsPath,
           dbOperationsPath,
@@ -1593,7 +2307,8 @@ async function start() {
           catalogTestFaultAdmission: {requested: catalogFaultFlag === 'true', effective: catalogTestFaultsAdmitted},
           readinessProgressPath,
           remoteJava: {...remoteJava, localLogPath: remoteJavaLogPath},
-          remoteTds: {...remoteTds, localLogPath: remoteTdsLogPath},
+          remoteTdsNodes: remoteTdsNodes.map(node => ({...node, localLogPath: remoteTdsLogPaths[node.instanceName]})),
+          remoteHaproxy: {...remoteHaproxy, localLogPath: remoteHaproxyLogPath},
           processes,
           readiness,
         },
@@ -1602,21 +2317,43 @@ async function start() {
       ) + '\n',
     );
     process.stdout.write(
-      `R5_DEV_START=PASS; MANIFEST=${manifestPath}; REMOTE_TDS_WS=ws://127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_PORT}; LOCAL_TDS_WS=ws://127.0.0.1:${tunnelPorts.tds}; PROCESSES=${processes.map(value => `${value.name}:${value.pid}`).join(',')}\n`,
+      `R5_DEV_START=PASS; MANIFEST=${manifestPath}; TDS_ENTRY_ONE=ws://127.0.0.1:${tunnelPorts.tds}; TDS_ENTRY_TWO=ws://127.0.0.1:${tunnelPorts.tdsSecondary}; TDS_NODES=${remoteTdsNodes.map(node => node.nodeId).join(',')}; HAPROXY_IMAGE_DIGEST=${remoteHaproxy.imageDigest}; PROCESSES=${processes.map(value => `${value.name}:${value.pid}`).join(',')}\n`,
     );
   } catch (error) {
     let cleanupStatus = 'PASS';
     let localProcessStatus = 'PASS';
-    let remoteJavaLogStatus = remoteJava ? 'PENDING' : 'NOT_APPLICABLE';
-    let remoteJavaStopStatus = remoteJava ? 'NOT_RUN' : 'NOT_APPLICABLE';
-    let remoteTdsLogStatus = remoteTds ? 'PENDING' : 'NOT_APPLICABLE';
-    let remoteTdsStopStatus = remoteTds ? 'NOT_RUN' : 'NOT_APPLICABLE';
+    let remoteJavaLogStatus = remoteJavaStartAttempted ? 'PENDING' : 'NOT_APPLICABLE';
+    let remoteJavaStopStatus = remoteJavaStartAttempted ? 'NOT_RUN' : 'NOT_APPLICABLE';
     let remoteJavaRootCleanupStatus = remoteRootMayExist ? 'NOT_RUN' : 'NOT_APPLICABLE';
-    let remoteJavaControlStatus = remoteJava ? 'FAIL' : 'NOT_APPLICABLE';
-    let remoteTdsControlStatus = remoteTds ? 'FAIL' : 'NOT_APPLICABLE';
+    let remoteJavaControlStatus = remoteJavaStartAttempted ? 'FAIL' : 'NOT_APPLICABLE';
+    let remoteHaproxyLogStatus = remoteHaproxyStartAttempted ? 'PENDING' : 'NOT_APPLICABLE';
+    let remoteHaproxyStopStatus = remoteHaproxyStartAttempted ? 'NOT_RUN' : 'NOT_APPLICABLE';
+    let remoteHaproxyControlStatus = remoteHaproxyStartAttempted ? 'FAIL' : 'NOT_APPLICABLE';
     let remoteRootCleanupEvidence = {status: remoteRootMayExist ? 'NOT_RUN' : 'NOT_APPLICABLE', remoteRoot};
     let managedRemoteJavaControl = null;
-    let managedRemoteTdsControl = null;
+    const remoteTdsNodeStatuses = [];
+    const remoteHost = env.environment.V2S_DEV_REMOTE_HOST;
+    for (const value of [...processes].reverse()) {
+      if (!Number.isInteger(value.pid) || typeof value.startToken !== 'string') continue;
+      try {
+        await stopOwnedProcess(value);
+      } catch {
+        cleanupStatus = 'FAIL';
+        localProcessStatus = 'FAIL';
+      }
+    }
+    if (remoteRootMayExist) {
+      if (remoteJavaStartAttempted && !remoteJava) {
+        try { remoteJava = readRemoteJavaControl(remoteHost, remoteRoot); } catch {}
+      }
+      for (const spec of tdsNodeSpecs) {
+        if (!remoteTdsStartAttempted.has(spec.instanceName) || remoteTdsNodes.some(value => value.instanceName === spec.instanceName)) continue;
+        try { remoteTdsNodes.push(readRemoteTdsControl(remoteHost, remoteRoot, spec.instanceName)); } catch {}
+      }
+      if (remoteHaproxyStartAttempted && !remoteHaproxy) {
+        try { remoteHaproxy = readRemoteHaproxyControl(remoteHost, remoteRoot); } catch {}
+      }
+    }
     if (remoteJava) {
       remoteJavaLogPath = path.join(remoteEvidenceDirectory, 'business-server.log');
       try {
@@ -1642,47 +2379,103 @@ async function start() {
         remoteJavaStopStatus = 'FAIL';
         cleanupStatus = 'FAIL';
       }
+    } else if (remoteJavaStartAttempted) {
+      remoteJavaControlStatus = 'FAIL';
+      remoteJavaStopStatus = 'FAIL';
+      remoteJavaLogStatus = 'FAIL';
+      cleanupStatus = 'FAIL';
     }
-    if (remoteTds) {
-      remoteTdsLogPath = path.join(remoteEvidenceDirectory, 'tds-server.log');
+    if (remoteHaproxy) {
+      let managedHaproxyControl = null;
       try {
-        managedRemoteTdsControl = validateManagedRemoteTdsBinding({runId, remoteTds, remoteDiagnostic: {remoteRoot}});
-        remoteTdsControlStatus = 'PASS';
-        collectRemoteTdsLog(env.environment.V2S_DEV_REMOTE_HOST, managedRemoteTdsControl, remoteTdsLogPath);
-        remoteTdsLogStatus = 'PASS';
+        managedHaproxyControl = validateManagedRemoteHaproxyBinding({runId, remoteHaproxy, remoteDiagnostic: {remoteRoot}, remoteResources});
+        remoteHaproxyControlStatus = 'PASS';
       } catch {
-        remoteTdsLogStatus = 'FAIL';
-      }
-      if (managedRemoteTdsControl) {
-        try {
-          remoteTdsStopStatus = await stopRemoteTds(env.environment.V2S_DEV_REMOTE_HOST, managedRemoteTdsControl);
-        } catch {
-          cleanupStatus = 'FAIL';
-          remoteTdsStopStatus = 'FAIL';
-        }
-      } else {
-        remoteTdsStopStatus = 'FAIL';
+        remoteHaproxyControlStatus = 'FAIL';
         cleanupStatus = 'FAIL';
       }
+      if (managedHaproxyControl) {
+        remoteHaproxyLogPath = path.join(remoteEvidenceDirectory, 'haproxy.log');
+        try {
+          collectRemoteHaproxyLog(remoteHost, managedHaproxyControl, remoteHaproxyLogPath);
+          remoteHaproxyLogStatus = 'PASS';
+        } catch {
+          remoteHaproxyLogStatus = 'FAIL';
+        }
+        try {
+          remoteHaproxyStopStatus = await stopRemoteHaproxy(remoteHost, managedHaproxyControl);
+        } catch {
+          remoteHaproxyStopStatus = 'FAIL';
+          cleanupStatus = 'FAIL';
+        }
+      } else {
+        remoteHaproxyStopStatus = 'FAIL';
+      }
+    } else if (remoteHaproxyStartAttempted) {
+      remoteHaproxyLogStatus = 'FAIL';
+      remoteHaproxyStopStatus = 'FAIL';
+      cleanupStatus = 'FAIL';
     }
-    if (remoteRootMayExist) {
-      const javaStopped = !remoteJava || ['STOPPED', 'ALREADY_STOPPED'].includes(remoteJavaStopStatus);
-      const tdsStopped = !remoteTds || ['STOPPED', 'ALREADY_STOPPED'].includes(remoteTdsStopStatus);
+    for (const spec of tdsNodeSpecs.filter(value => remoteTdsStartAttempted.has(value.instanceName))) {
+      const node = remoteTdsNodes.find(value => value.instanceName === spec.instanceName);
+      const nodeStatus = {instanceName: spec.instanceName, control: 'FAIL', stop: 'NOT_RUN', log: node ? 'PENDING' : 'NOT_APPLICABLE'};
+      if (!node) {
+        remoteTdsNodeStatuses.push(nodeStatus);
+        cleanupStatus = 'FAIL';
+        continue;
+      }
+      let managedControl = null;
       try {
-        if (javaStopped && tdsStopped && (managedRemoteJavaControl || managedRemoteTdsControl)) {
-          cleanupRemoteJavaRoot(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot);
+        managedControl = validateManagedRemoteTdsNodeBinding({runId, remoteDiagnostic: {remoteRoot}, remoteResources}, node);
+        if (managedControl.nodeId !== spec.nodeId || managedControl.websocketPort !== spec.websocketPort) fail('REMOTE_TDS_NODE_SPEC_MISMATCH');
+        nodeStatus.control = 'PASS';
+      } catch {
+        nodeStatus.control = 'FAIL';
+        cleanupStatus = 'FAIL';
+      }
+      if (managedControl) {
+        const localLogPath = path.join(remoteEvidenceDirectory, `${spec.instanceName}.log`);
+        try {
+          collectRemoteTdsLog(remoteHost, managedControl, localLogPath);
+          remoteTdsLogPaths[spec.instanceName] = localLogPath;
+          nodeStatus.log = 'PASS';
+        } catch {
+          nodeStatus.log = 'FAIL';
+        }
+        try {
+          nodeStatus.stop = await stopRemoteTds(remoteHost, managedControl);
+        } catch {
+          nodeStatus.stop = 'FAIL';
+          cleanupStatus = 'FAIL';
+        }
+      }
+      remoteTdsNodeStatuses.push(nodeStatus);
+    }
+    const remoteTdsControlStatus = remoteTdsNodeStatuses.length === 0
+      ? 'NOT_APPLICABLE'
+      : remoteTdsNodeStatuses.every(value => value.control === 'PASS') ? 'PASS' : 'FAIL';
+    const remoteTdsStopStatus = remoteTdsNodeStatuses.length === 0
+      ? 'NOT_APPLICABLE'
+      : remoteTdsNodeStatuses.every(value => ['STOPPED', 'ALREADY_STOPPED'].includes(value.stop))
+        ? remoteTdsNodeStatuses.some(value => value.stop === 'STOPPED') ? 'STOPPED' : 'ALREADY_STOPPED'
+        : 'FAIL';
+    if (remoteTdsControlStatus === 'FAIL' || remoteTdsStopStatus === 'FAIL') cleanupStatus = 'FAIL';
+    if (remoteRootMayExist) {
+      const javaStopped = !remoteJavaStartAttempted || (remoteJavaControlStatus === 'PASS' && ['STOPPED', 'ALREADY_STOPPED'].includes(remoteJavaStopStatus));
+      const tdsStopped = remoteTdsStopStatus === 'NOT_APPLICABLE' || (remoteTdsControlStatus === 'PASS' && ['STOPPED', 'ALREADY_STOPPED'].includes(remoteTdsStopStatus));
+      const haproxyStopped = !remoteHaproxyStartAttempted || (remoteHaproxyControlStatus === 'PASS' && ['STOPPED', 'ALREADY_STOPPED'].includes(remoteHaproxyStopStatus));
+      try {
+        if (javaStopped && tdsStopped && haproxyStopped && (remoteJava || remoteTdsNodes.length > 0 || remoteHaproxy)) {
+          cleanupRemoteJavaRoot(remoteHost, remoteRoot);
           remoteRootCleanupEvidence = {status: 'PASS', remoteRoot, remoteRootAbsent: true};
           remoteJavaRootCleanupStatus = 'PASS';
-        } else if (!managedRemoteJavaControl && !managedRemoteTdsControl) {
+        } else {
           remoteRootCleanupEvidence = cleanupRemoteRootWithoutJavaControl(
-            env.environment.V2S_DEV_REMOTE_HOST,
+            remoteHost,
             remoteRoot,
+            remoteResources.bootId,
           );
           remoteJavaRootCleanupStatus = 'PASS';
-        } else {
-          remoteRootCleanupEvidence = {status: 'FAIL', remoteRoot, reason: 'REMOTE_SERVICE_NOT_VERIFIED_STOPPED'};
-          remoteJavaRootCleanupStatus = 'FAIL';
-          cleanupStatus = 'FAIL';
         }
       } catch (error) {
         remoteRootCleanupEvidence = error.cleanupDetails ?? {status: 'FAIL', remoteRoot, failure: safeFailure(error)};
@@ -1690,25 +2483,18 @@ async function start() {
         cleanupStatus = 'FAIL';
       }
     }
-    for (const value of [...processes].reverse()) {
-      if (Number.isInteger(value.pid) && typeof value.startToken === 'string') {
-        try {
-          await stopOwnedProcess(value);
-        } catch {
-          cleanupStatus = 'FAIL';
-          localProcessStatus = 'FAIL';
-        }
-      }
-    }
     const terminal = writeTerminalManifest(
       {
         kind: 'r5-dev-run-manifest',
         runId,
+        remoteResources,
         readinessProgressPath,
         remoteJava,
-        remoteTds,
+        remoteTdsNodes,
+        remoteHaproxy,
         remoteJavaLogPath,
-        remoteTdsLogPath,
+        remoteTdsLogPaths,
+        remoteHaproxyLogPath,
         remoteDiagnostic: {kind: 'REMOTE_SSH_PULL', remoteRoot},
         remoteHostTrust: {
           host: env.environment.V2S_DEV_REMOTE_HOST,
@@ -1731,10 +2517,13 @@ async function start() {
           remoteJavaStopStatus,
           remoteTdsControlStatus,
           remoteTdsStopStatus,
+          remoteTdsNodeStatuses,
+          remoteHaproxyControlStatus,
+          remoteHaproxyStopStatus,
           remoteJavaRootCleanupStatus,
         }),
         cleanupEvidence: {remoteRoot: remoteRootCleanupEvidence},
-        diagnostics: {remoteJavaLogStatus, remoteJavaLogPath, remoteTdsLogStatus, remoteTdsLogPath},
+        diagnostics: {remoteJavaLogStatus, remoteJavaLogPath, remoteTdsNodeStatuses, remoteTdsLogPaths, remoteHaproxyLogStatus, remoteHaproxyLogPath},
       },
     );
     releasePortLock(portLock);
@@ -1754,6 +2543,7 @@ async function stop() {
     !manifest.remoteHostTrust?.host
   )
     fail('MANIFEST_INVALID');
+  assertNoActiveTerminalClientAcceptance({lockPath: path.join(root, '.runtime/terminal-client-dev-acceptance.lock')});
   const failures = [];
   const localProcessFailures = [];
   const diagnosticFailures = [];
@@ -1802,47 +2592,95 @@ async function stop() {
   } else {
     recordFailure(diagnosticFailures, new Error('R5_DEV_REMOTE_JAVA_CONTROL_UNVERIFIED'));
   }
-  let managedRemoteTdsControl = null;
-  let remoteTdsControlStatus = manifest.remoteTds ? 'FAIL' : 'NOT_APPLICABLE';
-  try {
-    if (manifest.remoteTds) {
-      managedRemoteTdsControl = validateManagedRemoteTdsBinding(manifest);
-      remoteTdsControlStatus = 'PASS';
-    }
-  } catch (error) {
-    failures.push(error);
-    firstFailure ??= error;
+  const manifestTdsNodes = Array.isArray(manifest.remoteTdsNodes)
+    ? manifest.remoteTdsNodes
+    : manifest.remoteTds ? [manifest.remoteTds] : [];
+  const requiresTdsNodes = manifest.topology?.tds === 'REMOTE_TRUSTED_HOST' || manifest.remoteHaproxy != null;
+  const remoteTdsNodeStatuses = [];
+  if (requiresTdsNodes && manifestTdsNodes.length !== TDS_CLUSTER_NODE_NAMES.length) {
+    recordFailure(failures, new Error('R5_DEV_REMOTE_TDS_NODE_SET_INVALID'));
   }
-  let remoteTdsStopStatus = manifest.remoteTds ? 'NOT_RUN' : 'NOT_APPLICABLE';
-  if (managedRemoteTdsControl) {
+  for (const value of manifestTdsNodes) {
+    const status = {instanceName: value.instanceName ?? 'tds-legacy', control: 'FAIL', stop: 'NOT_RUN', log: 'PENDING'};
+    let managedControl = null;
     try {
-      remoteTdsStopStatus = await stopRemoteTds(manifest.remoteHostTrust.host, managedRemoteTdsControl);
+      managedControl = Array.isArray(manifest.remoteTdsNodes)
+        ? validateManagedRemoteTdsNodeBinding(manifest, value)
+        : validateManagedRemoteTdsBinding({...manifest, remoteTds: value});
+      status.control = 'PASS';
     } catch (error) {
-      failures.push(error);
-      firstFailure ??= error;
+      recordFailure(failures, error);
     }
-    const diagnosticResult = collectStopDiagnostics({
-      remoteJavaStopStatus: remoteTdsStopStatus,
-      collectLog: () =>
-        collectRemoteTdsLog(
+    if (managedControl) {
+      try {
+        const localLogPath = managedControl.localLogPath ?? path.join(runtime, 'dev', manifest.runId, `${managedControl.instanceName ?? 'tds-server'}.log`);
+        collectRemoteTdsLog(manifest.remoteHostTrust.host, managedControl, localLogPath);
+        status.log = 'PASS';
+      } catch (error) {
+        status.log = 'FAIL';
+        recordFailure(diagnosticFailures, error);
+      }
+      try {
+        status.stop = await stopRemoteTds(manifest.remoteHostTrust.host, managedControl);
+      } catch (error) {
+        status.stop = 'FAIL';
+        recordFailure(failures, error);
+      }
+    } else {
+      status.log = 'FAIL';
+      recordFailure(diagnosticFailures, new Error('R5_DEV_REMOTE_TDS_CONTROL_UNVERIFIED'));
+    }
+    remoteTdsNodeStatuses.push(status);
+  }
+  const remoteTdsControlStatus = remoteTdsNodeStatuses.length === 0
+    ? requiresTdsNodes ? 'FAIL' : 'NOT_APPLICABLE'
+    : remoteTdsNodeStatuses.every(value => value.control === 'PASS') ? 'PASS' : 'FAIL';
+  const remoteTdsStopStatus = remoteTdsNodeStatuses.length === 0
+    ? requiresTdsNodes ? 'NOT_RUN' : 'NOT_APPLICABLE'
+    : remoteTdsNodeStatuses.every(value => ['STOPPED', 'ALREADY_STOPPED'].includes(value.stop))
+      ? remoteTdsNodeStatuses.some(value => value.stop === 'STOPPED') ? 'STOPPED' : 'ALREADY_STOPPED'
+      : 'FAIL';
+  let managedRemoteHaproxyControl = null;
+  let remoteHaproxyControlStatus = manifest.remoteHaproxy ? 'FAIL' : 'NOT_APPLICABLE';
+  let remoteHaproxyStopStatus = manifest.remoteHaproxy ? 'NOT_RUN' : 'NOT_APPLICABLE';
+  if (manifest.remoteHaproxy) {
+    try {
+      managedRemoteHaproxyControl = validateManagedRemoteHaproxyBinding(manifest);
+      remoteHaproxyControlStatus = 'PASS';
+    } catch (error) {
+      recordFailure(failures, error);
+    }
+    if (managedRemoteHaproxyControl) {
+      try {
+        collectRemoteHaproxyLog(
           manifest.remoteHostTrust.host,
-          managedRemoteTdsControl,
-          managedRemoteTdsControl.localLogPath ?? path.join(runtime, 'dev', manifest.runId, 'tds-server.log'),
-        ),
-      refreshDiagnostics: () => {},
-    });
-    for (const error of diagnosticResult.failures) recordFailure(diagnosticFailures, error);
-  } else if (manifest.remoteTds) {
-    recordFailure(diagnosticFailures, new Error('R5_DEV_REMOTE_TDS_CONTROL_UNVERIFIED'));
+          managedRemoteHaproxyControl,
+          managedRemoteHaproxyControl.localLogPath ?? path.join(runtime, 'dev', manifest.runId, 'haproxy.log'),
+        );
+      } catch (error) {
+        recordFailure(diagnosticFailures, error);
+      }
+      try {
+        remoteHaproxyStopStatus = await stopRemoteHaproxy(manifest.remoteHostTrust.host, managedRemoteHaproxyControl);
+      } catch (error) {
+        remoteHaproxyStopStatus = 'FAIL';
+        recordFailure(failures, error);
+      }
+    } else {
+      recordFailure(diagnosticFailures, new Error('R5_DEV_REMOTE_HAPROXY_CONTROL_UNVERIFIED'));
+    }
   }
   let remoteJavaRootCleanupStatus = 'NOT_RUN';
   const javaStopped =
     managedRemoteJavaControl !== null && ['STOPPED', 'ALREADY_STOPPED'].includes(remoteJavaStopStatus);
   const tdsStopped =
-    !manifest.remoteTds ||
-    (managedRemoteTdsControl !== null && ['STOPPED', 'ALREADY_STOPPED'].includes(remoteTdsStopStatus));
+    (!requiresTdsNodes && manifestTdsNodes.length === 0) ||
+    (remoteTdsControlStatus === 'PASS' && ['STOPPED', 'ALREADY_STOPPED'].includes(remoteTdsStopStatus));
+  const haproxyStopped =
+    manifest.remoteHaproxy == null ||
+    (managedRemoteHaproxyControl !== null && ['STOPPED', 'ALREADY_STOPPED'].includes(remoteHaproxyStopStatus));
   try {
-    if (!javaStopped || !tdsStopped) throw new Error('R5_DEV_REMOTE_ROOT_CLEANUP_SKIPPED_UNVERIFIED');
+    if (!javaStopped || !tdsStopped || !haproxyStopped) throw new Error('R5_DEV_REMOTE_ROOT_CLEANUP_SKIPPED_UNVERIFIED');
     cleanupRemoteJavaRoot(manifest.remoteHostTrust.host, managedRemoteJavaControl.remoteRoot);
     remoteJavaRootCleanupStatus = 'PASS';
   } catch (error) {
@@ -1863,6 +2701,9 @@ async function stop() {
       remoteJavaStopStatus,
       remoteTdsControlStatus,
       remoteTdsStopStatus,
+      remoteTdsNodeStatuses,
+      remoteHaproxyControlStatus,
+      remoteHaproxyStopStatus,
       remoteJavaRootCleanupStatus,
       failedProcessCount: failures.length,
     }),
@@ -1877,6 +2718,37 @@ async function stop() {
   releasePortLock(lockPath);
   rmSync(manifestPath);
   process.stdout.write(`R5_DEV_STOP=PASS; TERMINAL_MANIFEST=${terminal}\n`);
+}
+function cleanupFailedStart(runId) {
+  if (typeof runId !== 'string' || !/^r5-dev-[0-9]+-[0-9]+-[0-9a-f-]{36}$/.test(runId))
+    fail('FAILED_START_RUN_ID_INVALID');
+  const terminalPath = terminalManifestPathFor(runId);
+  if (!existsSync(terminalPath)) fail('FAILED_START_TERMINAL_MANIFEST_MISSING');
+  const manifest = JSON.parse(readFileSync(terminalPath, 'utf8'));
+  const remoteRoot = manifest?.remoteDiagnostic?.remoteRoot;
+  const remoteHost = manifest?.remoteHostTrust?.host;
+  const bootId = manifest?.remoteResources?.bootId;
+  if (manifest.kind !== 'r5-dev-run-manifest' || manifest.runId !== runId ||
+      manifest.business?.status !== 'FAIL' || typeof manifest.firstFailure !== 'string' ||
+      remoteRoot !== remoteDevRootFor(runId) || remoteHost !== manifest.remoteResources?.host ||
+      !/^[0-9a-f-]{16,128}$/i.test(bootId ?? '')) fail('FAILED_START_TERMINAL_MANIFEST_BINDING_INVALID');
+  const cleanup = manifest.cleanup;
+  const terminalStates = ['STOPPED', 'ALREADY_STOPPED'];
+  const javaStopped = manifest.remoteJava == null ||
+    (cleanup?.remoteJavaControl === 'PASS' && terminalStates.includes(cleanup.remoteJavaStop));
+  const tdsStatuses = cleanup?.remoteTdsNodes;
+  const tdsStopped = Array.isArray(tdsStatuses) && tdsStatuses.every(node =>
+    node.control === 'PASS' && terminalStates.includes(node.stop));
+  if (cleanup?.localProcess !== 'PASS' || !javaStopped || !tdsStopped)
+    fail('FAILED_START_RESOURCE_STOP_READBACK_REQUIRED');
+  const rootCleanup = cleanupRemoteRootWithoutJavaControl(remoteHost, remoteRoot, bootId);
+  manifest.cleanupRecovery = {
+    status: 'PASS',
+    recoveredAt: new Date().toISOString(),
+    remoteRoot: rootCleanup,
+  };
+  writeJsonAtomically(terminalPath, manifest);
+  process.stdout.write(`R5_DEV_FAILED_START_CLEANUP=PASS; RUN_ID=${runId}; TERMINAL_MANIFEST=${terminalPath}\n`);
 }
 const mode = process.argv[2];
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
@@ -2073,9 +2945,17 @@ else if (isMain && mode === 'stop') {
     process.stderr.write(`${error?.message ?? 'STOP_FAILED'}\n`);
     process.exitCode = 2;
   });
+} else if (isMain && mode === 'cleanup-failed-start') {
+  try {
+    if (process.argv.length !== 4) fail('FAILED_START_RUN_ID_REQUIRED');
+    cleanupFailedStart(process.argv[3]);
+  } catch (error) {
+    process.stderr.write(`${error?.message ?? 'FAILED_START_CLEANUP_FAILED'}\n`);
+    process.exitCode = 2;
+  }
 } else if (isMain) {
   try {
-    fail('USAGE_START_OR_STOP_OR_SELF_TEST');
+    fail('USAGE_START_OR_STOP_OR_CLEANUP_FAILED_START_OR_SELF_TEST');
   } catch (error) {
     process.stderr.write(`${error.message}\n`);
     process.exitCode = 2;

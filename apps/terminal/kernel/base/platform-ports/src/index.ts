@@ -57,9 +57,13 @@ export type {
   SystemStatus,
   PowerStatusChanged,
   PowerStatusListener,
+  NetworkStatusChanged,
+  NetworkStatusListener,
   DeviceCall,
   PowerStatusSubscriptionInput,
   PowerStatusUnsubscribeInput,
+  NetworkStatusSubscriptionInput,
+  NetworkStatusUnsubscribeInput,
   DevicePort,
 } from './types/device';
 export {normalizeDeviceIdentity} from './foundations/normalizeDeviceIdentity';

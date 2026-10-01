@@ -56,4 +56,21 @@ describe('partitioned state support', () => {
       }),
     ).toThrow('descriptor name mismatch for LEFT');
   });
+
+  it('keeps partitioned owner slices clear on reset even if an untyped caller supplies retain', () => {
+    const registration = toPartitionedStateDescriptors({
+      keys: ['LEFT'] as const,
+      stateKeys: {LEFT: 'orders.LEFT'},
+      createDescriptor: (_partition, stateKey) =>
+        ({
+          name: stateKey,
+          reducer: exampleReducer,
+          persistIntent: 'owner-only',
+          persistence: [{kind: 'field', stateKey: 'enabled', protection: 'plain'}],
+          resetIntent: 'retain',
+        }) as never,
+    });
+
+    expect(registration[0]?.resetIntent).toBe('clear');
+  });
 });

@@ -5,6 +5,7 @@ import path from 'node:path';
 import {
   repoRoot,
   runStaticChecks,
+  VOCABULARY,
   validateRuleContracts,
   validateAllLRulesEnabled,
   checkRd12,
@@ -212,6 +213,15 @@ replacePackage({
 });
 assert.equal(ruleStatus('TR-R06').status, 'FAIL', 'an unlisted features child must be red');
 console.log('MODEL_TR_R06=PASS');
+assert.ok(VOCABULARY.includes('generated'), 'generator-owned output directory must be part of the TER source vocabulary');
+replacePackage({
+  'index.ts': 'export const indexValue = 1\n',
+  'moduleName.ts': 'export const moduleName = "kernel.base.demo" as const\n',
+  'dependencies.ts': 'export const dependencyModuleNames = [] as const\n',
+  'generated/api.ts': 'export const generatedValue = 1\n',
+});
+assert.equal(ruleStatus('TR-R06').status, 'PASS', 'generator-owned output directory must be accepted');
+console.log('MODEL_TR_R06_GENERATED=PASS');
 
 replacePackage({
   'index.ts': "import './testing/startupDiagnostics'\nexport const indexValue = 1\n",

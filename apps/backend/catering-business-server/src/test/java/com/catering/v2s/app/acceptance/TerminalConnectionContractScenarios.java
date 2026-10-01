@@ -4,6 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +15,7 @@ import java.nio.file.StandardOpenOption;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
@@ -116,7 +121,7 @@ final class TerminalConnectionContractScenarios {
                 "TERMINAL_WIRE_CLIENT_SCRIPT_REPOSITORY_ESCAPE");
     }
 
-    static void topologyProbe(TdsAcceptanceProcess tds) throws Exception {
+    static void topologyProbe(BackendAcceptanceTest host, TdsAcceptanceProcess tds) throws Exception {
         String runId = requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_ID");
         Path script = terminalWireClientScript();
         String markerId = UUID.randomUUID().toString();
@@ -155,6 +160,12 @@ final class TerminalConnectionContractScenarios {
         builder.redirectError(ProcessBuilder.Redirect.appendTo(stderr.toFile()));
         Process node = builder.start();
         Throwable scenarioFailure = null;
+        StoreTerminalAcceptanceScenarios business = new StoreTerminalAcceptanceScenarios(host);
+        BackendAcceptanceTest.ScenarioContext fixtureContext =
+                host.new ScenarioContext(null, "performance.normal-path");
+        StoreTerminalAcceptanceScenarios.ConnectionFixture fixture = null;
+        SessionProbe authenticatedProbe = null;
+        boolean[] fixtureCancelled = {false};
         try {
             node.getOutputStream().write((JSON.writeValueAsString(request) + "\n").getBytes(StandardCharsets.UTF_8));
             node.getOutputStream().close();
@@ -172,6 +183,33 @@ final class TerminalConnectionContractScenarios {
             Assertions.assertEquals(4000, result.path("closeCode").asInt());
             Assertions.assertEquals(
                     "CREDENTIAL_INVALID", result.path("closeReason").asText());
+            fixture = business.createConnectionContractFixture(fixtureContext);
+            String authenticatedMarker = UUID.randomUUID().toString();
+            authenticatedProbe = startSessionProbe(
+                    tds,
+                    fixture,
+                    "terminal.connection.vs1.default-node-id",
+                    authenticatedMarker,
+                    wireClientLog(tds, authenticatedMarker));
+            authenticatedProbe.awaitReady(Duration.ofSeconds(15));
+            Assertions.assertEquals(
+                    TdsAcceptanceProcess.TdsStartConfiguration.DEFAULT_NODE_ID,
+                    authenticatedProbe.nodeId(),
+                    "V-S1_DEFAULT_NODE_ID_SESSION_READY_MISMATCH");
+            Assertions.assertEquals(
+                    TdsAcceptanceProcess.TdsStartConfiguration.DEFAULT_NODE_ID,
+                    host.text(
+                            "SELECT node_id FROM terminal_connection.latest_state "
+                                    + "WHERE terminal_ref=? AND session_id=? AND disconnected_at_epoch_millis IS NULL",
+                            fixture.terminalRef(),
+                            authenticatedProbe.sessionId()),
+                    "V-S1_DEFAULT_NODE_ID_LATEST_STATE_MISMATCH");
+            authenticatedProbe.ping(1);
+            business.performConnectionRevocation(
+                    fixtureContext, fixture, StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
+            fixtureCancelled[0] = true;
+            authenticatedProbe.awaitClose(4000, "ACTIVATION_CANCELLED", Duration.ofSeconds(15));
+            business.assertConnectionFixtureInactive(fixtureContext, fixture);
             writeContractResult(Map.ofEntries(
                     Map.entry("type", "transport-contract"),
                     Map.entry("operation", "terminal.connection.vs1.database-only-configuration-startup"),
@@ -184,6 +222,11 @@ final class TerminalConnectionContractScenarios {
                     Map.entry("handshake", "OPEN"),
                     Map.entry("closeCode", 4000),
                     Map.entry("closeReason", "CREDENTIAL_INVALID"),
+                    Map.entry("defaultNodeId", authenticatedProbe.nodeId()),
+                    Map.entry(
+                            "authenticatedLatestStateNodeId",
+                            TdsAcceptanceProcess.TdsStartConfiguration.DEFAULT_NODE_ID),
+                    Map.entry("fixtureRestored", fixtureCancelled[0]),
                     Map.entry("clientPid", node.pid()),
                     Map.entry("clientCommand", node.info().command().orElse("node"))));
             System.out.printf(
@@ -204,6 +247,23 @@ final class TerminalConnectionContractScenarios {
             }
             throw failure;
         } finally {
+            if (authenticatedProbe != null) {
+                Throwable authenticatedCleanupFailure = attemptCleanup(null, authenticatedProbe::stop);
+                finishCleanup(scenarioFailure, authenticatedCleanupFailure);
+            }
+            if (fixture != null) {
+                StoreTerminalAcceptanceScenarios.ConnectionFixture cleanupFixture = fixture;
+                Throwable fixtureCleanupFailure = attemptCleanup(null, () -> {
+                    if (!fixtureCancelled[0]) {
+                        business.performConnectionRevocation(
+                                fixtureContext,
+                                cleanupFixture,
+                                StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
+                    }
+                    business.assertConnectionFixtureInactive(fixtureContext, cleanupFixture);
+                });
+                finishCleanup(scenarioFailure, fixtureCleanupFailure);
+            }
             Process clientToStop = node;
             Throwable cleanupFailure = attemptCleanup(null, () -> stopOwnedClient(clientToStop, stderr));
             finishCleanup(scenarioFailure, cleanupFailure);
@@ -853,6 +913,243 @@ final class TerminalConnectionContractScenarios {
                 "terminal.connection.vs9.graceful-shutdown-order", () -> v9GracefulShutdown(host, tds)));
     }
 
+    static Stream<DynamicTest> v15ReadinessWithdrawalScenarios(BackendAcceptanceTest host, TdsAcceptanceProcess tds) {
+        return Stream.of(DynamicTest.dynamicTest(
+                "terminal.connection.vs15.readiness-withdrawal-and-drain",
+                () -> v15ReadinessWithdrawalAndDrain(host, tds)));
+    }
+
+    private static void v15ReadinessWithdrawalAndDrain(BackendAcceptanceTest host, TdsAcceptanceProcess tds)
+            throws Exception {
+        String runId = requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_ID");
+        String scenario = "terminal.connection.vs15.readiness-withdrawal-and-drain";
+        Assertions.assertEquals(scenario, tdsContractScenario(), "V-S15_TDS_SCENARIO_SELECTION_MISMATCH");
+        Assertions.assertEquals(
+                TdsAcceptanceProcess.TdsStartConfiguration.VS15_NODE_ID,
+                tds.nodeId(),
+                "V-S15_TDS_NODE_ID_CONFIGURATION_INVALID");
+        Assertions.assertEquals(
+                TdsAcceptanceProcess.TdsStartConfiguration.VS15_READINESS_WITHDRAWAL_WAIT_MS,
+                tds.readinessWithdrawalWaitMillis(),
+                "V-S15_READINESS_WITHDRAWAL_WAIT_CONFIGURATION_INVALID");
+
+        BackendAcceptanceTest.ScenarioContext context = host.new ScenarioContext(null, "performance.normal-path");
+        StoreTerminalAcceptanceScenarios business = new StoreTerminalAcceptanceScenarios(host);
+        StoreTerminalAcceptanceScenarios.ConnectionFixture activeFixture =
+                business.createConnectionContractFixture(context);
+        StoreTerminalAcceptanceScenarios.ConnectionFixture waitingFixture =
+                business.createConnectionContractFixture(context);
+        StoreTerminalAcceptanceScenarios.ConnectionFixture rejectFixture =
+                business.createConnectionContractFixture(context);
+        String activeMarker = UUID.randomUUID().toString();
+        String waitingMarker = UUID.randomUUID().toString();
+        SessionProbe active = null;
+        SessionProbe waiting = null;
+        Throwable scenarioFailure = null;
+        boolean resultWritten = false;
+        try {
+            active = startSessionProbe(tds, activeFixture, scenario, activeMarker, wireClientLog(tds, activeMarker));
+            active.awaitReady(Duration.ofSeconds(15));
+            Assertions.assertEquals(tds.nodeId(), active.nodeId(), "V-S15_ACTIVE_SESSION_READY_NODE_ID_MISMATCH");
+
+            tds.requestGracefulStop();
+            ReadinessSnapshot readiness = awaitReadinessWithdrawal(tds, Duration.ofSeconds(10));
+            long readinessObservedNanos = System.nanoTime();
+            Assertions.assertNotEquals(200, readiness.httpStatus(), "V-S15_READINESS_STILL_HTTP_OK");
+            Assertions.assertNotEquals("UP", readiness.status(), "V-S15_READINESS_STILL_UP");
+
+            active.ping(1);
+            waiting =
+                    startSessionProbe(tds, waitingFixture, scenario, waitingMarker, wireClientLog(tds, waitingMarker));
+            waiting.awaitReady(Duration.ofSeconds(15));
+            Assertions.assertEquals(tds.nodeId(), waiting.nodeId(), "V-S15_WAITING_SESSION_READY_NODE_ID_MISMATCH");
+            waiting.ping(1);
+            Assertions.assertEquals(
+                    tds.nodeId(),
+                    host.text(
+                            "SELECT node_id FROM terminal_connection.latest_state "
+                                    + "WHERE terminal_ref=? AND disconnected_at_epoch_millis IS NULL",
+                            activeFixture.terminalRef()),
+                    "V-S15_ACTIVE_LATEST_STATE_NODE_ID_MISMATCH");
+            Assertions.assertEquals(
+                    tds.nodeId(),
+                    host.text(
+                            "SELECT node_id FROM terminal_connection.latest_state "
+                                    + "WHERE terminal_ref=? AND disconnected_at_epoch_millis IS NULL",
+                            waitingFixture.terminalRef()),
+                    "V-S15_WAITING_LATEST_STATE_NODE_ID_MISMATCH");
+
+            tds.awaitLogMarker(
+                    "event=tds_drain_started",
+                    "event=tds_admission_refused readiness=REFUSING_TRAFFIC",
+                    Duration.ofSeconds(10),
+                    "V-S15_ADMISSION_REFUSAL_AFTER_WITHDRAWAL_WAIT_MISSING");
+            long drainStartedNanos = System.nanoTime();
+            long withdrawalElapsedMillis = TimeUnit.NANOSECONDS.toMillis(drainStartedNanos - readinessObservedNanos);
+            Assertions.assertTrue(
+                    withdrawalElapsedMillis
+                            >= TdsAcceptanceProcess.TdsStartConfiguration.VS15_READINESS_WITHDRAWAL_WAIT_MS - 500,
+                    "V-S15_ADMISSION_REFUSED_BEFORE_CONFIGURED_WITHDRAWAL_WAIT");
+            Assertions.assertTrue(withdrawalElapsedMillis <= 10_000, "V-S15_WITHDRAWAL_WAIT_UPPER_BOUND_EXCEEDED");
+
+            String rejectMarker = UUID.randomUUID().toString();
+            Map<String, Object> rejectRequest = Map.of(
+                    "scenario",
+                    "terminal.connection.vs9.drain-reject",
+                    "markerId",
+                    rejectMarker,
+                    "url",
+                    tds.websocketBaseUrl() + "/tdp/" + rejectFixture.fixture().groupWorkspaceKey() + "/ws",
+                    "authenticate",
+                    Map.of(
+                            "type",
+                            "AUTHENTICATE",
+                            "terminalRef",
+                            rejectFixture.terminalRef().toString(),
+                            "terminalCredential",
+                            rejectFixture.generation() + "." + rejectFixture.credentialSecret(),
+                            "deviceId",
+                            rejectFixture.deviceId(),
+                            "appVersion",
+                            "backend-acceptance"),
+                    "expectedClose",
+                    Map.of("code", 4000, "reason", "REDIRECT_TO_NEXT_NODE"));
+            JsonNode rejected = runWireClient(tds, rejectRequest);
+            Assertions.assertEquals(4000, rejected.path("closeCode").asInt(), "V-S15_REDIRECT_CLOSE_CODE_INVALID");
+            Assertions.assertEquals(
+                    "REDIRECT_TO_NEXT_NODE", rejected.path("closeReason").asText(), "V-S15_NEW_SESSION_NOT_REDIRECTED");
+            Assertions.assertEquals(
+                    List.of(), strings(rejected.path("eventTypes")), "V-S15_REJECTED_SESSION_REACHED_AUTH");
+            Assertions.assertEquals(
+                    0L,
+                    host.count(
+                            "SELECT count(*) FROM terminal_connection.latest_state WHERE terminal_ref=?",
+                            rejectFixture.terminalRef()),
+                    "V-S15_REJECTED_SESSION_WAS_REGISTERED");
+
+            active.awaitClose(4000, "REDIRECT_TO_NEXT_NODE", Duration.ofMillis(8_000));
+            waiting.awaitClose(4000, "REDIRECT_TO_NEXT_NODE", Duration.ofMillis(8_000));
+            int exitCode = tds.awaitProcessExit(Duration.ofSeconds(5));
+            Assertions.assertTrue(exitCode == 0 || exitCode == 143, "V-S15_TDS_EXIT_STATUS_INVALID");
+
+            String log = tds.logContents();
+            Instant readinessWithdrawnAt = tdsEventTimestamp(log, "event=tds_readiness_withdrawn");
+            Instant drainStartedAt = tdsEventTimestamp(log, "event=tds_drain_started");
+            Instant activeClosedAt = tdsEventTimestamp(
+                    log,
+                    "event=tds_ws_close_started",
+                    "sessionId=" + active.sessionId(),
+                    "closeReason=REDIRECT_TO_NEXT_NODE");
+            Instant waitingClosedAt = tdsEventTimestamp(
+                    log,
+                    "event=tds_ws_close_started",
+                    "sessionId=" + waiting.sessionId(),
+                    "closeReason=REDIRECT_TO_NEXT_NODE");
+            long activeCloseElapsedMillis =
+                    Duration.between(drainStartedAt, activeClosedAt).toMillis();
+            long waitingCloseElapsedMillis =
+                    Duration.between(drainStartedAt, waitingClosedAt).toMillis();
+            Instant lastSessionClosedAt = activeClosedAt.isAfter(waitingClosedAt) ? activeClosedAt : waitingClosedAt;
+            long withdrawalAndDrainElapsedMillis =
+                    Duration.between(readinessWithdrawnAt, lastSessionClosedAt).toMillis();
+            long maximumWithdrawalAndDrainMillis =
+                    tds.readinessWithdrawalWaitMillis() + TdsAcceptanceProcess.ACCEPTANCE_DRAIN_WINDOW_MILLIS + 2_000;
+            Assertions.assertTrue(
+                    activeCloseElapsedMillis >= 0
+                            && activeCloseElapsedMillis <= TdsAcceptanceProcess.ACCEPTANCE_DRAIN_WINDOW_MILLIS,
+                    "V-S15_ACTIVE_SESSIONS_EXCEEDED_DRAIN_WINDOW");
+            Assertions.assertTrue(
+                    waitingCloseElapsedMillis >= 0
+                            && waitingCloseElapsedMillis <= TdsAcceptanceProcess.ACCEPTANCE_DRAIN_WINDOW_MILLIS,
+                    "V-S15_ACTIVE_SESSIONS_EXCEEDED_DRAIN_WINDOW");
+            int admissionRefused = log.indexOf("event=tds_admission_refused");
+            int drainStarted = log.indexOf("event=tds_drain_started");
+            Assertions.assertTrue(
+                    admissionRefused >= 0 && drainStarted > admissionRefused,
+                    "V-S15_ADMISSION_DRAIN_LOG_ORDER_INVALID");
+            Assertions.assertTrue(
+                    log.contains("event=tds_drain_completed") && log.contains("Graceful shutdown complete"),
+                    "V-S15_GRACEFUL_SHUTDOWN_DID_NOT_COMPLETE");
+            Assertions.assertTrue(
+                    withdrawalAndDrainElapsedMillis >= 0
+                            && withdrawalAndDrainElapsedMillis <= maximumWithdrawalAndDrainMillis,
+                    "V-S15_TOTAL_WITHDRAWAL_AND_DRAIN_BOUND_EXCEEDED");
+            Assertions.assertEquals(
+                    2L,
+                    host.count(
+                            "SELECT count(*) FROM terminal_connection.latest_state "
+                                    + "WHERE terminal_ref IN (?, ?) AND disconnected_at_epoch_millis IS NOT NULL "
+                                    + "AND close_reason='REDIRECT_TO_NEXT_NODE'",
+                            activeFixture.terminalRef(),
+                            waitingFixture.terminalRef()),
+                    "V-S15_SESSION_REDIRECT_READBACK_INVALID");
+
+            writeContractResult(Map.ofEntries(
+                    Map.entry("type", "transport-contract"),
+                    Map.entry("operation", scenario),
+                    Map.entry("module", "TERMINAL_DATA_SERVER"),
+                    Map.entry("contract", "PASS"),
+                    Map.entry("status", "PASS"),
+                    Map.entry("runId", runId),
+                    Map.entry("producer", "real-tds-process-http-health-and-raw-node-websocket"),
+                    Map.entry("readinessHttpStatus", readiness.httpStatus()),
+                    Map.entry("readinessStatus", readiness.status()),
+                    Map.entry("nodeId", tds.nodeId()),
+                    Map.entry("activeSessionReadyNodeId", active.nodeId()),
+                    Map.entry("waitingSessionReadyNodeId", waiting.nodeId()),
+                    Map.entry("activeLatestStateNodeId", tds.nodeId()),
+                    Map.entry("waitingLatestStateNodeId", tds.nodeId()),
+                    Map.entry("pongsDuringWithdrawal", active.pongCount() + waiting.pongCount()),
+                    Map.entry("newSessionAfterWithdrawal", "REDIRECTED_WITHOUT_SESSION_READY"),
+                    Map.entry("withdrawalElapsedMillis", withdrawalElapsedMillis),
+                    Map.entry("readinessToLastCloseElapsedMillis", withdrawalAndDrainElapsedMillis),
+                    Map.entry("activeSessionCloseElapsedMillis", activeCloseElapsedMillis),
+                    Map.entry("waitingSessionCloseElapsedMillis", waitingCloseElapsedMillis)));
+            resultWritten = true;
+        } catch (Exception | Error failure) {
+            scenarioFailure = failure;
+            if (!resultWritten) writeScenarioFailure(runId, scenario, "TDS_VS15_READINESS_WITHDRAWAL_FAILED", failure);
+            throw failure;
+        } finally {
+            SessionProbe activeToStop = active;
+            SessionProbe waitingToStop = waiting;
+            Throwable cleanupFailure = activeToStop == null ? null : attemptCleanup(null, activeToStop::stop);
+            cleanupFailure =
+                    waitingToStop == null ? cleanupFailure : attemptCleanup(cleanupFailure, waitingToStop::stop);
+            cleanupFailure = attemptCleanup(cleanupFailure, tds::close);
+            finishCleanup(scenarioFailure, cleanupFailure);
+        }
+    }
+
+    private static ReadinessSnapshot awaitReadinessWithdrawal(TdsAcceptanceProcess tds, Duration timeout)
+            throws Exception {
+        HttpClient client =
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
+        URI endpoint = URI.create(tds.httpBaseUrl() + "/actuator/health/readiness");
+        long deadline = System.nanoTime() + timeout.toNanos();
+        while (System.nanoTime() < deadline) {
+            HttpRequest request = HttpRequest.newBuilder(endpoint)
+                    .timeout(Duration.ofSeconds(2))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode body = JSON.readTree(response.body());
+            String status = body.path("status").asText("UNKNOWN");
+            if (response.statusCode() != 200 && !"UP".equals(status)) {
+                return new ReadinessSnapshot(response.statusCode(), status);
+            }
+            TimeUnit.MILLISECONDS.sleep(50);
+        }
+        throw new IllegalStateException("V-S15_READINESS_WITHDRAWAL_DEADLINE_EXCEEDED");
+    }
+
+    private static String tdsContractScenario() {
+        String selected = System.getenv("V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO");
+        return selected == null || selected.isBlank() ? null : selected;
+    }
+
+    private record ReadinessSnapshot(int httpStatus, String status) {}
+
     private static void v9GracefulShutdown(BackendAcceptanceTest host, TdsAcceptanceProcess tds) throws Exception {
         String runId = requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_ID");
         String scenario = "terminal.connection.vs9.graceful-shutdown-order";
@@ -890,7 +1187,7 @@ final class TerminalConnectionContractScenarios {
             tds.requestGracefulStop();
             tds.awaitLogMarker(
                     "event=tds_drain_started",
-                    "readiness=REFUSING_TRAFFIC admission=REFUSED",
+                    "event=tds_admission_refused readiness=REFUSING_TRAFFIC",
                     Duration.ofSeconds(10),
                     "V-S9_DRAIN_READINESS_MARKER_MISSING");
             control.ping(1);
@@ -916,7 +1213,11 @@ final class TerminalConnectionContractScenarios {
             active.awaitClose(4000, "REDIRECT_TO_NEXT_NODE", Duration.ofSeconds(15));
             control.awaitClose(4000, "REDIRECT_TO_NEXT_NODE", Duration.ofSeconds(15));
             long drainElapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - drainStartedNanos);
-            Assertions.assertTrue(drainElapsedMillis <= 10_000, "V-S9_DRAIN_EXCEEDED_TEN_SECONDS");
+            long maximumShutdownMillis = TdsAcceptanceProcess.TdsStartConfiguration.DEFAULT_READINESS_WITHDRAWAL_WAIT_MS
+                    + TdsAcceptanceProcess.ACCEPTANCE_DRAIN_WINDOW_MILLIS
+                    + 2_000;
+            Assertions.assertTrue(
+                    drainElapsedMillis <= maximumShutdownMillis, "V-S9_WITHDRAWAL_AND_DRAIN_BOUND_EXCEEDED");
             tds.awaitLogMarker(
                     "event=tds_drain_started",
                     "event=tds_drain_completed",
@@ -926,8 +1227,11 @@ final class TerminalConnectionContractScenarios {
             Assertions.assertTrue(exitCode == 0 || exitCode == 143, "V-S9_TDS_EXIT_STATUS_INVALID");
             String log = tds.logContents();
             int drainStart = log.indexOf("event=tds_drain_started");
+            int admissionRefused = log.indexOf("event=tds_admission_refused readiness=REFUSING_TRAFFIC");
             int drainComplete = log.indexOf("event=tds_drain_completed");
-            Assertions.assertTrue(drainStart >= 0 && drainComplete > drainStart, "V-S9_DRAIN_LIFECYCLE_ORDER_INVALID");
+            Assertions.assertTrue(
+                    admissionRefused >= 0 && drainStart > admissionRefused, "V-S9_ADMISSION_DRAIN_LOG_ORDER_INVALID");
+            Assertions.assertTrue(drainComplete >= 0, "V-S9_DRAIN_COMPLETION_MARKER_MISSING");
             Assertions.assertEquals(
                     2L,
                     host.count(
@@ -4110,6 +4414,25 @@ final class TerminalConnectionContractScenarios {
             throw new IllegalStateException("TERMINAL_WIRE_SESSION_ID_MARKER_MISSING");
         }
 
+        String nodeId() throws Exception {
+            String prefix = "TERMINAL_WIRE_SESSION_READY markerId=" + markerId + " sessionId=";
+            for (String line : Files.readAllLines(log, StandardCharsets.UTF_8)) {
+                int start = line.indexOf(prefix);
+                if (start < 0) continue;
+                String encodedPrefix = " nodeIdBase64=";
+                int encodedStart = line.indexOf(encodedPrefix, start + prefix.length());
+                if (encodedStart < 0) throw new IllegalStateException("TERMINAL_WIRE_SESSION_NODE_ID_MARKER_MISSING");
+                String encoded =
+                        line.substring(encodedStart + encodedPrefix.length()).trim();
+                try {
+                    return new String(Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8);
+                } catch (IllegalArgumentException invalid) {
+                    throw new IllegalStateException("TERMINAL_WIRE_SESSION_NODE_ID_MARKER_INVALID", invalid);
+                }
+            }
+            throw new IllegalStateException("TERMINAL_WIRE_SESSION_NODE_ID_MARKER_MISSING");
+        }
+
         void stop() throws Exception {
             stopOwnedClient(node, log);
         }
@@ -4166,6 +4489,20 @@ final class TerminalConnectionContractScenarios {
             result.add(value.asText());
         });
         return List.copyOf(result);
+    }
+
+    private static Instant tdsEventTimestamp(String log, String... markers) {
+        for (String line : log.lines().toList()) {
+            if (!java.util.Arrays.stream(markers).allMatch(line::contains)) continue;
+            int firstSpace = line.indexOf(' ');
+            if (firstSpace < 1) continue;
+            try {
+                return OffsetDateTime.parse(line.substring(0, firstSpace)).toInstant();
+            } catch (java.time.format.DateTimeParseException ignored) {
+                // Non-application log lines do not carry the TDS event timestamp format.
+            }
+        }
+        throw new IllegalStateException("V-S15_TDS_EVENT_TIMESTAMP_MISSING");
     }
 
     private static boolean isOversizedMessageRejection(String scenario) {

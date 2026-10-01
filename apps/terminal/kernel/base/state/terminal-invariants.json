@@ -33,6 +33,7 @@
     "StateRuntimePersistenceRecordDescriptor",
     "StateRuntimeSliceDescriptor",
     "StateRuntimeSliceRegistration",
+    "StateResetIntent",
     "StateRuntimeSyncDescriptor",
     "StateRuntimeSyncRecordDescriptor",
     "StateSyncApplyResult",
@@ -68,9 +69,10 @@
   ],
   "closedUnionDefinitions": {
     "WorkspaceKey": ["MAIN", "BRANCH"],
-    "PersistIntent": ["never", "owner-only"]
+    "PersistIntent": ["never", "owner-only"],
+    "StateResetIntent": ["clear", "retain"]
   },
-  "closedUnionConsumerCount": 5,
+  "closedUnionConsumerCount": 8,
   "closedUnionConsumers": [
     {
       "union": "WorkspaceKey",
@@ -111,6 +113,30 @@
       "sourceFile": "src/types/slice.ts",
       "declarationId": "RegisteredStateRuntimeSlice",
       "member": "persistIntent"
+    },
+    {
+      "union": "StateResetIntent",
+      "unionPackage": "@catering-v2s/kernel-base-state",
+      "expectedSymbol": "@catering-v2s/kernel-base-state#StateResetIntent",
+      "sourceFile": "src/types/slice.ts",
+      "declarationId": "StateRuntimeSliceDescriptor",
+      "member": "resetIntent"
+    },
+    {
+      "union": "StateResetIntent",
+      "unionPackage": "@catering-v2s/kernel-base-state",
+      "expectedSymbol": "@catering-v2s/kernel-base-state#StateResetIntent",
+      "sourceFile": "src/types/slice.ts",
+      "declarationId": "StateRuntimeSliceRegistration",
+      "member": "resetIntent"
+    },
+    {
+      "union": "StateResetIntent",
+      "unionPackage": "@catering-v2s/kernel-base-state",
+      "expectedSymbol": "@catering-v2s/kernel-base-state#StateResetIntent",
+      "sourceFile": "src/types/slice.ts",
+      "declarationId": "RegisteredStateRuntimeSlice",
+      "member": "resetIntent"
     }
   ],
   "tr01Exceptions": [

@@ -605,7 +605,9 @@ function fixtureInitScript(fixtureDirectory) {
 }
 
 function selfTest() {
-  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'ter-owned-android-tests-'));
+  fs.mkdirSync(path.join(repositoryRoot, '.runtime'), {recursive: true});
+  const fixture = fs.mkdtempSync(path.join(repositoryRoot, '.runtime', 'ter-owned-android-tests-'));
+  const externalFixture = fs.mkdtempSync(path.join(os.tmpdir(), 'ter-owned-android-tests-outside-'));
   try {
     const testModule = path.join(fixture, 'module');
     const testSourceRoot = path.join(testModule, 'src/test/java/sample');
@@ -621,6 +623,15 @@ function selfTest() {
     if (findKotlinTestClassByMethod(testModule, 'target method').className !== 'TargetOwnerTest') {
       throw new Error('Kotlin targeted-method owner discovery selected the wrong test class');
     }
+    let externalModuleRejected = false;
+    try {
+      discoverKotlinTestClasses(externalFixture);
+    } catch (error) {
+      externalModuleRejected = String(error).includes(
+        'TERMINAL_ANDROID_TEST_INPUT_OUTSIDE_REPOSITORY input=module-root',
+      );
+    }
+    if (!externalModuleRejected) throw new Error('outside-repository Android test module was accepted');
     const testClass = [
       {
         qualifiedName: 'sample.ExampleTest',
@@ -743,6 +754,7 @@ function selfTest() {
     process.stdout.write('TERMINAL_ANDROID_UNIT_TESTS_SELF_TEST=PASS\n');
   } finally {
     fs.rmSync(fixture, {recursive: true, force: true});
+    fs.rmSync(externalFixture, {recursive: true, force: true});
   }
 }
 

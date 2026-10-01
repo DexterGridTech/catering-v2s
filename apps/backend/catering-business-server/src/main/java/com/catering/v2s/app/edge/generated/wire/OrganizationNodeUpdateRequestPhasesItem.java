@@ -6,6 +6,7 @@ public record OrganizationNodeUpdateRequestPhasesItem(
     String name
 ) {
 
+
   public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<OrganizationNodeUpdateRequestPhasesItem> {
     @Override
     public OrganizationNodeUpdateRequestPhasesItem deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)
