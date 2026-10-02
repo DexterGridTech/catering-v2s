@@ -14,6 +14,7 @@ import {fileURLToPath} from 'node:url';
 import {resolveTrustedRemoteHost} from './r5-remote-host-trust.mjs';
 import {validateRemoteJavaControl, validateRemoteTdsControl} from './r5-remote-java.mjs';
 import {validateManagedRemoteHaproxyBinding} from './r5-dev-runner.mjs';
+import {DORIS_RESIDENT_BE_VOLUME, DORIS_RESIDENT_CONTAINER, DORIS_RESIDENT_FE_VOLUME} from './r5-doris-resident.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
@@ -29,6 +30,8 @@ const safe = value => String(value ?? '').replace(/[\r\n\t]/g, ' ').slice(0, 500
 const shellQuote = value => `'${String(value).replaceAll("'", "'\\''")}'`;
 const postgresContainerIdGuard = 'case "$pg_container_id" in "$expected_pg_container_prefix"*) ;; *) fail POSTGRES_CONTAINER_ID_DRIFT ;; esac';
 const fail = code => { throw new Error(code); };
+export const residentPreflightResourceArgs = (repoRoot = root) =>
+  ['--profile', 'ter-validation-with-dev', path.join(repoRoot, '.runtime')];
 
 function local(command, args, {input, allowFailure = false} = {}) {
   const result = spawnSync(command, args, {cwd: root, encoding: 'utf8', input});
@@ -236,6 +239,9 @@ export function renderRemotePreflightScript({expectedBootId, expectedImageId, ex
     `expected_repo_digest=${shellQuote(expectedRepoDigest)}`,
     `expected_pg_container_prefix=${shellQuote(expectedPostgresContainerPrefix)}`,
     `image_ref=${shellQuote(imageRef)}`,
+    `resident_container=${shellQuote(DORIS_RESIDENT_CONTAINER)}`,
+    `resident_fe_volume=${shellQuote(DORIS_RESIDENT_FE_VOLUME)}`,
+    `resident_be_volume=${shellQuote(DORIS_RESIDENT_BE_VOLUME)}`,
     'fail() { printf "R5_DORIS_PREFLIGHT_FAILURE=%s\\n" "$1" >&2; exit 70; }',
     'boot_id=$(cat /proc/sys/kernel/random/boot_id) || fail REMOTE_BOOT_ID_READ_FAILED',
     'cpu_count=$(getconf _NPROCESSORS_ONLN) || fail REMOTE_CPU_READ_FAILED',
@@ -276,6 +282,17 @@ export function renderRemotePreflightScript({expectedBootId, expectedImageId, ex
     'printf "%s\\n" "$doris_image" | grep -F "$expected_repo_digest" >/dev/null || fail RESIDENT_DORIS_REPO_DIGEST_DRIFT',
     'test -z "$testcontainers_containers" || fail TESTCONTAINERS_CONTAINER_RESIDUE',
     'test -z "$testcontainers_volumes" || fail TESTCONTAINERS_VOLUME_RESIDUE',
+    'resident_container_facts=$(docker inspect -f \'{{.Id}}|{{.Image}}|{{.Config.Image}}|{{index .Config.Labels "com.catering-v2s.doris-resident"}}|{{index .Config.Labels "com.catering-v2s.doris-resident.host-fingerprint"}}|{{index .Config.Labels "com.catering-v2s.doris-resident.attempt"}}|{{.State.Running}}|{{.State.Health.Status}}|{{range .Mounts}}{{.Name}}:{{.Destination}};{{end}}\' "$resident_container" 2>/dev/null || true)',
+    'printf "R5_DORIS_PREFLIGHT_FACT\\tDORIS\\tRESIDENT_CONTAINER_B64\\t%s\\n" "$(printf %s "$resident_container_facts" | base64 -w0)"',
+    'for volume in "$resident_fe_volume" "$resident_be_volume"; do',
+    '  volume_facts=$(docker volume inspect -f \'{{.Name}}|{{.Driver}}|{{index .Labels "com.catering-v2s.doris-resident"}}|{{index .Labels "com.catering-v2s.doris-resident.attempt"}}\' "$volume" 2>/dev/null || true)',
+    '  holders=$(docker ps -aq --filter "volume=$volume" | paste -sd, -)',
+    '  printf "R5_DORIS_PREFLIGHT_FACT\\tDORIS\\tVOLUME_OCCUPANTS_B64\\t%s\\n" "$(printf %s "$volume|$volume_facts|$holders" | base64 -w0)"',
+    '  for holder in $(docker ps -aq --filter "volume=$volume"); do',
+    '    holder_facts=$(docker inspect -f \'{{.Id}}|{{.Name}}|{{.Image}}|{{.Config.Image}}|{{index .Config.Labels "com.catering-v2s.doris-resident"}}|{{index .Config.Labels "com.catering-v2s.doris-resident.host-fingerprint"}}|{{index .Config.Labels "com.catering-v2s.doris-resident.attempt"}}|{{.State.Running}}|{{range .Mounts}}{{.Name}}:{{.Destination}};{{end}}\' "$holder") || fail DORIS_RESIDENT_VOLUME_HOLDER_INSPECT_FAILED',
+    '    printf "R5_DORIS_PREFLIGHT_FACT\\tDORIS\\tVOLUME_HOLDER_B64\\t%s\\n" "$(printf %s "$holder_facts" | base64 -w0)"',
+    '  done',
+    'done',
     'printf "%s\\n" R5_DORIS_PREFLIGHT=PASS R5_DORIS_PREFLIGHT_CLEANUP=PASS_NO_REMOTE_MUTATION',
   ].join('\n');
 }
@@ -286,6 +303,9 @@ function parseRemotePreflightFacts(stdout) {
 
 function selfTest() {
   if (shellQuote("a'b") !== "'a'\\''b'") fail('R5_DORIS_PROBE_SELF_TEST_SHELL_QUOTE');
+  if (JSON.stringify(residentPreflightResourceArgs('/workspace/repo')) !==
+      JSON.stringify(['--profile', 'ter-validation-with-dev', '/workspace/repo/.runtime']))
+    fail('R5_DORIS_PREFLIGHT_SELF_TEST_RESOURCE_PROFILE_RED');
   const rendered = renderRemoteProbeScript({
     runId: 'r5probe-1', remoteRoot: `/tmp/r5-doris-feasibility-1-2-${'a'.repeat(8)}-1111-1111-1111-111111111111`,
     expectedBootId: 'a'.repeat(32), dev: {runId:'r5-dev-1-2-aaaaaaaa-1111-1111-1111-111111111111',remoteRoot:'/tmp/r5-dev-1-2-aaaaaaaa-1111-1111-1111-111111111111',java:{pid:1,processStartTicks:1},tdsNodes:[{pid:2,processStartTicks:2},{pid:3,processStartTicks:3},{pid:4,processStartTicks:4}],haproxy:{containerId:'a'.repeat(64)}},
@@ -310,6 +330,10 @@ function selfTest() {
   const preflightSyntax = local('bash', ['-n'], {input: preflight, allowFailure: true});
   if (preflightSyntax.status !== 0 || !/SHOW server_version/.test(preflight) || !/POSTGRES_CONTAINER_ID_DRIFT/.test(preflight) || /docker (?:run|pull|rm|stop|start)\b/.test(preflight))
     fail('R5_DORIS_PREFLIGHT_SELF_TEST_READ_ONLY_BOUNDARY');
+  if (!preflight.includes(DORIS_RESIDENT_CONTAINER) || !preflight.includes(DORIS_RESIDENT_FE_VOLUME) ||
+      !preflight.includes(DORIS_RESIDENT_BE_VOLUME) || !/docker ps -aq --filter "volume=\$volume"/.test(preflight) ||
+      /docker (?:container (?:rm|stop|start)|volume (?:create|rm))\b/.test(preflight))
+    fail('R5_DORIS_PREFLIGHT_SELF_TEST_RESIDENT_OCCUPANT_READ_ONLY');
   if (!/RESIDENT_HOST_BOOT_ID_DRIFT/.test(preflight) || !/RESIDENT_DORIS_IMAGE_ID_DRIFT/.test(preflight) ||
       !/TESTCONTAINERS_CONTAINER_RESIDUE/.test(preflight) || !/TESTCONTAINERS_VOLUME_RESIDUE/.test(preflight))
     fail('R5_DORIS_PREFLIGHT_SELF_TEST_DRIFT_RED');
@@ -345,7 +369,7 @@ function selfTest() {
   const postgresGuardRed = local('bash', ['-c', `fail() { printf '%s\\n' "$1" >&2; exit 70; }; pg_container_id=${'0'.repeat(64)}; expected_pg_container_prefix=39d62539cece; ${postgresContainerIdGuard}`], {allowFailure: true});
   if (postgresGuardPass.status !== 0 || postgresGuardRed.status !== 70 || !postgresGuardRed.stderr.includes('POSTGRES_CONTAINER_ID_DRIFT'))
     fail('R5_DORIS_PREFLIGHT_SELF_TEST_POSTGRES_IDENTITY_RED');
-  process.stdout.write('R5_DORIS_RESIDENT_FEASIBILITY_SELF_TEST=PASS\nRED=UNSAFE_ROOT,INVALID_IDENTIFIERS,NO_RESTART_READBACK,RESIDENT_HOST_OR_IMAGE_DRIFT,POSTGRES_CONTAINER_ID_DRIFT,TESTCONTAINERS_RESIDUE\n');
+  process.stdout.write('R5_DORIS_RESIDENT_FEASIBILITY_SELF_TEST=PASS\nRED=UNSAFE_ROOT,INVALID_IDENTIFIERS,NO_RESTART_READBACK,RESIDENT_HOST_OR_IMAGE_DRIFT,POSTGRES_CONTAINER_ID_DRIFT,TESTCONTAINERS_RESIDUE,WRONG_PREFLIGHT_RESOURCE_PROFILE\n');
 }
 
 async function runRemote(host, payload, logPath, manifest, manifestPath) {
@@ -451,9 +475,7 @@ async function mainPreflight() {
   if (!existsSync(priorManifestPath)) fail('R5_DORIS_PREFLIGHT_RESIDENT_EVIDENCE_MISSING');
   const baseline = residentPreflightIdentity(JSON.parse(readFileSync(priorManifestPath, 'utf8')));
   assertResidentPreflightHost(baseline.host, trust.host);
-  const budget = local(path.join(root, 'scripts/env/check-runtime-resource-budget'), [
-    '--profile', 'admin-validation-with-ter', path.join(root, '.runtime'),
-  ]);
+  const budget = local(path.join(root, 'scripts/env/check-runtime-resource-budget'), residentPreflightResourceArgs(root));
   const runId = `r5-doris-preflight-${Date.now()}-${process.pid}-${randomUUID()}`;
   const evidenceDir = path.join(evidenceRoot, runId);
   mkdirSync(evidenceDir, {recursive: true, mode: 0o700});

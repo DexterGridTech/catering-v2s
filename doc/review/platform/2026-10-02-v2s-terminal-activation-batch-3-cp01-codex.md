@@ -43,8 +43,30 @@ CP-01 关闭受管主机/R-14基线刷新、官方镜像与PG身份核对、当�
 
 - R-14 resident run仍是历史受管run `r5-doris-feasibility-1790872778086-71714-0ff1e0ca-c53f-4352-aac4-448238ff3bc5`，feasibility与probe cleanup PASS。它限定证明该主机、镜像、挂载及单次资源快照下的resident启动/重启读回；没有测峰值、长期容量、Stream Load或最小权限。
 - 本次预检只刷新当前主机/PG/Doris identity和资源基线；不替代CP-02的实际Doris写入，不替代CP-03通知/跨节点业务，也不替代backend-acceptance/DEV验收。
-- CP-01 fresh独立三维对账：`MATCHED`，三个维度均无OPEN；reviewer指出本记录此前的待复核状态应以其独立结论替代。当前字节上的最新预检为run `r5-doris-preflight-1790875962405-28711-15a18ff2-7737-455d-82b6-8bf126ed492d`，其脚本SHA与预检证据已列于上表；未运行业务或Stream Load。CP-01满足进入CP-02条件。
+- 初次CP-01 fresh独立三维对账：`MATCHED`，仅关闭原始资源/版本前置；该结论后因DEV start暴露的resident挂载次序误判而重新打开。后续修复后的CP-01复核见本记录末尾。
 
 当前字节上的最新运行：`r5-doris-preflight-1790875962405-28711-15a18ff2-7737-455d-82b6-8bf126ed492d`，2026-10-01T17:32:42Z，PG容器前缀/主机boot id/Doris image digest核对及受管远端只读预检PASS，`business=NOT_APPLICABLE`，`cleanup=PASS_NO_REMOTE_MUTATION`。
 
 最后一次通过：R-14 resident run `r5-doris-feasibility-1790872778086-71714-0ff1e0ca-c53f-4352-aac4-448238ff3bc5`，2026-10-01T16:39:38Z–16:40:48Z，限定的resident feasibility与cleanup PASS；未受本次源码修改影响，仍仅覆盖该主机/镜像/挂载范围。
+
+## 后续重新打开：DEV 首次启动诊断
+
+首个 `scripts/dev/start` run `r5-dev-1790906437831-68097-9b0ebb3e-1d48-4f54-928f-90c3020cc80f` 在 `DORIS_RESIDENT` 失败。业务 DEV 未启动；远端临时根/Java/TDS/HAProxy cleanup PASS；resident 状态当时 `NOT_RUN`。失败保留于`.runtime/batch3-dynamic/dev-start-e1.log`及terminal manifest。根因复现后分类为`CONFIRMED`：Docker `.Mounts` 次序是BE后FE，源码却按FE后BE比较拼接字符串，误拒绝了一项本来符合身份的resident容器；失败处理没有等同run attempt的容器完成卸载便移除卷，因此把清理失败附加到了首因上。
+
+由新增受管只读预检 `r5-doris-preflight-1790906704415-73485-f07d9e1e-0319-4372-a968-f53bf6cc4e1e` 捕获的有限字段证明，现存容器ID `d60d3ab2644c7ea5b6faa4fb0ba99187a734bdf3e7ea3a3d6ed5508d329cef0b`、官方固定image/digest、owner `r5-dev-resident`、本机host fingerprint、UUID attempt `bfaca21d-072a-4267-b032-09f364559e96`、healthy/running状态及BE/FE两挂载均相互一致；两个named volume的owner/attempt也相同。该预检`PASS_NO_REMOTE_MUTATION`，没有读取容器环境或写入远端。manifest SHA-256 `3b94c0b8f7277da343f0ac1129eef3b957634ec4240a91434554f5721c83d7a4`；日志SHA-256 `3d4236acdc7fd83ed86d998bc029a013cb85e2b49cb9bdef9dc2db0a5015073e`。
+
+最小修正：resident校验改为比较排序后的挂载集合；本地manifest缺失时，仅依据容器和两个卷的完整固定身份标签、镜像、loopback端口、挂载集合、健康状态/attempt UUID重建manifest；不匹配仍fail closed。创建失败清理先按本attempt精确身份删除容器，并有限轮询确认容器已退出/卸载后才删除卷；容器仍在时保留卷并报告cleanup FAIL。reset与DEV stop使用同一顺序无关挂载事实和含attempt标签的卷摘要。
+
+本次focused proof：`node --check`通过，`node scripts/dev/r5-doris-resident-feasibility.mjs --self-test`通过，挂载顺序shell proof通过，CP-04 focused套件`114/114 PASS`。这些是本地证明；实际managed DEV start尚未复验。读/写边界没有扩大。
+
+mount-order/adoption修复后的fresh CP-01独立复核：`CP-01_RECONCILIATION=MATCHED`，reviewer `/root/batch3_cp01_reconcile_after_mount_fix`，无OPEN。其核对当前预检身份、resident/Docker资源事实、mount无序集合实现、测试夹具与修复后CP-04记录；确认CP-01仍只关闭资源/身份/版本前置，不升级为DEV、Stream Load或业务PASS。当前CP-01、CP-04均已对账MATCHED；全批6b须在这两个当前字节结论后fresh重做。
+
+## 最终 review 后的 CP-01 差量修复
+
+S-1 intake 时发现的一次性只读预检首败根因及修复见 doc/review/platform/2026-10-02-v2s-terminal-activation-batch-3-implementation-review-intake-codex.md。根因是当前 DEV 已运行时，resident host preflight 错用会将 DEV 本机 SSH tunnel/Vite 计入活动预算的 admin-validation-with-ter；修复复用已有 ter-validation-with-dev 精确排除当前 R5 manifest，并在 --self-test 固定资源 profile。该修复改变 CP-01 的预检 owning source。
+
+受管首次拒绝：工具输出 R5_DORIS_HOST_PREFLIGHT_REFUSED=/.../scripts/env/check-runtime-resource-budget_FAILED；预算门在远端连接及 run manifest 创建前拒绝，因此无 managed run id/manifest。只读核对当时活跃 PID 与当前 DEV manifest 后确认属于 profile 误用，不是异常外部进程；原始拒绝输出只有本地工具结果，没有伪称存在日志文件。
+
+修复后 focused：node --check scripts/dev/r5-doris-resident-feasibility.mjs 与 node scripts/dev/r5-doris-resident-feasibility.mjs --self-test PASS。随后唯一一次同目的 read-only preflight：run r5-doris-preflight-1790910965425-41042-2254380d-5630-455b-a427-ced568f113bd，2026-10-02T03:16:05.427Z–03:16:07.206Z，status PASS、business NOT_APPLICABLE、cleanup PASS_NO_REMOTE_MUTATION；核对远端 boot id、PostgreSQL 16.13、Doris 固定 image digest、resident container及两个volume、Testcontainers容器/卷为空。manifest路径 .runtime/r5/evidence/doris-resident-feasibility/r5-doris-preflight-1790910965425-41042-2254380d-5630-455b-a427-ced568f113bd/run-manifest.json。
+
+CP-01 最终差量复核：`MATCHED`。Fresh 独立只读 reviewer `/root/batch3_final_delta_reconcile` 核验本 CP 全阶段的需求、详设/计划、项目记忆、当前预检源码、自测红例及上述受管 manifest，确认资源 profile 修复与实际证据对应。未重跑 resident probe；R-14 feasibility 的 host/image/mount 没有漂移。该差量复核未运行命令。

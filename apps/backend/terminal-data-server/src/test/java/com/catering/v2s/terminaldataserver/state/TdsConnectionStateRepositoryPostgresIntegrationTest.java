@@ -127,6 +127,23 @@ class TdsConnectionStateRepositoryPostgresIntegrationTest {
         }
     }
 
+    @Test
+    void disconnectForAnOlderOpenedIdentityDoesNotOverwriteANewerSession() {
+        TdsConnectionStateRepository.SessionIdentity older =
+                repository.open(verification(), "node-a", "session-older").orElseThrow();
+        TdsConnectionStateRepository.SessionIdentity newer =
+                repository.open(verification(), "node-b", "session-newer").orElseThrow();
+
+        assertThat(repository.writeDisconnect(older, "SERVER_ERROR")).isTrue();
+
+        TdsConnectionStateRepository.CurrentSessionState current =
+                repository.readCurrentSession(older).orElseThrow();
+        assertThat(newer.sequence()).isGreaterThan(older.sequence());
+        assertThat(current.sessionId()).isEqualTo("session-newer");
+        assertThat(current.sequence()).isEqualTo(newer.sequence());
+        assertThat(current.isOpen()).isTrue();
+    }
+
     private Connection listenForSessionOpen() throws Exception {
         PGSimpleDataSource listenerDataSource = new PGSimpleDataSource();
         listenerDataSource.setURL(POSTGRES.getJdbcUrl());

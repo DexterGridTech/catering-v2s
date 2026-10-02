@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath, pathToFileURL} from 'node:url';
+import {validateInvocationArguments} from './r5-remote-testcontainers.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const verifyPath = path.join(repoRoot, 'tools/verify-gates/verify.mjs');
@@ -236,6 +237,15 @@ test('normal verification keeps the explicit local, foundation and Java test ent
   const commands = new Map(
     verify.runtimeCommands.map(([label, command, args, remote = false]) => [label, {command, args, remote}]),
   );
+  for (const [label, command, args, remote = false] of verify.runtimeCommands) {
+    if (remote && command === 'node' && args[0] === 'scripts/test/r5-remote-testcontainers.mjs') {
+      assert.equal(args.includes('--no-daemon'), false, `${label} delegates --no-daemon to the managed runner`);
+      assert.doesNotThrow(
+        () => validateInvocationArguments(args.slice(1)),
+        `${label} uses only arguments accepted by the managed runner`,
+      );
+    }
+  }
   assert.equal(commands.has('U01-codegen'), false, 'contract-face/openapi-contracts own edge-codegen --check');
   assert.deepEqual(commands.get('THCL-04-node-tests'), {
     command: 'node',

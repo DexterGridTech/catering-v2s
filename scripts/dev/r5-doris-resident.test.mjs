@@ -74,7 +74,9 @@ test('remote ensure, verify and reset scripts are syntactically valid and fail c
   assert.match(ensure, /docker volume rm/);
   assert.match(ensure, /com\.catering-v2s\.doris-resident\.attempt/);
   assert.match(ensure, /resident_ready=true/);
-  assert.match(ensure, /DORIS_RESIDENT_CONTAINER_EXISTS_WITHOUT_MANIFEST/);
+  assert.match(ensure, /adopted_existing_container=true/);
+  assert.match(ensure, /expected_container_facts=/);
+  assert.match(ensure, /expected_mount_facts=/);
   assert.match(ensure, /DORIS_RESIDENT_ORPHAN_VOLUME_WITHOUT_MANIFEST/);
   assert.match(verify, /PORT_BINDING_INVALID/);
   assert.match(reset, /TRUNCATE TABLE \$database\.\$table/);
@@ -133,15 +135,30 @@ case "$1" in
     if [[ "$fmt" == *'{{.State.Health.Status}}'* ]]; then printf 'healthy\\n'
     elif [[ "$fmt" == *'{{.State.Running}}'* ]]; then printf 'true\\n'
     elif [[ "$fmt" == *'{{json .HostConfig.PortBindings}}'* ]]; then printf '%s\\n' '{"9030/tcp":[{"HostIp":"127.0.0.1","HostPort":"9030"}],"8030/tcp":[{"HostIp":"127.0.0.1","HostPort":"8030"}],"8040/tcp":[{"HostIp":"127.0.0.1","HostPort":"8040"}]}'
-    elif [[ "$fmt" == *'{{range .Mounts}}'* ]]; then printf '%s\\n' 'catering-v2s-r5-doris-fe-meta:/opt/apache-doris/fe/doris-meta;catering-v2s-r5-doris-be-storage:/opt/apache-doris/be/storage;'
-    elif [[ "$fmt" == *'{{.HostConfig.RestartPolicy.Name}}'* ]]; then printf '%s|%s|%s|%s|%s|unless-stopped\\n' "$container_id" '${DORIS_RESIDENT_IMAGE_ID}' '${DORIS_RESIDENT_IMAGE}' "$owner" '${identity.fingerprint}'
+    elif [[ "$fmt" == *'{{range .Mounts}}'* ]]; then printf '%s\\n' 'catering-v2s-r5-doris-be-storage:/opt/apache-doris/be/storage;catering-v2s-r5-doris-fe-meta:/opt/apache-doris/fe/doris-meta;'
+    elif [[ "$fmt" == *'{{.HostConfig.RestartPolicy.Name}}'* ]]; then
+      if [[ "$fmt" == *'doris-resident.attempt'* ]]; then printf '%s|%s|%s|%s|%s|%s|unless-stopped\\n' "$container_id" '${DORIS_RESIDENT_IMAGE_ID}' '${DORIS_RESIDENT_IMAGE}' "$owner" '${identity.fingerprint}' "$attempt"
+      else printf '%s|%s|%s|%s|%s|unless-stopped\\n' "$container_id" '${DORIS_RESIDENT_IMAGE_ID}' '${DORIS_RESIDENT_IMAGE}' "$owner" '${identity.fingerprint}'; fi
     elif [[ "$fmt" == *'{{.Name}}'* ]]; then printf '%s|/%s|%s|%s|%s|%s|%s\\n' "$container_id" '${DORIS_RESIDENT_CONTAINER}' '${DORIS_RESIDENT_IMAGE_ID}' '${DORIS_RESIDENT_IMAGE}' "$owner" '${identity.fingerprint}' "$attempt"
     elif [[ "$fmt" == *'doris-resident.attempt'* ]]; then printf '%s|%s|%s|%s|%s|%s\\n' "$container_id" '${DORIS_RESIDENT_IMAGE_ID}' '${DORIS_RESIDENT_IMAGE}' "$owner" '${identity.fingerprint}' "$attempt"
     elif [[ "$fmt" == *'{{.Id}}'* ]]; then printf '%s\\n' "$container_id"
     fi
     ;;
   run) : > "$state/container" ;;
-  exec) exit 1 ;;
+  exec)
+    if [[ "\${MOCK_EXEC_SUCCESS:-}" == true ]]; then
+      if [[ "$*" == *'mysql'* ]]; then
+        input=$(cat)
+        printf '%s' "$input" > "$state/mysql-input"
+        if [[ "$input" == *"ALTER USER 'tds_history_writer' IDENTIFIED BY "* ]]; then
+          printf '%s' 'reconciled' > "$state/writer-password"
+        fi
+        if [[ "$input" == *'SHOW GRANTS'* ]]; then printf '%s\\n' 'terminal_connection_history.connection_history: LOAD_PRIV'; fi
+      fi
+      exit 0
+    fi
+    exit 1
+    ;;
   info) printf '34359738368\\n' ;;
 esac
 `;
@@ -151,6 +168,9 @@ esac
     writeFileSync(dockerPath, mockDocker, {mode: 0o700});
     writeFileSync(path.join(bin, 'cat'), `#!/usr/bin/env bash
 if [[ "$1" == /proc/sys/kernel/random/boot_id ]]; then printf '%s\\n' '${identity.bootId}'; else exec /bin/cat "$@"; fi
+`, {mode: 0o700});
+    writeFileSync(path.join(bin, 'awk'), `#!/usr/bin/env bash
+if [[ "$*" == *'/proc/meminfo'* ]]; then printf '4096\\n'; else exec /usr/bin/awk "$@"; fi
 `, {mode: 0o700});
     const ensure = renderEnsureResidentScript({
       expectedBootId: identity.bootId,
@@ -172,6 +192,34 @@ if [[ "$1" == /proc/sys/kernel/random/boot_id ]]; then printf '%s\\n' '${identit
     assert.ok(commands.some(command => command === 'volume rm catering-v2s-r5-doris-be-storage'));
     assert.equal(commands.some(command => /image rm|image prune|docker pull/.test(command)), false);
     assert.deepEqual(readdirSync(state), []);
+
+    const adoptionState = path.join(directory, 'state-adoption');
+    const adoptionLog = path.join(directory, 'docker-adoption.log');
+    mkdirSync(adoptionState, {recursive: true});
+    writeFileSync(path.join(adoptionState, 'container'), 'managed-resident');
+    writeFileSync(path.join(adoptionState, 'catering-v2s-r5-doris-fe-meta'), 'managed-volume');
+    writeFileSync(path.join(adoptionState, 'catering-v2s-r5-doris-be-storage'), 'managed-volume');
+    writeFileSync(path.join(adoptionState, 'writer-password'), 'stale-password-from-persisted-resident');
+    const adoption = spawnSync('bash', ['-c', renderEnsureResidentScript({
+      expectedBootId: identity.bootId,
+      hostFingerprint: identity.fingerprint,
+      attemptId,
+      password: 'e'.repeat(64),
+      ddlBase64: Buffer.from('CREATE DATABASE IF NOT EXISTS terminal_connection_history;').toString('base64'),
+    })], {
+      encoding: 'utf8',
+      env: {...process.env, PATH: `${bin}:${process.env.PATH}`, MOCK_DOCKER_STATE: adoptionState, MOCK_DOCKER_LOG: adoptionLog, MOCK_EXEC_SUCCESS: 'true'},
+    });
+    assert.equal(adoption.status, 0, adoption.stderr);
+    assert.match(adoption.stdout, /R5_DORIS_RESIDENT\tADOPTED_EXISTING_CONTAINER\ttrue/);
+    assert.equal(parseResidentReport(adoption.stdout).adoptedExistingContainer, true);
+    const adoptionWriterSql = readFileSync(path.join(adoptionState, 'mysql-input'), 'utf8');
+    assert.ok(adoptionWriterSql.includes("ALTER USER 'tds_history_writer' IDENTIFIED BY '" + 'e'.repeat(64) + "'"), 'adoption must set the persisted password to the current DEV credential');
+    assert.equal(readFileSync(path.join(adoptionState, 'writer-password'), 'utf8'), 'reconciled', 'a stale password is not repaired by CREATE USER IF NOT EXISTS alone');
+    assert.equal(adoption.stdout.includes('e'.repeat(64)) || adoption.stderr.includes('e'.repeat(64)) || readFileSync(adoptionLog, 'utf8').includes('e'.repeat(64)), false, 'writer password must not appear in diagnostics');
+    const adoptionCommands = readFileSync(adoptionLog, 'utf8').split(/\\r?\\n/);
+    assert.equal(adoptionCommands.some(command => command.startsWith('run --detach')), false, 'adoption must not create another Doris container');
+    assert.ok(adoptionCommands.some(command => command.includes('volume inspect')));
     for (const failedInventory of ['container', 'volume']) {
       const failedState = path.join(directory, `state-${failedInventory}`);
       const failedLog = path.join(directory, `docker-${failedInventory}.log`);

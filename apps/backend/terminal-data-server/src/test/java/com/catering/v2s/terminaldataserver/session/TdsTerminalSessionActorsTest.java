@@ -425,6 +425,55 @@ class TdsTerminalSessionActorsTest {
     }
 
     @Test
+    void queuesDisconnectAfterCommittedCandidateReadbackFailsWithoutClosingPreviousSession() {
+        trackedSessionLimiter = new TdsConnectionCapacityLimiter(2, 2);
+        actors = new TdsTerminalSessionActors(
+                repository,
+                stateWriter,
+                historyWriter,
+                settings,
+                codec,
+                trackedSessionLimiter,
+                new SessionRegistrationGate("", "", "", Schedulers.immediate()),
+                Schedulers.immediate(),
+                Schedulers.immediate());
+
+        TdsWebSocketConnection previous = connection("session-previous");
+        begin("previous", 1, previous);
+        assertThat(register("previous", 1)).isTrue();
+
+        TdsWebSocketConnection candidate = connection("session-readback-fails");
+        repository.failReadSessionId = "session-readback-fails";
+        begin("candidate-readback-fails", 2, candidate);
+        Verification candidateVerification = verification(2);
+        assertThat(actors.recordVerification(TERMINAL, "candidate-readback-fails", candidateVerification)
+                        .block())
+                .isTrue();
+
+        assertThatThrownBy(() -> actors.register(TERMINAL, "candidate-readback-fails", candidateVerification).block())
+                .isInstanceOf(IllegalStateException.class);
+
+        ArgumentCaptor<Runnable> persisted = ArgumentCaptor.forClass(Runnable.class);
+        SessionIdentity candidateIdentity = repository.opened.getLast();
+        verify(stateWriter).queueDisconnect(eq(candidateIdentity), eq("SERVER_ERROR"), persisted.capture());
+        assertThat(candidate.closeReasonOr("missing")).isEqualTo("SERVER_ERROR");
+        assertThat(candidate.isAuthenticationReady()).isFalse();
+        assertThat(previous.isOpen()).isTrue();
+        assertThat(previous.isAuthenticationReady()).isTrue();
+        verify(historyWriter).recordConnected(any());
+        assertThat(repository.latest.values())
+                .extracting(CurrentSessionState::sessionId)
+                .contains("session-readback-fails");
+        assertThat(trackedSessionLimiter.tryAcquireTrackedSession()).isNull();
+
+        persisted.getValue().run();
+
+        TdsConnectionCapacityLimiter.Permit released = trackedSessionLimiter.tryAcquireTrackedSession();
+        assertThat(released).isNotNull();
+        released.close();
+    }
+
+    @Test
     void aSocketClosedBeforeRegistrationDoesNotWriteLatestState() {
         AtomicBoolean open = new AtomicBoolean(true);
         TdsWebSocketConnection connection = connection("session-1", open);
@@ -682,6 +731,7 @@ class TdsTerminalSessionActorsTest {
         private final AtomicLong sequence = new AtomicLong();
         private final Map<BindingKey, CurrentSessionState> latest = new java.util.concurrent.ConcurrentHashMap<>();
         private boolean failOpen;
+        private volatile String failReadSessionId;
         private volatile String noOpenSessionId;
         private volatile CountDownLatch openEntered;
         private volatile CountDownLatch openRelease;
@@ -755,6 +805,9 @@ class TdsTerminalSessionActorsTest {
         public Optional<CurrentSessionState> readCurrentSession(SessionIdentity identity) {
             CurrentSessionState observed =
                     latest.get(new BindingKey(identity.groupWorkspaceKey(), identity.terminalRef()));
+            if (identity.sessionId().equals(failReadSessionId)) {
+                throw new IllegalStateException("database readback unavailable");
+            }
             if (identity.sessionId().equals(blockReadSessionId)) {
                 CountDownLatch entered = currentReadEntered;
                 CountDownLatch release = currentReadRelease;

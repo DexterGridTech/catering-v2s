@@ -406,9 +406,8 @@ public final class TdsTerminalSessionActors {
                     currentSession = repository.readCurrentSession(identity);
                 } catch (RuntimeException failure) {
                     synchronized (monitor) {
-                        if (pending.get(attemptId) == attempt) pending.remove(attemptId);
-                        trackedPermit.close();
-                        connection.close("SERVER_ERROR");
+                        discardOpenedCandidate(
+                                attemptId, attempt, connection, identity, trackedPermit, "SERVER_ERROR");
                     }
                     throw failure;
                 }
@@ -630,6 +629,26 @@ public final class TdsTerminalSessionActors {
             if (pending.get(attemptId) == attempt) pending.remove(attemptId);
             trackedPermit.close();
             connection.close(closeReason);
+        }
+
+        private void discardOpenedCandidate(
+                String attemptId,
+                PendingAttempt attempt,
+                TdsWebSocketConnection connection,
+                SessionIdentity identity,
+                TdsConnectionCapacityLimiter.Permit trackedPermit,
+                String closeReason) {
+            if (pending.get(attemptId) == attempt) pending.remove(attemptId);
+            connection.close(closeReason);
+            stateWriter.queueDisconnect(identity, closeReason, () -> {
+                trackedPermit.close();
+                TdsAsyncLog.enqueue(
+                        logScheduler,
+                        () -> LOGGER.info(
+                                "event=tds_tracked_session_permit_released sessionId={} closeReason={}",
+                                identity.sessionId(),
+                                closeReason));
+            });
         }
 
         private boolean sameBindingIdentity(PendingAttempt attempt, CurrentBinding binding) {

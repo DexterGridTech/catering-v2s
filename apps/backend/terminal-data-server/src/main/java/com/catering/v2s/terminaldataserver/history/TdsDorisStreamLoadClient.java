@@ -15,7 +15,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Flow;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -81,27 +84,40 @@ public final class TdsDorisStreamLoadClient {
                 .header("Content-Type", "application/json")
                 .PUT(HttpRequest.BodyPublishers.ofByteArray(payload))
                 .build();
+        CompletableFuture<HttpResponse<byte[]>> responseFuture = null;
+        long deadlineNanos = System.nanoTime() + requestTimeout.toNanos();
         try {
-            HttpResponse<byte[]> response = httpClient.send(request, TdsDorisStreamLoadClient::boundedBody);
+            responseFuture = httpClient.sendAsync(request, TdsDorisStreamLoadClient::boundedBody);
+            long remainingNanos = deadlineNanos - System.nanoTime();
+            if (remainingNanos <= 0) throw new TimeoutException("DORIS_STREAM_LOAD_DEADLINE_EXCEEDED");
+            HttpResponse<byte[]> response = responseFuture.get(remainingNanos, TimeUnit.NANOSECONDS);
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 return response.statusCode() >= 500 || response.statusCode() == 429
                         ? LoadResult.retry("HTTP_" + response.statusCode())
                         : LoadResult.failed("HTTP_" + response.statusCode());
             }
             return interpret(response.body());
+        } catch (TimeoutException timeout) {
+            cancel(responseFuture);
+            return LoadResult.retry("REQUEST_TIMEOUT");
         } catch (InterruptedException interrupted) {
+            cancel(responseFuture);
             Thread.currentThread().interrupt();
             return LoadResult.retry("INTERRUPTED");
-        } catch (IOException | RuntimeException failure) {
+        } catch (ExecutionException | RuntimeException failure) {
             return LoadResult.retry(failureCategory(failure));
         }
+    }
+
+    private static void cancel(CompletableFuture<?> responseFuture) {
+        if (responseFuture != null) responseFuture.cancel(true);
     }
 
     private static String failureCategory(Throwable failure) {
         for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
             if (cause instanceof BoundedResponseException) return "RESPONSE_LIMIT_EXCEEDED";
+            if (cause instanceof java.net.http.HttpTimeoutException) return "REQUEST_TIMEOUT";
         }
-        if (failure instanceof java.net.http.HttpTimeoutException) return "REQUEST_TIMEOUT";
         return failure.getClass().getSimpleName().toUpperCase(Locale.ROOT);
     }
 

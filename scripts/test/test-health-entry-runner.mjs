@@ -18,6 +18,7 @@ const nodeTestFiles = Object.freeze([
   'scripts/dev/external-collaboration-business-channel-seed-executor.test.mjs',
   'scripts/dev/r5-dev-command-wrapper.test.mjs',
   'scripts/dev/r5-complete-seed-executor.test.mjs',
+  'scripts/dev/r5-doris-resident.test.mjs',
   'scripts/dev/managed-diagnostic-protocol.test.mjs',
   'scripts/dev/owner-command-seed-executor.test.mjs',
   'scripts/dev/r5-otp-debug-exposure.test.mjs',

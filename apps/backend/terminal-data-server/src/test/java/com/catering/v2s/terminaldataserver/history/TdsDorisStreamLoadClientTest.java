@@ -1,6 +1,10 @@
 package com.catering.v2s.terminaldataserver.history;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.catering.v2s.terminaldataserver.config.TdsDorisProperties;
 import com.catering.v2s.terminaldataserver.protocol.TdsWireJsonConfiguration;
@@ -8,11 +12,22 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -103,7 +118,87 @@ class TdsDorisStreamLoadClientTest {
         assertThat(subscriber.getBody().toCompletableFuture()).isCompletedExceptionally();
     }
 
+    @Test
+    void requestDeadlineCancelsAStalledResponseBodyAndAllowsTheNextBatch() throws Exception {
+        CountDownLatch bodyStarted = new CountDownLatch(1);
+        CountDownLatch releaseBody = new CountDownLatch(1);
+        CountDownLatch firstHandlerFinished = new CountDownLatch(1);
+        AtomicLong bodyStartedNanos = new AtomicLong();
+        AtomicReference<java.util.concurrent.CompletableFuture<?>> responseFuture = new AtomicReference<>();
+        AtomicInteger requests = new AtomicInteger();
+        startServer(exchange -> {
+            if (requests.incrementAndGet() > 1) {
+                respond(exchange, 200, "{\"Status\":\"Success\"}");
+                return;
+            }
+            try {
+                exchange.sendResponseHeaders(200, 64);
+                exchange.getResponseBody().write("{".getBytes(StandardCharsets.UTF_8));
+                exchange.getResponseBody().flush();
+                bodyStartedNanos.set(System.nanoTime());
+                bodyStarted.countDown();
+                releaseBody.await(3, TimeUnit.SECONDS);
+            } catch (IOException failure) {
+                throw new IllegalStateException("test response setup failed", failure);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            } finally {
+                exchange.close();
+                firstHandlerFinished.countDown();
+            }
+        });
+        HttpClient delegate = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(100)).build();
+        HttpClient httpClient = mock(HttpClient.class);
+        when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenAnswer(invocation -> {
+                    HttpRequest request = invocation.getArgument(0);
+                    @SuppressWarnings("unchecked")
+                    HttpResponse.BodyHandler<byte[]> handler = invocation.getArgument(1);
+                    java.util.concurrent.CompletableFuture<HttpResponse<byte[]>> future =
+                            delegate.sendAsync(request, handler);
+                    responseFuture.set(future);
+                    return future;
+                });
+        TdsDorisStreamLoadClient client = client(Duration.ofMillis(500), httpClient);
+        ExecutorService caller = Executors.newSingleThreadExecutor();
+        try {
+            long loadStartedNanos = System.nanoTime();
+            Future<TdsDorisStreamLoadClient.LoadResult> firstBatch =
+                    caller.submit(() -> client.load("stalled-body-label", new byte[] {'{', '}'}));
+            assertThat(bodyStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+            TdsDorisStreamLoadClient.LoadResult timedOut = firstBatch.get(2, TimeUnit.SECONDS);
+            long returnedNanos = System.nanoTime();
+            assertThat(timedOut.disposition()).isEqualTo(TdsDorisStreamLoadClient.Disposition.RETRY);
+            assertThat(timedOut.reason()).isEqualTo("REQUEST_TIMEOUT");
+            assertThat(returnedNanos - bodyStartedNanos.get())
+                    .isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(300));
+            assertThat(returnedNanos - loadStartedNanos).isLessThan(TimeUnit.SECONDS.toNanos(2));
+            java.util.concurrent.CompletableFuture<?> cancelledResponse = responseFuture.get();
+            assertThat(cancelledResponse.isCompletedExceptionally()).isTrue();
+            assertThatThrownBy(cancelledResponse::join)
+                    .isInstanceOf(CompletionException.class)
+                    .hasCauseInstanceOf(CancellationException.class)
+                    .hasRootCauseMessage("Request cancelled");
+
+            releaseBody.countDown();
+            assertThat(firstHandlerFinished.await(2, TimeUnit.SECONDS)).isTrue();
+            TdsDorisStreamLoadClient.LoadResult nextBatch =
+                    client.load("next-batch-label", new byte[] {'{', '}'});
+            assertThat(nextBatch.disposition()).isEqualTo(TdsDorisStreamLoadClient.Disposition.COMPLETE);
+            assertThat(requests.get()).isEqualTo(2);
+        } finally {
+            releaseBody.countDown();
+            caller.shutdownNow();
+            assertThat(caller.awaitTermination(2, TimeUnit.SECONDS)).isTrue();
+        }
+    }
+
     private TdsDorisStreamLoadClient client(Duration requestTimeout) {
+        return client(requestTimeout, HttpClient.newBuilder().connectTimeout(Duration.ofMillis(100)).build());
+    }
+
+    private TdsDorisStreamLoadClient client(Duration requestTimeout, HttpClient httpClient) {
         return new TdsDorisStreamLoadClient(
                 new TdsDorisProperties(
                         "http://127.0.0.1:" + server.getAddress().getPort(),
@@ -112,7 +207,7 @@ class TdsDorisStreamLoadClientTest {
                         "tds",
                         "tds-test-secret"),
                 mapper(),
-                HttpClient.newBuilder().connectTimeout(Duration.ofMillis(100)).build(),
+                httpClient,
                 requestTimeout);
     }
 

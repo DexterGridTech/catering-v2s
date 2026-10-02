@@ -47,10 +47,10 @@ RECALL：需求R-6.5～R-6.7、R-7.2～R-7.3、R-12～R-14、V-G1；详设§1～
 RECALL：需求R-2.3/R-6.5～R-6.7；详设§3、§4 CP-02、§7、§9a、§10；backend编码/日志规范；实际classpath与Doris官方4.1.3文档。
 
 1. 仅新增详设点名的TdsConnectionHistoryEvent、TdsConnectionHistoryWriter、TdsDorisStreamLoadClient。CONNECTED来自TdsTerminalSessionActors成功登记；HEARTBEAT_RTT来自TdsWebSocketHandler.receivePing在PONG发送/seq校验成功后；DISCONNECTED在actor close callback每session一次。
-2. 使用single worker与bounded serialized-event queue：最多4096条、单条≤1024字节、累计≤4MiB、batch≤128/128KiB；queue.offer非阻塞；full drop newest并计数。Stream Load只在worker做JDK HttpClient同步send。500ms连接超时、10s请求超时、最多3次及100/500ms退避；稳定batch UUID label与原payload重试。
+2. 使用single worker与bounded serialized-event queue：最多4096条、单条≤1024字节、累计≤4MiB、batch≤128/128KiB；queue.offer非阻塞；full drop newest并计数。Stream Load只在worker等待JDK HttpClient `sendAsync`结果。500ms连接超时；一个10s总deadline覆盖发送、响应头与完整受限响应body，到期取消原future/exchange并返回REQUEST_TIMEOUT；最多3次及100/500ms退避；稳定batch UUID label与原payload重试。
 3. DDL：新增scripts/dev/doris/connection-history.sql；Duplicate Key(event_id)，字段仅connection/disconnection/RTT所需；replication_num=1。schema建表非Flyway，DEV reset清数据而不删schema。无历史自动TTL。
 4. 用4.1.3真实容器证明表级最低权限、BE 8040直连PUT、表创建/三类事件写入及SQL readback。通过精确TDS场景`terminal.connection.history-records`观察真实WS认证、两次PING/PONG（第二次携带第一次测得的RTT）、真实设备取消激活与`ACTIVATION_CANCELLED`，并按terminal/session身份在Doris读回1条CONNECTED、2条HEARTBEAT_RTT（含精确匹配测得值）、1条DISCONNECTED。该首次focused run同时执行一次topology preflight。Apache文档列出的Success/Publish Timeout/Label Already Exists状态按详设处理；未知状态有限重试，耗尽drop/uncertain。若4.1.3表级权限不够或必须扩全局授权，停Dexter。
-5. focused tests：TdsConnectionHistoryWriterTest证明queue上限、caller不阻塞、drop与可观测性；TdsDorisStreamLoadClientTest用stub证明URI/headers/body、稳定label、timeout、响应体上限、状态映射与脱敏；容器验证相同label不重载重复事件。
+5. focused tests：TdsConnectionHistoryWriterTest证明queue上限、caller不阻塞、drop与可观测性；TdsDorisStreamLoadClientTest证明URI/headers/body、稳定label、响应头前timeout、响应头后body停顿仍受总deadline限制并取消exchange、超时后下一batch成功、响应体上限、状态映射与脱敏。JDK 21.0.11+9的取消future可能以`CompletionException`包装`CancellationException`，用例断言cause链，不依赖`CompletableFuture.isCancelled()`；容器验证相同label不重载重复事件。
 6. 命令：按实际Gradle任务核验后运行TDS单测（初步入口 ./gradlew :apps:backend:terminal-data-server:test）；通过`scripts/test/backend-acceptance --operation storeTerminalActivationBusinessPrecedence --topology-preflight --tds-contract-scenario terminal.connection.history-records`进行首次聚焦真实容器验收并完成拓扑预检。门失败保留first failure并修复根因。
 
 输出：DDL和事件完整往返、上界与丢弃证据、精确Doris权限。CP02三维MATCHED后进入CP03。
@@ -61,10 +61,10 @@ RECALL：需求R-4.4/R-7.2/R-7.3/V-S4/S5/S6/S13；详设CP-03/§7/§8/§9b；现
 
 1. 更新terminal-binding既有notification publisher、TDS payload parser、fixtures为typed union：binding revoke保留terminal/generation语义；session-open仅version/kind/terminalRef，无凭证、摘要或deviceId。
 2. 在PG事务中写latest-state并pg_notify。PG open提交后、本地登记与SESSION_READY之前，candidate保持pending；不得先回SESSION_READY。
-3. candidate开始本地登记前，按terminalRef向PG重读权威latest，并在现有per-terminal actor command顺序中比较/推进单调sequence水位；只有candidate identity与PG latest一致且sequence不低于已观察水位时才安装active并回SESSION_READY，否则关闭candidate，不登记。该复核与通知reconcile经同一per-terminal actor串行应用；通知仅唤醒，不取代PG读取。即使新通知先于旧candidate继续执行而被消费，actor保留观察到的高水位，旧candidate之后也不得回退。
+3. candidate开始本地登记前，按terminalRef向PG重读权威latest，并在现有per-terminal actor command顺序中比较/推进单调sequence水位；只有candidate identity与PG latest一致且sequence不低于已观察水位时才安装active并回SESSION_READY，否则关闭candidate，不登记。该复核与通知reconcile经同一per-terminal actor串行应用；通知仅唤醒，不取代PG读取。即使新通知先于旧candidate继续执行而被消费，actor保留观察到的高水位，旧candidate之后也不得回退。若`repository.open`已提交但此处权威readback抛错，只关闭该pending candidate并对精确identity调用stateWriter `queueDisconnect(SERVER_ERROR, persistedCallback)`；不能连带关闭既有active。候选无SESSION_READY/CONNECTED历史；tracked permit仅由断开已持久化后的callback释放，保留断开待写语义。
 4. session-open通知只唤醒；listener按terminalRef重读PG latest。actor仅在本地sequence更小、PG最新行断开或session identity不符时关旧连接；旧/乱序通知不得关闭高sequence会话。
 5. listener启动/恢复时先LISTEN并commit，再批量读取本节点tracked terminal的latest-session并reconcile；LISTEN前提交的通知由read覆盖，LISTEN后提交的通知由listener收到后重读覆盖。不得增加定时状态轮询；R-7.3的30秒重建上界保持。
-6. 受管真实PostgreSQL事务focused proof：
+6. focused actor与PostgreSQL proof：actor测试确定性注入open成功后的`readCurrentSession`失败，断言无SESSION_READY、candidate disconnect被排队、previous active保持打开、permit在persisted callback前不可复用；PostgreSQL repository测试以两个连续identity证明迟到的旧identity disconnect不覆盖新session。之后执行受管真实PostgreSQL事务focused proof：
    `node scripts/test/r5-remote-testcontainers.mjs :apps:backend:terminal-data-server:test --tests com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepositoryPostgresIntegrationTest`
    验证事务rollback后latest row不存在且listener收不到通知；事务commit后row与通知同时可见。该类含Testcontainers，禁止通过本机Gradle直跑。
 7. 真实双TDS/真实HTTP focused acceptance：
@@ -74,6 +74,8 @@ RECALL：需求R-4.4/R-7.2/R-7.3/V-S4/S5/S6/S13；详设CP-03/§7/§8/§9b；现
 输出：PG commit、本地pending登记、权威复核、active安装、SESSION_READY与通知reconcile的顺序证据；保留上述PostgreSQL integration test与V-S13场景的run ID及独立cleanup结果。CP03三维MATCHED后进入CP04。
 
 ## CP-04 · 远端DEV/reset/acceptance容器所有权
+
+复用 resident Doris 时，ensure 必须用当前受管 credential 中的 writer 密码执行 ALTER USER 后再校验表级授权；adoption focused proof 预置旧密码，证明 CREATE USER IF NOT EXISTS 不会掩盖凭证漂移，且密码不进入日志。
 
 RECALL：R-6.7/R-13/R-14；AGENTS远端环境/资源/cleanup；详设§4 CP-04/§9a/§11a。
 
