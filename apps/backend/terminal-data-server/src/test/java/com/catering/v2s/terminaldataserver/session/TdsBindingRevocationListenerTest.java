@@ -13,7 +13,11 @@ import static org.mockito.Mockito.when;
 
 import com.catering.v2s.terminaldataserver.protocol.TdsWireJsonConfiguration;
 import com.catering.v2s.terminaldataserver.session.TdsBindingRevocationListener.Revocation;
+import com.catering.v2s.terminaldataserver.session.TdsBindingRevocationListener.SessionOpened;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository;
+import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.BindingKey;
+import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentBinding;
+import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentSessionState;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -38,8 +42,13 @@ class TdsBindingRevocationListenerTest {
     @Test
     void parsesTheVersionedRevocationPayload() {
         assertThat(TdsBindingRevocationListener.parsePayload(
-                        "{\"v\":1,\"terminalRef\":\"" + TERMINAL + "\",\"revokedGeneration\":2}", objectMapper))
+                        "{\"v\":1,\"kind\":\"BINDING_REVOKED\",\"terminalRef\":\"" + TERMINAL
+                                + "\",\"revokedGeneration\":2}",
+                        objectMapper))
                 .isEqualTo(new Revocation(TERMINAL, 2));
+        assertThat(TdsBindingRevocationListener.parsePayload(
+                        "{\"v\":1,\"kind\":\"SESSION_OPEN\",\"terminalRef\":\"" + TERMINAL + "\"}", objectMapper))
+                .isEqualTo(new SessionOpened(TERMINAL));
     }
 
     @Test
@@ -103,10 +112,12 @@ class TdsBindingRevocationListenerTest {
         when(connection.createStatement()).thenReturn(statement);
         when(connection.unwrap(PGConnection.class)).thenReturn(pgConnection);
         when(repository.readCurrentBindings(eq(connection), anyCollection())).thenReturn(Map.of());
+        when(repository.readCurrentSessions(eq(connection), anyCollection())).thenReturn(Map.of());
         when(actors.trackedBindings()).thenReturn(List.of());
         when(notification.getName()).thenReturn("terminal_binding_events");
         when(notification.getParameter())
-                .thenReturn("{\"v\":1,\"terminalRef\":\"" + TERMINAL + "\",\"revokedGeneration\":2}");
+                .thenReturn("{\"v\":1,\"kind\":\"BINDING_REVOKED\",\"terminalRef\":\"" + TERMINAL
+                        + "\",\"revokedGeneration\":2}");
         when(pgConnection.getNotifications(anyInt())).thenAnswer(invocation -> {
             if (notificationReturned.compareAndSet(false, true)) return new PGNotification[] {notification};
             try {
@@ -148,14 +159,83 @@ class TdsBindingRevocationListenerTest {
     }
 
     @Test
+    void sessionOpenNotificationReconcilesBindingAndAuthoritativeSessionOnTheListenerThread() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        Statement statement = mock(Statement.class);
+        PGConnection pgConnection = mock(PGConnection.class);
+        PGNotification notification = mock(PGNotification.class);
+        TdsConnectionStateRepository repository = mock(TdsConnectionStateRepository.class);
+        TdsTerminalSessionActors actors = mock(TdsTerminalSessionActors.class);
+        CountDownLatch notificationDispatched = new CountDownLatch(1);
+        CountDownLatch stopped = new CountDownLatch(1);
+        AtomicBoolean notificationReturned = new AtomicBoolean();
+        BindingKey key = new BindingKey("GROUP-1", TERMINAL);
+        CurrentBinding binding = new CurrentBinding(key, UUID.randomUUID(), 3L, "ACTIVE");
+        CurrentSessionState session =
+                new CurrentSessionState(key, binding.workspaceUuid(), "node-b", "session-b", 12L, null);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.createStatement()).thenReturn(statement);
+        when(connection.unwrap(PGConnection.class)).thenReturn(pgConnection);
+        when(actors.trackedBindings()).thenReturn(List.of(), List.of(key));
+        when(repository.readCurrentBindings(eq(connection), anyCollection()))
+                .thenReturn(Map.of(), Map.of(key, binding));
+        when(repository.readCurrentSessions(eq(connection), anyCollection()))
+                .thenReturn(Map.of(), Map.of(key, session));
+        when(notification.getName()).thenReturn("terminal_binding_events");
+        when(notification.getParameter())
+                .thenReturn("{\"v\":1,\"kind\":\"SESSION_OPEN\",\"terminalRef\":\"" + TERMINAL + "\"}");
+        when(pgConnection.getNotifications(anyInt())).thenAnswer(invocation -> {
+            if (notificationReturned.compareAndSet(false, true)) return new PGNotification[] {notification};
+            try {
+                Thread.sleep(10_000);
+            } catch (InterruptedException stoppingListener) {
+                Thread.currentThread().interrupt();
+            }
+            return null;
+        });
+        org.mockito.Mockito.doAnswer(invocation -> {
+                    notificationDispatched.countDown();
+                    return null;
+                })
+                .when(actors)
+                .reconcileSession(session);
+
+        TdsBindingRevocationListener listener = new TdsBindingRevocationListener(
+                dataSource,
+                repository,
+                actors,
+                new TdsListenerRecoveryGate("", "", ""),
+                objectMapper,
+                Schedulers.immediate());
+        try {
+            listener.start();
+            assertThat(notificationDispatched.await(2, TimeUnit.SECONDS)).isTrue();
+            listener.stop(stopped::countDown);
+            assertThat(stopped.await(2, TimeUnit.SECONDS)).isTrue();
+            org.mockito.Mockito.verify(actors).reconcile(binding);
+            org.mockito.Mockito.verify(actors).reconcileSession(session);
+        } finally {
+            if (listener.isRunning()) {
+                listener.stop(stopped::countDown);
+                stopped.await(2, TimeUnit.SECONDS);
+            }
+        }
+    }
+
+    @Test
     void rejectsMalformedOrOutOfContractPayloads() {
         List<String> invalidPayloads = List.of(
                 "not-json",
-                "{\"v\":2,\"terminalRef\":\"" + TERMINAL + "\",\"revokedGeneration\":2}",
-                "{\"v\":1,\"terminalRef\":\"not-a-uuid\",\"revokedGeneration\":2}",
-                "{\"v\":1,\"terminalRef\":\"" + TERMINAL + "\",\"revokedGeneration\":0}",
-                "{\"v\":1,\"terminalRef\":\"" + TERMINAL + "\",\"revokedGeneration\":2,\"extra\":true}",
-                "{\"v\":1,\"terminalRef\":\"" + TERMINAL + "\",\"revokedGeneration\":2} {}");
+                "{\"v\":2,\"kind\":\"BINDING_REVOKED\",\"terminalRef\":\"" + TERMINAL + "\",\"revokedGeneration\":2}",
+                "{\"v\":1,\"kind\":\"BINDING_REVOKED\",\"terminalRef\":\"not-a-uuid\",\"revokedGeneration\":2}",
+                "{\"v\":1,\"kind\":\"BINDING_REVOKED\",\"terminalRef\":\"" + TERMINAL + "\",\"revokedGeneration\":0}",
+                "{\"v\":1,\"kind\":\"BINDING_REVOKED\",\"terminalRef\":\"" + TERMINAL
+                        + "\",\"revokedGeneration\":2,\"extra\":true}",
+                "{\"v\":1,\"kind\":\"SESSION_OPEN\",\"terminalRef\":\"" + TERMINAL + "\",\"extra\":true}",
+                "{\"v\":1,\"kind\":\"UNKNOWN\",\"terminalRef\":\"" + TERMINAL + "\"}",
+                "{\"v\":1,\"kind\":\"BINDING_REVOKED\",\"terminalRef\":\"" + TERMINAL
+                        + "\",\"revokedGeneration\":2} {}");
 
         for (String payload : invalidPayloads) {
             assertThatThrownBy(() -> TdsBindingRevocationListener.parsePayload(payload, objectMapper))

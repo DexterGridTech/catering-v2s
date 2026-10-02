@@ -334,7 +334,11 @@ describe('transport module command facade', () => {
       platformPorts: {
         device: {
           getNetworkStatus: async () => ({status: 'succeeded', value: {connected: true}, completedAt: 1}),
-          subscribeNetworkStatus: async () => ({status: 'succeeded', value: {subscriptionId: 'network-1'}, completedAt: 1}),
+          subscribeNetworkStatus: async () => ({
+            status: 'succeeded',
+            value: {subscriptionId: 'network-1'},
+            completedAt: 1,
+          }),
           unsubscribeNetworkStatus: async () => ({
             status: 'unavailable',
             port: 'device',

@@ -6,7 +6,7 @@ v2s 从一个业务 deployable 起步：单进程模块化单体、单 PostgreSQ
 
 初始形态不包含 MQ、通用 outbox、TDP、内部 OpenAPI client、搜索平台或常态轮询。只有真实触发条件与新 decision 可以改变该边界。
 
-已接受的 terminal service-shape decision 建立独立受管的 `terminal-data-server` WebSocket transport runtime。按需求 D-44，批次二 DEV 可运行三个独立 TDS 实例，并由两个 HAProxy WebSocket 入口接入；这是部署拓扑，不增加业务 deployable，也不实现跨节点会话协调（批次三）。TDS 仍是辅助传输进程，不是业务 deployable 或 TDP；业务事实仍由唯一业务应用与 owner 模块管理，TDS 不运行 Flyway、不拥有业务写入，也不引入 MQ、通用 outbox 或 TDP。
+已接受的 terminal service-shape decision 建立独立受管的 `terminal-data-server` WebSocket transport runtime。按需求 D-44，批次二 DEV 可运行三个独立 TDS 实例，并由两个 HAProxy WebSocket 入口接入；这是部署拓扑，不增加业务 deployable。2026-10-02接受的批次三 amendment 仅增加跨节点会话取代/恢复核验和TDS连接历史写入远端Doris；绑定与审计仍写PostgreSQL，TDS不运行Flyway、不拥有业务写入。Doris是具名遥测存储例外，不是业务数据库、业务deployable或TDP，也不引入MQ、通用outbox、持久队列或常态轮询；topic同步继续延后。
 
 ## HTTP 与管理端
 
@@ -51,6 +51,8 @@ operations capability 只表达用户发起的写工作流，不得作为页面�
 环境执行面固定为三类：**DEV、backend acceptance 与当前受管浏览器 L2** 的 Spring/Java 后端以及 TDS 均在受信远端非生产主机运行，并与 PostgreSQL/对象存储同侧；本机只启动两个管理端 Vite（browser L2 另由本机 Playwright 驱动），通过受管 tunnel 仅转发远端 Java HTTP、浏览器所需资产、当前 L2 获准的 WebSocket 入口，以及批次二 DEV 的两个 HAProxy WebSocket 入口；TDS 节点端口只绑定远端 loopback。禁止 PostgreSQL tunnel、本机 Java/TDS fallback、远端 Vite/浏览器。browser L2 每次必须隔离远端数据库/资产命名空间，并分别证明远端 Java/TDS、本机 Vite/Playwright、HTTP/asset/WebSocket ingress 与两侧 cleanup。**后续 UAT** 仅在获得单独授权后全量远端部署、远端执行。远端 Testcontainers 只是 JVM 与 Docker 同平面的技术验证，不替代任一浏览器 L2 或 UAT。受管 runner 若尚未实现对应远端后端拓扑，必须 fail closed，不得继续旧本机 Java + PostgreSQL tunnel。
 
 受管 Testcontainers/backend-acceptance 的运行授权隐含一条窄的 DEV 生命周期授权：若运行前受管 DEV 正在运行，先按其 manifest/identity 执行 `scripts/dev/stop`，stop cleanup PASS 后才跑测试；测试 business 与 cleanup 都 PASS 后，且仅在 `DEV_WAS_RUNNING=true` 时执行 `scripts/dev/start`，让 DEV 加载当前最新代码。原先没有 DEV 不补启动，测试失败不自动重启。该规则不扩张到 reset、seed、L2、UAT 或未知进程，start 仍不 seed；stop/test/start 三段证据分别判定。
+
+批次三专用边界：按已接受的batch-3 amendment，DEV Doris是与PostgreSQL、HAProxy、TDS同机的远端常驻服务；backend-acceptance每run启动隔离Doris容器，Doris端口不经tunnel。当前批次三指派单独授权动态验收后的非生产reset→DEV start→完整r5-full seed，但只在全批CP与6b MATCHED、适用准入、动态business和cleanup PASS及当前字节完整seed dry-run PASS后执行；reset先停历史生产者、清Doris并SQL readback为0，再做PG reset。该授权不扩展到L2、UAT、生产或后续其他任务。
 
 ## Backend acceptance 设计红线
 

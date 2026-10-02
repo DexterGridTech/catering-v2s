@@ -27,6 +27,11 @@ public final class RuntimeEnvironmentKeys {
     public static final String V2S_PLATFORM_SESSION = "V2S_PLATFORM_SESSION";
     public static final String V2S_RUNTIME_DIR = "V2S_RUNTIME_DIR";
     public static final String V2S_RUNTIME_ENVIRONMENT = "V2S_RUNTIME_ENVIRONMENT";
+    public static final String V2S_TDS_DORIS_DATABASE = "V2S_TDS_DORIS_DATABASE";
+    public static final String V2S_TDS_DORIS_ENDPOINT = "V2S_TDS_DORIS_ENDPOINT";
+    public static final String V2S_TDS_DORIS_PASSWORD = "V2S_TDS_DORIS_PASSWORD";
+    public static final String V2S_TDS_DORIS_TABLE = "V2S_TDS_DORIS_TABLE";
+    public static final String V2S_TDS_DORIS_USERNAME = "V2S_TDS_DORIS_USERNAME";
     public static final String V2S_TDS_MAX_TRACKED_SESSIONS = "V2S_TDS_MAX_TRACKED_SESSIONS";
     public static final String V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS = "V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS";
     public static final String V2S_TDS_NODE_ID = "V2S_TDS_NODE_ID";
@@ -52,6 +57,11 @@ public final class RuntimeEnvironmentKeys {
             V2S_PLATFORM_SESSION,
             V2S_RUNTIME_DIR,
             V2S_RUNTIME_ENVIRONMENT,
+            V2S_TDS_DORIS_DATABASE,
+            V2S_TDS_DORIS_ENDPOINT,
+            V2S_TDS_DORIS_PASSWORD,
+            V2S_TDS_DORIS_TABLE,
+            V2S_TDS_DORIS_USERNAME,
             V2S_TDS_MAX_TRACKED_SESSIONS,
             V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS,
             V2S_TDS_NODE_ID,

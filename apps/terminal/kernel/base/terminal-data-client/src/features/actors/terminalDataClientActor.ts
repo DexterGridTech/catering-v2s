@@ -33,6 +33,7 @@ import {
   cancelTerminalOnlineCommand,
   connectTerminalCommand,
   disconnectTerminalCommand,
+  initializeTerminalDataClientCommand,
   terminalHeartbeatTickCommand,
   terminalTransportEventCommand,
 } from '../commands/terminalDataClientCommands';
@@ -95,33 +96,41 @@ const dispatchOfflineReset = (context: ActorExecutionContext): void => {
 const isTerminalConnectionCloseReason = (reason: string): reason is TerminalConnectionCloseReason =>
   terminalConnectionCloseReasonSet.has(reason);
 
-const dispatchBackgroundCommand = <TPayload extends StateJsonValue>(input: Readonly<{
-  context: ActorExecutionContext;
-  transport: TerminalDataClientDependencies['transport'];
-  definition: CommandDefinition<TPayload>;
-  payload: TPayload;
-  failure: Readonly<{trigger: string; transportCause: string}>;
-}>): Promise<void> => {
+const dispatchBackgroundCommand = <TPayload extends StateJsonValue>(
+  input: Readonly<{
+    context: ActorExecutionContext;
+    transport: TerminalDataClientDependencies['transport'];
+    definition: CommandDefinition<TPayload>;
+    payload: TPayload;
+    failure: Readonly<{trigger: string; transportCause: string}>;
+  }>,
+): Promise<void> => {
   const {context, transport, definition, payload, failure} = input;
-  const logFailure = (event: 'background-command-dispatch-failed' | 'background-transport-invalidation-failed', failureKind: string, dispatchStatus?: string): void => {
-    context.platformPorts.logger.scope({
-      moduleName,
-      layer: 'kernel',
-      subsystem: 'terminal-data-client',
-      component: 'connection',
-    }).error({
-      category: 'terminal.connection.background-command',
-      event,
-      message: 'Terminal connection background command did not complete',
-      context: {commandId: context.command.commandId},
-      data: {
-        profileId,
-        commandName: definition.commandName,
-        trigger: failure.trigger,
-        failureKind,
-        ...(dispatchStatus === undefined ? {} : {dispatchStatus}),
-      },
-    });
+  const logFailure = (
+    event: 'background-command-dispatch-failed' | 'background-transport-invalidation-failed',
+    failureKind: string,
+    dispatchStatus?: string,
+  ): void => {
+    context.platformPorts.logger
+      .scope({
+        moduleName,
+        layer: 'kernel',
+        subsystem: 'terminal-data-client',
+        component: 'connection',
+      })
+      .error({
+        category: 'terminal.connection.background-command',
+        event,
+        message: 'Terminal connection background command did not complete',
+        context: {commandId: context.command.commandId},
+        data: {
+          profileId,
+          commandName: definition.commandName,
+          trigger: failure.trigger,
+          failureKind,
+          ...(dispatchStatus === undefined ? {} : {dispatchStatus}),
+        },
+      });
   };
   const invalidateTransport = async (failureKind: string, dispatchStatus?: string): Promise<void> => {
     logFailure('background-command-dispatch-failed', failureKind, dispatchStatus);
@@ -135,9 +144,7 @@ const dispatchBackgroundCommand = <TPayload extends StateJsonValue>(input: Reado
   try {
     return context.dispatchCommand(definition, payload).then(
       result =>
-        result.status === 'completed'
-          ? undefined
-          : invalidateTransport('dispatch-result-not-completed', result.status),
+        result.status === 'completed' ? undefined : invalidateTransport('dispatch-result-not-completed', result.status),
       () => invalidateTransport('dispatch-rejected'),
     );
   } catch {
@@ -238,6 +245,21 @@ export const createTerminalDataClientActor = (
     heartbeatDeadline = undefined;
   };
 
+  const armHeartbeatDeadline = (context: ActorExecutionContext): void => {
+    clearHeartbeatDeadline();
+    heartbeatDeadline = setTimeout(
+      () =>
+        dispatchBackgroundCommand({
+          context,
+          transport: dependencies.transport,
+          definition: terminalTransportEventCommand,
+          payload: {event: {type: 'close', code: 4000, reason: 'HEARTBEAT_TIMEOUT'}},
+          failure: {trigger: 'heartbeat-deadline', transportCause: 'HEARTBEAT_TIMEOUT'},
+        }),
+      expectedHeartbeatTimeoutMs,
+    );
+  };
+
   const clearLocalConnection = (): void => {
     if (heartbeatTimer !== undefined) clearInterval(heartbeatTimer);
     clearHeartbeatDeadline();
@@ -255,6 +277,14 @@ export const createTerminalDataClientActor = (
   };
 
   const actor = defineActor(moduleName, 'terminal-data-client', [
+    onCommand(initializeTerminalDataClientCommand, async context => {
+      if (readState(context.getState()).credential === null) return Object.freeze({status: 'inactive'});
+      const result = await context.dispatchCommand(connectTerminalCommand, Object.freeze({}), {
+        requestId: context.command.requestId ?? createRequestId(),
+      });
+      if (result.status !== 'completed') throw new Error(`Terminal auto-connect failed: ${result.status}`);
+      return Object.freeze({status: 'connect-requested'});
+    }),
     onCommand(activateTerminalCommand, async context => {
       if (readState(context.getState()).credential !== null)
         return Object.freeze({status: 'rejected', reason: 'ALREADY_ACTIVE'});
@@ -268,7 +298,13 @@ export const createTerminalDataClientActor = (
       }
       const current = readState(context.getState());
       if (current.credential !== null) return Object.freeze({status: 'rejected', reason: 'ALREADY_ACTIVE'});
-      const previous = current.pendingActivations[context.command.payload.operationId];
+      const previous =
+        current.pendingActivations[context.command.payload.operationId] ??
+        Object.values(current.pendingActivations).find(
+          pendingActivation =>
+            pendingActivation.groupWorkspaceKey === context.command.payload.groupWorkspaceKey &&
+            pendingActivation.activationCode === context.command.payload.activationCode,
+        );
       if (
         previous !== undefined &&
         (previous.groupWorkspaceKey !== context.command.payload.groupWorkspaceKey ||
@@ -334,7 +370,7 @@ export const createTerminalDataClientActor = (
           bindingGeneration: result.body.bindingGeneration,
         });
       }
-      if (result.kind === 'business-rejection') {
+      if (result.kind === 'business-rejection' && result.errorCode === 'TERMINAL_BINDING_ACTIVATION_EXPIRED') {
         context.dispatchAction(terminalDataClientActions.removePendingActivation(pending.operationId));
         await flush(context);
       }
@@ -368,8 +404,8 @@ export const createTerminalDataClientActor = (
       return Object.freeze({status: result.body.outcome});
     }),
     onCommand(cancelTerminalOfflineCommand, async context => {
-      await closeLocalConnection();
       context.dispatchAction(terminalDataClientActions.setActivationStatus('cancelling'));
+      await closeLocalConnection();
       resetRequestId.current = context.command.requestId ?? createRequestId();
       dispatchOfflineReset(context);
       return Object.freeze({status: 'cancelled-offline'});
@@ -499,10 +535,8 @@ export const createTerminalDataClientActor = (
             return null;
           }
           sentAtBySequence.delete(Number(parsed.seq));
-          if (sentAtBySequence.size === 0) {
-            clearHeartbeatDeadline();
-          }
           const observedAt = dependencies.now();
+          armHeartbeatDeadline(context);
           context.dispatchAction(
             terminalDataClientActions.recordRtt({rttMs: Math.max(0, observedAt - sentAt), observedAt}),
           );
@@ -568,8 +602,8 @@ export const createTerminalDataClientActor = (
           ),
         );
         if (reason === 'ACTIVATION_CANCELLED') {
-          await closeLocalConnection();
           context.dispatchAction(terminalDataClientActions.setActivationStatus('cancelling'));
+          await closeLocalConnection();
           resetRequestId.current = context.command.requestId ?? createRequestId();
           dispatchOfflineReset(context);
         } else {
@@ -593,21 +627,7 @@ export const createTerminalDataClientActor = (
       await connection.send(raw);
       sentAtBySequence.set(seq, sentAt);
       context.dispatchAction(terminalDataClientActions.nextPing());
-      if (heartbeatDeadline === undefined) {
-          heartbeatDeadline = setTimeout(
-            () =>
-              dispatchBackgroundCommand(
-                {
-                  context,
-                  transport: dependencies.transport,
-                  definition: terminalTransportEventCommand,
-                  payload: {event: {type: 'close', code: 4000, reason: 'HEARTBEAT_TIMEOUT'}},
-                  failure: {trigger: 'heartbeat-deadline', transportCause: 'HEARTBEAT_TIMEOUT'},
-                },
-              ),
-            expectedHeartbeatTimeoutMs,
-          );
-      }
+      if (heartbeatDeadline === undefined) armHeartbeatDeadline(context);
       return Object.freeze({status: 'ping-sent', seq});
     }),
   ]);

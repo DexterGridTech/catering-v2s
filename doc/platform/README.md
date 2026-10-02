@@ -18,4 +18,4 @@
 
 `catering-all-v2` 及其他旧仓只作为 Heritage 只读来源；不得作为 runtime/build fallback，
 也不得把旧仓状态复制为本仓当前状态。当前交付保持一个业务 deployable、一个 PostgreSQL
-数据库、两个独立 admin app。已接受的 terminal service-shape decision 准许辅助 TDS WebSocket runtime；按 D-44，批次二 DEV 可运行三个独立实例并通过两个 HAProxy 入口接入。实例扩展不增加业务 deployable，不引入 TDP，也不实现批次三的跨节点会话协调。未批准 Journey 和 TDP placeholder 不得被实现或作为验收依据。
+业务数据库、两个独立 admin app。已接受的 terminal service-shape decision 准许辅助 TDS WebSocket runtime；按 D-44，批次二 DEV 可运行三个独立实例并通过两个 HAProxy 入口接入。2026-10-02接受的批次三 amendment 将跨节点会话取代/恢复核验与TDS连接历史写入远端Doris列入批次三；Doris仅是具名telemetry store，绑定/审计仍留PostgreSQL，不增加业务deployable、TDP、MQ、通用outbox或轮询。未批准 Journey 和 TDP placeholder 不得被实现或作为验收依据。

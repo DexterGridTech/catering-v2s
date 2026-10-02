@@ -9,6 +9,7 @@ import {
   cancelTerminalOnlineCommand,
   connectTerminalCommand,
   disconnectTerminalCommand,
+  initializeTerminalDataClientCommand,
   terminalHeartbeatTickCommand,
   terminalTransportEventCommand,
 } from '../features/commands/terminalDataClientCommands';
@@ -23,6 +24,7 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
     cancelTerminalOfflineCommand,
     connectTerminalCommand,
     disconnectTerminalCommand,
+    initializeTerminalDataClientCommand,
     terminalTransportEventCommand,
     terminalHeartbeatTickCommand,
   ] as const;
@@ -36,9 +38,12 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
     actorDefinitions: [actorRuntime.actor],
     slices: [{name: terminalDataClientSliceName, persistIntent: 'owner-only' as const}],
     stateSlices: [terminalDataClientStateSlice],
-    install: (context: RuntimeModuleContext) => {
+    install: async (context: RuntimeModuleContext) => {
       context.registerResource(actorRuntime.dispose);
+      const result = await context.dispatchCommand(initializeTerminalDataClientCommand, Object.freeze({}));
+      if (result.status !== 'completed') throw new Error(`Terminal data client startup failed: ${result.status}`);
     },
-    onApplicationReset: (context: RuntimeModuleContext, input: RuntimeModuleResetInput) => actorRuntime.afterApplicationReset(context, input.reason),
+    onApplicationReset: (context: RuntimeModuleContext, input: RuntimeModuleResetInput) =>
+      actorRuntime.afterApplicationReset(context, input.reason),
   });
 };

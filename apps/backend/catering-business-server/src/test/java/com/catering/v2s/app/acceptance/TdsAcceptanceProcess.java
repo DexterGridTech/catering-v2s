@@ -37,6 +37,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final String runId;
+    private final String instanceName;
     private final Path directory;
     private final Path logPath;
     private final Path evidencePath;
@@ -53,11 +54,13 @@ final class TdsAcceptanceProcess implements AutoCloseable {
     private final TdsStartConfiguration startConfiguration;
     private final long rssAtReadyKiB;
     private boolean gracefulStopRequested;
+    private boolean forceTerminatedForAcceptanceScenario;
     private long rssBeforeStopKiB;
     private boolean closed;
 
     private TdsAcceptanceProcess(
             String runId,
+            String instanceName,
             Path directory,
             Path logPath,
             Path evidencePath,
@@ -74,6 +77,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
             TdsStartConfiguration startConfiguration,
             long rssAtReadyKiB) {
         this.runId = runId;
+        this.instanceName = instanceName;
         this.directory = directory;
         this.logPath = logPath;
         this.evidencePath = evidencePath;
@@ -91,15 +95,32 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         this.rssAtReadyKiB = rssAtReadyKiB;
     }
 
-    static TdsAcceptanceProcess start(PostgreSQLContainer<?> postgres, TdsStartConfiguration startConfiguration)
+    static TdsAcceptanceProcess start(
+            PostgreSQLContainer<?> postgres,
+            DorisConfiguration dorisConfiguration,
+            TdsStartConfiguration startConfiguration)
+            throws Exception {
+        return start(postgres, dorisConfiguration, "primary", startConfiguration);
+    }
+
+    static TdsAcceptanceProcess start(
+            PostgreSQLContainer<?> postgres,
+            DorisConfiguration dorisConfiguration,
+            String instanceName,
+            TdsStartConfiguration startConfiguration)
             throws Exception {
         Assertions.assertNotNull(startConfiguration, "TDS_START_CONFIGURATION_REQUIRED");
+        Assertions.assertNotNull(dorisConfiguration, "TDS_DORIS_CONFIGURATION_REQUIRED");
+        Assertions.assertTrue(
+                instanceName != null && instanceName.matches("[a-z][a-z0-9-]{0,31}"), "TDS_INSTANCE_NAME_INVALID");
         requireRemoteAcceptance();
         String runId = requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_ID");
         Path acceptanceDirectory = Path.of(requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_DIRECTORY"))
                 .toAbsolutePath()
                 .normalize();
-        Path directory = acceptanceDirectory.resolve("tds").normalize();
+        Path tdsDirectory = acceptanceDirectory.resolve("tds").normalize();
+        Path directory =
+                ("primary".equals(instanceName) ? tdsDirectory : tdsDirectory.resolve(instanceName)).normalize();
         Assertions.assertTrue(directory.startsWith(acceptanceDirectory), "TDS_RUN_DIRECTORY_ESCAPE");
         Files.createDirectories(directory);
         setOwnerOnly(directory);
@@ -194,6 +215,11 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         environment.put("V2S_TESTCONTAINERS_EXECUTION_PLANE", "remote");
         environment.put("V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS", maxUnauthenticated);
         environment.put("V2S_TDS_MAX_TRACKED_SESSIONS", maxTracked);
+        environment.put("V2S_TDS_DORIS_ENDPOINT", dorisConfiguration.endpoint());
+        environment.put("V2S_TDS_DORIS_DATABASE", "terminal_connection_history");
+        environment.put("V2S_TDS_DORIS_TABLE", "connection_history");
+        environment.put("V2S_TDS_DORIS_USERNAME", dorisConfiguration.username());
+        environment.put("V2S_TDS_DORIS_PASSWORD", dorisConfiguration.password());
 
         Instant startedAt = Instant.now();
         Process process = null;
@@ -211,6 +237,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
                     rssAtReadyKiB <= tdsCapacity.rssBudgetMiB() * 1024L, "TDS_RSS_BUDGET_EXCEEDED_AT_READINESS");
             TdsAcceptanceProcess owned = new TdsAcceptanceProcess(
                     runId,
+                    instanceName,
                     directory,
                     logPath,
                     evidencePath,
@@ -228,10 +255,11 @@ final class TdsAcceptanceProcess implements AutoCloseable {
                     rssAtReadyKiB);
             owned.writeEvidence("READY", "NOT_RUN", null);
             System.out.printf(
-                    ("BACKEND_ACCEPTANCE_TDS_PROCESS stage=READY pid=%d startTicks=%s port=%d "
+                    ("BACKEND_ACCEPTANCE_TDS_PROCESS stage=READY instance=%s pid=%d startTicks=%s port=%d "
                             + "stateWriteIntervalMillis=%d nodeId=%s readinessWithdrawalWaitMillis=%d "
                             + "appType=REACTIVE runId=%s "
                             + "logPath=%s registrationGateSocket=%s%n"),
+                    instanceName,
                     pid,
                     startTicks,
                     owned.port,
@@ -288,6 +316,14 @@ final class TdsAcceptanceProcess implements AutoCloseable {
 
     String nodeId() {
         return startConfiguration.effectiveNodeId();
+    }
+
+    long pid() {
+        return pid;
+    }
+
+    String startTicks() {
+        return startTicks;
     }
 
     long readinessWithdrawalWaitMillis() {
@@ -400,6 +436,29 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         return process.exitValue();
     }
 
+    void forceTerminateForAcceptanceScenario() throws Exception {
+        Assertions.assertFalse(closed, "TDS_PROCESS_ALREADY_CLOSED");
+        Assertions.assertTrue(process.isAlive(), "TDS_PROCESS_NOT_ALIVE_BEFORE_FORCED_TERMINATION");
+        Assertions.assertEquals(startTicks, processStartTicks(pid), "TDS_PROCESS_IDENTITY_CHANGED_BEFORE_FORCED_STOP");
+        rssBeforeStopKiB = readRssKiB(pid);
+        Assertions.assertTrue(rssBeforeStopKiB > 0, "TDS_RSS_UNAVAILABLE_BEFORE_FORCED_STOP");
+        Assertions.assertTrue(
+                rssBeforeStopKiB <= tdsCapacity.rssBudgetMiB() * 1024L, "TDS_RSS_BUDGET_EXCEEDED_BEFORE_FORCED_STOP");
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_TDS_PROCESS stage=FORCED_TERMINATION_REQUESTED instance=%s pid=%d "
+                        + "startTicks=%s rssKiB=%d runId=%s%n",
+                instanceName, pid, startTicks, rssBeforeStopKiB, runId);
+        process.destroyForcibly();
+        Assertions.assertTrue(
+                process.waitFor(5, TimeUnit.SECONDS), "TDS_ACCEPTANCE_FORCED_TERMINATION_DEADLINE_EXCEEDED");
+        Assertions.assertFalse(process.isAlive(), "TDS_PROCESS_ALIVE_AFTER_FORCED_TERMINATION");
+        forceTerminatedForAcceptanceScenario = true;
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_TDS_PROCESS stage=FORCED_TERMINATION_COMPLETE instance=%s pid=%d "
+                        + "startTicks=%s exitCode=%d runId=%s%n",
+                instanceName, pid, startTicks, process.exitValue(), runId);
+    }
+
     private static int awaitReady(Process process, Path logPath) throws Exception {
         long deadline = System.nanoTime() + STARTUP_DEADLINE.toNanos();
         while (System.nanoTime() < deadline) {
@@ -418,6 +477,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         Map<String, Object> evidence = new LinkedHashMap<>();
         evidence.put("schemaVersion", 1);
         evidence.put("kind", "backend-acceptance-tds-process");
+        evidence.put("instanceName", instanceName);
         evidence.put("runId", runId);
         evidence.put("phase", phase);
         evidence.put("processId", pid);
@@ -443,6 +503,11 @@ final class TdsAcceptanceProcess implements AutoCloseable {
                 "registrationGateSocket", registrationGateBroker.socketPath().toString());
         evidence.put("logPath", logPath.toString());
         evidence.put("cleanupStatus", cleanupStatus);
+        evidence.put(
+                "terminationMode",
+                forceTerminatedForAcceptanceScenario
+                        ? "EXPECTED_FORCED_ACCEPTANCE_SCENARIO"
+                        : gracefulStopRequested ? "GRACEFUL" : "UNEXPECTED");
         Path temporary = evidencePath.resolveSibling("process-evidence.json.tmp");
         Files.writeString(temporary, JSON.writeValueAsString(evidence) + "\n", StandardCharsets.UTF_8);
         Files.move(temporary, evidencePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
@@ -472,15 +537,21 @@ final class TdsAcceptanceProcess implements AutoCloseable {
             cleanupFailure = failure;
         }
         Integer exitCode = terminated ? process.exitValue() : null;
-        String cleanup = terminated && gracefullyRequested && cleanupFailure == null ? "PASS" : "FAIL";
+        boolean expectedStop = gracefullyRequested || forceTerminatedForAcceptanceScenario;
+        String cleanup = terminated && expectedStop && cleanupFailure == null ? "PASS" : "FAIL";
+        String terminationMode = forceTerminatedForAcceptanceScenario
+                ? "EXPECTED_FORCED_ACCEPTANCE_SCENARIO"
+                : gracefullyRequested ? "GRACEFUL" : "UNEXPECTED";
         writeEvidence("STOPPED", cleanup, exitCode);
         System.out.printf(
-                ("BACKEND_ACCEPTANCE_TDS_PROCESS stage=STOPPED pid=%d startTicks=%s exitCo"
-                        + "de=%s graceful=%s cleanup=%s runId=%s%n"),
+                ("BACKEND_ACCEPTANCE_TDS_PROCESS stage=STOPPED instance=%s pid=%d startTicks=%s exitCo"
+                        + "de=%s graceful=%s terminationMode=%s cleanup=%s runId=%s%n"),
+                instanceName,
                 pid,
                 startTicks,
                 exitCode == null ? "UNAVAILABLE" : exitCode,
                 gracefullyRequested,
+                terminationMode,
                 cleanup,
                 runId);
         if (!"PASS".equals(cleanup)) throw new IllegalStateException("TDS_PROCESS_CLEANUP_FAILED");
@@ -525,13 +596,25 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         static final String DEFAULT_NODE_ID = "terminal-data-server";
         static final long DEFAULT_READINESS_WITHDRAWAL_WAIT_MS = 3_000;
         static final String VS15_CONTRACT_SCENARIO_ID = "terminal.connection.vs15.readiness-withdrawal-and-drain";
+        static final String HISTORY_SECRET_SEARCH_SCENARIO_ID = "terminal.connection.vs11.secret-search";
+        static final String HISTORY_RECORDS_SCENARIO_ID = "terminal.connection.history-records";
+        static final String HISTORY_OUTAGE_BOUNDED_SCENARIO_ID = "terminal.connection.history-outage-bounded";
+        static final String VS13_CROSS_NODE_RECOVERY_SCENARIO_ID = "terminal.connection.vs13.cross-node-recovery";
         static final String VS15_NODE_ID = "vs15-acceptance-node";
+        static final String VS13_NODE_A_ID = "vs13-acceptance-node-a";
+        static final String VS13_NODE_B_ID = "vs13-acceptance-node-b";
         static final long VS15_READINESS_WITHDRAWAL_WAIT_MS = 4_000;
 
         static TdsStartConfiguration forContractScenario(String scenario) {
             if (scenario == null || scenario.isBlank()) return new TdsStartConfiguration(null, null);
             if (VS15_CONTRACT_SCENARIO_ID.equals(scenario)) {
                 return new TdsStartConfiguration(VS15_NODE_ID, VS15_READINESS_WITHDRAWAL_WAIT_MS);
+            }
+            if (HISTORY_SECRET_SEARCH_SCENARIO_ID.equals(scenario)) return new TdsStartConfiguration(null, null);
+            if (HISTORY_RECORDS_SCENARIO_ID.equals(scenario)) return new TdsStartConfiguration(null, null);
+            if (HISTORY_OUTAGE_BOUNDED_SCENARIO_ID.equals(scenario)) return new TdsStartConfiguration(null, null);
+            if (VS13_CROSS_NODE_RECOVERY_SCENARIO_ID.equals(scenario)) {
+                return new TdsStartConfiguration(VS13_NODE_A_ID, null);
             }
             throw new IllegalArgumentException("BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_UNKNOWN");
         }
@@ -544,6 +627,19 @@ final class TdsAcceptanceProcess implements AutoCloseable {
             return readinessWithdrawalWaitMsOverride == null
                     ? DEFAULT_READINESS_WITHDRAWAL_WAIT_MS
                     : readinessWithdrawalWaitMsOverride;
+        }
+    }
+
+    record DorisConfiguration(String endpoint, String username, String password) {
+        DorisConfiguration {
+            Assertions.assertTrue(endpoint != null && endpoint.startsWith("http://"), "TDS_DORIS_ENDPOINT_REQUIRED");
+            Assertions.assertTrue(username != null && !username.isBlank(), "TDS_DORIS_USERNAME_REQUIRED");
+            Assertions.assertTrue(password != null && !password.isEmpty(), "TDS_DORIS_PASSWORD_REQUIRED");
+        }
+
+        @Override
+        public String toString() {
+            return "DorisConfiguration[endpoint=" + endpoint + ", username=REDACTED, password=REDACTED]";
         }
     }
 

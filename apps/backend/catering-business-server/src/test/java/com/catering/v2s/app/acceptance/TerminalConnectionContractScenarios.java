@@ -37,7 +37,8 @@ import org.junit.jupiter.api.DynamicTest;
 final class TerminalConnectionContractScenarios {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final Duration CLIENT_DEADLINE = Duration.ofSeconds(15);
-    private static final String V_S11_SEARCHED_OUTPUTS = "tds-run-directory-recursive:*.log,*.txt,*.json,*.jsonl,*.out";
+    private static final String V_S11_SEARCHED_OUTPUTS =
+            "acceptance-run-directory-recursive:*.log,*.txt,*.json,*.jsonl,*.out;doris-history-row-columns";
     private static final ThreadLocal<Map<String, Object>> V8_SCAN_FAILURE_EVIDENCE = new ThreadLocal<>();
     private static final Pattern SAFE_WIRE_SIGNAL_DIAGNOSTIC =
             Pattern.compile("TERMINAL_WIRE_STAGE=PROCESS_SIGNAL signal=(SIGTERM) timestampUtc=([0-9TZ:.-]+) "
@@ -48,12 +49,15 @@ final class TerminalConnectionContractScenarios {
                     + "SESSION_PROBE_READY|SESSION_PROBE_WAITING_FOR_COMMAND|SESSION_PROBE_COMMAND_RECEIVED|"
                     + "SESSION_PROBE_WAITING_FOR_PONG|SESSION_PROBE_WAITING_FOR_CLOSE|"
                     + "WAITING_FOR_EXACT_BOUNDARY_SESSION_READY) "
-                    + "lastCommand=(NONE|PING|CLOSE|AWAIT_CLOSE|INVALID) "
+                    + "lastCommand=(NONE|PING|PING_BURST|CLOSE|AWAIT_CLOSE|INVALID) "
                     + "lastPingSequence=(NONE|[1-9][0-9]{0,8}) pid=[1-9][0-9]{0,19} "
                     + "ppid=[1-9][0-9]{0,19} senderPid=UNAVAILABLE_BY_NODE_SIGNAL_API exitCode=143");
     private static final Pattern SAFE_WIRE_LOG_MARKER_FILE =
             Pattern.compile("terminal-wire-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\.log");
     private static final Pattern SAFE_FAILURE_TYPE = Pattern.compile("[A-Za-z_$][A-Za-z0-9_$]{0,63}");
+    private static final Pattern SESSION_PROBE_PING_COMMAND =
+            Pattern.compile("PING\\t([1-9][0-9]{0,8})(?:\\t(?:0|[1-9][0-9]{0,5})(?:\\.[0-9]{1,6})?)?");
+    private static final Pattern SESSION_PROBE_PING_BURST_COMMAND = Pattern.compile("PING_BURST\\t([1-9][0-9]{0,3})");
     private static final Pattern TDS_AUTH_CONNECTION_ID =
             Pattern.compile("event=tds_ws_(?:accepted|first_frame_received) connectionId="
                     + "([0-9a-f]{8,32}(?:-[0-9a-f]{4,32}){1,4})");
@@ -918,6 +922,303 @@ final class TerminalConnectionContractScenarios {
                 "terminal.connection.vs15.readiness-withdrawal-and-drain",
                 () -> v15ReadinessWithdrawalAndDrain(host, tds)));
     }
+
+    static Stream<DynamicTest> connectionHistoryScenarios(BackendAcceptanceTest host, TdsAcceptanceProcess tds) {
+        return Stream.of(DynamicTest.dynamicTest(
+                "terminal.connection.history-records", () -> connectionHistoryRecords(host, tds)));
+    }
+
+    static Stream<DynamicTest> connectionHistoryOutageScenarios(
+            BackendAcceptanceTest host, TdsAcceptanceProcess tds, DorisStalledEndpoint endpoint) {
+        return Stream.of(DynamicTest.dynamicTest(
+                "terminal.connection.history-outage-bounded",
+                () -> connectionHistoryOutageBounded(host, tds, endpoint)));
+    }
+
+    private static void connectionHistoryOutageBounded(
+            BackendAcceptanceTest host, TdsAcceptanceProcess tds, DorisStalledEndpoint endpoint) throws Exception {
+        String runId = requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_ID");
+        String scenario = TdsAcceptanceProcess.TdsStartConfiguration.HISTORY_OUTAGE_BOUNDED_SCENARIO_ID;
+        Assertions.assertEquals(scenario, tdsContractScenario(), "TDS_HISTORY_OUTAGE_SCENARIO_SELECTION_MISMATCH");
+        BackendAcceptanceTest.ScenarioContext context = host.new ScenarioContext(null, "performance.normal-path");
+        StoreTerminalAcceptanceScenarios business = new StoreTerminalAcceptanceScenarios(host);
+        StoreTerminalAcceptanceScenarios.ConnectionFixture targetFixture = null;
+        StoreTerminalAcceptanceScenarios.ConnectionFixture controlFixture = null;
+        SessionProbe targetProbe = null;
+        SessionProbe controlProbe = null;
+        boolean targetCancelled = false;
+        Throwable scenarioFailure = null;
+        boolean resultWritten = false;
+        try {
+            targetFixture = business.createConnectionContractFixture(context);
+            controlFixture = business.createConnectionContractFixture(context);
+            String targetMarker = UUID.randomUUID().toString();
+            targetProbe =
+                    startSessionProbe(tds, targetFixture, scenario, targetMarker, wireClientLog(tds, targetMarker));
+            targetProbe.awaitReady(Duration.ofSeconds(15));
+            String targetSessionId = targetProbe.sessionId();
+            int firstRequest = endpoint.awaitFirstRequest();
+            Assertions.assertEquals(1, firstRequest, "TDS_HISTORY_OUTAGE_FIRST_LOAD_REQUEST_INVALID");
+
+            double totalPingMillis = targetProbe.pingBurst(4_100);
+            double maxPingMillis = targetProbe.lastPingBurstMaximumMillis();
+            awaitTdsLogContains(
+                    tds,
+                    "event=tds_doris_history_event_dropped reason=QUEUE_FULL "
+                            + "eventType=HEARTBEAT_RTT queueDepth=4096",
+                    Duration.ofSeconds(10),
+                    "TDS_HISTORY_OUTAGE_QUEUE_LIMIT_NOT_OBSERVED");
+
+            StoreTerminalAcceptanceScenarios.DorisOutageBusinessTimings businessTimings =
+                    business.performBusinessActionsDuringDorisOutage(context, 20);
+            long cancelStarted = System.nanoTime();
+            business.performConnectionRevocation(
+                    context, targetFixture, StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
+            long targetCancelMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - cancelStarted);
+            Assertions.assertTrue(
+                    targetCancelMillis < 1_000, "TDS_HISTORY_OUTAGE_SESSION_CANCEL_SLOWER_THAN_ONE_SECOND");
+            targetCancelled = true;
+            JsonNode targetClose = targetProbe.awaitClose(4000, "ACTIVATION_CANCELLED", Duration.ofSeconds(20));
+            Assertions.assertEquals(
+                    targetSessionId, targetClose.path("sessionId").asText());
+            targetProbe = null;
+
+            String controlMarker = UUID.randomUUID().toString();
+            controlProbe =
+                    startSessionProbe(tds, controlFixture, scenario, controlMarker, wireClientLog(tds, controlMarker));
+            controlProbe.awaitReady(Duration.ofSeconds(15));
+            double controlPingMillis = controlProbe.ping(1, 0d);
+            Assertions.assertTrue(controlPingMillis < 1_000, "TDS_HISTORY_OUTAGE_PONG_SLOWER_THAN_ONE_SECOND");
+            Map<String, Object> controlState = latestState(host, controlFixture.terminalRef());
+            Assertions.assertEquals(controlProbe.sessionId(), controlState.get("session_id"));
+            Assertions.assertTrue(
+                    ((Number) controlState.get("session_sequence")).longValue() > 0,
+                    "TDS_HISTORY_OUTAGE_CONTROL_SESSION_SEQUENCE_MISSING");
+            Assertions.assertNotNull(controlState.get("connected_at_epoch_millis"));
+            Assertions.assertNull(controlState.get("disconnected_at_epoch_millis"));
+
+            while (endpoint.elapsedMillisSinceFirstRequest() < 10_500) {
+                TimeUnit.MILLISECONDS.sleep(100);
+            }
+            endpoint.releaseResponse();
+            awaitTdsLogContains(
+                    tds,
+                    "event=tds_doris_history_batch_dropped_after_retry",
+                    Duration.ofSeconds(15),
+                    "TDS_HISTORY_OUTAGE_RETRY_DROP_NOT_OBSERVED");
+            endpoint.assertOnlyConnectionHistoryEvents();
+            Assertions.assertNull(endpoint.failure(), "TDS_HISTORY_OUTAGE_ENDPOINT_FAILED");
+
+            JsonNode controlResult = controlProbe.finish(Duration.ofSeconds(10));
+            controlProbe = null;
+            Assertions.assertEquals(1, controlResult.path("pongCount").asInt());
+            writeContractResult(Map.ofEntries(
+                    Map.entry("type", "transport-contract"),
+                    Map.entry("operation", scenario),
+                    Map.entry("module", "TERMINAL_DATA_SERVER"),
+                    Map.entry("contract", "PASS"),
+                    Map.entry("status", "PASS"),
+                    Map.entry("runId", runId),
+                    Map.entry("historyEndpoint", "run-scoped-loopback-stall"),
+                    Map.entry("historyRequestTimeoutMillis", 10_000),
+                    Map.entry("historyQueueCapacityEvents", 4_096),
+                    Map.entry("queueFullDropObserved", true),
+                    Map.entry("historyBatchDroppedAfterRetry", true),
+                    Map.entry("pingCount", 4_100),
+                    Map.entry("pingBurstElapsedMillis", totalPingMillis),
+                    Map.entry("pingBurstMaxIndividualMillis", maxPingMillis),
+                    Map.entry("businessActivationCount", 20),
+                    Map.entry("businessCancellationCount", 20),
+                    Map.entry("maximumActivationMillis", businessTimings.maximumActivationMillis()),
+                    Map.entry("maximumBusinessCancellationMillis", businessTimings.maximumCancellationMillis()),
+                    Map.entry("targetCancellationMillis", targetCancelMillis),
+                    Map.entry("postgresAuditRows", businessTimings.postgresAuditRows()),
+                    Map.entry("controlPongMillis", controlPingMillis),
+                    Map.entry(
+                            "controlSessionPongs",
+                            controlResult.path("pongCount").asInt())));
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT operation=%s CONTRACT=PASS runId=%s "
+                            + "queueCapacity=4096 queueDrop=PASS retriesDropped=PASS pingCount=4100 "
+                            + "maxActivationMillis=%d maxCancelMillis=%d%n",
+                    scenario,
+                    runId,
+                    businessTimings.maximumActivationMillis(),
+                    businessTimings.maximumCancellationMillis());
+            resultWritten = true;
+        } catch (Exception | Error failure) {
+            scenarioFailure = failure;
+            if (!resultWritten) writeScenarioFailure(runId, scenario, "TDS_HISTORY_OUTAGE_BOUNDED_FAILED", failure);
+            throw failure;
+        } finally {
+            endpoint.releaseResponse();
+            SessionProbe targetToStop = targetProbe;
+            Throwable cleanupFailure = targetToStop == null ? null : attemptCleanup(null, targetToStop::stop);
+            SessionProbe controlToStop = controlProbe;
+            cleanupFailure =
+                    controlToStop == null ? cleanupFailure : attemptCleanup(cleanupFailure, controlToStop::stop);
+            if (targetFixture != null && !targetCancelled) {
+                StoreTerminalAcceptanceScenarios.ConnectionFixture fixtureToCancel = targetFixture;
+                cleanupFailure = attemptCleanup(
+                        cleanupFailure,
+                        () -> business.performConnectionRevocation(
+                                context,
+                                fixtureToCancel,
+                                StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL));
+            }
+            if (controlFixture != null) {
+                StoreTerminalAcceptanceScenarios.ConnectionFixture fixtureToCancel = controlFixture;
+                cleanupFailure = attemptCleanup(
+                        cleanupFailure,
+                        () -> business.performConnectionRevocation(
+                                context,
+                                fixtureToCancel,
+                                StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL));
+            }
+            finishCleanup(scenarioFailure, cleanupFailure);
+        }
+    }
+
+    private static void connectionHistoryRecords(BackendAcceptanceTest host, TdsAcceptanceProcess tds)
+            throws Exception {
+        String runId = requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_ID");
+        String scenario = "terminal.connection.history-records";
+        Assertions.assertEquals(scenario, tdsContractScenario(), "TDS_HISTORY_SCENARIO_SELECTION_MISMATCH");
+        BackendAcceptanceTest.ScenarioContext context = host.new ScenarioContext(null, "performance.normal-path");
+        StoreTerminalAcceptanceScenarios business = new StoreTerminalAcceptanceScenarios(host);
+        StoreTerminalAcceptanceScenarios.ConnectionFixture fixture = null;
+        SessionProbe probe = null;
+        boolean fixtureCancelled = false;
+        Throwable scenarioFailure = null;
+        boolean resultWritten = false;
+        try {
+            fixture = business.createConnectionContractFixture(context);
+            String markerId = UUID.randomUUID().toString();
+            probe = startSessionProbe(tds, fixture, scenario, markerId, wireClientLog(tds, markerId));
+            probe.awaitReady(Duration.ofSeconds(15));
+            String sessionId = probe.sessionId();
+            Assertions.assertTrue(sessionId.matches("[A-Za-z0-9._-]{1,128}"), "TDS_HISTORY_SESSION_ID_SHAPE_INVALID");
+            double measuredRttMs = probe.ping(1, 0d);
+            Assertions.assertTrue(measuredRttMs > 0, "TDS_HISTORY_CLIENT_RTT_MEASUREMENT_INVALID");
+            probe.ping(2, measuredRttMs);
+            business.performConnectionRevocation(
+                    context, fixture, StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
+            fixtureCancelled = true;
+            probe.awaitClose(4000, "ACTIVATION_CANCELLED", Duration.ofSeconds(15));
+
+            DorisHistoryCounts counts =
+                    awaitDorisHistoryRecords(host, tds, fixture.terminalRef(), sessionId, measuredRttMs);
+            Assertions.assertEquals(1, counts.connected(), "TDS_HISTORY_CONNECTED_COUNT_INVALID");
+            Assertions.assertEquals(2, counts.heartbeatRtt(), "TDS_HISTORY_HEARTBEAT_RTT_COUNT_INVALID");
+            Assertions.assertEquals(1, counts.measuredRtt(), "TDS_HISTORY_MEASURED_RTT_VALUE_INVALID");
+            Assertions.assertEquals(1, counts.cancelled(), "TDS_HISTORY_DISCONNECTED_REASON_INVALID");
+            writeContractResult(Map.ofEntries(
+                    Map.entry("type", "transport-contract"),
+                    Map.entry("operation", scenario),
+                    Map.entry("module", "TERMINAL_DATA_SERVER"),
+                    Map.entry("contract", "PASS"),
+                    Map.entry("status", "PASS"),
+                    Map.entry("runId", runId),
+                    Map.entry("connectedRows", counts.connected()),
+                    Map.entry("heartbeatRttRows", counts.heartbeatRtt()),
+                    Map.entry("disconnectedCancelledRows", counts.cancelled()),
+                    Map.entry("measuredRttMs", measuredRttMs),
+                    Map.entry("tdsNodeId", tds.nodeId())));
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT operation=%s CONTRACT=PASS "
+                            + "runId=%s connected=%d heartbeats=%d disconnected=%d%n",
+                    scenario, runId, counts.connected(), counts.heartbeatRtt(), counts.cancelled());
+            resultWritten = true;
+        } catch (Exception | Error failure) {
+            scenarioFailure = failure;
+            if (!resultWritten) writeScenarioFailure(runId, scenario, "TDS_HISTORY_RECORDS_FAILED", failure);
+            throw failure;
+        } finally {
+            SessionProbe probeToStop = probe;
+            Throwable cleanupFailure = probeToStop == null ? null : attemptCleanup(null, probeToStop::stop);
+            if (fixture != null && !fixtureCancelled) {
+                StoreTerminalAcceptanceScenarios.ConnectionFixture fixtureToCancel = fixture;
+                cleanupFailure = attemptCleanup(
+                        cleanupFailure,
+                        () -> business.performConnectionRevocation(
+                                context,
+                                fixtureToCancel,
+                                StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL));
+            }
+            finishCleanup(scenarioFailure, cleanupFailure);
+        }
+    }
+
+    private static DorisHistoryCounts awaitDorisHistoryRecords(
+            BackendAcceptanceTest host,
+            TdsAcceptanceProcess tds,
+            UUID terminalRef,
+            String sessionId,
+            double measuredRttMs)
+            throws Exception {
+        String sql = "SELECT "
+                + "COALESCE(SUM(CASE WHEN event_type='CONNECTED' THEN 1 ELSE 0 END),0), "
+                + "COALESCE(SUM(CASE WHEN event_type='HEARTBEAT_RTT' THEN 1 ELSE 0 END),0), "
+                + "COALESCE(SUM(CASE WHEN event_type='HEARTBEAT_RTT' AND rtt_ms>0 AND ABS(rtt_ms-"
+                + Double.toString(measuredRttMs)
+                + ")<0.000001 THEN 1 ELSE 0 END),0), "
+                + "COALESCE(SUM(CASE WHEN event_type='DISCONNECTED' "
+                + "AND close_reason='ACTIVATION_CANCELLED' THEN 1 ELSE 0 END),0) "
+                + "FROM terminal_connection_history.connection_history WHERE terminal_ref='"
+                + terminalRef
+                + "' AND session_id='"
+                + sessionId
+                + "';\n";
+        long deadline = System.nanoTime() + Duration.ofSeconds(35).toNanos();
+        while (System.nanoTime() < deadline) {
+            String result = BackendAcceptanceTest.runDorisSql(sql).strip();
+            String[] values = result.split("\\t");
+            Assertions.assertEquals(4, values.length, "TDS_HISTORY_DORIS_READBACK_SHAPE_INVALID");
+            DorisHistoryCounts counts = new DorisHistoryCounts(
+                    Integer.parseInt(values[0]),
+                    Integer.parseInt(values[1]),
+                    Integer.parseInt(values[2]),
+                    Integer.parseInt(values[3]));
+            if (counts.equals(new DorisHistoryCounts(1, 2, 1, 1))) return counts;
+            if (tds.logContents().contains("event=tds_doris_history_batch_dropped_after_retry")) {
+                throw new IllegalStateException("TDS_HISTORY_DORIS_BATCH_DROPPED");
+            }
+            TimeUnit.MILLISECONDS.sleep(250);
+        }
+        throw new IllegalStateException("TDS_HISTORY_DORIS_READBACK_DEADLINE_EXCEEDED");
+    }
+
+    private record DorisHistoryCounts(int connected, int heartbeatRtt, int measuredRtt, int cancelled) {}
+
+    private static DorisSessionHistory awaitDorisSessionHistory(
+            BackendAcceptanceTest host, UUID terminalRef, String sessionId, String closeReason, int minimumHeartbeats)
+            throws Exception {
+        Assertions.assertTrue(
+                sessionId != null && sessionId.matches("[A-Za-z0-9._-]{1,128}"),
+                "TDS_HISTORY_SESSION_ID_SHAPE_INVALID");
+        Assertions.assertTrue(
+                closeReason.matches("SESSION_REPLACED|ACTIVATION_CANCELLED"), "TDS_HISTORY_CLOSE_REASON_INVALID");
+        String sql = "SELECT "
+                + "COALESCE(SUM(CASE WHEN event_type='CONNECTED' THEN 1 ELSE 0 END),0), "
+                + "COALESCE(SUM(CASE WHEN event_type='HEARTBEAT_RTT' THEN 1 ELSE 0 END),0), "
+                + "COALESCE(SUM(CASE WHEN event_type='DISCONNECTED' AND close_reason='"
+                + closeReason + "' THEN 1 ELSE 0 END),0) "
+                + "FROM terminal_connection_history.connection_history WHERE terminal_ref='"
+                + terminalRef + "' AND session_id='" + sessionId + "';\n";
+        long deadline = System.nanoTime() + Duration.ofSeconds(35).toNanos();
+        while (System.nanoTime() < deadline) {
+            String[] values = BackendAcceptanceTest.runDorisSql(sql).strip().split("\\t");
+            Assertions.assertEquals(3, values.length, "TDS_CROSS_NODE_HISTORY_READBACK_SHAPE_INVALID");
+            DorisSessionHistory history = new DorisSessionHistory(
+                    Integer.parseInt(values[0]), Integer.parseInt(values[1]), Integer.parseInt(values[2]));
+            if (history.connected() == 1 && history.heartbeats() >= minimumHeartbeats && history.disconnected() == 1)
+                return history;
+            TimeUnit.MILLISECONDS.sleep(250);
+        }
+        throw new IllegalStateException("TDS_CROSS_NODE_HISTORY_READBACK_DEADLINE_EXCEEDED");
+    }
+
+    private record DorisSessionHistory(int connected, int heartbeats, int disconnected) {}
 
     private static void v15ReadinessWithdrawalAndDrain(BackendAcceptanceTest host, TdsAcceptanceProcess tds)
             throws Exception {
@@ -1798,7 +2099,8 @@ final class TerminalConnectionContractScenarios {
 
     private static Map<String, Object> latestState(BackendAcceptanceTest host, UUID terminalRef) {
         return host.queryForMap(
-                "SELECT session_id, session_sequence, connected_at_epoch_millis, disconnected_at_epoch_millis, "
+                "SELECT node_id, session_id, session_sequence, connected_at_epoch_millis, "
+                        + "disconnected_at_epoch_millis, "
                         + "last_activity_at_epoch_millis, last_rtt_ms, close_reason "
                         + "FROM terminal_connection.latest_state WHERE terminal_ref=?",
                 terminalRef);
@@ -1844,9 +2146,19 @@ final class TerminalConnectionContractScenarios {
             protectedValues = new ArrayList<>(protectedValues);
             protectedValues.add(fixture.activationCode());
             protectedValues.add(fixture.deviceId());
+            protectedValues.add(credentialSecretDigestHex(fixture.credentialSecret()));
             boolean markerFound = false;
-            try (var paths = Files.walk(tds.directory())) {
-                for (Path path : paths.filter(Files::isRegularFile).toList()) {
+            Path runDirectory = Path.of(requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_DIRECTORY"))
+                    .toAbsolutePath()
+                    .normalize();
+            Assertions.assertTrue(Files.isDirectory(runDirectory), "V-S11_ACCEPTANCE_RUN_DIRECTORY_INVALID");
+            Assertions.assertTrue(
+                    tds.directory().toAbsolutePath().normalize().startsWith(runDirectory),
+                    "V-S11_TDS_DIRECTORY_OUTSIDE_RUN_DIRECTORY");
+            try (var paths = Files.walk(runDirectory)) {
+                for (Path path : paths.filter(
+                                candidate -> Files.isRegularFile(candidate, java.nio.file.LinkOption.NOFOLLOW_LINKS))
+                        .toList()) {
                     String name = path.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
                     if (!(name.endsWith(".log")
                             || name.endsWith(".txt")
@@ -1859,6 +2171,20 @@ final class TerminalConnectionContractScenarios {
                 }
             }
             Assertions.assertTrue(markerFound, "V-S11_MARKER_SEARCH_DID_NOT_FIND_SENTINEL");
+            String dorisSql = "SELECT event_id,event_time_epoch_millis,event_type,workspace_uuid,terminal_ref,node_id,"
+                    + "session_id,session_sequence,rtt_ms,close_reason "
+                    + "FROM terminal_connection_history.connection_history WHERE terminal_ref='"
+                    + fixture.terminalRef() + "';\n";
+            long dorisDeadline = System.nanoTime() + Duration.ofSeconds(35).toNanos();
+            String dorisRows;
+            do {
+                dorisRows = BackendAcceptanceTest.runDorisSql(dorisSql, false).strip();
+                if (dorisRows.lines().filter(line -> !line.isBlank()).count() >= 3) break;
+                TimeUnit.MILLISECONDS.sleep(250);
+            } while (System.nanoTime() < dorisDeadline);
+            Assertions.assertTrue(
+                    dorisRows.lines().filter(line -> !line.isBlank()).count() >= 3, "V-S11_DORIS_HISTORY_ROWS_MISSING");
+            assertNoProtectedValues(dorisRows, protectedValues, "V-S11_SECRET_IN_DORIS_HISTORY");
             Assertions.assertEquals(
                     1L,
                     host.count(
@@ -1880,7 +2206,12 @@ final class TerminalConnectionContractScenarios {
                     Map.entry("producer", "real-http-activation-and-tds-websocket"),
                     Map.entry("searchedOutputs", List.of(V_S11_SEARCHED_OUTPUTS)),
                     Map.entry("markerSearch", "FOUND"),
-                    Map.entry("protectedValues", List.of("credential", "secret", "activationCode", "deviceId"))));
+                    Map.entry(
+                            "dorisHistoryRows",
+                            dorisRows.lines().filter(line -> !line.isBlank()).count()),
+                    Map.entry(
+                            "protectedValues",
+                            List.of("credential", "credentialDigest", "secret", "activationCode", "deviceId"))));
             resultWritten = true;
         } catch (Exception | Error failure) {
             scenarioFailure = failure;
@@ -2562,6 +2893,391 @@ final class TerminalConnectionContractScenarios {
             cleanupFailure = attemptCleanup(cleanupFailure, () -> stopOwnedClient(targetToStop, targetLog));
             SessionProbe probeToStop = controlProbe;
             if (probeToStop != null) cleanupFailure = attemptCleanup(cleanupFailure, probeToStop::stop);
+            finishCleanup(scenarioFailure, cleanupFailure);
+        }
+    }
+
+    static Stream<DynamicTest> crossNodeRecoveryScenarios(BackendAcceptanceTest host, TdsAcceptanceProcess nodeA) {
+        String scenario = TdsAcceptanceProcess.TdsStartConfiguration.VS13_CROSS_NODE_RECOVERY_SCENARIO_ID;
+        return Stream.of(DynamicTest.dynamicTest(scenario, () -> crossNodeRecovery(host, nodeA)));
+    }
+
+    private static void crossNodeRecovery(BackendAcceptanceTest host, TdsAcceptanceProcess nodeA) throws Exception {
+        String runId = requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_ID");
+        String scenario = TdsAcceptanceProcess.TdsStartConfiguration.VS13_CROSS_NODE_RECOVERY_SCENARIO_ID;
+        Assertions.assertEquals(TdsAcceptanceProcess.TdsStartConfiguration.VS13_NODE_A_ID, nodeA.nodeId());
+        BackendAcceptanceTest.ScenarioContext context = host.new ScenarioContext(null, "performance.normal-path");
+        StoreTerminalAcceptanceScenarios business = new StoreTerminalAcceptanceScenarios(host);
+        StoreTerminalAcceptanceScenarios.ConnectionFixture targetFixture =
+                business.createConnectionContractFixture(context);
+        StoreTerminalAcceptanceScenarios.ConnectionFixture controlFixture =
+                business.createConnectionContractFixture(context);
+        StoreTerminalAcceptanceScenarios.ConnectionFixture registrationRaceFixture =
+                business.createConnectionContractFixture(context);
+        StoreTerminalAcceptanceScenarios.ConnectionFixture onlineTakeoverFixture =
+                business.createConnectionContractFixture(context);
+        TdsAcceptanceProcess nodeB = null;
+        SessionProbe registrationCandidateA = null;
+        SessionProbe registrationCurrentB = null;
+        SessionProbe onlineOldA = null;
+        SessionProbe onlineCurrentB = null;
+        SessionProbe oldOnA = null;
+        SessionProbe currentOnB = null;
+        SessionProbe controlOnB = null;
+        SessionProbe forcedNodeSessionOnA = null;
+        SessionProbe reconnectedSessionOnB = null;
+        SessionProbe failedAuthentication = null;
+        TdsRegistrationGateBroker.ArmedAttempt postgresOpenGate = null;
+        String postgresOpenAttemptId = null;
+        TdsRegistrationGateBroker.ArmedAttempt recoveryGate = null;
+        String attemptId = null;
+        int oldListenerBackendPid = -1;
+        String registrationCandidateSessionId = null;
+        String registrationWinningSessionId = null;
+        long registrationCandidateSequence = -1;
+        long registrationWinningSequence = -1;
+        String onlineTakeoverOldSessionId = null;
+        String onlineTakeoverCurrentSessionId = null;
+        Throwable scenarioFailure = null;
+        boolean resultWritten = false;
+        try {
+            nodeB = host.startAdditionalTds("node-b", TdsAcceptanceProcess.TdsStartConfiguration.VS13_NODE_B_ID);
+            Assertions.assertNotEquals(
+                    nodeA.websocketBaseUrl(), nodeB.websocketBaseUrl(), "V-S13_TDS_NODE_PORTS_NOT_DISTINCT");
+            Assertions.assertNotEquals(nodeA.nodeId(), nodeB.nodeId(), "V-S13_TDS_NODE_IDS_NOT_DISTINCT");
+
+            String registrationCandidateMarker = UUID.randomUUID().toString();
+            postgresOpenGate = nodeA.registrationGateBroker().armNextPostgresOpen(Duration.ofSeconds(25));
+            registrationCandidateA = startDeferredAuthenticationProbe(
+                    nodeA, registrationRaceFixture, scenario, registrationCandidateMarker, false, "SESSION_REPLACED");
+            registrationCandidateA.awaitOpen(Duration.ofSeconds(10));
+            registrationCandidateA.sendAuthentication();
+            postgresOpenAttemptId = awaitRegistrationGateObservation(
+                    postgresOpenGate,
+                    Duration.ofSeconds(15),
+                    registrationCandidateA.node,
+                    registrationCandidateA.log,
+                    nodeA);
+            Map<String, Object> candidateOpenState = latestState(host, registrationRaceFixture.terminalRef());
+            Assertions.assertEquals(nodeA.nodeId(), candidateOpenState.get("node_id"));
+            registrationCandidateSessionId = (String) candidateOpenState.get("session_id");
+            registrationCandidateSequence = ((Number) candidateOpenState.get("session_sequence")).longValue();
+            Assertions.assertNotNull(registrationCandidateSessionId, "V-S13_PG_OPEN_CANDIDATE_MISSING");
+
+            String registrationWinnerMarker = UUID.randomUUID().toString();
+            registrationCurrentB = startSessionProbe(
+                    nodeB,
+                    registrationRaceFixture,
+                    scenario,
+                    registrationWinnerMarker,
+                    wireClientLog(nodeA, registrationWinnerMarker));
+            registrationCurrentB.awaitReady(Duration.ofSeconds(15));
+            Map<String, Object> registrationWinnerState = latestState(host, registrationRaceFixture.terminalRef());
+            Assertions.assertEquals(nodeB.nodeId(), registrationWinnerState.get("node_id"));
+            registrationWinningSessionId = registrationCurrentB.sessionId();
+            registrationWinningSequence = ((Number) registrationWinnerState.get("session_sequence")).longValue();
+            Assertions.assertEquals(registrationWinningSessionId, registrationWinnerState.get("session_id"));
+            Assertions.assertTrue(
+                    registrationWinningSequence > registrationCandidateSequence,
+                    "V-S13_PG_OPEN_WINNER_SEQUENCE_NOT_NEWER");
+            awaitTdsLogContains(
+                    nodeA,
+                    "event=tds_session_open_notification_reconciled terminalRef="
+                            + registrationRaceFixture.terminalRef()
+                            + " trackedBindings=1 latestSequence=" + registrationWinningSequence,
+                    Duration.ofSeconds(20),
+                    "V-S13_A_DID_NOT_APPLY_B_SEQUENCE_BEFORE_CANDIDATE_RELEASE");
+
+            postgresOpenGate.release(postgresOpenAttemptId);
+            postgresOpenGate = null;
+            JsonNode rejectedCandidate =
+                    registrationCandidateA.awaitAuthenticationClose("SESSION_REPLACED", Duration.ofSeconds(20));
+            Assertions.assertTrue(rejectedCandidate.path("sessionId").isNull());
+            Assertions.assertEquals(List.of(), strings(rejectedCandidate.path("eventTypes")));
+            registrationCandidateA = null;
+            registrationCurrentB.ping(1);
+            Assertions.assertEquals(
+                    registrationWinningSessionId,
+                    latestState(host, registrationRaceFixture.terminalRef()).get("session_id"));
+            registrationCurrentB.finish(Duration.ofSeconds(10));
+            registrationCurrentB = null;
+
+            String onlineOldMarker = UUID.randomUUID().toString();
+            onlineOldA = startSessionProbe(
+                    nodeA, onlineTakeoverFixture, scenario, onlineOldMarker, wireClientLog(nodeA, onlineOldMarker));
+            onlineOldA.awaitReady(Duration.ofSeconds(15));
+            onlineOldA.ping(1);
+            onlineTakeoverOldSessionId = onlineOldA.sessionId();
+            String onlineCurrentMarker = UUID.randomUUID().toString();
+            onlineCurrentB = startSessionProbe(
+                    nodeB,
+                    onlineTakeoverFixture,
+                    scenario,
+                    onlineCurrentMarker,
+                    wireClientLog(nodeA, onlineCurrentMarker));
+            onlineCurrentB.awaitReady(Duration.ofSeconds(15));
+            onlineTakeoverCurrentSessionId = onlineCurrentB.sessionId();
+            JsonNode onlineReplaced = onlineOldA.awaitClose(4000, "SESSION_REPLACED", Duration.ofSeconds(20));
+            Assertions.assertEquals(
+                    onlineTakeoverOldSessionId, onlineReplaced.path("sessionId").asText());
+            onlineOldA = null;
+            Map<String, Object> onlineLatest = latestState(host, onlineTakeoverFixture.terminalRef());
+            Assertions.assertEquals(nodeB.nodeId(), onlineLatest.get("node_id"));
+            Assertions.assertEquals(onlineTakeoverCurrentSessionId, onlineLatest.get("session_id"));
+            onlineCurrentB.ping(1);
+            onlineCurrentB.finish(Duration.ofSeconds(10));
+            onlineCurrentB = null;
+
+            String oldMarker = UUID.randomUUID().toString();
+            oldOnA = startSessionProbe(nodeA, targetFixture, scenario, oldMarker, wireClientLog(nodeA, oldMarker));
+            oldOnA.awaitReady(Duration.ofSeconds(15));
+            oldOnA.ping(1);
+            String oldSessionId = oldOnA.sessionId();
+            long oldSequence =
+                    ((Number) latestState(host, targetFixture.terminalRef()).get("session_sequence")).longValue();
+
+            String controlMarker = UUID.randomUUID().toString();
+            controlOnB = startSessionProbe(
+                    nodeB, controlFixture, scenario, controlMarker, wireClientLog(nodeA, controlMarker));
+            controlOnB.awaitReady(Duration.ofSeconds(15));
+            controlOnB.ping(1);
+
+            oldListenerBackendPid = nodeA.awaitListenerBackendPid(Duration.ofSeconds(5));
+            recoveryGate = nodeA.registrationGateBroker().armNextListenerRecovery();
+            Assertions.assertTrue(
+                    host.terminatePostgresBackend(oldListenerBackendPid),
+                    "V-S13_EXACT_NODE_A_LISTENER_TERMINATION_FAILED");
+            attemptId = awaitRegistrationGateObservation(
+                    recoveryGate, Duration.ofSeconds(8), oldOnA.node, wireClientLog(nodeA, oldMarker), nodeA);
+            nodeA.awaitListenerDisconnected(oldListenerBackendPid, Duration.ofSeconds(3));
+
+            String newMarker = UUID.randomUUID().toString();
+            currentOnB = startSessionProbe(nodeB, targetFixture, scenario, newMarker, wireClientLog(nodeA, newMarker));
+            currentOnB.awaitReady(Duration.ofSeconds(15));
+            String newSessionId = currentOnB.sessionId();
+            Map<String, Object> afterNodeBOpen = latestState(host, targetFixture.terminalRef());
+            Assertions.assertEquals(nodeB.nodeId(), afterNodeBOpen.get("node_id"), "V-S13_NODE_B_NOT_LATEST");
+            Assertions.assertEquals(newSessionId, afterNodeBOpen.get("session_id"), "V-S13_NODE_B_SESSION_NOT_LATEST");
+            Assertions.assertTrue(
+                    ((Number) afterNodeBOpen.get("session_sequence")).longValue() > oldSequence,
+                    "V-S13_NODE_B_SEQUENCE_NOT_NEWER");
+            Assertions.assertNull(afterNodeBOpen.get("disconnected_at_epoch_millis"));
+
+            recoveryGate.release(attemptId);
+            recoveryGate = null;
+            int recoveredListenerBackendPid =
+                    nodeA.awaitListenerReadyAfter(oldListenerBackendPid, Duration.ofSeconds(30));
+            JsonNode replaced = oldOnA.awaitClose(4000, "SESSION_REPLACED", Duration.ofSeconds(20));
+            Assertions.assertEquals(oldSessionId, replaced.path("sessionId").asText());
+            oldOnA = null;
+            Map<String, Object> afterOldClose = latestState(host, targetFixture.terminalRef());
+            Assertions.assertEquals(newSessionId, afterOldClose.get("session_id"));
+            Assertions.assertEquals(nodeB.nodeId(), afterOldClose.get("node_id"));
+            Assertions.assertNull(
+                    afterOldClose.get("disconnected_at_epoch_millis"),
+                    "V-S6_STALE_NODE_A_DISCONNECT_OVERWROTE_NODE_B_SESSION");
+
+            String failedMarker = UUID.randomUUID().toString();
+            failedAuthentication = startDeferredAuthenticationProbe(
+                    nodeB, targetFixture, scenario, failedMarker, true, "CREDENTIAL_INVALID");
+            failedAuthentication.awaitOpen(Duration.ofSeconds(10));
+            JsonNode failed =
+                    failedAuthentication.authenticateExpectingClose("CREDENTIAL_INVALID", Duration.ofSeconds(15));
+            failedAuthentication = null;
+            currentOnB.ping(2);
+            Assertions.assertEquals(
+                    newSessionId, latestState(host, targetFixture.terminalRef()).get("session_id"));
+
+            business.performConnectionRevocation(
+                    context, targetFixture, StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
+            JsonNode cancelled = currentOnB.awaitClose(4000, "ACTIVATION_CANCELLED", Duration.ofSeconds(20));
+            Assertions.assertEquals(newSessionId, cancelled.path("sessionId").asText());
+            currentOnB = null;
+            awaitSessionDisconnectRecord(
+                    host, targetFixture.terminalRef(), newSessionId, "ACTIVATION_CANCELLED", Duration.ofSeconds(15));
+            Map<String, Object> afterCancellation = latestState(host, targetFixture.terminalRef());
+            Assertions.assertEquals(newSessionId, afterCancellation.get("session_id"));
+            Assertions.assertEquals("ACTIVATION_CANCELLED", afterCancellation.get("close_reason"));
+            Assertions.assertNotNull(afterCancellation.get("disconnected_at_epoch_millis"));
+
+            DorisSessionHistory oldHistory =
+                    awaitDorisSessionHistory(host, targetFixture.terminalRef(), oldSessionId, "SESSION_REPLACED", 1);
+            DorisSessionHistory currentHistory = awaitDorisSessionHistory(
+                    host, targetFixture.terminalRef(), newSessionId, "ACTIVATION_CANCELLED", 1);
+
+            controlOnB.ping(2);
+            JsonNode controlResult = controlOnB.finish(Duration.ofSeconds(10));
+            controlOnB = null;
+            Assertions.assertEquals(2, controlResult.path("pongCount").asInt());
+
+            StoreTerminalAcceptanceScenarios.ConnectionFixture forcedNodeFixture =
+                    business.createConnectionContractFixture(context);
+            String forcedNodeMarker = UUID.randomUUID().toString();
+            forcedNodeSessionOnA = startSessionProbe(
+                    nodeA, forcedNodeFixture, scenario, forcedNodeMarker, wireClientLog(nodeA, forcedNodeMarker));
+            forcedNodeSessionOnA.awaitReady(Duration.ofSeconds(15));
+            forcedNodeSessionOnA.ping(1);
+            String forcedOldSessionId = forcedNodeSessionOnA.sessionId();
+            Map<String, Object> beforeForcedTermination = latestState(host, forcedNodeFixture.terminalRef());
+            long forcedOldSequence = ((Number) beforeForcedTermination.get("session_sequence")).longValue();
+            Assertions.assertEquals(nodeA.nodeId(), beforeForcedTermination.get("node_id"));
+            Assertions.assertEquals(forcedOldSessionId, beforeForcedTermination.get("session_id"));
+
+            nodeA.forceTerminateForAcceptanceScenario();
+            Assertions.assertFalse(nodeA.processAlive(), "V-S6_NODE_A_STILL_RUNNING_AFTER_FORCED_TERMINATION");
+            Map<String, Object> afterForcedTermination = latestState(host, forcedNodeFixture.terminalRef());
+            Assertions.assertEquals(forcedOldSessionId, afterForcedTermination.get("session_id"));
+            Assertions.assertNull(
+                    afterForcedTermination.get("disconnected_at_epoch_millis"),
+                    "V-S6_FORCED_NODE_TERMINATION_UNEXPECTEDLY_WROTE_DISCONNECT");
+            forcedNodeSessionOnA.stop();
+            forcedNodeSessionOnA = null;
+
+            String reconnectedMarker = UUID.randomUUID().toString();
+            reconnectedSessionOnB = startSessionProbe(
+                    nodeB, forcedNodeFixture, scenario, reconnectedMarker, wireClientLog(nodeB, reconnectedMarker));
+            reconnectedSessionOnB.awaitReady(Duration.ofSeconds(15));
+            String reconnectedSessionId = reconnectedSessionOnB.sessionId();
+            Map<String, Object> afterReconnect = latestState(host, forcedNodeFixture.terminalRef());
+            Assertions.assertEquals(nodeB.nodeId(), afterReconnect.get("node_id"), "V-S6_RECONNECT_NODE_NOT_LATEST");
+            Assertions.assertEquals(
+                    reconnectedSessionId, afterReconnect.get("session_id"), "V-S6_RECONNECT_SESSION_NOT_LATEST");
+            Assertions.assertTrue(
+                    ((Number) afterReconnect.get("session_sequence")).longValue() > forcedOldSequence,
+                    "V-S6_RECONNECT_SEQUENCE_NOT_NEWER");
+            Assertions.assertNull(
+                    afterReconnect.get("disconnected_at_epoch_millis"),
+                    "V-S6_RECONNECTED_SESSION_PREMATURELY_DISCONNECTED");
+            reconnectedSessionOnB.ping(1);
+            Map<String, Object> afterReconnectPong = latestState(host, forcedNodeFixture.terminalRef());
+            Assertions.assertEquals(reconnectedSessionId, afterReconnectPong.get("session_id"));
+            Assertions.assertEquals(nodeB.nodeId(), afterReconnectPong.get("node_id"));
+            writeContractResult(Map.ofEntries(
+                    Map.entry("type", "transport-contract"),
+                    Map.entry("operation", "terminal.connection.latest-state-stale-write"),
+                    Map.entry("module", "TERMINAL_DATA_SERVER"),
+                    Map.entry("contract", "PASS"),
+                    Map.entry("status", "PASS"),
+                    Map.entry("runId", runId),
+                    Map.entry("forcedNodePid", nodeA.pid()),
+                    Map.entry("forcedNodeStartTicks", nodeA.startTicks()),
+                    Map.entry("oldNodeId", nodeA.nodeId()),
+                    Map.entry("oldSessionId", forcedOldSessionId),
+                    Map.entry("oldSequence", forcedOldSequence),
+                    Map.entry("disconnectWrittenBeforeReconnect", false),
+                    Map.entry("reconnectedNodeId", nodeB.nodeId()),
+                    Map.entry("reconnectedSessionId", reconnectedSessionId),
+                    Map.entry("reconnectedSequence", afterReconnect.get("session_sequence")),
+                    Map.entry("latestStateAfterReconnectPong", "NEW_NODE_B_SESSION")));
+            JsonNode reconnectedClose = reconnectedSessionOnB.finish(Duration.ofSeconds(10));
+            Assertions.assertEquals(
+                    reconnectedSessionId, reconnectedClose.path("sessionId").asText());
+            reconnectedSessionOnB = null;
+
+            writeContractResult(Map.ofEntries(
+                    Map.entry("type", "transport-contract"),
+                    Map.entry("operation", scenario),
+                    Map.entry("module", "TERMINAL_DATA_SERVER"),
+                    Map.entry("contract", "PASS"),
+                    Map.entry("status", "PASS"),
+                    Map.entry("runId", runId),
+                    Map.entry("nodeA", nodeA.nodeId()),
+                    Map.entry("nodeB", nodeB.nodeId()),
+                    Map.entry(
+                            "nodeAProcessEvidence",
+                            nodeA.directory().resolve("process-evidence.json").toString()),
+                    Map.entry(
+                            "nodeBProcessEvidence",
+                            nodeB.directory().resolve("process-evidence.json").toString()),
+                    Map.entry("listenerDisconnectedBackendPid", oldListenerBackendPid),
+                    Map.entry("listenerRecoveredBackendPid", recoveredListenerBackendPid),
+                    Map.entry("listenerRecoveryGateAttemptId", attemptId),
+                    Map.entry("registrationRaceGateAttemptId", postgresOpenAttemptId),
+                    Map.entry("registrationRaceCandidateSessionId", registrationCandidateSessionId),
+                    Map.entry("registrationRaceCandidateSequence", registrationCandidateSequence),
+                    Map.entry("registrationRaceWinnerSessionId", registrationWinningSessionId),
+                    Map.entry("registrationRaceWinnerSequence", registrationWinningSequence),
+                    Map.entry(
+                            "registrationRaceCandidateCloseReason",
+                            rejectedCandidate.path("closeReason").asText()),
+                    Map.entry("onlineTakeoverOldSessionId", onlineTakeoverOldSessionId),
+                    Map.entry("onlineTakeoverCurrentSessionId", onlineTakeoverCurrentSessionId),
+                    Map.entry("nodeAReplacedSessionId", oldSessionId),
+                    Map.entry("nodeBCurrentSessionId", newSessionId),
+                    Map.entry("nodeBSequence", afterNodeBOpen.get("session_sequence")),
+                    Map.entry("nodeACloseReason", replaced.path("closeReason").asText()),
+                    Map.entry(
+                            "failedAuthenticationReason",
+                            failed.path("closeReason").asText()),
+                    Map.entry("realHttpAction", "DEVICE_CANCEL"),
+                    Map.entry("nodeBCloseReason", cancelled.path("closeReason").asText()),
+                    Map.entry(
+                            "controlSessionPongs",
+                            controlResult.path("pongCount").asInt()),
+                    Map.entry("nodeAHistoryConnectedRows", oldHistory.connected()),
+                    Map.entry("nodeAHistoryHeartbeatRows", oldHistory.heartbeats()),
+                    Map.entry("nodeAHistorySessionReplacedRows", oldHistory.disconnected()),
+                    Map.entry("nodeBHistoryConnectedRows", currentHistory.connected()),
+                    Map.entry("nodeBHistoryHeartbeatRows", currentHistory.heartbeats()),
+                    Map.entry("nodeBHistoryActivationCancelledRows", currentHistory.disconnected())));
+            resultWritten = true;
+        } catch (Exception | Error failure) {
+            scenarioFailure = failure;
+            if (!resultWritten) writeScenarioFailure(runId, scenario, "TDS_VS13_CROSS_NODE_RECOVERY_FAILED", failure);
+            throw failure;
+        } finally {
+            Throwable cleanupFailure = null;
+            TdsRegistrationGateBroker.ArmedAttempt postgresOpenGateToRelease = postgresOpenGate;
+            String postgresOpenAttemptToRelease = postgresOpenAttemptId;
+            if (postgresOpenGateToRelease != null) {
+                cleanupFailure = attemptCleanup(cleanupFailure, () -> {
+                    if (postgresOpenAttemptToRelease == null) {
+                        nodeA.registrationGateBroker().cancel(postgresOpenGateToRelease);
+                    } else {
+                        postgresOpenGateToRelease.release(postgresOpenAttemptToRelease);
+                    }
+                });
+            }
+            TdsRegistrationGateBroker.ArmedAttempt gateToRelease = recoveryGate;
+            String attemptToRelease = attemptId;
+            if (gateToRelease != null) {
+                cleanupFailure = attemptCleanup(cleanupFailure, () -> {
+                    if (attemptToRelease == null) nodeA.registrationGateBroker().cancel(gateToRelease);
+                    else gateToRelease.release(attemptToRelease);
+                });
+            }
+            SessionProbe failedToStop = failedAuthentication;
+            if (failedToStop != null) cleanupFailure = attemptCleanup(cleanupFailure, failedToStop::stop);
+            SessionProbe registrationCandidateToStop = registrationCandidateA;
+            if (registrationCandidateToStop != null) {
+                cleanupFailure = attemptCleanup(cleanupFailure, registrationCandidateToStop::stop);
+            }
+            SessionProbe registrationCurrentToStop = registrationCurrentB;
+            if (registrationCurrentToStop != null) {
+                cleanupFailure = attemptCleanup(cleanupFailure, registrationCurrentToStop::stop);
+            }
+            SessionProbe onlineOldToStop = onlineOldA;
+            if (onlineOldToStop != null) cleanupFailure = attemptCleanup(cleanupFailure, onlineOldToStop::stop);
+            SessionProbe onlineCurrentToStop = onlineCurrentB;
+            if (onlineCurrentToStop != null) {
+                cleanupFailure = attemptCleanup(cleanupFailure, onlineCurrentToStop::stop);
+            }
+            SessionProbe currentToStop = currentOnB;
+            if (currentToStop != null) cleanupFailure = attemptCleanup(cleanupFailure, currentToStop::stop);
+            SessionProbe controlToStop = controlOnB;
+            if (controlToStop != null) cleanupFailure = attemptCleanup(cleanupFailure, controlToStop::stop);
+            SessionProbe forcedNodeToStop = forcedNodeSessionOnA;
+            if (forcedNodeToStop != null) {
+                cleanupFailure = attemptCleanup(cleanupFailure, forcedNodeToStop::stop);
+            }
+            SessionProbe reconnectedToStop = reconnectedSessionOnB;
+            if (reconnectedToStop != null) {
+                cleanupFailure = attemptCleanup(cleanupFailure, reconnectedToStop::stop);
+            }
+            SessionProbe oldToStop = oldOnA;
+            if (oldToStop != null) cleanupFailure = attemptCleanup(cleanupFailure, oldToStop::stop);
+            TdsAcceptanceProcess nodeBToStop = nodeB;
+            if (nodeBToStop != null) cleanupFailure = attemptCleanup(cleanupFailure, nodeBToStop::close);
             finishCleanup(scenarioFailure, cleanupFailure);
         }
     }
@@ -3503,6 +4219,7 @@ final class TerminalConnectionContractScenarios {
                     "event=tds_ws_credential_verification_completed",
                     "event=tds_ws_pre_registration_gate_entered",
                     "event=tds_ws_pre_registration_gate_released",
+                    "event=tds_session_postgres_open_committed_before_local_register",
                     "event=tds_ws_session_registration_completed");
             System.out.printf(
                     "BACKEND_ACCEPTANCE_GATE_OBSERVATION status=FAIL reason=%s client=%s wireStages=%s tdsStages=%s%n",
@@ -3687,16 +4404,15 @@ final class TerminalConnectionContractScenarios {
     }
 
     private static String probeCommandKind(String command) {
-        if (command.matches("PING\\t[1-9][0-9]{0,8}(?:\\t(?:0|[1-9][0-9]{0,5})(?:\\.[0-9]{1,3})?)?")) return "PING";
+        if (SESSION_PROBE_PING_COMMAND.matcher(command).matches()) return "PING";
+        if (SESSION_PROBE_PING_BURST_COMMAND.matcher(command).matches()) return "PING_BURST";
         if (command.equals("CLOSE")) return "CLOSE";
         if (command.matches("AWAIT_CLOSE\\t[1-9][0-9]{2,3}\\t[A-Z_]{1,48}")) return "AWAIT_CLOSE";
         return "INVALID";
     }
 
     private static String probeCommandSequence(String command) {
-        Matcher matcher = Pattern.compile(
-                        "PING\\t([1-9][0-9]{0,8})(?:\\t(?:0|[1-9][0-9]{0,5})" + "(?:\\.[0-9]{1,3})?)?")
-                .matcher(command);
+        Matcher matcher = SESSION_PROBE_PING_COMMAND.matcher(command);
         return matcher.matches() ? matcher.group(1) : "NONE";
     }
 
@@ -4168,6 +4884,20 @@ final class TerminalConnectionContractScenarios {
             return result;
         }
 
+        void sendAuthentication() throws Exception {
+            JsonNode exited = sendControlCommand("AUTHENTICATE", "AUTHENTICATE", true);
+            Assertions.assertNull(exited, "V-S13_CANDIDATE_CLIENT_EXITED_BEFORE_AUTHENTICATION");
+        }
+
+        JsonNode awaitAuthenticationClose(String reason, Duration timeout) throws Exception {
+            JsonNode result = awaitProbeResult(timeout, "AUTHENTICATION_CLOSE_RESULT");
+            Assertions.assertEquals(4000, result.path("closeCode").asInt());
+            Assertions.assertEquals(reason, result.path("closeReason").asText());
+            Assertions.assertTrue(result.path("sessionId").isNull());
+            Assertions.assertEquals(List.of(), strings(result.path("eventTypes")));
+            return result;
+        }
+
         JsonNode awaitUnauthenticatedClose(int code, String reason, Duration timeout) throws Exception {
             JsonNode result =
                     sendControlCommand("AWAIT_UNAUTHENTICATED_CLOSE", "AWAIT_CLOSE\t" + code + "\t" + reason, true);
@@ -4183,7 +4913,7 @@ final class TerminalConnectionContractScenarios {
             ping(sequence, 0d);
         }
 
-        void ping(int sequence, double lastRttMs) throws Exception {
+        double ping(int sequence, double lastRttMs) throws Exception {
             long pingStartedNanos = System.nanoTime();
             if (previousPingStartedNanos > 0) {
                 maximumPingGapMillis = Math.max(
@@ -4201,6 +4931,42 @@ final class TerminalConnectionContractScenarios {
             pongCount++;
             pendingPingSequence = -1;
             commandStage = "PONG_CONFIRMED";
+            long elapsedNanos = System.nanoTime() - pingStartedNanos;
+            return elapsedNanos / 1_000_000d;
+        }
+
+        double pingBurst(int count) throws Exception {
+            Assertions.assertTrue(count > 0 && count <= 8_192, "TERMINAL_WIRE_PING_BURST_COUNT_INVALID");
+            long startedNanos = System.nanoTime();
+            JsonNode exited = sendControlCommand("PING_BURST", "PING_BURST\t" + count, false);
+            Assertions.assertNull(exited, "TERMINAL_WIRE_SESSION_PROBE_EXITED_BEFORE_PONG_BURST");
+            String prefix =
+                    "TERMINAL_WIRE_SESSION_PONG_BURST markerId=" + markerId + " count=" + count + " elapsedMillis=";
+            Pattern resultPattern =
+                    Pattern.compile(Pattern.quote(prefix) + "([0-9]+\\.[0-9]{3}) maxPingMillis=([0-9]+\\.[0-9]{3})");
+            long deadline = startedNanos + Duration.ofSeconds(20).toNanos();
+            while (System.nanoTime() < deadline) {
+                if (Files.isRegularFile(log)) {
+                    for (String line : Files.readAllLines(log, StandardCharsets.UTF_8)) {
+                        Matcher result = resultPattern.matcher(line);
+                        if (!result.find()) continue;
+                        double elapsedMillis = Double.parseDouble(result.group(1));
+                        lastPingBurstMaximumMillis = Double.parseDouble(result.group(2));
+                        Assertions.assertTrue(
+                                lastPingBurstMaximumMillis < 1_000, "TERMINAL_WIRE_PING_BURST_PONG_OVER_ONE_SECOND");
+                        pongCount += count;
+                        return elapsedMillis;
+                    }
+                }
+                TimeUnit.MILLISECONDS.sleep(10);
+            }
+            throw new IllegalStateException("TERMINAL_WIRE_PING_BURST_DEADLINE_EXCEEDED");
+        }
+
+        private double lastPingBurstMaximumMillis;
+
+        double lastPingBurstMaximumMillis() {
+            return lastPingBurstMaximumMillis;
         }
 
         Set<Double> sentRtts() {

@@ -4,13 +4,13 @@
 目标：批次二详设与实施计划 13c；对当前字节建立逐代码核验索引。  
 范围：TER `server-config`、`transport`、`terminal-data-client`，既有终端 HTTP schema/生成链，TDS 协议资源链与本批 acceptance/DEV 场景。  
 排除：批次三、多节点生产拓扑扩展、Android/物理设备与 UAT。  
-作者状态：fresh 独立 reviewer 已判 `13c=MATCHED`，`M/S/N=0/0/1`。本记录提供逐项来源与证据映射；最终结论来自独立复核，不由作者预先宣布。
+历史状态：fresh 独立 reviewer 曾对本记录原有的 close-reason/异步释放字节判 `13c=MATCHED`，`M/S/N=0/0/1`。过滤复评后增加的变更以 §9 为准；原有 verdict 不自动覆盖这些后续字节。
 
 ## 1. 阶段与证据边界
 
 CP-01～CP-06 的既有阶段对账不在本记录中重跑或重判；此前已完成的全批 6b 也不重复执行。参考 [6b 记录](2026-10-01-v2s-terminal-activation-batch-2-6b-reconciliation-codex.md)。本记录只补齐详设 §13c 要求的逐生产符号、生成链、依赖图和判据映射，供独立复核。
 
-本轮最后一次当前字节终端验证：
+前一轮 close-reason/异步释放修复字节上的终端验证（对过滤复评修复属历史证据）：
 
 - `ter-local-59258-1790846371503`：`yarn workspace @catering-v2s/terminal run verify`，`TERMINAL_VERIFY=PASS`；静态阶段、29 个 package tests、31 个 package lint / 579 个文件、Android JVM `testDebugUnitTest`、Expo Android bundle/export 均通过，运行清理通过。Android JVM 与 bundle/export 不是设备运行证据。该 run 已包含 runtime 异步资源释放注册表、transport disposer 与对应包级测试；其后仅修改 acceptance 测试清理调用以 await 新 API。
 - 类型与 focused 测试：`@catering-v2s/kernel-base-terminal-data-client` typecheck 通过；6 个测试文件、19 个测试通过。
@@ -27,7 +27,7 @@ CP-01～CP-06 的既有阶段对账不在本记录中重跑或重判；此前已
 - 截至 V-B15 专项核验时的最新受管运行：`r5-tc-1790840460165-42576`，2026-10-01 07:41:00Z～07:45:59Z，PASS（业务与 cleanup 均 PASS）。
 - 该项最后一次通过：同上；仅证明 V-B15 单场景，不是全目录 backend-acceptance，也不表示 TER 后续改动已纳入该 run。
 
-最终 client close-reason 修正的当前字节 SHA-256：
+上一轮 client close-reason 修正当时的字节 SHA-256（仅作历史证据；本次过滤复核后的当前摘要见 §9）：
 
 | 文件 | SHA-256 |
 |---|---|
@@ -202,4 +202,57 @@ Unknown TDS message type remains a no-op under requirement R-4.9 (`requirements.
 - CP-06 fresh 三维对账：`MATCHED`，见 `doc/review/platform/2026-10-01-v2s-terminal-activation-batch-2-cp06-proof-codex.md`。
 - 全批 6b fresh 三维对账：`MATCHED`，见 `doc/review/platform/2026-10-01-v2s-terminal-activation-batch-2-6b-reconciliation-codex.md`。
 - Fresh `REVIEW_TARGET=IMPLEMENTATION` 对抗复核：`GO`, `M/S/N=0/0/1`。唯一 N-1 是根默认 `scripts/verify` 仍无完整 verdict；不得宣称 PASS。Reviewer 判定在诚实保留 `INTERRUPTED/NO_VERDICT` 的前提下，不需要为 TER 收尾修复重跑 backend-acceptance、E2/E5/E6、seed、生成链或根默认 verify。
-- Fresh 13c 最终复核：`MATCHED`, `M/S/N=0/0/1`。Reviewer 复算并确认受影响 TER 文件哈希，接受 backend/TDS 文件时间边界与当前源树摘要作为非重跑范围佐证；仍保留 N-1：根默认 verify 无 PASS，且原始 validate-only transcript 未作为独立 artifact 保存。当前记录保存了实际运行末尾摘要和退出码，根默认 verify 继续标 `INTERRUPTED/NO_VERDICT`。
+- Fresh 13c 原记录复核：`MATCHED`, `M/S/N=0/0/1`，适用于原 close-reason/异步释放字节；后续过滤复评增量的独立核验见 §9 的补充审查结果。
+
+## 9. 过滤复评修正后的当前字节增量对账
+
+本节更新本轮过滤复评触及的源码、测试和证据。§1、§7、§8 中更早的 TER close-reason/异步释放证据仍保留为各自当时字节记录；本节的当前摘要与场景 run 不反向改写它们。未被本轮修改的 backend、TDS 与 UI smoke 输入按 source-impact 规则沿用其原 run，并明确标为历史证据。
+
+### 9.1 五条过滤 finding 的实现与 focused proof
+
+| Finding | 当前实现落点 | 可证伪测试 / 门 | 当前判定 |
+|---|---|---|---|
+| 原过滤 S-1：同一次业务激活跨 operationId 复用秘密 | `terminalDataClientActor.ts:288-338`：身份读取 await 后重新读 state；先按 operationId 匹配，再按相同集团空间与激活码找未完成激活；校验 deviceId、surfaceForm、appVersion 冲突；仅不存在时生成秘密并登记。 | `terminalDataClientActor.test.ts:221-325` 覆盖并发/重试及响应倒序；`:327-396` 覆盖激活码冲突；`:398-470` 覆盖设备形态冲突。无全局队列、epoch 或通用 replay。 | `CONFIRMED → fixed` |
+| 原过滤 S-2：有合法 PONG 仍超时 | `terminalDataClientActor.ts:248-261,527-542`：每个 seq 匹配且字段有效的 PONG 记录 RTT 并重设存活 deadline；保留 seq 匹配。 | `terminalDataClientActor.test.ts:1024-1128` 覆盖仍有其他 pending seq 时持续合法 PONG；`:1456-1575` 覆盖无 PONG 超时。 | `CONFIRMED → fixed` |
+| 原过滤 S-3：恢复身份后没有自动连接入口 | `createTerminalDataClientModule.ts:41-45` 在 state hydration 后的 module install 派发 initialize；`terminalDataClientActor.ts:279-286` 仅在已有 credential 时经既有 `connectTerminalCommand` 连接；`createRuntime.ts:373-406` 先恢复 state 再 install/initialize。 | `runtimeStartup.test.ts:128-183` 覆盖从持久存储恢复身份后自动连接和无身份不连接；`module.test.ts:60-112` 覆盖模块接线。 | `CONFIRMED → fixed` |
+| 原过滤 S-4：取消开始后仍可建连 | `terminalDataClientActor.ts:388-418,406-411`：取消动作同步进入 cancelling，再等待 transport stop；connect 在 cancelling 时拒绝；停止失败保留失败状态。 | `terminalDataClientActor.test.ts:1134-1230` 覆盖 offline cancel 与 ACTIVATION_CANCELLED 在 stop 等待/拒绝期间均拒绝 connect。 | `CONFIRMED → fixed` |
+| 原过滤 S-7：生成器子文件可经符号链接逃出仓根 | `terminal-client-api.mjs:161-172` 对 package.json 与 moduleName.ts 完整文件路径分别使用 `resolveInsideRoot`。 | `terminal-client-api.mjs:559-577,657` 创建外部有效目标并断言两类 symlink marker；`verify.mjs:59-62` 强制两 marker。 | `CONFIRMED → fixed` |
+
+当前相关源文件 SHA-256（run 期间源码冻结；E 场景 manifest 绑定 DEV、进程、依赖解析版本与 runId；本表摘要标识本节复核字节）：
+
+| 文件 | SHA-256 |
+|---|---|
+| `apps/terminal/kernel/base/terminal-data-client/src/features/actors/terminalDataClientActor.ts` | `5bd4c8145785d3a4c64e18c69cc2b8114692acb095a391c3f6396f49afbe82c0` |
+| `apps/terminal/kernel/base/terminal-data-client/src/application/createTerminalDataClientModule.ts` | `f6aefcc65dfbcbca4881623aa6bbac6a373153e8e649349199370a7890036985` |
+| `apps/terminal/kernel/base/terminal-data-client/src/features/commands/terminalDataClientCommands.ts` | `2deb376840042a3c558b12c2e8415a363db8baf34467743b697f6d4e4f49dd86` |
+| `apps/terminal/kernel/base/terminal-data-client/test/terminalDataClientActor.test.ts` | `b586ff118194823c4ad529041023193c47f2155356d43c753030dfd365837499` |
+| `apps/terminal/kernel/base/terminal-data-client/test/runtimeStartup.test.ts` | `8a70372a0779b89f98a393c455bee54b8db5b0c82be6a6ec3395bb38804285f7` |
+| `scripts/generate/terminal-client-api.mjs` | `9bda2a7de666ec1cd9d133cd5a44eab9aaa6c1cbd1cfa7b7948544040dbb1d2c` |
+| `tools/verify-gates/verify.mjs` | `0ae782bde0556caf412f70b9f35230f82cbb5195b635dd6d6c65fc7ea5f479eb` |
+
+### 9.2 当前字节验证
+
+| 验证 | 当前运行 / 结果 | 边界 |
+|---|---|---|
+| terminal-data-client package tests | `.runtime/review/terminal-activation-batch-2-filtered-r2/terminal-data-client-test.log`：8 files / 31 tests PASS；run time `2026-10-01T12:30:38Z`。 | focused package tests；不替代 managed DEV 或 backend acceptance。 |
+| terminal-client-api generator | `.runtime/review/terminal-activation-batch-2-filtered-r2/terminal-client-generator.log`：`--check` 与 `--self-test` PASS，两个子文件 symlink red markers 均 PASS；run time `2026-10-01T12:30:45Z`。 | 证明本仓内输入闭包与生成一致性；不替代业务动态验收。 |
+| `scripts/verify --validate-only` | `.runtime/review/terminal-activation-batch-2-filtered-r2/scripts-verify-validate-only.log`：`ter-local-static-26031-1790858238313`，`2026-10-01T12:35:13Z–12:40:52Z`，49/49 PASS，exit 0。 | 仅静态 validate-only；默认 `scripts/verify` 仍为 `r5-verify-69267-1790842907944` 的 `INTERRUPTED/NO_VERDICT`，没有升级成 PASS。 |
+
+受影响的 DEV E 场景已按计划逐个重新运行，四个 run 均指向同一受管 DEV `r5-dev-1790849302252-25524-b0bf6fe5-2072-4e10-a69c-18ee8fdab058`，Node `v24.13.0`、Vitest `4.1.10`、Undici `8.11.2`；每份 manifest 均为 `business=PASS`、`cleanup=PASS`、`firstFailure=null`、`phase=VITEST_EXITED`：
+
+| Scenario | Run ID | UTC start | Business / fixture cleanup / runner cleanup |
+|---|---|---|---|
+| `terminal.dev.lifecycle-and-compression` (E1) | `ter-client-dev-1790858987277-42532-586dd501-944e-4abf-abdc-fa8f34531f0d` | `2026-10-01T12:49:47Z` | `PASS / PASS / PASS` |
+| `terminal.dev.entry-address-failover` (E2) | `ter-client-dev-1790859090876-44778-92c42c8e-c1f0-424e-a498-50a4ed7f46ef` | `2026-10-01T12:51:30Z` | `PASS / PASS / PASS` |
+| `terminal.dev.two-device-rebind` (E5) | `ter-client-dev-1790859100693-45153-080e8e69-e5a8-4270-b5b1-69c3c3a2970b` | `2026-10-01T12:51:40Z` | `PASS / PASS / PASS` |
+| `terminal.dev.three-node-two-entry-handoff` (E6) | `ter-client-dev-1790859109561-45522-73364c97-5008-4652-9273-6562e392ebad` | `2026-10-01T12:51:49Z` | `PASS / PASS / PASS` |
+
+V-T17 当前受管 Expo Web smoke：`.runtime/ter-admin-display/ter-v2s-vt17-20261001-01/run-manifest.json`，`sourceStable=PASS`，`business=PASS`、`cleanup=PASS`、`firstFailure=null`；观测到三项网络状态能力均不可用且 `transport.connectionActivity=none`。同日较早首败 `ter-batch2-vt17-20261001` 仍保留，`business=FAIL`、`cleanup=PASS`，failure code `WEB_PLATFORM_PORTS_COUNT_INVALID:terminal.admin:ports:summary:available`；后续成功运行没有改写首败。
+
+### 9.3 未受影响证据与保留项
+
+- V-B15 专项 backend acceptance 历史通过：`r5-tc-1790840460165-42576`，真实 HTTP 场景 `storeTerminalActivationUnknownFields` 与该 run 的 TDS CONTRACT 均 PASS、cleanup PASS，见 `.runtime/r5/evidence/remote-testcontainers/r5-tc-1790840460165-42576/`。V-S15 最近通过为 `r5-tc-1790835825346-33524`；更早同场景失败日志仍保留，见各 run 的 `tds-contract-result.jsonl.gz`。本轮没有 backend Java/TDS 源修改；当前 832 个 backend 文件树摘要 `ab697308b30016c6d158bf015a9b1768aa2f4d940cb69e09529797585dc4735c`、49 个 TDS 文件树摘要 `8c0898ab6d646f3b0063959d262998c3878d19bae0283dfa773be6f487062c9a` 与前一轮记录一致。因此沿用对应历史通过证据，不声称是本轮新 run，也不为未受影响字节重复执行。
+- V-T17 当前通过见上表；Android/VM/实机 parity、Browser L2、UAT、生产部署不在本轮范围，不作通过声明。
+- Fresh 本轮 CP-01 受影响子范围、CP-03、整批 6b 分别为 `MATCHED`，参见 `2026-09-30-v2s-terminal-activation-batch-2-cp01-reconciliation-codex.md`、`2026-10-01-v2s-terminal-activation-batch-2-cp03-reconciliation-codex.md`、`2026-10-01-v2s-terminal-activation-batch-2-6b-reconciliation-codex.md`。CP-01 verdict 只覆盖新增子文件 symlink 的生成器路径/红夹具/门接线范围。
+- 过滤复评原 N-1「timer command 生产自动恢复证据」仍为 `UNVERIFIED_REQUIRES_EVIDENCE / OPEN`；没有真实生产失败证据，不增加恢复框架。
+- 当前 fresh 整批 `REVIEW_TARGET=IMPLEMENTATION` 复核为 `GO, M/S/N=0/0/1`。唯一 N 是默认 `scripts/verify` 尚无完整 PASS；保留 `INTERRUPTED/NO_VERDICT`，当前 validate-only 不能替代它。Android/VM/设备、L2、UAT 与生产部署不作通过声明。

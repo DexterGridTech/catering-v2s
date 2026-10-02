@@ -12,6 +12,10 @@ import {
   validateTdsCapacityConfiguration,
 } from '../env/tds-capacity-configuration.mjs';
 import {
+  TDS_CROSS_NODE_RECOVERY_SCENARIO,
+  TDS_HISTORY_OUTAGE_BOUNDED_SCENARIO,
+  TDS_HISTORY_RECORDS_SCENARIO,
+  TDS_HISTORY_SECRET_SEARCH_SCENARIO,
   V_S15_TDS_CONTRACT_SCENARIO,
   backendAcceptanceEnvironment,
   canonicalBackendAcceptanceOperation,
@@ -139,6 +143,13 @@ const validManifest = () => ({
   backendAcceptance: null,
   workload: null,
   testExecution: {status: 'PASS', taskLine: `> Task ${task}`},
+  testcontainersResources: {
+    captureStatus: 'PASS',
+    capturedAt: '2026-10-02T10:00:00.000Z',
+    capturedContainerIds: ['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'],
+    capturedVolumeNames: ['tc-volume-0123456789abcdef'],
+    cleanupStatus: 'PASS',
+  },
   cleanup: {
     status: 'PASS',
     remoteProcess: 'PASS',
@@ -245,6 +256,17 @@ test('normal-run remote script emits query status before deriving cleanup marker
   assert.match(remoteScript, /if ! docker ps -aq --filter label=org\.testcontainers=true \| sort > \"\$root\/before-container-ids\"; then container_query_status=FAIL; fi/);
   assert.match(remoteScript, /if test \"\$container_query_status\" != PASS \|\| test \"\$volume_query_status\" != PASS; then .*exit 70; fi/);
   assert.match(remoteScript, /after_container_query_status=PASS/);
+  assert.match(
+    remoteScript,
+    /: > "\$resource_capture_containers"; : > "\$resource_capture_volumes"\ncapture_testcontainers_resources/,
+    'EMPTY_RESOURCE_CAPTURE_LISTS_MUST_BE_SORTABLE',
+  );
+  assert.match(remoteScript, /capture_testcontainers_resources & resource_capture_pid=\$!/);
+  assert.match(remoteScript, /sleep 0\.5/);
+  assert.match(remoteScript, /trap stop_resource_capture EXIT/);
+  assert.match(remoteScript, /grep -Fxq -- "\$resource_id"/);
+  assert.match(remoteScript, /REMOTE_TESTCONTAINERS_RESOURCE_CAPTURE=%s/);
+  assert.doesNotMatch(remoteScript, /read -r -t 0\.5/);
   assert.match(remoteScript, /if test \"\$after_container_query_status\" != PASS \|\| test \"\$after_volume_query_status\" != PASS; then break; fi/);
   assert.match(remoteScript, /container_cleanup=FAIL; if test \"\$after_container_query_status\" = PASS && cmp -s/);
 });
@@ -540,6 +562,9 @@ test('runner marker parsing retains early cleanup markers beyond the stdout tail
     'REMOTE_PROCESS_INVENTORY_RECORDS=512',
     'REMOTE_TESTCONTAINERS_AFTER_CONTAINER_QUERY=PASS',
     'REMOTE_TESTCONTAINERS_AFTER_VOLUME_QUERY=PASS',
+    'REMOTE_TESTCONTAINERS_RESOURCE_CAPTURE=PASS',
+    'REMOTE_TESTCONTAINERS_OWNED_CONTAINER_IDS=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    'REMOTE_TESTCONTAINERS_OWNED_VOLUME_IDS=tc-volume-0123456789abcdef',
     'REMOTE_TESTCONTAINERS_CONTAINERS=PASS',
     'REMOTE_TESTCONTAINERS_VOLUMES=PASS',
     'REMOTE_EVIDENCE_ARCHIVE_STATUS=0',
@@ -552,10 +577,29 @@ test('runner marker parsing retains early cleanup markers beyond the stdout tail
     REMOTE_PROCESS_INVENTORY_RECORDS: '512',
     REMOTE_TESTCONTAINERS_AFTER_CONTAINER_QUERY: 'PASS',
     REMOTE_TESTCONTAINERS_AFTER_VOLUME_QUERY: 'PASS',
+    REMOTE_TESTCONTAINERS_RESOURCE_CAPTURE: 'PASS',
+    REMOTE_TESTCONTAINERS_OWNED_CONTAINER_IDS: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    REMOTE_TESTCONTAINERS_OWNED_VOLUME_IDS: 'tc-volume-0123456789abcdef',
     REMOTE_TESTCONTAINERS_CONTAINERS: 'PASS',
     REMOTE_TESTCONTAINERS_VOLUMES: 'PASS',
     REMOTE_EVIDENCE_ARCHIVE_STATUS: '0',
   });
+});
+
+test('passing run manifest requires resource identities and cleanup evidence', () => {
+  assert.doesNotThrow(() => parseAndValidateRunManifest(validManifest()));
+  const validResources = validManifest().testcontainersResources;
+  for (const resources of [
+    {...validResources, captureStatus: 'FAIL'},
+    {...validResources, cleanupStatus: 'FAIL'},
+    {...validResources, capturedContainerIds: ['unknown']},
+    {...validResources, capturedVolumeNames: ['../outside']},
+  ]) {
+    assert.throws(
+      () => parseAndValidateRunManifest({...validManifest(), testcontainersResources: resources}),
+      /RUN_MANIFEST_TESTCONTAINERS_RESOURCE_EVIDENCE_INVALID/,
+    );
+  }
 });
 
 test('cleanup recovery binds the terminal manifest to its exact remote host and derived root', () => {
@@ -1109,6 +1153,101 @@ test('backend acceptance supplies every non-production server prerequisite and s
     ),
     /BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/,
   );
+  const historyEnvironment = backendAcceptanceEnvironment(
+    'backend-acceptance-run-history-12345678',
+    'storeTerminalActivationBusinessPrecedence',
+    'ACCEPTANCE',
+    null,
+    false,
+    {maxUnauthenticatedConnections: '2', maxTrackedSessions: '4'},
+    '/usr/bin/node',
+    true,
+    false,
+    false,
+    false,
+    TDS_HISTORY_RECORDS_SCENARIO,
+  ).join('\n');
+  assert.match(historyEnvironment, /V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT=true/);
+  assert.match(
+    historyEnvironment,
+    /export V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO='terminal\.connection\.history-records'/,
+  );
+  const historyRemoteScript = runScript({
+    remoteRoot: '/tmp/r5-tc-history-123',
+    remoteWorkspace: '/tmp/r5-tc-history-123/workspace',
+    remoteResults: '/tmp/r5-tc-history-123/results',
+    distribution,
+    invocation: {extraArguments: [], extensionScaleProof: false, productionMutationId: undefined},
+    backendAcceptanceRunId: 'backend-acceptance-run-history-12345678',
+    backendAcceptanceOperation: 'storeTerminalActivationBusinessPrecedence',
+    verificationMode: 'ACCEPTANCE',
+    topologyPreflight: true,
+    tdsContractScenario: TDS_HISTORY_RECORDS_SCENARIO,
+  });
+  assert.match(historyRemoteScript, /V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT=true/);
+  assert.throws(
+    () => runScript({
+      remoteRoot: '/tmp/r5-tc-history-123',
+      remoteWorkspace: '/tmp/r5-tc-history-123/workspace',
+      remoteResults: '/tmp/r5-tc-history-123/results',
+      distribution,
+      invocation: {extraArguments: [], extensionScaleProof: false, productionMutationId: undefined},
+      backendAcceptanceRunId: 'backend-acceptance-run-history-12345678',
+      backendAcceptanceOperation: 'storeTerminalActivationBusinessPrecedence',
+      verificationMode: 'ACCEPTANCE',
+      topologyPreflight: false,
+      tdsContractScenario: TDS_HISTORY_RECORDS_SCENARIO,
+    }),
+    /BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/,
+  );
+  const outageEnvironment = backendAcceptanceEnvironment(
+    'backend-acceptance-run-outage-12345678',
+    'storeTerminalActivationBusinessPrecedence',
+    'ACCEPTANCE',
+    null,
+    false,
+    {maxUnauthenticatedConnections: '2', maxTrackedSessions: '4'},
+    '/usr/bin/node',
+    false,
+    false,
+    false,
+    false,
+    TDS_HISTORY_OUTAGE_BOUNDED_SCENARIO,
+  ).join('\n');
+  assert.match(outageEnvironment, /V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT=false/);
+  assert.match(
+    outageEnvironment,
+    /export V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO='terminal\.connection\.history-outage-bounded'/,
+  );
+  assert.throws(
+    () => backendAcceptanceEnvironment(
+      'backend-acceptance-run-outage-12345678',
+      'storeTerminalActivationBusinessPrecedence',
+      'ACCEPTANCE', null, false,
+      {maxUnauthenticatedConnections: '2', maxTrackedSessions: '4'},
+      '/usr/bin/node', false, false, false, true,
+      TDS_HISTORY_OUTAGE_BOUNDED_SCENARIO,
+    ),
+    /BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/,
+  );
+  const outageRemoteScript = runScript({
+    remoteRoot: '/tmp/r5-tc-history-outage-123',
+    remoteWorkspace: '/tmp/r5-tc-history-outage-123/workspace',
+    remoteResults: '/tmp/r5-tc-history-outage-123/results',
+    distribution,
+    invocation: {extraArguments: [], extensionScaleProof: false, productionMutationId: undefined},
+    backendAcceptanceRunId: 'backend-acceptance-run-outage-12345678',
+    backendAcceptanceOperation: 'storeTerminalActivationBusinessPrecedence',
+    verificationMode: 'ACCEPTANCE',
+    topologyPreflight: false,
+    tdsContractScenario: TDS_HISTORY_OUTAGE_BOUNDED_SCENARIO,
+  });
+  assert.match(
+    outageRemoteScript,
+    /export V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO='terminal\.connection\.history-outage-bounded'/,
+  );
+  assert.match(readFileSync(new URL('./backend-acceptance', import.meta.url), 'utf8'),
+    /terminal\.connection\.history-outage-bounded\)[\s\S]*?expected_topology_preflight=false/);
   const d46Environment = backendAcceptanceEnvironment(
     'backend-acceptance-run-12345678',
     'storeTerminalDeviceActivationProtocols',
@@ -1209,6 +1348,111 @@ test('selected V-S15 TDS contract identity is closed and bound to topology-prefl
     () => parseAndValidateRunManifest({
       ...base,
       backendAcceptance: {...base.backendAcceptance, tdsContractScenario: 'terminal.connection.vs9.graceful'},
+    }),
+    /RUN_MANIFEST_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/,
+  );
+});
+
+test('selected Doris history TDS contract is closed and requires topology preflight', () => {
+  const manifest = {
+    ...validManifest(),
+    status: 'FAIL',
+    backendAcceptance: {
+      runId: 'backend-acceptance-r5-tc-history-1786638000000-123',
+      operation: 'storeTerminalActivationBusinessPrecedence',
+      topologyPreflight: true,
+      tdsContractScenario: TDS_HISTORY_RECORDS_SCENARIO,
+    },
+  };
+  assert.deepEqual(parseAndValidateRunManifest(manifest), manifest);
+  assert.throws(
+    () => parseAndValidateRunManifest({
+      ...manifest,
+      backendAcceptance: {...manifest.backendAcceptance, topologyPreflight: false},
+    }),
+    /RUN_MANIFEST_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/,
+  );
+  assert.throws(
+    () => parseAndValidateRunManifest({
+      ...manifest,
+      backendAcceptance: {...manifest.backendAcceptance, tdsContractScenario: 'terminal.connection.unknown'},
+    }),
+    /RUN_MANIFEST_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/,
+  );
+});
+
+test('selected V-S11 secret scan TDS contract is closed and runs without topology preflight', () => {
+  const environment = backendAcceptanceEnvironment(
+    'backend-acceptance-run-vs11-12345678',
+    'storeTerminalActivationBusinessPrecedence',
+    'ACCEPTANCE',
+    null,
+    false,
+    {maxUnauthenticatedConnections: '2', maxTrackedSessions: '4'},
+    '/usr/bin/node',
+    false,
+    false,
+    false,
+    false,
+    TDS_HISTORY_SECRET_SEARCH_SCENARIO,
+  ).join('\n');
+  assert.match(environment, /V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT=false/);
+  assert.match(
+    environment,
+    /export V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO='terminal\.connection\.vs11\.secret-search'/,
+  );
+  const manifest = {
+    ...validManifest(),
+    status: 'FAIL',
+    backendAcceptance: {
+      runId: 'backend-acceptance-r5-tc-vs11-1786638000000-123',
+      operation: 'storeTerminalActivationBusinessPrecedence',
+      topologyPreflight: false,
+      tdsContractScenario: TDS_HISTORY_SECRET_SEARCH_SCENARIO,
+    },
+  };
+  assert.deepEqual(parseAndValidateRunManifest(manifest), manifest);
+  assert.throws(
+    () => parseAndValidateRunManifest({
+      ...manifest,
+      backendAcceptance: {...manifest.backendAcceptance, topologyPreflight: true},
+    }),
+    /RUN_MANIFEST_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/,
+  );
+});
+
+test('selected cross-node recovery TDS contract is closed and requires topology preflight', () => {
+  const environment = backendAcceptanceEnvironment(
+    'backend-acceptance-run-vs13-12345678',
+    'storeTerminalActivationBusinessPrecedence',
+    'ACCEPTANCE',
+    null,
+    false,
+    {maxUnauthenticatedConnections: '2', maxTrackedSessions: '4'},
+    '/usr/bin/node',
+    true,
+    false,
+    false,
+    false,
+    TDS_CROSS_NODE_RECOVERY_SCENARIO,
+  ).join('\n');
+  assert.match(environment, /V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT=true/);
+  assert.match(environment, /terminal\.connection\.vs13\.cross-node-recovery/);
+  const manifest = {
+    ...validManifest(),
+    status: 'FAIL',
+    backendAcceptance: {
+      runId: 'backend-acceptance-r5-tc-vs13-1786638000000-123',
+      operation: 'storeTerminalActivationBusinessPrecedence',
+      topologyPreflight: true,
+      tdsContractScenario: TDS_CROSS_NODE_RECOVERY_SCENARIO,
+    },
+  };
+  assert.deepEqual(parseAndValidateRunManifest(manifest), manifest);
+  assert.throws(
+    () => parseAndValidateRunManifest({
+      ...manifest,
+      backendAcceptance: {...manifest.backendAcceptance, topologyPreflight: false},
     }),
     /RUN_MANIFEST_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/,
   );

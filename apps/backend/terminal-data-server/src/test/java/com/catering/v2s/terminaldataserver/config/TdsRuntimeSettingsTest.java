@@ -95,11 +95,17 @@ class TdsRuntimeSettingsTest {
     }
 
     private static ApplicationContextRunner contextRunner(Map<String, Object> environment) {
+        Map<String, Object> configuredEnvironment = new java.util.HashMap<>(environment);
+        configuredEnvironment.putIfAbsent("V2S_TDS_DORIS_ENDPOINT", "http://127.0.0.1:8040");
+        configuredEnvironment.putIfAbsent("V2S_TDS_DORIS_DATABASE", "terminal_connection_history");
+        configuredEnvironment.putIfAbsent("V2S_TDS_DORIS_TABLE", "connection_history");
+        configuredEnvironment.putIfAbsent("V2S_TDS_DORIS_USERNAME", "tds");
+        configuredEnvironment.putIfAbsent("V2S_TDS_DORIS_PASSWORD", "test-secret");
         return new ApplicationContextRunner()
                 .withUserConfiguration(TdsSettingsConfiguration.class)
                 .withInitializer(context -> context.getEnvironment()
                         .getPropertySources()
-                        .addFirst(new SystemEnvironmentPropertySource("tds-test-environment", environment)));
+                        .addFirst(new SystemEnvironmentPropertySource("tds-test-environment", configuredEnvironment)));
     }
 
     @Test

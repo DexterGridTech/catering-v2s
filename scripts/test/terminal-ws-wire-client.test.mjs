@@ -14,6 +14,8 @@ import {
   inflateMessage,
   parseControlRequest,
   safeCloseReasonForDiagnostics,
+  SESSION_PROBE_PING_BURST_COMMAND_PATTERN,
+  SESSION_PROBE_PING_COMMAND_PATTERN,
   validatePmdResponse,
   validatePongMessage,
   validateSessionReadyMessage,
@@ -27,6 +29,10 @@ const protocolMessages = new Map(terminalProtocol.messages.map(message => [messa
 const wireClientSource = readFileSync(new URL('./terminal-ws-wire-client.mjs', import.meta.url), 'utf8');
 const terminalAcceptanceSource = readFileSync(
   new URL('../../apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TerminalConnectionContractScenarios.java', import.meta.url),
+  'utf8',
+);
+const tdsAcceptanceProcessSource = readFileSync(
+  new URL('../../apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TdsAcceptanceProcess.java', import.meta.url),
   'utf8',
 );
 
@@ -265,6 +271,113 @@ test('V-S1 default-node-id probe is registered across the acceptance-to-wire-cli
   const request = parseControlRequest(JSON.stringify(control));
   assert.equal(request.scenario, scenario);
   assert.equal(request.expectedClose, null);
+});
+
+test('Doris history acceptance is registered as an authenticated session probe end to end', () => {
+  const scenario = 'terminal.connection.history-records';
+  const sessionProbeSet = /const SESSION_PROBE_SCENARIOS = new Set\(\[([\s\S]*?)\n\]\);/.exec(wireClientSource)?.[1];
+  assert.ok(sessionProbeSet, 'TERMINAL_WIRE_SESSION_PROBE_SCENARIO_SET_MISSING');
+  assert.ok(sessionProbeSet.includes(`'${scenario}'`), 'TDS_HISTORY_WIRE_PROBE_UNREGISTERED');
+  assert.ok(
+    terminalAcceptanceSource.includes(`String scenario = "${scenario}";`),
+    'TDS_HISTORY_ACCEPTANCE_SCENARIO_ID_DRIFT',
+  );
+  assert.match(
+    terminalAcceptanceSource,
+    /probe = startSessionProbe\(\s*tds,\s*fixture,\s*scenario,\s*markerId,\s*wireClientLog\(tds,\s*markerId\)\)/,
+    'TDS_HISTORY_ACCEPTANCE_WIRE_PROBE_DRIFT',
+  );
+
+  const control = validRequest();
+  control.scenario = scenario;
+  delete control.expectedClose;
+  const request = parseControlRequest(JSON.stringify(control));
+  assert.equal(request.scenario, scenario);
+  assert.equal(request.markerId, control.markerId);
+  assert.equal(request.authenticate.type, 'AUTHENTICATE');
+  assert.equal(request.expectedClose, null);
+});
+
+test('Doris outage bounded acceptance uses the capped burst probe and existing HTTP business operation', () => {
+  const scenario = 'terminal.connection.history-outage-bounded';
+  const sessionProbeSet = /const SESSION_PROBE_SCENARIOS = new Set\(\[([\s\S]*?)\n\]\);/.exec(wireClientSource)?.[1];
+  assert.ok(sessionProbeSet?.includes(`'${scenario}'`), 'TDS_HISTORY_OUTAGE_WIRE_PROBE_UNREGISTERED');
+  assert.match(wireClientSource, /PING_BURST\\t\(\[1-9\]\[0-9\]\{0,3\}\)/);
+  assert.match(wireClientSource, /MAX_SESSION_PROBE_PING_BURST = 8_192/);
+  assert.match(wireClientSource, /TERMINAL_WIRE_SESSION_PONG_BURST/);
+  assert.match(terminalAcceptanceSource, /connectionHistoryOutageBounded\([\s\S]*?pingBurst\(4_100\)/);
+  assert.match(terminalAcceptanceSource, /event=tds_doris_history_event_dropped reason=QUEUE_FULL/);
+  assert.match(terminalAcceptanceSource, /performBusinessActionsDuringDorisOutage\(context, 20\)/);
+  assert.match(
+    readFileSync(new URL('../../apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/StoreTerminalAcceptanceScenarios.java', import.meta.url), 'utf8'),
+    /performBusinessActionsDuringDorisOutage\([\s\S]*?ACTIVATED[\s\S]*?DEVICE_CANCELLED/,
+  );
+
+  const control = validRequest();
+  control.scenario = scenario;
+  delete control.expectedClose;
+  assert.equal(parseControlRequest(JSON.stringify(control)).scenario, scenario);
+});
+
+test('V-S13 cross-node recovery is registered as an authenticated session probe end to end', () => {
+  const scenario = 'terminal.connection.vs13.cross-node-recovery';
+  const sessionProbeSet = /const SESSION_PROBE_SCENARIOS = new Set\(\[([\s\S]*?)\n\]\);/.exec(wireClientSource)?.[1];
+  const deferredAuthSet = /const DEFERRED_AUTH_SCENARIOS = new Set\(\[([\s\S]*?)\n\]\);/.exec(wireClientSource)?.[1];
+  assert.ok(sessionProbeSet, 'TERMINAL_WIRE_SESSION_PROBE_SCENARIO_SET_MISSING');
+  assert.ok(sessionProbeSet.includes(`'${scenario}'`), 'V_S13_CROSS_NODE_RECOVERY_WIRE_PROBE_UNREGISTERED');
+  assert.ok(deferredAuthSet, 'TERMINAL_WIRE_DEFERRED_AUTH_SCENARIO_SET_MISSING');
+  assert.ok(deferredAuthSet.includes(`'${scenario}'`), 'V_S13_CROSS_NODE_RECOVERY_DEFERRED_AUTH_UNREGISTERED');
+  assert.ok(
+    tdsAcceptanceProcessSource.includes(`VS13_CROSS_NODE_RECOVERY_SCENARIO_ID = "${scenario}"`),
+    'V_S13_ACCEPTANCE_SCENARIO_ID_DRIFT',
+  );
+  assert.ok(
+    terminalAcceptanceSource.includes('String scenario = TdsAcceptanceProcess.TdsStartConfiguration.VS13_CROSS_NODE_RECOVERY_SCENARIO_ID;'),
+    'V_S13_SCENARIO_NOT_USED_BY_ACCEPTANCE',
+  );
+  assert.match(
+    terminalAcceptanceSource,
+    /oldOnA = startSessionProbe\(nodeA, targetFixture, scenario, oldMarker, wireClientLog\(nodeA, oldMarker\)\)/,
+    'V_S13_ACCEPTANCE_WIRE_PROBE_DRIFT',
+  );
+
+  const control = validRequest();
+  control.scenario = scenario;
+  delete control.expectedClose;
+  const request = parseControlRequest(JSON.stringify(control));
+  assert.equal(request.scenario, scenario);
+  assert.equal(request.markerId, control.markerId);
+  assert.equal(request.authenticate.terminalRef, control.authenticate.terminalRef);
+  assert.equal(request.expectedClose, null);
+
+  const deferredControl = validRequest();
+  deferredControl.scenario = scenario;
+  deferredControl.deferAuthentication = true;
+  deferredControl.expectedClose = {code: 4000, reason: 'CREDENTIAL_INVALID'};
+  const deferredRequest = parseControlRequest(JSON.stringify(deferredControl));
+  assert.equal(deferredRequest.scenario, scenario);
+  assert.equal(deferredRequest.deferAuthentication, true);
+  assert.equal(deferredRequest.authenticate.terminalRef, deferredControl.authenticate.terminalRef);
+  assert.deepEqual(deferredRequest.expectedClose, {code: 4000, reason: 'CREDENTIAL_INVALID'});
+
+  deferredControl.expectedClose = {code: 4000, reason: 'SESSION_REPLACED'};
+  assert.deepEqual(
+    parseControlRequest(JSON.stringify(deferredControl)).expectedClose,
+    {code: 4000, reason: 'SESSION_REPLACED'},
+  );
+  deferredControl.expectedClose = {code: 4000, reason: 'SERVER_ERROR'};
+  assert.throws(
+    () => parseControlRequest(JSON.stringify(deferredControl)),
+    /TERMINAL_WIRE_CONTROL_EXPECTED_CLOSE_INVALID/,
+  );
+});
+
+test('session probe accepts measured RTT precision from nanosecond timing', () => {
+  assert.deepEqual(SESSION_PROBE_PING_COMMAND_PATTERN.exec('PING\t2\t0.123456')?.slice(1), ['2', '0.123456']);
+  assert.equal(SESSION_PROBE_PING_COMMAND_PATTERN.test('PING\t2\t0.1234567'), false);
+  assert.equal(SESSION_PROBE_PING_BURST_COMMAND_PATTERN.test('PING_BURST\t4100'), true);
+  assert.equal(SESSION_PROBE_PING_BURST_COMMAND_PATTERN.test('PING_BURST\t0'), false);
+  assert.equal(SESSION_PROBE_PING_BURST_COMMAND_PATTERN.test('PING_BURST\t10000'), false);
 });
 
 test('one-shot topology and V-S14 wire cases require isolated marker ids', () => {

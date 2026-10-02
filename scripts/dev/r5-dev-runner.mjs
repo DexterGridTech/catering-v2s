@@ -46,10 +46,23 @@ import {
   validateRemoteTdsControl,
   validateRemoteResourceSnapshot,
 } from './r5-remote-java.mjs';
+import {
+  DORIS_RESIDENT_DATABASE,
+  DORIS_RESIDENT_ENDPOINT,
+  DORIS_RESIDENT_TABLE,
+  DORIS_RESIDENT_USERNAME,
+  buildResidentManifest,
+  parseResidentReport,
+  readResidentManifest,
+  renderEnsureResidentScript,
+  renderVerifyResidentScript,
+  writeResidentManifest,
+} from './r5-doris-resident.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
 const manifestPath = path.join(runtime, 'run-manifest.json');
+const dorisResidentManifestPath = path.join(runtime, 'doris-resident-manifest.json');
 const readinessProgressPath = path.join(runtime, `readiness-${process.pid}.jsonl`);
 const portLockPath = path.join(root, '.runtime/r5/managed-port-lock');
 const defaultTunnelPortPairs = Object.freeze([
@@ -103,6 +116,41 @@ const remoteExec = (host, script) => {
   if (result.status !== 0) fail(`REMOTE_EXECUTION_FAILED:${compact(result.stderr || result.stdout)}`);
   return result.stdout;
 };
+function ensureDorisResident({host, fingerprint, expectedBootId, credential}) {
+  const previous = readResidentManifest(dorisResidentManifestPath, {host, fingerprint});
+  const password = credential.values.V2S_TDS_DORIS_PASSWORD;
+  if (!/^[a-f0-9]{64}$/.test(password ?? '')) fail('DORIS_RESIDENT_CREDENTIAL_MISSING');
+  const ddlPath = path.join(root, 'scripts/dev/doris/connection-history.sql');
+  const ddlBase64 = Buffer.from(readFileSync(ddlPath)).toString('base64');
+  const script = renderEnsureResidentScript({
+    expectedBootId,
+    expectedContainerId: previous?.containerId ?? null,
+    expectedFeVolumeId: previous?.feVolumeId ?? null,
+    expectedBeVolumeId: previous?.beVolumeId ?? null,
+    hostFingerprint: fingerprint,
+    attemptId: crypto.randomUUID(),
+    password,
+    ddlBase64,
+  });
+  const result = remoteResult(host, script);
+  if (result.status !== 0) fail(`DORIS_RESIDENT_START_FAILED:${compact(result.stderr || result.stdout)}`);
+  const report = parseResidentReport(result.stdout);
+  const manifest = buildResidentManifest({host, fingerprint, report, previous});
+  const persisted = writeResidentManifest(dorisResidentManifestPath, manifest);
+  return Object.freeze({...manifest, manifestPath: persisted.path, manifestSha256: persisted.sha256});
+}
+function verifyDorisResidentForStop(manifest) {
+  const identity = readResidentManifest(dorisResidentManifestPath, {
+    host: manifest.remoteHostTrust?.host,
+    fingerprint: manifest.remoteHostTrust?.fingerprint,
+  });
+  if (!identity) fail('DORIS_RESIDENT_MANIFEST_MISSING');
+  const output = remoteExec(manifest.remoteHostTrust.host, renderVerifyResidentScript(identity));
+  if (!output.includes('R5_DORIS_RESIDENT_VERIFY=PASS') || !output.includes('R5_DORIS_RESIDENT_HEALTH=healthy')) {
+    fail('DORIS_RESIDENT_RETAINED_IDENTITY_NOT_HEALTHY');
+  }
+  return Object.freeze({status: 'PASS_RETAINED', containerId: identity.containerId, manifestPath: dorisResidentManifestPath});
+}
 const remoteRootGuard = rootValue => {
   if (!isOwnedRemoteDevRoot(rootValue)) fail('REMOTE_ROOT_IDENTITY_INVALID');
   return rootValue;
@@ -490,6 +538,11 @@ export async function startRemoteTds(
     V2S_TDS_MAX_TRACKED_SESSIONS: String(maxTracked),
     V2S_TDS_NODE_ID: nodeId,
     V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS: String(readinessWithdrawalWaitMs),
+    V2S_TDS_DORIS_ENDPOINT: DORIS_RESIDENT_ENDPOINT,
+    V2S_TDS_DORIS_DATABASE: DORIS_RESIDENT_DATABASE,
+    V2S_TDS_DORIS_TABLE: DORIS_RESIDENT_TABLE,
+    V2S_TDS_DORIS_USERNAME: credential.values.V2S_TDS_DORIS_USERNAME,
+    V2S_TDS_DORIS_PASSWORD: credential.values.V2S_TDS_DORIS_PASSWORD,
   };
   for (const [name, value] of Object.entries(values)) {
     if (!/^[A-Z][A-Z0-9_]{1,127}$/.test(name) || typeof value !== 'string' || !value || /[\u0000\r\n]/.test(value))
@@ -938,6 +991,42 @@ export function readManagedTdsLatestState({manifestPath, runId, terminalRef} = {
   const states = JSON.parse(output);
   if (!Array.isArray(states) || states.length > 1) fail('TERMINAL_ACCEPTANCE_TDS_STATE_READBACK_INVALID');
   return states[0] ?? null;
+}
+
+export function readManagedDorisHistory({manifestPath, runId, terminalRef, sessionIds} = {}) {
+  if (typeof terminalRef !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(terminalRef))
+    fail('TERMINAL_ACCEPTANCE_DORIS_TERMINAL_REF_INVALID');
+  if (!Array.isArray(sessionIds) || sessionIds.length < 1 || sessionIds.length > 8 ||
+      sessionIds.some(value => typeof value !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(value)) ||
+      new Set(sessionIds).size !== sessionIds.length)
+    fail('TERMINAL_ACCEPTANCE_DORIS_SESSION_IDS_INVALID');
+  const resolved = resolveManagedAcceptanceManifest(manifestPath ?? manifestPathDefault(), runId);
+  const resident = readResidentManifest(dorisResidentManifestPath, {
+    host: resolved.host,
+    fingerprint: resolved.manifest.remoteHostTrust.fingerprint,
+  });
+  if (!resident || resident.bootId !== resolved.manifest.remoteResources?.bootId)
+    fail('TERMINAL_ACCEPTANCE_DORIS_RESIDENT_IDENTITY_MISMATCH');
+  const inClause = sessionIds.map(value => `'${value}'`).join(',');
+  const sql = `SELECT event_type, session_id, rtt_ms, close_reason FROM ${DORIS_RESIDENT_DATABASE}.${DORIS_RESIDENT_TABLE} WHERE terminal_ref='${terminalRef}' AND session_id IN (${inClause}) ORDER BY event_time_epoch_millis, event_id`;
+  const script = [
+    'set -Eeuo pipefail',
+    `expected_boot_id=${quote(resolved.manifest.remoteResources.bootId)}`,
+    'test "$(cat /proc/sys/kernel/random/boot_id)" = "$expected_boot_id"',
+    renderVerifyResidentScript(resident),
+    `docker exec ${quote(resident.containerId)} mysql --batch --skip-column-names -h127.0.0.1 -P9030 -uroot -e ${quote(sql)}`,
+  ].join('\n');
+  const output = remoteExec(resolved.host, script);
+  if (!output.includes('R5_DORIS_RESIDENT_VERIFY=PASS')) fail('TERMINAL_ACCEPTANCE_DORIS_RESIDENT_READBACK_UNVERIFIED');
+  const rows = output.split(/\r?\n/).filter(line => line && !line.startsWith('R5_DORIS_RESIDENT_'));
+  return rows.map(line => {
+    const fields = line.split('\t');
+    if (fields.length !== 4 || !['CONNECTED', 'HEARTBEAT_RTT', 'DISCONNECTED'].includes(fields[0]) ||
+        !sessionIds.includes(fields[1]) || (fields[2] !== 'NULL' && fields[2] !== '\\N' && !/^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$/.test(fields[2])) ||
+        (fields[3] !== 'NULL' && fields[3] !== '\\N' && !/^[A-Z_]{1,48}$/.test(fields[3])))
+      fail('TERMINAL_ACCEPTANCE_DORIS_HISTORY_READBACK_INVALID');
+    return Object.freeze({eventType: fields[0], sessionId: fields[1], rttMs: fields[2], closeReason: fields[3]});
+  });
 }
 
 function manifestPathDefault() {
@@ -1509,6 +1598,7 @@ export function buildManagedDevCleanupReceipt({
   remoteTdsStopStatus = 'NOT_APPLICABLE',
   remoteHaproxyControlStatus = 'NOT_APPLICABLE',
   remoteHaproxyStopStatus = 'NOT_APPLICABLE',
+  dorisResidentStatus = 'NOT_APPLICABLE',
   remoteTdsNodeStatuses = [],
   remoteJavaRootCleanupStatus,
   failedProcessCount = 0,
@@ -1544,6 +1634,7 @@ export function buildManagedDevCleanupReceipt({
           ? 'PASS'
           : 'FAIL',
     remoteHaproxyStop: remoteHaproxyStopStatus,
+    dorisResident: dorisResidentStatus,
     remoteJavaRoot: remoteJavaRootCleanupStatus,
   };
   if (remoteTdsNodeStatuses.length > 0) {
@@ -1748,6 +1839,10 @@ function credentials() {
     if (!entries.CATERING_ASSET_S3_SECRET_KEY) entries.CATERING_ASSET_S3_SECRET_KEY = secret();
     if (!entries.V2S_SEED_REPORT_SECRET) entries.V2S_SEED_REPORT_SECRET = secret();
     if (!entries.V2S_DB_OPERATIONS_HMAC_KEY) entries.V2S_DB_OPERATIONS_HMAC_KEY = secret();
+    if (!entries.V2S_TDS_DORIS_USERNAME) entries.V2S_TDS_DORIS_USERNAME = DORIS_RESIDENT_USERNAME;
+    if (!entries.V2S_TDS_DORIS_PASSWORD) entries.V2S_TDS_DORIS_PASSWORD = crypto.randomBytes(32).toString('hex');
+    if (entries.V2S_TDS_DORIS_USERNAME !== DORIS_RESIDENT_USERNAME || !/^[a-f0-9]{64}$/.test(entries.V2S_TDS_DORIS_PASSWORD))
+      fail('DORIS_RESIDENT_CREDENTIAL_FILE_INVALID');
     entries.V2S_SEED_PLATFORM_ROOT_PASSWORD = 'root';
     delete entries.V2S_SEED_PLATFORM_BOOTSTRAP_PASSWORD;
     writeFileSync(
@@ -1775,6 +1870,8 @@ function credentials() {
     CATERING_ASSET_S3_SECRET_KEY: secret(),
     V2S_SEED_REPORT_SECRET: secret(),
     V2S_DB_OPERATIONS_HMAC_KEY: secret(),
+    V2S_TDS_DORIS_USERNAME: DORIS_RESIDENT_USERNAME,
+    V2S_TDS_DORIS_PASSWORD: crypto.randomBytes(32).toString('hex'),
   };
   writeFileSync(
     target,
@@ -2094,6 +2191,7 @@ async function start() {
   const remoteTdsLogPaths = {};
   let remoteHaproxy = null;
   let remoteHaproxyLogPath = null;
+  let dorisResident = null;
   let remoteRootMayExist = false;
   let remoteJavaStartAttempted = false;
   const remoteTdsStartAttempted = new Set();
@@ -2108,6 +2206,14 @@ async function start() {
     brokenBoundary = 'REMOTE_SOURCE_SYNC';
     await syncRemoteSource(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot);
     lastKnownGood = 'REMOTE_SOURCE_SYNC';
+    brokenBoundary = 'DORIS_RESIDENT';
+    dorisResident = ensureDorisResident({
+      host: env.environment.V2S_DEV_REMOTE_HOST,
+      fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256,
+      expectedBootId: remoteResources.bootId,
+      credential,
+    });
+    lastKnownGood = 'DORIS_RESIDENT_READY';
     // The remote JVM only needs the public asset URL to build browser-facing
     // readbacks.  Establish the managed local ingress first so the selected
     // port (including alternate-port runs) is available to that configuration.
@@ -2309,6 +2415,7 @@ async function start() {
           remoteJava: {...remoteJava, localLogPath: remoteJavaLogPath},
           remoteTdsNodes: remoteTdsNodes.map(node => ({...node, localLogPath: remoteTdsLogPaths[node.instanceName]})),
           remoteHaproxy: {...remoteHaproxy, localLogPath: remoteHaproxyLogPath},
+          dorisResident,
           processes,
           readiness,
         },
@@ -2492,6 +2599,7 @@ async function start() {
         remoteJava,
         remoteTdsNodes,
         remoteHaproxy,
+        dorisResident,
         remoteJavaLogPath,
         remoteTdsLogPaths,
         remoteHaproxyLogPath,
@@ -2520,6 +2628,7 @@ async function start() {
           remoteTdsNodeStatuses,
           remoteHaproxyControlStatus,
           remoteHaproxyStopStatus,
+          dorisResidentStatus: dorisResident ? 'PASS_RETAINED' : 'NOT_RUN',
           remoteJavaRootCleanupStatus,
         }),
         cleanupEvidence: {remoteRoot: remoteRootCleanupEvidence},
@@ -2679,6 +2788,13 @@ async function stop() {
   const haproxyStopped =
     manifest.remoteHaproxy == null ||
     (managedRemoteHaproxyControl !== null && ['STOPPED', 'ALREADY_STOPPED'].includes(remoteHaproxyStopStatus));
+  let dorisResidentStatus = 'FAIL';
+  try {
+    verifyDorisResidentForStop(manifest);
+    dorisResidentStatus = 'PASS_RETAINED';
+  } catch (error) {
+    recordFailure(failures, error);
+  }
   try {
     if (!javaStopped || !tdsStopped || !haproxyStopped) throw new Error('R5_DEV_REMOTE_ROOT_CLEANUP_SKIPPED_UNVERIFIED');
     cleanupRemoteJavaRoot(manifest.remoteHostTrust.host, managedRemoteJavaControl.remoteRoot);
@@ -2704,6 +2820,7 @@ async function stop() {
       remoteTdsNodeStatuses,
       remoteHaproxyControlStatus,
       remoteHaproxyStopStatus,
+      dorisResidentStatus,
       remoteJavaRootCleanupStatus,
       failedProcessCount: failures.length,
     }),

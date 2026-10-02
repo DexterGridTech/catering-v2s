@@ -12,7 +12,7 @@ import {
   resolveTerminalNodeRuntime,
   supportsTerminalAcceptanceNodeVersion,
 } from './terminal-client-dev-acceptance.mjs';
-import {TERMINAL_ACCEPTANCE_DEV_ACTIONS, executeManagedTerminalDevAction, haproxyServerAdminState, readManagedTdsLatestState, remoteTdsManagedProcessStateScript} from '../dev/r5-dev-runner.mjs';
+import {TERMINAL_ACCEPTANCE_DEV_ACTIONS, executeManagedTerminalDevAction, haproxyServerAdminState, readManagedDorisHistory, readManagedTdsLatestState, remoteTdsManagedProcessStateScript} from '../dev/r5-dev-runner.mjs';
 import {
   acquireTerminalClientDevAcceptanceLock,
   assertNoActiveTerminalClientAcceptance,
@@ -112,6 +112,33 @@ test('scenario cleanup evidence fails closed for missing, malformed, cross-run, 
     event('SCENARIO_CLEANUP_PASS'),
   ].map(value => JSON.stringify(value)).join('\n'));
   assert.deepEqual(readScenarioEvents(file, runId, scenarioId), {cleanup: 'PASS', startedCount: 1, failure: undefined});
+  const target = {
+    ...event('DORIS_HISTORY_TARGET'),
+    terminalRef: '123e4567-e89b-42d3-a456-426614174000',
+    sessionIds: ['session-a', 'session-b'],
+    heartbeatSessionId: 'session-a',
+  };
+  writeFileSync(file, [
+    event('SCENARIO_STARTED'),
+    target,
+    event('SCENARIO_CLEANUP_PASS'),
+  ].map(value => JSON.stringify(value)).join('\n'));
+  assert.deepEqual(readScenarioEvents(file, runId, scenarioId), {
+    cleanup: 'PASS',
+    startedCount: 1,
+    failure: undefined,
+    dorisHistoryTarget: {
+      terminalRef: target.terminalRef,
+      sessionIds: ['session-a', 'session-b'],
+      heartbeatSessionId: 'session-a',
+    },
+  });
+  writeFileSync(file, [event('SCENARIO_STARTED'), {...target, terminalRef: 'invalid'}, event('SCENARIO_CLEANUP_PASS')]
+    .map(value => JSON.stringify(value)).join('\n'));
+  assert.equal(readScenarioEvents(file, runId, scenarioId).failure, 'TERMINAL_CLIENT_ACCEPTANCE_DORIS_HISTORY_TARGET_INVALID');
+  writeFileSync(file, [event('SCENARIO_STARTED'), target, target, event('SCENARIO_CLEANUP_PASS')]
+    .map(value => JSON.stringify(value)).join('\n'));
+  assert.equal(readScenarioEvents(file, runId, scenarioId).failure, 'TERMINAL_CLIENT_ACCEPTANCE_DORIS_HISTORY_TARGET_DUPLICATE');
   writeFileSync(file, `${JSON.stringify(event('SCENARIO_STARTED'))}\n${JSON.stringify(event('UNRECOGNIZED_DIAGNOSTIC'))}\n${JSON.stringify(event('SCENARIO_CLEANUP_PASS'))}\n`);
   assert.deepEqual(readScenarioEvents(file, runId, scenarioId), {cleanup: 'FAIL', startedCount: 0, failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_EVENT_PHASE_INVALID'});
 });
@@ -120,6 +147,8 @@ test('managed terminal DEV control exposes only reviewed node actions and verifi
   assert.deepEqual(TERMINAL_ACCEPTANCE_DEV_ACTIONS, ['drain-stop-a', 'drain-force-stop-b', 'restart-a', 'restart-b', 'ensure-ready-a', 'ensure-ready-b']);
   await assert.rejects(executeManagedTerminalDevAction({action: 'kill-all'}), /TERMINAL_ACCEPTANCE_DEV_ACTION_NOT_ALLOWLISTED/);
   assert.throws(() => readManagedTdsLatestState({terminalRef: 'not-a-uuid'}), /TERMINAL_ACCEPTANCE_TERMINAL_REF_INVALID/);
+  assert.throws(() => readManagedDorisHistory({terminalRef: 'not-a-uuid', sessionIds: ['session-a']}), /TERMINAL_ACCEPTANCE_DORIS_TERMINAL_REF_INVALID/);
+  assert.throws(() => readManagedDorisHistory({terminalRef: '123e4567-e89b-42d3-a456-426614174000', sessionIds: ['bad\tsession']}), /TERMINAL_ACCEPTANCE_DORIS_SESSION_IDS_INVALID/);
   const output = [
     '# be_id be_name srv_id srv_name srv_addr srv_op_state srv_admin_state srv_fqdn srv_port',
     '1 terminal_nodes_ab 1 tds-a 127.0.0.1 2 8 - 18084',

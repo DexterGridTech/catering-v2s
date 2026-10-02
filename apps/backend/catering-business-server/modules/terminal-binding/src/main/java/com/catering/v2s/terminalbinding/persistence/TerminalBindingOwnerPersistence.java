@@ -262,8 +262,8 @@ public class TerminalBindingOwnerPersistence {
     }
 
     public void notifyRevoked(UUID terminalRef, long revokedGeneration) {
-        String payload =
-                "{\"v\":1,\"terminalRef\":\"" + terminalRef + "\",\"revokedGeneration\":" + revokedGeneration + "}";
+        String payload = "{\"v\":1,\"kind\":\"BINDING_REVOKED\",\"terminalRef\":\"" + terminalRef
+                + "\",\"revokedGeneration\":" + revokedGeneration + "}";
         jdbc.execute(
                 (PreparedStatementCreator) connection -> {
                     PreparedStatement statement = connection.prepareStatement("SELECT pg_notify(?, ?)");

@@ -9,6 +9,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {canonicalStartToken, readProcessTable, snapshotProcessTree} from '../dev/managed-process-tree.mjs';
 import {
+  readManagedDorisHistory,
   validateManagedRemoteHaproxyBinding,
   validateManagedRemoteJavaBinding,
   validateManagedRemoteTdsNodeBinding,
@@ -468,6 +469,44 @@ async function runSelectedScenario(scenarioId) {
       state.cleanup = 'FAIL';
       state.firstFailure ??= 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_CLEANUP_FAILED';
     }
+    if (scenarioId === 'terminal.dev.lifecycle-and-compression' && !scenarioEvents.dorisHistoryTarget) {
+      state.business = 'FAIL';
+      state.firstFailure ??= 'TERMINAL_CLIENT_ACCEPTANCE_DORIS_HISTORY_TARGET_MISSING';
+    }
+    if (scenarioEvents.dorisHistoryTarget && state.business === 'PASS') {
+      const target = scenarioEvents.dorisHistoryTarget;
+      const readbackStarted = Date.now();
+      let rows = [];
+      let readbackComplete = false;
+      while (Date.now() - readbackStarted < 20_000) {
+        rows = readManagedDorisHistory({
+          manifestPath: resolvedManifest.manifestPath,
+          runId: manifestData.runId,
+          terminalRef: target.terminalRef,
+          sessionIds: target.sessionIds,
+        });
+        const connected = rows.filter(row => row.eventType === 'CONNECTED');
+        const heartbeats = rows.filter(row => row.eventType === 'HEARTBEAT_RTT' && row.sessionId === target.heartbeatSessionId);
+        const disconnected = rows.filter(row => row.eventType === 'DISCONNECTED');
+        readbackComplete = connected.length >= target.sessionIds.length && heartbeats.length >= 3 &&
+          disconnected.length >= target.sessionIds.length && disconnected.every(row => row.closeReason === 'ACTIVATION_CANCELLED') &&
+          heartbeats.every(row => row.rttMs !== 'NULL' && row.rttMs !== '\\N');
+        if (readbackComplete) break;
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+      state.dorisHistoryReadback = {
+        status: readbackComplete ? 'PASS' : 'FAIL',
+        sessionCount: target.sessionIds.length,
+        connectedRows: rows.filter(row => row.eventType === 'CONNECTED').length,
+        heartbeatRows: rows.filter(row => row.eventType === 'HEARTBEAT_RTT').length,
+        disconnectedRows: rows.filter(row => row.eventType === 'DISCONNECTED').length,
+        elapsedMillis: Date.now() - readbackStarted,
+      };
+      if (!readbackComplete) {
+        state.business = 'FAIL';
+        state.firstFailure ??= 'TERMINAL_CLIENT_ACCEPTANCE_DORIS_HISTORY_READBACK_INCOMPLETE';
+      }
+    }
     const remaining = readProcessTable().filter(value => value.pgid === state.process.pgid);
     if (remaining.length === 0 && !processIsAlive(state.process.pid) && state.cleanup !== 'FAIL') state.cleanup = 'PASS';
     else {
@@ -531,6 +570,7 @@ export function readScenarioEvents(filePath, runId, scenarioId) {
     'SCENARIO_STARTED',
     'SCENARIO_CLEANUP_PASS',
     'SCENARIO_CLEANUP_FAIL',
+    'DORIS_HISTORY_TARGET',
     'E6_INITIAL_CONNECTIONS',
     'E6_AFTER_A_CONNECTION_WAIT_FAILED',
     'E6_AFTER_A_CONNECTION_REACHED',
@@ -544,7 +584,25 @@ export function readScenarioEvents(filePath, runId, scenarioId) {
     return Object.freeze({cleanup: 'FAIL', startedCount: started.length, failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_CLEANUP_PROOF_INVALID'});
   if (outcomes[0]?.phase === 'SCENARIO_CLEANUP_FAIL')
     return Object.freeze({cleanup: 'FAIL', startedCount: 1, failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_CLEANUP_FAILED'});
-  return Object.freeze({cleanup: 'PASS', startedCount: 1, failure: undefined});
+  const targets = events.filter(event => event.phase === 'DORIS_HISTORY_TARGET');
+  if (targets.length > 1) return Object.freeze({cleanup: 'FAIL', startedCount: 1, failure: 'TERMINAL_CLIENT_ACCEPTANCE_DORIS_HISTORY_TARGET_DUPLICATE'});
+  let result = {cleanup: 'PASS', startedCount: 1, failure: undefined};
+  if (targets.length === 1) {
+    const target = targets[0];
+    if (scenarioId !== 'terminal.dev.lifecycle-and-compression' ||
+        typeof target.terminalRef !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(target.terminalRef) ||
+        !Array.isArray(target.sessionIds) || target.sessionIds.length !== 2 ||
+        target.sessionIds.some(value => typeof value !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(value)) ||
+        new Set(target.sessionIds).size !== target.sessionIds.length ||
+        !target.sessionIds.includes(target.heartbeatSessionId))
+      return Object.freeze({cleanup: 'FAIL', startedCount: 1, failure: 'TERMINAL_CLIENT_ACCEPTANCE_DORIS_HISTORY_TARGET_INVALID'});
+    result = {...result, dorisHistoryTarget: Object.freeze({
+      terminalRef: target.terminalRef,
+      sessionIds: Object.freeze([...target.sessionIds]),
+      heartbeatSessionId: target.heartbeatSessionId,
+    })};
+  }
+  return Object.freeze(result);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {

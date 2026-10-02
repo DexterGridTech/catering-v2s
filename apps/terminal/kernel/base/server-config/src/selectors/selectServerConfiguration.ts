@@ -47,7 +47,8 @@ export const resolveServerNetworkSnapshot = (
   serverName: string,
 ): ServerNetworkSnapshot => {
   const current = readState(state);
-  const selectedSpace = defaults.spaces.find(space => space.name === current.selectedSpace) ??
+  const selectedSpace =
+    defaults.spaces.find(space => space.name === current.selectedSpace) ??
     defaults.spaces.find(space => space.name === defaults.selectedSpace);
   const server = selectedSpace?.servers.find(item => item.serverName === serverName);
   if (server === undefined) throw new Error('SERVER_CONFIG_SERVICE_UNAVAILABLE');
@@ -94,7 +95,9 @@ export const selectServerConfiguration = (
       ? current.selectedSpace
       : defaults.selectedSpace,
     spaces: Object.freeze(spaces.map(space => Object.freeze({...space, servers: Object.freeze(space.servers)}))),
-    defaults: Object.freeze(defaultViews.map(space => Object.freeze({...space, servers: Object.freeze(space.servers)}))),
+    defaults: Object.freeze(
+      defaultViews.map(space => Object.freeze({...space, servers: Object.freeze(space.servers)})),
+    ),
     overriddenServerNames: Object.freeze(Object.keys(current.overrides).sort()),
   });
 };

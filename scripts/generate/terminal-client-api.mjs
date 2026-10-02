@@ -158,11 +158,19 @@ function loadModel(root = repoRoot) {
     packagePaths.add(targetPolicy.targetPackage);
     if (outputPaths.has(targetPolicy.output)) fail('TERMINAL_CLIENT_OUTPUT_DUPLICATE', String(targetPolicy.output));
     outputPaths.add(targetPolicy.output);
-    const targetDirectory = resolveInsideRoot(targetPolicy.targetPackage, root, 'TERMINAL_CLIENT_TARGET_ESCAPE');
+    resolveInsideRoot(targetPolicy.targetPackage, root, 'TERMINAL_CLIENT_TARGET_ESCAPE');
     if (!targetPolicy.targetPackage.startsWith('apps/terminal/kernel/'))
       fail('TERMINAL_CLIENT_TARGET_INVALID', targetPolicy.targetPackage);
-    const targetPackage = JSON.parse(fs.readFileSync(path.join(targetDirectory, 'package.json'), 'utf8'));
-    const moduleNameSource = fs.readFileSync(path.join(targetDirectory, 'src/moduleName.ts'), 'utf8');
+    const targetPackagePath = path.posix.join(targetPolicy.targetPackage, 'package.json');
+    const targetModuleNamePath = path.posix.join(targetPolicy.targetPackage, 'src/moduleName.ts');
+    const targetPackage = JSON.parse(fs.readFileSync(
+      resolveInsideRoot(targetPackagePath, root, 'TERMINAL_CLIENT_TARGET_ESCAPE'),
+      'utf8',
+    ));
+    const moduleNameSource = fs.readFileSync(
+      resolveInsideRoot(targetModuleNamePath, root, 'TERMINAL_CLIENT_TARGET_ESCAPE'),
+      'utf8',
+    );
     const ownerKind = /export const moduleKind\s*=\s*['"]owner['"]\s+as const/.test(moduleNameSource);
     const ownerName = /export const moduleName\s*=\s*['"](kernel\.[A-Za-z0-9._-]+)['"]\s+as const/.exec(moduleNameSource)?.[1];
     if (!ownerKind || !ownerName || typeof targetPackage.name !== 'string' || !targetPackage.name.startsWith('@catering-v2s/kernel-'))
@@ -502,6 +510,15 @@ export function selfTest() {
     createPackage('apps/terminal/kernel/base/terminal-data-client', '@catering-v2s/kernel-base-terminal-data-client', 'kernel.base.terminal-data-client');
     createPackage('apps/terminal/kernel/base/another-owner', '@catering-v2s/kernel-base-another-owner', 'kernel.base.another-owner');
     createPackage('apps/terminal/kernel/base/contracts', '@catering-v2s/kernel-base-contracts', 'kernel.base.contracts', 'toolkit');
+    const targetPackageFile = path.join(root, singleTarget.targetPackage, 'package.json');
+    const targetModuleNameFile = path.join(root, singleTarget.targetPackage, 'src/moduleName.ts');
+    const validTargetPackage = fs.readFileSync(targetPackageFile, 'utf8');
+    const validTargetModuleName = fs.readFileSync(targetModuleNameFile, 'utf8');
+    const outsidePackageFile = path.join(outside, 'package.json');
+    const outsideModuleNameFile = path.join(outside, 'moduleName.ts');
+    fs.writeFileSync(outsidePackageFile, JSON.stringify({name: '@catering-v2s/kernel-outside'}));
+    fs.writeFileSync(outsideModuleNameFile,
+      "export const moduleName = 'kernel.outside' as const;\nexport const moduleKind = 'owner' as const;\n");
     writePolicy(policy);
     const operation = {
       operationId: 'activateTerminal', method: 'POST', path: '/api/terminal/activation',
@@ -539,6 +556,25 @@ export function selfTest() {
       Request: {type: 'object', additionalProperties: true, required: ['name'], properties: {name: {type: 'string'}}},
       Response: {type: 'object', additionalProperties: false, required: ['id'], properties: {id: {type: 'string'}}},
     }}}));
+    const assertTargetFileSymlinkRejected = (targetPath, outsidePath, label, restoreContents) => {
+      fs.rmSync(targetPath);
+      fs.symlinkSync(outsidePath, targetPath);
+      try {
+        loadModel(root);
+        fail(`TERMINAL_CLIENT_RED_${label}_SYMLINK_ESCAPE_NOT_DETECTED`);
+      } catch (error) {
+        if (error.code !== 'TERMINAL_CLIENT_TARGET_ESCAPE') throw error;
+      } finally {
+        fs.rmSync(targetPath);
+        fs.writeFileSync(targetPath, restoreContents);
+      }
+    };
+    assertTargetFileSymlinkRejected(
+      targetPackageFile, outsidePackageFile, 'TARGET_PACKAGE', validTargetPackage,
+    );
+    assertTargetFileSymlinkRejected(
+      targetModuleNameFile, outsideModuleNameFile, 'TARGET_MODULE_NAME', validTargetModuleName,
+    );
     const model = loadModel(root);
     const output = singleTarget.output;
     write(root);
@@ -618,7 +654,7 @@ export function selfTest() {
     try { loadModel(root); fail('TERMINAL_CLIENT_RED_SYMLINK_ESCAPE_NOT_DETECTED'); } catch (error) {
       if (error.code !== 'TERMINAL_CLIENT_INPUT_PATH_ESCAPE') throw error;
     }
-    process.stdout.write('TERMINAL_CLIENT_API_SELF_TEST=PASS\nRED_ZERO_SELECTOR=PASS\nRED_WRONG_FACE=PASS\nRED_GENERATED_DRIFT=PASS\nRED_MULTIPLE_TARGET_ASSIGNMENT=PASS\nRED_DUPLICATE_ASSIGNMENT=PASS\nRED_NON_OWNER_TARGET=PASS\nRED_SELECTOR_MISMATCH=PASS\nRED_OUTPUT_ESCAPE=PASS\nRED_ROOT_ESCAPE=PASS\nRED_SYMLINK_ESCAPE=PASS\n');
+    process.stdout.write('TERMINAL_CLIENT_API_SELF_TEST=PASS\nRED_ZERO_SELECTOR=PASS\nRED_WRONG_FACE=PASS\nRED_GENERATED_DRIFT=PASS\nRED_MULTIPLE_TARGET_ASSIGNMENT=PASS\nRED_DUPLICATE_ASSIGNMENT=PASS\nRED_NON_OWNER_TARGET=PASS\nRED_SELECTOR_MISMATCH=PASS\nRED_OUTPUT_ESCAPE=PASS\nRED_ROOT_ESCAPE=PASS\nRED_SYMLINK_ESCAPE=PASS\nRED_TARGET_PACKAGE_SYMLINK_ESCAPE=PASS\nRED_TARGET_MODULE_NAME_SYMLINK_ESCAPE=PASS\n');
   } finally {
     fs.rmSync(root, {recursive: true, force: true});
     fs.rmSync(outside, {recursive: true, force: true});

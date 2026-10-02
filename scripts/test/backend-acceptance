@@ -92,14 +92,36 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 
-if [[ -n "$tds_contract_scenario" && \
-      ( "$tds_contract_scenario" != 'terminal.connection.vs15.readiness-withdrawal-and-drain' || \
-        "$operation" != 'storeTerminalActivationBusinessPrecedence' || \
-        "$topology_preflight" != true || "$calibration" == true || \
-        -n "$production_mutation" || "$extension_scale_proof" == true || \
-        "$v12_diagnostic" == true || "$v8_diagnostic" == true || "$d46_focused" == true ) ]]; then
-  printf '%s\n' 'BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID' >&2
-  exit 2
+if [[ -n "$tds_contract_scenario" ]]; then
+  case "$tds_contract_scenario" in
+    terminal.connection.vs11.secret-search)
+      expected_topology_preflight=false
+      ;;
+    terminal.connection.vs15.readiness-withdrawal-and-drain)
+      expected_topology_preflight=true
+      ;;
+    terminal.connection.history-records)
+      expected_topology_preflight=true
+      ;;
+    terminal.connection.history-outage-bounded)
+      expected_topology_preflight=false
+      ;;
+    terminal.connection.vs13.cross-node-recovery)
+      expected_topology_preflight=true
+      ;;
+    *)
+      printf '%s\n' 'BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID' >&2
+      exit 2
+      ;;
+  esac
+  [[ "$operation" == 'storeTerminalActivationBusinessPrecedence' && \
+     "$topology_preflight" == "$expected_topology_preflight" && \
+     "$calibration" == false && -z "$production_mutation" && \
+     "$extension_scale_proof" == false && "$v12_diagnostic" == false && \
+     "$v8_diagnostic" == false && "$d46_focused" == false ]] || {
+    printf '%s\n' 'BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID' >&2
+    exit 2
+  }
 fi
 
 if [[ "$topology_preflight" == true && ( "$calibration" == true || "$extension_scale_proof" == true ) ]]; then

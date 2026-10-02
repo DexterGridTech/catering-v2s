@@ -34,6 +34,8 @@
 
 已接受的 terminal service-shape decision 允许独立受管的 `terminal-data-server` WebSocket transport runtime。按 D-44，批次二 DEV 可部署三个独立实例并经两个 HAProxy WebSocket 入口接入；该拓扑不增加业务 deployable，也不实现批次三的跨节点会话协调。TDS 是辅助传输进程，不拥有业务 deployable、事实写入或 Flyway history，因此不改变上述三个业务底座不变量，也不是 TDP。
 
+批次三accepted amendment只为TDS连接/断开/RTT历史列出远端Doris遥测存储例外；PostgreSQL仍是唯一业务数据库与Flyway history，binding与audit事实仍由业务owner保存。不新增业务deployable、Doris业务查询/统计API或页面。
+
 ### 1-B · 模块 owner 主权
 
 `MODULE_OWNER_SOVEREIGNTY` · `COMMAND_REQUIRED_TRANSACTION` · `TASK_READ_JOIN` · `COORDINATOR_NO_ASSET`
@@ -256,7 +258,7 @@ SharedLock.acquire(jdbc, Namespace.PRODUCT_SKU, ref);
 **为什么**:它们是为「跨进程最终一致」准备的,而当前是一个进程一个库。
 引入后真正的问题(同一事务内的正确性)会被掩盖。
 
-本批唯一的异步通知例外是 terminal-binding 在同一数据库事务中发出的绑定撤销唤醒，由 TDS 使用 PostgreSQL `LISTEN/NOTIFY` 关闭相应会话。它不是通用 outbox、事件总线、持久队列或业务状态轮询；不得扩展到其他业务事件。
+本批唯一的业务状态通知例外是 terminal-binding 在同一数据库事务中发出的绑定撤销唤醒，由 TDS 使用 PostgreSQL `LISTEN/NOTIFY` 关闭相应会话。批次三另有一个具名TDS连接历史副通道：PG事务内session-open通知仅作唤醒，TDS重读PG权威状态；连接/断开/RTT经TDS自有有界内存队列异步写Doris，失败有限重试后丢弃并计数，不进入业务主路径。它们都不是通用 outbox、事件总线、持久队列或常态状态轮询。
 
 ---
 

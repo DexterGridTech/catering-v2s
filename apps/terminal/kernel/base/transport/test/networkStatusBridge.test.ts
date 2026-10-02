@@ -2,21 +2,30 @@ import {describe, expect, it, vi} from 'vitest';
 import type {DevicePort, NetworkStatusChanged, PortResult} from '@catering-v2s/kernel-base-platform-ports';
 import {createTransportNetworkStatusBridge} from '../src/index';
 
-const unavailable = (capability: string) => ({
-  status: 'unavailable',
-  port: 'device',
-  capability,
-  reason: 'PLATFORM_UNSUPPORTED',
-  message: `device.${capability} is unavailable`,
-} as const);
+const unavailable = (capability: string) =>
+  ({
+    status: 'unavailable',
+    port: 'device',
+    capability,
+    reason: 'PLATFORM_UNSUPPORTED',
+    message: `device.${capability} is unavailable`,
+  }) as const;
 
-const success = <T,>(value: T): PortResult<T> => ({status: 'succeeded', value, completedAt: 1});
+const success = <T>(value: T): PortResult<T> => ({status: 'succeeded', value, completedAt: 1});
 const unsuccessfulUnsubscribes: readonly Readonly<{name: string; result: PortResult<{readonly completed: true}>}>[] = [
   {
     name: 'failed',
-    result: {status: 'failed', port: 'device', capability: 'unsubscribeNetworkStatus', error: {code: 'OS_FAILURE', message: 'failed', retryable: true}},
+    result: {
+      status: 'failed',
+      port: 'device',
+      capability: 'unsubscribeNetworkStatus',
+      error: {code: 'OS_FAILURE', message: 'failed', retryable: true},
+    },
   },
-  {name: 'timed-out', result: {status: 'timed-out', port: 'device', capability: 'unsubscribeNetworkStatus', timeoutMs: 100}},
+  {
+    name: 'timed-out',
+    result: {status: 'timed-out', port: 'device', capability: 'unsubscribeNetworkStatus', timeoutMs: 100},
+  },
   {name: 'unavailable', result: unavailable('unsubscribeNetworkStatus')},
 ];
 
@@ -37,7 +46,9 @@ describe('transport network status bridge', () => {
     const bridge = await createTransportNetworkStatusBridge({
       device,
       timeoutMs: 100,
-      dispatchTransition: async transition => { transitions.push(transition); },
+      dispatchTransition: async transition => {
+        transitions.push(transition);
+      },
     });
 
     listener?.({status: {connected: true}, observedAt: 2});
@@ -67,7 +78,9 @@ describe('transport network status bridge', () => {
     const bridge = await createTransportNetworkStatusBridge({
       device,
       timeoutMs: 100,
-      dispatchTransition: async transition => { transitions.push(transition); },
+      dispatchTransition: async transition => {
+        transitions.push(transition);
+      },
     });
     listener?.({status: {connected: false}, observedAt: 1});
     listener?.({status: {connected: false}, observedAt: 2});
@@ -94,25 +107,31 @@ describe('transport network status bridge', () => {
     expect(device.unsubscribeNetworkStatus).not.toHaveBeenCalled();
   });
 
-  it.each(unsuccessfulUnsubscribes)('surfaces $name and retains the subscription identity for cleanup retry', async ({result}) => {
-    const unsubscribe = vi.fn()
-      .mockResolvedValueOnce(result)
-      .mockResolvedValueOnce(success({completed: true}));
-    const device = {
-      getNetworkStatus: vi.fn(async () => success({connected: true})),
-      subscribeNetworkStatus: vi.fn(async () => success({subscriptionId: 'network-retry'})),
-      unsubscribeNetworkStatus: unsubscribe,
-    } as unknown as DevicePort;
-    const bridge = await createTransportNetworkStatusBridge({
-      device, timeoutMs: 100, dispatchTransition: async () => undefined,
-    });
+  it.each(unsuccessfulUnsubscribes)(
+    'surfaces $name and retains the subscription identity for cleanup retry',
+    async ({result}) => {
+      const unsubscribe = vi
+        .fn()
+        .mockResolvedValueOnce(result)
+        .mockResolvedValueOnce(success({completed: true}));
+      const device = {
+        getNetworkStatus: vi.fn(async () => success({connected: true})),
+        subscribeNetworkStatus: vi.fn(async () => success({subscriptionId: 'network-retry'})),
+        unsubscribeNetworkStatus: unsubscribe,
+      } as unknown as DevicePort;
+      const bridge = await createTransportNetworkStatusBridge({
+        device,
+        timeoutMs: 100,
+        dispatchTransition: async () => undefined,
+      });
 
-    await expect(bridge.dispose()).rejects.toThrow('TRANSPORT_NETWORK_STATUS_UNSUBSCRIBE_FAILED');
-    await bridge.dispose();
-    await bridge.dispose();
+      await expect(bridge.dispose()).rejects.toThrow('TRANSPORT_NETWORK_STATUS_UNSUBSCRIBE_FAILED');
+      await bridge.dispose();
+      await bridge.dispose();
 
-    expect(unsubscribe).toHaveBeenCalledTimes(2);
-    expect(unsubscribe).toHaveBeenNthCalledWith(1, {subscriptionId: 'network-retry', timeoutMs: 100});
-    expect(unsubscribe).toHaveBeenNthCalledWith(2, {subscriptionId: 'network-retry', timeoutMs: 100});
-  });
+      expect(unsubscribe).toHaveBeenCalledTimes(2);
+      expect(unsubscribe).toHaveBeenNthCalledWith(1, {subscriptionId: 'network-retry', timeoutMs: 100});
+      expect(unsubscribe).toHaveBeenNthCalledWith(2, {subscriptionId: 'network-retry', timeoutMs: 100});
+    },
+  );
 });

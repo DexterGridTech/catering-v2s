@@ -293,7 +293,7 @@ test('DEV start failure refuses remote-root deletion when managed Java stop fail
   assert.match(result.failures[0].message, /REMOTE_STOP_FAILED/);
 });
 
-test('DEV terminal cleanup receipt keeps local, remote Java, TDS, and remote-root statuses separate', () => {
+test('DEV terminal cleanup receipt keeps local, remote Java, TDS, Doris and remote-root statuses separate', () => {
   assert.deepEqual(
     buildManagedDevCleanupReceipt({
       cleanupStatus: 'FAIL',
@@ -316,6 +316,7 @@ test('DEV terminal cleanup receipt keeps local, remote Java, TDS, and remote-roo
       remoteHaproxyControl: 'NOT_APPLICABLE',
       remoteHaproxy: 'NOT_APPLICABLE',
       remoteHaproxyStop: 'NOT_APPLICABLE',
+      dorisResident: 'NOT_APPLICABLE',
       remoteJavaRoot: 'PASS',
     },
   );
@@ -434,7 +435,7 @@ test('DEV WebSocket readiness probe uses the TDS registered route and a route-sa
   assert.throws(() => buildTdsWebSocketProbeUrl('28180/invalid'), /TDS_WEBSOCKET_PROBE_PORT_INVALID/);
 });
 
-test('DEV tunnel proves both entry listeners belong to the owned SSH tunnel and maps no direct node or database port', () => {
+test('DEV tunnel maps only approved entry ports and keeps TDS nodes, databases, and Doris private', () => {
   const openTunnelSource = runnerSource.match(/async function openTunnel\(env, ports\) \{[\s\S]*?\n\}\nasync function /)?.[0];
   assert.ok(openTunnelSource, 'openTunnel implementation must remain directly inspectable');
   assert.match(openTunnelSource, /\$\{ports\.tds\}:127\.0\.0\.1:\$\{env\.environment\.V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT\}/);
@@ -448,6 +449,7 @@ test('DEV tunnel proves both entry listeners belong to the owned SSH tunnel and 
     ['tds', 'V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT'],
     ['tdsSecondary', 'V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT'],
   ]);
+  assert.doesNotMatch(openTunnelSource, /(?:9030|8030|8040|DORIS_RESIDENT_ENDPOINT)/);
   assert.match(openTunnelSource, /const tdsListeners = listenerPids\(ports\.tds\);[\s\S]*const tdsSecondaryListeners = listenerPids\(ports\.tdsSecondary\);/);
   assert.match(openTunnelSource, /tdsListeners\[0\] === value\.pid &&[\s\S]*tdsSecondaryListeners\[0\] === value\.pid/);
   assert.doesNotMatch(openTunnelSource, /V2S_DEV_REMOTE_TDS_[ABC]_PORT|V2S_DEV_REMOTE_(?:POSTGRES|DATABASE|PG)_PORT|V2S_DEV_REMOTE_TDS_MANAGEMENT_PORT/);

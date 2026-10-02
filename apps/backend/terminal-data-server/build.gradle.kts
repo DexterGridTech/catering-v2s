@@ -40,6 +40,8 @@ dependencies {
     testImplementation("io.netty:netty-buffer")
     testImplementation("io.projectreactor.tools:blockhound:1.0.17.RELEASE")
     testImplementation("com.tngtech.archunit:archunit:1.4.1")
+    testImplementation("org.testcontainers:junit-jupiter:1.21.4")
+    testImplementation("org.testcontainers:postgresql:1.21.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

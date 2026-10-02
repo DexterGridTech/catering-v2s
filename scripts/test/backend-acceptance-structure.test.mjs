@@ -563,12 +563,16 @@ test('TDS acceptance launcher classpath includes compiled source-set outputs', (
   assert.throws(() => assertSourceSetRuntimeClasspath(dependencyOnlyMutation), /TDS_TEST_RUNTIME_SOURCE_SET_OUTPUTS_MISSING/);
 });
 
-test('scripts/verify selects every TDS Java test exactly once', () => {
+test('scripts/verify routes TDS Java tests through managed remote runtime verification', () => {
   const verifySource = readFileSync(new URL('../../tools/verify-gates/verify.mjs', import.meta.url), 'utf8');
-  const gateStart = verifySource.indexOf("'tds-constructor-assembly'");
-  const gateEnd = verifySource.indexOf("'backend-pmd-preserve-stack-trace'", gateStart);
-  assert.ok(gateStart >= 0 && gateEnd > gateStart, 'TDS_UNIT_GATE_BOUNDARY_MISSING');
-  const gate = verifySource.slice(gateStart, gateEnd);
+  const staticStart = verifySource.indexOf('const staticCommands =');
+  const runtimeStart = verifySource.indexOf('const runtimeCommands =');
+  assert.ok(staticStart >= 0 && runtimeStart > staticStart, 'VERIFY_COMMAND_PHASES_MISSING');
+  const staticCommands = verifySource.slice(staticStart, runtimeStart);
+  const runtimeCommands = verifySource.slice(runtimeStart);
+  assert.doesNotMatch(staticCommands, /:apps:backend:terminal-data-server:test/);
+  assert.doesNotMatch(staticCommands, /:apps:backend:catering-business-server:modules:terminal-binding:test/);
+  assert.match(runtimeCommands, /scripts\/test\/r5-remote-testcontainers\.mjs/);
   const testRoot = path.join(root, 'apps/backend/terminal-data-server/src/test/java');
   const javaTestFiles = [];
   const visit = directory => {
@@ -586,9 +590,12 @@ test('scripts/verify selects every TDS Java test exactly once', () => {
     const className = path.basename(file, '.java');
     assert.ok(packageName, `TDS_JAVA_TEST_PACKAGE_MISSING:${path.relative(root, file)}`);
     const qualifiedName = `${packageName}.${className}`;
-    const selectorCount = (gate.match(new RegExp(qualifiedName.split('.').join('\\.'), 'g')) ?? []).length;
-    assert.equal(selectorCount, 1, `TDS_JAVA_TEST_SELECTOR_COUNT_INVALID:${qualifiedName}:${selectorCount}`);
+    const selectorCount =
+      (runtimeCommands.match(new RegExp(qualifiedName.split('.').join('\\.'), 'g')) ?? []).length;
+    assert.equal(selectorCount, 1, `TDS_REMOTE_RUNTIME_SELECTOR_COUNT_INVALID:${qualifiedName}:${selectorCount}`);
   }
+  assert.match(runtimeCommands, /'tds-constructor-assembly'[\s\S]*?scripts\/test\/r5-remote-testcontainers\.mjs/);
+  assert.match(runtimeCommands, /'tds-postgres-transaction-integration'[\s\S]*?scripts\/test\/r5-remote-testcontainers\.mjs/);
 });
 
 test('TDS uses Reactor Netty native compression with both inflation and complete-message bounds', () => {
@@ -850,9 +857,20 @@ test('registration-gate waits race client exit and retain credential-safe stage 
   assert.doesNotMatch(brokerSource, /completion instanceof String/);
   assert.match(brokerSource, /TDS_REGISTRATION_GATE_CLIENT_EXITED_BEFORE_OBSERVED/);
   assert.match(brokerSource, /TDS_REGISTRATION_GATE_OBSERVATION_DEADLINE_EXCEEDED/);
+  const registrationGateDeclaration = scenariosSource.indexOf('private static String awaitRegistrationGateObservation(');
+  assert.notEqual(registrationGateDeclaration, -1, 'TDS_REGISTRATION_GATE_WAITER_DECLARATION_MISSING');
+  const registrationGateDeclarationName = scenariosSource.indexOf(
+    'awaitRegistrationGateObservation(',
+    registrationGateDeclaration,
+  );
+  assert.notEqual(registrationGateDeclarationName, -1, 'TDS_REGISTRATION_GATE_WAITER_NAME_MISSING');
+  const registrationGateOccurrences = [...scenariosSource.matchAll(/awaitRegistrationGateObservation\(/g)];
+  const registrationGateCallsites = registrationGateOccurrences.filter(
+    ({index}) => index !== registrationGateDeclarationName,
+  );
   assert.equal(
-    (scenariosSource.match(/awaitRegistrationGateObservation\(/g) ?? []).length,
-    8,
+    registrationGateCallsites.length,
+    9,
     'TDS_REGISTRATION_GATE_WAIT_CALLSITE_DENOMINATOR_MISMATCH',
   );
   assert.equal(
@@ -1424,21 +1442,27 @@ test('wire client processes keep stderr isolated to their correlation marker', (
   }
 });
 
-test('V-S11 reports the recursive TDS output set that its secret scan reads', () => {
+test('V-S11 reports the recursive acceptance output and Doris history set that its secret scan reads', () => {
   const source = readFileSync(terminalContractScenariosPath, 'utf8');
   const start = source.indexOf('private static void v11SecretSearch(');
   const end = source.indexOf('\n    private static List<String> secretSearchValues', start);
   assert.ok(start >= 0 && end > start, 'V_S11_SECRET_SEARCH_BOUNDARY_MISSING');
   const scenario = source.slice(start, end);
-  assert.match(scenario, /Files\.walk\(tds\.directory\(\)\)/);
+  assert.match(scenario, /Files\.walk\(runDirectory\)/);
+  assert.match(scenario, /V2S_BACKEND_ACCEPTANCE_RUN_DIRECTORY/);
+  assert.match(scenario, /LinkOption\.NOFOLLOW_LINKS/);
   for (const extension of ['.log', '.txt', '.json', '.jsonl', '.out']) {
     assert.ok(scenario.includes(`name.endsWith("${extension}")`), `V_S11_SCAN_EXTENSION_MISSING:${extension}`);
   }
   assert.match(
     source,
-    /private static final String V_S11_SEARCHED_OUTPUTS = "tds-run-directory-recursive:\*\.log,\*\.txt,\*\.json,\*\.jsonl,\*\.out";/,
+    /private static final String V_S11_SEARCHED_OUTPUTS\s*=\s*"acceptance-run-directory-recursive:\*\.log,\*\.txt,\*\.json,\*\.jsonl,\*\.out;doris-history-row-columns";/,
     'V_S11_SEARCHED_OUTPUT_SET_MUST_BE_EXPLICIT',
   );
+  assert.match(scenario, /credentialSecretDigestHex\(fixture\.credentialSecret\(\)\)/);
+  assert.match(scenario, /FROM terminal_connection_history\.connection_history/);
+  assert.match(scenario, /BackendAcceptanceTest\.runDorisSql\(dorisSql, false\)/);
+  assert.match(scenario, /V-S11_SECRET_IN_DORIS_HISTORY/);
   assert.match(
     scenario,
     /Map\.entry\(\s*"searchedOutputs",\s*List\.of\(V_S11_SEARCHED_OUTPUTS\)\)/,
@@ -1711,9 +1735,10 @@ test('V-S15 acceptance selector is closed, remote-scoped and selects only its Ja
   assert.match(runner, /export V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO=/);
   assert.match(remoteRunner, /V_S15_TDS_CONTRACT_SCENARIO = 'terminal\.connection\.vs15\.readiness-withdrawal-and-drain'/);
   assert.match(remoteRunner, /tdsContractScenarioResult = 'PASS'/);
-  assert.match(suite, /Stream<DynamicTest> terminalConnectionV15ReadinessWithdrawalContracts\(\)/);
+  assert.match(suite, /Stream<DynamicTest> selectedTerminalConnectionContracts\(\)/);
   assert.match(suite, /selectedTdsContractScenario\(\) != null\) return Stream\.empty\(\)/);
-  assert.match(suite, /TdsStartConfiguration\.VS15_CONTRACT_SCENARIO_ID,\s*selectedScenario/);
+  assert.match(suite, /VS15_CONTRACT_SCENARIO_ID\.equals\(selectedScenario\)/);
+  assert.match(suite, /v15ReadinessWithdrawalScenarios\(this, tdsAcceptanceProcess\)/);
   assert.match(suite, /System\.getenv\(RuntimeEnvironmentKeys\.V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO\)/);
   assert.doesNotMatch(suite, /assertEquals\(\s*RuntimeEnvironmentKeys\.V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO,\s*selectedScenario/);
   assert.match(suite, /V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT/);
@@ -1793,4 +1818,44 @@ test('V-S15 acceptance selector is closed, remote-scoped and selects only its Ja
   assert.equal(unknownScenario.status, 2);
   assert.match(unknownScenario.stderr, /BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/);
   assert.doesNotMatch(unknownScenario.stderr, /R5_TESTCONTAINERS/);
+});
+
+test('V-S11 can run as an exact managed TDS contract without topology preflight', () => {
+  const runner = readFileSync(backendAcceptanceRunnerPath, 'utf8');
+  const remoteRunner = readFileSync(path.join(root, 'scripts/test/r5-remote-testcontainers.mjs'), 'utf8');
+  const suite = readFileSync(suitePath, 'utf8');
+  const tdsProcess = readFileSync(tdsProcessPath, 'utf8');
+  assert.match(runner, /terminal\.connection\.vs11\.secret-search\)\s*expected_topology_preflight=false/);
+  assert.match(remoteRunner, /TDS_HISTORY_SECRET_SEARCH_SCENARIO = 'terminal\.connection\.vs11\.secret-search'/);
+  assert.match(remoteRunner, /\[TDS_HISTORY_SECRET_SEARCH_SCENARIO, false\]/);
+  assert.match(suite, /HISTORY_SECRET_SEARCH_SCENARIO_ID\.equals\(selectedScenario\)/);
+  assert.match(suite, /v11SecretSearchScenarios\(this, tdsAcceptanceProcess\)/);
+  assert.match(tdsProcess, /HISTORY_SECRET_SEARCH_SCENARIO_ID\.equals\(scenario\)/);
+  assert.match(tdsProcess, /HISTORY_SECRET_SEARCH_SCENARIO_ID = "terminal\.connection\.vs11\.secret-search"/);
+});
+
+test('V-S13 acceptance selector owns two isolated TDS processes and a real cross-node recovery scenario', () => {
+  const runner = readFileSync(backendAcceptanceRunnerPath, 'utf8');
+  const remoteRunner = readFileSync(path.join(root, 'scripts/test/r5-remote-testcontainers.mjs'), 'utf8');
+  const suite = readFileSync(suitePath, 'utf8');
+  const tdsProcess = readFileSync(tdsProcessPath, 'utf8');
+  const scenarioSource = readFileSync(terminalContractScenariosPath, 'utf8');
+
+  assert.match(runner, /terminal\.connection\.vs13\.cross-node-recovery/);
+  assert.match(remoteRunner, /TDS_CROSS_NODE_RECOVERY_SCENARIO = 'terminal\.connection\.vs13\.cross-node-recovery'/);
+  assert.match(suite, /TdsStartConfiguration\.VS13_CROSS_NODE_RECOVERY_SCENARIO_ID\.equals\(selectedScenario\)/);
+  assert.match(suite, /startAdditionalTds\(/);
+  assert.match(tdsProcess, /instanceName != null && instanceName.matches/);
+  assert.match(tdsProcess, /TDS_RUN_DIRECTORY_ESCAPE/);
+  assert.match(tdsProcess, /instanceName", instanceName/);
+  assert.match(scenarioSource, /crossNodeRecoveryScenarios/);
+  assert.match(scenarioSource, /host\.terminatePostgresBackend\(\s*oldListenerBackendPid\)/);
+  assert.match(scenarioSource, /performConnectionRevocation\([\s\S]*?DEVICE_CANCEL/);
+  assert.match(scenarioSource, /V-S6_STALE_NODE_A_DISCONNECT_OVERWROTE_NODE_B_SESSION/);
+  assert.match(scenarioSource, /"SESSION_REPLACED"/);
+  assert.match(
+    scenarioSource,
+    /private static Map<String, Object> latestState\([\s\S]*?SELECT node_id, session_id, session_sequence[\s\S]*?FROM terminal_connection\.latest_state/,
+    'V_S13_LATEST_STATE_ASSERTED_COLUMNS_MISSING_FROM_QUERY',
+  );
 });

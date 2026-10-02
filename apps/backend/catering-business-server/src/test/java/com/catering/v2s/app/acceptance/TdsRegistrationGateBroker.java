@@ -23,6 +23,8 @@ import java.util.regex.Pattern;
 /** Run-owned UDS broker for deterministic registration and PostgreSQL listener timing controls. */
 final class TdsRegistrationGateBroker implements AutoCloseable {
     private static final int MAX_LINE_BYTES = 128;
+    private static final String BEFORE_REGISTER_STAGE = "CREDENTIAL_VERIFICATION_RETURNED_BEFORE_REGISTER";
+    private static final String AFTER_POSTGRES_OPEN_STAGE = "PG_OPEN_COMMITTED_BEFORE_LOCAL_REGISTER";
     private static final Duration DEFAULT_RELEASE_TIMEOUT = Duration.ofSeconds(14);
     private static final Duration LISTENER_RECOVERY_RELEASE_TIMEOUT = Duration.ofSeconds(45);
     private static final Pattern ATTEMPT_ID =
@@ -80,7 +82,22 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
         if (releaseTimeout == null || releaseTimeout.isNegative() || releaseTimeout.isZero()) {
             throw new IllegalArgumentException("TDS_REGISTRATION_GATE_RELEASE_TIMEOUT_INVALID");
         }
-        ArmedAttempt next = new ArmedAttempt(null, null, releaseTimeout);
+        ArmedAttempt next = new ArmedAttempt(BEFORE_REGISTER_STAGE, releaseTimeout);
+        return armRegistrationAttempt(next);
+    }
+
+    ArmedAttempt armNextPostgresOpen() {
+        return armNextPostgresOpen(DEFAULT_RELEASE_TIMEOUT);
+    }
+
+    ArmedAttempt armNextPostgresOpen(Duration releaseTimeout) {
+        if (releaseTimeout == null || releaseTimeout.isNegative() || releaseTimeout.isZero()) {
+            throw new IllegalArgumentException("TDS_REGISTRATION_GATE_RELEASE_TIMEOUT_INVALID");
+        }
+        return armRegistrationAttempt(new ArmedAttempt(AFTER_POSTGRES_OPEN_STAGE, releaseTimeout));
+    }
+
+    private ArmedAttempt armRegistrationAttempt(ArmedAttempt next) {
         synchronized (attemptLock) {
             if (armed != null || held != null) {
                 throw new IllegalStateException("TDS_REGISTRATION_GATE_ALREADY_ARMED");
@@ -156,8 +173,8 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
         try (client) {
             String request = readLine(client);
             String[] fields = request.split("\\t", -1);
-            boolean registration =
-                    fields.length == 2 && "CREDENTIAL_VERIFICATION_RETURNED_BEFORE_REGISTER".equals(fields[0]);
+            boolean registration = fields.length == 2
+                    && (BEFORE_REGISTER_STAGE.equals(fields[0]) || AFTER_POSTGRES_OPEN_STAGE.equals(fields[0]));
             boolean listenerRecovery = fields.length == 3
                     && "LISTENER_DISCONNECTED".equals(fields[0])
                     && fields[1].matches("[1-9][0-9]{0,9}");
@@ -171,7 +188,7 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
                 throw new IOException("TDS_REGISTRATION_GATE_REQUEST_INVALID");
             }
             ArmedAttempt hold = registration
-                    ? claimNextAttempt()
+                    ? claimNextAttempt(fields[0])
                     : listenerRecovery
                             ? claimNextListenerRecovery()
                             : claimNextListenerRevocation(fields[1], fields[2]);
@@ -204,9 +221,10 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
         }
     }
 
-    private ArmedAttempt claimNextAttempt() {
+    private ArmedAttempt claimNextAttempt(String stage) {
         synchronized (attemptLock) {
             ArmedAttempt next = armed;
+            if (next != null && !stage.equals(next.stage)) return null;
             armed = null;
             held = next;
             return next;
@@ -321,23 +339,26 @@ final class TdsRegistrationGateBroker implements AutoCloseable {
         private final CompletableFuture<String> observed = new CompletableFuture<>();
         private final CompletableFuture<String> release = new CompletableFuture<>();
         private final CompletableFuture<Boolean> clientDisconnectedBeforeRelease = new CompletableFuture<>();
+        private final String stage;
         private final String expectedTerminalRef;
         private final String expectedGeneration;
         private final Duration releaseTimeout;
 
-        private ArmedAttempt() {
-            this(null, null, DEFAULT_RELEASE_TIMEOUT);
-        }
-
         private ArmedAttempt(Duration releaseTimeout) {
-            this(null, null, releaseTimeout);
+            this(null, null, null, releaseTimeout);
         }
 
         private ArmedAttempt(String expectedTerminalRef, String expectedGeneration) {
-            this(expectedTerminalRef, expectedGeneration, DEFAULT_RELEASE_TIMEOUT);
+            this(null, expectedTerminalRef, expectedGeneration, DEFAULT_RELEASE_TIMEOUT);
         }
 
-        private ArmedAttempt(String expectedTerminalRef, String expectedGeneration, Duration releaseTimeout) {
+        private ArmedAttempt(String stage, Duration releaseTimeout) {
+            this(stage, null, null, releaseTimeout);
+        }
+
+        private ArmedAttempt(
+                String stage, String expectedTerminalRef, String expectedGeneration, Duration releaseTimeout) {
+            this.stage = stage;
             this.expectedTerminalRef = expectedTerminalRef;
             this.expectedGeneration = expectedGeneration;
             this.releaseTimeout = releaseTimeout;

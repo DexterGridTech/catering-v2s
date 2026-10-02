@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {
   createTerminalDataClientModule,
   dependencyModuleNames,
@@ -6,6 +6,13 @@ import {
   moduleName,
   runtimeModuleDependencyNames,
 } from '../src/index';
+import {
+  initializeTerminalDataClientCommand,
+  connectTerminalCommand,
+} from '../src/features/commands/terminalDataClientCommands';
+import {terminalDataClientStateSlice} from '../src/features/slices/terminalDataClient';
+import type {ActorExecutionContext} from '@catering-v2s/kernel-base-runtime';
+import type {StateRoot} from '@catering-v2s/kernel-base-state';
 
 const createDependencies = () => ({
   businessServerName: 'terminal-business-api',
@@ -43,9 +50,64 @@ describe('terminal-data-client package identity', () => {
       `${moduleName}.cancel-terminal-offline`,
       `${moduleName}.connect-terminal`,
       `${moduleName}.disconnect-terminal`,
+      `${moduleName}.initialize-terminal-data-client`,
       `${moduleName}.transport-event`,
       `${moduleName}.heartbeat-tick`,
     ]);
     expect(module.slices).toEqual([{name: `${moduleName}.client`, persistIntent: 'owner-only'}]);
+  });
+
+  it('restores the connection through the owner initialize command and does not connect without a credential', async () => {
+    const module = createTerminalDataClientModule(createDependencies());
+    const actor = module.actorDefinitions?.[0];
+    if (actor === undefined) throw new Error('terminal client actor definition missing');
+    const handler = actor?.handlers.find(
+      candidate => candidate.commandName === initializeTerminalDataClientCommand.commandName,
+    );
+    if (handler === undefined) throw new Error('terminal client initialize actor handler missing');
+    const dispatchCommand = vi.fn(async () => ({status: 'completed'}));
+    const makeContext = (credential: unknown): ActorExecutionContext =>
+      ({
+        runtimeId: 'test-runtime',
+        localNodeId: 'test-node',
+        platformPorts: {},
+        command: {
+          commandName: initializeTerminalDataClientCommand.commandName,
+          commandId: 'initialize',
+          requestId: null,
+          payload: {},
+        } as never,
+        actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
+        getState: () => ({[terminalDataClientStateSlice.name]: {credential}}) as StateRoot,
+        dispatchAction: (action: unknown) => action as never,
+        flushPersistence: async () => ({status: 'succeeded'}),
+        subscribeState: () => () => undefined,
+        dispatchCommand,
+        requestApplicationReset: () => undefined,
+      }) as unknown as ActorExecutionContext;
+
+    expect(await handler.handle(makeContext(null))).toEqual({status: 'inactive'});
+    expect(dispatchCommand).not.toHaveBeenCalled();
+    const restoredCredential = {
+      groupWorkspaceKey: 'workspace-1',
+      terminalRef: 'terminal-1',
+      storeRef: 'store-1',
+      deviceId: 'device-1',
+      bindingGeneration: 4,
+      credentialSecret: 'A'.repeat(43),
+    };
+    expect(await handler.handle(makeContext(restoredCredential))).toEqual({status: 'connect-requested'});
+    expect(dispatchCommand).toHaveBeenCalledWith(
+      connectTerminalCommand,
+      {},
+      {requestId: expect.stringMatching(/^req_/)},
+    );
+
+    const moduleDispatch = vi.fn(async () => ({status: 'completed'}));
+    await module.install?.({
+      registerResource: vi.fn(),
+      dispatchCommand: moduleDispatch,
+    } as never);
+    expect(moduleDispatch).toHaveBeenCalledWith(initializeTerminalDataClientCommand, {});
   });
 });

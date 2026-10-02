@@ -60,6 +60,8 @@
 TDS/WebSocket CONTRACT 场景由同一 acceptance 入口驱动独立 TDS 进程，不加入 business domain catalog、不增加业务断言，也不把 transport 协议知识写进 `BackendAcceptanceTest.java`；逐项断言由设计列出的 TDS CONTRACT producer 持有。
 TDS wire CONTRACT 的 Java 执行器位于 `TerminalConnectionContractScenarios.java`，由受管 `backend-acceptance` execution plan 按 scenario id 选择；它只输出 `CONTRACT`，不属于 generated operation identity、业务场景计数或 DB budget projection。
 
+按2026-10-02 accepted batch-3 amendment，每个获批backend-acceptance run另在同一远端Docker daemon/host启动一个隔离Doris容器，供TDS connection-history写入及SQL readback断言。Doris readback不新增HTTP业务scenario、BUSINESS operation identity或generated budget项；run-owned Doris container/volume cleanup由同一受管生命周期单独报告，远端镜像缓存保留。
+
 ## 3. 每条真实业务场景必须写什么
 
 新增场景不是“声明一个路径”，而是同时完成以下三件事：

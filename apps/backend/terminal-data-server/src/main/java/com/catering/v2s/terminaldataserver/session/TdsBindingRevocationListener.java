@@ -2,7 +2,9 @@ package com.catering.v2s.terminaldataserver.session;
 
 import com.catering.v2s.terminaldataserver.observability.TdsAsyncLog;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository;
+import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.BindingKey;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentBinding;
+import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentSessionState;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -26,7 +28,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-/** Holds the dedicated PostgreSQL listener and reconciles local sessions after every reconnect. */
+/** Holds the dedicated PostgreSQL listener for revocation and session-open wake-ups. */
 @Component
 public final class TdsBindingRevocationListener implements SmartLifecycle {
     private static final Logger LOGGER = LoggerFactory.getLogger(TdsBindingRevocationListener.class);
@@ -131,6 +133,8 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
         var keys = actors.trackedBindings();
         var currentBindings = repository.readCurrentBindings(connection, keys);
         for (CurrentBinding binding : currentBindings.values()) actors.reconcile(binding);
+        var currentSessions = repository.readCurrentSessions(connection, keys);
+        for (CurrentSessionState session : currentSessions.values()) actors.reconcileSession(session);
         ready = true;
         logInfo("tds_listener_ready", keys.size(), backendPid);
     }
@@ -144,11 +148,15 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
             if (notifications != null) {
                 for (PGNotification notification : notifications) {
                     if (!CHANNEL.equals(notification.getName())) continue;
-                    Revocation revocation = parse(notification.getParameter());
-                    listenerRecoveryGate.beforeRevocationDispatch(
-                            revocation.terminalRef(), revocation.revokedGeneration());
-                    actors.revoked(revocation.terminalRef(), revocation.revokedGeneration());
-                    logRevocationApplied(revocation);
+                    Notification event = parse(notification.getParameter());
+                    if (event instanceof Revocation revocation) {
+                        listenerRecoveryGate.beforeRevocationDispatch(
+                                revocation.terminalRef(), revocation.revokedGeneration());
+                        actors.revoked(revocation.terminalRef(), revocation.revokedGeneration());
+                        logRevocationApplied(revocation);
+                    } else if (event instanceof SessionOpened sessionOpened) {
+                        reconcileSession(connection, sessionOpened);
+                    }
                 }
             }
             if (System.nanoTime() >= nextHealthCheck) {
@@ -173,7 +181,7 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
         }
     }
 
-    private Revocation parse(String payload) throws SQLException {
+    private Notification parse(String payload) throws SQLException {
         if (payload == null || payload.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > MAX_PAYLOAD_BYTES) {
             throw new SQLException("TDS_NOTIFICATION_PAYLOAD_INVALID");
         }
@@ -184,29 +192,27 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
         }
     }
 
-    static Revocation parsePayload(String payload, ObjectMapper objectMapper) {
+    static Notification parsePayload(String payload, ObjectMapper objectMapper) {
         JsonNode node;
         try {
             node = objectMapper.readTree(payload);
         } catch (JacksonException malformed) {
             throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID", malformed);
         }
-        if (node == null || !node.isObject() || node.propertyNames().size() != 3) {
+        if (node == null || !node.isObject()) {
             throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID");
         }
         JsonNode version = node.get("v");
+        JsonNode kind = node.get("kind");
         JsonNode terminal = node.get("terminalRef");
-        JsonNode generation = node.get("revokedGeneration");
         if (version == null
                 || !version.isIntegralNumber()
                 || !version.canConvertToInt()
                 || version.asInt() != 1
+                || kind == null
+                || !kind.isString()
                 || terminal == null
-                || !terminal.isString()
-                || generation == null
-                || !generation.isIntegralNumber()
-                || !generation.canConvertToLong()
-                || generation.asLong() < 1) {
+                || !terminal.isString()) {
             throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID");
         }
         try {
@@ -214,10 +220,54 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
             if (!terminalRef.toString().equals(terminal.asString())) {
                 throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID");
             }
-            return new Revocation(terminalRef, generation.asLong());
+            if ("BINDING_REVOKED".equals(kind.asString())) {
+                JsonNode generation = node.get("revokedGeneration");
+                if (node.propertyNames().size() != 4
+                        || generation == null
+                        || !generation.isIntegralNumber()
+                        || !generation.canConvertToLong()
+                        || generation.asLong() < 1) {
+                    throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID");
+                }
+                return new Revocation(terminalRef, generation.asLong());
+            }
+            if ("SESSION_OPEN".equals(kind.asString()) && node.propertyNames().size() == 3) {
+                return new SessionOpened(terminalRef);
+            }
+            throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID");
         } catch (IllegalArgumentException malformed) {
             throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID", malformed);
         }
+    }
+
+    private void reconcileSession(Connection connection, SessionOpened notification) throws SQLException {
+        List<BindingKey> tracked = actors.trackedBindings().stream()
+                .filter(key -> key.terminalRef().equals(notification.terminalRef()))
+                .toList();
+        if (tracked.isEmpty()) {
+            TdsAsyncLog.enqueue(
+                    logScheduler,
+                    () -> LOGGER.debug(
+                            "event=tds_session_open_notification_ignored terminalRef={} reason=no_local_session",
+                            notification.terminalRef()));
+            return;
+        }
+        var currentBindings = repository.readCurrentBindings(connection, tracked);
+        for (CurrentBinding binding : currentBindings.values()) actors.reconcile(binding);
+        var currentSessions = repository.readCurrentSessions(connection, tracked);
+        for (CurrentSessionState session : currentSessions.values()) actors.reconcileSession(session);
+        long latestSequence = currentSessions.values().stream()
+                .mapToLong(CurrentSessionState::sequence)
+                .max()
+                .orElse(-1L);
+        TdsAsyncLog.enqueue(
+                logScheduler,
+                () -> LOGGER.info(
+                        "event=tds_session_open_notification_reconciled "
+                                + "terminalRef={} trackedBindings={} latestSequence={}",
+                        notification.terminalRef(),
+                        tracked.size(),
+                        latestSequence));
     }
 
     private void sleepBeforeRetry(long millis) {
@@ -324,5 +374,11 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
         return WebServerApplicationContext.START_STOP_LIFECYCLE_PHASE - 2;
     }
 
-    record Revocation(UUID terminalRef, long revokedGeneration) {}
+    sealed interface Notification permits Revocation, SessionOpened {
+        UUID terminalRef();
+    }
+
+    record Revocation(UUID terminalRef, long revokedGeneration) implements Notification {}
+
+    record SessionOpened(UUID terminalRef) implements Notification {}
 }

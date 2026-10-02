@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
 import com.catering.v2s.terminaldataserver.config.TdsRuntimeSettings;
+import com.catering.v2s.terminaldataserver.history.TdsConnectionHistoryWriter;
 import com.catering.v2s.terminaldataserver.protocol.TdsWireJsonConfiguration;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionProtocol;
@@ -91,6 +92,7 @@ class TdsWebSocketHandlerTransportFailureTest {
                 sessionActors,
                 revocationListener,
                 mock(TdsConnectionStateWriter.class),
+                mock(TdsConnectionHistoryWriter.class),
                 mock(SessionRegistrationGate.class),
                 Schedulers.immediate(),
                 Schedulers.immediate(),
@@ -139,6 +141,7 @@ class TdsWebSocketHandlerTransportFailureTest {
                 sessionActors,
                 revocationListener,
                 mock(TdsConnectionStateWriter.class),
+                mock(TdsConnectionHistoryWriter.class),
                 mock(SessionRegistrationGate.class),
                 Schedulers.immediate(),
                 Schedulers.immediate(),
@@ -201,6 +204,7 @@ class TdsWebSocketHandlerTransportFailureTest {
                 sessionActors,
                 revocationListener,
                 mock(TdsConnectionStateWriter.class),
+                mock(TdsConnectionHistoryWriter.class),
                 mock(SessionRegistrationGate.class),
                 Schedulers.immediate(),
                 Schedulers.immediate(),
@@ -259,6 +263,7 @@ class TdsWebSocketHandlerTransportFailureTest {
                 mock(TdsTerminalSessionActors.class),
                 mock(TdsBindingRevocationListener.class),
                 mock(TdsConnectionStateWriter.class),
+                mock(TdsConnectionHistoryWriter.class),
                 mock(SessionRegistrationGate.class),
                 Schedulers.immediate(),
                 Schedulers.immediate(),

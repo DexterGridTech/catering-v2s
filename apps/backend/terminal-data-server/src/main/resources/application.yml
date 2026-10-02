@@ -31,3 +31,9 @@ v2s:
     heartbeat-timeout-ms: 90000
     state-write-interval-ms: 15000
     drain-window-ms: 10000
+    doris:
+      endpoint: ${V2S_TDS_DORIS_ENDPOINT}
+      database: ${V2S_TDS_DORIS_DATABASE}
+      table: ${V2S_TDS_DORIS_TABLE}
+      username: ${V2S_TDS_DORIS_USERNAME}
+      password: ${V2S_TDS_DORIS_PASSWORD}

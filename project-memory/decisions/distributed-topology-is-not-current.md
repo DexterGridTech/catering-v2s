@@ -17,4 +17,4 @@ sourceRefs: ["doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-se
 - `NO_INTERNAL_OPENAPI_CLIENT`: 单 deployable 内模块协作不走内部 OpenAPI client。
 - `NO_DISTRIBUTED_DEFAULTS`: 不预建分布式边界；真实触发条件出现后另作 decision。
 
-已接受的 `terminal-data-server` WebSocket runtime（见 `doc/decisions/2026-09-26-v2s-terminal-activation-service-shape.md`）是辅助传输进程；按 D-44，批次二 DEV 可运行三个独立实例并通过两个 HAProxy 入口接入。各实例只消费绑定撤销的同事务 PostgreSQL `LISTEN/NOTIFY` 唤醒；此部署拓扑不构成 TDP，不引入 MQ、通用 outbox、持久队列、跨节点会话协调或常态轮询，跨节点会话协调仍属批次三。
+已接受的 `terminal-data-server` WebSocket runtime（见 `doc/decisions/2026-09-26-v2s-terminal-activation-service-shape.md`）是辅助传输进程；按 D-44，批次二 DEV 可运行三个独立实例并通过两个 HAProxy 入口接入。按2026-10-02 accepted batch-3 amendment，批次三只增加跨节点会话取代/恢复核验及TDS连接历史写入具名远端Doris；通知仍是同事务短payload唤醒，监听恢复以PG权威readback核验。该边界不构成TDP，不引入MQ、通用outbox、持久队列或常态轮询，Doris不是业务数据库。

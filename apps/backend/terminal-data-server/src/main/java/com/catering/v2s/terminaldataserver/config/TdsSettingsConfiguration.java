@@ -9,7 +9,7 @@ import reactor.core.scheduler.Schedulers;
 
 /** Binds required admission capacities and validates TDS timing before the server starts. */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(TdsRuntimeProperties.class)
+@EnableConfigurationProperties({TdsRuntimeProperties.class, TdsDorisProperties.class})
 public class TdsSettingsConfiguration {
     private static final int LOG_QUEUE_CAPACITY_PER_THREAD = 1_024;
 
@@ -48,6 +48,11 @@ public class TdsSettingsConfiguration {
     Scheduler tdsCodecWorker(TdsRuntimeSettings settings) {
         int capacity = workerCapacity(settings);
         return Schedulers.newBoundedElastic(capacity, capacity, "tds-codec-worker");
+    }
+
+    @Bean(name = "tds-doris-worker", destroyMethod = "dispose")
+    Scheduler tdsDorisWorker() {
+        return Schedulers.newSingle("tds-doris-history-writer");
     }
 
     private static int workerCapacity(TdsRuntimeSettings settings) {

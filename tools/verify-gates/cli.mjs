@@ -136,7 +136,13 @@ function assertNoFrontendCrossAppImports(app, base = root) {
     }
   };
   for (const file of files) {
-    const sourceFile = ts.createSourceFile(file, read(file, base), ts.ScriptTarget.Latest, true, frontendScriptKind(file));
+    const sourceFile = ts.createSourceFile(
+      file,
+      read(file, base),
+      ts.ScriptTarget.Latest,
+      true,
+      frontendScriptKind(file),
+    );
     const visit = node => {
       if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
         assertModuleBoundary(file, sourceFile, node.moduleSpecifier);
@@ -182,7 +188,13 @@ function assertNoPrivateFeatureUiImports(base = root) {
     const prefix = `apps/frontend/${app}/src/features/`;
     for (const file of sourceFiles(prefix, base)) {
       const owner = file.slice(prefix.length).split('/')[0];
-      const parsed = ts.createSourceFile(file, read(file, base), ts.ScriptTarget.Latest, true, frontendScriptKind(file));
+      const parsed = ts.createSourceFile(
+        file,
+        read(file, base),
+        ts.ScriptTarget.Latest,
+        true,
+        frontendScriptKind(file),
+      );
       const imports = parsed.statements
         .filter(statement => ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier))
         .map(statement => statement.moduleSpecifier.text);
@@ -751,7 +763,14 @@ function mappedMethodSource(source, annotationStart, annotationEnd, file) {
   const signatureStart = skipJavaAnnotations(masked, annotationEnd, file);
   const parameterStart = masked.indexOf('(', signatureStart);
   if (parameterStart < 0) fail('R5_SECURITY_CONTROLLER_METHOD_SIGNATURE_MISSING', file);
-  const parameterEnd = matchingDelimiter(masked, parameterStart, '(', ')', file, 'R5_SECURITY_CONTROLLER_METHOD_PARAMETERS_UNCLOSED');
+  const parameterEnd = matchingDelimiter(
+    masked,
+    parameterStart,
+    '(',
+    ')',
+    file,
+    'R5_SECURITY_CONTROLLER_METHOD_PARAMETERS_UNCLOSED',
+  );
   const bodyStart = masked.indexOf('{', parameterEnd + 1);
   if (bodyStart < 0) fail('R5_SECURITY_CONTROLLER_METHOD_BODY_MISSING', file);
   const bodyEnd = matchingDelimiter(masked, bodyStart, '{', '}', file, 'R5_SECURITY_CONTROLLER_METHOD_BODY_UNCLOSED');
@@ -796,24 +815,37 @@ function expectedResolver(securityMode, operationId) {
   // The terminal credential authenticator is the operation that parses the
   // terminal Authorization header and delegates digest verification to the owner.
   // TERMINAL_CREDENTIAL_AUTHENTICATOR is the generated resolver ID, not a Java class.
-  if (securityMode === 'TERMINAL_CREDENTIAL' && operationId === 'cancelTerminalActivation') return 'CancelTerminalActivationOperation';
+  if (securityMode === 'TERMINAL_CREDENTIAL' && operationId === 'cancelTerminalActivation')
+    return 'CancelTerminalActivationOperation';
   fail('R5_SECURITY_UNKNOWN_AUTHORIZATION_MODE', `${operationId}:${securityMode}`);
 }
 
 function routeUsesExpectedResolver(route, resolver, base) {
-  const field = route.controllerSource.match(new RegExp(`\\bprivate\\s+final\\s+${resolver}\\s+([A-Za-z_$][\\w$]*)\\s*;`))?.[1];
-  if (field && (resolver !== 'CancelTerminalActivationOperation' || new RegExp(`\\b${field}\\.execute\\s*\\(`).test(route.source))) return true;
+  const field = route.controllerSource.match(
+    new RegExp(`\\bprivate\\s+final\\s+${resolver}\\s+([A-Za-z_$][\\w$]*)\\s*;`),
+  )?.[1];
+  if (
+    field &&
+    (resolver !== 'CancelTerminalActivationOperation' || new RegExp(`\\b${field}\\.execute\\s*\\(`).test(route.source))
+  )
+    return true;
   if (resolver !== 'OperationsSessionResolver') return false;
 
-  const supportFields = [...route.controllerSource.matchAll(/\bprivate\s+final\s+([A-Za-z_$][\w$]*Support)\s+([A-Za-z_$][\w$]*)\s*;/g)];
+  const supportFields = [
+    ...route.controllerSource.matchAll(/\bprivate\s+final\s+([A-Za-z_$][\w$]*Support)\s+([A-Za-z_$][\w$]*)\s*;/g),
+  ];
   for (const [, supportType, supportField] of supportFields) {
-    const calls = [...route.controllerSource.matchAll(new RegExp(`\\b${supportField}\\.(readSession|commandSession)\\s*\\(`, 'g'))];
+    const calls = [
+      ...route.controllerSource.matchAll(new RegExp(`\\b${supportField}\\.(readSession|commandSession)\\s*\\(`, 'g')),
+    ];
     if (calls.length === 0) continue;
 
     const supportPath = path.posix.join(path.posix.dirname(route.file), `${supportType}.java`);
     if (!exists(supportPath, base)) continue;
     const supportSource = read(supportPath, base);
-    const resolverField = supportSource.match(/\bprivate\s+final\s+OperationsSessionResolver\s+([A-Za-z_$][\w$]*)\s*;/)?.[1];
+    const resolverField = supportSource.match(
+      /\bprivate\s+final\s+OperationsSessionResolver\s+([A-Za-z_$][\w$]*)\s*;/,
+    )?.[1];
     if (!resolverField) continue;
 
     const delegatesEverySessionCall = calls.every(([, method]) => {
@@ -832,12 +864,20 @@ function routeUsesExpectedResolver(route, resolver, base) {
 function routeUsesSessionResolver(route) {
   const methodSource = maskJavaTrivia(route.source);
   if (/\b(?:PlatformSessionResolver|OperationsSessionResolver)\b/.test(methodSource)) return true;
-  const resolverFields = [...route.controllerSource.matchAll(/\bprivate\s+final\s+(?:PlatformSessionResolver|OperationsSessionResolver)\s+([A-Za-z_$][\w$]*)\s*;/g)];
+  const resolverFields = [
+    ...route.controllerSource.matchAll(
+      /\bprivate\s+final\s+(?:PlatformSessionResolver|OperationsSessionResolver)\s+([A-Za-z_$][\w$]*)\s*;/g,
+    ),
+  ];
   for (const [, field] of resolverFields) {
     if (new RegExp(`\\b${field}\\s*\\.`).test(methodSource)) return true;
   }
-  const supportFields = [...route.controllerSource.matchAll(/\bprivate\s+final\s+([A-Za-z_$][\w$]*Support)\s+([A-Za-z_$][\w$]*)\s*;/g)];
-  return supportFields.some(([, , field]) => new RegExp(`\\b${field}\\.(?:readSession|commandSession)\\s*\\(`).test(methodSource));
+  const supportFields = [
+    ...route.controllerSource.matchAll(/\bprivate\s+final\s+([A-Za-z_$][\w$]*Support)\s+([A-Za-z_$][\w$]*)\s*;/g),
+  ];
+  return supportFields.some(([, , field]) =>
+    new RegExp(`\\b${field}\\.(?:readSession|commandSession)\\s*\\(`).test(methodSource),
+  );
 }
 
 function security(base = root) {
@@ -852,7 +892,9 @@ function security(base = root) {
   )
     fail('R4_SECURITY_EDGE_CONTEXT_MISSING');
   const expected = generatedRouteOperations(base);
-  const sourceCatalog = JSON.parse(read('doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json', base));
+  const sourceCatalog = JSON.parse(
+    read('doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json', base),
+  );
   const sourceOperations = new Map(sourceCatalog.operations.map(operation => [operation.operationId, operation]));
   const routeIndex = new Map();
   for (const route of controllerRoutes(base)) {
@@ -865,7 +907,12 @@ function security(base = root) {
       fail('R5_SECURITY_FACE_CARDINALITY_INVALID', operation.operationId);
     const face = operation.consumerFaces[0];
     const sourceOperation = sourceOperations.get(operation.operationId);
-    if (!sourceOperation || sourceOperation.face !== face || sourceOperation.method !== operation.method || sourceOperation.path !== operation.path)
+    if (
+      !sourceOperation ||
+      sourceOperation.face !== face ||
+      sourceOperation.method !== operation.method ||
+      sourceOperation.path !== operation.path
+    )
       fail('R5_SECURITY_SOURCE_OPERATION_DRIFT', operation.operationId);
     const route = routeIndex.get(`${operation.method} ${operation.path}`);
     if (!route) fail('R5_SECURITY_CONTROLLER_ROUTE_MISSING', operation.operationId);
@@ -885,15 +932,25 @@ function security(base = root) {
     'apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java',
     base,
   );
-  const configuredObjectPrefix = assetStorage.includes('@Value("${catering.asset.object-storage.object-prefix}") String objectPrefix');
-  const validatedObjectPrefix = assetStorage.includes('value.contains("//")') && assetStorage.includes('value.contains("..")');
-  const guardedObjectKey = assetStorage.includes('private String validKey(String value)')
-    && assetStorage.includes('!value.startsWith(objectPrefix)')
-    && assetStorage.includes('matches("static/[a-f0-9]{64}');
+  const configuredObjectPrefix = assetStorage.includes(
+    '@Value("${catering.asset.object-storage.object-prefix}") String objectPrefix',
+  );
+  const validatedObjectPrefix =
+    assetStorage.includes('value.contains("//")') && assetStorage.includes('value.contains("..")');
+  const guardedObjectKey =
+    assetStorage.includes('private String validKey(String value)') &&
+    assetStorage.includes('!value.startsWith(objectPrefix)') &&
+    assetStorage.includes('matches("static/[a-f0-9]{64}');
   const guardedStorageSinks = (assetStorage.match(/\bvalidKey\(objectKey\)/g) || []).length === 4;
   const serviceUsesStoragePort = assetService.includes('objects.objectKey("static/" + digest + suffix(contentType))');
-  if (!configuredObjectPrefix || !validatedObjectPrefix || !guardedObjectKey || !guardedStorageSinks
-    || /catering-v2s\/dev/.test(assetStorage) || !serviceUsesStoragePort)
+  if (
+    !configuredObjectPrefix ||
+    !validatedObjectPrefix ||
+    !guardedObjectKey ||
+    !guardedStorageSinks ||
+    /catering-v2s\/dev/.test(assetStorage) ||
+    !serviceUsesStoragePort
+  )
     fail('R5_SECURITY_ASSET_PREFIX_NOT_CONFIGURED');
   assertMatch(
     'apps/frontend/operations-admin/src/main.tsx',
@@ -1073,7 +1130,9 @@ function frontend(base = root) {
     operation.consumerFaces.some(face => frontendGeneratedFaces.has(face)),
   );
   assertOperationsEqual(registryOperations, generated, 'R5_FRONTEND_GENERATED_FACE_DRIFT');
-  const terminalRegistryOperations = allRegistryOperations.filter(operation => operation.consumerFaces.includes('terminal'));
+  const terminalRegistryOperations = allRegistryOperations.filter(operation =>
+    operation.consumerFaces.includes('terminal'),
+  );
   const terminalRegistryIds = terminalRegistryOperations.map(operation => operation.operationId).sort();
   const terminalIdsMarker = 'export const TERMINAL_OPERATION_IDS = ';
   const terminalClientApi = checkTerminalClientApi(base);
@@ -1101,15 +1160,13 @@ function frontend(base = root) {
   const sortedGeneratedIds = [...terminalGeneratedIds].sort();
   if (new Set(sortedGeneratedIds).size !== sortedGeneratedIds.length)
     fail('R5_TERMINAL_GENERATED_FACE_DUPLICATE_ASSIGNMENT');
-  if (!sameIds(terminalRegistryIds, sortedGeneratedIds))
-    fail('R5_TERMINAL_GENERATED_FACE_DRIFT');
+  if (!sameIds(terminalRegistryIds, sortedGeneratedIds)) fail('R5_TERMINAL_GENERATED_FACE_DRIFT');
   const terminalProjection = terminalClientApi.operationIds;
   const sortedTerminalProjection = [...terminalProjection].sort();
-  if (!sameIds(terminalRegistryIds, [...sortedTerminalProjection].sort()))
-    fail('R5_TERMINAL_POLICY_EDGE_FACE_DRIFT');
+  if (!sameIds(terminalRegistryIds, [...sortedTerminalProjection].sort())) fail('R5_TERMINAL_POLICY_EDGE_FACE_DRIFT');
   process.stdout.write('R5_TERMINAL_GENERATED_FACE_RECONCILIATION=PASS\n');
-  const terminalOnlyOperation = allRegistryOperations.find(operation =>
-    operation.consumerFaces.length > 0 && operation.consumerFaces.every(face => face === 'terminal'),
+  const terminalOnlyOperation = allRegistryOperations.find(
+    operation => operation.consumerFaces.length > 0 && operation.consumerFaces.every(face => face === 'terminal'),
   );
   if (!terminalOnlyOperation) fail('R5_FRONTEND_TERMINAL_FACE_RED_FIXTURE_MISSING');
   let terminalLeakRed = false;
@@ -1337,10 +1394,14 @@ function openapi(base = root) {
   });
   if (result.status !== 0) fail('R4_OPENAPI_GENERATED_DRIFT', (result.stdout || result.stderr).trim());
   generatedRouteOperations(base);
-  const terminalApi = spawnSync(process.execPath, [path.join(base, 'scripts/generate/terminal-client-api.mjs'), '--check'], {
-    cwd: base,
-    encoding: 'utf8',
-  });
+  const terminalApi = spawnSync(
+    process.execPath,
+    [path.join(base, 'scripts/generate/terminal-client-api.mjs'), '--check'],
+    {
+      cwd: base,
+      encoding: 'utf8',
+    },
+  );
   if (terminalApi.status !== 0)
     fail('R5_TERMINAL_CLIENT_API_GENERATED_DRIFT', (terminalApi.stdout || terminalApi.stderr).trim());
   process.stdout.write('R5_OPENAPI_CONTRACTS=PASS\n');
@@ -1585,12 +1646,24 @@ function runtimeEnvironmentKeys(base = root) {
   const policyPath = 'contracts/policy/runtime-environment-keys.json';
   const javaPath =
     'apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/runtime/RuntimeEnvironmentKeys.java';
-  const tdsSettingsPath = 'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsSettingsConfiguration.java';
-  const tdsPropertiesPath = 'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsRuntimeProperties.java';
+  const tdsSettingsPath =
+    'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsSettingsConfiguration.java';
+  const tdsPropertiesPath =
+    'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsRuntimeProperties.java';
+  const tdsDorisPropertiesPath =
+    'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsDorisProperties.java';
+  const tdsDorisClientPath =
+    'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/history/TdsDorisStreamLoadClient.java';
+  const tdsApplicationConfigPath = 'apps/backend/terminal-data-server/src/main/resources/application.yml';
+  const tdsRunnerPath = 'scripts/dev/r5-dev-runner.mjs';
   assertFile(policyPath, 'R5_RUNTIME_ENVIRONMENT_KEYS_POLICY_MISSING', base);
   assertFile(javaPath, 'R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_SOURCE_MISSING', base);
   assertFile(tdsSettingsPath, 'R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_MISSING', base);
   assertFile(tdsPropertiesPath, 'R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_MISSING', base);
+  assertFile(tdsDorisPropertiesPath, 'R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_MISSING', base);
+  assertFile(tdsDorisClientPath, 'R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_MISSING', base);
+  assertFile(tdsApplicationConfigPath, 'R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_MISSING', base);
+  assertFile(tdsRunnerPath, 'R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_MISSING', base);
   let policy;
   try {
     policy = JSON.parse(read(policyPath, base));
@@ -1598,13 +1671,21 @@ function runtimeEnvironmentKeys(base = root) {
     fail('R5_RUNTIME_ENVIRONMENT_KEYS_POLICY_INVALID');
   }
   const keys = policy?.crossLayerKeys;
+  const requiredDorisKeys = [
+    'V2S_TDS_DORIS_DATABASE',
+    'V2S_TDS_DORIS_ENDPOINT',
+    'V2S_TDS_DORIS_PASSWORD',
+    'V2S_TDS_DORIS_TABLE',
+    'V2S_TDS_DORIS_USERNAME',
+  ];
   if (
     policy?.schemaVersion !== 1 ||
     policy?.kind !== 'runtime-environment-keys' ||
     !Array.isArray(keys) ||
-    keys.length !== 23 ||
+    keys.length !== 28 ||
     new Set(keys).size !== keys.length ||
-    keys.some(key => typeof key !== 'string' || !/^V2S_[A-Z0-9_]+$/.test(key))
+    keys.some(key => typeof key !== 'string' || !/^V2S_[A-Z0-9_]+$/.test(key)) ||
+    requiredDorisKeys.some(key => !keys.includes(key))
   ) {
     fail('R5_RUNTIME_ENVIRONMENT_KEYS_POLICY_INVALID');
   }
@@ -1616,9 +1697,9 @@ function runtimeEnvironmentKeys(base = root) {
   const javaValues = new Set(javaDeclarations.map(match => match[2]));
   const keySet = new Set(keys);
   if (
-    javaDeclarations.length !== 23 ||
-    javaNames.size !== 23 ||
-    javaValues.size !== 23 ||
+    javaDeclarations.length !== 28 ||
+    javaNames.size !== 28 ||
+    javaValues.size !== 28 ||
     [...javaNames].some(name => !keySet.has(name)) ||
     [...javaValues].some(value => !keySet.has(value))
   ) {
@@ -1626,6 +1707,10 @@ function runtimeEnvironmentKeys(base = root) {
   }
   const tdsSettingsSource = read(tdsSettingsPath, base);
   const tdsPropertiesSource = read(tdsPropertiesPath, base);
+  const tdsDorisPropertiesSource = read(tdsDorisPropertiesPath, base);
+  const tdsDorisClientSource = read(tdsDorisClientPath, base);
+  const tdsApplicationConfig = read(tdsApplicationConfigPath, base);
+  const tdsRunnerSource = read(tdsRunnerPath, base);
   const tdsPropertiesClosed =
     /@ConfigurationProperties\s*\(\s*"v2s\.tds"\s*\)/.test(tdsPropertiesSource) &&
     /public\s+record\s+TdsRuntimeProperties\s*\(/.test(tdsPropertiesSource) &&
@@ -1633,14 +1718,15 @@ function runtimeEnvironmentKeys(base = root) {
     /\bString\s+maxTrackedSessions\b/.test(tdsPropertiesSource) &&
     /\bString\s+nodeId\b/.test(tdsPropertiesSource) &&
     /\blong\s+readinessWithdrawalWaitMs\b/.test(tdsPropertiesSource);
-  const tdsSettingsClosed =
-    /@EnableConfigurationProperties\s*\(\s*TdsRuntimeProperties\.class\s*\)/.test(tdsSettingsSource) &&
+  const tdsRuntimePropertiesBound =
+    /@EnableConfigurationProperties\s*\(\s*\{[^}]*\bTdsRuntimeProperties\.class\b[^}]*\}\s*\)/.test(tdsSettingsSource);
+  const tdsSettingsConsumerClosed =
     /TdsRuntimeSettings\.from\s*\(\s*properties\.maxUnauthenticatedConnections\(\)\s*,\s*properties\.maxTrackedSessions\(\)/.test(
       tdsSettingsSource,
     ) &&
     /properties\.nodeId\(\)/.test(tdsSettingsSource) &&
     /properties\.readinessWithdrawalWaitMs\(\)/.test(tdsSettingsSource);
-  if (!tdsPropertiesClosed || !tdsSettingsClosed) {
+  if (!tdsPropertiesClosed) {
     const missingKey = !/\bString\s+maxUnauthenticatedConnections\b/.test(tdsPropertiesSource)
       ? 'V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS'
       : !/\bString\s+maxTrackedSessions\b/.test(tdsPropertiesSource)
@@ -1649,6 +1735,53 @@ function runtimeEnvironmentKeys(base = root) {
           ? 'V2S_TDS_NODE_ID'
           : 'V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS';
     fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE', missingKey);
+  }
+  if (!tdsRuntimePropertiesBound) {
+    fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE', 'TDS_RUNTIME_PROPERTIES_BINDING');
+  }
+  if (!tdsSettingsConsumerClosed) {
+    fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE', 'TDS_RUNTIME_SETTINGS_CONSUMER');
+  }
+  const dorisPropertiesClosed =
+    /@ConfigurationProperties\s*\(\s*"v2s\.tds\.doris"\s*\)/.test(tdsDorisPropertiesSource) &&
+    /public\s+record\s+TdsDorisProperties\s*\(/.test(tdsDorisPropertiesSource) &&
+    ['endpoint', 'database', 'table', 'username', 'password'].every(field =>
+      new RegExp(`\\bString\\s+${field}\\b`).test(tdsDorisPropertiesSource),
+    );
+  if (!dorisPropertiesClosed) {
+    fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE', 'TDS_DORIS_PROPERTIES');
+  }
+  if (
+    !/@EnableConfigurationProperties\s*\(\s*\{[^}]*\bTdsDorisProperties\.class\b[^}]*\}\s*\)/.test(tdsSettingsSource)
+  ) {
+    fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE', 'TDS_DORIS_PROPERTIES_BINDING');
+  }
+  const dorisFields = [
+    ['endpoint', 'V2S_TDS_DORIS_ENDPOINT'],
+    ['database', 'V2S_TDS_DORIS_DATABASE'],
+    ['table', 'V2S_TDS_DORIS_TABLE'],
+    ['username', 'V2S_TDS_DORIS_USERNAME'],
+    ['password', 'V2S_TDS_DORIS_PASSWORD'],
+  ];
+  for (const [field, key] of dorisFields) {
+    if (!new RegExp(`\\b${field}:\\s*\\$\\{${key}\\}`).test(tdsApplicationConfig)) {
+      fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE', `TDS_DORIS_YAML_${key}`);
+    }
+    if (!new RegExp(`\\bproperties\\.${field}\\(\\)`).test(tdsDorisClientSource)) {
+      fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE', `TDS_DORIS_CONSUMER_${field}`);
+    }
+  }
+  const runnerDorisMappings = [
+    ['V2S_TDS_DORIS_ENDPOINT', 'DORIS_RESIDENT_ENDPOINT'],
+    ['V2S_TDS_DORIS_DATABASE', 'DORIS_RESIDENT_DATABASE'],
+    ['V2S_TDS_DORIS_TABLE', 'DORIS_RESIDENT_TABLE'],
+    ['V2S_TDS_DORIS_USERNAME', 'credential.values.V2S_TDS_DORIS_USERNAME'],
+    ['V2S_TDS_DORIS_PASSWORD', 'credential.values.V2S_TDS_DORIS_PASSWORD'],
+  ];
+  for (const [key, value] of runnerDorisMappings) {
+    if (!new RegExp(`\\b${key}:\\s*${value.replaceAll('.', '\\.')}\\b`).test(tdsRunnerSource)) {
+      fail('R5_RUNTIME_ENVIRONMENT_KEYS_TDS_CONFIG_CLOSURE', `TDS_RUNNER_${key}`);
+    }
   }
   const scriptFiles = [...sourceFiles('scripts', base), ...sourceFiles('tools', base)].filter(file =>
     /\.(?:mjs|js|sh|ts|tsx)$/.test(file),
@@ -1714,12 +1847,19 @@ function r11AssertStatusConfirmDangerSemantics(base = root) {
             property => ts.isJsxAttribute(property) && property.name.text === 'actionLabel',
           );
           const actionLabelText =
-            actionLabel && ts.isJsxAttribute(actionLabel) && actionLabel.initializer && ts.isStringLiteral(actionLabel.initializer)
+            actionLabel &&
+            ts.isJsxAttribute(actionLabel) &&
+            actionLabel.initializer &&
+            ts.isStringLiteral(actionLabel.initializer)
               ? actionLabel.initializer.text
               : undefined;
           const expression = dangerous.initializer?.getText(parsed) ?? '';
           const isVoidAction = expression.includes('VOIDED') || actionLabelText === '作废';
-          if (!dangerous.initializer || !isVoidAction || /DISABLED|停用|!==\s*['"](?:ENABLED|启用)['"]/.test(expression)) {
+          if (
+            !dangerous.initializer ||
+            !isVoidAction ||
+            /DISABLED|停用|!==\s*['"](?:ENABLED|启用)['"]/.test(expression)
+          ) {
             const line = parsed.getLineAndCharacterOfPosition(dangerous.getStart(parsed)).line + 1;
             fail('R11_STATUS_CONFIRM_DANGER_SEMANTICS', `${file}:${line}`);
           }
@@ -1843,7 +1983,8 @@ function r11AssertNoAdvisorySqlBypass(base = root) {
   for (const file of files) {
     if (file === helper) continue;
     const source = read(file, base);
-    const directJdbcSql = /\b(?:jdbc|template|jdbcTemplate)\s*\.\s*(?:queryForObject|queryForList|queryForRowSet|batchUpdate|query|update|execute)\s*\([\s\S]{0,500}?['"][^'"]*pg_advisory_xact_lock[^'"]*['"]/;
+    const directJdbcSql =
+      /\b(?:jdbc|template|jdbcTemplate)\s*\.\s*(?:queryForObject|queryForList|queryForRowSet|batchUpdate|query|update|execute)\s*\([\s\S]{0,500}?['"][^'"]*pg_advisory_xact_lock[^'"]*['"]/;
     const match = directJdbcSql.exec(source);
     if (match) {
       const line = source.slice(0, match.index).split('\n').length;
@@ -2014,8 +2155,9 @@ function selfTest(action) {
       const routeRegistryPath = `${appRoot}/src/main/resources/generated/edge-route-face-registry.json`;
       const routeRegistryOriginal = read(routeRegistryPath, scratch);
       const routeRegistry = JSON.parse(routeRegistryOriginal);
-      const terminalOperationIndex = routeRegistry.operations.findIndex(operation =>
-        operation.operationId === 'cancelTerminalActivation' && operation.consumerFaces?.includes('terminal'),
+      const terminalOperationIndex = routeRegistry.operations.findIndex(
+        operation =>
+          operation.operationId === 'cancelTerminalActivation' && operation.consumerFaces?.includes('terminal'),
       );
       if (terminalOperationIndex < 0) fail('R5_TERMINAL_GENERATED_FACE_SELF_TEST_FIXTURE_MISSING');
       routeRegistry.operations.splice(terminalOperationIndex, 1);
@@ -2126,7 +2268,8 @@ function selfTest(action) {
       const salesMenuSupport = `${appRoot}/src/main/java/com/catering/v2s/app/edge/operations/salesmenu/SalesMenuEdgeSupport.java`;
       const originalSalesMenuSupport = read(salesMenuSupport, scratch);
       const resolverField = 'private final OperationsSessionResolver sessions;';
-      if (!originalSalesMenuSupport.includes(resolverField)) fail('R4_SECURITY_SUPPORT_RESOLVER_SELF_TEST_FIXTURE_MISSING');
+      if (!originalSalesMenuSupport.includes(resolverField))
+        fail('R4_SECURITY_SUPPORT_RESOLVER_SELF_TEST_FIXTURE_MISSING');
       write(salesMenuSupport, originalSalesMenuSupport.replace(resolverField, 'private final Object sessions;'));
       let delegatedResolverRed = false;
       try {
@@ -2139,17 +2282,22 @@ function selfTest(action) {
       const platformAuthController = `${appRoot}/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java`;
       const originalPlatformAuthController = read(platformAuthController, scratch);
       const loginValidation = '        key(idempotencyKey);';
-      if (!originalPlatformAuthController.includes(loginValidation)) fail('R4_SECURITY_ANONYMOUS_ROUTE_SELF_TEST_FIXTURE_MISSING');
+      if (!originalPlatformAuthController.includes(loginValidation))
+        fail('R4_SECURITY_ANONYMOUS_ROUTE_SELF_TEST_FIXTURE_MISSING');
       write(
         platformAuthController,
-        originalPlatformAuthController.replace(loginValidation, `        sessionResolver.token(context);\n${loginValidation}`),
+        originalPlatformAuthController.replace(
+          loginValidation,
+          `        sessionResolver.token(context);\n${loginValidation}`,
+        ),
       );
       let anonymousRouteRed = false;
       try {
         actions[action](scratch);
       } catch (error) {
-        anonymousRouteRed = String(error).includes('R5_SECURITY_PUBLIC_EDGE_RESOLVER_FORBIDDEN')
-          && String(error).includes('platformPasswordLogin');
+        anonymousRouteRed =
+          String(error).includes('R5_SECURITY_PUBLIC_EDGE_RESOLVER_FORBIDDEN') &&
+          String(error).includes('platformPasswordLogin');
       }
       if (!anonymousRouteRed) fail('R5_SECURITY_ANONYMOUS_ROUTE_RESOLVER_SELF_TEST_NOT_DETECTED');
       write(platformAuthController, originalPlatformAuthController);
@@ -2178,7 +2326,8 @@ function selfTest(action) {
         'apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/MinioAssetObjectStorage.java';
       const assetStorageOriginal = read(assetStorage, scratch);
       const validKeyPrefixNeedle = '|| !value.startsWith(objectPrefix)';
-      if (!assetStorageOriginal.includes(validKeyPrefixNeedle)) fail('R4_SECURITY_ASSET_PREFIX_SELF_TEST_FIXTURE_MISSING');
+      if (!assetStorageOriginal.includes(validKeyPrefixNeedle))
+        fail('R4_SECURITY_ASSET_PREFIX_SELF_TEST_FIXTURE_MISSING');
       write(
         assetStorage,
         assetStorageOriginal.replace(validKeyPrefixNeedle, '|| !value.startsWith("catering-v2s/dev/")'),
@@ -2627,9 +2776,7 @@ final class R4BudgetHolderScopeLeakSql {
     static final String SECOND_STATEMENT = "WITH filtered AS (SELECT id FROM organization.commercial_group) SELECT * FROM filtered; SELECT * FROM filtered";
 }
 `;
-      const holderScopeLeakEntries = [
-        {file: holderScopeLeakFixture, source: holderScopeLeakSource},
-      ];
+      const holderScopeLeakEntries = [{file: holderScopeLeakFixture, source: holderScopeLeakSource}];
       const holderScopeLeakViolations = findJavaSelectStarViolations(holderScopeLeakEntries);
       const holderScopeLeakUnknowns = findJavaSqlConstructionUnknowns(holderScopeLeakEntries);
       if (
@@ -2772,7 +2919,8 @@ final class R4BudgetIncompleteSelectStarSql {
         {file: helperUnknownFixture, source: read(helperUnknownFixture, scratch)},
       ]);
       fs.rmSync(path.join(scratch, helperUnknownFixture));
-      if (!helperUnknowns.some(entry => entry.reason === 'helper-return')) fail('R4_DATABASE_SQL_HELPER_UNKNOWN_NOT_REPORTED');
+      if (!helperUnknowns.some(entry => entry.reason === 'helper-return'))
+        fail('R4_DATABASE_SQL_HELPER_UNKNOWN_NOT_REPORTED');
       const directHelperFixture =
         'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/R4BudgetDirectHelper.java';
       write(
@@ -2789,7 +2937,10 @@ final class R4BudgetIncompleteSelectStarSql {
         'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/R4BudgetCrossFileCaller.java';
       const crossFileConstants =
         'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/R4BudgetCrossFileConstants.java';
-      write(crossFileCaller, 'class R4BudgetCrossFileCaller { String query = R4BudgetCrossFileConstants.PREFIX + R4BudgetCrossFileConstants.SUFFIX; }\n');
+      write(
+        crossFileCaller,
+        'class R4BudgetCrossFileCaller { String query = R4BudgetCrossFileConstants.PREFIX + R4BudgetCrossFileConstants.SUFFIX; }\n',
+      );
       write(
         crossFileConstants,
         'final class R4BudgetCrossFileConstants { static final String PREFIX = "SELECT "; static final String SUFFIX = "* FROM organization.commercial_group"; }\n',
@@ -2875,8 +3026,7 @@ final class R4BudgetIncompleteSelectStarSql {
         }
         fs.rmSync(path.join(scratch, greenRelative));
         process.stdout.write(
-          'R4_BACKEND_WRITE_PATH_' + label + '_RED=PASS\n' +
-            'R4_BACKEND_WRITE_PATH_' + label + '_GREEN=PASS\n',
+          'R4_BACKEND_WRITE_PATH_' + label + '_RED=PASS\n' + 'R4_BACKEND_WRITE_PATH_' + label + '_GREEN=PASS\n',
         );
       }
       const tdsRuntimeFixtures = [
@@ -3026,7 +3176,11 @@ final class R4BudgetIncompleteSelectStarSql {
       const policy = JSON.parse(read('contracts/policy/runtime-environment-keys.json', scratch));
       const policyPath = 'contracts/policy/runtime-environment-keys.json';
       const policyOriginal = read(policyPath, scratch);
-      write(policyPath, `${JSON.stringify({...policy, crossLayerKeys: policy.crossLayerKeys.slice(1)}, null, 2)}\n`);
+      const dorisKey = 'V2S_TDS_DORIS_ENDPOINT';
+      write(
+        policyPath,
+        `${JSON.stringify({...policy, crossLayerKeys: policy.crossLayerKeys.filter(key => key !== dorisKey)}, null, 2)}\n`,
+      );
       let policyRed = false;
       try {
         actions[action](scratch);
@@ -3071,16 +3225,60 @@ final class R4BudgetIncompleteSelectStarSql {
       if (!javaRed) fail('R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_SELF_TEST_NOT_DETECTED');
       write(javaPath, javaOriginal);
 
+      const dorisDeclaration = `public static final String ${dorisKey} = "${dorisKey}";`;
+      if (!javaOriginal.includes(dorisDeclaration)) {
+        fail('R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_DORIS_FIXTURE_MISSING');
+      }
+      write(javaPath, javaOriginal.replace(dorisDeclaration, ''));
+      let dorisJavaRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        dorisJavaRed = String(error).includes('R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_CLOSURE');
+      } finally {
+        write(javaPath, javaOriginal);
+      }
+      if (!dorisJavaRed) fail('R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_DORIS_SELF_TEST_NOT_DETECTED');
+
       const tdsPropertiesPath =
         'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsRuntimeProperties.java';
       const tdsSettingsPath =
         'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsSettingsConfiguration.java';
+      const tdsDorisPropertiesPath =
+        'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/config/TdsDorisProperties.java';
+      const tdsDorisClientPath =
+        'apps/backend/terminal-data-server/src/main/java/com/catering/v2s/terminaldataserver/history/TdsDorisStreamLoadClient.java';
+      const tdsApplicationConfigPath = 'apps/backend/terminal-data-server/src/main/resources/application.yml';
+      const tdsRunnerPath = 'scripts/dev/r5-dev-runner.mjs';
       const tdsConfigMutations = [
+        [tdsSettingsPath, /\bTdsRuntimeProperties\.class\b/g, 'TdsRuntimePropertiesMutated.class'],
         [tdsPropertiesPath, /\bString\s+maxTrackedSessions\b/g, 'String maxTrackedSessionsMutated'],
         [tdsPropertiesPath, /\bString\s+nodeId\b/g, 'String nodeIdMutated'],
         [tdsPropertiesPath, /\blong\s+readinessWithdrawalWaitMs\b/g, 'long readinessWithdrawalWaitMsMutated'],
         [tdsSettingsPath, /properties\.nodeId\(\)/g, 'properties.nodeIdMutated()'],
-        [tdsSettingsPath, /properties\.readinessWithdrawalWaitMs\(\)/g, 'properties.readinessWithdrawalWaitMsMutated()'],
+        [
+          tdsSettingsPath,
+          /properties\.readinessWithdrawalWaitMs\(\)/g,
+          'properties.readinessWithdrawalWaitMsMutated()',
+        ],
+        [tdsSettingsPath, /\bTdsDorisProperties\.class\b/g, 'TdsDorisPropertiesMutated.class'],
+        [
+          tdsDorisPropertiesPath,
+          /@ConfigurationProperties\("v2s\.tds\.doris"\)/g,
+          '@ConfigurationProperties("v2s.tds.doris.mutated")',
+        ],
+        [tdsDorisPropertiesPath, /\bString\s+password\b/g, 'String passwordMutated'],
+        [
+          tdsApplicationConfigPath,
+          /password: \$\{V2S_TDS_DORIS_PASSWORD\}/g,
+          'password: ${V2S_TDS_DORIS_PASSWORD_MUTATED}',
+        ],
+        [tdsDorisClientPath, /properties\.password\(\)/g, 'properties.passwordMutated()'],
+        [
+          tdsRunnerPath,
+          /V2S_TDS_DORIS_ENDPOINT: DORIS_RESIDENT_ENDPOINT/g,
+          'V2S_TDS_DORIS_ENDPOINT: DORIS_RESIDENT_ENDPOINT_MUTATED',
+        ],
       ];
       for (const [relative, expression, replacement] of tdsConfigMutations) {
         const original = read(relative, scratch);
@@ -3128,7 +3326,10 @@ final class R4BudgetIncompleteSelectStarSql {
       return;
     } else if (action === 'r11') {
       const dateSource = 'apps/frontend/operations-admin/src/features/r11-self-test/ui/Date.tsx';
-      write(dateSource, 'export function DateValue(value: number) { return new Intl.DateTimeFormat("zh-CN").format(value); }\n');
+      write(
+        dateSource,
+        'export function DateValue(value: number) { return new Intl.DateTimeFormat("zh-CN").format(value); }\n',
+      );
       let dateRed = false;
       try {
         actions[action](scratch);
@@ -3145,7 +3346,7 @@ final class R4BudgetIncompleteSelectStarSql {
       writeScratch(
         scratch,
         dangerSource,
-        "export function StatusConfirm({status}: {status: string}) { return <StatusChangeConfirm dangerous={status === 'DISABLED'} actionLabel=\"停用\" />; }\n",
+        'export function StatusConfirm({status}: {status: string}) { return <StatusChangeConfirm dangerous={status === \'DISABLED\'} actionLabel="停用" />; }\n',
       );
       let dangerRed = false;
       try {
@@ -3160,11 +3361,7 @@ final class R4BudgetIncompleteSelectStarSql {
       });
 
       const bareDangerSource = 'apps/frontend/operations-admin/src/features/r11-self-test/ui/BareDanger.tsx';
-      writeScratch(
-        scratch,
-        bareDangerSource,
-        '<StatusChangeConfirm dangerous actionLabel="停用" />;\n',
-      );
+      writeScratch(scratch, bareDangerSource, '<StatusChangeConfirm dangerous actionLabel="停用" />;\n');
       let bareDangerRed = false;
       try {
         actions[action](scratch);
@@ -3213,8 +3410,7 @@ final class R4BudgetIncompleteSelectStarSql {
         force: true,
       });
 
-      const parser =
-        `${appRoot}/modules/catalog/src/main/java/com/catering/v2s/catalog/application/R11ParserMutation.java`;
+      const parser = `${appRoot}/modules/catalog/src/main/java/com/catering/v2s/catalog/application/R11ParserMutation.java`;
       write(parser, 'final class R11ParserMutation { private static int parseCursor(String value) { return 0; } }\n');
       let parserRed = false;
       try {
@@ -3225,8 +3421,7 @@ final class R4BudgetIncompleteSelectStarSql {
       if (!parserRed) fail('R11_BACKEND_PARSER_SELF_TEST_NOT_DETECTED');
       fs.rmSync(path.join(scratch, parser), {force: true});
 
-      const advisory =
-        `${appRoot}/modules/catalog/src/main/java/com/catering/v2s/catalog/application/R11AdvisoryMutation.java`;
+      const advisory = `${appRoot}/modules/catalog/src/main/java/com/catering/v2s/catalog/application/R11AdvisoryMutation.java`;
       write(
         advisory,
         'final class R11AdvisoryMutation { void bypass() { jdbc.execute("SELECT pg_advisory_xact_lock(?, ?)"); } }\n',

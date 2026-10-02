@@ -92,11 +92,7 @@ class MemoryStorage implements StateStoragePort {
     return successful({completed: true});
   }
 
-  async readMany({
-    keys,
-  }: {
-    readonly keys: readonly string[];
-  }): Promise<
+  async readMany({keys}: {readonly keys: readonly string[]}): Promise<
     PortResult<
       readonly {
         readonly key: string;

@@ -59,7 +59,7 @@ const staticCommands = Object.freeze([
     'terminal-client-api-self-test',
     'node',
     ['scripts/generate/terminal-client-api.mjs', '--self-test'],
-    ['TERMINAL_CLIENT_API_SELF_TEST=PASS', 'RED_ZERO_SELECTOR=PASS', 'RED_WRONG_FACE=PASS', 'RED_GENERATED_DRIFT=PASS', 'RED_MULTIPLE_TARGET_ASSIGNMENT=PASS', 'RED_DUPLICATE_ASSIGNMENT=PASS', 'RED_NON_OWNER_TARGET=PASS', 'RED_SELECTOR_MISMATCH=PASS', 'RED_OUTPUT_ESCAPE=PASS', 'RED_ROOT_ESCAPE=PASS', 'RED_SYMLINK_ESCAPE=PASS'],
+    ['TERMINAL_CLIENT_API_SELF_TEST=PASS', 'RED_ZERO_SELECTOR=PASS', 'RED_WRONG_FACE=PASS', 'RED_GENERATED_DRIFT=PASS', 'RED_MULTIPLE_TARGET_ASSIGNMENT=PASS', 'RED_DUPLICATE_ASSIGNMENT=PASS', 'RED_NON_OWNER_TARGET=PASS', 'RED_SELECTOR_MISMATCH=PASS', 'RED_OUTPUT_ESCAPE=PASS', 'RED_ROOT_ESCAPE=PASS', 'RED_SYMLINK_ESCAPE=PASS', 'RED_TARGET_PACKAGE_SYMLINK_ESCAPE=PASS', 'RED_TARGET_MODULE_NAME_SYMLINK_ESCAPE=PASS'],
   ],
   [
     'heritage-registry',
@@ -185,10 +185,22 @@ const staticCommands = Object.freeze([
     [':apps:backend:catering-business-server:backendModuleBoundariesArchunitSelector', '--no-daemon'],
     ['BUILD SUCCESSFUL'],
   ],
+  ['backend-pmd-preserve-stack-trace', 'gradle', ['backendPmdPreserveStackTrace', '--no-daemon'], ['BUILD SUCCESSFUL']],
+  ['backend-spotless-check', 'gradle', ['spotlessCheck', '--no-daemon'], ['BUILD SUCCESSFUL']],
+  [
+    'terminal-static',
+    'yarn',
+    ['workspace', '@catering-v2s/terminal', 'run', 'verify:static'],
+    ['TERMINAL_STATIC=PASS'],
+  ],
+]);
+
+const runtimeCommands = [
   [
     'tds-constructor-assembly',
-    'gradle',
+    'node',
     [
+      'scripts/test/r5-remote-testcontainers.mjs',
       ':apps:backend:terminal-data-server:test',
       '--tests',
       'architecture.TdsModuleBoundariesTest',
@@ -219,6 +231,10 @@ const staticCommands = Object.freeze([
       '--tests',
       'com.catering.v2s.terminaldataserver.session.TdsTerminalSessionActorsTest',
       '--tests',
+      'com.catering.v2s.terminaldataserver.history.TdsConnectionHistoryWriterTest',
+      '--tests',
+      'com.catering.v2s.terminaldataserver.history.TdsDorisStreamLoadClientTest',
+      '--tests',
       'com.catering.v2s.terminaldataserver.state.TdsConnectionCloseReasonContractTest',
       '--tests',
       'com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepositoryTest',
@@ -226,12 +242,13 @@ const staticCommands = Object.freeze([
       'com.catering.v2s.terminaldataserver.state.TdsConnectionStateWriterTest',
       '--no-daemon',
     ],
-    ['BUILD SUCCESSFUL'],
+    true,
   ],
   [
     'tds-compression-focused',
-    'gradle',
+    'node',
     [
+      'scripts/test/r5-remote-testcontainers.mjs',
       ':apps:backend:terminal-data-server:test',
       '--tests',
       'com.catering.v2s.terminaldataserver.websocket.TdsNativeDecompressionLimitTest',
@@ -239,30 +256,31 @@ const staticCommands = Object.freeze([
       'com.catering.v2s.terminaldataserver.websocket.TdsMessageSizeCloseHandlerTest',
       '--no-daemon',
     ],
-    ['BUILD SUCCESSFUL'],
+    true,
   ],
   [
     'terminal-binding-owner-unit',
-    'gradle',
+    'node',
     [
+      'scripts/test/r5-remote-testcontainers.mjs',
       ':apps:backend:catering-business-server:modules:terminal-binding:test',
       '--tests',
       'com.catering.v2s.terminalbinding.application.TerminalBindingOwnerServiceTest',
       '--no-daemon',
     ],
-    ['BUILD SUCCESSFUL'],
+    true,
   ],
-  ['backend-pmd-preserve-stack-trace', 'gradle', ['backendPmdPreserveStackTrace', '--no-daemon'], ['BUILD SUCCESSFUL']],
-  ['backend-spotless-check', 'gradle', ['spotlessCheck', '--no-daemon'], ['BUILD SUCCESSFUL']],
   [
-    'terminal-static',
-    'yarn',
-    ['workspace', '@catering-v2s/terminal', 'run', 'verify:static'],
-    ['TERMINAL_STATIC=PASS'],
+    'tds-postgres-transaction-integration',
+    'node',
+    [
+      'scripts/test/r5-remote-testcontainers.mjs',
+      ':apps:backend:terminal-data-server:test',
+      '--tests',
+      'com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepositoryPostgresIntegrationTest',
+    ],
+    true,
   ],
-]);
-
-const runtimeCommands = [
   ['U01-face', 'scripts/check/contract-face', []],
   ['U01-retirement', 'scripts/check/retirement', []],
   ['THCL-04-node-tests', 'node', ['scripts/test/test-health-entry-runner.mjs', '--node']],

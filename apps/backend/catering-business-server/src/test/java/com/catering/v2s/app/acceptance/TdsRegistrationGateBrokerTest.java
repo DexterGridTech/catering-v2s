@@ -56,6 +56,26 @@ class TdsRegistrationGateBrokerTest {
     }
 
     @Test
+    void armedPostgresOpenGateWaitsUntilTheExactCommittedCandidateIsReleased() throws Exception {
+        String attemptId = UUID.randomUUID().toString();
+        try (TdsRegistrationGateBroker broker = TdsRegistrationGateBroker.start(directory)) {
+            TdsRegistrationGateBroker.ArmedAttempt armed = broker.armNextPostgresOpen();
+            CompletableFuture<String> response = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return requestPostgresOpen(broker.socketPath(), attemptId);
+                } catch (IOException failure) {
+                    throw new IllegalStateException(failure);
+                }
+            });
+
+            assertEquals(attemptId, armed.awaitObserved(Duration.ofSeconds(2)));
+            assertFalse(response.isDone(), "the PG-open candidate must remain held before local registration");
+            armed.release(attemptId);
+            assertEquals("RELEASE\t" + attemptId, response.get(2, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
     void clientExitBeforeTheRegistrationGateIsReportedImmediately() throws Exception {
         try (TdsRegistrationGateBroker broker = TdsRegistrationGateBroker.start(directory)) {
             TdsRegistrationGateBroker.ArmedAttempt armed = broker.armNextAttempt();
@@ -144,6 +164,10 @@ class TdsRegistrationGateBrokerTest {
 
     private static String request(Path socketPath, String attemptId) throws IOException {
         return requestLine(socketPath, "CREDENTIAL_VERIFICATION_RETURNED_BEFORE_REGISTER\t" + attemptId + "\n");
+    }
+
+    private static String requestPostgresOpen(Path socketPath, String attemptId) throws IOException {
+        return requestLine(socketPath, "PG_OPEN_COMMITTED_BEFORE_LOCAL_REGISTER\t" + attemptId + "\n");
     }
 
     private static String requestRevocation(Path socketPath, UUID terminalRef, long generation, String attemptId)

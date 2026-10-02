@@ -7,10 +7,12 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {resolveTrustedRemoteHost} from "./r5-remote-host-trust.mjs";
 import {canonicalStartToken} from "./managed-process-tree.mjs";
+import {readResidentManifest, renderResidentTruncateScript} from "./r5-doris-resident.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, ".runtime/r5"));
 const managedDevManifestPath = path.join(runtime, "run-manifest.json");
+const dorisResidentManifestPath = path.join(runtime, "doris-resident-manifest.json");
 const resetRoot = path.join(runtime, "reset");
 const expectedManifestKind = "r5-dev-run-manifest";
 
@@ -51,6 +53,8 @@ export function validateResetTopology(resolved) {
 
 export function verifyRemoteResetTranscript(stdout) {
   const markers = [
+    "R5_REMOTE_RESET_DORIS_TRUNCATE=PASS",
+    "R5_REMOTE_RESET_DORIS_READBACK=0",
     "R5_REMOTE_RESET_TERMINATE=PASS",
     "R5_REMOTE_RESET_DROP=PASS",
     "R5_REMOTE_RESET_READBACK_ABSENT=PASS",
@@ -65,8 +69,12 @@ export function verifyRemoteResetTranscript(stdout) {
   }
 }
 
-export function runRemoteReset({host, targetDatabase, namespace = `v2s-dev-${targetDatabase.replace(/^catering_v2s_dev_/, "").replaceAll("_", "-")}`, executor = spawnSync}) {
+export function runRemoteReset({host, fingerprint, residentDoris, targetDatabase, namespace = `v2s-dev-${targetDatabase.replace(/^catering_v2s_dev_/, "").replaceAll("_", "-")}`, executor = spawnSync}) {
+  if (!residentDoris) fail("DORIS_RESIDENT_MANIFEST_REQUIRED_BEFORE_RESET");
+  if (residentDoris.host !== host || residentDoris.hostFingerprint !== fingerprint) fail("DORIS_RESIDENT_HOST_BINDING_INVALID");
+  const dorisResetScript = renderResidentTruncateScript(residentDoris);
   const script = [
+    dorisResetScript,
     "set -euo pipefail",
     `database='${targetDatabase}'`,
     "docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -q -c \"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$database' AND pid <> pg_backend_pid()\" >/dev/null",
@@ -86,8 +94,24 @@ export function runRemoteReset({host, targetDatabase, namespace = `v2s-dev-${tar
     "printf '%s\\n' R5_REMOTE_RESET_ASSET_CLEANUP=PASS",
   ].join("\n");
   const result = executor("ssh", ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8", host, "bash", "-s"], {cwd: root, encoding: "utf8", input: script});
-  if (result?.error || result?.status !== 0) fail("REMOTE_EXECUTION_FAILED");
-  verifyRemoteResetTranscript(result.stdout ?? "");
+  const output = String(result?.stdout ?? "");
+  if (result?.error || result?.status !== 0) {
+    if (output.includes("R5_REMOTE_RESET_READBACK_ABSENT=PASS")) {
+      const error = new ResetFailure("ASSET_CLEANUP_FAILED_AFTER_POSTGRES_RESET");
+      error.postgresResetCompleted = true;
+      error.dorisHistoryCleared = true;
+      throw error;
+    }
+    if (output.includes("R5_REMOTE_RESET_DORIS_TRUNCATE=PASS") && output.includes("R5_REMOTE_RESET_DORIS_READBACK=0")) {
+      const error = new ResetFailure("POSTGRES_RESET_FAILED_AFTER_DORIS_CLEAR");
+      error.dorisHistoryCleared = true;
+      throw error;
+    }
+    if (output.includes("R5_REMOTE_RESET_DORIS_TRUNCATE=PASS")) fail("DORIS_RESET_READBACK_OR_IDENTITY_FAILED");
+    fail("REMOTE_EXECUTION_FAILED");
+  }
+  verifyRemoteResetTranscript(output);
+  return Object.freeze({dorisTruncate: "PASS", dorisReadback: "0", postgresReset: "PASS", transcript: output});
 }
 
 function resolveEnvironment() {
@@ -114,6 +138,7 @@ function createRun(topology) {
     lastKnownGood: "RESET_MANIFEST_CREATED",
     brokenBoundary: null,
     managedDevOwnership: "NOT_CHECKED",
+    dorisHistory: "NOT_RUN",
     business: "PENDING",
     cleanup: "PENDING",
   };
@@ -155,8 +180,14 @@ function recordFailure(run, stage, error) {
   const code = error instanceof ResetFailure ? error.code : "UNEXPECTED_RESET_FAILURE";
   run.state.firstFailure ??= {stage, code};
   run.state.brokenBoundary ??= stage;
-  run.state.business = "FAIL";
-  run.state.cleanup = "PASS_NO_PERSISTENT_RESET_PROCESS";
+  run.state.business = error?.dorisHistoryCleared ? "PARTIAL_RESET_DORIS_CLEARED" : "FAIL";
+  if (error?.postgresResetCompleted) run.state.business = "POSTGRES_RESET_PASS_ASSET_CLEANUP_FAIL";
+  run.state.dorisHistory = error?.dorisHistoryCleared ? "CLEARED_READBACK_ZERO" : run.state.dorisHistory;
+  const devWasOwned = run.state.managedDevOwnership === "PASS_RUNNER_MANIFEST";
+  const devStopPassed = run.state.lastKnownGood === "MANAGED_DEV_STOPPED_BY_OWNING_RUNNER";
+  run.state.cleanup = devWasOwned && !devStopPassed
+    ? "FAIL_MANAGED_DEV_STOP_NOT_VERIFIED"
+    : "PASS_DORIS_RESIDENT_RETAINED_DEV_STOPPED";
   run.write(); run.event(stage, "FAIL", code);
   process.stderr.write(`R5_DEV_RESET=FAIL; REASON=${code}; RUN_MANIFEST=${run.manifestPath}; LOG=${run.logPath}\n`);
 }
@@ -171,8 +202,16 @@ export function selfTest() {
   expect("REMOTE_HOST_BINDING_INVALID", () => validateResetTopology({...valid, environment: {...valid.environment, V2S_DEV_REMOTE_HOST_SHA256: "0".repeat(64)}}));
   expect("REMOTE_HOST_PRODUCTION_LIKE", () => validateResetTopology({...valid, environment: {...valid.environment, V2S_DEV_REMOTE_HOST: "postgres-prod.internal", V2S_DEV_REMOTE_HOST_SHA256: sha256("postgres-prod.internal")}}));
   expect("TARGET_DATABASE_ALLOWLIST_INVALID", () => validateResetTopology({...valid, expectedDatabase: "postgres"}));
-  expect("REMOTE_EXECUTION_FAILED", () => runRemoteReset({host: valid.environment.V2S_DEV_REMOTE_HOST, targetDatabase: valid.expectedDatabase, executor: () => ({status: 255, stdout: "", stderr: "redacted"})}));
-  expect("POST_DROP_READBACK_FAILED", () => runRemoteReset({host: valid.environment.V2S_DEV_REMOTE_HOST, targetDatabase: valid.expectedDatabase, executor: () => ({status: 0, stdout: "R5_REMOTE_RESET_TERMINATE=PASS\\nR5_REMOTE_RESET_DROP=PASS\\nR5_REMOTE_RESET_READBACK_ABSENT=FAIL\\n"})}));
+  const residentDoris = {
+    schemaVersion: 1, kind: "r5-managed-doris-resident", host: "catering-remote-dev", hostFingerprint: sha256("catering-remote-dev"),
+    bootId: "01234567-89ab-cdef-0123-456789abcdef", containerName: "catering-v2s-r5-doris-resident", containerId: "a".repeat(64),
+    imageRef: "apache/doris:all-in-one-4.1.3", imageId: "sha256:82a5cabc7900ebcd3d080412d636c0cebd6602799fffe2605c652b2ea7d42609",
+    repoDigest: "apache/doris@sha256:82a5cabc7900ebcd3d080412d636c0cebd6602799fffe2605c652b2ea7d42609", feVolumeId: "b".repeat(64), beVolumeId: "c".repeat(64),
+    endpoint: "http://127.0.0.1:8040", database: "terminal_connection_history", table: "connection_history", username: "tds_history_writer",
+    health: "healthy", ports: {mysql: "127.0.0.1:9030", http: "127.0.0.1:8030", load: "127.0.0.1:8040"},
+  };
+  expect("REMOTE_EXECUTION_FAILED", () => runRemoteReset({host: valid.environment.V2S_DEV_REMOTE_HOST, fingerprint: residentDoris.hostFingerprint, targetDatabase: valid.expectedDatabase, residentDoris, executor: () => ({status: 255, stdout: "", stderr: "redacted"})}));
+  expect("POST_DROP_READBACK_FAILED", () => runRemoteReset({host: valid.environment.V2S_DEV_REMOTE_HOST, fingerprint: residentDoris.hostFingerprint, targetDatabase: valid.expectedDatabase, residentDoris, executor: () => ({status: 0, stdout: "R5_REMOTE_RESET_DORIS_TRUNCATE=PASS\\nR5_REMOTE_RESET_DORIS_READBACK=0\\nR5_REMOTE_RESET_TERMINATE=PASS\\nR5_REMOTE_RESET_DROP=PASS\\nR5_REMOTE_RESET_READBACK_ABSENT=FAIL\\n"})}));
   expect("SEED_DRY_RUN_REQUIRED_BEFORE_RESET:STATIC_PLAN", () => assertSeedDryRunPass({executor: () => ({status: 2, stdout: "", stderr: "R5_COMPLETE_SEED_DRY_RUN=FAIL; FIRST_FAILURE=STATIC_PLAN"})}));
   process.stdout.write("R5_DEV_RESET_SELF_TEST=PASS\nRED_HOST_HASH=PASS\nRED_PRODUCTION_HOST=PASS\nRED_ILLEGAL_DATABASE=PASS\nRED_REMOTE_EXECUTION=PASS\nRED_POST_DROP_READBACK=PASS\nRED_SEED_DRY_RUN=PASS\nCLEANUP=PASS\n");
 }
@@ -193,11 +232,17 @@ function main() {
     run.state.seedDryRunDigest = seed.outputDigest;
     run.write(); run.event("SEED_DRY_RUN", "PASS", seed.outputDigest);
     if (verifyManagedDevOwnership(run)) stopOwnedManagedDev(run);
-    runRemoteReset({...topology, namespace: topology.namespace});
-    run.state.lastKnownGood = "REMOTE_DATABASE_ABSENT_READBACK";
-    run.state.business = "PASS_DATABASE_ABSENT_READBACK";
-    run.state.cleanup = "PASS_NO_PERSISTENT_RESET_PROCESS";
-    run.write(); run.event("REMOTE_DATABASE_READBACK", "PASS", "ABSENT");
+    const residentDoris = readResidentManifest(dorisResidentManifestPath, {host: topology.host, fingerprint: topology.hostTrust.fingerprint});
+    if (!residentDoris) fail("DORIS_RESIDENT_MANIFEST_REQUIRED_BEFORE_RESET");
+    run.state.dorisResident = {containerId: residentDoris.containerId, imageId: residentDoris.imageId, feVolumeId: residentDoris.feVolumeId, beVolumeId: residentDoris.beVolumeId, host: residentDoris.host};
+    run.write(); run.event("DORIS_RESIDENT_MANIFEST", "PASS", "IDENTITY_BOUND");
+    const reset = runRemoteReset({...topology, fingerprint: topology.hostTrust.fingerprint, namespace: topology.namespace, residentDoris});
+    run.state.lastKnownGood = "DORIS_TRUNCATE_READBACK_AND_REMOTE_RESET";
+    run.state.dorisHistory = "CLEARED_READBACK_ZERO";
+    run.state.business = "PASS_DORIS_CLEARED_POSTGRES_ABSENT_READBACK";
+    run.state.cleanup = "PASS_DORIS_RESIDENT_RETAINED_DEV_STOPPED";
+    run.write(); run.event("DORIS_HISTORY_READBACK", "PASS", reset.dorisReadback);
+    run.event("REMOTE_DATABASE_READBACK", "PASS", "ABSENT");
     process.stdout.write(`R5_DEV_RESET=PASS; DATABASE=${topology.targetDatabase}; RUN_MANIFEST=${run.manifestPath}; LOG=${run.logPath}; FOLLOW_UP=scripts/dev/start\n`);
   } catch (error) { recordFailure(run, "RESET_EXECUTION", error); process.exitCode = 2; }
 }

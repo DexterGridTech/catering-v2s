@@ -3,4 +3,5 @@ build
 dist
 **/test-results/**
 apps/frontend/*/src/app/api/generated/**
+apps/terminal/kernel/base/terminal-data-client/src/generated/**
 apps/frontend/*/src/app/catalog/generatedAdminCatalog.ts

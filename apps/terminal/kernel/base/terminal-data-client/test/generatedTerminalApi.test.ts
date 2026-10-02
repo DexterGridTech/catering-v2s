@@ -35,7 +35,9 @@ describe('generated terminal API contract', () => {
     };
     const client = createTerminalApiClient(execute);
     const result = await client.activateTerminal({
-      pathParameters: {groupWorkspaceKey: 'group-1'}, queryParameters: {}, headers: {},
+      pathParameters: {groupWorkspaceKey: 'group-1'},
+      queryParameters: {},
+      headers: {},
       body: {
         activationCode: '12345678',
         deviceId: 'device-1',
@@ -56,36 +58,93 @@ describe('generated terminal API contract', () => {
       expect(descriptor.idempotencyRequired).toBe(false);
       expect(request.headers.Authorization).toBe('Terminal 1.' + 'A'.repeat(43));
       return {
-        kind: 'response', status: 401,
-        body: {type: 'about:blank', title: 'Invalid credential', status: 401, detail: 'invalid', errorCode: 'TERMINAL_BINDING_CREDENTIAL_INVALID', correlationId: 'correlation-123', future: {ignored: true}},
+        kind: 'response',
+        status: 401,
+        body: {
+          type: 'about:blank',
+          title: 'Invalid credential',
+          status: 401,
+          detail: 'invalid',
+          errorCode: 'TERMINAL_BINDING_CREDENTIAL_INVALID',
+          correlationId: 'correlation-123',
+          future: {ignored: true},
+        },
       };
     });
     const rejected = await cancellation.cancelTerminalActivation({
       pathParameters: {groupWorkspaceKey: 'group-1', terminalRef: 'terminal-ref'},
-      queryParameters: {}, headers: {Authorization: 'Terminal 1.' + 'A'.repeat(43)},
+      queryParameters: {},
+      headers: {Authorization: 'Terminal 1.' + 'A'.repeat(43)},
       body: {bindingGeneration: 1, deviceId: 'device-1'},
     });
     expect(rejected).toMatchObject({kind: 'business-rejection', errorCode: 'TERMINAL_BINDING_CREDENTIAL_INVALID'});
 
-    const invalidSuccess = createTerminalApiClient(async () => ({kind: 'response', status: 200, body: {terminalRef: 7}}));
-    await expect(invalidSuccess.activateTerminal({
-      pathParameters: {groupWorkspaceKey: 'group-1'}, queryParameters: {}, headers: {},
-      body: {activationCode: '12345678', deviceId: 'device-1', surfaceForm: 'laptop', appVersion: 'test', credentialSecret: 'A'.repeat(43)},
-    })).resolves.toEqual({kind: 'failure', category: 'delivered-failure', code: 'TERMINAL_RESPONSE_SCHEMA_INVALID'});
+    const invalidSuccess = createTerminalApiClient(async () => ({
+      kind: 'response',
+      status: 200,
+      body: {terminalRef: 7},
+    }));
+    await expect(
+      invalidSuccess.activateTerminal({
+        pathParameters: {groupWorkspaceKey: 'group-1'},
+        queryParameters: {},
+        headers: {},
+        body: {
+          activationCode: '12345678',
+          deviceId: 'device-1',
+          surfaceForm: 'laptop',
+          appVersion: 'test',
+          credentialSecret: 'A'.repeat(43),
+        },
+      }),
+    ).resolves.toEqual({kind: 'failure', category: 'delivered-failure', code: 'TERMINAL_RESPONSE_SCHEMA_INVALID'});
 
-    const unknownProblem = createTerminalApiClient(async () => ({kind: 'response', status: 409, body: {
-      type: 'about:blank', title: 'New error', status: 409, detail: 'updated server', errorCode: 'NEW_SERVER_ERROR', correlationId: 'correlation-123',
-    }}));
-    await expect(unknownProblem.activateTerminal({
-      pathParameters: {groupWorkspaceKey: 'group-1'}, queryParameters: {}, headers: {},
-      body: {activationCode: '12345678', deviceId: 'device-1', surfaceForm: 'laptop', appVersion: 'test', credentialSecret: 'A'.repeat(43)},
-    })).resolves.toEqual({kind: 'failure', category: 'unknown-business-rejection', code: 'NEW_SERVER_ERROR'});
+    const unknownProblem = createTerminalApiClient(async () => ({
+      kind: 'response',
+      status: 409,
+      body: {
+        type: 'about:blank',
+        title: 'New error',
+        status: 409,
+        detail: 'updated server',
+        errorCode: 'NEW_SERVER_ERROR',
+        correlationId: 'correlation-123',
+      },
+    }));
+    await expect(
+      unknownProblem.activateTerminal({
+        pathParameters: {groupWorkspaceKey: 'group-1'},
+        queryParameters: {},
+        headers: {},
+        body: {
+          activationCode: '12345678',
+          deviceId: 'device-1',
+          surfaceForm: 'laptop',
+          appVersion: 'test',
+          credentialSecret: 'A'.repeat(43),
+        },
+      }),
+    ).resolves.toEqual({kind: 'failure', category: 'unknown-business-rejection', code: 'NEW_SERVER_ERROR'});
 
-    const deliveryFailure: TerminalRequestExecutor = async () => ({kind: 'failure', category: 'not-delivered', code: 'network'});
-    await expect(createTerminalApiClient(deliveryFailure).activateTerminal({
-      pathParameters: {groupWorkspaceKey: 'group-1'}, queryParameters: {}, headers: {},
-      body: {activationCode: '12345678', deviceId: 'device-1', surfaceForm: 'laptop', appVersion: 'test', credentialSecret: 'A'.repeat(43)},
-    })).resolves.toEqual({kind: 'failure', category: 'not-delivered', code: 'network'});
+    const deliveryFailure: TerminalRequestExecutor = async () => ({
+      kind: 'failure',
+      category: 'not-delivered',
+      code: 'network',
+    });
+    await expect(
+      createTerminalApiClient(deliveryFailure).activateTerminal({
+        pathParameters: {groupWorkspaceKey: 'group-1'},
+        queryParameters: {},
+        headers: {},
+        body: {
+          activationCode: '12345678',
+          deviceId: 'device-1',
+          surfaceForm: 'laptop',
+          appVersion: 'test',
+          credentialSecret: 'A'.repeat(43),
+        },
+      }),
+    ).resolves.toEqual({kind: 'failure', category: 'not-delivered', code: 'network'});
   });
 });
 

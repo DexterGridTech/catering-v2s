@@ -32,6 +32,11 @@ class RuntimeEnvironmentKeysTest {
                         RuntimeEnvironmentKeys.V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS,
                         RuntimeEnvironmentKeys.V2S_TDS_NODE_ID,
                         RuntimeEnvironmentKeys.V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS,
+                        RuntimeEnvironmentKeys.V2S_TDS_DORIS_DATABASE,
+                        RuntimeEnvironmentKeys.V2S_TDS_DORIS_ENDPOINT,
+                        RuntimeEnvironmentKeys.V2S_TDS_DORIS_PASSWORD,
+                        RuntimeEnvironmentKeys.V2S_TDS_DORIS_TABLE,
+                        RuntimeEnvironmentKeys.V2S_TDS_DORIS_USERNAME,
                         RuntimeEnvironmentKeys.V2S_TESTCONTAINERS_EXECUTION_PLANE),
                 RuntimeEnvironmentKeys.CROSS_LAYER_KEYS);
     }

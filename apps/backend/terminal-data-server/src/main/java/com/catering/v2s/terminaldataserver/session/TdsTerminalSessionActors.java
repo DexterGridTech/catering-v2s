@@ -3,11 +3,14 @@ package com.catering.v2s.terminaldataserver.session;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
 import com.catering.v2s.terminaldataserver.config.TdsRuntimeSettings;
+import com.catering.v2s.terminaldataserver.history.TdsConnectionHistoryEvent;
+import com.catering.v2s.terminaldataserver.history.TdsConnectionHistoryWriter;
 import com.catering.v2s.terminaldataserver.observability.TdsAsyncLog;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.BindingKey;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentBinding;
+import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentSessionState;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateWriter;
 import com.catering.v2s.terminaldataserver.websocket.TdsWebSocketConnection;
@@ -18,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,9 +41,11 @@ public final class TdsTerminalSessionActors {
 
     private final TdsConnectionStateRepository repository;
     private final TdsConnectionStateWriter stateWriter;
+    private final TdsConnectionHistoryWriter historyWriter;
     private final TdsRuntimeSettings settings;
     private final TerminalConnectionFrameCodec codec;
     private final TdsConnectionCapacityLimiter capacityLimiter;
+    private final SessionRegistrationGate registrationGate;
     private final Scheduler jdbcScheduler;
     private final Scheduler logScheduler;
     private final ConcurrentHashMap<UUID, TerminalActor> actors = new ConcurrentHashMap<>();
@@ -50,16 +56,20 @@ public final class TdsTerminalSessionActors {
     public TdsTerminalSessionActors(
             TdsConnectionStateRepository repository,
             TdsConnectionStateWriter stateWriter,
+            TdsConnectionHistoryWriter historyWriter,
             TdsRuntimeSettings settings,
             TerminalConnectionFrameCodec codec,
             TdsConnectionCapacityLimiter capacityLimiter,
+            SessionRegistrationGate registrationGate,
             @Qualifier("tds-db-worker") Scheduler jdbcScheduler,
             @Qualifier("tds-log-worker") Scheduler logScheduler) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.stateWriter = Objects.requireNonNull(stateWriter, "stateWriter");
+        this.historyWriter = Objects.requireNonNull(historyWriter, "historyWriter");
         this.settings = Objects.requireNonNull(settings, "settings");
         this.codec = Objects.requireNonNull(codec, "codec");
         this.capacityLimiter = Objects.requireNonNull(capacityLimiter, "capacityLimiter");
+        this.registrationGate = Objects.requireNonNull(registrationGate, "registrationGate");
         this.jdbcScheduler = Objects.requireNonNull(jdbcScheduler, "jdbcScheduler");
         this.logScheduler = Objects.requireNonNull(logScheduler, "logScheduler");
     }
@@ -199,6 +209,14 @@ public final class TdsTerminalSessionActors {
         });
     }
 
+    public void reconcileSession(CurrentSessionState currentSession) {
+        Objects.requireNonNull(currentSession, "currentSession");
+        actors.computeIfPresent(currentSession.key().terminalRef(), (key, actor) -> {
+            actor.reconcileSession(currentSession);
+            return actor.isIdle() ? null : actor;
+        });
+    }
+
     public int trackedActorCount() {
         return actors.size();
     }
@@ -214,6 +232,7 @@ public final class TdsTerminalSessionActors {
         private final Map<String, PendingAttempt> pending = new HashMap<>();
         private ActiveSession active;
         private long revokedThroughGeneration;
+        private long latestObservedSequence;
         private int registrationsInFlight;
 
         private TerminalActor(UUID terminalRef) {
@@ -340,9 +359,9 @@ public final class TdsTerminalSessionActors {
 
                 // Opening the row is synchronous JDBC. Keep it outside the actor monitor so a
                 // concurrent revocation can remove this pending attempt and close its socket.
-                SessionIdentity identity;
+                Optional<SessionIdentity> opened;
                 try {
-                    identity = repository.open(verification, settings.nodeId(), connection.sessionId());
+                    opened = repository.open(verification, settings.nodeId(), connection.sessionId());
                 } catch (RuntimeException failure) {
                     synchronized (monitor) {
                         if (pending.get(attemptId) == attempt) pending.remove(attemptId);
@@ -352,16 +371,81 @@ public final class TdsTerminalSessionActors {
                     throw failure;
                 }
 
+                if (opened.isEmpty()) {
+                    synchronized (monitor) {
+                        if (pending.get(attemptId) == attempt) pending.remove(attemptId);
+                        trackedPermit.close();
+                        connection.close(
+                                generationRevoked(generation)
+                                        ? "ACTIVATION_CANCELLED"
+                                        : connection.closeReasonOr("SESSION_REPLACED"));
+                    }
+                    return false;
+                }
+                SessionIdentity identity = opened.get();
+
+                TdsAsyncLog.enqueue(
+                        logScheduler,
+                        () -> LOGGER.info(
+                                "event=tds_session_postgres_open_committed_before_local_register "
+                                        + "connectionId={} sessionId={} sequence={}",
+                                connection.connectionId(),
+                                identity.sessionId(),
+                                identity.sequence()));
+                try {
+                    registrationGate.afterPostgresOpen(attemptId).block();
+                } catch (RuntimeException failure) {
+                    synchronized (monitor) {
+                        abandonOpenedSession(attemptId, connection, identity, trackedPermit, "SERVER_ERROR");
+                    }
+                    throw failure;
+                }
+
+                Optional<CurrentSessionState> currentSession;
+                try {
+                    currentSession = repository.readCurrentSession(identity);
+                } catch (RuntimeException failure) {
+                    synchronized (monitor) {
+                        if (pending.get(attemptId) == attempt) pending.remove(attemptId);
+                        trackedPermit.close();
+                        connection.close("SERVER_ERROR");
+                    }
+                    throw failure;
+                }
+                currentSession.ifPresent(this::observeSessionSequence);
+
                 synchronized (monitor) {
                     if (pending.get(attemptId) != attempt
                             || draining.get()
                             || generationRevoked(generation)
-                            || !connection.isOpen()) {
+                            || !connection.isOpen()
+                            || currentSession.isEmpty()
+                            || !currentSession.get().isOpen()
+                            || !currentSession.get().matches(identity)
+                            || identity.sequence() < latestObservedSequence) {
+                        TdsAsyncLog.enqueue(
+                                logScheduler,
+                                () -> LOGGER.info(
+                                        "event=tds_session_candidate_rejected "
+                                                + "connectionId={} candidateSequence={} latestSequence={} "
+                                                + "currentRowPresent={}",
+                                        connection.connectionId(),
+                                        identity.sequence(),
+                                        currentSession
+                                                .map(CurrentSessionState::sequence)
+                                                .orElse(-1L),
+                                        currentSession.isPresent()));
+                        if (currentSession.isPresent() && currentSession.get().sequence() > identity.sequence()) {
+                            rejectOpenedCandidate(attemptId, attempt, connection, trackedPermit, "SESSION_REPLACED");
+                            return false;
+                        }
                         String closeReason = draining.get()
                                 ? "REDIRECT_TO_NEXT_NODE"
                                 : generationRevoked(generation)
                                         ? "ACTIVATION_CANCELLED"
-                                        : connection.closeReasonOr("NETWORK_ERROR");
+                                        : !connection.isOpen()
+                                                ? connection.closeReasonOr("NETWORK_ERROR")
+                                                : "SESSION_REPLACED";
                         abandonOpenedSession(attemptId, connection, identity, trackedPermit, closeReason);
                         return false;
                     }
@@ -392,6 +476,7 @@ public final class TdsTerminalSessionActors {
 
                     ActiveSession previous = active;
                     active = new ActiveSession(generation, connection, identity, trackedPermit);
+                    historyWriter.recordConnected(TdsConnectionHistoryEvent.connected(identity));
                     pending.remove(attemptId);
                     if (previous != null) {
                         String previousReason =
@@ -503,6 +588,50 @@ public final class TdsTerminalSessionActors {
             }
         }
 
+        private void reconcileSession(CurrentSessionState currentSession) {
+            synchronized (monitor) {
+                if (!terminalRef.equals(currentSession.key().terminalRef())) return;
+                if (currentSession.sequence() < latestObservedSequence) return;
+                latestObservedSequence = currentSession.sequence();
+                if (active != null
+                        && currentSession.sequence() >= active.identity().sequence()
+                        && (!currentSession.isOpen() || !currentSession.matches(active.identity()))) {
+                    ActiveSession replaced = active;
+                    active = null;
+                    replaced.connection().close("SESSION_REPLACED");
+                    queueDisconnect(replaced, "SESSION_REPLACED");
+                    TdsAsyncLog.enqueue(
+                            logScheduler,
+                            () -> LOGGER.info(
+                                    "event=tds_session_reconciled_as_replaced "
+                                            + "sessionId={} localSequence={} latestSessionId={} latestSequence={}",
+                                    replaced.identity().sessionId(),
+                                    replaced.identity().sequence(),
+                                    currentSession.sessionId(),
+                                    currentSession.sequence()));
+                }
+            }
+        }
+
+        private void observeSessionSequence(CurrentSessionState currentSession) {
+            synchronized (monitor) {
+                if (terminalRef.equals(currentSession.key().terminalRef())) {
+                    latestObservedSequence = Math.max(latestObservedSequence, currentSession.sequence());
+                }
+            }
+        }
+
+        private void rejectOpenedCandidate(
+                String attemptId,
+                PendingAttempt attempt,
+                TdsWebSocketConnection connection,
+                TdsConnectionCapacityLimiter.Permit trackedPermit,
+                String closeReason) {
+            if (pending.get(attemptId) == attempt) pending.remove(attemptId);
+            trackedPermit.close();
+            connection.close(closeReason);
+        }
+
         private boolean sameBindingIdentity(PendingAttempt attempt, CurrentBinding binding) {
             return binding.generation() != null
                     && attempt.workspaceUuid != null
@@ -538,6 +667,7 @@ public final class TdsTerminalSessionActors {
         }
 
         private void queueDisconnect(ActiveSession session, String closeReason) {
+            historyWriter.recordDisconnected(TdsConnectionHistoryEvent.disconnected(session.identity(), closeReason));
             stateWriter.queueDisconnect(session.identity(), closeReason, () -> {
                 session.trackedPermit().close();
                 TdsAsyncLog.enqueue(

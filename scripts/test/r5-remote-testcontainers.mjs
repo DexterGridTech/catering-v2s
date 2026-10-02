@@ -54,6 +54,20 @@ const remoteHostTrust = resolveTrustedRemoteHost(process.env);
 const remoteHost = remoteHostTrust.host;
 const backendAcceptanceSelector = 'com.catering.v2s.app.acceptance.BackendAcceptanceTest';
 export const V_S15_TDS_CONTRACT_SCENARIO = 'terminal.connection.vs15.readiness-withdrawal-and-drain';
+export const TDS_HISTORY_SECRET_SEARCH_SCENARIO = 'terminal.connection.vs11.secret-search';
+export const TDS_HISTORY_RECORDS_SCENARIO = 'terminal.connection.history-records';
+export const TDS_HISTORY_OUTAGE_BOUNDED_SCENARIO = 'terminal.connection.history-outage-bounded';
+export const TDS_CROSS_NODE_RECOVERY_SCENARIO = 'terminal.connection.vs13.cross-node-recovery';
+const TDS_CONTRACT_SCENARIO_PREFLIGHT = new Map([
+  [V_S15_TDS_CONTRACT_SCENARIO, true],
+  [TDS_HISTORY_SECRET_SEARCH_SCENARIO, false],
+  [TDS_HISTORY_RECORDS_SCENARIO, true],
+  [TDS_HISTORY_OUTAGE_BOUNDED_SCENARIO, false],
+  [TDS_CROSS_NODE_RECOVERY_SCENARIO, true],
+]);
+const isTdsContractScenarioScopeValid = (scenario, topologyPreflight) =>
+  TDS_CONTRACT_SCENARIO_PREFLIGHT.has(scenario) &&
+  TDS_CONTRACT_SCENARIO_PREFLIGHT.get(scenario) === topologyPreflight;
 const hasBackendAcceptanceSelector = extraArguments =>
   extraArguments.some(
     argument =>
@@ -330,11 +344,10 @@ export const backendAcceptanceEnvironment = (
   }
   if (
     tdsContractScenario !== null &&
-    (tdsContractScenario !== V_S15_TDS_CONTRACT_SCENARIO ||
+    (!isTdsContractScenarioScopeValid(tdsContractScenario, topologyPreflight) ||
       runId === null ||
       effectiveOperation !== 'storeTerminalActivationBusinessPrecedence' ||
       verificationMode !== 'ACCEPTANCE' ||
-      !topologyPreflight ||
       vs12Diagnostic ||
       vs8Diagnostic ||
       d46Focused ||
@@ -1138,6 +1151,20 @@ export const parseAndValidateRunManifest = manifest => {
   validateGradleDistribution(manifest.gradleDistribution);
   if (!['PASS', 'FAIL', 'NOT_RUN'].includes(manifest.testExecution.status))
     throw new Error('RUN_MANIFEST_TEST_EXECUTION_INVALID');
+  if (manifest.status === 'PASS') {
+    const resources = manifest.testcontainersResources;
+    if (
+      resources?.captureStatus !== 'PASS' ||
+      typeof resources?.capturedAt !== 'string' ||
+      resources?.cleanupStatus !== 'PASS' ||
+      !Array.isArray(resources.capturedContainerIds) ||
+      !resources.capturedContainerIds.every(id => /^[a-f0-9]{12,64}$/i.test(id)) ||
+      !Array.isArray(resources.capturedVolumeNames) ||
+      !resources.capturedVolumeNames.every(name => /^[A-Za-z0-9][A-Za-z0-9_.-]{0,254}$/.test(name))
+    ) {
+      throw new Error('RUN_MANIFEST_TESTCONTAINERS_RESOURCE_EVIDENCE_INVALID');
+    }
+  }
   const backendAcceptance = manifest.backendAcceptance;
   const tdsContractOnly = backendAcceptance?.scope === 'TDS_CONTRACT_ONLY';
   if (
@@ -1152,9 +1179,11 @@ export const parseAndValidateRunManifest = manifest => {
   }
   if (backendAcceptance !== null && backendAcceptance.tdsContractScenario != null) {
     if (
-      backendAcceptance.tdsContractScenario !== V_S15_TDS_CONTRACT_SCENARIO ||
+      !isTdsContractScenarioScopeValid(
+        backendAcceptance.tdsContractScenario,
+        backendAcceptance.topologyPreflight,
+      ) ||
       backendAcceptance.operation !== 'storeTerminalActivationBusinessPrecedence' ||
-      backendAcceptance.topologyPreflight !== true ||
       manifest.verificationMode !== 'ACCEPTANCE' ||
       (backendAcceptance.tdsContractScenarioResult !== undefined &&
         backendAcceptance.tdsContractScenarioResult !== 'PASS') ||
@@ -2182,11 +2211,10 @@ export const runScript = ({
   }
   if (
     tdsContractScenario !== null &&
-    (tdsContractScenario !== V_S15_TDS_CONTRACT_SCENARIO ||
+    (!isTdsContractScenarioScopeValid(tdsContractScenario, topologyPreflight) ||
       backendAcceptanceRunId === null ||
       backendAcceptanceOperation !== 'storeTerminalActivationBusinessPrecedence' ||
       verificationMode !== 'ACCEPTANCE' ||
-      !topologyPreflight ||
       productionMutation !== null ||
       invocation.extensionScaleProof === true ||
       vs12Diagnostic ||
@@ -2325,6 +2353,16 @@ export const runScript = ({
     'signal_trace_pid=""',
     'signal_trace_pid_start_ticks=""',
     'signal_trace_boot_id=""',
+    'resource_capture_status=NOT_RUN',
+    'resource_capture_stop="$root/testcontainers-resource-capture.stop"',
+    'resource_capture_containers="$root/testcontainers-resource-captured-container-ids"',
+    'resource_capture_volumes="$root/testcontainers-resource-captured-volume-ids"',
+    'resource_capture_pid=""',
+    'stop_resource_capture() { if test -n "$resource_capture_pid"; then touch "$resource_capture_stop" 2>/dev/null || true; wait "$resource_capture_pid" 2>/dev/null || true; fi; }',
+    'trap stop_resource_capture EXIT',
+    'trap \'exit 129\' HUP',
+    'trap \'exit 130\' INT',
+    'trap \'exit 143\' TERM',
     'signal_trace_stop_status=NOT_REQUESTED',
     'remote_pid_start_ticks() { local pid="$1" stat_line stat_tail; stat_line="$(cat "/proc/$pid/stat" 2>/dev/null)" || return 1; stat_tail="${stat_line##*) }"; read -r -a stat_fields <<< "$stat_tail"; test "${#stat_fields[@]}" -ge 20 || return 1; printf "%s" "${stat_fields[19]}"; }',
     'if test "$signal_trace_requested" = true && test "$signal_trace_system_requested" != true; then signal_trace_status=UNAVAILABLE; if command -v strace >/dev/null 2>&1; then signal_trace_status=READY; signal_trace_tool="$(command -v strace)"; signal_trace_version="$(strace --version | head -n 1)"; signal_trace_version="${signal_trace_version##* }"; fi; fi',
@@ -2359,6 +2397,16 @@ export const runScript = ({
     'fi',
     'signal_trace_preflight="$signal_trace_status"',
     'printf "REMOTE_SIGNAL_TRACE_PREFLIGHT=%s\\n" "$signal_trace_preflight"',
+    'rm -f -- "$resource_capture_stop" "$resource_capture_containers" "$resource_capture_volumes" "$root/testcontainers-resource-capture.failure"',
+    ': > "$resource_capture_containers"; : > "$resource_capture_volumes"',
+    'capture_testcontainers_resources() {',
+    '  while test ! -e "$resource_capture_stop"; do',
+    '    if ! container_snapshot="$(docker ps -aq --filter label=org.testcontainers=true | sort -u)"; then printf "CONTAINER_QUERY\\n" >> "$root/testcontainers-resource-capture.failure"; else while IFS= read -r resource_id; do test -n "$resource_id" || continue; if ! grep -Fxq -- "$resource_id" "$resource_capture_containers" 2>/dev/null; then printf "%s\\n" "$resource_id" >> "$resource_capture_containers"; fi; done <<< "$container_snapshot"; fi',
+    '    if ! volume_snapshot="$(docker volume ls -q --filter label=org.testcontainers=true | sort -u)"; then printf "VOLUME_QUERY\\n" >> "$root/testcontainers-resource-capture.failure"; else while IFS= read -r volume_name; do test -n "$volume_name" || continue; if ! grep -Fxq -- "$volume_name" "$resource_capture_volumes" 2>/dev/null; then printf "%s\\n" "$volume_name" >> "$resource_capture_volumes"; fi; done <<< "$volume_snapshot"; fi',
+    '    sleep 0.5',
+    '  done',
+    '}',
+    'capture_testcontainers_resources & resource_capture_pid=$!',
     'set +e',
     '(',
     '  set -euo pipefail',
@@ -2381,6 +2429,13 @@ export const runScript = ({
       : [`  "$gradle/bin/gradle" --no-daemon --rerun-tasks --stacktrace "$task" ${selectorArguments}`]),
     ') 2>&1 | tee "$log_file"',
     'gradle_status=${PIPESTATUS[0]}',
+    'touch "$resource_capture_stop"',
+    'resource_capture_wait_status=PASS; if ! wait "$resource_capture_pid"; then resource_capture_wait_status=FAIL; fi',
+    'resource_capture_status=PASS; test ! -s "$root/testcontainers-resource-capture.failure" && test "$resource_capture_wait_status" = PASS || resource_capture_status=FAIL',
+    'if test "$resource_capture_status" = PASS; then sort -u "$resource_capture_containers" > "$results/testcontainers-owned-container-ids"; sort -u "$resource_capture_volumes" > "$results/testcontainers-owned-volume-ids"; else : > "$results/testcontainers-owned-container-ids"; : > "$results/testcontainers-owned-volume-ids"; fi',
+    'owned_container_ids=$(paste -sd, "$results/testcontainers-owned-container-ids")',
+    'owned_volume_ids=$(paste -sd, "$results/testcontainers-owned-volume-ids")',
+    'printf "REMOTE_TESTCONTAINERS_RESOURCE_CAPTURE=%s\\nREMOTE_TESTCONTAINERS_OWNED_CONTAINER_IDS=%s\\nREMOTE_TESTCONTAINERS_OWNED_VOLUME_IDS=%s\\n" "$resource_capture_status" "${owned_container_ids:-NONE}" "${owned_volume_ids:-NONE}"',
     'if test "$signal_trace_system_requested" = true; then',
     '  if test -n "$signal_trace_pid"; then',
     '    if kill -0 "$signal_trace_pid" 2>/dev/null; then if test -n "$signal_trace_pid_start_ticks" && test "$(cat /proc/sys/kernel/random/boot_id 2>/dev/null || true)" = "$signal_trace_boot_id" && test "$(remote_pid_start_ticks "$signal_trace_pid" 2>/dev/null || true)" = "$signal_trace_pid_start_ticks"; then kill -TERM "$signal_trace_pid" 2>/dev/null || signal_trace_stop_status=FAIL; test "$signal_trace_stop_status" = FAIL || signal_trace_stop_status=STOPPED; else signal_trace_stop_status=IDENTITY_UNVERIFIED; fi; else signal_trace_stop_status=ALREADY_EXITED; fi',
@@ -2490,6 +2545,12 @@ export const runScript = ({
 };
 
 const marker = (output, name) => output.match(new RegExp(`(?:^|\\n)${name}=([^\\r\\n]+)`))?.[1]?.trim();
+const parseResourceIdMarker = (value, pattern) => {
+  if (value === 'NONE') return [];
+  if (typeof value !== 'string' || value.length === 0) return null;
+  const values = value.split(',');
+  return values.every(item => pattern.test(item)) && new Set(values).size === values.length ? values : null;
+};
 
 const RUNNER_MARKER_NAMES = new Set([
   'REMOTE_GRADLE_STATUS',
@@ -2502,6 +2563,9 @@ const RUNNER_MARKER_NAMES = new Set([
   'REMOTE_TESTCONTAINERS_AFTER_VOLUME_QUERY',
   'REMOTE_TESTCONTAINERS_CONTAINERS',
   'REMOTE_TESTCONTAINERS_VOLUMES',
+  'REMOTE_TESTCONTAINERS_RESOURCE_CAPTURE',
+  'REMOTE_TESTCONTAINERS_OWNED_CONTAINER_IDS',
+  'REMOTE_TESTCONTAINERS_OWNED_VOLUME_IDS',
   'REMOTE_EVIDENCE_ARCHIVE_STATUS',
   'REMOTE_SIGNAL_TRACE_STATUS',
   'REMOTE_SIGNAL_TRACE_TOOL',
@@ -2600,11 +2664,10 @@ const execute = async () => {
   const tdsContractScenario = process.env.V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO ?? null;
   if (
     tdsContractScenario !== null &&
-    (tdsContractScenario !== V_S15_TDS_CONTRACT_SCENARIO ||
+    (!isTdsContractScenarioScopeValid(tdsContractScenario, topologyPreflight) ||
       backendAcceptanceRunId === null ||
       backendAcceptanceOperation !== 'storeTerminalActivationBusinessPrecedence' ||
       verificationMode !== 'ACCEPTANCE' ||
-      !topologyPreflight ||
       tdsContractOnly ||
       d46Focused ||
       invocation.productionMutationId !== undefined ||
@@ -2745,6 +2808,12 @@ const execute = async () => {
     gradleDistribution: distribution,
     logPath: `${remoteResults}/gradle.log`,
     testExecution: {status: 'NOT_RUN'},
+    testcontainersResources: {
+      captureStatus: 'NOT_RUN',
+      capturedContainerIds: [],
+      capturedVolumeNames: [],
+      cleanupStatus: 'NOT_RUN',
+    },
     business: backendAcceptanceRunId === null ? 'NOT_APPLICABLE' : 'NOT_RUN',
     backendAcceptance:
       backendAcceptanceRunId === null
@@ -2931,6 +3000,24 @@ const execute = async () => {
       : null;
     const runnerMarker = name => remoteRun.markers?.[name] ?? marker(remoteRun.stdoutTail, name);
     const remoteGradleStatus = runnerMarker('REMOTE_GRADLE_STATUS');
+    const resourceCaptureStatus = runnerMarker('REMOTE_TESTCONTAINERS_RESOURCE_CAPTURE');
+    const capturedContainerIds = parseResourceIdMarker(
+      runnerMarker('REMOTE_TESTCONTAINERS_OWNED_CONTAINER_IDS'),
+      /^[a-f0-9]{12,64}$/i,
+    );
+    const capturedVolumeNames = parseResourceIdMarker(
+      runnerMarker('REMOTE_TESTCONTAINERS_OWNED_VOLUME_IDS'),
+      /^[A-Za-z0-9][A-Za-z0-9_.-]{0,254}$/,
+    );
+    const resourceCaptureValid =
+      resourceCaptureStatus === 'PASS' && capturedContainerIds !== null && capturedVolumeNames !== null;
+    manifest.testcontainersResources = {
+      captureStatus: resourceCaptureValid ? 'PASS' : 'FAIL',
+      capturedAt: resourceCaptureValid ? now() : null,
+      capturedContainerIds: capturedContainerIds ?? [],
+      capturedVolumeNames: capturedVolumeNames ?? [],
+      cleanupStatus: 'PENDING',
+    };
     const containerQueryStatus = runnerMarker('REMOTE_TESTCONTAINERS_CONTAINER_QUERY');
     const volumeQueryStatus = runnerMarker('REMOTE_TESTCONTAINERS_VOLUME_QUERY');
     const afterContainerQueryStatus = runnerMarker('REMOTE_TESTCONTAINERS_AFTER_CONTAINER_QUERY');
@@ -2978,11 +3065,14 @@ const execute = async () => {
     const executionPass =
       actualExecution.status === 'PASS' &&
       remoteGradleStatus === '0' &&
+      resourceCaptureValid &&
       manifest.remoteProcessInventory.status === 'CAPTURED' &&
       (!signalTracingRequested || manifest.signalTrace.status === 'CAPTURED') &&
       (!traceSystemSignals || manifest.signalTrace.stopStatus === 'STOPPED');
     const executionFailure =
-      processInventoryPreflight !== 'CAPTURED'
+      !resourceCaptureValid
+        ? 'REMOTE_TESTCONTAINERS_RESOURCE_CAPTURE_FAILED'
+        : processInventoryPreflight !== 'CAPTURED'
         ? 'REMOTE_PROCESS_INVENTORY_PREFLIGHT_FAILED'
         : remoteGradleStatus !== undefined && remoteGradleStatus !== '0'
         ? (gradleFailureCode ?? 'GRADLE_TEST_FAILURE_DETAILS_UNAVAILABLE')
@@ -3208,6 +3298,10 @@ const execute = async () => {
       }
       beginBoundary('REMOTE_WORKSPACE_CLEANUP');
       manifest.cleanup.remoteWorkspace = cleanupRemoteWorkspace(remoteRoot);
+      manifest.testcontainersResources.cleanupStatus =
+        manifest.cleanup.testcontainersContainers === 'PASS' && manifest.cleanup.testcontainersVolumes === 'PASS'
+          ? 'PASS'
+          : 'FAIL';
       if (manifest.cleanup.remoteWorkspace === 'PASS' && manifest.brokenBoundary === null) {
         markLastKnownGood('REMOTE_WORKSPACE_CLEANUP');
       }

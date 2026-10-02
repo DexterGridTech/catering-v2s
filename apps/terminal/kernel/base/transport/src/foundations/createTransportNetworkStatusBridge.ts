@@ -2,12 +2,14 @@ import type {DevicePort} from '@catering-v2s/kernel-base-platform-ports';
 import type {TransportNetworkStatusBridge, TransportNetworkStatusDispatch} from '../types/runtimeControl';
 
 /** Bridges optional device network observations into transport-owner commands only. */
-export const createTransportNetworkStatusBridge = async (input: Readonly<{
-  readonly device: DevicePort;
-  readonly dispatchTransition: TransportNetworkStatusDispatch;
-  readonly timeoutMs: number;
-  readonly onObservationError?: (source: 'subscribe' | 'dispatch', code: string) => void;
-}>): Promise<TransportNetworkStatusBridge> => {
+export const createTransportNetworkStatusBridge = async (
+  input: Readonly<{
+    readonly device: DevicePort;
+    readonly dispatchTransition: TransportNetworkStatusDispatch;
+    readonly timeoutMs: number;
+    readonly onObservationError?: (source: 'subscribe' | 'dispatch', code: string) => void;
+  }>,
+): Promise<TransportNetworkStatusBridge> => {
   const initial = await input.device.getNetworkStatus({timeoutMs: input.timeoutMs});
 
   let disposed = false;
@@ -27,7 +29,8 @@ export const createTransportNetworkStatusBridge = async (input: Readonly<{
       }
       if (lastConnected === event.status.connected) return;
       lastConnected = event.status.connected;
-      void input.dispatchTransition({connected: event.status.connected, observedAt: event.observedAt})
+      void input
+        .dispatchTransition({connected: event.status.connected, observedAt: event.observedAt})
         .catch(() => input.onObservationError?.('dispatch', 'TRANSPORT_NETWORK_COMMAND_FAILED'));
     },
     onError: error => input.onObservationError?.('subscribe', error.code),

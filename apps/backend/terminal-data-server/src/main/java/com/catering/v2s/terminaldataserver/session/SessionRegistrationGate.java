@@ -21,6 +21,8 @@ import reactor.core.scheduler.Scheduler;
 @Component
 public final class SessionRegistrationGate {
     public static final String CONTROL_SOCKET_PROPERTY = "v2s.tds.acceptance.registration-gate-socket";
+    public static final String BEFORE_REGISTER_STAGE = "CREDENTIAL_VERIFICATION_RETURNED_BEFORE_REGISTER";
+    public static final String AFTER_POSTGRES_OPEN_STAGE = "PG_OPEN_COMMITTED_BEFORE_LOCAL_REGISTER";
     private static final int MAX_CONTROL_LINE_BYTES = 128;
 
     private final Path controlSocket;
@@ -43,6 +45,15 @@ public final class SessionRegistrationGate {
     }
 
     public Mono<Void> beforeRegistration(String attemptId) {
+        return awaitControl(BEFORE_REGISTER_STAGE, attemptId);
+    }
+
+    /** Acceptance-only barrier after the PG open transaction commits and before local install. */
+    public Mono<Void> afterPostgresOpen(String attemptId) {
+        return awaitControl(AFTER_POSTGRES_OPEN_STAGE, attemptId);
+    }
+
+    private Mono<Void> awaitControl(String stage, String attemptId) {
         if (controlSocket == null) return Mono.empty();
         if (attemptId == null || !attemptId.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
             return Mono.error(new IllegalArgumentException("TDS_REGISTRATION_GATE_ATTEMPT_ID_INVALID"));
@@ -72,7 +83,7 @@ public final class SessionRegistrationGate {
                     if (cancelled.get()) return;
                     channel.connect(UnixDomainSocketAddress.of(controlSocket));
                     if (cancelled.get()) return;
-                    writeLine(channel, "CREDENTIAL_VERIFICATION_RETURNED_BEFORE_REGISTER\t" + attemptId);
+                    writeLine(channel, stage + "\t" + attemptId);
                     String response = readLine(channel);
                     if (!("RELEASE\t" + attemptId).equals(response)) {
                         throw new IOException("TDS_REGISTRATION_GATE_RELEASE_INVALID");

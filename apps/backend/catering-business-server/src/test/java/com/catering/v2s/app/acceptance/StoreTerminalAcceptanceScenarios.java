@@ -121,6 +121,97 @@ final class StoreTerminalAcceptanceScenarios {
                 fixture.generation() + 1);
     }
 
+    DorisOutageBusinessTimings performBusinessActionsDuringDorisOutage(
+            BackendAcceptanceTest.ScenarioContext context, int actionPairs) throws Exception {
+        assertTrue(actionPairs > 0 && actionPairs <= 20, "DORIS_OUTAGE_BUSINESS_ACTION_COUNT_INVALID");
+        StoreContext store = enabledStore(context);
+        UUID terminalRef = create(context, store, "TDS history outage business", null);
+        String activationCode =
+                readDetail(context, store, terminalRef).path("activationCode").asText();
+        String deviceId = "tds-doris-outage-device-" + UUID.randomUUID();
+        long maximumActivationMillis = 0;
+        long maximumCancellationMillis = 0;
+
+        for (int index = 1; index <= actionPairs; index++) {
+            String secret = newCredentialSecret();
+            long activationStarted = System.nanoTime();
+            BackendAcceptanceTest.Response activated = context.post(
+                    BackendAcceptanceTest.TERMINAL_ACTIVATION,
+                    terminalActivationPath(store.fixture()),
+                    null,
+                    activationBody(activationCode, deviceId, secret),
+                    Map.of(),
+                    OK);
+            maximumActivationMillis = Math.max(
+                    maximumActivationMillis, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - activationStarted));
+            assertEquals(index, activated.json().path("bindingGeneration").asInt());
+            assertFalse(activated.raw().contains(secret), "CONTRACT: activation never returns its credential");
+
+            long cancellationStarted = System.nanoTime();
+            BackendAcceptanceTest.Response cancelled = context.post(
+                    BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
+                    terminalActivationCancelPath(store.fixture(), terminalRef),
+                    null,
+                    Map.of("deviceId", deviceId),
+                    Map.of("Authorization", terminalCredential(index, secret)),
+                    OK);
+            maximumCancellationMillis = Math.max(
+                    maximumCancellationMillis, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - cancellationStarted));
+            assertEquals("CANCELLED", cancelled.json().path("outcome").asText());
+        }
+
+        long auditWindowStartedAt = System.currentTimeMillis();
+        ConnectionFixture auditFixture = createConnectionContractFixture(context);
+        StoreContext auditStore = new StoreContext(auditFixture.fixture(), auditFixture.session());
+        ConnectionFixture sameDeviceReactivation = reactivateConnectionContractFixture(context, auditFixture);
+        performConnectionRevocation(context, sameDeviceReactivation, ConnectionRevocationAction.DEVICE_CANCEL);
+        ConnectionFixture afterDeviceCancellation =
+                reactivateConnectionContractFixture(context, sameDeviceReactivation);
+        performConnectionRevocation(context, afterDeviceCancellation, ConnectionRevocationAction.OPERATIONS_CANCEL);
+        ConnectionFixture afterOperationsCancellation =
+                reactivateConnectionContractFixture(context, afterDeviceCancellation);
+        performConnectionRevocation(context, afterOperationsCancellation, ConnectionRevocationAction.TERMINAL_VOID);
+        assertConnectionFixtureInactive(context, afterOperationsCancellation);
+        long auditWindowCompletedAt = System.currentTimeMillis();
+
+        JsonNode lifecycleAudit = terminalBindingAuditHistory(context, auditStore, auditFixture.terminalRef());
+        assertTerminalBindingAuditHistory(
+                lifecycleAudit,
+                auditFixture.terminalRef(),
+                auditWindowStartedAt - 1_000,
+                auditWindowCompletedAt + 1_000,
+                Map.of(
+                        "ACTIVATED", 3,
+                        "REACTIVATED", 1,
+                        "DEVICE_CANCELLED", 1,
+                        "OPERATIONS_CANCELLED", 1,
+                        "TERMINAL_VOIDED", 1));
+
+        assertTrue(maximumActivationMillis < 1_000, "DORIS_OUTAGE_ACTIVATION_SLOWER_THAN_ONE_SECOND");
+        assertTrue(maximumCancellationMillis < 1_000, "DORIS_OUTAGE_CANCELLATION_SLOWER_THAN_ONE_SECOND");
+        assertEquals(actionPairs * 2L, terminalBindingAuditTotal(context, store, terminalRef));
+        JsonNode history = terminalBindingAuditHistory(context, store, terminalRef);
+        assertTrue(
+                hasTerminalBindingAuditReason(history, "终端设备", "ACTIVATED"),
+                "BUSINESS: Doris outage does not lose activation audit history in PostgreSQL");
+        assertTrue(
+                hasTerminalBindingAuditReason(history, "终端设备", "DEVICE_CANCELLED"),
+                "BUSINESS: Doris outage does not lose cancellation audit history in PostgreSQL");
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_BUSINESS scenario=storeTerminalActivationBusinessPrecedence "
+                        + "dorisOutageLifecycleAuditRows=%d actorsAndReasons=PASS occurredAt=PASS result=PASS%n",
+                lifecycleAudit.path("total").asInt());
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_BUSINESS scenario=storeTerminalActivationBusinessPrecedence "
+                        + "dorisOutageActions=%d maxActivationMillis=%d maxCancellationMillis=%d "
+                        + "postgresAuditRows=%d result=PASS%n",
+                actionPairs, maximumActivationMillis, maximumCancellationMillis, actionPairs * 2);
+        return new DorisOutageBusinessTimings(maximumActivationMillis, maximumCancellationMillis, actionPairs * 2L);
+    }
+
+    record DorisOutageBusinessTimings(
+            long maximumActivationMillis, long maximumCancellationMillis, long postgresAuditRows) {}
+
     void performConnectionRevocation(
             BackendAcceptanceTest.ScenarioContext context, ConnectionFixture fixture, ConnectionRevocationAction action)
             throws Exception {
@@ -2951,6 +3042,46 @@ final class StoreTerminalAcceptanceScenarios {
             }
         }
         return false;
+    }
+
+    private void assertTerminalBindingAuditHistory(
+            JsonNode history,
+            UUID terminalRef,
+            long occurredAtNotBefore,
+            long occurredAtNotAfter,
+            Map<String, Integer> expectedCounts) {
+        Map<String, String> expectedActors = Map.of(
+                "ACTIVATED", "终端设备",
+                "REACTIVATED", "终端设备",
+                "DEVICE_CANCELLED", "终端设备",
+                "OPERATIONS_CANCELLED", "Acceptance Operator",
+                "TERMINAL_VOIDED", "Acceptance Operator");
+        Map<String, Integer> actualCounts = new LinkedHashMap<>();
+        int expectedTotal =
+                expectedCounts.values().stream().mapToInt(Integer::intValue).sum();
+        assertEquals(expectedTotal, history.path("total").asInt(), "BUSINESS: PostgreSQL audit total is complete");
+        assertEquals(expectedTotal, history.path("items").size(), "BUSINESS: audit page contains every binding fact");
+        for (JsonNode item : history.path("items")) {
+            assertEquals(
+                    "TERMINAL_BINDING", item.path("target").path("entityType").asText());
+            assertEquals(
+                    terminalRef.toString(), item.path("target").path("entityId").asText());
+            long occurredAt = item.path("occurredAt").asLong(-1);
+            assertTrue(
+                    occurredAt >= occurredAtNotBefore && occurredAt <= occurredAtNotAfter,
+                    "BUSINESS: binding audit time matches the real HTTP operation window");
+            String reason = null;
+            for (JsonNode change : item.path("changes")) {
+                if (!"reason".equals(change.path("fieldKey").asText())) continue;
+                assertEquals(null, reason, "BUSINESS: one binding audit row has one reason");
+                reason = change.path("afterValue").asText();
+            }
+            assertNotNull(reason, "BUSINESS: binding audit reason is present");
+            assertEquals(
+                    expectedActors.get(reason), item.path("actorDisplayName").asText());
+            actualCounts.merge(reason, 1, Integer::sum);
+        }
+        assertEquals(expectedCounts, actualCounts, "BUSINESS: PostgreSQL retains each expected binding audit reason");
     }
 
     private void awaitActiveBindingGeneration(StoreContext store, UUID terminalRef, long generation)

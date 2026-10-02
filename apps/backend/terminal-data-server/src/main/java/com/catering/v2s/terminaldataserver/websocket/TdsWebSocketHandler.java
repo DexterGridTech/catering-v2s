@@ -5,6 +5,8 @@ import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
 import com.catering.v2s.terminaldataserver.config.TdsRuntimeSettings;
+import com.catering.v2s.terminaldataserver.history.TdsConnectionHistoryEvent;
+import com.catering.v2s.terminaldataserver.history.TdsConnectionHistoryWriter;
 import com.catering.v2s.terminaldataserver.observability.TdsAsyncLog;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec.Authenticate;
@@ -49,6 +51,7 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
     private final TdsTerminalSessionActors sessionActors;
     private final TdsBindingRevocationListener revocationListener;
     private final TdsConnectionStateWriter stateWriter;
+    private final TdsConnectionHistoryWriter historyWriter;
     private final SessionRegistrationGate registrationGate;
     private final Scheduler databaseScheduler;
     private final Scheduler identityScheduler;
@@ -64,6 +67,7 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
             TdsTerminalSessionActors sessionActors,
             TdsBindingRevocationListener revocationListener,
             TdsConnectionStateWriter stateWriter,
+            TdsConnectionHistoryWriter historyWriter,
             SessionRegistrationGate registrationGate,
             @Qualifier("tds-db-worker") Scheduler databaseScheduler,
             @Qualifier("tds-identity-worker") Scheduler identityScheduler,
@@ -77,6 +81,7 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
         this.sessionActors = sessionActors;
         this.revocationListener = revocationListener;
         this.stateWriter = stateWriter;
+        this.historyWriter = historyWriter;
         this.registrationGate = registrationGate;
         this.databaseScheduler = databaseScheduler;
         this.identityScheduler = identityScheduler;
@@ -460,7 +465,10 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                     }
                     if (!connection.sendText(response.pong())) return close(connection, "SERVER_ERROR");
                     SessionIdentity session = connection.persistedSession();
-                    if (session != null) stateWriter.queueHeartbeat(session, ping.lastRttMs());
+                    if (session != null) {
+                        stateWriter.queueHeartbeat(session, ping.lastRttMs());
+                        historyWriter.recordHeartbeat(TdsConnectionHistoryEvent.heartbeat(session, ping.lastRttMs()));
+                    }
                     if (!heartbeatEvents.tryEmitNext(ping.sequence()).isSuccess()) {
                         return close(connection, "SERVER_ERROR");
                     }

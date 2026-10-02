@@ -663,6 +663,12 @@ class BackendAcceptanceTest {
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Container
+    static final GenericContainer<?> DORIS = new GenericContainer<>("apache/doris:all-in-one-4.1.3")
+            .withExposedPorts(9030, 8040)
+            .waitingFor(Wait.forHealthcheck())
+            .withStartupTimeout(Duration.ofMinutes(2));
+
+    @Container
     static final GenericContainer<?> MINIO = new GenericContainer<>(MINIO_IMAGE)
             .withEnv("MINIO_ROOT_USER", OBJECT_STORAGE_ACCESS_KEY)
             .withEnv("MINIO_ROOT_PASSWORD", OBJECT_STORAGE_SECRET_KEY)
@@ -706,6 +712,8 @@ class BackendAcceptanceTest {
     private ConfigurableApplicationContext secondBusinessContext;
     private int secondBusinessPort;
     private TdsAcceptanceProcess tdsAcceptanceProcess;
+    private TdsAcceptanceProcess.DorisConfiguration tdsDorisConfiguration;
+    private DorisStalledEndpoint dorisStalledEndpoint;
     private boolean registrationRaceRedControlCaught;
 
     int secondBusinessPort() {
@@ -714,6 +722,160 @@ class BackendAcceptanceTest {
 
     int primaryBusinessPort() {
         return port;
+    }
+
+    private static TdsAcceptanceProcess.DorisConfiguration initializeDorisHistoryTable() throws Exception {
+        awaitDorisBackendHddStorage(Duration.ofSeconds(45));
+        Path ddlPath = AcceptanceRepositoryPaths.resolveRegularFile(
+                "scripts/dev/doris/connection-history.sql",
+                "BACKEND_ACCEPTANCE_DORIS_DDL_MISSING",
+                "BACKEND_ACCEPTANCE_DORIS_DDL_REPOSITORY_ESCAPE");
+        runDorisSql(Files.readString(ddlPath, StandardCharsets.UTF_8));
+
+        String username = "tds_history_writer";
+        String password = UUID.randomUUID().toString().replace("-", "");
+        runDorisSql("CREATE USER IF NOT EXISTS '" + username + "' IDENTIFIED BY '" + password + "';\n"
+                + "GRANT LOAD_PRIV ON terminal_connection_history.connection_history TO '" + username + "';\n");
+        String grants = runDorisSql("SHOW GRANTS FOR '" + username + "';\n");
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_DORIS_GRANT_READBACK user=[REDACTED] result=%s%n",
+                safeDorisSqlDiagnostic(grants.replace(username, "[USER]"), ""));
+        String normalizedGrants = grants.toLowerCase(java.util.Locale.ROOT);
+        String tableLoadGrant = "internal.terminal_connection_history.connection_history: load_priv";
+        int loadGrantIndex = normalizedGrants.indexOf("load_priv");
+        assertTrue(
+                normalizedGrants.contains(tableLoadGrant)
+                        && loadGrantIndex >= 0
+                        && loadGrantIndex == normalizedGrants.lastIndexOf("load_priv"),
+                "BACKEND_ACCEPTANCE_DORIS_TABLE_LOAD_GRANT_MISSING_OR_GLOBAL_LOAD_PRESENT");
+
+        String endpoint = "http://" + DORIS.getHost() + ":" + DORIS.getMappedPort(8040);
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_DORIS stage=READY image=apache/doris:all-in-one-4.1.3 "
+                        + "endpointHost=%s endpointPort=%d grant=TABLE_LOAD_ONLY password=REDACTED%n",
+                DORIS.getHost(), DORIS.getMappedPort(8040));
+        return new TdsAcceptanceProcess.DorisConfiguration(endpoint, username, password);
+    }
+
+    static String runDorisSql(String sql) throws Exception {
+        return runDorisSql(sql, true);
+    }
+
+    static String runDorisSql(String sql, boolean logSuccess) throws Exception {
+        String encoded = Base64.getEncoder().encodeToString(sql.getBytes(StandardCharsets.UTF_8));
+        org.testcontainers.containers.Container.ExecResult result = DORIS.execInContainer(
+                "bash",
+                "-lc",
+                "printf '%s' '" + encoded + "' | base64 -d | mysql --batch --skip-column-names "
+                        + "-h127.0.0.1 -P9030 -uroot");
+        String stage = dorisSqlStage(sql);
+        if (result.getExitCode() != 0) {
+            String stdout = safeDorisSqlDiagnostic(result.getStdout(), sql);
+            String stderr = safeDorisSqlDiagnostic(result.getStderr(), sql);
+            String diagnostics = stage.equals("OPERATIONAL_DDL") ? dorisOperationalDiagnostics() : "not-captured";
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_DORIS_SQL status=FAIL stage=%s exitCode=%d " + "stdout=%s stderr=%s%n",
+                    stage, result.getExitCode(), stdout, stderr);
+            System.out.printf("BACKEND_ACCEPTANCE_DORIS_DIAGNOSTICS stage=%s details=%s%n", stage, diagnostics);
+            throw new IllegalStateException("BACKEND_ACCEPTANCE_DORIS_SQL_FAILED stage=" + stage
+                    + " exitCode=" + result.getExitCode()
+                    + " stdout=" + stdout
+                    + " stderr=" + stderr
+                    + " diagnostics=" + diagnostics);
+        }
+        if (logSuccess) {
+            System.out.printf("BACKEND_ACCEPTANCE_DORIS_SQL stage=%s status=PASS exitCode=0%n", stage);
+        }
+        return result.getStdout();
+    }
+
+    private static void awaitDorisBackendHddStorage(Duration timeout) throws Exception {
+        long startedAt = System.nanoTime();
+        long deadline = startedAt + timeout.toNanos();
+        String backendId = "";
+        String disks = "";
+        while (System.nanoTime() < deadline) {
+            String backends = runDorisSql("SHOW BACKENDS;\n", false);
+            backendId = backends.lines()
+                    .map(String::strip)
+                    .filter(line -> !line.isEmpty())
+                    .map(line -> line.split("\\t", 2)[0])
+                    .filter(value -> value.matches("[0-9]+"))
+                    .findFirst()
+                    .orElse("");
+            if (!backendId.isEmpty()) {
+                disks = runDorisSql("SHOW PROC '/backends/" + backendId + "';\n", false);
+                if (disks.toUpperCase(java.util.Locale.ROOT).contains("HDD")) {
+                    long elapsedMillis =
+                            Duration.ofNanos(System.nanoTime() - startedAt).toMillis();
+                    System.out.printf(
+                            "BACKEND_ACCEPTANCE_DORIS_BACKEND_STORAGE status=READY backendId=%s "
+                                    + "medium=HDD elapsedMs=%d%n",
+                            backendId, elapsedMillis);
+                    return;
+                }
+            }
+            Thread.sleep(500);
+        }
+        String backendOutput = safeDorisSqlDiagnostic(backendId, "");
+        String diskOutput = safeDorisSqlDiagnostic(disks, "");
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_DORIS_BACKEND_STORAGE status=TIMEOUT timeoutMs=%d "
+                        + "backendId=%s diskReport=%s%n",
+                timeout.toMillis(), backendOutput, diskOutput);
+        throw new IllegalStateException("BACKEND_ACCEPTANCE_DORIS_BACKEND_HDD_STORAGE_TIMEOUT");
+    }
+
+    private static String dorisSqlStage(String sql) {
+        String statement = sql.stripLeading().toUpperCase(java.util.Locale.ROOT);
+        if (statement.startsWith("CREATE DATABASE") || statement.startsWith("CREATE TABLE")) return "OPERATIONAL_DDL";
+        if (statement.startsWith("CREATE USER") || statement.startsWith("GRANT LOAD")) return "TABLE_WRITER_GRANT";
+        if (statement.startsWith("SHOW GRANTS")) return "TABLE_WRITER_GRANT_READBACK";
+        if (statement.startsWith("SELECT")) return "HISTORY_SQL_READBACK";
+        return "OTHER_SQL";
+    }
+
+    private static String safeDorisSqlDiagnostic(String output, String sql) {
+        String safe = output == null ? "" : output;
+        if (sql != null && !sql.isEmpty()) safe = safe.replace(sql, "[SQL_REDACTED]");
+        safe = safe.replaceAll("(?i)(IDENTIFIED\\s+BY\\s+)'[^']*'", "$1'REDACTED'");
+        safe = safe.replaceAll("(?<!\\d)(?:\\d{1,3}\\.){3}\\d{1,3}(?!\\d)", "[IP]");
+        safe = safe.replaceAll("[\\r\\n\\t]+", " ").replaceAll("\\s{2,}", " ").trim();
+        return safe.length() <= 3500 ? safe : safe.substring(0, 3500);
+    }
+
+    private static String dorisOperationalDiagnostics() {
+        String command = "printf 'BE_STORAGE_DIRECTORY '; "
+                + "if test -d /opt/apache-doris/be/storage; then "
+                + "printf 'exists=true writable='; "
+                + "test -w /opt/apache-doris/be/storage && echo true || echo false; "
+                + "stat -c 'mode=%a uid=%u gid=%g' /opt/apache-doris/be/storage; "
+                + "df -Pk /opt/apache-doris/be/storage | "
+                + "awk 'NR==2 {printf \"total_kib=%s available_kib=%s\\n\", $2, $4}'; "
+                + "else echo exists=false; fi; "
+                + "printf 'BE_PROCESS '; "
+                + "ps -eo uid=,gid=,pid=,comm=,args= | grep -E '[d]oris_be' | head -n 3 || true; "
+                + "printf 'BE_STORAGE_ENTRIES '; "
+                + "find /opt/apache-doris/be/storage -maxdepth 1 -mindepth 1 "
+                + "-printf '%m %u:%g %f ' 2>/dev/null | head -c 500; echo; "
+                + "printf 'BE_STORAGE_CONFIG '; "
+                + "grep -E '^storage_root_path=' /opt/apache-doris/be/conf/be.conf || echo default; "
+                + "printf 'SHOW_BACKENDS_BEGIN\\n'; "
+                + "mysql --batch --skip-column-names -h127.0.0.1 -P9030 -uroot "
+                + "-e 'SHOW BACKENDS' 2>&1; "
+                + "printf 'SHOW_BACKENDS_END\\n'; "
+                + "printf 'BE_STORAGE_LOG_BEGIN\\n'; "
+                + "grep -Ei 'storage_root_path|data_dir|storage engine|path:|not exist|permission|failed|error|warn' "
+                + "/opt/apache-doris/be/log/be.INFO 2>/dev/null | tail -n 8 || true; "
+                + "printf 'BE_STORAGE_LOG_END\\n'";
+        try {
+            org.testcontainers.containers.Container.ExecResult diagnostic =
+                    DORIS.execInContainer("bash", "-lc", command);
+            String output = safeDorisSqlDiagnostic(diagnostic.getStdout() + " " + diagnostic.getStderr(), "");
+            return "exitCode=" + diagnostic.getExitCode() + " output=" + output;
+        } catch (Exception failure) {
+            return "unavailable=" + failure.getClass().getSimpleName();
+        }
     }
 
     @BeforeAll
@@ -772,8 +934,18 @@ class BackendAcceptanceTest {
                 "BACKEND_ACCEPTANCE_SECOND_CONTEXT_RAN_FLYWAY");
 
         String tdsContractScenario = System.getenv(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO);
+        if (TdsAcceptanceProcess.TdsStartConfiguration.HISTORY_OUTAGE_BOUNDED_SCENARIO_ID.equals(tdsContractScenario)) {
+            String runId = requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_RUN_ID);
+            dorisStalledEndpoint = DorisStalledEndpoint.start(runId);
+            tdsDorisConfiguration = new TdsAcceptanceProcess.DorisConfiguration(
+                    dorisStalledEndpoint.endpoint(), "acceptance", "acceptance-stalled-load");
+        } else {
+            tdsDorisConfiguration = initializeDorisHistoryTable();
+        }
         tdsAcceptanceProcess = TdsAcceptanceProcess.start(
-                POSTGRES, TdsAcceptanceProcess.TdsStartConfiguration.forContractScenario(tdsContractScenario));
+                POSTGRES,
+                tdsDorisConfiguration,
+                TdsAcceptanceProcess.TdsStartConfiguration.forContractScenario(tdsContractScenario));
         if ("true".equals(System.getenv("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT"))) {
             System.out.printf(
                     "BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT stage=START runId=%s operation=%s%n",
@@ -807,13 +979,39 @@ class BackendAcceptanceTest {
                 requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_RUN_ID));
     }
 
+    TdsAcceptanceProcess startAdditionalTds(String instanceName, String nodeId) throws Exception {
+        assertNotNull(tdsDorisConfiguration, "BACKEND_ACCEPTANCE_DORIS_CONFIGURATION_NOT_INITIALIZED");
+        assertNotNull(nodeId, "BACKEND_ACCEPTANCE_TDS_NODE_ID_REQUIRED");
+        return TdsAcceptanceProcess.start(
+                POSTGRES,
+                tdsDorisConfiguration,
+                instanceName,
+                new TdsAcceptanceProcess.TdsStartConfiguration(nodeId, null));
+    }
+
     @AfterAll
     void closeSecondBusinessContext() throws Exception {
+        Exception cleanupFailure = null;
         try {
-            if (tdsAcceptanceProcess != null) tdsAcceptanceProcess.close();
+            if (dorisStalledEndpoint != null) dorisStalledEndpoint.close();
+        } catch (Exception failure) {
+            cleanupFailure = failure;
         } finally {
-            if (secondBusinessContext != null) secondBusinessContext.close();
+            try {
+                if (tdsAcceptanceProcess != null) tdsAcceptanceProcess.close();
+            } catch (Exception failure) {
+                if (cleanupFailure == null) cleanupFailure = failure;
+                else cleanupFailure.addSuppressed(failure);
+            } finally {
+                try {
+                    if (secondBusinessContext != null) secondBusinessContext.close();
+                } catch (Exception failure) {
+                    if (cleanupFailure == null) cleanupFailure = failure;
+                    else cleanupFailure.addSuppressed(failure);
+                }
+            }
         }
+        if (cleanupFailure != null) throw cleanupFailure;
     }
 
     @TestFactory
@@ -876,22 +1074,51 @@ class BackendAcceptanceTest {
 
     @TestFactory
     @Order(13)
-    Stream<DynamicTest> terminalConnectionV15ReadinessWithdrawalContracts() {
+    Stream<DynamicTest> selectedTerminalConnectionContracts() {
         String selectedScenario = selectedTdsContractScenario();
         if (selectedScenario == null) return Stream.empty();
-        assertEquals(
-                TdsAcceptanceProcess.TdsStartConfiguration.VS15_CONTRACT_SCENARIO_ID,
-                selectedScenario,
-                "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_UNKNOWN");
         assertEquals(
                 "storeTerminalActivationBusinessPrecedence",
                 System.getenv(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION),
                 "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_OPERATION_INVALID");
-        assertEquals(
-                "true",
-                System.getenv("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT"),
-                "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_TOPOLOGY_PREFLIGHT_REQUIRED");
-        return TerminalConnectionContractScenarios.v15ReadinessWithdrawalScenarios(this, tdsAcceptanceProcess);
+        if (TdsAcceptanceProcess.TdsStartConfiguration.VS15_CONTRACT_SCENARIO_ID.equals(selectedScenario)) {
+            assertEquals(
+                    "true",
+                    System.getenv("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT"),
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_TOPOLOGY_PREFLIGHT_REQUIRED");
+            return TerminalConnectionContractScenarios.v15ReadinessWithdrawalScenarios(this, tdsAcceptanceProcess);
+        }
+        if (TdsAcceptanceProcess.TdsStartConfiguration.HISTORY_SECRET_SEARCH_SCENARIO_ID.equals(selectedScenario)) {
+            assertEquals(
+                    "false",
+                    System.getenv().getOrDefault("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT", "false"),
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_TOPOLOGY_PREFLIGHT_FORBIDDEN");
+            return TerminalConnectionContractScenarios.v11SecretSearchScenarios(this, tdsAcceptanceProcess);
+        }
+        if (TdsAcceptanceProcess.TdsStartConfiguration.HISTORY_RECORDS_SCENARIO_ID.equals(selectedScenario)) {
+            assertEquals(
+                    "true",
+                    System.getenv("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT"),
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_TOPOLOGY_PREFLIGHT_REQUIRED");
+            return TerminalConnectionContractScenarios.connectionHistoryScenarios(this, tdsAcceptanceProcess);
+        }
+        if (TdsAcceptanceProcess.TdsStartConfiguration.HISTORY_OUTAGE_BOUNDED_SCENARIO_ID.equals(selectedScenario)) {
+            assertEquals(
+                    "false",
+                    System.getenv().getOrDefault("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT", "false"),
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_TOPOLOGY_PREFLIGHT_FORBIDDEN");
+            assertNotNull(dorisStalledEndpoint, "BACKEND_ACCEPTANCE_DORIS_STALL_ENDPOINT_MISSING");
+            return TerminalConnectionContractScenarios.connectionHistoryOutageScenarios(
+                    this, tdsAcceptanceProcess, dorisStalledEndpoint);
+        }
+        if (TdsAcceptanceProcess.TdsStartConfiguration.VS13_CROSS_NODE_RECOVERY_SCENARIO_ID.equals(selectedScenario)) {
+            assertEquals(
+                    "true",
+                    System.getenv("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT"),
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_TOPOLOGY_PREFLIGHT_REQUIRED");
+            return TerminalConnectionContractScenarios.crossNodeRecoveryScenarios(this, tdsAcceptanceProcess);
+        }
+        throw new IllegalArgumentException("BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_UNKNOWN");
     }
 
     @TestFactory

@@ -765,6 +765,13 @@ describe('terminal-data-client managed DEV end-to-end scenarios', () => {
       'E1_DISCONNECTED',
     );
     expect(finalState.close_reason).toBe('ACTIVATION_CANCELLED');
+    expect(finalState.session_id).toBeTruthy();
+    expect(finalState.session_id).not.toBe(initialState.session_id);
+    recordScenarioEvent('DORIS_HISTORY_TARGET', {
+      terminalRef: first.terminalRef,
+      sessionIds: [initialState.session_id, finalState.session_id],
+      heartbeatSessionId: initialState.session_id,
+    });
   }, 150_000);
 
   it('terminal-data-client managed DEV retries a nonresponsive configured entry and prefers the reachable address', async () => {

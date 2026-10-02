@@ -72,6 +72,35 @@ class SessionRegistrationGateTest {
     }
 
     @Test
+    void postgresOpenGateSignalsCommittedCandidateBeforeLocalRegistration() throws Exception {
+        Path socketPath = Path.of("/tmp", "tds-registration-gate-" + UUID.randomUUID() + ".sock");
+        String attemptId = UUID.randomUUID().toString();
+        try (ServerSocketChannel server = ServerSocketChannel.open(StandardProtocolFamily.UNIX)) {
+            server.bind(UnixDomainSocketAddress.of(socketPath));
+            var result = new SessionRegistrationGate(
+                            socketPath.toString(), "backend-acceptance-test", "remote", identityScheduler)
+                    .afterPostgresOpen(attemptId)
+                    .toFuture();
+
+            try (SocketChannel client = server.accept();
+                    BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(Channels.newInputStream(client), StandardCharsets.US_ASCII));
+                    BufferedWriter writer = new BufferedWriter(
+                            new OutputStreamWriter(Channels.newOutputStream(client), StandardCharsets.US_ASCII))) {
+                assertEquals("PG_OPEN_COMMITTED_BEFORE_LOCAL_REGISTER\t" + attemptId, reader.readLine());
+                assertFalse(result.isDone(), "the committed candidate must remain provisional before release");
+                writer.write("RELEASE\t" + attemptId);
+                writer.newLine();
+                writer.flush();
+            }
+
+            result.get(1, TimeUnit.SECONDS);
+        } finally {
+            Files.deleteIfExists(socketPath);
+        }
+    }
+
+    @Test
     void acceptanceGateRejectsAReleaseForAnotherAttempt() throws Exception {
         Path socketPath = Path.of("/tmp", "tds-registration-gate-" + UUID.randomUUID() + ".sock");
         String attemptId = UUID.randomUUID().toString();

@@ -38,7 +38,8 @@ export const createServerConfigModule = (defaults: TransportServerConfig): Runti
     stateSlices: [slice.registration],
     install: async (context: RuntimeModuleContext) => {
       const result = await context.dispatchCommand(validateHydratedServerConfigCommand, Object.freeze({}));
-      if (result.status !== 'completed') throw new Error(`Server configuration startup validation failed: ${result.status}`);
+      if (result.status !== 'completed')
+        throw new Error(`Server configuration startup validation failed: ${result.status}`);
     },
   });
 };

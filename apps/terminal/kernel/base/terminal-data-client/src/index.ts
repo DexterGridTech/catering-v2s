@@ -1,7 +1,11 @@
 export {moduleName, moduleKind} from './moduleName';
 export {dependencyModuleNames, devDependencyModuleNames, runtimeModuleDependencyNames} from './dependencies';
 export {createTerminalDataClientModule} from './application/createTerminalDataClientModule';
-export {selectActivationState, selectConnectionState, selectConnectionLatency} from './selectors/selectTerminalDataClientState';
+export {
+  selectActivationState,
+  selectConnectionState,
+  selectConnectionLatency,
+} from './selectors/selectTerminalDataClientState';
 export type {
   ActivateTerminalPayload,
   CancelTerminalOnlinePayload,

@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -25,25 +26,34 @@ public class TdsConnectionStateRepository {
             WITH next_state AS (
                 SELECT nextval('terminal_connection.session_sequence') AS session_sequence,
                        floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_epoch_millis
+            ), written AS (
+                INSERT INTO terminal_connection.latest_state(
+                    workspace_uuid, group_workspace_key, terminal_ref, node_id, session_id,
+                    session_sequence, connected_at_epoch_millis, disconnected_at_epoch_millis,
+                    last_activity_at_epoch_millis, last_rtt_ms, close_reason)
+                SELECT ?, ?, ?, ?, ?, next_state.session_sequence, next_state.now_epoch_millis,
+                       NULL, next_state.now_epoch_millis, 0, NULL
+                FROM next_state
+                ON CONFLICT (workspace_uuid, group_workspace_key, terminal_ref) DO UPDATE SET
+                    node_id = EXCLUDED.node_id,
+                    session_id = EXCLUDED.session_id,
+                    session_sequence = EXCLUDED.session_sequence,
+                    connected_at_epoch_millis = EXCLUDED.connected_at_epoch_millis,
+                    disconnected_at_epoch_millis = NULL,
+                    last_activity_at_epoch_millis = EXCLUDED.last_activity_at_epoch_millis,
+                    last_rtt_ms = 0,
+                    close_reason = NULL
+                WHERE terminal_connection.latest_state.session_sequence < EXCLUDED.session_sequence
+                RETURNING workspace_uuid, group_workspace_key, terminal_ref,
+                          session_sequence, connected_at_epoch_millis
+            ), notified AS (
+                SELECT pg_notify(
+                    'terminal_binding_events',
+                    json_build_object('v', 1, 'kind', 'SESSION_OPEN', 'terminalRef', written.terminal_ref)::text)
+                FROM written
             )
-            INSERT INTO terminal_connection.latest_state(
-                workspace_uuid, group_workspace_key, terminal_ref, node_id, session_id,
-                session_sequence, connected_at_epoch_millis, disconnected_at_epoch_millis,
-                last_activity_at_epoch_millis, last_rtt_ms, close_reason)
-            SELECT ?, ?, ?, ?, ?, next_state.session_sequence, next_state.now_epoch_millis,
-                   NULL, next_state.now_epoch_millis, 0, NULL
-            FROM next_state
-            ON CONFLICT (workspace_uuid, group_workspace_key, terminal_ref) DO UPDATE SET
-                node_id = EXCLUDED.node_id,
-                session_id = EXCLUDED.session_id,
-                session_sequence = EXCLUDED.session_sequence,
-                connected_at_epoch_millis = EXCLUDED.connected_at_epoch_millis,
-                disconnected_at_epoch_millis = NULL,
-                last_activity_at_epoch_millis = EXCLUDED.last_activity_at_epoch_millis,
-                last_rtt_ms = 0,
-                close_reason = NULL
-            WHERE terminal_connection.latest_state.session_sequence < EXCLUDED.session_sequence
-            RETURNING session_sequence, connected_at_epoch_millis
+            SELECT written.session_sequence, written.connected_at_epoch_millis
+            FROM written CROSS JOIN notified
             """;
 
     private static final String WRITE_HEARTBEAT =
@@ -74,6 +84,20 @@ public class TdsConnectionStateRepository {
             WHERE workspace_uuid = ? AND group_workspace_key = ? AND terminal_ref = ?
             """;
 
+    private static final String READ_CURRENT_SESSIONS = "WITH requested(group_workspace_key, terminal_ref) AS ("
+            + "SELECT * FROM unnest(CAST(? AS varchar[]), CAST(? AS uuid[])) "
+            + "AS requested_keys(group_workspace_key, terminal_ref)) "
+            + "SELECT requested.group_workspace_key, requested.terminal_ref, state.workspace_uuid, "
+            + "state.node_id, state.session_id, state.session_sequence, state.disconnected_at_epoch_millis "
+            + "FROM requested LEFT JOIN terminal_connection.latest_state state "
+            + "ON state.group_workspace_key=requested.group_workspace_key "
+            + "AND state.terminal_ref=requested.terminal_ref";
+
+    private static final String READ_CURRENT_SESSION =
+            "SELECT workspace_uuid, group_workspace_key, terminal_ref, node_id, session_id, session_sequence, "
+                    + "disconnected_at_epoch_millis FROM terminal_connection.latest_state "
+                    + "WHERE workspace_uuid=? AND group_workspace_key=? AND terminal_ref=?";
+
     private static final RowMapper<OpenedSession> OPENED_SESSION_MAPPER = (result, rowNumber) ->
             new OpenedSession(result.getLong("session_sequence"), result.getLong("connected_at_epoch_millis"));
 
@@ -83,7 +107,7 @@ public class TdsConnectionStateRepository {
         this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
     }
 
-    public SessionIdentity open(Verification verification, String nodeId, String sessionId) {
+    public Optional<SessionIdentity> open(Verification verification, String nodeId, String sessionId) {
         if (verification == null || verification.outcome() != Outcome.VERIFIED) {
             throw new IllegalArgumentException("TDS_SESSION_VERIFICATION_INVALID");
         }
@@ -97,16 +121,76 @@ public class TdsConnectionStateRepository {
                 verification.terminalRef(),
                 nodeId,
                 sessionId);
+        if (opened.isEmpty()) return Optional.empty();
         if (opened.size() != 1) throw new IllegalStateException("TDS_SESSION_STATE_OPEN_FAILED");
         OpenedSession row = opened.iterator().next();
-        return new SessionIdentity(
+        return Optional.of(new SessionIdentity(
                 verification.workspaceUuid(),
                 verification.groupWorkspaceKey(),
                 verification.terminalRef(),
                 nodeId,
                 sessionId,
                 row.sequence(),
-                Instant.ofEpochMilli(row.connectedAtEpochMillis()));
+                Instant.ofEpochMilli(row.connectedAtEpochMillis())));
+    }
+
+    public Map<BindingKey, CurrentSessionState> readCurrentSessions(Connection connection, Collection<BindingKey> keys)
+            throws SQLException {
+        if (keys.isEmpty()) return Map.of();
+        String[] groupWorkspaceKeys =
+                keys.stream().map(BindingKey::groupWorkspaceKey).toArray(String[]::new);
+        UUID[] terminalRefs = keys.stream().map(BindingKey::terminalRef).toArray(UUID[]::new);
+        Map<BindingKey, CurrentSessionState> sessions = new HashMap<>();
+        Array groupWorkspaceKeyArray = connection.createArrayOf("varchar", groupWorkspaceKeys);
+        try {
+            Array terminalRefArray = connection.createArrayOf("uuid", terminalRefs);
+            try {
+                try (PreparedStatement statement = connection.prepareStatement(READ_CURRENT_SESSIONS)) {
+                    statement.setArray(1, groupWorkspaceKeyArray);
+                    statement.setArray(2, terminalRefArray);
+                    try (java.sql.ResultSet rows = statement.executeQuery()) {
+                        while (rows.next()) {
+                            UUID workspaceUuid = rows.getObject("workspace_uuid", UUID.class);
+                            if (workspaceUuid == null) continue;
+                            BindingKey key = new BindingKey(
+                                    rows.getString("group_workspace_key"), rows.getObject("terminal_ref", UUID.class));
+                            sessions.put(
+                                    key,
+                                    new CurrentSessionState(
+                                            key,
+                                            workspaceUuid,
+                                            rows.getString("node_id"),
+                                            rows.getString("session_id"),
+                                            rows.getLong("session_sequence"),
+                                            rows.getObject("disconnected_at_epoch_millis", Long.class)));
+                        }
+                    }
+                }
+            } finally {
+                terminalRefArray.free();
+            }
+        } finally {
+            groupWorkspaceKeyArray.free();
+        }
+        return Map.copyOf(sessions);
+    }
+
+    public Optional<CurrentSessionState> readCurrentSession(SessionIdentity identity) {
+        Objects.requireNonNull(identity, "identity");
+        return jdbcTemplate.query(
+                READ_CURRENT_SESSION,
+                rows -> rows.next()
+                        ? Optional.of(new CurrentSessionState(
+                                new BindingKey(identity.groupWorkspaceKey(), identity.terminalRef()),
+                                rows.getObject("workspace_uuid", UUID.class),
+                                rows.getString("node_id"),
+                                rows.getString("session_id"),
+                                rows.getLong("session_sequence"),
+                                rows.getObject("disconnected_at_epoch_millis", Long.class)))
+                        : Optional.empty(),
+                identity.workspaceUuid(),
+                identity.groupWorkspaceKey(),
+                identity.terminalRef());
     }
 
     public int writeHeartbeats(Collection<Heartbeat> heartbeats) {
@@ -249,6 +333,35 @@ public class TdsConnectionStateRepository {
             } else if (workspaceUuid == null || bindingStatus == null || generation < 1) {
                 throw new IllegalArgumentException("current binding result is invalid");
             }
+        }
+    }
+
+    public record CurrentSessionState(
+            BindingKey key,
+            UUID workspaceUuid,
+            String nodeId,
+            String sessionId,
+            long sequence,
+            Long disconnectedAtEpochMillis) {
+        public CurrentSessionState {
+            Objects.requireNonNull(key, "key");
+            Objects.requireNonNull(workspaceUuid, "workspaceUuid");
+            requireText(nodeId, "nodeId", 128);
+            requireText(sessionId, "sessionId", 128);
+            if (sequence < 1) throw new IllegalArgumentException("sequence is invalid");
+        }
+
+        public boolean isOpen() {
+            return disconnectedAtEpochMillis == null;
+        }
+
+        public boolean matches(SessionIdentity identity) {
+            return key.groupWorkspaceKey().equals(identity.groupWorkspaceKey())
+                    && key.terminalRef().equals(identity.terminalRef())
+                    && workspaceUuid.equals(identity.workspaceUuid())
+                    && nodeId.equals(identity.nodeId())
+                    && sessionId.equals(identity.sessionId())
+                    && sequence == identity.sequence();
         }
     }
 

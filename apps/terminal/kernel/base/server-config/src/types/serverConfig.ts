@@ -1,4 +1,8 @@
-import type {TransportHttpProxy, TransportServerAddress, TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
+import type {
+  TransportHttpProxy,
+  TransportServerAddress,
+  TransportServerConfig,
+} from '@catering-v2s/kernel-base-contracts';
 
 export interface ServerConfigOverrideState {
   readonly addresses: readonly TransportServerAddress[];
@@ -41,29 +45,35 @@ export type SetServerOverridePayload = Readonly<{
 
 export interface EffectiveServerConfigView {
   readonly selectedSpace: string;
-  readonly spaces: readonly Readonly<{name: string; servers: readonly Readonly<{
-    serverName: string;
-    addresses: readonly TransportServerAddress[];
-    proxy: null | Readonly<{
-      protocol: 'http';
-      host: string;
-      port: number;
-      username?: string;
-      passwordConfigured: boolean;
-    }>;
+  readonly spaces: readonly Readonly<{
+    name: string;
+    servers: readonly Readonly<{
+      serverName: string;
+      addresses: readonly TransportServerAddress[];
+      proxy: null | Readonly<{
+        protocol: 'http';
+        host: string;
+        port: number;
+        username?: string;
+        passwordConfigured: boolean;
+      }>;
       overridden: boolean;
-  }>[]}>[];
-  readonly defaults: readonly Readonly<{name: string; servers: readonly Readonly<{
-    serverName: string;
-    addresses: readonly TransportServerAddress[];
-    proxy: null | Readonly<{
-      protocol: 'http';
-      host: string;
-      port: number;
-      username?: string;
-      passwordConfigured: boolean;
-    }>;
-  }>[]}>[];
+    }>[];
+  }>[];
+  readonly defaults: readonly Readonly<{
+    name: string;
+    servers: readonly Readonly<{
+      serverName: string;
+      addresses: readonly TransportServerAddress[];
+      proxy: null | Readonly<{
+        protocol: 'http';
+        host: string;
+        port: number;
+        username?: string;
+        passwordConfigured: boolean;
+      }>;
+    }>[];
+  }>[];
   readonly overriddenServerNames: readonly string[];
 }
 

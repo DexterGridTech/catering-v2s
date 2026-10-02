@@ -14,11 +14,13 @@ import static org.mockito.Mockito.when;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
 import com.catering.v2s.terminaldataserver.config.TdsRuntimeSettings;
+import com.catering.v2s.terminaldataserver.history.TdsConnectionHistoryWriter;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionProtocol;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.BindingKey;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentBinding;
+import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentSessionState;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateWriter;
 import com.catering.v2s.terminaldataserver.websocket.TdsWebSocketConnection;
@@ -27,6 +29,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -51,6 +55,7 @@ class TdsTerminalSessionActorsTest {
 
     private final RecordingRepository repository = new RecordingRepository();
     private final TdsConnectionStateWriter stateWriter = mock(TdsConnectionStateWriter.class);
+    private final TdsConnectionHistoryWriter historyWriter = mock(TdsConnectionHistoryWriter.class);
     private final TerminalConnectionFrameCodec codec = mock(TerminalConnectionFrameCodec.class);
     private final TerminalConnectionProtocol protocol = mock(TerminalConnectionProtocol.class);
     private final TdsRuntimeSettings settings = TdsRuntimeSettings.from(
@@ -68,9 +73,11 @@ class TdsTerminalSessionActorsTest {
         actors = new TdsTerminalSessionActors(
                 repository,
                 stateWriter,
+                historyWriter,
                 settings,
                 codec,
                 trackedSessionLimiter,
+                new SessionRegistrationGate("", "", "", Schedulers.immediate()),
                 Schedulers.immediate(),
                 Schedulers.immediate());
     }
@@ -204,6 +211,68 @@ class TdsTerminalSessionActorsTest {
     }
 
     @Test
+    void aLaterCommittedSessionObservedBeforeLocalRegistrationRejectsTheOlderCandidate() throws Exception {
+        RecordingRepository sharedRepository = new RecordingRepository();
+        TdsTerminalSessionActors nodeA = newActors(sharedRepository);
+        TdsTerminalSessionActors nodeB = newActors(sharedRepository);
+        TdsWebSocketConnection candidateA = connection("node-a-session");
+        TdsWebSocketConnection candidateB = connection("node-b-session");
+        assertThat(nodeA.beginAttempt(TERMINAL, "GROUP-1", "node-a-attempt", 1, candidateA)
+                        .block())
+                .isTrue();
+        assertThat(nodeA.recordVerification(TERMINAL, "node-a-attempt", verification(1))
+                        .block())
+                .isTrue();
+        assertThat(nodeB.beginAttempt(TERMINAL, "GROUP-1", "node-b-attempt", 1, candidateB)
+                        .block())
+                .isTrue();
+        assertThat(nodeB.recordVerification(TERMINAL, "node-b-attempt", verification(1))
+                        .block())
+                .isTrue();
+
+        sharedRepository.blockReadSessionId = "node-a-session";
+        sharedRepository.currentReadEntered = new CountDownLatch(1);
+        sharedRepository.currentReadRelease = new CountDownLatch(1);
+        CompletableFuture<Boolean> registrationA = CompletableFuture.supplyAsync(() ->
+                nodeA.register(TERMINAL, "node-a-attempt", verification(1)).block());
+        assertThat(sharedRepository.currentReadEntered.await(2, TimeUnit.SECONDS))
+                .isTrue();
+
+        assertThat(nodeB.register(TERMINAL, "node-b-attempt", verification(1)).block())
+                .isTrue();
+        CurrentSessionState latestFromB = sharedRepository.currentSession(candidateB.sessionId());
+        assertThat(latestFromB).isNotNull();
+        nodeA.reconcileSession(latestFromB);
+        sharedRepository.currentReadRelease.countDown();
+
+        assertThat(registrationA.get(2, TimeUnit.SECONDS)).isFalse();
+        assertThat(candidateA.isAuthenticationReady()).isFalse();
+        assertThat(candidateA.closeReasonOr("missing")).isEqualTo("SESSION_REPLACED");
+        assertThat(candidateB.isAuthenticationReady()).isTrue();
+        assertThat(nodeA.trackedActorCount()).isZero();
+        assertThat(nodeB.trackedActorCount()).isEqualTo(1);
+    }
+
+    @Test
+    void aSessionRegisteredBeforeTheNewerCommitIsClosedByTheLaterAuthoritativeRead() {
+        RecordingRepository sharedRepository = new RecordingRepository();
+        TdsTerminalSessionActors nodeA = newActors(sharedRepository);
+        TdsTerminalSessionActors nodeB = newActors(sharedRepository);
+        TdsWebSocketConnection candidateA = connection("node-a-first");
+        beginWith(nodeA, "node-a-first-attempt", 1, candidateA);
+        assertThat(registerWith(nodeA, "node-a-first-attempt", 1)).isTrue();
+
+        TdsWebSocketConnection candidateB = connection("node-b-later");
+        beginWith(nodeB, "node-b-later-attempt", 1, candidateB);
+        assertThat(registerWith(nodeB, "node-b-later-attempt", 1)).isTrue();
+
+        nodeA.reconcileSession(sharedRepository.currentSession(candidateB.sessionId()));
+
+        assertThat(candidateA.closeReasonOr("missing")).isEqualTo("SESSION_REPLACED");
+        assertThat(candidateB.isAuthenticationReady()).isTrue();
+    }
+
+    @Test
     void newerVerifiedGenerationClosesTheRevokedSessionAsActivationCancelled() {
         TdsWebSocketConnection previous = connection("session-1");
         begin("attempt-1", 1, previous);
@@ -236,14 +305,38 @@ class TdsTerminalSessionActorsTest {
     }
 
     @Test
+    void candidateThatDidNotBecomeTheLatestDatabaseSessionLeavesTheExistingSessionUntouched() {
+        TdsWebSocketConnection active = connection("session-active");
+        begin("active", 1, active);
+        assertThat(register("active", 1)).isTrue();
+
+        repository.noOpenSessionId = "session-superseded-before-write";
+        TdsWebSocketConnection candidate = connection("session-superseded-before-write");
+        begin("superseded", 1, candidate);
+        assertThat(actors.recordVerification(TERMINAL, "superseded", verification(1))
+                        .block())
+                .isTrue();
+
+        assertThat(actors.register(TERMINAL, "superseded", verification(1)).block())
+                .isFalse();
+
+        assertThat(active.isOpen()).isTrue();
+        assertThat(active.isAuthenticationReady()).isTrue();
+        assertThat(candidate.closeReasonOr("missing")).isEqualTo("SESSION_REPLACED");
+        verify(stateWriter, never()).queueDisconnect(any(), anyString(), any(Runnable.class));
+    }
+
+    @Test
     void trackedCapacityRejectsOnlyCandidateAndReleasesPermitAfterDisconnectPersistence() {
         trackedSessionLimiter = new TdsConnectionCapacityLimiter(2, 1);
         actors = new TdsTerminalSessionActors(
                 repository,
                 stateWriter,
+                historyWriter,
                 settings,
                 codec,
                 trackedSessionLimiter,
+                new SessionRegistrationGate("", "", "", Schedulers.immediate()),
                 Schedulers.immediate(),
                 Schedulers.immediate());
 
@@ -280,9 +373,11 @@ class TdsTerminalSessionActorsTest {
         actors = new TdsTerminalSessionActors(
                 repository,
                 stateWriter,
+                historyWriter,
                 settings,
                 codec,
                 trackedSessionLimiter,
+                new SessionRegistrationGate("", "", "", Schedulers.immediate()),
                 Schedulers.immediate(),
                 Schedulers.immediate());
         repository.failOpen = true;
@@ -305,9 +400,11 @@ class TdsTerminalSessionActorsTest {
         actors = new TdsTerminalSessionActors(
                 repository,
                 stateWriter,
+                historyWriter,
                 settings,
                 codec,
                 trackedSessionLimiter,
+                new SessionRegistrationGate("", "", "", Schedulers.immediate()),
                 Schedulers.immediate(),
                 Schedulers.immediate());
         when(codec.sessionReady(anyString(), anyString(), any(Instant.class), anyLong(), anyLong()))
@@ -387,9 +484,11 @@ class TdsTerminalSessionActorsTest {
         actors = new TdsTerminalSessionActors(
                 repository,
                 stateWriter,
+                historyWriter,
                 settings,
                 codec,
                 trackedSessionLimiter,
+                new SessionRegistrationGate("", "", "", Schedulers.immediate()),
                 rejectingScheduler,
                 Schedulers.immediate());
         try {
@@ -549,24 +648,59 @@ class TdsTerminalSessionActorsTest {
                 actors.register(TERMINAL, attemptId, currentVerification).block());
     }
 
+    private boolean registerWith(TdsTerminalSessionActors target, String attemptId, long generation) {
+        Verification currentVerification = verification(generation);
+        assertThat(target.recordVerification(TERMINAL, attemptId, currentVerification)
+                        .block())
+                .isTrue();
+        return Boolean.TRUE.equals(
+                target.register(TERMINAL, attemptId, currentVerification).block());
+    }
+
+    private void beginWith(
+            TdsTerminalSessionActors target, String attemptId, long generation, TdsWebSocketConnection connection) {
+        assertThat(target.beginAttempt(TERMINAL, "GROUP-1", attemptId, generation, connection)
+                        .block())
+                .isTrue();
+    }
+
+    private TdsTerminalSessionActors newActors(RecordingRepository sourceRepository) {
+        return new TdsTerminalSessionActors(
+                sourceRepository,
+                stateWriter,
+                historyWriter,
+                settings,
+                codec,
+                new TdsConnectionCapacityLimiter(2, 16),
+                new SessionRegistrationGate("", "", "", Schedulers.immediate()),
+                Schedulers.immediate(),
+                Schedulers.immediate());
+    }
+
     private static final class RecordingRepository extends TdsConnectionStateRepository {
         private final List<SessionIdentity> opened = Collections.synchronizedList(new ArrayList<>());
         private final AtomicLong sequence = new AtomicLong();
+        private final Map<BindingKey, CurrentSessionState> latest = new java.util.concurrent.ConcurrentHashMap<>();
         private boolean failOpen;
+        private volatile String noOpenSessionId;
         private volatile CountDownLatch openEntered;
         private volatile CountDownLatch openRelease;
         private volatile String blockedSessionId;
         private volatile CountDownLatch blockedOpenEntered;
         private volatile CountDownLatch blockedOpenRelease;
         private volatile CountDownLatch concurrentOpenEntered;
+        private volatile String blockReadSessionId;
+        private volatile CountDownLatch currentReadEntered;
+        private volatile CountDownLatch currentReadRelease;
 
         private RecordingRepository() {
             super(mock(JdbcTemplate.class));
         }
 
         @Override
-        public SessionIdentity open(Verification verification, String nodeId, String sessionId) {
+        public Optional<SessionIdentity> open(Verification verification, String nodeId, String sessionId) {
             if (failOpen) throw new IllegalStateException("database unavailable");
+            if (sessionId.equals(noOpenSessionId)) return Optional.empty();
             if (sessionId.equals(blockedSessionId)) {
                 CountDownLatch entered = blockedOpenEntered;
                 CountDownLatch release = blockedOpenRelease;
@@ -604,7 +738,46 @@ class TdsTerminalSessionActorsTest {
                     sequence.incrementAndGet(),
                     Instant.parse("2026-09-26T00:00:00Z"));
             opened.add(identity);
-            return identity;
+            BindingKey key = new BindingKey(identity.groupWorkspaceKey(), identity.terminalRef());
+            latest.put(
+                    key,
+                    new CurrentSessionState(
+                            key,
+                            identity.workspaceUuid(),
+                            identity.nodeId(),
+                            identity.sessionId(),
+                            identity.sequence(),
+                            null));
+            return Optional.of(identity);
+        }
+
+        @Override
+        public Optional<CurrentSessionState> readCurrentSession(SessionIdentity identity) {
+            CurrentSessionState observed =
+                    latest.get(new BindingKey(identity.groupWorkspaceKey(), identity.terminalRef()));
+            if (identity.sessionId().equals(blockReadSessionId)) {
+                CountDownLatch entered = currentReadEntered;
+                CountDownLatch release = currentReadRelease;
+                if (entered != null && release != null) {
+                    entered.countDown();
+                    try {
+                        if (!release.await(2, TimeUnit.SECONDS)) {
+                            throw new IllegalStateException("test current-session read timed out");
+                        }
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException("test current-session read interrupted", interrupted);
+                    }
+                }
+            }
+            return Optional.ofNullable(observed);
+        }
+
+        private CurrentSessionState currentSession(String sessionId) {
+            return latest.values().stream()
+                    .filter(state -> state.sessionId().equals(sessionId))
+                    .findFirst()
+                    .orElse(null);
         }
     }
 }
