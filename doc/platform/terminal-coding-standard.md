@@ -52,6 +52,10 @@ TER 的控件形态不同。**等 TER 有真实 UI 批次、由实例产生后�
 ### `TR-01` · reducer 只能被 actor 调用，且只由 command 驱动
 
 **规则**：进入 reducer 的路径只有一条 —— `command → actor → dispatchAction`。
+**统一业务入口（Dexter 2026-10-02）**：发起任何业务指令必须使用 owner 公开 command，
+包括不直接修改 slice 的业务动作。禁止新增业务 service 方法、回调、event bus、effect 列表或
+capability 方法作为另一条业务执行入口。UI、integration、helper 和跨机路由都必须收敛到
+同一 command 派发路径；现有基础设施适配只能承接该路径，不能绕过 command 执行业务。
 标识符 `dispatchAction` / `store.dispatch` / `useDispatch`
 **不得出现在 `features/actors/**` 之外的任何生产文件**。
 
@@ -115,6 +119,10 @@ TER 的控件形态不同。**等 TER 有真实 UI 批次、由实例产生后�
 ### `TR-03` · 跨包读只能走 selector，禁止按字符串键读别人的 slice
 
 **规则**：读其它包的状态**只能**调用该包导出的 selector。
+**统一业务读取（Dexter 2026-10-02）**：业务数据与状态读取一律使用 owner 公开 selector；
+禁止新增 getter、service 查询方法、callback 或 snapshot API 作为替代读面。名称是 provider、
+capability 或 helper 不能成为例外：若其为既有基础设施适配，读取必须落到 owner selector，
+不得直接访问他包 state、slice 或 persistence。selector 保持纯读；UI 的响应式读取遵循 `TR-15`。
 **禁止**用字符串字面量作 key 从 `getState()` 取别人的 slice。
 
 **反例**（POC 实测）：`topology-runtime-v3/foundations/connectionController.ts:96-99`
@@ -868,7 +876,8 @@ screen 的 `containerKey` 在 definition 里（`primaryRootContainer` / `seconda
 **两块屏的 overlay 会串**。
 
 ⚠️ **注意区分**：`workspace`（`MAIN` / `BRANCH`）是**设备级工作上下文**
-（跟随主机 / 脱离主机独立工作），**不是"哪块屏"**，两块屏共享它，从全局读**是正确的**。
+（主机内容 / 副机本地交互上下文），**不是"哪块屏"**，两块屏共享它，从全局读**是正确的**。
+副机本地交互不表示独立终端资格；配对副机的产品边界见 §4-E。
 
 ### 4-B · 导航选中态只读 UI runtime，不在业务 slice 里复制
 
@@ -907,8 +916,10 @@ screen 的 `containerKey` 在 definition 里（`primaryRootContainer` / `seconda
    的 `MAIN → SLAVE` 投影。副屏用户操作回到主机，由主机 actor 执行业务 command 并写 `MAIN`。
    副机不得仅因拓扑事件在本地猜测、重放或另写一份副屏业务事实。
 2. **副机切到主屏后走 `BRANCH`**：`SLAVE + PRIMARY` 的 UI 由 `BRANCH` workspace 驱动，command
-   由副机 actor 本地处理；对应投影方向是 `BRANCH → MASTER`。feature 不支持该分支时，必须显式
-   提供不可用/找不到页的 catalog 结果，不得静默读取 `MAIN`、把操作发回 peer，或以空白内容伪装支持。
+   由副机 actor 本地处理；对应投影方向是 `BRANCH → MASTER`。这里的本地处理是 BRANCH 内容/交互
+   写入，不产生独立终端或主机业务事实写权。共享业务事实经其 owner 的具名 command 路由处理，
+   不得以通用 `peer-intent` 冒充该业务 owner 路由。feature 不支持该分支时，必须显式
+   提供不可用/找不到页的 catalog 结果，不得静默读取 `MAIN`、把全部操作发回 peer，或以空白内容伪装支持。
 3. **写入门必须在公共 content write seam 判定**：凡由 content actor 写 slice 的路径，都必须同时
    具备 workspace 与执行方 `instanceMode`，并在 `MAIN/MASTER`、`BRANCH/SLAVE` 不匹配时 fail closed。
    这条门覆盖所有 feature，不以逐 feature 的人工约定替代。
@@ -926,6 +937,75 @@ screen 的 `containerKey` 在 definition 里（`primaryRootContainer` / `seconda
 (b) 双机中 `MAIN` 由主机写入，经 descriptor 投影驱动副机 secondary，副屏操作回传主机；
 (c) 副机 `PRIMARY/BRANCH` 的 UI 与 command 本地闭环，且 `BRANCH` 写入者是副机 actor。上述
 语义不能用路径/字符串门冒充，必须有公共 write-seam 门与 focused 行为证据。
+
+---
+
+### 4-E · 终端界面场景统一术语
+
+**来源**：Dexter 2026-10-02「终端激活交互与双机拓扑优化专项」的界面场景定义。
+本节确认术语、当前源码映射及下述补充裁决，不授权新业务实现；未明确的专项细节仍留在需求讨论中。
+
+终端机型 `surfaceForm` 分为 `mobile` 与 `laptop`；laptop 的部署场景分为单机单屏、单机双屏、
+双机双屏。一种机型可以用于多种部署场景，禁止把屏幕数量或设备数量当成新的 `surfaceForm`。
+
+| 界面内容简称 | 使用场景 | 内容归属与显示模式（讨论中的说法） | 当前内容地址 | 实际承载设备 `instanceMode` |
+| --- | --- | --- | --- | --- |
+| MMP | mobile 主界面 | master + primary | `MAIN / PRIMARY` | `MASTER` |
+| LMP | laptop 单机主屏，或已配对双机的主机屏幕 | master + primary | `MAIN / PRIMARY` | `MASTER` |
+| LMS | laptop 单机的副屏 | master + secondary | `MAIN / SECONDARY` | `MASTER` |
+| LMS | 已配对双机中处于副屏角色的副机屏幕（接外部电源的目标场景） | master + secondary | 主机拥有的 `MAIN / SECONDARY` 投影 | `SLAVE`，`displayRole=VICE` |
+| LSP | 已配对双机中处于主屏显示角色的副机屏幕（电池供电的目标场景） | slave + primary | `BRANCH / PRIMARY` | `SLAVE`，`displayRole=CHIEF` |
+
+MMP/LMP/LMS/LSP 称呼的是**屏幕内容场景**，不是新的持久化状态、连接身份或拓扑实例枚举。
+以上「master/slave」描述内容归属；源码的 `instanceMode` 描述实际设备实例角色，两者不得混写。
+双机 LMS 由主机 actor 写入内容，再投影到副机；不能为了匹配简称，把副机实际角色改成 `MASTER`，
+也不能把其 renderer 的实例资格只声明成 `MASTER` 而排除 `SLAVE`。
+
+当前 ui-state 通过 workspace、displayMode 与 containerKey 定位内容，catalog 另检查 surfaceForm 与
+instanceMode；不存在名为「master + primary」的独立 ui-state 枚举。LMP 与 MMP 的内容地址相同，
+由机型选择不同 renderer；单机 LMS 与双机 LMS 使用同一内容语义，但承载实例不同。
+
+**供电与未配对边界**：`external` 是接外部电源，不要求电池此刻正在充电；`battery` 是电池供电。
+当前 display-context 在供电变化时请求确认，再切换 CHIEF/VICE；Dexter 在本专项讨论中确认沿用该确认步骤。
+确认前、供电未知时仍以已生效角色
+判定内容，不能仅凭充电图标声称已经变成 LMS/LSP。
+未配对副机、配对链路断开、角色切换中的用户行为必须在各专项中显式说明，不能从本表推导独立激活、
+离线写入或自动提升为主机。
+
+**主副机与激活准入（Dexter 2026-10-02 补充裁决）**：副机配对后只能作为主机的扩展，本身不作为
+独立终端。LSP 的独立页面、录入过程和本地 BRANCH UI 不改变这个产品身份；共享业务事实仍由主机 owner
+承接，不从副机 UI 的本地写权推导独立终端认证身份、TDS 会话或断链提交/合并能力。
+店员上下文属于具体业务准入，不能仅由「扩展」一词推定；Dexter 已在本专项单独裁定两个 sample
+integration 的 LSP 沿用主机店员资格，主机登出后退出业务并显示登录提示，不传播店员口令。
+副机不能独立连接 TDS，不能是本机激活态；
+一台机器连接了 TDS，就不能作为副机。主机激活信息的同步投影不代表副机自身已激活。
+已激活但暂时断连同样不能被当成副机，不能用「socket 当前没连上」绕过激活限制；只停止连接不等于取消激活。
+配对、切换实例角色、启动恢复和激活/建连命令都必须尊重这同一边界，不能只在管理台隐藏按钮。
+副机在 CHIEF/PRIMARY 下显示 LSP 时仍是 `SLAVE`，不因显示主屏内容取得独立激活或 TDS 建连资格。
+本条是后续专项实现的判据；当前已存在的 client/topology 源码尚不据此声称完成准入集成。
+
+**配对副机断链的业务与管理边界（同次专项补充裁决）**：两个 sample integration 统一控制业务准入。
+已配对副机断链后，不论 LMS/LSP 当前业务页面或业务弹层，都显示「配对连接中，请稍后」并阻断业务输入
+和命令；本地壁纸操作也不例外。左上角 admin 入口、管理员认证与输入、取消配对/切换配对地址仍须本机
+可用。不能将业务遮罩放在 admin 上方，也不能全局禁用 dispatcher/输入而关闭恢复通道。
+主机投影的 MAIN 内容与副机本地管理控制面是不同归属；不得为了离线打开 admin 放宽 SLAVE 对 MAIN
+业务 UI 的写权。退配/换地址中间的角色变化不是操作完成，失败仍保留可见恢复入口与业务阻断。
+恢复业务之前，必须依据本连接最新主机激活/店员及所需业务投影重新判定，不能把 peer accepted 或旧缓存
+当作准入；不引入离线业务队列、自动升主或第二套重连框架。
+原始裁决与 state/command 静态盘点见
+`doc/plans/platform/2026-10-02-ter-terminal-activation-interaction-and-pair-topology-requirements-discussion-claude.md`
+§9.5/§10。后续 review 同时核验 LMS 与 LSP、业务确认层、输入焦点、local admin open/close 和退配异步窗口；
+当前新增遮罩、LMS 本地 admin 控制面及业务准入尚未实现，不能据本节宣称功能 PASS。
+
+**源码核对入口**：`kernel/base/display-context/src/foundations/displayDerivation.ts` 的
+`resolveSurfaceDisplayMode` / `resolveWorkspace`，`ui/base/render/src/foundations/createCatalogContext.ts`，
+以及 `kernel/base/ui-state/src/foundations/workspaceOwnership.ts`；路径均相对 `apps/terminal/`。
+内容写入 owner 仍按 §4-D，命令的 surface 定位仍按 §4-A。
+
+**反例与评审边界**：将所有 SECONDARY 都称为「第二台机器」、把 SLAVE+VICE 的 LMS 当作 LSP、
+将 laptop 按三种拓扑扩成三个设备类型，或复制 MMP/LMP/LMS/LSP 成新的导航真相，都不符合本定义。
+这组术语由文档/实现评审逐项对照实际 catalog、内容 owner 与 surface 判定，不新增关键词机器门；
+简称一致不能证明页面可渲染、供电切换成功或同步闭环。
 
 ---
 

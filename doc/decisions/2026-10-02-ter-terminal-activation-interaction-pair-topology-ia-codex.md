@@ -1,0 +1,189 @@
+# 终端激活交互与双机拓扑优化 · IA 详设
+
+- 建立：2026-10-02
+- 作者：Codex
+- 状态：IMPLEMENTATION_FACING_DESIGN
+- 边界：本专项 UI-bearing screens 的信息架构；不授权源码或动态运行。
+
+## 1 · 元数据
+
+IA_SCOPE=IA-ACT-01..04,IA-ADMIN-00,IA-ADMIN-AUTH,IA-ADMIN-SHELL,IA-ADMIN-01..04,IA-AUTH-01..04,IA-SAMPLE-01..10,IA-MASK-01（26个唯一 screen）
+BUSINESS_SOURCE=doc/plans/platform/2026-10-02-ter-terminal-activation-interaction-and-pair-topology-formal-requirements-codex.md
+JOURNEY_REFS=doc/decisions/2026-10-02-ter-terminal-activation-interaction-pair-topology-journey-codex.md
+UI_INTERACTION_REF=doc/decisions/2026-10-02-ter-terminal-activation-interaction-pair-topology-ui-interaction-codex.md
+IMPLEMENTATION_DESIGN_REF=doc/plans/platform/2026-10-02-ter-terminal-activation-interaction-pair-topology-implementation-design-codex.md
+DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-02（仅整体方向；不代表详设或实现接受）
+IMPLEMENTATION_AUTHORITY=false
+PACKAGE_OWNERSHIP=依正式需求R-03：terminal-activation与server-config-panel位于apps/terminal/ui/base；sample-staff-auth、sample-member-desk、sample-wallpaper-picker位于apps/terminal/ui/feature。前两者只呈现并调用既有owner command/selector，不持有业务事实副本。
+
+## 2 · 每个 IA-ID 的两组维度
+
+列定义：BT=businessTask；AS=actorAndScenario；ES=entryAndSurface；CT=controlType；VE=validationAndError；AT=accessibilityAndTestId；LEE=emptyLoadingErrorStates；CL=containerBehaviorUnderLoad；IC=interactionConsistency；SP=stateAndPermission；NR=navigationAndRefresh；CS=collectionShapeAndScale；DC=dataSourceAndCascade；FU=forbiddenUI。每一行都依此顺序写满全部14维度。验证档位是未来计划，所有验证目前 NOT_RUN。
+
+| IA-ID 与 screen | 可见维度：BT；AS；ES；CT；VE；AT；LEE；CL；IC | 不可见维度：SP；NR；CS；DC；FU |
+| --- | --- | --- |
+| IA-ACT-01 / ACT-01-MMP |主机激活；首次使用的店员；MMP PRIMARY 激活页；仅8位数字输入、激活按钮、结果；非法码/typed拒绝保留输入且显原因；键盘可达、非颜色状态、terminal.activation.code/submit/result；hydration或配置未就绪显等待，unknown result不显成功；CONTAINER_LAYOUT=逐屏原文见§2.1.3（ACT-01-MMP）；TR-16 Web→VM|仅host可执行client command，配置和credential只经owner selector读取且UI不拼请求身份；显式激活UI command且已激活时显示“设备已激活成功”，不加按钮/计时；integration随后按当前owner selector交由业务包路由；遮罩优先；失败留页且不清表单；Bounded单行表单；生效服务空间来自config owner且提交前复读；禁设备标识、workspace key、secret、Authorization|
+| IA-ACT-02 / ACT-02-LMP |主机激活；首次使用的店员；sample-console PRIMARY激活页；仅8位数字输入、激活按钮、结果；非法码保留输入并显示原因；键盘可达、非颜色状态、terminal.activation.code/submit/result；未就绪显示等待，unknown不显成功；CONTAINER_LAYOUT=逐屏原文见§2.1.3（ACT-02-LMP）；TR-16 Web→VM|仅MMP/LMP可派client激活command，service space读config selector；显式激活UI command且已激活时显示“设备已激活成功”，不加按钮/计时；integration随后按当前owner selector交由业务包路由；遮罩优先；失败保留表单且不写阶段副本；Bounded单行表单；提交前重读配置和当前target；禁副机激活、后台权限字段、UI生成credential|
+| IA-ACT-03 / ACT-03-LMS | 引导到主屏激活；LMS店员/顾客；SECONDARY内容页；只读文字；无typed操作错误，主机状态变化时重路由；无动作焦点/testId；无投影时显示规定提示，读取失败不伪装未激活；CONTAINER_LAYOUT=逐屏原文见§2.1.3（ACT-03-LMS）；TR-16 | 显式激活UI command且主机已激活时显示“设备已激活成功”；不加按钮/计时，integration按最新owner状态路由；断链遮罩优先；读主机激活projection，不读取本机凭证；N/A单文本；配置与激活projection owner；禁输入、按钮、密钥 |
+| IA-ACT-04 / ACT-04-LSP | 引导到配对主机激活；slave店员；LSP PRIMARY；只读规定提示；连接失败先显示MASK；无动作焦点；缺projection不当inactive；CONTAINER_LAYOUT=逐屏原文见§2.1.3（ACT-04-LSP）；TR-16 | 显式激活UI command且主机已激活时显示“设备已激活成功”；不加按钮/计时，integration按最新owner状态路由；断链遮罩优先；读当前peer身份的主机projection，不读本机credential/不派激活；N/A单文本；topology+activation owners；禁本机激活码、取消入口、凭证 |
+| IA-ADMIN-00 / ADMIN-00 |从任一本机surface打开本机管理；本地管理员；本机左上既有手势；96 logical px内5次/1800ms；未完成手势不拦截画面；terminal.admin:launcher定位手势节点；未打开时不覆盖原页；CONTAINER_LAYOUT=逐屏原文见§2.1.3（ADMIN-00）；TER不适用后台§3-K|openLayerCommand target=local，本机拓扑可离线；只打开local admin，不改业务阶段；Bounded一个手势区；当前runtime owner；禁peer open命令、可见入口和扩大手势区域|
+| IA-ADMIN-AUTH / ADMIN-AUTH | 本机管理员通过认证进入admin；主副机本地管理员；local admin layer；安全密码输入、确认、关闭；失败清空密码并显示本机错误，成功仅打开本机层；terminal.admin.auth.password/submit/error/close，语义label与焦点；loading/失败区分；CONTAINER_LAYOUT=逐屏原文见§2.1.3（ADMIN-AUTH）；TER不适用后台§3-K | 本机认证owner及local layer commands；关闭只关本机层，不解除业务mask；Bounded单表单；本机配置owner；禁终端credential、peer session、staff password |
+| IA-ADMIN-SHELL / ADMIN-SHELL |在本机状态/配置/拓扑任务间切换；本地管理员；认证成功后的Admin导航区；三项导航和关闭；选择导航后进入对应本机内容screen，关闭只关闭本机层；当前shell/navigation TestId，导航项由adminTestIds.section(partKey)生成；未读取导航配置时不假显已选项；CONTAINER_LAYOUT=逐屏原文见§2.1.3（ADMIN-SHELL）；TER不适用后台§3-K|本机section navigation和close command均target=local；导航只切section，关闭只结束本地admin layer；Bounded三个管理入口；admin-shell section catalog提供项目；禁shell复制client/config/topology事实或向peer关闭|
+| IA-ADMIN-01 / ADMIN-01 | 查看激活与连接状态、合格主机取消激活；本地管理员；状态tab；状态行和仅host可见取消；取消中禁重入，失败保留原因；terminal.activation.admin.status/cancel，状态不用颜色唯一表达；未读取显示等待而非inactive；CONTAINER_LAYOUT=逐屏原文见§2.1.3（ADMIN-01）；TER不适用后台§3-K | owner selectors是唯一读口，local cancel command仅主机；只刷新状态tab不改变config/topology；Bounded固定字段；client owner，副机明确为host projection；禁副机取消、秘密字段 |
+| IA-ADMIN-02 / ADMIN-02 |编辑本机/主机网络配置；主机或未配对本机管理员；config tab编辑面；服务空间/服务/最多4个地址（每个baseUrl即完整URL前缀）/超时/代理字段及保存清除恢复；不设第二个独立前缀事实；校验失败保留草稿并展示owner结果；字段语义label与proxy密码secure input；缺配置显示未配置，保存失败不清草稿；CONTAINER_LAYOUT=逐屏原文见§2.1.3（ADMIN-02）；TER不适用后台§3-K|只调用server-config公开commands/selectors，配对副机直接写被owner拒绝；保存后selector区分：校验拒绝不改变effective；内存生效但持久化失败仍以新effective为准并明确提示未落盘；同步失败保留主机owner值、副机保持未ready；不得默认回滚；Bounded最多4条地址；package.json serverSpaces提供defaults、owner持久化override；禁密码回显、直读持久库、手写完整URL|
+| IA-ADMIN-03 / ADMIN-03 | 只读查看主机同步配置；配对副机管理员；config tab只读面；状态行无写控件；旧/缺失projection显示等待；terminal.server-config.read.*状态节点；同步错误不以旧值冒充current；CONTAINER_LAYOUT=逐屏原文见§2.1.3（ADMIN-03）；TER不适用后台§3-K | 读绑定当前peer identity的config projection；更新只刷新config显示，不改client credential；Bounded最多4地址；server-config owner projection；禁选择器/输入/写按钮/密码明文 |
+| IA-ADMIN-04 / ADMIN-04 | 副机查看/恢复拓扑；本地管理员；拓扑tab；拓扑状态、目标地址、连接和取消配对；执行中禁重复，显示阶段及失败；terminal.admin.topology.*命令与状态节点；未配对显示空状态，读取错误与断链不同；CONTAINER_LAYOUT=逐屏原文见§2.1.3（ADMIN-04）；TER不适用后台§3-K | topology public commands/selectors，命令target local；每次操作后重读peer identity+sync readiness；Bounded一个目标地址；topology owner；禁中间MASTER/repairPending解锁业务、禁偷偷清credential |
+| IA-AUTH-01 / AUTH-01-MMP | 主机店员登录；已激活MMP店员；PRIMARY登录页；姓名/密码/登录；invalid-credentials显示本地错误、清密码保留姓名；sample.auth.*真实输入节点、密码遮蔽；恢复中与失败可区分；CONTAINER_LAYOUT=逐屏原文见§2.1.3（AUTH-01-MMP）；TR-16 | staff host command；登录成功重判路由，失败不影响activation/config；Bounded登录表单；staff owner；禁后台IAM字段/副机口令 |
+| IA-AUTH-02 / AUTH-02-LMP | 主机店员登录；已激活LMP店员；PRIMARY登录页；同AUTH-01；同错误；同testId/焦点；同空/失败语义；CONTAINER_LAYOUT=逐屏原文见§2.1.3（AUTH-02-LMP）；TR-16 | 同AUTH-01；staff selector成功才进会员页；Bounded表单；staff owner；禁后台权限字段 |
+| IA-AUTH-03 / AUTH-03-LMS | 引导到主屏登录；LMS店员/顾客；SECONDARY内容；只读“请在主屏幕上完成店员登录”；无操作控件；无动作testId；staff projection缺失仍显引导；CONTAINER_LAYOUT=逐屏原文见§2.1.3（AUTH-03-LMS）；TR-16 | 读主机staff projection，变化重路由；不触发login/logout；N/A单提示；staff owner；禁密码输入/显示 |
+| IA-AUTH-04 / AUTH-04-LSP | 引导到主机登录；slave店员；LSP PRIMARY；只读“请先在主机上完成店员登录”；断链先mask；无动作焦点；缺主机资格不能转业务；CONTAINER_LAYOUT=逐屏原文见§2.1.3（AUTH-04-LSP）；TR-16 | 当前peer staff projection；logout/断链重判路由；N/A单提示；staff owner projection；禁副机登录/登出 |
+| IA-SAMPLE-01 / SAMPLE-01-MMP |读名单、录入会员并可退出；MMP店员；host member-desk；列表与新增表单；owner拒绝显示本次失败且不清其他pending；sample.desk.*真实输入/按钮；暂无会员为空态，读取失败不等于空；CONTAINER_LAYOUT=逐屏原文见§2.1.3（SAMPLE-01-MMP）；TR-16/TR-17|列表selector读host member-registry，pending按唯一host operation；成功确认刷新host list及匹配pending；Detail完整聚合无总量上限，PrimitiveList最多24个mounted item只是渲染窗口，样例随本机使用增长且长期设备容量未定为OPEN风险；host registry持有会员事实；禁HTTP member API和直接读state|
+| IA-SAMPLE-02 / SAMPLE-02-LMP | 同MMP会员任务；LMP店员；laptop host member-desk；控件与IA-SAMPLE-01相同；错误相同；样式/操作使用同一testId语义；无成员显空态；CONTAINER_LAYOUT=逐屏原文见§2.1.3（SAMPLE-02-LMP）；TR-16 | 同MMP host list+pending；每次操作只刷新列表/本次pending；集合规模与IA-SAMPLE-01相同、OPEN；owner同一host；禁隐式LMS/其他终端pending |
+| IA-SAMPLE-03 / SAMPLE-03-LSP |读host名单，在本机登记并完成顾客确认；slave店员；LSP PRIMARY独立页；list/add/name/phone/submit/cancel；顾客确认态再输入可选年龄并confirm/reject，提交后仍在SAMPLE-03本页；确认失败只作用当前draft；sample.desk.*真实控件；projection未ready显示mask而非空表；CONTAINER_LAYOUT=逐屏原文见§2.1.3（SAMPLE-03-LSP）；TR-16/TR-17|list为当前host projection，pending仅branch local；host确认使用显式peer command并以stable operation identity关联结果；Detail共享集合不设总量上限，24只是mounted窗口；host member-registry持有集合、branch owner持有本地pending；禁slave直接写host list、复制pending或显示logout|
+| IA-SAMPLE-04 / SAMPLE-04-MMP | 单屏移动主机顾客核对并确认/拒绝；顾客；MMP PRIMARY member-desk本页确认态；姓名/电话只读、年龄仅在确认态可选输入、确认/拒绝及条件性交还店员；owner拒绝时不影响其他pending；sample.desk.customer-member:*真实控件；pending缺失不显示旧身份；CONTAINER_LAYOUT=逐屏原文见§2.1.3（SAMPLE-04-MMP）；TR-16 | 读取本机hostPending；双机SLAVE+VICE通过hostPendingProjection及operationId确认/拒绝并显式target=peer回MASTER owner；年龄只随confirm提交；单条pending；member owner；禁查看/修改其他端pending与编辑姓名/电话 |
+| IA-SAMPLE-05 / SAMPLE-05-LMP | 顾客核对并确认/拒绝LMP单屏当前登记；顾客；member desk内确认surface；姓名/电话只读、年龄仅在确认态可选输入、确认/拒绝/条件性交还店员；过期operation显示失效，不改其他pending；sample.confirm.*；没有当前pending不出现可确认内容；CONTAINER_LAYOUT=逐屏原文见§2.1.3（SAMPLE-05-LMP）；TR-16 | 单机LMS读写同runtime hostPending；双机SLAVE+VICE消费hostPendingProjection，confirm/reject带operationId并显式target=peer回MASTER owner；Detail单记录；不得读取branchPending |
+| IA-SAMPLE-06 / SAMPLE-06-LMS | 顾客在LMS核对当前host登记；顾客；SECONDARY确认内容；仅确认时可选年龄输入、确认/拒绝；过期身份不提交；sample.confirm.*；无pending不渲染旧身份；CONTAINER_LAYOUT=逐屏原文见§2.1.3（SAMPLE-06-LMS）；TR-16 | 单机LMS读写MASTER同runtime的hostPending；双机SLAVE+VICE消费带operationId的hostPendingProjection，确认/拒绝显式target=peer回MASTER owner；不读branchPending；host member owner最终校验操作仍当前 |
+| IA-SAMPLE-07 / SAMPLE-07-MMP | 选并确认MMP本机壁纸或登出；主机店员；PRIMARY wallpaper page；四项radio none/w1/w2/w3、预览、确认及店员登出；unknown id不可确认；sample.wallpaper.picker:options:<wallpaperId>/confirm/logout真实radio/button；预览资源缺失用neutral placeholder；CONTAINER_LAYOUT=逐屏原文见§2.1.3（SAMPLE-07-MMP）；TR-16 | local wallpaper commands/selectors；确认后重读confirmed，cancel保留旧值；Bounded catalogue=4固定项；apps/terminal/ui/feature/sample-wallpaper-picker/src/foundations/wallpaperCatalogData.json；禁改其他content face |
+| IA-SAMPLE-08 / SAMPLE-08-LMP | 选并确认LMP本机壁纸、退出页面或登出；主机店员；PRIMARY壁纸选择页；四项radio/预览/确认、退出选择和独立登出；退出不等于登出；sample.wallpaper.picker:options:<wallpaperId>/confirm/exit/logout；同4-item状态；CONTAINER_LAYOUT=逐屏原文见§2.1.3（SAMPLE-08-LMP）；TR-16 | host local confirmed；LMS只读确认值；店员登出调用现有logoutCommand；退出页与logout是不同动作；Bounded 4；壁纸目录owner；禁改LSP本地状态 |
+| IA-SAMPLE-09 / SAMPLE-09-LMS | 显示host已确认壁纸；顾客；SECONDARY全画布；无控件文字；资源缺失neutral background；无testId动作；hydration未到用中性底色；CONTAINER_LAYOUT=逐屏原文见§2.1.3（SAMPLE-09-LMS）；TR-16 | host同一runtime selector读confirmed，不读pending；host confirm后更新画布；Bounded 4；host wallpaper owner；禁操作/显示pending |
+| IA-SAMPLE-10 / SAMPLE-10-LSP | 独立选本机壁纸；slave店员；LSP PRIMARY独立选择页；四项radio/preview/confirm/退出；断链mask；sample.wallpaper.branch.picker:option.<wallpaperId>/confirm/exit真实动作；不提供登出；缺目录项不造默认值；CONTAINER_LAYOUT=逐屏原文见§2.1.3（SAMPLE-10-LSP）；TR-16 | branch local persistent confirmed/pending，mask期间不丢值；切LMS再切回恢复本机confirmed；不提供staff logout；Bounded 4；本机wallpaper owner；禁host projection覆盖branch state |
+| IA-MASK-01 / MASK-01 |知道业务暂不可用且仍可本机恢复；副机店员/顾客；覆盖业务surface的全屏layer；配对提示和本机admin launcher；mask拦鼠标/触摸/焦点与business command；terminal.admin.launcher为手势节点；旧业务画面无可点内容，失联不显示加载；CONTAINER_LAYOUT=逐屏原文见§2.1.3（MASK-01）；TR-16|只在current peer、连接和required projections全部ready后解除；关闭admin不解除mask；N/A无集合；topology与projection owners；禁任何遮罩下业务command或副机MAIN权限|
+
+### 2.1.1 数据集合与容器行为
+
+成员集合已由现有 sample-member-registry 持有完整本地数组；正式需求没有分页协议、删除动作或总量上限。为避免新增业务行为，本设计不新增 cap、分页、自动删除或拒绝阈值；列表使用现有 PrimitiveList 的窗口化渲染，源码常量 LIST_MAX_MOUNTED=24 只界定同时挂载数，不界定总成员数。预期规模是本机 sample 过程录入的集合；随着使用可增长，数据与内存仍承载完整 owner 集合。长期增长量和设备容量上限来源不存在，列为 OPEN 风险，若独立 review 认为会阻碍可交付性则提交 Dexter 决定。长姓名/电话换行或截断由现有 PrimitiveList 行宽约束；不得撑出viewport；固定确认/提交区不得被列表遮住。
+
+成员观察档位：[owner focused] 注入超过24项，滚动可寻址全部条目、DOM/native mounted item不超过24；[静态] 不添加分页、丢项或新上限。所有终端非adapter行为先按TR-16在Expo Web对两个integration测，再用相同场景到VM；该安排目前未执行。
+
+| IA-ID / screen | collectionShapeAndScale 与可执行的容器观察 |
+| --- | --- |
+| IA-ACT-01 / ACT-01-MMP | 固定 1 个激活码字段、1 个只读服务空间；加载和错误提示不扩列；输入区滚动时标题、空间名与激活按钮仍在 viewport 内。 |
+| IA-ACT-02 / ACT-02-LMP | 同 ACT-01；表单为单列，错误文案换行不得撑宽表单或把提交操作移出视口。 |
+| IA-ACT-03 / ACT-03-LMS | 单条引导，无集合；hydration 未完成显示等待，不以空值替代。 |
+| IA-ACT-04 / ACT-04-LSP | 单条主机引导，无集合；当前 peer 未 ready 时保留遮罩并由本机 admin launcher 恢复。 |
+| IA-ADMIN-SHELL / ADMIN-SHELL | 固定三个导航入口；横向窄窗由既有 mobile 下拉导航承载，导航本身不增滚动条。 |
+| IA-ADMIN-00 / ADMIN-00 | 单个本机手势入口；透明 hit target 不改变逻辑画布内容或遮挡其它触控。 |
+| IA-ADMIN-AUTH / ADMIN-AUTH | 固定密码字段与操作；错误文案换行，不能覆盖验证/关闭按钮。 |
+| IA-ADMIN-01 / ADMIN-01 | 固定状态字段与至多一个取消操作；没有状态时显示等待，不能渲染成空列表或 inactive。 |
+| IA-ADMIN-02 / ADMIN-02 | 有界配置表单：地址 1～4 条，每项 addressName/baseUrl/timeoutMs；baseUrl承载URL前缀，不另存第二字段；表单区滚动，操作区固定。 |
+| IA-ADMIN-03 / ADMIN-03 | 显示主机配置的固定只读字段及 1～4 地址；长值换行/截断在内容列内，不出现编辑滚动区域。 |
+| IA-ADMIN-04 / ADMIN-04 | 单个当前 peer / 一个主机地址与有限状态；切换操作后仍只在拓扑内容区滚动，操作区可见。 |
+| IA-AUTH-01 / AUTH-01-MMP | 固定姓名、密码两字段；单列，校验错误占用字段下方，不移动登录操作出视口。 |
+| IA-AUTH-02 / AUTH-02-LMP | 同 AUTH-01，采用 laptop 单列表单，不出现第二滚动祖先。 |
+| IA-AUTH-03 / AUTH-03-LMS | 单条只读引导，无集合、无滚动和操作区。 |
+| IA-AUTH-04 / AUTH-04-LSP | 单条只读引导，无集合；断链遮罩优先于引导内容。 |
+| IA-SAMPLE-01 / SAMPLE-01-MMP | 完整 member registry，无业务总量上限；PrimitiveList 同时挂载最多 24 条，剩余条目可滚动到达，不设置分页或丢项。 |
+| IA-SAMPLE-02 / SAMPLE-02-LMP | 与 SAMPLE-01 同一集合规则；列表/表单唯一滚动区，操作固定；超长字段在行内换行或截断，不撑宽。 |
+| IA-SAMPLE-03 / SAMPLE-03-LSP | host confirmed list 无总量上限，branch pending 为单条本机操作；列表超过 24 项仍可遍历，同页确认操作不被列表遮挡。 |
+| IA-SAMPLE-04 / SAMPLE-04-MMP | 单条本机host pending，无集合；年龄可编辑；信息在唯一滚动区，决定操作位于其外。 |
+| IA-SAMPLE-05 / SAMPLE-05-LMP | 单条当前 operation，无集合；确认信息与操作固定对齐，迟到/缺失不扩出空态列表。 |
+| IA-SAMPLE-06 / SAMPLE-06-LMS | 单条 hostPending 或 hostPendingProjection，无集合；双机projection带operationId且绑定current peer；无pending时不显示旧内容；固定页面不得滚动。 |
+| IA-SAMPLE-07 / SAMPLE-07-MMP | 固定 4 项壁纸目录；选择列表可滚动，四项均可寻址，确认按钮保持可见且不受软键盘遮挡。 |
+| IA-SAMPLE-08 / SAMPLE-08-LMP | 固定 4 项壁纸目录；卡片换行而非撑宽，选择区唯一滚动，确认/退出保持可见。 |
+| IA-SAMPLE-09 / SAMPLE-09-LMS | 一张主机 confirmed 壁纸，无集合；只铺满 canvas，不引入滚动或显示 pending 状态。 |
+| IA-SAMPLE-10 / SAMPLE-10-LSP | 固定 4 项本机壁纸目录；与 LMP 同宽卡片换行/单滚动区，但独立 owner 与页面，不被 host 投影覆盖。 |
+| IA-MASK-01 / MASK-01 | 单一全屏遮罩与一个本机恢复入口，无集合、无滚动；遮罩外不得透出可交互业务区域。 |
+
+### 2.1.2 搜索与候选查询分母
+
+本专项没有 search-capable screen：member registry 只显示现有 owner 的完整列表；激活码是精确的 8 位用户输入，配置空间/服务来自有限内置声明，壁纸是固定四项单选。没有用户需求或 owner task-read 支持名称搜索、筛选或远程候选；不添加搜索框、候选协议或客户端过滤。
+
+| screen id | 搜索适用性 | 依据与可证伪结果 |
+| --- | --- | --- |
+| ACT-01-MMP、ACT-02-LMP、ACT-03-LMS、ACT-04-LSP | `NOT_APPLICABLE_WITH_REASON` | 激活只接受精确 8 位码，另外三面只读引导；表面出现搜索控件即偏离 R-03/R-04。 |
+| ADMIN-SHELL、ADMIN-00、ADMIN-AUTH、ADMIN-01、ADMIN-02、ADMIN-03、ADMIN-04 | `NOT_APPLICABLE_WITH_REASON` | 固定导航、登录、配置和拓扑状态/目标，不查询增长型候选；不得增添远程搜索。 |
+| AUTH-01-MMP、AUTH-02-LMP、AUTH-03-LMS、AUTH-04-LSP | `NOT_APPLICABLE_WITH_REASON` | 两个登录表单是固定字段；两个副面是只读引导。 |
+| SAMPLE-01-MMP、SAMPLE-02-LMP、SAMPLE-03-LSP、SAMPLE-04-MMP、SAMPLE-05-LMP、SAMPLE-06-LMS | `NOT_APPLICABLE_WITH_REASON` | 列表显示 owner 返回的完整集合，新增会员是用户输入事实，不是从候选集选会员；不引入搜索接口。 |
+| SAMPLE-07-MMP、SAMPLE-08-LMP、SAMPLE-09-LMS、SAMPLE-10-LSP | `NOT_APPLICABLE_WITH_REASON` | 四项固定壁纸及 LMS 只读 projection，不需要搜索。 |
+| MASK-01 | `NOT_APPLICABLE_WITH_REASON` | 遮罩与本机 admin launcher 不含候选查询。 |
+
+`CANDIDATE_QUERY_PROTOCOL=NOT_APPLICABLE_WITH_REASON`：上述全集均无增长型远程候选控件；不实现 §1.3.1 的 consumer protocol，不得为满足模板而新建候选 API。
+
+
+### 2.1.3 CONTAINER_LAYOUT逐屏原文（值与交互工件完全一致）
+
+| screen | CONTAINER_LAYOUT |
+| --- | --- |
+| ACT-01-MMP | `mobile PRIMARY 360×640（入口 package terminalSurfaces）；标题与服务空间固定在滚动表单上方，唯一滚动区为激活输入区，底部提交按钮不出视口；全宽单列。` |
+| ACT-02-LMP | `laptop PRIMARY 1280×720（入口 package terminalSurfaces）；居中单列表单，宽度不超过现有 720px 内容宽；唯一滚动区为表单内容，标题、服务空间与提交操作保持可见。` |
+| ACT-03-LMS | `laptop SECONDARY 1280×720；单一居中说明文本，无独立滚动区，不含提交控件。` |
+| ACT-04-LSP | `laptop PRIMARY 1280×720；单一居中说明文本，无独立滚动区，不含提交控件。` |
+| ADMIN-SHELL | `复用AdminShellFrameLaptop/AdminShellFrameMobile现有geometry；laptop以左侧导航列表展示三项，mobile以既有下拉导航展示同三项；标题与关闭保持可见，导航区域本身不滚动。` |
+| ADMIN-01 | `仅画“设备激活状态”当前内容区，不把共享 admin 壳、其他 tab 或关闭按钮画入本 screen；laptop 内容宽不超 admin-shell 现有内容区，mobile 单列；唯一纵向滚动在本 tab 内容区，取消按钮保持可见。` |
+| ADMIN-02 | `仅画主机/未配对本机可编辑的服务配置内容区；服务空间与服务选择在表单上方；地址最多四条；唯一滚动区是配置表单，保存/清除/恢复按钮保持可见并不横向溢出。` |
+| ADMIN-03 | `仅画副机只读配置内容区；与 ADMIN-02 共用容器宽度、列顺序与唯一滚动区；不含选择器、输入框或写入按钮；容器不超出 1280×720 viewport。` |
+| ADMIN-04 | `仅画“双机拓扑”当前内容区；laptop 状态/操作双栏，mobile 单列；唯一滚动区是 topology 内容区；连接/退配操作区始终可见。` |
+| ADMIN-00 | `现有逻辑画布范围不变；入口位于本机左上角，手势观察不拦截其余内容触摸；无新增滚动区域。` |
+| ADMIN-AUTH | `复用终端 admin layer laptop/mobile frame；对话内容居中且不超出画布；表单只有自身一段滚动；验证与关闭操作保持可见。` |
+| AUTH-01-MMP | `mobile PRIMARY 360×640；输入区唯一滚动，标题与登录按钮可见，表单单列。` |
+| AUTH-02-LMP | `laptop PRIMARY 1280×720；表单居中且宽度不超过现有 720px 内容宽；唯一滚动区为输入内容，标题与登录操作可见。` |
+| AUTH-03-LMS | `laptop 1280×720；单一居中提示，无滚动与操作按钮。` |
+| AUTH-04-LSP | `laptop PRIMARY 1280×720；单一居中提示，无滚动与操作按钮。` |
+| SAMPLE-01-MMP | `mobile PRIMARY 360×640；单列内容；唯一滚动为列表/表单内容，底部操作固定且不被软键盘遮挡。` |
+| SAMPLE-02-LMP | `laptop PRIMARY 1280×720；内容宽不超过现有 960px 列表宽；唯一滚动为列表/表单内容，页面操作固定。` |
+| SAMPLE-03-LSP | `laptop PRIMARY 1280×720；独立 LSP 页面；内容宽不超过 960px；唯一滚动为列表/表单内容，提交/确认操作固定。` |
+| SAMPLE-04-MMP | `mobile PRIMARY 360×640；确认信息与年龄输入位于唯一 InputScrollArea；确认/拒绝/交还店员动作位于滚动区外的单列操作组；不增加第二个滚动祖先，键盘覆盖时以当前 virtual keyboard 行为验证关键动作可达。` |
+| SAMPLE-05-LMP | `laptop PRIMARY 1280×720；姓名/电话与可选年龄在唯一 InputScrollArea；确认/拒绝/条件性交还店员位于滚动区外的操作组；无第二滚动祖先。` |
+| SAMPLE-06-LMS | `laptop SECONDARY 1280×720；姓名/电话与可选年龄在唯一 InputScrollArea；确认/拒绝位于滚动区外操作组；无第二滚动祖先。` |
+| SAMPLE-07-MMP | `mobile PRIMARY 360×640；沿用现有 120×72 缩略图；唯一滚动区为选项列表及确认操作，确认按钮在列表末尾且不被软键盘遮挡。` |
+| SAMPLE-08-LMP | `laptop PRIMARY 1280×720；选项列表唯一滚动；网格卡片宽沿用现有 220px，不小于视口时换行；确认与退出操作保持在可见内容底部。` |
+| SAMPLE-09-LMS | `laptop SECONDARY 1280×720；背景铺满声明画布，保持 cover；无滚动，不绘制其他内容、控件或状态值。` |
+| SAMPLE-10-LSP | `laptop PRIMARY 1280×720；采用与 LMP 相同卡片宽和列表布局；唯一滚动为壁纸列表；确认/退出保持可见；LSP component 独立，不以角色条件复用 LMP 页面。` |
+| MASK-01 | `覆盖当前业务 viewport 1280×720；遮罩吸收鼠标/触摸、键盘焦点及业务 action；左上角本地 admin launcher 位于遮罩上层且可点击；无滚动。` |
+
+## 3 · 共用信息架构规则
+
+- terminal-data-client独占设备credential、激活/取消 command、TDS业务首帧与PING/PONG协议；server-config独占地址和代理设置及代理秘密；composition注入网络配置provider；transport只执行通用通信command。组件一律通过公开owner command/selector。
+- 四面与实例分离：MMP/LMP/LMS属主机runtime，LSP属另一slave runtime。内容面不能决定实例角色或授权。
+- 配对branch projection绑定当前peer identity、revision及适用owner集合；peer已连不等于投影ready。换主机、断链、迟到快照或apply失败时所有业务仍遮罩。
+- 激活、会员、配置与壁纸的命令结果均以owner selector readback；响应丢失先读身份，不盲重发。会员确认要求operation identity一致。
+- 密码/秘密均不进入DOM可见明文、结构化日志、测试截图或错误正文。代理密码按裁决明文持久/同步但不回显；staff密码只用于本机登录且不复制到branch。
+- 输入仅通过TER input owner与现有PrimitiveInput/useInputField；没有裸平台输入绕行。
+- 所有动作具备语义label、可键盘/设备焦点访问，disabled/loading/error有非颜色文本；所列testId均为提案，实施期由每个app的唯一TestIds源码导出。
+- frontend-coding-standard.md §3-K-1..10仅适用管理后台antd交互；TER不是该consumer face，故明确N/A，依据terminal-coding-standard.md的不适用条款。TR-16/TR-17与TER §4-D/§4-E仍强制。
+
+## 4 · 错误语义与界面映射（按当前owner码族）
+
+| 错误码/结果族 | Screen | 用户处理 |
+| --- | --- | --- |
+| TERMINAL_BINDING_ACTIVATION_EXPIRED、TERMINAL_BINDING_CREDENTIAL_INVALID、TERMINAL_BINDING_ALREADY_BOUND、STORE_TERMINAL_DEVICE_TYPE_MISMATCH、STORE_TERMINAL_DISABLED、STORE_TERMINAL_STORE_VOIDED、PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED、PLATFORM_COMMON_VALIDATION_FAILED、PLATFORM_COMMON_RESULT_UNKNOWN | ACT-01/02、ADMIN-01 | client按既有稳定码映射本地可行动提示；unknown标记“结果待确认”并读取selector，不泄露响应正文或身份 |
+| invalid-credentials | AUTH-01/02 | 显示“姓名或密码不正确”，密码清空，姓名保留 |
+| no-pending-member、invalid-member-payload、customer-rejected | SAMPLE-01..06 | 输入问题留在本次录入；customer-rejected只终结对应pending，不写成员集合；迟到操作不得改变新pending |
+| invalid-wallpaper-id、confirm-without-pending | SAMPLE-07..10 | 保留confirmed值，报告当前选择不可用 |
+| topology owner typed failure | ADMIN-04、MASK-01 | 显示失败阶段；继续遮罩，只有完整成功并readback当前身份/同步状态才恢复 |
+| server-config校验/持久化失败 | ADMIN-02/03 | 分别读取effective、persistence、sync结果：校验拒绝不变更；内存已生效但持久化失败保留新effective并提示未落盘；同步失败主机维持有效值、副机保持not-ready；不默认回滚旧effective |
+| hydration/selector读取失败 | 所有相关screen | 显示等待/暂不可用；unknown不得压成inactive、空列表或成功 |
+
+码表具体闭集由实施CP重新打开当前公开类型检查；不增加需求外HTTP problem。sample功能没有业务HTTP endpoint。
+
+## 5 · 交叉对账（设计内静态条件）
+
+| 检查 | 判据 |
+| --- | --- |
+| IA ↔ Interaction | 26个screen id、surface、入口和可见文案逐项一致 |
+| IA ↔ 详设 | 详设§4、§5a、§6、§11a与本IA的owner、权限、回读、集合语义一致 |
+| IA-ID ↔ Journey | 每个IA-ID映射到已接受Journey步骤 |
+| 集合形态 | 成员总量没有规格上限是OPEN；不得由实现私自添加cap或分页 |
+| 计数 | 26个Interaction Screen对应26个IA-ID，逐项一一对应；需独立review复核 |
+
+IA_DIMENSIONS=26个ID，14维逐项填写
+INVISIBLE_DIMENSIONS_AS_OBSERVATIONS=是；详细判据和证据档位见每行
+FORBIDDEN_UI=explicit
+TYPED_PROBLEMS=5个业务码族+通用owner运行失败
+CROSS_CHECK_WITH_DESIGN=作者静态逐项对齐；R2对修订前字节为NO-GO；S-1修复后的字节待Dexter与Claude评审
+DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-02（direction only）
+IA_STATUS=IMPLEMENTATION_FACING_DESIGN_READY_FOR_INDEPENDENT_REVIEW；不构成implementation授权
+
+## 6 · 完成判定
+
+```text
+IA_ID_DENOMINATOR=26；全部与交互工件 screen ID 一一匹配，无重复或缺失
+VISIBLE_DIMENSIONS=26/26 已填写业务任务、actor/scenario、entry/surface、control、错误、accessibility/testId、empty/loading/error、container behavior、interaction consistency
+INVISIBLE_DIMENSIONS=26/26 已填写 state/permission、navigation/refresh、collection shape/scale、data source/cascade、forbidden UI；search 分母逐 screen 为 NOT_APPLICABLE_WITH_REASON
+INVISIBLE_DIMENSIONS_AS_OBSERVATIONS=是；执行档位、owner 与反例见逐屏字段/§2.1.1/§2.1.2/§2.1.3
+FORBIDDEN_UI=explicit；每条可由屏幕/DOM/source 比对证伪
+TYPED_PROBLEMS=按 §4 全量映射当前 owner 结果族；不新增错误码
+CROSS_CHECK_WITH_DESIGN=见 §5；R2对修订前字节为NO-GO；S-1修复后的字节待Dexter与Claude评审
+DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-02（仅整体方向；逐屏细节仍待审）
+IA_STATUS=READY_FOR_INDEPENDENT_DESIGN_REVIEW；不构成 implementation 授权
+```

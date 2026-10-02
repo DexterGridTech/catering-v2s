@@ -5336,7 +5336,8 @@
         "TERMINAL_PORT_REGISTRY_WITH_DEFAULTS",
         "TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README",
         "TERMINAL_WEB_FIRST_DEVICE_PARITY",
-        "TERMINAL_INPUT_VIRTUAL_KEYBOARD_USAGE"
+        "TERMINAL_INPUT_VIRTUAL_KEYBOARD_USAGE",
+        "TERMINAL_SCREEN_SCENARIO_TERMINOLOGY"
       ],
       "assertionSources": [
         {
@@ -5378,6 +5379,11 @@
           "assertionKey": "TERMINAL_INPUT_VIRTUAL_KEYBOARD_USAGE",
           "path": "doc/platform/terminal-coding-standard.md",
           "anchor": "### `TR-17` · TER 输入与虚拟键盘只能通过 input owner 使用"
+        },
+        {
+          "assertionKey": "TERMINAL_SCREEN_SCENARIO_TERMINOLOGY",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "### 4-E · 终端界面场景统一术语"
         }
       ],
       "sourceRefs": [

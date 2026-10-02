@@ -12,7 +12,7 @@ consumerFaces: ["all"]
 owners: ["platform","frontend-platform"]
 impacts: ["governance","architecture"]
 triggers: ["task-start","implementation","review"]
-assertions: ["TERMINAL_STANDARD_SINGLE_SOURCE","TERMINAL_STANDARD_POINTERS_ONLY","TERMINAL_HARD_RULES_NUMBERING_STABLE","TERMINAL_TRIPLE_NAMING_DERIVED","TERMINAL_PORT_REGISTRY_WITH_DEFAULTS","TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README","TERMINAL_WEB_FIRST_DEVICE_PARITY","TERMINAL_INPUT_VIRTUAL_KEYBOARD_USAGE"]
+assertions: ["TERMINAL_STANDARD_SINGLE_SOURCE","TERMINAL_STANDARD_POINTERS_ONLY","TERMINAL_HARD_RULES_NUMBERING_STABLE","TERMINAL_TRIPLE_NAMING_DERIVED","TERMINAL_PORT_REGISTRY_WITH_DEFAULTS","TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README","TERMINAL_WEB_FIRST_DEVICE_PARITY","TERMINAL_INPUT_VIRTUAL_KEYBOARD_USAGE","TERMINAL_SCREEN_SCENARIO_TERMINOLOGY"]
 sourceRefs: ["doc/platform/terminal-coding-standard.md"]
 ---
 
@@ -50,3 +50,8 @@ sourceRefs: ["doc/platform/terminal-coding-standard.md"]
   owner、承载、滚动祖先、一次测量、布局正本、Shift/URL 语义、覆盖动画、性能和验证顺序只按正本
   `TR-17`；本记忆不复述规则，后续 agent 必须在处理任何 TER virtual field 前回读该节及
   `apps/terminal/ui/base/input/README.md`。
+- `TERMINAL_SCREEN_SCENARIO_TERMINOLOGY`（Dexter 2026-10-02）：涉及 MMP/LMP/LMS/LSP、mobile/laptop、
+  单机单屏/单机双屏/双机双屏、内容归属与实际承载实例角色、配对副机断链业务遮罩/本地 admin 恢复、
+  主机店员准入时，回读正本
+  [§4-E · 终端界面场景统一术语](../../doc/platform/terminal-coding-standard.md#4-e--终端界面场景统一术语)。
+  定义只写在正本；本记忆负责路由，不复制映射表，也不把需求讨论稿中的建议提升为已裁决规则。

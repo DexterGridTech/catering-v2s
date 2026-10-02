@@ -41,8 +41,10 @@ TER = `apps/terminal`，v2s 仓内的终端产品工程。设计输入是对 POC
   POC 的"副屏独立进程"整套跨进程广播协议**不搬**。
   `displayMode` / `containerKey` 随命令传入；`workspace`（MAIN/BRANCH）是**设备级工作上下文**，两屏共享。
 - `TER_PAIR_TOPOLOGY_WITH_DETACHABLE_SECONDARY`：跨机拓扑**仍是一主一副 pair**
-  （"多 peer 图网络"是已被证伪的方向）；副屏（平板）**可拿下来、监听接电状态当主屏用** ——
-  即 POC 已实现的 standalone slave + powerDisplaySwitch，`SLAVE && PRIMARY → BRANCH`。
+  （"多 peer 图网络"是已被证伪的方向）；副机可切为主屏显示形态，但不据此取得独立终端资格。
+  当前产品术语、配对副机身份与准入边界见正本
+  [`doc/platform/terminal-coding-standard.md` §4-E](../../doc/platform/terminal-coding-standard.md#4-e--终端界面场景统一术语)。
+  POC 的 standalone slave 只作历史实现说明，不得反推现行副机产品身份。
 - `TER_FEATURE_TOPOLOGY_OWNERSHIP`：正式写入归属规则是：**`MAIN` 只能主机的 actor 执行 command
   写入 slice。`BRANCH` 只能副机的 actor 执行 command 写入 slice。** 正本见
   `doc/platform/terminal-coding-standard.md` §4-D。由此导出 `MAIN → SLAVE` 与 `BRANCH → MASTER`
