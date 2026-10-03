@@ -18,8 +18,9 @@ slice 或 Runtime module。
 这里只通过 `dispatchWithRequestId` 统一构造并传递显式带 `requestId` 的 public command intent，
 并由 `useRequestInFlight`／`useTrackedRequest` 提供 request 观察与瞬时句柄。变量的注册 identity 校验仍由
 ui-state module 完成。窄派发 Promise 被拒绝时，`useDispatchCommand` 通过注入的 logger 记录带
-`commandName`／`requestId` 的 `command-dispatch-rejected` typed diagnostic 后原样 rethrow；不把基础设施
-失败伪装成业务成功，也不新增业务错误层。
+`commandName`／`requestId` 与 `failure=promise-rejected` 的 `command-dispatch-rejected` typed diagnostic 后原样
+rethrow；Promise 正常 resolve 但聚合结果为 `partial-failed`、`timed-out` 或 `error` 时，也记录同一事件并保留
+对应失败类别。两种路径都不记录 payload 或原始异常消息，不把失败伪装成业务成功，也不新增业务错误层。
 
 React UI 的状态订阅统一走 `useUiStateSelector(selector[, equalityFn])`，生命周期状态走
 `useRenderStatus()`；业务组件不能直接读取 `stateSource`、完整 snapshot 或 raw root。`useUiStateSelector`

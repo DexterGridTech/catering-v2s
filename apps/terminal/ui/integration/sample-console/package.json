@@ -40,7 +40,22 @@
             "addresses": [
               {
                 "addressName": "primary",
-                "baseUrl": "http://127.0.0.1:7890/api/terminal/group-workspaces/mixc",
+                "baseUrl": "http://127.0.0.1:28080/api/terminal/group-workspaces/aurora",
+                "timeoutMs": 10000
+              }
+            ]
+          },
+          {
+            "serverName": "terminal-data-server",
+            "addresses": [
+              {
+                "addressName": "haproxy-entry-one",
+                "baseUrl": "ws://127.0.0.1:28180",
+                "timeoutMs": 10000
+              },
+              {
+                "addressName": "haproxy-entry-two",
+                "baseUrl": "ws://127.0.0.1:28181",
                 "timeoutMs": 10000
               }
             ]

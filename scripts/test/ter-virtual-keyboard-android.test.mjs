@@ -6,7 +6,24 @@ import path from 'node:path';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import * as runner from './ter-virtual-keyboard-android.mjs';
+import {terminalBusinessMemberFixture} from './terminal-business-fixtures.mjs';
 import {
+  activationFixtureActionLabel,
+  activationFixtureInputEvidence,
+  activationInputBoundaryReadback,
+  terminalBusinessInputValue,
+  terminalBusinessInputKeyPlan,
+  terminalBusinessInputReadback,
+  terminalBusinessMemberReadback,
+  terminalBusinessScreenAssertion,
+  terminalBusinessScreenWaitMatched,
+  terminalBusinessTextAssertion,
+  terminalActivationInputReadiness,
+  projectTerminalBusinessLogcatEvents,
+  TERMINAL_BUSINESS_SCREENS,
+  resolveManagedCommandTimeoutMs,
+  resolveManagedCommandMaxBytes,
+  validateTerminalEmulatorPair,
   emptyFrameMatrix,
   captureObservationMatrix,
   classifyFrameRoute,
@@ -21,7 +38,7 @@ import {
   parseLogicalDisplays,
   parseResourceNode,
   parseResourceContentDescriptionHash,
-  parseResourceTextHash,
+  parseHarnessTextHash,
   parseVisibleControlInventory,
   sameResourceNodeBounds,
   URL_SYMBOL_KEYS,
@@ -66,6 +83,587 @@ const IA_IDS = [
   'VK-IA-18',
   'VK-IA-19',
 ];
+
+test('activation fixture input evidence never persists or labels the activation digits', () => {
+  const activationCode = '70123456';
+  const evidence = activationFixtureInputEvidence({
+    fixtureKey: 'term-front',
+    expectedCode: activationCode,
+    observedValue: activationCode,
+  });
+  assert.deepEqual(evidence, {
+    fixtureKey: 'term-front',
+    expectedDigitCount: 8,
+    observedDigitCount: 8,
+    matched: true,
+  });
+  assert.equal(JSON.stringify(evidence).includes(activationCode), false);
+  assert.equal(activationFixtureActionLabel('dual', 'fixture', 3), 'dual-activation-fixture-03');
+  assert.equal(activationFixtureActionLabel('mobile', 'leading-zero', 1), 'mobile-activation-leading-zero-01');
+  assert.throws(() => activationFixtureActionLabel('dual', 'fixture', 17), /VK_ANDROID_ACTIVATION_ACTION_ORDINAL_INVALID/);
+  const mismatch = activationFixtureInputEvidence({
+    fixtureKey: 'term-front',
+    expectedCode: activationCode,
+    observedValue: '7012',
+  });
+  assert.deepEqual(mismatch, {
+    fixtureKey: 'term-front',
+    expectedDigitCount: 8,
+    observedDigitCount: 4,
+    matched: false,
+  });
+  assert.equal(JSON.stringify(mismatch).includes(activationCode), false);
+  const leadingZeroMismatch = activationInputBoundaryReadback({
+    expectedValue: '01234567',
+    observedValue: '1234567',
+  });
+  assert.deepEqual(leadingZeroMismatch, {
+    expectedDigitCount: 8,
+    observedDigitCount: 7,
+    leadingZeroPreserved: false,
+    exactMatch: false,
+    valueRedacted: true,
+  });
+  assert.equal(JSON.stringify(leadingZeroMismatch).includes('01234567'), false);
+  assert.equal(JSON.stringify(leadingZeroMismatch).includes('1234567'), false);
+});
+
+test('activation input readiness requires an enabled field and settled interactive virtual keyboard', () => {
+  const focusedFalseXml =
+    '<hierarchy><display id="0"><node resource-id="terminal.activation.code" text="" enabled="true" focused="false" bounds="[1,2][9,10]"/><node resource-id="ui.base.input:virtual-keyboard" enabled="true" bounds="[0,20][20,40]"/></display></hierarchy>';
+  assert.deepEqual(terminalActivationInputReadiness(focusedFalseXml, 0), {
+    fieldVisible: true,
+    fieldEnabled: true,
+    nativeFocusReported: false,
+    keyboardVisible: true,
+    keyboardHitShieldPresent: false,
+    ready: true,
+  });
+  const focusedSettledXml =
+    '<hierarchy><display id="0"><node resource-id="terminal.activation.code" text="" enabled="true" focused="true" bounds="[1,2][9,10]"/><node resource-id="ui.base.input:virtual-keyboard" enabled="true" bounds="[0,20][20,40]"/></display></hierarchy>';
+  assert.deepEqual(terminalActivationInputReadiness(focusedSettledXml, 0), {
+    fieldVisible: true,
+    fieldEnabled: true,
+    nativeFocusReported: true,
+    keyboardVisible: true,
+    keyboardHitShieldPresent: false,
+    ready: true,
+  });
+  const focusWithoutKeyboardSettlement =
+    '<hierarchy><display id="0"><node resource-id="terminal.activation.code" text="" enabled="true" focused="true" bounds="[1,2][9,10]"/><node resource-id="ui.base.input:virtual-keyboard" enabled="true" bounds="[0,20][20,40]"/><node resource-id="ui.base.input:keyboard-hit-shield" enabled="true" bounds="[0,20][20,40]"/></display></hierarchy>';
+  assert.deepEqual(terminalActivationInputReadiness(focusWithoutKeyboardSettlement, 0), {
+    fieldVisible: true,
+    fieldEnabled: true,
+    nativeFocusReported: true,
+    keyboardVisible: true,
+    keyboardHitShieldPresent: true,
+    ready: false,
+  });
+  const noKeyboardXml =
+    '<hierarchy><display id="0"><node resource-id="terminal.activation.code" text="" enabled="true" focused="false" bounds="[1,2][9,10]"/></display></hierarchy>';
+  assert.deepEqual(terminalActivationInputReadiness(noKeyboardXml, 0), {
+    fieldVisible: true,
+    fieldEnabled: true,
+    nativeFocusReported: false,
+    keyboardVisible: false,
+    keyboardHitShieldPresent: false,
+    ready: false,
+  });
+  const disabledFieldXml =
+    '<hierarchy><display id="0"><node resource-id="terminal.activation.code" text="" enabled="false" focused="false" bounds="[1,2][9,10]"/><node resource-id="ui.base.input:virtual-keyboard" enabled="true" bounds="[0,20][20,40]"/></display></hierarchy>';
+  assert.deepEqual(terminalActivationInputReadiness(disabledFieldXml, 0), {
+    fieldVisible: true,
+    fieldEnabled: false,
+    nativeFocusReported: false,
+    keyboardVisible: true,
+    keyboardHitShieldPresent: false,
+    ready: false,
+  });
+  const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
+  const activationInput = source.slice(
+    source.indexOf('async function clearActivationCodeInput('),
+    source.indexOf('async function enterActivationDigits('),
+  );
+  const activationFixtureInput = source.slice(
+    source.indexOf('async function runActivationFixtureInput('),
+    source.indexOf('async function seedW7Clipboard('),
+  );
+  assert.match(activationInput, /terminalActivationInputReadiness/);
+  assert.match(activationInput, /SETTLED_INTERACTIVE_VIRTUAL_KEYBOARD/);
+  assert.doesNotMatch(activationInput, /VK_ANDROID_ACTIVATION_INPUT_NOT_FOCUSED/);
+  assert.match(activationInput, /ACTIVATION_INPUT_READINESS_OBSERVED/);
+  assert.match(
+    activationInput,
+    /await tapResource\(manifest, shape, TERMINAL_ACTIVATION_INPUT_ID\);\s*let readinessAttempts = 0;\s*for \(let attempt = 1; attempt <= 8; attempt \+= 1\)/,
+  );
+  assert.match(activationFixtureInput, /activationInputBoundaryReadback\(/);
+  assert.match(activationFixtureInput, /ACTIVATION_BOUNDARY_READBACK/);
+});
+
+test('terminal business input uses fixed synthetic probes and returns only redacted key plans', () => {
+  const runId = 'ter-pair-topology-01';
+  const memberName = terminalBusinessInputValue(runId, 'member-name');
+  const memberPhone = terminalBusinessInputValue(runId, 'member-phone');
+  assert.match(memberName, /^ter[a-f0-9]{10}$/u);
+  assert.match(memberPhone, /^010\d{8}$/u);
+  assert.deepEqual({name: memberName, phone: memberPhone}, terminalBusinessMemberFixture(runId));
+  assert.notEqual(memberPhone, terminalBusinessInputValue('ter-pair-topology-02', 'member-phone'));
+  assert.throws(() => terminalBusinessMemberFixture('../outside'), /TERMINAL_BUSINESS_FIXTURE_RUN_ID_INVALID/u);
+  assert.deepEqual(terminalBusinessInputKeyPlan('A01'), [
+    {keyId: 'text-a', uppercase: true},
+    {keyId: 'text-0', uppercase: false},
+    {keyId: 'text-1', uppercase: false},
+  ]);
+  assert.deepEqual(terminalBusinessInputKeyPlan('Ter Guest').map(value => value.keyId), [
+    'text-t', 'text-e', 'text-r', 'space', 'text-g', 'text-u', 'text-e', 'text-s', 'text-t',
+  ]);
+  assert.equal(JSON.stringify(terminalBusinessInputKeyPlan(memberName)).includes(memberName), false);
+  assert.equal(JSON.stringify(terminalBusinessInputKeyPlan(memberPhone)).includes(memberPhone), false);
+  assert.deepEqual(terminalBusinessInputReadback('member-name', memberName, memberName), {
+    valueKey: 'member-name',
+    resourceId: 'sample.desk.member-form:name',
+    characterCount: memberName.length,
+    verification: 'FIELD_READBACK',
+    matched: true,
+  });
+  assert.deepEqual(terminalBusinessInputReadback('staff-passcode', '1111', '••••'), {
+    valueKey: 'staff-passcode',
+    resourceId: 'sample.auth.login:passcode',
+    characterCount: 4,
+    verification: 'OWNER_OUTCOME_REQUIRED',
+    matched: null,
+  });
+  assert.throws(() => terminalBusinessInputReadback('unknown', 'value', 'value'), /VK_ANDROID_BUSINESS_INPUT_KEY_INVALID/);
+  assert.throws(() => terminalBusinessInputValue(runId, 'arbitrary-input'), /VK_ANDROID_BUSINESS_INPUT_KEY_INVALID/);
+  assert.throws(() => terminalBusinessInputKeyPlan('private value!'), /VK_ANDROID_BUSINESS_INPUT_VALUE_INVALID/);
+});
+
+test('terminal business visible-text oracle compares in memory and returns no UI text', () => {
+  const visible = '<hierarchy><display id="0"><node resource-id="terminal.activation.admin:connection" text="连接状态：已连接" bounds="[1,2][9,10]"/></display></hierarchy>';
+  const hidden = '<hierarchy><display id="0"><node resource-id="terminal.activation.admin:connection" text="连接状态：连接中" bounds="[1,2][9,10]"/></display></hierarchy>';
+  assert.deepEqual(terminalBusinessTextAssertion(visible, 'connection-connected', 0), {
+    expectationId: 'connection-connected',
+    resourceId: 'terminal.activation.admin:connection',
+    matched: true,
+  });
+  const mismatch = terminalBusinessTextAssertion(hidden, 'connection-connected', 0);
+  assert.equal(mismatch.matched, false);
+  assert.equal(JSON.stringify(mismatch).includes('连接状态：连接中'), false);
+  assert.throws(
+    () => terminalBusinessTextAssertion(visible, 'unlisted-expectation', 0),
+    /VK_ANDROID_BUSINESS_TEXT_EXPECTATION_INVALID/,
+  );
+  assert.throws(
+    () => terminalBusinessTextAssertion('<hierarchy/>', 'activation-success', 0),
+    /VK_ANDROID_BUSINESS_TEXT_EXPECTATION_INVALID/,
+  );
+  const rejected = '<hierarchy><display id="0"><node resource-id="terminal.activation.result" text="终端已停用，暂时无法激活。" bounds="[1,2][9,10]"/></display></hierarchy>';
+  assert.equal(terminalBusinessTextAssertion(rejected, 'activation-disabled', 0).matched, true);
+});
+
+test('terminal business log projection binds app pid, time window, allowlisted fields, and redacts unknown payload data', () => {
+  const event = {
+    timestamp: Date.parse('2026-10-03T09:00:01.000Z'),
+    category: 'terminal.activation.http',
+    event: 'activation-request-result',
+    context: {commandId: 'cmd_mg2a0w00_1234567890abcdef'},
+    scope: {moduleName: 'kernel.base.terminal-data-client'},
+    security: {containsSensitiveRaw: false},
+    data: {
+      profileId: 'terminal-data-client',
+      operationId: 'activateTerminal',
+      elapsedMs: 12,
+      kind: 'success',
+      status: 200,
+      requestId: 'req_mg2a0w00_1234567890abcdef',
+      correlationId: 'corr_mg2a0w00_1234567890abcdef',
+      credentialSecret: 'must-not-be-retained',
+    },
+  };
+  const log = `1791018001.000 123 123 I ReactNativeJS: ${JSON.stringify(event)}\n1791018001.000 999 999 I ReactNativeJS: ${JSON.stringify(event)}`;
+  const projected = projectTerminalBusinessLogcatEvents(
+    log,
+    ['123'],
+    '2026-10-03T09:00:00.000Z',
+    '2026-10-03T09:00:02.000Z',
+  );
+  assert.equal(projected.invalidEventCount, 0);
+  assert.deepEqual(projected.events, [{
+    at: '2026-10-03T09:00:01.000Z',
+    event: 'activation-request-result',
+    commandIdPresent: true,
+    data: {
+      profileId: 'terminal-data-client',
+      operationId: 'activateTerminal',
+      elapsedMs: 12,
+      kind: 'success',
+      status: 200,
+      requestId: 'req_mg2a0w00_1234567890abcdef',
+      correlationId: 'corr_mg2a0w00_1234567890abcdef',
+    },
+  }]);
+  assert.equal(JSON.stringify(projected).includes('must-not-be-retained'), false);
+  const staleLogcatTimestamp = projectTerminalBusinessLogcatEvents(
+    `1791017999.000 123 123 I ReactNativeJS: ${JSON.stringify(event)}`,
+    ['123'],
+    '2026-10-03T09:00:00.000Z',
+    '2026-10-03T09:00:02.000Z',
+  );
+  assert.equal(staleLogcatTimestamp.events.length, 0);
+  assert.equal(staleLogcatTimestamp.invalidEventCount, 1);
+  const unboundedBriefLogcat = projectTerminalBusinessLogcatEvents(
+    `I/ReactNativeJS(123): ${JSON.stringify(event)}`,
+    ['123'],
+    '2026-10-03T09:00:00.000Z',
+    '2026-10-03T09:00:02.000Z',
+  );
+  assert.equal(unboundedBriefLogcat.events.length, 0);
+  assert.equal(unboundedBriefLogcat.invalidEventCount, 1);
+  assert.throws(
+    () => projectTerminalBusinessLogcatEvents(log, [], '2026-10-03T09:00:00.000Z', '2026-10-03T09:00:02.000Z'),
+    /VK_ANDROID_TERMINAL_BUSINESS_LOG_INPUT_INVALID/,
+  );
+  const untrusted = {...event, security: {containsSensitiveRaw: true}};
+  const invalid = projectTerminalBusinessLogcatEvents(
+    `I/ReactNativeJS(123): ${JSON.stringify(untrusted)}`,
+    ['123'],
+    '2026-10-03T09:00:00.000Z',
+    '2026-10-03T09:00:02.000Z',
+  );
+  assert.equal(invalid.events.length, 0);
+  assert.equal(invalid.invalidEventCount, 1);
+  const withoutCommand = {...event, context: {}};
+  const uncorrelated = projectTerminalBusinessLogcatEvents(
+    `1791018001.000 123 123 I ReactNativeJS: ${JSON.stringify(withoutCommand)}`,
+    ['123'],
+    '2026-10-03T09:00:00.000Z',
+    '2026-10-03T09:00:02.000Z',
+  );
+  assert.equal(uncorrelated.events.length, 0);
+  assert.equal(uncorrelated.invalidEventCount, 1);
+  const stringTimestamp = {...event, timestamp: new Date(event.timestamp).toISOString()};
+  const invalidTimestamp = projectTerminalBusinessLogcatEvents(
+    `1791018001.000 123 123 I ReactNativeJS: ${JSON.stringify(stringTimestamp)}`,
+    ['123'],
+    '2026-10-03T09:00:00.000Z',
+    '2026-10-03T09:00:02.000Z',
+  );
+  assert.equal(invalidTimestamp.events.length, 0);
+  assert.equal(invalidTimestamp.invalidEventCount, 1);
+});
+
+test('terminal business screen oracle requires every finite control on the selected display', () => {
+  const expectationId = 'member-form-host';
+  const controls = TERMINAL_BUSINESS_SCREENS[expectationId].required;
+  const nodes = controls.map(resourceId =>
+    `<node resource-id="${resourceId}" bounds="[1,2][9,10]" enabled="true"/>`,
+  );
+  const complete = `<hierarchy><display id="0">${nodes.join('')}</display><display id="1"></display></hierarchy>`;
+  assert.deepEqual(terminalBusinessScreenAssertion(complete, expectationId, 0), {
+    expectationId,
+    requiredControlCount: controls.length,
+    matchedControlCount: controls.length,
+    missingResourceIds: [],
+    unexpectedResourceIds: [],
+    ambiguousResourceIds: [],
+    matched: true,
+  });
+
+  const incomplete = `<hierarchy><display id="0">${nodes.slice(0, -1).join('')}</display></hierarchy>`;
+  const missing = terminalBusinessScreenAssertion(incomplete, expectationId, 0);
+  assert.equal(missing.matched, false);
+  assert.equal(missing.requiredControlCount - missing.matchedControlCount, 1);
+  assert.deepEqual(missing.missingResourceIds, [controls.at(-1)]);
+
+  assert.equal(terminalBusinessScreenAssertion(complete, expectationId, 1).matched, false);
+  assert.throws(
+    () => terminalBusinessScreenAssertion(complete, 'unlisted-screen', 0),
+    /VK_ANDROID_BUSINESS_SCREEN_EXPECTATION_INVALID/,
+  );
+  assert.throws(
+    () => terminalBusinessScreenAssertion(complete, expectationId, Number.NaN),
+    /VK_ANDROID_BUSINESS_SCREEN_DISPLAY_INVALID/,
+  );
+  const ambiguous = terminalBusinessScreenAssertion(
+    `<hierarchy><display id="0"><node resource-id="${controls[0]}" bounds="[1,2][9,10]"/><node resource-id="${controls[0]}" bounds="[1,2][9,10]"/></display></hierarchy>`,
+    expectationId,
+    0,
+  );
+  assert.equal(ambiguous.matched, false);
+  assert.deepEqual(ambiguous.ambiguousResourceIds, [controls[0]]);
+});
+
+test('terminal screen oracles distinguish host and branch wallpaper controls', () => {
+  const expectation = TERMINAL_BUSINESS_SCREENS['wallpaper-slave'];
+  const required = expectation.required.map(resourceId =>
+    `<node resource-id="${resourceId}" bounds="[1,2][9,10]" enabled="true"/>`,
+  );
+  const branchPage = `<hierarchy><display id="0">${required.join('')}</display></hierarchy>`;
+  assert.equal(terminalBusinessScreenAssertion(branchPage, 'wallpaper-slave', 0).matched, true);
+
+  const leakedHostLogout = branchPage.replace(
+    '</display>',
+    '<node resource-id="sample.wallpaper.picker:logout" bounds="[1,2][9,10]" enabled="true"/></display>',
+  );
+  const mismatch = terminalBusinessScreenAssertion(leakedHostLogout, 'wallpaper-slave', 0);
+  assert.equal(mismatch.matched, false);
+  assert.deepEqual(mismatch.unexpectedResourceIds, ['sample.wallpaper.picker:logout']);
+
+  const hostMobile = TERMINAL_BUSINESS_SCREENS['wallpaper-host-mobile'];
+  assert.ok(hostMobile.required.includes('sample.wallpaper.picker:logout'));
+  assert.ok(hostMobile.forbidden.includes('sample.wallpaper.picker:exit'));
+  assert.ok(TERMINAL_BUSINESS_SCREENS['wallpaper-host-laptop'].required.includes('sample.wallpaper.picker:exit'));
+});
+
+test('terminal screen oracles reject a host member list on the branch display', () => {
+  const expectation = TERMINAL_BUSINESS_SCREENS['member-list-branch'];
+  const required = expectation.required.map(resourceId =>
+    `<node resource-id="${resourceId}" bounds="[1,2][9,10]" enabled="true"/>`,
+  );
+  const branchList = `<hierarchy><display id="2">${required.join('')}</display></hierarchy>`;
+  assert.equal(terminalBusinessScreenAssertion(branchList, 'member-list-branch', 2).matched, true);
+  const leakedHostList = branchList.replace(
+    '</display>',
+    '<node resource-id="sample.desk.member-list" bounds="[1,2][9,10]" enabled="true"/></display>',
+  );
+  assert.deepEqual(
+    terminalBusinessScreenAssertion(leakedHostList, 'member-list-branch', 2).unexpectedResourceIds,
+    ['sample.desk.member-list'],
+  );
+});
+
+test('terminal business screen wait requires a visible oracle before or at the fixed deadline', () => {
+  assert.equal(terminalBusinessScreenWaitMatched(true, 20_000, 20_000), true);
+  assert.equal(terminalBusinessScreenWaitMatched(true, 20_001, 20_000), false);
+  assert.equal(terminalBusinessScreenWaitMatched(false, 4, 20_000), false);
+  assert.throws(
+    () => terminalBusinessScreenWaitMatched(true, -1, 20_000),
+    /VK_ANDROID_BUSINESS_SCREEN_WAIT_EVIDENCE_INVALID/,
+  );
+});
+
+test('managed Android child commands have a bounded default and validate explicit limits', () => {
+  assert.equal(resolveManagedCommandTimeoutMs(undefined), 60_000);
+  assert.equal(resolveManagedCommandTimeoutMs(8_000), 8_000);
+  assert.throws(() => resolveManagedCommandTimeoutMs(0), /VK_ANDROID_COMMAND_TIMEOUT_INVALID/);
+  assert.throws(() => resolveManagedCommandTimeoutMs(Number.POSITIVE_INFINITY), /VK_ANDROID_COMMAND_TIMEOUT_INVALID/);
+  assert.equal(resolveManagedCommandMaxBytes(undefined), 24 * 1024 * 1024);
+  assert.equal(resolveManagedCommandMaxBytes(8_000), 8_000);
+  assert.throws(() => resolveManagedCommandMaxBytes(0), /VK_ANDROID_COMMAND_OUTPUT_LIMIT_INVALID/);
+  assert.throws(() => resolveManagedCommandMaxBytes(129 * 1024 * 1024), /VK_ANDROID_COMMAND_OUTPUT_LIMIT_INVALID/);
+});
+
+test('terminal business screen expectations are anchored to current UI owners', () => {
+  const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
+  const activation = read('apps/terminal/ui/base/terminal-activation/src/components/ActivationCodeForm.tsx');
+  const staffLogin = [
+    'apps/terminal/ui/feature/sample-staff-auth/src/components/laptop/StaffLogin.tsx',
+    'apps/terminal/ui/feature/sample-staff-auth/src/components/StaffLoginOperatorNameInput.tsx',
+    'apps/terminal/ui/feature/sample-staff-auth/src/components/StaffLoginPasscodeInput.tsx',
+    'apps/terminal/ui/feature/sample-staff-auth/src/hooks/useStaffLogin.ts',
+  ].map(read).join('\n');
+  const memberList = [
+    'apps/terminal/ui/feature/sample-member-desk/src/components/laptop/MemberList.tsx',
+    'apps/terminal/ui/feature/sample-member-desk/src/components/branch/MemberList.tsx',
+  ].map(read).join('\n');
+  const memberForm = [
+    'apps/terminal/ui/feature/sample-member-desk/src/components/laptop/MemberForm.tsx',
+    'apps/terminal/ui/feature/sample-member-desk/src/components/MemberFormScrollContent.tsx',
+  ].map(read).join('\n');
+  const customer = [
+    'apps/terminal/ui/feature/sample-member-desk/src/components/laptop/CustomerMember.tsx',
+    'apps/terminal/ui/feature/sample-member-desk/src/components/branch/CustomerMember.tsx',
+  ].map(read).join('\n');
+  const wallpaper = [
+    'apps/terminal/ui/feature/sample-wallpaper-picker/src/foundations/wallpaperPickerTestIds.ts',
+    'apps/terminal/ui/feature/sample-wallpaper-picker/src/foundations/wallpaperCatalogData.json',
+    'apps/terminal/ui/feature/sample-wallpaper-picker/src/components/laptop/WallpaperPicker.tsx',
+    'apps/terminal/ui/feature/sample-wallpaper-picker/src/components/mobile/WallpaperPicker.tsx',
+    'apps/terminal/ui/feature/sample-wallpaper-picker/src/components/laptop/BranchWallpaperPicker.tsx',
+    'apps/terminal/ui/feature/sample-wallpaper-picker/src/components/WallpaperOptionCards.tsx',
+  ].map(read).join('\n');
+  const activationAdmin = read('apps/terminal/ui/base/terminal-activation/src/components/ActivationStatusSection.tsx');
+  const activationOwner = read('apps/terminal/ui/base/terminal-activation/src/components/ActivationCodeForm.tsx');
+  assert.match(activation, /testID="terminal\.activation\.screen"/);
+  assert.match(activation, /testID:\s*fieldId/);
+  assert.match(activation, /testID="terminal\.activation\.submit"/);
+  assert.match(staffLogin, /sample\.auth\.login/);
+  assert.match(staffLogin, /operatorNameFieldId\s*=\s*'sample\.auth\.login:operator-name'/);
+  assert.match(staffLogin, /passcodeFieldId\s*=\s*'sample\.auth\.login:passcode'/);
+  assert.match(memberList, /\$\{prefix\}:title/);
+  assert.match(memberList, /\$\{prefix\}:scroll/);
+  assert.match(memberList, /showLogout=\{false\}/);
+  assert.match(memberList, /sample\.desk\.branch\.member-list/);
+  assert.match(memberForm, /\$\{prefix\}:submit/);
+  assert.match(memberForm, /\$\{prefix\}:cancel/);
+  assert.match(customer, /\$\{prefix\}:confirm/);
+  assert.match(customer, /\$\{prefix\}:reject/);
+  assert.match(customer, /sample\.desk\.branch\.customer-member/);
+  assert.match(wallpaper, /sample\.wallpaper\.picker:logout/);
+  assert.match(wallpaper, /sample\.wallpaper\.branch\.picker:exit/);
+  assert.match(wallpaper, /branchWallpaperOptionTestId/);
+  assert.match(wallpaper, /sample\.wallpaper\.picker:exit/);
+  assert.match(wallpaper, /\$\{optionTestId\}:card/);
+  assert.match(wallpaper, /"none"/);
+  assert.match(wallpaper, /"w1"/);
+  assert.match(wallpaper, /"w2"/);
+  assert.match(wallpaper, /"w3"/);
+  assert.match(activationAdmin, /terminal\.activation\.admin\.cancel/);
+  assert.match(activationOwner, /STORE_TERMINAL_DISABLED:\s*'终端已停用，暂时无法激活。'/);
+  const activationField = activation.match(/const ActivationCodeField =([\s\S]*?)\n};/);
+  const activationForm = activation.match(/export const ActivationCodeForm =([\s\S]*)$/);
+  assert.ok(activationField, 'activation field has a dedicated input-owning component');
+  assert.ok(activationForm, 'activation form source is present');
+  assert.match(activationField[0], /useInputField\(/);
+  assert.doesNotMatch(activationForm[0], /useInputField\(/);
+  assert.match(activationForm[0], /<InputScrollArea[\s\S]*<ActivationCodeField\s/);
+  for (const [name, expectation] of Object.entries(TERMINAL_BUSINESS_SCREENS)) {
+    assert.ok(expectation.required.length > 0, `${name} has a nonempty screen oracle`);
+    assert.equal(new Set(expectation.required).size, expectation.required.length, `${name} has no duplicate required control`);
+    assert.equal(new Set(expectation.forbidden ?? []).size, (expectation.forbidden ?? []).length, `${name} has no duplicate forbidden control`);
+    assert.equal(expectation.required.some(resourceId => (expectation.forbidden ?? []).includes(resourceId)), false);
+  }
+});
+
+test('terminal business assertion failures are recorded before the runner exits nonzero', () => {
+  const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
+  for (const [functionName, failureCode] of [
+    ['assertTerminalBusinessText', 'VK_ANDROID_BUSINESS_TEXT_ASSERTION_FAILED'],
+    ['assertTerminalBusinessScreen', 'VK_ANDROID_BUSINESS_SCREEN_ASSERTION_FAILED'],
+  ]) {
+    const start = source.indexOf(`async function ${functionName}(`);
+    assert.notEqual(start, -1, `${functionName} exists`);
+    const body = source.slice(start, source.indexOf('\n}', start) + 2);
+    const tryBlock = body.indexOf('try {');
+    const dumpRead = body.indexOf('await uiDump(');
+    const catchBlock = body.indexOf('} catch (error)');
+    assert.ok(tryBlock >= 0 && dumpRead > tryBlock && catchBlock > dumpRead, `${functionName} records UI read failures`);
+    const evidenceWrite = body.indexOf('manifest.businessChecks.push(');
+    const manifestSave = body.indexOf('saveManifest(manifest);');
+    const failure = body.indexOf(`fail(failureCode ?? '${failureCode}')`);
+    assert.ok(evidenceWrite >= 0 && manifestSave > evidenceWrite && failure > manifestSave);
+  }
+  assert.match(source, /action === 'assert-business-screen'/);
+  assert.match(source, /action === 'wait-business-screen'/);
+  const waitStart = source.indexOf('async function waitTerminalBusinessScreen(');
+  const waitBody = source.slice(waitStart, source.indexOf('\n}', waitStart) + 2);
+  assert.match(waitBody, /BUSINESS_SCREEN_WAIT_TIMEOUT_MS/);
+  assert.match(waitBody, /BUSINESS_SCREEN_WAIT_POLL_MS/);
+  assert.match(waitBody, /performance\.now\(\)/);
+  assert.match(waitBody, /catch \(error\)/);
+  assert.match(waitBody, /failureCode/);
+  assert.match(waitBody, /manifest\.businessChecks\.push\(result\)/);
+  assert.ok(waitBody.indexOf('saveManifest(manifest);') < waitBody.indexOf("fail(failureCode ?? 'VK_ANDROID_BUSINESS_SCREEN_WAIT_TIMED_OUT')"));
+  const dumpStart = source.indexOf('async function uiDump(');
+  const dumpBody = source.slice(dumpStart, source.indexOf('\n}', dumpStart) + 2);
+  assert.match(dumpBody, /deadlineMonotonic/);
+  assert.match(dumpBody, /timeoutMs: commandTimeout\(\)/);
+  const managedStart = source.indexOf('async function runManaged(');
+  const managedBody = source.slice(managedStart, source.indexOf('\n}', managedStart) + 2);
+  assert.match(managedBody, /resolveManagedCommandTimeoutMs\(options\.timeoutMs\)/);
+  assert.match(managedBody, /resolveManagedCommandMaxBytes\(options\.maxBytes\)/);
+  assert.ok(managedBody.indexOf('resolveManagedCommandMaxBytes(options.maxBytes)') < managedBody.indexOf('spawn(command, args'));
+  assert.match(managedBody, /setTimeout\(/);
+  assert.match(managedBody, /VK_ANDROID_COMMAND_OUTPUT_TRUNCATED/);
+  assert.match(managedBody, /outputTruncated/);
+});
+
+test('terminal business oracle IDs and text match the current owning UI components', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+  const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
+  const operatorName = read('apps/terminal/ui/feature/sample-staff-auth/src/components/StaffLoginOperatorNameInput.tsx');
+  const passcode = read('apps/terminal/ui/feature/sample-staff-auth/src/components/StaffLoginPasscodeInput.tsx');
+  const memberForm = read('apps/terminal/ui/feature/sample-member-desk/src/components/MemberFormScrollContent.tsx');
+  const customerAge = read('apps/terminal/ui/feature/sample-member-desk/src/components/CustomerMemberAgeField.tsx');
+  const status = read('apps/terminal/ui/base/terminal-activation/src/components/ActivationStatusSection.tsx');
+  assert.match(operatorName, /testID:\s*operatorNameFieldId/);
+  assert.match(operatorName, /keyboardKind:\s*'virtual'/);
+  assert.match(passcode, /testID:\s*passcodeFieldId/);
+  assert.match(passcode, /secureTextEntry:\s*true/);
+  assert.match(memberForm, /testID:\s*`\$\{prefix\}:name`/);
+  assert.match(memberForm, /testID:\s*`\$\{prefix\}:phone`/);
+  assert.match(customerAge, /testID:\s*fieldId/);
+  assert.match(status, /testID="terminal\.activation\.admin:state"/);
+  assert.match(status, /testID="terminal\.activation\.admin:connection"/);
+  assert.match(status, /连接状态：\{connection === null \? '主机状态待同步' : readableConnection\(connection\.status\)\}/);
+});
+
+test('terminal member readback requires exactly one full synthetic row and redacts its values', () => {
+  const name = 'ter0123456789';
+  const phone = '01012345678';
+  const row = `<node resource-id="sample.desk.member-list:row:request-1:content" text="${name} ${phone}" bounds="[1,2][9,10]"/>`;
+  const xml = `<hierarchy><display id="0">${row}</display><display id="2"><node resource-id="sample.desk.member-list:row:request-2:content" text="${name} ${phone}"/></display></hierarchy>`;
+  assert.deepEqual(terminalBusinessMemberReadback(xml, name, phone, 0), {
+    rowsObserved: 1,
+    matchingRows: 1,
+    matched: true,
+  });
+  assert.deepEqual(terminalBusinessMemberReadback(`<hierarchy><display id="0">${row}${row.replace('request-1', 'request-2')}</display></hierarchy>`, name, phone, 0), {
+    rowsObserved: 2,
+    matchingRows: 2,
+    matched: false,
+  });
+  const mismatch = terminalBusinessMemberReadback(`<hierarchy><display id="0">${row.replace(phone, '01087654321')}</display></hierarchy>`, name, phone, 0);
+  assert.equal(mismatch.matched, false);
+  assert.equal(JSON.stringify(mismatch).includes(name), false);
+  assert.equal(JSON.stringify(mismatch).includes(phone), false);
+  assert.throws(() => terminalBusinessMemberReadback(xml, 'Alice', phone, 0), /VK_ANDROID_BUSINESS_MEMBER_EXPECTATION_INVALID/);
+  assert.throws(() => terminalBusinessMemberReadback(xml, name, phone, 'not-an-id'), /VK_ANDROID_BUSINESS_MEMBER_DISPLAY_INVALID/);
+});
+
+test('terminal member readback action derives the current run fixture and persists only counts', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+  const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
+  const helperStart = source.indexOf('async function assertTerminalBusinessMemberReadback(');
+  const helperEnd = source.indexOf('\nasync function ', helperStart + 1);
+  const helper = source.slice(helperStart, helperEnd);
+  assert.ok(helperStart >= 0 && helperEnd > helperStart);
+  assert.match(helper, /terminalBusinessInputValue\(manifest\.runId, 'member-name'\)/);
+  assert.match(helper, /terminalBusinessInputValue\(manifest\.runId, 'member-phone'\)/);
+  assert.match(helper, /name: 'BUSINESS_MEMBER_READBACK', \.\.\.evidence, elapsedMs:/);
+  assert.match(helper, /BUSINESS_MEMBER_READBACK_FAILED/);
+  assert.match(helper, /recordFirstFailure\(manifest, failureCode, 'member-list-owner-readback'\)/);
+  assert.doesNotMatch(helper, /expectedName|expectedPhone|member-name:.*value/);
+  assert.match(source.slice(source.indexOf("if (action === 'assert-business-member-readback')"), source.indexOf("if (action === 'capture-terminal-business-logs')")), /assertTerminalBusinessMemberReadback/);
+  assert.match(source.slice(source.indexOf('export function projectTerminalBusinessLogcatEvents'), source.indexOf('function isCanonicalBusinessTimestamp')), /entry\.timestampMs < start \|\| entry\.timestampMs > finish/);
+  const clockReader = source.slice(source.indexOf('async function readTerminalBusinessClock('), source.indexOf('\nasync function tapActivationKey', source.indexOf('async function readTerminalBusinessClock(')));
+  assert.match(clockReader, /\['shell', 'date', '\+%s'\]/);
+  assert.match(clockReader, /bootId: device\.inventory\.bootId/);
+  assert.match(source.slice(source.indexOf('async function dispatch(')), /action === 'business-clock'\) return readTerminalBusinessClock/);
+  assert.match(source, /ANDROID_TERMINAL_BUSINESS_LOGS=CAPTURED/);
+  assert.doesNotMatch(source, /ANDROID_TERMINAL_BUSINESS_LOGS=PASS/);
+});
+
+test('paired terminal VM admission proves separate emulator, AVD, and boot identities', () => {
+  const pair = validateTerminalEmulatorPair(
+    {serial: 'emulator-5554', avdName: 'TER_LAPTOP_A', bootId: '00000000-0000-0000-0000-000000000001'},
+    {serial: 'emulator-5556', avdName: 'TER_MOBILE_B', bootId: '00000000-0000-0000-0000-000000000002'},
+  );
+  assert.equal(pair.dual.avdName, 'TER_LAPTOP_A');
+  assert.equal(pair.mobile.avdName, 'TER_MOBILE_B');
+  for (const mobile of [
+    {serial: 'emulator-5554', avdName: 'TER_MOBILE_B', bootId: '00000000-0000-0000-0000-000000000002'},
+    {serial: 'emulator-5556', avdName: 'TER_LAPTOP_A', bootId: '00000000-0000-0000-0000-000000000002'},
+    {serial: 'emulator-5556', avdName: 'TER_MOBILE_B', bootId: '00000000-0000-0000-0000-000000000001'},
+    {serial: 'emulator-5556', avdName: '../TER_MOBILE_B', bootId: '00000000-0000-0000-0000-000000000002'},
+    {serial: 'physical-01', avdName: 'TER_MOBILE_B', bootId: '00000000-0000-0000-0000-000000000002'},
+  ]) {
+    assert.throws(
+      () => validateTerminalEmulatorPair(pair.dual, mobile),
+      /VK_ANDROID_DISTINCT_EMULATOR_IDENTITY_UNPROVEN/,
+    );
+  }
+  const manifest = validManifest();
+  manifest.devices.dual.inventory = pair.dual;
+  manifest.devices.mobile.inventory = pair.mobile;
+  manifest.emulatorPairIdentity = pair;
+  assert.doesNotThrow(() => runner.validateRunManifest(manifest));
+  manifest.emulatorPairIdentity = {...pair, mobile: {...pair.mobile, avdName: pair.dual.avdName}};
+  assert.throws(
+    () => runner.validateRunManifest(manifest),
+    /VK_ANDROID_DISTINCT_EMULATOR_IDENTITY_MISMATCH/,
+  );
+});
 
 function validManifest() {
   return {
@@ -156,6 +754,119 @@ test('runner requires explicit, distinct device identities and keeps fixed IA de
   const frames = emptyFrameMatrix();
   assert.deepEqual(Object.keys(frames), IA_IDS);
   assert.throws(() => parseArgs(['prepare', '--run-id', 'x', '--run-id', 'y']), /VK_ANDROID_ARGUMENT_INVALID/);
+});
+
+test('DEV tunnel route parser and package binding fail closed on stale or ambiguous inputs', () => {
+  const devManifest = {
+    kind: 'r5-dev-run-manifest',
+    runId: 'r5-dev-1790993299237-49733-238c3e40-5f08-42d7-bbee-1ef78650882f',
+    topology: {
+      java: 'REMOTE_TRUSTED_HOST',
+      tds: 'REMOTE_TRUSTED_HOST',
+      haproxy: 'REMOTE_TRUSTED_HOST_HOST_NETWORK_LOOPBACK_ONLY',
+    },
+    tunnelPorts: {http: '28080', tds: '28180', tdsSecondary: '28181'},
+    readiness: {
+      remoteJava: {readiness: 'REMOTE_JAVA_SPRING_BOOT_STARTED_AFTER_FLYWAY'},
+      remoteTdsNodes: ['tds-a', 'tds-b', 'tds-c'].map(nodeId => ({
+        readiness: 'REMOTE_TDS_REACTIVE_WEBSOCKET_AND_DATABASE_LISTENER_READY',
+        remoteIdentity: {nodeId},
+      })),
+      remoteHaproxy: {status: 'PASS'},
+    },
+  };
+  const packageConfig = {
+    serverSpaces: {
+      selectedSpace: 'development',
+      spaces: [
+        {
+          name: 'development',
+          servers: [
+            {
+              serverName: 'business',
+              addresses: [{addressName: 'primary', baseUrl: 'http://127.0.0.1:28080/api/terminal/group-workspaces/aurora'}],
+            },
+            {
+              serverName: 'terminal-data-server',
+              addresses: [
+                {addressName: 'haproxy-entry-one', baseUrl: 'ws://127.0.0.1:28180'},
+                {addressName: 'haproxy-entry-two', baseUrl: 'ws://127.0.0.1:28181'},
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+  assert.deepEqual(
+    runner.validateDevTunnelRouteInputs({appName: 'sample-terminal', packageConfig, devManifest}),
+    [
+      {devicePort: 28080, hostPort: 28080},
+      {devicePort: 28180, hostPort: 28180},
+      {devicePort: 28181, hostPort: 28181},
+    ],
+  );
+  assert.deepEqual(
+    runner.parseAdbReverseList(
+      'host-16 tcp:28080 tcp:28080\nhost tcp:28180 tcp:28180',
+    ),
+    [
+      {scope: 'host-16', deviceSocket: 'tcp:28080', hostSocket: 'tcp:28080'},
+      {scope: 'host', deviceSocket: 'tcp:28180', hostSocket: 'tcp:28180'},
+    ],
+  );
+  assert.throws(
+    () => runner.parseAdbReverseList('host-16 tcp:28080'),
+    /VK_ANDROID_DEV_TUNNEL_REVERSE_LIST_INVALID/,
+  );
+  const stale = structuredClone(devManifest);
+  stale.readiness.remoteTdsNodes.pop();
+  assert.throws(
+    () => runner.validateDevTunnelRouteInputs({appName: 'sample-terminal', packageConfig, devManifest: stale}),
+    /VK_ANDROID_DEV_TUNNEL_DEV_NOT_READY/,
+  );
+  const duplicateNode = structuredClone(devManifest);
+  duplicateNode.readiness.remoteTdsNodes[2].remoteIdentity.nodeId = 'tds-b';
+  assert.throws(
+    () => runner.validateDevTunnelRouteInputs({appName: 'sample-terminal', packageConfig, devManifest: duplicateNode}),
+    /VK_ANDROID_DEV_TUNNEL_DEV_NOT_READY/,
+  );
+  const staleHaproxyPath = structuredClone(devManifest);
+  staleHaproxyPath.remoteHaproxy = {status: 'PASS'};
+  delete staleHaproxyPath.readiness.remoteHaproxy;
+  assert.throws(
+    () => runner.validateDevTunnelRouteInputs({appName: 'sample-terminal', packageConfig, devManifest: staleHaproxyPath}),
+    /VK_ANDROID_DEV_TUNNEL_DEV_NOT_READY/,
+  );
+  const wrongSpace = structuredClone(packageConfig);
+  wrongSpace.serverSpaces.selectedSpace = 'production';
+  assert.throws(
+    () => runner.validateDevTunnelRouteInputs({appName: 'sample-terminal', packageConfig: wrongSpace, devManifest}),
+    /VK_ANDROID_PACKAGE_DEVELOPMENT_SPACE_INVALID/,
+  );
+  const wrongTunnel = structuredClone(packageConfig);
+  wrongTunnel.serverSpaces.spaces[0].servers[0].addresses[0].baseUrl =
+    'http://127.0.0.1:7890/api/terminal/group-workspaces/aurora';
+  assert.throws(
+    () => runner.validateDevTunnelRouteInputs({appName: 'sample-terminal', packageConfig: wrongTunnel, devManifest}),
+    /VK_ANDROID_PACKAGE_DEV_ADDRESS_MISMATCH/,
+  );
+});
+
+test('old schema-2 manifests without DEV tunnel mappings remain valid, malformed additions do not', () => {
+  const manifest = validManifest();
+  assert.equal(Object.hasOwn(manifest, 'devTunnelMappings'), false);
+  assert.equal(runner.validateRunManifest(manifest), true);
+  manifest.devTunnelMappings = 'not-an-array';
+  assert.throws(() => runner.validateRunManifest(manifest), /VK_ANDROID_MANIFEST_INVALID/);
+});
+
+test('run manifest accepts only a recognized authorization label when the field is present', () => {
+  const manifest = validManifest();
+  manifest.authorization = 'TER_ACTIVATION_INTERACTION_PAIR_TOPOLOGY_IMPLEMENTATION';
+  assert.equal(runner.validateRunManifest(manifest), true);
+  manifest.authorization = 'UNRELATED_AUTHORIZATION';
+  assert.throws(() => runner.validateRunManifest(manifest), /VK_ANDROID_RUN_AUTHORIZATION_INVALID/);
 });
 
 test('A11 W10 log parser binds new and legacy namespace facts to the exact launch intent', () => {
@@ -640,7 +1351,7 @@ test('JavaScript startup diagnostics keep only safe error identity and bundle so
   assert.equal(summary.errors[0].errorName, 'Error');
   assert.equal(summary.errors[0].safeCode, null);
   assert.equal(summary.errors[0].safeMessage, '[SENSITIVE_DETAIL_REDACTED]');
-  assert.match(summary.errors[0].messageSha256, /^[a-f0-9]{64}$/);
+  assert.equal(Object.hasOwn(summary.errors[0], 'messageSha256'), false);
   assert.deepEqual(summary.errors[0].bundleFrames, [{line: 1, column: 9876}]);
   assert.doesNotMatch(
     JSON.stringify(summary),
@@ -716,7 +1427,6 @@ test('resolved debug injection reinspection is APK, boot, launch-marker, and sta
           errorName: 'TypeError',
           safeCode: null,
           safeMessage: '[SENSITIVE_DETAIL_REDACTED]',
-          messageSha256: summary.javascriptErrorDetails.errors[0].messageSha256,
           bundleFrames: [],
         },
       ],
@@ -726,7 +1436,7 @@ test('resolved debug injection reinspection is APK, boot, launch-marker, and sta
     targetOwnerOutcomes: ['matched', 'clear'],
     observedOwners: ['screen:main:sample.desk.member-list'],
   });
-  assert.match(summary.javascriptErrorDetails.errors[0].messageSha256, /^[a-f0-9]{64}$/);
+  assert.equal(Object.hasOwn(summary.javascriptErrorDetails.errors[0], 'messageSha256'), false);
   assert.doesNotMatch(JSON.stringify(summary.javascriptErrorDetails), /secret-value|password=|token=/i);
   assert.deepEqual(
     calls.map(call => call.label),
@@ -945,8 +1655,8 @@ test('per-control visual report includes every captured UI node and keeps all ju
         resourceId: 'ui.base.input:virtual-keyboard:text-1',
         className: 'android.widget.Button',
         bounds: {left: 1, top: 2, right: 10, bottom: 11},
-        textSha256: 'a'.repeat(64),
-        contentDescriptionSha256: 'b'.repeat(64),
+        hasText: false,
+        hasContentDescription: true,
       },
       {
         nodeIndex: 1,
@@ -954,8 +1664,8 @@ test('per-control visual report includes every captured UI node and keeps all ju
         resourceIdSha256: 'c'.repeat(64),
         className: 'android.widget.TextView',
         bounds: null,
-        textSha256: null,
-        contentDescriptionSha256: null,
+        hasText: false,
+        hasContentDescription: false,
       },
     ],
   });
@@ -1021,7 +1731,26 @@ test('prepare rejects a missing serial and duplicate dual/mobile identity before
       dualSerial: 'emulator-5554',
       mobileSerial: 'emulator-5556',
       a11BaselineRunId: null,
+      authorization: 'TER_VIRTUAL_KEYBOARD_OPTIMIZATION_IMPLEMENTATION_CP4_DUAL_AND_MOBILE_ONLY',
     },
+  );
+  assert.equal(
+    runner.validatePrepareOptions({
+      'run-id': 'ter-pair-topology-01',
+      'dual-serial': 'emulator-5554',
+      'mobile-serial': 'emulator-5556',
+      authorization: 'TER_ACTIVATION_INTERACTION_PAIR_TOPOLOGY_IMPLEMENTATION',
+    }).authorization,
+    'TER_ACTIVATION_INTERACTION_PAIR_TOPOLOGY_IMPLEMENTATION',
+  );
+  assert.throws(
+    () => runner.validatePrepareOptions({
+      'run-id': 'ter-pair-topology-01',
+      'dual-serial': 'emulator-5554',
+      'mobile-serial': 'emulator-5556',
+      authorization: 'ARBITRARY_AUTHORIZATION',
+    }),
+    /VK_ANDROID_RUN_AUTHORIZATION_INVALID/,
   );
   assert.equal(
     runner.validatePrepareOptions({
@@ -1145,6 +1874,19 @@ test('run manifest accepts only fixed app bindings and run-scoped remote tempora
   const wrongPath = validManifest();
   wrongPath.appBindings['sample-terminal'].apkPath = '../../tmp/foreign.apk';
   assert.throws(() => runner.validateRunManifest(wrongPath), /VK_ANDROID_MANIFEST_APP_BINDING_INVALID/);
+
+  const historicalCleanup = validManifest();
+  historicalCleanup.appBindings['sample-terminal'].apkPath =
+    'apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk';
+  assert.throws(() => runner.validateRunManifest(historicalCleanup), /VK_ANDROID_MANIFEST_APP_BINDING_INVALID/);
+  assert.equal(runner.validateRunManifest(historicalCleanup, {allowHistoricalApkPathsForCleanup: true}), true);
+  const foreignHistoricalCleanup = validManifest();
+  foreignHistoricalCleanup.appBindings['sample-terminal'].apkPath =
+    'apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk';
+  assert.throws(
+    () => runner.validateRunManifest(foreignHistoricalCleanup, {allowHistoricalApkPathsForCleanup: true}),
+    /VK_ANDROID_MANIFEST_APP_BINDING_INVALID/,
+  );
 
   const wrongTemporaryPath = validManifest();
   wrongTemporaryPath.remoteTempFiles.push({host: 'emulator-5554', path: '/sdcard/other-run-dual-1234567890123.xml'});
@@ -3500,6 +4242,9 @@ test('W2 input actions use only fixed redacted probes, scoped hardware keys, and
   const xml =
     '<hierarchy><display id="0"><node resource-id="terminal.admin:debug-password" text="（482913）"/></display></hierarchy>';
   assert.equal(runner.parseAdminDebugPassword(xml, 0), '482913');
+  const mergedInstruction =
+    '<hierarchy><display id="0"><node resource-id="terminal.admin:login:instruction" text="请输入动态口令（482913）"/></display></hierarchy>';
+  assert.equal(runner.parseAdminDebugPassword(mergedInstruction, 0), '482913');
   assert.equal(
     JSON.stringify({
       codeHash: createHash('sha256').update(runner.parseAdminDebugPassword(xml, 0)).digest('hex'),
@@ -3508,6 +4253,13 @@ test('W2 input actions use only fixed redacted probes, scoped hardware keys, and
   );
   assert.throws(
     () => runner.parseAdminDebugPassword('<hierarchy/>', 0),
+    /VK_ANDROID_ADMIN_DEBUG_PASSWORD_NOT_OBSERVED/,
+  );
+  assert.throws(
+    () => runner.parseAdminDebugPassword(
+      '<hierarchy><display id="0"><node resource-id="terminal.admin:login:instruction" text="请输入动态口令（482913）且备用码（111222）"/></display></hierarchy>',
+      0,
+    ),
     /VK_ANDROID_ADMIN_DEBUG_PASSWORD_NOT_OBSERVED/,
   );
 });
@@ -3935,9 +4687,13 @@ test('screenshot proof requires an app window identity scoped to its logical dis
   assert.equal(inventory.length, 2);
   assert.equal(inventory[0].resourceId, 'keyboard:key');
   assert.deepEqual(inventory[0].bounds, {left: 1, top: 2, right: 9, bottom: 10});
-  assert.equal(inventory[0].textSha256, createHash('sha256').update(':/ .?&=-_%+'.replace(' ', '')).digest('hex'));
-  assert.equal(inventory[0].contentDescriptionSha256, createHash('sha256').update('符号键').digest('hex'));
-  assert.equal(inventory[1].textSha256, createHash('sha256').update('敏感输入').digest('hex'));
+  assert.equal(inventory[0].hasText, true);
+  assert.equal(inventory[0].hasContentDescription, true);
+  assert.equal(inventory[1].hasText, true);
+  assert.equal(Object.hasOwn(inventory[1], 'textSha256'), false);
+  assert.equal(Object.hasOwn(inventory[1], 'contentDescriptionSha256'), false);
+  assert.doesNotMatch(JSON.stringify(inventory), /敏感输入/);
+  assert.equal(JSON.stringify(inventory).includes(createHash('sha256').update('敏感输入').digest('hex')), false);
   assert.equal(JSON.stringify(inventory).includes('敏感输入'), false);
   assert.throws(() => parseVisibleControlInventory('<hierarchy/>', 0), /VK_ANDROID_CONTROL_INVENTORY_DISPLAY_MISSING/);
   const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
@@ -3985,12 +4741,29 @@ test('URL symbol business oracle hashes only the exact ten synthetic inserted ch
     node: {left: 1, top: 2, right: 9, bottom: 10, enabled: true, selected: false},
     textSha256: createHash('sha256').update(URL_SYMBOL_SEQUENCE).digest('hex'),
   });
-  const digest = parseResourceTextHash(harnessXml, 'harness:full-field', 0);
+  const digest = parseHarnessTextHash(harnessXml, 'harness:full-field', 0);
   assert.equal(digest, createHash('sha256').update(URL_SYMBOL_SEQUENCE).digest('hex'));
   assert.doesNotMatch(digest, /[:/?&=_%+]/);
   assert.throws(
     () =>
-      parseResourceTextHash('<hierarchy><display id="0"><node resource-id="field"/></display></hierarchy>', 'field', 0),
+      parseHarnessTextHash(
+        '<hierarchy><display id="0"><node resource-id="sample.auth.login:passcode"/></display></hierarchy>',
+        'sample.auth.login:passcode',
+        0,
+      ),
+    /VK_ANDROID_SENSITIVE_VALUE_HASH_FORBIDDEN/,
+  );
+  assert.throws(
+    () => parseHarnessTextHash('<hierarchy><display id="0"><node resource-id="terminal.activation.code" text="00123456"/></display></hierarchy>', 'terminal.activation.code', 0),
+    /VK_ANDROID_SENSITIVE_VALUE_HASH_FORBIDDEN/,
+  );
+  assert.throws(
+    () =>
+      parseHarnessTextHash(
+        '<hierarchy><display id="0"><node resource-id="harness:full-field"/></display></hierarchy>',
+        'harness:full-field',
+        0,
+      ),
     /VK_ANDROID_RESOURCE_TEXT_MISSING/,
   );
   const keyboardLabelXml =
@@ -4007,6 +4780,10 @@ test('URL symbol business oracle hashes only the exact ten synthetic inserted ch
         0,
       ),
     /VK_ANDROID_RESOURCE_CONTENT_DESCRIPTION_MISSING/,
+  );
+  assert.throws(
+    () => parseResourceContentDescriptionHash('<hierarchy/>', 'sample.member:phone', 0),
+    /VK_ANDROID_SENSITIVE_VALUE_HASH_FORBIDDEN/,
   );
 
   const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
@@ -4025,6 +4802,34 @@ test('URL symbol business oracle hashes only the exact ten synthetic inserted ch
   assert.match(action, /VK_ANDROID_CONTROLLED_HARNESS_FIELD_NOT_OBSERVED/);
   assert.doesNotMatch(action, /sample\.auth\.login:operator-name|sample\.auth\.login:submit|login\.submit/);
   assert.match(source, /insert-url-symbol-sequence.*insertUrlSymbolSequence/s);
+});
+
+test('sensitive Android probe paths persist only redacted outcomes and never value digests', () => {
+  const source = fs.readFileSync(path.join(root, 'scripts/test/ter-virtual-keyboard-android.mjs'), 'utf8');
+  const regions = [
+    source.slice(source.indexOf('async function typeW7Probe('), source.indexOf('async function capture(')),
+    source.slice(source.indexOf('async function runActivationFixtureInput('), source.indexOf('async function seedW7Clipboard(')),
+    source.slice(
+      source.indexOf('async function longPressW7Input('),
+      source.indexOf('async function triggerAdminLauncherGesture('),
+    ),
+    source.slice(source.indexOf('async function sendW2TextProbe('), source.indexOf('async function sendW2HardwareKey(')),
+    source.slice(
+      source.indexOf('export function summarizeJavaScriptRuntimeErrorDetails('),
+      source.indexOf('export function summarizeDebugFailureInjectionLogcat('),
+    ),
+  ];
+  assert.ok(regions.every(region => region.length > 0));
+  for (const region of regions) {
+    assert.doesNotMatch(region, /(?:text|value|observed|expected|message)Sha256\s*:/i);
+    assert.doesNotMatch(region, /sha256\((?:observedValue|observedStateValue|value|message|fixture\.activationCode)/);
+  }
+  assert.match(regions[0], /observedValue === expectedValue/);
+  assert.match(regions[1], /activationFixtureInputEvidence/);
+  assert.match(regions[2], /valuePreserved: true/);
+  assert.match(regions[3], /dispatchAccepted: true/);
+  assert.match(regions[3], /W2_TEXT_PROBE=DISPATCHED/);
+  assert.doesNotMatch(regions[4], /messageSha256/);
 });
 
 test('managed device runner cannot clear app data or global device logs', () => {

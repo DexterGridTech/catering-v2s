@@ -773,7 +773,12 @@ describe('render runtime snapshot seam', () => {
     const dispatchCalls: Array<Readonly<{command: unknown; requestId: typeof requestId}>> = [];
     const dispatchCommand: RenderProviderProps['dispatchCommand'] = async (currentCommand, options) => {
       dispatchCalls.push({command: currentCommand, requestId: options.requestId});
-      return undefined as never;
+      return {
+        requestId: options.requestId,
+        commandId: createCommandId(),
+        status: 'completed',
+        actorResults: [],
+      };
     };
     const readerCalls: Array<Readonly<{root: RuntimeStateRoot; declaration: typeof variable}>> = [];
     const selectUiVariable: RenderProviderProps['selectUiVariable'] = <TValue extends StateJsonValue>(

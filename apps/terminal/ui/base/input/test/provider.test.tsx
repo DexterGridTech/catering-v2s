@@ -231,6 +231,7 @@ const Field = ({
   nativeLess = false,
   layout = 'numeric',
   focusScopeId,
+  onValueChange,
   onReady,
 }: Readonly<{
   readonly fieldId: string;
@@ -238,6 +239,7 @@ const Field = ({
   readonly nativeLess?: boolean;
   readonly layout?: 'full' | 'alpha' | 'numeric' | 'financial';
   readonly focusScopeId?: string;
+  readonly onValueChange?: (value: string) => void;
   readonly keyboardKind?: 'virtual';
   readonly onReady: (result: InputFieldResult) => void;
 }>) => {
@@ -249,6 +251,7 @@ const Field = ({
     layout,
     nativeLess,
     focusScopeId,
+    onValueChange,
   });
   onReady(result);
   if (nativeLess) {
@@ -1085,6 +1088,46 @@ describe('input provider', () => {
       revision: 1,
       fields: {age: {value: '1', selection: {start: 1, end: 1}}},
     });
+    await act(() => {
+      renderer.unmount();
+    });
+  });
+
+  it('notifies the owning consumer for accepted native and virtual value changes only', async () => {
+    let field: InputFieldResult | undefined;
+    const onValueChange = vi.fn();
+    const renderer = await mount(
+      <InputSurfaceFrame>
+        <Field
+          fieldId="reported-value"
+          testID="sample:reported-value"
+          onValueChange={onValueChange}
+          onReady={value => {
+            field = value;
+          }}
+        />
+      </InputSurfaceFrame>,
+    );
+    const input = () => queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:reported-value')!;
+
+    await focusAndFinishKeyboard(renderer, input());
+    await act(() => {
+      getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-1'}).props.onPress();
+    });
+    expect(onValueChange).toHaveBeenLastCalledWith('1');
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+
+    await act(() => {
+      input().props.onChangeText('12');
+    });
+    expect(onValueChange).toHaveBeenLastCalledWith('12');
+    expect(onValueChange).toHaveBeenCalledTimes(2);
+
+    await act(() => {
+      input().props.onChangeText('12');
+    });
+    expect(onValueChange).toHaveBeenCalledTimes(2);
+    expect(field?.captureInputSnapshot().fields['reported-value']?.value).toBe('12');
     await act(() => {
       renderer.unmount();
     });

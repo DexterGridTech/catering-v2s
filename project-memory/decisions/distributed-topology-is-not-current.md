@@ -13,6 +13,10 @@ sourceRefs: ["doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-se
 ---
 # Distributed topology is not current
 
+2026-10-03 的命名澄清只以 `doc/platform/terminal-coding-standard.md` §4-F 为正本。
+本页 `NO_MQ_OUTBOX_TDP` 中 TDP 指旧未批准的平台/placeholder 扩张；不得据此否定新整体称呼，
+也不得用新称呼绕过以下部署、事实及授权限制。
+
 - `NO_MQ_OUTBOX_TDP`: 初始不引入 MQ、通用 outbox 或 TDP。
 - `NO_INTERNAL_OPENAPI_CLIENT`: 单 deployable 内模块协作不走内部 OpenAPI client。
 - `NO_DISTRIBUTED_DEFAULTS`: 不预建分布式边界；真实触发条件出现后另作 decision。

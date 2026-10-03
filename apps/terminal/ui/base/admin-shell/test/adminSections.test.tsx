@@ -67,6 +67,22 @@ describe('useAdminSections', () => {
     ]);
   });
 
+  it('uses the raw display-context renderer only as the runtime page fallback', () => {
+    const catalog = createUiCatalog([entry('admin.console.display-context', '运行状态（显示上下文）')]);
+
+    expect(selectAdminPageProjections(catalog.entries)).toEqual([
+      expect.objectContaining({
+        pageKey: 'runtime',
+        entry: expect.objectContaining({partKey: 'admin.console.display-context'}),
+        spec: expect.objectContaining({
+          key: 'runtime',
+          sourcePartKeys: ['admin.console.runtime', 'admin.console.display-context'],
+          rendererKey: 'admin.console.display-context.laptop',
+        }),
+      }),
+    ]);
+  });
+
   it('starts with no page selected and rejects unknown keys without choosing a fallback', async () => {
     const catalog = createUiCatalog([
       entry('admin.console.runtime', '运行状态'),

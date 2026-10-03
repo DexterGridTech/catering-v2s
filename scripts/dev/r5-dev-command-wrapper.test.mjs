@@ -464,6 +464,7 @@ test('DEV requires capacity-derived TDS keys before start and validates the dedi
   assert.match(capacitySource, /TDS_CAPACITY_CONFIG_MISSING/);
   assert.match(environmentSource, /V2S_TDS_NODE_ID: env\.V2S_TDS_NODE_ID \?\? "tds"/);
   assert.match(environmentSource, /V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS: env\.V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS \?\? "3000"/);
+  assert.match(environmentSource, /V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS: env\.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS \?\? "http:\/\/127\.0\.0\.1:8093"/);
   assert.match(environmentSource, /R5_DEV_TDS_NODE_ID_INVALID/);
   assert.match(environmentSource, /R5_DEV_TDS_READINESS_WITHDRAWAL_WAIT_INVALID/);
   assert.match(runnerSource, /V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT/);
@@ -472,6 +473,7 @@ test('DEV requires capacity-derived TDS keys before start and validates the dedi
   assert.match(runnerSource, /V2S_TDS_MAX_TRACKED_SESSIONS/);
   assert.match(runnerSource, /V2S_TDS_NODE_ID: nodeId/);
   assert.match(runnerSource, /V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS: String\(readinessWithdrawalWaitMs\)/);
+  assert.match(runnerSource, /terminalBrowserAllowedOrigins: env\.environment\.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS\.split\(/);
   assert.match(runnerSource, /REMOTE_TDS_NODE_ID_INVALID/);
   assert.match(runnerSource, /REMOTE_TDS_READINESS_WITHDRAWAL_WAIT_INVALID/);
   assert.match(runnerSource, /rssBudgetMiB/);

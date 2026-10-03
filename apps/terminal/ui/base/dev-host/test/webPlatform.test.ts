@@ -12,6 +12,28 @@ describe('ui.base.dev-host Web platform bindings', () => {
     expect(resolveSecondarySurfaceAvailable(await readDisplayInfo(device))).toBe(true);
   });
 
+  it('keeps device identity unavailable by default and accepts an explicit Web acceptance fixture', async () => {
+    const defaultDevice = createWebDevicePort(() => 'single');
+    await expect(defaultDevice.getDeviceInfo({timeoutMs: 1_000})).resolves.toMatchObject({
+      status: 'unavailable',
+      capability: 'getDeviceInfo',
+    });
+
+    const fixture = Object.freeze({
+      deviceId: 'ter-web-run-fixture',
+      manufacturer: 'TER Web acceptance',
+      model: 'managed-browser',
+      systemName: 'Web',
+      systemVersion: 'managed',
+      logicalProcessorCount: 4,
+    });
+    const fixtureDevice = createWebDevicePort(() => 'single', undefined, () => fixture);
+    await expect(fixtureDevice.getDeviceInfo({timeoutMs: 1_000})).resolves.toMatchObject({
+      status: 'succeeded',
+      value: fixture,
+    });
+  });
+
   it('keeps network observation unavailable in the Web host', async () => {
     const device = createWebDevicePort(() => 'single');
     await expect(device.getNetworkStatus({timeoutMs: 1_000})).resolves.toMatchObject({

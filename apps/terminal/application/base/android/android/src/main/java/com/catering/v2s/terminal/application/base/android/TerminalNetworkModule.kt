@@ -56,6 +56,8 @@ class TerminalNetworkModule : Module() {
           "status" to response.code,
           "bodyText" to body,
           "contentType" to (response.header("Content-Type") ?: ""),
+          "requestId" to response.header("X-Request-Id"),
+          "correlationId" to response.header("X-Correlation-Id"),
         )
       }
     }

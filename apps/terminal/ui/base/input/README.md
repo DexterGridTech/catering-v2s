@@ -20,6 +20,7 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
 - `InputSurfaceFrame` 在一个 Provider 内包裹完整 surface 内容，并把虚拟键盘作为覆盖内容的底部 overlay；键盘不参与内容尺寸分配；
 - `InputScrollArea` 是唯一的输入滚动祖先适配器，负责在固定尺寸视口内按焦点框、键盘可见带与当前 scroll offset 计算最小滚动；需要在有界内容区让末尾控件完整滚入视口时，只能通过 presentation-only 的 `contentPaddingBottom` 增加尾部内容 inset，不得另建滚动祖先；处于滚动区内的 virtual 字段必须由**实际渲染在对应 `InputScrollArea` 下方的 React 组件调用 `useInputField` 并渲染输入框**，以保持 Android/Web 测量坐标一致。仅把父组件创建的 `field.inputProps` 对应 `PrimitiveInput` JSX 放入滚动区不够，因为 hook 会在父组件中读取不到滚动祖先 context；
 - `InputProvider` 与 `useInputField` 维护 tokenized field registry、focus owner 与同步快照；
+- `InputFieldOptions.onValueChange` 是可选的字段级通知：原生输入或虚拟键盘使字段值实际变化后调用一次；无值变化的按键不通知。它只同步该字段的本地草稿，不派业务 command，也不替代提交时的同步快照；
 - `useInputSnapshot` 在提交动作边界同步读取不可变快照，不订阅编辑值；
 - `InputKeyboard` 是 `InputSurfaceFrame` 独占的 surface overlay presenter；字段不选择键盘位置，也不在业务卡片内挂载键盘；状态、owner、按键处理和 `VirtualKeyboard` renderer 始终共用；
 - `VirtualKeyboard` 只产生通用编辑 key，不派业务 command，业务不得直接用它拼第二套键盘；

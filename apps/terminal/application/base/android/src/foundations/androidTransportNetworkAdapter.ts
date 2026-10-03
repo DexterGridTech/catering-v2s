@@ -24,7 +24,13 @@ type NativeNetworkModule = Readonly<{
     bodyText: string | null,
     timeoutMs: number,
     proxy: unknown,
-  ) => Promise<Readonly<{status: number; bodyText: string; contentType: string}>>;
+  ) => Promise<Readonly<{
+    status: number;
+    bodyText: string;
+    contentType: string;
+    requestId?: string | null;
+    correlationId?: string | null;
+  }>>;
   readonly openSocket: (
     socketId: string,
     url: string,
@@ -135,6 +141,8 @@ const sendHttp = async (
       status: response.status,
       body: parseBody(response.bodyText, response.contentType),
       ...(response.contentType.length === 0 ? {} : {contentType: response.contentType}),
+      ...(response.requestId == null ? {} : {requestId: response.requestId}),
+      ...(response.correlationId == null ? {} : {correlationId: response.correlationId}),
     });
   } catch {
     return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'ANDROID_HTTP_TRANSPORT_FAILED'});

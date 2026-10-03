@@ -27,6 +27,10 @@
 第三方库 API 与运行行为的版本核验由跨项目规范
 [`third-party-library-usage-standard.md`](third-party-library-usage-standard.md) 统一定义；本文只保留该规则的指针。
 
+CBS/TDP/TDS/TDC 与长连接 A/B/C 目的的统一命名，见
+[`terminal-coding-standard.md` §4-F](terminal-coding-standard.md#4-f--终端与服务器长连接统一术语)；
+后台沿用同一术语正本，不复制定义，也不从命名推导新能力的实施授权。
+
 ---
 
 ## 1 · 能变成门的十类

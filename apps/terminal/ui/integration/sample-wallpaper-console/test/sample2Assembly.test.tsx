@@ -17,7 +17,7 @@ import {
   selectSessionState,
 } from '@catering-v2s/kernel-feature-sample-staff-session';
 import {ADMIN_CONSOLE_LAYER_ID, ADMIN_CONSOLE_PART_KEY, adminTestIds} from '@catering-v2s/ui-base-admin-shell';
-import {openLayerCommand, selectLayers, selectScreen, showScreenCommand} from '@catering-v2s/kernel-base-ui-state';
+import {contentStateSliceName, openLayerCommand, selectLayers, selectScreen, showScreenCommand} from '@catering-v2s/kernel-base-ui-state';
 import {
   confirmWallpaperCommand,
   selectWallpaperCommand,
@@ -419,8 +419,40 @@ describe('sample2 wallpaper console assembly', () => {
     }
   });
 
+  it('restores an activation screen removed from an already-routed secondary placement', async () => {
+    const assembly = await createSampleWallpaperConsoleAssembly({
+      platformPorts: createTestPlatformPorts({displayCount: 2}),
+      persistenceKey: `sample2-secondary-activation-restored-${Date.now()}`,
+      surfaceForm: 'laptop',
+    });
+    try {
+      await signalPrimaryReady(assembly);
+      expect(selectScreen(assembly.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe('terminal.activation.lms');
+
+      assembly.runtime.getStore().dispatch({
+        type: `${contentStateSliceName('MAIN')}/removeScreen`,
+        payload: {displayMode: 'SECONDARY', containerKey: 'main'},
+      });
+
+      await waitFor(() => {
+        expect(selectScreen(assembly.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe('terminal.activation.lms');
+      });
+    } finally {
+      await releaseRuntimeForTestAsync(assembly.runtime);
+    }
+  });
+
   it('uses only this integration package serverSpaces defaults and accepts an explicit entry fixture', async () => {
     const integrationDefaults = packageJson.serverSpaces as TransportServerConfig;
+    const developmentSpace = integrationDefaults.spaces.find(space => space.name === integrationDefaults.selectedSpace);
+    expect(developmentSpace?.servers.map(server => server.serverName).sort()).toEqual([
+      'business',
+      'terminal-data-server',
+    ]);
+    expect(developmentSpace?.servers.find(server => server.serverName === 'terminal-data-server')?.addresses).toEqual([
+      {addressName: 'haproxy-entry-one', baseUrl: 'ws://127.0.0.1:28180', timeoutMs: 10000},
+      {addressName: 'haproxy-entry-two', baseUrl: 'ws://127.0.0.1:28181', timeoutMs: 10000},
+    ]);
     const defaultsAssembly = await createSampleWallpaperConsoleAssembly({
       platformPorts: createTestPlatformPorts(),
       persistenceKey: `sample-wallpaper-console-server-defaults-${Date.now()}`,

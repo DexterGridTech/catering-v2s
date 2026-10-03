@@ -138,7 +138,7 @@ PACKAGE_OWNERSHIP=依正式需求R-03：terminal-activation与server-config-pane
 - 激活、会员、配置与壁纸的命令结果均以owner selector readback；响应丢失先读身份，不盲重发。会员确认要求operation identity一致。
 - 密码/秘密均不进入DOM可见明文、结构化日志、测试截图或错误正文。代理密码按裁决明文持久/同步但不回显；staff密码只用于本机登录且不复制到branch。
 - 输入仅通过TER input owner与现有PrimitiveInput/useInputField；没有裸平台输入绕行。
-- 所有动作具备语义label、可键盘/设备焦点访问，disabled/loading/error有非颜色文本；所列testId均为提案，实施期由每个app的唯一TestIds源码导出。
+- 所有动作具备语义label、可键盘/设备焦点访问，disabled/loading/error有非颜色文本；逐屏清单区分当前源码已有testId与设计提案，未落源的提案不得标成当前常量；实现时由每个app唯一TestIds源码导出并绑定真实节点。
 - frontend-coding-standard.md §3-K-1..10仅适用管理后台antd交互；TER不是该consumer face，故明确N/A，依据terminal-coding-standard.md的不适用条款。TR-16/TR-17与TER §4-D/§4-E仍强制。
 
 ## 4 · 错误语义与界面映射（按当前owner码族）

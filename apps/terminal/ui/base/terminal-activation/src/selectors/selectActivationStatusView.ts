@@ -19,10 +19,11 @@ export type ActivationStatusView = Readonly<{
 /** A matching persisted host cache is display-only until the current peer applies its revision. */
 export const selectActivationStatusView = (state: StateRoot): ActivationStatusView | null => {
   if (selectRuntimeInstanceMode(state) === 'MASTER') {
+    const latency = selectConnectionLatency(state);
     return Object.freeze({
       activation: selectActivationState(state),
       connection: selectConnectionState(state),
-      lastRttMs: selectConnectionLatency(state).lastRttMs,
+      lastRttMs: latency.samples.length === 0 ? null : latency.lastRttMs,
       currentPeerValue: true,
     });
   }

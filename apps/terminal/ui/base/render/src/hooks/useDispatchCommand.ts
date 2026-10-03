@@ -18,12 +18,22 @@ const createObservedDispatchCommand =
     options: DispatchOptions,
   ): Promise<CommandDispatchResult> => {
     try {
-      return await dispatchCommand(command, options);
+      const result = await dispatchCommand(command, options);
+      if (result.status === 'partial-failed' || result.status === 'timed-out' || result.status === 'error') {
+        reportRenderCommandDispatchRejection(logger, {
+          event: 'command-dispatch-rejected',
+          commandName: command.definition.commandName,
+          requestId: options.requestId,
+          failure: result.status,
+        });
+      }
+      return result;
     } catch (error) {
       reportRenderCommandDispatchRejection(logger, {
         event: 'command-dispatch-rejected',
         commandName: command.definition.commandName,
         requestId: options.requestId,
+        failure: 'promise-rejected',
       });
       throw error;
     }

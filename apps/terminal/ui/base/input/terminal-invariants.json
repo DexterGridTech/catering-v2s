@@ -27,5 +27,8 @@
     "useInputField",
     "useInputKeyboardState",
     "useInputSnapshot"
-  ]
+  ],
+  "publicTypeMembers": {
+    "InputFieldOptions": ["onValueChange"]
+  }
 }

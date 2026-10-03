@@ -22,6 +22,16 @@ function validPort(value, code) {
   if (!/^\d{4,5}$/.test(String(value ?? "")) || Number(value) < 1024 || Number(value) > 65535) fail(code);
   return String(value);
 }
+function validateTerminalBrowserOrigins(value) {
+  if (value === undefined || value === "") return;
+  const origins = String(value).split(",").map(origin => origin.trim());
+  if (origins.some(origin => {
+    const match = /^http:\/\/(localhost|127\.0\.0\.1):([0-9]{4,5})$/.exec(origin);
+    return match === null || Number(match[2]) < 1024 || Number(match[2]) > 65535;
+  }) || new Set(origins).size !== origins.length) {
+    fail("R5_DEV_TERMINAL_BROWSER_CORS_ORIGINS_INVALID");
+  }
+}
 function effectiveEnvironment(env, tdsCapacity) {
   const namespace = env.V2S_DEV_NAMESPACE ?? "v2s-dev-r5-full";
   const hostTrust = hostTrustEnvironment(env);
@@ -31,6 +41,9 @@ function effectiveEnvironment(env, tdsCapacity) {
     V2S_DEV_NAMESPACE: namespace,
     V2S_DEV_PROFILE: env.V2S_DEV_PROFILE ?? "r5-full",
     V2S_RUNTIME_ENVIRONMENT: env.V2S_RUNTIME_ENVIRONMENT ?? "non-production",
+    // The managed TER Expo Web runner serves at 127.0.0.1:8093 by default.
+    // Keep the DEV-only browser activation/cancel CORS origin explicit and narrow.
+    V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS: env.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS ?? "http://127.0.0.1:8093",
     ...hostTrust,
     // DEV Java now runs beside PostgreSQL on the trusted remote host.  This is
     // the Java-side URL; no local PostgreSQL tunnel is part of the topology.
@@ -66,6 +79,7 @@ function validate(input, mode) {
   try { parsedDatabaseUrl = new URL(databaseUrl.replace(/^jdbc:/, "")); } catch { fail("R5_DEV_DATABASE_URL_INVALID"); }
   if (parsedDatabaseUrl.hostname === "127.0.0.1" && [25432, 25433, 25434, 25435].includes(Number(parsedDatabaseUrl.port))) fail("R5_DEV_LEGACY_POSTGRES_TUNNEL_FORBIDDEN");
   validPort(env.V2S_DEV_REMOTE_HTTP_PORT, "R5_DEV_REMOTE_HTTP_PORT_INVALID");
+  validateTerminalBrowserOrigins(env.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS);
   validPort(env.V2S_DEV_REMOTE_ASSET_PORT, "R5_DEV_REMOTE_ASSET_PORT_INVALID");
   const remoteTdsPorts = [
     env.V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT,
@@ -102,16 +116,28 @@ function main() {
     const valid = { V2S_DEV_NAMESPACE: "v2s-dev-alpha", V2S_DEV_PROFILE: "r5-full", V2S_RUNTIME_ENVIRONMENT: "non-production", V2S_DEV_REMOTE_HOST: "catering-remote-dev", V2S_DEV_DATABASE_URL: "jdbc:postgresql://catering-remote-dev/catering_v2s_dev_alpha", V2S_DEV_ASSET_ROOT: "s3://dev-assets", ...Object.fromEntries(requiredSecrets.map((name) => [name, "test-only"])) };
     Object.assign(valid, hostTrustEnvironment(valid));
     validate(valid, "seed");
+    const tdsCapacity = loadTdsCapacityConfiguration();
+    const defaultBrowserOrigins = effectiveEnvironment(valid, tdsCapacity).V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS;
+    if (defaultBrowserOrigins !== "http://127.0.0.1:8093") fail("R5_DEV_TERMINAL_BROWSER_CORS_DEFAULT_INVALID");
+    const customBrowserOrigins = effectiveEnvironment(
+      { ...valid, V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS: "http://localhost:8093" },
+      tdsCapacity,
+    ).V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS;
+    if (customBrowserOrigins !== "http://localhost:8093") fail("R5_DEV_TERMINAL_BROWSER_CORS_OVERRIDE_INVALID");
     let nodeIdRed = false;
     try { validate({ ...valid, V2S_TDS_NODE_ID: " " }, "start"); } catch (error) { nodeIdRed = error.code === "R5_DEV_TDS_NODE_ID_INVALID"; }
     if (!nodeIdRed) fail("R5_DEV_TDS_NODE_ID_SELF_TEST_RED_NOT_DETECTED");
     let withdrawalWaitRed = false;
     try { validate({ ...valid, V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS: "1999" }, "start"); } catch (error) { withdrawalWaitRed = error.code === "R5_DEV_TDS_READINESS_WITHDRAWAL_WAIT_INVALID"; }
     if (!withdrawalWaitRed) fail("R5_DEV_TDS_READINESS_WITHDRAWAL_WAIT_SELF_TEST_RED_NOT_DETECTED");
+    validateTerminalBrowserOrigins("http://127.0.0.1:8093,http://localhost:8081");
+    let browserOriginsRed = false;
+    try { validateTerminalBrowserOrigins("*"); } catch (error) { browserOriginsRed = error.code === "R5_DEV_TERMINAL_BROWSER_CORS_ORIGINS_INVALID"; }
+    if (!browserOriginsRed) fail("R5_DEV_TERMINAL_BROWSER_CORS_ORIGINS_SELF_TEST_RED_NOT_DETECTED");
     let red = false;
     try { validate({ ...valid, V2S_DEV_REMOTE_HOST_SHA256: "0".repeat(64) }, "start"); } catch (error) { red = error.code === "R5_DEV_REMOTE_HOST_BINDING_INVALID"; }
     if (!red) fail("R5_DEV_ENVIRONMENT_SELF_TEST_RED_NOT_DETECTED");
-    process.stdout.write("R5_DEV_ENVIRONMENT_SELF_TEST=PASS; remote-host-binding=RED(R5_DEV_REMOTE_HOST_BINDING_INVALID); tds-node-id=RED(R5_DEV_TDS_NODE_ID_INVALID); tds-withdrawal-wait=RED(R5_DEV_TDS_READINESS_WITHDRAWAL_WAIT_INVALID)\n");
+    process.stdout.write("R5_DEV_ENVIRONMENT_SELF_TEST=PASS; remote-host-binding=RED(R5_DEV_REMOTE_HOST_BINDING_INVALID); tds-node-id=RED(R5_DEV_TDS_NODE_ID_INVALID); tds-withdrawal-wait=RED(R5_DEV_TDS_READINESS_WITHDRAWAL_WAIT_INVALID); terminal-browser-origins=DEFAULT(http://127.0.0.1:8093),OVERRIDE(http://localhost:8093),RED(R5_DEV_TERMINAL_BROWSER_CORS_ORIGINS_INVALID)\n");
     return;
   }
   const result = validate(process.env, mode === "check" ? "start" : mode);

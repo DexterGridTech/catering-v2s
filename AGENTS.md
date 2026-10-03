@@ -39,6 +39,11 @@
 
 ## 不可突破的红线
 
+**2026-10-03 术语澄清（Dexter）**：TDP 现指 Terminal Data Platform，即 TDS + TDC 的长连接整体，
+正本见 `doc/platform/terminal-coding-standard.md` §4-F。下文及历史材料中的「不引入 TDP」
+「TDS 不是 TDP」限制的是旧未批准平台/placeholder 的能力扩张，不否定此整体称呼。
+本次只授权 B/C 需求讨论与术语维护，不改变业务 deployable、事实 owner 或动态执行边界。
+
 - 一个业务 deployable；一个 PostgreSQL 数据库、多 owner schema、单一 Flyway history。
 - 模块 owner 保有事实与命令主权；跨模块写只调用目标模块公开 command API，并加入同一 `REQUIRED` 事务。
 - 跨 schema 读取只允许显式任务型 join；不得由 read edge 推导写入、锁、事务或 FK 权限。

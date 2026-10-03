@@ -104,7 +104,7 @@ const placementsFor = (state: StateRoot, surfaceForm: SurfaceForm): readonly Pla
   return [];
 };
 
-const signature = (state: StateRoot): string => {
+const signature = (state: StateRoot, surfaceForm: SurfaceForm): string => {
   const topology = selectTopologyState(state);
   const activation = selectActivationStatusView(state);
   const staff = selectHostStaffQualification(state);
@@ -120,19 +120,21 @@ const signature = (state: StateRoot): string => {
     activation?.activation.status ?? null,
     activation?.currentPeerValue ?? false,
     staff?.status ?? null,
+    placementsFor(state, surfaceForm).map(({route, key}) => [
+      key,
+      route.displayMode === undefined ? null : selectScreen(state, route.displayMode, 'main')?.partKey ?? null,
+    ]),
   ]);
 };
 
 const routeStage = async (
   context: ActorExecutionContext,
   surfaceForm: SurfaceForm,
-  lastStageByPlacement: Map<string, Stage>,
 ): Promise<void> => {
   const stage = currentStage(context.getState());
   if (stage === null) return;
   for (const placement of placementsFor(context.getState(), surfaceForm)) {
-    if (lastStageByPlacement.get(placement.key) === stage) continue;
-    const {route, key} = placement;
+    const {route} = placement;
     const existing = route.displayMode === undefined ? undefined : selectScreen(context.getState(), route.displayMode, 'main');
     if (stage === 'activation') {
       const expected = activationPartFor(surfaceForm, route);
@@ -164,7 +166,6 @@ const routeStage = async (
         if (result.status !== 'completed') throw new Error(`[sample-console] member desk stage route failed: ${result.status}`);
       }
     }
-    lastStageByPlacement.set(key, stage);
   }
 };
 
@@ -173,16 +174,15 @@ export const createSampleConsoleModule = (surfaceForm: SurfaceForm): RuntimeModu
   let initialized = false;
   let reconcileScheduled = false;
   let lastSignature: string | null = null;
-  const lastStageByPlacement = new Map<string, Stage>();
   const reconcileActor = defineActor(moduleName, 'owner-stage-route', [
     onCommand(startupReadyCommand, async context => {
       initialized = true;
-      lastSignature = signature(context.getState());
-      await routeStage(context, surfaceForm, lastStageByPlacement);
+      lastSignature = signature(context.getState(), surfaceForm);
+      await routeStage(context, surfaceForm);
       return null;
     }),
     onCommand(reconcileStageCommand, async context => {
-      await routeStage(context, surfaceForm, lastStageByPlacement);
+      await routeStage(context, surfaceForm);
       return null;
     }),
   ]);
@@ -228,7 +228,7 @@ export const createSampleConsoleModule = (surfaceForm: SurfaceForm): RuntimeModu
     install: (context: RuntimeModuleContext) => {
       context.subscribeState(() => {
         if (!initialized) return;
-        const nextSignature = signature(context.getState());
+        const nextSignature = signature(context.getState(), surfaceForm);
         if (nextSignature === lastSignature) return;
         lastSignature = nextSignature;
         if (reconcileScheduled) return;

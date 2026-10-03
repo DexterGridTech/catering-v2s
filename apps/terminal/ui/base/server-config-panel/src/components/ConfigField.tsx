@@ -30,6 +30,7 @@ export const ConfigField = ({
     layout: numeric ? 'financial' : 'full',
     focusScopeId: ADMIN_CONSOLE_FOCUS_SCOPE_ID,
     maxLength: secure ? 256 : 2048,
+    onValueChange,
   });
   return (
     <>
@@ -41,10 +42,6 @@ export const ConfigField = ({
         secureTextEntry={secure}
         editable={editable}
         appearance="admin"
-        onChangeText={value => {
-          field.inputProps.onChangeText?.(value);
-          onValueChange(value);
-        }}
       />
     </>
   );

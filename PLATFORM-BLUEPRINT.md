@@ -2,6 +2,10 @@
 
 ## 当前产品形态
 
+**术语澄清（Dexter 2026-10-03）**：TDP 现为 TDS + TDC 长连接整体的称呼，见
+`doc/platform/terminal-coding-standard.md` §4-F。本文旧「不含 TDP」指未批准的平台/placeholder
+扩张；不禁止新称呼。数据变化通知与远程运维目前只进入需求讨论，未获实施授权。
+
 v2s 从一个业务 deployable 起步：单进程模块化单体、单 PostgreSQL 数据库、多 owner schema、单一 Flyway history。模块通过公开 `<module>.api` command API 协作，同步加入同一 `REQUIRED` 事务；coordinator 不拥有业务资产。跨 schema read 只为明确任务型 join 服务。
 
 初始形态不包含 MQ、通用 outbox、TDP、内部 OpenAPI client、搜索平台或常态轮询。只有真实触发条件与新 decision 可以改变该边界。

@@ -1,5 +1,9 @@
 # catering-v2s 平台规范入口
 
+CBS/TDP/TDS/TDC 命名统一见 `doc/platform/terminal-coding-standard.md` §4-F（Dexter 2026-10-03）。
+本文旧「不增加 TDP」指未批准的旧平台能力扩张；TDP 作为 TDS + TDC 的整体称呼已生效，
+数据通知/远程运维仍为需求讨论，不因此获得实现或运行授权。
+
 本仓是 successor execution 仓。每次新会话从仓根开始，先读取 `AGENTS.md` 与
 `PLATFORM-BLUEPRINT.md`；当前任务与授权只来自 Dexter 在会话中的明确指派，不得从其他
 仓库、历史材料或仓内过期状态推导。

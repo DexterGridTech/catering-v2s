@@ -131,6 +131,9 @@ const validateEndpointPathAndQuery = (value: string | undefined): void => {
   }
 };
 
+const safeResponseDiagnosticId = (value: string | undefined): string | undefined =>
+  typeof value === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(value) ? value : undefined;
+
 export const createTransportConnectionOwner = (
   input: Readonly<{
     readonly adapter?: TransportNetworkAdapter;
@@ -392,10 +395,17 @@ export const createTransportConnectionOwner = (
               code: 'HTTP_NETWORK_CONFIGURATION_CHANGED',
             });
           }
+          const requestId = safeResponseDiagnosticId(result.requestId);
+          const correlationId = safeResponseDiagnosticId(result.correlationId);
           return Object.freeze({
-            ...result,
+            kind: 'response',
+            status: result.status,
+            body: result.body,
+            ...(result.contentType === undefined ? {} : {contentType: result.contentType}),
             addressName: address.addressName,
             configRevision: snapshot.revision,
+            ...(requestId === undefined ? {} : {requestId}),
+            ...(correlationId === undefined ? {} : {correlationId}),
           });
         }
         lastFailure = result;

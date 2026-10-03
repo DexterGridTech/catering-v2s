@@ -21,5 +21,7 @@ v2s:
   runtime-environment: ${V2S_RUNTIME_ENVIRONMENT:}
   dev-profile: ${V2S_DEV_PROFILE:}
   dev-namespace: ${V2S_DEV_NAMESPACE:}
+  terminal:
+    browser-allowed-origins: ${V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS:}
   seed:
     fixed-otp-value: ${V2S_SEED_OTP_FIXED_VALUE:}

@@ -473,7 +473,13 @@ describe('transport connection owner', () => {
       connect: async () => makeConnection(),
       sendHttp: async input => {
         calls.push(input.address.addressName);
-        return {kind: 'response', status: 409, body: {errorCode: 'BUSINESS_REJECTION'}};
+        return {
+          kind: 'response',
+          status: 409,
+          body: {errorCode: 'BUSINESS_REJECTION'},
+          requestId: 'req-owner-001',
+          correlationId: 'corr-owner-001',
+        };
       },
     };
     const owner = createTransportConnectionOwner({adapter, dispatchInternal: () => undefined});
@@ -487,7 +493,13 @@ describe('transport connection owner', () => {
     } as const;
 
     const first = await owner.executeHttp(request);
-    expect(first).toMatchObject({kind: 'response', addressName: 'primary', configRevision: 1});
+    expect(first).toMatchObject({
+      kind: 'response',
+      addressName: 'primary',
+      configRevision: 1,
+      requestId: 'req-owner-001',
+      correlationId: 'corr-owner-001',
+    });
     await owner.executeHttp(request);
     expect(calls).toEqual(['primary', 'primary']);
     owner.reportHttpAddressAvailable({
@@ -498,6 +510,33 @@ describe('transport connection owner', () => {
     });
     await owner.executeHttp(request);
     expect(calls).toEqual(['primary', 'primary', 'backup']);
+    await owner.dispose();
+  });
+
+  it('keeps only bounded safe response identity values for downstream diagnostics', async () => {
+    const adapter: TransportNetworkAdapter = {
+      readSnapshot: async () => snapshot(),
+      connect: async () => makeConnection(),
+      sendHttp: async () => ({
+        kind: 'response',
+        status: 409,
+        body: {errorCode: 'BUSINESS_REJECTION'},
+        requestId: 'req-owner-002',
+        correlationId: `unsafe${'x'.repeat(128)}`,
+      }),
+    };
+    const owner = createTransportConnectionOwner({adapter, dispatchInternal: () => undefined});
+    const result = await owner.executeHttp({
+      profileId: 'terminal-data-client:http',
+      serverName: 'terminal-data-server',
+      method: 'POST',
+      pathAndQuery: '/activation',
+      headers: {},
+      safeRetryable: true,
+    });
+
+    expect(result).toMatchObject({kind: 'response', requestId: 'req-owner-002'});
+    expect(result).not.toHaveProperty('correlationId');
     await owner.dispose();
   });
 

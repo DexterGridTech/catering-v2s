@@ -11,6 +11,7 @@ import {
   unavailableScriptPort,
   unavailableTopologyHostPort,
   type DevicePort,
+  type DeviceInfo,
   type DisplayInfo,
   type DisplaySurfaceInfo,
   type PlatformPorts,
@@ -35,14 +36,26 @@ export type WebPlatformOptions = Readonly<{
   readonly protectedStorage?: StateStoragePort;
   /** Optional deterministic display-facts source used by the Web preview. */
   readonly readDisplaySurfaces?: () => readonly DisplaySurfaceInfo[];
+  /** Optional non-persistent device identity fixture for real HTTP/WebSocket integration flows. */
+  readonly readDeviceInfo?: () => DeviceInfo;
 }>;
 
 export const createWebDevicePort = (
   readSurfaceMode: () => SurfaceMode,
   readDisplaySurfaces?: () => readonly DisplaySurfaceInfo[],
+  readDeviceInfo?: () => DeviceInfo,
 ): DevicePort => {
   const port: DevicePort = {
     ...unavailableDevicePort,
+    ...(readDeviceInfo === undefined
+      ? {}
+      : {
+          getDeviceInfo: async (): Promise<PortResult<DeviceInfo>> => ({
+            status: 'succeeded',
+            value: readDeviceInfo(),
+            completedAt: nowTimestampMs(),
+          }),
+        }),
     getDisplayInfo: async (): Promise<PortResult<DisplayInfo>> => ({
       status: 'succeeded',
       value: {
@@ -77,7 +90,11 @@ export const createWebDevicePort = (
     value: Object.freeze({
       port: 'device',
       capabilities: Object.freeze([
-        Object.freeze({capability: 'getDeviceInfo', state: 'unavailable' as const, source: 'default' as const}),
+        Object.freeze({
+          capability: 'getDeviceInfo',
+          state: readDeviceInfo === undefined ? ('unavailable' as const) : ('real' as const),
+          source: readDeviceInfo === undefined ? ('default' as const) : ('fixture' as const),
+        }),
         Object.freeze({capability: 'getDisplayInfo', state: 'real' as const, source: 'web' as const}),
         Object.freeze({capability: 'getSystemStatus', state: 'unavailable' as const, source: 'default' as const}),
         Object.freeze({capability: 'getNetworkStatus', state: 'unavailable' as const, source: 'default' as const}),
@@ -121,7 +138,7 @@ export const createWebPlatformPorts = (
       logger: consoleLoggerBinding,
       persistKv,
       persistSecure: options.protectedStorage ?? unavailablePersistSecurePort,
-      device: createWebDevicePort(readSurfaceMode, options.readDisplaySurfaces),
+      device: createWebDevicePort(readSurfaceMode, options.readDisplaySurfaces, options.readDeviceInfo),
       appControl: unavailableAppControlPort,
       script: unavailableScriptPort,
       connector: unavailableConnectorPort,

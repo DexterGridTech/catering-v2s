@@ -28,6 +28,21 @@ import type {ActorExecutionContext, CommandDefinition} from '@catering-v2s/kerne
 import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import type {TransportConnectionEvent} from '@catering-v2s/kernel-base-transport';
 
+const createActivationTestLogger = () => {
+  const events: unknown[] = [];
+  const logger = {
+    debug: vi.fn((event: unknown) => { events.push(event); return {status: 'succeeded'}; }),
+    info: vi.fn((event: unknown) => { events.push(event); return {status: 'succeeded'}; }),
+    warn: vi.fn((event: unknown) => { events.push(event); return {status: 'succeeded'}; }),
+    error: vi.fn((event: unknown) => { events.push(event); return {status: 'succeeded'}; }),
+    scope: vi.fn(),
+    withContext: vi.fn(),
+  };
+  logger.scope.mockReturnValue(logger as never);
+  logger.withContext.mockReturnValue(logger as never);
+  return {logger, events};
+};
+
 const actorState = (clientState: unknown, instanceMode: 'MASTER' | 'SLAVE' = 'MASTER'): StateRoot =>
   ({
     [terminalDataClientStateSlice.name]: clientState,
@@ -256,6 +271,8 @@ describe('terminal-data-client activation command actor', () => {
         kind: 'response' as const,
         addressName: 'primary',
         configRevision: 1,
+        requestId: 'req-activation-001',
+        correlationId: 'corr-activation-001',
         status: 200,
         body: {
           terminalRef: 'terminal-1',
@@ -265,7 +282,9 @@ describe('terminal-data-client activation command actor', () => {
         },
       };
     });
+    const dispatchCommand = vi.fn(async () => ({status: 'completed' as const}));
     const createCredentialSecret = vi.fn(() => secret);
+    const activationDiagnostics = createActivationTestLogger();
     const dependencies = {
       businessServerName: 'terminal-business-api',
       transport: {
@@ -290,6 +309,7 @@ describe('terminal-data-client activation command actor', () => {
       localNodeId: 'test-node',
       platformPorts: {
         device: {getDeviceInfo: async () => ({status: 'succeeded', value: {deviceId: 'device-1'}, completedAt: 1})},
+        logger: activationDiagnostics.logger,
       },
       command: {
         payload: {
@@ -305,7 +325,7 @@ describe('terminal-data-client activation command actor', () => {
       },
       flushPersistence: async () => ({status: 'succeeded'}),
       subscribeState: () => () => undefined,
-      dispatchCommand: async () => ({status: 'completed'}),
+      dispatchCommand,
       requestApplicationReset: () => undefined,
     } as unknown as ActorExecutionContext;
 
@@ -327,6 +347,26 @@ describe('terminal-data-client activation command actor', () => {
     expect(readback).toMatchObject({status: 'active', bindingGeneration: 2});
     expect(JSON.stringify(readback).includes(secret)).toBe(false);
     expect(second && typeof second === 'object' && 'status' in second ? second.status : '').toBe('activated');
+    expect(activationDiagnostics.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({event: 'activation-request-started', data: expect.objectContaining({operationId: 'activateTerminal'})}),
+      expect.objectContaining({
+        event: 'activation-request-result',
+        data: expect.objectContaining({
+          kind: 'success',
+          status: 200,
+          requestId: 'req-activation-001',
+          correlationId: 'corr-activation-001',
+        }),
+      }),
+    ]));
+    expect(JSON.stringify(activationDiagnostics.events)).not.toContain(secret);
+    expect(JSON.stringify(activationDiagnostics.events)).not.toContain('12345678');
+    expect(dispatchCommand).toHaveBeenCalledTimes(1);
+    expect(dispatchCommand).toHaveBeenCalledWith(
+      connectTerminalCommand,
+      Object.freeze({}),
+      expect.objectContaining({requestId: expect.any(String)}),
+    );
   });
 
   it('shares one pending secret across same-business-operation calls with different operation ids', async () => {
@@ -382,7 +422,7 @@ describe('terminal-data-client activation command actor', () => {
       ({
         runtimeId: 'test-runtime',
         localNodeId: 'test-node',
-        platformPorts: {device},
+        platformPorts: {device, logger: createActivationTestLogger().logger},
         command: {
           commandName: activateTerminalCommand.commandName,
           commandId,
@@ -465,6 +505,7 @@ describe('terminal-data-client activation command actor', () => {
         localNodeId: 'test-node',
         platformPorts: {
           device: {getDeviceInfo: async () => ({status: 'succeeded', value: {deviceId: 'device-1'}, completedAt: 1})},
+          logger: createActivationTestLogger().logger,
         },
         command: {
           commandName: activateTerminalCommand.commandName,
@@ -536,6 +577,7 @@ describe('terminal-data-client activation command actor', () => {
       localNodeId: 'test-node',
       platformPorts: {
         device: {getDeviceInfo: async () => ({status: 'succeeded', value: {deviceId: 'device-1'}, completedAt: 1})},
+        logger: createActivationTestLogger().logger,
       },
       command: {
         commandName: activateTerminalCommand.commandName,
@@ -599,6 +641,7 @@ describe('terminal-data-client activation command actor', () => {
         localNodeId: 'test-node',
         platformPorts: {
           device: {getDeviceInfo: async () => ({status: 'succeeded', value: {deviceId: 'device-1'}, completedAt: 1})},
+          logger: createActivationTestLogger().logger,
         },
         command: {
           payload: {activationCode},
@@ -657,6 +700,8 @@ describe('terminal-data-client activation command actor', () => {
           kind: 'response' as const,
           addressName: 'primary',
           configRevision: 4,
+          requestId: 'req-cancel-rejected-001',
+          correlationId: 'corr-cancel-rejected-001',
           status: 409,
           body: {
             type: 'https://example.invalid/problems/terminal-binding-credential-invalid',
@@ -671,6 +716,8 @@ describe('terminal-data-client activation command actor', () => {
         kind: 'response' as const,
         addressName: 'primary',
         configRevision: 4,
+        requestId: 'req-cancel-success-001',
+        correlationId: 'corr-cancel-success-001',
         status: 200,
         body: {outcome: 'CANCELLED'},
       };
@@ -695,11 +742,12 @@ describe('terminal-data-client activation command actor', () => {
       candidate => candidate.commandName === cancelTerminaActivationCommand.commandName,
     );
     if (handler === undefined) throw new Error('cancel terminal actor handler missing');
-    const makeContext = (): ActorExecutionContext =>
+    const cancellationDiagnostics = createActivationTestLogger();
+    const makeContext = (platformPorts: Record<string, unknown> = {}): ActorExecutionContext =>
       ({
         runtimeId: 'test-runtime',
         localNodeId: 'test-node',
-        platformPorts: {},
+        platformPorts: {logger: cancellationDiagnostics.logger, ...platformPorts},
         command: {
           commandName: cancelTerminaActivationCommand.commandName,
           payload: {},
@@ -720,6 +768,19 @@ describe('terminal-data-client activation command actor', () => {
     const second = await handler.handle(makeContext() as never);
     expect(first).toMatchObject({kind: 'failure', category: 'not-delivered'});
     expect(second).toMatchObject({kind: 'business-rejection', errorCode: 'TERMINAL_BINDING_CREDENTIAL_INVALID'});
+    expect(cancellationDiagnostics.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({event: 'cancel-activation-request-started'}),
+      expect.objectContaining({
+        event: 'cancel-activation-request-result',
+        data: expect.objectContaining({
+          kind: 'business-rejection',
+          status: 409,
+          errorCode: 'TERMINAL_BINDING_CREDENTIAL_INVALID',
+          requestId: 'req-cancel-rejected-001',
+          correlationId: 'corr-cancel-rejected-001',
+        }),
+      }),
+    ]));
     expect(selectActivationState({[terminalDataClientStateSlice.name]: state} as unknown as StateRoot)).toMatchObject({
       status: 'active',
       terminalRef: 'terminal-1',
@@ -736,10 +797,47 @@ describe('terminal-data-client activation command actor', () => {
     expect(transport.reportHttpAddressAvailable).toHaveBeenCalledTimes(1);
 
     const reset = vi.fn();
-    const success = await handler.handle({...makeContext(), requestApplicationReset: reset} as never);
+    const success = await handler.handle({
+      ...makeContext({
+        device: {getDeviceInfo: async () => ({
+          status: 'succeeded',
+          value: {deviceId: 'ter-web-run-fixture', systemName: 'Web'},
+        })},
+        appControl: {resetRuntime: reset},
+      }),
+      requestApplicationReset: reset,
+    } as never);
     expect(success).toEqual({status: 'CANCELLED'});
+    expect(cancellationDiagnostics.events).toContainEqual(expect.objectContaining({
+      event: 'cancel-activation-request-result',
+      data: expect.objectContaining({
+        kind: 'success',
+        status: 200,
+        requestId: 'req-cancel-success-001',
+        correlationId: 'corr-cancel-success-001',
+      }),
+    }));
+    expect(JSON.stringify(cancellationDiagnostics.events)).not.toContain(secret);
+    expect(JSON.stringify(cancellationDiagnostics.events)).not.toContain('Authorization');
     expect(transport.stop).toHaveBeenCalledWith({profileId: 'terminal-data-client'});
     expect(reset).toHaveBeenCalledWith('TERMINAL_ACTIVATION_CANCELLED');
+    const webResetLog = createActivationTestLogger();
+    const webContext = {
+      ...makeContext({
+        device: {getDeviceInfo: async () => ({
+          status: 'succeeded',
+          value: {deviceId: 'ter-web-run-fixture', systemName: 'Web'},
+        })},
+        appControl: {resetRuntime: reset},
+        logger: webResetLog.logger,
+      }),
+    };
+    await actor.afterApplicationReset(webContext as never, 'TERMINAL_ACTIVATION_CANCELLED');
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(webResetLog.events).toContainEqual(expect.objectContaining({
+      event: 'web-runtime-reset-observation-not-applicable',
+      data: {platform: 'Web', outcome: 'in-process-reset'},
+    }));
     actor.dispose();
   });
 
@@ -868,6 +966,7 @@ describe('terminal-data-client activation command actor', () => {
       executeHttp: vi.fn(async () => ({kind: 'failure' as const, category: 'not-delivered' as const, code: 'unused'})),
       reportHttpAddressAvailable: vi.fn(async () => undefined),
     };
+    const diagnostics = createActivationTestLogger();
     const actor = createTerminalDataClientActor({
       transport,
       businessServerName: 'terminal-business-api',
@@ -881,6 +980,7 @@ describe('terminal-data-client activation command actor', () => {
         runtimeId: 'test-runtime',
         localNodeId: 'test-node',
         platformPorts: {
+          logger: diagnostics.logger,
           device: {getDeviceInfo: async () => ({status: 'succeeded', value: {deviceId: 'device-1'}, completedAt: 1})},
         },
         command: {commandName, payload, requestId: null, commandId: 'test-command'} as never,
@@ -955,6 +1055,11 @@ describe('terminal-data-client activation command actor', () => {
       lastRttMs: 1_237,
       samples: [{rttMs: 1_237, observedAt: now}],
     });
+    expect(diagnostics.events).toContainEqual(expect.objectContaining({
+      category: 'terminal.connection.heartbeat',
+      event: 'heartbeat-pong-matched',
+      data: {profileId: 'terminal-data-client', sequence: 1, rttMs: 1_237},
+    }));
     expect(transport.invalid).not.toHaveBeenCalled();
     await findHandler(terminalTransportEventCommand.commandName).handle(
       makeContext(terminalTransportEventCommand.commandName, {
@@ -1142,6 +1247,7 @@ describe('terminal-data-client activation command actor', () => {
       executeHttp: vi.fn(),
       reportHttpAddressAvailable: vi.fn(async () => undefined),
     };
+    const diagnostics = createActivationTestLogger();
     const actorRuntime = createTerminalDataClientActor({
       transport,
       businessServerName: 'terminal-business-api',
@@ -1159,7 +1265,7 @@ describe('terminal-data-client activation command actor', () => {
       ({
         runtimeId: 'test-runtime',
         localNodeId: 'test-node',
-        platformPorts: {},
+        platformPorts: {logger: diagnostics.logger},
         command: {commandName, payload, requestId: null, commandId: 'heartbeat-renewal-test'} as never,
         actor: {
           actorKey: actorRuntime.actor.actorKey,
@@ -1222,6 +1328,10 @@ describe('terminal-data-client activation command actor', () => {
       expect(selectConnectionState({[terminalDataClientStateSlice.name]: state} as unknown as StateRoot).status).toBe(
         'connected',
       );
+      expect(diagnostics.events.filter(value =>
+        typeof value === 'object' && value !== null &&
+        (value as {event?: string}).event === 'heartbeat-pong-matched',
+      )).toHaveLength(6);
     } finally {
       actorRuntime.dispose();
       vi.useRealTimers();

@@ -28,6 +28,34 @@ const errors: Readonly<Record<string, string>> = Object.freeze({
 
 type Props = Readonly<{readonly defaults: TransportServerConfig}>;
 
+type ActivationCodeFieldProps = Readonly<{
+  readonly onValueChange: (value: string) => void;
+}>;
+
+const ActivationCodeField = ({onValueChange}: ActivationCodeFieldProps) => {
+  const field = useInputField({
+    fieldId,
+    testID: fieldId,
+    accessibilityLabel: '8位激活码',
+    keyboardKind: 'virtual',
+    layout: 'numeric',
+    maxLength: 8,
+    onValueChange,
+  });
+
+  return (
+    <>
+      <PrimitiveLabel testID="terminal.activation:code-label" nativeID={fieldId}>
+        8位激活码
+      </PrimitiveLabel>
+      <PrimitiveInput
+        {...field.inputProps}
+        onChangeText={text => field.inputProps.onChangeText?.(text.replace(/[^0-9]/g, '').slice(0, 8))}
+      />
+    </>
+  );
+};
+
 const actorResultCode = (result: CommandDispatchResult | undefined): string | null => {
   if (result === undefined) return null;
   const values = result.actorResults;
@@ -42,19 +70,11 @@ const actorResultCode = (result: CommandDispatchResult | undefined): string | nu
 };
 
 export const ActivationCodeForm = ({defaults}: Props) => {
-  const field = useInputField({
-    fieldId,
-    testID: fieldId,
-    accessibilityLabel: '8位激活码',
-    keyboardKind: 'virtual',
-    layout: 'numeric',
-    maxLength: 8,
-  });
   const activation = useUiStateSelector(selectActivationState);
   const config = useUiStateSelector(state => selectServerConfiguration(state, defaults));
   const tracked = useTrackedCommand();
+  const [value, setValue] = useState('');
   const [resultMessage, setResultMessage] = useState('');
-  const value = field.inputProps.value ?? '';
   const submit = async (): Promise<void> => {
     if (!/^\d{8}$/.test(value) || tracked.requestInFlight) return;
     setResultMessage('');
@@ -94,13 +114,7 @@ export const ActivationCodeForm = ({defaults}: Props) => {
         <PrimitiveStatus testID="terminal.activation:service-space">
           服务空间：{config?.selectedSpace ?? '正在读取'}
         </PrimitiveStatus>
-        <PrimitiveLabel testID="terminal.activation:code-label" nativeID={fieldId}>
-          8位激活码
-        </PrimitiveLabel>
-        <PrimitiveInput
-          {...field.inputProps}
-          onChangeText={text => field.inputProps.onChangeText?.(text.replace(/[^0-9]/g, '').slice(0, 8))}
-        />
+        <ActivationCodeField onValueChange={setValue} />
       </InputScrollArea>
       <PrimitiveActions testID="terminal.activation:actions">
         <PrimitiveButton

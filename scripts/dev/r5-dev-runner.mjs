@@ -416,6 +416,9 @@ export async function startRemoteJava(
     CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: assetObjectPrefix,
     SERVER_PORT: String(httpPort),
     V2S_DEV_REMOTE_HTTP_PORT: String(httpPort),
+    ...(env.environment.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS === undefined
+      ? {}
+      : {V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS: env.environment.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS}),
     ...extraEnvironment,
   };
   for (const [name, value] of Object.entries(values)) {
@@ -2381,6 +2384,7 @@ async function start() {
             tunnel: 'HTTP_ASSET_AND_TWO_TDS_HAPROXY_WEBSOCKET_ENTRIES',
           },
           tdsCapacity: env.tdsCapacity,
+          terminalBrowserAllowedOrigins: env.environment.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS.split(","),
           portLock,
           tunnelPorts,
           remotePorts,

@@ -87,7 +87,15 @@ export type TransportHttpRequest = Readonly<{
 }>;
 
 export type TransportHttpAttemptResult = Readonly<
-  | {readonly kind: 'response'; readonly status: number; readonly body: unknown; readonly contentType?: string}
+  | {
+      readonly kind: 'response';
+      readonly status: number;
+      readonly body: unknown;
+      readonly contentType?: string;
+      /** Sanitized response identity headers for request-scoped diagnostics. */
+      readonly requestId?: string;
+      readonly correlationId?: string;
+    }
   | {readonly kind: 'failure'; readonly category: 'not-delivered' | 'delivered-failure'; readonly code: string}
 >;
 
@@ -99,6 +107,8 @@ export type TransportHttpExecutionResult = Readonly<
       readonly contentType?: string;
       readonly addressName: string;
       readonly configRevision: number;
+      readonly requestId?: string;
+      readonly correlationId?: string;
     }
   | {readonly kind: 'failure'; readonly category: 'not-delivered' | 'delivered-failure'; readonly code: string}
 >;

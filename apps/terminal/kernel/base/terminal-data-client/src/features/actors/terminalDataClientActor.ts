@@ -10,6 +10,7 @@ import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {PersistenceOperationResult, StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import {
   createTerminalApiClient,
+  terminalOperationContracts,
   type TerminalOperationDescriptor,
   type TerminalOperationId,
   type TerminalOperationResult,
@@ -113,6 +114,12 @@ const isRfc3339Utc = (value: unknown): value is string => {
   return month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth && hour <= 23 && minute <= 59 && second <= 59;
 };
 const isCredentialSecret = (value: string): boolean => /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/.test(value);
+const activationLogCode = (code: string): string => {
+  const knownBusinessCode = terminalOperationContracts.activateTerminal.errorCodes.includes(code as never);
+  return knownBusinessCode || code === 'TERMINAL_RESPONSE_SCHEMA_INVALID' || code === 'HTTP_DELIVERED_FAILURE'
+    ? code
+    : 'UNCLASSIFIED_FAILURE';
+};
 const flush = async (context: ActorExecutionContext): Promise<void> => {
   const result: PersistenceOperationResult = await context.flushPersistence();
   if (result.status !== 'succeeded') throw new Error(`terminal client secure persistence failed: ${result.status}`);
@@ -199,7 +206,14 @@ const buildTerminalPathAndQuery = <I extends TerminalOperationId>(
 };
 
 const createTerminalClientForTransport = (dependencies: TerminalDataClientDependencies) => {
-  let acceptedResponse: Readonly<{addressName: string; configRevision: number}> | undefined;
+  let acceptedResponse:
+    | Readonly<{
+        addressName: string;
+        configRevision: number;
+        requestId?: string;
+        correlationId?: string;
+      }>
+    | undefined;
   const executeRequest: TerminalRequestExecutor = async (descriptor, request) => {
     acceptedResponse = undefined;
     const result = await dependencies.transport.executeHttp({
@@ -212,7 +226,12 @@ const createTerminalClientForTransport = (dependencies: TerminalDataClientDepend
       safeRetryable: descriptor.safeRetryable,
     });
     if (result.kind === 'failure') return result;
-    acceptedResponse = Object.freeze({addressName: result.addressName, configRevision: result.configRevision});
+    acceptedResponse = Object.freeze({
+      addressName: result.addressName,
+      configRevision: result.configRevision,
+      ...(result.requestId === undefined ? {} : {requestId: result.requestId}),
+      ...(result.correlationId === undefined ? {} : {correlationId: result.correlationId}),
+    });
     return Object.freeze({
       kind: 'response',
       status: result.status,
@@ -223,6 +242,13 @@ const createTerminalClientForTransport = (dependencies: TerminalDataClientDepend
   const client = createTerminalApiClient(executeRequest);
   return Object.freeze({
     client,
+    readAcceptedResponseIdentity: () => {
+      if (acceptedResponse === undefined) return Object.freeze({});
+      return Object.freeze({
+        ...(acceptedResponse.requestId === undefined ? {} : {requestId: acceptedResponse.requestId}),
+        ...(acceptedResponse.correlationId === undefined ? {} : {correlationId: acceptedResponse.correlationId}),
+      });
+    },
     acceptBusinessResponse: async (
       profileId: string,
       serverName: string,
@@ -423,16 +449,65 @@ export const createTerminalDataClientActor = (
           if (pendingByBusinessIdentity.get(signature) === reservation) pendingByBusinessIdentity.delete(signature);
         }
       }
-      const result = await terminalClient.client.activateTerminal({
-        pathParameters: {},
-        queryParameters: {},
-        headers: {},
-        body: {
-          activationCode: pending.activationCode,
-          deviceId: pending.deviceId,
-          surfaceForm: pending.surfaceForm,
-          appVersion: pending.appVersion,
-          credentialSecret: pending.credentialSecret,
+      const activationLogger = context.platformPorts.logger.scope({
+        moduleName,
+        layer: 'kernel',
+        subsystem: 'terminal-data-client',
+        component: 'activation',
+      });
+      const activationStartedAt = dependencies.now();
+      activationLogger.info({
+        category: 'terminal.activation.http',
+        event: 'activation-request-started',
+        message: 'Terminal activation HTTP request started',
+        context: {commandId: context.command.commandId},
+        data: {profileId, operationId: 'activateTerminal', method: 'POST', surfaceForm: dependencies.surfaceForm},
+      });
+      let result: Awaited<ReturnType<typeof terminalClient.client.activateTerminal>>;
+      try {
+        result = await terminalClient.client.activateTerminal({
+          pathParameters: {},
+          queryParameters: {},
+          headers: {},
+          body: {
+            activationCode: pending.activationCode,
+            deviceId: pending.deviceId,
+            surfaceForm: pending.surfaceForm,
+            appVersion: pending.appVersion,
+            credentialSecret: pending.credentialSecret,
+          },
+        });
+      } catch (error) {
+        activationLogger.error({
+          category: 'terminal.activation.http',
+          event: 'activation-request-threw',
+          message: 'Terminal activation HTTP request threw before returning a result',
+          context: {commandId: context.command.commandId},
+          data: {profileId, operationId: 'activateTerminal', elapsedMs: Math.max(0, dependencies.now() - activationStartedAt)},
+          error: {
+            name: error instanceof Error ? error.name : 'UnknownError',
+            code: 'ACTIVATION_HTTP_CALL_THROWN',
+            message: 'Terminal activation HTTP call did not return a result',
+          },
+        });
+        throw error;
+      }
+      const activationResultLog: Record<string, string | number> = result.kind === 'success'
+        ? {kind: result.kind, status: result.status}
+        : result.kind === 'business-rejection'
+          ? {kind: result.kind, status: result.status, errorCode: result.errorCode}
+          : {kind: result.kind, category: result.category, code: activationLogCode(result.code)};
+      activationLogger[result.kind === 'success' ? 'info' : 'warn']({
+        category: 'terminal.activation.http',
+        event: 'activation-request-result',
+        message: 'Terminal activation HTTP request returned a classified result',
+        context: {commandId: context.command.commandId},
+        data: {
+          profileId,
+          operationId: 'activateTerminal',
+          elapsedMs: Math.max(0, dependencies.now() - activationStartedAt),
+          ...activationResultLog,
+          ...terminalClient.readAcceptedResponseIdentity(),
         },
       });
       await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
@@ -451,6 +526,22 @@ export const createTerminalDataClientActor = (
         );
         context.dispatchAction(terminalDataClientActions.removePendingActivation(pending.operationId));
         await flush(context);
+        const connectionResult = await context.dispatchCommand(
+          connectTerminalCommand,
+          Object.freeze({}),
+          {requestId: context.command.requestId ?? createRequestId()},
+        );
+        if (connectionResult.status !== 'completed') {
+          context.platformPorts.logger
+            .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'connection'})
+            .error({
+              category: 'terminal.connection.activation-connect',
+              event: 'activation-connect-command-failed',
+              message: 'TDS connection command did not complete after activation',
+              context: {commandId: context.command.commandId},
+              data: {profileId, dispatchStatus: connectionResult.status},
+            });
+        }
         return Object.freeze({
           status: 'activated',
           terminalRef: result.body.terminalRef,
@@ -469,11 +560,48 @@ export const createTerminalDataClientActor = (
       const credential = readState(context.getState()).credential;
       if (credential === null) return Object.freeze({status: 'rejected', reason: 'TERMINAL_NOT_ACTIVE'});
       context.dispatchAction(terminalDataClientActions.setActivationStatus('cancelling'));
+      const cancellationLogger = context.platformPorts.logger.scope({
+        moduleName,
+        layer: 'kernel',
+        subsystem: 'terminal-data-client',
+        component: 'activation',
+      });
+      const cancellationStartedAt = dependencies.now();
+      cancellationLogger.info({
+        category: 'terminal.activation.http',
+        event: 'cancel-activation-request-started',
+        message: 'Terminal cancellation HTTP request started',
+        context: {commandId: context.command.commandId},
+        data: {
+          profileId,
+          operationId: 'cancelTerminalActivation',
+          method: 'POST',
+          surfaceForm: dependencies.surfaceForm,
+        },
+      });
       const result = await terminalClient.client.cancelTerminalActivation({
         pathParameters: {terminalRef: credential.terminalRef},
         queryParameters: {},
         headers: {Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`},
         body: {deviceId: credential.deviceId},
+      });
+      cancellationLogger[result.kind === 'success' ? 'info' : 'warn']({
+        category: 'terminal.activation.http',
+        event: 'cancel-activation-request-result',
+        message: 'Terminal cancellation HTTP request returned a classified result',
+        context: {commandId: context.command.commandId},
+        data: {
+          profileId,
+          operationId: 'cancelTerminalActivation',
+          method: 'POST',
+          elapsedMs: Math.max(0, dependencies.now() - cancellationStartedAt),
+          ...(result.kind === 'success'
+            ? {kind: result.kind, status: result.status, outcome: result.body.outcome}
+            : result.kind === 'business-rejection'
+              ? {kind: result.kind, status: result.status, errorCode: result.errorCode}
+              : {kind: result.kind, category: result.category, code: activationLogCode(result.code)}),
+          ...terminalClient.readAcceptedResponseIdentity(),
+        },
       });
       await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
       if (result.kind !== 'success') {
@@ -624,10 +752,23 @@ export const createTerminalDataClientActor = (
           }
           sentAtBySequence.delete(Number(parsed.seq));
           const observedAt = dependencies.now();
+          const rttMs = Math.max(0, observedAt - sentAt);
           armHeartbeatDeadline(context);
-          context.dispatchAction(
-            terminalDataClientActions.recordRtt({rttMs: Math.max(0, observedAt - sentAt), observedAt}),
-          );
+          context.dispatchAction(terminalDataClientActions.recordRtt({rttMs, observedAt}));
+          context.platformPorts.logger
+            .scope({
+              moduleName,
+              layer: 'kernel',
+              subsystem: 'terminal-data-client',
+              component: 'connection',
+            })
+            .info({
+              category: 'terminal.connection.heartbeat',
+              event: 'heartbeat-pong-matched',
+              message: 'Matched TDS PONG and recorded connection round-trip time',
+              context: {commandId: context.command.commandId},
+              data: {profileId, sequence: Number(parsed.seq), rttMs},
+            });
         }
         if (parsed.type === 'AUTHENTICATE' || parsed.type === 'PING') {
           await dependencies.transport.invalid({profileId, cause: 'PROTOCOL_INVALID'});
@@ -737,6 +878,18 @@ export const createTerminalDataClientActor = (
       if (reason !== 'TERMINAL_ACTIVATION_CANCELLED') return;
       const requestId = resetRequestId.current;
       if (requestId === undefined) throw new Error('terminal cancellation reset request id is missing');
+      const deviceInfo = await context.platformPorts.device.getDeviceInfo({timeoutMs: callTimeoutMs});
+      if (deviceInfo.status === 'succeeded' && deviceInfo.value.systemName === 'Web') {
+        context.platformPorts.logger.info({
+          category: 'terminal.activation.runtime-reset',
+          event: 'web-runtime-reset-observation-not-applicable',
+          message: 'The current browser runtime completes the in-process reset without a native successor process',
+          context: {requestId},
+          data: {platform: 'Web', outcome: 'in-process-reset'},
+        });
+        resetRequestId.current = undefined;
+        return;
+      }
       const result = await context.platformPorts.appControl.resetRuntime({requestId, timeoutMs: callTimeoutMs});
       if (result.status !== 'accepted') throw new Error(`terminal JavaScript reset was not accepted: ${result.status}`);
       resetRequestId.current = undefined;

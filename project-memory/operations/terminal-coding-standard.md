@@ -21,6 +21,17 @@ sourceRefs: ["doc/platform/terminal-coding-standard.md"]
 - `TERMINAL_STANDARD_SINGLE_SOURCE`：唯一内容源是
   [`doc/platform/terminal-coding-standard.md`](../../doc/platform/terminal-coding-standard.md)。
   新增或修改规则**只改那一处**。
+  Dexter 2026-10-03 确认的 CBS/TDP/TDS/TDC 及 A/B/C 目的命名，回读正本
+  **§4-F · 终端与服务器长连接统一术语**。本记忆只提供入口；术语生效不代表数据通知或远程运维实施获批。
+  topic 初始时间与更新接受确认的最新裁决也回读 §4-F，不沿用旧讨论中的跨包版本覆盖规则。
+  远程command、CBS terminal-control记录归属、终端持久记录/重连补报、PG范围缓存与feature失败归属
+  的最新裁决同样回读 §4-F，不从旧待定管理面或旧“不补报”建议推导本期范围。
+  后续所有TDC业务feature的slice/topic映射、集合响应复用、成员差量订退及单实体详情刷新，
+  回读同节 **“使用TDC的业务feature加载与刷新（长期约束，Dexter 2026-10-03）”**；本记忆不复制规则。
+  feature依赖的业务前提、成功command及store-service-point启动顺序，回读同节
+  **“feature业务前提与成功command（Dexter 2026-10-03启动顺序修正）”**；不沿用旧独立激活启动表述。
+  本期DEV后台修改→TER的数据同步必测分母及TER业务判断的排除边界，回读正本§4-F
+  **“数据同步验收边界（Dexter 2026-10-03）”**及其引用的正式需求§7.1，不以测试范围另立长期业务禁令。
 - `TERMINAL_STANDARD_POINTERS_ONLY`：项目记忆、skill、评审文档**只写"见正本"**，不复述规则内容。
   通用工作纪律（`currentData`/`isFetching`、`initiate` 义务、同一事实一个住址、幂等键、
   否定式全称命题、finding 带业务场景、动笔前查五处）由正本 §0 指针引用前端规范，同样不复述。

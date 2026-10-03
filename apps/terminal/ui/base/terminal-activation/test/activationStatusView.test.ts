@@ -23,6 +23,19 @@ const projection = {
 };
 
 const clientSliceName = `${terminalDataClientModuleName}.client`;
+const masterState = (lastRttMs: number, latencySamples: readonly {rttMs: number; observedAt: number}[]): StateRoot => ({
+  'kernel.base.runtime.instance-mode': {instanceMode: 'MASTER'},
+  [clientSliceName]: {
+    credential: null,
+    pendingActivations: {},
+    activationStatus: 'inactive',
+    connection: {status: 'stopped', addressName: null, nodeId: null, lastCloseReason: null},
+    heartbeatIntervalMs: 1_000,
+    nextPingSequence: 1,
+    lastRttMs,
+    latencySamples,
+  },
+});
 
 const branchState = (ready: boolean, localCredential = false): StateRoot => ({
   'kernel.base.runtime.instance-mode': {instanceMode: 'SLAVE'},
@@ -64,6 +77,13 @@ const branchState = (ready: boolean, localCredential = false): StateRoot => ({
 });
 
 describe('activation status view', () => {
+  it('does not present the initial zero sentinel as a measured RTT before a matched PONG', () => {
+    expect(selectActivationStatusView(masterState(0, []))).toMatchObject({lastRttMs: null});
+    expect(selectActivationStatusView(masterState(19, [{rttMs: 19, observedAt: Date.now()}]))).toMatchObject({
+      lastRttMs: 19,
+    });
+  });
+
   it('keeps a slave status unknown until the current peer projection is ready', () => {
     expect(selectActivationStatusView(branchState(false))).toBeNull();
     const state = {

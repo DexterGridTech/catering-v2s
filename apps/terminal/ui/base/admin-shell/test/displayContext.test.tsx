@@ -29,6 +29,7 @@ describe('DisplayContextSection lifecycle boundary', () => {
   it('uses runtime status for lifecycle unavailability', async () => {
     const renderer = await renderSection('created');
 
+    expect(renderer.getByTestId(adminTestIds.runtime.contentRoot)).toBeDefined();
     expect(renderer.getByTestId(adminTestIds.runtime.overallStatus)).toBeDefined();
     expect(renderer.getByTestId(adminTestIds.runtime.displayFactsError)).toBeDefined();
     await renderer.unmount();

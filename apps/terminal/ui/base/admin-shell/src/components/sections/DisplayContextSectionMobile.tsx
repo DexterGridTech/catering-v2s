@@ -18,7 +18,11 @@ const sectionStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0});
 const runtimeScrollPaddingBottom = 48;
 const mobileSurfaceCardStyle = Object.freeze({flexShrink: 0});
 
-/** Mobile raw display-context renderer; it keeps its own page JSX while sharing only the facts projection hook. */
+/**
+ * Mobile raw display-context fallback for the canonical runtime page. Its runtime test IDs intentionally match
+ * RuntimeSectionMobile: selectAdminPageProjections chooses only one of those catalog entries, so they are never
+ * mounted as two sibling pages.
+ */
 export const DisplayContextSectionMobile = ({context}: AdminSectionProps) => {
   const {facts, status, display, displayCountLabel, overallMessage} = useAdminRuntimeDisplay({
     context,

@@ -34,6 +34,7 @@ const focusRectOf = (
 };
 
 export const useInputField = (options: InputFieldOptions): InputFieldResult => {
+  const onValueChange = options.onValueChange;
   const controller = useInputController();
   const keyboardState = useInputKeyboardState();
   const scrollAncestor = useInputScrollAncestor();
@@ -73,7 +74,8 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
   const applyKey = useCallback(
     (key: KeyboardKey): EditResult => {
       if (!controller.canEditField(options.fieldId)) return {state: editStateRef.current, effect: 'edit'};
-      const result = applyKeyboardKey(editStateRef.current, key, options.maxLength);
+      const current = editStateRef.current;
+      const result = applyKeyboardKey(current, key, options.maxLength);
       editStateRef.current = result.state;
       setEditState(result.state);
       const token = tokenRef.current;
@@ -81,9 +83,10 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
         controller.updateValue(token, result.state.value);
         controller.updateSelection(token, result.state.selection);
       }
+      if (result.state.value !== current.value) onValueChange?.(result.state.value);
       return result;
     },
-    [controller, options.fieldId, options.maxLength],
+    [controller, options.fieldId, options.maxLength, onValueChange],
   );
   const applyKeyRef = useRef(applyKey);
   useLayoutEffect(() => {
@@ -212,8 +215,8 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
   ]);
 
   const updateState = useCallback(
-    (next: EditState): void => {
-      if (!controller.canEditField(options.fieldId)) return;
+    (next: EditState): boolean => {
+      if (!controller.canEditField(options.fieldId)) return false;
       editStateRef.current = next;
       setEditState(next);
       const token = tokenRef.current;
@@ -221,6 +224,7 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
         controller.updateValue(token, next.value);
         controller.updateSelection(token, next.selection);
       }
+      return true;
     },
     [controller, options.fieldId],
   );
@@ -228,13 +232,14 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
   const onChangeText = useCallback(
     (value: string): void => {
       const current = editStateRef.current;
-      updateState({
+      const accepted = updateState({
         ...current,
         value,
         selection: normalizeSelection(value, current.selection),
       });
+      if (accepted && value !== current.value) onValueChange?.(value);
     },
-    [updateState],
+    [onValueChange, updateState],
   );
 
   const onSelectionChange = useCallback(

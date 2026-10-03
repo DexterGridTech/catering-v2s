@@ -69,13 +69,14 @@ export type RenderCommandDispatchDiagnostic = Readonly<{
   readonly event: 'command-dispatch-rejected';
   readonly commandName: string;
   readonly requestId: RequestId;
+  readonly failure: 'promise-rejected' | 'partial-failed' | 'timed-out' | 'error';
 }>;
 
 export const reportRenderCommandDispatchRejection = (
   logger: LoggerPort,
   diagnostic: RenderCommandDispatchDiagnostic,
 ): void => {
-  logger.error({
+  const input = {
     category: 'ui.base.render',
     event: diagnostic.event,
     context: {
@@ -83,9 +84,11 @@ export const reportRenderCommandDispatchRejection = (
       requestId: diagnostic.requestId,
     },
     data: {
-      failure: 'promise-rejected',
+      failure: diagnostic.failure,
     },
-  });
+  };
+  if (diagnostic.failure === 'promise-rejected') logger.error(input);
+  else logger.warn(input);
 };
 
 const diagnosticIdentity = (diagnostic: RenderPartDiagnostic): string =>

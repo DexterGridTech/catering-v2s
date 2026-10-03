@@ -1,5 +1,4 @@
 import {
-  consoleLoggerBinding,
   createPlatformPorts,
   unavailableConnectorPort,
   unavailableHotUpdatePort,
@@ -22,6 +21,7 @@ import {
 import type {TopologyPeerChannel} from '@catering-v2s/kernel-base-transport';
 import type {TransportNetworkAdapter, TransportNetworkSnapshot} from '@catering-v2s/kernel-base-transport';
 import {createAndroidTransportNetworkAdapter} from './androidTransportNetworkAdapter';
+import {androidStructuredLoggerBinding} from './androidStructuredLoggerBinding';
 
 export type AndroidPlatformBinding = Readonly<{
   readonly environmentMode: EnvironmentMode;
@@ -44,7 +44,7 @@ export const createAndroidPlatformBinding = (persistenceKey: string): AndroidPla
   const platformPorts = createPlatformPorts({
     environmentMode,
     bindings: {
-      logger: consoleLoggerBinding,
+      logger: androidStructuredLoggerBinding,
       persistKv: createAndroidPersistKvPort(persistenceKey, 'plain'),
       persistSecure: createAndroidPersistKvPort(persistenceKey, 'protected'),
       device: createAndroidDevicePort(),

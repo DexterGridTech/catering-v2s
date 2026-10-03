@@ -20,6 +20,8 @@ type InputFieldOptionsBase = Readonly<{
   readonly initialValue?: string;
   readonly initialSelection?: PrimitiveInputSelection;
   readonly maxLength?: number;
+  /** Called when this field's accepted value changes through native or virtual input. */
+  readonly onValueChange?: (value: string) => void;
   readonly secureTextEntry?: boolean;
   readonly nativeLess?: boolean;
   readonly focusScopeId?: string;

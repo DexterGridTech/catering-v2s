@@ -1,5 +1,9 @@
 # catering-v2s 标准动作
 
+**术语入口（Dexter 2026-10-03）**：TDP 现指 TDS + TDC 长连接整体，正本为
+`doc/platform/terminal-coding-standard.md` §4-F。下文旧「TDS 不是 TDP」指旧平台/placeholder
+边界，不否定新命名；本次数据通知与远程运维需求讨论不授权新增运行。
+
 本目录是 v2s 仓内动作的唯一入口。当前任务与授权只来自 Dexter 在会话中的明确指派；历史 review、plan、evidence 与 decision 不能替代当前授权。`catering-business-server` 仍是唯一业务 deployable；按已接受的 terminal service-shape decision 与 D-44，批次二 DEV 可运行三个独立受管的 `terminal-data-server` WebSocket transport 实例，经两个 HAProxy 入口接入。2026-10-02 accepted batch-3 amendment 将跨节点会话取代/恢复核验和TDS连接历史写入远端Doris列入批次三。Doris只是具名遥测存储，不是业务数据库或业务owner；binding/audit仍在PostgreSQL。TDS不是TDP、业务deployable，不运行Flyway/seed，也不提供业务写API。
 
 获批 UI-bearing Journey 的交互设计先执行 `doc/decisions/2026-07-25-v2s-frontend-asset-carry-over-first.md`：逐屏盘点 all-v2 对应页并以带 `path@hash` 的静态摹本/截图为线框基线；仅当没有对应页才新画。未来实现才按 manifest 显式搬运页面、组件、shell/foundation，generated wire 始终按 v2s edge OpenAPI 重生成。本条不授权任何实现，也不允许 Heritage runtime/build fallback。
@@ -249,6 +253,38 @@ node scripts/test/terminal-client-dev-acceptance.mjs --scenario terminal.client.
 不会在本机连接数据库、启动临时 tunnel、使用本机 Docker 或自行 create 数据库。随后 `scripts/dev/start`
 复用既有远端 provision 路径创建业务库。实际 reset 写入独立 `reset/<run-id>/run-manifest.json`
 和脱敏事件日志；如有当前 DEV，只能先核验其 own manifest 与 start token，再委托既有 runner stop。
+
+### TER 专项 Expo Web A 场景
+
+TER专项的真实Expo Web场景由 `scripts/test/ter-admin-display-web.mjs` 单场景启动，参数顺序为
+`<runId> <port> <failureOwner|-> <integrationName> <scenario> <surfaceForm>`。A场景必须按
+`doc/plans/platform/2026-10-02-ter-terminal-activation-interaction-pair-topology-implementation-plan-codex.md`
+§9.2的分母逐项运行；不能只根据scenario名或测试进程退出码判断场景覆盖。
+
+激活和取消 Web场景使用真实浏览器跨端口访问本机DEV HTTP tunnel。DEV环境默认
+`V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS=http://127.0.0.1:8093`；该值只由受管DEV环境注入，并且
+后端仅在`non-production`启用对应终端POST路由的CORS。若显式改变`<port>`，必须在DEV启动前将该键
+设为同一个精确loopback origin并重启DEV；runner会对照DEV manifest fail closed，不会启动注定被CORS
+拦截的激活/取消场景；本地server-config场景不依赖该HTTP CORS入口。该环境变量不属于生产配置。
+
+全部11个A场景结束后，先调用
+`node scripts/test/ter-admin-display-web-stage.mjs <11-run-ids>`。入口重新计算当前Web source hash，逐行验证
+scenario/integration/surface、CLI给定runId与run manifest自报runId一致、11个场景绑定同一DEV run及manifest SHA、runner逐项记录的A-ID、DEV readiness、前端日志、适用的前后端关联、业务cleanup及source稳定性，并保存
+`.runtime/ter-admin-display/web-a-<timestamp>-<uuid>.json`。缺run、重复run、ID不符、cleanup失败或源码与当前字节不符都会返回非零；只有聚合manifest为`PASS`后才进入终端A+B阶段。这个聚合入口只读已有run evidence，不启动Expo/DEV、不重跑场景。
+
+前端command拒绝数量按场景闭合：单场景runner和汇总器都要求每个`terminal-server-config` run恰有一次已断言的`server-config.set-server-override`无效配置拒绝，其余A-Web run必须为零；配置场景还以日志切片、可见拒绝和effective selector不变三项共同证明该拒绝。业务HTTP拒绝（如A-04a的`STORE_TERMINAL_DISABLED`）由后端同请求ID的`REQUEST_COMPLETED`与页面断言验证，不计作前端command dispatch rejection。
+
+A-04a在确认为唯一的终端激活HTTP 409/`STORE_TERMINAL_DISABLED`且后端同请求关联通过后，可以豁免与该响应相差不超过1秒的单条Chromium HTTP 409控制台错误。runner仅保存状态分类、时间和已豁免索引，不保存控制台原文；其他控制台错误仍使场景失败。
+
+激活与TDS连接场景还采集business-server与三个当前DEV TDS节点的运行窗口日志；TDS另留结束后2秒供异步日志落盘。前端请求/响应与business-server completion按响应头中的requestId、correlationId关联；它们是后端生成的权威关联值，不能改用可能不同的出站请求头值。TDS仅输出allowlist后的生命周期事件，A-02要求有同节点同connectionId的`tds_ws_accepted`与`tds_session_registered`，临时完整远端日志复制件在解析后删除。
+
+Screen-placement诊断从可信`startup.complete`之后开始；可信`runtime.reset.completed`会清除此前一代的placement快照，重置后新观察到的空placement仍会失败。这样不会把终端激活取消后应用按设计完成的runtime reset过渡误报成当前界面失败；场景本身仍须断言重置后的目标页面和业务状态。
+
+配置场景在第一次保存有效override前注册失败清理；即使之后业务断言失败，也必须经server-config公开restore command恢复development defaults并对business/TDS有效地址做selector读回。恢复失败写入`serverConfigCleanup=FAIL`并使run cleanup失败。当前`ter-admin-display-android.mjs`只覆盖管理显示事实，`ter-virtual-keyboard-android.mjs`只提供终端设备管理与键盘场景能力；不得把它们当成本专项V-01～V-20业务runner。完整终端A+B场景runner须在VM阶段准入前完成并静态审查。
+
+虚拟机连接受管DEV时，`ter-virtual-keyboard-android.mjs bridge-dev-tunnels --run-id <runId> --device dual|mobile --app <app>`只负责网络接线，不是业务验收。它从当前 `.runtime/r5/run-manifest.json` 读取受管DEV的HTTP tunnel与两个HAProxy WebSocket入口，并核对被测app的development `serverSpaces` 声明与DEV readiness；随后按同端口建立精确的 `adb reverse tcp:<port> tcp:<port>` 映射。映射身份（设备serial/boot id、DEV run id、app及端口）写入VM run manifest。若设备端口已有映射则失败关闭；cleanup只移除读回仍匹配的本run映射，并核实移除结果。部分创建失败时保留manifest供受管cleanup收口。此命令只证明地址接线，不能替代真实HTTP/WebSocket业务断言、应用日志、后端日志或终端A+B runner。
+
+Web runner在创建输出前逐级验证`.runtime/ter-admin-display/<runId>`为仓库内真实目录，拒绝任何符号链接父目录或越出仓库的路径；A-stage聚合器执行相同边界检查。这样日志、截图和manifest不会经由被替换的runtime目录落到仓库外。
 
 ## 验证工作的通用规则
 

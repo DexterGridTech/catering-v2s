@@ -7,6 +7,7 @@ import path from 'node:path';
 import {PassThrough, Writable} from 'node:stream';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
+import {terminalBusinessMemberFixture} from './terminal-business-fixtures.mjs';
 import {
   ADMIN_SHELL_FRAME_SELECTOR,
   EXPECTED_ADMIN_SHELL_COLOR_BY_INTEGRATION,
@@ -16,13 +17,21 @@ import {
   WEB_LAYER_OWNER_COVERAGE,
   WEB_RUNNER_FIXED_SOURCE_FILES,
   WEB_SCENARIOS,
+  managedTestGroupWorkspaceUrl,
+  managedTestServerSpaceOverrides,
   additionalTextInputContextMenuTargets,
   applyWebSourceRecheckFailure,
   applyWebSourceSnapshot,
   acquireManagedWebRunLock,
+  adminLauncherGesturePagePoint,
+  adminLauncherBindingReady,
   awaitManagedChildSpawn,
   assertManagedWebListenerOwnership,
   classifyAdminLauncherFailureRecoveryLog,
+  classifyBrowserConsoleFailure,
+  expectedActivationRejectionConsoleFailureIndexes,
+  correlateManagedBackendRequest,
+  correlateManagedHttpExchange,
   collectWebSourceFiles,
   createExpoWebLaunchSpec,
   expectedTextInputProbeCount,
@@ -31,12 +40,33 @@ import {
   fetchExpoWebReadiness,
   hasStartupContentFailureReadiness,
   hashWebSourceFiles,
+  hasStartupCompletionEvent,
+  hasUnexpectedBrowserConsoleFailures,
   isExpectedRuntimeLogEvent,
+  isWallpaperRadioMarkerSelected,
+  memberConfirmationReadback,
+  wallpaperExitReadbackMismatch,
   launcherGeometryMatches,
+  projectWebFailureDiagnostic,
+  projectFrontendCommandDispatchEvents,
+  webCommandDispatchMismatch,
   pipeExpoOutput,
   parseListeningProcessIds,
   parseJsonEventsAfterByteOffset,
+  createWebLogCheckpoint,
   parsePlatformPortsSummaryCount,
+  unresolvedScreenPlacementsAfterStartup,
+  projectTerminalActivationLogEvents,
+  projectTerminalConnectionHeartbeatLogEvents,
+  projectManagedTdsLogLines,
+  displayedHeartbeatRttMismatch,
+  ensureContainedWebDirectory,
+  WEB_TERMINAL_BUSINESS_ASSERTION_IDS,
+  expectedWebAStageRows,
+  expectedWebBusinessAssertionIds,
+  hasManagedTerminalBrowserOrigin,
+  validateWebAStageManifests,
+  webBusinessAssertionSetMatches,
   releaseManagedWebRunLock,
   sendProtectedInputKeyboardProbe,
   sourceSnapshotsMatch,
@@ -134,6 +164,10 @@ test('WEB scenario registry rejects mismatched integration and surface before th
     'keyboard-member-journey',
     'keyboard-overlay-ownership',
     'textinput-contextmenu',
+    'terminal-activation-connection',
+    'terminal-activation-owner-rejection',
+    'terminal-server-config',
+    'terminal-wallpaper-exit',
   ]);
   assert.equal(
     webScenarioScopeError({
@@ -191,6 +225,146 @@ test('WEB scenario registry rejects mismatched integration and surface before th
   );
 });
 
+test('managed DEV group-workspace URL is loopback-only and uses the selected fixture route', () => {
+  const manifest = {
+    kind: 'r5-dev-run-manifest',
+    runId: 'r5-dev-1790922860937-77212-d6aee404-6382-43b0-804f-b9becf3f5c3c',
+    localHttpBaseUrl: 'http://127.0.0.1:28080',
+    localTdsWebSocketBaseUrl: 'ws://127.0.0.1:28180',
+    localTdsEntryTwoWebSocketBaseUrl: 'ws://127.0.0.1:28181',
+  };
+  assert.equal(managedTestGroupWorkspaceUrl(manifest), 'http://127.0.0.1:28080/api/terminal/group-workspaces/aurora');
+  assert.throws(
+    () => managedTestGroupWorkspaceUrl({...manifest, localHttpBaseUrl: 'http://192.0.2.8:28080'}),
+    /WEB_MANAGED_DEV_GROUP_WORKSPACE_INPUT_INVALID/,
+  );
+  assert.throws(
+    () => managedTestGroupWorkspaceUrl(manifest, '../outside'),
+    /WEB_MANAGED_DEV_GROUP_WORKSPACE_INPUT_INVALID/,
+  );
+  assert.deepEqual(managedTestServerSpaceOverrides(manifest), {
+    businessBaseUrl: 'http://127.0.0.1:28080/api/terminal/group-workspaces/aurora',
+    tdsEntryOneWebSocketBaseUrl: 'ws://127.0.0.1:28180',
+    tdsEntryTwoWebSocketBaseUrl: 'ws://127.0.0.1:28181',
+  });
+  assert.throws(
+    () => managedTestServerSpaceOverrides({...manifest, localTdsEntryTwoWebSocketBaseUrl: 'ws://192.0.2.2:28181'}),
+    /WEB_MANAGED_DEV_TDS_ENTRY_URL_INVALID/,
+  );
+  assert.throws(
+    () =>
+      managedTestServerSpaceOverrides({
+        ...manifest,
+        localTdsEntryTwoWebSocketBaseUrl: manifest.localTdsWebSocketBaseUrl,
+      }),
+    /WEB_MANAGED_DEV_TDS_ENTRIES_NOT_DISTINCT/,
+  );
+});
+
+test('managed terminal Web acceptance requires the exact DEV CORS origin and port', () => {
+  assert.equal(hasManagedTerminalBrowserOrigin(['http://127.0.0.1:8093'], 8093), true);
+  assert.equal(hasManagedTerminalBrowserOrigin(['http://localhost:8093'], 8093), false);
+  assert.equal(hasManagedTerminalBrowserOrigin(['http://127.0.0.1:8093'], 8094), false);
+  assert.equal(hasManagedTerminalBrowserOrigin(['*'], 8093), false);
+  assert.equal(hasManagedTerminalBrowserOrigin(null, 8093), false);
+});
+
+test('wallpaper Web selection reads the production radio marker exactly', () => {
+  assert.equal(isWallpaperRadioMarkerSelected(' • '), true);
+  assert.equal(isWallpaperRadioMarkerSelected(''), false);
+  assert.equal(isWallpaperRadioMarkerSelected('w1'), false);
+  assert.equal(isWallpaperRadioMarkerSelected(null), false);
+});
+
+test('wallpaper exit readback handles the valid no-wallpaper state without requiring an image node', () => {
+  assert.equal(
+    wallpaperExitReadbackMismatch({
+      wallpaperId: 'none',
+      homeRouteObserved: true,
+      backgroundCount: 0,
+      backgroundLabel: null,
+    }),
+    null,
+  );
+  assert.equal(
+    wallpaperExitReadbackMismatch({
+      wallpaperId: 'none',
+      homeRouteObserved: true,
+      backgroundCount: 1,
+      backgroundLabel: '当前壁纸：山景',
+    }),
+    'WEB_WALLPAPER_EXIT_NONE_BACKGROUND_PRESENT',
+  );
+  assert.equal(
+    wallpaperExitReadbackMismatch({
+      wallpaperId: 'w2',
+      homeRouteObserved: true,
+      backgroundCount: 1,
+      backgroundLabel: '当前壁纸：湖景',
+    }),
+    null,
+  );
+  assert.equal(
+    wallpaperExitReadbackMismatch({
+      wallpaperId: 'w2',
+      homeRouteObserved: true,
+      backgroundCount: 0,
+      backgroundLabel: null,
+    }),
+    'WEB_WALLPAPER_EXIT_CHANGED_CONFIRMED_VALUE',
+  );
+  assert.equal(
+    wallpaperExitReadbackMismatch({
+      wallpaperId: 'none',
+      homeRouteObserved: false,
+      backgroundCount: 0,
+      backgroundLabel: null,
+    }),
+    'WEB_WALLPAPER_EXIT_HOME_ROUTE_NOT_OBSERVED',
+  );
+});
+
+test('activation latency selector must match a real same-run matched PONG rather than an initial sentinel', () => {
+  const heartbeat = [{sequence: 7, rttMs: 42}];
+  assert.equal(displayedHeartbeatRttMismatch('连接延时：42 ms', heartbeat), null);
+  assert.equal(
+    displayedHeartbeatRttMismatch('连接延时：0 ms', heartbeat),
+    'WEB_TERMINAL_HEARTBEAT_RTT_SELECTOR_MISMATCH',
+  );
+  assert.equal(displayedHeartbeatRttMismatch('连接延时：0 ms', []), 'WEB_TERMINAL_HEARTBEAT_RTT_NOT_OBSERVED');
+  assert.equal(displayedHeartbeatRttMismatch('等待主机状态', heartbeat), 'WEB_TERMINAL_HEARTBEAT_RTT_NOT_OBSERVED');
+});
+
+test('all four terminal entry packages declare business HTTP and two HAProxy TDS addresses', () => {
+  const packagePaths = [
+    'apps/terminal/ui/integration/sample-console/package.json',
+    'apps/terminal/ui/integration/sample-wallpaper-console/package.json',
+    'apps/terminal/application/android/sample-terminal/package.json',
+    'apps/terminal/application/android/sample-wallpaper-terminal/package.json',
+  ];
+  for (const packagePath of packagePaths) {
+    const packageConfig = JSON.parse(fs.readFileSync(path.join(repositoryRoot, packagePath), 'utf8'));
+    const config = packageConfig.serverSpaces;
+    assert.equal(config.selectedSpace, 'development', packagePath);
+    assert.equal(config.spaces.length, 1, packagePath);
+    const development = config.spaces[0];
+    assert.equal(development.name, 'development', packagePath);
+    assert.deepEqual(
+      development.servers.map(server => server.serverName).sort(),
+      ['business', 'terminal-data-server'],
+      packagePath,
+    );
+    assert.deepEqual(
+      development.servers.find(server => server.serverName === 'terminal-data-server')?.addresses,
+      [
+        {addressName: 'haproxy-entry-one', baseUrl: 'ws://127.0.0.1:28180', timeoutMs: 10000},
+        {addressName: 'haproxy-entry-two', baseUrl: 'ws://127.0.0.1:28181', timeoutMs: 10000},
+      ],
+      packagePath,
+    );
+  }
+});
+
 test('WEB scenario admission matrix matches each actual integration and surface consumer', () => {
   const validRows = [
     ['platform-ports-smoke', 'sample-console', 'laptop', null],
@@ -240,6 +414,19 @@ test('WEB scenario admission matrix matches each actual integration and surface 
     ['textinput-contextmenu', 'sample-console', 'mobile', null],
     ['textinput-contextmenu', 'sample-wallpaper-console', 'laptop', null],
     ['textinput-contextmenu', 'sample-wallpaper-console', 'mobile', null],
+    ...['sample-console', 'sample-wallpaper-console'].flatMap(integrationName =>
+      ['laptop', 'mobile'].map(surfaceForm => ['terminal-activation-connection', integrationName, surfaceForm, null]),
+    ),
+    ...['sample-console', 'sample-wallpaper-console'].map(integrationName => [
+      'terminal-activation-owner-rejection',
+      integrationName,
+      'laptop',
+      null,
+    ]),
+    ...['sample-console', 'sample-wallpaper-console'].flatMap(integrationName =>
+      ['laptop', 'mobile'].map(surfaceForm => ['terminal-server-config', integrationName, surfaceForm, null]),
+    ),
+    ['terminal-wallpaper-exit', 'sample-wallpaper-console', 'laptop', null],
   ];
   for (const [webScenario, integrationName, surfaceForm, failureOwner] of validRows) {
     assert.equal(
@@ -280,10 +467,410 @@ test('WEB scenario admission matrix matches each actual integration and surface 
   }
 });
 
+test('Web business scenario catalog names the exact per-run A-ID evidence set', () => {
+  assert.deepEqual(
+    expectedWebBusinessAssertionIds({
+      webScenario: 'terminal-activation-connection',
+      integrationName: 'sample-console',
+      surfaceForm: 'laptop',
+    }),
+    ['A-02', 'A-03a', 'A-05a', 'A-10a', 'A-11a', 'A-13a'],
+  );
+  assert.deepEqual(
+    expectedWebBusinessAssertionIds({
+      webScenario: 'terminal-activation-owner-rejection',
+      integrationName: 'sample-console',
+      surfaceForm: 'laptop',
+    }),
+    ['A-04a'],
+  );
+  assert.deepEqual(
+    expectedWebBusinessAssertionIds({
+      webScenario: 'terminal-server-config',
+      integrationName: 'sample-console',
+      surfaceForm: 'mobile',
+    }),
+    ['A-06a', 'A-07a'],
+  );
+  assert.deepEqual(
+    expectedWebBusinessAssertionIds({
+      webScenario: 'terminal-wallpaper-exit',
+      integrationName: 'sample-wallpaper-console',
+      surfaceForm: 'laptop',
+    }),
+    ['A-02', 'A-03a', 'A-05a', 'A-10a', 'A-14b'],
+  );
+  assert.throws(
+    () =>
+      expectedWebBusinessAssertionIds({
+        webScenario: 'terminal-wallpaper-exit',
+        integrationName: 'sample-wallpaper-console',
+        surfaceForm: 'mobile',
+      }),
+    /WEB_TERMINAL_BUSINESS_ASSERTION_SCOPE_INVALID/u,
+  );
+  assert.deepEqual(Object.keys(WEB_TERMINAL_BUSINESS_ASSERTION_IDS), [
+    'terminal-activation-connection',
+    'terminal-activation-owner-rejection',
+    'terminal-server-config',
+    'terminal-wallpaper-exit',
+  ]);
+});
+
+test('Web business evidence rejects a missing, extra, or duplicated observed assertion id', () => {
+  const expected = ['A-02', 'A-05a', 'A-10a'];
+  assert.equal(webBusinessAssertionSetMatches(expected, ['A-10a', 'A-02', 'A-05a']), true);
+  assert.equal(webBusinessAssertionSetMatches(expected, ['A-02', 'A-10a']), false);
+  assert.equal(webBusinessAssertionSetMatches(expected, ['A-02', 'A-05a', 'A-10a', 'A-11a']), false);
+  assert.equal(webBusinessAssertionSetMatches(expected, ['A-02', 'A-05a', 'A-10a', 'A-10a']), false);
+});
+
+test('Web A-stage gate requires all exact rows, assertion ids, cleanups, and current source bytes', () => {
+  const sourceSha256 = 'a'.repeat(64);
+  const managedDevRunId = 'r5-dev-1790922860937-77212-d6aee404-6382-43b0-804f-b9becf3f5c3c';
+  const manifests = expectedWebAStageRows().map((row, index) => ({
+    runId: `web-a-${index}`,
+    requestedRunId: `web-a-${index}`,
+    phase: 'COMPLETE',
+    business: 'PASS',
+    cleanup: 'PASS',
+    sourceStable: 'PASS',
+    sourceSha256,
+    sourceSha256After: sourceSha256,
+    managedDevRunId,
+    managedDevManifestSha256: 'b'.repeat(64),
+    managedDevReadiness: {
+      runId: managedDevRunId,
+      business: {status: 'PASS'},
+      tds: [{status: 'PASS'}, {status: 'PASS'}, {status: 'PASS'}],
+      ingress: {status: 'PASS'},
+    },
+    frontendLogRead: 'PASS',
+    browserConsoleFailures: [],
+    managedHttpResults: [],
+    expectedHttpStatusConsoleFailureIndexes: [],
+    frontendRejectedCommandCount: row.webScenario === 'terminal-server-config' ? 1 : 0,
+    frontendCommandEvents:
+      row.webScenario === 'terminal-server-config'
+        ? [
+            {
+              event: 'command-dispatch-rejected',
+              commandName: 'kernel.base.server-config.set-server-override',
+              failure: 'error',
+            },
+          ]
+        : [],
+    ...(row.businessAssertionIds.includes('A-02')
+      ? {
+          backendLogRead: 'PASS',
+          tdsLogRead: 'PASS',
+          tdsNodeLogRead: [{status: 'PASS'}, {status: 'PASS'}, {status: 'PASS'}],
+          tdsServerLog: '.runtime/ter-admin-display/web-a/tds-server-events.jsonl',
+          tdsServerLogEvents: [
+            {event: 'tds_ws_accepted', nodeId: 'tds-a', connectionId: 'conn-1'},
+            {event: 'tds_session_registered', nodeId: 'tds-a', connectionId: 'conn-1'},
+          ],
+          frontendBackendLogCorrelation: {activation: 'PASS', 'cancel-activation': 'PASS'},
+          matchedHeartbeatRtt: {sequence: 1, rttMs: 12},
+          activationResult: {tdsSessionRouteObserved: 'PASS'},
+        }
+      : {}),
+    ...(row.businessAssertionIds.includes('A-04a')
+      ? {
+          backendLogRead: 'PASS',
+          frontendBackendLogCorrelation: {activation: 'PASS'},
+          activationRejection: {httpStatus: 409, ownerCode: 'STORE_TERMINAL_DISABLED'},
+        }
+      : {}),
+    ...(row.businessAssertionIds.includes('A-13a')
+      ? {
+          memberRegistration: {
+          pendingContentMatched: 'PASS',
+          confirmationReadbackMatched: 'PASS',
+          confirmedMemberRowCount: 1,
+          matchingConfirmedMemberRowCount: 1,
+          optionalAgeInputAcceptedAndSubmitted: 'PASS',
+            exactAgeStateReadback: 'OWNER_FOCUSED_PROOF_REQUIRED',
+          },
+        }
+      : {}),
+    ...(row.businessAssertionIds.includes('A-06a')
+      ? {
+          serverConfigUi: {
+            savedOverrideReadback: 'PASS',
+            clearedOverrideReadback: 'PASS',
+            rejectedInvalidOverrideWithoutEffectiveChange: 'PASS',
+            rejectedInvalidCommand: 'kernel.base.server-config.set-server-override',
+            restoredDefaultReadback: 'PASS',
+          },
+        }
+      : {}),
+    ...row,
+  }));
+  assert.equal(validateWebAStageManifests(manifests, sourceSha256).status, 'PASS');
+  assert.equal(manifests.length, 11);
+  assert.equal(
+    validateWebAStageManifests(manifests.slice(1), sourceSha256).errors.some(value =>
+      value.startsWith('WEB_A_ROW_MISSING:'),
+    ),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [{...manifests[0], cleanup: 'FAIL'}, ...manifests.slice(1)],
+      sourceSha256,
+    ).errors.includes('WEB_A_RUN_NOT_CLOSED:terminal-activation-connection|sample-console|laptop'),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [{...manifests[0], sourceSha256After: 'b'.repeat(64)}, ...manifests.slice(1)],
+      sourceSha256,
+    ).errors.includes('WEB_A_SOURCE_BYTES_MISMATCH:terminal-activation-connection|sample-console|laptop'),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [{...manifests[0], businessAssertionIds: ['A-02']}, ...manifests.slice(1)],
+      sourceSha256,
+    ).errors.includes('WEB_A_ASSERTION_SET_MISMATCH:terminal-activation-connection|sample-console|laptop'),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [{...manifests[0], requestedRunId: 'web-a-other'}, ...manifests.slice(1)],
+      sourceSha256,
+    ).errors.includes('WEB_A_MANIFEST_RUN_ID_MISMATCH:terminal-activation-connection|sample-console|laptop'),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [...manifests.slice(0, 1), {...manifests[1], managedDevManifestSha256: 'c'.repeat(64)}, ...manifests.slice(2)],
+      sourceSha256,
+    ).errors.includes('WEB_A_MANAGED_DEV_IDENTITY_MISMATCH:terminal-activation-connection|sample-console|mobile'),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [{...manifests[0], frontendLogRead: 'LOG_NOT_AVAILABLE'}, ...manifests.slice(1)],
+      sourceSha256,
+    ).errors.includes('WEB_A_FRONTEND_LOG_EVIDENCE_MISSING:terminal-activation-connection|sample-console|laptop'),
+    true,
+  );
+  const configRowIndex = manifests.findIndex(value => value.webScenario === 'terminal-server-config');
+  const rejectionRowIndex = manifests.findIndex(value => value.webScenario === 'terminal-activation-owner-rejection');
+  const memberRowIndex = manifests.findIndex(value => value.businessAssertionIds.includes('A-13a'));
+  assert.equal(
+    validateWebAStageManifests(
+      [
+        ...manifests.slice(0, memberRowIndex),
+        {
+          ...manifests[memberRowIndex],
+          memberRegistration: {...manifests[memberRowIndex].memberRegistration, confirmedMemberRowCount: 2},
+        },
+        ...manifests.slice(memberRowIndex + 1),
+      ],
+      sourceSha256,
+    ).errors.includes('WEB_A_MEMBER_CONFIRMATION_EVIDENCE_MISSING:terminal-activation-connection|sample-console|laptop'),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [
+        ...manifests.slice(0, configRowIndex),
+        {...manifests[configRowIndex], frontendRejectedCommandCount: 0},
+        ...manifests.slice(configRowIndex + 1),
+      ],
+      sourceSha256,
+    ).errors.includes('WEB_A_COMMAND_REJECTION_EVIDENCE_MISMATCH:terminal-server-config|sample-console|laptop'),
+    true,
+  );
+  const rejectedRun = {
+    ...manifests[rejectionRowIndex],
+    browserConsoleFailures: [
+      {at: new Date(100).toISOString(), level: 'error', classification: 'HTTP_RESPONSE_STATUS_409'},
+    ],
+    managedHttpResults: [{at: new Date(150).toISOString(), operation: 'activation', method: 'POST', status: 409}],
+    expectedHttpStatusConsoleFailureIndexes: [0],
+  };
+  assert.equal(
+    validateWebAStageManifests(
+      [...manifests.slice(0, rejectionRowIndex), rejectedRun, ...manifests.slice(rejectionRowIndex + 1)],
+      sourceSha256,
+    ).errors.some(value => value.startsWith('WEB_A_BROWSER_CONSOLE_EVIDENCE_MISMATCH:')),
+    false,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [
+        ...manifests.slice(0, rejectionRowIndex),
+        {...rejectedRun, expectedHttpStatusConsoleFailureIndexes: []},
+        ...manifests.slice(rejectionRowIndex + 1),
+      ],
+      sourceSha256,
+    ).errors.includes(
+      'WEB_A_BROWSER_CONSOLE_EVIDENCE_MISMATCH:terminal-activation-owner-rejection|sample-console|laptop',
+    ),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [{...manifests[0], frontendRejectedCommandCount: 1}, ...manifests.slice(1)],
+      sourceSha256,
+    ).errors.includes('WEB_A_COMMAND_REJECTION_EVIDENCE_MISMATCH:terminal-activation-connection|sample-console|laptop'),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [
+        ...manifests.slice(0, configRowIndex),
+        {
+          ...manifests[configRowIndex],
+          serverConfigUi: {
+            ...manifests[configRowIndex].serverConfigUi,
+            rejectedInvalidCommand: 'kernel.base.server-config.restore-defaults',
+          },
+        },
+        ...manifests.slice(configRowIndex + 1),
+      ],
+      sourceSha256,
+    ).errors.includes('WEB_A_SERVER_CONFIG_EVIDENCE_MISSING:terminal-server-config|sample-console|laptop'),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [
+        ...manifests.slice(0, configRowIndex),
+        {
+          ...manifests[configRowIndex],
+          frontendCommandEvents: [
+            {
+              event: 'command-dispatch-rejected',
+              commandName: 'kernel.base.server-config.restore-defaults',
+              failure: 'error',
+            },
+          ],
+        },
+        ...manifests.slice(configRowIndex + 1),
+      ],
+      sourceSha256,
+    ).errors.includes('WEB_A_COMMAND_REJECTION_EVIDENCE_MISMATCH:terminal-server-config|sample-console|laptop'),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [{...manifests[0], matchedHeartbeatRtt: null}, ...manifests.slice(1)],
+      sourceSha256,
+    ).errors.includes(
+      'WEB_A_ACTIVATION_BACKEND_TDS_OR_RTT_EVIDENCE_MISSING:terminal-activation-connection|sample-console|laptop',
+    ),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [
+        {...manifests[0], tdsServerLogEvents: [{event: 'tds_ws_accepted', nodeId: 'tds-a', connectionId: 'conn-1'}]},
+        ...manifests.slice(1),
+      ],
+      sourceSha256,
+    ).errors.includes(
+      'WEB_A_ACTIVATION_BACKEND_TDS_OR_RTT_EVIDENCE_MISSING:terminal-activation-connection|sample-console|laptop',
+    ),
+    true,
+  );
+});
+
+test('managed Web business scenarios assert owner outcomes, config readback and same-run RTT identity', () => {
+  const runner = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
+  assert.equal(runner.includes('manifest.businessAssertionIds = expectedWebBusinessAssertionIds('), false);
+  for (const fragment of [
+    "problem?.errorCode !== 'STORE_TERMINAL_DISABLED'",
+    'response.status() !== 409',
+    'WEB_TERMINAL_DISABLED_ACTIVATION_CHANGED_ROUTE',
+    'timeoutLabel(10001)',
+    'timeoutLabel(10000)',
+    'const timeoutLabel = milliseconds => `（${milliseconds} ms）`;',
+    "const configInputCount = await page.getByTestId('terminal.server-config.section').locator('input').count();",
+    "recordWebScenarioStep('SERVER_CONFIG_TIMEOUT_KEYBOARD_ADVANCE', {",
+    'advance <= configInputCount + 1',
+    'layerId: layer.id || null',
+    'layer.id !== previous',
+    "(style.pointerEvents === 'none' && opacity <= 0.01) ||",
+    'WEB_TERMINAL_SERVER_CONFIG_INVALID_INPUT_CHANGED_EFFECTIVE_VALUE',
+    'SERVER_CONFIG_EFFECTIVE_ADDRESS_TIMEOUT_NOT_OBSERVED',
+    'SERVER_CONFIG_SAVE_CLICK_RETURNED',
+    'await restoreButton.click();',
+    'completeWebBusinessAssertions();',
+    "recordBusinessAssertion('A-02')",
+    "recordBusinessAssertion('A-03a')",
+    "recordBusinessAssertion('A-05a')",
+    "recordBusinessAssertion('A-10a')",
+    "recordBusinessAssertion('A-11a')",
+    "recordBusinessAssertion('A-13a')",
+    "recordBusinessAssertion('A-14a')",
+    "recordBusinessAssertion('A-14b')",
+    'WEB_TERMINAL_SERVER_CONFIG_PACKAGE_TDS_ADDRESS_PROJECTION_MISMATCH',
+    'WEB_TERMINAL_SERVER_CONFIG_PACKAGE_BUSINESS_ADDRESS_PROJECTION_MISMATCH',
+    'WEB_TERMINAL_SERVER_CONFIG_INVALID_COMMAND_REJECTION_NOT_OBSERVED',
+    'WEB_TERMINAL_SERVER_CONFIG_CLEANUP_READBACK_MISMATCH',
+    'BACKEND_RAW_LOG_REMOVE_FAILED',
+    'TDS_RAW_LOG_REMOVE_FAILED',
+    'if (cleanupManagedServerConfig !== null && managedServerConfigDirty)',
+    'WEB_MEMBER_AGE_INPUT_NOT_ACCEPTED',
+    "recordBusinessAssertion('A-06a')",
+    "recordBusinessAssertion('A-07a')",
+    "recordBusinessAssertion('A-04a')",
+  ])
+    assert.ok(runner.includes(fragment), `WEB_BUSINESS_ASSERTION_MISSING:${fragment}`);
+  const stageRunner = fs.readFileSync(
+    path.join(repositoryRoot, 'scripts/test/ter-admin-display-web-stage.mjs'),
+    'utf8',
+  );
+  assert.ok(stageRunner.includes('validateWebAStageManifests(manifests, sourceSha256)'));
+  assert.ok(stageRunner.includes("stage: 'EXPO_WEB_A'"));
+  assert.ok(stageRunner.includes('frontendRejectedCommandCount: manifest.frontendRejectedCommandCount'));
+  assert.ok(stageRunner.includes('frontendCommandEvents: manifest.frontendCommandEvents'));
+  assert.ok(runner.includes('webCommandDispatchMismatch(webScenario, commandDispatchProjection.events)'));
+});
+
+test('Web command rejection policy permits only the asserted invalid server-config override', () => {
+  const invalidOverride = [
+    {
+      event: 'command-dispatch-rejected',
+      commandName: 'kernel.base.server-config.set-server-override',
+      failure: 'error',
+    },
+  ];
+  assert.equal(webCommandDispatchMismatch('terminal-server-config', invalidOverride), null);
+  assert.equal(webCommandDispatchMismatch('terminal-server-config', []), 'WEB_COMMAND_REJECTION_COUNT_MISMATCH');
+  assert.equal(
+    webCommandDispatchMismatch('terminal-server-config', [...invalidOverride, ...invalidOverride]),
+    'WEB_COMMAND_REJECTION_COUNT_MISMATCH',
+  );
+  assert.equal(
+    webCommandDispatchMismatch('terminal-server-config', [
+      {
+        event: 'command-dispatch-rejected',
+        commandName: 'kernel.base.server-config.restore-defaults',
+      },
+    ]),
+    'WEB_COMMAND_REJECTION_COMMAND_MISMATCH',
+  );
+  assert.equal(
+    webCommandDispatchMismatch('terminal-activation-connection', invalidOverride),
+    'WEB_COMMAND_REJECTION_COUNT_MISMATCH',
+  );
+  assert.equal(webCommandDispatchMismatch('terminal-activation-connection', []), null);
+});
+
 test('each admitted integration Web run starts that integration test-expo assembly', () => {
   const runner = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
   assert.ok(runner.includes("path.join(root, 'apps/terminal/ui/integration', integrationName)"));
-  assert.ok(runner.includes('const scenarioScopeProblem = webScenarioScopeError({integrationName, webScenario, surfaceForm, failureOwner})'));
+  assert.ok(
+    runner.includes(
+      'const scenarioScopeProblem = webScenarioScopeError({integrationName, webScenario, surfaceForm, failureOwner})',
+    ),
+  );
   for (const row of [
     {
       integrationName: 'sample-console',
@@ -303,8 +890,664 @@ test('each admitted integration Web run starts that integration test-expo assemb
     assert.ok(source.includes("import {createTestExpoApp} from '@catering-v2s/ui-base-dev-host';"));
     assert.ok(source.includes(row.moduleSpecifier));
     assert.ok(source.includes(`appName: '${row.integrationName}'`));
-    assert.ok(source.includes(`createAssembly: ${row.assembly}`));
+    assert.ok(
+      source.includes(`createAssembly: input => ${row.assembly}({...input, serverSpaces: testServerSpaces()})`),
+    );
   }
+});
+
+test('managed activation Web scenario enters the 8-digit fixture through the input owner and keeps it out of diagnostics', () => {
+  const runner = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
+  const compactRunner = runner.replace(/\s+/gu, ' ');
+  assert.ok(runner.includes("const activationField = page.getByTestId('terminal.activation.code')"));
+  assert.ok(runner.includes('await activationField.click();'));
+  assert.ok(runner.includes('ui.base.input:virtual-keyboard:text-${digit}'));
+  assert.ok(runner.includes('ui.base.input:virtual-keyboard:complete'));
+  assert.ok(runner.includes("waitFor({state: 'hidden', timeout: 5_000})"));
+  assert.ok(runner.includes('Promise.all([activationResponsePromise, activationClickPromise])'));
+  assert.ok(runner.includes('manifest.managedHttpRequests = managedHttpRequests'));
+  assert.ok(runner.includes("page.on('requestfailed'"));
+  assert.ok(runner.includes("page.on('requestfinished'"));
+  assert.ok(runner.includes('managedHttpFailures.push'));
+  assert.ok(runner.includes('managedHttpTransfers.push'));
+  assert.ok(runner.includes('managedHttpResults.push'));
+  assert.ok(runner.includes("headers['x-request-id']"));
+  assert.ok(runner.includes("headers['x-correlation-id']"));
+  assert.ok(
+    compactRunner.includes(
+      "const cancellationRoute = '/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel'",
+    ),
+  );
+  assert.ok(runner.includes('manifest.frontendBackendLogCorrelation'));
+  assert.ok(runner.includes('collectRemoteTdsLog'));
+  assert.ok(runner.includes('projectManagedTdsLogLines'));
+  assert.ok(runner.includes('hasRegisteredTdsSession'));
+  assert.ok(runner.includes("['CANCELLED', 'ALREADY_CANCELLED'].includes(cancellationBody?.outcome)"));
+  assert.ok(runner.includes("successorRuntimeAdapter: 'NOT_APPLICABLE_IN_EXPO_WEB'"));
+  assert.ok(runner.includes("vmSuccessorRuntimeEvidence: 'NOT_RUN'"));
+  assert.ok(
+    runner.includes("page.getByTestId('terminal.activation.screen').waitFor({state: 'visible', timeout: 15_000})"),
+  );
+  assert.ok(runner.includes('const latencyReadback = await waitForMatchedHeartbeatRttReadback({'));
+  assert.ok(runner.includes('displayedHeartbeatRttMismatch(displayText, matched)'));
+  assert.ok(
+    runner.includes('for (let completion = 0; completion < 3 && (await memberKeyboard.isVisible()); completion += 1)'),
+  );
+  assert.match(runner, /data-testid\^="sample\.desk\.member-list:row:"\]\:not\(\[data-testid\$=":content"\]\)/);
+  assert.ok(runner.includes('memberConfirmationReadback({'));
+  assert.ok(runner.includes('manifest.memberConfirmationReadback = memberReadback;'));
+  assert.ok(runner.includes('confirmedMemberRowCount: memberReadback.rowCount'));
+  assert.ok(
+    runner.includes(
+      "await memberKeyboard.waitFor({state: 'hidden', timeout: 5_000});\n      await page.getByTestId('sample.desk.member-form:submit').click();",
+    ),
+  );
+  assert.ok(
+    runner.includes('latencyBeforeCancellation,\n      cancellationOutcome: managedActivationCancellationOutcome'),
+  );
+  assert.ok(runner.indexOf('const latencyBeforeCancellation =') < runner.indexOf('await cleanupManagedActivation();'));
+  assert.ok(!runner.includes("getByText('终端已取消激活。', {exact: true})"));
+  assert.ok(runner.includes('correlateManagedHttpExchange({'));
+  assert.ok(runner.includes("expectedOutcome: isActivationRejectionScenario ? 'FAILED' : 'SUCCEEDED'"));
+  assert.ok(runner.includes('routeTemplate: item.routeTemplate'));
+  assert.match(runner, /resultClass:\s*await page\s*\.getByTestId\('terminal\.activation\.result'\)/u);
+  assert.ok(runner.includes('collectRemoteLog(managedDev.remoteHostTrust.host, managedDev.remoteJava, fullLogPath)'));
+  assert.ok(runner.includes('manifest.backendTerminalHttpLogEvents = lines.flatMap'));
+  assert.ok(
+    compactRunner.includes(
+      "const cancellationRoute = '/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel'",
+    ),
+  );
+  assert.ok(runner.includes('manifest.frontendActivationLogEvents = projectTerminalActivationLogEvents'));
+  assert.ok(runner.includes('manifest.browserConsoleFailures = browserConsoleFailures'));
+  assert.ok(runner.includes("manifest.frontendLogRead = 'PASS'"));
+  assert.ok(runner.includes("value.operation === 'activation' && value.method === 'POST' && value.status === 200"));
+  assert.ok(!runner.includes('request.postData()'));
+  assert.ok(runner.includes("headers['x-request-id']"));
+  assert.ok(runner.includes("headers['x-correlation-id']"));
+  assert.ok(!runner.includes('managedHttpRequests.push({url:'));
+  assert.ok(!runner.includes('activationField.fill(managedActivationFixture.activationCode)'));
+  assert.ok(
+    runner.includes(
+      '...(managedActivationFixture === null ? {} : {managedActivationFixture: managedActivationFixture.key})',
+    ),
+  );
+  assert.ok(runner.includes('TER_WEB_MANAGED_DEVICE_ID'));
+  assert.ok(runner.includes('sample.auth.login:operator-name'));
+  assert.ok(runner.includes('Integration owns the next route'));
+  assert.ok(!runner.includes('bounds.x + Math.min(24'));
+  assert.ok(!runner.includes('launcherBounds.x + Math.min(24'));
+  assert.match(runner, /await page\.screenshot\(\{path: screenshotPath, fullPage: true\}\)/);
+});
+
+test('member confirmation oracle rejects missing, duplicate, partial, and extra rows without returning PII', () => {
+  const {name, phone} = terminalBusinessMemberFixture('ter-oracle-run-01');
+  const expected = {expectedName: name, expectedPhone: phone};
+  assert.deepEqual(memberConfirmationReadback({...expected, rowTexts: [`${name} ${phone}`]}), {
+    status: 'PASS',
+    rowCount: 1,
+    matchingRowCount: 1,
+  });
+  for (const rowTexts of [
+    [],
+    [`other ${phone}`],
+    [`${name} ${phone}`, `${name} ${phone}`],
+    [`${name} ${phone}`, `other 0100000002`],
+  ]) {
+    const result = memberConfirmationReadback({...expected, rowTexts});
+    assert.equal(result.status, 'FAIL');
+    assert.equal(result.rowCount, rowTexts.length);
+    assert.equal(JSON.stringify(result).includes(expected.expectedPhone), false);
+  }
+});
+
+test('Web member journey uses the shared per-run terminal business fixture without persisting its values', () => {
+  const runner = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
+  const fixture = terminalBusinessMemberFixture('web-a-1791021504646-071d6f18-c362-48db-8605-b05fca0bffd9');
+  assert.match(fixture.name, /^ter[a-f0-9]{10}$/u);
+  assert.match(fixture.phone, /^010\d{8}$/u);
+  assert.notDeepEqual(fixture, terminalBusinessMemberFixture('web-a-1791021504647-071d6f18-c362-48db-8605-b05fca0bffd9'));
+  assert.match(runner, /const memberFixture = terminalBusinessMemberFixture\(runId\)/u);
+  assert.match(runner, /expectedName: memberFixture\.name/u);
+  assert.match(runner, /expectedPhone: memberFixture\.phone/u);
+  assert.doesNotMatch(runner, /Web Guest|0100000001/u);
+  assert.doesNotMatch(runner, /manifest\.[\w.]*member(?:Name|Phone|Fixture)/u);
+});
+
+test('managed activation Web status navigation uses shared page-level admin locators after opening the primary surface', () => {
+  const runner = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
+  const start = runner.indexOf('const openActivationAdminStatus = async () => {');
+  const end = runner.indexOf('cleanupManagedActivation = async () => {', start);
+  assert.ok(start >= 0 && end > start);
+  const openStatus = runner.slice(start, end);
+  assert.ok(openStatus.includes('const statusPanel = page.getByTestId(statusId);'));
+  assert.ok(openStatus.includes("const login = page.getByTestId('terminal.admin:login');"));
+  assert.ok(openStatus.includes('entryState = await Promise.any(['));
+  assert.ok(openStatus.includes("statusPanel.waitFor({state: 'visible', timeout: 10_000})"));
+  assert.ok(openStatus.includes("login.waitFor({state: 'visible', timeout: 10_000})"));
+  assert.ok(openStatus.includes("mobileNavigation.waitFor({state: 'visible', timeout: 10_000})"));
+  assert.ok(openStatus.includes("laptopStatusNavigation.waitFor({state: 'visible', timeout: 10_000})"));
+  assert.ok(openStatus.includes('if (await statusPanel.isVisible()) {'));
+  assert.ok(openStatus.includes("if (await login.isVisible()) entryState = 'LOGIN';"));
+  assert.ok(openStatus.includes("entryState = 'AUTHENTICATED_SHELL';"));
+  assert.ok(openStatus.includes("if (entryState === 'LOGIN') {"));
+  assert.ok(openStatus.includes("if (entryState !== 'STATUS') {"));
+  assert.ok(openStatus.includes('manifest.activationAdminEntryState = entryState;'));
+  assert.ok(openStatus.includes("recordWebScenarioStep('ADMIN_ENTRY_STATE_OBSERVED', {entryState});"));
+  assert.ok(openStatus.includes("recordWebScenarioStep('ADMIN_LAUNCHER_OPEN_STARTED', {launcherBounds})"));
+  assert.ok(openStatus.includes("recordWebScenarioStep('ADMIN_LAUNCHER_OPEN_RETURNED')"));
+  assert.ok(openStatus.includes("recordWebScenarioStep('ADMIN_ENTRY_WAIT_FAILED'"));
+  assert.ok(runner.includes('manifest.firstFailure ??= failureDiagnostic.failureCode;'));
+  assert.ok(runner.includes('manifest.firstFailureDetails ??= failureDiagnostic;'));
+  assert.ok(!runner.includes('error.stack'));
+  assert.ok(!runner.includes('error.message'));
+  assert.ok(!runner.includes('manifest.portReadback.listenerStderr'));
+  assert.ok(!runner.includes("stderr: String(listenerReadback.stderr ?? '').trim(),"));
+  assert.ok(runner.includes("String(listenerReadback.stderr ?? '').trim().length > 0 ? 'NON_EMPTY_STDERR' : ''"));
+});
+
+test('admin launcher gesture is transformed from current logical canvas coordinates', () => {
+  const geometry = runtimeLogEvent(
+    'admin.launcher-geometry-measured',
+    {
+      windowRect: {x: 40, y: 159, width: 1360, height: 765},
+      canvas: {width: 1280, height: 720},
+      windowDimensions: {width: 1440, height: 1000},
+    },
+    {category: 'admin.launcher'},
+  );
+  assert.deepEqual(adminLauncherGesturePagePoint(geometry), {x: 65.5, y: 184.5});
+  const readyBinding = runtimeLogEvent(
+    'admin.launcher-binding',
+    {displayMode: 'PRIMARY', handlerAttached: true, hasAdminLayer: false},
+    {category: 'admin.launcher'},
+  );
+  assert.equal(adminLauncherBindingReady(readyBinding), true);
+  assert.equal(adminLauncherBindingReady({...readyBinding, data: {...readyBinding.data, handlerAttached: false}}), false);
+  assert.equal(adminLauncherBindingReady({...readyBinding, data: {...readyBinding.data, hasAdminLayer: true}}), false);
+  assert.equal(adminLauncherBindingReady({...readyBinding, data: {...readyBinding.data, displayMode: 'SECONDARY'}}), false);
+  assert.equal(adminLauncherBindingReady({...readyBinding, scope: {...readyBinding.scope, moduleName: 'fixture'}}), false);
+  const runner = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
+  const compactRunner = runner.replace(/\s+/gu, ' ');
+  assert.ok(runner.includes("event.data?.displayMode === 'PRIMARY'"));
+  assert.ok(runner.includes('const primarySurface = page.getByTestId(surfaceTestIdPrefix);'));
+  assert.ok(runner.includes("const launcher = primarySurface.getByTestId('terminal.admin:launcher')"));
+  assert.ok(runner.includes('await restorePrimarySurfaceOrigin();'));
+  const restoreOrigin = runner.indexOf('await restorePrimarySurfaceOrigin();');
+  const readGeometry = runner.indexOf('const geometry = await currentAdminLauncherGeometry();', restoreOrigin);
+  assert.ok(
+    restoreOrigin >= 0 && readGeometry > restoreOrigin,
+    'launcher geometry must be read after restoring the page origin',
+  );
+  const bindingRead = runner.indexOf("event => isExpectedRuntimeLogEvent(event, 'admin.launcher-binding')", readGeometry);
+  const clickGesture = runner.indexOf('await page.mouse.click(point.x, point.y);', readGeometry);
+  assert.ok(bindingRead > readGeometry && clickGesture > bindingRead, 'read the latest launcher binding before tapping');
+  assert.ok(runner.includes('if (latestBinding === undefined || !adminLauncherBindingReady(latestBinding, \'PRIMARY\'))'));
+  assert.ok(runner.includes('event => adminLauncherBindingReady(event, \'PRIMARY\')'));
+  assert.ok(runner.includes("eventCount: 5"));
+  assert.ok(runner.includes('manifest.lastWebEventWait = {'));
+  assert.ok(runner.includes('const root = page.getByTestId(`${integrationName}:test-expo:root`);'));
+  assert.ok(runner.includes("const candidates = [element, ...element.querySelectorAll('*')];"));
+  assert.ok(runner.includes('node.scrollTop = 0;'));
+  assert.ok(runner.includes('node.scrollLeft = 0;'));
+  assert.ok(runner.includes('await page.evaluate(() => window.scrollTo(0, 0));'));
+  assert.ok(compactRunner.includes('const geometryMatchesSurface = surfaceBounds !== null &&'));
+  assert.ok(runner.includes('!geometryMatchesSurface'));
+  assert.ok(runner.includes("'admin.launcher-open-requested'"));
+  assert.ok(runner.includes("'admin.launcher-open-result'"));
+  assert.ok(runner.includes('WEB_PRIMARY_ADMIN_LAUNCHER_TARGET_OUTSIDE_PRIMARY_SURFACE'));
+  assert.ok(!runner.includes('refreshGeometry'));
+  assert.ok(runner.includes('await openAdminConsoleFromLauncher();'));
+  assert.throws(() => adminLauncherGesturePagePoint({...geometry, category: 'fixture'}), {
+    message: 'WEB_ADMIN_LAUNCHER_GEOMETRY_INVALID',
+  });
+  assert.throws(() => adminLauncherGesturePagePoint(geometry, {x: 97, y: 24}), {
+    message: 'WEB_ADMIN_LAUNCHER_GEOMETRY_INVALID',
+  });
+});
+
+test('activation log projection keeps request phase evidence and drops arbitrary payload fields', () => {
+  const startedAt = '2026-10-03T10:00:00.000+09:00';
+  const event = runtimeLogEvent(
+    'activation-request-result',
+    {
+      operationId: 'activateTerminal',
+      profileId: 'terminal-data-client',
+      kind: 'failure',
+      category: 'not-delivered',
+      status: 200,
+      elapsedMs: 17,
+      secret: 'must-not-appear',
+    },
+    {category: 'terminal.activation.http', moduleName: 'kernel.base.terminal-data-client'},
+  );
+  event.timestamp = Date.parse('2026-10-03T10:00:01.000+09:00');
+  event.context = {commandId: 'command-1', credentialSecret: 'must-not-appear'};
+  const projected = projectTerminalActivationLogEvents([event], startedAt, '2026-10-03T10:00:02.000+09:00');
+  assert.deepEqual(projected, [
+    {
+      at: '2026-10-03T01:00:01.000Z',
+      event: 'activation-request-result',
+      operationId: 'activateTerminal',
+      outcome: 'failure',
+      category: 'not-delivered',
+      status: 200,
+      elapsedMs: 17,
+      commandIdPresent: true,
+    },
+  ]);
+  assert.ok(!JSON.stringify(projected).includes('must-not-appear'));
+  assert.deepEqual(projectTerminalActivationLogEvents([event], startedAt, '2026-10-03T10:00:00.500+09:00'), []);
+});
+
+test('heartbeat log projection retains only matched sequence and RTT evidence', () => {
+  const startedAt = '2026-10-03T10:00:00.000+09:00';
+  const event = runtimeLogEvent(
+    'heartbeat-pong-matched',
+    {
+      profileId: 'terminal-data-client',
+      sequence: 7,
+      rttMs: 23,
+      credentialSecret: 'must-not-appear',
+    },
+    {category: 'terminal.connection.heartbeat', moduleName: 'kernel.base.terminal-data-client'},
+  );
+  event.timestamp = Date.parse('2026-10-03T10:00:01.000+09:00');
+  event.context = {commandId: 'heartbeat-command', credentialSecret: 'must-not-appear'};
+  const projected = projectTerminalConnectionHeartbeatLogEvents([event], startedAt, '2026-10-03T10:00:02.000+09:00');
+  assert.deepEqual(projected, [
+    {
+      at: '2026-10-03T01:00:01.000Z',
+      sequence: 7,
+      rttMs: 23,
+      commandIdPresent: true,
+    },
+  ]);
+  assert.ok(!JSON.stringify(projected).includes('must-not-appear'));
+  assert.deepEqual(
+    projectTerminalConnectionHeartbeatLogEvents([event], startedAt, '2026-10-03T10:00:00.500+09:00'),
+    [],
+  );
+});
+
+test('TDS log projection keeps run-window lifecycle diagnostics and excludes unapproved fields', () => {
+  const projected = projectManagedTdsLogLines(
+    [
+      '2026-10-03T10:00:01.123+09:00 INFO event=tds_ws_accepted connectionId=conn-1 sessionId=session-1 credentialSecret=do-not-copy',
+      '2026-10-03T10:00:02.123+09:00 INFO event=tds_session_registered connectionId=conn-1 sessionId=session-1 generation=4',
+      '2026-10-03T10:00:03.500+09:00 INFO event=tds_session_registered connectionId=late-flush',
+      '2026-10-03T10:00:04.501+09:00 INFO event=tds_ws_accepted connectionId=outside-grace',
+      'not-a-timestamp event=tds_ws_accepted connectionId=invalid',
+    ],
+    'tds-a',
+    '2026-10-03T10:00:00.000+09:00',
+    '2026-10-03T10:00:02.500+09:00',
+    2_000,
+  );
+  assert.equal(projected.length, 3);
+  assert.equal(projected[0].event, 'tds_ws_accepted');
+  assert.equal(projected[1].event, 'tds_session_registered');
+  assert.equal(projected[0].connectionId, 'conn-1');
+  assert.equal(projected[1].connectionId, 'conn-1');
+  assert.equal(projected[2].connectionId, 'late-flush');
+  assert.ok(!JSON.stringify(projected).includes('do-not-copy'));
+  assert.ok(!JSON.stringify(projected).includes('generation=4'));
+  assert.throws(
+    () => projectManagedTdsLogLines([], 'tds-a', '2026-10-03T10:00:00.000+09:00', '2026-10-03T10:00:02.500+09:00', -1),
+    /WEB_TDS_LOG_PROJECTION_INPUT_INVALID/u,
+  );
+});
+
+test('browser console diagnostics classify network policy failures without preserving message text', () => {
+  assert.equal(
+    classifyBrowserConsoleFailure(
+      "Access to fetch at 'http://127.0.0.1:28080/private' from origin 'http://localhost:8093' has been blocked by CORS policy",
+    ),
+    'CROSS_ORIGIN_POLICY',
+  );
+  assert.equal(classifyBrowserConsoleFailure('net::ERR_FAILED'), 'CHROMIUM_NETWORK_FAILURE');
+  assert.equal(classifyBrowserConsoleFailure('Failed to fetch'), 'FETCH_FAILED');
+  assert.equal(
+    classifyBrowserConsoleFailure('Failed to load resource: the server responded with a status of 409 (Conflict)'),
+    'HTTP_RESPONSE_STATUS_409',
+  );
+  assert.equal(classifyBrowserConsoleFailure('Unclassified message with private data'), 'OTHER_CONSOLE_FAILURE');
+  assert.equal(classifyBrowserConsoleFailure('{"event":"container-empty"}'), 'UI_CONTAINER_EMPTY');
+  assert.equal(
+    classifyBrowserConsoleFailure('{"event":"command-dispatch-rejected","data":{"failure":"error"}}'),
+    'COMMAND_DISPATCH_REJECTION_ERROR',
+  );
+  assert.equal(
+    hasUnexpectedBrowserConsoleFailures([{level: 'warning', classification: 'OTHER_CONSOLE_FAILURE'}]),
+    false,
+  );
+  assert.equal(hasUnexpectedBrowserConsoleFailures([{level: 'error', classification: 'OTHER_CONSOLE_FAILURE'}]), true);
+  assert.equal(hasUnexpectedBrowserConsoleFailures([{level: 'error', classification: 'UI_CONTAINER_EMPTY'}]), false);
+  const expectedConflict = [
+    {at: new Date(100).toISOString(), level: 'error', classification: 'HTTP_RESPONSE_STATUS_409'},
+  ];
+  const conflictResponse = [{at: new Date(150).toISOString(), operation: 'activation', method: 'POST', status: 409}];
+  const allowed = expectedActivationRejectionConsoleFailureIndexes({
+    failures: expectedConflict,
+    httpResults: conflictResponse,
+  });
+  assert.deepEqual(allowed, [0]);
+  assert.equal(hasUnexpectedBrowserConsoleFailures(expectedConflict, allowed), false);
+  assert.equal(
+    hasUnexpectedBrowserConsoleFailures(
+      [...expectedConflict, {level: 'error', classification: 'OTHER_CONSOLE_FAILURE'}],
+      allowed,
+    ),
+    true,
+  );
+  assert.deepEqual(
+    expectedActivationRejectionConsoleFailureIndexes({
+      failures: expectedConflict,
+      httpResults: [{...conflictResponse[0], at: new Date(2_000).toISOString()}],
+    }),
+    [],
+  );
+});
+
+test('frontend startup diagnostics use the production completion event and retain unresolved empty placements', () => {
+  const completion = runtimeLogEvent('startup.complete', {
+    groups: {modules: true, slices: true, commands: true, actors: true, ports: true, parts: true},
+    primaryDeclared: true,
+    primaryMeasured: true,
+    primaryRealReady: false,
+    primaryContentFailure: 'container-empty',
+  });
+  completion.timestamp = 20;
+  const events = [
+    Object.assign(
+      runtimeLogEvent(
+        'container-empty',
+        {displayMode: 'PRIMARY', containerKey: 'main', reason: 'container-empty'},
+        {category: 'display-diagnostics', moduleName: 'ui-base-render', layer: 'kernel'},
+      ),
+      {level: 'error', timestamp: 10},
+    ),
+    completion,
+    Object.assign(
+      runtimeLogEvent(
+        'render.screen-selection',
+        {displayMode: 'PRIMARY', containerKey: 'main', fallback: null, screenPartKey: 'terminal.activation.lmp'},
+        {category: 'display-diagnostics', moduleName: 'ui-base-render', layer: 'kernel'},
+      ),
+      {timestamp: 30},
+    ),
+    Object.assign(
+      runtimeLogEvent(
+        'render.screen-selection',
+        {displayMode: 'SECONDARY', containerKey: 'main', fallback: 'container-empty', screenPartKey: null},
+        {category: 'display-diagnostics', moduleName: 'ui-base-render', layer: 'kernel'},
+      ),
+      {timestamp: 31},
+    ),
+    Object.assign(
+      runtimeLogEvent(
+        'container-empty',
+        {displayMode: 'SECONDARY', containerKey: 'main', reason: 'container-empty'},
+        {category: 'display-diagnostics', moduleName: 'ui-base-render', layer: 'kernel'},
+      ),
+      {level: 'error', timestamp: 31},
+    ),
+  ];
+  assert.deepEqual(unresolvedScreenPlacementsAfterStartup(events), [
+    {
+      at: new Date(31).toISOString(),
+      displayMode: 'SECONDARY',
+      containerKey: 'main',
+      reason: 'container-empty',
+    },
+  ]);
+  const resetCompleted = Object.assign(
+    runtimeLogEvent(
+      'runtime.reset.completed',
+      {rootCommandId: 'root-1'},
+      {category: 'runtime.lifecycle', moduleName: 'kernel.base.runtime'},
+    ),
+    {timestamp: 40},
+  );
+  assert.deepEqual(unresolvedScreenPlacementsAfterStartup([...events, resetCompleted]), []);
+  assert.deepEqual(
+    unresolvedScreenPlacementsAfterStartup([
+      completion,
+      resetCompleted,
+      Object.assign(
+        runtimeLogEvent('render.screen-selection', {
+          displayMode: 'SECONDARY',
+          containerKey: 'main',
+          fallback: 'container-empty',
+          screenPartKey: null,
+        }),
+        {timestamp: 41},
+      ),
+    ]),
+    [
+      {
+        at: new Date(41).toISOString(),
+        displayMode: 'SECONDARY',
+        containerKey: 'main',
+        reason: 'container-empty',
+      },
+    ],
+  );
+  assert.equal(hasStartupCompletionEvent(events), true);
+  assert.equal(
+    hasStartupCompletionEvent([
+      {
+        ...completion,
+        data: {...completion.data, groups: {...completion.data.groups, commands: false}},
+      },
+    ]),
+    false,
+  );
+  assert.equal(hasStartupCompletionEvent([{event: 'startup.ready', timestamp: 30}]), false);
+  assert.deepEqual(
+    unresolvedScreenPlacementsAfterStartup([
+      completion,
+      Object.assign(
+        runtimeLogEvent(
+          'render.screen-selection',
+          {displayMode: 'SECONDARY', containerKey: 'main', fallback: null, screenPartKey: 'terminal.activation.lms'},
+          {category: 'display-diagnostics', moduleName: 'ui-base-render', layer: 'kernel'},
+        ),
+        {timestamp: 32},
+      ),
+    ]),
+    [],
+  );
+  assert.deepEqual(
+    unresolvedScreenPlacementsAfterStartup([
+      completion,
+      Object.assign(
+        runtimeLogEvent(
+          'render.screen-selection',
+          {displayMode: 'PRIMARY', containerKey: 'main', fallback: null, screenPartKey: null},
+          {category: 'display-diagnostics', moduleName: 'ui-base-render', layer: 'kernel'},
+        ),
+        {timestamp: 33},
+      ),
+    ]),
+    [
+      {
+        at: new Date(33).toISOString(),
+        displayMode: 'PRIMARY',
+        containerKey: 'main',
+        reason: 'screen-selection-incomplete',
+      },
+    ],
+  );
+});
+
+test('Web failure evidence keeps diagnostic markers and excludes raw exception content', () => {
+  const diagnostic = projectWebFailureDiagnostic(
+    new Error('WEB_REQUEST_FAILED:https://private.example/path?token=secret phone=5551234567'),
+    'ACTIVATION_SUBMIT',
+  );
+  assert.deepEqual(diagnostic, {
+    failureCode: 'WEB_REQUEST_FAILED',
+    errorType: 'Error',
+    scenarioStep: 'ACTIVATION_SUBMIT',
+  });
+  assert.equal(JSON.stringify(diagnostic).includes('private.example'), false);
+  assert.equal(JSON.stringify(diagnostic).includes('secret'), false);
+  assert.equal(JSON.stringify(diagnostic).includes('5551234567'), false);
+  assert.deepEqual(projectWebFailureDiagnostic(new Error(''), 'bad step'), {
+    failureCode: 'UNCLASSIFIED_WEB_FAILURE',
+    errorType: 'Error',
+    scenarioStep: 'UNCLASSIFIED_STEP',
+  });
+  assert.deepEqual(
+    projectWebFailureDiagnostic(
+      new Error('WEB_EXPECTED_LOG_EVENT_MISSING:admin.launcher-open-requested'),
+      'WAITING_FOR_LOG_EVENT',
+    ),
+    {
+      failureCode: 'WEB_EXPECTED_LOG_EVENT_MISSING',
+      errorType: 'Error',
+      scenarioStep: 'WAITING_FOR_LOG_EVENT',
+      expectedLogEvent: 'admin.launcher-open-requested',
+    },
+  );
+  const manifest = {business: 'PASS', firstFailure: null};
+  applyWebSourceRecheckFailure(manifest, new Error('source recheck failed /private/worktree/token'));
+  assert.equal(manifest.firstFailure, 'WEB_SOURCE_RECHECK_FAILED');
+  assert.equal(JSON.stringify(manifest).includes('/private/worktree'), false);
+  assert.equal(JSON.stringify(manifest).includes('token'), false);
+});
+
+test('frontend rejected command diagnostics are retained and counted without request identities', () => {
+  const projected = projectFrontendCommandDispatchEvents([
+    {
+      ...runtimeLogEvent('command-dispatch-completed', {}, {category: 'ui.base.render'}),
+      context: {commandName: 'integration.route-stage'},
+    },
+    {
+      ...runtimeLogEvent('command-dispatch-rejected', {failure: 'error'}, {category: 'ui.base.render'}),
+      context: {commandName: 'terminal-data-client.cancel-activation', requestId: 'private-request-id'},
+    },
+  ]);
+  assert.equal(projected.events.length, 2);
+  assert.equal(projected.rejectedCount, 1);
+  assert.equal(projected.events[1].event, 'command-dispatch-rejected');
+  assert.equal(projected.events[1].commandName, 'terminal-data-client.cancel-activation');
+  assert.equal(projected.events[1].failure, 'error');
+  assert.equal('requestId' in projected.events[1], false);
+  assert.equal(JSON.stringify(projected).includes('private-request-id'), false);
+  const runner = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
+  assert.ok(runner.includes('webCommandDispatchMismatch(webScenario, commandDispatchProjection.events)'));
+  assert.ok(runner.includes('commandDispatchMismatch !== null'));
+  assert.ok(runner.includes("'FRONTEND_COMMAND_DISPATCH_REJECTED'"));
+});
+
+test('front/back correlation requires one matching terminal-binding completion with owner outcome', () => {
+  const frontendResponse = {requestId: 'request-1', correlationId: 'correlation-1', status: 200};
+  const backendEvent = {
+    event: 'REQUEST_COMPLETED',
+    operationId: 'activateTerminal',
+    outcome: 'SUCCEEDED',
+    status: 200,
+    owner: 'terminal-binding',
+    consumerFace: 'terminal',
+    databaseOperationCount: 10,
+    routeTemplate: '/api/terminal/group-workspaces/{groupWorkspaceKey}/activation',
+    requestId: 'request-1',
+    correlationId: 'correlation-1',
+  };
+  const expected = {
+    frontendResponse,
+    backendEvents: [backendEvent],
+    operationId: 'activateTerminal',
+    routeTemplate: backendEvent.routeTemplate,
+  };
+  assert.equal(correlateManagedBackendRequest(expected), true);
+  assert.equal(
+    correlateManagedBackendRequest({...expected, backendEvents: [{...backendEvent, owner: 'unresolved'}]}),
+    false,
+  );
+  assert.equal(correlateManagedBackendRequest({...expected, backendEvents: [backendEvent, backendEvent]}), false);
+  const rejected = {
+    ...expected,
+    frontendResponse: {...frontendResponse, status: 409},
+    backendEvents: [{...backendEvent, outcome: 'FAILED', status: 409, errorCode: 'STORE_TERMINAL_DISABLED'}],
+    expectedOutcome: 'FAILED',
+    expectedStatus: 409,
+    expectedErrorCode: 'STORE_TERMINAL_DISABLED',
+  };
+  assert.equal(correlateManagedBackendRequest(rejected), true);
+  assert.equal(
+    correlateManagedBackendRequest({...rejected, expectedErrorCode: 'TERMINAL_BINDING_ALREADY_BOUND'}),
+    false,
+  );
+});
+
+test('front/back exchange uses backend response ids as the authoritative correlation key', () => {
+  const backendEvent = {
+    event: 'REQUEST_COMPLETED',
+    operationId: 'activateTerminal',
+    outcome: 'SUCCEEDED',
+    status: 200,
+    owner: 'terminal-binding',
+    consumerFace: 'terminal',
+    databaseOperationCount: 10,
+    routeTemplate: '/api/terminal/group-workspaces/{groupWorkspaceKey}/activation',
+    requestId: 'backend-request-1',
+    correlationId: 'backend-correlation-1',
+  };
+  const common = {
+    backendEvents: [backendEvent],
+    operationId: 'activateTerminal',
+    routeTemplate: backendEvent.routeTemplate,
+  };
+  assert.equal(
+    correlateManagedHttpExchange({
+      ...common,
+      request: {operation: 'activation', method: 'POST', requestId: null, correlationId: null},
+      response: {
+        operation: 'activation',
+        method: 'POST',
+        status: 200,
+        requestId: 'backend-request-1',
+        correlationId: 'backend-correlation-1',
+      },
+    }),
+    true,
+  );
+  assert.equal(
+    correlateManagedHttpExchange({
+      ...common,
+      request: {
+        operation: 'activation',
+        method: 'POST',
+        requestId: 'request-from-client',
+        correlationId: 'front-correlation',
+      },
+      response: {
+        operation: 'activation',
+        method: 'POST',
+        status: 200,
+        requestId: 'backend-request-1',
+        correlationId: 'backend-correlation-1',
+      },
+    }),
+    true,
+  );
+  assert.equal(
+    correlateManagedHttpExchange({
+      ...common,
+      request: {operation: 'activation', method: 'POST', requestId: null, correlationId: null},
+      response: {
+        operation: 'activation',
+        method: 'POST',
+        status: 200,
+        requestId: 'wrong-backend-request',
+        correlationId: 'backend-correlation-1',
+      },
+    }),
+    false,
+  );
 });
 
 test('W4 layer inventory expands to all 14 integration-owner pairs without converting OPEN rows to PASS', () => {
@@ -580,7 +1823,9 @@ test('TextInput context-menu run has an exact per-integration and per-surface de
     path.join(repositoryRoot, 'apps/terminal/ui/feature/sample-member-desk/src/hooks/useCustomerMember.ts'),
     'utf8',
   );
-  assert.ok(memberHook.includes("export const ageFieldId = (prefix = 'sample.desk.customer-member') => `${prefix}:age`"));
+  assert.ok(
+    memberHook.includes("export const ageFieldId = (prefix = 'sample.desk.customer-member') => `${prefix}:age`"),
+  );
   const adminTestIds = fs.readFileSync(
     path.join(repositoryRoot, 'apps/terminal/ui/base/admin-shell/src/foundations/adminTestIds.ts'),
     'utf8',
@@ -781,11 +2026,12 @@ test('persistent admin-layer failure requires either a fresh launcher request or
   assert.match(source, /manifest\.business = 'OPEN'/);
   assert.doesNotMatch(source, /adminLauncherRemainedUsable:\s*true/);
   assert.match(source, /isExpectedRuntimeLogEvent\(event, 'admin\.launcher-open-requested'\)/);
-  const helperStart = source.indexOf('const observeAdminLauncherAfterFailure = async (');
+  const helperStart = source.indexOf('const observeAdminLauncherAfterFailure = async');
   const helperEnd = source.indexOf('\ntry {', helperStart);
   assert.ok(helperStart >= 0 && helperEnd > helperStart, 'launcher observation helper must be present and bounded');
   const helperSource = source.slice(helperStart, helperEnd);
-  assert.equal((helperSource.match(/page\.mouse\.click\(/g) ?? []).length, 1);
+  assert.equal((helperSource.match(/page\.mouse\.click\(/g) ?? []).length, 0);
+  assert.match(helperSource, /openAdminConsoleFromLauncher\(\)/);
   assert.doesNotMatch(helperSource, /\b(?:for|while)\s*\(/);
   assert.match(helperSource, /parseJsonEventsAfterByteOffset\(fs\.readFileSync\(logPath\), 0\)/);
   assert.doesNotMatch(helperSource, /ui-base-render:layer:admin\.console\.layer.*isVisible/);
@@ -926,11 +2172,35 @@ test('WEB log event readback uses fresh complete JSONL records after a byte offs
   assert.deepEqual(parseJsonEventsAfterByteOffset(Buffer.concat([earlier, later]), midRecordOffset), [resetEvent]);
   assert.throws(() => parseJsonEventsAfterByteOffset(combined, combined.length + 1), /WEB_LOG_BYTE_OFFSET_INVALID/);
 
+  const olderEvent = {...resetEvent, timestamp: 99, event: 'admin.launcher-open-requested', category: 'admin.launcher'};
+  const targetEvent = {...olderEvent, timestamp: 101};
+  const partialOlderRecord = Buffer.from(`Web  INFO  ${JSON.stringify(olderEvent).slice(0, 80)}`);
+  const checkpointPrefix = Buffer.concat([Buffer.from('completed old line\n'), partialOlderRecord]);
+  const checkpoint = createWebLogCheckpoint(checkpointPrefix, 100);
+  const checkpointSuffix = Buffer.from(
+    `${JSON.stringify(olderEvent).slice(80)}\nWeb  INFO  ${JSON.stringify(targetEvent)}\n`,
+  );
+  const recordsAfterSplitCheckpoint = parseJsonEventsAfterByteOffset(
+    Buffer.concat([checkpointPrefix, checkpointSuffix]),
+    checkpoint,
+  );
+  assert.deepEqual(
+    recordsAfterSplitCheckpoint,
+    [targetEvent],
+    'a partial old record must not hide or impersonate a complete post-checkpoint event',
+  );
+  assert.deepEqual(createWebLogCheckpoint(Buffer.from('x'), 100), {
+    byteOffset: 1,
+    notBeforeEpochMillis: 100,
+  });
+
   const runnerSource = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
   const waitStart = runnerSource.indexOf('const waitForLogEvent =');
   const waitEnd = runnerSource.indexOf('\nconst observeAdminLauncherAfterFailure', waitStart);
   assert.ok(waitStart >= 0 && waitEnd > waitStart, 'log event wait helper must exist and be bounded');
-  assert.match(runnerSource.slice(waitStart, waitEnd), /isExpectedRuntimeLogEvent\(value, event\)/);
+  assert.match(runnerSource.slice(waitStart, waitEnd), /parseJsonEventsAfterByteOffset\(bytes, checkpoint\)/);
+  assert.match(runnerSource.slice(waitStart, waitEnd), /expectedOwnerEventCount/);
+  assert.match(runnerSource.slice(waitStart, waitEnd), /elapsedMs/);
 });
 
 test('W2 sends pointer probe, Tab, Shift+Tab, scanner suffix, and Enter in order', async () => {
@@ -1085,6 +2355,17 @@ test('source inventory contains all tracked and active app files plus runner inp
     'yarn.lock',
     'scripts/test/ter-admin-display-web.mjs',
     'scripts/test/ter-admin-display-web-contract.mjs',
+    'scripts/test/ter-admin-display-web.test.mjs',
+    'scripts/test/terminal-client-dev-acceptance.mjs',
+    'scripts/test/terminal-business-fixtures.mjs',
+    'scripts/dev/r5-dev-environment.mjs',
+    'scripts/dev/r5-dev-runner.mjs',
+    'scripts/dev/r5-remote-java-runtime.mjs',
+    'scripts/dev/managed-diagnostic-protocol.mjs',
+    'scripts/dev/r5-managed-terminal-topology.mjs',
+    'scripts/dev/r5-remote-java.mjs',
+    'scripts/dev/r5-doris-resident.mjs',
+    'scripts/dev/terminal-client-dev-acceptance-lock.mjs',
   ])
     assert.ok(files.includes(expected), `WEB_SOURCE_INVENTORY_MISSING:${expected}`);
   assert.equal(files.length, new Set(files).size);
@@ -1119,6 +2400,30 @@ test('source inventory rejects a symlink that resolves outside the repository', 
   });
 });
 
+test('Web runner runtime directories reject symlinked roots and stay inside the repository', t => {
+  const directory = temporaryDirectory(t);
+  const fakeRepositoryRoot = path.join(directory, 'repository');
+  const outsideDirectory = path.join(directory, 'outside');
+  fs.mkdirSync(fakeRepositoryRoot, {recursive: true});
+  fs.mkdirSync(outsideDirectory, {recursive: true});
+
+  const safeRuntime = ensureContainedWebDirectory(
+    fakeRepositoryRoot,
+    path.join(fakeRepositoryRoot, '.runtime/ter-admin-display'),
+  );
+  assert.equal(safeRuntime, path.join(fs.realpathSync(fakeRepositoryRoot), '.runtime/ter-admin-display'));
+
+  const otherRepositoryRoot = path.join(directory, 'other-repository');
+  fs.mkdirSync(otherRepositoryRoot, {recursive: true});
+  fs.symlinkSync(outsideDirectory, path.join(otherRepositoryRoot, '.runtime'));
+  assert.throws(
+    () =>
+      ensureContainedWebDirectory(otherRepositoryRoot, path.join(otherRepositoryRoot, '.runtime/ter-admin-display')),
+    {message: 'TER_ADMIN_DISPLAY_WEB_RUNTIME_PATH_INVALID'},
+  );
+  assert.equal(fs.existsSync(path.join(outsideDirectory, 'ter-admin-display')), false);
+});
+
 test('source digest changes on content or inventory drift', t => {
   const directory = temporaryDirectory(t);
   const firstPath = path.join(directory, 'first.ts');
@@ -1141,6 +2446,9 @@ test('source digest changes on content or inventory drift', t => {
     sourceStable: 'FAIL',
     lastKnownGood: 'PASS',
   });
+  const firstFailureManifest = {business: 'PASS', firstFailure: 'EARLIER_FIRST_FAILURE'};
+  applyWebSourceSnapshot(firstFailureManifest, before, afterContent);
+  assert.equal(firstFailureManifest.firstFailure, 'EARLIER_FIRST_FAILURE');
   const failedManifest = {business: 'FAIL', firstFailure: 'EARLIER_FIRST_FAILURE'};
   applyWebSourceRecheckFailure(failedManifest, new Error('fixture read failure'));
   assert.equal(failedManifest.firstFailure, 'EARLIER_FIRST_FAILURE');
