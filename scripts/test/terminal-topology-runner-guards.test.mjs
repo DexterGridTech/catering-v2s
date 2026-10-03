@@ -744,6 +744,19 @@ test('runner topology value assertions use exact scoped text instead of substrin
   assert.match(source, /hasExactScopedResourceText\(xml, 'terminal\.admin:topology:pair-result', '主机服务未能开启'\)/);
 });
 
+test('stage-one topology navigation waits for unique page content rather than the persistent navigation tab', () => {
+  const source = readFileSync(new URL('../../tools/terminal-topology/run-dual-device.mjs', import.meta.url), 'utf8');
+  const start = source.indexOf('const openTopology = async (');
+  const end = source.indexOf('\n};', start);
+  assert.ok(start >= 0 && end > start, 'stage-one topology navigation helper must exist');
+  const helper = source.slice(start, end);
+  assert.match(helper, /await waitForNode\(target, 'terminal\.admin:topology:title'\)/);
+  assert.doesNotMatch(helper, /await waitForNode\(target, 'terminal\.admin:section:topology'\)/);
+  assert.match(helper, /observe\(record, target, 'topology-open',[\s\S]*'terminal\.admin:topology:content-root'[\s\S]*'terminal\.admin:topology:title'/);
+  const ids = readFileSync(new URL('../../apps/terminal/ui/base/admin-shell/src/foundations/adminTestIds.ts', import.meta.url), 'utf8');
+  assert.match(ids, /section: sectionTestIds\.topology,[\s\S]*contentRoot: 'terminal\.admin:topology:content-root'/);
+});
+
 test('dual-device source snapshot includes every directly imported local topology helper', () => {
   const source = readFileSync(new URL('../../tools/terminal-topology/run-dual-device.mjs', import.meta.url), 'utf8');
   const importedHelpers = [...source.matchAll(/from\s+['"]\.\/([^'"]+\.mjs)['"]/g)].map(

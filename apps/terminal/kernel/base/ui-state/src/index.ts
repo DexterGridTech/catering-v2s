@@ -18,6 +18,7 @@ export {
   showScreenCommand,
 } from './features/commands';
 export {selectLayers, selectScreen} from './selectors/selectContent';
+export {contentStateSliceName} from './foundations/workspaceSlices';
 export {createModuleUiVariableFactory, createUiVariableWrite} from './foundations/uiVariable';
 export {
   isCurrentWorkspaceOwnedByInstance,

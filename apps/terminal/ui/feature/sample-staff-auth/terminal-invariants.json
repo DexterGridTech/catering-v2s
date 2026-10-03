@@ -13,6 +13,7 @@
     "devDependencyModuleNames",
     "moduleKind",
     "moduleName",
+    "needToLoginStaffCommand",
     "sampleStaffAuthAssembly"
   ],
   "publicExportMap": {

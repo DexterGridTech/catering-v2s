@@ -12,7 +12,11 @@ export {resolveTopologyCommandTarget} from './foundations/resolveCommandTarget';
 export {createTopologyModule} from './application/createTopologyModule';
 export type {CreateTopologyModuleInput} from './application/createTopologyModule';
 export {areTopologyFactsEqual, selectTopologyFacts} from './selectors/selectTopologyFacts';
-export {selectTopologyState, topologySliceName} from './selectors/selectTopologyState';
+export {
+  selectTopologyRequiredProjectionsReady,
+  selectTopologyState,
+  topologySliceName,
+} from './selectors/selectTopologyState';
 export {topologyActions} from './features/slices/topology';
 export {
   pairByHostTopologyCommand,

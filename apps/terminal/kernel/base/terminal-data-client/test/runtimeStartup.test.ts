@@ -14,10 +14,16 @@ import {
   type DevicePort,
 } from '@catering-v2s/kernel-base-platform-ports';
 import {moduleName as stateModuleName} from '@catering-v2s/kernel-base-state';
-import {createRuntime, type Runtime, type RuntimeModule} from '@catering-v2s/kernel-base-runtime';
+import {
+  createRuntime,
+  selectRuntimeInstanceMode,
+  setRuntimeInstanceModeCommand,
+  type Runtime,
+  type RuntimeModule,
+} from '@catering-v2s/kernel-base-runtime';
 import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {createTerminalDataClientModule} from '../src/application/createTerminalDataClientModule';
-import {selectConnectionState} from '../src/selectors/selectTerminalDataClientState';
+import {selectActivationState, selectConnectionState} from '../src/selectors/selectTerminalDataClientState';
 import {activateTerminalCommand} from '../src/features/commands/terminalDataClientCommands';
 import {
   createTransportModule,
@@ -72,6 +78,7 @@ const createComposition = (
     createCredentialSecret: () => 'A'.repeat(43),
     now: () => 1_000,
     appVersion: 'runtime-startup-test',
+    surfaceForm: 'laptop',
   });
   const modules: readonly RuntimeModule[] = [
     toolkit(contractsModuleName, []),
@@ -155,11 +162,7 @@ describe('terminal-data-client runtime startup', () => {
       const activation = await first.runtime.dispatchCommand(
         activateTerminalCommand,
         {
-          operationId: 'runtime-startup-activation',
-          groupWorkspaceKey: 'workspace-1',
           activationCode: '12345678',
-          surfaceForm: 'laptop',
-          appVersion: 'runtime-startup-test',
         },
         {requestId: createRequestId()},
       );
@@ -176,6 +179,61 @@ describe('terminal-data-client runtime startup', () => {
         expect(selectConnectionState(restored.runtime.getState()).status).toBe('awaiting-ready');
       } finally {
         if (restoredStarted) await releaseRuntimeForTestAsync(restored.runtime);
+      }
+    } finally {
+      if (firstStarted) await releaseRuntimeForTestAsync(first.runtime);
+    }
+  });
+
+  it('retains but never uses a conflicting local credential when SLAVE mode is restored', async () => {
+    const protectedStorage = createProcessMemoryStateStoragePort();
+    const plainStorage = createProcessMemoryStateStoragePort();
+    const first = createComposition({
+      protectedStorage,
+      plainStorage,
+      device: {
+        ...unavailableDevicePort,
+        getDeviceInfo: async () => ({
+          status: 'succeeded',
+          value: {
+            deviceId: 'device-1',
+            systemName: 'test',
+            systemVersion: 'test',
+            logicalProcessorCount: 1,
+          },
+          completedAt: 1,
+        }),
+      },
+    });
+    let firstStarted = false;
+    try {
+      await startRuntime(first.runtime, 'seed-conflicting-local-credential');
+      firstStarted = true;
+      const activation = await first.runtime.dispatchCommand(
+        activateTerminalCommand,
+        {activationCode: '12345678'},
+        {requestId: createRequestId()},
+      );
+      expect(activation.status).toBe('completed');
+      const roleChange = await first.runtime.dispatchCommand(setRuntimeInstanceModeCommand, {instanceMode: 'SLAVE'});
+      expect(roleChange.status).toBe('completed');
+      await releaseRuntimeForTestAsync(first.runtime);
+      firstStarted = false;
+
+      const restoredSlave = createComposition({protectedStorage, plainStorage});
+      let slaveStarted = false;
+      try {
+        await startRuntime(restoredSlave.runtime, 'restore-conflicting-local-credential-as-slave');
+        slaveStarted = true;
+        expect(selectRuntimeInstanceMode(restoredSlave.runtime.getState())).toBe('SLAVE');
+        expect(restoredSlave.getConnectionAttempts()).toBe(0);
+        expect(selectConnectionState(restoredSlave.runtime.getState()).status).not.toBe('awaiting-ready');
+        expect(selectActivationState(restoredSlave.runtime.getState())).toMatchObject({
+          status: 'active',
+          terminalRef: 'terminal-1',
+        });
+      } finally {
+        if (slaveStarted) await releaseRuntimeForTestAsync(restoredSlave.runtime);
       }
     } finally {
       if (firstStarted) await releaseRuntimeForTestAsync(first.runtime);

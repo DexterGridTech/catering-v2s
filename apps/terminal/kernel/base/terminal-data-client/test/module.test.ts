@@ -9,8 +9,13 @@ import {
 import {
   initializeTerminalDataClientCommand,
   connectTerminalCommand,
+  refreshTerminalClientStatusProjectionCommand,
 } from '../src/features/commands/terminalDataClientCommands';
 import {terminalDataClientStateSlice} from '../src/features/slices/terminalDataClient';
+import {
+  terminalClientStatusProjectionSliceName,
+  terminalClientStatusProjectionStateSlice,
+} from '../src/features/slices/terminalClientStatusProjection';
 import type {ActorExecutionContext} from '@catering-v2s/kernel-base-runtime';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 
@@ -27,6 +32,7 @@ const createDependencies = () => ({
   createCredentialSecret: () => 'A'.repeat(43),
   now: () => 1,
   appVersion: 'test',
+  surfaceForm: 'laptop' as const,
 });
 
 describe('terminal-data-client package identity', () => {
@@ -46,15 +52,19 @@ describe('terminal-data-client package identity', () => {
     expect(module.dependencies).toEqual([{moduleName: 'kernel.base.runtime'}, {moduleName: 'kernel.base.transport'}]);
     expect(module.commands?.map(command => command.name)).toEqual([
       `${moduleName}.activate-terminal`,
-      `${moduleName}.cancel-terminal-online`,
+      `${moduleName}.cancel-terminal-activation`,
       `${moduleName}.cancel-terminal-offline`,
       `${moduleName}.connect-terminal`,
       `${moduleName}.disconnect-terminal`,
       `${moduleName}.initialize-terminal-data-client`,
+      `${moduleName}.refresh-status-projection`,
       `${moduleName}.transport-event`,
       `${moduleName}.heartbeat-tick`,
     ]);
-    expect(module.slices).toEqual([{name: `${moduleName}.client`, persistIntent: 'owner-only'}]);
+    expect(module.slices).toEqual([
+      {name: `${moduleName}.client`, persistIntent: 'owner-only'},
+      {name: terminalClientStatusProjectionSliceName, persistIntent: 'owner-only'},
+    ]);
   });
 
   it('restores the connection through the owner initialize command and does not connect without a credential', async () => {
@@ -78,7 +88,11 @@ describe('terminal-data-client package identity', () => {
           payload: {},
         } as never,
         actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
-        getState: () => ({[terminalDataClientStateSlice.name]: {credential}}) as StateRoot,
+        getState: () =>
+          ({
+            'kernel.base.runtime.instance-mode': {instanceMode: 'MASTER'},
+            [terminalDataClientStateSlice.name]: {credential},
+          }) as StateRoot,
         dispatchAction: (action: unknown) => action as never,
         flushPersistence: async () => ({status: 'succeeded'}),
         subscribeState: () => () => undefined,
@@ -107,7 +121,58 @@ describe('terminal-data-client package identity', () => {
     await module.install?.({
       registerResource: vi.fn(),
       dispatchCommand: moduleDispatch,
+      subscribeState: vi.fn(() => () => undefined),
+      platformPorts: {logger: {scope: () => ({error: vi.fn()})}},
     } as never);
-    expect(moduleDispatch).toHaveBeenCalledWith(initializeTerminalDataClientCommand, {});
+    expect(moduleDispatch).toHaveBeenNthCalledWith(1, refreshTerminalClientStatusProjectionCommand, {});
+    expect(moduleDispatch).toHaveBeenNthCalledWith(2, initializeTerminalDataClientCommand, {});
+  });
+
+  it('projects only safe host activation, connection and latency facts', async () => {
+    const module = createTerminalDataClientModule(createDependencies());
+    const actor = module.actorDefinitions?.[0];
+    if (actor === undefined) throw new Error('terminal client actor definition missing');
+    const handler = actor.handlers.find(
+      candidate => candidate.commandName === refreshTerminalClientStatusProjectionCommand.commandName,
+    );
+    if (handler === undefined) throw new Error('terminal status projection handler missing');
+    const secret = 'A'.repeat(43);
+    const actions: unknown[] = [];
+    const projectionState = terminalClientStatusProjectionStateSlice;
+    const state = {
+      'kernel.base.runtime.instance-mode': {instanceMode: 'MASTER'},
+      [terminalDataClientStateSlice.name]: {
+        credential: {
+          groupWorkspaceKey: 'workspace-1',
+          terminalRef: 'terminal-1',
+          storeRef: 'store-1',
+          deviceId: 'device-1',
+          bindingGeneration: 2,
+          credentialSecret: secret,
+        },
+        pendingActivations: {},
+        activationStatus: 'active',
+        connection: {status: 'connected', addressName: 'primary', nodeId: 'tds-1', lastCloseReason: null},
+        heartbeatIntervalMs: 10_000,
+        nextPingSequence: 2,
+        lastRttMs: 17,
+        latencySamples: [{rttMs: 17, observedAt: 1}],
+      },
+      [projectionState.name]: {
+        projection: {available: false, activation: null, connection: null, lastRttMs: null, updatedAt: 0},
+      },
+    } as unknown as StateRoot;
+    const context = {
+      getState: () => state,
+      dispatchAction: (action: unknown) => {
+        actions.push(action);
+        return action as never;
+      },
+    } as unknown as ActorExecutionContext;
+    expect(await handler.handle(context)).toEqual({status: 'updated'});
+    expect(JSON.stringify(actions)).not.toContain(secret);
+    expect(JSON.stringify(actions)).not.toContain('credentialSecret');
+    expect(JSON.stringify(actions)).toContain('terminal-1');
+    expect(JSON.stringify(actions)).toContain('17');
   });
 });

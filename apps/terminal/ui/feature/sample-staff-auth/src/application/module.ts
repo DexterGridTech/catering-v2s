@@ -7,6 +7,7 @@ import {
   authNoticeDismissedCommand,
   authSystemFailureDismissedCommand,
   authSystemFailureObservedCommand,
+  needToLoginStaffCommand,
 } from '../features/commands/commands';
 import {
   createAuthNavigationActor,
@@ -18,6 +19,7 @@ import {moduleKind, moduleName} from '../moduleName';
 
 const commands = [
   authNoticeDismissedCommand,
+  needToLoginStaffCommand,
   authSystemFailureObservedCommand,
   authSystemFailureDismissedCommand,
 ] as const;

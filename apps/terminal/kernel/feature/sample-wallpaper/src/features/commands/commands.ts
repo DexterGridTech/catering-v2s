@@ -13,3 +13,8 @@ export const confirmWallpaperCommand = defineCommand<EmptyPayload>(moduleName, {
   name: 'confirm-wallpaper',
   visibility: 'public',
 });
+
+export const cancelWallpaperSelectionCommand = defineCommand<EmptyPayload>(moduleName, {
+  name: 'cancel-wallpaper-selection',
+  visibility: 'public',
+});

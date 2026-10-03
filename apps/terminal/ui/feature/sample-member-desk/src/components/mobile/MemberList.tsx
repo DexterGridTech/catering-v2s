@@ -4,52 +4,61 @@ import {
   PrimitiveContainer,
   PrimitiveEmptyState,
   PrimitiveHeading,
+  PrimitiveList,
 } from '@catering-v2s/ui-base-primitives';
 import {InputScrollArea} from '@catering-v2s/ui-base-input';
 import {MemberRow} from '../MemberRow';
 import {useMemberList} from '../../hooks/useMemberList';
 
-const mobileRootStyle = Object.freeze({width: '100%', paddingHorizontal: 8, gap: 3});
+const mobileRootStyle = Object.freeze({flex: 1, minHeight: 0, width: '100%', paddingHorizontal: 8, gap: 3});
 
-export const MemberList = () => {
+export const MemberList = ({prefix = 'sample.desk.member-list', showLogout = true}: Readonly<{readonly prefix?: string; readonly showLogout?: boolean}>) => {
   const list = useMemberList();
   return (
-    <PrimitiveContainer testID="sample.desk.member-list" style={mobileRootStyle}>
-      <PrimitiveHeading testID="sample.desk.member-list:title">已登记会员</PrimitiveHeading>
-      <InputScrollArea testID="sample.desk.member-list:scroll">
-        {list.members.length === 0 ? (
-          <PrimitiveEmptyState testID="sample.desk.member-list:empty" accessibilityLabel="会员列表为空">
+    <PrimitiveContainer testID={prefix} style={mobileRootStyle}>
+      <PrimitiveHeading testID={`${prefix}:title`}>已登记会员</PrimitiveHeading>
+      {list.members.length === 0 ? (
+        <InputScrollArea testID={`${prefix}:scroll`}>
+          <PrimitiveEmptyState testID={`${prefix}:empty`} accessibilityLabel="会员列表为空">
             暂无会员
           </PrimitiveEmptyState>
-        ) : (
-          list.members.map(member => (
+        </InputScrollArea>
+      ) : (
+        <PrimitiveList
+          testID={`${prefix}:scroll`}
+          accessibilityLabel="已登记会员"
+          data={list.members}
+          getItemKey={member => member.memberId}
+          rowHeight={64}
+          renderItem={member => (
             <MemberRow
-              key={member.memberId}
-              testID="sample.desk.member-list:row"
+              testID={`${prefix}:row:${member.memberId}`}
               name={member.name}
               phone={member.phone}
             />
-          ))
-        )}
-      </InputScrollArea>
-      <PrimitiveActions testID="sample.desk.member-list:actions" orientation="column">
+          )}
+        />
+      )}
+      <PrimitiveActions testID={`${prefix}:actions`} orientation="column">
         <PrimitiveButton
-          testID={list.members.length === 0 ? 'sample.desk.member-list:empty-action' : 'sample.desk.member-list:add'}
+          testID={list.members.length === 0 ? `${prefix}:empty-action` : `${prefix}:add`}
           accessibilityLabel="新增会员"
           onPress={list.openForm}
           style={{width: '100%'}}
         >
           {list.members.length === 0 ? '新增会员' : '新增'}
         </PrimitiveButton>
-        <PrimitiveButton
-          testID="sample.desk.member-list:logout"
-          accessibilityLabel="退出"
-          disabled={list.requestInFlight}
-          onPress={list.logout}
-          style={{width: '100%'}}
-        >
-          退出
-        </PrimitiveButton>
+        {showLogout ? (
+          <PrimitiveButton
+            testID={`${prefix}:logout`}
+            accessibilityLabel="退出"
+            disabled={list.requestInFlight}
+            onPress={list.logout}
+            style={{width: '100%'}}
+          >
+            退出
+          </PrimitiveButton>
+        ) : null}
       </PrimitiveActions>
     </PrimitiveContainer>
   );

@@ -30,6 +30,8 @@ export const RenderProvider = ({
   layerDismissals,
   selectUiVariable,
   selectSurfaceForm,
+  selectBusinessInterlockActive,
+  renderBusinessInterlock,
   children,
 }: RenderProviderProps) => {
   const selectSurfaceFormReader = selectSurfaceForm ?? missingSurfaceFormReader;
@@ -104,6 +106,8 @@ export const RenderProvider = ({
         layerDismissals: layerDismissals ?? emptyLayerDismissals,
         selectUiVariable,
         selectSurfaceForm: selectSurfaceFormReader,
+        selectBusinessInterlockActive,
+        renderBusinessInterlock,
         reportPartDiagnostic: diagnosticReporter.report,
         clearPartDiagnostic: diagnosticReporter.clearForPart,
       }),
@@ -120,6 +124,8 @@ export const RenderProvider = ({
       rendererCatalog,
       selectUiVariable,
       selectSurfaceFormReader,
+      selectBusinessInterlockActive,
+      renderBusinessInterlock,
       runtimeFacts,
       onRuntimeRetry,
       topologyCapability,

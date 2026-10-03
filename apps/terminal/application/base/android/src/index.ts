@@ -7,6 +7,7 @@ export {
   createAndroidTopologyPeerChannel,
 } from './foundations/nativeTopology';
 export {createAndroidPlatformBinding} from './foundations/androidPlatform';
+export {createAndroidTransportNetworkAdapter} from './foundations/androidTransportNetworkAdapter';
 export {AndroidTerminalApp} from './components/AndroidTerminalApp';
 export type {AndroidPlatformBinding} from './foundations/androidPlatform';
 export type {AndroidSurfaceForm, AndroidTerminalAppProps} from './components/AndroidTerminalApp';

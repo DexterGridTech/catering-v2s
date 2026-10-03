@@ -28,14 +28,15 @@ describe('generated terminal API contract', () => {
     const execute: TerminalRequestExecutor = async (descriptor, request) => {
       expect(descriptor.operationId).toBe('activateTerminal');
       expect(descriptor.safeRetryable).toBe(true);
-      expect(request.pathParameters.groupWorkspaceKey).toBe('group-1');
+      expect(descriptor.path).toBe('/activation');
+      expect(request.pathParameters).toEqual({});
       expect(request.queryParameters).toEqual({});
       expect(request.headers).toEqual({});
       return {kind: 'response', status: 200, body};
     };
     const client = createTerminalApiClient(execute);
     const result = await client.activateTerminal({
-      pathParameters: {groupWorkspaceKey: 'group-1'},
+      pathParameters: {},
       queryParameters: {},
       headers: {},
       body: {
@@ -54,6 +55,7 @@ describe('generated terminal API contract', () => {
 
     const cancellation = createTerminalApiClient(async (descriptor, request) => {
       expect(descriptor.operationId).toBe('cancelTerminalActivation');
+      expect(descriptor.path).toBe('/terminals/{terminalRef}/activation/cancel');
       expect(descriptor.owner).toBe('terminal-binding');
       expect(descriptor.idempotencyRequired).toBe(false);
       expect(request.headers.Authorization).toBe('Terminal 1.' + 'A'.repeat(43));
@@ -72,7 +74,7 @@ describe('generated terminal API contract', () => {
       };
     });
     const rejected = await cancellation.cancelTerminalActivation({
-      pathParameters: {groupWorkspaceKey: 'group-1', terminalRef: 'terminal-ref'},
+      pathParameters: {terminalRef: 'terminal-ref'},
       queryParameters: {},
       headers: {Authorization: 'Terminal 1.' + 'A'.repeat(43)},
       body: {bindingGeneration: 1, deviceId: 'device-1'},
@@ -86,7 +88,7 @@ describe('generated terminal API contract', () => {
     }));
     await expect(
       invalidSuccess.activateTerminal({
-        pathParameters: {groupWorkspaceKey: 'group-1'},
+        pathParameters: {},
         queryParameters: {},
         headers: {},
         body: {
@@ -113,7 +115,7 @@ describe('generated terminal API contract', () => {
     }));
     await expect(
       unknownProblem.activateTerminal({
-        pathParameters: {groupWorkspaceKey: 'group-1'},
+        pathParameters: {},
         queryParameters: {},
         headers: {},
         body: {
@@ -133,7 +135,7 @@ describe('generated terminal API contract', () => {
     });
     await expect(
       createTerminalApiClient(deliveryFailure).activateTerminal({
-        pathParameters: {groupWorkspaceKey: 'group-1'},
+        pathParameters: {},
         queryParameters: {},
         headers: {},
         body: {

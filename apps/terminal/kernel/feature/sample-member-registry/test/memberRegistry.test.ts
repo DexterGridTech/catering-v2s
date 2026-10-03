@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
+import type {PeerDispatchGateway, Runtime, RuntimeModule} from '@catering-v2s/kernel-base-runtime';
 import {releaseRuntimeForTest, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing';
 import {
   confirmMemberCommand,
@@ -10,12 +11,34 @@ import {
   memberWithdrawnCommand,
   rejectMemberCommand,
   selectMembers,
+  selectBranchPendingMember,
+  selectHostPendingMember,
   selectPendingMember,
+  registerBranchConfirmedMemberCommand,
   submitMemberCommand,
   withdrawMemberCommand,
 } from '../src/index';
 import {createEventRecorderModule, createMemoryStorageForTest, createTestRuntime, type RecordedEvent} from './support';
 import {memberSliceName} from '../src/features/slices/slice';
+import {setRuntimeInstanceModeAction} from '../../../base/runtime/src/features/slices/runtimeInstanceMode';
+
+const peerGatewayModule = (peer: Runtime): RuntimeModule => {
+  const gateway: PeerDispatchGateway = {
+    dispatchCommand: (command, options) => peer.dispatchCommand(command.definition, command.payload, {
+      requestId: options.requestId ?? undefined,
+      commandId: options.commandId,
+      parentCommandId: options.parentCommandId ?? undefined,
+      routeContext: options.routeContext,
+    }),
+  };
+  return Object.freeze({
+    moduleName: 'test.sample-member-registry.peer-gateway',
+    kind: 'toolkit' as const,
+    dependencies: [{moduleName: 'kernel.base.runtime'}],
+    install: (context: Parameters<NonNullable<RuntimeModule['install']>>[0]) =>
+      context.installPeerDispatchGateway(gateway),
+  });
+};
 
 describe('sample member registry owner module', () => {
   it('describes the owner commands, actors, slice, and isolated persistence contract', () => {
@@ -32,8 +55,9 @@ describe('sample member registry owner module', () => {
       ['kernel.feature.sample-member-registry.member-rejected', 'public'],
       ['kernel.feature.sample-member-registry.withdraw-member', 'public'],
       ['kernel.feature.sample-member-registry.member-withdrawn', 'public'],
+      ['kernel.feature.sample-member-registry.register-branch-confirmed-member', 'public'],
     ]);
-    expect(module.actors?.map(actor => actor.name)).toEqual(['submit', 'confirm', 'reject']);
+    expect(module.actors?.map(actor => actor.name)).toEqual(['submit', 'confirm', 'reject', 'register-branch-confirmed']);
     expect(module.slices).toEqual([
       {
         name: 'kernel.feature.sample-member-registry.members',
@@ -45,24 +69,56 @@ describe('sample member registry owner module', () => {
     expect(module.stateSlices?.[0]?.hasPersistence).toBe(true);
   });
 
-  it('builds and applies the declared master-to-slave full member snapshot', async () => {
+  it('syncs confirmed members while preserving the branch-local pending registration', async () => {
     const source = createTestRuntime([createSampleMemberRegistryModule()]);
     const target = createTestRuntime([createSampleMemberRegistryModule()]);
     try {
       await source.start();
       await target.start();
+      target.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'));
+      const branchRequestId = createRequestId();
+      await target.dispatchCommand(
+        submitMemberCommand,
+        {
+          name: 'Branch pending',
+          phone: '010-9999-0000',
+        },
+        {requestId: branchRequestId},
+      );
+      const firstRequestId = createRequestId();
       await source.dispatchCommand(
         submitMemberCommand,
         {
           name: 'Sync me',
           phone: '010-0000-0000',
         },
-        {requestId: createRequestId()},
+        {requestId: firstRequestId},
+      );
+      await source.dispatchCommand(confirmMemberCommand, {operationId: String(firstRequestId)}, {requestId: createRequestId()});
+      const hostRequestId = createRequestId();
+      await source.dispatchCommand(
+        submitMemberCommand,
+        {
+          name: 'Host pending',
+          phone: '010-1111-2222',
+        },
+        {requestId: hostRequestId},
       );
 
       const payload = runtimeStateSyncForTest(source).createFullSyncPayload(memberSliceName);
       expect(payload.status).toBe('ready');
       if (payload.status !== 'ready') return;
+      expect(payload.payload.entries).toEqual([
+        expect.objectContaining({
+          key: 'state',
+          value: expect.objectContaining({
+            value: {
+              members: [expect.objectContaining({name: 'Sync me', phone: '010-0000-0000', operationId: String(firstRequestId)})],
+              hostPending: {operationId: String(hostRequestId), name: 'Host pending', phone: '010-1111-2222'},
+            },
+          }),
+        }),
+      ]);
       expect(payload.payload).toMatchObject({
         mode: 'authoritative',
         replaceMissing: true,
@@ -75,13 +131,87 @@ describe('sample member registry owner module', () => {
         sliceName: memberSliceName,
         changed: true,
       });
-      expect(selectPendingMember(target.getState())).toEqual({
-        name: 'Sync me',
-        phone: '010-0000-0000',
+      expect(selectMembers(target.getState())).toEqual([
+        expect.objectContaining({name: 'Sync me', phone: '010-0000-0000'}),
+      ]);
+      expect(selectBranchPendingMember(target.getState())).toEqual({
+        operationId: String(branchRequestId), name: 'Branch pending', phone: '010-9999-0000',
+      });
+      expect(selectHostPendingMember(target.getState())).toEqual({
+        operationId: String(hostRequestId), name: 'Host pending', phone: '010-1111-2222',
       });
     } finally {
       releaseRuntimeForTest(source);
       releaseRuntimeForTest(target);
+    }
+  });
+
+  it('routes LSP confirmation to the MASTER list owner and deduplicates by operation identity', async () => {
+    const master = createTestRuntime([createSampleMemberRegistryModule()]);
+    await master.start();
+    const slave = createTestRuntime([createSampleMemberRegistryModule(), peerGatewayModule(master)]);
+    try {
+      await slave.start();
+      slave.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'));
+      const requestId = createRequestId();
+      await slave.dispatchCommand(
+        submitMemberCommand,
+        {name: 'Branch member', phone: '010-1111-2222'},
+        {requestId},
+      );
+      const result = await slave.dispatchCommand(confirmMemberCommand, {operationId: String(requestId)}, {
+        requestId: createRequestId(),
+      });
+
+      expect(result.status).toBe('completed');
+      expect(selectBranchPendingMember(slave.getState())).toBeNull();
+      expect(selectMembers(master.getState())).toEqual([
+        expect.objectContaining({
+          operationId: String(requestId),
+          name: 'Branch member',
+          phone: '010-1111-2222',
+        }),
+      ]);
+      await slave.dispatchCommand(registerBranchConfirmedMemberCommand, {
+        operationId: String(requestId),
+        name: 'Branch member',
+        phone: '010-1111-2222',
+      }, {requestId: createRequestId(), target: 'peer'});
+      expect(selectMembers(master.getState())).toHaveLength(1);
+    } finally {
+      releaseRuntimeForTest(slave);
+      releaseRuntimeForTest(master);
+    }
+  });
+
+  it('routes dual-machine LMS decisions to the MASTER host-pending owner', async () => {
+    const master = createTestRuntime([createSampleMemberRegistryModule()]);
+    const slave = createTestRuntime([createSampleMemberRegistryModule(), peerGatewayModule(master)]);
+    try {
+      await master.start();
+      await slave.start();
+      slave.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'));
+      const operationId = createRequestId();
+      await master.dispatchCommand(
+        submitMemberCommand,
+        {name: 'Host member', phone: '010-3333-4444'},
+        {requestId: operationId},
+      );
+      const result = await slave.dispatchCommand(
+        confirmMemberCommand,
+        {operationId: String(operationId), age: 34},
+        {requestId: createRequestId(), target: 'peer'},
+      );
+
+      expect(result.status).toBe('completed');
+      expect(selectHostPendingMember(master.getState())).toBeNull();
+      expect(selectMembers(master.getState())).toEqual([
+        expect.objectContaining({operationId: String(operationId), age: 34}),
+      ]);
+      expect(selectBranchPendingMember(slave.getState())).toBeNull();
+    } finally {
+      releaseRuntimeForTest(slave);
+      releaseRuntimeForTest(master);
     }
   });
 
@@ -105,6 +235,7 @@ describe('sample member registry owner module', () => {
 
     expect(result.status).toBe('completed');
     expect(selectPendingMember(runtime.getState())).toEqual({
+      operationId: String(requestId),
       name: 'Alice',
       phone: '010-1234-5678',
     });
@@ -112,7 +243,7 @@ describe('sample member registry owner module', () => {
     expect(events).toEqual([
       expect.objectContaining({
         commandName: memberPendingCommand.commandName,
-        payload: {name: 'Alice', phone: '010-1234-5678'},
+        payload: {operationId: String(requestId), name: 'Alice', phone: '010-1234-5678'},
         requestId: String(requestId),
       }),
     ]);
@@ -122,12 +253,56 @@ describe('sample member registry owner module', () => {
     const runtime = createTestRuntime([createSampleMemberRegistryModule()]);
     await runtime.start();
 
-    const result = await runtime.dispatchCommand(confirmMemberCommand, {}, {requestId: createRequestId()});
+    const result = await runtime.dispatchCommand(confirmMemberCommand, {operationId: 'missing'}, {requestId: createRequestId()});
 
     expect(result.status).toBe('completed');
     expect(result.actorResults[0]?.error).toBeNull();
     expect(selectMembers(runtime.getState())).toEqual([]);
     expect(selectPendingMember(runtime.getState())).toBeNull();
+  });
+
+  it('ignores a late decision for an older operation without consuming the newer host pending member', async () => {
+    const runtime = createTestRuntime([createSampleMemberRegistryModule()]);
+    await runtime.start();
+    try {
+      const olderOperationId = createRequestId();
+      const currentOperationId = createRequestId();
+      await runtime.dispatchCommand(
+        submitMemberCommand,
+        {name: 'Older registration', phone: '010-0000-0001'},
+        {requestId: olderOperationId},
+      );
+      await runtime.dispatchCommand(
+        submitMemberCommand,
+        {name: 'Current registration', phone: '010-0000-0002'},
+        {requestId: currentOperationId},
+      );
+
+      const staleResult = await runtime.dispatchCommand(
+        confirmMemberCommand,
+        {operationId: String(olderOperationId)},
+        {requestId: createRequestId()},
+      );
+      expect(staleResult.status).toBe('completed');
+      expect(selectMembers(runtime.getState())).toEqual([]);
+      expect(selectPendingMember(runtime.getState())).toEqual({
+        operationId: String(currentOperationId),
+        name: 'Current registration',
+        phone: '010-0000-0002',
+      });
+
+      await runtime.dispatchCommand(
+        confirmMemberCommand,
+        {operationId: String(currentOperationId)},
+        {requestId: createRequestId()},
+      );
+      expect(selectMembers(runtime.getState())).toEqual([
+        expect.objectContaining({operationId: String(currentOperationId), name: 'Current registration'}),
+      ]);
+      expect(selectPendingMember(runtime.getState())).toBeNull();
+    } finally {
+      releaseRuntimeForTest(runtime);
+    }
   });
 
   it('confirms a pending registration into a member and clears pending state', async () => {
@@ -137,23 +312,30 @@ describe('sample member registry owner module', () => {
       createEventRecorderModule([memberPendingCommand, memberConfirmedCommand], events),
     ]);
     await runtime.start();
+    const submitRequestId = createRequestId();
     await runtime.dispatchCommand(
       submitMemberCommand,
       {
         name: 'Bob',
         phone: '010-9876-5432',
       },
-      {requestId: createRequestId()},
+      {requestId: submitRequestId},
     );
 
     const requestId = createRequestId();
-    const result = await runtime.dispatchCommand(confirmMemberCommand, {age: 37}, {requestId});
+    const result = await runtime.dispatchCommand(confirmMemberCommand, {operationId: String(submitRequestId), age: 37}, {requestId});
     const members = selectMembers(runtime.getState());
 
     expect(result.status).toBe('completed');
     expect(selectPendingMember(runtime.getState())).toBeNull();
     expect(members).toHaveLength(1);
-    expect(members[0]).toMatchObject({name: 'Bob', phone: '010-9876-5432', age: 37});
+    expect(members[0]).toMatchObject({
+      memberId: String(submitRequestId),
+      operationId: String(submitRequestId),
+      name: 'Bob',
+      phone: '010-9876-5432',
+      age: 37,
+    });
     expect(members[0]?.memberId).toEqual(expect.any(String));
     expect(members[0]?.registeredAt).toEqual(expect.any(Number));
     expect(events.at(-1)).toEqual(
@@ -169,15 +351,16 @@ describe('sample member registry owner module', () => {
     const storage = createMemoryStorageForTest();
     const first = createTestRuntime([createSampleMemberRegistryModule()], storage);
     await first.start();
+    const committedRequestId = createRequestId();
     await first.dispatchCommand(
       submitMemberCommand,
       {
         name: 'Committed',
         phone: '010-2222-3333',
       },
-      {requestId: createRequestId()},
+      {requestId: committedRequestId},
     );
-    await first.dispatchCommand(confirmMemberCommand, {}, {requestId: createRequestId()});
+    await first.dispatchCommand(confirmMemberCommand, {operationId: String(committedRequestId)}, {requestId: createRequestId()});
     await first.dispatchCommand(
       submitMemberCommand,
       {
@@ -216,11 +399,13 @@ describe('sample member registry owner module', () => {
       {requestId: createRequestId()},
     );
 
+    const pending = selectHostPendingMember(runtime.getState());
     const requestId = createRequestId();
-    const result = await runtime.dispatchCommand(rejectMemberCommand, {}, {requestId});
+    const result = await runtime.dispatchCommand(rejectMemberCommand, {operationId: pending!.operationId}, {requestId});
 
     expect(result.status).toBe('completed');
     expect(selectPendingMember(runtime.getState())).toEqual({
+      operationId: pending!.operationId,
       name: 'Carol',
       phone: '010-1111-2222',
     });
@@ -228,7 +413,7 @@ describe('sample member registry owner module', () => {
     expect(events.at(-1)).toEqual(
       expect.objectContaining({
         commandName: memberRejectedCommand.commandName,
-        payload: {reasonCode: 'customer-rejected'},
+        payload: {operationId: pending!.operationId, reasonCode: 'customer-rejected'},
         requestId: String(requestId),
       }),
     );
@@ -250,8 +435,9 @@ describe('sample member registry owner module', () => {
       {requestId: createRequestId()},
     );
 
+    const pending = selectHostPendingMember(runtime.getState());
     const requestId = createRequestId();
-    const result = await runtime.dispatchCommand(withdrawMemberCommand, {}, {requestId});
+    const result = await runtime.dispatchCommand(withdrawMemberCommand, {operationId: pending!.operationId}, {requestId});
 
     expect(result.status).toBe('completed');
     expect(selectPendingMember(runtime.getState())).toBeNull();
@@ -259,7 +445,7 @@ describe('sample member registry owner module', () => {
     expect(events.at(-1)).toEqual(
       expect.objectContaining({
         commandName: memberWithdrawnCommand.commandName,
-        payload: {},
+        payload: {operationId: pending!.operationId},
         requestId: String(requestId),
       }),
     );
@@ -281,9 +467,10 @@ describe('sample member registry owner module', () => {
       },
       {requestId: createRequestId()},
     );
-    await runtime.dispatchCommand(withdrawMemberCommand, {}, {requestId: createRequestId()});
-    const lateReject = await runtime.dispatchCommand(rejectMemberCommand, {}, {requestId: createRequestId()});
-    const lateWithdraw = await runtime.dispatchCommand(withdrawMemberCommand, {}, {requestId: createRequestId()});
+    const pending = selectHostPendingMember(runtime.getState());
+    await runtime.dispatchCommand(withdrawMemberCommand, {operationId: pending!.operationId}, {requestId: createRequestId()});
+    const lateReject = await runtime.dispatchCommand(rejectMemberCommand, {operationId: pending!.operationId}, {requestId: createRequestId()});
+    const lateWithdraw = await runtime.dispatchCommand(withdrawMemberCommand, {operationId: pending!.operationId}, {requestId: createRequestId()});
 
     expect(lateReject.status).toBe('completed');
     expect(lateWithdraw.status).toBe('completed');
@@ -301,13 +488,13 @@ describe('sample member registry owner module', () => {
         phone: '010-1234-5678',
       }),
     ).rejects.toMatchObject({code: 'ERR_TER_RUNTIME_REQUEST_ID_REQUIRED'});
-    await expect(runtime.dispatchCommand(confirmMemberCommand, {})).rejects.toMatchObject({
+    await expect(runtime.dispatchCommand(confirmMemberCommand, {operationId: 'missing'})).rejects.toMatchObject({
       code: 'ERR_TER_RUNTIME_REQUEST_ID_REQUIRED',
     });
-    await expect(runtime.dispatchCommand(rejectMemberCommand, {})).rejects.toMatchObject({
+    await expect(runtime.dispatchCommand(rejectMemberCommand, {operationId: 'missing'})).rejects.toMatchObject({
       code: 'ERR_TER_RUNTIME_REQUEST_ID_REQUIRED',
     });
-    await expect(runtime.dispatchCommand(withdrawMemberCommand, {})).rejects.toMatchObject({
+    await expect(runtime.dispatchCommand(withdrawMemberCommand, {operationId: 'missing'})).rejects.toMatchObject({
       code: 'ERR_TER_RUNTIME_REQUEST_ID_REQUIRED',
     });
   });

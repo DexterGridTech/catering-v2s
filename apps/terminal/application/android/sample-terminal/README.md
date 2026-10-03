@@ -46,6 +46,8 @@ registerRootComponent(App)
 `createSurfaceForDisplayIndex()` 完成对应 surface 的呈现；assembly 被拒绝时只把失败事实
 交给来自 `ui.base.render` 的 `StandaloneStartupFailurePage`，不在 App 自绘失败 UI 或调用
 splash。库消费者不应绕过 `App` 自己创建第二个 React host、runtime 或 store。
+本 Android application 的 `package.json.serverSpaces` 是该入口唯一的内置服务配置。`platformPorts.ts`
+在创建 integration assembly 时显式传入它；它不继承或合并 `sample-console` integration 的默认列表。
 
 受管键盘验证器可向已运行的主屏 Activity 发送精确 URI `ter-vk://controlled/full`，进入
 `InputSurfaceFrame` 内的空 full-layout harness，用于验证 URL 符号实际插入；副屏和正常启动

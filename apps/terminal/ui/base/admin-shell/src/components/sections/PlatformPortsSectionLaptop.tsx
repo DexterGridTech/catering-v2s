@@ -49,7 +49,7 @@ export const PlatformPortsSectionLaptop = ({context}: AdminSectionProps) => {
   const undeclared = units.filter(unit => unit.state === 'undeclared').length;
   return (
     <PrimitiveContainer
-      testID={adminTestIds.ports.section}
+      testID={adminTestIds.ports.contentRoot}
       layout="content"
       appearance="admin-content"
       bounded

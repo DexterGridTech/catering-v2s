@@ -23,6 +23,8 @@ export type RenderContextValue = Readonly<{
   readonly selectSurfaceForm: NonNullable<RenderProviderProps['selectSurfaceForm']>;
   readonly reportPartDiagnostic: RenderPartDiagnosticReporter['report'];
   readonly clearPartDiagnostic: RenderPartDiagnosticReporter['clearForPart'];
+  readonly selectBusinessInterlockActive?: RenderProviderProps['selectBusinessInterlockActive'];
+  readonly renderBusinessInterlock?: RenderProviderProps['renderBusinessInterlock'];
 }>;
 
 export type RenderSubscriptionContextValue = Readonly<{

@@ -54,7 +54,8 @@ const DisplayRole = () => {
 安装期使用 `definePart` 同时得到两半：`catalogEntry` 交给 ui-state 的 `createUiCatalog`，
 `rendererBinding` 交给本包的 `createRendererCatalog`。两张 catalog 构建后冻结且没有 register；
 `catalogEntry` 保存准入字段（包括可为空的 `containerKeys`），renderer binding 保存 component、`layerTier`
-与正交的 `layerGuard`。`layerTier` 只决定标准层/告警层的排序，`layerGuard` 决定遮罩与返回键是否
+与正交的 `layerGuard`。`layerTier` 按标准层、告警层、本机管理层排序；integration business interlock
+插在告警业务层与本机管理层之间。`layerGuard` 决定遮罩与返回键是否
 可以关闭顶层 layer：`dismissible` 可关闭，`decisive` 不可绕过。
 文案只存在 catalog，不进入 state 或 renderer binding。
 

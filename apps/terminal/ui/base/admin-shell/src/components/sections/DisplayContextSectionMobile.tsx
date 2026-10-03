@@ -27,7 +27,7 @@ export const DisplayContextSectionMobile = ({context}: AdminSectionProps) => {
 
   return (
     <PrimitiveContainer
-      testID={adminTestIds.runtime.section}
+      testID={adminTestIds.runtime.contentRoot}
       layout="content"
       appearance="admin-content"
       bounded

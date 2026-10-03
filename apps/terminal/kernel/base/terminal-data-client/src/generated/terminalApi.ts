@@ -30,8 +30,8 @@ export type TerminalActivationResult = {
 export type TerminalOperationId = "activateTerminal" | "cancelTerminalActivation";
 export const TERMINAL_OPERATION_IDS = ["activateTerminal","cancelTerminalActivation"] as const;
 export type TerminalRequestMap = {
-  activateTerminal: { readonly pathParameters: { readonly "groupWorkspaceKey": string }; readonly queryParameters: Readonly<Record<string, never>>; readonly headers: Readonly<Record<string, never>>; readonly body: TerminalActivationRequest };
-  cancelTerminalActivation: { readonly pathParameters: { readonly "groupWorkspaceKey": string; readonly "terminalRef": string }; readonly queryParameters: Readonly<Record<string, never>>; readonly headers: { readonly "Authorization": string }; readonly body: TerminalActivationCancellationRequest };
+  activateTerminal: { readonly pathParameters: {  }; readonly queryParameters: Readonly<Record<string, never>>; readonly headers: Readonly<Record<string, never>>; readonly body: TerminalActivationRequest };
+  cancelTerminalActivation: { readonly pathParameters: { readonly "terminalRef": string }; readonly queryParameters: Readonly<Record<string, never>>; readonly headers: { readonly "Authorization": string }; readonly body: TerminalActivationCancellationRequest };
 };
 export type TerminalResponseMap = {
   activateTerminal: TerminalActivationResult;
@@ -60,7 +60,7 @@ export const terminalOperationContracts = {
   "activateTerminal": {
     operationId: "activateTerminal",
     method: "POST",
-    path: "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation",
+    path: "/activation",
     owner: "terminal-binding",
     authorizationMode: "NONE",
     idempotencyRequired: false,
@@ -73,7 +73,7 @@ export const terminalOperationContracts = {
   "cancelTerminalActivation": {
     operationId: "cancelTerminalActivation",
     method: "POST",
-    path: "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel",
+    path: "/terminals/{terminalRef}/activation/cancel",
     owner: "terminal-binding",
     authorizationMode: "TERMINAL_CREDENTIAL",
     idempotencyRequired: false,

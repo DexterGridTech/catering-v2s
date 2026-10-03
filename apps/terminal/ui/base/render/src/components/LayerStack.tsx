@@ -61,7 +61,17 @@ const tierRank = (
 ): number => {
   const entry = uiCatalog.byPartKey[layer.partKey];
   if (entry === undefined) return 0;
-  return rendererCatalog.tierOf(entry.rendererKey) === 'alert' ? 1 : 0;
+  const tier = rendererCatalog.tierOf(entry.rendererKey);
+  return tier === 'admin' ? 2 : tier === 'alert' ? 1 : 0;
+};
+
+const isAdminLayer = (
+  layer: Layer,
+  uiCatalog: Parameters<typeof resolvePart>[0]['uiCatalog'],
+  rendererCatalog: Parameters<typeof resolvePart>[0]['rendererCatalog'],
+): boolean => {
+  const entry = uiCatalog.byPartKey[layer.partKey];
+  return entry !== undefined && rendererCatalog.tierOf(entry.rendererKey) === 'admin';
 };
 
 const compareStrings = (left: string, right: string): number => (left === right ? 0 : left < right ? -1 : 1);
@@ -98,8 +108,16 @@ export const LayerStack = () => {
   const {displayMode} = useSurfaceContext();
   const presentationOffsetY = useSurfacePresentationOffset();
   const notifyFocusBoundary = useSurfaceFocusBoundary();
-  const {logger, uiCatalog, rendererCatalog, layerDismissals, reportPartDiagnostic, clearPartDiagnostic} =
-    useRenderContext();
+  const {
+    logger,
+    uiCatalog,
+    rendererCatalog,
+    layerDismissals,
+    reportPartDiagnostic,
+    clearPartDiagnostic,
+    selectBusinessInterlockActive,
+    renderBusinessInterlock,
+  } = useRenderContext();
   const dispatchCommand = useDispatchCommand();
   const runtimeStatus = useRenderStatus();
   const catalogContext = useUiCatalogContext(displayMode);
@@ -108,6 +126,8 @@ export const LayerStack = () => {
     [displayMode],
   );
   const selectedLayers = useUiStateSelector(layerSelector);
+  const interlockSelector = selectBusinessInterlockActive ?? alwaysInactiveInterlock;
+  const businessInterlockActive = useUiStateSelector(interlockSelector) ?? false;
   const layers = (selectedLayers ?? []).filter(layer => {
     const entry = uiCatalog.byPartKey[layer.partKey];
     return (
@@ -115,7 +135,12 @@ export const LayerStack = () => {
     );
   });
   const orderedLayers = [...layers].sort((left, right) => compareLayers({left, right, uiCatalog, rendererCatalog}));
-  const layerSignature = orderedLayers.map(layer => layer.layerId).join('\u0000');
+  const layerSignature = [
+    ...orderedLayers.map(layer => layer.layerId),
+    ...(businessInterlockActive ? [BUSINESS_INTERLOCK_FOCUS_MARKER] : []),
+  ].join('\u0000');
+  const adminLayers = orderedLayers.filter(layer => isAdminLayer(layer, uiCatalog, rendererCatalog));
+  const businessLayers = orderedLayers.filter(layer => !isAdminLayer(layer, uiCatalog, rendererCatalog));
   const topLayer = orderedLayers.at(-1);
   const topLayerId = topLayer?.layerId ?? null;
   const previousLayerSignature = useRef('');
@@ -130,12 +155,13 @@ export const LayerStack = () => {
         source: 'ui-base-render.LayerStack',
         displayMode,
         runtimeStatus,
+        businessInterlockActive,
         layerCount: orderedLayers.length,
         layerIds: orderedLayers.map(layer => layer.layerId),
         topLayerId,
       },
     });
-  }, [displayMode, logger, orderedLayers, runtimeStatus, topLayerId]);
+  }, [businessInterlockActive, displayMode, logger, orderedLayers, runtimeStatus, topLayerId]);
 
   useEffect(() => {
     const hadLayers = previousLayerSignature.current.length > 0;
@@ -148,6 +174,35 @@ export const LayerStack = () => {
   const topGuard =
     topLayer === undefined ? ('dismissible' as const) : layerGuardOf(topLayer, uiCatalog, rendererCatalog);
   const topLayerDismissal = topLayer === undefined ? undefined : layerDismissals?.[topLayer.partKey];
+
+  const renderLayer = (layer: Layer) => (
+    <View
+      key={layer.layerId}
+      testID={`ui-base-render:layer:${layer.layerId}`}
+      accessibilityElementsHidden={businessInterlockActive && !isAdminLayer(layer, uiCatalog, rendererCatalog)}
+      importantForAccessibility={
+        businessInterlockActive && !isAdminLayer(layer, uiCatalog, rendererCatalog) ? 'no-hide-descendants' : 'auto'
+      }
+      pointerEvents="box-none"
+      style={styles.layer}
+    >
+      <Animated.View style={[styles.layerContent, {transform: [{translateY: presentationOffsetY}]}]}>
+        <SystemFailureBoundary ownerId={`layer:${layer.layerId}`}>
+          <ResolvedLayer
+            placement={layer}
+            displayMode={displayMode}
+            containerKey={null}
+            catalogContext={catalogContext!}
+            uiCatalog={uiCatalog}
+            rendererCatalog={rendererCatalog}
+            reportPartDiagnostic={reportPartDiagnostic}
+            clearPartDiagnostic={clearPartDiagnostic}
+            elementKey={layer.layerId}
+          />
+        </SystemFailureBoundary>
+      </Animated.View>
+    </View>
+  );
 
   const dismissTopLayer = useCallback(() => {
     if (topLayer === undefined || topGuard !== 'dismissible') return;
@@ -176,12 +231,14 @@ export const LayerStack = () => {
   useEffect(() => {
     if (Platform.OS === 'web' || typeof BackHandler?.addEventListener !== 'function') return undefined;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (businessInterlockActive && (topLayer === undefined || !isAdminLayer(topLayer, uiCatalog, rendererCatalog)))
+        return true;
       if (topLayer === undefined) return false;
       if (topGuard === 'dismissible') dismissTopLayer();
       return true;
     });
     return () => subscription.remove();
-  }, [dismissTopLayer, topGuard, topLayer]);
+  }, [businessInterlockActive, dismissTopLayer, rendererCatalog, topGuard, topLayer, uiCatalog]);
 
   if (runtimeStatus !== 'started') {
     return (
@@ -201,30 +258,12 @@ export const LayerStack = () => {
           onPress={dismissTopLayer}
         />
       ) : null}
-      {orderedLayers.map(layer => (
-        <View
-          key={layer.layerId}
-          testID={`ui-base-render:layer:${layer.layerId}`}
-          pointerEvents="box-none"
-          style={styles.layer}
-        >
-          <Animated.View style={[styles.layerContent, {transform: [{translateY: presentationOffsetY}]}]}>
-            <SystemFailureBoundary ownerId={`layer:${layer.layerId}`}>
-              <ResolvedLayer
-                placement={layer}
-                displayMode={displayMode}
-                containerKey={null}
-                catalogContext={catalogContext!}
-                uiCatalog={uiCatalog}
-                rendererCatalog={rendererCatalog}
-                reportPartDiagnostic={reportPartDiagnostic}
-                clearPartDiagnostic={clearPartDiagnostic}
-                elementKey={layer.layerId}
-              />
-            </SystemFailureBoundary>
-          </Animated.View>
-        </View>
-      ))}
+      {businessLayers.map(renderLayer)}
+      {businessInterlockActive ? renderBusinessInterlock?.() : null}
+      {adminLayers.map(renderLayer)}
     </View>
   );
 };
+
+const BUSINESS_INTERLOCK_FOCUS_MARKER = 'ui-base-render:business-interlock';
+const alwaysInactiveInterlock = (): boolean => false;

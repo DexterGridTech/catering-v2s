@@ -12,10 +12,7 @@ import type {
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import type {CommandDispatchResult, Runtime} from '@catering-v2s/kernel-base-runtime';
 import {createDisplayContextModule} from '@catering-v2s/kernel-base-display-context';
-import {
-  createSampleStaffSessionModule,
-  sessionRestoredAnonymousCommand,
-} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {
   createRendererCatalog,
   createRenderRuntimeFacts,
@@ -39,6 +36,7 @@ import {
   authNoticeDismissedCommand,
   authSystemFailureDismissedCommand,
   authSystemFailureObservedCommand,
+  needToLoginStaffCommand,
 } from '../src/features/commands/commands';
 import {operatorNameVariable} from '../src/features/variables/variables';
 import {createTestRuntime} from '../../../../kernel/feature/sample-staff-session/test/support';
@@ -335,6 +333,26 @@ describe('sample staff auth UI feature', () => {
     }));
     expect(metadata).toEqual([
       ...expectedPair({
+        partKey: 'sample.auth.guide.lms',
+        containerKeys: ['main'],
+        displayModes: ['SECONDARY'],
+        workspaces: ['MAIN'],
+        instanceModes: ['SLAVE'],
+        title: '主屏登录引导',
+        layerTier: 'standard',
+        layerGuard: 'dismissible',
+      }),
+      ...expectedPair({
+        partKey: 'sample.auth.guide.lsp',
+        containerKeys: ['main'],
+        displayModes: ['PRIMARY'],
+        workspaces: ['BRANCH'],
+        instanceModes: ['SLAVE'],
+        title: '主机登录引导',
+        layerTier: 'standard',
+        layerGuard: 'dismissible',
+      }),
+      ...expectedPair({
         partKey: 'sample.auth.login',
         containerKeys: ['main'],
         displayModes: ['PRIMARY'],
@@ -374,6 +392,7 @@ describe('sample staff auth UI feature', () => {
         name: authNoticeDismissedCommand.commandName,
         visibility: 'public',
       },
+      {name: needToLoginStaffCommand.commandName, visibility: 'public'},
       {
         name: authSystemFailureObservedCommand.commandName,
         visibility: 'public',
@@ -764,20 +783,52 @@ describe('sample staff auth UI feature', () => {
     }
   });
 
-  it('does not issue local content writes when a SLAVE is rendering its projected MAIN workspace', async () => {
+  it.each([
+    ['MASTER primary', 'MASTER', 'CHIEF', {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'}, 'sample.auth.login', 'PRIMARY'],
+    ['SLAVE CHIEF', 'SLAVE', 'CHIEF', {workspace: 'BRANCH', instanceMode: 'SLAVE', displayMode: 'PRIMARY'}, 'sample.auth.guide.lsp', 'PRIMARY'],
+  ] as const)('routes needToLoginStaffCommand for %s', async (_label, mode, role, routeContext, expectedPart, displayMode) => {
     const actor = createAuthNavigationActor();
-    const handler = actor.handlers.find(handler => handler.commandName === sessionRestoredAnonymousCommand.commandName);
+    const handler = actor.handlers.find(handler => handler.commandName === needToLoginStaffCommand.commandName);
     expect(handler).toBeDefined();
-    const dispatches: string[] = [];
+    const dispatches: Array<Readonly<{commandName: string; payload: unknown}>> = [];
     const state = {
-      'kernel.base.runtime.instance-mode': {instanceMode: 'SLAVE'},
-      'kernel.base.display-context.display-role': {displayRole: 'VICE', powerConfirmation: null},
+      'kernel.base.runtime.instance-mode': {instanceMode: mode},
+      'kernel.base.display-context.display-role': {displayRole: role, powerConfirmation: null},
     } as RuntimeStateRoot;
     await handler!.handle({
-      command: {commandName: sessionRestoredAnonymousCommand.commandName, payload: {}},
+      command: {commandName: needToLoginStaffCommand.commandName, payload: {}, routeContext},
       getState: () => state,
-      dispatchCommand: async (definition: {readonly commandName: string}) => {
-        dispatches.push(definition.commandName);
+      dispatchCommand: async (definition: {readonly commandName: string}, payload: unknown) => {
+        dispatches.push({commandName: definition.commandName, payload});
+        return completedResult();
+      },
+    } as never);
+    expect(dispatches).toEqual([
+      {
+        commandName: 'kernel.base.ui-state.show-screen',
+        payload: {displayMode, containerKey: 'main', partKey: expectedPart},
+      },
+    ]);
+  });
+
+  it('does not route SLAVE VICE locally because it consumes the MASTER secondary projection', async () => {
+    const actor = createAuthNavigationActor();
+    const handler = actor.handlers.find(handler => handler.commandName === needToLoginStaffCommand.commandName);
+    expect(handler).toBeDefined();
+    const dispatches: Array<Readonly<{commandName: string; payload: unknown}>> = [];
+    const state = {
+      'kernel.base.runtime.instance-mode': Object.freeze({instanceMode: 'SLAVE'}),
+      'kernel.base.display-context.display-role': Object.freeze({displayRole: 'VICE', powerConfirmation: null}),
+    } as RuntimeStateRoot;
+    await handler!.handle({
+      command: {
+        commandName: needToLoginStaffCommand.commandName,
+        payload: {},
+        routeContext: {workspace: 'MAIN', instanceMode: 'SLAVE', displayMode: 'SECONDARY'},
+      },
+      getState: () => state,
+      dispatchCommand: async (definition: {readonly commandName: string}, payload: unknown) => {
+        dispatches.push({commandName: definition.commandName, payload});
         return completedResult();
       },
     } as never);

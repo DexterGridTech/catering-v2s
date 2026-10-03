@@ -30,7 +30,7 @@ const canonicalBinding = (binding: RendererBinding): RendererBinding => {
   if (!isRenderComponent(binding.component)) {
     throw new Error('[ui-base-render] renderer component must be callable');
   }
-  if (binding.layerTier !== 'standard' && binding.layerTier !== 'alert') {
+  if (binding.layerTier !== 'standard' && binding.layerTier !== 'alert' && binding.layerTier !== 'admin') {
     throw new Error('[ui-base-render] renderer layerTier is invalid');
   }
   if (binding.layerGuard !== 'dismissible' && binding.layerGuard !== 'decisive') {

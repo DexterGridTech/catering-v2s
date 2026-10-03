@@ -74,11 +74,11 @@ const TEXTINPUT_CONSUMER_SOURCE = Object.freeze({
 const TEXTINPUT_CONSUMER_BINDING = Object.freeze({
   'sample.auth.login:operator-name': 'testID: operatorNameFieldId',
   'sample.auth.login:passcode': 'testID: passcodeFieldId',
-  'sample.desk.customer-member:age': 'testID: ageFieldId',
-  'sample.desk.member-form:name': "testID: 'sample.desk.member-form:name'",
-  'sample.desk.member-form:phone': "testID: 'sample.desk.member-form:phone'",
-  'sample.desk.member-form:keyboard-alpha-probe': "testID: 'sample.desk.member-form:keyboard-alpha-probe'",
-  'sample.desk.member-form:keyboard-financial-probe': "testID: 'sample.desk.member-form:keyboard-financial-probe'",
+  'sample.desk.customer-member:age': 'testID: fieldId',
+  'sample.desk.member-form:name': 'testID: `${prefix}:name`',
+  'sample.desk.member-form:phone': 'testID: `${prefix}:phone`',
+  'sample.desk.member-form:keyboard-alpha-probe': 'testID: `${prefix}:keyboard-alpha-probe`',
+  'sample.desk.member-form:keyboard-financial-probe': 'testID: `${prefix}:keyboard-financial-probe`',
   'terminal.admin:topology:host': 'testID: topologyIds.host',
 });
 const TEXTINPUT_PRODUCTION_CONSUMER_FILES = Object.freeze([
@@ -92,15 +92,15 @@ const TEXTINPUT_PRODUCTION_CONSUMER_FILES = Object.freeze([
   },
   {
     path: 'apps/terminal/ui/feature/sample-member-desk/src/components/CustomerMemberAgeField.tsx',
-    required: ['useInputField', 'testID: ageFieldId', "layout: 'numeric'"],
+    required: ['const fieldId = ageFieldId(prefix);', 'useInputField', 'testID: fieldId', "layout: 'numeric'"],
   },
   {
     path: TEXTINPUT_CONSUMER_SOURCE['sample.desk.member-form:name'],
     required: [
-      "testID: 'sample.desk.member-form:name'",
-      "testID: 'sample.desk.member-form:phone'",
-      "testID: 'sample.desk.member-form:keyboard-alpha-probe'",
-      "testID: 'sample.desk.member-form:keyboard-financial-probe'",
+      'testID: `${prefix}:name`',
+      'testID: `${prefix}:phone`',
+      'testID: `${prefix}:keyboard-alpha-probe`',
+      'testID: `${prefix}:keyboard-financial-probe`',
     ],
   },
   {
@@ -280,6 +280,33 @@ test('WEB scenario admission matrix matches each actual integration and surface 
   }
 });
 
+test('each admitted integration Web run starts that integration test-expo assembly', () => {
+  const runner = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
+  assert.ok(runner.includes("path.join(root, 'apps/terminal/ui/integration', integrationName)"));
+  assert.ok(runner.includes('const scenarioScopeProblem = webScenarioScopeError({integrationName, webScenario, surfaceForm, failureOwner})'));
+  for (const row of [
+    {
+      integrationName: 'sample-console',
+      moduleSpecifier: "import {createSampleAssembly, terminalSurfaces} from '../src';",
+      assembly: 'createSampleAssembly',
+    },
+    {
+      integrationName: 'sample-wallpaper-console',
+      moduleSpecifier: "import {createSampleWallpaperConsoleAssembly, terminalSurfaces} from '../src';",
+      assembly: 'createSampleWallpaperConsoleAssembly',
+    },
+  ]) {
+    const source = fs.readFileSync(
+      path.join(repositoryRoot, `apps/terminal/ui/integration/${row.integrationName}/test-expo/App.tsx`),
+      'utf8',
+    );
+    assert.ok(source.includes("import {createTestExpoApp} from '@catering-v2s/ui-base-dev-host';"));
+    assert.ok(source.includes(row.moduleSpecifier));
+    assert.ok(source.includes(`appName: '${row.integrationName}'`));
+    assert.ok(source.includes(`createAssembly: ${row.assembly}`));
+  }
+});
+
 test('W4 layer inventory expands to all 14 integration-owner pairs without converting OPEN rows to PASS', () => {
   const rows = enumerateWebLayerOwnerCoverage();
   const expectedOwnerNames = [
@@ -448,7 +475,7 @@ test('TextInput context-menu run has an exact per-integration and per-surface de
     TEXTINPUT_CONSUMER_SOURCE['sample.desk.customer-member:age'],
     'apps/terminal/ui/feature/sample-member-desk/src/components/CustomerMemberAgeField.tsx',
   );
-  assert.equal(TEXTINPUT_CONSUMER_BINDING['sample.desk.customer-member:age'], 'testID: ageFieldId');
+  assert.equal(TEXTINPUT_CONSUMER_BINDING['sample.desk.customer-member:age'], 'testID: fieldId');
   assert.equal(
     Object.values(EXPECTED_TEXTINPUT_PROBE_IDS).some(forms =>
       Object.values(forms).some(ids => ids.includes('sample.desk.customer-member:age')),
@@ -553,7 +580,7 @@ test('TextInput context-menu run has an exact per-integration and per-surface de
     path.join(repositoryRoot, 'apps/terminal/ui/feature/sample-member-desk/src/hooks/useCustomerMember.ts'),
     'utf8',
   );
-  assert.ok(memberHook.includes("ageFieldId = 'sample.desk.customer-member:age'"));
+  assert.ok(memberHook.includes("export const ageFieldId = (prefix = 'sample.desk.customer-member') => `${prefix}:age`"));
   const adminTestIds = fs.readFileSync(
     path.join(repositoryRoot, 'apps/terminal/ui/base/admin-shell/src/foundations/adminTestIds.ts'),
     'utf8',

@@ -4,7 +4,7 @@ import {createConfirmWithoutPendingError, createInvalidWallpaperIdError} from '.
 import {moduleName} from '../../moduleName';
 import {selectPendingWallpaperId, selectWallpaperId, isWallpaperId} from '../../selectors/selectors';
 import {wallpaperActions} from '../slices/slice';
-import {confirmWallpaperCommand, selectWallpaperCommand} from '../commands/commands';
+import {cancelWallpaperSelectionCommand, confirmWallpaperCommand, selectWallpaperCommand} from '../commands/commands';
 import type {WallpaperId} from '../../types/types';
 
 const readWallpaperId = (context: ActorExecutionContext): WallpaperId => {
@@ -31,6 +31,10 @@ export const createSelectionActor = (): ActorDefinition =>
         throw createConfirmWithoutPendingError(context);
       }
       context.dispatchAction(wallpaperActions.confirmPending());
+      return null;
+    }),
+    onCommand(cancelWallpaperSelectionCommand, context => {
+      context.dispatchAction(wallpaperActions.clearPending());
       return null;
     }),
   ]);

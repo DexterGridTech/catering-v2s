@@ -6,7 +6,7 @@ import {moduleName} from '../../moduleName';
 export type WallpaperPickerCommandPayload = Readonly<{readonly wallpaperId: WallpaperId}> & StateJsonValue;
 export type EmptyPayload = Readonly<Record<string, never>> & StateJsonValue;
 
-export type WallpaperSystemOperation = 'select' | 'confirm';
+export type WallpaperSystemOperation = 'select' | 'confirm' | 'cancel' | 'logout';
 export type WallpaperSystemFailurePhase = 'before-write' | 'after-write' | 'unknown-write-phase';
 
 export type WallpaperSystemFailurePayload = Readonly<{
@@ -22,6 +22,17 @@ export const wallpaperOptionSelectedCommand = defineCommand<WallpaperPickerComma
 
 export const confirmWallpaperRequestedCommand = defineCommand<EmptyPayload>(moduleName, {
   name: 'wallpaper-confirm-requested',
+  visibility: 'public',
+});
+
+export const startWallpaperPickerCommand = defineCommand<EmptyPayload>(moduleName, {
+  name: 'start-wallpaper-picker',
+  visibility: 'public',
+});
+
+/** Integration owns the destination when a user leaves the local wallpaper picker. */
+export const wallpaperPickerExitRequestedCommand = defineCommand<EmptyPayload>(moduleName, {
+  name: 'wallpaper-picker-exit-requested',
   visibility: 'public',
 });
 

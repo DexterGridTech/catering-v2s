@@ -68,6 +68,10 @@ export type TransportNetworkAdapter = Readonly<{
 
 export type TransportModuleOptions = Readonly<{
   readonly networkAdapter?: TransportNetworkAdapter;
+  /** Composition-created adapter; receives the installed runtime context for owner-backed config reads. */
+  readonly networkAdapterFactory?: (
+    context: import('@catering-v2s/kernel-base-runtime').RuntimeModuleContext,
+  ) => TransportNetworkAdapter;
   readonly now?: () => number;
   readonly random?: () => number;
 }>;

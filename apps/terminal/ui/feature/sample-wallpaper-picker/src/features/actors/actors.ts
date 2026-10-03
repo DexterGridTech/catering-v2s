@@ -3,6 +3,7 @@ import {
   isCurrentWorkspaceOwnedByInstance,
   openLayerCommand,
   selectLayers,
+  showScreenCommand,
 } from '@catering-v2s/kernel-base-ui-state';
 import type {ActorDefinition, ActorExecutionContext, CommandDispatchResult} from '@catering-v2s/kernel-base-runtime';
 import {defineActor, onCommand} from '@catering-v2s/kernel-base-runtime';
@@ -20,6 +21,7 @@ import {
   wallpaperSystemFailureDismissedCommand,
   wallpaperSystemFailureObservedCommand,
   wallpaperOptionSelectedCommand,
+  startWallpaperPickerCommand,
   type WallpaperSystemOperation,
 } from '../commands/commands';
 import {createChildDispatchFailureError} from '../../foundations/errors';
@@ -119,5 +121,30 @@ export const createWallpaperPickerActor = (): ActorDefinition =>
         layerId: noticeLayerId,
       });
       return null;
+    }),
+  ]);
+
+export const createWallpaperPickerEntryActor = (): ActorDefinition =>
+  defineActor(moduleName, 'wallpaper-picker-entry', [
+    onCommand(startWallpaperPickerCommand, async context => {
+      const route = context.command.routeContext;
+      if (route?.displayMode === undefined || route.workspace === undefined || route.instanceMode === undefined) {
+        throw new Error('[ui.feature.sample-wallpaper-picker] stage route context is incomplete');
+      }
+      let partKey: string | null = null;
+      if (route.workspace === 'MAIN' && route.displayMode === 'SECONDARY') {
+        partKey = 'sample.wallpaper.host-display';
+      } else if (route.instanceMode === 'MASTER' && route.workspace === 'MAIN' && route.displayMode === 'PRIMARY') {
+        partKey = 'sample.wallpaper.picker';
+      } else if (route.instanceMode === 'SLAVE' && route.workspace === 'BRANCH' && route.displayMode === 'PRIMARY') {
+        partKey = 'sample.wallpaper.branch.picker';
+      }
+      if (partKey === null) throw new Error('[ui.feature.sample-wallpaper-picker] stage route is unavailable');
+      await context.dispatchCommand(showScreenCommand, {
+        displayMode: route.displayMode,
+        containerKey: 'main',
+        partKey,
+      }, {routeContext: route});
+      return Object.freeze({status: 'wallpaper-stage-requested', partKey});
     }),
   ]);

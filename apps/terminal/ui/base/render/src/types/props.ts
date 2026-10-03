@@ -6,6 +6,7 @@ import type {
   CommandDispatchResult,
   CommandIntent,
   CommandRouteIntent,
+  CommandTarget,
   RuntimeStatus,
 } from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
@@ -37,6 +38,8 @@ type RenderDispatchOptions = Readonly<{
   readonly routeContext?: CommandRouteContext | null;
   /** Semantic intent only; the runtime derives the concrete target. */
   readonly routeIntent?: CommandRouteIntent;
+  /** Explicit owner routing for a business command addressed to the peer runtime. */
+  readonly target?: CommandTarget;
 }>;
 
 type RenderDispatchCommand = <TPayload extends StateJsonValue>(
@@ -136,6 +139,10 @@ export type RenderProviderProps = Readonly<{
   /** Feature-owned intents used by generic layer affordances. */
   readonly layerDismissals?: Readonly<Record<string, RenderLayerDismissal>>;
   readonly selectUiVariable: RenderUiVariableReader;
+  /** Local integration gate for a blocking business overlay; it never disables the command dispatcher. */
+  readonly selectBusinessInterlockActive?: (root: RenderStateRoot) => boolean;
+  /** Rendered above business layers and below explicitly privileged local admin layers. */
+  readonly renderBusinessInterlock?: () => ReactNode;
   /** Required by SurfaceRoot; optional only for provider consumers that do not mount a surface. */
   readonly selectSurfaceForm?: RenderSurfaceFormReader;
   readonly children?: ReactNode;

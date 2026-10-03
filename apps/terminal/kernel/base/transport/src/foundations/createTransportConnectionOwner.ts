@@ -375,6 +375,23 @@ export const createTransportConnectionOwner = (
           result = Object.freeze({kind: 'failure', category: 'delivered-failure', code: 'HTTP_TRANSPORT_ERROR'});
         }
         if (result.kind === 'response') {
+          let currentSnapshot: TransportNetworkSnapshot;
+          try {
+            currentSnapshot = await adapter.readSnapshot(request.serverName);
+          } catch {
+            return Object.freeze({
+              kind: 'failure',
+              category: 'delivered-failure',
+              code: 'HTTP_CONFIG_READBACK_FAILED',
+            });
+          }
+          if (currentSnapshot.serverName !== request.serverName || currentSnapshot.revision !== snapshot.revision) {
+            return Object.freeze({
+              kind: 'failure',
+              category: 'delivered-failure',
+              code: 'HTTP_NETWORK_CONFIGURATION_CHANGED',
+            });
+          }
           return Object.freeze({
             ...result,
             addressName: address.addressName,

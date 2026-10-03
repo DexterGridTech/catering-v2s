@@ -6,7 +6,9 @@ import {
   createRequestId,
   type SurfaceForm,
   type TopologyIdentity,
+  type TopologyJsonValue,
   type TopologyLocator,
+  type TopologyStateFullMessage,
 } from '@catering-v2s/kernel-base-contracts';
 import {
   createRuntime,
@@ -18,8 +20,13 @@ import {
   type RuntimeModuleContext,
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime';
-import {releaseRuntimeForTest, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing';
-import {defineStateRuntimeSlice, type StateJsonValue, type SyncValueEnvelope} from '@catering-v2s/kernel-base-state';
+import {releaseRuntimeForTestAsync, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing';
+import {
+  defineStateRuntimeSlice,
+  type StateJsonValue,
+  type SyncStateDiff,
+  type SyncValueEnvelope,
+} from '@catering-v2s/kernel-base-state';
 import {
   createDisplayContextModule,
   selectDisplayRole,
@@ -58,6 +65,7 @@ import {
   resolveTopologyCommandTarget,
   areTopologyFactsEqual,
   selectTopologyFacts,
+  selectTopologyRequiredProjectionsReady,
   setTopologyHostEnabledCommand,
   topologySliceName,
   topologyActions,
@@ -462,6 +470,44 @@ describe('topology operation eligibility', () => {
 });
 
 describe('topology pairing facts', () => {
+  it('keeps required projection readiness scoped to the accepted peer connection', async () => {
+    const {runtime} = createTopologyRuntime({host: new FakeTopologyHost()});
+    await runtime.start();
+    const required = ['config.state', 'staff.state'] as const;
+    const connectionId = 'projection-peer-current';
+    const staleConnectionId = 'projection-peer-stale';
+    try {
+      runtime
+        .getStore()
+        .dispatch(
+          topologyActions.setPeerIdentity(
+            Object.freeze({...identity, nodeId: 'node-slave', instanceMode: 'SLAVE', displayRole: 'VICE'}),
+          ),
+        );
+      runtime.getStore().dispatch(topologyActions.setPeerReachable(true));
+      runtime.getStore().dispatch(topologyActions.setPeerStateSyncConnection(connectionId));
+      expect(selectTopologyRequiredProjectionsReady(runtime.getState(), required)).toBe(false);
+
+      runtime
+        .getStore()
+        .dispatch(topologyActions.markPeerStateSyncSliceApplied({connectionId, sliceName: required[0], revision: 1}));
+      expect(selectTopologyRequiredProjectionsReady(runtime.getState(), required)).toBe(false);
+      runtime
+        .getStore()
+        .dispatch(topologyActions.markPeerStateSyncSliceApplied({connectionId, sliceName: required[1], revision: 1}));
+      expect(selectTopologyRequiredProjectionsReady(runtime.getState(), required)).toBe(true);
+
+      runtime.getStore().dispatch(topologyActions.setPeerStateSyncConnection(staleConnectionId));
+      expect(selectTopologyRequiredProjectionsReady(runtime.getState(), required)).toBe(false);
+      runtime
+        .getStore()
+        .dispatch(topologyActions.markPeerStateSyncSliceApplied({connectionId, sliceName: required[0], revision: 2}));
+      expect(selectTopologyRequiredProjectionsReady(runtime.getState(), required)).toBe(false);
+    } finally {
+      await releaseRuntimeForTestAsync(runtime);
+    }
+  });
+
   it('projects typed payload failure diagnostics without changing peer lifecycle facts', async () => {
     const host = new FakeTopologyHost();
     const {runtime} = createTopologyRuntime({host});
@@ -500,7 +546,7 @@ describe('topology pairing facts', () => {
       await waitForReconciliation();
       expect(selectTopologyFacts(runtime.getState())?.payloadFailure).toBeNull();
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -545,7 +591,7 @@ describe('topology pairing facts', () => {
       );
     } finally {
       session.close('test-done');
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -596,7 +642,7 @@ describe('topology pairing facts', () => {
         total: 1,
       });
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -628,7 +674,7 @@ describe('topology pairing facts', () => {
       await waitForReconciliation();
       expect(peer.sentFrames.some(raw => JSON.parse(raw).type === 'state-full-chunk')).toBe(false);
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -660,6 +706,7 @@ describe('topology pairing facts', () => {
       getSession: () => session,
       isPeerAccepted: () => true,
       getConnectionId: () => 'deterministic-lock-1',
+      onStateSliceApplied: () => {},
       dispatchPayloadFailure: (_context, failure) => failures.push(failure),
       clearPayloadFailure: () => {},
       log: () => {},
@@ -692,6 +739,61 @@ describe('topology pairing facts', () => {
     await waitForReconciliation();
     expect(session.sendStateFull).toHaveBeenCalledTimes(2);
     expect(failures).toHaveLength(2);
+  });
+
+  it('marks only an applied full-state frame from the current accepted connection', () => {
+    let currentConnectionId = 'sync-current-1';
+    let applyStatus: 'applied' | 'skipped' = 'applied';
+    const applied: Array<Readonly<{connectionId: string; sliceName: string; revision: number}>> = [];
+    const context = {
+      getState: () => ({'kernel.base.runtime.instance-mode': {instanceMode: 'MASTER'}}),
+      applyAuthoritativeSync: vi.fn(() =>
+        applyStatus === 'applied'
+          ? {status: 'applied' as const, changed: true}
+          : {status: 'skipped' as const, reason: 'test'},
+      ),
+    } as unknown as RuntimeModuleContext;
+    const controller = createTopologyStateSyncController({
+      stateSyncSlices: [{name: membersSyncSliceName, syncIntent: 'slave-to-master'}],
+      getSession: () => undefined,
+      isPeerAccepted: () => true,
+      getConnectionId: () => currentConnectionId,
+      onStateSliceApplied: ({connectionId, sliceName, revision}) => {
+        applied.push({connectionId, sliceName, revision});
+      },
+      dispatchPayloadFailure: () => {},
+      clearPayloadFailure: () => {},
+      log: () => {},
+    });
+    const message: TopologyStateFullMessage = {
+      type: 'state-full',
+      protocolVersion: 1,
+      wireId: 'projection-full-1',
+      sliceName: membersSyncSliceName,
+      direction: 'slave-to-master',
+      revision: 1,
+      value: {mode: 'authoritative', replaceMissing: true, entries: []} as TopologyJsonValue,
+    };
+    const readDiff = (value: unknown) => value as SyncStateDiff;
+
+    controller.acceptStateFull({context, message, readDiff, sourceConnectionId: currentConnectionId});
+    expect(context.applyAuthoritativeSync).toHaveBeenCalledOnce();
+    expect(applied).toEqual([{connectionId: 'sync-current-1', sliceName: membersSyncSliceName, revision: 1}]);
+
+    currentConnectionId = 'sync-current-2';
+    controller.acceptStateFull({context, message, readDiff, sourceConnectionId: 'sync-current-1'});
+    expect(context.applyAuthoritativeSync).toHaveBeenCalledOnce();
+    expect(applied).toHaveLength(1);
+
+    applyStatus = 'skipped';
+    controller.acceptStateFull({
+      context,
+      message: {...message, revision: 2},
+      readDiff,
+      sourceConnectionId: currentConnectionId,
+    });
+    expect(context.applyAuthoritativeSync).toHaveBeenCalledTimes(2);
+    expect(applied).toHaveLength(1);
   });
 
   it('keeps membersSyncRevision unchanged when a transfer write fails and retries the same revision after reconnect', async () => {
@@ -740,7 +842,7 @@ describe('topology pairing facts', () => {
         .map(frame => frame.revision);
       expect(revisions).toEqual([2]);
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -756,7 +858,7 @@ describe('topology pairing facts', () => {
       expect(areTopologyFactsEqual(previous, Object.freeze({...next!, peerReachable: true}))).toBe(false);
       expect(areTopologyFactsEqual(undefined, next)).toBe(false);
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -788,7 +890,7 @@ describe('topology pairing facts', () => {
         reasonCode: 'TOPOLOGY_UNAVAILABLE',
       });
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -860,7 +962,7 @@ describe('topology pairing facts', () => {
         hasTopologySecondarySurface: true,
       });
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -893,7 +995,7 @@ describe('topology pairing facts', () => {
         hasTopologySecondarySurface: false,
       });
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -939,7 +1041,7 @@ describe('topology pairing facts', () => {
         hasTopologySecondarySurface: false,
       });
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 });
@@ -986,7 +1088,7 @@ describe('topology unpair peer cleanup', () => {
       });
       expect(selectTopologyFacts(runtime.getState())).toMatchObject({paired: false});
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 });
@@ -1073,7 +1175,7 @@ describe('topology runtime target resolution', () => {
         }),
       ).toBeUndefined();
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 });
@@ -1117,7 +1219,7 @@ describe('topology module identity admission', () => {
         peerReachable: false,
       });
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 });
@@ -1137,7 +1239,7 @@ describe('topology admin capability', () => {
         reasonCode: 'TOPOLOGY_REQUIRES_SINGLE_SCREEN',
       });
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
 
     const mobile = createTopologyRuntime({host: new FakeTopologyHost(), surfaceForm: 'mobile'});
@@ -1150,7 +1252,7 @@ describe('topology admin capability', () => {
       expect(topologyReasonMessages.TOPOLOGY_UNSUPPORTED_FORM).toBe('mobile 形态不支持双机拓扑');
       expect(topologyReasonMessages.TOPOLOGY_REQUIRES_SINGLE_SCREEN).toBe('双机拓扑要求本机只有一个物理屏');
     } finally {
-      releaseRuntimeForTest(mobile.runtime);
+      await releaseRuntimeForTestAsync(mobile.runtime);
     }
   });
 
@@ -1211,7 +1313,7 @@ describe('topology admin capability', () => {
         repairPending: false,
       });
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -1223,7 +1325,7 @@ describe('topology admin capability', () => {
         createTopologyAdminCapability(invalid.runtime).pairByHost({host: 'http://192.0.2.42'}),
       ).resolves.toMatchObject({status: 'error', reasonCode: 'TOPOLOGY_INVALID_LOCATOR'});
     } finally {
-      releaseRuntimeForTest(invalid.runtime);
+      await releaseRuntimeForTestAsync(invalid.runtime);
     }
 
     const identityFailure = createTopologyRuntime({
@@ -1240,7 +1342,7 @@ describe('topology admin capability', () => {
         createTopologyAdminCapability(identityFailure.runtime).pairByHost({host: '192.0.2.43'}),
       ).resolves.toMatchObject({status: 'error', reasonCode: 'TOPOLOGY_IDENTITY_FAILED'});
     } finally {
-      releaseRuntimeForTest(identityFailure.runtime);
+      await releaseRuntimeForTestAsync(identityFailure.runtime);
     }
 
     const moduleMismatch = createTopologyRuntime({
@@ -1265,7 +1367,7 @@ describe('topology admin capability', () => {
         repairPending: false,
       });
     } finally {
-      releaseRuntimeForTest(moduleMismatch.runtime);
+      await releaseRuntimeForTestAsync(moduleMismatch.runtime);
     }
 
     const rollback = createTopologyRuntime({
@@ -1285,7 +1387,7 @@ describe('topology admin capability', () => {
       expect(selectRuntimeInstanceMode(rollback.runtime.getState())).toBe('MASTER');
       expect(selectDisplayRole(rollback.runtime.getState())).toBe('CHIEF');
     } finally {
-      releaseRuntimeForTest(rollback.runtime);
+      await releaseRuntimeForTestAsync(rollback.runtime);
     }
   });
 
@@ -1324,7 +1426,7 @@ describe('topology admin capability', () => {
         }),
       ).toBe(true);
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -1369,7 +1471,7 @@ describe('topology admin capability', () => {
         }),
       ).toBe(true);
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 });
@@ -1407,7 +1509,7 @@ describe('topology lifecycle integration', () => {
         ]),
       );
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -1498,7 +1600,7 @@ describe('topology lifecycle integration', () => {
         expect.arrayContaining([expect.objectContaining({type: 'command-result'})]),
       );
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -1591,7 +1693,7 @@ describe('topology lifecycle integration', () => {
       expect(results).toEqual([expect.objectContaining({commandId: 'command-b', status: 'completed'})]);
       expect(results.some(frame => frame.commandId === 'command-a')).toBe(false);
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -1698,7 +1800,7 @@ describe('topology lifecycle integration', () => {
       );
       expect(statuses).toHaveLength(4);
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -1745,10 +1847,10 @@ describe('topology lifecycle integration', () => {
           .map(raw => JSON.parse(raw) as {type?: string})
           .filter(frame => frame.type === 'command-request'),
       ).toHaveLength(256);
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
       await expect(Promise.all(pending)).resolves.toHaveLength(256);
     } finally {
-      if (runtime.status === 'started') releaseRuntimeForTest(runtime);
+      if (runtime.status === 'started') await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -1796,7 +1898,7 @@ describe('topology lifecycle integration', () => {
       expect(settled).not.toBe('timeout');
       expect(settled).toMatchObject({status: 'error'});
     } finally {
-      if (runtime.status === 'started') releaseRuntimeForTest(runtime);
+      if (runtime.status === 'started') await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -1823,7 +1925,7 @@ describe('topology lifecycle integration', () => {
     });
     await waitForReconciliation();
     const frameCount = peer.sentFrames.length;
-    releaseRuntimeForTest(runtime);
+    await releaseRuntimeForTestAsync(runtime);
     store.dispatch({
       type: 'test/set-members',
       payload: {
@@ -1895,7 +1997,7 @@ describe('topology lifecycle integration', () => {
       expect(observed).toEqual([2]);
       expect(selectTopologyFacts(runtime.getState())?.displayCount).toBe(2);
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -2096,7 +2198,7 @@ describe('topology lifecycle integration', () => {
       expect(unpaired.status).toBe('completed');
       expect(selectTopologyFacts(first.runtime.getState())).toMatchObject({paired: false});
     } finally {
-      releaseRuntimeForTest(first.runtime);
+      await releaseRuntimeForTestAsync(first.runtime);
     }
 
     const successor = createTopologyRuntime({
@@ -2118,7 +2220,7 @@ describe('topology lifecycle integration', () => {
       });
       expect(selectTopologyFacts(successor.runtime.getState())).toMatchObject({paired: false});
     } finally {
-      releaseRuntimeForTest(successor.runtime);
+      await releaseRuntimeForTestAsync(successor.runtime);
     }
   });
 
@@ -2158,7 +2260,7 @@ describe('topology lifecycle integration', () => {
 
     expect(peer.closeCalls).toHaveLength(1);
     expect(peer.closeCalls[0]).toBeTruthy();
-    releaseRuntimeForTest(runtime);
+    await releaseRuntimeForTestAsync(runtime);
   });
 
   it('preserves a typed port-occupied error at the host lifecycle boundary', async () => {

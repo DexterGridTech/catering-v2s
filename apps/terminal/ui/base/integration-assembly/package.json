@@ -16,6 +16,7 @@
     "@catering-v2s/kernel-base-platform-ports": "workspace:*",
     "@catering-v2s/kernel-base-runtime": "workspace:*",
     "@catering-v2s/kernel-base-state": "workspace:*",
+    "@catering-v2s/kernel-base-transport": "workspace:*",
     "@catering-v2s/kernel-base-ui-state": "workspace:*",
     "@catering-v2s/ui-base-admin-shell": "workspace:*",
     "@catering-v2s/ui-base-input": "workspace:*",

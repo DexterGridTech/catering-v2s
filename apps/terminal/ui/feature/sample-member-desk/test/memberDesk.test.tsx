@@ -17,7 +17,6 @@ import {createTransportModule} from '@catering-v2s/kernel-base-transport';
 import {createTopologyModule, topologyActions, topologyHostEventCommand} from '@catering-v2s/kernel-base-topology';
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry';
-import {loginSucceededCommand} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {
   createRendererCatalog,
   createRenderRuntimeFacts,
@@ -30,20 +29,22 @@ import {
 } from '../../../../../../tools/terminal-shared/react-native-vitest-entry';
 import type {RenderProviderProps} from '@catering-v2s/ui-base-render';
 import {createUiCatalog, createUiStateModule, selectLayers, selectScreen} from '@catering-v2s/kernel-base-ui-state';
-import {sampleMemberDeskAssembly} from '../src/index';
+import {sampleMemberDeskAssembly, startMemberDeskCommand} from '../src/index';
 import {createSampleMemberDeskModule} from '../src/application/module';
 import {CustomerMember} from '../src/components/laptop/CustomerMember';
 import {DeskSystemNotice} from '../src/components/laptop/DeskSystemNotice';
 import {DeskSystemNotice as MobileDeskSystemNotice} from '../src/components/mobile/DeskSystemNotice';
 import {MemberList} from '../src/components/laptop/MemberList';
 import {MemberForm} from '../src/components/laptop/MemberForm';
+import {BranchLaptopMemberList} from '../src/components/branch/MemberList';
+import {BranchLaptopCustomerMember} from '../src/components/branch/CustomerMember';
 import {RegistryNotice} from '../src/components/laptop/RegistryNotice';
 import {WaitingConfirm} from '../src/components/laptop/WaitingConfirm';
 import {confirmMemberCommand, submitMemberCommand} from '@catering-v2s/kernel-feature-sample-member-registry';
 import {memberActions as memberStateActions} from '../../../../kernel/feature/sample-member-registry/src/features/slices/slice';
-import {deskSystemFailureDismissedCommand, deskSystemFailureObservedCommand} from '../src/features/commands/commands';
+import {deskSystemFailureDismissedCommand, deskSystemFailureObservedCommand, memberFormOpenedCommand} from '../src/features/commands/commands';
 import {createTestRuntime} from '../../../../kernel/feature/sample-member-registry/test/support';
-import {releaseRuntimeForTest} from '../../../../kernel/base/runtime/src/testing';
+import {releaseRuntimeForTestAsync} from '../../../../kernel/base/runtime/src/testing';
 import {setDisplayRoleAction} from '../../../../kernel/base/display-context/src/features/slices/displayRole';
 import {setRuntimeInstanceModeAction} from '../../../../kernel/base/runtime/src/features/slices/runtimeInstanceMode';
 import {useCustomerMember} from '../src/hooks/useCustomerMember';
@@ -360,16 +361,22 @@ const expectTextAbsent = (renderer: RenderResult, value: string): void => {
 
 const memberRoot = (
   pending: Readonly<{name: string; phone: string}>,
-  members: readonly Readonly<{memberId: string; name: string; phone: string; registeredAt: number}>[] = [],
+  members: readonly Readonly<{memberId: string; operationId: string; name: string; phone: string; registeredAt: number}>[] = [],
+  instanceMode: 'MASTER' | 'SLAVE' = 'MASTER',
 ): RuntimeStateRoot =>
-  Object.freeze({
-    'kernel.base.runtime.instance-mode': Object.freeze({instanceMode: 'MASTER'}),
-    'kernel.base.display-context.display-role': Object.freeze({displayRole: 'CHIEF'}),
-    'kernel.feature.sample-member-registry.members': Object.freeze({
-      members: Object.freeze(members),
-      pending: Object.freeze(pending),
-    }),
-  }) as RuntimeStateRoot;
+  {
+    const hostPending = Object.freeze({operationId: `operation:${pending.phone}`, ...pending});
+    return Object.freeze({
+      'kernel.base.runtime.instance-mode': Object.freeze({instanceMode}),
+      'kernel.base.display-context.display-role': Object.freeze({displayRole: instanceMode === 'MASTER' ? 'CHIEF' : 'VICE'}),
+      'kernel.feature.sample-member-registry.members': Object.freeze({
+        members: Object.freeze(members),
+        hostPending: instanceMode === 'MASTER' ? hostPending : null,
+        branchPending: null,
+        ...(instanceMode === 'SLAVE' ? {hostPendingProjection: hostPending} : {}),
+      }),
+    }) as RuntimeStateRoot;
+  };
 
 const completedResult = (): CommandDispatchResult => ({
   requestId: null,
@@ -444,6 +451,36 @@ describe('sample member desk UI feature', () => {
       layerGuard: rendererBinding.layerGuard,
     }));
     expect(metadata).toEqual([
+      ...expectedPair({
+        partKey: 'sample.desk.branch.member-list',
+        containerKeys: ['main'],
+        displayModes: ['PRIMARY'],
+        workspaces: ['BRANCH'],
+        instanceModes: ['SLAVE'],
+        title: '已登记会员',
+        layerTier: 'standard',
+        layerGuard: 'dismissible',
+      }),
+      ...expectedPair({
+        partKey: 'sample.desk.branch.member-form',
+        containerKeys: ['main'],
+        displayModes: ['PRIMARY'],
+        workspaces: ['BRANCH'],
+        instanceModes: ['SLAVE'],
+        title: '新增会员',
+        layerTier: 'standard',
+        layerGuard: 'dismissible',
+      }),
+      ...expectedPair({
+        partKey: 'sample.desk.branch.customer-member',
+        containerKeys: ['main'],
+        displayModes: ['PRIMARY'],
+        workspaces: ['BRANCH'],
+        instanceModes: ['SLAVE'],
+        title: '顾客会员确认',
+        layerTier: 'standard',
+        layerGuard: 'dismissible',
+      }),
       ...expectedPair({
         partKey: 'sample.desk.member-list',
         containerKeys: ['main'],
@@ -573,18 +610,48 @@ describe('sample member desk UI feature', () => {
     try {
       await runtime.start();
       runtime.getStore().dispatch(topologyActions.setMasterLocator(locator));
-      const result = await runtime.dispatchCommand(
-        loginSucceededCommand,
-        {operatorName: 'A001'},
+      runtime.getStore().dispatch(setRuntimeInstanceModeAction('MASTER'));
+      runtime.getStore().dispatch(setDisplayRoleAction('CHIEF'));
+      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toBeUndefined();
+      expect(selectScreen(runtime.getState(), 'SECONDARY', 'main')).toBeUndefined();
+      await runtime.dispatchCommand(
+        startMemberDeskCommand,
+        {},
+        {
+          requestId: createRequestId(),
+          routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'},
+        },
+      );
+      await runtime.dispatchCommand(
+        startMemberDeskCommand,
+        {},
+        {
+          requestId: createRequestId(),
+          routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'SECONDARY'},
+        },
+      );
+      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({partKey: 'sample.desk.member-list'});
+      expect(selectScreen(runtime.getState(), 'SECONDARY', 'main')).toMatchObject({
+        partKey: 'sample.desk.customer-welcome',
+      });
+      const operationId = createRequestId();
+      await runtime.dispatchCommand(
+        submitMemberCommand,
+        {name: 'LMS member', phone: '010-1234-5678'},
+        {requestId: operationId},
+      );
+      const confirmed = await runtime.dispatchCommand(
+        confirmMemberCommand,
+        {operationId: String(operationId)},
         {requestId: createRequestId()},
       );
-      expect(result.status).toBe('completed');
+      expect(confirmed.status).toBe('completed');
       expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({partKey: 'sample.desk.member-list'});
       expect(selectScreen(runtime.getState(), 'SECONDARY', 'main')).toMatchObject({
         partKey: 'sample.desk.customer-welcome',
       });
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -635,11 +702,11 @@ describe('sample member desk UI feature', () => {
       expect(result.status).toBe('completed');
       expect(selectScreen(runtime.getState(), 'SECONDARY', 'main')).toBeUndefined();
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
-  it('reconciles the customer surface after a recovered members state transfer', async () => {
+  it('keeps SLAVE VICE from writing host-owned screen placement during state-transfer recovery', async () => {
     const catalog = createUiCatalog(
       sampleMemberDeskAssembly.parts
         .filter(part => part.catalogEntry.surfaceForm.includes('laptop'))
@@ -674,10 +741,11 @@ describe('sample member desk UI feature', () => {
     try {
       await runtime.start();
       runtime.getStore().dispatch(topologyActions.setMasterLocator(locator));
+      runtime.getStore().dispatch(topologyActions.setDisplayCount(2));
       runtime.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'));
       runtime.getStore().dispatch(setDisplayRoleAction('VICE'));
 
-      runtime.getStore().dispatch(memberStateActions.setPending({name: 'Alice', phone: '010-0000-0000'}));
+      runtime.getStore().dispatch(memberStateActions.setBranchPending({operationId: 'branch-operation', name: 'Branch Alice', phone: '010-0000-0000'}));
       const pendingResult = await runtime.dispatchCommand(
         topologyHostEventCommand,
         {event: 'state-transfer-recovered'},
@@ -685,18 +753,144 @@ describe('sample member desk UI feature', () => {
       );
       expect(pendingResult.status).toBe('completed');
       expect(selectScreen(runtime.getState(), 'SECONDARY', 'main')).toBeUndefined();
-
-      runtime.getStore().dispatch(memberStateActions.clearPending());
-      const clearedResult = await runtime.dispatchCommand(
-        topologyHostEventCommand,
-        {event: 'state-transfer-recovered'},
-        {requestId: createRequestId()},
-      );
-      expect(clearedResult.status).toBe('completed');
-      expect(selectScreen(runtime.getState(), 'SECONDARY', 'main')).toBeUndefined();
+      expect((runtime.getState()['kernel.feature.sample-member-registry.members'] as {readonly branchPending: {readonly operationId: string}}).branchPending.operationId)
+        .toBe('branch-operation');
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
+  });
+
+  it('routes the paired branch member desk from list to local form and local confirmation', async () => {
+    const catalog = createUiCatalog(
+      sampleMemberDeskAssembly.parts
+        .filter(part => part.catalogEntry.surfaceForm.includes('laptop'))
+        .map(part => part.catalogEntry),
+    );
+    const runtime = createTestRuntime([
+      createDisplayContextModule(),
+      createTransportModule(),
+      createTopologyModule({
+        displayName: 'sample branch member desk test',
+        moduleName: 'ui.integration.sample-console',
+        surfaceForm: 'laptop',
+      }),
+      createUiStateModule({catalog, variables: [], surfaceForm: 'laptop'}),
+      createSampleStaffSessionModule(),
+      createSampleMemberRegistryModule(),
+      createSampleMemberDeskModule(),
+    ]);
+    const locator: TopologyLocator = {
+      host: '192.0.2.63',
+      port: 43172,
+      basePath: '/terminal-topology',
+      identity: {
+        protocolVersion: 1,
+        moduleName: 'ui.integration.sample-console',
+        nodeId: 'node-member-desk-branch',
+        displayName: 'Master',
+        instanceMode: 'MASTER',
+        displayRole: 'CHIEF',
+      },
+    };
+    try {
+      await runtime.start();
+      runtime.getStore().dispatch(topologyActions.setMasterLocator(locator));
+      runtime.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'));
+      runtime.getStore().dispatch(setDisplayRoleAction('CHIEF'));
+
+      const started = await runtime.dispatchCommand(startMemberDeskCommand, {}, {requestId: createRequestId()});
+      expect(started.status).toBe('completed');
+      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({partKey: 'sample.desk.branch.member-list'});
+
+      await runtime.dispatchCommand(memberFormOpenedCommand, {}, {requestId: createRequestId()});
+      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({partKey: 'sample.desk.branch.member-form'});
+
+      await runtime.dispatchCommand(
+        submitMemberCommand,
+        {name: 'Branch member', phone: '010-1234-9876'},
+        {requestId: 'branch-operation-1' as never},
+      );
+      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({partKey: 'sample.desk.branch.customer-member'});
+      expect((runtime.getState()['kernel.feature.sample-member-registry.members'] as {readonly branchPending: unknown}).branchPending)
+        .toMatchObject({operationId: 'branch-operation-1', name: 'Branch member', phone: '010-1234-9876'});
+    } finally {
+      await releaseRuntimeForTestAsync(runtime);
+    }
+  });
+
+  it('renders the branch member projection without logout and sends branch confirmation to the peer owner', async () => {
+    const {logger} = createLogger();
+    const dispatched: Array<Readonly<{name: string; payload: unknown; target: string | undefined}>> = [];
+    const dispatchCommand = ((command, options) => {
+      dispatched.push({name: command.definition.commandName, payload: command.payload, target: options.target});
+      return Promise.resolve(completedResult());
+    }) as RenderProviderProps['dispatchCommand'];
+    const branchPending = Object.freeze({operationId: 'branch-op-7', name: 'Branch guest', phone: '010-7777-8888'});
+    const root = Object.freeze({
+      'kernel.base.runtime.instance-mode': Object.freeze({instanceMode: 'SLAVE'}),
+      'kernel.base.display-context.display-role': Object.freeze({displayRole: 'CHIEF'}),
+      'kernel.feature.sample-member-registry.members': Object.freeze({
+        members: Object.freeze([
+          {memberId: 'host-member-1', operationId: 'host-member-1', name: 'Host guest', phone: '010-1111-2222', registeredAt: 1},
+        ]),
+        hostPending: null,
+        branchPending,
+        hostPendingProjection: null,
+      }),
+    }) as RuntimeStateRoot;
+    const renderer = await mount(
+      createElement(
+        RenderProvider,
+        {
+          stateSource: createStateSource(root),
+          uiCatalog: createUiCatalog([]),
+          rendererCatalog: createRendererCatalog([]),
+          logger,
+          dispatchCommand,
+          selectUiVariable: (_root, declaration) => declaration.defaultValue,
+        },
+        createElement(BranchLaptopMemberList),
+      ),
+    );
+    const branchList = queryRenderedByType(renderer, 'VirtualizedList').find(
+      node => node.props.testID === 'sample.desk.branch.member-list:scroll',
+    );
+    expect(branchList).toBeDefined();
+    expect((branchList!.props.data as readonly {memberId: string}[]).map(member => member.memberId)).toEqual(['host-member-1']);
+    expect(queryRenderedByProps(renderer, {testID: 'sample.desk.branch.member-list:logout'})).toHaveLength(0);
+    await act(async () => {
+      await renderer.unmount();
+    });
+
+    const customerRenderer = await mount(
+      createElement(
+        RenderProvider,
+        {
+          stateSource: createStateSource(root),
+          uiCatalog: createUiCatalog([]),
+          rendererCatalog: createRendererCatalog([]),
+          logger,
+          dispatchCommand,
+          selectUiVariable: (_root, declaration) => declaration.defaultValue,
+        },
+        withInputSurface(createElement(BranchLaptopCustomerMember)),
+      ),
+    );
+    expectTextValue(customerRenderer, 'sample.desk.branch.customer-member:name', 'Branch guest');
+    expectTextValue(customerRenderer, 'sample.desk.branch.customer-member:phone', '010-7777-8888');
+    expect(getRenderedByProps(customerRenderer, {testID: 'sample.desk.branch.customer-member:confirm'})).toBeDefined();
+    expect(getRenderedByProps(customerRenderer, {testID: 'sample.desk.branch.customer-member:reject'})).toBeDefined();
+    await act(async () => {
+      await press(customerRenderer, 'sample.desk.branch.customer-member:confirm')();
+    });
+    expect(dispatched).toContainEqual({
+      name: confirmMemberCommand.commandName,
+      payload: {operationId: 'branch-op-7'},
+      target: 'peer',
+    });
+    await act(async () => {
+      await customerRenderer.unmount();
+    });
   });
 
   it('reads confirm data through the owner selector and renders the two actions', async () => {
@@ -830,14 +1024,15 @@ describe('sample member desk UI feature', () => {
     await act(async () => {
       ageInput.props.onChangeText('37');
     });
-    expect((root['kernel.feature.sample-member-registry.members'] as {readonly pending: unknown}).pending).toEqual({
+    expect((root['kernel.feature.sample-member-registry.members'] as {readonly hostPending: unknown}).hostPending).toEqual({
+      operationId: 'operation:010-1234-5678',
       name: 'Alice',
       phone: '010-1234-5678',
     });
     await act(async () => {
       await press(renderer, 'sample.desk.customer-member:confirm')();
     });
-    expect(dispatched).toContainEqual({name: confirmMemberCommand.commandName, payload: {age: 37}});
+    expect(dispatched).toContainEqual({name: confirmMemberCommand.commandName, payload: {operationId: 'operation:010-1234-5678', age: 37}});
     await act(async () => {
       await renderer.unmount();
     });
@@ -868,7 +1063,46 @@ describe('sample member desk UI feature', () => {
     await act(async () => {
       await press(renderer, 'sample.desk.customer-member:confirm')();
     });
-    expect(dispatched).toContainEqual({name: confirmMemberCommand.commandName, payload: {}});
+    expect(dispatched).toContainEqual({name: confirmMemberCommand.commandName, payload: {operationId: 'operation:010-1234-5678'}});
+    await act(async () => {
+      await renderer.unmount();
+    });
+  });
+
+  it('routes dual-machine LMS confirmation to the peer host owner with the projected operation id', async () => {
+    const {logger} = createLogger();
+    const dispatched: Array<Readonly<{name: string; payload: unknown; target: string | undefined}>> = [];
+    const dispatchCommand = ((command, options) => {
+      dispatched.push({
+        name: command.definition.commandName,
+        payload: command.payload,
+        target: options.target,
+      });
+      return Promise.resolve(completedResult());
+    }) as RenderProviderProps['dispatchCommand'];
+    const renderer = await mount(
+      createElement(
+        RenderProvider,
+        {
+          stateSource: createStateSource(memberRoot({name: 'Host member', phone: '010-3333-4444'}, [], 'SLAVE')),
+          uiCatalog: createUiCatalog([]),
+          rendererCatalog: createRendererCatalog([]),
+          logger,
+          dispatchCommand,
+          selectUiVariable: (_root, declaration) => declaration.defaultValue,
+        },
+        withInputSurface(createElement(CustomerMember, {mode: 'confirm'})),
+      ),
+    );
+
+    await act(async () => {
+      await press(renderer, 'sample.desk.customer-member:confirm')();
+    });
+    expect(dispatched).toContainEqual({
+      name: confirmMemberCommand.commandName,
+      payload: {operationId: 'operation:010-3333-4444'},
+      target: 'peer',
+    });
     await act(async () => {
       await renderer.unmount();
     });
@@ -1143,16 +1377,21 @@ describe('sample member desk UI feature', () => {
     });
   });
 
-  it('passes the approved member-list row testID into the feature-owned MemberRow', async () => {
+  it('keeps the complete member list while mounting at most 24 rows and scrolling to the last member', async () => {
     const {logger} = createLogger();
+    const members = Array.from({length: 30}, (_value, index) => ({
+      memberId: `member-${index}`,
+      operationId: `operation-${index}`,
+      name: `Member ${index}`,
+      phone: `010-${String(index).padStart(4, '0')}-0000`,
+      registeredAt: index,
+    }));
     const renderer = await mount(
       createElement(
         RenderProvider,
         {
           stateSource: createStateSource(
-            memberRoot({name: 'Pending', phone: '010-0000-0000'}, [
-              {memberId: 'member-1', name: 'Alice', phone: '010-1234-5678', registeredAt: 1},
-            ]),
+            memberRoot({name: 'Pending', phone: '010-0000-0000'}, members),
           ),
           uiCatalog: createUiCatalog([]),
           rendererCatalog: createRendererCatalog([]),
@@ -1169,20 +1408,39 @@ describe('sample member desk UI feature', () => {
       ),
     );
 
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.member-list:row'})).toBeDefined();
-    expectTextValue(renderer, 'sample.desk.member-list:row:content', 'Alice 010-1234-5678');
-    const scrollArea = getRenderedByProps(renderer, {
-      testID: 'sample.desk.member-list:scroll',
-    }) as unknown as TestInstanceQuery;
-    expect(
-      queryRenderedSubtree(scrollArea, node => node.props.testID === 'sample.desk.member-list:row').length,
-    ).toBeGreaterThan(0);
-    expect(queryRenderedSubtree(scrollArea, node => node.props.testID === 'sample.desk.member-list:add')).toHaveLength(
-      0,
-    );
-    expect(
-      queryRenderedSubtree(scrollArea, node => node.props.testID === 'sample.desk.member-list:logout'),
-    ).toHaveLength(0);
+    const virtualizedList = () =>
+      queryRenderedByType(renderer, 'VirtualizedList').find(node => node.props.testID === 'sample.desk.member-list:scroll');
+    type ListProps = Readonly<{
+      readonly data: readonly typeof members[number][];
+      readonly getItemCount: (items: readonly typeof members[number][]) => number;
+      readonly renderItem: (input: Readonly<{item: typeof members[number]; index: number}>) => ReactElement<{
+        readonly testID?: string;
+        readonly children?: ReactNode;
+      }>;
+      readonly onScroll: (event: Readonly<{nativeEvent: Readonly<{contentOffset: Readonly<{y: number}>}>}>) => void;
+    }>;
+    const list = virtualizedList();
+    expect(list).toBeDefined();
+    const initialProps = list!.props as ListProps;
+    expect(initialProps.getItemCount(initialProps.data)).toBe(30);
+    const renderedWindowSize = (props: ListProps) =>
+      props.data.filter((item, index) => typeof props.renderItem({item, index}).props.testID === 'string').length;
+    expect(renderedWindowSize(initialProps)).toBeLessThanOrEqual(24);
+    await act(async () => {
+      initialProps.onScroll({nativeEvent: {contentOffset: {y: 29 * 64}}});
+    });
+    const finalList = virtualizedList();
+    expect(finalList).toBeDefined();
+    const finalProps = finalList!.props as ListProps;
+    expect(renderedWindowSize(finalProps)).toBeLessThanOrEqual(24);
+    const finalRow = finalProps.renderItem({item: members[29]!, index: 29});
+    expect(finalRow.props.testID).toBe('sample.desk.member-list:scroll:row:member-29');
+    const finalMember = finalRow.props.children as ReactElement<{readonly testID: string; readonly name: string; readonly phone: string}>;
+    expect(finalMember.props.testID).toBe('sample.desk.member-list:row:member-29');
+    expect(finalMember.props.name).toBe('Member 29');
+    expect(finalMember.props.phone).toBe('010-0029-0000');
+    expect(queryRenderedByProps(renderer, {testID: 'sample.desk.member-list:add'})).toHaveLength(1);
+    expect(queryRenderedByProps(renderer, {testID: 'sample.desk.member-list:logout'})).toHaveLength(1);
     await act(async () => {
       await renderer.unmount();
     });
@@ -1604,7 +1862,7 @@ describe('sample member desk UI feature', () => {
           ),
       ).toBe(false);
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 });

@@ -14,6 +14,9 @@ const readState = (state: StateRoot): ServerConfigState => {
   return slice as ServerConfigState;
 };
 
+const effectiveDefaults = (current: ServerConfigState, defaults: TransportServerConfig): TransportServerConfig =>
+  current.syncedHostDefaults ?? defaults;
+
 const maskProxy = (
   proxy: TransportHttpProxy | null | undefined,
 ): EffectiveServerConfigView['defaults'][number]['servers'][number]['proxy'] => {
@@ -47,9 +50,10 @@ export const resolveServerNetworkSnapshot = (
   serverName: string,
 ): ServerNetworkSnapshot => {
   const current = readState(state);
+  const effective = effectiveDefaults(current, defaults);
   const selectedSpace =
-    defaults.spaces.find(space => space.name === current.selectedSpace) ??
-    defaults.spaces.find(space => space.name === defaults.selectedSpace);
+    effective.spaces.find(space => space.name === current.selectedSpace) ??
+    effective.spaces.find(space => space.name === effective.selectedSpace);
   const server = selectedSpace?.servers.find(item => item.serverName === serverName);
   if (server === undefined) throw new Error('SERVER_CONFIG_SERVICE_UNAVAILABLE');
   const override = current.overrides[serverName];
@@ -67,7 +71,8 @@ export const selectServerConfiguration = (
   defaults: TransportServerConfig,
 ): EffectiveServerConfigView => {
   const current = readState(state);
-  const spaces = defaults.spaces.map(space => ({
+  const effective = effectiveDefaults(current, defaults);
+  const spaces = effective.spaces.map(space => ({
     name: space.name,
     servers: space.servers.map(server => {
       const override = current.overrides[server.serverName];
@@ -76,11 +81,12 @@ export const selectServerConfiguration = (
         serverName: server.serverName,
         addresses: override?.addresses ?? server.addresses,
         proxy: maskProxy(proxy),
+        proxyPasswordOverridden: current.proxyPasswords[server.serverName] !== undefined,
         overridden: override !== undefined,
       });
     }),
   }));
-  const defaultViews = defaults.spaces.map(space => ({
+  const defaultViews = effective.spaces.map(space => ({
     name: space.name,
     servers: space.servers.map(server =>
       Object.freeze({
@@ -91,9 +97,10 @@ export const selectServerConfiguration = (
     ),
   }));
   return Object.freeze({
-    selectedSpace: defaults.spaces.some(space => space.name === current.selectedSpace)
+    source: current.syncedHostDefaults === null ? 'package-defaults' : 'host-sync',
+    selectedSpace: effective.spaces.some(space => space.name === current.selectedSpace)
       ? current.selectedSpace
-      : defaults.selectedSpace,
+      : effective.selectedSpace,
     spaces: Object.freeze(spaces.map(space => Object.freeze({...space, servers: Object.freeze(space.servers)}))),
     defaults: Object.freeze(
       defaultViews.map(space => Object.freeze({...space, servers: Object.freeze(space.servers)})),

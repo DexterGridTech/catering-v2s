@@ -1,4 +1,5 @@
 export {moduleName} from './moduleName';
+export {PairReadinessInterlock, pairReadinessInterlockTestIds} from './components/PairReadinessInterlock';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
 export {createStartupDiagnosticsWriter} from './foundations/startupDiagnosticsWriter';
 export type {StartupDiagnosticsWriter, StartupDiagnosticsWriterInput} from './foundations/startupDiagnosticsWriter';
@@ -16,6 +17,7 @@ export type {
 export {createStartupReadyActor, createStartupReadyPayload} from './foundations/startupReady';
 export type {StartupReadyActorInput, StartupReadyPayload} from './foundations/startupReady';
 export {selectStateSyncSlices} from './foundations/stateSyncSlices';
+export {createBrowserTransportNetworkAdapter} from './foundations/createBrowserTransportNetworkAdapter';
 export type {StateSyncSlice, TopologyStateSyncSlice} from './foundations/stateSyncSlices';
 export {
   createIntegrationAssembly,

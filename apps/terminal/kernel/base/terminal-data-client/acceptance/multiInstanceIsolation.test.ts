@@ -92,7 +92,12 @@ const createComposition = (
     readSnapshot: async serverName => ({
       serverName,
       revision: 1,
-      addresses: [{addressName: `${input.key}-endpoint`, baseUrl: 'https://terminal.example.test'}],
+      addresses: [
+        {
+          addressName: `${input.key}-endpoint`,
+          baseUrl: 'https://terminal.example.test/api/terminal/group-workspaces/group-workspace-1',
+        },
+      ],
     }),
     connect: async () => socket,
     sendHttp: async ({body}) => {
@@ -117,6 +122,7 @@ const createComposition = (
     createCredentialSecret: () => input.secret,
     now: () => 1_000,
     appVersion: 'acceptance-test',
+    surfaceForm: 'laptop',
   });
   const modules: readonly RuntimeModule[] = [
     toolkit(contractsModuleName, []),
@@ -238,11 +244,7 @@ describe('terminal-data-client Node acceptance composition isolation', () => {
       runtime.dispatchCommand(
         activateTerminalCommand,
         {
-          operationId: `activation-${activationCode}`,
-          groupWorkspaceKey: 'group-workspace-1',
           activationCode,
-          surfaceForm: 'laptop',
-          appVersion: 'acceptance-test',
         },
         {requestId: createRequestId()},
       );

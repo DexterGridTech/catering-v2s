@@ -11,8 +11,10 @@ export const createSampleTerminalAssembly = (input: Readonly<{readonly surfaceFo
   return createSampleAssembly({
     ...androidPlatform,
     persistenceKey,
+    appVersion: packageJson.version,
     surfaceForm: input.surfaceForm,
     terminalSurfaces: packageJson.terminalSurfaces,
+    serverSpaces: packageJson.serverSpaces,
     showAdminPassword: packageJson.showAdminPassword,
   });
 };

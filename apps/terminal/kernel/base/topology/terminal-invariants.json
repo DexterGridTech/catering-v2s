@@ -27,6 +27,7 @@
     "refreshTopologyDisplayCommand",
     "runtimeModuleDependencyNames",
     "selectTopologyFacts",
+    "selectTopologyRequiredProjectionsReady",
     "selectTopologyState",
     "setTopologyHostEnabledCommand",
     "topologyActions",

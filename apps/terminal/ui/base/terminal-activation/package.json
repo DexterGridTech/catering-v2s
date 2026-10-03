@@ -1,0 +1,41 @@
+{
+  "name": "@catering-v2s/ui-base-terminal-activation",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "node ../../../../../tools/terminal-shared/run-owned-lint.mjs",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
+  },
+  "dependencies": {
+    "@catering-v2s/kernel-base-contracts": "workspace:*",
+    "@catering-v2s/kernel-base-runtime": "workspace:*",
+    "@catering-v2s/kernel-base-server-config": "workspace:*",
+    "@catering-v2s/kernel-base-state": "workspace:*",
+    "@catering-v2s/kernel-base-terminal-data-client": "workspace:*",
+    "@catering-v2s/kernel-base-topology": "workspace:*",
+    "@catering-v2s/ui-base-admin-shell": "workspace:*",
+    "@catering-v2s/ui-base-input": "workspace:*",
+    "@catering-v2s/ui-base-primitives": "workspace:*",
+    "@catering-v2s/ui-base-render": "workspace:*",
+    "expo-crypto": "~57.0.2"
+  },
+  "peerDependencies": {
+    "expo": "~57.0.18",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "14.0.1",
+    "@types/react": "~19.2.2",
+    "expo": "~57.0.18",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "test-renderer": "1.2.0",
+    "typescript": "~6.0.3",
+    "vitest": "4.1.10"
+  }
+}

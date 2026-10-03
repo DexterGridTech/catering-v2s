@@ -6,13 +6,16 @@ export {
   selectConnectionState,
   selectConnectionLatency,
 } from './selectors/selectTerminalDataClientState';
+export {selectTerminalClientStatusProjection} from './selectors/selectTerminalDataClientStatusProjection';
+export {terminalClientStatusProjectionSliceName} from './features/slices/terminalClientStatusProjection';
 export type {
   ActivateTerminalPayload,
-  CancelTerminalOnlinePayload,
+  CancelTerminaActivationPayload,
   TerminalActivationView,
   TerminalConnectionView,
   TerminalLatencySample,
   TerminalClientState,
+  TerminalClientStatusProjection,
   TerminalCredential,
   TerminalTransportCommands,
   TerminalTransportConnection,
@@ -20,7 +23,7 @@ export type {
 } from './types/client';
 export {
   activateTerminalCommand,
-  cancelTerminalOnlineCommand,
+  cancelTerminaActivationCommand,
   cancelTerminalOfflineCommand,
   connectTerminalCommand,
   disconnectTerminalCommand,

@@ -1,4 +1,5 @@
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
+import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {wallpaperSliceName} from '../features/slices/slice';
 import type {WallpaperId, WallpaperState} from '../types/types';
 
@@ -16,6 +17,15 @@ const readWallpaperState = (root: StateRoot): WallpaperState => {
 };
 
 export const selectWallpaperId = (root: StateRoot): WallpaperId => readWallpaperState(root).wallpaperId;
+
+export const selectHostConfirmedWallpaperId = (root: StateRoot): WallpaperId | null => {
+  const state = readWallpaperState(root);
+  if (selectRuntimeInstanceMode(root) === 'MASTER') return state.wallpaperId;
+  const projected = state.hostConfirmedWallpaperId;
+  if (projected === undefined || projected === null) return null;
+  if (!isWallpaperId(projected)) throw new Error(`Invalid host wallpaper projection: ${wallpaperSliceName}`);
+  return projected;
+};
 
 export const selectPendingWallpaperId = (root: StateRoot): WallpaperId | undefined =>
   readWallpaperState(root).pendingWallpaperId;

@@ -15,7 +15,7 @@ SUCCESS_OUTCOME=激活与配置结果由 owner selector 读回；每一内容面
 UI_BEARING=true
 SKILL_USED=cs-spec-to-plan@1e909f3a92fb4ecff9b4eafb360129bdbf4dad5900a49443b0ece0bc434cda9c
 DEXTER_WIREFRAME_REVIEW=ACCEPTED
-WIREFRAME_ACCEPTANCE_SCOPE=整体交互方向（四面激活/登录、admin、断链本地恢复、LSP独立会员/壁纸、LMS主机投影）；R2已review修订前字节，修订后逐屏文档待Dexter/Claude评审；运行细节未验证
+WIREFRAME_ACCEPTANCE_SCOPE=整体交互方向（四面激活/登录、admin、断链本地恢复、LSP独立会员/壁纸、LMS主机投影）；R2已review修订前字节；S-1～S-6/N-1已按主agent intake修订，当前完整设计包待Dexter/Claude独立静态复评；运行细节未验证
 PACKAGE_OWNERSHIP=terminal-activation与server-config-panel按正式需求R-03位于apps/terminal/ui/base，是跨两个integration复用的UI呈现包；它们调用现有owner command/selector，不拥有业务事实。三个sample包仍位于apps/terminal/ui/feature。
 DEXTER_HIFI_REVIEW=NOT_REQUIRED
 CONSUMER_FACE=public
@@ -144,7 +144,7 @@ FORM_MUTATION_DENOMINATOR=1个业务mutation：activateTerminalCommand；needToA
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | activationCode | 8位数字激活码输入框 | EDITABLE | R-04；本screen激活码 | 用户输入原样传入，保留前导零 | 校验8位数字；不和身份/空间字段拼接 | terminal-data-client在当前角色、设备和配置下重核 | owner拒绝时保留该字段草稿并显示非敏感原因；只以owner readback宣告成功，迟到结果不得覆盖新操作 |
 | operationId | 不显示；仅owner用于绑定本次操作 | HIDDEN_OWNER_FACT | client一次业务操作身份 | 由既有client操作路径创建并在同次重试复用 | 不得从控件输入或重试时另造 | client actor按同次业务操作规则确认 | 冲突/迟到结果不覆盖当前owner状态；按selector重新读回并显示当前错误/等待状态，不把unknown报成功 |
-| groupWorkspaceKey | 不显示；路由身份不是用户输入 | HIDDEN_OWNER_FACT | 成功响应的凭证身份；当前选中空间的prefix仅用于路由 | activation command不收集团编码；generated后缀负责只产生operation suffix与path参数；composition注入server-config network provider，由transport network adapter将suffix追加到当前选中地址的addresses[].baseUrl（该baseUrl就是完整URL前缀） | 当前选中空间变化即按新prefix发起；owner拒绝时保留凭证、不伪造成功 | groupWorkspaceKey只取验证成功响应，不从URL解析或重建；client不读server-config selector/state | 冲突/迟到结果不覆盖当前owner状态；按selector重新读回并显示当前错误/等待状态，不把unknown报成功 |
+| groupWorkspaceKey | 不显示；路由身份不是用户输入 | HIDDEN_OWNER_FACT | 成功响应的凭证身份；当前选中空间的prefix仅用于路由 | activation command不收集团编码；generated后缀负责只产生operation suffix与path参数；composition注入server-config network provider，由transport network adapter将suffix追加到当前选中地址的addresses[].baseUrl（该baseUrl就是完整URL前缀） | 请求始终使用当前选中的服务空间；切换空间后按新prefix发起；owner拒绝时保留凭证、不伪造成功 | groupWorkspaceKey只取验证成功响应，不从URL解析或重建；client不读server-config selector/state | 冲突/迟到结果不覆盖当前owner状态；按selector重新读回并显示当前错误/等待状态，不把unknown报成功 |
 | surfaceForm / appVersion | 不显示；仅owner用于绑定本次操作 | HIDDEN_OWNER_FACT | application composition设备元数据 | 当前运行入口真实值 | 身份变化令旧请求不得提交 | client校验闭集与当前运行身份 | 冲突/迟到结果不覆盖当前owner状态；按selector重新读回并显示当前错误/等待状态，不把unknown报成功 |
 | deviceId / credentialSecret | 不显示；仅owner用于绑定本次操作 | HIDDEN_OWNER_FACT | DevicePort / terminal-data-client安全随机来源 | 分别由设备端口读取、client生成；只在client保存 | 不得进入DOM、日志或配置投影 | client唯一持有并验证；UI不接触秘密 | 冲突/迟到结果不覆盖当前owner状态；按selector重新读回并显示当前错误/等待状态，不把unknown报成功 |
 
@@ -209,7 +209,7 @@ FORM_MUTATION_DENOMINATOR=1个业务mutation：activateTerminalCommand；needToA
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | activationCode | 8位数字激活码输入框 | EDITABLE | R-04；本screen激活码 | 用户输入原样传入，保留前导零 | 校验8位数字；不和身份/空间字段拼接 | terminal-data-client在当前角色、设备和配置下重核 | owner拒绝时保留该字段草稿并显示非敏感原因；只以owner readback宣告成功，迟到结果不得覆盖新操作 |
 | operationId | 不显示；仅owner用于绑定本次操作 | HIDDEN_OWNER_FACT | client一次业务操作身份 | 由既有client操作路径创建并在同次重试复用 | 不得从控件输入或重试时另造 | client actor按同次业务操作规则确认 | 冲突/迟到结果不覆盖当前owner状态；按selector重新读回并显示当前错误/等待状态，不把unknown报成功 |
-| groupWorkspaceKey | 不显示；路由身份不是用户输入 | HIDDEN_OWNER_FACT | 成功响应的凭证身份；当前选中空间的prefix仅用于路由 | activation command不收集团编码；generated后缀负责只产生operation suffix与path参数；composition注入server-config network provider，由transport network adapter将suffix追加到当前选中地址的addresses[].baseUrl（该baseUrl就是完整URL前缀） | 当前选中空间变化即按新prefix发起；owner拒绝时保留凭证、不伪造成功 | groupWorkspaceKey只取验证成功响应，不从URL解析或重建；client不读server-config selector/state | 冲突/迟到结果不覆盖当前owner状态；按selector重新读回并显示当前错误/等待状态，不把unknown报成功 |
+| groupWorkspaceKey | 不显示；路由身份不是用户输入 | HIDDEN_OWNER_FACT | 成功响应的凭证身份；当前选中空间的prefix仅用于路由 | activation command不收集团编码；generated后缀负责只产生operation suffix与path参数；composition注入server-config network provider，由transport network adapter将suffix追加到当前选中地址的addresses[].baseUrl（该baseUrl就是完整URL前缀） | 请求始终使用当前选中的服务空间；切换空间后按新prefix发起；owner拒绝时保留凭证、不伪造成功 | groupWorkspaceKey只取验证成功响应，不从URL解析或重建；client不读server-config selector/state | 冲突/迟到结果不覆盖当前owner状态；按selector重新读回并显示当前错误/等待状态，不把unknown报成功 |
 | surfaceForm / appVersion | 不显示；仅owner用于绑定本次操作 | HIDDEN_OWNER_FACT | application composition设备元数据 | 当前运行入口真实值 | 身份变化令旧请求不得提交 | client校验闭集与当前运行身份 | 冲突/迟到结果不覆盖当前owner状态；按selector重新读回并显示当前错误/等待状态，不把unknown报成功 |
 | deviceId / credentialSecret | 不显示；仅owner用于绑定本次操作 | HIDDEN_OWNER_FACT | DevicePort / terminal-data-client安全随机来源 | 分别由设备端口读取、client生成；只在client保存 | 不得进入DOM、日志或配置投影 | client唯一持有并验证；UI不接触秘密 | 冲突/迟到结果不覆盖当前owner状态；按selector重新读回并显示当前错误/等待状态，不把unknown报成功 |
 
@@ -397,8 +397,8 @@ HOST_AND_ENTRY=本机 admin launcher → 本机认证 → “设备激活状态�
 ACTOR=终端本地管理员
 BUSINESS_SCENARIO=排查当前设备是否已激活及 TDS 是否在线
 BUSINESS_GOAL=看清激活/连接/延时并可从合格主机取消激活
-USER_VISIBLE_COPY=设备激活状态；激活状态；终端；门店；集团空间；连接状态；连接延时；取消激活；取消中；错误说明
-TECHNICAL_BOUNDARY=状态与操作能力由 terminal-data-client selectors/command 判定；副机仅呈现标注为主机的投影
+USER_VISIBLE_COPY=设备激活状态；激活状态；终端；门店；集团空间；连接状态；连接延时；主机状态待同步；上次主机状态（待同步）；等待主机状态；取消激活；取消中；错误说明
+TECHNICAL_BOUNDARY=MASTER读取terminal-data-client本机selectors；SLAVE只显示sourceNodeId匹配当前peer的持久status projection；projection revision未ready或断链时标“上次主机状态（待同步）”，无匹配缓存时显示等待；status projection只用于展示，不授予业务资格
 FOUNDATION_PRIMITIVE=@catering-v2s/ui-base-admin-shell:adminShellAssembly; @catering-v2s/ui-base-render:useUiStateSelector,useDispatchCommand; @catering-v2s/ui-base-primitives:PrimitiveCard,PrimitiveButton,PrimitiveStatusRow,PrimitiveText
 CONTAINER_LAYOUT=仅画“设备激活状态”当前内容区，不把共享 admin 壳、其他 tab 或关闭按钮画入本 screen；laptop 内容宽不超 admin-shell 现有内容区，mobile 单列；唯一纵向滚动在本 tab 内容区，取消按钮保持可见。
 ```
@@ -406,9 +406,10 @@ CONTAINER_LAYOUT=仅画“设备激活状态”当前内容区，不把共享 ad
 ```text
 ┌──────────── 设备激活状态 ──────────────────────────────────┐
 │ ┌ 激活状态 ──────────────────────────────────────────────┐ │
-│ │ 已激活 / 未激活 / 正在取消                              │ │
+│ │ 激活状态：已激活 / 未激活 / 正在取消                    │ │
+│ │ 上次主机状态（待同步） / 主机状态待同步                 │ │
 │ │ 终端：…  门店：…  集团空间：…                            │ │
-│ │ 连接：已连接/连接中/断开；延时：…                         │ │
+│ │ 连接：已连接/连接中/断开；延时：…或等待主机状态          │ │
 │ │ 最近可恢复错误：…                                         │ │
 │ │ [取消激活]（仅有权威主机且已激活）                        │ │
 │ └─────────────────────────────────────────────────────────┘ │
@@ -1179,16 +1180,16 @@ CONTAINER_LAYOUT=laptop PRIMARY 1280×720；独立 LSP 页面；内容宽不超�
 
 #### 逐屏操作控件与 testId roster
 
-以下新增 LSP 页面控件仍为设计提案；已有 customer-member 叶组件的字面量只用于 MMP/LMP 当前源码证据，不表示 LSP 已实现或绑定。本专项无 Browser L2 授权，未来非 adapter 行为按 TR-16 先 Expo Web，再以同一场景清单对照 VM。
+LSP 控件已由独立 BRANCH/SLAVE parts 实现，并复用相同叶组件与 owner commands；表内列出当前源码节点。本专项无 Browser L2 授权，未来非 adapter 行为按 TR-16 先 Expo Web，再以同一场景清单对照 VM。
 
 | 用户动作/观察 | testId提案 | 实际动作节点 | 当前证据状态 |
 | --- | --- | --- | --- |
-| 读取主机已登记会员集合及空态 | sample.desk.branch.member-list:title / row / empty | 真实列表与空态节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 打开新增表单 | sample.desk.branch.member-form:add | 真实按钮节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 输入姓名、电话 | sample.desk.branch.member-form:name / phone | 真实输入节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 提交或取消本机草稿 | sample.desk.branch.member-form:submit / cancel | 真实按钮节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 确认态读取姓名/电话/年龄并输入可选年龄 | sample.desk.branch.customer-member:name / phone / age | 只读文本与真实输入节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 确认或标记信息有误 | sample.desk.branch.customer-member:confirm / reject | 真实按钮节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
+| 读取主机已登记会员集合及空态 | sample.desk.branch.member-list:title / row:<memberId> / empty | BranchMemberList中的真实列表与空态节点 | IMPLEMENTED_FOCUSED_ONLY；Expo Web/VM NOT_RUN |
+| 打开新增表单 | sample.desk.branch.member-list:add | BranchMemberList中的真实按钮节点 | IMPLEMENTED_FOCUSED_ONLY；Expo Web/VM NOT_RUN |
+| 输入姓名、电话 | sample.desk.branch.member-form:name / phone | BranchMemberForm中的真实输入节点 | IMPLEMENTED_FOCUSED_ONLY；Expo Web/VM NOT_RUN |
+| 提交或取消本机草稿 | sample.desk.branch.member-form:submit / cancel | BranchMemberForm中的真实按钮节点 | IMPLEMENTED_FOCUSED_ONLY；Expo Web/VM NOT_RUN |
+| 确认态读取姓名/电话/年龄并输入可选年龄 | sample.desk.branch.customer-member:name / phone / age | BranchCustomerMember中的只读文本与真实输入节点 | IMPLEMENTED_FOCUSED_ONLY；Expo Web/VM NOT_RUN |
+| 确认或标记信息有误 | sample.desk.branch.customer-member:confirm / reject | BranchCustomerMember中的真实按钮节点 | IMPLEMENTED_FOCUSED_ONLY；Expo Web/VM NOT_RUN |
 
 L2_SCRIPT_ADMISSION=NOT_APPLICABLE_WITH_REASON：本专项当前未授权 Browser L2；本屏未来先做 Expo Web 与同场景 VM 验证，不虚构空分母。
 
@@ -1429,13 +1430,13 @@ CONTAINER_LAYOUT=mobile PRIMARY 360×640；沿用现有 120×72 缩略图；唯�
 
 #### 逐屏操作控件与 testId roster
 
-以下均为设计提案；当前没有新增控件、testId绑定、L2 binding或focused proof。本专项未来按 TR-16 先Expo Web，再以同一场景清单对照VM。
+MMP壁纸页的当前源码已绑定选项、确认、店员登出testId；focused package test覆盖四个Radio和logout command dispatch。Expo Web/VM仍NOT_RUN。
 
-| 用户动作/观察 | testId提案 | 实际动作节点 | 当前证据状态 |
+| 用户动作/观察 | testId（当前源码） | 实际动作节点 | 当前证据状态 |
 | --- | --- | --- | --- |
-| 选择无壁纸/山景/湖景/海滩 | sample.wallpaper.picker:options:<wallpaperId> | 真实Radio option节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 确认壁纸 | sample.wallpaper.picker:confirm | 真实按钮节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 店员登出 | sample.wallpaper.picker:logout | 真实按钮；复用现有staff logoutCommand | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
+| 选择无壁纸/山景/湖景/海滩 | sample.wallpaper.picker:options:<wallpaperId> | 真实Radio option节点 | CURRENT_SOURCE_ID; FEATURE_FOCUSED_PASS; EXPO_WEB_VM_NOT_RUN |
+| 确认壁纸 | sample.wallpaper.picker:confirm | 真实按钮节点 | CURRENT_SOURCE_ID; FEATURE_FOCUSED_PASS; EXPO_WEB_VM_NOT_RUN |
+| 店员登出 | sample.wallpaper.picker:logout | 真实按钮；复用现有staff logoutCommand | CURRENT_SOURCE_ID; FEATURE_FOCUSED_PASS; ROUTE_CP06_PENDING; EXPO_WEB_VM_NOT_RUN |
 
 L2_SCRIPT_ADMISSION=NOT_APPLICABLE_WITH_REASON：本专项当前未授权Browser L2；该screen的非adapter行为按未来Expo Web及VM验收，不虚构空分母。
 
@@ -1485,14 +1486,14 @@ CONTAINER_LAYOUT=laptop PRIMARY 1280×720；选项列表唯一滚动；网格卡
 
 #### 逐屏操作控件与 testId roster
 
-以下均为设计提案；当前没有新增控件、testId绑定、L2 binding或focused proof。本专项未来按 TR-16 先Expo Web，再以同一场景清单对照VM。
+LMP壁纸页的当前源码已绑定选项、确认、退出选择、店员登出testId；focused package test覆盖退出事件与logout command dispatch。exit的integration目标由CP-06接线，Web/VM仍NOT_RUN。
 
-| 用户动作/观察 | testId提案 | 实际动作节点 | 当前证据状态 |
+| 用户动作/观察 | testId（当前源码） | 实际动作节点 | 当前证据状态 |
 | --- | --- | --- | --- |
-| 选择无壁纸/山景/湖景/海滩 | sample.wallpaper.picker:options:<wallpaperId> | 真实Radio option节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 确认壁纸 | sample.wallpaper.picker:confirm | 真实按钮节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 退出选择 | sample.wallpaper.picker:exit | 真实页面导航动作；不调用logoutCommand | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 店员登出 | sample.wallpaper.picker:logout | 真实按钮；复用现有staff logoutCommand | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
+| 选择无壁纸/山景/湖景/海滩 | sample.wallpaper.picker:options:<wallpaperId> | 真实Radio option节点 | CURRENT_SOURCE_ID; FEATURE_FOCUSED_PASS; EXPO_WEB_VM_NOT_RUN |
+| 确认壁纸 | sample.wallpaper.picker:confirm | 真实按钮节点 | CURRENT_SOURCE_ID; FEATURE_FOCUSED_PASS; EXPO_WEB_VM_NOT_RUN |
+| 退出选择 | sample.wallpaper.picker:exit | 真实页面导航动作；不调用logoutCommand | CURRENT_SOURCE_ID; FEATURE_FOCUSED_PASS; ROUTE_CP06_PENDING; EXPO_WEB_VM_NOT_RUN |
+| 店员登出 | sample.wallpaper.picker:logout | 真实按钮；复用现有staff logoutCommand | CURRENT_SOURCE_ID; FEATURE_FOCUSED_PASS; ROUTE_CP06_PENDING; EXPO_WEB_VM_NOT_RUN |
 
 L2_SCRIPT_ADMISSION=NOT_APPLICABLE_WITH_REASON：本专项当前未授权Browser L2；该screen的非adapter行为按未来Expo Web及VM验收，不虚构空分母。
 
@@ -1520,12 +1521,12 @@ SEARCH_CAPABILITY=NOT_APPLICABLE_WITH_REASON：依 IA §2.1.2 本screen属于有
 CONSUMER_FACE=public
 APPLICATION_AFFILIATION=独立 public 能力（TER 终端运行时页面；不是 platform-admin 或 operations-admin 后台会话）
 UI_SURFACE=终端内容面
-HOST_AND_ENTRY=sample-wallpaper-console 的 host runtime 在 SECONDARY 内容位显示主机已确认 wallpaperId
+HOST_AND_ENTRY=单机 LMS 由 MASTER+SECONDARY 同一 runtime 在 SECONDARY 内容位显示主机已确认 wallpaperId；双机 LMS 由 SLAVE+VICE 实例在 SECONDARY 内容位显示当前 peer 的主机已确认 wallpaperId 投影
 ACTOR=顾客
 BUSINESS_SCENARIO=主机选定壁纸后，顾客观看主机副屏
 BUSINESS_GOAL=看到主机当前已确认背景
 USER_VISIBLE_COPY=无额外文字；显示主机已确认壁纸
-TECHNICAL_BOUNDARY=LMS 与 PRIMARY 同属主机 runtime，仅 selector 读取 host confirmed；不显示 pending，不新增同步副本
+TECHNICAL_BOUNDARY=单机 LMS 用 MASTER+SECONDARY 同一 runtime 的 host confirmed selector；双机 LMS 用 SLAVE+VICE 当前 peer 绑定的 host-confirmed projection selector；两者均不显示 pending，不读取副机 LSP 本地 wallpaper，不新增可写事实
 FOUNDATION_PRIMITIVE=@catering-v2s/ui-base-render:useUiStateSelector; @catering-v2s/ui-base-primitives:PrimitiveImage
 CONTAINER_LAYOUT=laptop SECONDARY 1280×720；背景铺满声明画布，保持 cover；无滚动，不绘制其他内容、控件或状态值。
 ```
@@ -1542,11 +1543,11 @@ CONTAINER_LAYOUT=laptop SECONDARY 1280×720；背景铺满声明画布，保持 
 
 #### 逐屏操作控件与 testId roster
 
-以下均为设计提案；当前没有新增控件、testId绑定、L2 binding或focused proof。本专项未来按 TR-16 先Expo Web，再以同一场景清单对照VM。
+LMP壁纸页的当前源码已绑定选项、确认、退出选择、店员登出testId；focused package test覆盖退出事件与logout command dispatch。exit的integration目标由CP-06接线，Web/VM仍NOT_RUN。
 
-| 用户动作/观察 | testId提案 | 实际动作节点 | 当前证据状态 |
+| 用户动作/观察 | testId（当前源码） | 实际动作节点 | 当前证据状态 |
 | --- | --- | --- | --- |
-| 显示主机已确认背景 | sample.wallpaper.background | 只读canvas节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
+| 显示主机已确认背景 | sample.wallpaper.background | 只读canvas节点 | CURRENT_SOURCE_ID; FEATURE_FOCUSED_PASS; EXPO_WEB_VM_NOT_RUN |
 
 L2_SCRIPT_ADMISSION=NOT_APPLICABLE_WITH_REASON：本专项当前未授权Browser L2；该screen的非adapter行为按未来Expo Web及VM验收，不虚构空分母。
 
@@ -1595,13 +1596,13 @@ CONTAINER_LAYOUT=laptop PRIMARY 1280×720；采用与 LMP 相同卡片宽和列�
 
 #### 逐屏操作控件与 testId roster
 
-以下均为设计提案；当前没有新增控件、testId绑定、L2 binding或focused proof。本专项未来按 TR-16 先Expo Web，再以同一场景清单对照VM。
+LSP独立SLAVE/BRANCH壁纸页的当前源码已绑定本地选项、确认、退出testId且无logout控件；focused package test覆盖选项和确认command dispatch。exit的integration目标由CP-06接线，Web/VM仍NOT_RUN。
 
-| 用户动作/观察 | testId提案 | 实际动作节点 | 当前证据状态 |
+| 用户动作/观察 | testId（当前源码） | 实际动作节点 | 当前证据状态 |
 | --- | --- | --- | --- |
-| 选择无壁纸/山景/湖景/海滩 | sample.wallpaper.branch.picker:option.<wallpaperId> | 真实Radio option节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 确认壁纸 | sample.wallpaper.branch.picker:confirm | 真实按钮节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 退出选择 | sample.wallpaper.branch.picker:exit | 真实页面导航动作；不调用logoutCommand | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
+| 选择无壁纸/山景/湖景/海滩 | sample.wallpaper.branch.picker:option.<wallpaperId> | 真实Radio option节点 | CURRENT_SOURCE_ID; FEATURE_FOCUSED_PASS; EXPO_WEB_VM_NOT_RUN |
+| 确认壁纸 | sample.wallpaper.branch.picker:confirm | 真实按钮节点 | CURRENT_SOURCE_ID; FEATURE_FOCUSED_PASS; EXPO_WEB_VM_NOT_RUN |
+| 退出选择 | sample.wallpaper.branch.picker:exit | 真实页面导航动作；不调用logoutCommand | CURRENT_SOURCE_ID; FEATURE_FOCUSED_PASS; ROUTE_CP06_PENDING; EXPO_WEB_VM_NOT_RUN |
 
 L2_SCRIPT_ADMISSION=NOT_APPLICABLE_WITH_REASON：本专项当前未授权Browser L2；该screen的非adapter行为按未来Expo Web及VM验收，不虚构空分母。
 
@@ -1651,12 +1652,13 @@ CONTAINER_LAYOUT=覆盖当前业务 viewport 1280×720；遮罩吸收鼠标/触�
 
 #### 逐屏操作控件与 testId roster
 
-以下均为设计提案；当前没有新增控件、testId绑定、L2 binding或focused proof。本专项未来按 TR-16 先Expo Web，再以同一场景清单对照VM。
+遮罩状态与提示 testId 已由 integration-assembly 的 `pairReadinessInterlockTestIds` 实现；本 screen 尚无 Browser L2 binding，focused proof 仅证明组件装配/焦点与可访问性，不证明 Expo Web 或 VM 行为。本专项仍按 TR-16 先Expo Web，再以同一场景清单对照VM。
 
-| 用户动作/观察 | testId提案 | 实际动作节点 | 当前证据状态 |
+| 用户动作/观察 | testId（当前源码） | 实际动作节点 | 当前证据状态 |
 | --- | --- | --- | --- |
-| 本机管理手势入口 | terminal.admin:launcher | 真实AdminLauncher手势节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
-| 断链遮罩状态 | terminal.pair.mask:status | 状态文本节点 | DESIGN_PROPOSAL / NOT_IMPLEMENTED |
+| 本机管理手势入口 | terminal.admin:launcher | 真实AdminLauncher手势节点 | 当前源码常量；既有手势节点 |
+| 断链遮罩状态 | terminal.pair.mask:status | 遮罩容器节点 | 当前源码常量；`PairReadinessInterlock` |
+| 断链遮罩提示 | terminal.pair.mask:message | 真实提示文本节点 | 当前源码常量；`PairReadinessInterlock` |
 
 L2_SCRIPT_ADMISSION=NOT_APPLICABLE_WITH_REASON：本专项当前未授权Browser L2；该screen的非adapter行为按未来Expo Web及VM验收，不虚构空分母。
 
@@ -1731,24 +1733,24 @@ SEARCH_CAPABILITY=NOT_APPLICABLE_WITH_REASON：依 IA §2.1.2 本screen属于有
 | ADMIN-04 | `apps/terminal/ui/base/admin-shell + kernel/base/topology` | 拓扑状态、host地址、连接/配对、退配、错误阶段 | `当前常量：terminal.admin:topology:host-status / host-ip / pair / unpair / operation-feedback / failure:reason` | topology owner local commands |
 | AUTH-01-MMP | `apps/terminal/ui/feature/sample-staff-auth` | 姓名、密码、登录、错误/进行中 | `当前字面量：sample.auth.login:operator-name / passcode / submit / loading；sample.auth.notice:message` | loginCommand → staff-session owner |
 | AUTH-02-LMP | `apps/terminal/ui/feature/sample-staff-auth` | 姓名、密码、登录、错误/进行中 | `同AUTH-01（移动/笔记本语义一致）` | 同AUTH-01 |
-| AUTH-03-LMS | `apps/terminal/ui/feature/sample-staff-auth（只读引导提案）` | 请在主屏登录；无输入/提交 | `当前无独立引导节点；提案：sample.auth.guide` | 只读staff qualification projection；不派login/logout |
-| AUTH-04-LSP | `apps/terminal/ui/feature/sample-staff-auth（只读引导提案）` | 请先在主机登录；无输入/提交 | `当前无独立引导节点；提案：sample.auth.guide` | 只读host staff projection；不派login/logout |
+| AUTH-03-LMS | `apps/terminal/ui/feature/sample-staff-auth/src/components/AuthGuide.tsx` | 请在主屏登录；无输入/提交 | `当前testID：sample.auth.guide:message；part=sample.auth.guide.lms` | 只读staff qualification projection；不派login/logout |
+| AUTH-04-LSP | `apps/terminal/ui/feature/sample-staff-auth/src/components/AuthGuide.tsx` | 请先在主机登录；无输入/提交 | `当前testID：sample.auth.guide:message；part=sample.auth.guide.lsp` | 只读host staff projection；不派login/logout |
 | SAMPLE-01-MMP | `apps/terminal/ui/feature/sample-member-desk` | 会员列表/行/空态/新增、姓名/电话输入、提交/取消、退出、店员登出 | `当前字面量：sample.desk.member-list:title / row / empty / empty-action / add / logout；sample.desk.member-form:name / phone / submit / cancel；该表单无年龄输入，年龄仅在customer-member确认面` | 现有member-desk commands → host member-registry |
 | SAMPLE-02-LMP | `apps/terminal/ui/feature/sample-member-desk` | 与SAMPLE-01相同笔记本布局 | `同SAMPLE-01；实施时集中为该feature唯一TestIds源` | 同SAMPLE-01 |
-| SAMPLE-03-LSP | `apps/terminal/ui/feature/sample-member-desk（LSP独立实现）` | 读host会员列表；本机新增草稿；同页顾客确认/拒绝；无登出 | `现有LSP屏未实现；提案IDs：sample.desk.branch.member-list:* / member-form:* / customer-member:*` | BRANCH本机pending→显式host member owner command；不提供logout |
+| SAMPLE-03-LSP | `apps/terminal/ui/feature/sample-member-desk/src/components/branch` | 读host会员列表；本机新增草稿；同页顾客确认/拒绝；无登出 | `当前ID：sample.desk.branch.member-list:* / member-form:* / customer-member:*` | BRANCH本机pending→显式host member owner command；不提供logout |
 | SAMPLE-04-MMP | `apps/terminal/ui/feature/sample-member-desk` | 本机pending姓名/电话、可选年龄、确认/拒绝/条件性交还店员 | `当前字面量：sample.desk.customer-member:title / name / phone / age-label / age / confirm / reject / hand-back` | current host pending selector→confirm/reject/withdraw owner commands |
 | SAMPLE-05-LMP | `apps/terminal/ui/feature/sample-member-desk` | 单屏主机pending姓名/电话、可选年龄、确认/拒绝/条件性交还店员 | `当前字面量：sample.desk.customer-member:title / name / phone / age-label / age / confirm / reject / hand-back` | 本机host当前operation identity → member owner |
 | SAMPLE-06-LMS | `apps/terminal/ui/feature/sample-member-desk` | 欢迎、姓名/电话、可选年龄输入、确认/拒绝 | `当前字面量：sample.desk.customer-member:title / name / phone / age-label / age / confirm / reject；无hand-back（mode=confirm）` | 单机LMS走同runtime host member owner；双机SLAVE+VICE走显式peer目标的MASTER owner；LMS只消费hostPending projection，不读branchPending |
-| SAMPLE-07-MMP | `apps/terminal/ui/feature/sample-wallpaper-picker` | 壁纸none/w1/w2/w3选择、确认、店员登出 | `当前常量：sample.wallpaper.picker:title / options / options:<wallpaperId> / confirm / logout` | 壁纸owner commands及既有staff logoutCommand；登出后integration按staff selector路由 |
-| SAMPLE-08-LMP | `apps/terminal/ui/feature/sample-wallpaper-picker` | 壁纸选择/确认、退出选择、店员登出 | `sample.wallpaper.picker:options:<wallpaperId> / confirm / exit / logout` | wallpaper owner；exit只结束选择页，logout复用既有staff logoutCommand并由integration按selector路由 |
-| SAMPLE-09-LMS | `apps/terminal/ui/feature/sample-wallpaper-picker` | 只显示host已确认壁纸，无操作 | `当前字面量：sample.wallpaper.background` | host confirmed selector；不显示pending |
-| SAMPLE-10-LSP | `apps/terminal/ui/feature/sample-wallpaper-picker（LSP独立页面）` | 选择/确认/退出副机本地壁纸；无登出 | `提案：sample.wallpaper.branch.picker:option.<wallpaperId> / confirm / exit；不登记logout` | branch本机wallpaper owner；host projection不得覆盖；R-09禁止LSP登出 |
-| MASK-01 | `两个integration composition + topology` | 断链提示与业务全屏遮罩；保留本机admin launcher | `当前无专项mask节点；提案：terminal.pair.mask:status；launcher继续terminal.admin:launcher` | topology current connection/projection readiness selectors |
+| SAMPLE-07-MMP | `apps/terminal/ui/feature/sample-wallpaper-picker` | 壁纸none/w1/w2/w3选择、确认、店员登出 | `当前源码常量：sample.wallpaper.picker:title / options:scroll / options / options:<wallpaperId> / confirm / logout` | 壁纸owner commands及既有staff logoutCommand；登出后integration按staff selector路由 |
+| SAMPLE-08-LMP | `apps/terminal/ui/feature/sample-wallpaper-picker` | 壁纸选择/确认、退出选择、店员登出 | `当前源码常量：sample.wallpaper.picker:title / options:scroll / options / options:<wallpaperId> / confirm / exit / logout` | wallpaper owner；exit只结束选择页，logout复用既有staff logoutCommand并由integration按selector路由 |
+| SAMPLE-09-LMS | `apps/terminal/ui/feature/sample-wallpaper-picker` | 只显示host已确认壁纸，无操作 | `当前源码常量：sample.wallpaper.background` | 单机MASTER+SECONDARY读取本机host confirmed selector；双机SLAVE+VICE读取绑定当前peer的host-confirmed projection selector；不显示pending或副机本地壁纸 |
+| SAMPLE-10-LSP | `apps/terminal/ui/feature/sample-wallpaper-picker（LSP独立页面）` | 选择/确认/退出副机本地壁纸；无登出 | `当前源码常量：sample.wallpaper.branch.picker:title / options:scroll / options / option.<wallpaperId> / confirm / exit；不登记logout` | branch本机wallpaper owner；host projection不得覆盖；R-09禁止LSP登出 |
+| MASK-01 | `两个integration composition + topology` | 断链提示与业务全屏遮罩；保留本机admin launcher | `当前常量：terminal.pair.mask:status / terminal.pair.mask:message；launcher继续terminal.admin:launcher` | topology current connection/projection readiness selectors |
 
 当前 L2 不适用且无运行授权；此表是实施时的静态/test-expo/VM 控件分母，不宣称已绑定L2。
 ### 4.1 Surface ownership 自检
 
-下表逐屏核对线框里的可见元素均归属该屏声明的单一 `UI_SURFACE`，且 `USER_VISIBLE_COPY` 均有草图位置。R2 对修订前字节完成了静态复核；S-1 修订后的当前字节尚无独立 review。本表是静态自查，不是运行证明。
+下表逐屏核对线框里的可见元素均归属该屏声明的单一 `UI_SURFACE`，且 `USER_VISIBLE_COPY` 均有草图位置。R2 对修订前字节完成了静态复核；S-1～S-6/N-1 修订后的当前字节尚无独立 review。本表是静态自查，不是运行证明。
 
 | screen id | 声明 UI_SURFACE | 线框可见元素分母 | 元素属于当前surface | 文案均有位置 | 结论 |
 | --- | --- | --- | --- | --- | --- |
@@ -1937,7 +1939,7 @@ DEMO_DATA=N/A
 - 低保真线框结论：`ACCEPTED_DIRECTION`（整体交互方向已接受；不是逐屏细节接受）
 - 高保真 demo 结论：`NOT_REQUIRED`
 - 已接受方向：四面激活/登录、共享本机admin状态/配置/拓扑tab、断链时本机admin恢复、LSP独立会员与壁纸、LMS显示主机投影。
-- 仍待Dexter与Claude复核：R2已review修订前的26屏静态设计；本次补槽位与同根文字修正后的整体文档尚未取得独立 verdict。真实渲染、控件/testId、状态运行和owner行为仍未验证；不得将方向接受读作实现授权或动态PASS。
+- 仍待Dexter与Claude复核：R2已review修订前的26屏静态设计；本次S-1～S-6/N-1处置及其同步修订后的整体文档尚未取得独立 verdict。真实渲染、控件/testId、状态运行和owner行为仍未验证；不得将方向接受读作实现授权或动态PASS。
 - 允许进入 implementation-facing design：是；允许源码实施/运行：否。
 
 ## 10.1 前端管理一致性适用性
@@ -1953,7 +1955,7 @@ DEMO_DATA=N/A
 
 ## 12. 已接受方向与仍待审的细节
 
-Dexter 已接受整体交互方向。R2 对修订前字节的 verdict 为 NO-GO，finding 是模板槽位缺失；本轮已补齐槽位并同步发现的 roster 交叉引用。修订后字节仍交 Dexter 与 Claude 复核；真实渲染、控件/TestId 及运行行为均未验证。
+Dexter 已接受整体交互方向。R2 对修订前字节的 verdict 为 NO-GO；本轮按 intake 修订 S-1～S-6/N-1 并同步相关设计文档。修订后字节仍交 Dexter 与 Claude 独立复核；真实渲染、控件/TestId 及运行行为均未验证。
 
 ```text
 DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-02（仅整体方向；逐屏细节仍待审）

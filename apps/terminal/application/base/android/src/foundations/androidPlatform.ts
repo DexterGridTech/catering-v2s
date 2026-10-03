@@ -20,11 +20,16 @@ import {
   createAndroidTopologyPeerChannel,
 } from './nativeTopology';
 import type {TopologyPeerChannel} from '@catering-v2s/kernel-base-transport';
+import type {TransportNetworkAdapter, TransportNetworkSnapshot} from '@catering-v2s/kernel-base-transport';
+import {createAndroidTransportNetworkAdapter} from './androidTransportNetworkAdapter';
 
 export type AndroidPlatformBinding = Readonly<{
   readonly environmentMode: EnvironmentMode;
   readonly platformPorts: PlatformPorts;
   readonly topologyPeerChannel: TopologyPeerChannel;
+  readonly transportNetworkAdapterFactory: (
+    readSnapshot: (serverName: string) => Promise<TransportNetworkSnapshot>,
+  ) => TransportNetworkAdapter;
   readonly nativeLoadingCapability: NativeLoadingCapability;
   readonly surfaceHostSourcesByDisplayIndex: Readonly<{
     readonly 0: ReturnType<typeof createAndroidSurfaceHostSource>;
@@ -57,6 +62,7 @@ export const createAndroidPlatformBinding = (persistenceKey: string): AndroidPla
     environmentMode,
     platformPorts,
     topologyPeerChannel,
+    transportNetworkAdapterFactory: readSnapshot => createAndroidTransportNetworkAdapter(readSnapshot),
     nativeLoadingCapability,
     surfaceHostSourcesByDisplayIndex: Object.freeze({
       0: createAndroidSurfaceHostSource({surfaceKey: 'PRIMARY', displayIndex: 0}),

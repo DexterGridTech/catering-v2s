@@ -49,7 +49,6 @@ export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFr
         const request = dispatchWithRequestId({
           dispatchCommand: dispatchRef.current,
           definition: closeLayerCommand,
-          routeIntent: 'peer-intent',
           payload: {displayMode: identityDisplayMode, layerId: ADMIN_CONSOLE_LAYER_ID},
         });
         return request
@@ -62,7 +61,7 @@ export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFr
                 displayMode: identityDisplayMode,
                 displayIndex,
                 surfaceKey,
-                routeIntent: 'peer-intent',
+                target: 'local',
                 status: result.status,
               },
             });
@@ -76,7 +75,7 @@ export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFr
                 displayMode: identityDisplayMode,
                 displayIndex,
                 surfaceKey,
-                routeIntent: 'peer-intent',
+                target: 'local',
               },
             });
           });
@@ -95,7 +94,6 @@ export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFr
     const request = dispatchWithRequestId({
       dispatchCommand,
       definition: closeLayerCommand,
-      routeIntent: 'peer-intent',
       payload: {displayMode: surface.displayMode, layerId: ADMIN_CONSOLE_LAYER_ID},
     });
     void request
@@ -108,7 +106,7 @@ export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFr
             displayMode: surface.displayMode,
             displayIndex,
             surfaceKey,
-            routeIntent: 'peer-intent',
+            target: 'local',
             status: result.status,
           },
         });
@@ -121,7 +119,7 @@ export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFr
               displayMode: surface.displayMode,
               displayIndex,
               surfaceKey,
-              routeIntent: 'peer-intent',
+              target: 'local',
               status: result.status,
               reason: 'command-not-completed',
             },
@@ -137,7 +135,7 @@ export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFr
             displayMode: surface.displayMode,
             displayIndex,
             surfaceKey,
-            routeIntent: 'peer-intent',
+            target: 'local',
           },
         });
       });

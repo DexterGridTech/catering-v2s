@@ -11,21 +11,22 @@ import {useMemberForm} from '../../hooks/useMemberForm';
 
 const laptopRootStyle = Object.freeze({width: '100%', maxWidth: 960, alignSelf: 'center' as const});
 
-export const MemberForm = () => {
-  const form = useMemberForm();
+export const MemberForm = ({prefix = 'sample.desk.member-form'}: Readonly<{readonly prefix?: string}>) => {
+  const form = useMemberForm(prefix);
   return (
-    <PrimitiveContainer testID="sample.desk.member-form" style={laptopRootStyle}>
-      <PrimitiveHeading testID="sample.desk.member-form:title">新增会员</PrimitiveHeading>
-      <InputScrollArea testID="sample.desk.member-form:scroll">
+    <PrimitiveContainer testID={prefix} style={laptopRootStyle}>
+      <PrimitiveHeading testID={`${prefix}:title`}>新增会员</PrimitiveHeading>
+      <InputScrollArea testID={`${prefix}:scroll`}>
         <MemberFormScrollContent
           initialName={form.nameInitialValue}
           initialPhone={form.phoneInitialValue}
           editable={!form.requestInFlight}
+          prefix={prefix}
         />
       </InputScrollArea>
-      <PrimitiveActions testID="sample.desk.member-form:actions">
+      <PrimitiveActions testID={`${prefix}:actions`}>
         <PrimitiveButton
-          testID="sample.desk.member-form:submit"
+          testID={`${prefix}:submit`}
           accessibilityLabel="提交"
           disabled={form.requestInFlight}
           onPress={form.submit}
@@ -33,7 +34,7 @@ export const MemberForm = () => {
           {form.requestInFlight ? '提交中' : '提交'}
         </PrimitiveButton>
         <PrimitiveButton
-          testID="sample.desk.member-form:cancel"
+          testID={`${prefix}:cancel`}
           accessibilityLabel="取消录入"
           disabled={form.requestInFlight}
           onPress={form.cancel}
@@ -41,7 +42,7 @@ export const MemberForm = () => {
           取消
         </PrimitiveButton>
       </PrimitiveActions>
-      {form.requestInFlight ? <PrimitiveStatus testID="sample.desk.member-form:loading">提交中</PrimitiveStatus> : null}
+      {form.requestInFlight ? <PrimitiveStatus testID={`${prefix}:loading`}>提交中</PrimitiveStatus> : null}
     </PrimitiveContainer>
   );
 };

@@ -29,6 +29,26 @@
     }
   },
   "showAdminPassword": true,
+  "serverSpaces": {
+    "selectedSpace": "development",
+    "spaces": [
+      {
+        "name": "development",
+        "servers": [
+          {
+            "serverName": "business",
+            "addresses": [
+              {
+                "addressName": "primary",
+                "baseUrl": "http://127.0.0.1:7890/api/terminal/group-workspaces/mixc",
+                "timeoutMs": 10000
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
   "scripts": {
     "lint": "node ../../../../../tools/terminal-shared/run-owned-lint.mjs",
     "typecheck": "tsc --project tsconfig.json --noEmit",
@@ -40,6 +60,8 @@
     "@catering-v2s/kernel-base-display-context": "workspace:*",
     "@catering-v2s/kernel-base-platform-ports": "workspace:*",
     "@catering-v2s/kernel-base-runtime": "workspace:*",
+    "@catering-v2s/kernel-base-server-config": "workspace:*",
+    "@catering-v2s/kernel-base-terminal-data-client": "workspace:*",
     "@catering-v2s/kernel-base-topology": "workspace:*",
     "@catering-v2s/kernel-base-transport": "workspace:*",
     "@catering-v2s/kernel-base-ui-state": "workspace:*",
@@ -50,6 +72,8 @@
     "@catering-v2s/ui-base-integration-assembly": "workspace:*",
     "@catering-v2s/ui-base-primitives": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*",
+    "@catering-v2s/ui-base-server-config-panel": "workspace:*",
+    "@catering-v2s/ui-base-terminal-activation": "workspace:*",
     "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*",
     "@catering-v2s/ui-feature-sample-wallpaper-picker": "workspace:*",
     "react-native-reanimated": "4.5.1",

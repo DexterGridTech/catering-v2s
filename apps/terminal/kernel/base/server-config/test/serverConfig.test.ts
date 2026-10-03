@@ -19,7 +19,13 @@ import {
   type PortResult,
   type StateStoragePort,
 } from '@catering-v2s/kernel-base-platform-ports';
-import {createRuntime, type Runtime, type RuntimeModule} from '@catering-v2s/kernel-base-runtime';
+import {
+  createRuntime,
+  setRuntimeInstanceModeCommand,
+  type Runtime,
+  type RuntimeModule,
+} from '@catering-v2s/kernel-base-runtime';
+import {releaseRuntimeForTestAsync, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing';
 import {moduleName as contractsModuleName} from '@catering-v2s/kernel-base-contracts';
 import {moduleName as platformPortsModuleName} from '@catering-v2s/kernel-base-platform-ports';
 import {moduleName as stateModuleName} from '@catering-v2s/kernel-base-state';
@@ -32,6 +38,7 @@ import {
   setServerOverrideCommand,
 } from '../src/index';
 import {resolveServerNetworkSnapshot} from '../src/foundations/networkAdapter';
+import {serverConfigSliceName} from '../src/features/slices/serverConfig';
 
 const defaults: TransportServerConfig = Object.freeze({
   selectedSpace: 'dev',
@@ -72,6 +79,7 @@ const successful = <TValue>(value: TValue): PortResult<TValue> => ({
 
 class MemoryStorage implements StateStoragePort {
   readonly values = new Map<string, string>();
+  failWrites = false;
 
   async read({
     key,
@@ -83,6 +91,14 @@ class MemoryStorage implements StateStoragePort {
   }
 
   async write({key, value}: {readonly key: string; readonly value: string}): Promise<PortResult<NoOutput>> {
+    if (this.failWrites) {
+      return {
+        status: 'failed',
+        port: 'persistKv',
+        capability: 'write',
+        error: {code: 'FIXTURE_WRITE_FAILED', message: 'fixture write failure', retryable: false},
+      };
+    }
     this.values.set(key, value);
     return successful({completed: true});
   }
@@ -113,6 +129,14 @@ class MemoryStorage implements StateStoragePort {
   }: {
     readonly entries: readonly {readonly key: string; readonly value: string}[];
   }): Promise<PortResult<NoOutput>> {
+    if (this.failWrites) {
+      return {
+        status: 'failed',
+        port: 'persistKv',
+        capability: 'writeMany',
+        error: {code: 'FIXTURE_WRITE_FAILED', message: 'fixture write failure', retryable: false},
+      };
+    }
     for (const entry of entries) this.values.set(entry.key, entry.value);
     return successful({completed: true});
   }
@@ -133,7 +157,13 @@ class MemoryStorage implements StateStoragePort {
 }
 
 const createFixture = (
-  input: Readonly<{plain?: MemoryStorage; secure?: MemoryStorage; logs?: LogEvent[]; persistenceKey?: string}> = {},
+  input: Readonly<{
+    plain?: MemoryStorage;
+    secure?: MemoryStorage;
+    logs?: LogEvent[];
+    persistenceKey?: string;
+    defaults?: TransportServerConfig;
+  }> = {},
 ) => {
   const plain = input.plain ?? new MemoryStorage();
   const secure = input.secure ?? new MemoryStorage();
@@ -146,7 +176,7 @@ const createFixture = (
       kind: 'toolkit',
       dependencies: [{moduleName: contractsModuleName}, {moduleName: platformPortsModuleName}],
     },
-    createServerConfigModule(defaults),
+    createServerConfigModule(input.defaults ?? defaults),
   ];
   const runtime = createRuntime({
     localNodeId: createNodeId(),
@@ -177,7 +207,17 @@ const createFixture = (
 };
 
 const start = async (runtime: Runtime): Promise<void> => {
-  await runtime.start();
+  try {
+    await runtime.start();
+  } catch (error) {
+    const failure = runtime.failure;
+    const actorFailures = runtime.journal
+      .list()
+      .flatMap(event => (event.kind === 'actor.error' ? [event.errorKey] : []));
+    throw new Error(
+      `SERVER_CONFIG_RUNTIME_START_FAILED:${JSON.stringify(actorFailures)}:${failure?.code ?? 'UNKNOWN'}:${failure?.message ?? String(error)}:${failure?.cause instanceof Error ? failure.cause.message : String(failure?.cause ?? error)}`,
+    );
+  }
 };
 
 const dispatch = async <TPayload extends import('@catering-v2s/kernel-base-state').StateJsonValue>(
@@ -188,7 +228,7 @@ const dispatch = async <TPayload extends import('@catering-v2s/kernel-base-state
 
 const tick = async (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
 
-describe('server-config owner commands, selectors, and protected persistence', () => {
+describe('server-config owner commands, selectors, and required plain proxy persistence', () => {
   const runtimes: Runtime[] = [];
   afterEach(() => {
     runtimes.length = 0;
@@ -220,12 +260,12 @@ describe('server-config owner commands, selectors, and protected persistence', (
     expect(JSON.stringify(selected)).not.toContain('new-proxy-secret');
     const snapshot = resolveServerNetworkSnapshot(fixture.runtime.getState(), defaults, 'business');
     expect(snapshot.proxy?.password).toBe('new-proxy-secret');
+    await tick();
     expect(fixture.plain.values.size).toBeGreaterThan(0);
-    expect([...fixture.plain.values.values()].join('\n')).not.toContain('new-proxy-secret');
-    expect([...fixture.secure.values.values()].join('\n')).toContain('new-proxy-secret');
+    expect([...fixture.plain.values.values()].join('\n')).toContain('new-proxy-secret');
+    expect(fixture.secure.values.size).toBe(0);
     expect(JSON.stringify(fixture.logs)).not.toContain('new-proxy-secret');
 
-    await tick();
     const restoredFixture = createFixture({
       plain: fixture.plain,
       secure: fixture.secure,
@@ -274,6 +314,29 @@ describe('server-config owner commands, selectors, and protected persistence', (
     expect(selectServerConfiguration(fixture.runtime.getState(), defaults)).toEqual(before);
   });
 
+  it('rejects every direct configuration mutation on a SLAVE runtime without changing owner state', async () => {
+    const fixture = createFixture();
+    runtimes.push(fixture.runtime);
+    await start(fixture.runtime);
+    expect((await dispatch(fixture.runtime, setRuntimeInstanceModeCommand, {instanceMode: 'SLAVE'})).status).toBe(
+      'completed',
+    );
+    const before = fixture.runtime.getState()[serverConfigSliceName];
+    const rejected = await Promise.all([
+      dispatch(fixture.runtime, selectServerConfigSpaceCommand, {spaceName: 'prod'}),
+      dispatch(fixture.runtime, setServerOverrideCommand, {
+        serverName: 'business',
+        addresses: [{addressName: 'branch', baseUrl: 'https://branch.example.test', timeoutMs: 1000}],
+        proxy: null,
+      }),
+      dispatch(fixture.runtime, clearServerOverrideCommand, {serverName: 'business'}),
+      dispatch(fixture.runtime, restoreServerDefaultsCommand, {}),
+    ]);
+
+    expect(rejected.map(result => result.status)).toEqual(['error', 'error', 'error', 'error']);
+    expect(fixture.runtime.getState()[serverConfigSliceName]).toEqual(before);
+  });
+
   it('persists environment and override across runtime restart and restores defaults through one command', async () => {
     const plain = new MemoryStorage();
     const secure = new MemoryStorage();
@@ -305,6 +368,186 @@ describe('server-config owner commands, selectors, and protected persistence', (
     expect(selectServerConfiguration(second.runtime.getState(), defaults)).toMatchObject({
       selectedSpace: 'dev',
       overriddenServerNames: [],
+    });
+  });
+
+  it('keeps the newly effective selection when persistence fails and reports the failure from the owner command', async () => {
+    const fixture = createFixture();
+    runtimes.push(fixture.runtime);
+    await start(fixture.runtime);
+    fixture.plain.failWrites = true;
+
+    const result = await dispatch(fixture.runtime, selectServerConfigSpaceCommand, {spaceName: 'prod'});
+
+    expect(result.status).toBe('completed');
+    expect(result.actorResults[0]?.result).toMatchObject({changed: true, persistence: 'failed'});
+    expect(selectServerConfiguration(fixture.runtime.getState(), defaults).selectedSpace).toBe('prod');
+  });
+
+  it('discards invalid persisted selection and override while retaining a valid hydrated override', async () => {
+    const plain = new MemoryStorage();
+    const persistenceKey = 'server-config-invalid-hydration-test';
+    const hydrationDefaults: TransportServerConfig = Object.freeze({
+      selectedSpace: 'dev',
+      spaces: Object.freeze(
+        defaults.spaces.map(space =>
+          Object.freeze({
+            ...space,
+            servers: Object.freeze([
+              ...space.servers,
+              Object.freeze({
+                serverName: 'authenticated',
+                addresses: Object.freeze([
+                  Object.freeze({addressName: 'primary', baseUrl: 'https://authenticated.example.test'}),
+                ]),
+                proxy: Object.freeze({
+                  protocol: 'http' as const,
+                  host: 'proxy.example.test',
+                  port: 8080,
+                  username: 'user',
+                  password: 'default-secret',
+                }),
+              }),
+            ]),
+          }),
+        ),
+      ),
+    });
+    const initial = createFixture({plain, persistenceKey, defaults: hydrationDefaults});
+    runtimes.push(initial.runtime);
+    await start(initial.runtime);
+    expect((await dispatch(initial.runtime, selectServerConfigSpaceCommand, {spaceName: 'prod'})).status).toBe(
+      'completed',
+    );
+    expect(
+      (
+        await dispatch(initial.runtime, setServerOverrideCommand, {
+          serverName: 'business',
+          addresses: [{addressName: 'custom', baseUrl: 'https://custom.example.test', timeoutMs: 1700}],
+          proxy: null,
+        })
+      ).status,
+    ).toBe('completed');
+    expect(
+      (
+        await dispatch(initial.runtime, setServerOverrideCommand, {
+          serverName: 'authenticated',
+          addresses: [{addressName: 'custom-auth', baseUrl: 'https://auth.example.test', timeoutMs: 1700}],
+          proxy: {
+            protocol: 'http',
+            host: 'proxy.example.test',
+            port: 8081,
+            username: 'override-user',
+            password: {mode: 'set', value: 'override-secret'},
+          },
+        })
+      ).status,
+    ).toBe('completed');
+    await tick();
+    await releaseRuntimeForTestAsync(initial.runtime);
+
+    const selectedSpaceKey = [...plain.values.keys()].find(key => key.endsWith('/field/selectedSpace'));
+    const overridesKey = [...plain.values.keys()].find(key => key.endsWith('/field/overrides'));
+    const proxyPasswordKey = [...plain.values.keys()].find(key =>
+      key.endsWith('/record/proxy-passwords/entry/authenticated'),
+    );
+    expect(selectedSpaceKey).toBeDefined();
+    expect(overridesKey).toBeDefined();
+    expect(proxyPasswordKey).toBeDefined();
+    if (selectedSpaceKey === undefined || overridesKey === undefined || proxyPasswordKey === undefined)
+      throw new Error('HYDRATION_FIXTURE_KEYS_MISSING');
+    plain.values.set(selectedSpaceKey, JSON.stringify('removed-space'));
+    plain.values.set(proxyPasswordKey, JSON.stringify(123));
+    plain.values.set(
+      overridesKey,
+      JSON.stringify({
+        business: {
+          addresses: [{addressName: 'custom', baseUrl: 'https://custom.example.test', timeoutMs: 1700}],
+          proxy: null,
+        },
+        removedService: {
+          addresses: [{addressName: 'invalid', baseUrl: 'not-a-url', timeoutMs: -1}],
+          proxy: null,
+        },
+        authenticated: {
+          addresses: [{addressName: 'custom-auth', baseUrl: 'https://auth.example.test', timeoutMs: 1700}],
+          proxy: {protocol: 'http', host: 'proxy.example.test', port: 8081, username: 'override-user'},
+        },
+      }),
+    );
+
+    const logs: LogEvent[] = [];
+    const restored = createFixture({plain, logs, persistenceKey, defaults: hydrationDefaults});
+    runtimes.push(restored.runtime);
+    await start(restored.runtime);
+
+    expect(logs).toContainEqual(
+      expect.objectContaining({
+        category: 'server-config.hydration',
+        event: 'server-config.hydration.invalid-values-reset',
+        data: expect.objectContaining({selectedSpaceReset: true, droppedOverrideCount: 2}),
+      }),
+    );
+    const selected = selectServerConfiguration(restored.runtime.getState(), hydrationDefaults);
+    expect(selected.selectedSpace).toBe('dev');
+    expect(selected.overriddenServerNames).toEqual(['business']);
+    expect(resolveServerNetworkSnapshot(restored.runtime.getState(), hydrationDefaults, 'business').addresses).toEqual([
+      {addressName: 'custom', baseUrl: 'https://custom.example.test', timeoutMs: 1700},
+    ]);
+  });
+
+  it('copies host defaults, selected address, and default proxy password to the branch as plain persisted projection', async () => {
+    const host = createFixture({persistenceKey: 'server-config-sync-host'});
+    const branchDefaults: TransportServerConfig = Object.freeze({
+      selectedSpace: 'branch-local',
+      spaces: Object.freeze([
+        Object.freeze({
+          name: 'branch-local',
+          servers: Object.freeze([
+            Object.freeze({
+              serverName: 'business',
+              addresses: Object.freeze([{addressName: 'local', baseUrl: 'http://127.0.0.1:8080/branch'}]),
+            }),
+          ]),
+        }),
+      ]),
+    });
+    const branchFixture = createFixture({persistenceKey: 'server-config-sync-branch', defaults: branchDefaults});
+    runtimes.push(host.runtime, branchFixture.runtime);
+    await start(host.runtime);
+    await start(branchFixture.runtime);
+
+    const payload = runtimeStateSyncForTest(host.runtime).createFullSyncPayload(serverConfigSliceName);
+    expect(payload.status).toBe('ready');
+    if (payload.status !== 'ready') throw new Error('SERVER_CONFIG_SYNC_FIXTURE_NOT_READY');
+    expect(
+      runtimeStateSyncForTest(branchFixture.runtime).applyAuthoritativeSync(serverConfigSliceName, payload.payload)
+        .status,
+    ).toBe('applied');
+    const network = resolveServerNetworkSnapshot(branchFixture.runtime.getState(), branchDefaults, 'business');
+    expect(network.addresses[0]).toMatchObject({
+      addressName: 'primary',
+      baseUrl: 'https://business.dev.example.test',
+    });
+    expect(network.proxy?.password).toBe('default-proxy-secret');
+    expect(JSON.stringify(selectServerConfiguration(branchFixture.runtime.getState(), branchDefaults))).not.toContain(
+      'default-proxy-secret',
+    );
+    await tick();
+    expect([...branchFixture.plain.values.values()].join('\n')).toContain('default-proxy-secret');
+    expect(branchFixture.secure.values.size).toBe(0);
+
+    const restoredBranch = createFixture({
+      plain: branchFixture.plain,
+      secure: branchFixture.secure,
+      persistenceKey: 'server-config-sync-branch',
+      defaults: branchDefaults,
+    });
+    runtimes.push(restoredBranch.runtime);
+    await start(restoredBranch.runtime);
+    expect(resolveServerNetworkSnapshot(restoredBranch.runtime.getState(), branchDefaults, 'business')).toMatchObject({
+      addresses: [{addressName: 'primary', baseUrl: 'https://business.dev.example.test'}],
+      proxy: {password: 'default-proxy-secret'},
     });
   });
 

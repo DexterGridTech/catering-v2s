@@ -3,16 +3,28 @@ import {moduleName as integrationModuleName} from '../moduleName';
 import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import {type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render';
 import {
+  createCredentialSecret,
+  createTerminalActivationModule,
+  createTerminalActivationParts,
+} from '@catering-v2s/ui-base-terminal-activation';
+import {createServerConfigPanelParts} from '@catering-v2s/ui-base-server-config-panel';
+import {createTerminalDataClientModule} from '@catering-v2s/kernel-base-terminal-data-client';
+import {
   createIntegrationAssembly,
   createStartupReadyPayload,
   createSurfaceForDisplayIndex as createSharedSurfaceForDisplayIndex,
+  createBrowserTransportNetworkAdapter,
+  PairReadinessInterlock,
   selectStateSyncSlices,
   type IntegrationAssembly,
 } from '@catering-v2s/ui-base-integration-assembly';
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {sampleWallpaperPickerAssembly, WallpaperBackground} from '@catering-v2s/ui-feature-sample-wallpaper-picker';
-import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
-import {createSampleWallpaperModule} from '@catering-v2s/kernel-feature-sample-wallpaper';
+import {createSampleStaffSessionModule, sessionSliceName} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {createSampleWallpaperModule, wallpaperSliceName} from '@catering-v2s/kernel-feature-sample-wallpaper';
+import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
+import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config';
+import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {
   createTopologyAdminCapability,
   createTopologyModule,
@@ -22,9 +34,12 @@ import {
   createTopologyIdentityClient,
   createTransportModule,
   type TopologyPeerChannel,
+  type TransportNetworkAdapter,
+  type TransportNetworkSnapshot,
 } from '@catering-v2s/kernel-base-transport';
 import {
   createSampleWallpaperConsoleModule,
+  selectSampleWallpaperConsoleBusinessInterlockActive,
   startupReadyCommand,
   type SampleWallpaperConsoleReadyPayload,
 } from '../application/module';
@@ -37,6 +52,7 @@ import {
 } from '../application/terminalSurfaces';
 
 const defaultPersistenceKey = 'sample-wallpaper-console';
+export {selectSampleWallpaperConsoleBusinessInterlockActive};
 
 export type WallpaperConsoleAssembly = IntegrationAssembly;
 
@@ -46,6 +62,7 @@ type WallpaperConsoleAssemblyInput = Readonly<{
   readonly platformPorts: PlatformPorts;
   readonly nativeLoadingCapability: NativeLoadingCapability;
   readonly persistenceKey?: string;
+  readonly appVersion?: string;
   readonly surfaceForm: SurfaceForm;
   readonly terminalSurfaces?: TerminalSurfaces;
   readonly defaultContainerPartKeys?: Readonly<Partial<Record<string, string>>>;
@@ -53,8 +70,12 @@ type WallpaperConsoleAssemblyInput = Readonly<{
   readonly packagingDebugMode?: boolean;
   readonly startupDebugMode?: boolean;
   readonly showAdminPassword?: boolean;
+  readonly serverSpaces?: TransportServerConfig;
   readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>;
   readonly topologyPeerChannel?: TopologyPeerChannel;
+  readonly transportNetworkAdapterFactory?: (
+    readSnapshot: (serverName: string) => Promise<TransportNetworkSnapshot>,
+  ) => TransportNetworkAdapter;
 }>;
 
 export function createSampleWallpaperConsoleAssembly(
@@ -81,7 +102,15 @@ export async function createSampleWallpaperConsoleAssembly(
     packagingDebugMode: input.packagingDebugMode,
     startupDebugMode: input.startupDebugMode,
     showAdminPassword: input.showAdminPassword ?? packageJson.showAdminPassword,
-    parts: [...sampleStaffAuthAssembly.parts, ...sampleWallpaperPickerAssembly.parts, ...wallpaperConsoleParts],
+    selectBusinessInterlockActive: selectSampleWallpaperConsoleBusinessInterlockActive,
+    renderBusinessInterlock: () => <PairReadinessInterlock />,
+    parts: [
+      ...sampleStaffAuthAssembly.parts,
+      ...sampleWallpaperPickerAssembly.parts,
+      ...createTerminalActivationParts(input.serverSpaces ?? (packageJson.serverSpaces as TransportServerConfig)),
+      ...createServerConfigPanelParts(input.serverSpaces ?? (packageJson.serverSpaces as TransportServerConfig)),
+      ...wallpaperConsoleParts,
+    ],
     layerDismissals: Object.freeze({
       ...sampleStaffAuthAssembly.layerDismissals,
       ...sampleWallpaperPickerAssembly.layerDismissals,
@@ -92,22 +121,56 @@ export async function createSampleWallpaperConsoleAssembly(
     createStartupReadyPayload,
     resolveCommandTarget: resolveTopologyCommandTarget,
     createTopologyAdminCapability,
-    createApplicationModules: ({uiStateModule}) => [
-      createTransportModule(),
-      createTopologyModule({
-        displayName: 'sample-wallpaper-console',
-        moduleName: integrationModuleName,
+    createApplicationModules: ({uiStateModule}) => {
+      const staffSessionModule = createSampleStaffSessionModule();
+      const wallpaperModule = createSampleWallpaperModule();
+      const serverConfigModule = createServerConfigModule(
+        input.serverSpaces ?? (packageJson.serverSpaces as TransportServerConfig),
+      );
+      const serverSpaces = input.serverSpaces ?? (packageJson.serverSpaces as TransportServerConfig);
+      const transportModule = createTransportModule({
+        networkAdapterFactory: context => {
+          const readSnapshot = async (serverName: string): Promise<TransportNetworkSnapshot> =>
+            resolveServerNetworkSnapshot(context.getState(), serverSpaces, serverName);
+          return (
+            input.transportNetworkAdapterFactory?.(readSnapshot) ?? createBrowserTransportNetworkAdapter(readSnapshot)
+          );
+        },
+      });
+      const terminalDataClientModule = createTerminalDataClientModule({
+        transport: transportModule.commandGateway,
+        businessServerName: 'business',
+        createCredentialSecret,
+        now: () => Date.now(),
         surfaceForm,
-        identityClient: createTopologyIdentityClient(),
-        peerChannel: input.topologyPeerChannel,
-        stateSyncSlices: selectStateSyncSlices(uiStateModule.stateSlices ?? []),
-      }),
-      createSampleWallpaperConsoleModule(),
-      createSampleStaffSessionModule(),
-      createSampleWallpaperModule(),
-      sampleStaffAuthAssembly.createModule(),
-      sampleWallpaperPickerAssembly.createModule(),
-    ],
+        appVersion: input.appVersion ?? '1.0.0',
+      });
+      return [
+        serverConfigModule,
+        transportModule,
+        createTopologyModule({
+          displayName: 'sample-wallpaper-console',
+          moduleName: integrationModuleName,
+          surfaceForm,
+          identityClient: createTopologyIdentityClient(),
+          peerChannel: input.topologyPeerChannel,
+          stateSyncSlices: selectStateSyncSlices([
+            ...(uiStateModule.stateSlices ?? []),
+            ...(staffSessionModule.stateSlices ?? []),
+            ...(wallpaperModule.stateSlices ?? []),
+            ...(serverConfigModule.stateSlices ?? []),
+            ...(terminalDataClientModule.stateSlices ?? []),
+          ]),
+        }),
+        createSampleWallpaperConsoleModule(surfaceForm),
+        createTerminalActivationModule(),
+        terminalDataClientModule,
+        staffSessionModule,
+        wallpaperModule,
+        sampleStaffAuthAssembly.createModule(),
+        sampleWallpaperPickerAssembly.createModule(),
+      ];
+    },
     renderChildren: () => <WallpaperBackground />,
   });
 }

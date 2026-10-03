@@ -26,7 +26,7 @@ type AdminPartSpec = Readonly<{
   readonly title: string;
   readonly description: string;
   readonly component: ComponentType<any>;
-  readonly layerTier?: 'standard' | 'alert';
+  readonly layerTier?: 'standard' | 'alert' | 'admin';
   readonly layerGuard?: 'decisive';
 }>;
 
@@ -48,6 +48,7 @@ const adminConsolePart = (surfaceForm: 'laptop' | 'mobile') =>
       title: '终端管理',
       description: '终端本地诊断与拓扑管理外壳',
       component: surfaceForm === 'laptop' ? AdminLayerLaptop : AdminLayerMobile,
+      layerTier: 'admin',
       layerGuard: 'decisive',
     },
     surfaceForm,
@@ -73,7 +74,7 @@ const powerConfirmationPart = (surfaceForm: 'laptop' | 'mobile') =>
       title: '显示角色切换确认',
       description: '确认电源状态触发的显示角色切换',
       component: surfaceForm === 'laptop' ? PowerRoleConfirmationLaptop : PowerRoleConfirmationMobile,
-      layerTier: 'alert',
+      layerTier: 'admin',
       layerGuard: 'decisive',
     },
     surfaceForm,

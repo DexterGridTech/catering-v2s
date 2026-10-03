@@ -271,6 +271,9 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     getSession: () => currentSession,
     isPeerAccepted: () => peerAccepted,
     getConnectionId: () => currentConnectionId,
+    onStateSliceApplied: ({context, connectionId, sliceName, revision}) => {
+      dispatchTopologyEvent(context, {event: 'state-sync-slice-applied', connectionId, sliceName, revision});
+    },
     dispatchPayloadFailure,
     clearPayloadFailure,
     log: topologyPeerLog,
@@ -309,8 +312,9 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
       },
       currentConnectionId,
     );
-    if (peerIdentity !== undefined) dispatchTopologyEvent(context, {event: 'peer-accepted', peerIdentity});
-    else dispatchTopologyEvent(context, {event: 'peer-accepted'});
+    if (peerIdentity !== undefined)
+      dispatchTopologyEvent(context, {event: 'peer-accepted', peerIdentity, connectionId: currentConnectionId});
+    else dispatchTopologyEvent(context, {event: 'peer-accepted', connectionId: currentConnectionId});
     topologyStateSync.sendStateSnapshots(context, true);
   };
 
@@ -370,8 +374,18 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
   const handleWireMessage = (
     context: RuntimeModuleContext,
     message: TopologyWireMessage | TopologyStateFullMessage,
+    sourceConnectionId?: string,
   ): void => {
-    topologyPeerLog(context, 'frame-received', {messageType: message.type}, currentConnectionId);
+    if (sourceConnectionId !== undefined && sourceConnectionId !== currentConnectionId) {
+      topologyPeerLog(
+        context,
+        'frame-ignored',
+        {messageType: message.type, reason: 'stale-peer-connection'},
+        sourceConnectionId,
+      );
+      return;
+    }
+    topologyPeerLog(context, 'frame-received', {messageType: message.type}, sourceConnectionId ?? currentConnectionId);
     if (
       !peerAccepted &&
       message.type !== 'hello' &&
@@ -513,7 +527,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
       return;
     }
     if (message.type === 'state-full') {
-      topologyStateSync.acceptStateFull(context, message, readSyncStateDiff);
+      topologyStateSync.acceptStateFull({context, message, readDiff: readSyncStateDiff, sourceConnectionId});
       return;
     }
     if (message.type === 'command-request') {
@@ -525,6 +539,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     peerAccepted = false;
     closingConnectionId = undefined;
     currentConnectionId = connectionId;
+    dispatchTopologyEvent(context, {event: 'peer-connection-installed', connectionId});
     topologyPeerLog(context, 'session-installed', {hasConnectionId: connectionId !== undefined}, connectionId);
     currentSession = createTopologySession({
       write: raw =>
@@ -532,7 +547,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
           handlePeerLoss(context, error instanceof Error ? error.message : 'TOPOLOGY_WRITE_FAILED', connectionId);
           throw error;
         }),
-      onMessage: message => handleWireMessage(context, message),
+      onMessage: message => handleWireMessage(context, message, connectionId),
       onProtocolError: error => {
         topologyPeerLog(
           context,

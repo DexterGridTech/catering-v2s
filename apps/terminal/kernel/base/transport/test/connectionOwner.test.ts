@@ -500,4 +500,47 @@ describe('transport connection owner', () => {
     expect(calls).toEqual(['primary', 'primary', 'backup']);
     await owner.dispose();
   });
+
+  it('does not expose an HTTP response after the effective network revision changes in flight', async () => {
+    let revision = 1;
+    let completeResponse!: () => void;
+    const responseStarted = new Promise<void>(resolve => {
+      completeResponse = resolve;
+    });
+    let releaseResponse!: () => void;
+    const responseCanFinish = new Promise<void>(resolve => {
+      releaseResponse = resolve;
+    });
+    const adapter: TransportNetworkAdapter = {
+      readSnapshot: async () => ({...snapshot(), serverName: 'terminal-business-api', revision}),
+      connect: async () => makeConnection(),
+      sendHttp: async () => {
+        completeResponse();
+        await responseCanFinish;
+        return {kind: 'response', status: 200, body: {groupWorkspaceKey: 'old-space'}};
+      },
+    };
+    const owner = createTransportConnectionOwner({adapter, dispatchInternal: () => undefined});
+    const request = {
+      profileId: 'terminal-data-client:http',
+      serverName: 'terminal-business-api',
+      method: 'POST',
+      pathAndQuery: '/activation',
+      headers: {},
+      body: {activationCode: '01234567'},
+      safeRetryable: true,
+    } as const;
+
+    const execution = owner.executeHttp(request);
+    await responseStarted;
+    revision = 2;
+    releaseResponse();
+
+    expect(await execution).toEqual({
+      kind: 'failure',
+      category: 'delivered-failure',
+      code: 'HTTP_NETWORK_CONFIGURATION_CHANGED',
+    });
+    await owner.dispose();
+  });
 });

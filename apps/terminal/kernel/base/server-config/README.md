@@ -14,9 +14,9 @@ server-config 不保存终端凭证，也不负责连接重试或 TDS 业务协�
 
 `selectServerConfiguration` 返回当前与默认配置、覆盖服务列表及 `passwordConfigured`，不返回密码。网络 adapter 专用入口位于包子路径 `@catering-v2s/kernel-base-server-config/network-adapter`；仅组合层可将其 `resolveServerNetworkSnapshot(state, defaults, serverName)` 注入 transport 的网络 provider。terminal-data-client 不消费这个快照。
 
-代理密码只允许通过 `persistSecure` 保存；设置命令可明确设置新密码、沿用已设置密码或移除认证。普通 selector、日志与错误不包含原文。覆盖代理是完整服务设置，不继承 defaults 的代理密码。
+按本专项正式需求，代理密码是普通字符串字段，使用 `persistKv` 明文持久化，并随主机配置通过现有 topology state sync 明文复制到副机。普通 selector、日志与错误仍不包含原文；覆盖代理仍是完整服务设置，不继承 defaults 的代理密码。主机 package defaults（包括默认代理凭证）与当前选择/覆盖作为一份配置快照同步；副机将其作为本地持久缓存，不能编辑或反向提交。
 
-本包的 `server-config.configuration` slice 声明 D-16 的 reset 保留。state runtime 只保留其持久化字段/记录；`serviceRevisions` 等易失值回到初始状态。
+本包的 `server-config.configuration` slice 声明 D-16 的 reset 保留。state runtime 只保留其持久化字段/记录；`serviceRevisions` 等易失值回到初始状态。副机 `syncedHostDefaults` 是主机权威配置的持久缓存，不是第二个可写配置 owner；配对业务就绪仍由 topology 当前连接与必需投影判定。
 
 ## 用法
 
@@ -24,4 +24,4 @@ server-config 不保存终端凭证，也不负责连接重试或 TDS 业务协�
 
 ## 在这个包上迭代时
 
-先读批次二详设 CP-02、R-11 与 TR-09，再扩展 owner 命令/selector 和 state 声明；地址与代理秘密按日志规范脱敏。
+先读当前专项详设 CP-01、需求 R-07/R-08 与 TR-09，再扩展 owner 命令/selector 和 state 声明；地址与代理秘密按日志规范脱敏。每个运行入口只向本 owner 注入一份 package `serverSpaces` defaults；主机 defaults 的副机副本只能是 topology projection，不能成为第二份 defaults owner。

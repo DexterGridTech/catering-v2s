@@ -75,5 +75,6 @@ describe('AdminLayerFrame cleanup under StrictMode', () => {
     expect(harness.dispatchWithRequestId.mock.calls[0]?.[0]).toMatchObject({
       payload: {displayMode: 'PRIMARY', layerId: 'admin.console.layer'},
     });
+    expect(harness.dispatchWithRequestId.mock.calls[0]?.[0]).not.toHaveProperty('routeIntent');
   });
 });

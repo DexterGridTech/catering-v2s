@@ -13,7 +13,8 @@
     "devDependencyModuleNames",
     "moduleKind",
     "moduleName",
-    "sampleMemberDeskAssembly"
+    "sampleMemberDeskAssembly",
+    "startMemberDeskCommand"
   ],
   "publicExportMap": {
     ".": "./src/index.ts"

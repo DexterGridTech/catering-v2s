@@ -2,8 +2,10 @@ import {useCallback} from 'react';
 import {
   confirmMemberCommand,
   rejectMemberCommand,
-  selectPendingMember,
+  selectBranchPendingMember,
+  selectHostPendingMember,
 } from '@catering-v2s/kernel-feature-sample-member-registry';
+import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {CommandDefinition} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
 import {
@@ -20,15 +22,22 @@ import {
 import {useInputSnapshot} from '@catering-v2s/ui-base-input';
 import type {CustomerMemberMode} from '../types/customerMember';
 
-export const ageFieldId = 'sample.desk.customer-member:age';
+export const ageFieldId = (prefix = 'sample.desk.customer-member') => `${prefix}:age`;
 
-export const useCustomerMember = ({mode}: Readonly<{readonly mode: CustomerMemberMode}>) => {
+export const useCustomerMember = ({
+  mode,
+  inputPrefix,
+  pendingSource,
+}: Readonly<{readonly mode: CustomerMemberMode; readonly inputPrefix?: string; readonly pendingSource?: 'host' | 'branch'}>) => {
   const dispatchCommand = useDispatchCommand();
-  const pending = useUiStateSelector(selectPendingMember);
+  const runtimeMode = useUiStateSelector(selectRuntimeInstanceMode);
+  const resolvedPendingSource = pendingSource ?? (mode === 'confirm' || runtimeMode === 'MASTER' ? 'host' : 'branch');
+  const pending = useUiStateSelector(resolvedPendingSource === 'host' ? selectHostPendingMember : selectBranchPendingMember) ?? null;
   const captureInputSnapshot = useInputSnapshot();
   const trackedCommand = useTrackedCommand();
   const requestInFlight = trackedCommand.requestInFlight;
   const canDecide = pending !== null && pending !== undefined && !requestInFlight;
+  const memberAgeFieldId = ageFieldId(inputPrefix);
 
   const observeSystemFailure = useCallback(
     async (operation: DeskSystemOperation): Promise<void> => {
@@ -55,27 +64,41 @@ export const useCustomerMember = ({mode}: Readonly<{readonly mode: CustomerMembe
       return trackedCommand.run({
         definition: command,
         payload,
-        routeIntent: 'peer-intent',
+        target: mode === 'confirm' && runtimeMode === 'SLAVE' ? 'peer' : 'local',
         rejectionPolicy: 'RETHROW',
         onOutcome: (_result, outcome) => (outcome === 'system-failure' ? observeSystemFailure(operation) : undefined),
         onRejected: () => observeSystemFailure(operation),
       });
     },
-    [canDecide, observeSystemFailure, trackedCommand],
+    [canDecide, mode, observeSystemFailure, runtimeMode, trackedCommand],
   );
 
   const confirm = useCallback(() => {
-    const rawAge = captureInputSnapshot().fields[ageFieldId]?.value.trim() ?? '';
-    if (rawAge.length === 0) return decide(confirmMemberCommand, {}, 'confirm-member');
+    const rawAge = captureInputSnapshot().fields[memberAgeFieldId]?.value.trim() ?? '';
+    if (pending === null) return undefined;
+    if (rawAge.length === 0) return decide(confirmMemberCommand, {operationId: pending.operationId}, 'confirm-member');
     const age = Number(rawAge);
-    return decide(confirmMemberCommand, Number.isFinite(age) ? {age} : {}, 'confirm-member');
-  }, [captureInputSnapshot, decide]);
-  const reject = useCallback(() => decide(rejectMemberCommand, {}, 'reject-member'), [decide]);
-  const handBack = useCallback(() => decide(memberSubmissionWithdrawnCommand, {}, 'withdraw-member'), [decide]);
+    return decide(
+      confirmMemberCommand,
+      {operationId: pending.operationId, ...(Number.isFinite(age) ? {age} : {})},
+      'confirm-member',
+    );
+  }, [captureInputSnapshot, decide, memberAgeFieldId, pending]);
+  const reject = useCallback(
+    () => (pending === null ? undefined : decide(rejectMemberCommand, {operationId: pending.operationId}, 'reject-member')),
+    [decide, pending],
+  );
+  const handBack = useCallback(
+    () =>
+      pending === null
+        ? undefined
+        : decide(memberSubmissionWithdrawnCommand, {operationId: pending.operationId}, 'withdraw-member'),
+    [decide, pending],
+  );
 
   return {
     pending,
-    ageFieldId,
+    ageFieldId: memberAgeFieldId,
     requestInFlight,
     canDecide,
     isHandheldConfirm: mode === 'handheld-confirm',

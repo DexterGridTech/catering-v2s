@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {parts} from '../src/parts/parts';
+import {adminTestIds} from '../src/foundations/adminTestIds';
 
 const normalizeCatalogEntry = (entry: (typeof parts)[number]['catalogEntry']) => ({
   partKey: entry.partKey,
@@ -12,6 +13,18 @@ const normalizeCatalogEntry = (entry: (typeof parts)[number]['catalogEntry']) =>
 });
 
 describe('admin-shell R-10a part declarations', () => {
+  it('keeps navigation tab identifiers distinct from rendered section content roots', () => {
+    for (const section of [adminTestIds.ports, adminTestIds.runtime, adminTestIds.topology]) {
+      expect(section.contentRoot).not.toBe(section.section);
+      expect(section.contentRoot).toMatch(/^terminal\.admin:[a-z-]+:content-root$/);
+    }
+    expect(new Set([
+      adminTestIds.ports.contentRoot,
+      adminTestIds.runtime.contentRoot,
+      adminTestIds.topology.contentRoot,
+    ]).size).toBe(3);
+  });
+
   it('contains two non-overlapping siblings for every admin part key', () => {
     expect(parts).toHaveLength(12);
     const groups = new Map<string, (typeof parts)[number][]>();
@@ -59,7 +72,7 @@ describe('admin-shell R-10a part declarations', () => {
     const adminConsoleSiblings = groups.get('admin.console')!;
     expect(adminConsoleSiblings.every(part => part.rendererBinding.layerGuard === 'decisive')).toBe(true);
     const powerConfirmationSiblings = groups.get('admin.console.power-confirmation')!;
-    expect(powerConfirmationSiblings.every(part => part.rendererBinding.layerTier === 'alert')).toBe(true);
+      expect(powerConfirmationSiblings.every(part => part.rendererBinding.layerTier === 'admin')).toBe(true);
     expect(powerConfirmationSiblings.every(part => part.rendererBinding.layerGuard === 'decisive')).toBe(true);
     expect(
       parts

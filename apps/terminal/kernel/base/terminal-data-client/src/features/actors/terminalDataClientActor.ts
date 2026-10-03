@@ -6,6 +6,7 @@ import {
   type ActorDefinition,
   type CommandDefinition,
 } from '@catering-v2s/kernel-base-runtime';
+import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {PersistenceOperationResult, StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import {
   createTerminalApiClient,
@@ -26,14 +27,25 @@ import type {
   TerminalDataClientDependencies,
   TerminalTransportConnection,
 } from '../../types/client';
+import {
+  selectActivationState,
+  selectConnectionLatency,
+  selectConnectionState,
+} from '../../selectors/selectTerminalDataClientState';
 import {terminalDataClientActions, terminalDataClientSliceName} from '../slices/terminalDataClient';
+import {
+  terminalClientStatusProjectionActions,
+  terminalClientStatusProjectionSliceName,
+} from '../slices/terminalClientStatusProjection';
+import type {TerminalClientStatusProjection, TerminalClientStatusProjectionState} from '../../types/client';
 import {
   activateTerminalCommand,
   cancelTerminalOfflineCommand,
-  cancelTerminalOnlineCommand,
+  cancelTerminaActivationCommand,
   connectTerminalCommand,
   disconnectTerminalCommand,
   initializeTerminalDataClientCommand,
+  refreshTerminalClientStatusProjectionCommand,
   terminalHeartbeatTickCommand,
   terminalTransportEventCommand,
 } from '../commands/terminalDataClientCommands';
@@ -69,6 +81,21 @@ const readState = (state: StateRoot): TerminalClientState => {
   if (current === undefined || current === null) throw new Error('TERMINAL_DATA_CLIENT_STATE_MISSING');
   return current as TerminalClientState;
 };
+const readStatusProjection = (state: StateRoot): TerminalClientStatusProjectionState => {
+  const current = state[terminalClientStatusProjectionSliceName];
+  if (current === undefined || current === null) throw new Error('TDC_STATUS_PROJECTION_STATE_MISSING');
+  return current as TerminalClientStatusProjectionState;
+};
+const isHostRuntime = (state: StateRoot): boolean => selectRuntimeInstanceMode(state) === 'MASTER';
+const sameStatusProjection = (
+  left: TerminalClientStatusProjection,
+  right: Omit<TerminalClientStatusProjection, 'updatedAt'>,
+): boolean =>
+  left.available === right.available &&
+  left.sourceNodeId === right.sourceNodeId &&
+  JSON.stringify(left.activation) === JSON.stringify(right.activation) &&
+  JSON.stringify(left.connection) === JSON.stringify(right.connection) &&
+  left.lastRttMs === right.lastRttMs;
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 const isRfc3339Utc = (value: unknown): value is string => {
@@ -232,6 +259,10 @@ export const createTerminalDataClientActor = (
 ): TerminalDataClientActorRuntime => {
   const terminalClient = createTerminalClientForTransport(dependencies);
   const resetRequestId: {current?: ReturnType<typeof createRequestId>} = {};
+  type PendingActivation = NonNullable<TerminalClientState['pendingActivations'][string]>;
+  type ActivationReservation = Readonly<{signature: string; promise: Promise<PendingActivation>}>;
+  const pendingByOperationId = new Map<string, ActivationReservation>();
+  const pendingByBusinessIdentity = new Map<string, ActivationReservation>();
   let connection: TerminalTransportConnection | undefined;
   let unsubscribeConnection: (() => void) | undefined;
   let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
@@ -277,7 +308,30 @@ export const createTerminalDataClientActor = (
   };
 
   const actor = defineActor(moduleName, 'terminal-data-client', [
+    onCommand(refreshTerminalClientStatusProjectionCommand, context => {
+      if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER') {
+        return Object.freeze({status: 'not-host'});
+      }
+      const state = context.getState();
+      const next = Object.freeze({
+        available: true,
+        sourceNodeId: context.localNodeId,
+        activation: selectActivationState(state),
+        connection: selectConnectionState(state),
+        lastRttMs: selectConnectionLatency(state, dependencies.now()).lastRttMs,
+      });
+      if (sameStatusProjection(readStatusProjection(state).projection, next)) {
+        return Object.freeze({status: 'unchanged'});
+      }
+      context.dispatchAction(
+        terminalClientStatusProjectionActions.replaceProjection(
+          Object.freeze({...next, updatedAt: dependencies.now()}),
+        ),
+      );
+      return Object.freeze({status: 'updated'});
+    }),
     onCommand(initializeTerminalDataClientCommand, async context => {
+      if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
       if (readState(context.getState()).credential === null) return Object.freeze({status: 'inactive'});
       const result = await context.dispatchCommand(connectTerminalCommand, Object.freeze({}), {
         requestId: context.command.requestId ?? createRequestId(),
@@ -286,6 +340,8 @@ export const createTerminalDataClientActor = (
       return Object.freeze({status: 'connect-requested'});
     }),
     onCommand(activateTerminalCommand, async context => {
+      if (!isHostRuntime(context.getState()))
+        return Object.freeze({status: 'rejected', reason: 'TERMINAL_CLIENT_HOST_ROLE_REQUIRED'});
       if (readState(context.getState()).credential !== null)
         return Object.freeze({status: 'rejected', reason: 'ALREADY_ACTIVE'});
       const device = await context.platformPorts.device.getDeviceInfo({timeoutMs: callTimeoutMs});
@@ -298,46 +354,77 @@ export const createTerminalDataClientActor = (
       }
       const current = readState(context.getState());
       if (current.credential !== null) return Object.freeze({status: 'rejected', reason: 'ALREADY_ACTIVE'});
+      const operationId = context.command.requestId ?? createRequestId();
+      const signature = JSON.stringify([
+        context.command.payload.activationCode,
+        device.value.deviceId,
+        dependencies.surfaceForm,
+        dependencies.appVersion,
+      ]);
+      const operationReservation = pendingByOperationId.get(operationId);
+      if (operationReservation !== undefined && operationReservation.signature !== signature)
+        return Object.freeze({status: 'rejected', reason: 'ACTIVATION_OPERATION_MISMATCH'});
       const previous =
-        current.pendingActivations[context.command.payload.operationId] ??
+        current.pendingActivations[operationId] ??
         Object.values(current.pendingActivations).find(
           pendingActivation =>
-            pendingActivation.groupWorkspaceKey === context.command.payload.groupWorkspaceKey &&
-            pendingActivation.activationCode === context.command.payload.activationCode,
+            pendingActivation.activationCode === context.command.payload.activationCode &&
+            pendingActivation.deviceId === device.value.deviceId &&
+            pendingActivation.surfaceForm === dependencies.surfaceForm &&
+            pendingActivation.appVersion === dependencies.appVersion,
         );
       if (
         previous !== undefined &&
-        (previous.groupWorkspaceKey !== context.command.payload.groupWorkspaceKey ||
-          previous.activationCode !== context.command.payload.activationCode ||
+        (previous.activationCode !== context.command.payload.activationCode ||
           previous.deviceId !== device.value.deviceId ||
-          previous.surfaceForm !== context.command.payload.surfaceForm ||
-          previous.appVersion !== context.command.payload.appVersion)
+          previous.surfaceForm !== dependencies.surfaceForm ||
+          previous.appVersion !== dependencies.appVersion)
       )
         return Object.freeze({status: 'rejected', reason: 'ACTIVATION_OPERATION_MISMATCH'});
       let pending = previous;
       if (pending === undefined) {
-        let credentialSecret: string;
-        try {
-          credentialSecret = dependencies.createCredentialSecret();
-        } catch {
-          return Object.freeze({status: 'rejected', reason: 'SECURE_RANDOM_UNAVAILABLE'});
+        const businessReservation = pendingByBusinessIdentity.get(signature);
+        let reservation = operationReservation ?? businessReservation;
+        if (reservation !== undefined && reservation.signature !== signature)
+          return Object.freeze({status: 'rejected', reason: 'ACTIVATION_OPERATION_MISMATCH'});
+        if (reservation === undefined) {
+          const promise = Promise.resolve().then(async (): Promise<PendingActivation> => {
+            let credentialSecret: string;
+            try {
+              credentialSecret = await dependencies.createCredentialSecret();
+            } catch {
+              throw new Error('SECURE_RANDOM_UNAVAILABLE');
+            }
+            if (!isCredentialSecret(credentialSecret)) throw new Error('SECURE_RANDOM_INVALID');
+            const created = Object.freeze({
+              operationId,
+              activationCode: context.command.payload.activationCode,
+              deviceId: device.value.deviceId,
+              surfaceForm: dependencies.surfaceForm,
+              appVersion: dependencies.appVersion,
+              credentialSecret,
+            });
+            context.dispatchAction(terminalDataClientActions.setPendingActivation(created));
+            await flush(context);
+            return created;
+          });
+          reservation = Object.freeze({signature, promise});
+          pendingByBusinessIdentity.set(signature, reservation);
         }
-        if (!isCredentialSecret(credentialSecret))
-          return Object.freeze({status: 'rejected', reason: 'SECURE_RANDOM_INVALID'});
-        pending = Object.freeze({
-          operationId: context.command.payload.operationId,
-          groupWorkspaceKey: context.command.payload.groupWorkspaceKey,
-          activationCode: context.command.payload.activationCode,
-          deviceId: device.value.deviceId,
-          surfaceForm: context.command.payload.surfaceForm,
-          appVersion: context.command.payload.appVersion,
-          credentialSecret,
-        });
-        context.dispatchAction(terminalDataClientActions.setPendingActivation(pending));
-        await flush(context);
+        pendingByOperationId.set(operationId, reservation);
+        try {
+          pending = await reservation.promise;
+        } catch (error) {
+          if (error instanceof Error && error.message.startsWith('SECURE_RANDOM_'))
+            return Object.freeze({status: 'rejected', reason: error.message});
+          throw error;
+        } finally {
+          if (pendingByOperationId.get(operationId) === reservation) pendingByOperationId.delete(operationId);
+          if (pendingByBusinessIdentity.get(signature) === reservation) pendingByBusinessIdentity.delete(signature);
+        }
       }
       const result = await terminalClient.client.activateTerminal({
-        pathParameters: {groupWorkspaceKey: pending.groupWorkspaceKey},
+        pathParameters: {},
         queryParameters: {},
         headers: {},
         body: {
@@ -353,7 +440,7 @@ export const createTerminalDataClientActor = (
         context.dispatchAction(
           terminalDataClientActions.replaceCredential(
             Object.freeze({
-              groupWorkspaceKey: pending.groupWorkspaceKey,
+              groupWorkspaceKey: result.body.groupWorkspaceKey,
               terminalRef: result.body.terminalRef,
               storeRef: result.body.storeRef,
               deviceId: pending.deviceId,
@@ -376,18 +463,14 @@ export const createTerminalDataClientActor = (
       }
       return result;
     }),
-    onCommand(cancelTerminalOnlineCommand, async context => {
+    onCommand(cancelTerminaActivationCommand, async context => {
+      if (!isHostRuntime(context.getState()))
+        return Object.freeze({status: 'rejected', reason: 'TERMINAL_CLIENT_HOST_ROLE_REQUIRED'});
       const credential = readState(context.getState()).credential;
       if (credential === null) return Object.freeze({status: 'rejected', reason: 'TERMINAL_NOT_ACTIVE'});
-      if (
-        credential.groupWorkspaceKey !== context.command.payload.groupWorkspaceKey ||
-        credential.terminalRef !== context.command.payload.terminalRef
-      ) {
-        return Object.freeze({status: 'rejected', reason: 'TERMINAL_IDENTITY_MISMATCH'});
-      }
       context.dispatchAction(terminalDataClientActions.setActivationStatus('cancelling'));
       const result = await terminalClient.client.cancelTerminalActivation({
-        pathParameters: {groupWorkspaceKey: credential.groupWorkspaceKey, terminalRef: credential.terminalRef},
+        pathParameters: {terminalRef: credential.terminalRef},
         queryParameters: {},
         headers: {Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`},
         body: {deviceId: credential.deviceId},
@@ -404,6 +487,8 @@ export const createTerminalDataClientActor = (
       return Object.freeze({status: result.body.outcome});
     }),
     onCommand(cancelTerminalOfflineCommand, async context => {
+      if (!isHostRuntime(context.getState()))
+        return Object.freeze({status: 'rejected', reason: 'TERMINAL_CLIENT_HOST_ROLE_REQUIRED'});
       context.dispatchAction(terminalDataClientActions.setActivationStatus('cancelling'));
       await closeLocalConnection();
       resetRequestId.current = context.command.requestId ?? createRequestId();
@@ -411,6 +496,8 @@ export const createTerminalDataClientActor = (
       return Object.freeze({status: 'cancelled-offline'});
     }),
     onCommand(connectTerminalCommand, async context => {
+      if (!isHostRuntime(context.getState()))
+        return Object.freeze({status: 'rejected', reason: 'TERMINAL_CLIENT_HOST_ROLE_REQUIRED'});
       const credential = readState(context.getState()).credential;
       if (credential === null) return Object.freeze({status: 'rejected', reason: 'TERMINAL_NOT_ACTIVE'});
       const clientState = readState(context.getState());
@@ -465,6 +552,7 @@ export const createTerminalDataClientActor = (
       return Object.freeze({status: 'disconnected'});
     }),
     onCommand(terminalTransportEventCommand, async context => {
+      if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
       const event = context.command.payload.event;
       if (event.type === 'message') {
         let parsed: unknown;
@@ -614,6 +702,7 @@ export const createTerminalDataClientActor = (
       return null;
     }),
     onCommand(terminalHeartbeatTickCommand, async context => {
+      if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
       if (!sessionReady || connection === undefined) return null;
       const current = readState(context.getState());
       const seq = current.nextPingSequence;

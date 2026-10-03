@@ -22,6 +22,8 @@ const createInitialState = (input: CreateTopologyStateInput): TopologyState =>
     hostAddress: null,
     peerReachable: false,
     peerConnectionRevision: 0,
+    peerStateSyncConnectionId: null,
+    peerAppliedStateSyncRevisions: Object.freeze({}),
     hostDesired: false,
     hostReconcileRevision: 0,
     hostActual: 'stopped',
@@ -54,6 +56,8 @@ const topologySlice = createSlice({
       masterLocator: null,
       peerIdentity: null,
       peerReachable: false,
+      peerStateSyncConnectionId: null,
+      peerAppliedStateSyncRevisions: Object.freeze({}),
     }),
     setHostAddress: (state, action: PayloadAction<NonNullable<TopologyState['hostAddress']>>): TopologyState => ({
       ...state!,
@@ -64,7 +68,13 @@ const topologySlice = createSlice({
       ...state!,
       peerIdentity: action.payload,
     }),
-    clearPeerIdentity: (state): TopologyState => ({...state!, peerIdentity: null, peerReachable: false}),
+    clearPeerIdentity: (state): TopologyState => ({
+      ...state!,
+      peerIdentity: null,
+      peerReachable: false,
+      peerStateSyncConnectionId: null,
+      peerAppliedStateSyncRevisions: Object.freeze({}),
+    }),
     setPeerReachable: (state, action: PayloadAction<boolean>): TopologyState => ({
       ...state!,
       peerReachable: action.payload,
@@ -72,7 +82,29 @@ const topologySlice = createSlice({
     bumpPeerConnectionRevision: (state): TopologyState => ({
       ...state!,
       peerConnectionRevision: state!.peerConnectionRevision + 1,
+      peerStateSyncConnectionId: null,
+      peerAppliedStateSyncRevisions: Object.freeze({}),
     }),
+    setPeerStateSyncConnection: (state, action: PayloadAction<string | null>): TopologyState => ({
+      ...state!,
+      peerStateSyncConnectionId: action.payload,
+      peerAppliedStateSyncRevisions: Object.freeze({}),
+    }),
+    markPeerStateSyncSliceApplied: (
+      state,
+      action: PayloadAction<Readonly<{connectionId: string; sliceName: string; revision: number}>>,
+    ): TopologyState => {
+      if (state!.peerStateSyncConnectionId !== action.payload.connectionId) return state!;
+      const previousRevision = state!.peerAppliedStateSyncRevisions[action.payload.sliceName] ?? 0;
+      if (action.payload.revision <= previousRevision) return state!;
+      return {
+        ...state!,
+        peerAppliedStateSyncRevisions: Object.freeze({
+          ...state!.peerAppliedStateSyncRevisions,
+          [action.payload.sliceName]: action.payload.revision,
+        }),
+      };
+    },
     setHostDesired: (state, action: PayloadAction<boolean>): TopologyState => ({
       ...state!,
       hostDesired: action.payload,

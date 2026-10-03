@@ -2385,6 +2385,7 @@ const stage2RunDualAdminFrames = async (record, target) => {
     'topology-dual-screen-unavailable',
     [
       'terminal.admin:section:topology',
+      'terminal.admin:topology:content-root',
       'terminal.admin:topology:title',
       'terminal.admin:topology:page-gate',
       'terminal.admin:topology:page-gate:card',
@@ -2457,12 +2458,14 @@ const stage2OpenTopology = async (record, target) => {
   const expectedIds = unavailable
     ? [
         'terminal.admin:section:topology',
+        'terminal.admin:topology:content-root',
         'terminal.admin:topology:title',
         'terminal.admin:topology:page-gate',
         'terminal.admin:topology:page-gate-reason',
       ]
     : [
         'terminal.admin:section:topology',
+        'terminal.admin:topology:content-root',
         'terminal.admin:topology:title',
         'terminal.admin:topology:pair-result',
         'terminal.admin:topology:goal-choice',
@@ -2739,6 +2742,7 @@ const stage2RunMobileTopology = async (record, target) => {
     'mobile-topology-tab-visible',
     [
       'terminal.admin:section:topology',
+      'terminal.admin:topology:content-root',
       'terminal.admin:topology:title',
       'terminal.admin:topology:page-gate',
       'terminal.admin:topology:page-gate-reason',
@@ -2866,8 +2870,14 @@ const openTopology = async (record, target) => {
   )
     return;
   await tapNode(target, 'terminal.admin:section:topology');
-  await waitForNode(target, 'terminal.admin:section:topology');
-  await observe(record, target, 'topology-open', ['terminal.admin:section:topology', 'terminal.admin:topology:title']);
+  // Wait for page content, not the selected navigation button, to prove that
+  // the route changed. The two controls now have distinct test IDs.
+  await waitForNode(target, 'terminal.admin:topology:title');
+  await observe(record, target, 'topology-open', [
+    'terminal.admin:section:topology',
+    'terminal.admin:topology:content-root',
+    'terminal.admin:topology:title',
+  ]);
 };
 
 const assertTopologyValue = async (record, target, label, id, text) => {

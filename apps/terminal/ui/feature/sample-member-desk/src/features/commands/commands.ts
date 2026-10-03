@@ -3,6 +3,11 @@ import {moduleName} from '../../moduleName';
 
 export type EmptyPayload = Readonly<{}>;
 
+export const startMemberDeskCommand = defineCommand<EmptyPayload>(moduleName, {
+  name: 'start-member-desk',
+  visibility: 'public',
+});
+
 export type MemberFormCancelledPayload = Readonly<{readonly dirty: boolean}>;
 export type DraftDiscardIntent = 'cancel-form' | 'logout';
 export type RegistryNoticeReason = 'customer-rejected' | 'system-failure';
@@ -23,7 +28,7 @@ export const memberDraftDiscardedCommand = defineCommand<Readonly<{readonly inte
   visibility: 'public',
 });
 
-export const memberSubmissionWithdrawnCommand = defineCommand<EmptyPayload>(moduleName, {
+export const memberSubmissionWithdrawnCommand = defineCommand<Readonly<{readonly operationId: string}>>(moduleName, {
   name: 'member-submission-withdrawn',
   visibility: 'public',
 });

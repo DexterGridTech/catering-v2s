@@ -18,6 +18,9 @@ import {WaitingConfirm as MobileWaitingConfirm} from '../components/mobile/Waiti
 import {WithdrawConfirm as LaptopWithdrawConfirm} from '../components/laptop/WithdrawConfirm';
 import {WithdrawConfirm as MobileWithdrawConfirm} from '../components/mobile/WithdrawConfirm';
 import {dispatchDeskSystemFailureDismissal} from '../foundations/systemFailureDismissal';
+import {BranchLaptopMemberList, BranchMobileMemberList} from '../components/branch/MemberList';
+import {BranchLaptopMemberForm, BranchMobileMemberForm} from '../components/branch/MemberForm';
+import {BranchLaptopCustomerMember, BranchMobileCustomerMember} from '../components/branch/CustomerMember';
 
 const primary = ['PRIMARY'] as const;
 const secondary = ['SECONDARY'] as const;
@@ -27,6 +30,41 @@ const layer = [] as const;
 const mainWorkspace = ['MAIN'] as const;
 const master = ['MASTER'] as const;
 const masterAndSlave = ['MASTER', 'SLAVE'] as const;
+const branchWorkspace = ['BRANCH'] as const;
+const slave = ['SLAVE'] as const;
+
+const branchMemberListPair = definePartPair({
+  partKey: 'sample.desk.branch.member-list',
+  containerKeys: main,
+  displayModes: primary,
+  workspaces: branchWorkspace,
+  instanceModes: slave,
+  title: '已登记会员',
+  description: '在副机读取主机会员并开始本地登记',
+  components: {laptop: BranchLaptopMemberList, mobile: BranchMobileMemberList},
+});
+
+const branchMemberFormPair = definePartPair({
+  partKey: 'sample.desk.branch.member-form',
+  containerKeys: main,
+  displayModes: primary,
+  workspaces: branchWorkspace,
+  instanceModes: slave,
+  title: '新增会员',
+  description: '在副机录入会员并交由顾客在本机确认',
+  components: {laptop: BranchLaptopMemberForm, mobile: BranchMobileMemberForm},
+});
+
+const branchCustomerMemberPair = definePartPair({
+  partKey: 'sample.desk.branch.customer-member',
+  containerKeys: main,
+  displayModes: primary,
+  workspaces: branchWorkspace,
+  instanceModes: slave,
+  title: '顾客会员确认',
+  description: '在副机本地展示并确认本机待登记会员',
+  components: {laptop: BranchLaptopCustomerMember, mobile: BranchMobileCustomerMember},
+});
 
 const memberListPair = definePartPair({
   partKey: 'sample.desk.member-list',
@@ -136,6 +174,12 @@ const customerMemberPair = definePartPair({
 });
 
 export const parts = Object.freeze([
+  branchMemberListPair.laptop,
+  branchMemberListPair.mobile,
+  branchMemberFormPair.laptop,
+  branchMemberFormPair.mobile,
+  branchCustomerMemberPair.laptop,
+  branchCustomerMemberPair.mobile,
   memberListPair.laptop,
   memberListPair.mobile,
   memberFormPair.laptop,

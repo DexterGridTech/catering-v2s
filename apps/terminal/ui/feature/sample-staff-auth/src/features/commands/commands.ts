@@ -8,6 +8,12 @@ export const authNoticeDismissedCommand = defineCommand<EmptyPayload>(moduleName
   visibility: 'public',
 });
 
+/** Integration requests the existing login or read-only host-login guide stage. */
+export const needToLoginStaffCommand = defineCommand<EmptyPayload>(moduleName, {
+  name: 'need-to-login-staff',
+  visibility: 'public',
+});
+
 export type AuthSystemOperation = 'login' | 'logout';
 
 export const authSystemFailureObservedCommand = defineCommand<

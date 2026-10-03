@@ -1,10 +1,12 @@
 import {useCallback} from 'react';
 import {closeLayerCommand} from '@catering-v2s/kernel-base-ui-state';
 import {memberSubmissionWithdrawnCommand} from '../features/commands/commands';
-import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render';
+import {selectHostPendingMember} from '@catering-v2s/kernel-feature-sample-member-registry';
+import {dispatchWithRequestId, useDispatchCommand, useUiStateSelector} from '@catering-v2s/ui-base-render';
 
 export const useWithdrawConfirm = () => {
   const dispatchCommand = useDispatchCommand();
+  const pending = useUiStateSelector(selectHostPendingMember);
   const keepWaiting = useCallback(
     () =>
       dispatchWithRequestId({
@@ -15,14 +17,15 @@ export const useWithdrawConfirm = () => {
     [dispatchCommand],
   );
   const withdraw = useCallback(
-    () =>
-      dispatchWithRequestId({
-        dispatchCommand,
-        definition: memberSubmissionWithdrawnCommand,
-        payload: {},
-        routeIntent: 'peer-intent',
-      }),
-    [dispatchCommand],
+    () => pending === null || pending === undefined
+      ? undefined
+      : dispatchWithRequestId({
+          dispatchCommand,
+          definition: memberSubmissionWithdrawnCommand,
+          payload: {operationId: pending.operationId},
+          target: 'local',
+        }),
+    [dispatchCommand, pending],
   );
   return {keepWaiting, withdraw};
 };

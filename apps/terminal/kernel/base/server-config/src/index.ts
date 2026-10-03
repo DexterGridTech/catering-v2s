@@ -8,6 +8,7 @@ export {
   setServerOverrideCommand,
 } from './features/commands';
 export {selectServerConfiguration} from './selectors/selectServerConfiguration';
+export {resolveServerNetworkSnapshot} from './selectors/selectServerConfiguration';
 export type {
   EffectiveServerConfigView,
   ServerConfigAddressInput,

@@ -34,7 +34,7 @@ import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/test
 import {
   activateTerminalCommand,
   cancelTerminalOfflineCommand,
-  cancelTerminalOnlineCommand,
+  cancelTerminaActivationCommand,
   connectTerminalCommand,
   createTerminalDataClientModule,
   disconnectTerminalCommand,
@@ -337,7 +337,13 @@ const createScenarioClient = async (alias: string, requireCompression = false): 
         servers: Object.freeze([
           Object.freeze({
             serverName: 'terminal-business-api',
-            addresses: Object.freeze([{addressName: 'business-http', baseUrl: httpUrl, timeoutMs: 5_000}]),
+            addresses: Object.freeze([
+              {
+                addressName: 'business-http',
+                baseUrl: `${httpUrl}/api/terminal/group-workspaces/${workspaceKey}`,
+                timeoutMs: 5_000,
+              },
+            ]),
           }),
           Object.freeze({
             serverName: 'terminal-data-server',
@@ -403,6 +409,7 @@ const createScenarioClient = async (alias: string, requireCompression = false): 
     createCredentialSecret: () => randomBytes(32).toString('base64url'),
     now: Date.now,
     appVersion: 'batch-2-managed-dev-acceptance',
+    surfaceForm: 'laptop',
   });
   const modules: readonly RuntimeModule[] = [
     toolkit(contractsModuleName, []),
@@ -468,11 +475,7 @@ const activate = async (
   const fixture = fixtureTerminals[fixtureIndex];
   if (!fixture) throw new Error('TERMINAL_DEV_FIXTURE_INDEX_INVALID');
   const result = (await dispatch(client.runtime, activateTerminalCommand, {
-    operationId: `managed-dev-${client.alias}-${randomUUID()}`,
-    groupWorkspaceKey: workspaceKey,
     activationCode: fixture.activationCode,
-    surfaceForm: fixture.surfaceForm,
-    appVersion: 'batch-2-managed-dev-acceptance',
   })) as {
     status?: string | number;
     terminalRef?: string;
@@ -754,10 +757,7 @@ describe('terminal-data-client managed DEV end-to-end scenarios', () => {
     const second = await activate(client, 0, session);
     expect(second.terminalRef).toBe(first.terminalRef);
     await connect(client);
-    const cancelResult = await dispatch(client.runtime, cancelTerminalOnlineCommand, {
-      groupWorkspaceKey: workspaceKey,
-      terminalRef: second.terminalRef,
-    });
+    const cancelResult = await dispatch(client.runtime, cancelTerminaActivationCommand, {});
     expect(cancelResult).toMatchObject({status: 'CANCELLED'});
     const finalState = await recordLatestState(
       second.terminalRef,

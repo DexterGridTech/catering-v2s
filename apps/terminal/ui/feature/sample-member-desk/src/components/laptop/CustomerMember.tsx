@@ -12,24 +12,24 @@ import {useCustomerMember} from '../../hooks/useCustomerMember';
 
 const laptopRootStyle = Object.freeze({width: '100%', maxWidth: 960, alignSelf: 'center' as const});
 
-export const CustomerMember = ({mode}: CustomerMemberProps) => {
-  const member = useCustomerMember({mode});
+export const CustomerMember = ({mode, prefix = 'sample.desk.customer-member', pendingSource}: CustomerMemberProps) => {
+  const member = useCustomerMember({mode, inputPrefix: prefix, pendingSource});
   return (
-    <PrimitiveContainer testID="sample.desk.customer-member" layout="centered" style={laptopRootStyle}>
-      <InputScrollArea testID="sample.desk.customer-member:scroll">
-        <PrimitiveHeading testID="sample.desk.customer-member:title">请确认登记</PrimitiveHeading>
-        <PrimitiveText testID="sample.desk.customer-member:name" accessibilityLabel="姓名">
+    <PrimitiveContainer testID={prefix} layout="centered" style={laptopRootStyle}>
+      <InputScrollArea testID={`${prefix}:scroll`}>
+        <PrimitiveHeading testID={`${prefix}:title`}>请确认登记</PrimitiveHeading>
+        <PrimitiveText testID={`${prefix}:name`} accessibilityLabel="姓名">
           {member.pending?.name ?? ''}
         </PrimitiveText>
-        <PrimitiveText testID="sample.desk.customer-member:phone" accessibilityLabel="电话">
+        <PrimitiveText testID={`${prefix}:phone`} accessibilityLabel="电话">
           {member.pending?.phone ?? ''}
         </PrimitiveText>
-        <CustomerMemberAgeField editable={!member.requestInFlight} />
+        <CustomerMemberAgeField editable={!member.requestInFlight} prefix={prefix} />
       </InputScrollArea>
       {member.canDecide ? (
-        <PrimitiveActions testID="sample.desk.customer-member:actions">
+        <PrimitiveActions testID={`${prefix}:actions`}>
           <PrimitiveButton
-            testID="sample.desk.customer-member:confirm"
+            testID={`${prefix}:confirm`}
             accessibilityLabel="确认"
             disabled={member.requestInFlight}
             onPress={member.confirm}
@@ -37,7 +37,7 @@ export const CustomerMember = ({mode}: CustomerMemberProps) => {
             确认
           </PrimitiveButton>
           <PrimitiveButton
-            testID="sample.desk.customer-member:reject"
+            testID={`${prefix}:reject`}
             accessibilityLabel="拒绝"
             disabled={member.requestInFlight}
             onPress={member.reject}
@@ -46,7 +46,7 @@ export const CustomerMember = ({mode}: CustomerMemberProps) => {
           </PrimitiveButton>
           {member.isHandheldConfirm ? (
             <PrimitiveButton
-              testID="sample.desk.customer-member:hand-back"
+              testID={`${prefix}:hand-back`}
               accessibilityLabel="交还店员"
               disabled={member.requestInFlight}
               onPress={member.handBack}

@@ -89,9 +89,12 @@ const summarizeContentSync = (sliceName: string, value: TopologyJsonValue): Part
 export type TopologyStateSyncController = Readonly<{
   readonly sendStateSnapshots: (context: RuntimeModuleContext, force?: boolean) => void;
   readonly acceptStateFull: (
-    context: RuntimeModuleContext,
-    message: TopologyStateFullMessage,
-    readDiff: (value: TopologyJsonValue) => SyncStateDiff | undefined,
+    input: Readonly<{
+      readonly context: RuntimeModuleContext;
+      readonly message: TopologyStateFullMessage;
+      readonly readDiff: (value: TopologyJsonValue) => SyncStateDiff | undefined;
+      readonly sourceConnectionId?: string;
+    }>,
   ) => void;
   readonly resetReceived: () => void;
 }>;
@@ -101,6 +104,14 @@ export type CreateTopologyStateSyncControllerInput = Readonly<{
   readonly getSession: () => TopologySession | undefined;
   readonly isPeerAccepted: () => boolean;
   readonly getConnectionId: () => string | undefined;
+  readonly onStateSliceApplied: (
+    input: Readonly<{
+      readonly context: RuntimeModuleContext;
+      readonly connectionId: string;
+      readonly sliceName: string;
+      readonly revision: number;
+    }>,
+  ) => void;
   readonly dispatchPayloadFailure: (
     context: RuntimeModuleContext,
     failure: Readonly<{
@@ -252,11 +263,22 @@ export const createTopologyStateSyncController = (
     lastReceivedPayloadFailureKey = undefined;
   };
 
-  const acceptStateFull = (
-    context: RuntimeModuleContext,
-    message: TopologyStateFullMessage,
-    readDiff: (value: TopologyJsonValue) => SyncStateDiff | undefined,
-  ): void => {
+  const acceptStateFull = ({
+    context,
+    message,
+    readDiff,
+    sourceConnectionId,
+  }: Parameters<TopologyStateSyncController['acceptStateFull']>[0]): void => {
+    const currentConnectionId = input.getConnectionId();
+    if (
+      sourceConnectionId === undefined ||
+      currentConnectionId === undefined ||
+      sourceConnectionId !== currentConnectionId ||
+      !input.isPeerAccepted()
+    ) {
+      input.log(context, 'state-full-ignored', {reason: 'stale-peer-connection'}, sourceConnectionId);
+      return;
+    }
     const state = stateAt(context);
     const declaration = declarationByName.get(message.sliceName);
     const expectedDirection = incomingDirectionFor(state);
@@ -352,6 +374,12 @@ export const createTopologyStateSyncController = (
       input.getConnectionId(),
     );
     receivedRevisions.set(message.sliceName, message.revision);
+    input.onStateSliceApplied({
+      context,
+      connectionId: sourceConnectionId,
+      sliceName: message.sliceName,
+      revision: message.revision,
+    });
     lastReceivedPayloadFailureKey = undefined;
     input.clearPayloadFailure(context);
   };

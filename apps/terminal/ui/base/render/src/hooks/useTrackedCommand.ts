@@ -17,6 +17,7 @@ export type TrackedCommandRunInput<TPayload extends StateJsonValue> = Readonly<{
   readonly definition: CommandDefinition<TPayload>;
   readonly payload: TPayload;
   readonly routeIntent?: RouteIntent;
+  readonly target?: Parameters<DispatchCommand>[1]['target'];
   readonly onOutcome?: (result: CommandDispatchResult, outcome: RequestOutcome) => void | PromiseLike<void>;
   readonly onRejected?: (error: unknown) => void | PromiseLike<void>;
   readonly rejectionPolicy: TrackedCommandRejectionPolicy;
@@ -50,6 +51,7 @@ export const useTrackedCommand = (): TrackedCommand => {
           payload: input.payload,
           requestId,
           routeIntent: input.routeIntent,
+          target: input.target,
         });
       } catch (error) {
         trackedRequest.finish(requestId);

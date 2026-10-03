@@ -16,6 +16,8 @@ describe('sample-console package surface', () => {
       'kernel.base.display-context',
       'kernel.base.platform-ports',
       'kernel.base.runtime',
+      'kernel.base.server-config',
+      'kernel.base.terminal-data-client',
       'kernel.base.topology',
       'kernel.base.transport',
       'kernel.base.ui-state',
@@ -25,6 +27,8 @@ describe('sample-console package surface', () => {
       'ui.base.input',
       'ui.base.integration-assembly',
       'ui.base.render',
+      'ui.base.server-config-panel',
+      'ui.base.terminal-activation',
       'ui.feature.sample-member-desk',
       'ui.feature.sample-staff-auth',
     ]);

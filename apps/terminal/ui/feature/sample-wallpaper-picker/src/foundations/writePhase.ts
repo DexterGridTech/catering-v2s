@@ -27,5 +27,12 @@ export const classifyWallpaperWritePhase = (
   if (input.operation === 'confirm' && input.after.confirmed === input.requested && input.after.pending === undefined)
     return 'after-write';
 
+  if (
+    input.operation === 'cancel' &&
+    input.after.confirmed === input.before.confirmed &&
+    input.after.pending === undefined
+  )
+    return 'after-write';
+
   return 'unknown-write-phase';
 };

@@ -22,6 +22,7 @@ import type {
   TransportHttpExecutionResult,
   TransportHttpRequest,
   TransportModuleOptions,
+  TransportNetworkAdapter,
 } from '../types/runtimeControl';
 
 type TransportRuntimeModule = RuntimeModule & Readonly<{readonly commandGateway: TransportCommandGateway}>;
@@ -47,6 +48,24 @@ const requireCompleted = (
 /** Creates one transport owner and a generic facade whose control methods dispatch owner commands. */
 export const createTransportModule = (options: TransportModuleOptions = {}): TransportRuntimeModule => {
   let runtimeContext: RuntimeModuleContext | undefined;
+  let activeNetworkAdapter = options.networkAdapter;
+  const networkAdapter =
+    options.networkAdapterFactory === undefined && options.networkAdapter === undefined
+      ? undefined
+      : Object.freeze({
+          readSnapshot: (serverName: string) => {
+            if (activeNetworkAdapter === undefined) throw new Error('TRANSPORT_NETWORK_ADAPTER_NOT_INSTALLED');
+            return activeNetworkAdapter.readSnapshot(serverName);
+          },
+          connect: (input: Parameters<TransportNetworkAdapter['connect']>[0]) => {
+            if (activeNetworkAdapter === undefined) throw new Error('TRANSPORT_NETWORK_ADAPTER_NOT_INSTALLED');
+            return activeNetworkAdapter.connect(input);
+          },
+          sendHttp: (input: Parameters<NonNullable<TransportNetworkAdapter['sendHttp']>>[0]) => {
+            if (activeNetworkAdapter?.sendHttp === undefined) throw new Error('TRANSPORT_HTTP_ADAPTER_UNAVAILABLE');
+            return activeNetworkAdapter.sendHttp(input);
+          },
+        });
   let bridgeDispose: (() => Promise<void>) | undefined;
   const report = (context: RuntimeModuleContext, input: TransportDiagnosticInput): void => {
     context.platformPorts.logger.withContext({nodeId: context.localNodeId})[input.level]({
@@ -90,7 +109,7 @@ export const createTransportModule = (options: TransportModuleOptions = {}): Tra
     );
   };
   const owner = createTransportConnectionOwner({
-    adapter: options.networkAdapter,
+    adapter: networkAdapter,
     now: options.now,
     random: options.random,
     dispatchInternal,
@@ -189,6 +208,7 @@ export const createTransportModule = (options: TransportModuleOptions = {}): Tra
     slices: [],
     install: async (context: RuntimeModuleContext) => {
       runtimeContext = context;
+      if (options.networkAdapterFactory !== undefined) activeNetworkAdapter = options.networkAdapterFactory(context);
       const bridge = await createTransportNetworkStatusBridge({
         device: context.platformPorts.device,
         timeoutMs: 5_000,

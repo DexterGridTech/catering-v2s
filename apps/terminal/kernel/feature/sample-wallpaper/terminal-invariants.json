@@ -9,6 +9,7 @@
   "ownerKind": "owner",
   "publicExports": [
     "WallpaperId",
+    "cancelWallpaperSelectionCommand",
     "WallpaperState",
     "confirmWallpaperCommand",
     "createSampleWallpaperModule",
@@ -18,7 +19,9 @@
     "moduleKind",
     "moduleName",
     "selectPendingWallpaperId",
+    "selectHostConfirmedWallpaperId",
     "selectWallpaperCommand",
-    "selectWallpaperId"
+    "selectWallpaperId",
+    "wallpaperSliceName"
   ]
 }

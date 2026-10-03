@@ -43,6 +43,7 @@ export const isValidOpenedAt = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value) && value > 0;
 
 export const contentStateKeys = createWorkspaceStateKeys(contentBaseName);
+export const contentStateSliceName = (workspace: WorkspaceKey): string => contentStateKeys[workspace];
 
 const isDisplayMode = (value: unknown): value is DisplayMode => value === 'PRIMARY' || value === 'SECONDARY';
 

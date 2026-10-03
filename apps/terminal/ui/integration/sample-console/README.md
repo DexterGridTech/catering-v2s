@@ -58,6 +58,9 @@ export map 另提供 @catering-v2s/ui-integration-sample-console/theme/global.cs
 `assembly.createSurface({displayIndex, displayMode, surfaceForm})` 仍是通用宿主按已确定模式挂载
 surface 的闭包入口。
 `persistenceKey` 仅用于测试隔离；生产端口由 assembly 的消费者注入。
+本包 `package.json.serverSpaces` 是 Expo Web integration 默认配置；未显式传入 `serverSpaces` 时，
+`createSampleAssembly` 将其作为不可变 defaults 注入 `server-config`。Android application 会显式传入
+其自身 package.json 的 `serverSpaces`，不与本 integration 的声明合并。
 调用方可通过可选的 `terminalSurfaces` 整份覆盖本包默认配置；未传入时使用本包 `package.json`，而具体形态仍由本包按 `surfaceForm` 选择。
 本包 `package.json` 的 `showAdminPassword` 控制 admin 登录提示旁是否显示当前动态口令；调用方显式传入的值优先。
 本 integration 注入的 `moduleName` 是 topology 配对身份的一部分；只允许相同 integration 的另一节点配对，

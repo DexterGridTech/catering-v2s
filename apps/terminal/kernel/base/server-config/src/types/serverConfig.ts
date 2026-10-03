@@ -12,8 +12,10 @@ export interface ServerConfigOverrideState {
 export interface ServerConfigState {
   readonly selectedSpace: string;
   readonly overrides: Readonly<Record<string, ServerConfigOverrideState>>;
-  /** Protected persistence only; selectors and ordinary config projections never expose these values. */
+  /** Plain persistence and host-to-branch state sync are explicitly required for proxy authentication. */
   readonly proxyPasswords: Readonly<Record<string, string>>;
+  /** Last authoritative host package defaults received by a paired branch; never editable locally. */
+  readonly syncedHostDefaults: TransportServerConfig | null;
   /** Per-service runtime revision; it intentionally resets on process restart. */
   readonly serviceRevisions: Readonly<Record<string, number>>;
 }
@@ -44,6 +46,8 @@ export type SetServerOverridePayload = Readonly<{
 }>;
 
 export interface EffectiveServerConfigView {
+  /** Identifies whether a paired branch has received the master's config projection. */
+  readonly source: 'package-defaults' | 'host-sync';
   readonly selectedSpace: string;
   readonly spaces: readonly Readonly<{
     name: string;
@@ -57,6 +61,7 @@ export interface EffectiveServerConfigView {
         username?: string;
         passwordConfigured: boolean;
       }>;
+      proxyPasswordOverridden: boolean;
       overridden: boolean;
     }>[];
   }>[];

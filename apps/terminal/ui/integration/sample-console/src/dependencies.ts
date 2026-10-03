@@ -1,6 +1,7 @@
 import {moduleName as contracts} from '@catering-v2s/kernel-base-contracts';
 import {moduleName as platformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import {moduleName as runtime} from '@catering-v2s/kernel-base-runtime';
+import {moduleName as serverConfig} from '@catering-v2s/kernel-base-server-config';
 import {moduleName as topology} from '@catering-v2s/kernel-base-topology';
 import {moduleName as transport} from '@catering-v2s/kernel-base-transport';
 import {moduleName as displayContext} from '@catering-v2s/kernel-base-display-context';
@@ -13,6 +14,9 @@ import {moduleName as staffAuth} from '@catering-v2s/ui-feature-sample-staff-aut
 import {moduleName as memberDesk} from '@catering-v2s/ui-feature-sample-member-desk';
 import {moduleName as devHost} from '@catering-v2s/ui-base-dev-host';
 import {moduleName as adminShell} from '@catering-v2s/ui-base-admin-shell';
+import {moduleName as serverConfigPanel} from '@catering-v2s/ui-base-server-config-panel';
+import {moduleName as terminalActivation} from '@catering-v2s/ui-base-terminal-activation';
+import {moduleName as terminalDataClient} from '@catering-v2s/kernel-base-terminal-data-client';
 import {moduleName as integrationAssembly} from '@catering-v2s/ui-base-integration-assembly';
 import {moduleName as primitives} from '@catering-v2s/ui-base-primitives';
 
@@ -20,6 +24,7 @@ export const dependencyModuleNames = [
   contracts,
   platformPorts,
   runtime,
+  serverConfig,
   topology,
   transport,
   displayContext,
@@ -31,6 +36,9 @@ export const dependencyModuleNames = [
   staffAuth,
   memberDesk,
   adminShell,
+  serverConfigPanel,
+  terminalActivation,
+  terminalDataClient,
   integrationAssembly,
 ] as const;
 
@@ -38,6 +46,7 @@ export const devDependencyModuleNames = [devHost, primitives] as const;
 
 export const runtimeModuleDependencyNames = [
   runtime,
+  serverConfig,
   topology,
   transport,
   displayContext,
@@ -46,4 +55,5 @@ export const runtimeModuleDependencyNames = [
   memberRegistry,
   staffAuth,
   memberDesk,
+  terminalDataClient,
 ] as const;

@@ -695,9 +695,29 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       if (event.event === 'peer-accepted') {
         if (event.peerIdentity !== undefined)
           context.dispatchAction(topologyActions.setPeerIdentity(event.peerIdentity));
+        context.dispatchAction(topologyActions.setPeerStateSyncConnection(event.connectionId ?? null));
         context.dispatchAction(topologyActions.setPeerReachable(true));
       }
+      if (event.event === 'peer-connection-installed') {
+        context.dispatchAction(topologyActions.setPeerStateSyncConnection(null));
+        context.dispatchAction(topologyActions.setPeerReachable(false));
+      }
+      if (
+        event.event === 'state-sync-slice-applied' &&
+        event.connectionId &&
+        event.sliceName &&
+        event.revision !== undefined
+      ) {
+        context.dispatchAction(
+          topologyActions.markPeerStateSyncSliceApplied({
+            connectionId: event.connectionId,
+            sliceName: event.sliceName,
+            revision: event.revision,
+          }),
+        );
+      }
       if (event.event === 'close' || event.event === 'error' || event.event === 'peer-unreachable') {
+        context.dispatchAction(topologyActions.setPeerStateSyncConnection(null));
         context.dispatchAction(topologyActions.setPeerReachable(false));
         context.dispatchAction(topologyActions.bumpPeerConnectionRevision());
         if (event.reason === 'TOPOLOGY_UNPAIRED') {

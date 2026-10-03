@@ -7,6 +7,7 @@ const sectionTestIds = Object.freeze({
 
 const portsTestIds = Object.freeze({
   section: sectionTestIds.platformPorts,
+  contentRoot: 'terminal.admin:ports:content-root',
   title: 'terminal.admin:ports:title',
   overallStatus: 'terminal.admin:ports:overall-status',
   summary: Object.freeze({
@@ -24,6 +25,7 @@ const portsTestIds = Object.freeze({
 
 const runtimeTestIds = Object.freeze({
   section: sectionTestIds.runtime,
+  contentRoot: 'terminal.admin:runtime:content-root',
   title: 'terminal.admin:runtime:title',
   overallStatus: 'terminal.admin:runtime:overall-status',
   physicalDisplayCount: 'terminal.admin:runtime:physical-display-count',
@@ -39,6 +41,7 @@ const runtimeTestIds = Object.freeze({
 
 const topologyTestIds = Object.freeze({
   section: sectionTestIds.topology,
+  contentRoot: 'terminal.admin:topology:content-root',
   scroll: 'terminal.admin:topology:scroll',
   title: 'terminal.admin:topology:title',
   role: 'terminal.admin:topology:role',

@@ -19,6 +19,7 @@ import {
   selectPendingWallpaperId,
   selectWallpaperId,
 } from '@catering-v2s/kernel-feature-sample-wallpaper';
+import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {createSampleWallpaperPickerModule} from '../src/application/module';
 import {WallpaperPicker} from '../src/components/laptop/WallpaperPicker';
 import {
@@ -174,6 +175,7 @@ describe('sample wallpaper picker production failure boundary', () => {
       createDisplayContextModule(),
       uiState,
       createSampleWallpaperModule(),
+      createSampleStaffSessionModule(),
       failureInjectionModule(),
       createSampleWallpaperPickerModule(),
     ]);
@@ -223,6 +225,7 @@ describe('sample wallpaper picker production failure boundary', () => {
       createDisplayContextModule(),
       uiState,
       createSampleWallpaperModule(),
+      createSampleStaffSessionModule(),
       failureInjectionModule(),
       createSampleWallpaperPickerModule(),
     ]);
@@ -253,6 +256,7 @@ describe('sample wallpaper picker production failure boundary', () => {
       createDisplayContextModule(),
       uiState,
       createSampleWallpaperModule(),
+      createSampleStaffSessionModule(),
       failureInjectionModule(),
       createSampleWallpaperPickerModule(),
     ]);
@@ -289,6 +293,7 @@ describe('sample wallpaper picker production failure boundary', () => {
     const runtime = createTestRuntime([
       createDisplayContextModule(),
       uiState,
+      createSampleStaffSessionModule(),
       beforeWriteFailureWallpaperModule(),
       createSampleWallpaperPickerModule(),
     ]);

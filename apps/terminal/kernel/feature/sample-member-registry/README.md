@@ -23,6 +23,8 @@ pending；已清除 pending 后再次收到同一竞争动作必须是幂等 no-
 - `src/foundations/errors.ts`：本包的 typed error 定义。
 - `src/application/module.ts`：真实 RuntimeModule 工厂；`src/index.ts`：公开面。
 
+MASTER→SLAVE 的同步 payload 只包含已确认 `members`。SLAVE apply 保留本机 `pending`，不发送、覆盖或清理分支登记草稿；双机 LMS 的主机 pending 另由 CP-05 明确的 operationId 投影承载。
+
 ## 用法
 
 ```ts
@@ -49,4 +51,3 @@ README。新增业务事实必须仍由 owner actor/slice 写入；改动后至�
 相关 runtime acceptance 和 terminal skeleton static checker。不要把 UI identity、display
 事实、presentation copy 或 platform adapter 依赖搬进来，也不要把完整
 `dependencyModuleNames` 数组冒充 runtime subset。
-

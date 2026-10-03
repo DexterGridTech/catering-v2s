@@ -182,7 +182,7 @@ function loadModel(root = repoRoot) {
       targetPolicy.tags.some(tag => operation.tags.includes(tag)) &&
       (included.size === 0 || included.has(operation.operationId)) &&
       !excluded.has(operation.operationId),
-    );
+    ).map(operation => ({...operation, pathParameters: [...operation.pathParameters]}));
     if (selected.length === 0) fail('TERMINAL_CLIENT_OPERATION_EMPTY', targetPolicy.targetPackage);
     if (included.size > 0 && selected.length !== included.size)
       fail('TERMINAL_CLIENT_OPERATION_SELECTOR_MISMATCH', targetPolicy.targetPackage);
@@ -207,6 +207,25 @@ function loadModel(root = repoRoot) {
         fail('TERMINAL_CLIENT_OPERATION_CONTRACT_INCOMPLETE', operation.operationId);
       if (!schemas[operation.requestSchema] || !schemas[operation.responseSchema])
         fail('TERMINAL_CLIENT_SCHEMA_MISSING', operation.operationId);
+      if (targetPolicy.stripPathPrefix !== undefined) {
+        const prefix = targetPolicy.stripPathPrefix;
+        if (typeof prefix !== 'string' || !prefix.startsWith('/') || prefix.endsWith('/') || prefix.includes('?'))
+          fail('TERMINAL_CLIENT_PATH_PREFIX_INVALID', operation.operationId);
+        if (!operation.path.startsWith(`${prefix}/`))
+          fail('TERMINAL_CLIENT_PATH_PREFIX_MISMATCH', operation.operationId);
+        const removedNames = [...prefix.matchAll(/\{([^}]+)\}/g)].map(match => match[1]);
+        if (new Set(removedNames).size !== removedNames.length ||
+            removedNames.some(name => !operation.pathParameters.some(parameter => parameter.name === name)))
+          fail('TERMINAL_CLIENT_PATH_PREFIX_PARAMETER_MISMATCH', operation.operationId);
+        operation.generatedPath = operation.path.slice(prefix.length);
+        operation.pathParameters = operation.pathParameters.filter(parameter => !removedNames.includes(parameter.name));
+        const generatedRouteParameters = [...operation.generatedPath.matchAll(/\{([^}]+)\}/g)].map(match => match[1]).sort();
+        const generatedDeclaredParameters = operation.pathParameters.map(parameter => parameter.name).sort();
+        if (!sameSet(generatedRouteParameters, generatedDeclaredParameters))
+          fail('TERMINAL_CLIENT_GENERATED_PATH_PARAMETER_MISMATCH', operation.operationId);
+      } else {
+        operation.generatedPath = operation.path;
+      }
       assignmentCounts.set(operation.operationId, (assignmentCounts.get(operation.operationId) ?? 0) + 1);
     }
     targets.push({policy: targetPolicy, targetPackage, moduleName: ownerName, selected: selected.sort((a, b) => a.operationId.localeCompare(b.operationId)), schemas});
@@ -312,7 +331,7 @@ function render(model) {
   const operationRows = selected.map(operation => `  ${JSON.stringify(operation.operationId)}: {
     operationId: ${JSON.stringify(operation.operationId)},
     method: ${JSON.stringify(operation.method)},
-    path: ${JSON.stringify(operation.path)},
+    path: ${JSON.stringify(operation.generatedPath)},
     owner: ${JSON.stringify(operation.owner)},
     authorizationMode: ${JSON.stringify(operation.auth)},
     idempotencyRequired: ${operation.idempotencyRequired},
@@ -483,8 +502,9 @@ export function selfTest() {
     const singleTarget = {
       targetPackage: 'apps/terminal/kernel/base/terminal-data-client',
       tags: ['terminal-binding'],
-      includeOperationIds: [],
+      includeOperationIds: ['activateTerminal', 'cancelTerminalActivation'],
       excludeOperationIds: [],
+      stripPathPrefix: '/api/terminal/group-workspaces/{groupWorkspaceKey}',
       output: 'apps/terminal/kernel/base/terminal-data-client/src/generated/api.ts',
     };
     const policy = {
@@ -521,24 +541,34 @@ export function selfTest() {
       "export const moduleName = 'kernel.outside' as const;\nexport const moduleKind = 'owner' as const;\n");
     writePolicy(policy);
     const operation = {
-      operationId: 'activateTerminal', method: 'POST', path: '/api/terminal/activation',
+      operationId: 'activateTerminal', method: 'POST', path: '/api/terminal/group-workspaces/{groupWorkspaceKey}/activation',
       tags: ['terminal-binding'], 'x-consumer-faces': ['terminal'], 'x-owner-module': 'terminal-binding',
       'x-authorization-mode': 'NONE', 'x-idempotency-policy': 'FORBIDDEN', 'x-safe-retryable': true, 'x-error-codes': ['E_TEST'],
       security: [],
-      parameters: [{name: 'mode', in: 'query', required: false, schema: {type: 'string'}}, {name: 'X-Test', in: 'header', required: true, schema: {type: 'string'}}],
+      parameters: [
+        {name: 'groupWorkspaceKey', in: 'path', required: true, schema: {type: 'string'}},
+        {name: 'mode', in: 'query', required: false, schema: {type: 'string'}},
+        {name: 'X-Test', in: 'header', required: true, schema: {type: 'string'}},
+      ],
       requestBody: {content: {'application/json': {schema: {$ref: '#/components/schemas/Request'}}}},
       responses: {'200': {content: {'application/json': {schema: {$ref: '#/components/schemas/Response'}}}}},
     };
     const secondOperation = {
       ...operation,
       operationId: 'cancelTerminalActivation',
-      path: '/api/terminal/activation/cancel',
+      path: '/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel',
       'x-authorization-mode': 'TERMINAL_CREDENTIAL',
       security: [{terminalCredential: []}],
+      parameters: [
+        {name: 'groupWorkspaceKey', in: 'path', required: true, schema: {type: 'string'}},
+        {name: 'terminalRef', in: 'path', required: true, schema: {type: 'string'}},
+        {name: 'mode', in: 'query', required: false, schema: {type: 'string'}},
+        {name: 'X-Test', in: 'header', required: true, schema: {type: 'string'}},
+      ],
     };
     fs.writeFileSync(path.join(root, 'paths/terminal.json'), JSON.stringify({paths: {
-      '/api/terminal/activation': {post: operation},
-      '/api/terminal/activation/cancel': {post: secondOperation},
+      [operation.path]: {post: operation},
+      [secondOperation.path]: {post: secondOperation},
     }}));
     const catalogOperation = operation => ({
       operationId: operation.operationId,
@@ -576,6 +606,12 @@ export function selfTest() {
       targetModuleNameFile, outsideModuleNameFile, 'TARGET_MODULE_NAME', validTargetModuleName,
     );
     const model = loadModel(root);
+    const generatedById = new Map(model.targets[0].selected.map(row => [row.operationId, row]));
+    if (generatedById.get('activateTerminal')?.generatedPath !== '/activation' ||
+        generatedById.get('cancelTerminalActivation')?.generatedPath !== '/terminals/{terminalRef}/activation/cancel' ||
+        generatedById.get('activateTerminal')?.pathParameters.length !== 0 ||
+        !sameSet(generatedById.get('cancelTerminalActivation')?.pathParameters.map(parameter => parameter.name) ?? [], ['terminalRef']))
+      fail('TERMINAL_CLIENT_RED_GENERATED_PREFIX_CONTRACT_NOT_ENFORCED');
     const output = singleTarget.output;
     write(root);
     check(root);
@@ -629,18 +665,26 @@ export function selfTest() {
       if (error.code !== 'TERMINAL_CLIENT_OUTPUT_PATH_ESCAPE') throw error;
     }
     const noOperation = JSON.parse(fs.readFileSync(path.join(root, 'paths/terminal.json'), 'utf8'));
-    noOperation.paths['/api/terminal/activation'].post.tags = ['other'];
+    noOperation.paths[operation.path].post.tags = ['other'];
     fs.writeFileSync(path.join(root, 'paths/terminal.json'), JSON.stringify(noOperation));
     writePolicy(policy);
     try { loadModel(root); fail('TERMINAL_CLIENT_RED_ZERO_NOT_DETECTED'); } catch (error) {
-      if (!['TERMINAL_CLIENT_OPERATION_EMPTY', 'TERMINAL_CLIENT_OPERATION_FACE_CLOSURE'].includes(error.code)) throw error;
+      if (![
+        'TERMINAL_CLIENT_OPERATION_EMPTY',
+        'TERMINAL_CLIENT_OPERATION_FACE_CLOSURE',
+        'TERMINAL_CLIENT_OPERATION_SELECTOR_MISMATCH',
+      ].includes(error.code)) throw error;
     }
-    noOperation.paths['/api/terminal/activation'].post.tags = ['terminal-binding'];
-    noOperation.paths['/api/terminal/activation'].post['x-consumer-faces'] = ['operations-admin'];
+    noOperation.paths[operation.path].post.tags = ['terminal-binding'];
+    noOperation.paths[operation.path].post['x-consumer-faces'] = ['operations-admin'];
     fs.writeFileSync(path.join(root, 'paths/terminal.json'), JSON.stringify(noOperation));
     writePolicy(policy);
     try { loadModel(root); fail('TERMINAL_CLIENT_RED_WRONG_FACE_NOT_DETECTED'); } catch (error) {
-      if (!['TERMINAL_CLIENT_OPERATION_EMPTY', 'TERMINAL_CLIENT_OPERATION_FACE_CLOSURE'].includes(error.code)) throw error;
+      if (![
+        'TERMINAL_CLIENT_OPERATION_EMPTY',
+        'TERMINAL_CLIENT_OPERATION_FACE_CLOSURE',
+        'TERMINAL_CLIENT_OPERATION_SELECTOR_MISMATCH',
+      ].includes(error.code)) throw error;
     }
     const escapedPolicy = {...policy, operationCatalog: '../outside.json'};
     writePolicy(escapedPolicy);

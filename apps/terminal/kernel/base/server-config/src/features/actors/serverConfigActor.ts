@@ -1,4 +1,4 @@
-import {defineActor, onCommand} from '@catering-v2s/kernel-base-runtime';
+import {defineActor, onCommand, selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {ActorDefinition, ActorExecutionContext} from '@catering-v2s/kernel-base-runtime';
 import type {UnknownAction} from '@reduxjs/toolkit';
 import type {TransportHttpProxy, TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
@@ -14,7 +14,12 @@ import type {
   ServerConfigState,
   SetServerOverridePayload,
 } from '../../types/serverConfig';
-import {validateProxy, validateServerAddress} from '../../foundations/validateServerConfigDefaults';
+import {
+  defaultServiceNames,
+  validateProxy,
+  validateServerAddress,
+  validateServerConfigDefaults,
+} from '../../foundations/validateServerConfigDefaults';
 
 type ServerConfigActions = Readonly<{
   replaceConfiguration: (state: ServerConfigState) => UnknownAction;
@@ -33,10 +38,25 @@ const readState = (context: ActorExecutionContext): ServerConfigState => {
   return current as unknown as ServerConfigState;
 };
 
+const requireMaster = (context: ActorExecutionContext): void => {
+  if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER') return invalid('HOST_ONLY');
+};
+
 const revise = (state: ServerConfigState, names: readonly string[]): Readonly<Record<string, number>> => {
   const revisions = {...state.serviceRevisions};
   for (const name of new Set(names)) revisions[name] = (revisions[name] ?? 0) + 1;
   return Object.freeze(revisions);
+};
+
+const persistenceOutcome = async (
+  context: ActorExecutionContext,
+  changed: boolean,
+): Promise<'unchanged' | 'persisted' | 'failed' | 'unconfirmed'> => {
+  if (!changed) return 'unchanged';
+  const result = await context.flushPersistence();
+  if (result.status === 'succeeded') return 'persisted';
+  const sliceKey = `/${encodeURIComponent(serverConfigSliceName)}/`;
+  return result.failures.some(failure => failure.storageKey?.includes(sliceKey)) ? 'failed' : 'unconfirmed';
 };
 
 const requireKnownService = (serverName: unknown, serviceNames: ReadonlySet<string>): string => {
@@ -160,15 +180,26 @@ const normalizedHydratedState = (
   defaults: TransportServerConfig,
   serviceNames: readonly string[],
 ): Readonly<{state: ServerConfigState; droppedOverrideCount: number; selectedSpaceReset: boolean}> => {
-  const validSpaces = new Set(defaults.spaces.map(space => space.name));
+  let syncedHostDefaults: TransportServerConfig | null = null;
+  if (current.syncedHostDefaults !== null) {
+    try {
+      validateServerConfigDefaults(current.syncedHostDefaults);
+      syncedHostDefaults = current.syncedHostDefaults;
+    } catch {
+      syncedHostDefaults = null;
+    }
+  }
+  const effectiveDefaults = syncedHostDefaults ?? defaults;
+  const effectiveServiceNames = defaultServiceNames(effectiveDefaults);
+  const validSpaces = new Set(effectiveDefaults.spaces.map(space => space.name));
   const selectedSpaceReset = !validSpaces.has(current.selectedSpace);
-  const selectedSpace = selectedSpaceReset ? defaults.selectedSpace : current.selectedSpace;
+  const selectedSpace = selectedSpaceReset ? effectiveDefaults.selectedSpace : current.selectedSpace;
   const overrides: Record<string, ServerConfigOverrideState> = {};
   const proxyPasswords: Record<string, string> = {};
   let droppedOverrideCount = 0;
   const currentOverrides = isObject(current.overrides) ? current.overrides : {};
   const currentPasswords = isObject(current.proxyPasswords) ? current.proxyPasswords : {};
-  const knownServices = new Set(serviceNames);
+  const knownServices = new Set(effectiveServiceNames.length > 0 ? effectiveServiceNames : serviceNames);
 
   for (const [serverName, raw] of Object.entries(currentOverrides)) {
     try {
@@ -193,6 +224,7 @@ const normalizedHydratedState = (
       selectedSpace,
       overrides: Object.freeze(overrides),
       proxyPasswords: Object.freeze(proxyPasswords),
+      syncedHostDefaults,
       serviceRevisions: Object.freeze(revisions),
     }),
     droppedOverrideCount,
@@ -209,13 +241,15 @@ export const createServerConfigActor = (
   ].sort();
   const serviceNameSet = new Set(serviceNames);
   return defineActor('kernel.base.server-config', 'configuration-owner', [
-    onCommand(selectServerConfigSpaceCommand, context => {
+    onCommand(selectServerConfigSpaceCommand, async context => {
+      requireMaster(context);
       const state = readState(context);
       const spaceName = context.command.payload.spaceName;
       if (typeof spaceName !== 'string' || !defaults.spaces.some(space => space.name === spaceName)) {
         return invalid('SPACE_UNKNOWN');
       }
-      if (state.selectedSpace === spaceName) return Object.freeze({changed: false, selectedSpace: spaceName});
+      if (state.selectedSpace === spaceName)
+        return Object.freeze({changed: false, selectedSpace: spaceName, persistence: 'unchanged'});
       context.dispatchAction(
         actions.replaceConfiguration(
           Object.freeze({
@@ -225,9 +259,14 @@ export const createServerConfigActor = (
           }),
         ),
       );
-      return Object.freeze({changed: true, selectedSpace: spaceName});
+      return Object.freeze({
+        changed: true,
+        selectedSpace: spaceName,
+        persistence: await persistenceOutcome(context, true),
+      });
     }),
-    onCommand(setServerOverrideCommand, context => {
+    onCommand(setServerOverrideCommand, async context => {
+      requireMaster(context);
       const state = readState(context);
       const parsed = normalizeSetPayload(context.command.payload, state, serviceNameSet);
       const currentOverride = state.overrides[parsed.serverName];
@@ -236,7 +275,7 @@ export const createServerConfigActor = (
         JSON.stringify(currentOverride) === JSON.stringify(parsed.override) &&
         currentPassword === (parsed.password ?? undefined)
       ) {
-        return Object.freeze({changed: false, serverName: parsed.serverName});
+        return Object.freeze({changed: false, serverName: parsed.serverName, persistence: 'unchanged'});
       }
       const nextOverrides = {...state.overrides, [parsed.serverName]: parsed.override};
       const nextPasswords = {...state.proxyPasswords};
@@ -246,16 +285,22 @@ export const createServerConfigActor = (
         ...state,
         overrides: Object.freeze(nextOverrides),
         proxyPasswords: Object.freeze(nextPasswords),
+        syncedHostDefaults: state.syncedHostDefaults,
         serviceRevisions: revise(state, [parsed.serverName]),
       });
       context.dispatchAction(actions.replaceConfiguration(nextState));
-      return Object.freeze({changed: true, serverName: parsed.serverName});
+      return Object.freeze({
+        changed: true,
+        serverName: parsed.serverName,
+        persistence: await persistenceOutcome(context, true),
+      });
     }),
-    onCommand(clearServerOverrideCommand, context => {
+    onCommand(clearServerOverrideCommand, async context => {
+      requireMaster(context);
       const state = readState(context);
       const serverName = requireKnownService(context.command.payload.serverName, serviceNameSet);
       if (state.overrides[serverName] === undefined && state.proxyPasswords[serverName] === undefined) {
-        return Object.freeze({changed: false, serverName});
+        return Object.freeze({changed: false, serverName, persistence: 'unchanged'});
       }
       const overrides = {...state.overrides};
       const proxyPasswords = {...state.proxyPasswords};
@@ -267,30 +312,33 @@ export const createServerConfigActor = (
             ...state,
             overrides: Object.freeze(overrides),
             proxyPasswords: Object.freeze(proxyPasswords),
+            syncedHostDefaults: state.syncedHostDefaults,
             serviceRevisions: revise(state, [serverName]),
           }),
         ),
       );
-      return Object.freeze({changed: true, serverName});
+      return Object.freeze({changed: true, serverName, persistence: await persistenceOutcome(context, true)});
     }),
-    onCommand(restoreServerDefaultsCommand, context => {
+    onCommand(restoreServerDefaultsCommand, async context => {
+      requireMaster(context);
       const state = readState(context);
       const hasChanges =
         state.selectedSpace !== defaults.selectedSpace ||
         Object.keys(state.overrides).length > 0 ||
         Object.keys(state.proxyPasswords).length > 0;
-      if (!hasChanges) return Object.freeze({changed: false});
+      if (!hasChanges) return Object.freeze({changed: false, persistence: 'unchanged'});
       context.dispatchAction(
         actions.replaceConfiguration(
           Object.freeze({
             selectedSpace: defaults.selectedSpace,
             overrides: Object.freeze({}),
             proxyPasswords: Object.freeze({}),
+            syncedHostDefaults: null,
             serviceRevisions: revise(state, serviceNames),
           }),
         ),
       );
-      return Object.freeze({changed: true});
+      return Object.freeze({changed: true, persistence: await persistenceOutcome(context, true)});
     }),
     onCommand(validateHydratedServerConfigCommand, context => {
       const current = readState(context);

@@ -1,12 +1,12 @@
 import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {createSelectionActor} from '../features/actors/actors';
-import {confirmWallpaperCommand, selectWallpaperCommand} from '../features/commands/commands';
+import {cancelWallpaperSelectionCommand, confirmWallpaperCommand, selectWallpaperCommand} from '../features/commands/commands';
 import {wallpaperErrorDefinitions} from '../foundations/errors';
 import {moduleKind, moduleName} from '../moduleName';
 import {wallpaperStateRegistration} from '../features/slices/slice';
 
-const commands = [selectWallpaperCommand, confirmWallpaperCommand] as const;
+const commands = [selectWallpaperCommand, confirmWallpaperCommand, cancelWallpaperSelectionCommand] as const;
 
 export const createSampleWallpaperModule = (): RuntimeModule => {
   const actors = [createSelectionActor()] as const;

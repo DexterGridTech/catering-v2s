@@ -9,8 +9,14 @@ import {
   submitMemberCommand,
   memberWithdrawnCommand,
   withdrawMemberCommand,
+  registerBranchConfirmedMemberCommand,
 } from '../features/commands/commands';
-import {createConfirmMemberActor, createRejectMemberActor, createSubmitMemberActor} from '../features/actors/actors';
+import {
+  createConfirmMemberActor,
+  createRejectMemberActor,
+  createRegisterBranchConfirmedMemberActor,
+  createSubmitMemberActor,
+} from '../features/actors/actors';
 import {memberErrorDefinitions} from '../foundations/errors';
 import {moduleKind, moduleName} from '../moduleName';
 import {memberStateRegistration} from '../features/slices/slice';
@@ -24,10 +30,16 @@ const commands = [
   memberRejectedCommand,
   withdrawMemberCommand,
   memberWithdrawnCommand,
+  registerBranchConfirmedMemberCommand,
 ] as const;
 
 export const createSampleMemberRegistryModule = (): RuntimeModule => {
-  const actors = [createSubmitMemberActor(), createConfirmMemberActor(), createRejectMemberActor()] as const;
+  const actors = [
+    createSubmitMemberActor(),
+    createConfirmMemberActor(),
+    createRejectMemberActor(),
+    createRegisterBranchConfirmedMemberActor(),
+  ] as const;
   return Object.freeze({
     moduleName,
     kind: moduleKind,

@@ -14,7 +14,7 @@ import {
 } from '@catering-v2s/kernel-base-platform-ports';
 import {switchDisplayRoleCommand, switchInstanceModeCommand} from '@catering-v2s/kernel-base-display-context';
 import {selectRequestExecutionView} from '@catering-v2s/kernel-base-runtime';
-import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing';
+import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {
   clearLayersCommand,
   openLayerCommand,
@@ -31,17 +31,25 @@ import {
   selectPendingMember,
   submitMemberCommand,
 } from '@catering-v2s/kernel-feature-sample-member-registry';
-import {sessionRestoredAnonymousCommand} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {
+  loginCommand,
+} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {selectServerConfiguration} from '@catering-v2s/kernel-base-server-config';
+import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
+import packageJson from '../package.json';
 import {
   memberRegistrationAbandonedCommand,
   memberRegistrationRetryRequestedCommand,
   memberSubmissionWithdrawnCommand,
 } from '../../../../ui/feature/sample-member-desk/src/features/commands/commands';
 import {createSampleAssembly as createProductionSampleAssembly, createSurfaceForDisplayIndex} from '../src';
+import {startupReadyCommand} from '../src/application/module';
 import {createSampleDefinedParts} from '../src/assembly/assembly';
 import {adminTestIds} from '@catering-v2s/ui-base-admin-shell';
 import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk';
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
+import {needToActivateTerminalCommand} from '@catering-v2s/ui-base-terminal-activation';
+import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-client';
 import {createTestPlatformPorts, TestPeerChannel, type TestPlatformPorts} from './support';
 import {
   resetNativeTestRefFactory,
@@ -66,6 +74,10 @@ vi.mock('react-native', async importOriginal => {
   return withNativeTestHosts(actual, reactRuntime);
 });
 
+vi.mock('expo-crypto', () => ({
+  getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
+}));
+
 type TestSampleAssemblyInput = Omit<
   Parameters<typeof createProductionSampleAssembly>[0],
   'platformPorts' | 'nativeLoadingCapability'
@@ -86,8 +98,74 @@ const queryNodesByType = (renderer: TestRenderer, type: string): TestNode[] =>
 const createSampleAssembly = (input: TestSampleAssemblyInput) =>
   createProductionSampleAssembly({
     ...input,
+    transportNetworkAdapterFactory:
+      input.transportNetworkAdapterFactory ??
+      (readSnapshot =>
+        Object.freeze({
+          readSnapshot,
+          connect: async () => {
+            throw new Error('WEBSOCKET_NOT_EXPECTED_IN_SAMPLE_CONSOLE_COMPOSITION_TEST');
+          },
+          sendHttp: async () =>
+            Object.freeze({
+              kind: 'response' as const,
+              status: 200,
+              body: Object.freeze({
+                terminalRef: 'terminal-console-test',
+                storeRef: 'store-console-test',
+                groupWorkspaceKey: 'workspace-console-test',
+                bindingGeneration: 1,
+              }),
+            }),
+        })),
     nativeLoadingCapability: input.platformPorts.nativeLoadingCapability,
   });
+
+const dispatchOptions = () => ({requestId: createRequestId()});
+
+const signalPrimaryReady = async (assembly: Awaited<ReturnType<typeof createSampleAssembly>>) => {
+  const result = await assembly.runtime.dispatchCommand(
+    startupReadyCommand,
+    {surfaceKey: 'PRIMARY', displayIndex: 0, readyPartKey: 'terminal.activation.lmp', contentFailure: null},
+    dispatchOptions(),
+  );
+  expect(result.status).toBe('completed');
+};
+
+const activateForTest = async (assembly: Awaited<ReturnType<typeof createSampleAssembly>>) => {
+  const result = await assembly.runtime.dispatchCommand(
+    activateTerminalCommand,
+    {activationCode: '00123456'},
+    dispatchOptions(),
+  );
+  expect(result.status).toBe('completed');
+  expect(result.actorResults.map(item => item.result)).toContainEqual(
+    expect.objectContaining({status: 'activated', terminalRef: 'terminal-console-test'}),
+  );
+  await new Promise(resolve => setTimeout(resolve, 0));
+};
+
+const readyAndActivateForTest = async (assembly: Awaited<ReturnType<typeof createSampleAssembly>>) => {
+  await signalPrimaryReady(assembly);
+  await activateForTest(assembly);
+};
+
+const loginForTest = async (assembly: Awaited<ReturnType<typeof createSampleAssembly>>) => {
+  const result = await assembly.runtime.dispatchCommand(
+    loginCommand,
+    {operatorName: 'A001', passcode: '1111'},
+    dispatchOptions(),
+  );
+  expect(result.status).toBe('completed');
+  await new Promise(resolve => setTimeout(resolve, 0));
+};
+
+const ACTIVATION_DEVICE_INFO = Object.freeze({
+  deviceId: 'DEVICE-SAMPLE-CONSOLE-TEST',
+  systemName: 'TEST',
+  systemVersion: '1',
+  logicalProcessorCount: 8,
+});
 
 const LANDSCAPE_PRIMARY_FRAME = {width: 1280, height: 720} as const;
 const LANDSCAPE_SECONDARY_FRAME = {width: 1280, height: 720} as const;
@@ -153,6 +231,16 @@ const createRecordingStorage = () => {
     },
   };
   return Object.freeze({storage, writes});
+};
+
+const waitForRecordedValues = async (
+  recordings: readonly Readonly<{readonly writes: readonly string[]}>[],
+  expectedValues: readonly string[],
+) => {
+  await waitFor(() => {
+    const persisted = recordings.flatMap(recording => recording.writes).join('\n');
+    for (const expected of expectedValues) expect(persisted).toContain(expected);
+  });
 };
 
 const mount = async (
@@ -403,7 +491,9 @@ const tapWebLauncher = async (renderer: TestRenderer, count = 5): Promise<void> 
 
 const authenticateAdmin = async (renderer: TestRenderer): Promise<void> => {
   await finishKeyboardPresentation(renderer);
-  for (const digit of ['1', '2', '3', '4', '5', '6']) {
+  const displayedPassword = renderer.queryByText(/^（\d{6}）$/);
+  const displayedCode = String(displayedPassword?.props.children ?? '').match(/\d{6}/)?.[0] ?? '123456';
+  for (const digit of displayedCode) {
     await act(async () => {
       await press(renderer, `ui.base.input:virtual-keyboard:text-${digit}`);
       await new Promise(resolve => setTimeout(resolve, 0));
@@ -464,6 +554,192 @@ afterEach(() => {
 });
 
 describe('sample-console real assembly', () => {
+  it('renders only the explicit activation success result after the client owner activates', async () => {
+    const requests: Array<Readonly<{pathAndQuery: string; activationCode: string | undefined}>> = [];
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({
+        deviceInfo: {
+          deviceId: 'DEVICE-ACTIVATION-001',
+          systemName: 'Android',
+          systemVersion: '57',
+          logicalProcessorCount: 8,
+        },
+      }),
+      persistenceKey: `sample-console-activation-success-${Date.now()}`,
+      surfaceForm: 'laptop',
+      transportNetworkAdapterFactory: readSnapshot =>
+        Object.freeze({
+          readSnapshot,
+          connect: async () => {
+            throw new Error('WEBSOCKET_NOT_EXPECTED_IN_ACTIVATION_SCREEN_TEST');
+          },
+          sendHttp: async input => {
+            requests.push(
+              Object.freeze({
+                pathAndQuery: input.pathAndQuery,
+                activationCode: (input.body as {activationCode?: string} | undefined)?.activationCode,
+              }),
+            );
+            return Object.freeze({
+              kind: 'response' as const,
+              status: 200,
+              body: Object.freeze({
+                terminalRef: 'terminal-1',
+                storeRef: 'store-1',
+                groupWorkspaceKey: 'workspace-1',
+                bindingGeneration: 1,
+              }),
+            });
+          },
+        }),
+    });
+    let renderer: TestRenderer | undefined;
+    try {
+      const activation = await assembly.runtime.dispatchCommand(
+        activateTerminalCommand,
+        {activationCode: '00123456'},
+        {requestId: createRequestId()},
+      );
+      expect(activation.status).toBe('completed');
+      expect(activation.actorResults.map(item => item.result)).toContainEqual(
+        expect.objectContaining({status: 'activated', terminalRef: 'terminal-1'}),
+      );
+      expect(requests).toEqual([{pathAndQuery: '/activation', activationCode: '00123456'}]);
+      const routeContext = {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'} as const;
+      const intent = await assembly.runtime.dispatchCommand(
+        needToActivateTerminalCommand,
+        {},
+        {requestId: createRequestId(), routeContext},
+      );
+      expect(intent.status).toBe('completed');
+      expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')).toMatchObject({
+        partKey: 'terminal.activation.lmp',
+      });
+
+      renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME);
+      expect(getNode(renderer, 'terminal.activation.result').children.join('')).toBe('设备已激活成功');
+      expect(queryNodes(renderer, 'terminal.activation.submit')).toHaveLength(0);
+      expect(queryNodes(renderer, 'terminal.activation.continue')).toHaveLength(0);
+    } finally {
+      if (renderer !== undefined) await renderer.unmount();
+      await releaseRuntimeForTestAsync(assembly.runtime);
+    }
+  });
+
+  it('routes activation intent to MMP, LMP, single-host LMS, dual-host LMS, or LSP from route ownership', async () => {
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-activation-route-${Date.now()}`,
+      surfaceForm: 'laptop',
+    });
+    const routes = [
+      {
+        routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'} as const,
+        expected: 'terminal.activation.lmp',
+      },
+      {
+        routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'SECONDARY'} as const,
+        expected: 'terminal.activation.lms',
+      },
+      {
+        routeContext: {workspace: 'MAIN', instanceMode: 'SLAVE', displayMode: 'SECONDARY'} as const,
+        expected: 'terminal.activation.lms',
+      },
+      {
+        routeContext: {workspace: 'BRANCH', instanceMode: 'SLAVE', displayMode: 'PRIMARY'} as const,
+        expected: 'terminal.activation.lsp',
+      },
+    ];
+    try {
+      for (const [index, item] of routes.entries()) {
+        const result = await assembly.runtime.dispatchCommand(
+          needToActivateTerminalCommand,
+          {},
+          {requestId: createRequestId(), routeContext: item.routeContext},
+        );
+        expect(result.status, `route ${index}`).toBe('completed');
+        expect(selectScreen(assembly.runtime.getState(), item.routeContext.displayMode, 'main')?.partKey).toBe(
+          item.expected,
+        );
+      }
+    } finally {
+      await releaseRuntimeForTestAsync(assembly.runtime);
+    }
+    const mobileAssembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-activation-mobile-route-${Date.now()}`,
+      surfaceForm: 'mobile',
+    });
+    try {
+      const result = await mobileAssembly.runtime.dispatchCommand(
+        needToActivateTerminalCommand,
+        {},
+        {
+          requestId: createRequestId(),
+          routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'},
+        },
+      );
+      expect(result.status).toBe('completed');
+      expect(selectScreen(mobileAssembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe(
+        'terminal.activation.mmp',
+      );
+    } finally {
+      await releaseRuntimeForTestAsync(mobileAssembly.runtime);
+    }
+  });
+
+  it('uses only this integration package serverSpaces defaults and accepts an explicit entry fixture', async () => {
+    const integrationDefaults = packageJson.serverSpaces as TransportServerConfig;
+    const defaultsAssembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-server-defaults-${Date.now()}`,
+      surfaceForm: 'mobile',
+    });
+    const fixture: TransportServerConfig = {
+      selectedSpace: 'sample-console-fixture',
+      spaces: [
+        {
+          name: 'sample-console-fixture',
+          servers: [
+            {
+              serverName: 'business',
+              addresses: [{addressName: 'fixture', baseUrl: 'https://sample-console.invalid/api', timeoutMs: 3210}],
+            },
+          ],
+        },
+      ],
+    };
+    let fixtureAssembly: Awaited<ReturnType<typeof createSampleAssembly>> | undefined;
+    try {
+      fixtureAssembly = await createSampleAssembly({
+        platformPorts: createTestPlatformPorts(),
+        persistenceKey: `sample-console-server-fixture-${Date.now()}`,
+        surfaceForm: 'mobile',
+        serverSpaces: fixture,
+      });
+      const defaultState = defaultsAssembly.runtime.getState();
+      const fixtureState = fixtureAssembly.runtime.getState();
+      expect(defaultState['kernel.base.server-config.configuration']).toMatchObject({
+        selectedSpace: integrationDefaults.selectedSpace,
+      });
+      expect(selectServerConfiguration(defaultState, integrationDefaults).spaces.map(space => space.name)).toEqual(
+        integrationDefaults.spaces.map(space => space.name),
+      );
+      expect(fixtureState['kernel.base.server-config.configuration']).toMatchObject({
+        selectedSpace: fixture.selectedSpace,
+      });
+      expect(selectServerConfiguration(fixtureState, fixture).spaces).toMatchObject([
+        {
+          name: 'sample-console-fixture',
+          servers: [{serverName: 'business', addresses: fixture.spaces[0]!.servers[0]!.addresses}],
+        },
+      ]);
+    } finally {
+      await releaseRuntimeForTestAsync(defaultsAssembly.runtime);
+      if (fixtureAssembly !== undefined) await releaseRuntimeForTestAsync(fixtureAssembly.runtime);
+    }
+  });
+
   it('waits for PRIMARY surface measurement when resolved layout arrives first', async () => {
     const events: LogEvent[] = [];
     const assembly = await createSampleAssembly({
@@ -498,7 +774,7 @@ describe('sample-console real assembly', () => {
       expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false);
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -535,7 +811,7 @@ describe('sample-console real assembly', () => {
       expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false);
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -563,14 +839,14 @@ describe('sample-console real assembly', () => {
       expect(events.filter(event => event.event === 'startup.ready-dispatch-start')).toHaveLength(2);
       expect(
         events.filter(event => event.event === 'startup.ready-dispatch-result').map(event => event.data?.status),
-      ).toEqual(['error', 'completed']);
+      ).toEqual(['partial-failed', 'completed']);
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
-  it('sends the member registry sync slice but never an isolated wallpaper slice', async () => {
+  it('declares the host staff qualification and confirmed member projections for a paired slave', async () => {
     const peer = new TestPeerChannel();
     const assembly = await createSampleAssembly({
       platformPorts: createTestPlatformPorts({displayCount: 1}),
@@ -582,11 +858,11 @@ describe('sample-console real assembly', () => {
       await openTestPeerAsSlave(peer);
       const sliceNames = stateFullSliceNames(peer);
       expect(sliceNames).toContain('kernel.feature.sample-member-registry.members');
-      expect(sliceNames).not.toContain('kernel.feature.sample-staff-session.session');
+      expect(sliceNames).toContain('kernel.feature.sample-staff-session.session');
       expect(sliceNames).not.toContain('kernel.feature.sample-wallpaper.selection');
     } finally {
       await peer.dispose();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -610,7 +886,7 @@ describe('sample-console real assembly', () => {
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -618,7 +894,10 @@ describe('sample-console real assembly', () => {
     const assemblies = await Promise.all(
       (['laptop', 'mobile'] as const).map(surfaceForm =>
         createSampleAssembly({
-          platformPorts: createTestPlatformPorts({displayCount: surfaceForm === 'laptop' ? 2 : 1}),
+          platformPorts: createTestPlatformPorts({
+            displayCount: surfaceForm === 'laptop' ? 2 : 1,
+            deviceInfo: ACTIVATION_DEVICE_INFO,
+          }),
           persistenceKey: `sample-console-form-renderer-${surfaceForm}-${Date.now()}`,
           surfaceForm,
           surfaceHostSourcesByDisplayIndex: {
@@ -631,6 +910,7 @@ describe('sample-console real assembly', () => {
     try {
       for (const assembly of assemblies) {
         const frame = assembly.surfaceForm === 'laptop' ? LANDSCAPE_PRIMARY_FRAME : PORTRAIT_PRIMARY_FRAME;
+        await readyAndActivateForTest(assembly);
         const renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), frame);
         renderers.push(renderer);
         const login = getNode(renderer, 'sample.auth.login');
@@ -646,7 +926,7 @@ describe('sample-console real assembly', () => {
       }
     } finally {
       for (const renderer of renderers) await renderer.unmount();
-      for (const assembly of assemblies) releaseRuntimeForTest(assembly.runtime);
+      for (const assembly of assemblies) await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -663,7 +943,7 @@ describe('sample-console real assembly', () => {
       },
     } as const;
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts(),
+      platformPorts: createTestPlatformPorts({deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample-console-surface-override-${Date.now()}`,
       surfaceForm: 'laptop',
       terminalSurfaces: override,
@@ -672,7 +952,7 @@ describe('sample-console real assembly', () => {
       expect(assembly.surfaceDeclarations).toEqual(override.orientations.landscape);
       expect(assembly.runtimeFacts.surfaceCanvasSizes).toEqual(override.orientations.landscape);
     } finally {
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -737,8 +1017,8 @@ describe('sample-console real assembly', () => {
     } finally {
       if (firstRenderer !== undefined) await firstRenderer!.unmount();
       if (secondRenderer !== undefined) await secondRenderer!.unmount();
-      releaseRuntimeForTest(firstAssembly.runtime);
-      releaseRuntimeForTest(secondAssembly.runtime);
+      await releaseRuntimeForTestAsync(firstAssembly.runtime);
+      await releaseRuntimeForTestAsync(secondAssembly.runtime);
     }
   });
 
@@ -785,7 +1065,10 @@ describe('sample-console real assembly', () => {
   });
 
   it('registers separate laptop and mobile renderer siblings for every sample business part', async () => {
-    const definedParts = createSampleDefinedParts(false);
+    const definedParts = createSampleDefinedParts(false).filter(
+      ({catalogEntry}) =>
+        catalogEntry.partKey.startsWith('sample.auth.') || catalogEntry.partKey.startsWith('sample.desk.'),
+    );
     const groups = new Map<string, (typeof definedParts)[number][]>();
     for (const part of definedParts) {
       const siblings = groups.get(part.catalogEntry.partKey) ?? [];
@@ -810,11 +1093,20 @@ describe('sample-console real assembly', () => {
     const definedParts = createSampleDefinedParts();
     const featureParts = [...sampleStaffAuthAssembly.parts, ...sampleMemberDeskAssembly.parts];
 
-    expect(createSampleDefinedParts(false)).toEqual(featureParts);
+    const activationParts = createSampleDefinedParts(false).filter(({catalogEntry}) =>
+      catalogEntry.partKey.startsWith('terminal.activation.'),
+    );
+    expect(activationParts.map(({catalogEntry}) => catalogEntry.partKey)).toEqual([
+      'terminal.activation.mmp',
+      'terminal.activation.lmp',
+      'terminal.activation.lms',
+      'terminal.activation.lsp',
+      'terminal.activation.admin.status',
+    ]);
     expect(definedParts.slice(0, featureParts.length)).toEqual(featureParts);
-    expect(definedParts).toHaveLength(featureParts.length + 1);
+    expect(definedParts).toHaveLength(featureParts.length + 7);
     expect(
-      definedParts.slice(featureParts.length).map(({catalogEntry, rendererBinding}) => ({
+      definedParts.slice(featureParts.length + 5).map(({catalogEntry, rendererBinding}) => ({
         partKey: catalogEntry.partKey,
         rendererKey: catalogEntry.rendererKey,
         containerKeys: [...catalogEntry.containerKeys],
@@ -827,6 +1119,18 @@ describe('sample-console real assembly', () => {
         layerGuard: rendererBinding.layerGuard,
       })),
     ).toEqual([
+      {
+        partKey: 'terminal.server-config.admin',
+        rendererKey: 'terminal.server-config.admin',
+        containerKeys: ['admin.sections'],
+        displayModes: ['PRIMARY', 'SECONDARY'],
+        workspaces: ['MAIN', 'BRANCH'],
+        instanceModes: ['MASTER', 'SLAVE'],
+        title: '服务配置',
+        surfaceForm: ['mobile', 'laptop'],
+        layerTier: 'standard',
+        layerGuard: 'dismissible',
+      },
       {
         partKey: 'sample.console.admin-test',
         rendererKey: 'sample.console.admin-test',
@@ -933,7 +1237,7 @@ describe('sample-console real assembly', () => {
         minHeight: 0,
         minWidth: 0,
       });
-      const laptopPortsSection = queryNodes(laptopRenderer, adminTestIds.ports.section).find(
+      const laptopPortsSection = queryNodes(laptopRenderer, adminTestIds.ports.contentRoot).find(
         node => node.type === 'View',
       )!;
       expect(StyleSheet.flatten(laptopPortsSection.props.style)).toMatchObject({
@@ -991,7 +1295,7 @@ describe('sample-console real assembly', () => {
         expanded: false,
       });
       expect(getNode(mobileRenderer, adminTestIds.content)).toBeDefined();
-      const mobilePortsSection = queryNodes(mobileRenderer, adminTestIds.ports.section).find(
+      const mobilePortsSection = queryNodes(mobileRenderer, adminTestIds.ports.contentRoot).find(
         node => node.type === 'View',
       )!;
       expect(StyleSheet.flatten(mobilePortsSection.props.style)).toMatchObject({
@@ -1018,20 +1322,21 @@ describe('sample-console real assembly', () => {
     } finally {
       if (laptopRenderer !== undefined) await laptopRenderer!.unmount();
       if (mobileRenderer !== undefined) await mobileRenderer!.unmount();
-      releaseRuntimeForTest(laptopAssembly.runtime);
-      releaseRuntimeForTest(mobileAssembly.runtime);
+      await releaseRuntimeForTestAsync(laptopAssembly.runtime);
+      await releaseRuntimeForTestAsync(mobileAssembly.runtime);
     }
   });
 
   it('observes business controls without consuming their touch and maps scaled window points to logical space', async () => {
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts(),
+      platformPorts: createTestPlatformPorts({deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample-console-admin-gesture-ancestor-${Date.now()}`,
       surfaceForm: 'laptop',
       surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, LANDSCAPE_PRIMARY_FRAME)},
     });
     let renderer: TestRenderer | undefined;
     try {
+      await readyAndActivateForTest(assembly);
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME);
       const launcher = getNode(renderer, adminTestIds.launcher);
       expect(launcher.type).toBe('View');
@@ -1065,7 +1370,7 @@ describe('sample-console real assembly', () => {
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1097,8 +1402,8 @@ describe('sample-console real assembly', () => {
     } finally {
       if (enlargedRenderer !== undefined) await enlargedRenderer!.unmount();
       if (reducedRenderer !== undefined) await reducedRenderer!.unmount();
-      releaseRuntimeForTest(enlargedAssembly.runtime);
-      releaseRuntimeForTest(reducedAssembly.runtime);
+      await releaseRuntimeForTestAsync(enlargedAssembly.runtime);
+      await releaseRuntimeForTestAsync(reducedAssembly.runtime);
     }
   });
 
@@ -1137,7 +1442,7 @@ describe('sample-console real assembly', () => {
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1218,7 +1523,7 @@ describe('sample-console real assembly', () => {
     } finally {
       vi.unstubAllGlobals();
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1265,7 +1570,7 @@ describe('sample-console real assembly', () => {
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1314,7 +1619,7 @@ describe('sample-console real assembly', () => {
       expect(getNode(renderer, adminTestIds.shell)).toBeDefined();
       expect(getNode(renderer, 'terminal.admin:navigation')).toBeDefined();
       await selectMobileAdminSection(renderer!, 'admin.console.runtime');
-      expect(getNode(renderer, adminTestIds.runtime.section)).toBeDefined();
+      expect(getNode(renderer, adminTestIds.runtime.contentRoot)).toBeDefined();
       expect(queryNodes(renderer, 'sample.console.admin-test')).toHaveLength(0);
       await act(async () => {
         hostSource.emit({
@@ -1324,7 +1629,7 @@ describe('sample-console real assembly', () => {
         await new Promise(resolve => setTimeout(resolve, 0));
       });
       expect(getNode(renderer, adminTestIds.shell)).toBeDefined();
-      expect(getNode(renderer, adminTestIds.runtime.section)).toBeDefined();
+      expect(getNode(renderer, adminTestIds.runtime.contentRoot)).toBeDefined();
       await act(async () => {
         await press(renderer!, adminTestIds.close);
         await new Promise(resolve => setTimeout(resolve, 0));
@@ -1339,7 +1644,7 @@ describe('sample-console real assembly', () => {
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1367,7 +1672,7 @@ describe('sample-console real assembly', () => {
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
       if (previousDocument === undefined) delete globalWithDocument.document;
       else Object.defineProperty(globalWithDocument, 'document', {configurable: true, value: previousDocument});
     }
@@ -1444,7 +1749,7 @@ describe('sample-console real assembly', () => {
       expect(findTextInput(renderer, 'sample.desk.member-form:phone').props.value).toBe('34');
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1475,7 +1780,7 @@ describe('sample-console real assembly', () => {
       expect(events.some(event => JSON.stringify(event).includes('123456'))).toBe(false);
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1521,7 +1826,7 @@ describe('sample-console real assembly', () => {
       expect(getNode(renderer, adminTestIds.shell)).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1547,11 +1852,11 @@ describe('sample-console real assembly', () => {
       expect(renderer.getByText('请输入动态口令')).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
-  it('does not expose the admin launcher on a physical non-host surface', async () => {
+  it('keeps the local admin launcher available on a physical non-host surface', async () => {
     const assembly = await createSampleAssembly({
       platformPorts: createTestPlatformPorts(),
       persistenceKey: `sample-console-admin-secondary-test-${Date.now()}`,
@@ -1561,10 +1866,12 @@ describe('sample-console real assembly', () => {
     let renderer: TestRenderer | undefined;
     try {
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 1));
-      expect(queryNodes(renderer, adminTestIds.launcher)).toHaveLength(0);
+      expect(queryNodes(renderer, adminTestIds.launcher)).toHaveLength(1);
+      await tapLauncher(renderer);
+      expect(getNode(renderer, adminTestIds.login)).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1594,7 +1901,7 @@ describe('sample-console real assembly', () => {
       });
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1631,7 +1938,7 @@ describe('sample-console real assembly', () => {
       );
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1681,7 +1988,7 @@ describe('sample-console real assembly', () => {
     } finally {
       releaseDisplayInfo();
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1703,15 +2010,15 @@ describe('sample-console real assembly', () => {
       await tapLauncher(renderer);
       await authenticateAdmin(renderer);
       await selectMobileAdminSection(renderer!, 'admin.console.runtime');
-      expect(getNode(renderer, adminTestIds.runtime.section)).toBeDefined();
-      await new Promise(resolve => setTimeout(resolve, 350));
+      expect(getNode(renderer, adminTestIds.runtime.contentRoot)).toBeDefined();
+      await waitForRecordedValues([plainStorage, protectedStorage], ['admin.console.layer']);
       const persistedValues = [...plainStorage.writes, ...protectedStorage.writes];
       expect(persistedValues.length).toBeGreaterThan(0);
       expect(persistedValues.join('\n')).toContain('admin.console.layer');
       expect(persistedValues.join('\n')).not.toContain('sample.console.admin-test');
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1729,21 +2036,30 @@ describe('sample-console real assembly', () => {
         platformPorts: createTestPlatformPorts({
           plainStorage: plainStorage.storage,
           protectedStorage: protectedStorage.storage,
+          deviceInfo: ACTIVATION_DEVICE_INFO,
         }),
         persistenceKey,
         surfaceForm: 'mobile',
+        showAdminPassword: true,
         surfaceHostSourcesByDisplayIndex: {0: hostSource},
       });
+      await readyAndActivateForTest(firstAssembly);
+      await loginForTest(firstAssembly);
       firstRenderer = await mount(createSurfaceForDisplayIndex(firstAssembly, 0), PORTRAIT_PRIMARY_FRAME);
       await tapLauncher(firstRenderer);
       await authenticateAdmin(firstRenderer);
       await selectMobileAdminSection(firstRenderer!, 'admin.console.runtime');
-      expect(getNode(firstRenderer, adminTestIds.runtime.section)).toBeDefined();
+      expect(getNode(firstRenderer, adminTestIds.runtime.contentRoot)).toBeDefined();
       const businessBefore = selectScreen(firstAssembly.runtime.getState(), 'PRIMARY', 'main');
       expect(businessBefore).toBeDefined();
       const businessPartKey = businessBefore!.partKey;
-      await new Promise(resolve => setTimeout(resolve, 350));
-      releaseRuntimeForTest(firstAssembly.runtime);
+      await waitForRecordedValues([plainStorage, protectedStorage], [
+        'admin.console.layer',
+        businessPartKey,
+        'A001',
+        'terminal-console-test',
+      ]);
+      await releaseRuntimeForTestAsync(firstAssembly.runtime);
       firstAssembly = undefined;
       // Do not unmount the first renderer before hydration: a killed process
       // does not run the layer component's close effect.
@@ -1752,6 +2068,7 @@ describe('sample-console real assembly', () => {
         platformPorts: createTestPlatformPorts({
           plainStorage: plainStorage.storage,
           protectedStorage: protectedStorage.storage,
+          deviceInfo: ACTIVATION_DEVICE_INFO,
         }),
         persistenceKey,
         surfaceForm: 'mobile',
@@ -1768,8 +2085,8 @@ describe('sample-console real assembly', () => {
     } finally {
       if (firstRenderer !== undefined) await firstRenderer!.unmount();
       if (secondRenderer !== undefined) await secondRenderer!.unmount();
-      if (firstAssembly !== undefined) releaseRuntimeForTest(firstAssembly.runtime);
-      if (secondAssembly !== undefined) releaseRuntimeForTest(secondAssembly.runtime);
+      if (firstAssembly !== undefined) releaseRuntimeForTestAsync(firstAssembly.runtime);
+      if (secondAssembly !== undefined) releaseRuntimeForTestAsync(secondAssembly.runtime);
     }
   });
 
@@ -1843,7 +2160,7 @@ describe('sample-console real assembly', () => {
       expect(canvas.props.style).toEqual(expect.arrayContaining([expect.objectContaining({width: 1280, height: 720})]));
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
   it('reads device identity once at assembly startup and exposes only the normalized fact', async () => {
@@ -1874,7 +2191,7 @@ describe('sample-console real assembly', () => {
       createSurfaceForDisplayIndex(assembly, 0);
       expect(deviceInfoCalls).toBe(1);
     } finally {
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1891,33 +2208,37 @@ describe('sample-console real assembly', () => {
           'kernel.base.runtime',
           'kernel.base.display-context',
           'kernel.base.ui-state',
+          'kernel.base.server-config',
           'kernel.feature.sample-staff-session',
           'kernel.feature.sample-member-registry',
           'ui.feature.sample-staff-auth',
           'ui.feature.sample-member-desk',
+          'ui.base.terminal-activation',
+          'kernel.base.terminal-data-client',
           'ui.integration.sample-console',
         ]),
       );
-      expect(assembly.runtime.descriptors).toHaveLength(10);
+      expect(assembly.runtime.descriptors).toHaveLength(13);
     } finally {
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
   it('renders a real catalog part through RenderProvider and SurfaceRoot', async () => {
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts(),
+      platformPorts: createTestPlatformPorts({deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample-console-render-test-${Date.now()}`,
       surfaceForm: 'laptop',
     });
     let renderer: TestRenderer | undefined;
     try {
+      await readyAndActivateForTest(assembly);
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME);
       expect(getNode(renderer, 'sample.auth.login')).toBeDefined();
       expect(getNode(renderer, 'sample.auth.login:submit')).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -1971,7 +2292,7 @@ describe('sample-console real assembly', () => {
       expect(translatedNodes.length).toBeGreaterThan(0);
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -2000,19 +2321,19 @@ describe('sample-console real assembly', () => {
       expect(getNode(renderer, 'sample.desk.customer-welcome')).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
   it('recomputes anonymous secondary placement after a display refresh', async () => {
     let displayCount = 1;
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts({getDisplayCount: () => displayCount}),
+      platformPorts: createTestPlatformPorts({getDisplayCount: () => displayCount, deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample-console-display-refresh-placement-${Date.now()}`,
       surfaceForm: 'laptop',
     });
     try {
-      await assembly.runtime.dispatchCommand(sessionRestoredAnonymousCommand, {}, {requestId: createRequestId()});
+      await readyAndActivateForTest(assembly);
       displayCount = 2;
       const refreshed = await assembly.runtime.dispatchCommand(
         refreshTopologyDisplayCommand,
@@ -2024,7 +2345,7 @@ describe('sample-console real assembly', () => {
         partKey: 'sample.desk.customer-welcome',
       });
     } finally {
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -2087,13 +2408,13 @@ describe('sample-console real assembly', () => {
         });
       }
     } finally {
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
   it('closes the dual-screen age journey on withdraw before a late confirm can register', async () => {
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts({displayCount: 2}),
+      platformPorts: createTestPlatformPorts({displayCount: 2, deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample-console-age-withdraw-test-${Date.now()}`,
       surfaceForm: 'laptop',
     });
@@ -2141,13 +2462,17 @@ describe('sample-console real assembly', () => {
 
       const membersBeforeLateConfirm = selectMembers(assembly.runtime.getState());
       await act(async () => {
-        await assembly.runtime.dispatchCommand(confirmMemberCommand, {age: 3}, {requestId: createRequestId()});
+        await assembly.runtime.dispatchCommand(
+          confirmMemberCommand,
+          {operationId: 'late-confirm', age: 3},
+          {requestId: createRequestId()},
+        );
       });
       expect(selectPendingMember(assembly.runtime.getState())).toBeNull();
       expect(selectMembers(assembly.runtime.getState())).toEqual(membersBeforeLateConfirm);
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -2189,7 +2514,7 @@ describe('sample-console real assembly', () => {
       expect(selectPendingMember(assembly.runtime.getState())).toBeNull();
     } finally {
       if (secondaryRenderer !== undefined) await secondaryRenderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -2223,12 +2548,13 @@ describe('sample-console real assembly', () => {
       });
       expect(selectMembers(assembly.runtime.getState())).toEqual([]);
       expect(selectPendingMember(assembly.runtime.getState())).toEqual({
+        operationId: expect.any(String),
         name: 'Alice',
         phone: '010-1234-5678',
       });
     } finally {
       if (secondaryRenderer !== undefined) await secondaryRenderer!.unmount();
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -2247,8 +2573,13 @@ describe('sample-console real assembly', () => {
         },
         {requestId: createRequestId()},
       );
-      await assembly.runtime.dispatchCommand(rejectMemberCommand, {}, {requestId: createRequestId()});
+      await assembly.runtime.dispatchCommand(
+        rejectMemberCommand,
+        {operationId: selectPendingMember(assembly.runtime.getState())?.operationId ?? 'missing-pending'},
+        {requestId: createRequestId()},
+      );
       expect(selectPendingMember(assembly.runtime.getState())).toEqual({
+        operationId: expect.any(String),
         name: 'Carol',
         phone: '010-1111-2222',
       });
@@ -2264,11 +2595,16 @@ describe('sample-console real assembly', () => {
         partKey: 'sample.desk.member-form',
       });
       expect(selectPendingMember(assembly.runtime.getState())).toEqual({
+        operationId: expect.any(String),
         name: 'Carol',
         phone: '010-1111-2222',
       });
 
-      await assembly.runtime.dispatchCommand(rejectMemberCommand, {}, {requestId: createRequestId()});
+      await assembly.runtime.dispatchCommand(
+        rejectMemberCommand,
+        {operationId: selectPendingMember(assembly.runtime.getState())?.operationId ?? 'missing-pending'},
+        {requestId: createRequestId()},
+      );
       await assembly.runtime.dispatchCommand(memberRegistrationAbandonedCommand, {}, {requestId: createRequestId()});
       expect(selectPendingMember(assembly.runtime.getState())).toBeNull();
       expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')).toMatchObject({
@@ -2276,7 +2612,7 @@ describe('sample-console real assembly', () => {
       });
       expect(selectLayers(assembly.runtime.getState(), 'PRIMARY')).toHaveLength(0);
     } finally {
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 
@@ -2300,13 +2636,17 @@ describe('sample-console real assembly', () => {
         props: {mode: 'handheld-confirm'},
       });
 
-      await assembly.runtime.dispatchCommand(memberSubmissionWithdrawnCommand, {}, {requestId: createRequestId()});
+      await assembly.runtime.dispatchCommand(
+        memberSubmissionWithdrawnCommand,
+        {operationId: selectPendingMember(assembly.runtime.getState())?.operationId ?? 'missing-pending'},
+        {requestId: createRequestId()},
+      );
       expect(selectPendingMember(assembly.runtime.getState())).toBeNull();
       expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')).toMatchObject({
         partKey: 'sample.desk.member-form',
       });
     } finally {
-      releaseRuntimeForTest(assembly.runtime);
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 });

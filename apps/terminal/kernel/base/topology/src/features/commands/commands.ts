@@ -37,12 +37,17 @@ export type TopologyHostEventPayload = Readonly<{
     | 'close'
     | 'error'
     | 'peer-accepted'
+    | 'peer-connection-installed'
     | 'peer-unreachable'
+    | 'state-sync-slice-applied'
     | 'state-transfer-failed'
     | 'state-transfer-recovered';
   readonly frame?: string;
   readonly reason?: string;
   readonly peerIdentity?: TopologyIdentity;
+  readonly connectionId?: string;
+  readonly sliceName?: string;
+  readonly revision?: number;
   readonly payloadFailure?: TopologyPayloadFailure;
 }>;
 

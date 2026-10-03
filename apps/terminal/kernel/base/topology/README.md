@@ -63,8 +63,10 @@ const eligibility = evaluateTopologyOperation({
 
 1. 新增拓扑字段先确认唯一 owner；公共协议字段同步 contracts parser/vector/invariant，连接机制同步
    transport，不能在此复制 union。
-2. `peerReachable` 只能影响送达状态和提示，不得进入 secondary 语义；新增 operation 必须补 operation
-   focused test，并测试自然捷径会红。
+2. `peerReachable` 只能影响送达状态和提示，不得进入 secondary 语义。业务 projection readiness 由
+   `selectTopologyRequiredProjectionsReady` 判断：当前已接纳 peer、connection id 与成功应用修订必须属于同一连接，
+   且调用方列出的每个 required slice 都已 apply。新连接、断连和 peer 替换清空 applied revisions；旧连接帧不能推进
+   当前 readiness。新增 operation 必须补 operation focused test，并测试自然捷径会红。
 3. 改完运行本包 typecheck、owned test、contracts static；改 graph/package 时同步 workspace、invariant、
    census 和本 README，并回读真实装配。
 4. 任何 native host 起停都由 topology lifecycle actor 通过 typed port 触发；测试 fixture 不得直接持有

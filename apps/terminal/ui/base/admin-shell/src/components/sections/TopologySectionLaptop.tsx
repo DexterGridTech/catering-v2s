@@ -75,7 +75,7 @@ export const TopologySectionLaptop = ({context}: AdminSectionProps) => {
     });
   return (
     <PrimitiveContainer
-      testID={topologyIds.section}
+      testID={topologyIds.contentRoot}
       layout="content"
       appearance="admin-content"
       bounded

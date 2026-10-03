@@ -9,8 +9,9 @@
     {
       "targetPackage": "apps/terminal/kernel/base/terminal-data-client",
       "tags": ["terminal-binding"],
-      "includeOperationIds": [],
+      "includeOperationIds": ["activateTerminal", "cancelTerminalActivation"],
       "excludeOperationIds": [],
+      "stripPathPrefix": "/api/terminal/group-workspaces/{groupWorkspaceKey}",
       "output": "apps/terminal/kernel/base/terminal-data-client/src/generated/terminalApi.ts"
     }
   ]

@@ -49,6 +49,8 @@ options 的受批准 fallback 使用 `displayIndex=0`、`surfaceForm='laptop'`�
 `InputSurfaceFrame` 内的空 full-layout harness，用于验证 URL 符号实际插入；副屏和正常启动
 不进入该页面。它不是业务 part、字段或提交路径，harness 截图也不计入生产 IA 帧分母。
 Android 运行时使用本包 `package.json` 的 `terminalSurfaces` 整份覆盖 integration 默认值；integration 仍按 `surfaceForm` 选择对应声明。
+本 Android application 的 `package.json.serverSpaces` 是该入口唯一的内置服务配置。`platformPorts.ts`
+在创建 integration assembly 时显式传入它；它不继承或合并 `sample-wallpaper-console` integration 的默认列表。
 Android 运行时使用本包 `package.json` 的 `showAdminPassword` 控制 admin 登录提示旁是否显示当前动态口令。
 
 进入 admin console 后，laptop/mobile 的 master-detail 或可换行 tablist 版式由 integration 接入的

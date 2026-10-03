@@ -7,10 +7,17 @@ import {
   selectConnectionState,
 } from '../src/selectors/selectTerminalDataClientState';
 import {
+  terminalDataClientSliceName,
   terminalDataClientActions,
   terminalDataClientReducer,
   terminalDataClientStateSlice,
 } from '../src/features/slices/terminalDataClient';
+import {
+  terminalClientStatusProjectionActions,
+  terminalClientStatusProjectionSliceName,
+  terminalClientStatusProjectionStateSlice,
+} from '../src/features/slices/terminalClientStatusProjection';
+import {selectTerminalClientStatusProjection} from '../src/selectors/selectTerminalDataClientStatusProjection';
 
 const initial = () => terminalDataClientReducer(undefined, {type: 'test/init'});
 const root = (client: object) => ({[terminalDataClientStateSlice.name]: client});
@@ -124,7 +131,6 @@ describe('terminal-data-client selectors', () => {
     firstRuntime.getStore().dispatch(
       terminalDataClientActions.setPendingActivation({
         operationId: 'operation-1',
-        groupWorkspaceKey: 'workspace-1',
         activationCode: pendingActivationCode,
         deviceId: 'device-1',
         surfaceForm: 'laptop',
@@ -143,5 +149,101 @@ describe('terminal-data-client selectors', () => {
       pendingActivations: {},
     });
     expect(selectActivationState(restartedRuntime.getState()).status).toBe('inactive');
+  });
+
+  it('syncs a safe status projection without the local credential or pending secrets', async () => {
+    const createProjectionRuntime = (
+      key: string,
+      plainStorage: ReturnType<typeof createFakeStorage> = createFakeStorage(),
+      protectedStorage: ReturnType<typeof createFakeStorage> = createFakeStorage(),
+    ) =>
+      createStateRuntime({
+        runtimeName: key,
+        environmentMode: 'TEST',
+        slices: [terminalDataClientStateSlice, terminalClientStatusProjectionStateSlice],
+        logger: createFakeLogger(),
+        plainStorage,
+        protectedStorage,
+        persistenceKey: key,
+        persistenceDebounceMs: 0,
+      });
+    const host = await createProjectionRuntime('terminal-status-projection-host');
+    const branchPlainStorage = createFakeStorage();
+    const branchProtectedStorage = createFakeStorage();
+    const branch = await createProjectionRuntime(
+      'terminal-status-projection-branch',
+      branchPlainStorage,
+      branchProtectedStorage,
+    );
+    const secret = 'C'.repeat(43);
+    host.getStore().dispatch(
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'workspace-1',
+        terminalRef: 'terminal-1',
+        storeRef: 'store-1',
+        deviceId: 'device-1',
+        bindingGeneration: 3,
+        credentialSecret: secret,
+      }),
+    );
+    host.getStore().dispatch(
+      terminalDataClientActions.setPendingActivation({
+        operationId: 'operation-1',
+        activationCode: '12345678',
+        deviceId: 'device-1',
+        surfaceForm: 'laptop',
+        appVersion: '1.0.0',
+        credentialSecret: secret,
+      }),
+    );
+    host.getStore().dispatch(
+      terminalClientStatusProjectionActions.replaceProjection({
+        available: true,
+        sourceNodeId: 'host-node-1',
+        activation: {
+          status: 'active',
+          terminalRef: 'terminal-1',
+          storeRef: 'store-1',
+          groupWorkspaceKey: 'workspace-1',
+          bindingGeneration: 3,
+        },
+        connection: {status: 'connected', addressName: 'primary', nodeId: 'tds-1', lastCloseReason: null},
+        lastRttMs: 21,
+        updatedAt: 100,
+      }),
+    );
+    const payload = host.createFullSyncPayload(terminalClientStatusProjectionSliceName);
+    expect(payload.status).toBe('ready');
+    if (payload.status !== 'ready') throw new Error('TDC_STATUS_PROJECTION_SYNC_NOT_READY');
+    expect(JSON.stringify(payload.payload)).not.toContain(secret);
+    expect(JSON.stringify(payload.payload)).not.toContain('credentialSecret');
+    expect(host.createFullSyncPayload(terminalDataClientSliceName)).toMatchObject({
+      status: 'skipped',
+      reason: 'SYNC_NOT_DECLARED',
+    });
+    expect(branch.applyAuthoritativeSync(terminalClientStatusProjectionSliceName, payload.payload).status).toBe(
+      'applied',
+    );
+    expect(selectTerminalClientStatusProjection(branch.getState())).toMatchObject({
+      available: true,
+      sourceNodeId: 'host-node-1',
+      activation: {status: 'active', terminalRef: 'terminal-1'},
+      connection: {status: 'connected', nodeId: 'tds-1'},
+      lastRttMs: 21,
+      updatedAt: 100,
+    });
+    expect(branch.getState()[terminalDataClientSliceName]).toMatchObject({credential: null, pendingActivations: {}});
+    expect((await branch.flushPersistence()).status).toBe('succeeded');
+    const restartedBranch = await createProjectionRuntime(
+      'terminal-status-projection-branch',
+      branchPlainStorage,
+      branchProtectedStorage,
+    );
+    expect(selectTerminalClientStatusProjection(restartedBranch.getState())).toMatchObject({
+      available: true,
+      sourceNodeId: 'host-node-1',
+      activation: {status: 'active', terminalRef: 'terminal-1'},
+      lastRttMs: 21,
+    });
   });
 });

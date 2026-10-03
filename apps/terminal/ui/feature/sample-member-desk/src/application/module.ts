@@ -9,6 +9,7 @@ import {
   memberDraftDiscardedCommand,
   memberFormCancelledCommand,
   memberFormOpenedCommand,
+  startMemberDeskCommand,
   memberRegistrationAbandonedCommand,
   memberRegistrationRetryRequestedCommand,
   memberSubmissionWithdrawnCommand,
@@ -25,6 +26,7 @@ import {
 import {moduleKind, moduleName} from '../moduleName';
 
 const commands = [
+  startMemberDeskCommand,
   memberFormOpenedCommand,
   memberFormCancelledCommand,
   memberDraftDiscardedCommand,

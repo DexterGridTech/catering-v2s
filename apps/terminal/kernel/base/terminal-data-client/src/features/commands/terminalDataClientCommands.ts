@@ -1,6 +1,6 @@
 import {defineCommand} from '@catering-v2s/kernel-base-runtime';
 import {moduleName} from '../../moduleName';
-import type {ActivateTerminalPayload, CancelTerminalOnlinePayload, TerminalTransportEvent} from '../../types/client';
+import type {ActivateTerminalPayload, CancelTerminaActivationPayload, TerminalTransportEvent} from '../../types/client';
 
 export const activateTerminalCommand = defineCommand<ActivateTerminalPayload>(moduleName, {
   name: 'activate-terminal',
@@ -9,8 +9,8 @@ export const activateTerminalCommand = defineCommand<ActivateTerminalPayload>(mo
   allowReentry: false,
   defaultTarget: 'local',
 });
-export const cancelTerminalOnlineCommand = defineCommand<CancelTerminalOnlinePayload>(moduleName, {
-  name: 'cancel-terminal-online',
+export const cancelTerminaActivationCommand = defineCommand<CancelTerminaActivationPayload>(moduleName, {
+  name: 'cancel-terminal-activation',
   visibility: 'public',
   allowNoActor: false,
   allowReentry: false,
@@ -39,6 +39,13 @@ export const disconnectTerminalCommand = defineCommand<Readonly<{}>>(moduleName,
 });
 export const initializeTerminalDataClientCommand = defineCommand<Readonly<{}>>(moduleName, {
   name: 'initialize-terminal-data-client',
+  visibility: 'internal',
+  allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+export const refreshTerminalClientStatusProjectionCommand = defineCommand<Readonly<{}>>(moduleName, {
+  name: 'refresh-status-projection',
   visibility: 'internal',
   allowNoActor: false,
   allowReentry: false,

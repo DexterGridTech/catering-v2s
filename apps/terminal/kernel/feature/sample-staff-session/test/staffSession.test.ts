@@ -1,5 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
+import type {StateRoot} from '@catering-v2s/kernel-base-state';
+import {releaseRuntimeForTestAsync, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing';
 import {
   bootstrapSessionCommand,
   createSampleStaffSessionModule,
@@ -9,13 +11,14 @@ import {
   logoutCommand,
   logoutSucceededCommand,
   selectSessionState,
+  selectHostStaffQualification,
   sessionRestoredAnonymousCommand,
   sessionRestoredAuthenticatedCommand,
 } from '../src/index';
 import {createEventRecorderModule, createMemoryStorageForTest, createTestRuntime, type RecordedEvent} from './support';
 
 describe('sample staff session owner module', () => {
-  it('describes the owner commands, actors, slice, and isolated persistence contract', () => {
+  it('describes the owner commands, actors, slice, and host-to-slave qualification projection', () => {
     const module = createSampleStaffSessionModule();
     expect(module.moduleName).toBe('kernel.feature.sample-staff-session');
     expect(module.kind).toBe('owner');
@@ -38,8 +41,40 @@ describe('sample staff session owner module', () => {
       },
     ]);
     expect(module.stateSlices).toHaveLength(1);
-    expect(module.stateSlices?.[0]?.syncIntent).toBe('isolated');
+    expect(module.stateSlices?.[0]?.syncIntent).toBe('master-to-slave');
     expect(module.stateSlices?.[0]?.hasPersistence).toBe(true);
+  });
+
+  it('projects only the host staff qualification needed by the paired read-only surfaces', async () => {
+    const host = createTestRuntime([createSampleStaffSessionModule()]);
+    const slave = createTestRuntime([createSampleStaffSessionModule()]);
+    try {
+      await host.start();
+      await slave.start();
+      await host.dispatchCommand(loginCommand, {operatorName: 'A001', passcode: '1111'}, {requestId: createRequestId()});
+
+      const payload = runtimeStateSyncForTest(host).createFullSyncPayload('kernel.feature.sample-staff-session.session');
+      expect(payload.status).toBe('ready');
+      if (payload.status !== 'ready') return;
+      expect(payload.payload.entries).toEqual([
+        expect.objectContaining({
+          key: 'state',
+          value: expect.objectContaining({value: {status: 'authenticated', operatorName: 'A001'}}),
+        }),
+      ]);
+
+      expect(runtimeStateSyncForTest(slave).applyAuthoritativeSync('kernel.feature.sample-staff-session.session', payload.payload)).toMatchObject({status: 'applied'});
+      expect(selectSessionState(slave.getState())).toMatchObject({status: 'anonymous', operatorName: null});
+      const slaveState = {
+        ...slave.getState(),
+        'kernel.base.runtime.instance-mode': {instanceMode: 'SLAVE'},
+      } as StateRoot;
+      expect(selectHostStaffQualification(slaveState)).toEqual({status: 'authenticated', operatorName: 'A001'});
+      expect(JSON.stringify(payload.payload)).not.toContain('1111');
+    } finally {
+      await releaseRuntimeForTestAsync(host);
+      await releaseRuntimeForTestAsync(slave);
+    }
   });
 
   it('bootstraps anonymous state and emits the explicit anonymous result event with a request id', async () => {

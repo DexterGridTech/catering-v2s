@@ -501,8 +501,12 @@ try {
       return source.replace(entry, '');
     },
     report => {
-      assertGateVector(report, ['graph-comparison', 'state-reset-retention-only']);
+      assertGateVector(report, ['graph-comparison', 'runtime-dependency-contract', 'state-reset-retention-only']);
       assert.match(gate(report, 'graph-comparison').error, /server-config/);
+      assert.match(
+        gate(report, 'runtime-dependency-contract').error,
+        /dependencyModuleNames must contain only imported moduleName bindings; opaque expression serverConfig/,
+      );
       assert.match(
         gate(report, 'state-reset-retention-only').error,
         /SERVER_CONFIG_RESET_RETENTION_OWNER_COUNT expected=1 actual=0/,

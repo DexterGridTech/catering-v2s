@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/ui-base-server-config-panel",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-server-config-panel", "runner": "vitest"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-base-server-config-panel", "runner": "eslint"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "ownerKind": "toolkit",
+  "publicExports": ["createServerConfigPanelParts", "dependencyModuleNames", "devDependencyModuleNames", "moduleName"]
+}

@@ -6,13 +6,18 @@ import {
   createIntegrationAssembly,
   createStartupReadyPayload,
   createSurfaceForDisplayIndex as createSharedSurfaceForDisplayIndex,
+  createBrowserTransportNetworkAdapter,
+  PairReadinessInterlock,
   selectStateSyncSlices,
   type IntegrationAssembly,
 } from '@catering-v2s/ui-base-integration-assembly';
 import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk';
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
-import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry';
-import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {createSampleMemberRegistryModule, memberSliceName} from '@catering-v2s/kernel-feature-sample-member-registry';
+import {createSampleStaffSessionModule, sessionSliceName} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
+import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config';
+import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {
   createTopologyAdminCapability,
   createTopologyModule,
@@ -21,10 +26,24 @@ import {
 import {
   createTopologyIdentityClient,
   createTransportModule,
+  type TransportNetworkAdapter,
+  type TransportNetworkSnapshot,
   type TopologyPeerChannel,
 } from '@catering-v2s/kernel-base-transport';
 import {ADMIN_SECTION_CONTAINER_KEY, SampleSection} from '@catering-v2s/ui-base-admin-shell';
-import {createSampleConsoleModule, startupReadyCommand, type SampleConsoleReadyPayload} from '../application/module';
+import {
+  createCredentialSecret,
+  createTerminalActivationModule,
+  createTerminalActivationParts,
+} from '@catering-v2s/ui-base-terminal-activation';
+import {createServerConfigPanelParts} from '@catering-v2s/ui-base-server-config-panel';
+import {createTerminalDataClientModule} from '@catering-v2s/kernel-base-terminal-data-client';
+import {
+  createSampleConsoleModule,
+  selectSampleConsoleBusinessInterlockActive,
+  startupReadyCommand,
+  type SampleConsoleReadyPayload,
+} from '../application/module';
 import {
   getSurfaceDeclarations,
   terminalSurfaces,
@@ -33,6 +52,7 @@ import {
 } from '../application/terminalSurfaces';
 
 const defaultPersistenceKey = 'sample-console';
+export {selectSampleConsoleBusinessInterlockActive};
 
 const sampleAdminTestPart = definePart({
   partKey: 'sample.console.admin-test',
@@ -47,9 +67,17 @@ const sampleAdminTestPart = definePart({
   component: SampleSection,
 });
 
-export const createSampleDefinedParts = (includeSampleAdminSection = true) => {
+export const createSampleDefinedParts = (
+  includeSampleAdminSection = true,
+  serverSpaces: TransportServerConfig = packageJson.serverSpaces as TransportServerConfig,
+) => {
   const baseParts = [...sampleStaffAuthAssembly.parts, ...sampleMemberDeskAssembly.parts];
-  return Object.freeze(includeSampleAdminSection ? [...baseParts, sampleAdminTestPart] : baseParts);
+  return Object.freeze([
+    ...baseParts,
+    ...createTerminalActivationParts(serverSpaces),
+    ...createServerConfigPanelParts(serverSpaces),
+    ...(includeSampleAdminSection ? [sampleAdminTestPart] : []),
+  ]);
 };
 
 export type SampleAssembly = IntegrationAssembly;
@@ -60,6 +88,7 @@ type SampleAssemblyInput = Readonly<{
   readonly platformPorts: PlatformPorts;
   readonly nativeLoadingCapability: NativeLoadingCapability;
   readonly persistenceKey?: string;
+  readonly appVersion?: string;
   readonly surfaceForm: SurfaceForm;
   readonly terminalSurfaces?: TerminalSurfaces;
   readonly defaultContainerPartKeys?: Readonly<Partial<Record<string, string>>>;
@@ -67,8 +96,12 @@ type SampleAssemblyInput = Readonly<{
   readonly packagingDebugMode?: boolean;
   readonly startupDebugMode?: boolean;
   readonly showAdminPassword?: boolean;
+  readonly serverSpaces?: TransportServerConfig;
   readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>;
   readonly topologyPeerChannel?: TopologyPeerChannel;
+  readonly transportNetworkAdapterFactory?: (
+    readSnapshot: (serverName: string) => Promise<TransportNetworkSnapshot>,
+  ) => TransportNetworkAdapter;
 }>;
 
 export function createSampleAssembly(input: SampleAssemblyInput): Promise<SampleAssembly>;
@@ -91,7 +124,9 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
     packagingDebugMode: input.packagingDebugMode,
     startupDebugMode: input.startupDebugMode,
     showAdminPassword: input.showAdminPassword ?? packageJson.showAdminPassword,
-    parts: createSampleDefinedParts(),
+    selectBusinessInterlockActive: selectSampleConsoleBusinessInterlockActive,
+    renderBusinessInterlock: () => <PairReadinessInterlock />,
+    parts: createSampleDefinedParts(true, input.serverSpaces ?? (packageJson.serverSpaces as TransportServerConfig)),
     layerDismissals: Object.freeze({
       ...sampleStaffAuthAssembly.layerDismissals,
       ...sampleMemberDeskAssembly.layerDismissals,
@@ -104,8 +139,31 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
     createTopologyAdminCapability,
     createApplicationModules: ({uiStateModule}) => {
       const memberRegistryModule = createSampleMemberRegistryModule();
+      const staffSessionModule = createSampleStaffSessionModule();
+      const serverConfigModule = createServerConfigModule(
+        input.serverSpaces ?? (packageJson.serverSpaces as TransportServerConfig),
+      );
+      const serverSpaces = input.serverSpaces ?? (packageJson.serverSpaces as TransportServerConfig);
+      const transportModule = createTransportModule({
+        networkAdapterFactory: context => {
+          const readSnapshot = async (serverName: string): Promise<TransportNetworkSnapshot> =>
+            resolveServerNetworkSnapshot(context.getState(), serverSpaces, serverName);
+          return (
+            input.transportNetworkAdapterFactory?.(readSnapshot) ?? createBrowserTransportNetworkAdapter(readSnapshot)
+          );
+        },
+      });
+      const terminalDataClientModule = createTerminalDataClientModule({
+        transport: transportModule.commandGateway,
+        businessServerName: 'business',
+        createCredentialSecret,
+        now: () => Date.now(),
+        surfaceForm,
+        appVersion: input.appVersion ?? '1.0.0',
+      });
       return [
-        createTransportModule(),
+        serverConfigModule,
+        transportModule,
         createTopologyModule({
           displayName: 'sample-console',
           moduleName: integrationModuleName,
@@ -114,11 +172,16 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
           peerChannel: input.topologyPeerChannel,
           stateSyncSlices: selectStateSyncSlices([
             ...(uiStateModule.stateSlices ?? []),
+            ...(staffSessionModule.stateSlices ?? []),
             ...(memberRegistryModule.stateSlices ?? []),
+            ...(serverConfigModule.stateSlices ?? []),
+            ...(terminalDataClientModule.stateSlices ?? []),
           ]),
         }),
-        createSampleConsoleModule(),
-        createSampleStaffSessionModule(),
+        createSampleConsoleModule(surfaceForm),
+        createTerminalActivationModule(),
+        terminalDataClientModule,
+        staffSessionModule,
         memberRegistryModule,
         sampleStaffAuthAssembly.createModule(),
         sampleMemberDeskAssembly.createModule(),

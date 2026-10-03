@@ -3,8 +3,15 @@ import {createElement, type ComponentType, type ReactElement} from 'react';
 import {describe, expect, it} from 'vitest';
 import {Text, View} from 'react-native';
 import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort} from '@catering-v2s/kernel-base-platform-ports';
-import {createRendererCatalog, definePart, RenderProvider, SurfaceRoot} from '../src';
-import {createUiCatalog} from '@catering-v2s/kernel-base-ui-state';
+import {
+  createCatalogContext,
+  createRendererCatalog,
+  definePart,
+  RenderProvider,
+  SurfaceFocusBoundaryContext,
+  SurfaceRoot,
+} from '../src';
+import {createUiCatalog, isUiCatalogEntryAvailable, selectLayers} from '@catering-v2s/kernel-base-ui-state';
 import {unusedRenderProviderBindings} from './renderProviderBindings';
 
 type RuntimeStateRoot = ReturnType<import('@catering-v2s/kernel-base-runtime').Runtime['getState']>;
@@ -108,6 +115,109 @@ const surfaceWithAdminEntry = (children: ReactElement) =>
 const mount = (element: ReactElement): Promise<RenderResult> => render(element);
 
 describe('LayerStack filtered hydration behavior', () => {
+  it('places the business interlock above business layers, below local admin, and suspends business focus', async () => {
+    const source = createSource();
+    const businessPart = layerPart('sample.business-layer', 'sample.business-layer.renderer', () => null);
+    const adminPart = definePart({
+      partKey: 'sample.local-admin-layer',
+      rendererKey: 'sample.local-admin-layer.renderer',
+      containerKeys: [],
+      displayModes: ['PRIMARY'] as const,
+      workspaces: ['MAIN'] as const,
+      instanceModes: ['MASTER'] as const,
+      surfaceForm: ['laptop'] as const,
+      title: 'Local admin',
+      description: 'Local admin layer',
+      layerTier: 'admin',
+      component: () => createElement(Text, {testID: 'local-admin-layer'}, 'admin'),
+    });
+    source.setRoot(
+      rootWithLayers([
+        {layerId: 'business-layer', partKey: businessPart.catalogEntry.partKey, openedAt: 3},
+        {layerId: 'local-admin-layer', partKey: adminPart.catalogEntry.partKey, openedAt: 1},
+      ]),
+    );
+    expect(selectLayers(source.stateSource.getState(), 'PRIMARY')).toHaveLength(2);
+    const uiCatalog = createUiCatalog([businessPart.catalogEntry, adminPart.catalogEntry]);
+    const catalogContext = createCatalogContext(source.stateSource.getState(), 'PRIMARY', 'laptop');
+    expect(isUiCatalogEntryAvailable(businessPart.catalogEntry, null, catalogContext)).toBe(true);
+    expect(isUiCatalogEntryAvailable(adminPart.catalogEntry, null, catalogContext)).toBe(true);
+    const catalog = createRendererCatalog([businessPart.rendererBinding, adminPart.rendererBinding]);
+    const focusEvents: string[] = [];
+
+    const renderer = await mount(
+      createElement(
+        SurfaceFocusBoundaryContext.Provider,
+        {value: phase => focusEvents.push(phase)},
+        createElement(
+          RenderProvider,
+          {
+            ...unusedRenderProviderBindings,
+            stateSource: source.stateSource,
+            uiCatalog,
+            rendererCatalog: catalog,
+            logger: createLogger(),
+            selectBusinessInterlockActive: () => true,
+            renderBusinessInterlock: () => createElement(View, {testID: 'business-interlock'}),
+          },
+          surfaceWithAdminEntry(createElement(Text, {testID: 'surface-content'}, 'surface')),
+        ),
+      ),
+    );
+
+    const interlockOrder = renderer
+      .getAllByTestId(/business-interlock|local-admin-layer/)
+      .filter(node => node.props.testID === 'business-interlock' || node.props.testID === 'local-admin-layer')
+      .map(node => node.props.testID);
+    expect(interlockOrder).toEqual(['business-interlock', 'local-admin-layer']);
+    expect(renderer.getByTestId('business-interlock')).toBeDefined();
+    expect(renderer.getByTestId('local-admin-layer')).toBeDefined();
+    expect(
+      renderer
+        .getAllByTestId(/^ui-base-render:layer:/, {includeHiddenElements: true})
+        .map(node => node.props.testID),
+    ).toEqual([
+      'ui-base-render:layer:business-layer',
+      'ui-base-render:layer:local-admin-layer',
+    ]);
+    expect(renderer.getByTestId('ui-base-render:layer:business-layer', {includeHiddenElements: true}).props).toMatchObject({
+      accessibilityElementsHidden: true,
+      importantForAccessibility: 'no-hide-descendants',
+    });
+    expect(renderer.getByTestId('ui-base-render:layer:local-admin-layer').props).toMatchObject({
+      accessibilityElementsHidden: false,
+      importantForAccessibility: 'auto',
+    });
+    await waitFor(() => expect(focusEvents).toContain('suspend'));
+    await renderer.unmount();
+
+    const isolatedSource = createSource();
+    isolatedSource.setRoot(rootWithLayers([]));
+    const isolatedFocusEvents: string[] = [];
+    const isolatedRenderer = await mount(
+      createElement(
+        SurfaceFocusBoundaryContext.Provider,
+        {value: phase => isolatedFocusEvents.push(phase)},
+        createElement(
+          RenderProvider,
+          {
+            ...unusedRenderProviderBindings,
+            stateSource: isolatedSource.stateSource,
+            uiCatalog: createUiCatalog([]),
+            rendererCatalog: createRendererCatalog([]),
+            logger: createLogger(),
+            selectBusinessInterlockActive: () => true,
+            renderBusinessInterlock: () => createElement(View, {testID: 'business-interlock'}),
+          },
+          createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'main'}),
+        ),
+      ),
+    );
+    expect(isolatedRenderer.getByTestId('business-interlock')).toBeDefined();
+    await waitFor(() => expect(isolatedFocusEvents).toContain('suspend'));
+    await isolatedRenderer.unmount();
+  });
+
   it('does not leave a backdrop or empty layer for a placement unavailable in the current form', async () => {
     const source = createSource();
     source.setRoot(rootWithStaleLayer());

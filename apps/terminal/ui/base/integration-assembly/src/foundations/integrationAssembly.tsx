@@ -24,6 +24,7 @@ import {
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
+import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {
   createUiCatalog,
   createUiStateModule,
@@ -218,6 +219,8 @@ export type IntegrationAssemblyInput<TReadyPayload extends StateJsonValue> = Rea
     }>,
   ) => readonly RuntimeModule[];
   readonly renderChildren?: () => ReactNode;
+  readonly selectBusinessInterlockActive?: (root: StateRoot) => boolean;
+  readonly renderBusinessInterlock?: () => ReactNode;
 }>;
 
 export const createStateSource = (runtime: Runtime): RenderProviderProps['stateSource'] =>
@@ -766,6 +769,8 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
         layerDismissals={input.layerDismissals}
         selectUiVariable={selectUiVariable}
         selectSurfaceForm={selectSurfaceForm}
+        selectBusinessInterlockActive={input.selectBusinessInterlockActive}
+        renderBusinessInterlock={input.renderBusinessInterlock}
       >
         <SurfaceRoot
           displayMode={surface.displayMode}

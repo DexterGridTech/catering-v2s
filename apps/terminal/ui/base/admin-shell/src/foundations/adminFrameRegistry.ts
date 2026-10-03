@@ -206,6 +206,7 @@ const portCategoryControls = Object.freeze(
 
 const portsOverviewControls = Object.freeze([
   ...laptopPanelControls,
+  adminTestIds.ports.contentRoot,
   'admin.console.platform-ports:scroll',
   adminTestIds.ports.title,
   adminTestIds.ports.overallStatus,
@@ -220,6 +221,7 @@ const portsOverviewControls = Object.freeze([
 
 const portsMobileOverviewControls = Object.freeze([
   ...mobilePanelControls,
+  adminTestIds.ports.contentRoot,
   'admin.console.platform-ports:scroll',
   adminTestIds.ports.title,
   adminTestIds.ports.overallStatus,
@@ -234,6 +236,7 @@ const portsMobileOverviewControls = Object.freeze([
 
 const runtimeLaptopControls = Object.freeze([
   ...laptopPanelControls,
+  adminTestIds.runtime.contentRoot,
   'admin.console.runtime:scroll',
   adminTestIds.runtime.title,
   adminTestIds.runtime.overallStatus,
@@ -261,6 +264,7 @@ const runtimeLaptopControls = Object.freeze([
 
 const runtimeMobileBaseControls = Object.freeze([
   ...mobilePanelControls,
+  adminTestIds.runtime.contentRoot,
   'admin.console.runtime:scroll',
   adminTestIds.runtime.title,
   adminTestIds.runtime.overallStatus,
@@ -313,13 +317,14 @@ const portsExpandedItemControls = Object.freeze(
 
 const topologyLaptopBaseControls = Object.freeze([
   ...laptopPanelControls,
+  adminTestIds.topology.contentRoot,
   adminTestIds.topology.scroll,
   adminTestIds.topology.title,
 ]);
 
 const topologyMobileControls = Object.freeze([
   ...mobilePanelControls,
-  adminTestIds.topology.section,
+  adminTestIds.topology.contentRoot,
   adminTestIds.topology.scroll,
   adminTestIds.topology.title,
   adminTestIds.topology.pageGate,

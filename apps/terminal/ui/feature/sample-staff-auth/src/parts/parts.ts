@@ -5,12 +5,37 @@ import {AuthSystemNotice as LaptopAuthSystemNotice} from '../components/laptop/A
 import {AuthSystemNotice as MobileAuthSystemNotice} from '../components/mobile/AuthSystemNotice';
 import {StaffLogin as LaptopStaffLogin} from '../components/laptop/StaffLogin';
 import {StaffLogin as MobileStaffLogin} from '../components/mobile/StaffLogin';
+import {LmsAuthGuide as LaptopLmsAuthGuide, LspAuthGuide as LaptopLspAuthGuide} from '../components/laptop/AuthGuide';
+import {LmsAuthGuide as MobileLmsAuthGuide, LspAuthGuide as MobileLspAuthGuide} from '../components/mobile/AuthGuide';
 import {dispatchAuthSystemFailureDismissal} from '../foundations/systemFailureDismissal';
 
 const primary = ['PRIMARY'] as const;
 const mainContainer = ['main'] as const;
 const main = ['MAIN'] as const;
 const master = ['MASTER'] as const;
+const slave = ['SLAVE'] as const;
+
+const lmsGuidePair = definePartPair({
+  partKey: 'sample.auth.guide.lms',
+  containerKeys: mainContainer,
+  displayModes: ['SECONDARY'] as const,
+  workspaces: main,
+  instanceModes: slave,
+  title: '主屏登录引导',
+  description: '主机店员尚未登录时在副机显示只读引导',
+  components: {laptop: LaptopLmsAuthGuide, mobile: MobileLmsAuthGuide},
+});
+
+const lspGuidePair = definePartPair({
+  partKey: 'sample.auth.guide.lsp',
+  containerKeys: mainContainer,
+  displayModes: ['PRIMARY'] as const,
+  workspaces: ['BRANCH'] as const,
+  instanceModes: slave,
+  title: '主机登录引导',
+  description: '副机店员尚未获得主机登录资格时显示只读引导',
+  components: {laptop: LaptopLspAuthGuide, mobile: MobileLspAuthGuide},
+});
 
 const loginPair = definePartPair({
   partKey: 'sample.auth.login',
@@ -48,6 +73,10 @@ const systemNoticePair = definePartPair({
 });
 
 export const parts = Object.freeze([
+  lmsGuidePair.laptop,
+  lmsGuidePair.mobile,
+  lspGuidePair.laptop,
+  lspGuidePair.mobile,
   loginPair.laptop,
   loginPair.mobile,
   noticePair.laptop,

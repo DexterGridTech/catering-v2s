@@ -3,7 +3,7 @@ import {describe, expect, it, vi} from 'vitest';
 import {
   activateTerminalCommand,
   cancelTerminalOfflineCommand,
-  cancelTerminalOnlineCommand,
+  cancelTerminaActivationCommand,
   connectTerminalCommand,
   disconnectTerminalCommand,
   initializeTerminalDataClientCommand,
@@ -28,7 +28,120 @@ import type {ActorExecutionContext, CommandDefinition} from '@catering-v2s/kerne
 import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import type {TransportConnectionEvent} from '@catering-v2s/kernel-base-transport';
 
+const actorState = (clientState: unknown, instanceMode: 'MASTER' | 'SLAVE' = 'MASTER'): StateRoot =>
+  ({
+    [terminalDataClientStateSlice.name]: clientState,
+    'kernel.base.runtime.instance-mode': {instanceMode},
+  }) as StateRoot;
+
 describe('terminal-data-client activation command actor', () => {
+  it('blocks SLAVE credential actions but allows local disconnect cleanup without touching credentials', async () => {
+    const secret = 'A'.repeat(43);
+    let state = terminalDataClientReducer(undefined, {type: 'test/init'});
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'workspace-1',
+        terminalRef: 'terminal-1',
+        storeRef: 'store-1',
+        deviceId: 'device-1',
+        bindingGeneration: 8,
+        credentialSecret: secret,
+      }),
+    );
+    const transport = {
+      start: vi.fn(),
+      ready: vi.fn(),
+      invalid: vi.fn(),
+      stop: vi.fn(),
+      executeHttp: vi.fn(),
+      reportHttpAddressAvailable: vi.fn(),
+    };
+    const actor = createTerminalDataClientActor({
+      transport,
+      businessServerName: 'terminal-business-api',
+      createCredentialSecret: () => secret,
+      now: () => 1_000,
+      appVersion: '1.0.0',
+      surfaceForm: 'laptop',
+    });
+    const findHandler = (commandName: string) => {
+      const handler = actor.actor.handlers.find(candidate => candidate.commandName === commandName);
+      if (handler === undefined) throw new Error(`terminal handler missing: ${commandName}`);
+      return handler;
+    };
+    const makeContext = (commandName: string, payload: unknown): ActorExecutionContext =>
+      ({
+        runtimeId: 'slave-runtime',
+        localNodeId: 'slave-node',
+        platformPorts: {device: {getDeviceInfo: vi.fn()}},
+        command: {commandName, payload, requestId: 'operation-1', commandId: 'slave-command'} as never,
+        actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
+        getState: () => actorState(state, 'SLAVE'),
+        dispatchAction: (action: unknown) => {
+          state = terminalDataClientReducer(state, action as never);
+          return action as never;
+        },
+        flushPersistence: async () => ({status: 'succeeded'}),
+        subscribeState: () => () => undefined,
+        dispatchCommand: async () => ({status: 'completed'}),
+        requestApplicationReset: vi.fn(),
+      }) as unknown as ActorExecutionContext;
+
+    expect(
+      await findHandler(initializeTerminalDataClientCommand.commandName).handle(
+        makeContext(initializeTerminalDataClientCommand.commandName, {}),
+      ),
+    ).toEqual({status: 'not-host'});
+    expect(
+      await findHandler(activateTerminalCommand.commandName).handle(
+        makeContext(activateTerminalCommand.commandName, {activationCode: '12345678'}),
+      ),
+    ).toMatchObject({
+      status: 'rejected',
+      reason: 'TERMINAL_CLIENT_HOST_ROLE_REQUIRED',
+    });
+    expect(
+      await findHandler(cancelTerminaActivationCommand.commandName).handle(
+        makeContext(cancelTerminaActivationCommand.commandName, {}),
+      ),
+    ).toMatchObject({
+      status: 'rejected',
+      reason: 'TERMINAL_CLIENT_HOST_ROLE_REQUIRED',
+    });
+    expect(
+      await findHandler(cancelTerminalOfflineCommand.commandName).handle(
+        makeContext(cancelTerminalOfflineCommand.commandName, {}),
+      ),
+    ).toMatchObject({
+      status: 'rejected',
+      reason: 'TERMINAL_CLIENT_HOST_ROLE_REQUIRED',
+    });
+    expect(
+      await findHandler(connectTerminalCommand.commandName).handle(makeContext(connectTerminalCommand.commandName, {})),
+    ).toMatchObject({
+      status: 'rejected',
+      reason: 'TERMINAL_CLIENT_HOST_ROLE_REQUIRED',
+    });
+
+    expect(
+      await findHandler(disconnectTerminalCommand.commandName).handle(
+        makeContext(disconnectTerminalCommand.commandName, {}),
+      ),
+    ).toEqual({
+      status: 'disconnected',
+    });
+    expect(selectActivationState(actorState(state, 'SLAVE'))).toMatchObject({
+      status: 'active',
+      terminalRef: 'terminal-1',
+    });
+    expect(state).toMatchObject({credential: {deviceId: 'device-1', credentialSecret: secret}});
+    expect(transport.start).not.toHaveBeenCalled();
+    expect(transport.executeHttp).not.toHaveBeenCalled();
+    expect(transport.stop).toHaveBeenCalledTimes(1);
+    actor.dispose();
+  });
+
   it('keeps the TypeScript close-reason set aligned with the shared protocol', () => {
     const protocol = JSON.parse(
       readFileSync(
@@ -81,6 +194,7 @@ describe('terminal-data-client activation command actor', () => {
         createCredentialSecret: () => secret,
         now: () => 1_000,
         appVersion: '1.0.0',
+        surfaceForm: 'laptop',
       });
       const handler = actor.actor.handlers.find(
         candidate => candidate.commandName === terminalTransportEventCommand.commandName,
@@ -97,7 +211,7 @@ describe('terminal-data-client activation command actor', () => {
           requestId: `close-${index}`,
         },
         actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
-        getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+        getState: () => actorState(state),
         dispatchAction: (action: unknown) => {
           state = terminalDataClientReducer(state, action as never);
           return action as never;
@@ -165,6 +279,7 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret,
       now: () => 100,
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     } as never;
     const actor = createTerminalDataClientActor(dependencies).actor;
     let state = terminalDataClientReducer(undefined, {type: 'test/init'});
@@ -178,16 +293,12 @@ describe('terminal-data-client activation command actor', () => {
       },
       command: {
         payload: {
-          operationId: 'operation-1',
-          groupWorkspaceKey: 'workspace-1',
           activationCode: '12345678',
-          surfaceForm: 'laptop',
-          appVersion: '1.0.0',
         },
-        requestId: null,
+        requestId: 'operation-1',
       },
       actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
-      getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+      getState: () => actorState(state),
       dispatchAction: (action: unknown) => {
         state = terminalDataClientReducer(state, action as never);
         return action as never;
@@ -199,7 +310,7 @@ describe('terminal-data-client activation command actor', () => {
     } as unknown as ActorExecutionContext;
 
     await handler.handle(context as never);
-    (context.command as unknown as {payload: {operationId: string}}).payload.operationId = 'operation-2';
+    (context.command as unknown as {requestId: string}).requestId = 'operation-2';
     const second = await handler.handle(context as never);
     const readback = selectActivationState({[terminalDataClientStateSlice.name]: state} as unknown as StateRoot);
     expect(submitted.length).toBe(2);
@@ -210,7 +321,7 @@ describe('terminal-data-client activation command actor', () => {
       profileId: 'terminal-data-client:http',
       serverName: 'terminal-business-api',
       method: 'POST',
-      pathAndQuery: '/api/terminal/group-workspaces/workspace-1/activation',
+      pathAndQuery: '/activation',
       headers: {},
     });
     expect(readback).toMatchObject({status: 'active', bindingGeneration: 2});
@@ -261,6 +372,7 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret,
       now: () => 100,
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     } as never);
     const actor = actorRuntime.actor;
     let state = terminalDataClientReducer(undefined, {type: 'test/init'});
@@ -274,17 +386,11 @@ describe('terminal-data-client activation command actor', () => {
         command: {
           commandName: activateTerminalCommand.commandName,
           commandId,
-          requestId: null,
-          payload: {
-            operationId,
-            groupWorkspaceKey: 'workspace-1',
-            activationCode: '12345678',
-            surfaceForm: 'laptop',
-            appVersion: '1.0.0',
-          },
+          requestId: operationId,
+          payload: {activationCode: '12345678'},
         } as never,
         actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
-        getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+        getState: () => actorState(state),
         dispatchAction: (action: unknown) => {
           state = terminalDataClientReducer(state, action as never);
           return action as never;
@@ -347,6 +453,7 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret,
       now: () => 100,
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     } as never);
     const actor = actorRuntime.actor;
     let state = terminalDataClientReducer(undefined, {type: 'test/init'});
@@ -362,17 +469,11 @@ describe('terminal-data-client activation command actor', () => {
         command: {
           commandName: activateTerminalCommand.commandName,
           commandId,
-          requestId: null,
-          payload: {
-            operationId: 'operation-mismatch',
-            groupWorkspaceKey: 'workspace-1',
-            activationCode,
-            surfaceForm: 'laptop',
-            appVersion: '1.0.0',
-          },
+          requestId: 'operation-mismatch',
+          payload: {activationCode},
         } as never,
         actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
-        getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+        getState: () => actorState(state),
         dispatchAction: (action: unknown) => {
           state = terminalDataClientReducer(state, action as never);
           return action as never;
@@ -395,14 +496,13 @@ describe('terminal-data-client activation command actor', () => {
     actorRuntime.dispose();
   });
 
-  it('rejects changed activation parameters across operation ids for the same business operation', async () => {
+  it('rejects a changed activation code under the same owner operation identity', async () => {
     const secret = 'D'.repeat(43);
     let state = terminalDataClientReducer(undefined, {type: 'test/init'});
     state = terminalDataClientReducer(
       state,
       terminalDataClientActions.setPendingActivation({
         operationId: 'operation-original',
-        groupWorkspaceKey: 'workspace-1',
         activationCode: '12345678',
         deviceId: 'device-1',
         surfaceForm: 'laptop',
@@ -425,6 +525,7 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret,
       now: () => 100,
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     } as never);
     const handler = actorRuntime.actor.handlers.find(
       candidate => candidate.commandName === activateTerminalCommand.commandName,
@@ -439,13 +540,9 @@ describe('terminal-data-client activation command actor', () => {
       command: {
         commandName: activateTerminalCommand.commandName,
         commandId: 'root-changed-params',
-        requestId: null,
+        requestId: 'operation-original',
         payload: {
-          operationId: 'operation-new',
-          groupWorkspaceKey: 'workspace-1',
-          activationCode: '12345678',
-          surfaceForm: 'tablet',
-          appVersion: '1.0.0',
+          activationCode: '87654321',
         },
       } as never,
       actor: {
@@ -453,7 +550,7 @@ describe('terminal-data-client activation command actor', () => {
         moduleName: actorRuntime.actor.moduleName,
         actorName: actorRuntime.actor.actorName,
       },
-      getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+      getState: () => actorState(state),
       dispatchAction: (action: unknown) => {
         state = terminalDataClientReducer(state, action as never);
         return action as never;
@@ -491,6 +588,7 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret: () => secret,
       now: () => 100,
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     });
     const actor = actorRuntime.actor;
     const handler = actor.handlers.find(candidate => candidate.commandName === activateTerminalCommand.commandName);
@@ -503,17 +601,11 @@ describe('terminal-data-client activation command actor', () => {
           device: {getDeviceInfo: async () => ({status: 'succeeded', value: {deviceId: 'device-1'}, completedAt: 1})},
         },
         command: {
-          payload: {
-            operationId,
-            groupWorkspaceKey: 'workspace-1',
-            activationCode,
-            surfaceForm: 'laptop',
-            appVersion: '1.0.0',
-          },
-          requestId: null,
+          payload: {activationCode},
+          requestId: operationId,
         },
         actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
-        getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+        getState: () => actorState(state),
         dispatchAction: (action: unknown) => {
           state = terminalDataClientReducer(state, action as never);
           return action as never;
@@ -597,9 +689,10 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret: () => secret,
       now: () => 100,
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     });
     const handler = actor.actor.handlers.find(
-      candidate => candidate.commandName === cancelTerminalOnlineCommand.commandName,
+      candidate => candidate.commandName === cancelTerminaActivationCommand.commandName,
     );
     if (handler === undefined) throw new Error('cancel terminal actor handler missing');
     const makeContext = (): ActorExecutionContext =>
@@ -608,12 +701,12 @@ describe('terminal-data-client activation command actor', () => {
         localNodeId: 'test-node',
         platformPorts: {},
         command: {
-          commandName: cancelTerminalOnlineCommand.commandName,
-          payload: {groupWorkspaceKey: 'workspace-1', terminalRef: 'terminal-1'},
+          commandName: cancelTerminaActivationCommand.commandName,
+          payload: {},
           requestId: 'cancel-request-1',
         },
         actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
-        getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+        getState: () => actorState(state),
         dispatchAction: (action: unknown) => {
           state = terminalDataClientReducer(state, action as never);
           return action as never;
@@ -635,7 +728,7 @@ describe('terminal-data-client activation command actor', () => {
       profileId: 'terminal-data-client:http',
       serverName: 'terminal-business-api',
       method: 'POST',
-      pathAndQuery: '/api/terminal/group-workspaces/workspace-1/terminals/terminal-1/activation/cancel',
+      pathAndQuery: '/terminals/terminal-1/activation/cancel',
       headers: {Authorization: `Terminal 8.${secret}`},
       body: {deviceId: 'device-1'},
       safeRetryable: true,
@@ -688,6 +781,7 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret: () => secret,
       now: () => 1_000,
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     });
     const makeContext = (commandName: string, payload: unknown): ActorExecutionContext =>
       ({
@@ -698,7 +792,7 @@ describe('terminal-data-client activation command actor', () => {
         },
         command: {commandName, payload, requestId: null, commandId: 'test-command'} as never,
         actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
-        getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+        getState: () => actorState(state),
         dispatchAction: (action: unknown) => {
           state = terminalDataClientReducer(state, action as never);
           return action as never;
@@ -780,6 +874,7 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret: () => secret,
       now: () => now,
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     });
     const makeContext = (commandName: string, payload: unknown): ActorExecutionContext =>
       ({
@@ -790,7 +885,7 @@ describe('terminal-data-client activation command actor', () => {
         },
         command: {commandName, payload, requestId: null, commandId: 'test-command'} as never,
         actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
-        getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+        getState: () => actorState(state),
         dispatchAction: (action: unknown) => {
           state = terminalDataClientReducer(state, action as never);
           return action as never;
@@ -934,6 +1029,7 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret: () => secret,
       now: () => 1_000,
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     } as never);
     const actor = actorRuntime.actor;
     const makeContext = (commandName: string, payload: unknown): ActorExecutionContext =>
@@ -943,7 +1039,7 @@ describe('terminal-data-client activation command actor', () => {
         platformPorts: {},
         command: {commandName, payload, requestId: null, commandId: 'connect-idempotency-test'} as never,
         actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
-        getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+        getState: () => actorState(state),
         dispatchAction: (action: unknown) => {
           state = terminalDataClientReducer(state, action as never);
           return action as never;
@@ -1052,6 +1148,7 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret: () => secret,
       now: () => Date.now(),
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     });
     const findHandler = (commandName: string) => {
       const handler = actorRuntime.actor.handlers.find(candidate => candidate.commandName === commandName);
@@ -1069,7 +1166,7 @@ describe('terminal-data-client activation command actor', () => {
           moduleName: actorRuntime.actor.moduleName,
           actorName: actorRuntime.actor.actorName,
         },
-        getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+        getState: () => actorState(state),
         dispatchAction: (action: unknown) => {
           state = terminalDataClientReducer(state, action as never);
           return action as never;
@@ -1166,6 +1263,7 @@ describe('terminal-data-client activation command actor', () => {
         createCredentialSecret: () => secret,
         now: () => 1_000,
         appVersion: '1.0.0',
+        surfaceForm: 'laptop',
       } as never);
       const findHandler = (commandName: string) => {
         const handler = actorRuntime.actor.handlers.find(candidate => candidate.commandName === commandName);
@@ -1184,7 +1282,7 @@ describe('terminal-data-client activation command actor', () => {
             moduleName: actorRuntime.actor.moduleName,
             actorName: actorRuntime.actor.actorName,
           },
-          getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+          getState: () => actorState(state),
           dispatchAction: (action: unknown) => {
             state = terminalDataClientReducer(state, action as never);
             return action as never;
@@ -1286,6 +1384,7 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret: () => secret,
       now: () => 1_000,
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     });
     const makeContext = (commandName: string, payload: unknown): ActorExecutionContext =>
       ({
@@ -1294,7 +1393,7 @@ describe('terminal-data-client activation command actor', () => {
         platformPorts: {logger},
         command: {commandName, payload, requestId: null, commandId: 'background-dispatch-test'} as never,
         actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
-        getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+        getState: () => actorState(state),
         dispatchAction: (action: unknown) => {
           state = terminalDataClientReducer(state, action as never);
           return action as never;
@@ -1387,6 +1486,7 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret: () => secret,
       now: () => 1_000,
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     });
     const makeContext = (commandName: string, payload: unknown): ActorExecutionContext =>
       ({
@@ -1395,7 +1495,7 @@ describe('terminal-data-client activation command actor', () => {
         platformPorts: {logger},
         command: {commandName, payload, requestId: null, commandId: 'heartbeat-dispatch-test'} as never,
         actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
-        getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+        getState: () => actorState(state),
         dispatchAction: (action: unknown) => {
           state = terminalDataClientReducer(state, action as never);
           return action as never;
@@ -1502,6 +1602,7 @@ describe('terminal-data-client activation command actor', () => {
       createCredentialSecret: () => secret,
       now: () => 1_000,
       appVersion: '1.0.0',
+      surfaceForm: 'laptop',
     });
     const makeContext = (commandName: string, payload: unknown): ActorExecutionContext =>
       ({
@@ -1510,7 +1611,7 @@ describe('terminal-data-client activation command actor', () => {
         platformPorts: {logger},
         command: {commandName, payload, requestId: null, commandId: 'heartbeat-deadline-test'} as never,
         actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
-        getState: () => ({[terminalDataClientStateSlice.name]: state}) as StateRoot,
+        getState: () => actorState(state),
         dispatchAction: (action: unknown) => {
           state = terminalDataClientReducer(state, action as never);
           return action as never;

@@ -53,7 +53,7 @@ const requireLayerTier = <TProps extends RenderComponentProps>(input: DefinePart
     throw new Error('[ui-base-render] layerTier must not be explicitly undefined');
   }
   const layerTier = input.layerTier ?? 'standard';
-  if (layerTier !== 'standard' && layerTier !== 'alert') {
+  if (layerTier !== 'standard' && layerTier !== 'alert' && layerTier !== 'admin') {
     throw new Error('[ui-base-render] layerTier is invalid');
   }
   return layerTier;

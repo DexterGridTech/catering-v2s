@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/ui-base-terminal-activation",
+  "owned": {
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/ui-base-terminal-activation",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/ui-base-terminal-activation",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
+  },
+  "ownerKind": "toolkit",
+  "publicExports": [
+    "ActivationCodeForm",
+    "ActivationGuide",
+    "ActivationStatusSection",
+    "createTerminalActivationModule",
+    "createTerminalActivationParts",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName",
+    "needToActivateTerminalCommand",
+    "selectActivationStatusView",
+    "runtimeModuleDependencyNames"
+  ]
+}

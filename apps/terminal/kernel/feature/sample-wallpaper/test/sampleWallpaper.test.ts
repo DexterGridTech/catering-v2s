@@ -1,11 +1,15 @@
 import {describe, expect, it} from 'vitest';
 import type {LoggerPort} from '@catering-v2s/kernel-base-platform-ports';
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
+import {releaseRuntimeForTestAsync, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing';
 import {createStateRuntime} from '@catering-v2s/kernel-base-state';
+import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {
   confirmWallpaperCommand,
+  cancelWallpaperSelectionCommand,
   createSampleWallpaperModule,
   selectPendingWallpaperId,
+  selectHostConfirmedWallpaperId,
   selectWallpaperCommand,
   selectWallpaperId,
 } from '../src/index';
@@ -20,6 +24,7 @@ describe('sample wallpaper owner module', () => {
     expect(module.commands?.map(command => [command.name, command.visibility])).toEqual([
       ['kernel.feature.sample-wallpaper.select-wallpaper', 'public'],
       ['kernel.feature.sample-wallpaper.confirm-wallpaper', 'public'],
+      ['kernel.feature.sample-wallpaper.cancel-wallpaper-selection', 'public'],
     ]);
     expect(module.actors?.map(actor => actor.name)).toEqual(['selection']);
     expect(module.slices).toEqual([
@@ -28,7 +33,46 @@ describe('sample wallpaper owner module', () => {
         persistIntent: 'owner-only',
       },
     ]);
+    expect(module.stateSlices?.[0]?.syncIntent).toBe('master-to-slave');
     expect(module.stateSlices?.[0]?.hasPersistence).toBe(true);
+  });
+
+  it('syncs the host confirmed wallpaper without replacing the slave pending choice', async () => {
+    const host = createTestRuntime([createSampleWallpaperModule()]);
+    const slave = createTestRuntime([createSampleWallpaperModule()]);
+    try {
+      await host.start();
+      await slave.start();
+      await host.dispatchCommand(selectWallpaperCommand, {wallpaperId: 'w2'}, {requestId: createRequestId()});
+      await host.dispatchCommand(confirmWallpaperCommand, {}, {requestId: createRequestId()});
+      await host.dispatchCommand(selectWallpaperCommand, {wallpaperId: 'w3'}, {requestId: createRequestId()});
+      await slave.dispatchCommand(selectWallpaperCommand, {wallpaperId: 'w1'}, {requestId: createRequestId()});
+
+      const payload = runtimeStateSyncForTest(host).createFullSyncPayload('kernel.feature.sample-wallpaper.selection');
+      expect(payload.status).toBe('ready');
+      if (payload.status !== 'ready') return;
+      expect(payload.payload.entries).toEqual([
+        expect.objectContaining({
+          key: 'state',
+          value: expect.objectContaining({value: {wallpaperId: 'w2'}}),
+        }),
+      ]);
+      expect(runtimeStateSyncForTest(slave).applyAuthoritativeSync('kernel.feature.sample-wallpaper.selection', payload.payload)).toMatchObject({status: 'applied'});
+      expect(selectWallpaperId(slave.getState())).toBe('none');
+      const slaveState = {
+        ...slave.getState(),
+        'kernel.base.runtime.instance-mode': {instanceMode: 'SLAVE'},
+      } as StateRoot;
+      expect(selectHostConfirmedWallpaperId(slaveState)).toBe('w2');
+      expect(slave.getState()['kernel.feature.sample-wallpaper.selection']).toMatchObject({
+        wallpaperId: 'none',
+        hostConfirmedWallpaperId: 'w2',
+      });
+      expect(selectPendingWallpaperId(slave.getState())).toBe('w1');
+    } finally {
+      await releaseRuntimeForTestAsync(host);
+      await releaseRuntimeForTestAsync(slave);
+    }
   });
 
   it('selects a valid wallpaper into pending without changing confirmed state', async () => {
@@ -86,6 +130,21 @@ describe('sample wallpaper owner module', () => {
     expect(result.status).toBe('completed');
     expect(selectWallpaperId(runtime.getState())).toBe('w2');
     expect(selectPendingWallpaperId(runtime.getState())).toBeUndefined();
+  });
+
+  it('cancels only the pending choice and preserves the confirmed wallpaper', async () => {
+    const runtime = createTestRuntime([createSampleWallpaperModule()]);
+    await runtime.start();
+    await runtime.dispatchCommand(selectWallpaperCommand, {wallpaperId: 'w2'}, {requestId: createRequestId()});
+    await runtime.dispatchCommand(confirmWallpaperCommand, {}, {requestId: createRequestId()});
+    await runtime.dispatchCommand(selectWallpaperCommand, {wallpaperId: 'w3'}, {requestId: createRequestId()});
+
+    const result = await runtime.dispatchCommand(cancelWallpaperSelectionCommand, {}, {requestId: createRequestId()});
+
+    expect(result.status).toBe('completed');
+    expect(selectWallpaperId(runtime.getState())).toBe('w2');
+    expect(selectPendingWallpaperId(runtime.getState())).toBeUndefined();
+    await releaseRuntimeForTestAsync(runtime);
   });
 
   it('rejects confirm without a different pending wallpaper with no state write or child command', async () => {

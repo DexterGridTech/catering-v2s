@@ -1,11 +1,27 @@
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {render} from '@testing-library/react-native';
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
+import {createRequestId} from '@catering-v2s/kernel-base-contracts';
+import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-client';
 import {createSampleAssembly as createProductionSampleAssembly, createSurfaceForDisplayIndex} from '../src';
-import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing';
+import {startupReadyCommand} from '../src/application/module';
+import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {createTestPlatformPorts, type TestPlatformPorts} from './support';
 import {queryRenderedTree} from '../../../../../../tools/terminal-shared/rntl-rendered-tree';
+import {
+  resetNativeTestRefFactory,
+  setNativeTestRefFactory,
+} from '../../../../../../tools/terminal-shared/rntl-native-test-host';
+
+vi.mock('react-native', async importOriginal => {
+  const actual = await importOriginal<typeof import('react-native')>();
+  const [{withNativeTestHosts}, reactRuntime] = await Promise.all([
+    import('../../../../../../tools/terminal-shared/rntl-native-test-host'),
+    import('react'),
+  ]);
+  return withNativeTestHosts(actual, reactRuntime);
+});
 
 type TestSampleAssemblyInput = Omit<
   Parameters<typeof createProductionSampleAssembly>[0],
@@ -18,6 +34,26 @@ type TestSampleAssemblyInput = Omit<
 const createSampleAssembly = (input: TestSampleAssemblyInput) =>
   createProductionSampleAssembly({
     ...input,
+    transportNetworkAdapterFactory:
+      input.transportNetworkAdapterFactory ??
+      (readSnapshot =>
+        Object.freeze({
+          readSnapshot,
+          connect: async () => {
+            throw new Error('WEBSOCKET_NOT_EXPECTED_IN_SAMPLE_CONSOLE_THEME_TEST');
+          },
+          sendHttp: async () =>
+            Object.freeze({
+              kind: 'response' as const,
+              status: 200,
+              body: Object.freeze({
+                terminalRef: 'terminal-theme-test',
+                storeRef: 'store-theme-test',
+                groupWorkspaceKey: 'workspace-theme-test',
+                bindingGeneration: 1,
+              }),
+            }),
+        })),
     nativeLoadingCapability: input.platformPorts.nativeLoadingCapability,
   });
 const requireFromTest = createRequire(import.meta.url);
@@ -93,12 +129,40 @@ describe('sample-console app theme wiring', () => {
   });
 
   it('renders the app surface through the primitive semantic token path', async () => {
+    setNativeTestRefFactory(hostName =>
+      hostName === 'View'
+        ? {
+            measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) =>
+              callback(0, 0, 1280, 720),
+          }
+        : {},
+    );
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts(),
+      platformPorts: createTestPlatformPorts({
+        deviceInfo: {
+          deviceId: 'DEVICE-SAMPLE-CONSOLE-THEME-TEST',
+          systemName: 'TEST',
+          systemVersion: '1',
+          logicalProcessorCount: 8,
+        },
+      }),
       persistenceKey: `sample-console-theme-test-${Date.now()}`,
       surfaceForm: 'laptop',
     });
     try {
+      const ready = await assembly.runtime.dispatchCommand(
+        startupReadyCommand,
+        {surfaceKey: 'PRIMARY', displayIndex: 0, readyPartKey: 'terminal.activation.lmp', contentFailure: null},
+        {requestId: createRequestId()},
+      );
+      expect(ready.status).toBe('completed');
+      const activation = await assembly.runtime.dispatchCommand(
+        activateTerminalCommand,
+        {activationCode: '00123456'},
+        {requestId: createRequestId()},
+      );
+      expect(activation.status).toBe('completed');
+      await new Promise(resolve => setTimeout(resolve, 0));
       const renderer = await render(createSurfaceForDisplayIndex(assembly, 0));
       const canvasNodes = queryRenderedTree(
         renderer,
@@ -109,7 +173,8 @@ describe('sample-console app theme wiring', () => {
       expect(canvasNodes.length).toBeGreaterThan(0);
       await renderer.unmount();
     } finally {
-      releaseRuntimeForTest(assembly.runtime);
+      resetNativeTestRefFactory();
+      await releaseRuntimeForTestAsync(assembly.runtime);
     }
   });
 });

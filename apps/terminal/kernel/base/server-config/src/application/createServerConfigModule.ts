@@ -17,7 +17,7 @@ import {defaultServiceNames, validateServerConfigDefaults} from '../foundations/
 export const createServerConfigModule = (defaults: TransportServerConfig): RuntimeModule => {
   validateServerConfigDefaults(defaults);
   const serviceNames = defaultServiceNames(defaults);
-  const slice = createServerConfigSlice({defaultSpace: defaults.selectedSpace, serviceNames});
+  const slice = createServerConfigSlice({defaults, serviceNames});
   const actor = createServerConfigActor(defaults, slice.actions);
   const commandDefinitions = [
     selectServerConfigSpaceCommand,

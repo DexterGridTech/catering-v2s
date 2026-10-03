@@ -16,16 +16,22 @@ import type {CommandDispatchResult, Runtime} from '@catering-v2s/kernel-base-run
 import {createRendererCatalog, RenderProvider, type RenderProviderProps} from '@catering-v2s/ui-base-render';
 import {createUiCatalog} from '@catering-v2s/kernel-base-ui-state';
 import {selectPendingWallpaperId, selectWallpaperId} from '@catering-v2s/kernel-feature-sample-wallpaper';
+import {logoutCommand} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {
   assetsById,
+  branchWallpaperOptionTestId,
+  branchWallpaperPickerTestIds,
   WallpaperBackground,
   wallpaperOptionSelectedCommand,
   confirmWallpaperRequestedCommand,
+  wallpaperPickerExitRequestedCommand,
   wallpaperOptionTestId,
   wallpaperPickerTestIds,
   sampleWallpaperPickerAssembly,
 } from '../src/index';
 import {WallpaperPicker} from '../src/components/laptop/WallpaperPicker';
+import {BranchWallpaperPicker} from '../src/components/laptop/BranchWallpaperPicker';
+import {WallpaperPicker as MobileWallpaperPicker} from '../src/components/mobile/WallpaperPicker';
 import {WallpaperSystemNotice} from '../src/components/laptop/WallpaperSystemNotice';
 import {WallpaperSystemNotice as MobileWallpaperSystemNotice} from '../src/components/mobile/WallpaperSystemNotice';
 import expectedW1 from '../assets/w1.jpg';
@@ -191,6 +197,54 @@ describe('sample wallpaper picker', () => {
         layerTier: 'alert',
         layerGuard: 'dismissible',
       }),
+      {
+        partKey: 'sample.wallpaper.branch.picker',
+        rendererKey: 'sample.wallpaper.branch.picker',
+        containerKeys: ['main'],
+        displayModes: ['PRIMARY'],
+        workspaces: ['BRANCH'],
+        instanceModes: ['SLAVE'],
+        title: '副机本地壁纸',
+        surfaceForm: ['laptop'],
+        layerTier: 'standard',
+        layerGuard: 'dismissible',
+      },
+      {
+        partKey: 'sample.wallpaper.home',
+        rendererKey: 'sample.wallpaper.home',
+        containerKeys: ['main'],
+        displayModes: ['PRIMARY'],
+        workspaces: ['MAIN'],
+        instanceModes: ['MASTER'],
+        title: '当前壁纸',
+        surfaceForm: ['laptop'],
+        layerTier: 'standard',
+        layerGuard: 'dismissible',
+      },
+      {
+        partKey: 'sample.wallpaper.branch.home',
+        rendererKey: 'sample.wallpaper.branch.home',
+        containerKeys: ['main'],
+        displayModes: ['PRIMARY'],
+        workspaces: ['BRANCH'],
+        instanceModes: ['SLAVE'],
+        title: '副机当前壁纸',
+        surfaceForm: ['laptop'],
+        layerTier: 'standard',
+        layerGuard: 'dismissible',
+      },
+      {
+        partKey: 'sample.wallpaper.host-display',
+        rendererKey: 'sample.wallpaper.host-display',
+        containerKeys: ['main'],
+        displayModes: ['SECONDARY'],
+        workspaces: ['MAIN'],
+        instanceModes: ['MASTER', 'SLAVE'],
+        title: '主机已确认壁纸',
+        surfaceForm: ['laptop'],
+        layerTier: 'standard',
+        layerGuard: 'dismissible',
+      },
     ]);
     expect(Object.keys(assetsById)).toEqual(['none', 'w1', 'w2', 'w3']);
     expect(assetsById.none).toBeUndefined();
@@ -272,6 +326,51 @@ describe('sample wallpaper picker', () => {
     const confirm = renderer.getByTestId(wallpaperPickerTestIds.confirm);
     expect(confirm.props.disabled).toBe(true);
     await renderer.unmount();
+  });
+
+  it('renders an independent SLAVE/BRANCH wallpaper page with local selectors and no logout affordance', async () => {
+    const calls: Array<Readonly<{name: string; payload: unknown}>> = [];
+    const renderer = await mount(
+      renderProvider(rootFor('w1', 'w2'), commandDispatch(calls), createElement(BranchWallpaperPicker)),
+    );
+    expect(renderer.getByTestId(branchWallpaperPickerTestIds.root)).toBeTruthy();
+    expect(renderer.getByTestId(branchWallpaperPickerTestIds.title).children).toContain('选择本机壁纸');
+    expect(queryRenderedTree(renderer, node => node.props.accessibilityRole === 'radio')).toHaveLength(4);
+    expect(renderer.getByTestId(branchWallpaperOptionTestId('w2')).props.accessibilityState.selected).toBe(true);
+    expect(renderer.getByTestId(branchWallpaperPickerTestIds.confirm).props.disabled).toBe(false);
+    expect(renderer.getByTestId(branchWallpaperPickerTestIds.exit)).toBeTruthy();
+    expect(queryRenderedTree(renderer, node => node.props.testID === wallpaperPickerTestIds.logout)).toHaveLength(0);
+
+    await fireEvent.press(renderer.getByTestId(branchWallpaperOptionTestId('w3')));
+    expect(calls).toEqual([
+      {name: wallpaperOptionSelectedCommand.commandName, payload: {wallpaperId: 'w3'}},
+    ]);
+    await fireEvent.press(renderer.getByTestId(branchWallpaperPickerTestIds.confirm));
+    expect(calls[1]).toEqual({name: confirmWallpaperRequestedCommand.commandName, payload: {}});
+    await renderer.unmount();
+  });
+
+  it('routes host MMP/LMP logout through the existing staff owner and keeps LSP exit separate', async () => {
+    for (const Component of [MobileWallpaperPicker, WallpaperPicker]) {
+      const calls: Array<Readonly<{name: string; payload: unknown}>> = [];
+      const renderer = await mount(renderProvider(rootFor('w1'), commandDispatch(calls), createElement(Component)));
+      await fireEvent.press(renderer.getByTestId(wallpaperPickerTestIds.logout));
+      expect(calls).toEqual([{name: logoutCommand.commandName, payload: {}}]);
+      if (Component === WallpaperPicker) {
+        await fireEvent.press(renderer.getByTestId(wallpaperPickerTestIds.exit));
+        expect(calls[1]).toEqual({name: wallpaperPickerExitRequestedCommand.commandName, payload: {}});
+      }
+      await renderer.unmount();
+    }
+
+    const branchCalls: Array<Readonly<{name: string; payload: unknown}>> = [];
+    const branchRenderer = await mount(
+      renderProvider(rootFor('w1'), commandDispatch(branchCalls), createElement(BranchWallpaperPicker)),
+    );
+    await fireEvent.press(branchRenderer.getByTestId(branchWallpaperPickerTestIds.exit));
+    expect(branchCalls).toEqual([{name: wallpaperPickerExitRequestedCommand.commandName, payload: {}}]);
+    expect(queryRenderedTree(branchRenderer, node => node.props.testID === wallpaperPickerTestIds.logout)).toHaveLength(0);
+    await branchRenderer.unmount();
   });
 
   it('does not dispatch a kernel change command for the same effective option or a disabled confirm', async () => {

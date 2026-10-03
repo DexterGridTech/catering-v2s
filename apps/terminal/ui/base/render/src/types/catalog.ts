@@ -1,6 +1,6 @@
 import type {ComponentType} from 'react';
 
-export type LayerTier = 'standard' | 'alert';
+export type LayerTier = 'standard' | 'alert' | 'admin';
 export type LayerGuard = 'dismissible' | 'decisive';
 
 type RenderComponentProps = object;

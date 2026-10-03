@@ -28,6 +28,26 @@
     }
   },
   "showAdminPassword": true,
+  "serverSpaces": {
+    "selectedSpace": "development",
+    "spaces": [
+      {
+        "name": "development",
+        "servers": [
+          {
+            "serverName": "business",
+            "addresses": [
+              {
+                "addressName": "primary",
+                "baseUrl": "http://127.0.0.1:7890/api/terminal/group-workspaces/mixc",
+                "timeoutMs": 10000
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
   "dependencies": {
     "@catering-v2s/application-base-android": "workspace:*",
     "@catering-v2s/ui-base-input": "workspace:*",

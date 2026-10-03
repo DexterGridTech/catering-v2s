@@ -7,22 +7,23 @@ BUSINESS_SOURCE=doc/plans/platform/2026-10-02-ter-terminal-activation-interactio
 JOURNEY=doc/decisions/2026-10-02-ter-terminal-activation-interaction-pair-topology-journey-codex.md
 IA=doc/decisions/2026-10-02-ter-terminal-activation-interaction-pair-topology-ia-codex.md
 INTERACTION=doc/decisions/2026-10-02-ter-terminal-activation-interaction-pair-topology-ui-interaction-codex.md
-IMPLEMENTATION_AUTHORITY=false
-AUTHORIZED=本轮仅详设、计划、Journey、IA、交互与测试方案；源码、生成、构建、测试、verify、DEV、reset/seed、L2、UAT、部署均未授权
-ALL_DYNAMIC_STATUS=NOT_RUN
+IMPLEMENTATION_AUTHORITY=true
+AUTHORIZED=Dexter于2026-10-03当前会话授权最小文档修正、批次全范围实施、生成/构建/测试/verify、受管DEV、Expo Web和VM/adapter动态验收；排除Browser L2、reset/seed、UAT、生产部署、生产HA与范围外功能
+ALL_DYNAMIC_STATUS=IN_PROGRESS
 REVIEW_CYCLE_ID=TER-ACTIVATION-INTERACTION-PAIR-TOPOLOGY-DESIGN-2026-10-02
 
-计划仅供后续实施派工，不能被解释为当前运行授权。
+本计划按当前Dexter授权执行；详设与计划中的动态步骤不扩展其边界。DEV start/restart不隐式seed。
 
 ## 1 · 实施纪律
 
-实施如另获授权，先重开原始需求、适用详设、IA、screen线框、memory六维命中原文、该CP owning source与可复用源码；每个实际变更点写入前后都逐条回读同一组输入并做同根盘点与focused proof。全部代码、测试、脚本、文档由主agent写；独立子agent只做read-only阶段对账和最终对抗review。不得动批次外Android app功能，除本批serverSpaces接线、测试/testId所必需的具名文件。
+本次实施先重开原始需求、适用详设、IA、screen线框、memory六维命中原文、该CP owning source与可复用源码；每个实际变更点写入前后都逐条回读同一组输入并做同根盘点与focused proof。全部代码、测试、脚本、文档由主agent写；独立子agent只做read-only阶段对账和最终对抗review。不得动批次外Android app功能，除本批serverSpaces接线、测试/testId所必需的具名文件。
 
 每个完整CP完成全部修改、focused proof和修复后，fresh reviewer做该CP三维对账，结果MATCHED方可进入下一CP。全部CP之后做单独全批6b，MATCHED后才开始整体验收。动态期间保留首败、日志、当前bytes、business与cleanup；failureCategory第二次出现冻结该类后续运行，先根因修复并用同focused proof关到零复发，再继续，不换场景或盲重跑。
 
 ## 2 · RECALL 与预检
 
 每CP开工前必须重新读：
+
 - 原始正式需求的本CP R条款及V条款；
 - design §4的CP三列、§7同步事实、§9a文件全链、§11a场景；
 - Journey与该CP对应screen的IA/interaction；
@@ -37,8 +38,8 @@ REVIEW_CYCLE_ID=TER-ACTIVATION-INTERACTION-PAIR-TOPOLOGY-DESIGN-2026-10-02
 ### 步骤1：核实app配置声明和owner defaults形状
 
 - 现成能力：server-config/src/types/serverConfig.ts、validateServerConfigDefaults.ts、createServerConfigModule.ts；app packageJson读取先例为两Android platformPorts.ts及integration terminalSurfaces.ts。
-- 如何验证：对两个integration和两个Android package分别构造不同serverSpaces fixture；默认空间选择、非法配置拒绝、有效hydrated override不被defaults覆盖均能在owner/composition focused tests观察。
-- 无现成时实现形态：在每个app自己的package.json声明需求定义的serverSpaces闭集；composition读取并传入server-config defaults；配置owner验证；不合并app配置、不让kernel读UI package、不把service defaults写进hydrated state。
+- 如何验证：server-config owner focused tests 用独立 defaults fixture 观察默认选择、非法声明启动拒绝、合法 hydration 覆盖保留；并用畸形持久值证明无效 selectedSpace 回默认、无效 service override 与代理秘密形状被丢弃、有效 override 保留，脱敏 hydration log 记录 reset/drop 计数。两个 integration composition tests 各自观察省略参数时读取本包 package.json defaults、传入异值 fixture 时只暴露该 fixture 的空间集合。两个 Android `platformPorts.ts` 必须逐字传入各自 application package.json 的 `serverSpaces`，并通过各自 typecheck；获准的 application VM 场景再分别读取两个实际 application 的有效 server config，确认没有采用 integration defaults。不得把一条通用 owner test 冒充四个入口的运行证明。
+- 无现成时实现形态：在两个integration与两个Android application入口各自package.json声明本入口serverSpaces；composition读取并传入server-config defaults，入口配置不互相合并。主机继续从不可变package defaults读取默认值；既有server-config同步记录携带主机defaults、selectedSpace、overrides与代理密码，副机将主机defaults保存在`syncedHostDefaults`只读投影字段并以plain persistence缓存，不将它解释成副机package defaults或第二个可写配置owner。
 - 具体触及输入全集：sample-console/package.json、sample-wallpaper-console/package.json、sample-terminal/package.json、sample-wallpaper-terminal/package.json；其两个integration assembly及两个Android platformPorts.ts。
 
 ### 步骤2：确认proxy明文持久/同步与config public commands
@@ -52,12 +53,12 @@ REVIEW_CYCLE_ID=TER-ACTIVATION-INTERACTION-PAIR-TOPOLOGY-DESIGN-2026-10-02
 
 - 现成能力：topology selectTopologyFacts、createTopologyStateSyncController按声明传full snapshot/revision；现有pair session identity。
 - 如何验证：同步成功时读到当前peer的required slices与revision；断连、apply失败、换peer后，旧revision/current peer混配不会成为ready。
-- 无现成时实现形态：在既有topology-owned同步状态中记录当前连接身份已应用的具名所需业务slice/revision，输出一个selector给stage/actor；不加事件总线、常态轮询或多源ready cache。
+- 无现成时实现形态：topology owner 的瞬态 state 记录 `peerStateSyncConnectionId` 与按 sliceName 索引的 `peerAppliedStateSyncRevisions`，由 `selectTopologyRequiredProjectionsReady(state, requiredSliceNames)` 判定；controller仅在当前已接纳连接的完整快照成功 apply 后提交该连接/slice/revision。新连接、断连和 peer 替换清空记录，迟到旧连接帧忽略。该 selector 的必需 slice 清单由 CP-04 composition 提供，不另建轮询或第二 ready cache。
 - 同根检索：两个integration的stateSyncSlices声明、topology apply/revision/connection close路径、现有测试夹具。把具体required slice全集列入CP实现记录并锁定后才通过。
 
 ### CP-01 退出
 
-focused defaults/projection测试通过；package类型/文档/invariant同步完成；CP-01三维对账MATCHED。
+server-config owner defaults/projection 与 hydrated invalid-state focused tests 通过；两个 integration composition tests 通过；两个 Android wrapper 分别传入各自 package.json 的 `serverSpaces` 并通过 typecheck；四入口 README、package/invariant graph 同步完成；CP-01 三维对账 MATCHED。Android application 的实际运行期有效配置仍由 V-07 的受管 VM 场景核验，不以本阶段 typecheck 冒充。
 
 ## 4 · CP-02 终端激活UI和status tab
 
@@ -72,19 +73,19 @@ focused defaults/projection测试通过；package类型/文档/invariant同步�
 
 - 现成能力：`contracts/openapi-source`、edge catalog、`scripts/generate/r5-edge-materialize.mjs`、`scripts/generate/edge-codegen.mjs`、`scripts/generate/terminal-client-api.mjs`及`contracts/policy/terminal-client-generation.json`。
 - 如何验证：按当前生成入口产物可重现；只为activate/cancel两个terminal operation生成去掉canonical group-workspaces前缀的operation suffix；其它consumer route不变。URL fixture逐字节断言baseUrl path、suffix、query和编码参数，断言client command/actor没有server-config selector/state访问。
-- 无现成时实现形态：canonical仍保留完整route；terminal生成policy显式选中这两个operation并只影响terminal consumer生成片；不得手改generated文件或改变后台operation。激活command输入仅含8位activationCode及由client owner生成的操作身份；取消command不接收groupWorkspaceKey、URL或prefix。generated代码负责operation suffix及path/query参数编码；client只序列化operation参数。composition注入server-config公开provider到transport network adapter；adapter每次请求按当前selected service space选择地址并把suffix追加到`addresses[].baseUrl`。client不读server-config、不解析URL、不重建集团编码。凭证中的groupWorkspaceKey、terminalRef、storeRef与generation仅取验证成功响应。
+- 无现成时实现形态：canonical仍保留完整route；terminal生成policy显式选中这两个operation并只影响terminal consumer生成片；不得手改generated文件或改变后台operation。激活command输入仅含8位activationCode及由client owner生成的操作身份；取消command不接收groupWorkspaceKey、terminalRef、URL或prefix；client从自身credential读取terminalRef填入generated path parameter。generated代码负责operation suffix及path/query参数编码；client只序列化operation参数。composition注入server-config公开provider到transport network adapter；adapter每次请求按当前selected service space选择地址并把suffix追加到`addresses[].baseUrl`。client不读server-config、不解析URL、不重建集团编码。凭证中的groupWorkspaceKey、terminalRef、storeRef与generation仅取验证成功响应。
 - 当前服务空间若不接纳已保存凭证，展示owner拒绝并保留凭证；不静默切回旧服务空间。
 
 ### 步骤2：cancel公开名与admin status screen
 
-- 现成能力：terminal-data-client现有cancelTerminalOnlineCommand和actor；selectors selectActivationState/selectConnectionState/selectConnectionLatency；admin-shell public adminShellAssembly、AdminSectionComponent、AdminLauncher。取消请求使用当前选中的服务空间配置；切换空间后按新地址请求，服务器拒绝则保留当前凭证并展示稳定原因。
-- 如何验证：通过status screen cancel后selector依次显示cancelling与terminal状态；slave direct command拒绝且不改变凭证；tab中不存在activate action；切换服务空间后真实HTTP fixture观察取消请求抵达新地址，拒绝不清凭证。
-- 无现成时实现形态：按需求公开拼写导出cancelTerminaActivationCommand并同步package index、README、invariants、所有consumer与测试；owner内部可以继续复用既有终止流程。
+- 现成能力：terminal-data-client现有cancelTerminalOnlineCommand和actor；selectors selectActivationState/selectConnectionState/selectConnectionLatency；topology的selectTopologyRequiredProjectionsReady按当前peer与apply revision判定；admin-shell public adminShellAssembly、AdminSectionComponent、AdminLauncher。取消请求使用当前选中的服务空间配置；切换空间后按新地址请求，服务器拒绝则保留当前凭证并展示稳定原因。
+- 如何验证：通过status screen cancel后selector依次显示cancelling与terminal状态；slave direct command拒绝且不改变凭证；tab中不存在activate action；切换服务空间后真实HTTP fixture观察取消请求抵达新地址，拒绝不清凭证；匹配当前peer的持久缓存断链时标记“上次主机状态（待同步）”，另一peer的缓存或无缓存时显示“主机状态待同步”，均不显示“未激活”或授权业务。
+- 无现成时实现形态：按需求公开拼写导出cancelTerminaActivationCommand并同步package index、README、invariants、所有consumer与测试；在terminal-data-client增加仅含激活展示摘要、连接展示摘要、最新RTT和sourceNodeId的`terminal-data-client.status-projection`切片，以plain owner persistence保存host摘要并按`master-to-slave`同步；原credential/pending client slice继续isolated。由client actor从已有selectors刷新安全投影，两个composition显式纳入state sync；SLAVE仅显示sourceNodeId匹配当前peer的缓存，当前peer revision已apply时标记为当前，否则显示“上次主机状态（待同步）”；无同host缓存时显示“主机状态待同步”。此缓存只用于状态显示，不授予业务资格。投影不含凭证秘密、deviceId、activationCode、pending或RTT历史。
 - 不在组件解读TDS business reason；仅显示client owner映射后的稳定错误。
 
 ### CP-02 focused/静态proof
 
-端面matrix ACT-01..04; response loss/并发/配置变化由client owner focused；screen展示错误状态由UI tests。确认generated API的canonical→materialize→edge-codegen→client链未手改产物。
+端面matrix ACT-01..04；response loss/并发/配置变化由client owner focused；status projection测试证明credential/pending slice不可同步、safe summary可持久/同步、只消费匹配当前peer身份的缓存并在未ready时标旧，不回退inactive；以持久化SLAVE状态恢复且故意残留本地credential，运行client initialize并断言无HTTP/WS，ACT引导不得将该隔离本地凭证显示为成功；SLAVE激活、取消、离线取消、connect命令拒绝，不清credential且不触网。disconnect是本地teardown例外：允许清本机连接/transport资源，但不得开始连接、发HTTP或更改credential及host status projection。screen展示错误状态由UI tests。确认generated API的canonical→materialize→edge-codegen→client链未手改产物。
 
 ## 5 · CP-03 admin layer 与server-config-panel
 
@@ -124,10 +125,10 @@ admin-shell单测覆盖主primary、同runtime secondary、slave primary的open/
 
 ### 步骤2：current peer同步ready与迟到event
 
-- 现成能力：当前topology session/peer accepted与state sync revision；resolveTopologyCommandTarget提供明确peer/local路线。
+- 现成能力：当前topology session/peer accepted与state sync revision；`selectStateSyncSlices`只接受composition显式传入的owner `stateSlices`；resolveTopologyCommandTarget提供明确peer/local路线。CP-04实际接入的owner slices为staff qualification、member confirmed list及（壁纸sample）host confirmed wallpaper。
 - 如何验证：两个app实例接受peer后但projection未apply时仍block；前一个peer迟到full-state不能满足新identity；当前session断连后ready立刻失效。
-- 无现成时实现形态：用topology owner的current connection id + registered required sync revisions创建单一readiness selector；仅在所有本批明确需要的slice由当前peer apply之后ready。不新增ready轮询/泛化框架。
-- required slice全集按composition逐项列出：ui-state placement、staff qualification、member confirmed list、当前peer绑定的hostPendingProjection（含operationId，仅双机LMS需要）、wallpaper host confirmed（仅适用面）；config projection另供admin只读/HTTP；terminal credential永远不列。投影apply只更新members与hostPendingProjection，必须保留slave branchPending。单机LMS(MASTER+SECONDARY)从同一runtime读取hostPending并本地调用owner；双机LMS由SLAVE+VICE承载，只消费当前peer身份的投影，确认/拒绝携带operationId并显式target=peer回MASTER owner。
+- 无现成时实现形态：用topology owner的current connection id + registered required sync revisions创建单一readiness selector；每个integration在`stateSyncSlices`中传入owner真实声明，并以current peer applied revision解锁。不新增ready轮询/泛化框架。staff投影只传status/operatorName且不覆盖SLAVE本机会话；member投影只传confirmed members且保留branchPending；壁纸投影只更新SLAVE的hostConfirmedWallpaperId且保留本地wallpaperId/pending。
+- required slice全集按composition逐项列出：两个app均含ui-state MAIN placement与staff qualification；sample-console另含member registry slice；sample-wallpaper-console另含host-confirmed wallpaper slice。CP-05把含`operationId`的`hostPendingProjection`放入既有member registry slice，因此承载LMS的required set继续使用已登记的`memberSliceName`，不新增第二个slice名称或readiness项；需由owner focused proof验证同一slice的投影值与`branchPending`隔离，再由composition proof确认该slice仍在当前peer required set。config projection另供admin只读/HTTP；TDC status projection仅用于ADMIN-01显示，current peer apply后标当前，未ready但sourceNodeId匹配时标为上次缓存，peer不匹配或无缓存时显示等待；terminal credential slice永远不列。单机LMS(MASTER+SECONDARY)从同一runtime读取hostPending并本地调用owner；双机LMS由SLAVE+VICE承载，只消费当前peer身份的投影，确认/拒绝携带operationId并显式target=peer回MASTER owner。
 
 ### 步骤3：local admin topology recovery
 
@@ -138,6 +139,12 @@ admin-shell单测覆盖主primary、同runtime secondary、slave primary的open/
 ### CP-04 proof
 
 focused topology controller/actor tests对disconnect、current identity replacement、迟到full snapshot；Expo Web覆盖普通mask交互；两真实实例VM证明adapter断连与本机恢复。
+
+当前执行记录：LayerStack focused test证明标准业务层 < business interlock < 本机admin层、interlock时业务层不进入accessibility tree、focus boundary保持suspended且admin层可见；两个integration composition tests分别证明 MASTER 不mask、SLAVE在当前peer/连接/required slice revision未ready时mask、全部所需slice apply后解除。受影响render/admin-shell/integration-assembly及两个integration的test/lint/typecheck均已运行通过；另运行staff-auth、member-desk、wallpaper-picker包测试与lint/typecheck，结果均通过。member-desk首跑因四个已启动runtime的`finally`同步调用`releaseRuntimeForTest`触发`ASYNC_RUNTIME_RESOURCES_REQUIRE_RELEASE_ASYNC`；根因为transport module按runtime契约注册异步cleanup，已改用现有`releaseRuntimeForTestAsync`，同一包测试复验通过。真实Expo Web、VM及adapter场景仍未运行，不能由上述focused证据替代。
+
+CP-04投影闭包修正记录：两composition此前漏把staff session（及壁纸composition的wallpaper owner）传给`selectStateSyncSlices`；staff slice原为isolated、wallpaper slice原为isolated；member slice原样发送完整state会把branch pending带上。现staff仅发送`{status,operatorName}`到`hostQualification`，SLAVE本机会话保留；member只发送confirmed members并保留SLAVE pending；wallpaper只把MASTER confirmed值写入SLAVE的`hostConfirmedWallpaperId`，不覆盖本地confirmed/pending。CP-04 fresh reviewer `/root/cp04_reconciliation_r2` 已按当时CP-04范围完成需求/详设与项目记忆三维复核并返回`STEP_RECONCILIATION=MATCHED`，只读报告见`doc/review/platform/2026-10-03-ter-terminal-activation-interaction-pair-topology-cp04-reconciliation-codex.md`。CP-05新增host pending projection仍落在既有member registry slice中；required set不增加slice身份，只需以当前peer的member-slice revision证明该投影已应用。
+
+当前字节复验：member-registry `1 file/10 tests PASS`；staff-session `1/8 PASS`；wallpaper owner `2/10 PASS`；sample-console `9/61 PASS`；sample-wallpaper-console `5/29 PASS`。以上owner/composition包typecheck均exit 0，lint均`0 errors/0 warnings`。member-registry首次断言把`SyncValueEnvelope`误写为裸value，发生同一focused failure family；对照state sync封套源码后改为断言`entry.value.value`，同一focused suite现通过。首败保留在CP-04 intake。
 
 ## 7 · CP-05 staff/member/wallpaper业务隔离
 
@@ -164,6 +171,8 @@ focused topology controller/actor tests对disconnect、current identity replacem
 
 domain focused tests优先证所有op identity和owner边界；Expo Web场景复用scripts/test/ter-admin-display-web.mjs现有业务功能，按业务域增加明确场景；device/machine-specific同场景用既有managed topology runner。缺少真实case时只增对应owner的case，不扩为通用registry。
 
+CP-05 focused 当前字节结果：`@catering-v2s/kernel-feature-sample-member-registry` 为1文件/13 tests PASS，typecheck与lint PASS；`@catering-v2s/ui-feature-sample-member-desk` 为2文件/36 tests PASS，typecheck与lint PASS；`@catering-v2s/ui-feature-sample-staff-auth` 为2文件/14 tests PASS，typecheck与lint PASS；`@catering-v2s/ui-feature-sample-wallpaper-picker` 为3文件/20 tests PASS，typecheck与lint PASS；wallpaper integration 为5文件/30 tests PASS，typecheck与lint PASS。member-desk路径覆盖SLAVE+CHIEF分支列表/本机草稿/同屏确认及host owner提交；staff-auth覆盖slave只读资格引导与禁止本机登录；壁纸feature覆盖LSP独立页面、退出与MMP/LMP既有logoutCommand。当前重跑原始命令、退出码、完整输出、源码指纹与范围边界见`doc/review/platform/2026-10-03-ter-terminal-activation-interaction-pair-topology-cp05-focused-proof-codex.md`及相邻`.log`；byte fingerprint为`89866d9fca4564c4a0be0e24fd40f89dba431be8f3f0163afe31ac4fd0785768`。上述为包级focused proof，不是Expo Web、VM或V-01～V-20运行证明。`hostPendingProjection`通过member registry既有slice同步，composition现有peer required slice名称不变；CP-05 fresh阶段三维对账MATCHED见`doc/review/platform/2026-10-03-ter-terminal-activation-pair-topology-cp05-reconciliation-codex.md`。
+
 ## 8 · CP-06 integration阶段路由与composition闭环
 
 ### 步骤1：唯一stage actor与双assembly消费
@@ -182,7 +191,7 @@ domain focused tests优先证所有op identity和owner边界；Expo Web场景复
 
 ### CP-06 proof
 
-两composition scenario tests与publicSurface/static dependency tests；复制同一webscenario set到两app test-expo，之后按TR-16执行VM同scenario。
+两composition scenario tests与publicSurface/static dependency tests。Web runner 的共享机械目录是 `scripts/test/ter-admin-display-web-contract.mjs::WEB_SCENARIOS`；可执行分母是 `scripts/test/ter-admin-display-web.test.mjs` 中完整的 integration/surface/failureOwner 准入矩阵。两个 `test-expo/App.tsx` 分别装配本 integration 的真实 assembly，按准入矩阵运行各自适用行；不得把所有通用 runner 场景复制到不承载该功能的另一 integration。该目录和矩阵只证明现有 Expo Web runner 的屏幕/键盘/平台端口场景，不冒充 V-01～V-20 业务验收。业务场景分母仍是详设 §11a 的 V-01～V-20；逐项使用同一 V-ID、业务断言和 cleanup，在适用 integration 的 Expo Web 先运行，再在对应 VM/application 拓扑运行；涉及 adapter 的行仅在对应 VM 单独证明。Web runner 准入矩阵用 `node --test scripts/test/ter-admin-display-web.test.mjs` 验证，业务 V 场景结果按全批 §11a 单独登记。
 
 ## 9 · 全CP之后的验收与交付前置
 
@@ -192,7 +201,7 @@ domain focused tests优先证所有op identity和owner边界；Expo Web场景复
 
 ### 9.2 动态步骤
 
-1. 本专项当前没有测试运行授权。未来实施授权后先检查资源、设备身份、run manifest、日志和cleanup；确保没有同一时间并发受管运行。
+1. 本专项已获DEV、Expo Web、虚拟机与适用adapter运行授权；首次执行前检查资源、设备身份、run manifest、日志和cleanup，确保没有同一时间并发受管运行。不得据此执行Browser L2、reset/seed、UAT或部署。
 2. 跑相关package的focused tests与静态type/test；修已知故障后才做场景级验收。
 3. 所有不依赖adapter行为先在两个integration Expo Web跑获批场景；完整记录scene id、source hash、设备/浏览器状态、业务断言和cleanup。
 4. Web通过后，以同一scenario ids先验四拓扑VM：MMP mobile host、LMP laptop primary host、LMS laptop secondary host、LSP独立slave primary；双机用两台不同身份VM，分场景连续使用，不要求四台同时启动。
@@ -224,4 +233,18 @@ domain focused tests优先证所有op identity和owner边界；Expo Web场景复
 
 ## 13 · 当前状态自证
 
-CP-01..06=DESIGN_ONLY；focused=NOT_RUN；Expo Web=NOT_RUN；VM/dual-device=NOT_RUN；managed cleanup=NOT_RUN；Browser L2=N/A_WITH_REASON；DEV/reset/seed/UAT/deploy=N/A_NOT_AUTHORIZED。详设与计划须一同接受独立REVIEW_TARGET=DESIGN。
+设计复评NO-GO历史字节边界保留；按本轮授权完成指定最小修订后直接进入实施，不重开已关闭DESIGN cycle。
+
+| 范围                                     | 当前状态                                         | 当前字节证据                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CP-01                                    | `MATCHED`                                        | CP-01 fresh 阶段级独立三维对账 `STEP_RECONCILIATION=MATCHED`，0 finding；reviewer 检查当前需求/详设/IA、四入口defaults接线、README、owner invalid-hydration test、raw logs与哈希。详见 `doc/review/platform/2026-10-03-ter-terminal-activation-pair-topology-cp01-finding-intake-codex.md`。Expo Web、Android VM、DEV、adapter 与 V-01～V-20 尚未由 CP-01 证明。                                                                 |
+| CP-02                                    | `MATCHED`                                        | Fresh阶段级独立三维对账由`/root/cp02_reconciliation_r2`完成，`CP02_RECONCILIATION=MATCHED`；终端完整静态门`node tools/terminal-skeleton/verify-static.mjs`以run ID `ter-local-static-21377-1790970009305`退出码0并报告`TERMINAL_STATIC=PASS`。Expo Web、VM/device、adapter、DEV、V-01～V-20仍未由本CP证明。详见`doc/review/platform/2026-10-03-ter-terminal-activation-interaction-pair-topology-cp02-finding-intake-codex.md`。 |
+| CP-03                                    | `MATCHED`                                        | Fresh独立阶段级三维对账`STEP_RECONCILIATION=MATCHED`；S-CP03-1确认并修复四个server-config公开命令的SLAVE owner准入，9项owner tests、60项sample-console tests、28项wallpaper-console tests通过；reviewer更正assembly路径后结论保持MATCHED。Expo Web/VM/DEV与整体验收未执行。详见`doc/review/platform/2026-10-03-ter-terminal-activation-interaction-pair-topology-cp03-finding-intake-codex.md`。 |
+| CP-04                                    | `MATCHED`                                        | focused tests、lint、typecheck及fresh独立三维对账均完成；required slices与两个composition的实际owner sync registrations闭合，投影保留branch-local state。member-desk首败与Async-release根因修复见CP-04 intake；fresh报告见`doc/review/platform/2026-10-03-ter-terminal-activation-interaction-pair-topology-cp04-reconciliation-codex.md`。Expo Web/VM/device/adapter仍NOT_RUN。 |
+| CP-05                                    | `MATCHED`                                        | fresh reviewer `/root/cp05_reconciliation_r2` 返回`STEP_RECONCILIATION=MATCHED`、0 finding；独立核验113/113 tests及当前源码fingerprint。focused原始命令/输出见`doc/review/platform/2026-10-03-ter-terminal-activation-interaction-pair-topology-cp05-focused-proof-codex.md`与相邻`.log`，三维对账见`doc/review/platform/2026-10-03-ter-terminal-activation-interaction-pair-topology-cp05-reconciliation-codex.md`。Expo Web/VM仍NOT_RUN。
+| CP-06                                    | `MATCHED`                                        | Fresh reviewer `/root/cp06_reconciliation_r5` 返回`STEP_RECONCILIATION=MATCHED`、无finding；当前源码、focused proof、四份原始日志哈希一致；两integration完整包typecheck/test及Web runner准入矩阵均PASS。Expo Web、VM/device、adapter、DEV与V-01～V-20动态验收均NOT_RUN。详见`doc/review/platform/2026-10-03-ter-terminal-activation-interaction-pair-topology-cp06-reconciliation-codex.md`及focused proof。 |
+| 全批 6b                                  | `MATCHED`                                        | Fresh reviewer `/root/whole_batch_6b_reconciliation_r1` 返回`6B_RECONCILIATION=MATCHED`、无finding；逐项核了需求、详设/Journey/IA、CP-01～CP-06阶段证据与执行面边界，详见`doc/review/platform/2026-10-03-ter-terminal-activation-interaction-pair-topology-6b-reconciliation-codex.md`。这是静态整体对账，不是动态验收。 |
+| Expo Web / VM / dual-device / adapter    | NOT_RUN                                          | 受管UI与虚拟机动态场景尚未执行。                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Browser L2 / reset / seed / UAT / deploy | N/A_WITH_REASON / NOT_AUTHORIZED                 | 本批明确排除。                                                                                                                                                                                                                                                                                                                                                                                                                   |
+
+CP-01首败保留与处置：topology owned test首先报告多个`ASYNC_RUNTIME_RESOURCES_REQUIRE_RELEASE_ASYNC`，测试改为await既有async release后同包40/40通过；readiness映射改为revision后，focused反例发现换连接未清revision，修复connection setter清空逻辑后同包40/40/typecheck/lint PASS；skeleton静态门发现两个integration package graph未登记server-config，补齐skeleton与dependency declarations后8/8 PASS；sample-console package surface测试发现expected dependency roster未更新，补齐后原suite 57/57 PASS。随后fresh CP-01 intake发现defaults composition proof、四入口 README 与原始运行证据不完整，新增两个 composition tests、更新五份 README 和阶段证据记录；当前 sample-console 58/58、sample-wallpaper-console 27/27。新增测试首次 typecheck 报 `TS2532`/`TS2339`，改为结构断言后 typecheck 与两包测试通过；首次 Prettier check 报 wallpaper test 格式错误，格式化后check通过。fresh CP-01 reconciliation 进一步发现 owner 没有无效持久配置恢复反例；新增用真实 state JSON codec 字节播种的测试，覆盖非法 selectedSpace 回默认、未知服务和代理秘密形状丢弃、合法 business override 保留并核验 reset/drop 日志计数。首轮测试因夹具错误地添加 `json:` 前缀而未能 hydration，按 `persistenceCodec.ts` 的原始 JSON 编码修正夹具；失败日志保留，最终 owner 7/7 与 lint PASS。所有首败均保留且没有改写为通过。

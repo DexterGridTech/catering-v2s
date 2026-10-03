@@ -9,7 +9,7 @@ import {
 } from '@catering-v2s/ui-base-render';
 import {useInputSnapshot} from '@catering-v2s/ui-base-input';
 
-export const useMemberForm = () => {
+export const useMemberForm = (inputPrefix = 'sample.desk.member-form') => {
   const dispatchCommand = useDispatchCommand();
   const pending = useUiStateSelector(selectPendingMember);
   const captureInputSnapshot = useInputSnapshot();
@@ -31,28 +31,27 @@ export const useMemberForm = () => {
   const submit = useCallback(async () => {
     if (requestInFlight) return;
     const snapshot = captureInputSnapshot();
-    const name = snapshot.fields['sample.desk.member-form:name']?.value ?? '';
-    const phone = snapshot.fields['sample.desk.member-form:phone']?.value ?? '';
+    const name = snapshot.fields[`${inputPrefix}:name`]?.value ?? '';
+    const phone = snapshot.fields[`${inputPrefix}:phone`]?.value ?? '';
     return trackedCommand.run({
       definition: submitMemberCommand,
       payload: {name, phone},
-      routeIntent: 'peer-intent',
       rejectionPolicy: 'RETHROW',
       onOutcome: (_result, outcome) => (outcome === 'system-failure' ? observeSystemFailure() : undefined),
       onRejected: () => observeSystemFailure(),
     });
-  }, [captureInputSnapshot, observeSystemFailure, requestInFlight, trackedCommand]);
+  }, [captureInputSnapshot, inputPrefix, observeSystemFailure, requestInFlight, trackedCommand]);
 
   const cancel = useCallback(() => {
     const snapshot = captureInputSnapshot();
-    const name = snapshot.fields['sample.desk.member-form:name']?.value ?? '';
-    const phone = snapshot.fields['sample.desk.member-form:phone']?.value ?? '';
+    const name = snapshot.fields[`${inputPrefix}:name`]?.value ?? '';
+    const phone = snapshot.fields[`${inputPrefix}:phone`]?.value ?? '';
     return dispatchWithRequestId({
       dispatchCommand,
       definition: memberFormCancelledCommand,
       payload: {dirty: name.trim().length > 0 || phone.trim().length > 0},
     });
-  }, [captureInputSnapshot, dispatchCommand]);
+  }, [captureInputSnapshot, dispatchCommand, inputPrefix]);
 
   return {
     nameInitialValue: pending?.name ?? '',

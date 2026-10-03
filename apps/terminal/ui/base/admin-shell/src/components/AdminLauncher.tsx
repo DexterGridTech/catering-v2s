@@ -110,7 +110,7 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
         isHostPrimaryDisplay: surface.isHostPrimaryDisplay,
         surfaceHostAvailability: surface.surfaceHostAvailability,
         hasAdminLayer,
-        handlerAttached: surface.isHostPrimaryDisplay && !hasAdminLayer,
+        handlerAttached: !hasAdminLayer,
       },
     });
   }, [
@@ -210,7 +210,6 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
     void dispatchWithRequestId({
       dispatchCommand,
       definition: openLayerCommand,
-      routeIntent: 'peer-intent',
       payload: {
         displayMode: surface.displayMode,
         layerId: ADMIN_CONSOLE_LAYER_ID,
@@ -225,7 +224,7 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
           data: {
             displayMode: surface.displayMode,
             displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
-            routeIntent: 'peer-intent',
+            target: 'local',
             status: result.status,
           },
         });
@@ -237,7 +236,7 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
             data: {
               displayMode: surface.displayMode,
               displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
-              routeIntent: 'peer-intent',
+              target: 'local',
               status: result.status,
               reason: 'command-not-completed',
             },
@@ -252,7 +251,7 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
           data: {
             displayMode: surface.displayMode,
             displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
-            routeIntent: 'peer-intent',
+            target: 'local',
           },
           error: {
             name: error instanceof Error ? error.name : 'UnknownError',
@@ -356,7 +355,6 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
     ],
   );
 
-  if (!surface.isHostPrimaryDisplay) return <>{children}</>;
   const launcherEventProps =
     typeof document === 'undefined'
       ? {onTouchEnd: hasAdminLayer ? undefined : handleLauncherEvent}

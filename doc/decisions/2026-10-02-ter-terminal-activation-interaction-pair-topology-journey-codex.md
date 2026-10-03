@@ -87,5 +87,5 @@ IMPLEMENTATION_FACING_DESIGN=IN_PROGRESS; DESIGN_AND_PLAN_REMAIN_SUBJECT_TO_INDE
 - 裁决：接受整体交互方向。
 - 精确范围：四面激活/登录；共享本机 admin 状态、配置、拓扑；副机断链时本地 admin 恢复；LSP 独立会员与壁纸；LMS 展示主机投影。
 - 已知前提：按正式需求 R-01～R-16 与本 Journey §2 的逐 actor 前提链；没有未决外部前提。
-- 未决项：R2 已按修订前字节完成独立静态复核；本轮 S-1 修订后的详设包交 Dexter 与 Claude 评审，逐屏运行与实现细节仍未验证。
+- 未决项：R2 已按修订前字节完成独立静态复核；S-1～S-6/N-1 已由主 agent intake 并作文档修订，当前完整设计包交 Dexter 与 Claude 独立静态复评；逐屏运行与实现细节仍未验证。
 - 后续允许动作：编写交互、IA、详设和实施计划；不含源码实施或动态验证授权。

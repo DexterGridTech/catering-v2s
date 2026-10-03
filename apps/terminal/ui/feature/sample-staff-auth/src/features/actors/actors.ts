@@ -18,12 +18,13 @@ import {
   loginFailedCommand,
   loginSucceededCommand,
   logoutSucceededCommand,
-  sessionRestoredAnonymousCommand,
 } from '@catering-v2s/kernel-feature-sample-staff-session';
+import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
 import {
   authNoticeDismissedCommand,
   authSystemFailureDismissedCommand,
   authSystemFailureObservedCommand,
+  needToLoginStaffCommand,
 } from '../commands/commands';
 import {moduleName} from '../../moduleName';
 import {operatorNameVariable} from '../variables/variables';
@@ -33,12 +34,26 @@ const primary = 'PRIMARY' as const;
 const isContentOwner = (context: ActorExecutionContext): boolean =>
   isCurrentWorkspaceOwnedByInstance(context.getState());
 
-const showLogin = (context: ActorExecutionContext) =>
-  context.dispatchCommand(showScreenCommand, {
-    displayMode: primary,
-    containerKey: 'main',
-    partKey: 'sample.auth.login',
-  });
+const showLoginStage = (context: ActorExecutionContext): Promise<unknown> => {
+  const route = context.command.routeContext;
+  if (route === null || route.displayMode === undefined || route.workspace === undefined || route.instanceMode === undefined)
+    return Promise.reject(new Error('[sample-staff-auth] login stage route context is incomplete'));
+
+  const partKey =
+    route.instanceMode === 'MASTER'
+      ? route.displayMode === 'PRIMARY'
+        ? 'sample.auth.login'
+        : null
+      : route.displayMode === 'PRIMARY' && route.workspace === 'BRANCH' && selectDisplayRole(context.getState()) === 'CHIEF'
+          ? 'sample.auth.guide.lsp'
+          : null;
+  if (partKey === null) return Promise.reject(new Error('[sample-staff-auth] login stage route is unavailable'));
+  return context.dispatchCommand(
+    showScreenCommand,
+    {displayMode: route.displayMode, containerKey: 'main', partKey},
+    {routeContext: route},
+  );
+};
 
 export const createAuthResultActor = (): ActorDefinition =>
   defineActor(moduleName, 'auth-result', [
@@ -56,15 +71,14 @@ export const createAuthResultActor = (): ActorDefinition =>
 
 export const createAuthNavigationActor = (): ActorDefinition =>
   defineActor(moduleName, 'auth-navigation', [
+    onCommand(needToLoginStaffCommand, async context => {
+      if (!isContentOwner(context)) return null;
+      await showLoginStage(context);
+      return null;
+    }),
     onCommand(logoutSucceededCommand, async context => {
       if (!isContentOwner(context)) return null;
       await context.dispatchCommand(clearLayersCommand, {displayMode: primary});
-      await showLogin(context);
-      return null;
-    }),
-    onCommand(sessionRestoredAnonymousCommand, async context => {
-      if (!isContentOwner(context)) return null;
-      await showLogin(context);
       return null;
     }),
     onCommand(loginSucceededCommand, async context => {

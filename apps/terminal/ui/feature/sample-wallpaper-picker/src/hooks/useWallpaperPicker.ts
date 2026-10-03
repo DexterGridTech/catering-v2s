@@ -1,12 +1,15 @@
 import {useCallback, useRef} from 'react';
 import {
   confirmWallpaperRequestedCommand,
+  wallpaperPickerExitRequestedCommand,
   wallpaperSystemFailureObservedCommand,
   wallpaperOptionSelectedCommand,
   type WallpaperSystemFailurePhase,
   type WallpaperSystemOperation,
 } from '../features/commands/commands';
+import {logoutCommand} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {
+  cancelWallpaperSelectionCommand,
   selectPendingWallpaperId,
   selectWallpaperId,
   type WallpaperId,
@@ -96,5 +99,38 @@ export const useWallpaperPicker = () => {
     return runAction({definition: confirmWallpaperRequestedCommand, payload: {}, operation: 'confirm'});
   }, [canConfirm, pending, runAction]);
 
-  return {confirmed, effective, requestInFlight, canConfirm, selectOption, confirm};
+  const logout = useCallback(() => {
+    if (requestInFlight) return undefined;
+    return trackedCommand.run({
+      definition: logoutCommand,
+      payload: {},
+      rejectionPolicy: 'RETHROW',
+      onOutcome: (_result, outcome) =>
+        outcome === 'system-failure' ? observeSystemFailure('logout', 'unknown-write-phase') : undefined,
+      onRejected: () => observeSystemFailure('logout', 'unknown-write-phase'),
+    });
+  }, [observeSystemFailure, requestInFlight, trackedCommand]);
+
+  const exit = useCallback(
+    async () => {
+      if (requestInFlight) return undefined;
+      const result =
+        pending === undefined
+          ? undefined
+          : await runAction({
+              definition: cancelWallpaperSelectionCommand,
+              payload: {},
+              operation: 'cancel',
+            });
+      if (pending !== undefined && result?.status !== 'completed') return result;
+      return dispatchWithRequestId({
+        dispatchCommand,
+        definition: wallpaperPickerExitRequestedCommand,
+        payload: {},
+      });
+    },
+    [dispatchCommand, pending, requestInFlight, runAction],
+  );
+
+  return {confirmed, effective, requestInFlight, canConfirm, selectOption, confirm, logout, exit};
 };

@@ -13,10 +13,17 @@ import {SystemFailureBoundary} from './SystemFailureBoundary';
 
 const SurfaceRootContent = ({children}: Readonly<{readonly children?: ReactNode}>) => {
   const presentationOffsetY = useSurfacePresentationOffset();
+  const {selectBusinessInterlockActive} = useRenderContext();
+  const interlockSelector = selectBusinessInterlockActive ?? alwaysInactiveInterlock;
+  const businessInterlockActive = useUiStateSelector(interlockSelector) ?? false;
   return (
     <View style={styles.content}>
       <SystemFailureBoundary ownerId="surface-content">
-        <Animated.View style={[styles.presentedContent, {transform: [{translateY: presentationOffsetY}]}]}>
+        <Animated.View
+          accessibilityElementsHidden={businessInterlockActive}
+          importantForAccessibility={businessInterlockActive ? 'no-hide-descendants' : 'auto'}
+          style={[styles.presentedContent, {transform: [{translateY: presentationOffsetY}]}]}
+        >
           {children}
           <ScreenContainer />
         </Animated.View>
@@ -27,6 +34,8 @@ const SurfaceRootContent = ({children}: Readonly<{readonly children?: ReactNode}
     </View>
   );
 };
+
+const alwaysInactiveInterlock = (): boolean => false;
 
 export const SurfaceRoot = ({
   displayMode,

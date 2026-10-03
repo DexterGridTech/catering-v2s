@@ -14,7 +14,8 @@
 通过同步快照读取。密码草稿不进入 runtime/store，认证业务失败时由登录部件清空。
 
 店员会话状态和领域结果命令仍由 `kernel/feature/sample-staff-session` 持有。本包
-只消费该 owner 协议。带 loading 生命周期的登录动作显式沿 tracked requestId 派发；
+只消费该 owner 协议，并公开 `needToLoginStaffCommand` 供 integration 按当前资格阶段
+请求主屏登录或副机只读引导；恢复会话事件不再自行导航。带 loading 生命周期的登录动作显式沿 tracked requestId 派发；
 其他 feature-owned public action 统一经 render 的 `dispatchWithRequestId` 生成 requestId。
 resolved 的 `SYSTEM`/timeout/partial failure 与 Promise rejection 统一观察为
 `auth.system-notice`，而已知认证业务失败仍走 `auth.notice`。本包不拥有业务 slice，
@@ -54,7 +55,7 @@ void authParts
 
 包根 @catering-v2s/ui-feature-sample-staff-auth 当前公开以下符号（含类型）：
 StaffAuthAssembly、dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、
-sampleStaffAuthAssembly。唯一 export-map 路径是 . → ./src/index.ts；包内实现深路径不是包级导入入口。
+needToLoginStaffCommand、sampleStaffAuthAssembly。唯一 export-map 路径是 . → ./src/index.ts；包内实现深路径不是包级导入入口。
 该清单与 terminal-invariants.json 的 publicExports / publicExportMap 及
 test/publicSurface.test.ts 对齐。
 

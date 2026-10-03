@@ -9,6 +9,8 @@
   "ownerKind": "owner",
   "publicExports": [
     "WallpaperBackground",
+    "branchWallpaperOptionTestId",
+    "branchWallpaperPickerTestIds",
     "WallpaperPickerAssembly",
     "WallpaperId",
     "WallpaperPickerCommandPayload",
@@ -23,6 +25,8 @@
     "sampleWallpaperPickerAssembly",
     "wallpaperOptionTestId",
     "wallpaperPickerTestIds",
+    "wallpaperPickerExitRequestedCommand",
+    "startWallpaperPickerCommand",
     "wallpaperOptionSelectedCommand"
   ],
   "publicExportMap": {

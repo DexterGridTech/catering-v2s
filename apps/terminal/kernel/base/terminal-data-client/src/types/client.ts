@@ -30,7 +30,6 @@ export type TerminalCredential = Readonly<{
 /** Current-JS-runtime retry context only; the activation operation ends on runtime restart. */
 export type PendingTerminalActivation = Readonly<{
   readonly operationId: string;
-  readonly groupWorkspaceKey: string;
   readonly activationCode: string;
   readonly deviceId: string;
   readonly surfaceForm: TerminalSurfaceForm;
@@ -80,18 +79,25 @@ export type TerminalClientState = Readonly<{
   readonly latencySamples: readonly TerminalLatencySample[];
 }>;
 
-export type ActivateTerminalPayload = Readonly<{
-  readonly operationId: string;
-  readonly groupWorkspaceKey: string;
-  readonly activationCode: string;
-  readonly surfaceForm: TerminalSurfaceForm;
-  readonly appVersion: string;
+/** Secret-free, current-host status shared read-only with a paired slave runtime. */
+export type TerminalClientStatusProjection = Readonly<{
+  readonly available: boolean;
+  readonly sourceNodeId: string | null;
+  readonly activation: TerminalActivationView | null;
+  readonly connection: TerminalConnectionView | null;
+  readonly lastRttMs: number | null;
+  readonly updatedAt: number;
 }>;
 
-export type CancelTerminalOnlinePayload = Readonly<{
-  readonly groupWorkspaceKey: string;
-  readonly terminalRef: string;
+export type TerminalClientStatusProjectionState = Readonly<{
+  readonly projection: TerminalClientStatusProjection;
 }>;
+
+export type ActivateTerminalPayload = Readonly<{
+  readonly activationCode: string;
+}>;
+
+export type CancelTerminaActivationPayload = Readonly<{}>;
 
 export type TerminalTransportEvent = TransportConnectionEvent;
 export type TerminalTransportConnection = TransportConnection;
@@ -101,8 +107,9 @@ export type TerminalTransportCommands = TransportCommandGateway;
 export type TerminalDataClientDependencies = Readonly<{
   readonly transport: TerminalTransportCommands;
   readonly businessServerName: string;
-  readonly createCredentialSecret: () => string;
+  readonly createCredentialSecret: () => string | Promise<string>;
   readonly now: () => number;
+  readonly surfaceForm: TerminalSurfaceForm;
   readonly appVersion: string;
 }>;
 

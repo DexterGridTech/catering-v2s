@@ -166,7 +166,7 @@ const part = <TProps extends object>(
     readonly partKey: string;
     readonly rendererKey: string;
     readonly component: ComponentType<TProps>;
-    readonly layerTier?: 'standard' | 'alert';
+    readonly layerTier?: 'standard' | 'alert' | 'admin';
     readonly layerGuard?: 'dismissible' | 'decisive';
     readonly containerKeys?: readonly string[];
     readonly surfaceForm?: readonly ('laptop' | 'mobile')[];
