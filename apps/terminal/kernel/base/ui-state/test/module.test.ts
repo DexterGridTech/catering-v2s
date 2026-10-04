@@ -9,6 +9,7 @@ describe('ui-state package boundary', () => {
       'clearLayersCommand',
       'clearUiVariablesCommand',
       'closeLayerCommand',
+      'contentStateSliceName',
       'createModuleUiVariableFactory',
       'createUiCatalog',
       'createUiStateModule',

@@ -18,10 +18,16 @@ import org.springframework.stereotype.Repository;
 public class OrganizationCommandPersistence {
     private final JdbcTemplate jdbc;
     private final OrganizationAuditEventWriter auditEvents;
+    private final OrganizationTerminalTopicSnapshotPersistence terminalTopics;
 
     public OrganizationCommandPersistence(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
         this.auditEvents = new OrganizationAuditEventWriter(jdbc);
+        this.terminalTopics = new OrganizationTerminalTopicSnapshotPersistence(jdbc);
+    }
+
+    public void notifyCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupUuid) {
+        terminalTopics.notifyExact(workspaceUuid, groupWorkspaceKey, "COMMERCIAL_GROUP", commercialGroupUuid);
     }
 
     public IdempotencyRow findInitializationIdempotency(UUID workspaceUuid, String idempotencyKey) {
@@ -178,11 +184,13 @@ public class OrganizationCommandPersistence {
                 result -> result.next() ? commercialGroupReadback(result, groupWorkspaceKey) : null);
     }
 
-    public UUID findCommercialGroupRef(String groupWorkspaceKey) {
+    public UUID findCommercialGroupRef(UUID workspaceUuid, String groupWorkspaceKey) {
         return jdbc.query(
-                OrganizationCommandServiceSql
-                        .ORGANIZATION_COMMAND_SERVICE_SELECT_COMMERCIAL_GROUP_COMMERCIAL_GROUP_UUID_GROUP_WORKSPACE_KEY,
-                statement -> statement.setString(1, groupWorkspaceKey),
+                OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_SELECT_SCOPED_COMMERCIAL_GROUP_REF,
+                statement -> {
+                    statement.setObject(1, workspaceUuid);
+                    statement.setString(2, groupWorkspaceKey);
+                },
                 result -> result.next() ? result.getObject(1, UUID.class) : null);
     }
 

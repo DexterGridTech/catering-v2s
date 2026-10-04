@@ -37,12 +37,7 @@ export const ConfigField = ({
       <PrimitiveLabel testID={`${fieldId}:label`} nativeID={fieldId}>
         {label}
       </PrimitiveLabel>
-      <PrimitiveInput
-        {...field.inputProps}
-        secureTextEntry={secure}
-        editable={editable}
-        appearance="admin"
-      />
+      <PrimitiveInput {...field.inputProps} secureTextEntry={secure} editable={editable} appearance="admin" />
     </>
   );
 };

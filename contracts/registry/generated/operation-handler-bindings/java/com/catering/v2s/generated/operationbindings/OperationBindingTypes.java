@@ -32,6 +32,21 @@ public final class OperationBindingTypes {
     private TerminalCredentialCommandContext() {}
   }
 
+  public record TerminalCredentialReadContext(
+      java.util.UUID workspaceUuid,
+      String groupWorkspaceKey,
+      java.util.UUID storeRef,
+      java.util.UUID terminalRef,
+      long bindingGeneration) {
+    public TerminalCredentialReadContext {
+      java.util.Objects.requireNonNull(workspaceUuid, "workspaceUuid");
+      java.util.Objects.requireNonNull(groupWorkspaceKey, "groupWorkspaceKey");
+      java.util.Objects.requireNonNull(storeRef, "storeRef");
+      java.util.Objects.requireNonNull(terminalRef, "terminalRef");
+      if (bindingGeneration < 1) throw new IllegalArgumentException("bindingGeneration is invalid");
+    }
+  }
+
   public static final class Wire {
     public record AuditHistoryPage() {}
     public record Brand() {}
@@ -312,6 +327,17 @@ public final class OperationBindingTypes {
     public record TerminalActivationCancellationResult() {}
     public record TerminalActivationRequest() {}
     public record TerminalActivationResult() {}
+    public record TerminalContractRead() {}
+    public record TerminalContractReadQuery(java.util.UUID contractRef) {}
+    public record TerminalServicePointAreaRead() {}
+    public record TerminalServicePointAreaReadQuery(java.util.UUID areaRef) {}
+    public record TerminalServicePointRead() {}
+    public record TerminalServicePointReadQuery(java.util.UUID pointRef) {}
+    public record TerminalStoreActiveContractsRead() {}
+    public record TerminalStoreBasicRead() {}
+    public record TerminalStoreOrganizationPathRead() {}
+    public record TerminalStoreServicePointAreasRead() {}
+    public record TerminalStoreServicePointsRead() {}
     public record WorkspaceAccount() {}
     public record WorkspaceAccountPage() {}
     public record WorkspaceAccountStatusTransitionRequest() {}

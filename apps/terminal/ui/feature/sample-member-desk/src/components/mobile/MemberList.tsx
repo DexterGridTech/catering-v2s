@@ -12,7 +12,10 @@ import {useMemberList} from '../../hooks/useMemberList';
 
 const mobileRootStyle = Object.freeze({flex: 1, minHeight: 0, width: '100%', paddingHorizontal: 8, gap: 3});
 
-export const MemberList = ({prefix = 'sample.desk.member-list', showLogout = true}: Readonly<{readonly prefix?: string; readonly showLogout?: boolean}>) => {
+export const MemberList = ({
+  prefix = 'sample.desk.member-list',
+  showLogout = true,
+}: Readonly<{readonly prefix?: string; readonly showLogout?: boolean}>) => {
   const list = useMemberList();
   return (
     <PrimitiveContainer testID={prefix} style={mobileRootStyle}>
@@ -31,11 +34,7 @@ export const MemberList = ({prefix = 'sample.desk.member-list', showLogout = tru
           getItemKey={member => member.memberId}
           rowHeight={64}
           renderItem={member => (
-            <MemberRow
-              testID={`${prefix}:row:${member.memberId}`}
-              name={member.name}
-              phone={member.phone}
-            />
+            <MemberRow testID={`${prefix}:row:${member.memberId}`} name={member.name} phone={member.phone} />
           )}
         />
       )}

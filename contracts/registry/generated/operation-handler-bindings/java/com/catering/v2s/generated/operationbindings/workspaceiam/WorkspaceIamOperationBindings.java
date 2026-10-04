@@ -248,7 +248,6 @@ public final class WorkspaceIamOperationBindings {
     };
   }
 
-
   public OperationBindingTypes.Wire.PublicInvitationAcceptIntent acceptPublicInvitation(OperationBindingTypes.PublicProtocolCommandContext context, OperationBindingTypes.Wire.NoBody request) {
     return adapters.acceptPublicInvitation(ACCEPT_PUBLIC_INVITATION_DESCRIPTOR, context, request);
   }

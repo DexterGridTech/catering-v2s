@@ -1,40 +1,75 @@
 {
   "paths": {
-    "/api/operations/external-capability-dictionary": {
-      "get": {
-        "operationId": "getOperationsExternalCapabilityDictionary",
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels": {
+      "post": {
+        "operationId": "createOperationsBusinessChannel",
         "tags": [
-          "collaboration"
+          "business-channel"
         ],
         "x-consumer-faces": [
           "operations-admin"
         ],
-        "x-owner-module": "collaboration",
+        "x-owner-module": "business-channel",
         "x-scenario-ids": [
           "R5-EXTERNAL-COLLABORATION"
         ],
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
-        "x-idempotency-policy": "FORBIDDEN",
+        "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
+          "BINDING_NOT_EFFECTIVE",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_STALE",
+          "DINE_IN_FORM_MISMATCH",
+          "DUPLICATE_CODE",
+          "ORDER_KIND_MISMATCH",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
           "PLATFORM_COMMON_CONTEXT_STALE",
           "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED",
+          "PROVIDER_NOT_ENABLED",
+          "VERSION_CONFLICT"
         ],
         "security": [
           {
             "operationsSessionCookie": []
           }
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Owner readback",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../components/collaboration/collaboration.schemas.json#/components/schemas/CapabilityDictionary"
+                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelView"
                 }
               }
             }
@@ -54,30 +89,163 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-capability": "REQ_CREATE_OPERATIONS_BUSINESS_CHANNEL",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelCreateRequest"
+              }
+            }
           }
         }
       }
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates": {
-      "get": {
-        "operationId": "getOperationsExternalProviderCandidates",
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates": {
+      "post": {
+        "operationId": "createOperationsBusinessChannelTemplate",
         "tags": [
-          "collaboration"
+          "business-channel"
         ],
         "x-consumer-faces": [
           "operations-admin"
         ],
-        "x-owner-module": "collaboration",
+        "x-owner-module": "business-channel",
+        "x-scenario-ids": [
+          "R5-EXTERNAL-COLLABORATION"
+        ],
+        "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_DUPLICATE",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_NOT_APPLICABLE",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED",
+          "BUSINESS_SCOPE_EXCEEDED",
+          "DINE_IN_FORM_MISMATCH",
+          "DUPLICATE_CODE",
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED",
+          "PROVIDER_NOT_ENABLED",
+          "VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-capability": "REQ_CREATE_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateCreateRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getOperationsBusinessChannelTemplates",
+        "tags": [
+          "business-channel"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "business-channel",
         "x-scenario-ids": [
           "R5-EXTERNAL-COLLABORATION"
         ],
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -104,51 +272,27 @@
           },
           {
             "in": "query",
-            "name": "capabilityClass",
+            "name": "projectRef",
             "required": false,
             "schema": {
               "type": "string",
-              "enum": [
-                "MASTER_DATA_SYNC",
-                "MEMBER_BENEFIT",
-                "GROUP_BUY",
-                "TAKEAWAY",
-                "DINE_IN",
-                "INVENTORY_SYNC",
-                "TAKEAWAY_DELIVERY",
-                "ORDER_SYNC"
-              ]
+              "format": "uuid"
             }
           },
           {
             "in": "query",
-            "name": "nodeType",
+            "name": "sortKey",
             "required": false,
             "schema": {
-              "type": "string",
-              "enum": [
-                "PROJECT",
-                "STORE"
-              ]
+              "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateSortKey"
             }
           },
           {
             "in": "query",
-            "name": "cursor",
+            "name": "sortDirection",
             "required": false,
             "schema": {
-              "type": "string",
-              "description": "cursor"
-            }
-          },
-          {
-            "in": "query",
-            "name": "pageSize",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
+              "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
             }
           }
         ],
@@ -158,7 +302,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/ExternalProviderCandidatePage"
+                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplatePage"
                 }
               }
             }
@@ -178,100 +322,22 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         }
       }
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding": {
-      "get": {
-        "operationId": "getOperationsOwnerBindingDetail",
-        "tags": [
-          "collaboration"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "collaboration",
-        "x-scenario-ids": [
-          "R5-EXTERNAL-COLLABORATION"
-        ],
-        "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
-        "x-idempotency-policy": "FORBIDDEN",
-        "x-error-codes": [
-          "PLATFORM_COMMON_ACCESS_DENIED",
-          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
-          "PLATFORM_COMMON_CONTEXT_STALE",
-          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
-        ],
-        "security": [
-          {
-            "operationsSessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
-            }
-          },
-          {
-            "name": "channelRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128,
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingView"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        }
-      },
       "post": {
         "operationId": "createOperationsOwnerBinding",
         "tags": [
@@ -366,10 +432,16 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
@@ -480,10 +552,16 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
@@ -499,23 +577,22 @@
             }
           }
         }
-      }
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates": {
+      },
       "get": {
-        "operationId": "getOperationsBusinessChannelTemplates",
+        "operationId": "getOperationsOwnerBindingDetail",
         "tags": [
-          "business-channel"
+          "collaboration"
         ],
         "x-consumer-faces": [
           "operations-admin"
         ],
-        "x-owner-module": "business-channel",
+        "x-owner-module": "collaboration",
         "x-scenario-ids": [
           "R5-EXTERNAL-COLLABORATION"
         ],
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -541,28 +618,14 @@
             }
           },
           {
-            "in": "query",
-            "name": "projectRef",
-            "required": false,
+            "name": "channelRef",
+            "in": "path",
+            "required": true,
             "schema": {
               "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
               "format": "uuid"
-            }
-          },
-          {
-            "in": "query",
-            "name": "sortKey",
-            "required": false,
-            "schema": {
-              "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateSortKey"
-            }
-          },
-          {
-            "in": "query",
-            "name": "sortDirection",
-            "required": false,
-            "schema": {
-              "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
             }
           }
         ],
@@ -572,7 +635,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplatePage"
+                  "$ref": "../../components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingView"
                 }
               }
             }
@@ -592,16 +655,24 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         }
-      },
-      "post": {
-        "operationId": "createOperationsBusinessChannelTemplate",
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}": {
+      "get": {
+        "operationId": "getOperationsBusinessChannelDetail",
         "tags": [
           "business-channel"
         ],
@@ -613,28 +684,14 @@
           "R5-EXTERNAL-COLLABORATION"
         ],
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
-        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
-          "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT",
-          "BUSINESS_CHANNEL_STORE_VISIBILITY_DUPLICATE",
-          "BUSINESS_CHANNEL_STORE_VISIBILITY_NOT_APPLICABLE",
-          "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED",
-          "BUSINESS_SCOPE_EXCEEDED",
-          "DINE_IN_FORM_MISMATCH",
-          "DUPLICATE_CODE",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
           "PLATFORM_COMMON_CONTEXT_STALE",
           "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT",
-          "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED",
-          "PROVIDER_NOT_ENABLED",
-          "VERSION_CONFLICT"
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
         ],
         "security": [
           {
@@ -654,13 +711,14 @@
             }
           },
           {
-            "name": "Idempotency-Key",
-            "in": "header",
+            "name": "channelRef",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "minLength": 16,
-              "maxLength": 128
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
             }
           }
         ],
@@ -670,7 +728,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateView"
+                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelView"
                 }
               }
             }
@@ -690,20 +748,254 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "post": {
+        "operationId": "transitionOperationsBusinessChannelStatus",
+        "tags": [
+          "business-channel"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "business-channel",
+        "x-scenario-ids": [
+          "R5-EXTERNAL-COLLABORATION"
+        ],
+        "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "VERSION_CONFLICT",
+          "VOIDED_RECORD_IMMUTABLE"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "channelRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
-        "x-required-capability": "REQ_CREATE_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE",
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_TRANSITION_OPERATIONS_BUSINESS_CHANNEL_STATUS",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateCreateRequest"
+                "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelStatusRequest"
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateOperationsBusinessChannel",
+        "tags": [
+          "business-channel"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "business-channel",
+        "x-scenario-ids": [
+          "R5-EXTERNAL-COLLABORATION"
+        ],
+        "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "IMMUTABLE_FIELD",
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "VERSION_CONFLICT",
+          "VOIDED_RECORD_IMMUTABLE"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "channelRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_UPDATE_OPERATIONS_BUSINESS_CHANNEL",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelUpdateRequest"
               }
             }
           }
@@ -725,6 +1017,7 @@
         ],
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
           "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT",
           "PLATFORM_COMMON_ACCESS_DENIED",
@@ -819,112 +1112,7 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        }
-      }
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}": {
-      "patch": {
-        "operationId": "updateOperationsBusinessChannelTemplate",
-        "tags": [
-          "business-channel"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "business-channel",
-        "x-scenario-ids": [
-          "R5-EXTERNAL-COLLABORATION"
-        ],
-        "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
-        "x-idempotency-policy": "REQUIRED_16_128",
-        "x-error-codes": [
-          "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT",
-          "BUSINESS_CHANNEL_STORE_VISIBILITY_DUPLICATE",
-          "BUSINESS_CHANNEL_STORE_VISIBILITY_NOT_APPLICABLE",
-          "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED",
-          "IMMUTABLE_FIELD",
-          "PLATFORM_COMMON_ACCESS_DENIED",
-          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
-          "PLATFORM_COMMON_CONTEXT_STALE",
-          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT",
-          "VERSION_CONFLICT",
-          "VOIDED_RECORD_IMMUTABLE"
-        ],
-        "security": [
-          {
-            "operationsSessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
-            }
-          },
-          {
-            "name": "templateRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128,
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateView"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
+          "422": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "429": {
@@ -932,152 +1120,99 @@
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        },
-        "x-expected-version-policy": "REQUIRED",
-        "x-required-capability": "REQ_UPDATE_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateUpdateRequest"
-              }
-            }
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         }
       }
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status": {
-      "post": {
-        "operationId": "transitionOperationsBusinessChannelTemplateStatus",
-        "tags": [
-          "business-channel"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "business-channel",
-        "x-scenario-ids": [
-          "R5-EXTERNAL-COLLABORATION"
-        ],
-        "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
-        "x-idempotency-policy": "REQUIRED_16_128",
-        "x-error-codes": [
-          "PLATFORM_COMMON_ACCESS_DENIED",
-          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
-          "PLATFORM_COMMON_CONTEXT_STALE",
-          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT",
-          "VERSION_CONFLICT",
-          "VOIDED_RECORD_IMMUTABLE"
-        ],
-        "security": [
-          {
-            "operationsSessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
-            }
-          },
-          {
-            "name": "templateRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128,
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateView"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        },
-        "x-expected-version-policy": "REQUIRED",
-        "x-required-capability": "REQ_TRANSITION_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE_STATUS",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateStatusRequest"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-template-candidates": {
+    "/api/operations/external-capability-dictionary": {
       "get": {
-        "operationId": "getOperationsStoreBusinessChannelTemplateCandidates",
+        "operationId": "getOperationsExternalCapabilityDictionary",
         "tags": [
-          "business-channel"
+          "collaboration"
         ],
         "x-consumer-faces": [
           "operations-admin"
         ],
-        "x-owner-module": "business-channel",
+        "x-owner-module": "collaboration",
         "x-scenario-ids": [
           "R5-EXTERNAL-COLLABORATION"
         ],
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/collaboration/collaboration.schemas.json#/components/schemas/CapabilityDictionary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates": {
+      "get": {
+        "operationId": "getOperationsExternalProviderCandidates",
+        "tags": [
+          "collaboration"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "collaboration",
+        "x-scenario-ids": [
+          "R5-EXTERNAL-COLLABORATION"
+        ],
+        "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -1104,36 +1239,32 @@
           },
           {
             "in": "query",
-            "name": "projectRef",
+            "name": "capabilityClass",
             "required": false,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "enum": [
+                "MASTER_DATA_SYNC",
+                "MEMBER_BENEFIT",
+                "GROUP_BUY",
+                "TAKEAWAY",
+                "DINE_IN",
+                "INVENTORY_SYNC",
+                "TAKEAWAY_DELIVERY",
+                "ORDER_SYNC"
+              ]
             }
           },
           {
             "in": "query",
-            "name": "storeRef",
+            "name": "nodeType",
             "required": false,
             "schema": {
               "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "in": "query",
-            "name": "sortKey",
-            "required": false,
-            "schema": {
-              "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateSortKey"
-            }
-          },
-          {
-            "in": "query",
-            "name": "sortDirection",
-            "required": false,
-            "schema": {
-              "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
+              "enum": [
+                "PROJECT",
+                "STORE"
+              ]
             }
           },
           {
@@ -1162,7 +1293,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateCandidatePage"
+                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/ExternalProviderCandidatePage"
                 }
               }
             }
@@ -1182,10 +1313,16 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         }
@@ -1206,6 +1343,7 @@
         ],
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -1284,10 +1422,16 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         }
@@ -1308,6 +1452,7 @@
         ],
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -1417,102 +1562,7 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        }
-      }
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels": {
-      "post": {
-        "operationId": "createOperationsBusinessChannel",
-        "tags": [
-          "business-channel"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "business-channel",
-        "x-scenario-ids": [
-          "R5-EXTERNAL-COLLABORATION"
-        ],
-        "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
-        "x-idempotency-policy": "REQUIRED_16_128",
-        "x-error-codes": [
-          "BINDING_NOT_EFFECTIVE",
-          "BUSINESS_CHANNEL_STORE_VISIBILITY_STALE",
-          "DINE_IN_FORM_MISMATCH",
-          "DUPLICATE_CODE",
-          "ORDER_KIND_MISMATCH",
-          "PLATFORM_COMMON_ACCESS_DENIED",
-          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
-          "PLATFORM_COMMON_CONTEXT_STALE",
-          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT",
-          "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED",
-          "PROVIDER_NOT_ENABLED",
-          "VERSION_CONFLICT"
-        ],
-        "security": [
-          {
-            "operationsSessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelView"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
+          "422": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "429": {
@@ -1520,24 +1570,16 @@
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        },
-        "x-required-capability": "REQ_CREATE_OPERATIONS_BUSINESS_CHANNEL",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelCreateRequest"
-              }
-            }
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         }
       }
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}": {
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-template-candidates": {
       "get": {
-        "operationId": "getOperationsBusinessChannelDetail",
+        "operationId": "getOperationsStoreBusinessChannelTemplateCandidates",
         "tags": [
           "business-channel"
         ],
@@ -1550,6 +1592,7 @@
         ],
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -1575,14 +1618,56 @@
             }
           },
           {
-            "name": "channelRef",
-            "in": "path",
-            "required": true,
+            "in": "query",
+            "name": "projectRef",
+            "required": false,
             "schema": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 128,
               "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "storeRef",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortKey",
+            "required": false,
+            "schema": {
+              "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateSortKey"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortDirection",
+            "required": false,
+            "schema": {
+              "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
             }
           }
         ],
@@ -1592,7 +1677,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelView"
+                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateCandidatePage"
                 }
               }
             }
@@ -1612,16 +1697,24 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         }
-      },
-      "patch": {
-        "operationId": "updateOperationsBusinessChannel",
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status": {
+      "post": {
+        "operationId": "transitionOperationsBusinessChannelTemplateStatus",
         "tags": [
           "business-channel"
         ],
@@ -1635,6 +1728,131 @@
         "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "VERSION_CONFLICT",
+          "VOIDED_RECORD_IMMUTABLE"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "templateRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_TRANSITION_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE_STATUS",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateStatusRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}": {
+      "patch": {
+        "operationId": "updateOperationsBusinessChannelTemplate",
+        "tags": [
+          "business-channel"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "business-channel",
+        "x-scenario-ids": [
+          "R5-EXTERNAL-COLLABORATION"
+        ],
+        "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_DUPLICATE",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_NOT_APPLICABLE",
+          "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED",
           "IMMUTABLE_FIELD",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -1667,7 +1885,7 @@
             }
           },
           {
-            "name": "channelRef",
+            "name": "templateRef",
             "in": "path",
             "required": true,
             "schema": {
@@ -1694,7 +1912,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelView"
+                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateView"
                 }
               }
             }
@@ -1714,117 +1932,7 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        },
-        "x-expected-version-policy": "REQUIRED",
-        "x-required-capability": "REQ_UPDATE_OPERATIONS_BUSINESS_CHANNEL",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelUpdateRequest"
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "operationId": "transitionOperationsBusinessChannelStatus",
-        "tags": [
-          "business-channel"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "business-channel",
-        "x-scenario-ids": [
-          "R5-EXTERNAL-COLLABORATION"
-        ],
-        "x-page-key": "OPERATIONS-BUSINESS-CHANNEL",
-        "x-idempotency-policy": "REQUIRED_16_128",
-        "x-error-codes": [
-          "PLATFORM_COMMON_ACCESS_DENIED",
-          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
-          "PLATFORM_COMMON_CONTEXT_STALE",
-          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT",
-          "VERSION_CONFLICT",
-          "VOIDED_RECORD_IMMUTABLE"
-        ],
-        "security": [
-          {
-            "operationsSessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
-            }
-          },
-          {
-            "name": "channelRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128,
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelView"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
+          "422": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "429": {
@@ -1832,16 +1940,19 @@
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
         "x-expected-version-policy": "REQUIRED",
-        "x-required-capability": "REQ_TRANSITION_OPERATIONS_BUSINESS_CHANNEL_STATUS",
+        "x-required-capability": "REQ_UPDATE_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelStatusRequest"
+                "$ref": "../../components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateUpdateRequest"
               }
             }
           }

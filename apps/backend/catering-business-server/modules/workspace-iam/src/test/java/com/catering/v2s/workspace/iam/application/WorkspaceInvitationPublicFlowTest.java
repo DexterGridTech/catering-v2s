@@ -46,6 +46,8 @@ class WorkspaceInvitationPublicFlowTest {
     private static WorkspaceInvitationService invitations;
     private static WorkspaceAuthenticationService authentication;
     private static WorkspaceUserService user;
+    private static OrganizationHierarchyService hierarchy;
+    private static OrganizationCommandService commercialGroups;
     private static UUID workspaceId;
     private static UUID groupId;
     private static UUID regionId;
@@ -85,16 +87,14 @@ class WorkspaceInvitationPublicFlowTest {
                 new ExtensionDefinitionPersistence(jdbc, time),
                 new ExtensionCommandReceiptService(jdbc, time),
                 workspaceStatuses);
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, time);
-        BusinessEntityService entities = new BusinessEntityService(jdbc, time, definitions, hierarchy);
         WorkspaceRoleService roles = new WorkspaceRoleService(jdbc, time);
-        OrganizationCommandService groups = new OrganizationCommandService(jdbc, null, time);
+        commercialGroups = new OrganizationCommandService(jdbc, null, time);
         long groupWorkspaceId = jdbc.queryForObject(
                 "SELECT id FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND group_workspace_key=?",
                 Long.class,
                 workspaceId,
                 "public-flow");
-        groups.execute(
+        commercialGroups.execute(
                 new com.catering.v2s.platform.access.PlatformExecutionContext(
                         "public-flow", "platform-admin", Instant.ofEpochMilli(NOW + 60_000L), "public-flow"),
                 workspaceId,
@@ -108,17 +108,18 @@ class WorkspaceInvitationPublicFlowTest {
                 "SELECT commercial_group_uuid FROM organization.commercial_group WHERE group_workspace_key=?",
                 UUID.class,
                 "public-flow");
-        regionId = hierarchy
-                .create(workspaceId, "public-flow", "REGION", null, "region", "Region")
-                .id();
+        hierarchy = new OrganizationHierarchyService(jdbc, time, commercialGroups);
+        BusinessEntityService entities = new BusinessEntityService(jdbc, time, definitions, hierarchy);
+        regionId = hierarchy.createRegion(workspaceId, "public-flow", "region", "Region").id();
         roleId = roles.create(workspaceId, "public-flow", "Region user", "REGION", null, Set.of(), Set.of())
                 .id();
-        OrganizationTaskPathService taskPaths = new OrganizationTaskPathService(jdbc, groups);
+        OrganizationTaskPathService taskPaths = new OrganizationTaskPathService(jdbc, commercialGroups);
         OrganizationAssignmentCandidateService candidates =
-                new OrganizationAssignmentCandidateService(jdbc, groups, taskPaths);
+                new OrganizationAssignmentCandidateService(jdbc, commercialGroups, taskPaths);
         WorkspaceAssignmentScopeService assignments = new WorkspaceAssignmentScopeService(jdbc);
         WorkspaceUserService user =
-                new WorkspaceUserService(jdbc, hierarchy, entities, roles, groups, candidates, assignments, taskPaths);
+                new WorkspaceUserService(
+                        jdbc, hierarchy, entities, roles, commercialGroups, candidates, assignments, taskPaths);
         ObjectProvider<DevFixedOtpIssuer> fixedOtpIssuer = Mockito.mock(ObjectProvider.class);
         invitations = new WorkspaceInvitationService(
                 jdbc,
@@ -127,7 +128,7 @@ class WorkspaceInvitationPublicFlowTest {
                 hierarchy,
                 entities,
                 entities,
-                groups,
+                commercialGroups,
                 new WorkspaceOtpRateLimitService(jdbc, time),
                 new WorkspaceIamCommandReceiptService(jdbc, time),
                 new WorkspaceCommandAuthorizationService(jdbc),
@@ -523,9 +524,7 @@ class WorkspaceInvitationPublicFlowTest {
     void userUsesOwnerPathAndScopeInsteadOfAnUnboundedAccountList() {
         UUID accountId = UUID.randomUUID();
         UUID assignmentId = UUID.randomUUID();
-        UUID scopeId = new OrganizationHierarchyService(jdbc, () -> NOW)
-                .create(workspaceId, "public-flow", "REGION", null, "user-scope", "User scope")
-                .id();
+        UUID scopeId = hierarchy.createRegion(workspaceId, "public-flow", "user-scope", "User scope").id();
         jdbc.update(
                 "INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, "
                         + "mobile_normalized, login_name_normalized, display_name, status, version, "
@@ -573,9 +572,7 @@ class WorkspaceInvitationPublicFlowTest {
         assertEquals(1, pathNodes.size());
         assertEquals("user-scope", pathNodes.getFirst().code());
         assertEquals("User scope", pathNodes.getFirst().name());
-        UUID emptyScopeId = new OrganizationHierarchyService(jdbc, () -> NOW)
-                .create(workspaceId, "public-flow", "REGION", null, "empty-scope", "Empty scope")
-                .id();
+        UUID emptyScopeId = hierarchy.createRegion(workspaceId, "public-flow", "empty-scope", "Empty scope").id();
         assertEquals(
                 0,
                 user.page(WorkspaceUserService.AccountPageQuery.forPlatform(
@@ -653,9 +650,7 @@ class WorkspaceInvitationPublicFlowTest {
 
     @Test
     void platformInvitationPageDoesNotComposeTypeOrganizationAndRoleAcrossDifferentIntents() {
-        UUID otherRegionId = new OrganizationHierarchyService(jdbc, () -> NOW)
-                .create(workspaceId, "public-flow", "REGION", null, "other-region", "Other region")
-                .id();
+        UUID otherRegionId = hierarchy.createRegion(workspaceId, "public-flow", "other-region", "Other region").id();
         UUID otherRoleId = new WorkspaceRoleService(jdbc, () -> NOW)
                 .create(workspaceId, "public-flow", "Other region user", "REGION", null, Set.of(), Set.of())
                 .id();
@@ -699,9 +694,7 @@ class WorkspaceInvitationPublicFlowTest {
 
     @Test
     void platformInvitationCreationRejectsMixedTargetsBeforePersistence() {
-        UUID otherRegionId = new OrganizationHierarchyService(jdbc, () -> NOW)
-                .create(workspaceId, "public-flow", "REGION", null, "mixed-region", "Mixed region")
-                .id();
+        UUID otherRegionId = hierarchy.createRegion(workspaceId, "public-flow", "mixed-region", "Mixed region").id();
         assertThrows(
                 WorkspaceInvitationService.InvitationValidationException.class,
                 () -> invitations.create(

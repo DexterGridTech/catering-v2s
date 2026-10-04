@@ -17,14 +17,15 @@ export const useWithdrawConfirm = () => {
     [dispatchCommand],
   );
   const withdraw = useCallback(
-    () => pending === null || pending === undefined
-      ? undefined
-      : dispatchWithRequestId({
-          dispatchCommand,
-          definition: memberSubmissionWithdrawnCommand,
-          payload: {operationId: pending.operationId},
-          target: 'local',
-        }),
+    () =>
+      pending === null || pending === undefined
+        ? undefined
+        : dispatchWithRequestId({
+            dispatchCommand,
+            definition: memberSubmissionWithdrawnCommand,
+            payload: {operationId: pending.operationId},
+            target: 'local',
+          }),
     [dispatchCommand, pending],
   );
   return {keepWaiting, withdraw};

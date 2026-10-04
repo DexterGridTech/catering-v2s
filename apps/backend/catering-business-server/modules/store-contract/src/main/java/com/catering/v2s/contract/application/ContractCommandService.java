@@ -181,6 +181,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.extensionSubmission());
         UUID id = UUID.randomUUID();
         long now = time.currentEpochMillis();
+        persistence.lockActiveCollection(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId());
         try {
             persistence.insertWithExtensions(
                     id,
@@ -224,6 +225,9 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 command.actor(),
                 CONTRACT_CREATED,
                 createdChanges(created));
+        persistence.notifyContract(command.workspaceUuid(), command.groupWorkspaceKey(), id);
+        persistence.refreshActiveCollection(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId(), now);
         return created;
     }
 
@@ -281,6 +285,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 command.actor(),
                 CONTRACT_UPDATED,
                 changed(existing, updated));
+        persistence.notifyContract(command.workspaceUuid(), command.groupWorkspaceKey(), command.contractId());
         return updated;
     }
 
@@ -390,6 +395,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
         validateValues(workspaceUuid, key, extensionValues);
         UUID id = UUID.randomUUID();
         long now = time.currentEpochMillis();
+        persistence.lockActiveCollection(workspaceUuid, key, storeId);
         try {
             persistence.insertWithoutExtensions(
                     id,
@@ -411,6 +417,8 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
         replaceValues(id, workspaceUuid, key, extensionValues);
         StoreContractReadback created = require(workspaceUuid, key, id);
         audit(workspaceUuid, key, id, "CONTRACT_CREATED", now, actor, CONTRACT_CREATED, createdChanges(created));
+        persistence.notifyContract(workspaceUuid, key, id);
+        persistence.refreshActiveCollection(workspaceUuid, key, storeId, now);
         return created;
     }
 
@@ -664,6 +672,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 actor,
                 CONTRACT_UPDATED,
                 changed(existing, updated));
+        persistence.notifyContract(workspaceUuid, key, contractId);
         return updated;
     }
 
@@ -808,6 +817,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             AuditActor actor,
             StoreContractReadback existing) {
         long now = time.currentEpochMillis();
+        persistence.lockActiveCollection(workspaceUuid, key, existing.storeId());
         if (persistence.invalidate(now, now, contractId, workspaceUuid, key, expectedVersion) != 1)
             throw new ContractConflictException();
         StoreContractReadback invalidated = new StoreContractReadback(
@@ -833,6 +843,8 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 actor,
                 CONTRACT_INVALIDATED,
                 List.of(AuditChange.forNullableScalar("status", existing.status(), invalidated.status())));
+        persistence.notifyContract(workspaceUuid, key, contractId);
+        persistence.refreshActiveCollection(workspaceUuid, key, existing.storeId(), now);
         return invalidated;
     }
 

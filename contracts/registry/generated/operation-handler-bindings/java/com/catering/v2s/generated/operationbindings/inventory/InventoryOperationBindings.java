@@ -74,7 +74,6 @@ public final class InventoryOperationBindings {
     };
   }
 
-
   public OperationBindingTypes.Wire.InventoryWriteReadback countOperationsInventoryTarget(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.InventoryCountRequest request) {
     return adapters.countOperationsInventoryTarget(COUNT_OPERATIONS_INVENTORY_TARGET_DESCRIPTOR, context, request);
   }

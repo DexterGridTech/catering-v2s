@@ -50,7 +50,94 @@
         "serverTs": {"type": "string", "format": "RFC3339-UTC"}
       },
       "additionalFields": "ignore"
+    },
+    {
+      "type": "TOPIC_SUBSCRIBE",
+      "direction": "device_to_tds",
+      "fields": {
+        "subscriptionId": {"type": "string", "format": "UUID"},
+        "topicKey": {"type": "string", "enumRef": "topicKeys"},
+        "ownerRef": {"type": "string", "format": "canonical-UUID"},
+        "lastAcceptedTimeEpochMillis": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+      },
+      "additionalFields": "ignore"
+    },
+    {
+      "type": "TOPIC_UNSUBSCRIBE",
+      "direction": "device_to_tds",
+      "fields": {
+        "subscriptionId": {"type": "string", "format": "UUID"},
+        "topicKey": {"type": "string", "enumRef": "topicKeys"},
+        "ownerRef": {"type": "string", "format": "canonical-UUID"}
+      },
+      "additionalFields": "ignore"
+    },
+    {
+      "type": "TOPIC_CHANGED",
+      "direction": "tds_to_device",
+      "fields": {
+        "notificationId": {"type": "string", "format": "UUID"},
+        "subscriptionId": {"type": "string", "format": "UUID"},
+        "topicKey": {"type": "string", "enumRef": "topicKeys"},
+        "ownerRef": {"type": "string", "format": "canonical-UUID"},
+        "topicTimeEpochMillis": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+      },
+      "additionalFields": "ignore"
+    },
+    {
+      "type": "TOPIC_ACCEPT",
+      "direction": "device_to_tds",
+      "fields": {
+        "notificationId": {"type": "string", "format": "UUID"},
+        "subscriptionId": {"type": "string", "format": "UUID"},
+        "topicKey": {"type": "string", "enumRef": "topicKeys"},
+        "ownerRef": {"type": "string", "format": "canonical-UUID"},
+        "acceptedTimeEpochMillis": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+      },
+      "additionalFields": "ignore"
+    },
+    {
+      "type": "REMOTE_COMMAND",
+      "direction": "tds_to_device",
+      "fields": {
+        "remoteOperationId": {"type": "string", "format": "UUID"},
+        "requestId": {"type": "string", "format": "UUID"},
+        "bindingGeneration": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+        "commandName": {"type": "string", "minUtf8Bytes": 1, "maxUtf8Bytes": 128},
+        "parameters": {"type": "object"}
+      },
+      "additionalFields": "ignore"
+    },
+    {
+      "type": "REMOTE_REPORT",
+      "direction": "device_to_tds",
+      "fields": {
+        "reportId": {"type": "string", "format": "UUID"},
+        "remoteOperationId": {"type": "string", "format": "UUID"},
+        "requestId": {"type": "string", "format": "UUID"},
+        "phase": {"type": "string", "enum": ["RECEIVED", "STARTED", "COMPLETED", "FAILED", "UNKNOWN"]},
+        "occurredAt": {"type": "string", "format": "RFC3339-UTC"},
+        "result": {"type": "object", "optional": true},
+        "errorCode": {"type": "string", "minUtf8Bytes": 1, "maxUtf8Bytes": 128, "optional": true}
+      },
+      "additionalFields": "ignore"
+    },
+    {
+      "type": "REMOTE_REPORT_ACK",
+      "direction": "tds_to_device",
+      "fields": {
+        "reportId": {"type": "string", "format": "UUID"},
+        "remoteOperationId": {"type": "string", "format": "UUID"},
+        "requestId": {"type": "string", "format": "UUID"},
+        "acceptedAt": {"type": "string", "format": "RFC3339-UTC"}
+      },
+      "additionalFields": "ignore"
     }
+  ],
+  "topicKeys": [
+    "STORE", "PROJECT", "REGION", "COMMERCIAL_GROUP", "STORE_OPERATING_RULE",
+    "VALID_CONTRACT_COLLECTION", "CONTRACT", "SERVICE_POINT_AREA_COLLECTION",
+    "SERVICE_POINT_AREA", "SERVICE_POINT_COLLECTION", "SERVICE_POINT"
   ],
   "close": {
     "application": {

@@ -64,6 +64,16 @@ const TERMINAL_CREDENTIAL_CANCEL = Object.freeze({
   consumerFace: "terminal",
   ownerModule: "terminal-binding",
 });
+const TERMINAL_CREDENTIAL_READS = new Map([
+  ["terminalReadStoreBasic", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/basic", ownerModule:"organization"}],
+  ["terminalReadStoreOrganizationPath", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/organization-path", ownerModule:"organization"}],
+  ["terminalReadStoreActiveContracts", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/contracts", ownerModule:"store-contract"}],
+  ["terminalReadContract", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/contracts/{contractRef}", ownerModule:"store-contract"}],
+  ["terminalReadStoreServicePointAreas", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas", ownerModule:"organization"}],
+  ["terminalReadServicePointArea", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/service-point-areas/{areaRef}", ownerModule:"organization"}],
+  ["terminalReadStoreServicePoints", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points", ownerModule:"organization"}],
+  ["terminalReadServicePoint", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/service-points/{pointRef}", ownerModule:"organization"}],
+]);
 const SELF_SESSION_RESOLVER = "AUTHENTICATED_WORKSPACE_SELF_SESSION";
 const READ_SCOPE_RESOLVER = "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE";
 const ROLE_NODE_RANGE_READ = "ROLE_NODE_RANGE_READ";
@@ -836,7 +846,9 @@ export function mutatingOperationInventory(root = process.cwd()) {
     if (isCatalogInventoryDefinitionOnly(document) && sourcePath !== CATALOG_INVENTORY_OPENAPI_PATH) continue;
     for (const [route, methods] of Object.entries(document.paths || {})) {
       for (const [method, operation] of Object.entries(methods || {})) {
-        if (!WRITE_METHODS.has(String(method).toUpperCase()) || !operation || typeof operation !== "object") continue;
+        const upperMethod = String(method).toUpperCase();
+        const terminalCredentialRead = upperMethod === "GET" && TERMINAL_CREDENTIAL_READS.has(operation?.operationId);
+        if ((!WRITE_METHODS.has(upperMethod) && !terminalCredentialRead) || !operation || typeof operation !== "object") continue;
         const consumerFaces = operation["x-consumer-faces"];
         if (!operation.operationId) fail(`CAPABILITY_OPERATION_ID_MISSING:${sourcePath}:${method}:${route}`);
         if (!Array.isArray(consumerFaces) || consumerFaces.length !== 1 || typeof consumerFaces[0] !== "string" || consumerFaces[0].length === 0) {
@@ -855,7 +867,11 @@ export function mutatingOperationInventory(root = process.cwd()) {
           ownerModule: operation["x-owner-module"],
         };
         const isUnprotectedActivation = operation.operationId === UNPROTECTED_TERMINAL_ACTIVATION.operationId;
-        const isTerminalCredentialCancel = operation.operationId === TERMINAL_CREDENTIAL_CANCEL.operationId;
+        const terminalCredentialIdentity = operation.operationId === TERMINAL_CREDENTIAL_CANCEL.operationId
+          ? TERMINAL_CREDENTIAL_CANCEL
+          : TERMINAL_CREDENTIAL_READS.has(operation.operationId)
+            ? {operationId:operation.operationId, method:TERMINAL_CREDENTIAL_READS.get(operation.operationId).method, path:TERMINAL_CREDENTIAL_READS.get(operation.operationId).path, consumerFace:"terminal", ownerModule:TERMINAL_CREDENTIAL_READS.get(operation.operationId).ownerModule}
+            : undefined;
         if (explicitAuthorizationMode !== undefined
           && !["NONE", TERMINAL_CREDENTIAL_MODE].includes(explicitAuthorizationMode)) {
           fail(`CAPABILITY_AUTHORIZATION_MODE_UNKNOWN:${operation.operationId}:${explicitAuthorizationMode}`);
@@ -872,11 +888,11 @@ export function mutatingOperationInventory(root = process.cwd()) {
         } else if (explicitAuthorizationMode === "NONE") {
           fail(`CAPABILITY_UNEXPECTED_UNPROTECTED_OPERATION:${operation.operationId}`);
         }
-        if (consumerFaces[0] === "terminal" && !isUnprotectedActivation && !isTerminalCredentialCancel) {
+        if (consumerFaces[0] === "terminal" && !isUnprotectedActivation && !terminalCredentialIdentity) {
           fail(`CAPABILITY_TERMINAL_OPERATION_IDENTITY_UNKNOWN:${operation.operationId}`);
         }
-        if (isTerminalCredentialCancel) {
-          if (JSON.stringify(identity) !== JSON.stringify(TERMINAL_CREDENTIAL_CANCEL)
+        if (terminalCredentialIdentity) {
+          if (JSON.stringify(identity) !== JSON.stringify(terminalCredentialIdentity)
             || explicitAuthorizationMode !== TERMINAL_CREDENTIAL_MODE
             || JSON.stringify(operation.security) !== JSON.stringify([{terminalCredential: []}])
             || operation["x-required-terminal-credential"] === undefined
@@ -1012,6 +1028,7 @@ function validateCapabilityWriteOnlyBoundary(root, manifest) {
   if (openApiReadCapabilities.length > 0) fail(`CAPABILITY_READ_OPENAPI_CAPABILITY_PRESENT:${openApiReadCapabilities.sort().join(",")}`);
   const registryReadCapabilities = (manifest.requirements || [])
     .filter((requirement) => !WRITE_METHODS.has(String(requirement?.operationIdentity?.method || "").toUpperCase()))
+    .filter((requirement) => requirement?.authorizationMode !== TERMINAL_CREDENTIAL_MODE)
     .filter((requirement) => requirement.capabilityKey !== undefined || requirement.capabilityMapping !== undefined || requirement.ownerRecheckId !== undefined)
     .map((requirement) => requirement?.requirementId || "UNSET");
   if (registryReadCapabilities.length > 0) fail(`CAPABILITY_READ_REGISTRY_CAPABILITY_PRESENT:${registryReadCapabilities.sort().join(",")}`);
@@ -1723,6 +1740,29 @@ function selfTest() {
     catch (error) { if (!String(error.message).includes("CAPABILITY_TERMINAL_CREDENTIAL_CONTRACT_DRIFT:cancelTerminalActivation")) throw error; }
     writeFixture(root, terminalCredentialCancellation);
 
+    for (const [operationId, operation] of TERMINAL_CREDENTIAL_READS) {
+      const terminalCredentialRead = {
+        operationId,
+        method: operation.method,
+        path: operation.path,
+        consumerFace: "terminal",
+        ownerModule: operation.ownerModule,
+        authorizationMode: TERMINAL_CREDENTIAL_MODE,
+        security: [{terminalCredential: []}],
+      };
+      writeFixture(root, terminalCredentialRead);
+      validateCapabilityInvariants(root);
+      const unmarkedTerminalRead = json(root, "contracts/openapi/fixture.json", "CAPABILITY_SELF_TEST_FIXTURE_INVALID");
+      delete unmarkedTerminalRead.paths[terminalCredentialRead.path].get["x-required-terminal-credential"];
+      fs.writeFileSync(path.join(root, "contracts/openapi/fixture.json"), JSON.stringify(unmarkedTerminalRead));
+      try { mutatingOperationInventory(root); fail(`CAPABILITY_SELF_TEST_TERMINAL_CREDENTIAL_READ_MARKER_NOT_DETECTED:${operationId}`); }
+      catch (error) {
+        if (!String(error.message).includes(`CAPABILITY_TERMINAL_CREDENTIAL_CONTRACT_DRIFT:${operationId}`)) throw error;
+      }
+      process.stdout.write(`RED_TERMINAL_CREDENTIAL_READ_MARKER:${operationId}=PASS\n`);
+    }
+    writeFixture(root, terminalCredentialCancellation);
+
     const projectionPath = path.join(root, "contracts/openapi/generated-catalog-path-shard.json");
     const canonicalDocument = json(root, "contracts/openapi/fixture.json", "CAPABILITY_SELF_TEST_FIXTURE_INVALID");
     fs.writeFileSync(projectionPath, JSON.stringify({kind: "catalog-inventory-openapi-path-shard", paths: canonicalDocument.paths}));
@@ -2032,7 +2072,7 @@ function selfTest() {
     try { validateP3AStaticProofSurfaces(root); fail("CAPABILITY_SELF_TEST_PROBLEM_ADVICE_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("P3_A_TYPED_PROBLEM_ADVICE_HANDLER_MISSING")) throw error; }
 
-    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_TERMINAL_ACTIVATION_PERMISSION=PASS\nRED_TERMINAL_ACTIVATION_IAM_REQUIREMENT=PASS\nRED_TERMINAL_CREDENTIAL_WORKSPACE_CAPABILITY=PASS\nRED_TERMINAL_CREDENTIAL_CROSS_FACE=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_CATALOG_INVENTORY_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_OPENAPI_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_TARGET_CAPABILITY_MAPPING=PASS\nRED_CATALOG_INVENTORY_READ_CAPABILITY=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_SCHEMA=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_PARAMETER=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_MISSING=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_EXPANSION=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_READ_PLACEMENT=PASS\nRED_CATALOG_INVENTORY_DIRECT_CONFIGURATION_CAPABILITY=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_READ_OPENAPI_CAPABILITY=PASS\nRED_READ_REGISTRY_CAPABILITY=PASS\nRED_READ_REGISTRY_SCOPE_MODEL=PASS\nRED_READ_EDGE_GET_CAPABILITY=PASS\nRED_READ_EDGE_GET_CAPABILITY_HELPER=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
+    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_TERMINAL_ACTIVATION_PERMISSION=PASS\nRED_TERMINAL_ACTIVATION_IAM_REQUIREMENT=PASS\nRED_TERMINAL_CREDENTIAL_WORKSPACE_CAPABILITY=PASS\nRED_TERMINAL_CREDENTIAL_CROSS_FACE=PASS\nRED_TERMINAL_CREDENTIAL_READ_MARKER=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_CATALOG_INVENTORY_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_OPENAPI_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_TARGET_CAPABILITY_MAPPING=PASS\nRED_CATALOG_INVENTORY_READ_CAPABILITY=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_SCHEMA=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_PARAMETER=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_MISSING=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_EXPANSION=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_READ_PLACEMENT=PASS\nRED_CATALOG_INVENTORY_DIRECT_CONFIGURATION_CAPABILITY=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_READ_OPENAPI_CAPABILITY=PASS\nRED_READ_REGISTRY_CAPABILITY=PASS\nRED_READ_REGISTRY_SCOPE_MODEL=PASS\nRED_READ_EDGE_GET_CAPABILITY=PASS\nRED_READ_EDGE_GET_CAPABILITY_HELPER=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
   } finally {
     fs.rmSync(root, {recursive: true, force: true});
   }

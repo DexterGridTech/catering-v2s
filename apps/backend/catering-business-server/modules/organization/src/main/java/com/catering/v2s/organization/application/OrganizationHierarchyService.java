@@ -55,6 +55,16 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 definitions);
     }
 
+    public OrganizationHierarchyService(
+            JdbcTemplate jdbc, TimeProvider time, CommercialGroupLookup commercialGroups) {
+        this(
+                new OrganizationHierarchyPersistence(jdbc),
+                time,
+                new OrganizationHierarchyCommandReceiptService(jdbc, time),
+                commercialGroups,
+                null);
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     public OrganizationHierarchyService(
             OrganizationHierarchyPersistence persistence,
@@ -82,7 +92,8 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
     @Override
     @Transactional
     public OrganizationNodeReadback createRegion(CreateRegionCommand command) {
-        requireCommercialGroup(command.workspaceUuid(), command.groupWorkspaceKey(), command.ownerScopeGrant());
+        UUID commercialGroupRef = requireCommercialGroup(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.ownerScopeGrant());
         return receipts.execute(
                 command.workspaceUuid(),
                 command.idempotencyKey(),
@@ -98,7 +109,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                         command.workspaceUuid(),
                         command.groupWorkspaceKey(),
                         OrganizationNodeTypes.REGION,
-                        null,
+                        commercialGroupRef,
                         command.code(),
                         command.name(),
                         command.notes(),
@@ -152,6 +163,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 command.nodeId(),
                 null,
                 command.ownerScopeGrant());
+        requireCurrentParent(command.workspaceUuid(), command.groupWorkspaceKey(), current);
         return receipts.execute(
                 command.workspaceUuid(),
                 command.idempotencyKey(),
@@ -269,6 +281,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 now,
                 actor,
                 "[{\"fieldKey\":\"name\",\"after\":\"" + json(created.name()) + "\"}]");
+        persistence.notifyTerminalTopic(workspaceUuid, groupWorkspaceKey, type, id);
         return created;
     }
 
@@ -353,9 +366,16 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
     @Transactional
     public OrganizationNodeReadback createRegion(
             UUID workspaceUuid, String groupWorkspaceKey, String code, String name, String notes) {
-        requireCommercialGroup(workspaceUuid, groupWorkspaceKey);
+        UUID commercialGroupRef = requireCommercialGroup(workspaceUuid, groupWorkspaceKey);
         return create(
-                workspaceUuid, groupWorkspaceKey, OrganizationNodeTypes.REGION, null, code, name, notes, List.of());
+                workspaceUuid,
+                groupWorkspaceKey,
+                OrganizationNodeTypes.REGION,
+                commercialGroupRef,
+                code,
+                name,
+                notes,
+                List.of());
     }
 
     @Transactional
@@ -366,11 +386,20 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             String name,
             String notes,
             String idempotencyKey) {
+        UUID commercialGroupRef = requireCommercialGroup(workspaceUuid, groupWorkspaceKey);
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
                 canonical("createRegion", workspaceUuid, groupWorkspaceKey, code, name, notes),
-                () -> createRegion(workspaceUuid, groupWorkspaceKey, code, name, notes));
+                () -> create(
+                        workspaceUuid,
+                        groupWorkspaceKey,
+                        OrganizationNodeTypes.REGION,
+                        commercialGroupRef,
+                        code,
+                        name,
+                        notes,
+                        List.of()));
     }
 
     @Transactional
@@ -382,17 +411,17 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             String notes,
             String idempotencyKey,
             AuditActor actor) {
+        UUID commercialGroupRef = requireCommercialGroup(workspaceUuid, groupWorkspaceKey);
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
                 canonical("createRegion", workspaceUuid, groupWorkspaceKey, code, name, notes),
                 () -> {
-                    requireCommercialGroup(workspaceUuid, groupWorkspaceKey);
                     return create(
                             workspaceUuid,
                             groupWorkspaceKey,
                             OrganizationNodeTypes.REGION,
-                            null,
+                            commercialGroupRef,
                             code,
                             name,
                             notes,
@@ -411,17 +440,17 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             Map<String, String> extensionValues,
             String idempotencyKey,
             AuditActor actor) {
+        UUID commercialGroupRef = requireCommercialGroup(workspaceUuid, groupWorkspaceKey);
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
                 canonical("createRegion", workspaceUuid, groupWorkspaceKey, code, name, notes, extensionValues),
                 () -> {
-                    requireCommercialGroup(workspaceUuid, groupWorkspaceKey);
                     return create(
                             workspaceUuid,
                             groupWorkspaceKey,
                             OrganizationNodeTypes.REGION,
-                            null,
+                            commercialGroupRef,
                             code,
                             name,
                             notes,
@@ -443,7 +472,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             String idempotencyKey,
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        requireCommercialGroup(workspaceUuid, groupWorkspaceKey, ownerScopeGrant);
+        UUID commercialGroupRef = requireCommercialGroup(workspaceUuid, groupWorkspaceKey, ownerScopeGrant);
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
@@ -452,7 +481,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                         workspaceUuid,
                         groupWorkspaceKey,
                         OrganizationNodeTypes.REGION,
-                        null,
+                        commercialGroupRef,
                         code,
                         name,
                         notes,
@@ -692,6 +721,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 now,
                 AuditActor.system(),
                 "[]");
+        persistence.notifyTerminalTopic(workspaceUuid, groupWorkspaceKey, OrganizationNodeTypes.PROJECT, projectId);
         return updated;
     }
 
@@ -722,8 +752,10 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             long expectedVersion,
             String status,
             AuditActor actor) {
+        requireCurrentParent(workspaceUuid, groupWorkspaceKey, current);
         // The owner-bound command already performed the grant-bound read before receipt replay.
         // Keep the post-write readback fresh; only the pre-write fact is transferred.
+        long now = time.currentEpochMillis();
         if (!List.of("ENABLED", "DISABLED", "VOIDED").contains(status)
                 || "VOIDED".equals(current.status())
                 || current.version() != expectedVersion
@@ -732,7 +764,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                                 workspaceUuid,
                                 groupWorkspaceKey,
                                 status,
-                                time.currentEpochMillis(),
+                                now,
                                 expectedVersion)
                         != 1) {
             throw new OrganizationConflictException();
@@ -743,10 +775,11 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 groupWorkspaceKey,
                 nodeId,
                 "ORGANIZATION_NODE_STATUS_CHANGED",
-                time.currentEpochMillis(),
+                now,
                 actor,
                 "[{\"fieldKey\":\"status\",\"before\":\"" + json(current.status()) + "\",\"after\":\""
                         + json(updated.status()) + "\"}]");
+        persistence.notifyTerminalTopic(workspaceUuid, groupWorkspaceKey, current.nodeType(), nodeId);
         return updated;
     }
 
@@ -758,6 +791,10 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             long expectedVersion,
             String status,
             String idempotencyKey) {
+        requireCurrentParent(
+                workspaceUuid,
+                groupWorkspaceKey,
+                requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null));
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
@@ -774,6 +811,10 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             String status,
             String idempotencyKey,
             AuditActor actor) {
+        requireCurrentParent(
+                workspaceUuid,
+                groupWorkspaceKey,
+                requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null));
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
@@ -881,10 +922,12 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             Map<String, String> extensionValues,
             AuditActor actor) {
         OrganizationNodeReadback current = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
+        requireCurrentParent(workspaceUuid, groupWorkspaceKey, current);
         requireMutable(current.status());
         ExtensionValues extensions =
                 extensionValues(workspaceUuid, groupWorkspaceKey, current.nodeType(), current, extensionValues);
         List<String> phases = normalizedPhases(current.nodeType(), phaseNames);
+        long now = time.currentEpochMillis();
         if (!Objects.equals(current.parentId(), parentId)
                 || current.version() != expectedVersion
                 || persistence.updateNode(
@@ -896,7 +939,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                                 optionalNotes(notes),
                                 extensions.json(),
                                 extensions.revision(),
-                                time.currentEpochMillis(),
+                                now,
                                 expectedVersion)
                         != 1) throw new OrganizationConflictException();
         if (!current.phaseNames().equals(phases)) replacePhases(nodeId, phases);
@@ -906,14 +949,16 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 groupWorkspaceKey,
                 nodeId,
                 "ORGANIZATION_NODE_UPDATED",
-                time.currentEpochMillis(),
+                now,
                 actor,
                 "[{\"fieldKey\":\"name\",\"before\":\"" + json(current.name()) + "\",\"after\":\""
                         + json(updated.name()) + "\"}]");
+        persistence.notifyTerminalTopic(workspaceUuid, groupWorkspaceKey, current.nodeType(), nodeId);
         return updated;
     }
 
     private OrganizationNodeReadback updateWithSubmission(UpdateNodeCommand command, OrganizationNodeReadback current) {
+        requireCurrentParent(command.workspaceUuid(), command.groupWorkspaceKey(), current);
         requireMutable(current.status());
         ExtensionValues extensions = extensionValues(
                 command.workspaceUuid(),
@@ -922,6 +967,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 current,
                 command.extensionSubmission());
         List<String> phases = normalizedPhases(current.nodeType(), command.phaseNames());
+        long now = time.currentEpochMillis();
         if (!Objects.equals(current.parentId(), command.parentId())
                 || current.version() != command.expectedVersion()
                 || persistence.updateNode(
@@ -933,7 +979,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                                 optionalNotes(command.notes()),
                                 extensions.json(),
                                 extensions.revision(),
-                                time.currentEpochMillis(),
+                                now,
                                 command.expectedVersion())
                         != 1) throw new OrganizationConflictException();
         if (!current.phaseNames().equals(phases)) replacePhases(command.nodeId(), phases);
@@ -944,10 +990,12 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 command.groupWorkspaceKey(),
                 command.nodeId(),
                 "ORGANIZATION_NODE_UPDATED",
-                time.currentEpochMillis(),
+                now,
                 command.actor(),
                 "[{\"fieldKey\":\"name\",\"before\":\"" + json(current.name()) + "\",\"after\":\""
                         + json(updated.name()) + "\"}]");
+        persistence.notifyTerminalTopic(
+                command.workspaceUuid(), command.groupWorkspaceKey(), current.nodeType(), command.nodeId());
         return updated;
     }
 
@@ -963,6 +1011,10 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             List<String> phaseNames,
             long expectedVersion,
             String idempotencyKey) {
+        requireCurrentParent(
+                workspaceUuid,
+                groupWorkspaceKey,
+                requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null));
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
@@ -1176,16 +1228,24 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
     }
 
     private void validateParent(UUID workspaceUuid, String key, String type, UUID parentId) {
-        String parentType =
-                switch (type) {
-                    case OrganizationNodeTypes.REGION -> null;
-                    case OrganizationNodeTypes.PROJECT -> OrganizationNodeTypes.REGION;
-                    default -> throw new OrganizationValidationException();
-                };
-        if ((parentType == null) != (parentId == null)) throw new OrganizationValidationException();
-        if (parentType != null) {
-            OrganizationNodeReadback parent = requireNode(workspaceUuid, key, parentId, parentType);
-            if (!"ENABLED".equals(parent.status())) throw new OrganizationValidationException();
+        if (OrganizationNodeTypes.REGION.equals(type)) {
+            if (parentId == null || !parentId.equals(requireCommercialGroup(workspaceUuid, key))) {
+                throw new OrganizationValidationException();
+            }
+            return;
+        }
+        if (!OrganizationNodeTypes.PROJECT.equals(type) || parentId == null) {
+            throw new OrganizationValidationException();
+        }
+        OrganizationNodeReadback parent = requireNode(workspaceUuid, key, parentId, OrganizationNodeTypes.REGION);
+        if (!"ENABLED".equals(parent.status())) throw new OrganizationValidationException();
+    }
+
+    private void requireCurrentParent(UUID workspaceUuid, String groupWorkspaceKey, OrganizationNodeReadback node) {
+        if (OrganizationNodeTypes.REGION.equals(node.nodeType())
+                && (node.parentId() == null
+                        || !node.parentId().equals(requireCommercialGroup(workspaceUuid, groupWorkspaceKey)))) {
+            throw new OrganizationValidationException();
         }
     }
 
@@ -1193,12 +1253,12 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
         if ("VOIDED".equals(status)) throw new OrganizationConflictException();
     }
 
-    private void requireCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey) {
-        if (commercialGroups == null) return;
-        commercialGroups.requireCommercialGroupRef(workspaceUuid, groupWorkspaceKey);
+    private UUID requireCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey) {
+        if (commercialGroups == null) throw new OrganizationValidationException();
+        return commercialGroups.requireCommercialGroupRef(workspaceUuid, groupWorkspaceKey);
     }
 
-    private void requireCommercialGroup(
+    private UUID requireCommercialGroup(
             UUID workspaceUuid, String groupWorkspaceKey, OperationsOwnerScopeGrant ownerScopeGrant) {
         if (commercialGroups == null) {
             throw new OrganizationAuthorizationException();
@@ -1207,6 +1267,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
         if (ownerScopeGrant == null
                 || !ownerScopeGrant.matches(workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP, groupId))
             throw new OrganizationAuthorizationException();
+        return groupId;
     }
 
     private ExtensionValues extensionValues(

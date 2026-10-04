@@ -15,6 +15,9 @@ import {moduleName} from '../../moduleName';
 import {selectSessionState} from '../../selectors/selectors';
 import {sessionActions} from '../slices/slice';
 import type {LoginPayload} from '../../types/types';
+import type {StateRoot} from '@catering-v2s/kernel-base-state';
+
+export type StaffLoginGuard = (state: StateRoot) => boolean;
 
 const credentials: readonly LoginPayload[] = [
   Object.freeze({operatorName: 'A001', passcode: '1111'}),
@@ -61,9 +64,11 @@ export const createBootstrapActor = (): ActorDefinition =>
     }),
   ]);
 
-export const createLoginActor = (): ActorDefinition =>
+export const createLoginActor = (canLogin?: StaffLoginGuard): ActorDefinition =>
   defineActor(moduleName, 'login', [
     onCommand(loginCommand, async context => {
+      if (canLogin !== undefined && !canLogin(context.getState()))
+        throw new Error('STAFF_LOGIN_REQUIRES_ACTIVE_TERMINAL');
       const payload = readLoginPayload(context.command.payload);
       if (!isKnownCredential(payload)) {
         await context.dispatchCommand(loginFailedCommand, {reasonCode: 'invalid-credentials'});

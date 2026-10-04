@@ -33,6 +33,57 @@ const masterAndSlave = ['MASTER', 'SLAVE'] as const;
 const branchWorkspace = ['BRANCH'] as const;
 const slave = ['SLAVE'] as const;
 
+const branchRegistryNoticePair = definePartPair({
+  partKey: 'sample.desk.branch.registry-notice',
+  containerKeys: layer,
+  displayModes: primary,
+  workspaces: branchWorkspace,
+  instanceModes: slave,
+  title: '登记结果提示',
+  description: '向副机店员说明本次登记未完成的原因',
+  layerTier: 'alert',
+  layerGuard: 'decisive',
+  components: {laptop: LaptopRegistryNotice, mobile: MobileRegistryNotice},
+});
+
+const branchDiscardConfirmPair = definePartPair({
+  partKey: 'sample.desk.branch.discard-confirm',
+  containerKeys: layer,
+  displayModes: primary,
+  workspaces: branchWorkspace,
+  instanceModes: slave,
+  title: '放弃草稿确认',
+  description: '在副机取消录入或退出前确认是否放弃当前草稿',
+  layerTier: 'alert',
+  layerGuard: 'decisive',
+  components: {laptop: LaptopDiscardConfirm, mobile: MobileDiscardConfirm},
+});
+
+const branchWithdrawConfirmPair = definePartPair({
+  partKey: 'sample.desk.branch.withdraw-confirm',
+  containerKeys: layer,
+  displayModes: primary,
+  workspaces: branchWorkspace,
+  instanceModes: slave,
+  title: '撤回登记确认',
+  description: '在副机顾客确认前确认是否撤回本次登记',
+  layerTier: 'alert',
+  layerGuard: 'decisive',
+  components: {laptop: LaptopWithdrawConfirm, mobile: MobileWithdrawConfirm},
+});
+
+const branchSystemNoticePair = definePartPair({
+  partKey: 'sample.desk.branch.system-notice',
+  containerKeys: layer,
+  displayModes: primary,
+  workspaces: branchWorkspace,
+  instanceModes: slave,
+  title: '系统失败提示',
+  description: '向副机店员说明登记链路失败并允许继续操作',
+  layerTier: 'alert',
+  components: {laptop: LaptopDeskSystemNotice, mobile: MobileDeskSystemNotice},
+});
+
 const branchMemberListPair = definePartPair({
   partKey: 'sample.desk.branch.member-list',
   containerKeys: main,
@@ -180,6 +231,14 @@ export const parts = Object.freeze([
   branchMemberFormPair.mobile,
   branchCustomerMemberPair.laptop,
   branchCustomerMemberPair.mobile,
+  branchRegistryNoticePair.laptop,
+  branchRegistryNoticePair.mobile,
+  branchDiscardConfirmPair.laptop,
+  branchDiscardConfirmPair.mobile,
+  branchWithdrawConfirmPair.laptop,
+  branchWithdrawConfirmPair.mobile,
+  branchSystemNoticePair.laptop,
+  branchSystemNoticePair.mobile,
   memberListPair.laptop,
   memberListPair.mobile,
   memberFormPair.laptop,

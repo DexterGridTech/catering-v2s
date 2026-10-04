@@ -1,5 +1,6 @@
 package com.catering.v2s.terminaldataserver.protocol;
 
+import com.catering.v2s.terminaldataserver.protocol.generated.TerminalConnectionMessages;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -54,6 +55,12 @@ public final class TerminalConnectionProtocol {
             JsonNode fields = requiredObject(messageNode, "fields");
             Set<String> fieldNames = new HashSet<>();
             fields.propertyNames().forEach(fieldNames::add);
+            Set<String> requiredFieldNames = new HashSet<>();
+            fields.propertyNames().forEach(fieldName -> {
+                if (!fields.path(fieldName).path("optional").asBoolean(false)) {
+                    requiredFieldNames.add(fieldName);
+                }
+            });
             String additionalFields = requiredText(messageNode, "additionalFields");
             if (!"ignore".equals(additionalFields)) throw invalidContract("unknown additional-fields handling");
             MessageDefinition definition = new MessageDefinition(
@@ -61,13 +68,24 @@ public final class TerminalConnectionProtocol {
                     requiredText(messageNode, "direction"),
                     messageNode.path("firstMessage").asBoolean(false),
                     messageNode.path("maxSerializedUtf8Bytes").asInt(0),
-                    Set.copyOf(fieldNames));
+                    Set.copyOf(fieldNames),
+                    Set.copyOf(requiredFieldNames));
             if (loadedMessages.putIfAbsent(type, definition) != null) {
                 throw invalidContract("duplicate message type");
             }
         }
         if (loadedMessages.isEmpty()) throw invalidContract("messages are empty");
         messages = Map.copyOf(loadedMessages);
+        if (!TerminalConnectionMessages.fieldNamesByType().equals(messages.entrySet().stream()
+                .collect(java.util.stream.Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> {
+                            Set<String> fields = new HashSet<>(entry.getValue().fieldNames());
+                            fields.add("type");
+                            return Set.copyOf(fields);
+                        })))) {
+            throw invalidContract("generated message schema differs from canonical protocol");
+        }
 
         JsonNode close = requiredObject(contract, "close");
         JsonNode application = requiredObject(close, "application");
@@ -213,7 +231,12 @@ public final class TerminalConnectionProtocol {
     }
 
     public record MessageDefinition(
-            String type, String direction, boolean firstMessage, int maxSerializedUtf8Bytes, Set<String> fieldNames) {}
+            String type,
+            String direction,
+            boolean firstMessage,
+            int maxSerializedUtf8Bytes,
+            Set<String> fieldNames,
+            Set<String> requiredFieldNames) {}
 
     public record Close(int code, String reason) {}
 }

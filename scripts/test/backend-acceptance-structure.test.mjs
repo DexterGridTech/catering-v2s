@@ -315,7 +315,7 @@ function assertAcceptanceRepositoryInputsUseExplicitRoot(buildSource, pathsSourc
   );
   assert.equal(
     (scenariosSource.match(/Path script = terminalWireClientScript\(\);/g) ?? []).length,
-    4,
+    5,
     'TERMINAL_WIRE_CLIENT_REPOSITORY_PATH_CALLSITE_DENOMINATOR_MISMATCH',
   );
 }
@@ -870,7 +870,7 @@ test('registration-gate waits race client exit and retain credential-safe stage 
   );
   assert.equal(
     registrationGateCallsites.length,
-    9,
+    10,
     'TDS_REGISTRATION_GATE_WAIT_CALLSITE_DENOMINATOR_MISMATCH',
   );
   assert.equal(
@@ -1832,6 +1832,32 @@ test('V-S11 can run as an exact managed TDS contract without topology preflight'
   assert.match(suite, /v11SecretSearchScenarios\(this, tdsAcceptanceProcess\)/);
   assert.match(tdsProcess, /HISTORY_SECRET_SEARCH_SCENARIO_ID\.equals\(scenario\)/);
   assert.match(tdsProcess, /HISTORY_SECRET_SEARCH_SCENARIO_ID = "terminal\.connection\.vs11\.secret-search"/);
+});
+
+test('TDP active-store topic subscription is an exact managed TDS contract requiring topology preflight', () => {
+  const runner = readFileSync(backendAcceptanceRunnerPath, 'utf8');
+  const remoteRunner = readFileSync(path.join(root, 'scripts/test/r5-remote-testcontainers.mjs'), 'utf8');
+  const suite = readFileSync(suitePath, 'utf8');
+  const tdsProcess = readFileSync(tdsProcessPath, 'utf8');
+  const scenario = 'terminal.connection.topic.active-store-subscription';
+
+  assert.ok(
+    runner.includes(`${scenario})\n      expected_topology_preflight=true`),
+    'BACKEND_ACCEPTANCE_TOPIC_SCENARIO_TOPOLOGY_PREFLIGHT_MAPPING_MISSING',
+  );
+  assert.match(remoteRunner, /TDS_TOPIC_SUBSCRIPTION_SCENARIO = 'terminal\.connection\.topic\.active-store-subscription'/);
+  assert.match(remoteRunner, /\[TDS_TOPIC_SUBSCRIPTION_SCENARIO, true\]/);
+  assert.match(suite, /TOPIC_SUBSCRIPTION_SCENARIO_ID\.equals\(selectedScenario\)/);
+  assert.match(tdsProcess, /TOPIC_SUBSCRIPTION_SCENARIO_ID = "terminal\.connection\.topic\.active-store-subscription"/);
+
+  const missingTopology = spawnSync(
+    'bash',
+    [backendAcceptanceRunnerPath, '--operation', 'storeTerminalActivationBusinessPrecedence', '--tds-contract-scenario', scenario],
+    {cwd: root, encoding: 'utf8'},
+  );
+  assert.equal(missingTopology.status, 2);
+  assert.match(missingTopology.stderr, /BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID/);
+  assert.doesNotMatch(missingTopology.stderr, /R5_TESTCONTAINERS/);
 });
 
 test('V-S13 acceptance selector owns two isolated TDS processes and a real cross-node recovery scenario', () => {

@@ -24,13 +24,15 @@ type NativeNetworkModule = Readonly<{
     bodyText: string | null,
     timeoutMs: number,
     proxy: unknown,
-  ) => Promise<Readonly<{
-    status: number;
-    bodyText: string;
-    contentType: string;
-    requestId?: string | null;
-    correlationId?: string | null;
-  }>>;
+  ) => Promise<
+    Readonly<{
+      status: number;
+      bodyText: string;
+      contentType: string;
+      requestId?: string | null;
+      correlationId?: string | null;
+    }>
+  >;
   readonly openSocket: (
     socketId: string,
     url: string,

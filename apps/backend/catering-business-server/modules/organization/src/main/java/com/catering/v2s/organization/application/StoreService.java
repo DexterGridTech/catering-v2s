@@ -494,6 +494,7 @@ public class StoreService {
                     operatingRuleJson,
                     now);
             persistence.insertDefaultQrConfiguration(id, workspaceUuid, groupWorkspaceKey, now);
+            persistence.initializeTerminalTopicCollections(workspaceUuid, groupWorkspaceKey, id);
         } catch (DuplicateKeyException exception) {
             throw new BusinessEntityService.OrganizationDuplicateException(exception);
         } catch (DataIntegrityViolationException exception) {
@@ -515,6 +516,8 @@ public class StoreService {
                                 createdChanges(created, headCompanyId), null, created, definition, submission),
                         operatingRuleChanges(Map.of(), createdRules, operatingRuleSwitches)),
                 storeAuditKeys(definition));
+        persistence.notifyStore(workspaceUuid, groupWorkspaceKey, id);
+        persistence.notifyOperatingRule(workspaceUuid, groupWorkspaceKey, id);
         return created;
     }
 
@@ -557,6 +560,7 @@ public class StoreService {
         } catch (IllegalArgumentException invalid) {
             throw new BusinessEntityService.OrganizationValidationException(invalid);
         }
+        long now = time.currentEpochMillis();
         int changed;
         try {
             changed = persistence.update(
@@ -571,7 +575,7 @@ public class StoreService {
                     BusinessEntityValueSupport.text(input.name(), 120),
                     BusinessEntityValueSupport.optional(input.notes(), 2000),
                     operatingRuleJson,
-                    time.currentEpochMillis(),
+                    now,
                     input.expectedVersion());
         } catch (DataIntegrityViolationException exception) {
             throw new BusinessEntityService.OrganizationConflictException(exception);
@@ -592,7 +596,7 @@ public class StoreService {
                 input.groupWorkspaceKey(),
                 input.storeId(),
                 "STORE_UPDATED",
-                time.currentEpochMillis(),
+                now,
                 input.actor(),
                 append(
                         BusinessEntityValueSupport.withExtensionChanges(
@@ -603,6 +607,8 @@ public class StoreService {
                                 input.extensionSubmission()),
                         operatingRuleChanges(beforeRules, afterRules, input.operatingRuleSwitches())),
                 storeAuditKeys(definition));
+        persistence.notifyStore(input.workspaceUuid(), input.groupWorkspaceKey(), input.storeId());
+        persistence.notifyOperatingRule(input.workspaceUuid(), input.groupWorkspaceKey(), input.storeId());
         return updated;
     }
 
@@ -614,6 +620,7 @@ public class StoreService {
             long expectedVersion,
             AuditActor actor,
             OrganizationEntityReadback before) {
+        long now = time.currentEpochMillis();
         if (!VALID_STATUS.contains(status)
                 || "VOIDED".equals(before.status())
                 || persistence.transitionStatus(
@@ -621,7 +628,7 @@ public class StoreService {
                                 workspaceUuid,
                                 groupWorkspaceKey,
                                 status,
-                                time.currentEpochMillis(),
+                                now,
                                 expectedVersion)
                         != 1) throw new BusinessEntityService.OrganizationConflictException();
         OrganizationEntityReadback updated = OwnerOperationDiagnostics.readback(
@@ -631,9 +638,11 @@ public class StoreService {
                 groupWorkspaceKey,
                 id,
                 "STORE_STATUS_CHANGED",
-                time.currentEpochMillis(),
+                now,
                 actor,
                 List.of(AuditChange.forNullableScalar("status", before.status(), updated.status())));
+        persistence.notifyStore(workspaceUuid, groupWorkspaceKey, id);
+        persistence.notifyOperatingRule(workspaceUuid, groupWorkspaceKey, id);
         return updated;
     }
 

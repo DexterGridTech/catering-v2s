@@ -1,7 +1,7 @@
 import type {DisplayMode} from '@catering-v2s/kernel-base-display-context';
 import {resolveWorkspace, selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
-import type {StateRoot} from '@catering-v2s/kernel-base-state';
+import type {StateRoot, WorkspaceKey} from '@catering-v2s/kernel-base-state';
 import {readContentState} from '../foundations/workspaceSlices';
 import type {ContainerKey} from '../types/catalog';
 import type {LayerEntry, ScreenPlacement} from '../types/content';
@@ -39,5 +39,11 @@ export const selectScreen = (
   ];
 };
 
-export const selectLayers = (root: StateRoot, displayMode: DisplayMode): readonly LayerEntry[] =>
-  selectCurrentContentState(root).contentSets[requireDisplayMode(displayMode)].layers;
+export const selectLayers = (
+  root: StateRoot,
+  displayMode: DisplayMode,
+  workspace?: WorkspaceKey,
+): readonly LayerEntry[] => {
+  const content = workspace === undefined ? selectCurrentContentState(root) : readContentState(root, workspace);
+  return content.contentSets[requireDisplayMode(displayMode)].layers;
+};

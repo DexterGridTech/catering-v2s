@@ -52,10 +52,16 @@ describe('terminal-data-client package identity', () => {
     expect(module.dependencies).toEqual([{moduleName: 'kernel.base.runtime'}, {moduleName: 'kernel.base.transport'}]);
     expect(module.commands?.map(command => command.name)).toEqual([
       `${moduleName}.activate-terminal`,
+      `${moduleName}.activation-succeeded`,
       `${moduleName}.cancel-terminal-activation`,
       `${moduleName}.cancel-terminal-offline`,
       `${moduleName}.connect-terminal`,
       `${moduleName}.disconnect-terminal`,
+      `${moduleName}.subscribe-topic`,
+      `${moduleName}.unsubscribe-topic`,
+      `${moduleName}.accept-topic-notification`,
+      `${moduleName}.read-terminal-data`,
+      `${moduleName}.topic-changed`,
       `${moduleName}.initialize-terminal-data-client`,
       `${moduleName}.refresh-status-projection`,
       `${moduleName}.transport-event`,

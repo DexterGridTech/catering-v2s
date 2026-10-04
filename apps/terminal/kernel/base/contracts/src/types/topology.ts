@@ -186,6 +186,8 @@ export type TopologyWireMessage =
       readonly parentCommandId: string | null;
       readonly commandName: string;
       readonly payload: TopologyJsonValue;
+      /** Optional bounded window used only by an explicitly registered late-result observer. */
+      readonly lateResultTtlMs?: number;
     }>
   | Readonly<{
       readonly type: 'command-result';

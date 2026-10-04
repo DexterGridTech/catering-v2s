@@ -41,7 +41,7 @@ export const sessionStateRegistration = defineStateRuntimeSlice<SessionState>({
     kind: 'record',
     getEntries: (state: Readonly<SessionState>): Readonly<Record<string, SyncValueEnvelope>> => ({
       state: {
-      value: {status: state.status, operatorName: state.operatorName},
+        value: {status: state.status, operatorName: state.operatorName},
         updatedAt: 0 as TimestampMs,
       },
     }),

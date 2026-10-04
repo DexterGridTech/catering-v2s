@@ -9,7 +9,7 @@ import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-c
 import {terminalDataClientActions} from '../../../../../terminal/kernel/base/terminal-data-client/src/features/slices/terminalDataClient';
 import {createSurfaceForDisplayIndex, createSampleWallpaperConsoleAssembly} from '../src';
 import {startupReadyCommand} from '../src/application/module';
-import {createTestPlatformPorts, type TestPlatformPorts} from './support';
+import {createReadyTerminalNetworkAdapter, createTestPlatformPorts, type TestPlatformPorts} from './support';
 import {adminTestIds} from '@catering-v2s/ui-base-admin-shell';
 import {
   resetNativeTestRefFactory,
@@ -40,7 +40,8 @@ const DEVICE_INFO = Object.freeze({
 type TestAssemblyInput = Omit<
   Parameters<typeof createSampleWallpaperConsoleAssembly>[0],
   'platformPorts' | 'nativeLoadingCapability'
-> & Readonly<{readonly platformPorts: TestPlatformPorts}>;
+> &
+  Readonly<{readonly platformPorts: TestPlatformPorts}>;
 
 const createAssembly = (input: TestAssemblyInput) =>
   createSampleWallpaperConsoleAssembly({
@@ -49,23 +50,18 @@ const createAssembly = (input: TestAssemblyInput) =>
     transportNetworkAdapterFactory:
       input.transportNetworkAdapterFactory ??
       (readSnapshot =>
-        Object.freeze({
-          readSnapshot,
-          connect: async () => {
-            throw new Error('WEBSOCKET_NOT_EXPECTED_IN_WALLPAPER_OWNER_STAGE_REGRESSION');
-          },
-          sendHttp: async () =>
-            Object.freeze({
-              kind: 'response' as const,
-              status: 200,
-              body: Object.freeze({
-                terminalRef: 'terminal-wallpaper-stage-test',
-                storeRef: 'store-wallpaper-stage-test',
-                groupWorkspaceKey: 'workspace-wallpaper-stage-test',
-                bindingGeneration: 1,
-              }),
+        createReadyTerminalNetworkAdapter(readSnapshot, async () =>
+          Object.freeze({
+            kind: 'response' as const,
+            status: 200,
+            body: Object.freeze({
+              terminalRef: '00000000-0000-4000-8000-000000000011',
+              storeRef: '00000000-0000-4000-8000-000000000012',
+              groupWorkspaceKey: 'workspace-wallpaper-stage-test',
+              bindingGeneration: 1,
             }),
-        })),
+          }),
+        )),
   });
 
 const dispatchOptions = () => ({requestId: createRequestId()});
@@ -107,7 +103,7 @@ const activate = async (assembly: Awaited<ReturnType<typeof createAssembly>>) =>
   );
   expect(result.status).toBe('completed');
   expect(result.actorResults.map(item => item.result)).toContainEqual(
-    expect.objectContaining({status: 'activated', terminalRef: 'terminal-wallpaper-stage-test'}),
+    expect.objectContaining({status: 'activated', terminalRef: '00000000-0000-4000-8000-000000000011'}),
   );
 };
 
@@ -120,12 +116,15 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
   it('restores an authenticated session without routing past the activation gate', async () => {
     const persistenceKey = `sample-wallpaper-stage-restore-${Date.now()}`;
     const plainStorage = createProcessMemoryStateStoragePort();
+    const protectedStorage = createProcessMemoryStateStoragePort();
     const previous = await createAssembly({
-      platformPorts: createTestPlatformPorts({plainStorage}),
+      platformPorts: createTestPlatformPorts({plainStorage, protectedStorage, deviceInfo: DEVICE_INFO}),
       persistenceKey,
       surfaceForm: 'laptop',
     });
     try {
+      await makeReady(previous);
+      await activate(previous);
       const login = await previous.runtime.dispatchCommand(
         loginCommand,
         {operatorName: 'A001', passcode: '1111'},
@@ -138,14 +137,14 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
     }
 
     const assembly = await createAssembly({
-      platformPorts: createTestPlatformPorts({plainStorage}),
+      platformPorts: createTestPlatformPorts({plainStorage, protectedStorage, deviceInfo: DEVICE_INFO}),
       persistenceKey,
       surfaceForm: 'laptop',
     });
     try {
       await makeReady(assembly);
       expect(selectSessionState(assembly.runtime.getState())).toEqual({status: 'authenticated', operatorName: 'A001'});
-      expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('terminal.activation.lmp');
+      expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.wallpaper.picker');
     } finally {
       await releaseRuntimeForTestAsync(assembly.runtime);
     }
@@ -161,10 +160,15 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
     try {
       await makeReady(assembly);
       await activate(assembly);
-      await waitFor(() => expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.auth.login'));
+      await waitFor(() =>
+        expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.auth.login'),
+      );
       setNativeTestRefFactory((hostName: string, props: NativeTestHostProps) => {
         if (props.testID === adminTestIds.launcher) {
-          return {measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => callback(0, 0, 1, 1)};
+          return {
+            measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) =>
+              callback(0, 0, 1, 1),
+          };
         }
         return hostName === 'View' ? {} : undefined;
       });

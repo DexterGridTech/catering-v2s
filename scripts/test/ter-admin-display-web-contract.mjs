@@ -59,7 +59,9 @@ export function expectedWebBusinessAssertionIds({webScenario, integrationName, s
 
 export function hasManagedTerminalBrowserOrigin(origins, port) {
   if (!Array.isArray(origins) || !Number.isInteger(port) || port < 1024 || port > 65535) return false;
-  if (origins.some(value => typeof value !== 'string' || !/^http:\/\/(?:127\.0\.0\.1|localhost):[0-9]{4,5}$/u.test(value))) {
+  if (
+    origins.some(value => typeof value !== 'string' || !/^http:\/\/(?:127\.0\.0\.1|localhost):[0-9]{4,5}$/u.test(value))
+  ) {
     return false;
   }
   return origins.includes(`http://127.0.0.1:${port}`);
@@ -343,7 +345,11 @@ export function memberConfirmationReadback({rowTexts, expectedName, expectedPhon
     typeof expectedPhone !== 'string' ||
     expectedPhone.length === 0
   ) {
-    return Object.freeze({status: 'FAIL', rowCount: Array.isArray(rowTexts) ? rowTexts.length : null, matchingRowCount: 0});
+    return Object.freeze({
+      status: 'FAIL',
+      rowCount: Array.isArray(rowTexts) ? rowTexts.length : null,
+      matchingRowCount: 0,
+    });
   }
   const expectedRow = `${expectedName} ${expectedPhone}`;
   const matchingRowCount = rowTexts.filter(value => value.trim() === expectedRow).length;
@@ -524,9 +530,7 @@ export function classifyAdminLauncherFailureRecoveryLog(
 
 export function parseJsonEventsAfterByteOffset(bytes, byteOffset) {
   const checkpoint =
-    typeof byteOffset === 'number'
-      ? Object.freeze({byteOffset, notBeforeEpochMillis: null})
-      : byteOffset;
+    typeof byteOffset === 'number' ? Object.freeze({byteOffset, notBeforeEpochMillis: null}) : byteOffset;
   if (
     !Buffer.isBuffer(bytes) ||
     !checkpoint ||
@@ -908,6 +912,60 @@ export function correlateManagedHttpExchange({
     expectedStatus,
     expectedErrorCode,
   });
+}
+
+export function projectManagedTerminalActivationBackendLogLines(lines, startedAt, finishedAt) {
+  const start = Date.parse(startedAt);
+  const finish = Date.parse(finishedAt);
+  if (!Array.isArray(lines) || !Number.isFinite(start) || !Number.isFinite(finish) || finish < start) {
+    throw new Error('WEB_TERMINAL_BACKEND_LOG_PROJECTION_INPUT_INVALID');
+  }
+  const route = (...segments) => `/${segments.join('/')}`;
+  const activationRoute = route('api', 'terminal', 'group-workspaces', '{groupWorkspaceKey}', 'activation');
+  const cancellationRoute = route(
+    'api',
+    'terminal',
+    'group-workspaces',
+    '{groupWorkspaceKey}',
+    'terminals',
+    '{terminalRef}',
+    'activation',
+    'cancel',
+  );
+  return Object.freeze(
+    lines.flatMap(line => {
+      const timestampText = line.match(/^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}[+-]\d\d:\d\d)/u)?.[1];
+      if (timestampText === undefined) return [];
+      const timestamp = Date.parse(timestampText);
+      if (timestamp < start || timestamp > finish) return [];
+      const routeTemplate = line.match(/\brouteTemplate=([^\s]+)/u)?.[1] ?? null;
+      const event = line.match(/\bevent=([A-Z0-9_]+)/u)?.[1] ?? null;
+      const activationEvent = event !== null && event.startsWith('TERMINAL_ACTIVATION_HTTP_');
+      const managedRoute = routeTemplate === activationRoute || routeTemplate === cancellationRoute;
+      if (!activationEvent && (!line.includes('request-completed') || !managedRoute)) return [];
+      const value = key => line.match(new RegExp(`\\b${key}=([^\\s]+)`, 'u'))?.[1] ?? null;
+      return [
+        Object.freeze({
+          at: timestampText,
+          event,
+          operationId: value('operationId'),
+          outcome: value('outcome'),
+          status: Number(value('status')) || null,
+          durationMillis: Number(value('durationMillis')) || 0,
+          errorCode: value('errorCode'),
+          databaseOperationCount: /^\d+$/u.test(value('databaseOperationCount') ?? '')
+            ? Number(value('databaseOperationCount'))
+            : null,
+          owner: value('owner'),
+          consumerFace: value('consumerFace'),
+          routeTemplate,
+          requestId: value('requestId'),
+          correlationId: value('correlationId'),
+          exceptionType: value('exceptionType'),
+        }),
+      ];
+    }),
+  );
 }
 
 export function projectManagedTdsLogLines(lines, nodeId, startedAt, finishedAt, finishGraceMillis = 0) {

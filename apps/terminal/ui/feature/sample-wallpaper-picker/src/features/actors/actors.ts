@@ -140,11 +140,15 @@ export const createWallpaperPickerEntryActor = (): ActorDefinition =>
         partKey = 'sample.wallpaper.branch.picker';
       }
       if (partKey === null) throw new Error('[ui.feature.sample-wallpaper-picker] stage route is unavailable');
-      await context.dispatchCommand(showScreenCommand, {
-        displayMode: route.displayMode,
-        containerKey: 'main',
-        partKey,
-      }, {routeContext: route});
+      await context.dispatchCommand(
+        showScreenCommand,
+        {
+          displayMode: route.displayMode,
+          containerKey: 'main',
+          partKey,
+        },
+        {routeContext: route},
+      );
       return Object.freeze({status: 'wallpaper-stage-requested', partKey});
     }),
   ]);

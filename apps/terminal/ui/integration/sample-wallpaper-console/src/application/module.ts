@@ -10,9 +10,15 @@ import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
 import type {CommandRouteContext, SurfaceForm} from '@catering-v2s/kernel-base-contracts';
 import {contentStateSliceName, selectScreen, showScreenCommand} from '@catering-v2s/kernel-base-ui-state';
-import {selectTopologyFacts, selectTopologyRequiredProjectionsReady, selectTopologyState} from '@catering-v2s/kernel-base-topology';
+import {
+  selectTopologyFacts,
+  selectTopologyRequiredProjectionsReady,
+  selectTopologyState,
+} from '@catering-v2s/kernel-base-topology';
 import {selectHostStaffQualification, sessionSliceName} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {wallpaperSliceName} from '@catering-v2s/kernel-feature-sample-wallpaper';
+import {serverConfigSliceName} from '@catering-v2s/kernel-base-server-config';
+import {terminalClientStatusProjectionSliceName} from '@catering-v2s/kernel-base-terminal-data-client';
 import {needToActivateTerminalCommand, selectActivationStatusView} from '@catering-v2s/ui-base-terminal-activation';
 import {startWallpaperPickerCommand} from '@catering-v2s/ui-feature-sample-wallpaper-picker';
 import {needToLoginStaffCommand} from '@catering-v2s/ui-feature-sample-staff-auth';
@@ -44,11 +50,31 @@ const requiredPeerProjectionSliceNames = Object.freeze([
   contentStateSliceName('MAIN'),
   sessionSliceName,
   wallpaperSliceName,
+  serverConfigSliceName,
+  terminalClientStatusProjectionSliceName,
 ]);
 
+const hasCurrentActivatedTerminal = (state: StateRoot): boolean => {
+  const activation = selectActivationStatusView(state);
+  return activation !== null && activation.currentPeerValue && activation.activation.status === 'active';
+};
+
 export const selectSampleWallpaperConsoleBusinessInterlockActive = (state: StateRoot): boolean =>
-  selectRuntimeInstanceMode(state) === 'SLAVE' &&
-  !selectTopologyRequiredProjectionsReady(state, requiredPeerProjectionSliceNames);
+  selectTopologyState(state).repairPending ||
+  (selectRuntimeInstanceMode(state) === 'SLAVE' &&
+    !selectTopologyRequiredProjectionsReady(state, requiredPeerProjectionSliceNames)) ||
+  (selectHostStaffQualification(state)?.status === 'authenticated' && !hasCurrentActivatedTerminal(state));
+
+export const selectSampleWallpaperConsoleStaffLoginAllowed = (state: StateRoot): boolean =>
+  selectRuntimeInstanceMode(state) === 'MASTER' &&
+  !selectTopologyState(state).repairPending &&
+  hasCurrentActivatedTerminal(state);
+
+export const selectSampleWallpaperConsoleBusinessMutationAllowed = (state: StateRoot): boolean =>
+  !selectTopologyState(state).repairPending &&
+  !selectSampleWallpaperConsoleBusinessInterlockActive(state) &&
+  hasCurrentActivatedTerminal(state) &&
+  selectHostStaffQualification(state)?.status === 'authenticated';
 
 const activationPartFor = (surfaceForm: SurfaceForm, route: CommandRouteContext): string | null => {
   if (route.displayMode === undefined || route.workspace === undefined || route.instanceMode === undefined) return null;
@@ -66,14 +92,15 @@ const activationPartFor = (surfaceForm: SurfaceForm, route: CommandRouteContext)
   return null;
 };
 
-const currentStage = (state: StateRoot): Stage | null => {
+export const selectSampleWallpaperConsoleRouteStage = (state: StateRoot): Stage | null => {
   const topology = selectTopologyState(state);
-  if (topology.repairPending || selectSampleWallpaperConsoleBusinessInterlockActive(state)) return null;
+  if (topology.repairPending) return null;
   const activationView = selectActivationStatusView(state);
   if (activationView === null || !activationView.currentPeerValue) return null;
   const status = activationView.activation.status;
   if (status === 'activating' || status === 'cancelling') return null;
   if (status === 'inactive') return 'activation';
+  if (selectSampleWallpaperConsoleBusinessInterlockActive(state)) return null;
   const staff = selectHostStaffQualification(state);
   if (staff === null) return null;
   return staff.status === 'authenticated' ? 'business' : 'staff';
@@ -120,18 +147,54 @@ const signature = (state: StateRoot, surfaceForm: SurfaceForm): string => {
     staff?.status ?? null,
     placementsFor(state, surfaceForm).map(({route, key}) => [
       key,
-      route.displayMode === undefined ? null : selectScreen(state, route.displayMode, 'main')?.partKey ?? null,
+      route.displayMode === undefined ? null : (selectScreen(state, route.displayMode, 'main')?.partKey ?? null),
     ]),
   ]);
 };
 
-const routeStage = async (
-  context: ActorExecutionContext,
-  surfaceForm: SurfaceForm,
+const routePlacement = async (
+  input: Readonly<{
+    context: ActorExecutionContext;
+    surfaceForm: SurfaceForm;
+    stage: NonNullable<ReturnType<typeof selectSampleWallpaperConsoleRouteStage>>;
+    route: ReturnType<typeof placementsFor>[number]['route'];
+  }>,
 ): Promise<void> => {
-  const stage = currentStage(context.getState());
-  const activationView = selectActivationStatusView(context.getState());
-  const staff = selectHostStaffQualification(context.getState());
+  const {context, surfaceForm, stage, route} = input;
+  const existing =
+    route.displayMode === undefined ? undefined : selectScreen(context.getState(), route.displayMode, 'main');
+  if (stage === 'activation') {
+    const expected = activationPartFor(surfaceForm, route);
+    if (expected === null || existing?.partKey === expected) return;
+    const result = await context.dispatchCommand(needToActivateTerminalCommand, {}, {routeContext: route});
+    if (result.status !== 'completed')
+      throw new Error(`[sample-wallpaper-console] activation route failed: ${result.status}`);
+    return;
+  }
+  if (stage === 'staff') {
+    const expected =
+      route.instanceMode === 'MASTER' && route.displayMode === 'PRIMARY'
+        ? 'sample.auth.login'
+        : route.displayMode === 'PRIMARY'
+          ? 'sample.auth.guide.lsp'
+          : 'sample.auth.guide.lms';
+    if (existing?.partKey === expected) return;
+    const result = await context.dispatchCommand(needToLoginStaffCommand, {}, {routeContext: route});
+    if (result.status !== 'completed')
+      throw new Error(`[sample-wallpaper-console] staff stage route failed: ${result.status}`);
+    return;
+  }
+  if (existing?.partKey.startsWith('sample.wallpaper.') === true) return;
+  const result = await context.dispatchCommand(startWallpaperPickerCommand, {}, {routeContext: route});
+  if (result.status !== 'completed')
+    throw new Error(`[sample-wallpaper-console] wallpaper stage route failed: ${result.status}`);
+};
+
+const routeStage = async (context: ActorExecutionContext, surfaceForm: SurfaceForm): Promise<void> => {
+  const state = context.getState();
+  const stage = selectSampleWallpaperConsoleRouteStage(state);
+  const activationView = selectActivationStatusView(state);
+  const staff = selectHostStaffQualification(state);
   context.platformPorts.logger.info({
     category: 'terminal-stage-routing',
     event: 'sample-wallpaper-console.stage-observed',
@@ -139,47 +202,17 @@ const routeStage = async (
     data: {
       stage,
       surfaceForm,
-      instanceMode: selectRuntimeInstanceMode(context.getState()),
-      displayRole: selectDisplayRole(context.getState()),
-      repairPending: selectTopologyState(context.getState()).repairPending,
+      instanceMode: selectRuntimeInstanceMode(state),
+      displayRole: selectDisplayRole(state),
+      repairPending: selectTopologyState(state).repairPending,
       activationStatus: activationView?.activation.status ?? null,
       activationPeerCurrent: activationView?.currentPeerValue ?? false,
       staffStatus: staff?.status ?? null,
     },
   });
   if (stage === null) return;
-  for (const placement of placementsFor(context.getState(), surfaceForm)) {
-    const {route} = placement;
-    const existing = route.displayMode === undefined ? undefined : selectScreen(context.getState(), route.displayMode, 'main');
-    if (stage === 'activation') {
-      const expected = activationPartFor(surfaceForm, route);
-      if (expected === null) continue;
-      if (existing?.partKey !== expected) {
-        const result = await context.dispatchCommand(needToActivateTerminalCommand, {}, {routeContext: route});
-        if (result.status !== 'completed') throw new Error(`[sample-wallpaper-console] activation route failed: ${result.status}`);
-      }
-    } else if (stage === 'staff') {
-      if (route.instanceMode === 'MASTER' && route.displayMode === 'SECONDARY') {
-        if (existing?.partKey !== 'sample.wallpaper-console.waiting') {
-          const result = await context.dispatchCommand(showScreenCommand, {
-            displayMode: 'SECONDARY', containerKey: 'main', partKey: 'sample.wallpaper-console.waiting',
-          }, {routeContext: route});
-          if (result.status !== 'completed') throw new Error(`[sample-wallpaper-console] waiting-stage route failed: ${result.status}`);
-        }
-      } else {
-        const expected = route.instanceMode === 'MASTER' ? 'sample.auth.login' : route.displayMode === 'PRIMARY' ? 'sample.auth.guide.lsp' : 'sample.auth.guide.lms';
-        if (existing?.partKey !== expected) {
-          const result = await context.dispatchCommand(needToLoginStaffCommand, {}, {routeContext: route});
-          if (result.status !== 'completed') throw new Error(`[sample-wallpaper-console] staff stage route failed: ${result.status}`);
-        }
-      }
-    } else {
-      const existingIsWallpaper = existing?.partKey.startsWith('sample.wallpaper.') === true;
-      if (!existingIsWallpaper) {
-        const result = await context.dispatchCommand(startWallpaperPickerCommand, {}, {routeContext: route});
-        if (result.status !== 'completed') throw new Error(`[sample-wallpaper-console] wallpaper stage route failed: ${result.status}`);
-      }
-    }
+  for (const placement of placementsFor(state, surfaceForm)) {
+    await routePlacement({context, surfaceForm, stage, route: placement.route});
   }
 };
 
@@ -188,7 +221,10 @@ export const createSampleWallpaperConsoleModule = (surfaceForm: SurfaceForm): Ru
   let reconcileScheduled = false;
   let lastSignature: string | null = null;
   let lastSecondaryAvailability: boolean | null = null;
-  const logSecondaryAvailability = (state: StateRoot, logger: ActorExecutionContext['platformPorts']['logger']): void => {
+  const logSecondaryAvailability = (
+    state: StateRoot,
+    logger: ActorExecutionContext['platformPorts']['logger'],
+  ): void => {
     const hasTopologySecondarySurface = selectTopologyFacts(state)?.hasTopologySecondarySurface ?? false;
     const secondaryAvailable = surfaceForm === 'laptop' && hasTopologySecondarySurface;
     if (lastSecondaryAvailability === secondaryAvailable) return;
@@ -222,11 +258,15 @@ export const createSampleWallpaperConsoleModule = (surfaceForm: SurfaceForm): Ru
       const partKey = activationPartFor(surfaceForm, route);
       if (partKey === null) return Object.freeze({status: 'rejected', reason: 'ACTIVATION_ROUTE_UNAVAILABLE'});
       if (selectScreen(context.getState(), route.displayMode, 'main')?.partKey !== partKey) {
-        await context.dispatchCommand(showScreenCommand, {
-          displayMode: route.displayMode,
-          containerKey: 'main',
-          partKey,
-        }, {routeContext: route});
+        await context.dispatchCommand(
+          showScreenCommand,
+          {
+            displayMode: route.displayMode,
+            containerKey: 'main',
+            partKey,
+          },
+          {routeContext: route},
+        );
       }
       return Object.freeze({status: 'activation-screen-requested', partKey});
     }),
@@ -265,33 +305,36 @@ export const createSampleWallpaperConsoleModule = (surfaceForm: SurfaceForm): Ru
         reconcileScheduled = true;
         queueMicrotask(() => {
           reconcileScheduled = false;
-          void context.dispatchCommand(reconcileStageCommand, {}, {requestId: createRequestId()}).then(result => {
-            if (result.status !== 'completed') {
+          void context
+            .dispatchCommand(reconcileStageCommand, {}, {requestId: createRequestId()})
+            .then(result => {
+              if (result.status !== 'completed') {
+                context.platformPorts.logger.error({
+                  category: 'terminal-stage-routing',
+                  event: 'sample-wallpaper-console.reconcile-rejected',
+                  message: 'Owner-stage reconciliation command did not complete',
+                  data: {
+                    status: result.status,
+                    actorFailures: result.actorResults
+                      .filter(actor => actor.status === 'error' || actor.status === 'timed-out')
+                      .map(actor => ({
+                        actorKey: actor.actorKey,
+                        status: actor.status,
+                        errorKey: actor.error?.key ?? null,
+                        errorCode: actor.error?.code ?? null,
+                      })),
+                  },
+                });
+              }
+            })
+            .catch(error => {
               context.platformPorts.logger.error({
                 category: 'terminal-stage-routing',
-                event: 'sample-wallpaper-console.reconcile-rejected',
-                message: 'Owner-stage reconciliation command did not complete',
-                data: {
-                  status: result.status,
-                  actorFailures: result.actorResults
-                    .filter(actor => actor.status === 'error' || actor.status === 'timed-out')
-                    .map(actor => ({
-                      actorKey: actor.actorKey,
-                      status: actor.status,
-                      errorKey: actor.error?.key ?? null,
-                      errorCode: actor.error?.code ?? null,
-                    })),
-                },
+                event: 'sample-wallpaper-console.reconcile-failed',
+                message: 'Owner-stage reconciliation failed',
+                data: {errorType: error instanceof Error ? error.name : typeof error},
               });
-            }
-          }).catch(error => {
-            context.platformPorts.logger.error({
-              category: 'terminal-stage-routing',
-              event: 'sample-wallpaper-console.reconcile-failed',
-              message: 'Owner-stage reconciliation failed',
-              data: {errorType: error instanceof Error ? error.name : typeof error},
             });
-          });
         });
       });
     },

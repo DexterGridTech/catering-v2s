@@ -9,7 +9,7 @@ import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-c
 import {terminalDataClientActions} from '../../../../../terminal/kernel/base/terminal-data-client/src/features/slices/terminalDataClient';
 import {createSampleAssembly, createSurfaceForDisplayIndex} from '../src';
 import {startupReadyCommand} from '../src/application/module';
-import {createTestPlatformPorts, type TestPlatformPorts} from './support';
+import {createReadyTerminalNetworkAdapter, createTestPlatformPorts, type TestPlatformPorts} from './support';
 import {adminTestIds} from '@catering-v2s/ui-base-admin-shell';
 import {
   resetNativeTestRefFactory,
@@ -64,23 +64,18 @@ const createAssembly = (input: TestAssemblyInput) =>
     transportNetworkAdapterFactory:
       input.transportNetworkAdapterFactory ??
       (readSnapshot =>
-        Object.freeze({
-          readSnapshot,
-          connect: async () => {
-            throw new Error('WEBSOCKET_NOT_EXPECTED_IN_OWNER_STAGE_REGRESSION');
-          },
-          sendHttp: async () =>
-            Object.freeze({
-              kind: 'response' as const,
-              status: 200,
-              body: Object.freeze({
-                terminalRef: 'terminal-stage-test',
-                storeRef: 'store-stage-test',
-                groupWorkspaceKey: 'workspace-stage-test',
-                bindingGeneration: 1,
-              }),
+        createReadyTerminalNetworkAdapter(readSnapshot, async () =>
+          Object.freeze({
+            kind: 'response' as const,
+            status: 200,
+            body: Object.freeze({
+              terminalRef: '00000000-0000-4000-8000-000000000005',
+              storeRef: '00000000-0000-4000-8000-000000000006',
+              groupWorkspaceKey: 'workspace-stage-test',
+              bindingGeneration: 1,
             }),
-        })),
+          }),
+        )),
   });
 
 const makeReady = async (assembly: Awaited<ReturnType<typeof createAssembly>>) => {
@@ -105,7 +100,7 @@ const activate = async (assembly: Awaited<ReturnType<typeof createAssembly>>) =>
   );
   expect(result.status).toBe('completed');
   expect(result.actorResults.map(item => item.result)).toContainEqual(
-    expect.objectContaining({status: 'activated', terminalRef: 'terminal-stage-test'}),
+    expect.objectContaining({status: 'activated', terminalRef: '00000000-0000-4000-8000-000000000005'}),
   );
 };
 
@@ -118,12 +113,15 @@ describe('sample-console integration owner-stage regressions', () => {
   it('restores an authenticated session without routing past the activation gate', async () => {
     const persistenceKey = `sample-console-stage-restore-${Date.now()}`;
     const plainStorage = createProcessMemoryStateStoragePort();
+    const protectedStorage = createProcessMemoryStateStoragePort();
     const previous = await createAssembly({
-      platformPorts: createTestPlatformPorts({plainStorage}),
+      platformPorts: createTestPlatformPorts({plainStorage, protectedStorage, deviceInfo: DEVICE_INFO}),
       persistenceKey,
       surfaceForm: 'laptop',
     });
     try {
+      await makeReady(previous);
+      await activate(previous);
       const login = await previous.runtime.dispatchCommand(
         loginCommand,
         {operatorName: 'A001', passcode: '1111'},
@@ -136,14 +134,14 @@ describe('sample-console integration owner-stage regressions', () => {
     }
 
     const assembly = await createAssembly({
-      platformPorts: createTestPlatformPorts({plainStorage}),
+      platformPorts: createTestPlatformPorts({plainStorage, protectedStorage, deviceInfo: DEVICE_INFO}),
       persistenceKey,
       surfaceForm: 'laptop',
     });
     try {
       await makeReady(assembly);
       expect(selectSessionState(assembly.runtime.getState())).toEqual({status: 'authenticated', operatorName: 'A001'});
-      expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('terminal.activation.lmp');
+      expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.desk.member-list');
     } finally {
       await releaseRuntimeForTestAsync(assembly.runtime);
     }
@@ -165,16 +163,23 @@ describe('sample-console integration owner-stage regressions', () => {
         dispatchOptions(),
       );
       expect(login.status).toBe('completed');
-      await waitFor(() => expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.desk.member-list'));
+      await waitFor(() =>
+        expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.desk.member-list'),
+      );
       setNativeTestRefFactory((hostName: string, props: NativeTestHostProps) => {
         if (props.testID === adminTestIds.launcher) {
-          return {measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => callback(0, 0, 1, 1)};
+          return {
+            measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) =>
+              callback(0, 0, 1, 1),
+          };
         }
         return hostName === 'View' ? {} : undefined;
       });
       renderer = await render(createSurfaceForDisplayIndex(assembly, 0));
       fireEvent.press(renderer.getByTestId('sample.desk.member-list:empty-action'));
-      await waitFor(() => expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.desk.member-form'));
+      await waitFor(() =>
+        expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.desk.member-form'),
+      );
       fireEvent.changeText(renderer.getByTestId('sample.desk.member-form:name'), 'Alice pending');
 
       await act(async () => {

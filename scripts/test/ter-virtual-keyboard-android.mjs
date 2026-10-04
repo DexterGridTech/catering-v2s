@@ -6,9 +6,16 @@
 // bridge-dev-tunnels --run-id ID --device dual|mobile --app APP;
 // build --run-id ID --app APP; launch/inspect/tap/capture/transition/insert-url-symbol-sequence --run-id ID
 // with the explicit --device dual|mobile and the action-specific IA/testID fields;
+// select-different-wallpaper reads selected radio state, chooses one different option, and verifies pending confirmation;
 // business-input --value-key, assert-business-text --expectation, assert-business-screen/wait-business-screen,
+// diagnose-business-screen records a bounded resource-id/class summary without retaining UI text,
 // and assert-business-member-readback are finite, redacted test oracles;
-// business-clock emits the attached Android VM's epoch milliseconds for bounded log projection;
+// mark-terminal-evidence-start and capture-terminal-business-logs use device identity and run-bound
+// timestamps automatically; capture requires --expectation activation-success|activation-cancelled|heartbeat-pong
+// and keeps only allowlisted app/backend/TDS summaries plus safe line counters;
+// read-terminal-binding is a read-only owner-fact check for one named seed fixture;
+// resolve-terminal-binding-fixture compares the live app identity against the finite typed seed fixture set in memory;
+// business-clock remains a diagnostic clock observation;
 // W7 uses w7-seed-clipboard and w7-long-press through this managed runner; input values are compared only in memory.
 // inject-debug-failure sends a debug-only VIEW event to an already-owned process without Activity wait;
 // diagnose-pending-launch --run-id ID resolves only the exact pending launch after host/boot/process readback;
@@ -31,6 +38,14 @@ import {
 } from '../dev/managed-process-tree.mjs';
 import {parseAvdNameReply} from '../../tools/terminal-topology/device-identity.mjs';
 import {terminalBusinessMemberFixture} from './terminal-business-fixtures.mjs';
+import {collectRemoteLog, collectRemoteTdsLog} from '../dev/r5-remote-java-runtime.mjs';
+import {readManagedTerminalBindingByName} from '../dev/r5-dev-runner.mjs';
+import {validateManagedDevManifest} from './terminal-client-dev-acceptance.mjs';
+import {
+  correlateManagedBackendRequest,
+  projectManagedTdsLogLines,
+  projectManagedTerminalActivationBackendLogLines,
+} from './ter-admin-display-web-contract.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const RUNTIME_ROOT = path.join(ROOT, '.runtime/ter-virtual-keyboard-android');
@@ -47,6 +62,7 @@ const TERMINAL_BUSINESS_INPUTS = Object.freeze({
   'staff-name': Object.freeze({
     apps: Object.freeze(['sample-terminal', 'sample-wallpaper-terminal']),
     resourceId: 'sample.auth.login:operator-name',
+    nextResourceId: 'sample.auth.login:passcode',
     value: 'A001',
   }),
   'staff-passcode': Object.freeze({
@@ -57,11 +73,13 @@ const TERMINAL_BUSINESS_INPUTS = Object.freeze({
   'member-name': Object.freeze({
     apps: Object.freeze(['sample-terminal']),
     resourceId: 'sample.desk.member-form:name',
+    nextResourceId: 'sample.desk.member-form:phone',
     valueForRun: runId => terminalBusinessMemberFixture(runId).name,
   }),
   'member-phone': Object.freeze({
     apps: Object.freeze(['sample-terminal']),
     resourceId: 'sample.desk.member-form:phone',
+    nextResourceId: 'sample.desk.member-form:keyboard-alpha-probe',
     valueForRun: runId => terminalBusinessMemberFixture(runId).phone,
   }),
   'member-age': Object.freeze({
@@ -72,9 +90,22 @@ const TERMINAL_BUSINESS_INPUTS = Object.freeze({
 });
 const TERMINAL_BUSINESS_TEXT = Object.freeze({
   'activation-active': Object.freeze({resourceId: 'terminal.activation.admin:state', expectedText: '激活状态：已激活'}),
-  'connection-connected': Object.freeze({resourceId: 'terminal.activation.admin:connection', expectedText: '连接状态：已连接'}),
-  'activation-disabled': Object.freeze({resourceId: 'terminal.activation.result', expectedText: '终端已停用，暂时无法激活。'}),
+  'connection-connected': Object.freeze({
+    resourceId: 'terminal.activation.admin:connection',
+    expectedText: '连接状态：已连接',
+  }),
+  'activation-disabled': Object.freeze({
+    resourceId: 'terminal.activation.result',
+    expectedText: '终端已停用，暂时无法激活。',
+  }),
 });
+const KEYBOARD_BLOCKED_SUBMIT_RESOURCE_IDS = new Set([
+  'terminal.activation.submit',
+  'sample.auth.login:submit',
+  'sample.desk.member-form:submit',
+  'sample.desk.customer-member:confirm',
+  'sample.desk.customer-member:reject',
+]);
 export const TERMINAL_BUSINESS_SCREENS = Object.freeze({
   activation: Object.freeze({
     required: Object.freeze(['terminal.activation.screen', 'terminal.activation.code', 'terminal.activation.submit']),
@@ -88,37 +119,59 @@ export const TERMINAL_BUSINESS_SCREENS = Object.freeze({
     ]),
   }),
   'member-list-host': Object.freeze({
-    required: Object.freeze(['sample.desk.member-list', 'sample.desk.member-list:title', 'sample.desk.member-list:scroll']),
+    required: Object.freeze([
+      'sample.desk.member-list',
+      'sample.desk.member-list:title',
+      'sample.desk.member-list:scroll',
+    ]),
+    forbidden: Object.freeze([
+      'sample.desk.waiting-confirm',
+      'sample.desk.registry-notice',
+      'sample.desk.discard-confirm',
+      'sample.desk.withdraw-confirm',
+      'sample.desk.system-notice',
+    ]),
   }),
   'member-list-branch': Object.freeze({
-    required: Object.freeze(['sample.desk.branch.member-list', 'sample.desk.branch.member-list:title', 'sample.desk.branch.member-list:scroll']),
+    required: Object.freeze([
+      'sample.desk.branch.member-list',
+      'sample.desk.branch.member-list:title',
+      'sample.desk.branch.member-list:scroll',
+    ]),
     forbidden: Object.freeze([
       'sample.desk.branch.member-list:logout',
       'sample.desk.member-list',
       'sample.desk.member-list:logout',
     ]),
   }),
-  'member-form-host': Object.freeze({required: Object.freeze([
-    'sample.desk.member-form',
-    'sample.desk.member-form:name',
-    'sample.desk.member-form:phone',
-    'sample.desk.member-form:submit',
-    'sample.desk.member-form:cancel',
-  ])}),
-  'customer-confirmation-host': Object.freeze({required: Object.freeze([
-    'sample.desk.customer-member',
-    'sample.desk.customer-member:name',
-    'sample.desk.customer-member:phone',
-    'sample.desk.customer-member:confirm',
-    'sample.desk.customer-member:reject',
-  ])}),
-  'customer-confirmation-branch': Object.freeze({required: Object.freeze([
-    'sample.desk.branch.customer-member',
-    'sample.desk.branch.customer-member:name',
-    'sample.desk.branch.customer-member:phone',
-    'sample.desk.branch.customer-member:confirm',
-    'sample.desk.branch.customer-member:reject',
-  ]), forbidden: Object.freeze(['sample.desk.customer-member'])}),
+  'member-form-host': Object.freeze({
+    required: Object.freeze([
+      'sample.desk.member-form',
+      'sample.desk.member-form:name',
+      'sample.desk.member-form:phone',
+      'sample.desk.member-form:submit',
+      'sample.desk.member-form:cancel',
+    ]),
+  }),
+  'customer-confirmation-host': Object.freeze({
+    required: Object.freeze([
+      'sample.desk.customer-member',
+      'sample.desk.customer-member:name',
+      'sample.desk.customer-member:phone',
+      'sample.desk.customer-member:confirm',
+      'sample.desk.customer-member:reject',
+    ]),
+  }),
+  'customer-confirmation-branch': Object.freeze({
+    required: Object.freeze([
+      'sample.desk.branch.customer-member',
+      'sample.desk.branch.customer-member:name',
+      'sample.desk.branch.customer-member:phone',
+      'sample.desk.branch.customer-member:confirm',
+      'sample.desk.branch.customer-member:reject',
+    ]),
+    forbidden: Object.freeze(['sample.desk.customer-member']),
+  }),
   'wallpaper-host-mobile': Object.freeze({
     required: Object.freeze([
       'sample.wallpaper.picker',
@@ -131,16 +184,18 @@ export const TERMINAL_BUSINESS_SCREENS = Object.freeze({
     ]),
     forbidden: Object.freeze(['sample.wallpaper.picker:exit']),
   }),
-  'wallpaper-host-laptop': Object.freeze({required: Object.freeze([
-    'sample.wallpaper.picker',
-    'sample.wallpaper.picker:options:w1',
-    'sample.wallpaper.picker:options:w2',
-    'sample.wallpaper.picker:options:w3',
-    'sample.wallpaper.picker:options:none',
-    'sample.wallpaper.picker:confirm',
-    'sample.wallpaper.picker:exit',
-    'sample.wallpaper.picker:logout',
-  ])}),
+  'wallpaper-host-laptop': Object.freeze({
+    required: Object.freeze([
+      'sample.wallpaper.picker',
+      'sample.wallpaper.picker:options:w1',
+      'sample.wallpaper.picker:options:w2',
+      'sample.wallpaper.picker:options:w3',
+      'sample.wallpaper.picker:options:none',
+      'sample.wallpaper.picker:confirm',
+      'sample.wallpaper.picker:exit',
+      'sample.wallpaper.picker:logout',
+    ]),
+  }),
   'wallpaper-slave': Object.freeze({
     required: Object.freeze([
       'sample.wallpaper.branch.picker',
@@ -163,6 +218,13 @@ export const TERMINAL_BUSINESS_SCREENS = Object.freeze({
     ]),
   }),
 });
+
+const WALLPAPER_OPTION_RESOURCE_IDS = Object.freeze([
+  'sample.wallpaper.picker:options:none',
+  'sample.wallpaper.picker:options:w1',
+  'sample.wallpaper.picker:options:w2',
+  'sample.wallpaper.picker:options:w3',
+]);
 const IA_IDS = Object.freeze(Array.from({length: 19}, (_, index) => `VK-IA-${String(index + 1).padStart(2, '0')}`));
 const FULL_KEY_IDS = Object.freeze([
   ...Array.from('1234567890', value => `text-${value}`),
@@ -500,6 +562,30 @@ export function parseArgs(argv) {
   return result;
 }
 
+export function assertRunAllowsAction(manifest, action) {
+  if (!manifest || typeof action !== 'string') fail('VK_ANDROID_RUN_ACTION_INPUT_INVALID');
+  if (manifest.status === 'CLEANED' && !['cleanup', 'report'].includes(action)) fail('VK_ANDROID_RUN_ALREADY_CLEANED');
+  if (
+    manifest.status === 'FAIL' &&
+    ![
+      'business-clock',
+      'capture-terminal-business-logs',
+      'cleanup',
+      'diagnose-business-screen',
+      'diagnose-pending-launch',
+      'inspect',
+      'inspect-resolved-launch',
+      'read-terminal-binding',
+      'report',
+      'reinspect-resolved-launch-logs',
+      'resolve-terminal-binding-fixture',
+      'verify-terminal-binding-identity',
+    ].includes(action)
+  ) {
+    fail('VK_ANDROID_RUN_FAILED_ACTION_NOT_ALLOWED');
+  }
+}
+
 export function activationFixtureInputEvidence({fixtureKey, expectedCode, observedValue}) {
   if (!/^[A-Za-z0-9._-]{1,96}$/.test(fixtureKey ?? '')) fail('VK_ANDROID_ACTIVATION_FIXTURE_KEY_INVALID');
   if (!/^\d{8}$/.test(expectedCode ?? '') || typeof observedValue !== 'string')
@@ -537,12 +623,14 @@ export function terminalBusinessInputValue(runId, valueKey) {
   const input = TERMINAL_BUSINESS_INPUTS[valueKey];
   if (!input) fail('VK_ANDROID_BUSINESS_INPUT_KEY_INVALID');
   const value = typeof input.valueForRun === 'function' ? input.valueForRun(runId) : input.value;
-  if (typeof value !== 'string' || !/^[A-Za-z0-9 ]{1,32}$/u.test(value)) fail('VK_ANDROID_BUSINESS_INPUT_VALUE_INVALID');
+  if (typeof value !== 'string' || !/^[A-Za-z0-9 ]{1,32}$/u.test(value))
+    fail('VK_ANDROID_BUSINESS_INPUT_VALUE_INVALID');
   return value;
 }
 
 export function terminalBusinessInputKeyPlan(value) {
-  if (typeof value !== 'string' || !/^[A-Za-z0-9 ]{1,32}$/u.test(value)) fail('VK_ANDROID_BUSINESS_INPUT_VALUE_INVALID');
+  if (typeof value !== 'string' || !/^[A-Za-z0-9 ]{1,32}$/u.test(value))
+    fail('VK_ANDROID_BUSINESS_INPUT_VALUE_INVALID');
   const keys = [];
   for (const character of value) {
     if (character === ' ') {
@@ -550,10 +638,16 @@ export function terminalBusinessInputKeyPlan(value) {
     } else if (/^[0-9]$/u.test(character)) {
       keys.push(Object.freeze({keyId: `text-${character}`, uppercase: false}));
     } else {
-      keys.push(Object.freeze({keyId: `text-${character.toLowerCase()}`, uppercase: character !== character.toLowerCase()}));
+      keys.push(
+        Object.freeze({keyId: `text-${character.toLowerCase()}`, uppercase: character !== character.toLowerCase()}),
+      );
     }
   }
   return Object.freeze(keys);
+}
+
+export function terminalBusinessInputNeedsShiftToggle(key, shiftSelected) {
+  return key?.uppercase !== shiftSelected;
 }
 
 export function terminalBusinessInputReadback(valueKey, expected, observed) {
@@ -578,6 +672,14 @@ export function terminalBusinessInputReadback(valueKey, expected, observed) {
   });
 }
 
+export function terminalBusinessInputEntryDecision(valueKey, expected, observed) {
+  if (!TERMINAL_BUSINESS_INPUTS[valueKey] || typeof expected !== 'string' || typeof observed !== 'string')
+    fail('VK_ANDROID_BUSINESS_INPUT_READBACK_INVALID');
+  if (observed.length === 0) return Object.freeze({action: 'TYPE'});
+  if (valueKey === 'staff-name' && observed === expected) return Object.freeze({action: 'USE_REMEMBERED_MATCH'});
+  fail('VK_ANDROID_BUSINESS_INPUT_PREFILLED_VALUE_MISMATCH');
+}
+
 export function terminalBusinessMemberReadback(xml, expectedName, expectedPhone, displayId) {
   if (!/^ter[a-f0-9]{10}$/u.test(expectedName ?? '') || !/^010\d{8}$/u.test(expectedPhone ?? '')) {
     fail('VK_ANDROID_BUSINESS_MEMBER_EXPECTATION_INVALID');
@@ -591,13 +693,18 @@ export function terminalBusinessMemberReadback(xml, expectedName, expectedPhone,
   const close = scoped.indexOf('</display>', open.index + open[0].length);
   if (close < 0) fail('VK_ANDROID_RESOURCE_NODE_NOT_FOUND');
   scoped = scoped.slice(open.index, close + '</display>'.length);
-  const contentNodes = [...scoped.matchAll(/<node\b[^>]*resource-id=["'](sample\.desk\.member-list:row:[A-Za-z0-9._:-]+:content)["'][^>]*>/gu)];
-  const decode = value => value
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&');
+  const contentNodes = [
+    ...scoped.matchAll(
+      /<node\b[^>]*resource-id=["'](sample\.desk\.member-list:row:[A-Za-z0-9._:-]+:content)["'][^>]*>/gu,
+    ),
+  ];
+  const decode = value =>
+    value
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&');
   const target = `${expectedName} ${expectedPhone}`;
   const matchingRows = contentNodes.filter(match => {
     const text = match[0].match(/\btext=["']([^"']*)["']/u)?.[1];
@@ -614,7 +721,11 @@ export function terminalBusinessTextAssertion(xml, expectationId, displayId) {
   const expectation = TERMINAL_BUSINESS_TEXT[expectationId];
   if (!expectation) fail('VK_ANDROID_BUSINESS_TEXT_EXPECTATION_INVALID');
   const actual = parseResourceTextValue(xml, expectation.resourceId, displayId);
-  return Object.freeze({expectationId, resourceId: expectation.resourceId, matched: actual === expectation.expectedText});
+  return Object.freeze({
+    expectationId,
+    resourceId: expectation.resourceId,
+    matched: actual === expectation.expectedText,
+  });
 }
 
 export function terminalBusinessScreenAssertion(xml, expectationId, displayId) {
@@ -645,6 +756,56 @@ export function terminalBusinessScreenAssertion(xml, expectationId, displayId) {
     unexpectedResourceIds: Object.freeze(unexpectedResourceIds),
     ambiguousResourceIds: Object.freeze([...new Set(ambiguousResourceIds)]),
     matched: missingResourceIds.length === 0 && unexpectedResourceIds.length === 0 && ambiguousResourceIds.length === 0,
+  });
+}
+
+export function summarizeTerminalBusinessScreenDiagnostic(xml, displayId, expectedPackage) {
+  if (
+    !Number.isSafeInteger(Number(displayId)) ||
+    Number(displayId) < 0 ||
+    typeof expectedPackage !== 'string' ||
+    !/^[A-Za-z0-9_.]{1,192}$/u.test(expectedPackage)
+  ) {
+    fail('VK_ANDROID_BUSINESS_SCREEN_DIAGNOSTIC_ARGUMENT_INVALID');
+  }
+  const inventory = parseVisibleControlInventory(xml, Number(displayId));
+  const resourceIds = [
+    ...new Set(
+      inventory
+        .map(item => item.resourceId)
+        .filter(value => value !== null && /^(?:terminal|sample|ui\.base|ui\.integration)(?:[.:_-]|$)/u.test(value)),
+    ),
+  ].sort();
+  const classCounts = new Map();
+  for (const item of inventory) {
+    if (typeof item.className === 'string' && /^[A-Za-z][A-Za-z0-9_.$-]{0,127}$/u.test(item.className)) {
+      classCounts.set(item.className, (classCounts.get(item.className) ?? 0) + 1);
+    }
+  }
+  let appWindowVisible = false;
+  try {
+    parseDisplayWindowIdentity(xml, Number(displayId), expectedPackage);
+    appWindowVisible = true;
+  } catch (error) {
+    if (error?.message !== 'VK_ANDROID_CAPTURE_WINDOW_IDENTITY_UNPROVEN') throw error;
+  }
+  const screenControlCounts = Object.fromEntries(
+    Object.entries(TERMINAL_BUSINESS_SCREENS).map(([name, expectation]) => {
+      const ids = expectation.required.filter(id => resourceIds.includes(id));
+      return [name, {observed: ids.length, required: expectation.required.length}];
+    }),
+  );
+  return Object.freeze({
+    displayId: Number(displayId),
+    expectedPackage,
+    appWindowVisible,
+    visibleNodeCount: inventory.length,
+    applicationResourceIds: Object.freeze(resourceIds.slice(0, 80)),
+    applicationResourceIdsTruncated: resourceIds.length > 80,
+    classCounts: Object.freeze(Object.fromEntries([...classCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 16))),
+    screenControlCounts: Object.freeze(screenControlCounts),
+    uiTextCaptured: false,
+    contentDescriptionsCaptured: false,
   });
 }
 
@@ -686,11 +847,7 @@ export function validateTerminalEmulatorPair(dual, mobile) {
       fail('VK_ANDROID_DISTINCT_EMULATOR_IDENTITY_UNPROVEN');
     }
   }
-  if (
-    dual.serial === mobile.serial ||
-    dual.avdName === mobile.avdName ||
-    dual.bootId === mobile.bootId
-  ) {
+  if (dual.serial === mobile.serial || dual.avdName === mobile.avdName || dual.bootId === mobile.bootId) {
     fail('VK_ANDROID_DISTINCT_EMULATOR_IDENTITY_UNPROVEN');
   }
   return Object.freeze({
@@ -859,6 +1016,38 @@ export function parseResourceNode(xml, resourceId, displayId = null) {
   });
 }
 
+export function chooseDifferentWallpaperOption(xml, displayId) {
+  const options = WALLPAPER_OPTION_RESOURCE_IDS.map(resourceId => ({
+    resourceId,
+    node: parseResourceNode(xml, resourceId, displayId),
+  }));
+  if (options.some(option => option.node === null)) fail('VK_ANDROID_WALLPAPER_OPTIONS_INCOMPLETE');
+  const selected = options.filter(option => option.node.selected);
+  if (selected.length !== 1) fail('VK_ANDROID_WALLPAPER_SELECTION_NOT_UNIQUE');
+  const next = options.find(option => !option.node.selected && option.node.enabled);
+  if (!next) fail('VK_ANDROID_WALLPAPER_NO_ALTERNATIVE_OPTION');
+  return Object.freeze({currentResourceId: selected[0].resourceId, nextResourceId: next.resourceId});
+}
+
+export function activationSubmitReadiness(xml, displayId) {
+  const keyboardVisible = parseResourceNode(xml, 'ui.base.input:virtual-keyboard', displayId) !== null;
+  const blockingAdminOverlayPresent = parseResourceNode(xml, 'terminal.admin:login', displayId) !== null;
+  const submit = parseResourceNode(xml, 'terminal.activation.submit', displayId);
+  return Object.freeze({
+    keyboardVisible,
+    blockingAdminOverlayPresent,
+    submitVisible: submit !== null,
+    submitEnabled: submit?.enabled === true,
+    ready:
+      !keyboardVisible &&
+      !blockingAdminOverlayPresent &&
+      submit !== null &&
+      submit.enabled &&
+      submit.right > submit.left &&
+      submit.bottom > submit.top,
+  });
+}
+
 export function sameResourceNodeBounds(left, right) {
   return (
     left !== null &&
@@ -921,7 +1110,8 @@ export function parseAdminDebugPassword(xml, displayId) {
   if (
     digits.length !== 1 ||
     (debugTags.length === 0 && (!/请输入动态口令/.test(text) || !/[（(]\d{6}[）)]/.test(text)))
-  ) fail('VK_ANDROID_ADMIN_DEBUG_PASSWORD_NOT_OBSERVED');
+  )
+    fail('VK_ANDROID_ADMIN_DEBUG_PASSWORD_NOT_OBSERVED');
   return digits[0];
 }
 
@@ -1061,7 +1251,15 @@ export function parseTextInputContextMenu(xml, displayId) {
 export function parseResourceContentDescriptionHash(xml, resourceId, displayId) {
   if (!/^ui\.base\.input:virtual-keyboard:(?:text-[0-9]|text-[a-z]|shift|space|backspace|complete)$/.test(resourceId))
     fail('VK_ANDROID_SENSITIVE_VALUE_HASH_FORBIDDEN');
-  return sha256(parseResourceAttributeValue(xml, resourceId, displayId, 'content-desc', 'VK_ANDROID_RESOURCE_CONTENT_DESCRIPTION_MISSING'));
+  return sha256(
+    parseResourceAttributeValue(
+      xml,
+      resourceId,
+      displayId,
+      'content-desc',
+      'VK_ANDROID_RESOURCE_CONTENT_DESCRIPTION_MISSING',
+    ),
+  );
 }
 
 function parseResourceTextValue(xml, resourceId, displayId) {
@@ -1162,15 +1360,29 @@ export function parseResourceUiState(xml, resourceId, displayId) {
 export function terminalActivationInputReadiness(xml, displayId) {
   const field = parseResourceUiState(xml, TERMINAL_ACTIVATION_INPUT_ID, displayId);
   const keyboardVisible = parseResourceNode(xml, 'ui.base.input:virtual-keyboard', displayId) !== null;
+  const keyboardInteractive = parseResourceNode(xml, 'ui.base.input:keyboard-layer:interactive', displayId) !== null;
   const keyboardHitShieldPresent = parseResourceNode(xml, 'ui.base.input:keyboard-hit-shield', displayId) !== null;
+  const blockingAdminOverlayPresent = parseResourceNode(xml, 'terminal.admin:login', displayId) !== null;
+  const focusVisibilityFailure =
+    parseVisibleControlInventory(xml, displayId)
+      .map(item => item.resourceId)
+      .find(resourceId => resourceId?.startsWith('ui.base.input:focus-visibility-error:')) ?? null;
   const nativeFocusReported = field?.focused === true;
   return Object.freeze({
     fieldVisible: field !== null,
     fieldEnabled: field?.enabled === true,
     nativeFocusReported,
     keyboardVisible,
+    keyboardInteractive,
     keyboardHitShieldPresent,
-    ready: field?.enabled === true && keyboardVisible && !keyboardHitShieldPresent,
+    blockingAdminOverlayPresent,
+    focusVisibilityFailure,
+    ready:
+      field?.enabled === true &&
+      keyboardVisible &&
+      keyboardInteractive &&
+      !keyboardHitShieldPresent &&
+      !blockingAdminOverlayPresent,
   });
 }
 
@@ -1721,8 +1933,11 @@ export function validateRunManifest(manifest, {allowHistoricalApkPathsForCleanup
       appName,
       'android/app/build/outputs/apk/release/app-release.apk',
     );
-    const pathMatches = binding.apkPath === expectedPath ||
-      (allowHistoricalApkPathsForCleanup && binding.apkPath === historicalCleanupPath && (binding.buildType ?? 'release') === 'release');
+    const pathMatches =
+      binding.apkPath === expectedPath ||
+      (allowHistoricalApkPathsForCleanup &&
+        binding.apkPath === historicalCleanupPath &&
+        (binding.buildType ?? 'release') === 'release');
     if (
       !app ||
       !pathMatches ||
@@ -2265,7 +2480,7 @@ export function validateRunManifest(manifest, {allowHistoricalApkPathsForCleanup
       !Number.isInteger(mapping.hostPort) ||
       mapping.hostPort < 1 ||
       mapping.hostPort > 65535 ||
-      mapping.status !== 'OWNED' && mapping.status !== 'CREATING' ||
+      (mapping.status !== 'OWNED' && mapping.status !== 'CREATING') ||
       !RUN_ID_RE.test(mapping.devRunId ?? '') ||
       seenTunnelMappings.has(routeKey)
     )
@@ -2450,13 +2665,43 @@ export async function launchWithPendingOwnership(manifest, intent, {persist, lau
 }
 
 function parseLogcatLine(line) {
-  const brief = String(line).match(/^[VDIWEF]\/([^ (]+)\(\s*(\d+)\):\s*(.*)$/);
+  // logcat aligns epoch timestamps with leading spaces on some builds.
+  const normalizedLine = String(line).trimStart();
+  const brief = normalizedLine.match(/^[VDIWEF]\/([^ (]+)\(\s*(\d+)\s*\):\s*(.*)$/);
   if (brief) return {tag: brief[1], pid: brief[2], message: brief[3], timestampMs: null};
-  const epoch = String(line).match(/^(\d{10}\.\d{3})\s+(\d+)\s+\d+\s+[VDIWEF]\s+([^:]+):\s*(.*)$/);
+  // Some Android logcat builds retain brief's `I/Tag(pid):` header when `-v epoch`
+  // is requested. Keep the epoch PID and embedded brief PID equal before using
+  // either identity so the managed parser never attributes another process's log.
+  const epochBrief = normalizedLine.match(
+    /^(\d{10}\.\d{1,9})\s+(\d+)\s+\d+\s+[VDIWEF]\/([^ (]+)\(\s*(\d+)\s*\):\s*(.*)$/,
+  );
+  if (epochBrief) {
+    if (epochBrief[2] !== epochBrief[4]) return null;
+    const timestampMs = Math.round(Number(epochBrief[1]) * 1000);
+    if (!Number.isSafeInteger(timestampMs)) return null;
+    return {tag: epochBrief[3], pid: epochBrief[2], message: epochBrief[5], timestampMs};
+  }
+  // Some emulator logcat builds combine the epoch modifier with brief's
+  // `priority/tag(pid):` header and include UID as an extra numeric column.
+  // Bind the embedded brief PID to the PID column before accepting the entry.
+  const epochUidBrief = normalizedLine.match(
+    /^(\d{10}\.\d{1,9})\s+(?:(\d+)\s+)?(\d+)\s+\d+\s+[VDIWEF]\/([^ (]+)\(\s*(\d+)\s*\):\s*(.*)$/,
+  );
+  if (epochUidBrief) {
+    if (epochUidBrief[3] !== epochUidBrief[5]) return null;
+    const timestampMs = Math.round(Number(epochUidBrief[1]) * 1000);
+    if (!Number.isSafeInteger(timestampMs)) return null;
+    return {tag: epochUidBrief[4], pid: epochUidBrief[3], message: epochUidBrief[6], timestampMs};
+  }
+  // Android logcat may include the process UID when the `uid` modifier is
+  // enabled by the platform/build. In that form the fields are timestamp,
+  // UID, PID, TID, priority, tag; without it they are timestamp, PID, TID,
+  // priority, tag. Match both shapes while always binding the process PID.
+  const epoch = normalizedLine.match(/^(\d{10}\.\d{1,9})\s+(?:(\d+)\s+)?(\d+)\s+(\d+)\s+([VDIWEF])\s+([^:]+):\s*(.*)$/);
   if (!epoch) return null;
   const timestampMs = Math.round(Number(epoch[1]) * 1000);
   if (!Number.isSafeInteger(timestampMs)) return null;
-  return {tag: epoch[3], pid: epoch[2], message: epoch[4], timestampMs};
+  return {tag: epoch[6], pid: epoch[3], message: epoch[7], timestampMs};
 }
 
 const STRUCTURED_RUNTIME_EVENT_FIELDS = Object.freeze({
@@ -2605,8 +2850,16 @@ const TERMINAL_BUSINESS_LOG_EVENTS = Object.freeze({
     category: 'terminal.activation.http',
     required: Object.freeze(['profileId', 'operationId', 'elapsedMs', 'kind']),
     fields: Object.freeze([
-      'profileId', 'operationId', 'elapsedMs', 'kind', 'status', 'errorCode', 'category', 'code',
-      'requestId', 'correlationId',
+      'profileId',
+      'operationId',
+      'elapsedMs',
+      'kind',
+      'status',
+      'errorCode',
+      'category',
+      'code',
+      'requestId',
+      'correlationId',
     ]),
   }),
   'activation-request-threw': Object.freeze({
@@ -2623,8 +2876,18 @@ const TERMINAL_BUSINESS_LOG_EVENTS = Object.freeze({
     category: 'terminal.activation.http',
     required: Object.freeze(['profileId', 'operationId', 'method', 'elapsedMs', 'kind']),
     fields: Object.freeze([
-      'profileId', 'operationId', 'method', 'elapsedMs', 'kind', 'status', 'outcome', 'errorCode',
-      'category', 'code', 'requestId', 'correlationId',
+      'profileId',
+      'operationId',
+      'method',
+      'elapsedMs',
+      'kind',
+      'status',
+      'outcome',
+      'errorCode',
+      'category',
+      'code',
+      'requestId',
+      'correlationId',
     ]),
   }),
   'heartbeat-pong-matched': Object.freeze({
@@ -2655,10 +2918,13 @@ export function projectTerminalBusinessLogcatEvents(logcatText, processIds, star
   const start = Date.parse(startedAt);
   const finish = Date.parse(finishedAt);
   if (
-    !Array.isArray(processIds) || processIds.length === 0 ||
+    !Array.isArray(processIds) ||
+    processIds.length === 0 ||
     processIds.some(value => !/^\d{1,10}$/u.test(String(value))) ||
     new Set(processIds.map(String)).size !== processIds.length ||
-    !Number.isFinite(start) || !Number.isFinite(finish) || finish < start
+    !Number.isFinite(start) ||
+    !Number.isFinite(finish) ||
+    finish < start
   ) {
     fail('VK_ANDROID_TERMINAL_BUSINESS_LOG_INPUT_INVALID');
   }
@@ -2668,6 +2934,11 @@ export function projectTerminalBusinessLogcatEvents(logcatText, processIds, star
   for (const line of String(logcatText ?? '').split(/\r?\n/u)) {
     const entry = parseLogcatLine(line);
     if (!entry || entry.tag !== 'ReactNativeJS' || !allowedPids.has(entry.pid)) continue;
+    // `logcat -d` returns the bounded ring buffer, including events from before
+    // this evidence window. Ignore those by the trusted line timestamp before
+    // validating the structured payload; an in-window line with a stale or
+    // malformed payload timestamp remains an invalid event below.
+    if (Number.isSafeInteger(entry.timestampMs) && (entry.timestampMs < start || entry.timestampMs > finish)) continue;
     const objectStart = entry.message.indexOf('{');
     if (objectStart < 0) continue;
     let record;
@@ -2684,9 +2955,13 @@ export function projectTerminalBusinessLogcatEvents(logcatText, processIds, star
       record.category !== descriptor.category ||
       record.scope?.moduleName !== 'kernel.base.terminal-data-client' ||
       record.security?.containsSensitiveRaw !== false ||
-      !Number.isSafeInteger(entry.timestampMs) || entry.timestampMs < start || entry.timestampMs > finish ||
-      !Number.isSafeInteger(timestamp) || timestamp < start || timestamp > finish ||
-      data === null || typeof data !== 'object' || Array.isArray(data)
+      !Number.isSafeInteger(entry.timestampMs) ||
+      !Number.isSafeInteger(timestamp) ||
+      timestamp < start ||
+      timestamp > finish ||
+      data === null ||
+      typeof data !== 'object' ||
+      Array.isArray(data)
     ) {
       invalidEventCount += 1;
       continue;
@@ -2731,15 +3006,308 @@ export function projectTerminalBusinessLogcatEvents(logcatText, processIds, star
       invalidEventCount += 1;
       continue;
     }
-    events.push(Object.freeze({
-      at: new Date(timestamp).toISOString(),
-      event: record.event,
-      commandIdPresent: true,
-      data: Object.freeze(safeData),
-    }));
+    events.push(
+      Object.freeze({
+        at: new Date(timestamp).toISOString(),
+        event: record.event,
+        commandIdPresent: true,
+        data: Object.freeze(safeData),
+      }),
+    );
     if (events.length > 200) fail('VK_ANDROID_TERMINAL_BUSINESS_LOG_EVENT_LIMIT');
   }
   return Object.freeze({events: Object.freeze(events), invalidEventCount});
+}
+
+export function resolveTerminalBusinessLogWindow(startedAt, finishedAt) {
+  if (
+    !isCanonicalBusinessTimestamp(startedAt) ||
+    !isCanonicalBusinessTimestamp(finishedAt) ||
+    Date.parse(finishedAt) < Date.parse(startedAt)
+  ) {
+    fail('VK_ANDROID_TERMINAL_BUSINESS_LOG_WINDOW_INVALID');
+  }
+  return Object.freeze({startedAt, finishedAt});
+}
+
+const TERMINAL_BUSINESS_EVIDENCE_EXPECTATIONS = new Set([
+  'activation-success',
+  'activation-cancelled',
+  'heartbeat-pong',
+]);
+
+export function terminalBusinessEvidenceFailureCodes(expectation, events, correlations, tdsRegisteredSessionCount) {
+  if (
+    !TERMINAL_BUSINESS_EVIDENCE_EXPECTATIONS.has(expectation) ||
+    !Array.isArray(events) ||
+    !Array.isArray(correlations) ||
+    !Number.isSafeInteger(tdsRegisteredSessionCount) ||
+    tdsRegisteredSessionCount < 0
+  ) {
+    fail('VK_ANDROID_TERMINAL_BUSINESS_EXPECTATION_INVALID');
+  }
+  const failures = [];
+  if (expectation === 'activation-success') {
+    const matched = events.some(
+      event =>
+        event.event === 'activation-request-result' &&
+        event.data?.operationId === 'activateTerminal' &&
+        event.data?.kind === 'success' &&
+        event.data?.status === 200,
+    );
+    if (!matched) failures.push('VK_ANDROID_TERMINAL_ACTIVATION_EVENT_MISSING');
+    if (!correlations.some(item => item.operationId === 'activateTerminal' && item.status === 'PASS'))
+      failures.push('VK_ANDROID_FRONTEND_BACKEND_LOG_CORRELATION_MISMATCH');
+    if (tdsRegisteredSessionCount === 0) failures.push('VK_ANDROID_TDS_REGISTERED_SESSION_NOT_OBSERVED');
+  } else if (expectation === 'activation-cancelled') {
+    const matched = events.some(
+      event =>
+        event.event === 'cancel-activation-request-result' &&
+        event.data?.operationId === 'cancelTerminalActivation' &&
+        event.data?.kind === 'success' &&
+        event.data?.status === 200 &&
+        ['CANCELLED', 'ALREADY_CANCELLED'].includes(event.data?.outcome),
+    );
+    if (!matched) failures.push('VK_ANDROID_TERMINAL_CANCELLATION_EVENT_MISSING');
+    if (!correlations.some(item => item.operationId === 'cancelTerminalActivation' && item.status === 'PASS'))
+      failures.push('VK_ANDROID_FRONTEND_BACKEND_LOG_CORRELATION_MISMATCH');
+  } else {
+    if (!events.some(event => event.event === 'heartbeat-pong-matched'))
+      failures.push('VK_ANDROID_TERMINAL_HEARTBEAT_PONG_EVENT_MISSING');
+  }
+  return Object.freeze([...new Set(failures)]);
+}
+
+export function summarizeTerminalBusinessLogcatDiagnostics(logcatText, processIds) {
+  if (
+    !Array.isArray(processIds) ||
+    processIds.length === 0 ||
+    processIds.some(value => !/^\d{1,10}$/u.test(String(value)))
+  ) {
+    fail('VK_ANDROID_TERMINAL_BUSINESS_LOG_INPUT_INVALID');
+  }
+  const allowedPids = new Set(processIds.map(String));
+  let lineCount = 0;
+  let reactNativeJsLineCount = 0;
+  let appLogLineCount = 0;
+  let otherProcessReactNativeJsLineCount = 0;
+  let unparsedReactNativeJsLineCount = 0;
+  const unparsedHeaderFormats = {epoch: 0, isoDate: 0, monthDay: 0, brief: 0, other: 0};
+  const unparsedHeaderShapes = {};
+  let jsonEventEnvelopeCount = 0;
+  let knownEventCandidateCount = 0;
+  for (const line of String(logcatText ?? '').split(/\r?\n/u)) {
+    if (line.length === 0) continue;
+    lineCount += 1;
+    const entry = parseLogcatLine(line);
+    if (entry?.tag === 'ReactNativeJS') {
+      reactNativeJsLineCount += 1;
+      if (!allowedPids.has(entry.pid)) {
+        otherProcessReactNativeJsLineCount += 1;
+        continue;
+      }
+    } else if (/(?:^|\s)[VDIWEF]\/ReactNativeJS\(|(?:^|\s)ReactNativeJS:/u.test(line)) {
+      unparsedReactNativeJsLineCount += 1;
+      const header = line.trimStart();
+      const format = /^\d{10}\.\d{1,9}\s/u.test(header)
+        ? 'epoch'
+        : /^\d{4}-\d{2}-\d{2}[ T]/u.test(header)
+          ? 'isoDate'
+          : /^\d{2}-\d{2}\s+\d{2}:\d{2}:/u.test(header)
+            ? 'monthDay'
+            : /^[VDIWEF]\//u.test(header)
+              ? 'brief'
+              : 'other';
+      unparsedHeaderFormats[format] += 1;
+      const tagIndex = header.indexOf('ReactNativeJS');
+      if (tagIndex >= 0) {
+        const beforeTag = header.slice(0, tagIndex);
+        const epochMatch = beforeTag.match(/^(\d{10}\.\d{1,9})\s+(.*)$/u);
+        const numericFieldCount = epochMatch ? (epochMatch[2].match(/\d+/gu) ?? []).length : 0;
+        const priorityStyle = /[VDIWEF]\/$/u.test(beforeTag)
+          ? 'slash'
+          : /[VDIWEF]\s+$/u.test(beforeTag)
+            ? 'space'
+            : 'other';
+        const embeddedPid = /^\(\s*\d+\s*\)\s*:/u.test(header.slice(tagIndex + 'ReactNativeJS'.length));
+        const shape = `${format}|numericFields=${numericFieldCount}|priority=${priorityStyle}|embeddedPid=${embeddedPid}`;
+        unparsedHeaderShapes[shape] = (unparsedHeaderShapes[shape] ?? 0) + 1;
+      }
+      continue;
+    } else {
+      continue;
+    }
+    appLogLineCount += 1;
+    const start = entry.message.indexOf('{');
+    if (start < 0) continue;
+    jsonEventEnvelopeCount += 1;
+    try {
+      const record = JSON.parse(entry.message.slice(start));
+      if (Object.hasOwn(TERMINAL_BUSINESS_LOG_EVENTS, record?.event)) knownEventCandidateCount += 1;
+    } catch {
+      // Counts only; log contents are never returned or persisted.
+    }
+  }
+  return Object.freeze({
+    lineCount,
+    reactNativeJsLineCount,
+    appLogLineCount,
+    otherProcessReactNativeJsLineCount,
+    unparsedReactNativeJsLineCount,
+    unparsedHeaderFormats,
+    unparsedHeaderShapes,
+    jsonEventEnvelopeCount,
+    knownEventCandidateCount,
+  });
+}
+
+export function terminalTdsNodeEvidenceId(control) {
+  if (
+    !control ||
+    typeof control !== 'object' ||
+    Array.isArray(control) ||
+    !['tds-a', 'tds-b', 'tds-c'].includes(control.instanceName) ||
+    typeof control.nodeId !== 'string' ||
+    !/^[A-Za-z0-9._-]{1,96}$/u.test(control.nodeId)
+  ) {
+    fail('VK_ANDROID_TDS_CONTROL_NODE_ID_INVALID');
+  }
+  return control.nodeId;
+}
+
+export function terminalBindingReadbackMatches({
+  expectedTerminalStatus,
+  observedTerminalStatus,
+  expectedBindingStatus,
+  observedBindingStatus,
+  generation,
+}) {
+  const generationValid =
+    observedBindingStatus === 'UNBOUND'
+      ? generation === null
+      : ['ACTIVE', 'ENDED'].includes(observedBindingStatus) && Number.isSafeInteger(generation);
+  return (
+    expectedTerminalStatus === observedTerminalStatus &&
+    generationValid &&
+    (expectedBindingStatus === undefined || expectedBindingStatus === observedBindingStatus)
+  );
+}
+
+export function terminalBindingIdentityReadbackMatches({
+  observedTerminalRef,
+  expectedTerminalRef,
+  observedGroupWorkspaceKey,
+  expectedGroupWorkspaceKey,
+}) {
+  if (
+    typeof observedTerminalRef !== 'string' ||
+    typeof expectedTerminalRef !== 'string' ||
+    typeof observedGroupWorkspaceKey !== 'string' ||
+    typeof expectedGroupWorkspaceKey !== 'string'
+  ) {
+    fail('VK_ANDROID_TERMINAL_IDENTITY_READBACK_INVALID');
+  }
+  const terminalRefMatches = observedTerminalRef === expectedTerminalRef;
+  const groupWorkspaceMatches = observedGroupWorkspaceKey === expectedGroupWorkspaceKey;
+  return Object.freeze({
+    terminalRefMatches,
+    groupWorkspaceMatches,
+    matched: terminalRefMatches && groupWorkspaceMatches,
+  });
+}
+
+export function terminalBindingFixtureCandidates({
+  observedTerminalRef,
+  observedGroupWorkspaceKey,
+  expectedGroupWorkspaceKey,
+  candidates,
+}) {
+  if (
+    typeof observedTerminalRef !== 'string' ||
+    typeof observedGroupWorkspaceKey !== 'string' ||
+    typeof expectedGroupWorkspaceKey !== 'string' ||
+    !Array.isArray(candidates) ||
+    candidates.length < 1 ||
+    candidates.length > 16 ||
+    candidates.some(
+      candidate =>
+        typeof candidate?.fixtureKey !== 'string' ||
+        typeof candidate?.terminalRef !== 'string' ||
+        typeof candidate?.groupWorkspaceKey !== 'string',
+    )
+  ) {
+    fail('VK_ANDROID_TERMINAL_IDENTITY_CANDIDATE_INPUT_INVALID');
+  }
+  if (observedGroupWorkspaceKey !== expectedGroupWorkspaceKey) {
+    return Object.freeze({
+      candidateCount: candidates.length,
+      matchedFixtureKeys: Object.freeze([]),
+      workspaceMatches: false,
+    });
+  }
+  const matchedFixtureKeys = candidates
+    .filter(
+      candidate =>
+        candidate.groupWorkspaceKey === expectedGroupWorkspaceKey && candidate.terminalRef === observedTerminalRef,
+    )
+    .map(candidate => candidate.fixtureKey);
+  return Object.freeze({
+    candidateCount: candidates.length,
+    matchedFixtureKeys: Object.freeze(matchedFixtureKeys),
+    workspaceMatches: true,
+  });
+}
+
+export function correlateAndroidTerminalBackendLogEvents(clientEvents, backendEvents) {
+  if (!Array.isArray(clientEvents) || !Array.isArray(backendEvents))
+    fail('VK_ANDROID_TERMINAL_BACKEND_CORRELATION_INPUT_INVALID');
+  const route = (...segments) => `/${segments.join('/')}`;
+  const routes = Object.freeze({
+    activateTerminal: route('api', 'terminal', 'group-workspaces', '{groupWorkspaceKey}', 'activation'),
+    cancelTerminalActivation: route(
+      'api',
+      'terminal',
+      'group-workspaces',
+      '{groupWorkspaceKey}',
+      'terminals',
+      '{terminalRef}',
+      'activation',
+      'cancel',
+    ),
+  });
+  return Object.freeze(
+    clientEvents.flatMap(event => {
+      if (!['activation-request-result', 'cancel-activation-request-result'].includes(event?.event)) return [];
+      const data = event.data;
+      const operationId = data?.operationId;
+      if (
+        !Object.hasOwn(routes, operationId) ||
+        typeof data.requestId !== 'string' ||
+        typeof data.correlationId !== 'string' ||
+        !Number.isSafeInteger(data.status)
+      ) {
+        return [Object.freeze({operationId: typeof operationId === 'string' ? operationId : null, status: 'FAIL'})];
+      }
+      const expectedOutcome = data.kind === 'success' ? 'SUCCEEDED' : 'FAILED';
+      const matched = correlateManagedBackendRequest({
+        frontendResponse: {requestId: data.requestId, correlationId: data.correlationId, status: data.status},
+        backendEvents,
+        operationId,
+        routeTemplate: routes[operationId],
+        expectedOutcome,
+        expectedStatus: data.status,
+        expectedErrorCode: typeof data.errorCode === 'string' ? data.errorCode : null,
+      });
+      return [
+        Object.freeze({
+          operationId,
+          requestIdPresent: true,
+          correlationIdPresent: true,
+          status: matched ? 'PASS' : 'FAIL',
+        }),
+      ];
+    }),
+  );
 }
 
 function safeJavaScriptErrorMessage(message) {
@@ -3526,6 +4094,15 @@ function writeJsonAtomic(file, value) {
 function manifestPath(runId) {
   return path.join(RUNTIME_ROOT, safeRunId(runId), 'run-manifest.json');
 }
+function evidenceRunPath(manifest, filename) {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u.test(filename)) fail('VK_ANDROID_EVIDENCE_FILENAME_INVALID');
+  const evidenceDirectory = path.join(EVIDENCE_ROOT, safeRunId(manifest.runId));
+  const canonicalEvidenceRoot = fs.realpathSync(EVIDENCE_ROOT);
+  const canonicalEvidenceDirectory = fs.realpathSync(evidenceDirectory);
+  if (!canonicalEvidenceDirectory.startsWith(`${canonicalEvidenceRoot}${path.sep}`))
+    fail('VK_ANDROID_EVIDENCE_PATH_ESCAPES_ROOT');
+  return path.join(canonicalEvidenceDirectory, filename);
+}
 function readManifest(runId, {allowHistoricalApkPathsForCleanup = false} = {}) {
   const file = manifestPath(runId);
   if (!fs.existsSync(file)) fail('VK_ANDROID_RUN_NOT_PREPARED');
@@ -3750,9 +4327,9 @@ async function runManaged(manifest, label, command, args, options = {}) {
     }
   }, 1000);
   const timeout = setTimeout(() => {
-        limitFailure = 'VK_ANDROID_COMMAND_TIMEOUT';
-        if (termination === null) termination = terminateOwnedProcessTree(identity, {waitMs: 15_000});
-      }, timeoutMs);
+    limitFailure = 'VK_ANDROID_COMMAND_TIMEOUT';
+    if (termination === null) termination = terminateOwnedProcessTree(identity, {waitMs: 15_000});
+  }, timeoutMs);
   const exit = await new Promise(resolve => child.once('close', (code, signal) => resolve({code, signal})));
   clearInterval(heartbeat);
   clearTimeout(timeout);
@@ -3824,8 +4401,8 @@ async function runManaged(manifest, label, command, args, options = {}) {
     acceptedExitCodes: [...acceptedExitCodes],
     signal: exit.signal,
     durationMs: finishedAt - startedAt,
-      outputBytes: stdout.length + stderr.length,
-      outputTruncated,
+    outputBytes: stdout.length + stderr.length,
+    outputTruncated,
     ownedTreeReadbackCount: currentRows.length,
     result: commandPassed ? 'PASS' : 'FAIL',
     logPath: diagnosticPath,
@@ -3904,21 +4481,17 @@ async function setupDevTunnelMappings(manifest, shape, appName, devManifestArgum
   if (!['dual', 'mobile'].includes(shape) || !APPS[appName]) fail('VK_ANDROID_DEV_TUNNEL_ARGUMENT_INVALID');
   if (!manifest.appBindings[appName]) fail('VK_ANDROID_DEV_TUNNEL_APP_NOT_BUILT');
   const device = deviceFor(manifest, shape);
-  const bootId = (await adbText(manifest, device, `${shape}-dev-tunnel-boot-id`, [
-    'shell',
-    'cat',
-    '/proc/sys/kernel/random/boot_id',
-  ])).trim();
+  const bootId = (
+    await adbText(manifest, device, `${shape}-dev-tunnel-boot-id`, ['shell', 'cat', '/proc/sys/kernel/random/boot_id'])
+  ).trim();
   if (!bootId || bootId !== device.inventory?.bootId) fail('VK_ANDROID_DEV_TUNNEL_DEVICE_IDENTITY_CHANGED');
   const devManifest = readRepositoryJson(managedDevManifestFile(devManifestArgument));
   const packageConfig = readRepositoryJson(path.join(ROOT, APPS[appName].androidRoot, '..', 'package.json'));
   const routes = validateDevTunnelRouteInputs({appName, packageConfig, devManifest});
-  if (manifest.devTunnelMappings.some(mapping => mapping.shape === shape))
-    fail('VK_ANDROID_DEV_TUNNEL_ALREADY_OWNED');
-  const existing = parseAdbReverseList(await adbText(manifest, device, `${shape}-dev-tunnel-reverse-list-before`, [
-    'reverse',
-    '--list',
-  ]));
+  if (manifest.devTunnelMappings.some(mapping => mapping.shape === shape)) fail('VK_ANDROID_DEV_TUNNEL_ALREADY_OWNED');
+  const existing = parseAdbReverseList(
+    await adbText(manifest, device, `${shape}-dev-tunnel-reverse-list-before`, ['reverse', '--list']),
+  );
   for (const route of routes) {
     if (existing.some(item => item.deviceSocket === `tcp:${route.devicePort}`))
       fail('VK_ANDROID_DEV_TUNNEL_DEVICE_PORT_ALREADY_MAPPED');
@@ -3942,10 +4515,12 @@ async function setupDevTunnelMappings(manifest, shape, appName, devManifestArgum
       `tcp:${route.devicePort}`,
       `tcp:${route.hostPort}`,
     ]);
-    const after = parseAdbReverseList(await adbText(manifest, device, `${shape}-dev-tunnel-reverse-readback-${route.devicePort}`, [
-      'reverse',
-      '--list',
-    ]));
+    const after = parseAdbReverseList(
+      await adbText(manifest, device, `${shape}-dev-tunnel-reverse-readback-${route.devicePort}`, [
+        'reverse',
+        '--list',
+      ]),
+    );
     const deviceRoute = after.filter(item => item.deviceSocket === `tcp:${route.devicePort}`);
     if (deviceRoute.length !== 1 || deviceRoute[0].hostSocket !== `tcp:${route.hostPort}`)
       fail('VK_ANDROID_DEV_TUNNEL_REVERSE_READBACK_MISMATCH');
@@ -3962,7 +4537,9 @@ async function setupDevTunnelMappings(manifest, shape, appName, devManifestArgum
     ports: routes.map(route => route.devicePort),
   });
   saveManifest(manifest);
-  process.stdout.write(`DEV_TUNNEL_REVERSE_SETUP=PASS\nDEVICE=${shape}\nMAPPINGS=${routes.length}\nPORTS=${routes.map(route => route.devicePort).join(',')}\n`);
+  process.stdout.write(
+    `DEV_TUNNEL_REVERSE_SETUP=PASS\nDEVICE=${shape}\nMAPPINGS=${routes.length}\nPORTS=${routes.map(route => route.devicePort).join(',')}\n`,
+  );
 }
 
 async function cleanupDevTunnelMappings(manifest) {
@@ -3992,16 +4569,17 @@ async function cleanupDevTunnelMappings(manifest) {
           continue;
         }
       }
-      const bootId = (await adbText(manifest, device, `${mapping.shape}-dev-tunnel-cleanup-boot-id`, [
-        'shell',
-        'cat',
-        '/proc/sys/kernel/random/boot_id',
-      ])).trim();
+      const bootId = (
+        await adbText(manifest, device, `${mapping.shape}-dev-tunnel-cleanup-boot-id`, [
+          'shell',
+          'cat',
+          '/proc/sys/kernel/random/boot_id',
+        ])
+      ).trim();
       if (bootId !== mapping.deviceBootId) throw new Error('VK_ANDROID_DEV_TUNNEL_DEVICE_IDENTITY_CHANGED');
-      const routes = parseAdbReverseList(await adbText(manifest, device, `${mapping.shape}-dev-tunnel-cleanup-list`, [
-        'reverse',
-        '--list',
-      ]));
+      const routes = parseAdbReverseList(
+        await adbText(manifest, device, `${mapping.shape}-dev-tunnel-cleanup-list`, ['reverse', '--list']),
+      );
       const atDevicePort = routes.filter(item => item.deviceSocket === `tcp:${mapping.devicePort}`);
       if (atDevicePort.some(item => item.hostSocket !== `tcp:${mapping.hostPort}`))
         throw new Error('VK_ANDROID_DEV_TUNNEL_MAPPING_OWNERSHIP_CHANGED');
@@ -4011,10 +4589,9 @@ async function cleanupDevTunnelMappings(manifest) {
           '--remove',
           `tcp:${mapping.devicePort}`,
         ]);
-        const after = parseAdbReverseList(await adbText(manifest, device, `${mapping.shape}-dev-tunnel-cleanup-readback`, [
-          'reverse',
-          '--list',
-        ]));
+        const after = parseAdbReverseList(
+          await adbText(manifest, device, `${mapping.shape}-dev-tunnel-cleanup-readback`, ['reverse', '--list']),
+        );
         if (after.some(item => item.deviceSocket === `tcp:${mapping.devicePort}`))
           throw new Error('VK_ANDROID_DEV_TUNNEL_CLEANUP_READBACK_FAILED');
       } else if (atDevicePort.length > 1) {
@@ -4053,7 +4630,12 @@ export function parseAdbReverseList(output) {
     const line = rawLine.trim();
     if (!line) continue;
     const parts = line.split(/\s+/);
-    if (parts.length !== 3 || !/^(?:host(?:-\d+)?|\(reverse\))$/.test(parts[0] ?? '') || !/^tcp:\d+$/.test(parts[1] ?? '') || !/^tcp:\d+$/.test(parts[2] ?? ''))
+    if (
+      parts.length !== 3 ||
+      !/^(?:host(?:-\d+)?|\(reverse\))$/.test(parts[0] ?? '') ||
+      !/^tcp:\d+$/.test(parts[1] ?? '') ||
+      !/^tcp:\d+$/.test(parts[2] ?? '')
+    )
       fail('VK_ANDROID_DEV_TUNNEL_REVERSE_LIST_INVALID');
     mappings.push({scope: parts[0], deviceSocket: parts[1], hostSocket: parts[2]});
   }
@@ -4072,7 +4654,9 @@ export function validateDevTunnelRouteInputs({appName, packageConfig, devManifes
     devManifest.readiness?.remoteHaproxy?.status !== 'PASS' ||
     !Array.isArray(devManifest.readiness?.remoteTdsNodes) ||
     devManifest.readiness.remoteTdsNodes.length !== 3 ||
-    devManifest.readiness.remoteTdsNodes.some(node => node.readiness !== 'REMOTE_TDS_REACTIVE_WEBSOCKET_AND_DATABASE_LISTENER_READY') ||
+    devManifest.readiness.remoteTdsNodes.some(
+      node => node.readiness !== 'REMOTE_TDS_REACTIVE_WEBSOCKET_AND_DATABASE_LISTENER_READY',
+    ) ||
     new Set(devManifest.readiness.remoteTdsNodes.map(node => node.remoteIdentity?.nodeId)).size !== 3
   )
     fail('VK_ANDROID_DEV_TUNNEL_DEV_NOT_READY');
@@ -4106,7 +4690,17 @@ export function validateDevTunnelRouteInputs({appName, packageConfig, devManifes
       fail('VK_ANDROID_PACKAGE_DEV_ADDRESS_MISMATCH');
     return port;
   };
-  const businessPath = '/api/terminal/group-workspaces/aurora';
+  let businessPath;
+  try {
+    businessPath = new URL(business[0].baseUrl).pathname;
+  } catch {
+    fail('VK_ANDROID_PACKAGE_DEV_ADDRESS_INVALID');
+  }
+  const managedWorkspacePrefix = `/${['api', 'terminal', 'group-workspaces'].join('/')}/`;
+  const workspaceKey = businessPath.startsWith(managedWorkspacePrefix)
+    ? businessPath.slice(managedWorkspacePrefix.length)
+    : '';
+  if (!/^[A-Za-z0-9_-]+$/.test(workspaceKey)) fail('VK_ANDROID_PACKAGE_DEV_GROUP_WORKSPACE_ROUTE_INVALID');
   const businessPort = address(business[0], 'http:', devManifest.tunnelPorts.http, businessPath);
   const tdsPorts = tds.map((entry, index) =>
     address(entry, 'ws:', index === 0 ? devManifest.tunnelPorts.tds : devManifest.tunnelPorts.tdsSecondary),
@@ -4258,9 +4852,7 @@ async function inventoryDevice(manifest, shape) {
   const devices = await queryDevices(manifest);
   if (!devices.has(device.serial)) fail('VK_ANDROID_DEVICE_NOT_ONLINE');
   if (!/^emulator-\d+$/.test(device.serial)) fail('VK_ANDROID_DEVICE_IS_NOT_A_MANAGED_EMULATOR');
-  const avdName = parseAvdNameReply(
-    await adbText(manifest, device, `${shape}-avd-name`, ['emu', 'avd', 'name']),
-  );
+  const avdName = parseAvdNameReply(await adbText(manifest, device, `${shape}-avd-name`, ['emu', 'avd', 'name']));
   const logicalText = await adbText(manifest, device, `${shape}-logical-display-inventory`, [
     'shell',
     'cmd',
@@ -4282,7 +4874,15 @@ async function inventoryDevice(manifest, shape) {
   const logical = parseLogicalDisplays(logicalText);
   const surfaces = parseSurfaceDisplays(surfaceText);
   const pairing = validateDeviceShape({shape, logical, surfaces});
-  const result = {serial: device.serial, avdName, model: model.trim(), bootId: bootId.trim(), logical, surfaces, pairing};
+  const result = {
+    serial: device.serial,
+    avdName,
+    model: model.trim(),
+    bootId: bootId.trim(),
+    logical,
+    surfaces,
+    pairing,
+  };
   manifest.devices[shape] = {...manifest.devices[shape], inventory: result, online: true};
   saveManifest(manifest);
   return result;
@@ -4312,9 +4912,9 @@ async function prepare(args) {
       dual: {serial: dualSerial, shape: 'dual', online: false},
       mobile: {serial: mobileSerial, shape: 'mobile', online: false},
     },
-      processReadbackPreflight: [],
-      devTunnelMappings: [],
-      appBindings: {},
+    processReadbackPreflight: [],
+    devTunnelMappings: [],
+    appBindings: {},
     ownedRemoteProcesses: [],
     ownedRemoteCaptureProcesses: [],
     pendingRemoteLaunches: [],
@@ -4328,9 +4928,9 @@ async function prepare(args) {
     remoteTempFiles: [],
     frameMatrix: emptyFrameMatrix(),
     controlledHarnessEntries: [],
-      controlledHarnessCaptures: [],
-      businessChecks: [],
-      terminalBusinessLogEvidence: [],
+    controlledHarnessCaptures: [],
+    businessChecks: [],
+    terminalBusinessLogEvidence: [],
     commandResults: [],
     processes: [],
     activeProcessIdentity: null,
@@ -5048,13 +5648,13 @@ async function uiDump(manifest, device, displayId, {deadlineMonotonic = null} = 
   manifest.remoteTempFiles.push({host: device.serial, path: remote});
   validateRunManifest(manifest);
   saveManifest(manifest);
-  await adbText(manifest, device, `${device.shape}-uiautomator-dump`, [
-    'shell',
-    'uiautomator',
-    'dump',
-    '--windows',
-    remote,
-  ], {timeoutMs: commandTimeout()});
+  await adbText(
+    manifest,
+    device,
+    `${device.shape}-uiautomator-dump`,
+    ['shell', 'uiautomator', 'dump', '--windows', remote],
+    {timeoutMs: commandTimeout()},
+  );
   const xml = await adbText(manifest, device, `${device.shape}-uiautomator-read`, ['shell', 'cat', remote], {
     maxBytes: 12 * 1024 * 1024,
     diagnosticOutput: 'omit',
@@ -5289,6 +5889,12 @@ async function tapResource(manifest, shape, resourceId, surface = 'primary') {
     logical ??
     validateDeviceShape({shape, logical: device.inventory.logical, surfaces: device.inventory.surfaces})[surface];
   const {xml} = await uiDump(manifest, device, actual.id);
+  if (
+    KEYBOARD_BLOCKED_SUBMIT_RESOURCE_IDS.has(resourceId) &&
+    parseResourceNode(xml, 'ui.base.input:virtual-keyboard', actual.id) !== null
+  ) {
+    fail('VK_ANDROID_FORM_SUBMIT_BLOCKED_BY_KEYBOARD');
+  }
   const node = parseResourceNode(xml, safeLabel(resourceId, 'VK_ANDROID_RESOURCE_ID_INVALID'), actual.id);
   if (!node || !node.enabled || node.right <= node.left || node.bottom <= node.top)
     fail('VK_ANDROID_RESOURCE_NODE_NOT_ACTIONABLE');
@@ -5309,6 +5915,38 @@ async function tapResource(manifest, shape, resourceId, surface = 'primary') {
   return {issuedAtMonotonic, completedAtMonotonic: performance.now()};
 }
 
+async function selectDifferentWallpaperOption(manifest, shape, surface = 'primary') {
+  requireOwnedApp(manifest, shape, 'sample-wallpaper-terminal');
+  const device = deviceFor(manifest, shape);
+  const display = logicalDisplayFor(manifest, shape, surface);
+  const before = await uiDump(manifest, device, display.id);
+  const selection = chooseDifferentWallpaperOption(before.xml, display.id);
+  await tapResourceFromSnapshot(
+    manifest,
+    shape,
+    device,
+    display.id,
+    before.xml,
+    selection.nextResourceId,
+    `${shape}-wallpaper-select-different-option`,
+  );
+  const after = await uiDump(manifest, device, display.id);
+  const selected = parseResourceNode(after.xml, selection.nextResourceId, display.id);
+  const confirm = parseResourceNode(after.xml, 'sample.wallpaper.picker:confirm', display.id);
+  if (selected?.selected !== true || confirm?.enabled !== true)
+    fail('VK_ANDROID_WALLPAPER_SELECTION_READBACK_MISMATCH');
+  manifest.lastKnownGood = `wallpaper-selection-pending:${selection.nextResourceId}`;
+  appendEvent(manifest, 'WALLPAPER_DIFFERENT_OPTION_SELECTED', {
+    shape,
+    displayId: display.id,
+    previousResourceId: selection.currentResourceId,
+    selectedResourceId: selection.nextResourceId,
+    confirmationEnabled: true,
+  });
+  saveManifest(manifest);
+  process.stdout.write(`WALLPAPER_SELECTION_PENDING=${JSON.stringify(selection)}\nCONFIRM_ENABLED=true\n`);
+}
+
 async function enterTerminalBusinessInput(manifest, shape, appName, valueKey, surface = 'primary') {
   requireOwnedApp(manifest, shape, appName);
   const input = TERMINAL_BUSINESS_INPUTS[valueKey];
@@ -5320,42 +5958,125 @@ async function enterTerminalBusinessInput(manifest, shape, appName, valueKey, su
   let {xml} = await uiDump(manifest, device, display.id);
   const field = parseResourceNode(xml, input.resourceId, display.id);
   if (!field?.enabled) fail('VK_ANDROID_BUSINESS_INPUT_FIELD_NOT_ACTIONABLE');
-  if (parseResourceTextValue(xml, input.resourceId, display.id).length !== 0)
-    fail('VK_ANDROID_BUSINESS_INPUT_FIELD_NOT_EMPTY');
-  if (parseResourceUiState(xml, input.resourceId, display.id)?.focused !== true) {
-    await tapResource(manifest, shape, input.resourceId, surface);
-  }
-  let keyboardReady = false;
-  for (let attempt = 0; attempt < 25; attempt += 1) {
-    ({xml} = await uiDump(manifest, device, display.id));
-    if (parseResourceNode(xml, 'ui.base.input:virtual-keyboard', display.id) !== null) {
-      keyboardReady = true;
-      break;
+  const initialText = parseResourceTextValue(xml, input.resourceId, display.id);
+  const entryDecision = terminalBusinessInputEntryDecision(valueKey, value, initialText);
+  let keyboardDismissed = true;
+  if (entryDecision.action === 'TYPE') {
+    if (parseResourceUiState(xml, input.resourceId, display.id)?.focused !== true) {
+      await tapResource(manifest, shape, input.resourceId, surface);
     }
-    await sleep(120);
-  }
-  if (!keyboardReady) fail('VK_ANDROID_BUSINESS_INPUT_KEYBOARD_NOT_READY');
-  const shiftId = 'ui.base.input:virtual-keyboard:shift';
-  for (let index = 0; index < keyPlan.length; index += 1) {
-    const key = keyPlan[index];
-    ({xml} = await uiDump(manifest, device, display.id));
-    const shift = parseResourceNode(xml, shiftId, display.id);
-    if (key.uppercase && !shift?.selected) {
-      if (!shift?.enabled) fail('VK_ANDROID_BUSINESS_INPUT_SHIFT_NOT_ACTIONABLE');
-      await tapActivationKey(manifest, shape, display.id, shiftId, `${shape}-business-input-shift-${String(index + 1).padStart(2, '0')}`);
-    } else if (!key.uppercase && shift?.selected) {
-      if (!shift.enabled) fail('VK_ANDROID_BUSINESS_INPUT_SHIFT_NOT_ACTIONABLE');
-      await tapActivationKey(manifest, shape, display.id, shiftId, `${shape}-business-input-unshift-${String(index + 1).padStart(2, '0')}`);
+    let keyboardReady = false;
+    for (let attempt = 0; attempt < 25; attempt += 1) {
+      ({xml} = await uiDump(manifest, device, display.id));
+      if (parseResourceNode(xml, 'ui.base.input:virtual-keyboard', display.id) !== null) {
+        keyboardReady = true;
+        break;
+      }
+      await sleep(120);
     }
-    await tapActivationKey(
-      manifest,
-      shape,
-      display.id,
-      `ui.base.input:virtual-keyboard:${key.keyId}`,
-      `${shape}-business-input-key-${String(index + 1).padStart(2, '0')}`,
-    );
+    if (!keyboardReady) fail('VK_ANDROID_BUSINESS_INPUT_KEYBOARD_NOT_READY');
+    const shiftId = 'ui.base.input:virtual-keyboard:shift';
+    let shiftSelected = parseResourceNode(xml, shiftId, display.id)?.selected === true;
+    for (let index = 0; index < keyPlan.length; index += 1) {
+      const key = keyPlan[index];
+      const shift = parseResourceNode(xml, shiftId, display.id);
+      if (terminalBusinessInputNeedsShiftToggle(key, shiftSelected) && key.uppercase) {
+        if (!shift?.enabled) fail('VK_ANDROID_BUSINESS_INPUT_SHIFT_NOT_ACTIONABLE');
+        await tapResourceFromSnapshot(
+          manifest,
+          shape,
+          device,
+          display.id,
+          xml,
+          shiftId,
+          `${shape}-business-input-shift-${String(index + 1).padStart(2, '0')}`,
+        );
+        ({xml} = await uiDump(manifest, device, display.id));
+        shiftSelected = parseResourceNode(xml, shiftId, display.id)?.selected === true;
+        if (!shiftSelected) fail('VK_ANDROID_BUSINESS_INPUT_SHIFT_STATE_MISMATCH');
+      } else if (terminalBusinessInputNeedsShiftToggle(key, shiftSelected) && !key.uppercase) {
+        if (!shift.enabled) fail('VK_ANDROID_BUSINESS_INPUT_SHIFT_NOT_ACTIONABLE');
+        await tapResourceFromSnapshot(
+          manifest,
+          shape,
+          device,
+          display.id,
+          xml,
+          shiftId,
+          `${shape}-business-input-unshift-${String(index + 1).padStart(2, '0')}`,
+        );
+        ({xml} = await uiDump(manifest, device, display.id));
+        shiftSelected = parseResourceNode(xml, shiftId, display.id)?.selected === true;
+        if (shiftSelected) fail('VK_ANDROID_BUSINESS_INPUT_SHIFT_STATE_MISMATCH');
+      }
+      await tapResourceFromSnapshot(
+        manifest,
+        shape,
+        device,
+        display.id,
+        xml,
+        `ui.base.input:virtual-keyboard:${key.keyId}`,
+        `${shape}-business-input-key-${String(index + 1).padStart(2, '0')}`,
+      );
+      // The input owner consumes one-shot Shift after each accepted character.
+      // The XML snapshot is intentionally reused between ordinary keys, so advance
+      // this state from the keyboard contract rather than reading a stale snapshot.
+      shiftSelected = false;
+    }
+    ({xml} = await uiDump(manifest, device, display.id));
+    keyboardDismissed = parseResourceNode(xml, 'ui.base.input:virtual-keyboard', display.id) === null;
+    if (!keyboardDismissed) {
+      const complete = parseResourceNode(xml, 'ui.base.input:virtual-keyboard:complete', display.id);
+      if (!complete?.enabled) fail('VK_ANDROID_BUSINESS_INPUT_KEYBOARD_COMPLETE_NOT_ACTIONABLE');
+      await tapResourceFromSnapshot(
+        manifest,
+        shape,
+        device,
+        display.id,
+        xml,
+        'ui.base.input:virtual-keyboard:complete',
+        `${shape}-business-input-keyboard-complete`,
+      );
+      ({xml} = await uiDump(manifest, device, display.id));
+      keyboardDismissed = parseResourceNode(xml, 'ui.base.input:virtual-keyboard', display.id) === null;
+      if (input.nextResourceId !== undefined) {
+        const nextFieldFocused = parseResourceUiState(xml, input.nextResourceId, display.id)?.focused === true;
+        if (keyboardDismissed || !nextFieldFocused) fail('VK_ANDROID_BUSINESS_INPUT_NEXT_FIELD_NOT_FOCUSED');
+      } else if (!keyboardDismissed) {
+        fail('VK_ANDROID_BUSINESS_INPUT_KEYBOARD_DID_NOT_CLOSE');
+      }
+      if (valueKey !== 'staff-passcode' && parseResourceTextValue(xml, input.resourceId, display.id) !== value) {
+        fail('VK_ANDROID_BUSINESS_INPUT_READBACK_CHANGED_AFTER_KEYBOARD_CLOSE');
+      }
+    }
   }
-  ({xml} = await uiDump(manifest, device, display.id));
+  if (entryDecision.action === 'USE_REMEMBERED_MATCH') {
+    keyboardDismissed = parseResourceNode(xml, 'ui.base.input:virtual-keyboard', display.id) === null;
+    if (!keyboardDismissed) {
+      const complete = parseResourceNode(xml, 'ui.base.input:virtual-keyboard:complete', display.id);
+      if (!complete?.enabled) fail('VK_ANDROID_BUSINESS_INPUT_KEYBOARD_COMPLETE_NOT_ACTIONABLE');
+      await tapResourceFromSnapshot(
+        manifest,
+        shape,
+        device,
+        display.id,
+        xml,
+        'ui.base.input:virtual-keyboard:complete',
+        `${shape}-business-input-keyboard-complete`,
+      );
+      ({xml} = await uiDump(manifest, device, display.id));
+      keyboardDismissed = parseResourceNode(xml, 'ui.base.input:virtual-keyboard', display.id) === null;
+      if (input.nextResourceId !== undefined) {
+        const nextFieldFocused = parseResourceUiState(xml, input.nextResourceId, display.id)?.focused === true;
+        if (keyboardDismissed || !nextFieldFocused) fail('VK_ANDROID_BUSINESS_INPUT_NEXT_FIELD_NOT_FOCUSED');
+      } else if (!keyboardDismissed) {
+        fail('VK_ANDROID_BUSINESS_INPUT_KEYBOARD_DID_NOT_CLOSE');
+      }
+    }
+    manifest.businessChecks ??= [];
+    manifest.businessChecks.push({name: 'BUSINESS_INPUT_PREFILLED_MATCH', valueKey, at: now()});
+    appendEvent(manifest, 'BUSINESS_INPUT_PREFILLED_MATCH', {valueKey});
+  }
   const evidence = terminalBusinessInputReadback(
     valueKey,
     value,
@@ -5363,12 +6084,40 @@ async function enterTerminalBusinessInput(manifest, shape, appName, valueKey, su
   );
   if (evidence.matched === false) fail('VK_ANDROID_BUSINESS_INPUT_READBACK_MISMATCH');
   manifest.businessChecks ??= [];
-  manifest.businessChecks.push({name: 'BUSINESS_INPUT_READBACK', ...evidence, at: now()});
-  appendEvent(manifest, 'BUSINESS_INPUT_READBACK', evidence);
+  const completedEvidence = Object.freeze({...evidence, keyboardDismissed});
+  manifest.businessChecks.push({name: 'BUSINESS_INPUT_READBACK', ...completedEvidence, at: now()});
+  appendEvent(manifest, 'BUSINESS_INPUT_READBACK', completedEvidence);
   if (evidence.matched === true) manifest.lastKnownGood = `business-input:${valueKey}`;
   saveManifest(manifest);
   process.stdout.write(
-    `ANDROID_BUSINESS_INPUT=${evidence.matched === true ? 'PASS' : 'DISPATCHED'}\nVALUE_KEY=${valueKey}\nCHARACTERS=${value.length}\nVERIFICATION=${evidence.verification}\nVALUE_REDACTED=true\n`,
+    `ANDROID_BUSINESS_INPUT=${evidence.matched === true ? 'PASS' : 'DISPATCHED'}\nVALUE_KEY=${valueKey}\nENTRY=${entryDecision.action}\nCHARACTERS=${value.length}\nVERIFICATION=${evidence.verification}\nVALUE_REDACTED=true\n`,
+  );
+}
+
+async function clearTerminalBusinessInput(manifest, shape, appName, valueKey, surface = 'primary') {
+  requireOwnedApp(manifest, shape, appName);
+  if (appName !== 'sample-terminal' || !['member-name', 'member-phone'].includes(valueKey))
+    fail('VK_ANDROID_BUSINESS_INPUT_CLEAR_SCOPE_INVALID');
+  const input = TERMINAL_BUSINESS_INPUTS[valueKey];
+  const device = deviceFor(manifest, shape);
+  const display = logicalDisplayFor(manifest, shape, surface);
+  const {xml: beforeXml} = await uiDump(manifest, device, display.id);
+  const field = parseResourceNode(beforeXml, input.resourceId, display.id);
+  if (!field?.enabled) fail('VK_ANDROID_BUSINESS_INPUT_FIELD_NOT_ACTIONABLE');
+  if (parseResourceUiState(beforeXml, input.resourceId, display.id)?.focused !== true)
+    await tapResource(manifest, shape, input.resourceId, surface);
+  const beforeValue = parseResourceTextValue(beforeXml, input.resourceId, display.id);
+  await adbText(manifest, device, `${shape}-business-input-clear-${valueKey}`, w7ClearInputArgs(display.id));
+  const {xml: afterXml} = await uiDump(manifest, device, display.id);
+  if (parseResourceTextValue(afterXml, input.resourceId, display.id) !== '')
+    fail('VK_ANDROID_BUSINESS_INPUT_CLEAR_READBACK_MISMATCH');
+  const evidence = Object.freeze({valueKey, characterCountCleared: beforeValue.length, cleared: true, at: now()});
+  manifest.businessChecks ??= [];
+  manifest.businessChecks.push({name: 'BUSINESS_INPUT_CLEARED', ...evidence});
+  appendEvent(manifest, 'BUSINESS_INPUT_CLEARED', evidence);
+  saveManifest(manifest);
+  process.stdout.write(
+    `ANDROID_BUSINESS_INPUT_CLEAR=PASS\nVALUE_KEY=${valueKey}\nCHARACTERS_CLEARED=${beforeValue.length}\nVALUE_REDACTED=true\n`,
   );
 }
 
@@ -5403,7 +6152,10 @@ async function assertTerminalBusinessScreen(manifest, shape, appName, expectatio
   let failureCode = null;
   try {
     const {xml} = await uiDump(manifest, device, display.id);
-    evidence = terminalBusinessScreenAssertion(xml, expectationId, display.id);
+    evidence = {
+      ...terminalBusinessScreenAssertion(xml, expectationId, display.id),
+      screenDiagnostic: summarizeTerminalBusinessScreenDiagnostic(xml, display.id, APPS[appName].packageName),
+    };
   } catch (error) {
     failureCode = /^VK_ANDROID_[A-Z0-9_]+$/u.test(error?.message ?? '')
       ? error.message
@@ -5450,7 +6202,12 @@ async function assertTerminalBusinessMemberReadback(manifest, shape, appName, su
       : 'VK_ANDROID_BUSINESS_MEMBER_READBACK_FAILED';
     evidence = Object.freeze({rowsObserved: 0, matchingRows: 0, matched: false, failureCode});
   }
-  const result = Object.freeze({name: 'BUSINESS_MEMBER_READBACK', ...evidence, elapsedMs: Math.ceil(performance.now() - startedAt), at: now()});
+  const result = Object.freeze({
+    name: 'BUSINESS_MEMBER_READBACK',
+    ...evidence,
+    elapsedMs: Math.ceil(performance.now() - startedAt),
+    at: now(),
+  });
   manifest.businessChecks ??= [];
   manifest.businessChecks.push(result);
   appendEvent(manifest, evidence.matched ? 'BUSINESS_MEMBER_READBACK' : 'BUSINESS_MEMBER_READBACK_FAILED', result);
@@ -5481,7 +6238,10 @@ async function waitTerminalBusinessScreen(manifest, shape, appName, expectationI
     while (performance.now() < deadline) {
       const {xml} = await uiDump(manifest, device, display.id, {deadlineMonotonic: deadline});
       attempts += 1;
-      evidence = terminalBusinessScreenAssertion(xml, expectationId, display.id);
+      evidence = {
+        ...terminalBusinessScreenAssertion(xml, expectationId, display.id),
+        screenDiagnostic: summarizeTerminalBusinessScreenDiagnostic(xml, display.id, APPS[appName].packageName),
+      };
       if (evidence.matched) break;
       await sleep(Math.min(BUSINESS_SCREEN_WAIT_POLL_MS, Math.max(0, deadline - performance.now())));
     }
@@ -5492,10 +6252,18 @@ async function waitTerminalBusinessScreen(manifest, shape, appName, expectationI
   }
   const completedAt = performance.now();
   const elapsedMs = Math.ceil(completedAt - startedAt);
-  const matched = failureCode === null && terminalBusinessScreenWaitMatched(evidence?.matched === true, elapsedMs, BUSINESS_SCREEN_WAIT_TIMEOUT_MS);
+  const matched =
+    failureCode === null &&
+    terminalBusinessScreenWaitMatched(evidence?.matched === true, elapsedMs, BUSINESS_SCREEN_WAIT_TIMEOUT_MS);
   const result = Object.freeze({
     name: 'BUSINESS_SCREEN_WAIT',
-    ...(evidence ?? {expectationId, requiredControlCount: 0, matchedControlCount: 0, missingResourceIds: [], unexpectedResourceIds: []}),
+    ...(evidence ?? {
+      expectationId,
+      requiredControlCount: 0,
+      matchedControlCount: 0,
+      missingResourceIds: [],
+      unexpectedResourceIds: [],
+    }),
     observedMatched: evidence?.matched === true,
     matched,
     attempts,
@@ -5507,7 +6275,8 @@ async function waitTerminalBusinessScreen(manifest, shape, appName, expectationI
   manifest.businessChecks ??= [];
   manifest.businessChecks.push(result);
   appendEvent(manifest, 'BUSINESS_SCREEN_WAIT', result);
-  if (!matched) recordFirstFailure(manifest, failureCode ?? 'VK_ANDROID_BUSINESS_SCREEN_WAIT_TIMED_OUT', 'business-screen-wait');
+  if (!matched)
+    recordFirstFailure(manifest, failureCode ?? 'VK_ANDROID_BUSINESS_SCREEN_WAIT_TIMED_OUT', 'business-screen-wait');
   saveManifest(manifest);
   if (!result.matched) fail(failureCode ?? 'VK_ANDROID_BUSINESS_SCREEN_WAIT_TIMED_OUT');
   manifest.lastKnownGood = `business-screen:${expectationId}`;
@@ -5517,12 +6286,49 @@ async function waitTerminalBusinessScreen(manifest, shape, appName, expectationI
   );
 }
 
-async function collectTerminalBusinessLogEvidence(manifest, shape, appName, startedAt, finishedAt) {
+async function diagnoseTerminalBusinessScreen(manifest, shape, appName, surface = 'primary') {
   const app = APPS[appName];
-  if (!app || !isCanonicalBusinessTimestamp(startedAt) || !isCanonicalBusinessTimestamp(finishedAt)) {
-    fail('VK_ANDROID_TERMINAL_BUSINESS_LOG_ARGUMENT_INVALID');
-  }
+  if (!app) fail('VK_ANDROID_BUSINESS_SCREEN_DIAGNOSTIC_ARGUMENT_INVALID');
+  requireOwnedApp(manifest, shape, appName);
   const device = deviceFor(manifest, shape);
+  const display = logicalDisplayFor(manifest, shape, surface);
+  const {xml} = await uiDump(manifest, device, display.id);
+  const result = {
+    name: 'BUSINESS_SCREEN_DIAGNOSTIC',
+    status: 'OBSERVED_NOT_A_BUSINESS_VERDICT',
+    shape,
+    appName,
+    surface,
+    ...summarizeTerminalBusinessScreenDiagnostic(xml, display.id, app.packageName),
+    at: now(),
+  };
+  manifest.businessChecks ??= [];
+  manifest.businessChecks.push(result);
+  appendEvent(manifest, 'BUSINESS_SCREEN_DIAGNOSTIC', result);
+  saveManifest(manifest);
+  process.stdout.write(`ANDROID_SCREEN_DIAGNOSTIC=${JSON.stringify(result)}\n`);
+}
+
+async function collectTerminalBusinessLogEvidence(manifest, shape, appName, expectation) {
+  const app = APPS[appName];
+  if (!app) fail('VK_ANDROID_TERMINAL_BUSINESS_LOG_ARGUMENT_INVALID');
+  if (!TERMINAL_BUSINESS_EVIDENCE_EXPECTATIONS.has(expectation))
+    fail('VK_ANDROID_TERMINAL_BUSINESS_EXPECTATION_INVALID');
+  const device = deviceFor(manifest, shape);
+  const evidenceStart = manifest.terminalBusinessEvidenceWindowStartedAt;
+  if (
+    evidenceStart?.shape !== shape ||
+    evidenceStart?.serial !== device.serial ||
+    evidenceStart?.bootId !== device.inventory?.bootId ||
+    !isCanonicalBusinessTimestamp(evidenceStart?.startedAt)
+  ) {
+    fail('VK_ANDROID_TERMINAL_BUSINESS_LOG_START_MARK_MISSING');
+  }
+  await readTerminalBusinessClock(manifest, shape);
+  const finishedAt = new Date(manifest.terminalBusinessClock.epochMs).toISOString();
+  const {startedAt} = resolveTerminalBusinessLogWindow(evidenceStart.startedAt, finishedAt);
+  const paddedStart = new Date(Date.parse(startedAt) - 2_000).toISOString();
+  const paddedFinish = new Date(Date.parse(finishedAt) + 2_000).toISOString();
   const owned = requireOwnedApp(manifest, shape, appName);
   const current = await remoteProcessIdentity(manifest, device, app.packageName);
   if (!remoteProcessIdentityMatches(owned, current, device.serial) || current.processes.length === 0) {
@@ -5538,24 +6344,205 @@ async function collectTerminalBusinessLogEvidence(manifest, shape, appName, star
   const evidence = projectTerminalBusinessLogcatEvents(
     logcatText,
     current.processes.map(value => String(value.pid)),
-    startedAt,
-    finishedAt,
+    paddedStart,
+    paddedFinish,
   );
-  manifest.terminalBusinessLogEvidence ??= [];
-  manifest.terminalBusinessLogEvidence.push({
+  const logcatDiagnostics = summarizeTerminalBusinessLogcatDiagnostics(
+    logcatText,
+    current.processes.map(value => String(value.pid)),
+  );
+  const captureIndex = (manifest.terminalBusinessLogEvidence?.length ?? 0) + 1;
+  const captureSuffix = String(captureIndex).padStart(2, '0');
+  const result = {
     shape,
     appName,
+    expectation,
+    captureIndex,
     serial: device.serial,
     bootId: current.bootId,
     processCount: current.processes.length,
-    startedAt,
-    finishedAt,
+    startedAt: paddedStart,
+    finishedAt: paddedFinish,
     eventCount: evidence.events.length,
     invalidEventCount: evidence.invalidEventCount,
+    logcatDiagnostics,
     events: evidence.events,
-    status: evidence.invalidEventCount === 0 ? 'CAPTURED' : 'FAIL',
+    backendLogRead: 'NOT_STARTED',
+    backendCorrelations: [],
+    tdsLogRead: 'NOT_APPLICABLE',
+    tdsNodeLogRead: [],
+    tdsRegisteredSessionCount: 0,
+    status: 'NOT_RUN',
     at: now(),
-  });
+  };
+  const failureCodes = [];
+  let rawServerLogCleanup = 'PASS';
+  let tdsExpected = expectation === 'activation-success';
+  let logReadStage = 'BACKEND_LOG_COLLECTION';
+  let lastKnownGood = 'CLIENT_LOGCAT_CAPTURED';
+  let brokenBoundary = evidence.invalidEventCount !== 0 ? 'CLIENT_LOGCAT_EVENT_PROJECTION' : null;
+  if (evidence.invalidEventCount !== 0) failureCodes.push('VK_ANDROID_TERMINAL_BUSINESS_LOG_EVENT_INVALID');
+
+  const temporaryPaths = [];
+  try {
+    const devManifest = validateManagedDevManifest(readRepositoryJson(managedDevManifestFile())).manifest;
+    if (
+      !manifest.devTunnelMappings.some(mapping => mapping.devRunId === devManifest.runId && mapping.status === 'OWNED')
+    ) {
+      fail('VK_ANDROID_TERMINAL_LOG_DEV_RUN_BINDING_MISMATCH');
+    }
+    const host = devManifest.remoteHostTrust.host;
+    const backendRawPath = path.join(RUNTIME_ROOT, manifest.runId, '.remote-terminal-business.log.tmp');
+    temporaryPaths.push(backendRawPath);
+    collectRemoteLog(host, devManifest.remoteJava, backendRawPath);
+    const backendLines = fs.readFileSync(backendRawPath, 'utf8').split(/\r?\n/u);
+    const backendEvents = projectManagedTerminalActivationBackendLogLines(backendLines, paddedStart, paddedFinish);
+    const correlations = correlateAndroidTerminalBackendLogEvents(evidence.events, backendEvents);
+    result.backendLogRead = 'PASS';
+    result.backendCorrelations = correlations;
+    if (correlations.some(item => item.status !== 'PASS')) {
+      brokenBoundary ??= 'FRONTEND_BACKEND_CORRELATION';
+      failureCodes.push('VK_ANDROID_FRONTEND_BACKEND_LOG_CORRELATION_MISMATCH');
+    }
+    const backendPath = evidenceRunPath(manifest, `backend-terminal-activation-${captureSuffix}.jsonl`);
+    fs.writeFileSync(
+      backendPath,
+      `${backendEvents.map(value => JSON.stringify(value)).join('\n')}${backendEvents.length ? '\n' : ''}`,
+      {mode: 0o600},
+    );
+    result.backendRequestLog = path.relative(ROOT, backendPath);
+    lastKnownGood = 'BACKEND_EVENTS_PROJECTED';
+
+    const successfulActivations = evidence.events.filter(
+      event =>
+        event.event === 'activation-request-result' && event.data?.kind === 'success' && event.data?.status === 200,
+    );
+    const backendSuccessfulActivations = backendEvents.some(
+      event => event.operationId === 'activateTerminal' && event.outcome === 'SUCCEEDED' && event.status === 200,
+    );
+    if (expectation === 'activation-success' || successfulActivations.length > 0 || backendSuccessfulActivations) {
+      tdsExpected = true;
+      logReadStage = 'TDS_LOG_COLLECTION';
+      const projectedTdsEvents = [];
+      for (const node of devManifest.remoteTdsNodes) {
+        const nodeId = terminalTdsNodeEvidenceId(node);
+        const rawPath = path.join(RUNTIME_ROOT, manifest.runId, `.remote-${nodeId}-tds.log.tmp`);
+        temporaryPaths.push(rawPath);
+        let lines;
+        try {
+          collectRemoteTdsLog(host, node, rawPath);
+          lines = fs.readFileSync(rawPath, 'utf8').split(/\r?\n/u);
+        } catch (error) {
+          result.tdsNodeLogRead.push({
+            nodeId,
+            status: 'LOG_NOT_AVAILABLE',
+            failureCode: 'VK_ANDROID_TDS_LOG_NOT_AVAILABLE',
+          });
+          throw new Error('VK_ANDROID_TDS_LOG_NOT_AVAILABLE', {cause: error});
+        }
+        let projected;
+        try {
+          projected = projectManagedTdsLogLines(lines, nodeId, paddedStart, paddedFinish, 2_000);
+        } catch (error) {
+          result.tdsNodeLogRead.push({
+            nodeId,
+            status: 'PROJECTION_FAILED',
+            failureCode: 'VK_ANDROID_TDS_LOG_PROJECTION_FAILED',
+          });
+          throw new Error('VK_ANDROID_TDS_LOG_PROJECTION_FAILED', {cause: error});
+        }
+        projectedTdsEvents.push(...projected);
+        result.tdsNodeLogRead.push({nodeId, status: 'PASS', eventCount: projected.length});
+        lastKnownGood = `TDS_NODE_LOG_PROJECTED:${nodeId}`;
+      }
+      result.tdsLogRead = result.tdsNodeLogRead.length === 3 ? 'PASS' : 'LOG_NOT_AVAILABLE';
+      const accepted = new Set(
+        projectedTdsEvents
+          .filter(event => event.event === 'tds_ws_accepted' && typeof event.connectionId === 'string')
+          .map(event => `${event.nodeId}|${event.connectionId}`),
+      );
+      result.tdsRegisteredSessionCount = projectedTdsEvents.filter(
+        event =>
+          event.event === 'tds_session_registered' &&
+          typeof event.connectionId === 'string' &&
+          accepted.has(`${event.nodeId}|${event.connectionId}`),
+      ).length;
+      if (result.tdsLogRead !== 'PASS') failureCodes.push('VK_ANDROID_TDS_LOG_NOT_AVAILABLE');
+      if (result.tdsRegisteredSessionCount === 0) failureCodes.push('VK_ANDROID_TDS_REGISTERED_SESSION_NOT_OBSERVED');
+      const tdsPath = evidenceRunPath(manifest, `tds-server-events-${captureSuffix}.jsonl`);
+      fs.writeFileSync(
+        tdsPath,
+        `${projectedTdsEvents.map(value => JSON.stringify(value)).join('\n')}${projectedTdsEvents.length ? '\n' : ''}`,
+        {mode: 0o600},
+      );
+      result.tdsServerLog = path.relative(ROOT, tdsPath);
+    }
+  } catch (error) {
+    brokenBoundary = logReadStage;
+    if (error?.message === 'VK_ANDROID_TDS_LOG_NOT_AVAILABLE') {
+      result.tdsLogRead = 'LOG_NOT_AVAILABLE';
+      failureCodes.push('VK_ANDROID_TDS_LOG_NOT_AVAILABLE');
+    } else if (error?.message === 'VK_ANDROID_TDS_LOG_PROJECTION_FAILED') {
+      result.tdsLogRead = 'PROJECTION_FAILED';
+      failureCodes.push('VK_ANDROID_TDS_LOG_PROJECTION_FAILED');
+    } else {
+      const failureCode =
+        logReadStage === 'TDS_LOG_COLLECTION'
+          ? 'VK_ANDROID_TDS_LOG_EVIDENCE_INVALID'
+          : 'VK_ANDROID_MANAGED_SERVER_LOG_EVIDENCE_UNAVAILABLE';
+      if (logReadStage === 'TDS_LOG_COLLECTION') result.tdsLogRead = 'LOG_NOT_AVAILABLE';
+      else
+        result.backendLogRead = result.backendLogRead === 'NOT_STARTED' ? 'LOG_NOT_AVAILABLE' : result.backendLogRead;
+      failureCodes.push(failureCode);
+    }
+    result.logReadFailure =
+      error instanceof Error && /^[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(error.message)
+        ? error.message
+        : error instanceof Error && /^[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(error.name)
+          ? error.name
+          : 'UNKNOWN';
+    if (tdsExpected && result.tdsLogRead === 'NOT_APPLICABLE') result.tdsLogRead = 'LOG_NOT_AVAILABLE';
+  } finally {
+    for (const rawPath of temporaryPaths) {
+      try {
+        fs.rmSync(rawPath, {force: true});
+        if (fs.existsSync(rawPath)) throw new Error('RAW_LOG_REMAINS');
+      } catch {
+        rawServerLogCleanup = 'FAIL';
+        failureCodes.push('VK_ANDROID_RAW_SERVER_LOG_CLEANUP_FAILED');
+      }
+    }
+  }
+  result.brokenBoundary = brokenBoundary;
+  result.lastKnownGood = lastKnownGood;
+  result.rawServerLogCleanup = rawServerLogCleanup;
+  failureCodes.push(
+    ...terminalBusinessEvidenceFailureCodes(
+      expectation,
+      evidence.events,
+      result.backendCorrelations,
+      result.tdsRegisteredSessionCount,
+    ),
+  );
+  if (brokenBoundary === null && failureCodes.length > 0) {
+    const firstFailure = failureCodes[0];
+    brokenBoundary = firstFailure.includes('TDS_')
+      ? 'TDS_SESSION_EVIDENCE'
+      : firstFailure.includes('CORRELATION')
+        ? 'FRONTEND_BACKEND_CORRELATION'
+        : 'CLIENT_BUSINESS_EVENT_EVIDENCE';
+    result.brokenBoundary = brokenBoundary;
+  }
+  if (result.backendLogRead !== 'PASS') failureCodes.push('VK_ANDROID_MANAGED_SERVER_LOG_EVIDENCE_UNAVAILABLE');
+  if (tdsExpected && result.tdsLogRead !== 'PASS') failureCodes.push('VK_ANDROID_TDS_LOG_NOT_AVAILABLE');
+  if (result.rawServerLogCleanup !== 'PASS') failureCodes.push('VK_ANDROID_RAW_SERVER_LOG_CLEANUP_FAILED');
+  result.status = failureCodes.length === 0 ? 'PASS' : 'FAIL';
+  if (failureCodes.length > 0) {
+    recordFirstFailure(manifest, failureCodes[0], brokenBoundary ?? logReadStage);
+    manifest.business = 'FAIL';
+  }
+  manifest.terminalBusinessLogEvidence ??= [];
+  manifest.terminalBusinessLogEvidence.push(result);
   appendEvent(manifest, 'TERMINAL_BUSINESS_LOG_EVIDENCE_COLLECTED', {
     shape,
     appName,
@@ -5563,31 +6550,272 @@ async function collectTerminalBusinessLogEvidence(manifest, shape, appName, star
     bootId: current.bootId,
     processCount: current.processes.length,
     eventCount: evidence.events.length,
-    invalidEventCount: evidence.invalidEventCount,
-    status: evidence.invalidEventCount === 0 ? 'PASS' : 'FAIL',
+    expectation,
+    logcatDiagnostics,
+    backendLogRead: result.backendLogRead,
+    backendCorrelationCount: result.backendCorrelations.length,
+    tdsLogRead: result.tdsLogRead,
+    tdsRegisteredSessionCount: result.tdsRegisteredSessionCount,
+    status: result.status,
   });
   saveManifest(manifest);
-  if (evidence.invalidEventCount !== 0) fail('VK_ANDROID_TERMINAL_BUSINESS_LOG_EVENT_INVALID');
-  process.stdout.write(`ANDROID_TERMINAL_BUSINESS_LOGS=CAPTURED\nEVENTS=${evidence.events.length}\nRAW_LOG_RETAINED=false\n`);
+  if (failureCodes.length > 0) fail(failureCodes[0]);
+  process.stdout.write(
+    `ANDROID_TERMINAL_EVIDENCE=PASS\nEXPECTATION=${expectation}\nAPP_EVENTS=${evidence.events.length}\nREACT_NATIVE_JS_LINES=${logcatDiagnostics.reactNativeJsLineCount}\nAPP_LOG_LINES=${logcatDiagnostics.appLogLineCount}\nOTHER_PROCESS_JS_LINES=${logcatDiagnostics.otherProcessReactNativeJsLineCount}\nUNPARSED_JS_LINES=${logcatDiagnostics.unparsedReactNativeJsLineCount}\nKNOWN_EVENT_CANDIDATES=${logcatDiagnostics.knownEventCandidateCount}\nBACKEND_CORRELATIONS=${result.backendCorrelations.length}\nTDS_REGISTERED_SESSIONS=${result.tdsRegisteredSessionCount}\nRAW_LOGS_RETAINED=false\n`,
+  );
+}
+
+function readTerminalBindingEvidence(manifest, shape, fixtureKey, groupWorkspaceKey, expectedBindingStatus) {
+  if (
+    !['dual', 'mobile'].includes(shape) ||
+    !/^[A-Za-z0-9_-]{1,64}$/u.test(groupWorkspaceKey ?? '') ||
+    (expectedBindingStatus !== undefined && !['UNBOUND', 'ACTIVE', 'ENDED'].includes(expectedBindingStatus))
+  ) {
+    fail('VK_ANDROID_TERMINAL_BINDING_READBACK_ARGUMENT_INVALID');
+  }
+  const expectedDeviceType = shape === 'dual' ? 'laptop' : 'mobile';
+  const fixtureContract = readRepositoryJson(
+    path.join(ROOT, 'doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json'),
+  );
+  const fixture = fixtureContract.stableFixtures?.organization?.storeTerminals?.find(value => value.key === fixtureKey);
+  if (
+    !fixture ||
+    fixture.deviceType !== expectedDeviceType ||
+    !/^[\u4e00-\u9fffA-Za-z0-9._ -]{1,120}$/u.test(fixture.name ?? '')
+  )
+    fail('VK_ANDROID_TERMINAL_BINDING_FIXTURE_INVALID');
+  const devManifest = validateManagedDevManifest(readRepositoryJson(managedDevManifestFile())).manifest;
+  const [binding] = readManagedTerminalBindingByName({
+    runId: devManifest.runId,
+    groupWorkspaceKey,
+    terminalNames: [fixture.name],
+  });
+  const matched = terminalBindingReadbackMatches({
+    expectedTerminalStatus: fixture.status,
+    observedTerminalStatus: binding.terminalStatus,
+    expectedBindingStatus,
+    observedBindingStatus: binding.bindingStatus,
+    generation: binding.generation,
+  });
+  const evidence = Object.freeze({
+    shape,
+    fixtureKey,
+    expectedTerminalStatus: fixture.status,
+    terminalStatus: binding.terminalStatus,
+    expectedBindingStatus: expectedBindingStatus ?? 'ANY',
+    bindingStatus: binding.bindingStatus,
+    generation: binding.generation,
+    matched,
+    status: expectedBindingStatus === undefined && matched ? 'OBSERVED' : matched ? 'PASS' : 'FAIL',
+    groupWorkspaceKeyRedacted: true,
+    terminalRefRedacted: true,
+    at: now(),
+  });
+  manifest.businessChecks ??= [];
+  manifest.businessChecks.push({name: 'SERVER_TERMINAL_BINDING_READBACK', ...evidence});
+  appendEvent(manifest, 'SERVER_TERMINAL_BINDING_READBACK', evidence);
+  if (matched) manifest.lastKnownGood = `terminal-binding-readback:${fixtureKey}:${binding.bindingStatus}`;
+  else {
+    recordFirstFailure(manifest, 'VK_ANDROID_TERMINAL_BINDING_READBACK_MISMATCH', 'SERVER_TERMINAL_BINDING_READBACK');
+    manifest.business = 'FAIL';
+  }
+  saveManifest(manifest);
+  if (!matched) fail('VK_ANDROID_TERMINAL_BINDING_READBACK_MISMATCH');
+  process.stdout.write(
+    `SERVER_TERMINAL_BINDING_READBACK=${evidence.status}\nFIXTURE_KEY=${fixtureKey}\nEXPECTED_BINDING_STATUS=${evidence.expectedBindingStatus}\nTERMINAL_STATUS=${binding.terminalStatus}\nBINDING_STATUS=${binding.bindingStatus}\nGENERATION=${binding.generation ?? 'NONE'}\nIDENTIFIERS_REDACTED=true\n`,
+  );
+}
+
+async function verifyTerminalBindingIdentity(
+  manifest,
+  shape,
+  appName,
+  fixtureKey,
+  groupWorkspaceKey,
+  surface = 'primary',
+) {
+  const app = APPS[appName];
+  if (appName !== 'sample-terminal' || !app) fail('VK_ANDROID_TERMINAL_IDENTITY_READBACK_ARGUMENT_INVALID');
+  requireOwnedApp(manifest, shape, appName);
+  if (!['dual', 'mobile'].includes(shape) || !/^[A-Za-z0-9_-]{1,64}$/u.test(groupWorkspaceKey ?? ''))
+    fail('VK_ANDROID_TERMINAL_IDENTITY_READBACK_ARGUMENT_INVALID');
+  const expectedDeviceType = shape === 'dual' ? 'laptop' : 'mobile';
+  const fixtureContract = readRepositoryJson(
+    path.join(ROOT, 'doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json'),
+  );
+  const fixture = fixtureContract.stableFixtures?.organization?.storeTerminals?.find(value => value.key === fixtureKey);
+  if (!fixture || fixture.deviceType !== expectedDeviceType) fail('VK_ANDROID_TERMINAL_BINDING_FIXTURE_INVALID');
+  const device = deviceFor(manifest, shape);
+  const display = logicalDisplayFor(manifest, shape, surface);
+  const {xml} = await uiDump(manifest, device, display.id);
+  for (const resourceId of [
+    'terminal.activation.admin.status',
+    'terminal.activation.admin:terminal',
+    'terminal.activation.admin:workspace',
+  ]) {
+    if (parseResourceNode(xml, resourceId, display.id) === null)
+      fail('VK_ANDROID_TERMINAL_ADMIN_STATUS_SCREEN_NOT_VISIBLE');
+  }
+  const terminalText = parseResourceTextValue(xml, 'terminal.activation.admin:terminal', display.id);
+  const terminalRefs = [
+    ...terminalText.matchAll(/\b([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\b/giu),
+  ].map(match => match[1].toLowerCase());
+  const workspaceText = parseResourceTextValue(xml, 'terminal.activation.admin:workspace', display.id);
+  const workspaceMatch = workspaceText.match(/集团空间\s*[:：]\s*([A-Za-z0-9_-]{1,64})/u);
+  if (terminalRefs.length !== 1 || !workspaceMatch) fail('VK_ANDROID_TERMINAL_ADMIN_IDENTITY_FIELDS_INVALID');
+  const devManifest = validateManagedDevManifest(readRepositoryJson(managedDevManifestFile())).manifest;
+  const [binding] = readManagedTerminalBindingByName({
+    runId: devManifest.runId,
+    groupWorkspaceKey,
+    terminalNames: [fixture.name],
+  });
+  const comparison = terminalBindingIdentityReadbackMatches({
+    observedTerminalRef: terminalRefs[0],
+    expectedTerminalRef: binding.terminalRef,
+    observedGroupWorkspaceKey: workspaceMatch[1],
+    expectedGroupWorkspaceKey: groupWorkspaceKey,
+  });
+  const evidence = Object.freeze({
+    name: 'SERVER_TERMINAL_BINDING_IDENTITY_MATCH',
+    shape,
+    fixtureKey,
+    terminalRefMatches: comparison.terminalRefMatches,
+    groupWorkspaceMatches: comparison.groupWorkspaceMatches,
+    bindingStatus: binding.bindingStatus,
+    generation: binding.generation,
+    status: comparison.matched ? 'PASS' : 'FAIL',
+    identifiersRedacted: true,
+    at: now(),
+  });
+  manifest.businessChecks ??= [];
+  manifest.businessChecks.push(evidence);
+  appendEvent(manifest, 'SERVER_TERMINAL_BINDING_IDENTITY_MATCH', evidence);
+  if (comparison.matched) manifest.lastKnownGood = `terminal-binding-identity:${fixtureKey}`;
+  else {
+    recordFirstFailure(
+      manifest,
+      'VK_ANDROID_TERMINAL_BINDING_IDENTITY_MISMATCH',
+      'SERVER_TERMINAL_BINDING_IDENTITY_MATCH',
+    );
+    manifest.business = 'FAIL';
+  }
+  saveManifest(manifest);
+  if (!comparison.matched) fail('VK_ANDROID_TERMINAL_BINDING_IDENTITY_MISMATCH');
+  process.stdout.write(
+    `SERVER_TERMINAL_BINDING_IDENTITY_MATCH=PASS\nFIXTURE_KEY=${fixtureKey}\nBINDING_STATUS=${binding.bindingStatus}\nGENERATION=${binding.generation ?? 'NONE'}\nIDENTIFIERS_REDACTED=true\n`,
+  );
+}
+
+async function resolveTerminalBindingFixture(manifest, shape, appName, groupWorkspaceKey, surface = 'primary') {
+  const app = APPS[appName];
+  if (
+    appName !== 'sample-terminal' ||
+    !app ||
+    !['dual', 'mobile'].includes(shape) ||
+    !/^[A-Za-z0-9_-]{1,64}$/u.test(groupWorkspaceKey ?? '')
+  ) {
+    fail('VK_ANDROID_TERMINAL_BINDING_FIXTURE_RESOLUTION_ARGUMENT_INVALID');
+  }
+  requireOwnedApp(manifest, shape, appName);
+  const expectedDeviceType = shape === 'dual' ? 'laptop' : 'mobile';
+  const fixtureContract = readRepositoryJson(
+    path.join(ROOT, 'doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json'),
+  );
+  const fixtures =
+    fixtureContract.stableFixtures?.organization?.storeTerminals?.filter(
+      value =>
+        value.deviceType === expectedDeviceType &&
+        /^[\u4e00-\u9fffA-Za-z0-9._ -]{1,120}$/u.test(value.name ?? '') &&
+        /^[A-Za-z0-9._-]{1,96}$/u.test(value.key ?? ''),
+    ) ?? [];
+  if (fixtures.length < 1 || fixtures.length > 16) fail('VK_ANDROID_TERMINAL_BINDING_FIXTURE_SET_INVALID');
+
+  const device = deviceFor(manifest, shape);
+  const display = logicalDisplayFor(manifest, shape, surface);
+  const {xml} = await uiDump(manifest, device, display.id);
+  for (const resourceId of [
+    'terminal.activation.admin.status',
+    'terminal.activation.admin:terminal',
+    'terminal.activation.admin:workspace',
+  ]) {
+    if (parseResourceNode(xml, resourceId, display.id) === null)
+      fail('VK_ANDROID_TERMINAL_ADMIN_STATUS_SCREEN_NOT_VISIBLE');
+  }
+  const terminalText = parseResourceTextValue(xml, 'terminal.activation.admin:terminal', display.id);
+  const terminalRefs = [
+    ...terminalText.matchAll(/\b([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\b/giu),
+  ].map(match => match[1].toLowerCase());
+  const workspaceText = parseResourceTextValue(xml, 'terminal.activation.admin:workspace', display.id);
+  const workspaceMatch = workspaceText.match(/集团空间\s*[:：]\s*([A-Za-z0-9_-]{1,64})/u);
+  if (terminalRefs.length !== 1 || !workspaceMatch) fail('VK_ANDROID_TERMINAL_ADMIN_IDENTITY_FIELDS_INVALID');
+
+  const devManifest = validateManagedDevManifest(readRepositoryJson(managedDevManifestFile())).manifest;
+  const bindings = readManagedTerminalBindingByName({
+    runId: devManifest.runId,
+    groupWorkspaceKey,
+    terminalNames: fixtures.map(value => value.name),
+  });
+  const fixtureByName = new Map(fixtures.map(value => [value.name, value]));
+  const resolution = terminalBindingFixtureCandidates({
+    observedTerminalRef: terminalRefs[0],
+    observedGroupWorkspaceKey: workspaceMatch[1],
+    expectedGroupWorkspaceKey: groupWorkspaceKey,
+    candidates: bindings.map(binding => ({
+      fixtureKey: fixtureByName.get(binding.name)?.key,
+      terminalRef: binding.terminalRef,
+      groupWorkspaceKey,
+    })),
+  });
+  const matchedFixtureKey = resolution.matchedFixtureKeys.length === 1 ? resolution.matchedFixtureKeys[0] : null;
+  const matchedBinding =
+    matchedFixtureKey === null
+      ? null
+      : bindings.find(binding => fixtureByName.get(binding.name)?.key === matchedFixtureKey);
+  const evidence = Object.freeze({
+    name: 'SERVER_TERMINAL_BINDING_FIXTURE_RESOLUTION',
+    shape,
+    appName,
+    candidateCount: resolution.candidateCount,
+    matchedFixtureKey,
+    matchedBindingStatus: matchedBinding?.bindingStatus ?? null,
+    matchedGeneration: matchedBinding?.generation ?? null,
+    workspaceMatches: resolution.workspaceMatches,
+    status: matchedFixtureKey === null ? 'FAIL' : 'PASS',
+    identifiersRedacted: true,
+    at: now(),
+  });
+  manifest.businessChecks ??= [];
+  manifest.businessChecks.push(evidence);
+  appendEvent(manifest, 'SERVER_TERMINAL_BINDING_FIXTURE_RESOLUTION', evidence);
+  if (matchedFixtureKey !== null) manifest.lastKnownGood = `terminal-binding-fixture:${matchedFixtureKey}`;
+  else
+    recordFirstFailure(
+      manifest,
+      'VK_ANDROID_TERMINAL_BINDING_FIXTURE_NOT_UNIQUE',
+      'SERVER_TERMINAL_BINDING_FIXTURE_RESOLUTION',
+    );
+  saveManifest(manifest);
+  if (matchedFixtureKey === null) fail('VK_ANDROID_TERMINAL_BINDING_FIXTURE_NOT_UNIQUE');
+  process.stdout.write(
+    `SERVER_TERMINAL_BINDING_FIXTURE_RESOLUTION=PASS\nFIXTURE_KEY=${matchedFixtureKey}\nBINDING_STATUS=${matchedBinding.bindingStatus}\nGENERATION=${matchedBinding.generation ?? 'NONE'}\nCANDIDATES=${resolution.candidateCount}\nIDENTIFIERS_REDACTED=true\n`,
+  );
 }
 
 async function readTerminalBusinessClock(manifest, shape) {
   const device = deviceFor(manifest, shape);
-  const output = await adbText(
-    manifest,
-    device,
-    `${shape}-terminal-business-clock`,
-    ['shell', 'date', '+%s'],
-    {diagnosticOutput: 'omit'},
-  );
+  const output = await adbText(manifest, device, `${shape}-terminal-business-clock`, ['shell', 'date', '+%s'], {
+    diagnosticOutput: 'omit',
+  });
   const seconds = Number(output.trim());
   if (!/^\d{9,11}$/u.test(output.trim()) || !Number.isSafeInteger(seconds) || seconds <= 0)
     fail('VK_ANDROID_TERMINAL_BUSINESS_CLOCK_INVALID');
   const epochMs = seconds * 1000;
   manifest.terminalBusinessClock = {
+    shape,
     serial: device.serial,
     bootId: device.inventory.bootId,
     epochMs,
+    at: new Date(epochMs).toISOString(),
     observedAt: now(),
   };
   appendEvent(manifest, 'TERMINAL_BUSINESS_CLOCK_READ', {
@@ -5599,12 +6827,24 @@ async function readTerminalBusinessClock(manifest, shape) {
   process.stdout.write(`ANDROID_BUSINESS_CLOCK_EPOCH_MS=${epochMs}\nDEVICE_IDENTITY_BOUND=true\n`);
 }
 
+async function markTerminalBusinessEvidenceStart(manifest, shape) {
+  await readTerminalBusinessClock(manifest, shape);
+  const {serial, bootId, at} = manifest.terminalBusinessClock;
+  manifest.terminalBusinessEvidenceWindowStartedAt = {shape, serial, bootId, startedAt: at, markedAt: now()};
+  appendEvent(manifest, 'TERMINAL_BUSINESS_EVIDENCE_WINDOW_STARTED', {shape, serial, bootId, startedAt: at});
+  saveManifest(manifest);
+  process.stdout.write(`ANDROID_EVIDENCE_WINDOW=STARTED\nDEVICE_IDENTITY_BOUND=true\nSTARTED_AT=${at}\n`);
+}
+
 async function tapActivationKey(manifest, shape, displayId, keyId, safeLabel) {
   const device = deviceFor(manifest, shape);
   const {xml} = await uiDump(manifest, device, displayId);
-  const key = parseResourceNode(xml, keyId, displayId);
-  if (!key?.enabled || key.right <= key.left || key.bottom <= key.top)
-    fail('VK_ANDROID_ACTIVATION_KEY_NOT_ACTIONABLE');
+  await tapResourceFromSnapshot(manifest, shape, device, displayId, xml, keyId, safeLabel);
+}
+
+async function tapResourceFromSnapshot(manifest, shape, device, displayId, xml, resourceId, safeLabel) {
+  const key = parseResourceNode(xml, resourceId, displayId);
+  if (!key?.enabled || key.right <= key.left || key.bottom <= key.top) fail('VK_ANDROID_ACTIVATION_KEY_NOT_ACTIONABLE');
   await adbText(manifest, device, safeLabel, [
     'shell',
     'input',
@@ -5624,8 +6864,7 @@ async function clearActivationCodeInput(manifest, shape, appName, labelOrdinalOf
   if (parseResourceNode(xml, TERMINAL_ACTIVATION_SCREEN_ID, display.id) === null)
     fail('VK_ANDROID_ACTIVATION_SCREEN_NOT_VISIBLE');
   let readiness = terminalActivationInputReadiness(xml, display.id);
-  if (!readiness.fieldVisible)
-    fail('VK_ANDROID_ACTIVATION_INPUT_NOT_VISIBLE');
+  if (!readiness.fieldVisible) fail('VK_ANDROID_ACTIVATION_INPUT_NOT_VISIBLE');
   // A rendered keyboard is presentation state, not evidence that this field
   // owns input. Route every probe through the field's real focus entrypoint.
   await tapResource(manifest, shape, TERMINAL_ACTIVATION_INPUT_ID);
@@ -5644,7 +6883,9 @@ async function clearActivationCodeInput(manifest, shape, appName, labelOrdinalOf
     fieldEnabled: readiness.fieldEnabled,
     nativeFocusReported: readiness.nativeFocusReported,
     keyboardVisible: readiness.keyboardVisible,
+    keyboardInteractive: readiness.keyboardInteractive,
     keyboardHitShieldPresent: readiness.keyboardHitShieldPresent,
+    focusVisibilityFailure: readiness.focusVisibilityFailure,
     ready: readiness.ready,
     attempts: readinessAttempts,
     proof: 'SETTLED_INTERACTIVE_VIRTUAL_KEYBOARD',
@@ -5659,10 +6900,12 @@ async function clearActivationCodeInput(manifest, shape, appName, labelOrdinalOf
     fail('VK_ANDROID_ACTIVATION_INPUT_NOT_READY');
   }
   for (let index = 0; index < 8; index += 1) {
-    await tapActivationKey(
+    await tapResourceFromSnapshot(
       manifest,
       shape,
+      device,
       display.id,
+      xml,
       'ui.base.input:virtual-keyboard:backspace',
       activationFixtureActionLabel(shape, 'overlength', labelOrdinalOffset + index + 1),
     );
@@ -5673,17 +6916,37 @@ async function clearActivationCodeInput(manifest, shape, appName, labelOrdinalOf
 }
 
 async function enterActivationDigits(manifest, shape, displayId, digits, purpose) {
+  const device = deviceFor(manifest, shape);
+  const {xml} = await uiDump(manifest, device, displayId);
+  if (!terminalActivationInputReadiness(xml, displayId).ready) fail('VK_ANDROID_ACTIVATION_INPUT_NOT_READY');
   for (let index = 0; index < digits.length; index += 1) {
     const digit = digits[index];
     if (!/^[0-9]$/.test(digit)) fail('VK_ANDROID_ACTIVATION_FIXTURE_INPUT_INVALID');
-    await tapActivationKey(
+    await tapResourceFromSnapshot(
       manifest,
       shape,
+      device,
       displayId,
+      xml,
       `${VIRTUAL_NUMERIC_KEY_ID}${digit}`,
       activationFixtureActionLabel(shape, purpose, index + 1),
     );
   }
+  const {xml: resultXml} = await uiDump(manifest, device, displayId);
+  const observedValue = parseResourceTextValue(resultXml, TERMINAL_ACTIVATION_INPUT_ID, displayId);
+  const readback = Object.freeze({
+    purpose,
+    expectedDigitCount: digits.length,
+    observedDigitCount: observedValue.length,
+    matched: observedValue === digits,
+    valueRedacted: true,
+    at: now(),
+  });
+  manifest.activationDigitBatchReadbacks ??= [];
+  manifest.activationDigitBatchReadbacks.push(readback);
+  appendEvent(manifest, 'ACTIVATION_DIGITS_READBACK', readback);
+  saveManifest(manifest);
+  if (!readback.matched) fail('VK_ANDROID_ACTIVATION_KEY_READBACK_MISMATCH');
 }
 
 async function runActivationFixtureInput(manifest, shape, appName, fixtureKey, expectedStatus = 'ENABLED') {
@@ -5708,6 +6971,21 @@ async function runActivationFixtureInput(manifest, shape, appName, fixtureKey, e
   let {xml} = await uiDump(manifest, device, display.id);
   if (parseResourceNode(xml, TERMINAL_ACTIVATION_SCREEN_ID, display.id) === null)
     fail('VK_ANDROID_ACTIVATION_SCREEN_NOT_VISIBLE');
+  if (parseResourceNode(xml, 'terminal.admin:login', display.id) !== null) {
+    const close = parseResourceNode(xml, 'terminal.admin:close', display.id);
+    if (!close?.enabled) fail('VK_ANDROID_ACTIVATION_BLOCKING_ADMIN_OVERLAY_NOT_DISMISSIBLE');
+    await tapResource(manifest, shape, 'terminal.admin:close');
+    ({xml} = await uiDump(manifest, device, display.id));
+    if (parseResourceNode(xml, 'terminal.admin:login', display.id) !== null)
+      fail('VK_ANDROID_ACTIVATION_BLOCKING_ADMIN_OVERLAY_DID_NOT_CLOSE');
+    appendEvent(manifest, 'ACTIVATION_BLOCKING_ADMIN_OVERLAY_DISMISSED', {
+      shape,
+      appName,
+      displayId: display.id,
+      action: 'EXISTING_ADMIN_CLOSE_CONTROL',
+    });
+    saveManifest(manifest);
+  }
   await clearActivationCodeInput(manifest, shape, appName, 0);
   ({xml} = await uiDump(manifest, device, display.id));
   if (parseResourceTextValue(xml, TERMINAL_ACTIVATION_INPUT_ID, display.id) !== '')
@@ -5723,8 +7001,7 @@ async function runActivationFixtureInput(manifest, shape, appName, fixtureKey, e
   manifest.activationBoundaryReadback = leadingZeroReadback;
   appendEvent(manifest, 'ACTIVATION_BOUNDARY_READBACK', leadingZeroReadback);
   saveManifest(manifest);
-  if (!leadingZeroReadback.exactMatch)
-    fail('VK_ANDROID_ACTIVATION_LEADING_ZERO_NOT_PRESERVED');
+  if (!leadingZeroReadback.exactMatch) fail('VK_ANDROID_ACTIVATION_LEADING_ZERO_NOT_PRESERVED');
   await tapActivationKey(
     manifest,
     shape,
@@ -5749,8 +7026,44 @@ async function runActivationFixtureInput(manifest, shape, appName, fixtureKey, e
     observedValue: parseResourceTextValue(xml, TERMINAL_ACTIVATION_INPUT_ID, display.id),
   });
   if (!evidence.matched) fail('VK_ANDROID_ACTIVATION_FIXTURE_INPUT_MISMATCH');
-  const submit = parseResourceNode(xml, 'terminal.activation.submit', display.id);
-  if (!submit?.enabled) fail('VK_ANDROID_ACTIVATION_SUBMIT_NOT_ENABLED');
+  const keyboardVisible = parseResourceNode(xml, 'ui.base.input:virtual-keyboard', display.id) !== null;
+  if (keyboardVisible) {
+    const complete = parseResourceNode(xml, 'ui.base.input:virtual-keyboard:complete', display.id);
+    if (!complete?.enabled) fail('VK_ANDROID_ACTIVATION_KEYBOARD_COMPLETE_NOT_ACTIONABLE');
+    await tapActivationKey(
+      manifest,
+      shape,
+      display.id,
+      'ui.base.input:virtual-keyboard:complete',
+      'activation-submit-keyboard-complete',
+    );
+  }
+
+  const readinessStartedAt = performance.now();
+  const readinessDeadline = readinessStartedAt + 3000;
+  let readinessAttempts = 0;
+  let submitReadiness = null;
+  while (performance.now() < readinessDeadline) {
+    ({xml} = await uiDump(manifest, device, display.id, {deadlineMonotonic: readinessDeadline}));
+    readinessAttempts += 1;
+    submitReadiness = activationSubmitReadiness(xml, display.id);
+    if (submitReadiness.ready) break;
+    await sleep(Math.min(100, Math.max(0, readinessDeadline - performance.now())));
+  }
+  const submitEvidence = Object.freeze({
+    fixtureKey,
+    shape,
+    appName,
+    ...submitReadiness,
+    attempts: readinessAttempts,
+    keyboardCompleted: keyboardVisible,
+    elapsedMs: Math.ceil(performance.now() - readinessStartedAt),
+    at: now(),
+  });
+  manifest.activationSubmitReadiness = submitEvidence;
+  appendEvent(manifest, 'ACTIVATION_SUBMIT_READY', submitEvidence);
+  saveManifest(manifest);
+  if (!submitReadiness?.ready) fail('VK_ANDROID_ACTIVATION_SUBMIT_NOT_READY');
 
   manifest.activationFixtureInput = Object.freeze({
     fixtureKey,
@@ -6431,9 +7744,16 @@ function recoverPriorRunTunnelMappings(manifest, sourceRunId) {
   if (source.runId !== sourceRunId || source.tool !== 'scripts/test/ter-virtual-keyboard-android.mjs')
     fail('VK_ANDROID_TUNNEL_RECOVERY_SOURCE_INVALID');
   const sourceLog = path.join(EVIDENCE_ROOT, sourceRunId, 'logs', 'commands.jsonl');
-  if (!fs.existsSync(sourceLog) || !fs.realpathSync(sourceLog).startsWith(`${fs.realpathSync(EVIDENCE_ROOT)}${path.sep}`))
+  if (
+    !fs.existsSync(sourceLog) ||
+    !fs.realpathSync(sourceLog).startsWith(`${fs.realpathSync(EVIDENCE_ROOT)}${path.sep}`)
+  )
     fail('VK_ANDROID_TUNNEL_RECOVERY_EVIDENCE_MISSING');
-  const rows = fs.readFileSync(sourceLog, 'utf8').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
+  const rows = fs
+    .readFileSync(sourceLog, 'utf8')
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map(line => JSON.parse(line));
   const devManifest = readRepositoryJson(managedDevManifestFile());
   const packageConfig = readRepositoryJson(path.join(ROOT, APPS['sample-terminal'].androidRoot, '..', 'package.json'));
   const routes = validateDevTunnelRouteInputs({appName: 'sample-terminal', packageConfig, devManifest});
@@ -6442,13 +7762,20 @@ function recoverPriorRunTunnelMappings(manifest, sourceRunId) {
     const device = deviceFor(manifest, shape);
     if (oldDevice?.serial !== device.serial || oldDevice.inventory?.bootId !== device.inventory?.bootId) continue;
     for (const route of routes) {
-      const create = rows.find(row => row.label === `${shape}-dev-tunnel-reverse-create-${route.devicePort}` && row.exitCode === 0);
-      const readback = rows.find(row => row.label === `${shape}-dev-tunnel-reverse-readback-${route.devicePort}` && row.exitCode === 0);
+      const create = rows.find(
+        row => row.label === `${shape}-dev-tunnel-reverse-create-${route.devicePort}` && row.exitCode === 0,
+      );
+      const readback = rows.find(
+        row => row.label === `${shape}-dev-tunnel-reverse-readback-${route.devicePort}` && row.exitCode === 0,
+      );
       if (!create || !readback) continue;
       const oldRoute = parseAdbReverseList(readback.stdout).filter(
         item => item.deviceSocket === `tcp:${route.devicePort}` && item.hostSocket === `tcp:${route.hostPort}`,
       );
-      if (oldRoute.length !== 1 || manifest.devTunnelMappings.some(item => item.shape === shape && item.devicePort === route.devicePort))
+      if (
+        oldRoute.length !== 1 ||
+        manifest.devTunnelMappings.some(item => item.shape === shape && item.devicePort === route.devicePort)
+      )
         continue;
       manifest.devTunnelMappings.push({
         shape,
@@ -7196,6 +8523,7 @@ async function dispatch(argv) {
     fail('VK_ANDROID_HISTORICAL_RECOVERY_ARGUMENT_INVALID');
   const runId = safeRunId(args['run-id']);
   const manifest = readManifest(runId, {allowHistoricalApkPathsForCleanup: action === 'cleanup'});
+  assertRunAllowsAction(manifest, action);
   if (manifest.a11BaselineRunId && !['build', 'launch', 'observe-w10', 'report', 'cleanup'].includes(action)) {
     fail('VK_ANDROID_A11_W10_ACTION_NOT_ALLOWED');
   }
@@ -7225,7 +8553,12 @@ async function dispatch(argv) {
   }
   if (action === 'build') return buildApp(manifest, args.app, args['build-type'] ?? 'release');
   if (action === 'bridge-dev-tunnels')
-    return setupDevTunnelMappings(manifest, args.device, args.app, args['dev-manifest'] ?? '.runtime/r5/run-manifest.json');
+    return setupDevTunnelMappings(
+      manifest,
+      args.device,
+      args.app,
+      args['dev-manifest'] ?? '.runtime/r5/run-manifest.json',
+    );
   if (action === 'launch')
     return installLaunch(
       manifest,
@@ -7326,6 +8659,8 @@ async function dispatch(argv) {
   if (action === 'inspect')
     return inspectResource(manifest, args.device, args['resource-id'], args.surface ?? 'primary');
   if (action === 'tap') return tapResource(manifest, args.device, args['resource-id'], args.surface ?? 'primary');
+  if (action === 'select-different-wallpaper')
+    return selectDifferentWallpaperOption(manifest, args.device, args.surface ?? 'primary');
   if (action === 'activation-fixture-input')
     return runActivationFixtureInput(
       manifest,
@@ -7336,16 +8671,46 @@ async function dispatch(argv) {
     );
   if (action === 'business-input')
     return enterTerminalBusinessInput(manifest, args.device, args.app, args['value-key'], args.surface ?? 'primary');
+  if (action === 'clear-business-input')
+    return clearTerminalBusinessInput(manifest, args.device, args.app, args['value-key'], args.surface ?? 'primary');
   if (action === 'assert-business-text')
     return assertTerminalBusinessText(manifest, args.device, args.app, args.expectation, args.surface ?? 'primary');
   if (action === 'assert-business-screen')
     return assertTerminalBusinessScreen(manifest, args.device, args.app, args.expectation, args.surface ?? 'primary');
+  if (action === 'diagnose-business-screen')
+    return diagnoseTerminalBusinessScreen(manifest, args.device, args.app, args.surface ?? 'primary');
   if (action === 'assert-business-member-readback')
     return assertTerminalBusinessMemberReadback(manifest, args.device, args.app, args.surface ?? 'primary');
   if (action === 'wait-business-screen')
     return waitTerminalBusinessScreen(manifest, args.device, args.app, args.expectation, args.surface ?? 'primary');
+  if (action === 'mark-terminal-evidence-start') return markTerminalBusinessEvidenceStart(manifest, args.device);
   if (action === 'capture-terminal-business-logs')
-    return collectTerminalBusinessLogEvidence(manifest, args.device, args.app, args['started-at'], args['finished-at']);
+    return collectTerminalBusinessLogEvidence(manifest, args.device, args.app, args.expectation);
+  if (action === 'read-terminal-binding')
+    return readTerminalBindingEvidence(
+      manifest,
+      args.device,
+      args['fixture-key'],
+      args['group-workspace-key'],
+      args['expected-binding-status'],
+    );
+  if (action === 'verify-terminal-binding-identity')
+    return verifyTerminalBindingIdentity(
+      manifest,
+      args.device,
+      args.app,
+      args['fixture-key'],
+      args['group-workspace-key'],
+      args.surface ?? 'primary',
+    );
+  if (action === 'resolve-terminal-binding-fixture')
+    return resolveTerminalBindingFixture(
+      manifest,
+      args.device,
+      args.app,
+      args['group-workspace-key'],
+      args.surface ?? 'primary',
+    );
   if (action === 'business-clock') return readTerminalBusinessClock(manifest, args.device);
   if (action === 'activation-input-clear') {
     await clearActivationCodeInput(manifest, args.device, args.app);
@@ -7466,8 +8831,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToP
             manifest.cleanup = 'FAIL';
             manifest.status = 'CLEANUP_REQUIRED';
             manifest.phase = 'CLEANUP_FAILED';
-          } else if (manifest.cleanup === 'PASS') {
-            manifest.status = 'CLEANED';
           } else if (manifest.status !== 'CLEANUP_REQUIRED') {
             manifest.status = 'FAIL';
             manifest.phase = 'FAILED';

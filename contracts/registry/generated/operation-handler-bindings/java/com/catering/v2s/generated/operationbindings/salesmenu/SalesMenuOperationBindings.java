@@ -116,7 +116,6 @@ public final class SalesMenuOperationBindings {
     };
   }
 
-
   public OperationBindingTypes.Wire.SalesMenuCommandReadback addOperationsSalesMenuItems(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.SalesMenuItemsAddRequest request) {
     return adapters.addOperationsSalesMenuItems(ADD_OPERATIONS_SALES_MENU_ITEMS_DESCRIPTOR, context, request);
   }

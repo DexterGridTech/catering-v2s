@@ -1,90 +1,6 @@
 {
   "paths": {
     "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}": {
-      "get": {
-        "operationId": "getPublicInvitationView",
-        "tags": [
-          "workspace-iam"
-        ],
-        "x-consumer-faces": [
-          "public"
-        ],
-        "x-owner-module": "workspace-iam",
-        "x-scenario-ids": [
-          "D04-S06"
-        ],
-        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
-        "x-idempotency-policy": "FORBIDDEN",
-        "x-error-codes": [
-          "ACCOUNT_NOT_BINDABLE",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
-          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
-          "WORKSPACE_IAM_GRANT_INVALID",
-          "WORKSPACE_IAM_INVITATION_EXPIRED",
-          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
-          "WORKSPACE_IAM_INVITATION_TERMINAL",
-          "WORKSPACE_IAM_OTP_INVALID"
-        ],
-        "security": [],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
-            }
-          },
-          {
-            "name": "invitationToken",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationView"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        }
-      },
       "post": {
         "operationId": "acceptPublicInvitation",
         "tags": [
@@ -99,6 +15,7 @@
         ],
         "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
         "x-idempotency-policy": "REQUIRED_16_128",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
           "ACCOUNT_NOT_BINDABLE",
           "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
@@ -171,14 +88,421 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
         "x-required-owner-protocol": "REQ_ACCEPT_PUBLIC_INVITATION"
+      },
+      "get": {
+        "operationId": "getPublicInvitationView",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "public"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S06"
+        ],
+        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
+        "x-error-codes": [
+          "ACCOUNT_NOT_BINDABLE",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
+          "WORKSPACE_IAM_GRANT_INVALID",
+          "WORKSPACE_IAM_INVITATION_EXPIRED",
+          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
+          "WORKSPACE_IAM_INVITATION_TERMINAL",
+          "WORKSPACE_IAM_OTP_INVALID"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "invitationToken",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete": {
+      "post": {
+        "operationId": "completePublicInvitation",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "public"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S06"
+        ],
+        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-request-schema": "NoBody",
+        "x-error-codes": [
+          "ACCOUNT_NOT_BINDABLE",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
+          "WORKSPACE_IAM_GRANT_INVALID",
+          "WORKSPACE_IAM_INVITATION_EXPIRED",
+          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
+          "WORKSPACE_IAM_INVITATION_TERMINAL",
+          "WORKSPACE_IAM_OTP_INVALID"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "invitationToken",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationCompletion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-owner-protocol": "REQ_COMPLETE_PUBLIC_INVITATION"
+      }
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion": {
+      "get": {
+        "operationId": "getPublicInvitationCompletion",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "public"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S06"
+        ],
+        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
+        "x-error-codes": [
+          "ACCOUNT_NOT_BINDABLE",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
+          "WORKSPACE_IAM_GRANT_INVALID",
+          "WORKSPACE_IAM_INVITATION_EXPIRED",
+          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
+          "WORKSPACE_IAM_INVITATION_TERMINAL",
+          "WORKSPACE_IAM_OTP_INVALID"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "invitationToken",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationCompletion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials": {
+      "post": {
+        "operationId": "savePublicInvitationCredentials",
+        "tags": [
+          "workspace-iam"
+        ],
+        "x-consumer-faces": [
+          "public"
+        ],
+        "x-owner-module": "workspace-iam",
+        "x-scenario-ids": [
+          "D04-S06"
+        ],
+        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "ACCOUNT_NOT_BINDABLE",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
+          "WORKSPACE_IAM_GRANT_INVALID",
+          "WORKSPACE_IAM_INVITATION_EXPIRED",
+          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
+          "WORKSPACE_IAM_INVITATION_TERMINAL",
+          "WORKSPACE_IAM_OTP_INVALID"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "invitationToken",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationCredentialResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-owner-protocol": "REQ_SAVE_PUBLIC_INVITATION_CREDENTIALS",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationCredentialRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send": {
@@ -268,10 +592,16 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
@@ -375,10 +705,16 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
@@ -391,296 +727,6 @@
                 "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationOtpVerifyRequest"
               }
             }
-          }
-        }
-      }
-    },
-    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials": {
-      "post": {
-        "operationId": "savePublicInvitationCredentials",
-        "tags": [
-          "workspace-iam"
-        ],
-        "x-consumer-faces": [
-          "public"
-        ],
-        "x-owner-module": "workspace-iam",
-        "x-scenario-ids": [
-          "D04-S06"
-        ],
-        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
-        "x-idempotency-policy": "REQUIRED_16_128",
-        "x-error-codes": [
-          "ACCOUNT_NOT_BINDABLE",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
-          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
-          "WORKSPACE_IAM_GRANT_INVALID",
-          "WORKSPACE_IAM_INVITATION_EXPIRED",
-          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
-          "WORKSPACE_IAM_INVITATION_TERMINAL",
-          "WORKSPACE_IAM_OTP_INVALID"
-        ],
-        "security": [],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
-            }
-          },
-          {
-            "name": "invitationToken",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationCredentialResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        },
-        "x-required-owner-protocol": "REQ_SAVE_PUBLIC_INVITATION_CREDENTIALS",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationCredentialRequest"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete": {
-      "post": {
-        "operationId": "completePublicInvitation",
-        "tags": [
-          "workspace-iam"
-        ],
-        "x-consumer-faces": [
-          "public"
-        ],
-        "x-owner-module": "workspace-iam",
-        "x-scenario-ids": [
-          "D04-S06"
-        ],
-        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
-        "x-idempotency-policy": "REQUIRED_16_128",
-        "x-error-codes": [
-          "ACCOUNT_NOT_BINDABLE",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
-          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
-          "WORKSPACE_IAM_GRANT_INVALID",
-          "WORKSPACE_IAM_INVITATION_EXPIRED",
-          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
-          "WORKSPACE_IAM_INVITATION_TERMINAL",
-          "WORKSPACE_IAM_OTP_INVALID"
-        ],
-        "security": [],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
-            }
-          },
-          {
-            "name": "invitationToken",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationCompletion"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        },
-        "x-required-owner-protocol": "REQ_COMPLETE_PUBLIC_INVITATION"
-      }
-    },
-    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion": {
-      "get": {
-        "operationId": "getPublicInvitationCompletion",
-        "tags": [
-          "workspace-iam"
-        ],
-        "x-consumer-faces": [
-          "public"
-        ],
-        "x-owner-module": "workspace-iam",
-        "x-scenario-ids": [
-          "D04-S06"
-        ],
-        "x-page-key": "PUBLIC-INVITATION-ACCEPTANCE",
-        "x-idempotency-policy": "FORBIDDEN",
-        "x-error-codes": [
-          "ACCOUNT_NOT_BINDABLE",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
-          "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
-          "WORKSPACE_IAM_GRANT_INVALID",
-          "WORKSPACE_IAM_INVITATION_EXPIRED",
-          "WORKSPACE_IAM_INVITATION_NOT_FOUND",
-          "WORKSPACE_IAM_INVITATION_TERMINAL",
-          "WORKSPACE_IAM_OTP_INVALID"
-        ],
-        "security": [],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
-            }
-          },
-          {
-            "name": "invitationToken",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/PublicInvitationCompletion"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         }
       }

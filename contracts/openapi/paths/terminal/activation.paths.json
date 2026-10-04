@@ -70,10 +70,16 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
@@ -167,10 +173,16 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },

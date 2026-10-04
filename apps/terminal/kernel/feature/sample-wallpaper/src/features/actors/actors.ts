@@ -6,6 +6,12 @@ import {selectPendingWallpaperId, selectWallpaperId, isWallpaperId} from '../../
 import {wallpaperActions} from '../slices/slice';
 import {cancelWallpaperSelectionCommand, confirmWallpaperCommand, selectWallpaperCommand} from '../commands/commands';
 import type {WallpaperId} from '../../types/types';
+import type {StateRoot} from '@catering-v2s/kernel-base-state';
+
+export type WallpaperMutationGuard = (state: StateRoot) => boolean;
+const requireEligible = (guard: WallpaperMutationGuard | undefined, context: ActorExecutionContext): void => {
+  if (guard !== undefined && !guard(context.getState())) throw new Error('WALLPAPER_MUTATION_REQUIRES_ACTIVE_SESSION');
+};
 
 const readWallpaperId = (context: ActorExecutionContext): WallpaperId => {
   const payload: unknown = context.command.payload;
@@ -17,14 +23,16 @@ const readWallpaperId = (context: ActorExecutionContext): WallpaperId => {
   return value;
 };
 
-export const createSelectionActor = (): ActorDefinition =>
+export const createSelectionActor = (guard?: WallpaperMutationGuard): ActorDefinition =>
   defineActor(moduleName, 'selection', [
     onCommand(selectWallpaperCommand, context => {
+      requireEligible(guard, context);
       const wallpaperId = readWallpaperId(context);
       context.dispatchAction(wallpaperActions.setPending(wallpaperId));
       return null;
     }),
     onCommand(confirmWallpaperCommand, context => {
+      requireEligible(guard, context);
       const pending = selectPendingWallpaperId(context.getState());
       const confirmed = selectWallpaperId(context.getState());
       if (pending === undefined || pending === confirmed) {
@@ -34,6 +42,7 @@ export const createSelectionActor = (): ActorDefinition =>
       return null;
     }),
     onCommand(cancelWallpaperSelectionCommand, context => {
+      requireEligible(guard, context);
       context.dispatchAction(wallpaperActions.clearPending());
       return null;
     }),

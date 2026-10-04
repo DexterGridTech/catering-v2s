@@ -29,14 +29,26 @@ const testServerSpaces = (): TransportServerConfig => {
   const tdsEntryOneUrl = new URL(managedTdsEntryOneWebSocketBaseUrl!);
   const tdsEntryTwoUrl = new URL(managedTdsEntryTwoWebSocketBaseUrl!);
   if (
-    businessUrl.protocol !== 'http:' || businessUrl.hostname !== '127.0.0.1' || !/^\d{4,5}$/.test(businessUrl.port) ||
+    businessUrl.protocol !== 'http:' ||
+    businessUrl.hostname !== '127.0.0.1' ||
+    !/^\d{4,5}$/.test(businessUrl.port) ||
     !/^\/api\/terminal\/group-workspaces\/[A-Za-z0-9_-]+$/.test(businessUrl.pathname) ||
-    businessUrl.username.length > 0 || businessUrl.password.length > 0 || businessUrl.search.length > 0 || businessUrl.hash.length > 0 ||
-    [tdsEntryOneUrl, tdsEntryTwoUrl].some(url =>
-      url.protocol !== 'ws:' || url.hostname !== '127.0.0.1' || !/^\d{4,5}$/.test(url.port) ||
-      (url.pathname !== '' && url.pathname !== '/') || url.username.length > 0 || url.password.length > 0 ||
-      url.search.length > 0 || url.hash.length > 0
-    ) || tdsEntryOneUrl.port === tdsEntryTwoUrl.port
+    businessUrl.username.length > 0 ||
+    businessUrl.password.length > 0 ||
+    businessUrl.search.length > 0 ||
+    businessUrl.hash.length > 0 ||
+    [tdsEntryOneUrl, tdsEntryTwoUrl].some(
+      url =>
+        url.protocol !== 'ws:' ||
+        url.hostname !== '127.0.0.1' ||
+        !/^\d{4,5}$/.test(url.port) ||
+        (url.pathname !== '' && url.pathname !== '/') ||
+        url.username.length > 0 ||
+        url.password.length > 0 ||
+        url.search.length > 0 ||
+        url.hash.length > 0,
+    ) ||
+    tdsEntryOneUrl.port === tdsEntryTwoUrl.port
   ) {
     throw new Error('TEST_EXPO_MANAGED_SERVER_URL_INVALID');
   }
@@ -55,11 +67,12 @@ const testServerSpaces = (): TransportServerConfig => {
       }
       if (server.serverName === 'terminal-data-server') {
         const addresses = server.addresses.map(address => {
-          const url = address.addressName === 'haproxy-entry-one'
-            ? tdsEntryOneUrl
-            : address.addressName === 'haproxy-entry-two'
-              ? tdsEntryTwoUrl
-              : null;
+          const url =
+            address.addressName === 'haproxy-entry-one'
+              ? tdsEntryOneUrl
+              : address.addressName === 'haproxy-entry-two'
+                ? tdsEntryTwoUrl
+                : null;
           if (url === null) return address;
           tdsAddressesReplaced += 1;
           return Object.freeze({...address, baseUrl: url.toString()});

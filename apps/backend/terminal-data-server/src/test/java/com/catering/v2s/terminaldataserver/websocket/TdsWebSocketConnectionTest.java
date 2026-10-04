@@ -73,4 +73,42 @@ class TdsWebSocketConnectionTest {
 
         assertThat(payload.refCnt()).isZero();
     }
+
+    @Test
+    void rejectsAndReleasesFrameWhenTheSingleOutboundSlotIsOccupied() {
+        WebSocketSession session = mock(WebSocketSession.class);
+        when(session.getId()).thenReturn("full-outbound-session");
+        ByteBuf queuedPayload = Unpooled.copiedBuffer("QUEUED", StandardCharsets.UTF_8);
+        ByteBuf rejectedPayload = Unpooled.copiedBuffer("REJECTED", StandardCharsets.UTF_8);
+        WebSocketMessage queued = new WebSocketMessage(
+                WebSocketMessage.Type.TEXT,
+                new NettyDataBufferFactory(ByteBufAllocator.DEFAULT).wrap(queuedPayload));
+        WebSocketMessage rejected = new WebSocketMessage(
+                WebSocketMessage.Type.TEXT,
+                new NettyDataBufferFactory(ByteBufAllocator.DEFAULT).wrap(rejectedPayload));
+        when(session.textMessage(anyString())).thenReturn(queued, rejected);
+        TdsConnectionCapacityLimiter limiter = new TdsConnectionCapacityLimiter(1, 1);
+        TdsConnectionCapacityLimiter.Permit permit = limiter.tryAcquireUnauthenticated();
+        TdsWebSocketConnection connection = new TdsWebSocketConnection(
+                session, new TerminalConnectionProtocol(JsonMapper.builder().build()), permit, Schedulers.immediate());
+        BaseSubscriber<WebSocketMessage> subscriber = new BaseSubscriber<>() {
+            @Override
+            protected void hookOnSubscribe(Subscription subscription) {
+                // Keep the single outbound slot occupied until cancellation.
+            }
+        };
+
+        try {
+            connection.outboundMessages().subscribe(subscriber);
+            assertThat(connection.sendText("QUEUED")).isTrue();
+            assertThat(connection.sendText("REJECTED")).isFalse();
+            assertThat(queuedPayload.refCnt()).isEqualTo(1);
+            assertThat(rejectedPayload.refCnt()).isZero();
+        } finally {
+            subscriber.cancel();
+            permit.close();
+        }
+
+        assertThat(queuedPayload.refCnt()).isZero();
+    }
 }

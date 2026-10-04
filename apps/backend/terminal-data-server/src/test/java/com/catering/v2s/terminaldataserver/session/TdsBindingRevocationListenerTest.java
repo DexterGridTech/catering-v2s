@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.catering.v2s.terminaldataserver.protocol.TdsWireJsonConfiguration;
 import com.catering.v2s.terminaldataserver.session.TdsBindingRevocationListener.Revocation;
 import com.catering.v2s.terminaldataserver.session.TdsBindingRevocationListener.SessionOpened;
+import com.catering.v2s.terminaldataserver.session.TdsBindingRevocationListener.TopicChangedWakeup;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.BindingKey;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentBinding;
@@ -27,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
@@ -49,6 +51,14 @@ class TdsBindingRevocationListenerTest {
         assertThat(TdsBindingRevocationListener.parsePayload(
                         "{\"v\":1,\"kind\":\"SESSION_OPEN\",\"terminalRef\":\"" + TERMINAL + "\"}", objectMapper))
                 .isEqualTo(new SessionOpened(TERMINAL));
+        UUID workspace = UUID.randomUUID();
+        UUID owner = UUID.randomUUID();
+        assertThat(TdsBindingRevocationListener.parsePayload(
+                        "{\"v\":1,\"kind\":\"TOPIC_CHANGED\",\"workspaceUuid\":\"" + workspace
+                                + "\",\"groupWorkspaceKey\":\"GROUP-1\",\"topicKey\":\"STORE\",\"ownerRef\":\""
+                                + owner + "\",\"futureField\":true}",
+                        objectMapper))
+                .isEqualTo(new TopicChangedWakeup(workspace, "GROUP-1", "STORE", owner));
     }
 
     @Test
@@ -83,6 +93,61 @@ class TdsBindingRevocationListenerTest {
                 listener.stop(stopped::countDown);
                 stopped.await(2, TimeUnit.SECONDS);
             }
+        }
+    }
+
+    @Test
+    void topicChangeWakeupDoesNotDisconnectTheSharedDatabaseListener() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        Statement statement = mock(Statement.class);
+        PGConnection pgConnection = mock(PGConnection.class);
+        PGNotification notification = mock(PGNotification.class);
+        CountDownLatch resumedPolling = new CountDownLatch(1);
+        CountDownLatch stopped = new CountDownLatch(1);
+        AtomicInteger connectionCount = new AtomicInteger();
+        AtomicBoolean firstNotification = new AtomicBoolean(true);
+
+        when(dataSource.getConnection()).thenAnswer(invocation -> {
+            connectionCount.incrementAndGet();
+            return connection;
+        });
+        when(connection.createStatement()).thenReturn(statement);
+        when(connection.unwrap(PGConnection.class)).thenReturn(pgConnection);
+        when(connection.getAutoCommit()).thenReturn(true);
+        when(pgConnection.getBackendPID()).thenReturn(73);
+        when(notification.getName()).thenReturn("terminal_binding_events");
+        when(notification.getParameter()).thenReturn("{\"v\":1,\"kind\":\"TOPIC_CHANGED\","
+                + "\"workspaceUuid\":\"11111111-1111-4111-8111-111111111111\","
+                + "\"groupWorkspaceKey\":\"GROUP-1\",\"topicKey\":\"STORE\","
+                + "\"ownerRef\":\"22222222-2222-4222-8222-222222222222\"}");
+        when(pgConnection.getNotifications(anyInt())).thenAnswer(invocation -> {
+            if (firstNotification.compareAndSet(true, false)) return new PGNotification[] {notification};
+            resumedPolling.countDown();
+            try {
+                Thread.sleep(10_000);
+            } catch (InterruptedException stopping) {
+                Thread.currentThread().interrupt();
+            }
+            return null;
+        });
+
+        TdsBindingRevocationListener listener = new TdsBindingRevocationListener(
+                dataSource,
+                mock(TdsConnectionStateRepository.class),
+                mock(TdsTerminalSessionActors.class),
+                new TdsListenerRecoveryGate("", "", ""),
+                TdsWireJsonConfiguration.createWireObjectMapper(),
+                Schedulers.immediate());
+
+        try {
+            listener.start();
+            assertThat(resumedPolling.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(listener.isReady()).isTrue();
+            assertThat(connectionCount.get()).isEqualTo(1);
+        } finally {
+            listener.stop(stopped::countDown);
+            assertThat(stopped.await(2, TimeUnit.SECONDS)).isTrue();
         }
     }
 
@@ -159,6 +224,19 @@ class TdsBindingRevocationListenerTest {
     }
 
     @Test
+    void listenerFailureDiagnosticsExposeOnlyValidatedSqlState() {
+        assertThat(TdsBindingRevocationListener.sqlState(new SQLException("private message", "08006")))
+                .isEqualTo("08006");
+        assertThat(TdsBindingRevocationListener.sqlState(new SQLException("private message", "bad-state")))
+                .isEqualTo("NONE");
+        assertThat(TdsBindingRevocationListener.sqlState(
+                        new IllegalStateException("wrapper", new SQLException("private message", "57P01"))))
+                .isEqualTo("57P01");
+        assertThat(TdsBindingRevocationListener.sqlState(new IllegalStateException("private message")))
+                .isEqualTo("NONE");
+    }
+
+    @Test
     void sessionOpenNotificationReconcilesBindingAndAuthoritativeSessionOnTheListenerThread() throws Exception {
         DataSource dataSource = mock(DataSource.class);
         Connection connection = mock(Connection.class);
@@ -215,6 +293,7 @@ class TdsBindingRevocationListenerTest {
             assertThat(stopped.await(2, TimeUnit.SECONDS)).isTrue();
             org.mockito.Mockito.verify(actors).reconcile(binding);
             org.mockito.Mockito.verify(actors).reconcileSession(session);
+            org.mockito.Mockito.verify(actors).reconcileTopicSubscriptions();
         } finally {
             if (listener.isRunning()) {
                 listener.stop(stopped::countDown);

@@ -13,7 +13,7 @@ import {
   remoteJavaReadiness,
   remoteTdsReadiness,
 } from '../dev/r5-remote-java-runtime.mjs';
-import {remoteHaproxyIngressReadiness} from '../dev/r5-dev-runner.mjs';
+import {readManagedTerminalBindingByName, remoteHaproxyIngressReadiness} from '../dev/r5-dev-runner.mjs';
 import {terminalBusinessMemberFixture} from './terminal-business-fixtures.mjs';
 import {
   ADMIN_SHELL_FRAME_SELECTOR,
@@ -56,6 +56,7 @@ import {
   unresolvedScreenPlacementsAfterStartup,
   projectTerminalActivationLogEvents,
   projectTerminalConnectionHeartbeatLogEvents,
+  projectManagedTerminalActivationBackendLogLines,
   projectManagedTdsLogLines,
   displayedHeartbeatRttMismatch,
   ensureContainedWebDirectory,
@@ -109,15 +110,32 @@ const managedGroupWorkspaceKey = 'aurora';
 const managedServerOverrides =
   managedDev === null ? null : managedTestServerSpaceOverrides(managedDev, managedGroupWorkspaceKey);
 const managedGroupWorkspaceUrl = managedServerOverrides?.businessBaseUrl ?? null;
+const managedGroupWorkspacePath =
+  managedGroupWorkspaceUrl === null ? null : new URL(managedGroupWorkspaceUrl).pathname.replace(/\/+$/u, '');
+const activationRouteTemplate = `/${['api', 'terminal', 'group-workspaces', '{groupWorkspaceKey}', 'activation'].join('/')}`;
+const cancellationRouteTemplate = `/${[
+  'api',
+  'terminal',
+  'group-workspaces',
+  '{groupWorkspaceKey}',
+  'terminals',
+  '{terminalRef}',
+  'activation',
+  'cancel',
+].join('/')}`;
 const activationFixtureByIntegrationAndSurface = Object.freeze({
   'sample-console': Object.freeze({laptop: 'term-front', mobile: 'term-handheld'}),
   'sample-wallpaper-console': Object.freeze({laptop: 'term-kds', mobile: 'term-preparing'}),
 });
+const activationFixtureOverride = process.env.TER_WEB_MANAGED_FIXTURE_KEY ?? null;
 const managedActivationFixtureKey = !isManagedActivationScenario
   ? null
   : isActivationRejectionScenario
     ? 'term-disabled'
-    : activationFixtureByIntegrationAndSurface[integrationName][surfaceForm];
+    : (activationFixtureOverride ?? activationFixtureByIntegrationAndSurface[integrationName][surfaceForm]);
+if (activationFixtureOverride !== null && (!isManagedActivationScenario || isActivationRejectionScenario)) {
+  throw new Error('WEB_MANAGED_ACTIVATION_FIXTURE_OVERRIDE_NOT_APPLICABLE');
+}
 const managedActivationDeviceIdOverride = process.env.TER_WEB_MANAGED_DEVICE_ID ?? null;
 if (managedActivationDeviceIdOverride !== null && !/^[A-Za-z0-9:._-]{1,128}$/.test(managedActivationDeviceIdOverride)) {
   throw new Error('WEB_MANAGED_ACTIVATION_DEVICE_ID_INVALID');
@@ -139,12 +157,31 @@ const readManagedActivationFixture = (fixtureKey, expectedStatus = 'ENABLED') =>
   ) {
     throw new Error('WEB_MANAGED_ACTIVATION_FIXTURE_INVALID');
   }
-  return Object.freeze({key: fixtureKey, activationCode: entry.activationCode});
+  return Object.freeze({key: fixtureKey, name: entry.name, activationCode: entry.activationCode});
 };
 const managedActivationFixture = readManagedActivationFixture(
   managedActivationFixtureKey,
   isActivationRejectionScenario ? 'DISABLED' : 'ENABLED',
 );
+const managedActivationFixtureState =
+  managedActivationFixture === null || managedDev === null
+    ? null
+    : readManagedTerminalBindingByName({
+        runId: managedDev.runId,
+        groupWorkspaceKey: managedGroupWorkspaceKey,
+        terminalNames: [managedActivationFixture.name],
+      })[0];
+if (
+  managedActivationFixtureState !== null &&
+  (managedActivationFixtureState.terminalStatus !== (isActivationRejectionScenario ? 'DISABLED' : 'ENABLED') ||
+    (!isActivationRejectionScenario && managedActivationFixtureState.bindingStatus === 'ACTIVE'))
+) {
+  throw new Error(
+    managedActivationFixtureState.bindingStatus === 'ACTIVE'
+      ? 'WEB_MANAGED_ACTIVATION_FIXTURE_ALREADY_BOUND'
+      : 'WEB_MANAGED_ACTIVATION_FIXTURE_READBACK_MISMATCH',
+  );
+}
 const integrationPackage = JSON.parse(fs.readFileSync(path.join(integrationRoot, 'package.json'), 'utf8'));
 const orientation = surfaceForm === 'laptop' ? 'landscape' : 'portrait';
 const expectedPrimaryLogicalSize = integrationPackage.terminalSurfaces?.orientations?.[orientation]?.PRIMARY;
@@ -215,6 +252,15 @@ const manifest = {
         managedTdsEntryOneWebSocketBaseUrl: managedServerOverrides.tdsEntryOneWebSocketBaseUrl,
         managedTdsEntryTwoWebSocketBaseUrl: managedServerOverrides.tdsEntryTwoWebSocketBaseUrl,
         ...(managedActivationFixture === null ? {} : {managedActivationFixture: managedActivationFixture.key}),
+        ...(managedActivationFixtureState === null
+          ? {}
+          : {
+              managedActivationFixtureReadback: {
+                terminalStatus: managedActivationFixtureState.terminalStatus,
+                bindingStatus: managedActivationFixtureState.bindingStatus,
+                generation: managedActivationFixtureState.generation,
+              },
+            }),
         ...(managedActivationDeviceId === null ? {} : {managedActivationDeviceId}),
       }),
   process: null,
@@ -445,12 +491,8 @@ const openAdminConsoleFromLauncher = async () => {
   const latestBinding = bindingEvents.at(-1);
   if (latestBinding === undefined || !adminLauncherBindingReady(latestBinding, 'PRIMARY')) {
     const bindingLogOffset = captureWebLogCheckpoint();
-    await waitForLogEvent(
-      logPath,
-      'admin.launcher-binding',
-      bindingLogOffset,
-      2_000,
-      event => adminLauncherBindingReady(event, 'PRIMARY'),
+    await waitForLogEvent(logPath, 'admin.launcher-binding', bindingLogOffset, 2_000, event =>
+      adminLauncherBindingReady(event, 'PRIMARY'),
     );
   }
   const point = adminLauncherGesturePagePoint(geometry);
@@ -770,10 +812,15 @@ try {
     });
   });
   const managedOperationForPath = pathname => {
-    if (pathname === '/api/terminal/group-workspaces/aurora/activation') return 'activation';
-    if (/^\/api\/terminal\/group-workspaces\/aurora\/terminals\/[^/]+\/activation\/cancel$/.test(pathname))
+    if (managedGroupWorkspacePath !== null && pathname === `${managedGroupWorkspacePath}/activation`)
+      return 'activation';
+    if (
+      managedGroupWorkspacePath !== null &&
+      pathname.startsWith(`${managedGroupWorkspacePath}/terminals/`) &&
+      /\/activation\/cancel$/u.test(pathname)
+    )
       return 'cancel-activation';
-    return pathname.startsWith('/api/terminal/') ? 'other-terminal-api' : null;
+    return pathname.startsWith(`/${['api', 'terminal'].join('/')}/`) ? 'other-terminal-api' : null;
   };
   page.on('request', request => {
     try {
@@ -1539,6 +1586,11 @@ try {
     }
     const activationField = page.getByTestId('terminal.activation.code');
     await activationField.waitFor({state: 'visible', timeout: 20_000});
+    const activationServiceSpace = (await page.getByTestId('terminal.activation:service-space').innerText()).trim();
+    if (activationServiceSpace !== '服务空间：development') {
+      throw new Error('WEB_TERMINAL_ACTIVATION_SERVICE_SPACE_MISMATCH');
+    }
+    manifest.activationServiceSpace = activationServiceSpace;
     await activationField.click();
     for (const digit of managedActivationFixture.activationCode) {
       await page.getByTestId(`ui.base.input:virtual-keyboard:text-${digit}`).click();
@@ -1553,7 +1605,8 @@ try {
         try {
           const url = new URL(response.url());
           return (
-            url.pathname === '/api/terminal/group-workspaces/aurora/activation' &&
+            managedGroupWorkspacePath !== null &&
+            url.pathname === `${managedGroupWorkspacePath}/activation` &&
             response.request().method() === 'POST'
           );
         } catch {
@@ -2021,6 +2074,11 @@ try {
     };
     const activationField = page.getByTestId('terminal.activation.code');
     await activationField.waitFor({state: 'visible', timeout: 20_000});
+    const activationServiceSpace = (await page.getByTestId('terminal.activation:service-space').innerText()).trim();
+    if (activationServiceSpace !== '服务空间：development') {
+      throw new Error('WEB_TERMINAL_ACTIVATION_SERVICE_SPACE_MISMATCH');
+    }
+    manifest.activationServiceSpace = activationServiceSpace;
     await activationField.click();
     for (const digit of managedActivationFixture.activationCode) {
       await page.getByTestId(`ui.base.input:virtual-keyboard:text-${digit}`).click();
@@ -2045,7 +2103,8 @@ try {
         try {
           const url = new URL(response.url());
           return (
-            url.pathname === '/api/terminal/group-workspaces/aurora/activation' &&
+            managedGroupWorkspacePath !== null &&
+            url.pathname === `${managedGroupWorkspacePath}/activation` &&
             response.request().method() === 'POST'
           );
         } catch {
@@ -2101,7 +2160,10 @@ try {
       const memberPhone = page.getByTestId('sample.desk.member-form:phone');
       await memberPhone.click();
       for (const digit of memberFixture.phone) await tapKey(`text-${digit}`);
-      if ((await memberName.inputValue()) !== memberFixture.name || (await memberPhone.inputValue()) !== memberFixture.phone) {
+      if (
+        (await memberName.inputValue()) !== memberFixture.name ||
+        (await memberPhone.inputValue()) !== memberFixture.phone
+      ) {
         throw new Error('WEB_MEMBER_INPUT_NOT_ACCEPTED');
       }
       const memberKeyboard = page.getByTestId('ui.base.input:virtual-keyboard');
@@ -2553,50 +2615,18 @@ try {
     try {
       collectRemoteLog(managedDev.remoteHostTrust.host, managedDev.remoteJava, fullLogPath);
       const lines = fs.readFileSync(fullLogPath, 'utf8').split(/\r?\n/u);
-      const runStart = Date.parse(manifest.startedAt) - 2_000;
-      const runFinish = Date.parse(manifest.finishedAt) + 2_000;
-      manifest.backendTerminalHttpLogEvents = lines.flatMap(line => {
-        const timestampText = line.match(/^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}[+-]\d\d:\d\d)/u)?.[1];
-        if (timestampText === undefined) return [];
-        const timestamp = Date.parse(timestampText);
-        if (timestamp < runStart || timestamp > runFinish) return [];
-        const routeTemplate = line.match(/\brouteTemplate=([^\s]+)/u)?.[1] ?? null;
-        const event = line.match(/\bevent=([A-Z0-9_]+)/u)?.[1] ?? null;
-        const activationRoute = '/api/terminal/group-workspaces/{groupWorkspaceKey}/activation';
-        const cancellationRoute =
-          '/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel';
-        const activationEvent = event !== null && event.startsWith('TERMINAL_ACTIVATION_HTTP_');
-        const managedRoute = routeTemplate === activationRoute || routeTemplate === cancellationRoute;
-        if (!activationEvent && (!line.includes('request-completed') || !managedRoute)) return [];
-        const value = key => line.match(new RegExp(`\\b${key}=([^\\s]+)`, 'u'))?.[1] ?? null;
-        return [
-          {
-            at: timestampText,
-            event,
-            operationId: value('operationId'),
-            outcome: value('outcome'),
-            status: Number(value('status')) || null,
-            durationMillis: Number(value('durationMillis')) || 0,
-            errorCode: value('errorCode'),
-            databaseOperationCount: /^\d+$/u.test(value('databaseOperationCount') ?? '')
-              ? Number(value('databaseOperationCount'))
-              : null,
-            owner: value('owner'),
-            consumerFace: value('consumerFace'),
-            routeTemplate,
-            requestId: value('requestId'),
-            correlationId: value('correlationId'),
-            exceptionType: value('exceptionType'),
-          },
-        ];
-      });
+      manifest.backendTerminalHttpLogEvents = projectManagedTerminalActivationBackendLogLines(
+        lines,
+        new Date(Date.parse(manifest.startedAt) - 2_000).toISOString(),
+        new Date(Date.parse(manifest.finishedAt) + 2_000).toISOString(),
+      );
       manifest.backendLogRead = 'PASS';
       if (managedActivationAttempted) {
         const expected = [
           {
             operation: 'activation',
             operationId: 'activateTerminal',
-            routeTemplate: '/api/terminal/group-workspaces/{groupWorkspaceKey}/activation',
+            routeTemplate: activationRouteTemplate,
             expectedOutcome: isActivationRejectionScenario ? 'FAILED' : 'SUCCEEDED',
             expectedStatus: isActivationRejectionScenario ? 409 : 200,
             expectedErrorCode: isActivationRejectionScenario ? 'STORE_TERMINAL_DISABLED' : null,
@@ -2604,8 +2634,7 @@ try {
           {
             operation: 'cancel-activation',
             operationId: 'cancelTerminalActivation',
-            routeTemplate:
-              '/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel',
+            routeTemplate: cancellationRouteTemplate,
             expectedOutcome: 'SUCCEEDED',
             expectedStatus: 200,
             expectedErrorCode: null,

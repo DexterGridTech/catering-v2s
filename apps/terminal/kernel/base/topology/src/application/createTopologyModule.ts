@@ -48,6 +48,7 @@ export type CreateTopologyModuleInput = Readonly<{
   readonly nodeId?: string;
   readonly identityClient?: TopologyIdentityClient;
   readonly peerChannel?: TopologyPeerChannel;
+  readonly canPair?: (state: import('@catering-v2s/kernel-base-state').StateRoot) => boolean;
   readonly stateSyncSlices?: readonly Readonly<{
     readonly name: string;
     readonly syncIntent: 'master-to-slave' | 'slave-to-master';
@@ -168,6 +169,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     identityClient: input.identityClient,
     peerChannel: input.peerChannel,
     moduleName: input.moduleName,
+    canPair: input.canPair,
   });
   const commands = [
     queryTopologyHostCommand,
@@ -273,6 +275,9 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     getConnectionId: () => currentConnectionId,
     onStateSliceApplied: ({context, connectionId, sliceName, revision}) => {
       dispatchTopologyEvent(context, {event: 'state-sync-slice-applied', connectionId, sliceName, revision});
+    },
+    onStateSliceApplyFailed: ({context, connectionId, sliceName, revision}) => {
+      dispatchTopologyEvent(context, {event: 'state-sync-slice-apply-failed', connectionId, sliceName, revision});
     },
     dispatchPayloadFailure,
     clearPayloadFailure,
@@ -563,7 +568,21 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
       onStateTransferFailure: failure => {
         if (failure.code === undefined || !payloadFailureCodes.has(failure.code)) return;
         const deterministic = failure.code !== 'TOPOLOGY_REASSEMBLY_TIMEOUT';
-        const failureKey = `${failure.sliceName ?? 'unknown'}:${failure.revision ?? 'unknown'}:${failure.code}`;
+        const failureKey = `${connectionId ?? 'unknown'}:${failure.sliceName ?? 'unknown'}:${failure.revision ?? 'unknown'}:${failure.code}`;
+        if (
+          connectionId !== undefined &&
+          failure.sliceName !== undefined &&
+          typeof failure.revision === 'number' &&
+          Number.isSafeInteger(failure.revision) &&
+          failure.revision > 0
+        ) {
+          dispatchTopologyEvent(context, {
+            event: 'state-sync-slice-apply-failed',
+            connectionId,
+            sliceName: failure.sliceName,
+            revision: failure.revision,
+          });
+        }
         if (deterministic && lastReceivedPayloadFailureKey === failureKey) return;
         if (deterministic) lastReceivedPayloadFailureKey = failureKey;
         dispatchPayloadFailure(context, {

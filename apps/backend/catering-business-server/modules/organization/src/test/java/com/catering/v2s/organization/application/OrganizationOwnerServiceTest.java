@@ -20,11 +20,20 @@ import com.catering.v2s.platform.access.PlatformExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
+import com.catering.v2s.organization.application.persistence.OrganizationTerminalTopicSnapshotPersistence;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import org.postgresql.PGConnection;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -85,15 +94,12 @@ class OrganizationOwnerServiceTest {
                 new ExtensionDefinitionPersistence(jdbc, time),
                 new ExtensionCommandReceiptService(jdbc, time),
                 workspaceStatuses);
-        hierarchy = new OrganizationHierarchyService(jdbc, time, definitions);
-        entities = new BusinessEntityService(jdbc, time, definitions, hierarchy);
         commercialGroups = new OrganizationCommandService(
                 jdbc,
                 (candidateWorkspaceId, groupWorkspaceKey) ->
                         workspaceId.equals(candidateWorkspaceId) && "organization-test".equals(groupWorkspaceKey),
                 time,
                 definitions);
-        overview = new OrganizationOverviewTaskReadService(jdbc, definitions, entities, hierarchy, commercialGroups);
         definitions.replace(
                 workspaceId,
                 "organization-test",
@@ -131,11 +137,27 @@ class OrganizationOwnerServiceTest {
                         "ENABLED",
                         0,
                         null)));
+        ensureCommercialGroupInitialized();
+        hierarchy = new OrganizationHierarchyService(
+                jdbc(),
+                time,
+                new OrganizationHierarchyCommandReceiptService(jdbc(), time),
+                (candidateWorkspaceId, groupWorkspaceKey) ->
+                        workspaceId.equals(candidateWorkspaceId) && "organization-test".equals(groupWorkspaceKey),
+                commercialGroups,
+                definitions);
+        entities = new BusinessEntityService(jdbc(), time, definitions, hierarchy);
+        overview = new OrganizationOverviewTaskReadService(jdbc(), definitions, entities, hierarchy, commercialGroups);
     }
 
     @Test
     void hierarchyIsStrictAndStoresRequireSameWorkspaceActiveReferences() {
-        var region = hierarchy.create(workspaceId, "organization-test", "REGION", null, "R1", "Region");
+        UUID commercialGroupRef = commercialGroups.requireCommercialGroupRef(workspaceId, "organization-test");
+        var region = hierarchy.createRegion(workspaceId, "organization-test", "R1", "Region");
+        assertEquals(commercialGroupRef, region.parentId(), "REGION persists its real commercial-group reference");
+        assertThrows(
+                OrganizationHierarchyService.OrganizationValidationException.class,
+                () -> hierarchy.create(workspaceId, "organization-test", "REGION", null, "R-NULL", "No parent"));
         var project = hierarchy.create(workspaceId, "organization-test", "PROJECT", region.id(), "P1", "Project");
         var phases = hierarchy.replaceProjectPhaseNames(
                 workspaceId, "organization-test", project.id(), project.version(), List.of("Preparation", "Operating"));
@@ -156,6 +178,9 @@ class OrganizationOwnerServiceTest {
         assertThrows(
                 OrganizationHierarchyService.OrganizationValidationException.class,
                 () -> hierarchy.create(workspaceId, "organization-test", "REGION", region.id(), "bad", "Bad parent"));
+        assertThrows(
+                OrganizationCommandService.OrganizationCommandException.class,
+                () -> commercialGroups.requireCommercialGroupRef(UUID.randomUUID(), "organization-test"));
 
         var brand = entities.createEntity(
                 "BRAND", workspaceId, "organization-test", "brand-1", "Brand", null, null, Map.of());
@@ -205,6 +230,174 @@ class OrganizationOwnerServiceTest {
     }
 
     @Test
+    void firstConcurrentAreaCollectionRefreshesSerializeBeforeReadingAnAbsentSnapshot() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        UUID storeRef = createTerminalTopicTestStore(suffix);
+        JdbcTemplate db = new JdbcTemplate(dataSource);
+        db.update(
+                "DELETE FROM organization.terminal_topic_snapshot WHERE workspace_uuid=? AND group_workspace_key=? "
+                        + "AND store_ref=? AND topic_key='SERVICE_POINT_AREA_COLLECTION'",
+                workspaceId,
+                "organization-test",
+                storeRef);
+
+        var topics = new OrganizationTerminalTopicSnapshotPersistence(db);
+        var transactions = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
+        var firstLocked = new CountDownLatch(1);
+        var releaseFirst = new CountDownLatch(1);
+        var secondStarted = new CountDownLatch(1);
+        var executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> first = executor.submit(() -> transactions.executeWithoutResult(status -> {
+                topics.lockAreaCollection(workspaceId, "organization-test", storeRef);
+                firstLocked.countDown();
+                await(releaseFirst);
+                insertTopicTestArea(db, storeRef, suffix + "-first", NOW + 1);
+                topics.refreshAreaCollection(workspaceId, "organization-test", storeRef, NOW + 1);
+            }));
+            assertTrue(firstLocked.await(5, TimeUnit.SECONDS), "first transaction acquired the scope lock");
+
+            Future<?> second = executor.submit(() -> transactions.executeWithoutResult(status -> {
+                db.queryForObject("SELECT set_config('application_name', ?, true)", String.class,
+                        "tdp_topic_collection_waiter_" + suffix);
+                secondStarted.countDown();
+                topics.lockAreaCollection(workspaceId, "organization-test", storeRef);
+                insertTopicTestArea(db, storeRef, suffix + "-second", NOW + 2);
+                topics.refreshAreaCollection(workspaceId, "organization-test", storeRef, NOW + 2);
+            }));
+            assertTrue(secondStarted.await(5, TimeUnit.SECONDS), "second transaction reached the lock call");
+            assertTrue(awaitAdvisoryLockWaiter("tdp_topic_collection_waiter_" + suffix),
+                    "second transaction is blocked on the same PostgreSQL advisory lock");
+
+            releaseFirst.countDown();
+            first.get(10, TimeUnit.SECONDS);
+            second.get(10, TimeUnit.SECONDS);
+        } finally {
+            releaseFirst.countDown();
+            executor.shutdownNow();
+            assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS), "concurrency test workers terminated");
+        }
+
+        assertEquals(2, db.queryForObject(
+                "SELECT count(*) FROM organization.store_service_point_area WHERE workspace_uuid=? "
+                        + "AND group_workspace_key=? AND store_ref=? AND status='ENABLED'",
+                Integer.class,
+                workspaceId,
+                "organization-test",
+                storeRef));
+        String actualHash = db.queryForObject(
+                "SELECT collection_hash FROM organization.terminal_topic_snapshot WHERE workspace_uuid=? "
+                        + "AND group_workspace_key=? AND store_ref=? AND topic_key='SERVICE_POINT_AREA_COLLECTION'",
+                String.class,
+                workspaceId,
+                "organization-test",
+                storeRef);
+        String expectedHash = db.queryForObject(
+                "SELECT encode(sha256(convert_to(coalesce(string_agg(area_ref::text, E'\\n' ORDER BY area_ref::text), ''), 'UTF8')), 'hex') "
+                        + "FROM organization.store_service_point_area WHERE workspace_uuid=? AND group_workspace_key=? "
+                        + "AND store_ref=? AND status='ENABLED'",
+                String.class,
+                workspaceId,
+                "organization-test",
+                storeRef);
+        assertEquals(expectedHash, actualHash, "the final snapshot includes both serialized committed members");
+        assertEquals(NOW + 2, db.queryForObject(
+                "SELECT topic_time_epoch_millis FROM organization.terminal_topic_snapshot WHERE workspace_uuid=? "
+                        + "AND group_workspace_key=? AND store_ref=? AND topic_key='SERVICE_POINT_AREA_COLLECTION'",
+                Long.class,
+                workspaceId,
+                "organization-test",
+                storeRef));
+    }
+
+    @Test
+    void storeStatusTransitionWakesBothStoreRootTopics() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        UUID storeRef = createTerminalTopicTestStore(suffix);
+
+        try (Connection listener = dataSource.getConnection(); Statement statement = listener.createStatement()) {
+            statement.execute("LISTEN terminal_binding_events");
+
+            var current = entities.requireEntity("STORE", workspaceId, "organization-test", storeRef);
+            var transitioned = entities.transitionEntityStatus(
+                    "STORE",
+                    workspaceId,
+                    "organization-test",
+                    storeRef,
+                    "DISABLED",
+                    current.version());
+            assertEquals("DISABLED", transitioned.status());
+
+            statement.executeQuery("SELECT 1").close();
+            var notifications = listener.unwrap(PGConnection.class).getNotifications();
+            assertEquals(2, notifications.length, "store root status update publishes both precise topics");
+            assertTrue(java.util.Arrays.stream(notifications).anyMatch(notification -> {
+                String payload = notification.getParameter();
+                return payload.contains("\"topicKey\": \"STORE\"")
+                        && payload.contains("\"ownerRef\": \"" + storeRef + "\"");
+            }));
+            assertTrue(java.util.Arrays.stream(notifications).anyMatch(notification -> {
+                String payload = notification.getParameter();
+                return payload.contains("\"topicKey\": \"STORE_OPERATING_RULE\"")
+                        && payload.contains("\"ownerRef\": \"" + storeRef + "\"");
+            }));
+        }
+    }
+
+    @Test
+    void rollbackDiscardsOwnerMutationSnapshotAndNotificationTogether() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        UUID storeRef = createTerminalTopicTestStore(suffix);
+        JdbcTemplate db = new JdbcTemplate(dataSource);
+        db.update(
+                "DELETE FROM organization.terminal_topic_snapshot WHERE workspace_uuid=? AND group_workspace_key=? "
+                        + "AND store_ref=? AND topic_key='SERVICE_POINT_AREA_COLLECTION'",
+                workspaceId,
+                "organization-test",
+                storeRef);
+
+        var topics = new OrganizationTerminalTopicSnapshotPersistence(db);
+        var transactions = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
+        try (Connection listener = dataSource.getConnection(); Statement statement = listener.createStatement()) {
+            statement.execute("LISTEN terminal_binding_events");
+            statement.execute("SELECT pg_notify('terminal_binding_events', 'rollback-control')");
+            statement.executeQuery("SELECT 1").close();
+            PGConnection pgConnection = listener.unwrap(PGConnection.class);
+            var controlNotifications = pgConnection.getNotifications();
+            assertTrue(controlNotifications != null && controlNotifications.length == 1,
+                    "listener receives the committed control event");
+            assertEquals("rollback-control", controlNotifications[0].getParameter());
+
+            assertThrows(IllegalStateException.class, () -> transactions.executeWithoutResult(status -> {
+                topics.lockAreaCollection(workspaceId, "organization-test", storeRef);
+                insertTopicTestArea(db, storeRef, suffix + "-rollback", NOW + 3);
+                topics.refreshAreaCollection(workspaceId, "organization-test", storeRef, NOW + 3);
+                throw new IllegalStateException("rollback owner mutation");
+            }));
+
+            assertEquals(0, db.queryForObject(
+                    "SELECT count(*) FROM organization.store_service_point_area WHERE workspace_uuid=? "
+                            + "AND group_workspace_key=? AND store_ref=? AND code=?",
+                    Integer.class,
+                    workspaceId,
+                    "organization-test",
+                    storeRef,
+                    suffix + "-rollback"));
+            assertEquals(0, db.queryForObject(
+                    "SELECT count(*) FROM organization.terminal_topic_snapshot WHERE workspace_uuid=? "
+                            + "AND group_workspace_key=? AND store_ref=? AND topic_key='SERVICE_POINT_AREA_COLLECTION'",
+                    Integer.class,
+                    workspaceId,
+                    "organization-test",
+                    storeRef));
+            statement.executeQuery("SELECT 1").close();
+            var notifications = pgConnection.getNotifications();
+            assertTrue(notifications == null || notifications.length == 0,
+                    "rolled-back topic wake-ups are not visible to listeners");
+        }
+    }
+
+    @Test
     void rejectsUnknownExtensionValueAndCrossWorkspaceReference() {
         assertThrows(
                 BusinessEntityService.OrganizationValidationException.class,
@@ -224,8 +417,8 @@ class OrganizationOwnerServiceTest {
 
     @Test
     void catalogBrandJudgmentUsesOrganizationFactsRatherThanTheRawSelection() {
-        var region = hierarchy.create(
-                workspaceId, "organization-test", "REGION", null, "brand-judgment-region", "Brand judgment region");
+        var region = hierarchy.createRegion(
+                workspaceId, "organization-test", "brand-judgment-region", "Brand judgment region");
         var project = hierarchy.create(
                 workspaceId,
                 "organization-test",
@@ -735,13 +928,25 @@ class OrganizationOwnerServiceTest {
                 "organization-test-extension-project-0001",
                 AuditActor.system());
         assertEquals(Map.of("projectBudget", "100"), project.extensionValues());
+        assertThrows(
+                OrganizationHierarchyService.OrganizationConflictException.class,
+                () -> hierarchy.update(
+                        workspaceId,
+                        "organization-test",
+                        region.id(),
+                        "EXT-R",
+                        "Extension region",
+                        null,
+                        null,
+                        List.of(),
+                        region.version()));
         var updated = hierarchy.update(
                 workspaceId,
                 "organization-test",
                 region.id(),
                 "EXT-R",
                 "Extension region",
-                null,
+                region.parentId(),
                 null,
                 List.of(),
                 region.version(),
@@ -896,7 +1101,7 @@ class OrganizationOwnerServiceTest {
                 region.id(),
                 "GRANT-R",
                 "Updated grant region",
-                null,
+                groupId,
                 null,
                 List.of(),
                 region.version(),
@@ -962,8 +1167,8 @@ class OrganizationOwnerServiceTest {
     @Test
     void hierarchyUpdateOnlyRewritesProjectPhasesWhenFactsChange() {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
-        var region = hierarchy.create(
-                workspaceId, "organization-test", "REGION", null, "CP10-PHASE-R-" + suffix, "CP10 phase region");
+        var region = hierarchy.createRegion(
+                workspaceId, "organization-test", "CP10-PHASE-R-" + suffix, "CP10 phase region");
         var project = hierarchy.create(
                 workspaceId,
                 "organization-test",
@@ -1036,8 +1241,7 @@ class OrganizationOwnerServiceTest {
 
     @Test
     void authorizationIsSingleActionIdempotentAndReferencedBrandCannotBeRemoved() {
-        var region =
-                hierarchy.create(workspaceId, "organization-test", "REGION", null, "AUTH-R", "Authorization region");
+        var region = hierarchy.createRegion(workspaceId, "organization-test", "AUTH-R", "Authorization region");
         var project = hierarchy.create(
                 workspaceId, "organization-test", "PROJECT", region.id(), "AUTH-P", "Authorization project");
         var brand = entities.createEntity(
@@ -1341,7 +1545,7 @@ class OrganizationOwnerServiceTest {
 
     @Test
     void overviewPreservesHierarchyPathAndStoreReferences() {
-        var region = hierarchy.create(workspaceId, "organization-test", "REGION", null, "OV-R", "Overview region");
+        var region = hierarchy.createRegion(workspaceId, "organization-test", "OV-R", "Overview region");
         var project =
                 hierarchy.create(workspaceId, "organization-test", "PROJECT", region.id(), "OV-P", "Overview project");
         hierarchy.replaceProjectPhaseNames(
@@ -1398,7 +1602,7 @@ class OrganizationOwnerServiceTest {
     @Test
     void hierarchyPageKeepsItsPredicateCountAndAncestryInsideTheHierarchyOwner() {
         var region =
-                hierarchy.create(workspaceId, "organization-test", "REGION", null, "CANONICAL-R", "Canonical region");
+                hierarchy.createRegion(workspaceId, "organization-test", "CANONICAL-R", "Canonical region");
         var project = hierarchy.create(
                 workspaceId, "organization-test", "PROJECT", region.id(), "CANONICAL-P", "Canonical project");
         hierarchy.replaceProjectPhaseNames(
@@ -1430,7 +1634,7 @@ class OrganizationOwnerServiceTest {
 
     @Test
     void overviewUsesServerPageAndReadsOneItemWithoutMaterializingTheCategory() {
-        var region = hierarchy.create(workspaceId, "organization-test", "REGION", null, "PAGE-R", "Page region");
+        var region = hierarchy.createRegion(workspaceId, "organization-test", "PAGE-R", "Page region");
         var project =
                 hierarchy.create(workspaceId, "organization-test", "PROJECT", region.id(), "PAGE-P", "Page project");
         var brand = entities.createEntity(
@@ -1492,7 +1696,7 @@ class OrganizationOwnerServiceTest {
         OrganizationTaskPathService paths = new OrganizationTaskPathService(jdbc(), groups);
         OrganizationAssignmentCandidateService candidates =
                 new OrganizationAssignmentCandidateService(jdbc(), groups, paths);
-        var region = hierarchy.create(workspaceId, "organization-test", "REGION", null, "CAND-R", "Candidate region");
+        var region = hierarchy.createRegion(workspaceId, "organization-test", "CAND-R", "Candidate region");
         var project = hierarchy.create(
                 workspaceId, "organization-test", "PROJECT", region.id(), "CAND-P", "Candidate project");
         var brand = entities.createEntity(
@@ -1547,7 +1751,7 @@ class OrganizationOwnerServiceTest {
             }
         };
         OrganizationTaskPathService paths = new OrganizationTaskPathService(jdbc(), groups);
-        var region = hierarchy.create(workspaceId, "organization-test", "REGION", null, "BATCH-R", "Batch region");
+        var region = hierarchy.createRegion(workspaceId, "organization-test", "BATCH-R", "Batch region");
         var project =
                 hierarchy.create(workspaceId, "organization-test", "PROJECT", region.id(), "BATCH-P", "Batch project");
         var tenant = entities.createEntity(
@@ -1638,7 +1842,7 @@ class OrganizationOwnerServiceTest {
             }
         };
         OrganizationTaskPathService paths = new OrganizationTaskPathService(jdbc(), groups);
-        var region = hierarchy.create(workspaceId, "organization-test", "REGION", null, "LABEL-R", "Label region");
+        var region = hierarchy.createRegion(workspaceId, "organization-test", "LABEL-R", "Label region");
         var project =
                 hierarchy.create(workspaceId, "organization-test", "PROJECT", region.id(), "LABEL-P", "Label project");
         var tenant = entities.createEntity(
@@ -1734,8 +1938,7 @@ class OrganizationOwnerServiceTest {
             }
         };
         OrganizationTaskPathService paths = new OrganizationTaskPathService(jdbc(), groups);
-        var region =
-                hierarchy.create(workspaceId, "organization-test", "REGION", null, "AVAILABLE-R", "Available region");
+        var region = hierarchy.createRegion(workspaceId, "organization-test", "AVAILABLE-R", "Available region");
         var project = hierarchy.create(
                 workspaceId, "organization-test", "PROJECT", region.id(), "AVAILABLE-P", "Available project");
         jdbc().update("UPDATE organization.organization_node SET status='DISABLED' WHERE id=?", project.id());
@@ -1761,8 +1964,7 @@ class OrganizationOwnerServiceTest {
         ensureCommercialGroupInitialized();
         UUID group = commercialGroups.requireCommercialGroupRef(workspaceId, "organization-test");
         OrganizationTaskPathService paths = new OrganizationTaskPathService(jdbc(), commercialGroups);
-        var region =
-                hierarchy.create(workspaceId, "organization-test", "REGION", null, "PERSISTED-R", "Persisted region");
+        var region = hierarchy.createRegion(workspaceId, "organization-test", "PERSISTED-R", "Persisted region");
         var project = hierarchy.create(
                 workspaceId, "organization-test", "PROJECT", region.id(), "PERSISTED-P", "Persisted project");
         var headCompany = entities.createEntity(
@@ -1843,6 +2045,103 @@ class OrganizationOwnerServiceTest {
                         .displayPath());
     }
 
+    private static UUID createTerminalTopicTestStore(String suffix) {
+        var region = hierarchy.createRegion(
+                workspaceId, "organization-test", "TOPIC-R-" + suffix, "Topic test region " + suffix);
+        var project = hierarchy.create(
+                workspaceId,
+                "organization-test",
+                "PROJECT",
+                region.id(),
+                "TOPIC-P-" + suffix,
+                "Topic test project " + suffix);
+        var brand = entities.createEntity(
+                "BRAND",
+                workspaceId,
+                "organization-test",
+                "topic-brand-" + suffix,
+                "Topic brand " + suffix,
+                null,
+                null,
+                Map.of());
+        var tenant = entities.createEntity(
+                "TENANT",
+                workspaceId,
+                "organization-test",
+                "topic-tenant-" + suffix,
+                "Topic tenant " + suffix,
+                "Topic tenant legal " + suffix,
+                "91310000" + suffix,
+                Map.of());
+        var head = entities.createEntity(
+                "HEAD_COMPANY",
+                workspaceId,
+                "organization-test",
+                "topic-head-" + suffix,
+                "Topic head " + suffix,
+                "Topic head legal " + suffix,
+                "91310000HEAD" + suffix,
+                Map.of());
+        entities.addHeadCompanyBrandAuthorization(
+                workspaceId,
+                "organization-test",
+                head.id(),
+                brand.id(),
+                "topic-auth-" + suffix,
+                AuditActor.system());
+        return entities.createStore(
+                workspaceId,
+                "organization-test",
+                project.id(),
+                tenant.id(),
+                brand.id(),
+                head.id(),
+                "topic-store-" + suffix,
+                "Topic store " + suffix,
+                Map.of("floorArea", "10"))
+                .id();
+    }
+
+    private static void insertTopicTestArea(JdbcTemplate jdbc, UUID storeRef, String code, long updatedAt) {
+        UUID areaRef = UUID.randomUUID();
+        jdbc.update(
+                "INSERT INTO organization.store_service_point_area(area_ref, workspace_uuid, group_workspace_key, "
+                        + "store_ref, name, code, area_type, status, display_order, version, created_at_epoch_millis, "
+                        + "updated_at_epoch_millis) VALUES (?, ?, 'organization-test', ?, ?, ?, 'SCAN_AREA', "
+                        + "'ENABLED', 0, 1, ?, ?)",
+                areaRef,
+                workspaceId,
+                storeRef,
+                "Area " + code,
+                code,
+                updatedAt - 1,
+                updatedAt);
+    }
+
+    private static void await(CountDownLatch latch) {
+        try {
+            if (!latch.await(10, TimeUnit.SECONDS)) throw new AssertionError("barrier timeout");
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("barrier interrupted", interrupted);
+        }
+    }
+
+    private static boolean awaitAdvisoryLockWaiter(String applicationName) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            Integer waiters = jdbc().queryForObject(
+                    "SELECT count(*) FROM pg_stat_activity activity JOIN pg_locks lock "
+                            + "ON lock.pid=activity.pid WHERE activity.application_name=? "
+                            + "AND lock.locktype='advisory' AND NOT lock.granted",
+                    Integer.class,
+                    applicationName);
+            if (waiters != null && waiters > 0) return true;
+            Thread.sleep(10);
+        }
+        return false;
+    }
+
     private static JdbcTemplate jdbc() {
         return new JdbcTemplate(
                 new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()));
@@ -1853,17 +2152,12 @@ class OrganizationOwnerServiceTest {
                         "SELECT id FROM platform_workspace.group_workspace WHERE "
                                 + "group_workspace_key='organization-test'",
                         Long.class);
-        OrganizationCommandService commands = new OrganizationCommandService(
-                jdbc(),
-                (candidateWorkspaceId, groupWorkspaceKey) ->
-                        workspaceId.equals(candidateWorkspaceId) && "organization-test".equals(groupWorkspaceKey),
-                () -> NOW);
         PlatformExecutionContext context = new PlatformExecutionContext(
                 "organization-owner-test",
                 "platform-admin",
                 Instant.ofEpochMilli(NOW + 60_000L),
                 "organization-owner-test");
-        commands.execute(
+        commercialGroups.execute(
                 context,
                 workspaceId,
                 "organization-test",

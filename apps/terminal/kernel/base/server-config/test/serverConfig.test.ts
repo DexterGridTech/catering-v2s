@@ -371,6 +371,54 @@ describe('server-config owner commands, selectors, and required plain proxy pers
     });
   });
 
+  it('clears a synchronized host-default projection when the branch becomes MASTER and restores package defaults', async () => {
+    const hostDefaults: TransportServerConfig = Object.freeze({
+      ...defaults,
+      spaces: Object.freeze(
+        defaults.spaces.map(space =>
+          Object.freeze({
+            ...space,
+            servers: Object.freeze(
+              space.servers.map(server =>
+                Object.freeze({
+                  ...server,
+                  addresses: Object.freeze([{addressName: 'host', baseUrl: 'https://host.example.test'}]),
+                }),
+              ),
+            ),
+          }),
+        ),
+      ),
+    });
+    const host = createFixture({defaults: hostDefaults, persistenceKey: 'server-config-host-defaults-host'});
+    const branch = createFixture({persistenceKey: 'server-config-host-defaults-branch'});
+    runtimes.push(host.runtime, branch.runtime);
+    await start(host.runtime);
+    await start(branch.runtime);
+    expect((await dispatch(branch.runtime, setRuntimeInstanceModeCommand, {instanceMode: 'SLAVE'})).status).toBe(
+      'completed',
+    );
+    const payload = runtimeStateSyncForTest(host.runtime).createFullSyncPayload(serverConfigSliceName);
+    expect(payload.status).toBe('ready');
+    if (payload.status !== 'ready') return;
+    expect(
+      runtimeStateSyncForTest(branch.runtime).applyAuthoritativeSync(serverConfigSliceName, payload.payload).status,
+    ).toBe('applied');
+    expect(resolveServerNetworkSnapshot(branch.runtime.getState(), defaults, 'business').addresses[0]?.baseUrl).toBe(
+      'https://host.example.test',
+    );
+
+    expect((await dispatch(branch.runtime, setRuntimeInstanceModeCommand, {instanceMode: 'MASTER'})).status).toBe(
+      'completed',
+    );
+    const restored = await dispatch(branch.runtime, restoreServerDefaultsCommand, {});
+    expect(restored.actorResults[0]?.result).toMatchObject({changed: true});
+    expect(branch.runtime.getState()[serverConfigSliceName]).toMatchObject({syncedHostDefaults: null});
+    expect(resolveServerNetworkSnapshot(branch.runtime.getState(), defaults, 'business').addresses[0]?.baseUrl).toBe(
+      'https://business.dev.example.test',
+    );
+  });
+
   it('keeps the newly effective selection when persistence fails and reports the failure from the owner command', async () => {
     const fixture = createFixture();
     runtimes.push(fixture.runtime);
@@ -494,6 +542,29 @@ describe('server-config owner commands, selectors, and required plain proxy pers
     expect(resolveServerNetworkSnapshot(restored.runtime.getState(), hydrationDefaults, 'business').addresses).toEqual([
       {addressName: 'custom', baseUrl: 'https://custom.example.test', timeoutMs: 1700},
     ]);
+  });
+
+  it('commits normalization when persisted synchronized defaults are malformed', async () => {
+    const plain = new MemoryStorage();
+    const persistenceKey = 'server-config-invalid-synced-defaults-test';
+    const first = createFixture({plain, persistenceKey});
+    runtimes.push(first.runtime);
+    await start(first.runtime);
+    await dispatch(first.runtime, selectServerConfigSpaceCommand, {spaceName: 'prod'});
+    await tick();
+    await releaseRuntimeForTestAsync(first.runtime);
+    runtimes.splice(runtimes.indexOf(first.runtime), 1);
+    const selectedSpaceKey = [...plain.values.keys()].find(key => key.endsWith('/field/selectedSpace'));
+    expect(selectedSpaceKey).toBeDefined();
+    if (selectedSpaceKey === undefined) throw new Error('SELECTED_SPACE_FIXTURE_KEY_MISSING');
+    const syncedDefaultsKey = selectedSpaceKey.replace(/\/field\/selectedSpace$/u, '/field/syncedHostDefaults');
+    plain.values.set(syncedDefaultsKey, JSON.stringify({malformed: true}));
+
+    const restored = createFixture({plain, persistenceKey});
+    runtimes.push(restored.runtime);
+    await start(restored.runtime);
+    expect(restored.runtime.getState()[serverConfigSliceName]).toMatchObject({syncedHostDefaults: null});
+    expect(selectServerConfiguration(restored.runtime.getState(), defaults).source).toBe('package-defaults');
   });
 
   it('copies host defaults, selected address, and default proxy password to the branch as plain persisted projection', async () => {

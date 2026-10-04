@@ -75,18 +75,20 @@ describe('runtime startup diagnostics', () => {
       );
       expect(commands).toEqual(
         expect.objectContaining({
-          count: 6,
+          count: 7,
           commands: expect.arrayContaining([
             {moduleName: runtimeModuleName, commandName: `${runtimeModuleName}.reset-runtime-after-system-failure`},
+            {moduleName: runtimeModuleName, commandName: `${runtimeModuleName}.hello-world`},
             {moduleName: fixtureModuleName, commandName: `${fixtureModuleName}.known`},
           ]),
         }),
       );
       expect(actors).toEqual(
         expect.objectContaining({
-          count: 5,
+          count: 6,
           actorKeys: expect.arrayContaining([
             `${runtimeModuleName}.reset-runtime-after-system-failure`,
+            `${runtimeModuleName}.hello-world`,
             `${fixtureModuleName}.handler`,
           ]),
         }),

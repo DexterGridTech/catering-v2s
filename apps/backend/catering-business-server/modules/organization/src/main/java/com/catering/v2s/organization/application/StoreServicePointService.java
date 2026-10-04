@@ -16,6 +16,7 @@ import com.catering.v2s.organization.api.StoreOperatingRuleGate;
 import com.catering.v2s.organization.api.StoreServicePointAssetLifecycle;
 import com.catering.v2s.organization.api.StoreServicePointOwnerApi;
 import com.catering.v2s.organization.application.persistence.OrganizationAuditEventWriter;
+import com.catering.v2s.organization.application.persistence.OrganizationTerminalTopicSnapshotPersistence;
 import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
@@ -54,6 +55,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     private final ObjectProvider<StoreServicePointAssetLifecycle> assets;
     private final StoreOperatingRuleGate operatingRules;
     private final OrganizationAuditEventWriter auditEvents;
+    private final OrganizationTerminalTopicSnapshotPersistence terminalTopics;
 
     public StoreServicePointService(
             JdbcTemplate jdbc,
@@ -69,6 +71,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         this.assets = assets;
         this.operatingRules = operatingRules;
         this.auditEvents = new OrganizationAuditEventWriter(jdbc);
+        this.terminalTopics = new OrganizationTerminalTopicSnapshotPersistence(jdbc);
     }
 
     @Override
@@ -332,6 +335,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     public Area createArea(AreaCommand command) {
         requireCommand(
                 command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
+        terminalTopics.lockAreaCollection(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
         String name = required(command.name(), 120);
         String code = required(command.code(), 64);
         String type = areaType(command.areaType());
@@ -384,7 +388,11 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                         AuditChange.forNullableScalar("name", null, name),
                                 AuditChange.forNullableScalar("code", null, code),
                         AuditChange.forNullableScalar("areaType", null, type),
-                                AuditChange.forNullableScalar("status", null, "ENABLED")));
+                        AuditChange.forNullableScalar("status", null, "ENABLED")));
+        terminalTopics.notifyExact(
+                command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT_AREA", areaRef);
+        terminalTopics.refreshAreaCollection(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), now);
         return requireAreaRead(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), areaRef);
     }
 
@@ -393,6 +401,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     public Area updateArea(AreaCommand command) {
         requireCommand(
                 command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
+        terminalTopics.lockAreaCollection(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
         AreaRow before = requireAreaForUpdate(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), command.areaRef());
         if ("VOIDED".equals(before.status)) throw new BusinessEntityService.OrganizationConflictException();
@@ -419,6 +428,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                                 command.storeRef(),
                                 before.areaRef)
                         > 0) throw new BusinessEntityService.OrganizationValidationException();
+        long now = time.currentEpochMillis();
         int updated;
         try {
             updated = jdbc.update(
@@ -430,7 +440,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                     code,
                     type,
                     status,
-                    time.currentEpochMillis(),
+                    now,
                     before.areaRef,
                     command.workspaceUuid(),
                     command.groupWorkspaceKey(),
@@ -447,8 +457,12 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 AREA_ENTITY,
                 "AREA_UPDATED",
                 command.actor(),
-                time.currentEpochMillis(),
+                now,
                 changes(before, name, code, type, status));
+        terminalTopics.notifyExact(
+                command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT_AREA", before.areaRef);
+        terminalTopics.refreshAreaCollection(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), now);
         return requireAreaRead(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.areaRef);
     }
@@ -458,6 +472,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     public Area transitionArea(StatusCommand command) {
         requireCommand(
                 command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
+        terminalTopics.lockAreaCollection(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
         AreaRow before = requireAreaForUpdate(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), command.targetRef());
         String target = status(command.status());
@@ -471,12 +486,13 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 AREA))
             return requireAreaRead(
                     command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.areaRef);
+        long now = time.currentEpochMillis();
         int updated = jdbc.update(
                 ("UPDATE organization.store_service_point_area SET status=?, version=versi"
                         + "on+1, updated_at_epoch_millis=? WHERE area_ref=? AND workspace_uuid=? AN"
                         + "D group_workspace_key=? AND store_ref=? AND version=?"),
                 target,
-                time.currentEpochMillis(),
+                now,
                 before.areaRef,
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
@@ -490,8 +506,12 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 AREA_ENTITY,
                 "AREA_STATUS_CHANGED",
                 command.actor(),
-                time.currentEpochMillis(),
+                now,
                 List.of(AuditChange.forNullableScalar("status", before.status, target)));
+        terminalTopics.notifyExact(
+                command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT_AREA", before.areaRef);
+        terminalTopics.refreshAreaCollection(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), now);
         return requireAreaRead(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.areaRef);
     }
@@ -533,6 +553,10 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 rows.get(index),
                 rows.get(neighbor),
                 time.currentEpochMillis());
+        terminalTopics.notifyExact(
+                command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT_AREA", rows.get(index).areaRef);
+        terminalTopics.notifyExact(
+                command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT_AREA", rows.get(neighbor).areaRef);
         return requireAreaRead(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.areaRef);
     }
@@ -542,6 +566,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     public Point createPoint(PointCommand command) {
         requireCommand(
                 command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
+        terminalTopics.lockPointCollection(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
         AreaRow area = requireAreaForUpdate(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), command.areaRef());
         String pointType = pointType(command.pointType());
@@ -630,6 +655,10 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                         command.reservable(),
                         command.imageAssetRef(),
                         extension));
+        terminalTopics.notifyExact(
+                command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT", pointRef);
+        terminalTopics.refreshPointCollection(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), now);
         return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), pointRef);
     }
 
@@ -638,6 +667,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     public Point updatePoint(PointCommand command) {
         requireCommand(
                 command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
+        terminalTopics.lockPointCollection(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
         PointRow before = requirePointForUpdate(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), command.pointRef());
         if ("VOIDED".equals(before.status)) throw new BusinessEntityService.OrganizationConflictException();
@@ -670,6 +700,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 before.imageAssetRef,
                 command.imageAssetRef(),
                 command.imageBindGrant());
+        long now = time.currentEpochMillis();
         int updated;
         try {
             updated = jdbc.update(
@@ -688,7 +719,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                     command.imageAssetRef(),
                     extension.json(),
                     extension.revision(),
-                    time.currentEpochMillis(),
+                    now,
                     before.pointRef,
                     command.workspaceUuid(),
                     command.groupWorkspaceKey(),
@@ -705,7 +736,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 POINT_ENTITY,
                 "SERVICE_POINT_UPDATED",
                 command.actor(),
-                time.currentEpochMillis(),
+                now,
                 pointChanges(
                         before,
                         command.name(),
@@ -717,6 +748,10 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                         command.reservable(),
                         command.imageAssetRef(),
                         extension));
+        terminalTopics.notifyExact(
+                command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT", before.pointRef);
+        terminalTopics.refreshPointCollection(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), now);
         return readPointAfterMutation(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef, status);
     }
@@ -726,6 +761,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     public Point transitionPoint(StatusCommand command) {
         requireCommand(
                 command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
+        terminalTopics.lockPointCollection(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
         PointRow before = requirePointForUpdate(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), command.targetRef());
         String target = status(command.status());
@@ -738,12 +774,13 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 before.pointRef,
                 POINT))
             return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef);
+        long now = time.currentEpochMillis();
         int updated = jdbc.update(
                 ("UPDATE organization.store_service_point SET status=?, version=version+1,"
                         + " updated_at_epoch_millis=? WHERE point_ref=? AND workspace_uuid=? AND gr"
                         + "oup_workspace_key=? AND store_ref=? AND version=?"),
                 target,
-                time.currentEpochMillis(),
+                now,
                 before.pointRef,
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
@@ -757,8 +794,12 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 POINT_ENTITY,
                 "SERVICE_POINT_STATUS_CHANGED",
                 command.actor(),
-                time.currentEpochMillis(),
+                now,
                 List.of(AuditChange.forNullableScalar("status", before.status, target)));
+        terminalTopics.notifyExact(
+                command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT", before.pointRef);
+        terminalTopics.refreshPointCollection(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), now);
         return readPointAfterMutation(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef, target);
     }
@@ -799,6 +840,10 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         if (index < 0 || neighbor < 0 || neighbor >= rows.size())
             return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef);
         swapOrders("organization.store_service_point", rows.get(index), rows.get(neighbor), time.currentEpochMillis());
+        terminalTopics.notifyExact(
+                command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT", rows.get(index).pointRef);
+        terminalTopics.notifyExact(
+                command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT", rows.get(neighbor).pointRef);
         return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef);
     }
 

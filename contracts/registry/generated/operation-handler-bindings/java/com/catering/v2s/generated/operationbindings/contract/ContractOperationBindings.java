@@ -68,7 +68,6 @@ public final class ContractOperationBindings {
     };
   }
 
-
   public OperationBindingTypes.Wire.StoreContract createOperationsContract(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreContractCreateRequest request) {
     return adapters.createOperationsContract(CREATE_OPERATIONS_CONTRACT_DESCRIPTOR, context, request);
   }

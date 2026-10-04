@@ -10,6 +10,17 @@ import { projectEdgeCatalog } from "./edge-operation-projections.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const safeRetryableOperationIds = new Set(["activateTerminal", "cancelTerminalActivation"]);
+const terminalCredentialOperationIds = new Set([
+  "cancelTerminalActivation",
+  "terminalReadStoreBasic",
+  "terminalReadStoreOrganizationPath",
+  "terminalReadStoreActiveContracts",
+  "terminalReadContract",
+  "terminalReadStoreServicePointAreas",
+  "terminalReadServicePointArea",
+  "terminalReadStoreServicePoints",
+  "terminalReadServicePoint",
+]);
 const catalogPath = "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json";
 const placementPath = "doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json";
 const errorCatalogPath = "doc/plans/platform/2026-07-26-v2s-r5-error-code-disposition-catalog.json";
@@ -281,7 +292,7 @@ function operationDocument(operation, catalog, requirements, pathFile) {
   const response = successType ? { description: "Owner readback", content: { [successType]: { schema: { $ref: `#/components/schemas/${operation.responseSchema}` } } } } : { description: "No content" };
   const responses = { [operation.successStatus]: response };
   const problemResponseRef = `${path.posix.relative(path.posix.dirname(pathFile), "edge.openapi.json")}#/components/responses/ProblemResponse`;
-  for (const status of ["400", "401", "403", "404", "409", "429", "500"]) responses[status] = { $ref: problemResponseRef };
+  for (const status of ["400", "401", "403", "404", "409", "422", "429", "500", "503"]) responses[status] = { $ref: problemResponseRef };
   const document = {
     operationId: operation.operationId,
     tags: [operation.owner],
@@ -290,6 +301,7 @@ function operationDocument(operation, catalog, requirements, pathFile) {
     "x-scenario-ids": operation.scenarioIds,
     "x-page-key": operation.pageKey,
     "x-idempotency-policy": operation.idempotency.header,
+    ...(operation.requestSchema === "NoBody" ? {"x-request-schema": "NoBody"} : {}),
     ...(safeRetryable ? {"x-safe-retryable": true} : {}),
     "x-error-codes": operationErrors(operation, catalog),
     security: security(operation),
@@ -307,11 +319,12 @@ function operationDocument(operation, catalog, requirements, pathFile) {
     }
     document["x-authorization-mode"] = "NONE";
   } else if (operation.authorizationMode === "TERMINAL_CREDENTIAL") {
-    if (operation.operationId !== "cancelTerminalActivation" || operation.face !== "terminal"
+    if (!terminalCredentialOperationIds.has(operation.operationId) || operation.face !== "terminal"
       || operation.security !== "TERMINAL_CREDENTIAL" || requirement?.authorizationMode !== "TERMINAL_CREDENTIAL") {
       fail("R5_EDGE_TERMINAL_CREDENTIAL_AUTH_DRIFT", operation.operationId);
     }
     document["x-authorization-mode"] = "TERMINAL_CREDENTIAL";
+    document["x-required-terminal-credential"] = requirement.requirementId;
   } else if (operation.authorizationMode !== undefined) {
     fail("R5_EDGE_AUTHORIZATION_MODE_UNRESOLVED", `${operation.operationId}:${operation.authorizationMode}`);
   }
@@ -553,8 +566,60 @@ function selfTest() {
       }
       return result;
     };
-    materialize(scratch, true);
+    const initialMaterialization = materialize(scratch, true);
     const acceptedCatalog = readJson(catalogPath, scratch);
+    for (const operation of acceptedCatalog.operations.filter(entry => entry.face === "terminal" && entry.method === "GET")) {
+      const reportOperation = initialMaterialization.report.operations.find(entry => entry.operationId === operation.operationId);
+      const generatedPath = readJson(path.posix.join(generatedRoot, reportOperation.pathFile), scratch);
+      const generatedOperation = generatedPath.paths?.[operation.path]?.get;
+      if (!generatedOperation?.responses?.["422"] || !generatedOperation?.responses?.["503"])
+        fail("R5_EDGE_TERMINAL_TYPED_PROBLEM_RESPONSE_MISSING", operation.operationId);
+    }
+    const terminalReadOperationId = "terminalReadStoreBasic";
+    const terminalAnonymousMutation = clone(acceptedCatalog);
+    const anonymousRead = terminalAnonymousMutation.operations.find(operation => operation.operationId === terminalReadOperationId);
+    anonymousRead.authorizationMode = "NONE";
+    anonymousRead.security = "NONE";
+    write(catalogPath, terminalAnonymousMutation, scratch);
+    try {
+      materialize(scratch, false);
+      fail("R5_EDGE_TERMINAL_READ_ANONYMOUS_RED_NOT_DETECTED");
+    } catch (error) {
+      if (!String(error.message).includes("R5_EDGE_TERMINAL_ANONYMOUS_AUTH_DRIFT")) throw error;
+    }
+    process.stdout.write("FIXTURE=terminal-read-anonymous; EXPECTED=FAIL; ACTUAL=FAIL; MARKER=R5_EDGE_TERMINAL_ANONYMOUS_AUTH_DRIFT\n");
+    process.stdout.write("R5_EDGE_TERMINAL_READ_ANONYMOUS_RED=PASS\n");
+    write(catalogPath, acceptedCatalog, scratch);
+    const terminalWorkspaceSessionMutation = clone(acceptedCatalog);
+    const workspaceSessionRead = terminalWorkspaceSessionMutation.operations.find(operation => operation.operationId === terminalReadOperationId);
+    workspaceSessionRead.authorizationMode = "AUTHENTICATED_WORKSPACE";
+    workspaceSessionRead.security = "AUTHENTICATED_WORKSPACE";
+    write(catalogPath, terminalWorkspaceSessionMutation, scratch);
+    try {
+      materialize(scratch, false);
+      fail("R5_EDGE_TERMINAL_READ_WORKSPACE_SESSION_RED_NOT_DETECTED");
+    } catch (error) {
+      if (!String(error.message).includes("R5_EDGE_SECURITY_UNRESOLVED")) throw error;
+    }
+    process.stdout.write("FIXTURE=terminal-read-workspace-session; EXPECTED=FAIL; ACTUAL=FAIL; MARKER=R5_EDGE_SECURITY_UNRESOLVED\n");
+    process.stdout.write("R5_EDGE_TERMINAL_READ_WORKSPACE_SESSION_RED=PASS\n");
+    write(catalogPath, acceptedCatalog, scratch);
+    const terminalCredentialManifest = readJson(authorizationManifestPath, scratch);
+    const removedCredentialRequirement = terminalCredentialManifest.requirements.findIndex(requirement =>
+      requirement.operationIdentity?.operationId === terminalReadOperationId);
+    if (removedCredentialRequirement < 0) fail("R5_EDGE_TERMINAL_READ_CREDENTIAL_REQUIREMENT_FIXTURE_MISSING");
+    terminalCredentialManifest.requirements.splice(removedCredentialRequirement, 1);
+    write(authorizationManifestPath, terminalCredentialManifest, scratch);
+    try {
+      materialize(scratch, false);
+      fail("R5_EDGE_TERMINAL_READ_CREDENTIAL_REQUIREMENT_RED_NOT_DETECTED");
+    } catch (error) {
+      if (!String(error.message).includes("R5_EDGE_TERMINAL_CREDENTIAL_AUTH_DRIFT")) throw error;
+    }
+    process.stdout.write("FIXTURE=terminal-read-requirement-removed; EXPECTED=FAIL; ACTUAL=FAIL; MARKER=R5_EDGE_TERMINAL_CREDENTIAL_AUTH_DRIFT\n");
+    process.stdout.write("R5_EDGE_TERMINAL_READ_CREDENTIAL_REQUIREMENT_RED=PASS\n");
+    write(authorizationManifestPath, readJson(authorizationManifestPath, root), scratch);
+    write(catalogPath, acceptedCatalog, scratch);
     const safeRetryMutation = clone(acceptedCatalog);
     safeRetryMutation.operations.find((operation) => operation.operationId === "activateTerminal").safeRetryable = false;
     write(catalogPath, safeRetryMutation, scratch);

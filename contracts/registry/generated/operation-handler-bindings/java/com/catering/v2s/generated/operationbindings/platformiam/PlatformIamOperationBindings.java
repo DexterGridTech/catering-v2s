@@ -72,7 +72,6 @@ public final class PlatformIamOperationBindings {
     };
   }
 
-
   public OperationBindingTypes.Wire.PlatformCurrentPasswordChangeResult changeCurrentPlatformPassword(OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.PlatformCurrentPasswordChangeRequest request) {
     return adapters.changeCurrentPlatformPassword(CHANGE_CURRENT_PLATFORM_PASSWORD_DESCRIPTOR, context, request);
   }

@@ -10,14 +10,20 @@ import {
   advanceAnimatedTimingsForTests,
   setAnimatedTimingAutoFinishForTests,
 } from '../../../../../../tools/terminal-shared/react-native-vitest-entry';
-import {createProcessMemoryStateStoragePort, type LogEvent, type StateStoragePort} from '@catering-v2s/kernel-base-platform-ports';
 import {
-  loginCommand,
-  logoutCommand,
-  selectSessionState,
-} from '@catering-v2s/kernel-feature-sample-staff-session';
+  createProcessMemoryStateStoragePort,
+  type LogEvent,
+  type StateStoragePort,
+} from '@catering-v2s/kernel-base-platform-ports';
+import {loginCommand, logoutCommand, selectSessionState} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {ADMIN_CONSOLE_LAYER_ID, ADMIN_CONSOLE_PART_KEY, adminTestIds} from '@catering-v2s/ui-base-admin-shell';
-import {contentStateSliceName, openLayerCommand, selectLayers, selectScreen, showScreenCommand} from '@catering-v2s/kernel-base-ui-state';
+import {
+  contentStateSliceName,
+  openLayerCommand,
+  selectLayers,
+  selectScreen,
+  showScreenCommand,
+} from '@catering-v2s/kernel-base-ui-state';
 import {
   confirmWallpaperCommand,
   selectWallpaperCommand,
@@ -40,7 +46,12 @@ import {
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {needToActivateTerminalCommand} from '@catering-v2s/ui-base-terminal-activation';
 import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-client';
-import {createTestPlatformPorts, TestPeerChannel, type TestPlatformPorts} from './support';
+import {
+  createReadyTerminalNetworkAdapter,
+  createTestPlatformPorts,
+  TestPeerChannel,
+  type TestPlatformPorts,
+} from './support';
 import {
   resetNativeTestRefFactory,
   setNativeTestRefFactory,
@@ -67,6 +78,11 @@ vi.mock('expo-crypto', () => ({
   getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
 }));
 
+vi.mock('@catering-v2s/ui-base-terminal-activation', async importOriginal => {
+  const actual = await importOriginal<typeof import('@catering-v2s/ui-base-terminal-activation')>();
+  return {...actual, createCredentialSecret: vi.fn(async () => 'A'.repeat(43))};
+});
+
 type TestWallpaperConsoleAssemblyInput = Omit<
   Parameters<typeof createProductionSampleWallpaperConsoleAssembly>[0],
   'platformPorts' | 'nativeLoadingCapability'
@@ -90,9 +106,7 @@ const readPersistedValues = async (storages: readonly StateStoragePort[]): Promi
     if (keyResult.value.length === 0) continue;
     const entriesResult = await storage.readMany({keys: keyResult.value});
     if (entriesResult.status !== 'succeeded') throw new Error('SAMPLE_WALLPAPER_STORAGE_VALUE_READ_FAILED');
-    values.push(
-      ...entriesResult.value.flatMap(entry => (entry.result.state === 'found' ? [entry.result.value] : [])),
-    );
+    values.push(...entriesResult.value.flatMap(entry => (entry.result.state === 'found' ? [entry.result.value] : [])));
   }
   return values;
 };
@@ -110,23 +124,18 @@ const createSampleWallpaperConsoleAssembly = (input: TestWallpaperConsoleAssembl
     transportNetworkAdapterFactory:
       input.transportNetworkAdapterFactory ??
       (readSnapshot =>
-        Object.freeze({
-          readSnapshot,
-          connect: async () => {
-            throw new Error('WEBSOCKET_NOT_EXPECTED_IN_WALLPAPER_COMPOSITION_TEST');
-          },
-          sendHttp: async () =>
-            Object.freeze({
-              kind: 'response' as const,
-              status: 200,
-              body: Object.freeze({
-                terminalRef: 'terminal-wallpaper-test',
-                storeRef: 'store-wallpaper-test',
-                groupWorkspaceKey: 'workspace-wallpaper-test',
-                bindingGeneration: 1,
-              }),
+        createReadyTerminalNetworkAdapter(readSnapshot, async () =>
+          Object.freeze({
+            kind: 'response' as const,
+            status: 200,
+            body: Object.freeze({
+              terminalRef: '00000000-0000-4000-8000-000000000009',
+              storeRef: '00000000-0000-4000-8000-000000000010',
+              groupWorkspaceKey: 'workspace-wallpaper-test',
+              bindingGeneration: 1,
             }),
-        })),
+          }),
+        )),
     nativeLoadingCapability: input.platformPorts.nativeLoadingCapability,
   });
 
@@ -146,15 +155,16 @@ const activateForTest = async (assembly: Awaited<ReturnType<typeof createSampleW
     dispatchOptions(),
   );
   expect(result.status).toBe('completed');
-  expect(result.actorResults.map(item => item.result)).toContainEqual(
-    expect.objectContaining({status: 'activated', terminalRef: 'terminal-wallpaper-test'}),
-  );
+  const activation = result.actorResults
+    .map(item => item.result)
+    .find(value => typeof value === 'object' && value !== null && 'status' in value && value.status === 'activated');
+  if (activation === undefined)
+    throw new Error(`TERMINAL_TEST_ACTIVATION_RESULT ${JSON.stringify(result.actorResults)}`);
+  expect(activation).toMatchObject({status: 'activated', terminalRef: '00000000-0000-4000-8000-000000000009'});
   await new Promise(resolve => setTimeout(resolve, 0));
 };
 
-const readyAndActivateForTest = async (
-  assembly: Awaited<ReturnType<typeof createSampleWallpaperConsoleAssembly>>,
-) => {
+const readyAndActivateForTest = async (assembly: Awaited<ReturnType<typeof createSampleWallpaperConsoleAssembly>>) => {
   await signalPrimaryReady(assembly);
   await activateForTest(assembly);
 };
@@ -576,7 +586,7 @@ describe('sample2 wallpaper console assembly', () => {
       surfaceForm: 'laptop',
     });
     const mobile = await createSampleWallpaperConsoleAssembly({
-      platformPorts: createTestPlatformPorts({displayCount: 1}),
+      platformPorts: createTestPlatformPorts({displayCount: 1, deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample2-surface-mobile-${Date.now()}`,
       surfaceForm: 'mobile',
     });
@@ -854,7 +864,9 @@ describe('sample2 wallpaper console assembly', () => {
   it('keeps primary business parts as distinct laptop/mobile siblings and secondary parts laptop-only', async () => {
     const primaryParts = [...sampleStaffAuthAssembly.parts, ...sampleWallpaperPickerAssembly.parts];
     const pairedKeys = new Set(
-      primaryParts.filter(part => part.catalogEntry.surfaceForm.includes('mobile')).map(part => part.catalogEntry.partKey),
+      primaryParts
+        .filter(part => part.catalogEntry.surfaceForm.includes('mobile'))
+        .map(part => part.catalogEntry.partKey),
     );
     const pairedParts = primaryParts.filter(part => pairedKeys.has(part.catalogEntry.partKey));
     const groups = new Map<string, (typeof pairedParts)[number][]>();
@@ -882,7 +894,7 @@ describe('sample2 wallpaper console assembly', () => {
             part.catalogEntry.displayModes.includes('SECONDARY') && part.catalogEntry.instanceModes.includes('SLAVE'),
         )
         .map(part => part.catalogEntry.partKey),
-      ).toEqual(['sample.wallpaper-console.waiting', 'sample.wallpaper-console.welcome']);
+    ).toEqual(['sample.wallpaper-console.waiting', 'sample.wallpaper-console.welcome']);
     expect(
       sampleWallpaperPickerAssembly.parts
         .filter(part => part.catalogEntry.displayModes.includes('SECONDARY'))
@@ -916,13 +928,15 @@ describe('sample2 wallpaper console assembly', () => {
           ),
         ),
       ).toEqual([]);
-      expect(selectScreen(laptop.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe('sample.wallpaper-console.waiting');
+      expect(selectScreen(laptop.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe('sample.auth.guide.lms');
       await loginForTest(laptop);
       expect(selectScreen(laptop.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.wallpaper.picker');
-      expect(selectScreen(laptop.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe('sample.wallpaper.host-display');
+      expect(selectScreen(laptop.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe(
+        'sample.wallpaper.host-display',
+      );
       await logoutForTest(laptop);
       expect(selectScreen(laptop.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.auth.login');
-      expect(selectScreen(laptop.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe('sample.wallpaper-console.waiting');
+      expect(selectScreen(laptop.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe('sample.auth.guide.lms');
 
       await readyAndActivateForTest(mobile);
       await loginForTest(mobile);
@@ -942,11 +956,12 @@ describe('sample2 wallpaper console assembly', () => {
 
   it('routes a successful local picker exit to the confirmed wallpaper display without logging out', async () => {
     const assembly = await createSampleWallpaperConsoleAssembly({
-      platformPorts: createTestPlatformPorts({displayCount: 1}),
+      platformPorts: createTestPlatformPorts({displayCount: 1, deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample2-picker-exit-${Date.now()}`,
       surfaceForm: 'laptop',
     });
     try {
+      await readyAndActivateForTest(assembly);
       await assembly.runtime.dispatchCommand(loginCommand, {operatorName: 'A001', passcode: '1111'}, dispatchOptions());
       await assembly.runtime.dispatchCommand(
         wallpaperPickerExitRequestedCommand,
@@ -986,9 +1001,7 @@ describe('sample2 wallpaper console assembly', () => {
         {surfaceKey: 'PRIMARY', displayIndex: 0, readyPartKey: 'terminal.activation.lmp', contentFailure: null},
         dispatchOptions(),
       );
-      expect(selectScreen(assembly.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe(
-        'terminal.activation.lms',
-      );
+      expect(selectScreen(assembly.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe('terminal.activation.lms');
       expect(
         events.some(
           event =>
@@ -1002,7 +1015,7 @@ describe('sample2 wallpaper console assembly', () => {
     }
   });
 
-  it('prunes a persisted laptop-only secondary container when hydrating the mobile assembly', async () => {
+  it('retains the mobile-capable LMS projection when hydrating the mobile assembly', async () => {
     const plainStorage = createProcessMemoryStateStoragePort();
     const protectedStorage = createProcessMemoryStateStoragePort();
     const events: LogEvent[] = [];
@@ -1022,10 +1035,8 @@ describe('sample2 wallpaper console assembly', () => {
         surfaceForm: 'laptop',
       });
       await readyAndActivateForTest(laptop);
-      expect(selectScreen(laptop.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe(
-        'sample.wallpaper-console.waiting',
-      );
-      await waitForPersistedValues([plainStorage, protectedStorage], ['sample.wallpaper-console.waiting']);
+      expect(selectScreen(laptop.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe('sample.auth.guide.lms');
+      await waitForPersistedValues([plainStorage, protectedStorage], ['sample.auth.guide.lms']);
       await releaseRuntimeForTestAsync(laptop.runtime);
       laptop = undefined;
 
@@ -1039,17 +1050,12 @@ describe('sample2 wallpaper console assembly', () => {
         persistenceKey,
         surfaceForm: 'mobile',
       });
-      expect(selectScreen(mobile.runtime.getState(), 'SECONDARY', 'main')).toBeUndefined();
-      expect(events).toEqual(
+      expect(selectScreen(mobile.runtime.getState(), 'SECONDARY', 'main')?.partKey).toBe('sample.auth.guide.lms');
+      expect(events).not.toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             event: 'ui-state-hydration.container.not-renderable',
-            data: expect.objectContaining({
-              displayMode: 'SECONDARY',
-              containerKey: 'main',
-              partKey: 'sample.wallpaper-console.waiting',
-              reason: 'hydrated-container-not-renderable',
-            }),
+            data: expect.objectContaining({partKey: 'sample.auth.guide.lms'}),
           }),
         ]),
       );
@@ -1068,6 +1074,8 @@ describe('sample2 wallpaper console assembly', () => {
     let primary: TestRenderer | undefined;
     let secondary: TestRenderer | undefined;
     try {
+      await readyAndActivateForTest(assembly);
+      await loginForTest(assembly);
       await assembly.runtime.dispatchCommand(selectWallpaperCommand, {wallpaperId: 'w2'}, dispatchOptions());
       await assembly.runtime.dispatchCommand(confirmWallpaperCommand, {}, dispatchOptions());
       expect(selectWallpaperId(assembly.runtime.getState())).toBe('w2');
@@ -1079,7 +1087,8 @@ describe('sample2 wallpaper console assembly', () => {
       expect(getNode(primary, 'sample.wallpaper.background').props.source).toBe(
         getNode(secondary, 'sample.wallpaper.background').props.source,
       );
-      expect(queryNodes(primary, wallpaperPickerTestIds.root)).toHaveLength(0);
+      expect(queryNodes(primary, wallpaperPickerTestIds.root)).toHaveLength(1);
+      expect(queryNodes(secondary, wallpaperPickerTestIds.root)).toHaveLength(0);
 
       const firstSource = getNode(primary, 'sample.wallpaper.background').props.source;
       await primary.unmount();
@@ -1101,7 +1110,7 @@ describe('sample2 wallpaper console assembly', () => {
     }
   });
 
-  it('keeps picker, waiting, and host confirmed wallpaper containers transparent', async () => {
+  it('shows the LMS login guide before staff login and keeps the confirmed wallpaper surfaces transparent', async () => {
     const assembly = await createSampleWallpaperConsoleAssembly({
       platformPorts: createTestPlatformPorts({displayCount: 2, deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample2-transparent-consumers-${Date.now()}`,
@@ -1116,7 +1125,7 @@ describe('sample2 wallpaper console assembly', () => {
     try {
       await readyAndActivateForTest(assembly);
       waiting = await mount(createSurfaceForDisplayIndex(assembly, 1));
-      expect(containerFor(waiting, 'sample.wallpaper-console.waiting').props.className).toContain('flex-1 p-6 gap-4');
+      expect(getNode(waiting, 'sample.auth.guide:message').children.join('')).toBe('请在主屏登录');
       await waiting.unmount();
       waiting = undefined;
 
@@ -1193,14 +1202,10 @@ describe('sample2 wallpaper console assembly', () => {
       await firstAssembly.runtime.dispatchCommand(selectWallpaperCommand, {wallpaperId: 'w3'}, dispatchOptions());
       const businessPartKey = selectScreen(firstAssembly.runtime.getState(), 'PRIMARY', 'main')?.partKey;
       expect(businessPartKey).toBe('sample.wallpaper.picker');
-      await waitForPersistedValues([plainStorage, protectedStorage], [
-        'w2',
-        'w3',
-        ADMIN_CONSOLE_LAYER_ID,
-        'sample.wallpaper.picker',
-        'A001',
-        'terminal-wallpaper-test',
-      ]);
+      await waitForPersistedValues(
+        [plainStorage, protectedStorage],
+        ['w2', 'w3', ADMIN_CONSOLE_LAYER_ID, 'sample.wallpaper.picker', 'A001', '00000000-0000-4000-8000-000000000009'],
+      );
       await releaseRuntimeForTestAsync(firstAssembly.runtime);
       firstAssembly = undefined;
 

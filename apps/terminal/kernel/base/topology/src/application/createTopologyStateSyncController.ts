@@ -112,6 +112,14 @@ export type CreateTopologyStateSyncControllerInput = Readonly<{
       readonly revision: number;
     }>,
   ) => void;
+  readonly onStateSliceApplyFailed: (
+    input: Readonly<{
+      readonly context: RuntimeModuleContext;
+      readonly connectionId: string;
+      readonly sliceName: string;
+      readonly revision: number;
+    }>,
+  ) => void;
   readonly dispatchPayloadFailure: (
     context: RuntimeModuleContext,
     failure: Readonly<{
@@ -330,6 +338,12 @@ export const createTopologyStateSyncController = (
         input.getConnectionId(),
       );
       lastReceivedPayloadFailureKey = failureKey;
+      input.onStateSliceApplyFailed({
+        context,
+        connectionId: sourceConnectionId,
+        sliceName: message.sliceName,
+        revision: message.revision,
+      });
       input.dispatchPayloadFailure(context, {
         code: 'TOPOLOGY_DECODED_PAYLOAD_INVALID',
         sliceName: message.sliceName,
@@ -353,6 +367,12 @@ export const createTopologyStateSyncController = (
         input.getConnectionId(),
       );
       lastReceivedPayloadFailureKey = failureKey;
+      input.onStateSliceApplyFailed({
+        context,
+        connectionId: sourceConnectionId,
+        sliceName: message.sliceName,
+        revision: message.revision,
+      });
       input.dispatchPayloadFailure(context, {
         code: 'TOPOLOGY_PROTOCOL_REJECTED',
         sliceName: message.sliceName,

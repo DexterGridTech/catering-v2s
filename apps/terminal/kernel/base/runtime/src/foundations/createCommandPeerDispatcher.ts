@@ -1,6 +1,6 @@
 import {nowTimestampMs, type AppError, type SessionId} from '@catering-v2s/kernel-base-contracts';
 import type {PeerDispatchGateway} from '../types/peer';
-import type {CommandDefinition, CommandIntent, DispatchedCommand} from '../types/command';
+import type {CommandDefinition, CommandIntent, DispatchedCommand, LateOutcomeObserver} from '../types/command';
 import type {ActorExecutionRecord, LedgerError} from '../types/execution';
 import type {RuntimeLifecycleObserver} from '../types/journal';
 import type {LifecycleCommandContext, LifecycleEmitterResult, LifecycleTransition} from './createLifecycleEmitter';
@@ -50,9 +50,11 @@ export const createCommandPeerDispatcher = (input: PeerDispatcherDependencies) =
       definition: CommandDefinition<TPayload>;
       lifecycleContext: LifecycleCommandContext;
       observer?: RuntimeLifecycleObserver;
+      lateOutcome?: LateOutcomeObserver;
+      lateResultTtlMs?: number;
     }>,
   ): Promise<ActorExecutionRecord> => {
-    const {command, definition, lifecycleContext, observer} = dispatchInput;
+    const {command, definition, lifecycleContext, observer, lateOutcome, lateResultTtlMs} = dispatchInput;
     const startedAt = nowTimestampMs();
     const runningRecord = input.emitActorRunning(
       {
@@ -101,9 +103,34 @@ export const createCommandPeerDispatcher = (input: PeerDispatcherDependencies) =
         commandId: command.commandId,
         parentCommandId: command.parentCommandId,
         routeContext: command.routeContext,
+        ...(lateResultTtlMs === undefined ? {} : {lateResultTtlMs}),
+        ...(lateOutcome === undefined
+          ? {}
+          : {
+              onLateResult: (records: readonly ActorExecutionRecord[]) => {
+                for (const record of records) {
+                  lateOutcome(record);
+                  input.emit(
+                    {
+                      kind: record.status === 'completed' ? 'actor.late-completed' : 'actor.late-error',
+                      context: lifecycleContext,
+                      actorKey: record.actorKey,
+                      completedAt: record.completedAt ?? nowTimestampMs(),
+                      error: record.error,
+                    },
+                    observer,
+                  );
+                }
+              },
+            }),
       })
       .then(result => {
-        if (result.status === 'completed') return {status: 'completed' as const, result: null, error: null};
+        if (result.status === 'completed')
+          return {
+            status: 'completed' as const,
+            result: lateOutcome === undefined ? null : {actorResults: result.actorResults as unknown as StateJsonValue},
+            error: null,
+          };
         if (result.status === 'timed-out') return {status: 'timed-out' as const, result: null, error: null};
         return {
           status: 'error' as const,
@@ -145,7 +172,7 @@ export const createCommandPeerDispatcher = (input: PeerDispatcherDependencies) =
       observer,
     );
     if (timedOutLocally) {
-      void peerGateway.cancelCommand?.(command.commandId).catch(() => undefined);
+      if (lateOutcome === undefined) void peerGateway.cancelCommand?.(command.commandId).catch(() => undefined);
       void peerPromise
         .then(lateOutcome => {
           if (lateOutcome.status === 'completed') {

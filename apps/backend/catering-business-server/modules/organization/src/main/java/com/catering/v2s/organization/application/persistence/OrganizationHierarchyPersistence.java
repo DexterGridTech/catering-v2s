@@ -21,10 +21,16 @@ import org.springframework.stereotype.Repository;
 public class OrganizationHierarchyPersistence {
     private final JdbcTemplate jdbc;
     private final OrganizationAuditEventWriter auditEvents;
+    private final OrganizationTerminalTopicSnapshotPersistence terminalTopics;
 
     public OrganizationHierarchyPersistence(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
         this.auditEvents = new OrganizationAuditEventWriter(jdbc);
+        this.terminalTopics = new OrganizationTerminalTopicSnapshotPersistence(jdbc);
+    }
+
+    public void notifyTerminalTopic(UUID workspaceUuid, String groupWorkspaceKey, String topicKey, UUID ownerRef) {
+        terminalTopics.notifyExact(workspaceUuid, groupWorkspaceKey, topicKey, ownerRef);
     }
 
     public int insertNode(

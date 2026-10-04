@@ -27,6 +27,7 @@
     "selectSurfaceForm",
     "createUiVariableWrite",
     "createUiStateModule",
+    "contentStateSliceName",
     "clearLayersCommand",
     "clearUiVariablesCommand",
     "closeLayerCommand",

@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {createAppError, createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {createRuntime, defineActor, defineCommand, onCommand, type RuntimeModule} from '../src/index';
+import {releaseRuntimeForTestAsync} from '../src/testing';
 import {createTestRuntimeInput, deferred} from './testSupport';
 
 type CommandSpec = NonNullable<RuntimeModule['commandDefinitions']>[number];
@@ -21,6 +22,45 @@ const moduleFor = (
   });
 
 describe('runtime actor result boundary', () => {
+  it('dispatches an installed command by name from a runtime-owned actor receiver', async () => {
+    const parentCommand = defineCommand<Readonly<{}>>('test.named-dispatch', {name: 'parent', visibility: 'internal'});
+    const childCommand = defineCommand<Readonly<{readonly value: string}>>('test.named-dispatch', {
+      name: 'child',
+      visibility: 'internal',
+    });
+    const missingCommand = defineCommand<Readonly<{}>>('test.named-dispatch', {
+      name: 'missing',
+      visibility: 'internal',
+    });
+    const childActor = defineActor('test.named-dispatch', 'child', [
+      onCommand(childCommand, context => ({value: context.command.payload.value})),
+    ]);
+    const parentActor = defineActor('test.named-dispatch', 'parent', [
+      onCommand(parentCommand, async context => {
+        const child = await context.dispatchCommand(childCommand.commandName, {value: 'selected-by-name'});
+        return {childStatus: child.status, childValue: child.actorResults[0]?.result ?? null};
+      }),
+      onCommand(missingCommand, async context => {
+        await context.dispatchCommand('test.named-dispatch.not-registered', {});
+        return {unreachable: true};
+      }),
+    ]);
+    const runtime = createRuntime(
+      createTestRuntimeInput({
+        modules: [moduleFor('test.named-dispatch', [parentCommand, childCommand, missingCommand], [parentActor, childActor])],
+      }),
+    );
+    await runtime.start();
+    const result = await runtime.dispatchCommand(parentCommand, {});
+    expect(result.actorResults[0]?.result).toEqual({
+      childStatus: 'completed',
+      childValue: {value: 'selected-by-name'},
+    });
+    const unknown = await runtime.dispatchCommand(missingCommand, {});
+    expect(unknown.status).toBe('error');
+    expect(unknown.actorResults[0]?.status).toBe('error');
+  });
+
   it('R-1 normalizes void to null and stores a detached frozen result', async () => {
     const voidCommand = defineCommand<Readonly<{}>>('test.actor-result', {name: 'void', visibility: 'internal'});
     const objectCommand = defineCommand<Readonly<{}>>('test.actor-result', {name: 'object', visibility: 'internal'});
@@ -84,16 +124,50 @@ describe('runtime actor result boundary', () => {
       createTestRuntimeInput({modules: [moduleFor('test.late-result', [command], [actor])]}),
     );
     await runtime.start();
-    const timedOut = await runtime.dispatchCommand(command, {});
+    const lateOutcomes: unknown[] = [];
+    const timedOut = await runtime.dispatchCommand(command, {}, {
+      lateResultTtlMs: 1_000,
+      lateOutcome: record => lateOutcomes.push(record),
+    });
     expect(timedOut.status).toBe('timed-out');
     expect(timedOut.actorResults[0]?.status).toBe('timed-out');
     gate.resolve({late: true});
     await Promise.resolve();
     await new Promise(resolve => setTimeout(resolve, 0));
-    expect(runtime.journal.list().some(event => event.kind === 'actor.late-completed')).toBe(true);
+    expect(lateOutcomes).toEqual([
+      expect.objectContaining({status: 'completed', result: {late: true}, error: null}),
+    ]);
+    const lateJournalEvent = runtime.journal.list().find(event => event.kind === 'actor.late-completed');
+    expect(lateJournalEvent).toBeDefined();
+    expect(lateJournalEvent).not.toHaveProperty('result');
     gate = deferred<Readonly<{late: boolean}>>();
     const later = await runtime.dispatchCommand(command, {});
     expect(later.status).toBe('timed-out');
+  });
+
+  it('R-3b drops a late-result observer after its finite residence window', async () => {
+    const command = defineCommand<Readonly<{}>>('test.late-result-expiry', {
+      name: 'run',
+      visibility: 'internal',
+      timeoutMs: 2,
+    });
+    const gate = deferred<Readonly<{late: boolean}>>();
+    const actor = defineActor('test.late-result-expiry', 'worker', [onCommand(command, () => gate.promise)]);
+    const runtime = createRuntime(
+      createTestRuntimeInput({modules: [moduleFor('test.late-result-expiry', [command], [actor])]}),
+    );
+    await runtime.start();
+    const lateOutcomes: unknown[] = [];
+    const timedOut = await runtime.dispatchCommand(command, {}, {
+      lateResultTtlMs: 5,
+      lateOutcome: record => lateOutcomes.push(record),
+    });
+    expect(timedOut.status).toBe('timed-out');
+    await new Promise(resolve => setTimeout(resolve, 10));
+    gate.resolve({late: true});
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(lateOutcomes).toEqual([]);
+    await releaseRuntimeForTestAsync(runtime);
   });
 
   it('R-4 projects AppError fields and wraps ordinary Error at the actor boundary', async () => {

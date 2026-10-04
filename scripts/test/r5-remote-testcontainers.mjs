@@ -58,12 +58,16 @@ export const TDS_HISTORY_SECRET_SEARCH_SCENARIO = 'terminal.connection.vs11.secr
 export const TDS_HISTORY_RECORDS_SCENARIO = 'terminal.connection.history-records';
 export const TDS_HISTORY_OUTAGE_BOUNDED_SCENARIO = 'terminal.connection.history-outage-bounded';
 export const TDS_CROSS_NODE_RECOVERY_SCENARIO = 'terminal.connection.vs13.cross-node-recovery';
+export const TDS_TOPIC_SUBSCRIPTION_SCENARIO = 'terminal.connection.topic.active-store-subscription';
+export const TDS_REMOTE_COMMAND_SCENARIO = 'terminal.connection.remote-command';
 const TDS_CONTRACT_SCENARIO_PREFLIGHT = new Map([
   [V_S15_TDS_CONTRACT_SCENARIO, true],
   [TDS_HISTORY_SECRET_SEARCH_SCENARIO, false],
   [TDS_HISTORY_RECORDS_SCENARIO, true],
   [TDS_HISTORY_OUTAGE_BOUNDED_SCENARIO, false],
   [TDS_CROSS_NODE_RECOVERY_SCENARIO, true],
+  [TDS_TOPIC_SUBSCRIPTION_SCENARIO, true],
+  [TDS_REMOTE_COMMAND_SCENARIO, true],
 ]);
 const isTdsContractScenarioScopeValid = (scenario, topologyPreflight) =>
   TDS_CONTRACT_SCENARIO_PREFLIGHT.has(scenario) &&

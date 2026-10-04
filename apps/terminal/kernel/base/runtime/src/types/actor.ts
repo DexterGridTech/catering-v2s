@@ -22,11 +22,18 @@ export type ActorExecutionContext<TPayload extends StateJsonValue = StateJsonVal
   dispatchAction: (action: RuntimeUnknownAction) => RuntimeUnknownAction;
   flushPersistence: () => Promise<PersistenceOperationResult>;
   subscribeState: (listener: () => void) => () => void;
-  dispatchCommand: <TChildPayload extends StateJsonValue>(
-    definition: CommandDefinition<TChildPayload>,
-    payload: TChildPayload,
-    options?: ActorDispatchOptions,
-  ) => Promise<CommandDispatchResult>;
+  dispatchCommand: {
+    <TChildPayload extends StateJsonValue>(
+      definition: CommandDefinition<TChildPayload>,
+      payload: TChildPayload,
+      options?: ActorDispatchOptions,
+    ): Promise<CommandDispatchResult>;
+    <TChildPayload extends StateJsonValue>(
+      commandName: string,
+      payload: TChildPayload,
+      options?: ActorDispatchOptions,
+    ): Promise<CommandDispatchResult>;
+  };
   requestApplicationReset: (reason?: string) => void;
 }>;
 

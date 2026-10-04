@@ -45,16 +45,19 @@ function resolveInsideRoot(relativePath, root, marker) {
 
 function walkJsonFiles(directory, root) {
   const absolute = resolveInsideRoot(directory, root, 'TERMINAL_CLIENT_INPUT_PATH_ESCAPE');
-  return fs.readdirSync(absolute, {withFileTypes: true}).sort((a, b) => a.name.localeCompare(b.name)).flatMap(entry => {
-    const relative = path.posix.join(directory.replaceAll(path.sep, '/'), entry.name);
-    if (entry.isSymbolicLink()) resolveInsideRoot(relative, root, 'TERMINAL_CLIENT_INPUT_PATH_ESCAPE');
-    if (entry.isDirectory()) return walkJsonFiles(relative, root);
-    if (entry.isFile() && entry.name.endsWith('.json')) {
-      resolveInsideRoot(relative, root, 'TERMINAL_CLIENT_INPUT_PATH_ESCAPE');
-      return [relative];
-    }
-    return [];
-  });
+  return fs
+    .readdirSync(absolute, {withFileTypes: true})
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .flatMap(entry => {
+      const relative = path.posix.join(directory.replaceAll(path.sep, '/'), entry.name);
+      if (entry.isSymbolicLink()) resolveInsideRoot(relative, root, 'TERMINAL_CLIENT_INPUT_PATH_ESCAPE');
+      if (entry.isDirectory()) return walkJsonFiles(relative, root);
+      if (entry.isFile() && entry.name.endsWith('.json')) {
+        resolveInsideRoot(relative, root, 'TERMINAL_CLIENT_INPUT_PATH_ESCAPE');
+        return [relative];
+      }
+      return [];
+    });
 }
 
 function readOpenApiOperations(pathsRoot, root) {
@@ -94,8 +97,8 @@ function readOpenApiOperations(pathsRoot, root) {
         const security = operation.security ?? [];
         if (!Array.isArray(security)) fail('TERMINAL_CLIENT_SECURITY_INVALID', operation.operationId);
         const securitySchemes = [...new Set(security.flatMap(requirement => Object.keys(requirement ?? {})))].sort();
-        const successfulResponses = Object.entries(operation.responses ?? {}).filter(([status, response]) =>
-          /^2\d\d$/.test(status) && response?.content?.['application/json']?.schema?.$ref,
+        const successfulResponses = Object.entries(operation.responses ?? {}).filter(
+          ([status, response]) => /^2\d\d$/.test(status) && response?.content?.['application/json']?.schema?.$ref,
         );
         const [successStatus, successResponse] = successfulResponses[0] ?? [null, null];
         operations.push({
@@ -113,7 +116,10 @@ function readOpenApiOperations(pathsRoot, root) {
           idempotencyPolicy: operation['x-idempotency-policy'] ?? null,
           safeRetryable: operation['x-safe-retryable'] === true,
           errors: operation['x-error-codes'] ?? [],
-          requestSchema: operation.requestBody?.content?.['application/json']?.schema?.$ref?.split('/').at(-1) ?? null,
+          requestSchema:
+            operation.requestBody?.content?.['application/json']?.schema?.$ref?.split('/').at(-1) ??
+            operation['x-request-schema'] ??
+            null,
           responseSchema: successResponse?.content?.['application/json']?.schema?.$ref?.split('/').at(-1) ?? null,
           successStatus,
           successResponseCount: successfulResponses.length,
@@ -135,17 +141,38 @@ function loadModel(root = repoRoot) {
   const catalog = readJson(policy.operationCatalog, root);
   const catalogById = new Map((catalog.operations ?? []).map(operation => [operation.operationId, operation]));
   const openApiOperations = readOpenApiOperations(policy.openApiPathsRoot, root);
-  const terminalCatalogIds = (catalog.operations ?? []).filter(operation => operation.face === policy.face).map(operation => operation.operationId).sort();
-  const schemas = readJson(policy.canonicalSchemas, root).components?.schemas;
-  if (!schemas || typeof schemas !== 'object') fail('TERMINAL_CLIENT_SCHEMA_SOURCE_INVALID');
+  const terminalCatalogIds = (catalog.operations ?? [])
+    .filter(operation => operation.face === policy.face)
+    .map(operation => operation.operationId)
+    .sort();
+  const schemaPaths = Array.isArray(policy.canonicalSchemas) ? policy.canonicalSchemas : [policy.canonicalSchemas];
+  if (schemaPaths.length === 0 || schemaPaths.some(value => typeof value !== 'string'))
+    fail('TERMINAL_CLIENT_SCHEMA_SOURCE_INVALID');
+  const schemas = {};
+  for (const schemaPath of schemaPaths) {
+    const sourceSchemas = readJson(schemaPath, root).components?.schemas;
+    if (!sourceSchemas || typeof sourceSchemas !== 'object') fail('TERMINAL_CLIENT_SCHEMA_SOURCE_INVALID', schemaPath);
+    for (const [name, schema] of Object.entries(sourceSchemas)) {
+      if (schemas[name] && JSON.stringify(schemas[name]) !== JSON.stringify(schema))
+        fail('TERMINAL_CLIENT_SCHEMA_SOURCE_AMBIGUOUS', name);
+      schemas[name] = schema;
+    }
+  }
   const targets = [];
   const packagePaths = new Set();
   const outputPaths = new Set();
   const assignmentCounts = new Map();
   for (const targetPolicy of policy.targets) {
-    if (!targetPolicy || typeof targetPolicy !== 'object' || typeof targetPolicy.targetPackage !== 'string' ||
-        !Array.isArray(targetPolicy.tags) || targetPolicy.tags.length === 0 ||
-        typeof targetPolicy.output !== 'string' || targetPolicy.output.trim() === '' || path.isAbsolute(targetPolicy.output)) {
+    if (
+      !targetPolicy ||
+      typeof targetPolicy !== 'object' ||
+      typeof targetPolicy.targetPackage !== 'string' ||
+      !Array.isArray(targetPolicy.tags) ||
+      targetPolicy.tags.length === 0 ||
+      typeof targetPolicy.output !== 'string' ||
+      targetPolicy.output.trim() === '' ||
+      path.isAbsolute(targetPolicy.output)
+    ) {
       fail('TERMINAL_CLIENT_TARGET_INVALID');
     }
     for (const field of ['includeOperationIds', 'excludeOperationIds']) {
@@ -154,7 +181,8 @@ function loadModel(root = repoRoot) {
       if (new Set(targetPolicy[field]).size !== targetPolicy[field].length)
         fail('TERMINAL_CLIENT_SELECTOR_DUPLICATE', field);
     }
-    if (packagePaths.has(targetPolicy.targetPackage)) fail('TERMINAL_CLIENT_TARGET_DUPLICATE', targetPolicy.targetPackage);
+    if (packagePaths.has(targetPolicy.targetPackage))
+      fail('TERMINAL_CLIENT_TARGET_DUPLICATE', targetPolicy.targetPackage);
     packagePaths.add(targetPolicy.targetPackage);
     if (outputPaths.has(targetPolicy.output)) fail('TERMINAL_CLIENT_OUTPUT_DUPLICATE', String(targetPolicy.output));
     outputPaths.add(targetPolicy.output);
@@ -163,32 +191,46 @@ function loadModel(root = repoRoot) {
       fail('TERMINAL_CLIENT_TARGET_INVALID', targetPolicy.targetPackage);
     const targetPackagePath = path.posix.join(targetPolicy.targetPackage, 'package.json');
     const targetModuleNamePath = path.posix.join(targetPolicy.targetPackage, 'src/moduleName.ts');
-    const targetPackage = JSON.parse(fs.readFileSync(
-      resolveInsideRoot(targetPackagePath, root, 'TERMINAL_CLIENT_TARGET_ESCAPE'),
-      'utf8',
-    ));
+    const targetPackage = JSON.parse(
+      fs.readFileSync(resolveInsideRoot(targetPackagePath, root, 'TERMINAL_CLIENT_TARGET_ESCAPE'), 'utf8'),
+    );
     const moduleNameSource = fs.readFileSync(
       resolveInsideRoot(targetModuleNamePath, root, 'TERMINAL_CLIENT_TARGET_ESCAPE'),
       'utf8',
     );
     const ownerKind = /export const moduleKind\s*=\s*['"]owner['"]\s+as const/.test(moduleNameSource);
-    const ownerName = /export const moduleName\s*=\s*['"](kernel\.[A-Za-z0-9._-]+)['"]\s+as const/.exec(moduleNameSource)?.[1];
-    if (!ownerKind || !ownerName || typeof targetPackage.name !== 'string' || !targetPackage.name.startsWith('@catering-v2s/kernel-'))
+    const ownerName = /export const moduleName\s*=\s*['"](kernel\.[A-Za-z0-9._-]+)['"]\s+as const/.exec(
+      moduleNameSource,
+    )?.[1];
+    if (
+      !ownerKind ||
+      !ownerName ||
+      typeof targetPackage.name !== 'string' ||
+      !targetPackage.name.startsWith('@catering-v2s/kernel-')
+    )
       fail('TERMINAL_CLIENT_TARGET_NOT_OWNER', targetPolicy.targetPackage);
     const included = new Set(targetPolicy.includeOperationIds);
     const excluded = new Set(targetPolicy.excludeOperationIds);
-    const selected = openApiOperations.filter(operation =>
-      operation.face.includes(policy.face) &&
-      targetPolicy.tags.some(tag => operation.tags.includes(tag)) &&
-      (included.size === 0 || included.has(operation.operationId)) &&
-      !excluded.has(operation.operationId),
-    ).map(operation => ({...operation, pathParameters: [...operation.pathParameters]}));
+    const selected = openApiOperations
+      .filter(
+        operation =>
+          operation.face.includes(policy.face) &&
+          targetPolicy.tags.some(tag => operation.tags.includes(tag)) &&
+          (included.size === 0 || included.has(operation.operationId)) &&
+          !excluded.has(operation.operationId),
+      )
+      .map(operation => ({...operation, pathParameters: [...operation.pathParameters]}));
     if (selected.length === 0) fail('TERMINAL_CLIENT_OPERATION_EMPTY', targetPolicy.targetPackage);
     if (included.size > 0 && selected.length !== included.size)
       fail('TERMINAL_CLIENT_OPERATION_SELECTOR_MISMATCH', targetPolicy.targetPackage);
     for (const operation of selected) {
       const catalogOperation = catalogById.get(operation.operationId);
-      if (!catalogOperation || catalogOperation.face !== policy.face || catalogOperation.method !== operation.method || catalogOperation.path !== operation.path)
+      if (
+        !catalogOperation ||
+        catalogOperation.face !== policy.face ||
+        catalogOperation.method !== operation.method ||
+        catalogOperation.path !== operation.path
+      )
         fail('TERMINAL_CLIENT_OPERATION_CATALOG_DRIFT', operation.operationId);
       if (catalogOperation.owner !== operation.owner)
         fail('TERMINAL_CLIENT_OPERATION_OWNER_DRIFT', operation.operationId);
@@ -196,9 +238,16 @@ function loadModel(root = repoRoot) {
       if (!['REQUIRED', 'FORBIDDEN'].includes(idempotencyHeader) || operation.idempotencyPolicy !== idempotencyHeader)
         fail('TERMINAL_CLIENT_OPERATION_IDEMPOTENCY_DRIFT', operation.operationId);
       operation.idempotencyRequired = idempotencyHeader === 'REQUIRED';
-      if (catalogOperation.authorizationMode !== operation.auth || catalogOperation.safeRetryable !== operation.safeRetryable)
+      if (
+        catalogOperation.authorizationMode !== operation.auth ||
+        Boolean(catalogOperation.safeRetryable) !== operation.safeRetryable
+      )
         fail('TERMINAL_CLIENT_OPERATION_SEMANTIC_DRIFT', operation.operationId);
-      if (operation.successResponseCount !== 1 || String(catalogOperation.successStatus) !== operation.successStatus || !operation.responseSchema)
+      if (
+        operation.successResponseCount !== 1 ||
+        String(catalogOperation.successStatus) !== operation.successStatus ||
+        !operation.responseSchema
+      )
         fail('TERMINAL_CLIENT_OPERATION_SUCCESS_RESPONSE_DRIFT', operation.operationId);
       const expectedSecuritySchemes = operation.auth === 'TERMINAL_CREDENTIAL' ? ['terminalCredential'] : [];
       if (!sameSet(operation.securitySchemes, expectedSecuritySchemes))
@@ -214,12 +263,16 @@ function loadModel(root = repoRoot) {
         if (!operation.path.startsWith(`${prefix}/`))
           fail('TERMINAL_CLIENT_PATH_PREFIX_MISMATCH', operation.operationId);
         const removedNames = [...prefix.matchAll(/\{([^}]+)\}/g)].map(match => match[1]);
-        if (new Set(removedNames).size !== removedNames.length ||
-            removedNames.some(name => !operation.pathParameters.some(parameter => parameter.name === name)))
+        if (
+          new Set(removedNames).size !== removedNames.length ||
+          removedNames.some(name => !operation.pathParameters.some(parameter => parameter.name === name))
+        )
           fail('TERMINAL_CLIENT_PATH_PREFIX_PARAMETER_MISMATCH', operation.operationId);
         operation.generatedPath = operation.path.slice(prefix.length);
         operation.pathParameters = operation.pathParameters.filter(parameter => !removedNames.includes(parameter.name));
-        const generatedRouteParameters = [...operation.generatedPath.matchAll(/\{([^}]+)\}/g)].map(match => match[1]).sort();
+        const generatedRouteParameters = [...operation.generatedPath.matchAll(/\{([^}]+)\}/g)]
+          .map(match => match[1])
+          .sort();
         const generatedDeclaredParameters = operation.pathParameters.map(parameter => parameter.name).sort();
         if (!sameSet(generatedRouteParameters, generatedDeclaredParameters))
           fail('TERMINAL_CLIENT_GENERATED_PATH_PARAMETER_MISMATCH', operation.operationId);
@@ -228,7 +281,13 @@ function loadModel(root = repoRoot) {
       }
       assignmentCounts.set(operation.operationId, (assignmentCounts.get(operation.operationId) ?? 0) + 1);
     }
-    targets.push({policy: targetPolicy, targetPackage, moduleName: ownerName, selected: selected.sort((a, b) => a.operationId.localeCompare(b.operationId)), schemas});
+    targets.push({
+      policy: targetPolicy,
+      targetPackage,
+      moduleName: ownerName,
+      selected: selected.sort((a, b) => a.operationId.localeCompare(b.operationId)),
+      schemas,
+    });
   }
   const assignedIds = [...assignmentCounts.keys()].sort();
   const duplicatedAssignment = [...assignmentCounts].find(([, count]) => count !== 1);
@@ -248,29 +307,49 @@ function identifier(value) {
 }
 
 function schemaType(schema, name, seen) {
+  const declaredTypes = Array.isArray(schema.type) ? schema.type : [schema.type];
+  const type = declaredTypes.find(value => value !== 'null');
+  const nullable = schema.nullable === true || declaredTypes.includes('null');
+  const wrapNullable = value => (nullable ? `${value} | null` : value);
+  if (Array.isArray(schema.allOf))
+    return wrapNullable(
+      schema.allOf.map((child, index) => schemaType(child, `${name}AllOf${index}`, seen)).join(' & '),
+    );
+  if (Array.isArray(schema.oneOf))
+    return wrapNullable(
+      schema.oneOf.map((child, index) => schemaType(child, `${name}OneOf${index}`, seen)).join(' | '),
+    );
+  if (Array.isArray(schema.anyOf))
+    return wrapNullable(
+      schema.anyOf.map((child, index) => schemaType(child, `${name}AnyOf${index}`, seen)).join(' | '),
+    );
   if (schema.$ref) {
     const ref = schema.$ref.split('/').at(-1);
     if (!seen.has(ref)) fail('TERMINAL_CLIENT_SCHEMA_CLOSURE_MISSING', ref);
-    return ref;
+    return wrapNullable(ref);
   }
-  if (Array.isArray(schema.enum)) return schema.enum.map(value => JSON.stringify(value)).join(' | ');
-  if (schema.type === 'array') return `readonly ${schemaType(schema.items ?? {}, `${name}Item`, seen)}[]`;
-  if (schema.type === 'string') return 'string';
-  if (schema.type === 'integer' || schema.type === 'number') return 'number';
-  if (schema.type === 'boolean') return 'boolean';
-  if (schema.type === 'object') {
-    const members = Object.entries(schema.properties ?? {}).map(([key, property]) =>
-      `  readonly ${JSON.stringify(key)}${(schema.required ?? []).includes(key) ? '' : '?'}: ${schemaType(property, `${name}_${identifier(key)}`, seen)};`,
+  if (Array.isArray(schema.enum)) return wrapNullable(schema.enum.map(value => JSON.stringify(value)).join(' | '));
+  if (type === 'array') return wrapNullable(`readonly ${schemaType(schema.items ?? {}, `${name}Item`, seen)}[]`);
+  if (type === 'string') return wrapNullable('string');
+  if (type === 'integer' || type === 'number') return wrapNullable('number');
+  if (type === 'boolean') return wrapNullable('boolean');
+  if (type === 'object') {
+    const members = Object.entries(schema.properties ?? {}).map(
+      ([key, property]) =>
+        `  readonly ${JSON.stringify(key)}${(schema.required ?? []).includes(key) ? '' : '?'}: ${schemaType(property, `${name}_${identifier(key)}`, seen)};`,
     );
     if (schema.additionalProperties === true) members.push('  readonly [key: string]: JsonValue;');
     else if (schema.additionalProperties && typeof schema.additionalProperties === 'object')
-      members.push(`  readonly [key: string]: ${schemaType(schema.additionalProperties, `${name}AdditionalProperty`, seen)};`);
-    if (members.length === 0 && schema.additionalProperties !== true) return 'Readonly<Record<string, never>>';
-    return `{
+      members.push(
+        `  readonly [key: string]: ${schemaType(schema.additionalProperties, `${name}AdditionalProperty`, seen)};`,
+      );
+    if (members.length === 0 && schema.additionalProperties !== true)
+      return wrapNullable('Readonly<Record<string, never>>');
+    return wrapNullable(`{
 ${members.join('\n')}
-}`;
+}`);
   }
-  return 'never';
+  fail('TERMINAL_CLIENT_SCHEMA_TYPE_UNSUPPORTED', `${name}:${JSON.stringify(schema)}`);
 }
 
 function schemaClosure(selected, schemas) {
@@ -279,7 +358,8 @@ function schemaClosure(selected, schemas) {
     if (!schema || typeof schema !== 'object') return;
     if (typeof schema.$ref === 'string') {
       const prefix = '#/components/schemas/';
-      if (!schema.$ref.startsWith(prefix)) fail('TERMINAL_CLIENT_SCHEMA_REFERENCE_UNSUPPORTED', `${context}:${schema.$ref}`);
+      if (!schema.$ref.startsWith(prefix))
+        fail('TERMINAL_CLIENT_SCHEMA_REFERENCE_UNSUPPORTED', `${context}:${schema.$ref}`);
       const name = schema.$ref.slice(prefix.length);
       if (!Object.hasOwn(schemas, name)) fail('TERMINAL_CLIENT_SCHEMA_MISSING', `${context}:${name}`);
       if (closure.has(name)) return;
@@ -291,12 +371,19 @@ function schemaClosure(selected, schemas) {
     if (schema.items) visit(schema.items, `${context}[]`);
     if (schema.additionalProperties && typeof schema.additionalProperties === 'object')
       visit(schema.additionalProperties, `${context}.*`);
+    for (const key of ['allOf', 'oneOf', 'anyOf'])
+      for (const [index, child] of (schema[key] ?? []).entries()) visit(child, `${context}.${key}[${index}]`);
   };
   for (const operation of selected) {
     visit({$ref: `#/components/schemas/${operation.requestSchema}`}, operation.operationId);
     visit({$ref: `#/components/schemas/${operation.responseSchema}`}, operation.operationId);
-    for (const parameter of [...operation.pathParameters, ...operation.queryParameters, ...operation.headerParameters]) {
-      if (!parameter.name || (parameter.in === 'path' && !parameter.required)) fail('TERMINAL_CLIENT_PATH_PARAMETER_INVALID', operation.operationId);
+    for (const parameter of [
+      ...operation.pathParameters,
+      ...operation.queryParameters,
+      ...operation.headerParameters,
+    ]) {
+      if (!parameter.name || (parameter.in === 'path' && !parameter.required))
+        fail('TERMINAL_CLIENT_PATH_PARAMETER_INVALID', operation.operationId);
       visit(parameter.schema, operation.operationId + '.' + parameter.name);
     }
   }
@@ -307,28 +394,50 @@ function render(model) {
   const {policy, selected, schemas} = model;
   const usedSchemas = schemaClosure(selected, schemas);
   const typeNames = new Set(usedSchemas);
-  const types = usedSchemas.map(name => `export type ${name} = ${schemaType(schemas[name], name, typeNames)};`).join('\n\n');
-  const requests = selected.map(operation => {
-    const renderParameters = (items, location) => items.map(parameter =>
-      'readonly ' + JSON.stringify(parameter.name) + (parameter.required ? '' : '?') + ': ' +
-        schemaType(parameter.schema, operation.operationId + '_' + location + '_' + identifier(parameter.name), typeNames),
-    ).join('; ');
-    const pathParameters = renderParameters(operation.pathParameters, 'path');
-    const queryParameters = renderParameters(operation.queryParameters, 'query');
-    const headerParameters = renderParameters(operation.headerParameters, 'header');
-    const authorizationHeader = operation.auth === 'TERMINAL_CREDENTIAL' && !operation.headerParameters.some(parameter => parameter.name.toLowerCase() === 'authorization')
-      ? (headerParameters ? headerParameters + '; ' : '') + 'readonly "Authorization": string'
-      : headerParameters;
-    const requestParts = [
-      'readonly pathParameters: { ' + pathParameters + ' }',
-      'readonly queryParameters: ' + (queryParameters ? '{ ' + queryParameters + ' }' : 'Readonly<Record<string, never>>'),
-      'readonly headers: ' + (authorizationHeader ? '{ ' + authorizationHeader + ' }' : 'Readonly<Record<string, never>>'),
-      'readonly body: ' + operation.requestSchema,
-    ];
-    return '  ' + operation.operationId + ': { ' + requestParts.join('; ') + ' };';
-  }).join('\n');
+  const types = usedSchemas
+    .map(name => `export type ${name} = ${schemaType(schemas[name], name, typeNames)};`)
+    .join('\n\n');
+  const validatorSchemaDefinitions = JSON.stringify(Object.fromEntries(usedSchemas.map(name => [name, schemas[name]])));
+  const requests = selected
+    .map(operation => {
+      const renderParameters = (items, location) =>
+        items
+          .map(
+            parameter =>
+              'readonly ' +
+              JSON.stringify(parameter.name) +
+              (parameter.required ? '' : '?') +
+              ': ' +
+              schemaType(
+                parameter.schema,
+                operation.operationId + '_' + location + '_' + identifier(parameter.name),
+                typeNames,
+              ),
+          )
+          .join('; ');
+      const pathParameters = renderParameters(operation.pathParameters, 'path');
+      const queryParameters = renderParameters(operation.queryParameters, 'query');
+      const headerParameters = renderParameters(operation.headerParameters, 'header');
+      const authorizationHeader =
+        operation.auth === 'TERMINAL_CREDENTIAL' &&
+        !operation.headerParameters.some(parameter => parameter.name.toLowerCase() === 'authorization')
+          ? (headerParameters ? headerParameters + '; ' : '') + 'readonly "Authorization": string'
+          : headerParameters;
+      const requestParts = [
+        'readonly pathParameters: { ' + pathParameters + ' }',
+        'readonly queryParameters: ' +
+          (queryParameters ? '{ ' + queryParameters + ' }' : 'Readonly<Record<string, never>>'),
+        'readonly headers: ' +
+          (authorizationHeader ? '{ ' + authorizationHeader + ' }' : 'Readonly<Record<string, never>>'),
+        'readonly body: ' + operation.requestSchema,
+      ];
+      return '  ' + operation.operationId + ': { ' + requestParts.join('; ') + ' };';
+    })
+    .join('\n');
   const responseMap = selected.map(operation => `  ${operation.operationId}: ${operation.responseSchema};`).join('\n');
-  const operationRows = selected.map(operation => `  ${JSON.stringify(operation.operationId)}: {
+  const operationRows = selected
+    .map(
+      operation => `  ${JSON.stringify(operation.operationId)}: {
     operationId: ${JSON.stringify(operation.operationId)},
     method: ${JSON.stringify(operation.method)},
     path: ${JSON.stringify(operation.generatedPath)},
@@ -340,24 +449,107 @@ function render(model) {
     errorCodes: ${JSON.stringify(operation.errors)},
     requestSchema: ${JSON.stringify(operation.requestSchema)},
     responseSchema: ${JSON.stringify(operation.responseSchema)},
-  },`).join('\n');
-  const validators = usedSchemas.filter(name => selected.some(operation => operation.responseSchema === name)).map(name => `export function is${name}(value: unknown): value is ${name} {
+  },`,
+    )
+    .join('\n');
+  const validators = `type TerminalJsonSchema = Readonly<{
+  readonly $ref?: string;
+  readonly type?: string | readonly string[];
+  readonly nullable?: boolean;
+  readonly enum?: readonly unknown[];
+  readonly required?: readonly string[];
+  readonly properties?: Readonly<Record<string, TerminalJsonSchema>>;
+  readonly items?: TerminalJsonSchema;
+  readonly additionalProperties?: boolean | TerminalJsonSchema;
+  readonly allOf?: readonly TerminalJsonSchema[];
+  readonly anyOf?: readonly TerminalJsonSchema[];
+  readonly oneOf?: readonly TerminalJsonSchema[];
+  readonly minLength?: number;
+  readonly maxLength?: number;
+  readonly minItems?: number;
+  readonly maxItems?: number;
+  readonly minimum?: number;
+  readonly maximum?: number;
+  readonly pattern?: string;
+  readonly format?: string;
+}>;
+const terminalResponseSchemas = JSON.parse(${JSON.stringify(validatorSchemaDefinitions)}) as Readonly<Record<string, TerminalJsonSchema>>;
+
+function matchesStringSchema(schema: TerminalJsonSchema, value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  return (schema.minLength === undefined || value.length >= schema.minLength)
+    && (schema.maxLength === undefined || value.length <= schema.maxLength)
+    && (schema.pattern === undefined || new RegExp(schema.pattern).test(value))
+    && (schema.format !== "uuid" || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value));
+}
+
+function matchesNumberSchema(schema: TerminalJsonSchema, value: unknown, integer: boolean): boolean {
+  if (typeof value !== "number") return false;
+  return (!integer || Number.isInteger(value))
+    && (schema.minimum === undefined || value >= schema.minimum)
+    && (schema.maximum === undefined || value <= schema.maximum);
+}
+
+function matchesArraySchema(schema: TerminalJsonSchema, value: unknown, depth: number): boolean {
+  if (!Array.isArray(value)) return false;
+  return (schema.minItems === undefined || value.length >= schema.minItems)
+    && (schema.maxItems === undefined || value.length <= schema.maxItems)
+    && (schema.items === undefined || value.every(item => matchesTerminalSchema(schema.items!, item, depth + 1)));
+}
+
+function matchesObjectSchema(schema: TerminalJsonSchema, value: unknown, depth: number): boolean {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const record = value as Record<string, unknown>;
-  return ${Object.entries(schemas[name].properties ?? {}).filter(([key]) => (schemas[name].required ?? []).includes(key)).map(([key, rule]) => {
-    const condition = rule.type === 'string' ? `typeof record[${JSON.stringify(key)}] === "string"` :
-      rule.type === 'integer' ? `typeof record[${JSON.stringify(key)}] === "number" && Number.isInteger(record[${JSON.stringify(key)}])` :
-      rule.type === 'number' ? `typeof record[${JSON.stringify(key)}] === "number"` :
-      rule.type === 'boolean' ? `typeof record[${JSON.stringify(key)}] === "boolean"` : 'false';
-    const enumConstraint = Array.isArray(rule.enum) ? ` && [${rule.enum.map(JSON.stringify).join(', ')}].includes(record[${JSON.stringify(key)}] as never)` : '';
-    const minimum = typeof rule.minimum === 'number' ? ` && (record[${JSON.stringify(key)}] as number) >= ${rule.minimum}` : '';
-    const minLength = typeof rule.minLength === 'number' ? ` && (record[${JSON.stringify(key)}] as string).length >= ${rule.minLength}` : '';
-    const maxLength = typeof rule.maxLength === 'number' ? ` && (record[${JSON.stringify(key)}] as string).length <= ${rule.maxLength}` : '';
-    const pattern = typeof rule.pattern === 'string' ? ` && new RegExp(${JSON.stringify(rule.pattern)}).test(record[${JSON.stringify(key)}] as string)` : '';
-    return `(${condition}${enumConstraint}${minimum}${minLength}${maxLength}${pattern})`;
-  }).join(' && ') || 'true'};
-}`).join('\n\n');
-  const methods = selected.map(operation => `    ${operation.operationId}: (request: TerminalRequestMap[${JSON.stringify(operation.operationId)}]) => execute(${JSON.stringify(operation.operationId)}, request),`).join('\n');
+  const properties = schema.properties ?? {};
+  const additionalProperties = schema.additionalProperties;
+  if ((schema.required ?? []).some(key => !Object.hasOwn(record, key))) return false;
+  if (Object.entries(properties).some(([key, child]) => Object.hasOwn(record, key)
+    && !matchesTerminalSchema(child, record[key], depth + 1))) return false;
+  if (additionalProperties === false
+    && Object.keys(record).some(key => !Object.hasOwn(properties, key))) return false;
+  if (typeof additionalProperties === "object"
+    && Object.entries(record).some(([key, item]) => !Object.hasOwn(properties, key)
+      && !matchesTerminalSchema(additionalProperties, item, depth + 1))) return false;
+  return true;
+}
+
+function matchesTerminalSchema(schema: TerminalJsonSchema, value: unknown, depth = 0): boolean {
+  if (depth > 64) return false;
+  const declaredTypes = Array.isArray(schema.type) ? schema.type : schema.type ? [schema.type] : [];
+  if (value === null) return schema.nullable === true || declaredTypes.includes("null");
+  if (schema.$ref) {
+    const referenceName = schema.$ref.split("/").at(-1) ?? "";
+    const referenceSchema = terminalResponseSchemas[referenceName];
+    return referenceSchema !== undefined && matchesTerminalSchema(referenceSchema, value, depth + 1);
+  }
+  if (schema.enum && !schema.enum.some(candidate => Object.is(candidate, value))) return false;
+  if (schema.allOf && !schema.allOf.every(child => matchesTerminalSchema(child, value, depth + 1))) return false;
+  if (schema.anyOf && !schema.anyOf.some(child => matchesTerminalSchema(child, value, depth + 1))) return false;
+  if (schema.oneOf && schema.oneOf.filter(child => matchesTerminalSchema(child, value, depth + 1)).length !== 1) return false;
+  const nonNullTypes = declaredTypes.filter(type => type !== "null");
+  const type = nonNullTypes.length === 1 ? nonNullTypes[0] : undefined;
+  if (type === "string") return matchesStringSchema(schema, value);
+  if (type === "integer" || type === "number") return matchesNumberSchema(schema, value, type === "integer");
+  if (type === "boolean") return typeof value === "boolean";
+  if (type === "array") return matchesArraySchema(schema, value, depth);
+  if (type === "object" || schema.properties || schema.additionalProperties !== undefined)
+    return matchesObjectSchema(schema, value, depth);
+  return type === undefined || type === "null";
+}
+
+${usedSchemas
+  .map(
+    name => `export function is${name}(value: unknown): value is ${name} {
+  return matchesTerminalSchema(terminalResponseSchemas[${JSON.stringify(name)}], value);
+}`,
+  )
+  .join('\n\n')}`;
+  const methods = selected
+    .map(
+      operation =>
+        `    ${operation.operationId}: (request: TerminalRequestMap[${JSON.stringify(operation.operationId)}]) => execute(${JSON.stringify(operation.operationId)}, request),`,
+    )
+    .join('\n');
   return `// Generated from ${policyPath} and canonical terminal contract sources; do not edit.
 
 export type JsonValue = string | number | boolean | null | readonly JsonValue[] | {readonly [key: string]: JsonValue};
@@ -423,7 +615,13 @@ ${methods}
 
 function validateTerminalResponse(schemaName: string, value: unknown): boolean {
   switch (schemaName) {
-${selected.filter(operation => selected.some(candidate => candidate.responseSchema === operation.responseSchema)).map(operation => `    case ${JSON.stringify(operation.responseSchema)}: return is${operation.responseSchema}(value);`).filter((row, index, rows) => rows.indexOf(row) === index).join('\n')}
+${selected
+  .filter(operation => selected.some(candidate => candidate.responseSchema === operation.responseSchema))
+  .map(
+    operation => `    case ${JSON.stringify(operation.responseSchema)}: return is${operation.responseSchema}(value);`,
+  )
+  .filter((row, index, rows) => rows.indexOf(row) === index)
+  .join('\n')}
     default: return false;
   }
 }
@@ -446,10 +644,8 @@ function outputPath(root, target) {
     fail('TERMINAL_CLIENT_OUTPUT_PATH_ESCAPE', String(output));
   const absolute = path.resolve(root, output);
   const relative = path.relative(root, absolute);
-  if (relative === '..' || relative.startsWith(`..${path.sep}`))
-    fail('TERMINAL_CLIENT_OUTPUT_PATH_ESCAPE', output);
-  if (!output.startsWith(`${targetPackage}/src/generated/`))
-    fail('TERMINAL_CLIENT_OUTPUT_PATH_ESCAPE', output);
+  if (relative === '..' || relative.startsWith(`..${path.sep}`)) fail('TERMINAL_CLIENT_OUTPUT_PATH_ESCAPE', output);
+  if (!output.startsWith(`${targetPackage}/src/generated/`)) fail('TERMINAL_CLIENT_OUTPUT_PATH_ESCAPE', output);
   let parent = path.dirname(absolute);
   while (!fs.existsSync(parent)) parent = path.dirname(parent);
   const actualParent = fs.realpathSync(parent);
@@ -466,20 +662,29 @@ export function check(root = repoRoot) {
     const file = outputPath(root, target);
     if (!fs.existsSync(file)) fail('TERMINAL_CLIENT_GENERATED_MISSING', target.policy.output);
     if (fs.readFileSync(file, 'utf8') !== render(target)) fail('TERMINAL_CLIENT_GENERATED_DRIFT', target.policy.output);
-    return Object.freeze({output: target.policy.output, operationIds: Object.freeze(target.selected.map(row => row.operationId))});
+    return Object.freeze({
+      output: target.policy.output,
+      operationIds: Object.freeze(target.selected.map(row => row.operationId)),
+    });
   });
   return Object.freeze({
     operationIds: Object.freeze(model.targets.flatMap(target => target.selected.map(row => row.operationId)).sort()),
-    operations: Object.freeze(model.targets.flatMap(target => target.selected).map(row => Object.freeze({
-      operationId: row.operationId,
-      method: row.method,
-      path: row.path,
-      owner: row.owner,
-      authorizationMode: row.auth,
-      idempotencyRequired: row.idempotencyRequired,
-      safeRetryable: row.safeRetryable,
-      consumerFaces: Object.freeze([model.policy.face]),
-    }))),
+    operations: Object.freeze(
+      model.targets
+        .flatMap(target => target.selected)
+        .map(row =>
+          Object.freeze({
+            operationId: row.operationId,
+            method: row.method,
+            path: row.path,
+            owner: row.owner,
+            authorizationMode: row.auth,
+            idempotencyRequired: row.idempotencyRequired,
+            safeRetryable: row.safeRetryable,
+            consumerFaces: Object.freeze([model.policy.face]),
+          }),
+        ),
+    ),
     outputs: Object.freeze(outputs),
     output: outputs.length === 1 ? outputs[0].output : undefined,
   });
@@ -521,15 +726,30 @@ export function selfTest() {
       const directory = path.join(root, relativePath);
       fs.mkdirSync(path.join(directory, 'src'), {recursive: true});
       fs.writeFileSync(path.join(directory, 'package.json'), JSON.stringify({name: packageName}));
-      fs.writeFileSync(path.join(directory, 'src/moduleName.ts'),
-        `export const moduleName = '${moduleName}' as const;\nexport const moduleKind = '${kind}' as const;\n`);
+      fs.writeFileSync(
+        path.join(directory, 'src/moduleName.ts'),
+        `export const moduleName = '${moduleName}' as const;\nexport const moduleKind = '${kind}' as const;\n`,
+      );
     };
     fs.mkdirSync(path.join(root, 'contracts/policy'), {recursive: true});
     fs.mkdirSync(path.join(root, 'apps/terminal/kernel/base/terminal-data-client/src/generated'), {recursive: true});
     fs.mkdirSync(path.join(root, 'paths'), {recursive: true});
-    createPackage('apps/terminal/kernel/base/terminal-data-client', '@catering-v2s/kernel-base-terminal-data-client', 'kernel.base.terminal-data-client');
-    createPackage('apps/terminal/kernel/base/another-owner', '@catering-v2s/kernel-base-another-owner', 'kernel.base.another-owner');
-    createPackage('apps/terminal/kernel/base/contracts', '@catering-v2s/kernel-base-contracts', 'kernel.base.contracts', 'toolkit');
+    createPackage(
+      'apps/terminal/kernel/base/terminal-data-client',
+      '@catering-v2s/kernel-base-terminal-data-client',
+      'kernel.base.terminal-data-client',
+    );
+    createPackage(
+      'apps/terminal/kernel/base/another-owner',
+      '@catering-v2s/kernel-base-another-owner',
+      'kernel.base.another-owner',
+    );
+    createPackage(
+      'apps/terminal/kernel/base/contracts',
+      '@catering-v2s/kernel-base-contracts',
+      'kernel.base.contracts',
+      'toolkit',
+    );
     const targetPackageFile = path.join(root, singleTarget.targetPackage, 'package.json');
     const targetModuleNameFile = path.join(root, singleTarget.targetPackage, 'src/moduleName.ts');
     const validTargetPackage = fs.readFileSync(targetPackageFile, 'utf8');
@@ -537,13 +757,22 @@ export function selfTest() {
     const outsidePackageFile = path.join(outside, 'package.json');
     const outsideModuleNameFile = path.join(outside, 'moduleName.ts');
     fs.writeFileSync(outsidePackageFile, JSON.stringify({name: '@catering-v2s/kernel-outside'}));
-    fs.writeFileSync(outsideModuleNameFile,
-      "export const moduleName = 'kernel.outside' as const;\nexport const moduleKind = 'owner' as const;\n");
+    fs.writeFileSync(
+      outsideModuleNameFile,
+      "export const moduleName = 'kernel.outside' as const;\nexport const moduleKind = 'owner' as const;\n",
+    );
     writePolicy(policy);
     const operation = {
-      operationId: 'activateTerminal', method: 'POST', path: '/api/terminal/group-workspaces/{groupWorkspaceKey}/activation',
-      tags: ['terminal-binding'], 'x-consumer-faces': ['terminal'], 'x-owner-module': 'terminal-binding',
-      'x-authorization-mode': 'NONE', 'x-idempotency-policy': 'FORBIDDEN', 'x-safe-retryable': true, 'x-error-codes': ['E_TEST'],
+      operationId: 'activateTerminal',
+      method: 'POST',
+      path: '/api/terminal/group-workspaces/{groupWorkspaceKey}/activation',
+      tags: ['terminal-binding'],
+      'x-consumer-faces': ['terminal'],
+      'x-owner-module': 'terminal-binding',
+      'x-authorization-mode': 'NONE',
+      'x-idempotency-policy': 'FORBIDDEN',
+      'x-safe-retryable': true,
+      'x-error-codes': ['E_TEST'],
       security: [],
       parameters: [
         {name: 'groupWorkspaceKey', in: 'path', required: true, schema: {type: 'string'}},
@@ -551,7 +780,7 @@ export function selfTest() {
         {name: 'X-Test', in: 'header', required: true, schema: {type: 'string'}},
       ],
       requestBody: {content: {'application/json': {schema: {$ref: '#/components/schemas/Request'}}}},
-      responses: {'200': {content: {'application/json': {schema: {$ref: '#/components/schemas/Response'}}}}},
+      responses: {200: {content: {'application/json': {schema: {$ref: '#/components/schemas/Response'}}}}},
     };
     const secondOperation = {
       ...operation,
@@ -566,10 +795,15 @@ export function selfTest() {
         {name: 'X-Test', in: 'header', required: true, schema: {type: 'string'}},
       ],
     };
-    fs.writeFileSync(path.join(root, 'paths/terminal.json'), JSON.stringify({paths: {
-      [operation.path]: {post: operation},
-      [secondOperation.path]: {post: secondOperation},
-    }}));
+    fs.writeFileSync(
+      path.join(root, 'paths/terminal.json'),
+      JSON.stringify({
+        paths: {
+          [operation.path]: {post: operation},
+          [secondOperation.path]: {post: secondOperation},
+        },
+      }),
+    );
     const catalogOperation = operation => ({
       operationId: operation.operationId,
       face: 'terminal',
@@ -581,11 +815,31 @@ export function selfTest() {
       successStatus: '200',
       idempotency: {header: 'FORBIDDEN'},
     });
-    fs.writeFileSync(path.join(root, 'catalog.json'), JSON.stringify({operations: [operation, secondOperation].map(catalogOperation)}));
-    fs.writeFileSync(path.join(root, 'schemas.json'), JSON.stringify({components: {schemas: {
-      Request: {type: 'object', additionalProperties: true, required: ['name'], properties: {name: {type: 'string'}}},
-      Response: {type: 'object', additionalProperties: false, required: ['id'], properties: {id: {type: 'string'}}},
-    }}}));
+    fs.writeFileSync(
+      path.join(root, 'catalog.json'),
+      JSON.stringify({operations: [operation, secondOperation].map(catalogOperation)}),
+    );
+    fs.writeFileSync(
+      path.join(root, 'schemas.json'),
+      JSON.stringify({
+        components: {
+          schemas: {
+            Request: {
+              type: 'object',
+              additionalProperties: true,
+              required: ['name'],
+              properties: {name: {type: 'string'}},
+            },
+            Response: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['id'],
+              properties: {id: {type: 'string'}},
+            },
+          },
+        },
+      }),
+    );
     const assertTargetFileSymlinkRejected = (targetPath, outsidePath, label, restoreContents) => {
       fs.rmSync(targetPath);
       fs.symlinkSync(outsidePath, targetPath);
@@ -599,106 +853,170 @@ export function selfTest() {
         fs.writeFileSync(targetPath, restoreContents);
       }
     };
+    assertTargetFileSymlinkRejected(targetPackageFile, outsidePackageFile, 'TARGET_PACKAGE', validTargetPackage);
     assertTargetFileSymlinkRejected(
-      targetPackageFile, outsidePackageFile, 'TARGET_PACKAGE', validTargetPackage,
-    );
-    assertTargetFileSymlinkRejected(
-      targetModuleNameFile, outsideModuleNameFile, 'TARGET_MODULE_NAME', validTargetModuleName,
+      targetModuleNameFile,
+      outsideModuleNameFile,
+      'TARGET_MODULE_NAME',
+      validTargetModuleName,
     );
     const model = loadModel(root);
     const generatedById = new Map(model.targets[0].selected.map(row => [row.operationId, row]));
-    if (generatedById.get('activateTerminal')?.generatedPath !== '/activation' ||
-        generatedById.get('cancelTerminalActivation')?.generatedPath !== '/terminals/{terminalRef}/activation/cancel' ||
-        generatedById.get('activateTerminal')?.pathParameters.length !== 0 ||
-        !sameSet(generatedById.get('cancelTerminalActivation')?.pathParameters.map(parameter => parameter.name) ?? [], ['terminalRef']))
+    if (
+      generatedById.get('activateTerminal')?.generatedPath !== '/activation' ||
+      generatedById.get('cancelTerminalActivation')?.generatedPath !== '/terminals/{terminalRef}/activation/cancel' ||
+      generatedById.get('activateTerminal')?.pathParameters.length !== 0 ||
+      !sameSet(generatedById.get('cancelTerminalActivation')?.pathParameters.map(parameter => parameter.name) ?? [], [
+        'terminalRef',
+      ])
+    )
       fail('TERMINAL_CLIENT_RED_GENERATED_PREFIX_CONTRACT_NOT_ENFORCED');
     const output = singleTarget.output;
     write(root);
     check(root);
-    const generatedWithMissingOperation = fs.readFileSync(path.join(root, output), 'utf8')
+    const generatedWithMissingOperation = fs
+      .readFileSync(path.join(root, output), 'utf8')
       .replace(/TERMINAL_OPERATION_IDS = \[[^\]]*\]/, 'TERMINAL_OPERATION_IDS = []');
     fs.writeFileSync(path.join(root, output), generatedWithMissingOperation);
-    try { check(root); fail('TERMINAL_CLIENT_RED_GENERATED_DRIFT_NOT_DETECTED'); } catch (error) {
+    try {
+      check(root);
+      fail('TERMINAL_CLIENT_RED_GENERATED_DRIFT_NOT_DETECTED');
+    } catch (error) {
       if (error.code !== 'TERMINAL_CLIENT_GENERATED_DRIFT') throw error;
     }
     write(root);
     const splitTargets = [
       {...singleTarget, includeOperationIds: ['activateTerminal']},
       {
-        targetPackage: 'apps/terminal/kernel/base/another-owner', tags: ['terminal-binding'],
-        includeOperationIds: ['cancelTerminalActivation'], excludeOperationIds: [],
+        targetPackage: 'apps/terminal/kernel/base/another-owner',
+        tags: ['terminal-binding'],
+        includeOperationIds: ['cancelTerminalActivation'],
+        excludeOperationIds: [],
         output: 'apps/terminal/kernel/base/another-owner/src/generated/api.ts',
       },
     ];
     writePolicy({...policy, targets: splitTargets});
     const splitResult = write(root);
-    if (splitResult.outputs.length !== 2 || !sameSet(splitResult.outputs[0].operationIds, ['activateTerminal']) ||
-        !sameSet(splitResult.outputs[1].operationIds, ['cancelTerminalActivation']))
+    if (
+      splitResult.outputs.length !== 2 ||
+      !sameSet(splitResult.outputs[0].operationIds, ['activateTerminal']) ||
+      !sameSet(splitResult.outputs[1].operationIds, ['cancelTerminalActivation'])
+    )
       fail('TERMINAL_CLIENT_RED_MULTIPLE_TARGET_ASSIGNMENT_NOT_SUPPORTED');
     check(root);
 
-    const duplicateTargets = {...policy, targets: [
-      {...singleTarget, includeOperationIds: ['activateTerminal']},
-      {
-        targetPackage: 'apps/terminal/kernel/base/another-owner', tags: ['terminal-binding'],
-        includeOperationIds: ['activateTerminal'], excludeOperationIds: [],
-        output: 'apps/terminal/kernel/base/another-owner/src/generated/api.ts',
-      },
-    ]};
+    const duplicateTargets = {
+      ...policy,
+      targets: [
+        {...singleTarget, includeOperationIds: ['activateTerminal']},
+        {
+          targetPackage: 'apps/terminal/kernel/base/another-owner',
+          tags: ['terminal-binding'],
+          includeOperationIds: ['activateTerminal'],
+          excludeOperationIds: [],
+          output: 'apps/terminal/kernel/base/another-owner/src/generated/api.ts',
+        },
+      ],
+    };
     writePolicy(duplicateTargets);
-    try { loadModel(root); fail('TERMINAL_CLIENT_RED_DUPLICATE_ASSIGNMENT_NOT_DETECTED'); } catch (error) {
+    try {
+      loadModel(root);
+      fail('TERMINAL_CLIENT_RED_DUPLICATE_ASSIGNMENT_NOT_DETECTED');
+    } catch (error) {
       if (error.code !== 'TERMINAL_CLIENT_OPERATION_DUPLICATE_ASSIGNMENT') throw error;
     }
-    const wrongTarget = {...policy, targets: [{...singleTarget, includeOperationIds: ['activateTerminal'], targetPackage: 'apps/terminal/kernel/base/contracts', output: 'apps/terminal/kernel/base/contracts/src/generated/api.ts'}]};
+    const wrongTarget = {
+      ...policy,
+      targets: [
+        {
+          ...singleTarget,
+          includeOperationIds: ['activateTerminal'],
+          targetPackage: 'apps/terminal/kernel/base/contracts',
+          output: 'apps/terminal/kernel/base/contracts/src/generated/api.ts',
+        },
+      ],
+    };
     writePolicy(wrongTarget);
-    try { loadModel(root); fail('TERMINAL_CLIENT_RED_NON_OWNER_TARGET_NOT_DETECTED'); } catch (error) {
+    try {
+      loadModel(root);
+      fail('TERMINAL_CLIENT_RED_NON_OWNER_TARGET_NOT_DETECTED');
+    } catch (error) {
       if (error.code !== 'TERMINAL_CLIENT_TARGET_NOT_OWNER') throw error;
     }
-    const selectorMismatch = {...policy, targets: [{...singleTarget, includeOperationIds: ['activateTerminal', 'missingOperation']}]};
+    const selectorMismatch = {
+      ...policy,
+      targets: [{...singleTarget, includeOperationIds: ['activateTerminal', 'missingOperation']}],
+    };
     writePolicy(selectorMismatch);
-    try { loadModel(root); fail('TERMINAL_CLIENT_RED_SELECTOR_MISMATCH_NOT_DETECTED'); } catch (error) {
+    try {
+      loadModel(root);
+      fail('TERMINAL_CLIENT_RED_SELECTOR_MISMATCH_NOT_DETECTED');
+    } catch (error) {
       if (error.code !== 'TERMINAL_CLIENT_OPERATION_SELECTOR_MISMATCH') throw error;
     }
     const escapedOutput = {...policy, targets: [{...singleTarget, output: '../outside.ts'}]};
     writePolicy(escapedOutput);
-    try { outputPath(root, loadModel(root).targets[0]); fail('TERMINAL_CLIENT_RED_OUTPUT_ESCAPE_NOT_DETECTED'); } catch (error) {
+    try {
+      outputPath(root, loadModel(root).targets[0]);
+      fail('TERMINAL_CLIENT_RED_OUTPUT_ESCAPE_NOT_DETECTED');
+    } catch (error) {
       if (error.code !== 'TERMINAL_CLIENT_OUTPUT_PATH_ESCAPE') throw error;
     }
     const noOperation = JSON.parse(fs.readFileSync(path.join(root, 'paths/terminal.json'), 'utf8'));
     noOperation.paths[operation.path].post.tags = ['other'];
     fs.writeFileSync(path.join(root, 'paths/terminal.json'), JSON.stringify(noOperation));
     writePolicy(policy);
-    try { loadModel(root); fail('TERMINAL_CLIENT_RED_ZERO_NOT_DETECTED'); } catch (error) {
-      if (![
-        'TERMINAL_CLIENT_OPERATION_EMPTY',
-        'TERMINAL_CLIENT_OPERATION_FACE_CLOSURE',
-        'TERMINAL_CLIENT_OPERATION_SELECTOR_MISMATCH',
-      ].includes(error.code)) throw error;
+    try {
+      loadModel(root);
+      fail('TERMINAL_CLIENT_RED_ZERO_NOT_DETECTED');
+    } catch (error) {
+      if (
+        ![
+          'TERMINAL_CLIENT_OPERATION_EMPTY',
+          'TERMINAL_CLIENT_OPERATION_FACE_CLOSURE',
+          'TERMINAL_CLIENT_OPERATION_SELECTOR_MISMATCH',
+        ].includes(error.code)
+      )
+        throw error;
     }
     noOperation.paths[operation.path].post.tags = ['terminal-binding'];
     noOperation.paths[operation.path].post['x-consumer-faces'] = ['operations-admin'];
     fs.writeFileSync(path.join(root, 'paths/terminal.json'), JSON.stringify(noOperation));
     writePolicy(policy);
-    try { loadModel(root); fail('TERMINAL_CLIENT_RED_WRONG_FACE_NOT_DETECTED'); } catch (error) {
-      if (![
-        'TERMINAL_CLIENT_OPERATION_EMPTY',
-        'TERMINAL_CLIENT_OPERATION_FACE_CLOSURE',
-        'TERMINAL_CLIENT_OPERATION_SELECTOR_MISMATCH',
-      ].includes(error.code)) throw error;
+    try {
+      loadModel(root);
+      fail('TERMINAL_CLIENT_RED_WRONG_FACE_NOT_DETECTED');
+    } catch (error) {
+      if (
+        ![
+          'TERMINAL_CLIENT_OPERATION_EMPTY',
+          'TERMINAL_CLIENT_OPERATION_FACE_CLOSURE',
+          'TERMINAL_CLIENT_OPERATION_SELECTOR_MISMATCH',
+        ].includes(error.code)
+      )
+        throw error;
     }
     const escapedPolicy = {...policy, operationCatalog: '../outside.json'};
     writePolicy(escapedPolicy);
-    try { loadModel(root); fail('TERMINAL_CLIENT_RED_ROOT_ESCAPE_NOT_DETECTED'); } catch (error) {
+    try {
+      loadModel(root);
+      fail('TERMINAL_CLIENT_RED_ROOT_ESCAPE_NOT_DETECTED');
+    } catch (error) {
       if (error.code !== 'TERMINAL_CLIENT_INPUT_PATH_ESCAPE') throw error;
     }
     const outsideCatalog = path.join(outside, 'catalog.json');
     fs.writeFileSync(outsideCatalog, '{}');
     fs.symlinkSync(outsideCatalog, path.join(root, 'linked-catalog.json'));
     writePolicy({...policy, operationCatalog: 'linked-catalog.json'});
-    try { loadModel(root); fail('TERMINAL_CLIENT_RED_SYMLINK_ESCAPE_NOT_DETECTED'); } catch (error) {
+    try {
+      loadModel(root);
+      fail('TERMINAL_CLIENT_RED_SYMLINK_ESCAPE_NOT_DETECTED');
+    } catch (error) {
       if (error.code !== 'TERMINAL_CLIENT_INPUT_PATH_ESCAPE') throw error;
     }
-    process.stdout.write('TERMINAL_CLIENT_API_SELF_TEST=PASS\nRED_ZERO_SELECTOR=PASS\nRED_WRONG_FACE=PASS\nRED_GENERATED_DRIFT=PASS\nRED_MULTIPLE_TARGET_ASSIGNMENT=PASS\nRED_DUPLICATE_ASSIGNMENT=PASS\nRED_NON_OWNER_TARGET=PASS\nRED_SELECTOR_MISMATCH=PASS\nRED_OUTPUT_ESCAPE=PASS\nRED_ROOT_ESCAPE=PASS\nRED_SYMLINK_ESCAPE=PASS\nRED_TARGET_PACKAGE_SYMLINK_ESCAPE=PASS\nRED_TARGET_MODULE_NAME_SYMLINK_ESCAPE=PASS\n');
+    process.stdout.write(
+      'TERMINAL_CLIENT_API_SELF_TEST=PASS\nRED_ZERO_SELECTOR=PASS\nRED_WRONG_FACE=PASS\nRED_GENERATED_DRIFT=PASS\nRED_MULTIPLE_TARGET_ASSIGNMENT=PASS\nRED_DUPLICATE_ASSIGNMENT=PASS\nRED_NON_OWNER_TARGET=PASS\nRED_SELECTOR_MISMATCH=PASS\nRED_OUTPUT_ESCAPE=PASS\nRED_ROOT_ESCAPE=PASS\nRED_SYMLINK_ESCAPE=PASS\nRED_TARGET_PACKAGE_SYMLINK_ESCAPE=PASS\nRED_TARGET_MODULE_NAME_SYMLINK_ESCAPE=PASS\n',
+    );
   } finally {
     fs.rmSync(root, {recursive: true, force: true});
     fs.rmSync(outside, {recursive: true, force: true});
@@ -711,10 +1029,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToP
     if (args.length === 1 && args[0] === '--self-test') selfTest();
     else if (args.length === 1 && args[0] === '--check') {
       const result = check();
-      process.stdout.write(`TERMINAL_CLIENT_API_CHECK=PASS\nOPERATIONS=${result.operationIds.join(',')}\nOUTPUTS=${result.outputs.map(output => output.output).join(',')}\n`);
+      process.stdout.write(
+        `TERMINAL_CLIENT_API_CHECK=PASS\nOPERATIONS=${result.operationIds.join(',')}\nOUTPUTS=${result.outputs.map(output => output.output).join(',')}\n`,
+      );
     } else if (args.length === 1 && args[0] === '--write') {
       const result = write();
-      process.stdout.write(`TERMINAL_CLIENT_API_WRITE=PASS\nOPERATIONS=${result.operationIds.join(',')}\nOUTPUTS=${result.outputs.map(output => output.output).join(',')}\n`);
+      process.stdout.write(
+        `TERMINAL_CLIENT_API_WRITE=PASS\nOPERATIONS=${result.operationIds.join(',')}\nOUTPUTS=${result.outputs.map(output => output.output).join(',')}\n`,
+      );
     } else fail('TERMINAL_CLIENT_API_ARGUMENT_INVALID');
   } catch (error) {
     process.stderr.write(`${error.code || 'TERMINAL_CLIENT_API_FAIL'}:${error.message}\n`);

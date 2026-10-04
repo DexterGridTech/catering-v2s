@@ -1,11 +1,28 @@
 import {defineCommand} from '@catering-v2s/kernel-base-runtime';
 import {moduleName} from '../../moduleName';
-import type {ActivateTerminalPayload, CancelTerminaActivationPayload, TerminalTransportEvent} from '../../types/client';
+import type {
+  AcceptTerminalTopicNotificationPayload,
+  ActivateTerminalPayload,
+  CancelTerminaActivationPayload,
+  SubscribeTerminalTopicPayload,
+  TerminalTopicChangedPayload,
+  TerminalTransportEvent,
+  TerminalDataReadPayload,
+  TerminalActivationSucceededPayload,
+  UnsubscribeTerminalTopicPayload,
+} from '../../types/client';
 
 export const activateTerminalCommand = defineCommand<ActivateTerminalPayload>(moduleName, {
   name: 'activate-terminal',
   visibility: 'public',
   allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+export const terminalActivationSucceededCommand = defineCommand<TerminalActivationSucceededPayload>(moduleName, {
+  name: 'activation-succeeded',
+  visibility: 'public',
+  allowNoActor: true,
   allowReentry: false,
   defaultTarget: 'local',
 });
@@ -34,6 +51,44 @@ export const disconnectTerminalCommand = defineCommand<Readonly<{}>>(moduleName,
   name: 'disconnect-terminal',
   visibility: 'public',
   allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+export const subscribeTerminalTopicCommand = defineCommand<SubscribeTerminalTopicPayload>(moduleName, {
+  name: 'subscribe-topic',
+  visibility: 'public',
+  allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+export const unsubscribeTerminalTopicCommand = defineCommand<UnsubscribeTerminalTopicPayload>(moduleName, {
+  name: 'unsubscribe-topic',
+  visibility: 'public',
+  allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+export const acceptTerminalTopicNotificationCommand = defineCommand<AcceptTerminalTopicNotificationPayload>(
+  moduleName,
+  {
+    name: 'accept-topic-notification',
+    visibility: 'public',
+    allowNoActor: false,
+    allowReentry: false,
+    defaultTarget: 'local',
+  },
+);
+export const readTerminalDataCommand = defineCommand<TerminalDataReadPayload>(moduleName, {
+  name: 'read-terminal-data',
+  visibility: 'public',
+  allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+export const terminalTopicChangedCommand = defineCommand<TerminalTopicChangedPayload>(moduleName, {
+  name: 'topic-changed',
+  visibility: 'public',
+  allowNoActor: true,
   allowReentry: false,
   defaultTarget: 'local',
 });

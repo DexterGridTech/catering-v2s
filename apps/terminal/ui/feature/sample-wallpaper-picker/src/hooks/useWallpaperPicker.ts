@@ -111,26 +111,23 @@ export const useWallpaperPicker = () => {
     });
   }, [observeSystemFailure, requestInFlight, trackedCommand]);
 
-  const exit = useCallback(
-    async () => {
-      if (requestInFlight) return undefined;
-      const result =
-        pending === undefined
-          ? undefined
-          : await runAction({
-              definition: cancelWallpaperSelectionCommand,
-              payload: {},
-              operation: 'cancel',
-            });
-      if (pending !== undefined && result?.status !== 'completed') return result;
-      return dispatchWithRequestId({
-        dispatchCommand,
-        definition: wallpaperPickerExitRequestedCommand,
-        payload: {},
-      });
-    },
-    [dispatchCommand, pending, requestInFlight, runAction],
-  );
+  const exit = useCallback(async () => {
+    if (requestInFlight) return undefined;
+    const result =
+      pending === undefined
+        ? undefined
+        : await runAction({
+            definition: cancelWallpaperSelectionCommand,
+            payload: {},
+            operation: 'cancel',
+          });
+    if (pending !== undefined && result?.status !== 'completed') return result;
+    return dispatchWithRequestId({
+      dispatchCommand,
+      definition: wallpaperPickerExitRequestedCommand,
+      payload: {},
+    });
+  }, [dispatchCommand, pending, requestInFlight, runAction]);
 
   return {confirmed, effective, requestInFlight, canConfirm, selectOption, confirm, logout, exit};
 };

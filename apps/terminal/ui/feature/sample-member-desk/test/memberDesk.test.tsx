@@ -40,9 +40,17 @@ import {BranchLaptopMemberList} from '../src/components/branch/MemberList';
 import {BranchLaptopCustomerMember} from '../src/components/branch/CustomerMember';
 import {RegistryNotice} from '../src/components/laptop/RegistryNotice';
 import {WaitingConfirm} from '../src/components/laptop/WaitingConfirm';
-import {confirmMemberCommand, submitMemberCommand} from '@catering-v2s/kernel-feature-sample-member-registry';
+import {
+  confirmMemberCommand,
+  memberConfirmedCommand,
+  submitMemberCommand,
+} from '@catering-v2s/kernel-feature-sample-member-registry';
 import {memberActions as memberStateActions} from '../../../../kernel/feature/sample-member-registry/src/features/slices/slice';
-import {deskSystemFailureDismissedCommand, deskSystemFailureObservedCommand, memberFormOpenedCommand} from '../src/features/commands/commands';
+import {
+  deskSystemFailureDismissedCommand,
+  deskSystemFailureObservedCommand,
+  memberFormOpenedCommand,
+} from '../src/features/commands/commands';
 import {createTestRuntime} from '../../../../kernel/feature/sample-member-registry/test/support';
 import {releaseRuntimeForTestAsync} from '../../../../kernel/base/runtime/src/testing';
 import {setDisplayRoleAction} from '../../../../kernel/base/display-context/src/features/slices/displayRole';
@@ -361,22 +369,29 @@ const expectTextAbsent = (renderer: RenderResult, value: string): void => {
 
 const memberRoot = (
   pending: Readonly<{name: string; phone: string}>,
-  members: readonly Readonly<{memberId: string; operationId: string; name: string; phone: string; registeredAt: number}>[] = [],
+  members: readonly Readonly<{
+    memberId: string;
+    operationId: string;
+    name: string;
+    phone: string;
+    registeredAt: number;
+  }>[] = [],
   instanceMode: 'MASTER' | 'SLAVE' = 'MASTER',
-): RuntimeStateRoot =>
-  {
-    const hostPending = Object.freeze({operationId: `operation:${pending.phone}`, ...pending});
-    return Object.freeze({
-      'kernel.base.runtime.instance-mode': Object.freeze({instanceMode}),
-      'kernel.base.display-context.display-role': Object.freeze({displayRole: instanceMode === 'MASTER' ? 'CHIEF' : 'VICE'}),
-      'kernel.feature.sample-member-registry.members': Object.freeze({
-        members: Object.freeze(members),
-        hostPending: instanceMode === 'MASTER' ? hostPending : null,
-        branchPending: null,
-        ...(instanceMode === 'SLAVE' ? {hostPendingProjection: hostPending} : {}),
-      }),
-    }) as RuntimeStateRoot;
-  };
+): RuntimeStateRoot => {
+  const hostPending = Object.freeze({operationId: `operation:${pending.phone}`, ...pending});
+  return Object.freeze({
+    'kernel.base.runtime.instance-mode': Object.freeze({instanceMode}),
+    'kernel.base.display-context.display-role': Object.freeze({
+      displayRole: instanceMode === 'MASTER' ? 'CHIEF' : 'VICE',
+    }),
+    'kernel.feature.sample-member-registry.members': Object.freeze({
+      members: Object.freeze(members),
+      hostPending: instanceMode === 'MASTER' ? hostPending : null,
+      branchPending: null,
+      ...(instanceMode === 'SLAVE' ? {hostPendingProjection: hostPending} : {}),
+    }),
+  }) as RuntimeStateRoot;
+};
 
 const completedResult = (): CommandDispatchResult => ({
   requestId: null,
@@ -479,6 +494,46 @@ describe('sample member desk UI feature', () => {
         instanceModes: ['SLAVE'],
         title: '顾客会员确认',
         layerTier: 'standard',
+        layerGuard: 'dismissible',
+      }),
+      ...expectedPair({
+        partKey: 'sample.desk.branch.registry-notice',
+        containerKeys: [],
+        displayModes: ['PRIMARY'],
+        workspaces: ['BRANCH'],
+        instanceModes: ['SLAVE'],
+        title: '登记结果提示',
+        layerTier: 'alert',
+        layerGuard: 'decisive',
+      }),
+      ...expectedPair({
+        partKey: 'sample.desk.branch.discard-confirm',
+        containerKeys: [],
+        displayModes: ['PRIMARY'],
+        workspaces: ['BRANCH'],
+        instanceModes: ['SLAVE'],
+        title: '放弃草稿确认',
+        layerTier: 'alert',
+        layerGuard: 'decisive',
+      }),
+      ...expectedPair({
+        partKey: 'sample.desk.branch.withdraw-confirm',
+        containerKeys: [],
+        displayModes: ['PRIMARY'],
+        workspaces: ['BRANCH'],
+        instanceModes: ['SLAVE'],
+        title: '撤回登记确认',
+        layerTier: 'alert',
+        layerGuard: 'decisive',
+      }),
+      ...expectedPair({
+        partKey: 'sample.desk.branch.system-notice',
+        containerKeys: [],
+        displayModes: ['PRIMARY'],
+        workspaces: ['BRANCH'],
+        instanceModes: ['SLAVE'],
+        title: '系统失败提示',
+        layerTier: 'alert',
         layerGuard: 'dismissible',
       }),
       ...expectedPair({
@@ -745,7 +800,13 @@ describe('sample member desk UI feature', () => {
       runtime.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'));
       runtime.getStore().dispatch(setDisplayRoleAction('VICE'));
 
-      runtime.getStore().dispatch(memberStateActions.setBranchPending({operationId: 'branch-operation', name: 'Branch Alice', phone: '010-0000-0000'}));
+      runtime.getStore().dispatch(
+        memberStateActions.setBranchPending({
+          operationId: 'branch-operation',
+          name: 'Branch Alice',
+          phone: '010-0000-0000',
+        }),
+      );
       const pendingResult = await runtime.dispatchCommand(
         topologyHostEventCommand,
         {event: 'state-transfer-recovered'},
@@ -753,8 +814,61 @@ describe('sample member desk UI feature', () => {
       );
       expect(pendingResult.status).toBe('completed');
       expect(selectScreen(runtime.getState(), 'SECONDARY', 'main')).toBeUndefined();
-      expect((runtime.getState()['kernel.feature.sample-member-registry.members'] as {readonly branchPending: {readonly operationId: string}}).branchPending.operationId)
-        .toBe('branch-operation');
+      expect(
+        (
+          runtime.getState()['kernel.feature.sample-member-registry.members'] as {
+            readonly branchPending: {readonly operationId: string};
+          }
+        ).branchPending.operationId,
+      ).toBe('branch-operation');
+    } finally {
+      await releaseRuntimeForTestAsync(runtime);
+    }
+  });
+
+  it('stores completed branch navigation while VICE is showing the host projection', async () => {
+    const catalog = createUiCatalog(
+      sampleMemberDeskAssembly.parts
+        .filter(part => part.catalogEntry.surfaceForm.includes('laptop'))
+        .map(part => part.catalogEntry),
+    );
+    const runtime = createTestRuntime([
+      createDisplayContextModule(),
+      createTransportModule(),
+      createTopologyModule({
+        displayName: 'sample member desk VICE completion test',
+        moduleName: 'ui.integration.sample-console',
+        surfaceForm: 'laptop',
+      }),
+      createUiStateModule({catalog, variables: [], surfaceForm: 'laptop'}),
+      createSampleStaffSessionModule(),
+      createSampleMemberRegistryModule(),
+      createSampleMemberDeskModule(),
+    ]);
+    try {
+      await runtime.start();
+      runtime.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'));
+      runtime.getStore().dispatch(setDisplayRoleAction('VICE'));
+      runtime.getStore().dispatch(
+        memberStateActions.registerConfirmedMember({
+          memberId: 'branch-operation-9',
+          operationId: 'branch-operation-9',
+          name: 'Branch guest',
+          phone: '010-9999-9999',
+          registeredAt: 1,
+        }),
+      );
+
+      await runtime.dispatchCommand(
+        memberConfirmedCommand,
+        {memberId: 'branch-operation-9'},
+        {requestId: createRequestId()},
+      );
+      runtime.getStore().dispatch(setDisplayRoleAction('CHIEF'));
+
+      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({
+        partKey: 'sample.desk.branch.member-list',
+      });
     } finally {
       await releaseRuntimeForTestAsync(runtime);
     }
@@ -800,25 +914,33 @@ describe('sample member desk UI feature', () => {
 
       const started = await runtime.dispatchCommand(startMemberDeskCommand, {}, {requestId: createRequestId()});
       expect(started.status).toBe('completed');
-      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({partKey: 'sample.desk.branch.member-list'});
+      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({
+        partKey: 'sample.desk.branch.member-list',
+      });
 
       await runtime.dispatchCommand(memberFormOpenedCommand, {}, {requestId: createRequestId()});
-      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({partKey: 'sample.desk.branch.member-form'});
+      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({
+        partKey: 'sample.desk.branch.member-form',
+      });
 
       await runtime.dispatchCommand(
         submitMemberCommand,
         {name: 'Branch member', phone: '010-1234-9876'},
         {requestId: 'branch-operation-1' as never},
       );
-      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({partKey: 'sample.desk.branch.customer-member'});
-      expect((runtime.getState()['kernel.feature.sample-member-registry.members'] as {readonly branchPending: unknown}).branchPending)
-        .toMatchObject({operationId: 'branch-operation-1', name: 'Branch member', phone: '010-1234-9876'});
+      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({
+        partKey: 'sample.desk.branch.customer-member',
+      });
+      expect(
+        (runtime.getState()['kernel.feature.sample-member-registry.members'] as {readonly branchPending: unknown})
+          .branchPending,
+      ).toMatchObject({operationId: 'branch-operation-1', name: 'Branch member', phone: '010-1234-9876'});
     } finally {
       await releaseRuntimeForTestAsync(runtime);
     }
   });
 
-  it('renders the branch member projection without logout and sends branch confirmation to the peer owner', async () => {
+  it('renders the branch member projection without logout and keeps its decision on the local registry owner', async () => {
     const {logger} = createLogger();
     const dispatched: Array<Readonly<{name: string; payload: unknown; target: string | undefined}>> = [];
     const dispatchCommand = ((command, options) => {
@@ -831,7 +953,13 @@ describe('sample member desk UI feature', () => {
       'kernel.base.display-context.display-role': Object.freeze({displayRole: 'CHIEF'}),
       'kernel.feature.sample-member-registry.members': Object.freeze({
         members: Object.freeze([
-          {memberId: 'host-member-1', operationId: 'host-member-1', name: 'Host guest', phone: '010-1111-2222', registeredAt: 1},
+          {
+            memberId: 'host-member-1',
+            operationId: 'host-member-1',
+            name: 'Host guest',
+            phone: '010-1111-2222',
+            registeredAt: 1,
+          },
         ]),
         hostPending: null,
         branchPending,
@@ -856,7 +984,9 @@ describe('sample member desk UI feature', () => {
       node => node.props.testID === 'sample.desk.branch.member-list:scroll',
     );
     expect(branchList).toBeDefined();
-    expect((branchList!.props.data as readonly {memberId: string}[]).map(member => member.memberId)).toEqual(['host-member-1']);
+    expect((branchList!.props.data as readonly {memberId: string}[]).map(member => member.memberId)).toEqual([
+      'host-member-1',
+    ]);
     expect(queryRenderedByProps(renderer, {testID: 'sample.desk.branch.member-list:logout'})).toHaveLength(0);
     await act(async () => {
       await renderer.unmount();
@@ -886,7 +1016,7 @@ describe('sample member desk UI feature', () => {
     expect(dispatched).toContainEqual({
       name: confirmMemberCommand.commandName,
       payload: {operationId: 'branch-op-7'},
-      target: 'peer',
+      target: 'local',
     });
     await act(async () => {
       await customerRenderer.unmount();
@@ -1024,7 +1154,9 @@ describe('sample member desk UI feature', () => {
     await act(async () => {
       ageInput.props.onChangeText('37');
     });
-    expect((root['kernel.feature.sample-member-registry.members'] as {readonly hostPending: unknown}).hostPending).toEqual({
+    expect(
+      (root['kernel.feature.sample-member-registry.members'] as {readonly hostPending: unknown}).hostPending,
+    ).toEqual({
       operationId: 'operation:010-1234-5678',
       name: 'Alice',
       phone: '010-1234-5678',
@@ -1032,7 +1164,10 @@ describe('sample member desk UI feature', () => {
     await act(async () => {
       await press(renderer, 'sample.desk.customer-member:confirm')();
     });
-    expect(dispatched).toContainEqual({name: confirmMemberCommand.commandName, payload: {operationId: 'operation:010-1234-5678', age: 37}});
+    expect(dispatched).toContainEqual({
+      name: confirmMemberCommand.commandName,
+      payload: {operationId: 'operation:010-1234-5678', age: 37},
+    });
     await act(async () => {
       await renderer.unmount();
     });
@@ -1063,7 +1198,10 @@ describe('sample member desk UI feature', () => {
     await act(async () => {
       await press(renderer, 'sample.desk.customer-member:confirm')();
     });
-    expect(dispatched).toContainEqual({name: confirmMemberCommand.commandName, payload: {operationId: 'operation:010-1234-5678'}});
+    expect(dispatched).toContainEqual({
+      name: confirmMemberCommand.commandName,
+      payload: {operationId: 'operation:010-1234-5678'},
+    });
     await act(async () => {
       await renderer.unmount();
     });
@@ -1390,9 +1528,7 @@ describe('sample member desk UI feature', () => {
       createElement(
         RenderProvider,
         {
-          stateSource: createStateSource(
-            memberRoot({name: 'Pending', phone: '010-0000-0000'}, members),
-          ),
+          stateSource: createStateSource(memberRoot({name: 'Pending', phone: '010-0000-0000'}, members)),
           uiCatalog: createUiCatalog([]),
           rendererCatalog: createRendererCatalog([]),
           logger,
@@ -1409,11 +1545,13 @@ describe('sample member desk UI feature', () => {
     );
 
     const virtualizedList = () =>
-      queryRenderedByType(renderer, 'VirtualizedList').find(node => node.props.testID === 'sample.desk.member-list:scroll');
+      queryRenderedByType(renderer, 'VirtualizedList').find(
+        node => node.props.testID === 'sample.desk.member-list:scroll',
+      );
     type ListProps = Readonly<{
-      readonly data: readonly typeof members[number][];
-      readonly getItemCount: (items: readonly typeof members[number][]) => number;
-      readonly renderItem: (input: Readonly<{item: typeof members[number]; index: number}>) => ReactElement<{
+      readonly data: readonly (typeof members)[number][];
+      readonly getItemCount: (items: readonly (typeof members)[number][]) => number;
+      readonly renderItem: (input: Readonly<{item: (typeof members)[number]; index: number}>) => ReactElement<{
         readonly testID?: string;
         readonly children?: ReactNode;
       }>;
@@ -1435,7 +1573,11 @@ describe('sample member desk UI feature', () => {
     expect(renderedWindowSize(finalProps)).toBeLessThanOrEqual(24);
     const finalRow = finalProps.renderItem({item: members[29]!, index: 29});
     expect(finalRow.props.testID).toBe('sample.desk.member-list:scroll:row:member-29');
-    const finalMember = finalRow.props.children as ReactElement<{readonly testID: string; readonly name: string; readonly phone: string}>;
+    const finalMember = finalRow.props.children as ReactElement<{
+      readonly testID: string;
+      readonly name: string;
+      readonly phone: string;
+    }>;
     expect(finalMember.props.testID).toBe('sample.desk.member-list:row:member-29');
     expect(finalMember.props.name).toBe('Member 29');
     expect(finalMember.props.phone).toBe('010-0029-0000');

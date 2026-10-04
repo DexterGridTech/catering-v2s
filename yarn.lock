@@ -1507,6 +1507,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@catering-v2s/kernel-feature-store-basic@workspace:*, @catering-v2s/kernel-feature-store-basic@workspace:apps/terminal/kernel/feature/store-basic":
+  version: 0.0.0-use.local
+  resolution: "@catering-v2s/kernel-feature-store-basic@workspace:apps/terminal/kernel/feature/store-basic"
+  dependencies:
+    "@catering-v2s/kernel-base-contracts": "workspace:*"
+    "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*"
+    "@catering-v2s/kernel-base-terminal-data-client": "workspace:*"
+    "@reduxjs/toolkit": "npm:2.12.0"
+    typescript: "npm:~6.0.3"
+    vitest: "npm:4.1.10"
+  languageName: unknown
+  linkType: soft
+
 "@catering-v2s/operations-admin@workspace:apps/frontend/operations-admin":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/operations-admin@workspace:apps/frontend/operations-admin"
@@ -1812,6 +1826,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@catering-v2s/ui-feature-sample-staff-auth@workspace:apps/terminal/ui/feature/sample-staff-auth"
   dependencies:
+    "@catering-v2s/kernel-base-display-context": "workspace:*"
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
@@ -1843,6 +1858,7 @@ __metadata:
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
+    "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
     "@catering-v2s/kernel-feature-sample-wallpaper": "workspace:*"
     "@catering-v2s/ui-base-feature-assembly": "workspace:*"
     "@catering-v2s/ui-base-primitives": "workspace:*"
@@ -1870,12 +1886,14 @@ __metadata:
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-server-config": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*"
     "@catering-v2s/kernel-base-terminal-data-client": "workspace:*"
     "@catering-v2s/kernel-base-topology": "workspace:*"
     "@catering-v2s/kernel-base-transport": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
     "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*"
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
+    "@catering-v2s/kernel-feature-store-basic": "workspace:*"
     "@catering-v2s/ui-base-admin-shell": "workspace:*"
     "@catering-v2s/ui-base-dev-host": "workspace:*"
     "@catering-v2s/ui-base-input": "workspace:*"
@@ -1917,12 +1935,14 @@ __metadata:
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-server-config": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*"
     "@catering-v2s/kernel-base-terminal-data-client": "workspace:*"
     "@catering-v2s/kernel-base-topology": "workspace:*"
     "@catering-v2s/kernel-base-transport": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
     "@catering-v2s/kernel-feature-sample-wallpaper": "workspace:*"
+    "@catering-v2s/kernel-feature-store-basic": "workspace:*"
     "@catering-v2s/ui-base-admin-shell": "workspace:*"
     "@catering-v2s/ui-base-dev-host": "workspace:*"
     "@catering-v2s/ui-base-input": "workspace:*"

@@ -18,11 +18,10 @@ describe('admin-shell R-10a part declarations', () => {
       expect(section.contentRoot).not.toBe(section.section);
       expect(section.contentRoot).toMatch(/^terminal\.admin:[a-z-]+:content-root$/);
     }
-    expect(new Set([
-      adminTestIds.ports.contentRoot,
-      adminTestIds.runtime.contentRoot,
-      adminTestIds.topology.contentRoot,
-    ]).size).toBe(3);
+    expect(
+      new Set([adminTestIds.ports.contentRoot, adminTestIds.runtime.contentRoot, adminTestIds.topology.contentRoot])
+        .size,
+    ).toBe(3);
   });
 
   it('contains two non-overlapping siblings for every admin part key', () => {
@@ -72,7 +71,7 @@ describe('admin-shell R-10a part declarations', () => {
     const adminConsoleSiblings = groups.get('admin.console')!;
     expect(adminConsoleSiblings.every(part => part.rendererBinding.layerGuard === 'decisive')).toBe(true);
     const powerConfirmationSiblings = groups.get('admin.console.power-confirmation')!;
-      expect(powerConfirmationSiblings.every(part => part.rendererBinding.layerTier === 'admin')).toBe(true);
+    expect(powerConfirmationSiblings.every(part => part.rendererBinding.layerTier === 'admin')).toBe(true);
     expect(powerConfirmationSiblings.every(part => part.rendererBinding.layerGuard === 'decisive')).toBe(true);
     expect(
       parts

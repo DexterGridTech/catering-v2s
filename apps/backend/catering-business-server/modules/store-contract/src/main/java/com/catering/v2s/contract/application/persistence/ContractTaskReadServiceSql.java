@@ -76,7 +76,7 @@ public final class ContractTaskReadServiceSql {
             FROM project p CROSS JOIN phases LEFT JOIN selected ON TRUE
             """;
     public static final String CONTRACT_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_ID =
-            " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.store_id=? ORDER BY ";
+            " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.store_id=? AND ";
     public static final String CONTRACT_TASK_READ_SERVICE_CONTRACT_NO = "c.contract_no";
     public static final String WHERE_WS_UUID_GRP_WS_ALT_A_001 =
             " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.store_id=? AND ";

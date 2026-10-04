@@ -490,6 +490,7 @@ export async function startRemoteTds(
     remoteRoot,
     env,
     credential,
+    tdsDbCredentials,
     instanceName = 'tds-a',
     websocketPort = env.environment.V2S_DEV_REMOTE_TDS_A_PORT,
     nodeId = env.environment.V2S_TDS_NODE_ID ?? 'terminal-data-server',
@@ -521,6 +522,9 @@ export async function startRemoteTds(
       fail(`REMOTE_TDS_CAPACITY_INVALID:${key}`);
   }
   if (!Number.isSafeInteger(rssBudgetMiB) || rssBudgetMiB < 1) fail('REMOTE_TDS_RSS_BUDGET_INVALID');
+  if (tdsDbCredentials?.username !== 'catering_v2s_tds_dev' ||
+      typeof tdsDbCredentials.password !== 'string' || !/^[A-Za-z0-9_-]{32,64}$/.test(tdsDbCredentials.password))
+    fail('REMOTE_TDS_DATABASE_CREDENTIAL_INVALID');
   const remoteWorkspace = `${remoteRoot}/workspace`;
   const remoteResults = `${remoteRoot}/results`;
   const remoteEnvFile = `${remoteRoot}/${instanceName}.env`;
@@ -529,10 +533,8 @@ export async function startRemoteTds(
   const remotePhase = `${remoteResults}/${instanceName}-phase.jsonl`;
   const values = {
     SPRING_DATASOURCE_URL: env.environment.V2S_DEV_DATABASE_URL,
-    SPRING_DATASOURCE_USERNAME:
-      credential.values.V2S_DEV_DATABASE_USERNAME ?? credential.values.CATERING_BUSINESS_DB_USERNAME,
-    SPRING_DATASOURCE_PASSWORD:
-      credential.values.V2S_DEV_DATABASE_PASSWORD ?? credential.values.CATERING_BUSINESS_DB_PASSWORD,
+    SPRING_DATASOURCE_USERNAME: tdsDbCredentials.username,
+    SPRING_DATASOURCE_PASSWORD: tdsDbCredentials.password,
     SERVER_PORT: String(websocketPort),
     V2S_RUNTIME_ENVIRONMENT: env.environment.V2S_RUNTIME_ENVIRONMENT,
     V2S_DEV_PROFILE: env.environment.V2S_DEV_PROFILE,
@@ -930,6 +932,58 @@ async function restartRemoteTdsFromSavedEnvironment(host, control, progressPath,
   return waitForRemoteTdsReady(host, updated, progressPath).then(() => updated);
 }
 
+function provisionRemoteTdsDatabasePrincipal(host, env, password) {
+  const database = /^jdbc:postgresql:\/\/[^/]+\/([a-z][a-z0-9_]{2,62})(?:\?.*)?$/.exec(
+    env.environment.V2S_DEV_DATABASE_URL ?? '',
+  )?.[1];
+  if (!database) fail('REMOTE_TDS_DATABASE_URL_INVALID');
+  const role = 'catering_v2s_tds_dev';
+  const sql = `GRANT CONNECT ON DATABASE "${database}" TO ${role};
+GRANT USAGE ON SCHEMA platform_workspace, store_terminal, organization, terminal_binding, terminal_connection, contract TO ${role};
+GRANT SELECT (workspace_uuid, group_workspace_key, status) ON platform_workspace.group_workspace TO ${role};
+GRANT SELECT (workspace_uuid, group_workspace_key, terminal_ref, store_ref, status) ON store_terminal.terminal TO ${role};
+GRANT SELECT (workspace_uuid, group_workspace_key, id, status) ON organization.store TO ${role};
+GRANT SELECT (workspace_uuid, group_workspace_key, terminal_ref, generation, credential_digest, binding_status, bound_device_id, activated_at_epoch_millis) ON terminal_binding.latest_binding TO ${role};
+GRANT USAGE ON SEQUENCE terminal_connection.session_sequence TO ${role};
+GRANT SELECT, INSERT, UPDATE ON terminal_connection.latest_state TO ${role};
+GRANT SELECT ON organization.terminal_topic_snapshot, contract.terminal_topic_snapshot TO ${role};
+GRANT EXECUTE ON FUNCTION organization.read_terminal_topic_time(UUID, VARCHAR, UUID, VARCHAR, UUID) TO ${role};
+GRANT EXECUTE ON FUNCTION contract.read_terminal_topic_time(UUID, VARCHAR, UUID, VARCHAR, UUID) TO ${role};
+DO $tds_terminal_control_grants$
+DECLARE
+  terminal_control_schema oid := to_regnamespace('terminal_control');
+  online_operation_table oid := to_regclass('terminal_control.online_operation');
+  claim_function oid := to_regprocedure('terminal_control.claim_online_operation(uuid,character varying)');
+  report_function oid := to_regprocedure('terminal_control.accept_terminal_report(uuid,uuid,uuid,bigint,character varying,character varying,character varying,timestamp with time zone,jsonb,character varying)');
+BEGIN
+  IF terminal_control_schema IS NULL THEN
+    IF online_operation_table IS NOT NULL OR claim_function IS NOT NULL OR report_function IS NOT NULL THEN
+      RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_OBJECT_SET_INCONSISTENT';
+    END IF;
+    RAISE NOTICE 'TDS_TERMINAL_CONTROL_ACCESS_DEFERRED_OBJECTS_ABSENT';
+    RETURN;
+  END IF;
+  IF online_operation_table IS NULL OR claim_function IS NULL OR report_function IS NULL THEN
+    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_OBJECT_SET_INCOMPLETE';
+  END IF;
+  EXECUTE 'GRANT USAGE ON SCHEMA terminal_control TO catering_v2s_tds_dev';
+  EXECUTE 'GRANT EXECUTE ON FUNCTION terminal_control.claim_online_operation(UUID, VARCHAR) TO catering_v2s_tds_dev';
+  EXECUTE 'GRANT EXECUTE ON FUNCTION terminal_control.accept_terminal_report(UUID, UUID, UUID, BIGINT, VARCHAR, VARCHAR, VARCHAR, TIMESTAMPTZ, JSONB, VARCHAR) TO catering_v2s_tds_dev';
+END
+$tds_terminal_control_grants$;`;
+  const encodedSql = Buffer.from(sql, 'utf8').toString('base64');
+  const script = [
+    'set -euo pipefail',
+    `database=${quote(database)}`,
+    `role=${quote(role)}`,
+    `password=${quote(password)}`,
+    `if [ "$(docker exec catering-postgres psql -U catering -d postgres -Atqc "SELECT 1 FROM pg_roles WHERE rolname='$role'")" = 1 ]; then docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -q -c "ALTER ROLE $role WITH LOGIN PASSWORD '$password'"; else docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE ROLE $role LOGIN PASSWORD '$password'"; fi`,
+    `printf %s ${quote(encodedSql)} | base64 -d | docker exec -i catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -q`,
+    `docker exec -e PGPASSWORD="$password" catering-postgres psql -h 127.0.0.1 -U "$role" -d "$database" -v ON_ERROR_STOP=1 -q <<'SQL'\nSELECT workspace_uuid, group_workspace_key, status FROM platform_workspace.group_workspace LIMIT 0;\nSELECT workspace_uuid, group_workspace_key, terminal_ref, store_ref, status FROM store_terminal.terminal LIMIT 0;\nSELECT workspace_uuid, group_workspace_key, id, status FROM organization.store LIMIT 0;\nSELECT workspace_uuid, group_workspace_key, terminal_ref, generation, credential_digest, binding_status, bound_device_id, activated_at_epoch_millis FROM terminal_binding.latest_binding LIMIT 0;\nSELECT nextval('terminal_connection.session_sequence');\nSELECT * FROM organization.read_terminal_topic_time(NULL::uuid, NULL::varchar, NULL::uuid, 'STORE', NULL::uuid);\nSELECT * FROM contract.read_terminal_topic_time(NULL::uuid, NULL::varchar, NULL::uuid, 'CONTRACT', NULL::uuid);\nDO $check$\nDECLARE\n  terminal_control_schema oid := to_regnamespace('terminal_control');\n  online_operation_table oid := to_regclass('terminal_control.online_operation');\n  claim_function oid := to_regprocedure('terminal_control.claim_online_operation(uuid,character varying)');\n  report_function oid := to_regprocedure('terminal_control.accept_terminal_report(uuid,uuid,uuid,bigint,character varying,character varying,character varying,timestamp with time zone,jsonb,character varying)');\nBEGIN\n  IF terminal_control_schema IS NULL THEN\n    IF online_operation_table IS NOT NULL OR claim_function IS NOT NULL OR report_function IS NOT NULL THEN\n      RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_OBJECT_SET_INCONSISTENT';\n    END IF;\n    RAISE NOTICE 'TDS_TERMINAL_CONTROL_ACCESS_NOT_APPLICABLE_OBJECTS_ABSENT';\n    RETURN;\n  END IF;\n  IF online_operation_table IS NULL OR claim_function IS NULL OR report_function IS NULL THEN\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_OBJECT_SET_INCOMPLETE';\n  END IF;\n  EXECUTE 'SELECT count(*) FROM terminal_control.claim_online_operation(NULL::uuid, ''dev-probe-node'')';\n  EXECUTE 'SELECT accepted FROM terminal_control.accept_terminal_report(NULL::uuid, NULL::uuid, NULL::uuid, 1, ''dev-probe-node'', ''dev-probe-session'', ''RECEIVED'', clock_timestamp(), NULL, NULL)';\n  BEGIN\n    EXECUTE 'SELECT operation_id FROM terminal_control.online_operation LIMIT 0';\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_DIRECT_SELECT_UNEXPECTEDLY_ALLOWED';\n  EXCEPTION WHEN insufficient_privilege THEN NULL;\n  END;\n  BEGIN\n    EXECUTE 'INSERT INTO terminal_control.online_operation(operation_id) VALUES (''00000000-0000-0000-0000-000000000000'')';\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_DIRECT_INSERT_UNEXPECTEDLY_ALLOWED';\n  EXCEPTION WHEN insufficient_privilege THEN NULL;\n  END;\n  BEGIN\n    EXECUTE 'UPDATE terminal_control.online_operation SET status=status WHERE false';\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_DIRECT_UPDATE_UNEXPECTEDLY_ALLOWED';\n  EXCEPTION WHEN insufficient_privilege THEN NULL;\n  END;\n  BEGIN\n    EXECUTE 'DELETE FROM terminal_control.online_operation WHERE false';\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_DIRECT_DELETE_UNEXPECTEDLY_ALLOWED';\n  EXCEPTION WHEN insufficient_privilege THEN NULL;\n  END;\nEND\n$check$;\nDO $check$ BEGIN BEGIN UPDATE organization.store SET name=name WHERE false; RAISE EXCEPTION 'TDS_OWNER_DML_UNEXPECTEDLY_ALLOWED'; EXCEPTION WHEN insufficient_privilege THEN NULL; END; END $check$;\nSQL`,
+  ].join('\n');
+  remoteExec(host, script);
+}
+
 function resolveManagedAcceptanceManifest(manifestPath, runId) {
   const actualPath = realpathSync(manifestPath);
   if (actualPath !== realpathSync(manifestPathDefault()) || actualPath !== path.join(runtime, 'run-manifest.json'))
@@ -994,6 +1048,49 @@ export function readManagedTdsLatestState({manifestPath, runId, terminalRef} = {
   const states = JSON.parse(output);
   if (!Array.isArray(states) || states.length > 1) fail('TERMINAL_ACCEPTANCE_TDS_STATE_READBACK_INVALID');
   return states[0] ?? null;
+}
+
+export function readManagedTerminalBindingByName({manifestPath, runId, groupWorkspaceKey, terminalNames} = {}) {
+  if (typeof groupWorkspaceKey !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/u.test(groupWorkspaceKey) ||
+      !Array.isArray(terminalNames) || terminalNames.length < 1 || terminalNames.length > 16 ||
+      terminalNames.some(value => typeof value !== 'string' || value.length < 1 || value.length > 120 || /[\u0000\r\n]/u.test(value)) ||
+      new Set(terminalNames).size !== terminalNames.length) {
+    fail('TERMINAL_ACCEPTANCE_BINDING_READBACK_INPUT_INVALID');
+  }
+  const resolved = resolveManagedAcceptanceManifest(manifestPath ?? manifestPathDefault(), runId);
+  const names = terminalNames.map(value => quote(value)).join(',');
+  const sql = `SELECT COALESCE(json_agg(row_to_json(binding_state)), '[]'::json) FROM (SELECT terminal.name, terminal.terminal_ref::text, terminal.status AS terminal_status, COALESCE(binding.binding_status, 'UNBOUND') AS binding_status, binding.generation FROM store_terminal.terminal terminal LEFT JOIN terminal_binding.latest_binding binding ON binding.workspace_uuid=terminal.workspace_uuid AND binding.group_workspace_key=terminal.group_workspace_key AND binding.terminal_ref=terminal.terminal_ref WHERE terminal.group_workspace_key=${quote(groupWorkspaceKey)} AND terminal.name IN (${names}) ORDER BY terminal.name) binding_state`;
+  const script = [
+    'set -euo pipefail',
+    `expected_boot_id=${quote(resolved.manifest.remoteResources?.bootId ?? '')}`,
+    'test "$(cat /proc/sys/kernel/random/boot_id)" = "$expected_boot_id"',
+    `printf %s ${quote(sql)} | docker exec -i catering-postgres psql -U catering -d ${quote(resolved.database)} -v ON_ERROR_STOP=1 -Atq`,
+  ].join('\n');
+  const output = remoteExec(resolved.host, script).trim();
+  return parseManagedTerminalBindingReadback(JSON.parse(output), terminalNames);
+}
+
+export function parseManagedTerminalBindingReadback(rows, terminalNames) {
+  if (!Array.isArray(terminalNames) || terminalNames.length < 1 || terminalNames.length > 16 ||
+      terminalNames.some(value => typeof value !== 'string') || new Set(terminalNames).size !== terminalNames.length ||
+      !Array.isArray(rows) || rows.length !== terminalNames.length) {
+    fail('TERMINAL_ACCEPTANCE_BINDING_READBACK_INVALID');
+  }
+  if (!Array.isArray(rows) || rows.length !== terminalNames.length ||
+      rows.some(row => !terminalNames.includes(row.name) ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(row.terminal_ref) ||
+        !['ENABLED', 'DISABLED', 'VOIDED'].includes(row.terminal_status) ||
+        !['UNBOUND', 'ACTIVE', 'ENDED'].includes(row.binding_status) ||
+        (row.binding_status === 'UNBOUND' ? row.generation !== null : !Number.isSafeInteger(row.generation)))) {
+    fail('TERMINAL_ACCEPTANCE_BINDING_READBACK_INVALID');
+  }
+  return Object.freeze(rows.map(row => Object.freeze({
+    name: row.name,
+    terminalRef: row.terminal_ref,
+    terminalStatus: row.terminal_status,
+    bindingStatus: row.binding_status,
+    generation: row.generation,
+  })));
 }
 
 export function readManagedDorisHistory({manifestPath, runId, terminalRef, sessionIds} = {}) {
@@ -1426,37 +1523,26 @@ export function remoteRootCleanupScript(remoteRoot, expectedBootId) {
       'container_count=0; test -z "$container_ids" || container_count=$(printf "%s\\n" "$container_ids" | wc -l | tr -d " ")',
       'container_ids_csv=""',
       'if test -n "$container_ids"; then container_ids_csv=$(printf "%s\\n" "$container_ids" | tr "\\n" ","); fi',
-      'if test ! -e "$root"; then',
-      '  printf "R5_REMOTE_ROOT_PRESENT=false\\n"',
-      '  printf "REMOTE_ACTIVE_PROCESS_COUNT=0\\n"',
-      '  printf "REMOTE_ACTIVE_PROCESS_PIDS=\\n"',
-      '  printf "REMOTE_ACTIVE_CONTAINER_COUNT=%s\\n" "$container_count"',
-      '  printf "REMOTE_ACTIVE_CONTAINER_IDS=%s\\n" "$container_ids_csv"',
-      '  printf "REMOTE_UNKNOWN_PROCESS_COUNT=0\\n"',
-      '  printf "REMOTE_UNKNOWN_PROCESS_PIDS=\\n"',
-      '  if test "$container_count" -ne 0; then exit 48; fi',
-      '  printf "R5_REMOTE_ROOT_ABSENT=true\\n"',
-      '  exit 0',
-      'fi',
-      'if ! ps -eo pid=,args= > "$root/.process-table"; then exit 47; fi',
+      'root_present=false; test ! -e "$root" || root_present=true',
+      'if ! process_table=$(ps -eo pid=,args=); then exit 47; fi',
       'active_process_count=0',
       'active_process_pids=""',
       'while read -r pid args; do',
       '  test -n "$pid" || continue',
       '  case "$args" in *"$root"*) active_process_count=$((active_process_count + 1)); active_process_pids="${active_process_pids}${pid}," ;; esac',
-      'done < "$root/.process-table"',
+      'done <<< "$process_table"',
       'unknown_process_count=0',
       'unknown_process_pids=""',
       'for proc in /proc/[0-9]*; do',
       '  test -e "$proc/cwd" || continue',
       '  pid="${proc##*/}"',
       '  if ! cwd=$(readlink "$proc/cwd" 2>/dev/null); then unknown_process_count=$((unknown_process_count + 1)); unknown_process_pids="${unknown_process_pids}${pid},"; continue; fi',
+      '  case "$cwd" in *" (deleted)") cwd=${cwd%" (deleted)"} ;; esac',
       '  case "$cwd" in',
       '    "$root"|"$root"/*) active_process_count=$((active_process_count + 1)); active_process_pids="${active_process_pids}${pid}," ;;',
       '  esac',
       'done',
-      'rm -f -- "$root/.process-table"',
-      'printf "R5_REMOTE_ROOT_PRESENT=true\\n"',
+      'printf "R5_REMOTE_ROOT_PRESENT=%s\\n" "$root_present"',
       'printf "REMOTE_ACTIVE_PROCESS_COUNT=%s\\n" "$active_process_count"',
       'printf "REMOTE_ACTIVE_PROCESS_PIDS=%s\\n" "${active_process_pids%,}"',
       'printf "REMOTE_ACTIVE_CONTAINER_COUNT=%s\\n" "$container_count"',
@@ -1466,7 +1552,7 @@ export function remoteRootCleanupScript(remoteRoot, expectedBootId) {
       'if test "$active_process_count" -ne 0; then exit 45; fi',
       'if test "$container_count" -ne 0; then exit 48; fi',
       'if test "$unknown_process_count" -ne 0; then exit 46; fi',
-      'rm -rf -- "$root"',
+      'if test "$root_present" = true; then rm -rf -- "$root"; fi',
       'test ! -e "$root"',
       'printf "R5_REMOTE_ROOT_ABSENT=true\\n"',
   ].join('\n');
@@ -2188,6 +2274,7 @@ async function start() {
   const portLock = acquirePortLock();
   let processes = [];
   let remoteJava = null;
+  let remoteBusinessReadiness = null;
   let remoteJavaLogPath = null;
   const remoteTdsNodes = [];
   const remoteTdsReadinessResults = [];
@@ -2237,14 +2324,35 @@ async function start() {
     lastKnownGood = 'REMOTE_JAVA_CONTROL_READY';
     brokenBoundary = 'REMOTE_HOST_IDENTITY';
     if (remoteJava.bootId !== remoteResources.bootId) fail('REMOTE_HOST_REBOOTED_DURING_START');
+    // TDS database grants name schema objects created by business Flyway.
+    // Wait for the existing Spring readiness marker before provisioning that
+    // principal, so an in-progress first startup cannot turn schema creation
+    // into a misleading permission/cleanup failure.
+    brokenBoundary = 'REMOTE_BUSINESS_READINESS_BEFORE_TDS';
+    remoteBusinessReadiness = await waitForRemoteBusinessReady(
+      env.environment.V2S_DEV_REMOTE_HOST,
+      remoteJava,
+      readinessProgressPath,
+    );
+    lastKnownGood = 'REMOTE_BUSINESS_SCHEMA_READY';
     brokenBoundary = 'REMOTE_TDS_CONTROL';
+    const tdsDbCredentials = {
+      username: 'catering_v2s_tds_dev',
+      password: crypto.randomBytes(32).toString('base64url'),
+    };
     for (const spec of tdsNodeSpecs) {
+      provisionRemoteTdsDatabasePrincipal(
+        env.environment.V2S_DEV_REMOTE_HOST,
+        env,
+        tdsDbCredentials.password,
+      );
       remoteTdsStartAttempted.add(spec.instanceName);
       const remoteTds = await startRemoteTds(env.environment.V2S_DEV_REMOTE_HOST, {
         runId,
         remoteRoot,
         env,
         credential,
+        tdsDbCredentials,
         ...spec,
       });
       remoteTdsNodes.push(remoteTds);
@@ -2325,11 +2433,7 @@ async function start() {
     });
     lastKnownGood = 'PROCESS_IDENTITIES';
     brokenBoundary = 'REMOTE_READINESS';
-    const remoteReadiness = await waitForRemoteBusinessReady(
-      env.environment.V2S_DEV_REMOTE_HOST,
-      remoteJava,
-      readinessProgressPath,
-    );
+    const remoteReadiness = remoteBusinessReadiness;
     const tdsWebSocketProbe = probeLocalTdsWebSocket(buildTdsWebSocketProbeUrl(tunnelPorts.tds));
     const tdsSecondaryWebSocketProbe = probeLocalTdsWebSocket(buildTdsWebSocketProbeUrl(tunnelPorts.tdsSecondary));
     lastKnownGood = 'REMOTE_READINESS';
@@ -2857,12 +2961,18 @@ function cleanupFailedStart(runId) {
   const terminalStates = ['STOPPED', 'ALREADY_STOPPED'];
   const javaStopped = manifest.remoteJava == null ||
     (cleanup?.remoteJavaControl === 'PASS' && terminalStates.includes(cleanup.remoteJavaStop));
+  if (cleanup?.localProcess !== 'PASS' || !javaStopped)
+    fail('FAILED_START_RESOURCE_STOP_READBACK_REQUIRED');
+  const rootCleanup = cleanupRemoteRootWithoutJavaControl(remoteHost, remoteRoot, bootId);
+  // A failed start may stop before a TDS control file is created. In that
+  // case the run-root scan is the stop proof: it checks process arguments,
+  // working directories (including deleted cwd links), and owned containers
+  // before removing the root. A live run-scoped TDS process keeps cleanup red.
   const tdsStatuses = cleanup?.remoteTdsNodes;
   const tdsStopped = Array.isArray(tdsStatuses) && tdsStatuses.every(node =>
     node.control === 'PASS' && terminalStates.includes(node.stop));
-  if (cleanup?.localProcess !== 'PASS' || !javaStopped || !tdsStopped)
+  if (!tdsStopped && rootCleanup.status !== 'PASS')
     fail('FAILED_START_RESOURCE_STOP_READBACK_REQUIRED');
-  const rootCleanup = cleanupRemoteRootWithoutJavaControl(remoteHost, remoteRoot, bootId);
   manifest.cleanupRecovery = {
     status: 'PASS',
     recoveredAt: new Date().toISOString(),

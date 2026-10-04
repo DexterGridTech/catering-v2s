@@ -1,15 +1,22 @@
 import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime';
+import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {createSelectionActor} from '../features/actors/actors';
-import {cancelWallpaperSelectionCommand, confirmWallpaperCommand, selectWallpaperCommand} from '../features/commands/commands';
+import {
+  cancelWallpaperSelectionCommand,
+  confirmWallpaperCommand,
+  selectWallpaperCommand,
+} from '../features/commands/commands';
 import {wallpaperErrorDefinitions} from '../foundations/errors';
 import {moduleKind, moduleName} from '../moduleName';
 import {wallpaperStateRegistration} from '../features/slices/slice';
 
 const commands = [selectWallpaperCommand, confirmWallpaperCommand, cancelWallpaperSelectionCommand] as const;
 
-export const createSampleWallpaperModule = (): RuntimeModule => {
-  const actors = [createSelectionActor()] as const;
+export const createSampleWallpaperModule = (
+  input: Readonly<{canMutate?: (state: StateRoot) => boolean}> = {},
+): RuntimeModule => {
+  const actors = [createSelectionActor(input.canMutate)] as const;
   return Object.freeze({
     moduleName,
     kind: moduleKind,

@@ -30,3 +30,26 @@ export function readManagedTdsLatestState(input: Readonly<{
   runId: string;
   terminalRef: string;
 }>): ManagedTdsLatestState | null;
+
+export function readManagedTerminalBindingByName(input: Readonly<{
+  manifestPath?: string;
+  runId: string;
+  groupWorkspaceKey: string;
+  terminalNames: readonly string[];
+}>): readonly Readonly<{
+  name: string;
+  terminalRef: string;
+  terminalStatus: 'ENABLED' | 'DISABLED' | 'VOIDED';
+  bindingStatus: 'UNBOUND' | 'ACTIVE' | 'ENDED';
+  generation: number | null;
+}>[];
+export function parseManagedTerminalBindingReadback(
+  rows: readonly Readonly<Record<string, unknown>>[],
+  terminalNames: readonly string[],
+): readonly Readonly<{
+  name: string;
+  terminalRef: string;
+  terminalStatus: 'ENABLED' | 'DISABLED' | 'VOIDED';
+  bindingStatus: 'UNBOUND' | 'ACTIVE' | 'ENDED';
+  generation: number | null;
+}>[];

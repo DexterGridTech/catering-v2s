@@ -1,6 +1,101 @@
 {
   "paths": {
     "/api/platform/admin-users": {
+      "post": {
+        "operationId": "createPlatformAdmin",
+        "tags": [
+          "platform-iam"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "platform-iam",
+        "x-scenario-ids": [
+          "D04-S11"
+        ],
+        "x-page-key": "PLATFORM-ADMIN-USERS",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "PLATFORM_IAM_LOGIN_NAME_CONFLICT"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/platform-iam/platform-identity.schemas.json#/components/schemas/PlatformAdminDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-platform-authorization": "REQ_CREATE_PLATFORM_ADMIN",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/platform-iam/platform-identity.schemas.json#/components/schemas/PlatformAdminCreateRequest"
+              }
+            }
+          }
+        }
+      },
       "get": {
         "operationId": "getPlatformAdminPage",
         "tags": [
@@ -15,6 +110,7 @@
         ],
         "x-page-key": "PLATFORM-ADMIN-USERS",
         "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -116,82 +212,7 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        }
-      },
-      "post": {
-        "operationId": "createPlatformAdmin",
-        "tags": [
-          "platform-iam"
-        ],
-        "x-consumer-faces": [
-          "platform-admin"
-        ],
-        "x-owner-module": "platform-iam",
-        "x-scenario-ids": [
-          "D04-S11"
-        ],
-        "x-page-key": "PLATFORM-ADMIN-USERS",
-        "x-idempotency-policy": "REQUIRED_16_128",
-        "x-error-codes": [
-          "PLATFORM_COMMON_ACCESS_DENIED",
-          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
-          "PLATFORM_COMMON_CONTEXT_STALE",
-          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT",
-          "PLATFORM_IAM_LOGIN_NAME_CONFLICT"
-        ],
-        "security": [
-          {
-            "platformSessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/platform-iam/platform-identity.schemas.json#/components/schemas/PlatformAdminDetail"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
+          "422": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "429": {
@@ -199,17 +220,9 @@
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        },
-        "x-required-platform-authorization": "REQ_CREATE_PLATFORM_ADMIN",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "../../components/platform-iam/platform-identity.schemas.json#/components/schemas/PlatformAdminCreateRequest"
-              }
-            }
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         }
       }
@@ -229,6 +242,7 @@
         ],
         "x-page-key": "PLATFORM-ADMIN-USERS",
         "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -279,18 +293,24 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         }
       }
     },
-    "/api/platform/admin-users/{platformAdminId}/profile": {
-      "patch": {
-        "operationId": "updatePlatformAdminProfile",
+    "/api/platform/admin-users/{platformAdminId}/credential-reset": {
+      "post": {
+        "operationId": "resetPlatformAdminCredential",
         "tags": [
           "platform-iam"
         ],
@@ -313,8 +333,7 @@
           "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT",
-          "PLATFORM_IAM_LOGIN_NAME_CONFLICT"
+          "PLATFORM_COMMON_VERSION_CONFLICT"
         ],
         "security": [
           {
@@ -369,21 +388,26 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
-        "x-expected-version-policy": "REQUIRED",
-        "x-required-platform-authorization": "REQ_UPDATE_PLATFORM_ADMIN_PROFILE",
+        "x-required-platform-authorization": "REQ_RESET_PLATFORM_ADMIN_CREDENTIAL",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../components/platform-iam/platform-identity.schemas.json#/components/schemas/PlatformAdminProfileUpdateRequest"
+                "$ref": "../../components/platform-iam/platform-identity.schemas.json#/components/schemas/PlatformAdminCredentialResetRequest"
               }
             }
           }
@@ -470,10 +494,16 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
@@ -491,9 +521,9 @@
         }
       }
     },
-    "/api/platform/admin-users/{platformAdminId}/credential-reset": {
-      "post": {
-        "operationId": "resetPlatformAdminCredential",
+    "/api/platform/admin-users/{platformAdminId}/profile": {
+      "patch": {
+        "operationId": "updatePlatformAdminProfile",
         "tags": [
           "platform-iam"
         ],
@@ -516,7 +546,8 @@
           "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT"
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "PLATFORM_IAM_LOGIN_NAME_CONFLICT"
         ],
         "security": [
           {
@@ -571,20 +602,27 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
-        "x-required-platform-authorization": "REQ_RESET_PLATFORM_ADMIN_CREDENTIAL",
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-platform-authorization": "REQ_UPDATE_PLATFORM_ADMIN_PROFILE",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../components/platform-iam/platform-identity.schemas.json#/components/schemas/PlatformAdminCredentialResetRequest"
+                "$ref": "../../components/platform-iam/platform-identity.schemas.json#/components/schemas/PlatformAdminProfileUpdateRequest"
               }
             }
           }

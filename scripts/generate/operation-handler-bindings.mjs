@@ -39,6 +39,7 @@ const CONTEXT_KINDS = new Set([
   "PLATFORM_COMMAND_CONTEXT",
   "PUBLIC_PROTOCOL_CONTEXT",
   "TERMINAL_CREDENTIAL_CONTEXT",
+  "TERMINAL_CREDENTIAL_READ_CONTEXT",
 ]);
 const COPY_ROLES = new Set(["NONE", "COPY_SOURCE", "COPY_TARGET"]);
 const MODES = new Set(["READ", "COMMAND"]);
@@ -57,6 +58,7 @@ const OWNER_NAMESPACES = Object.freeze({
   catalog: "catalog",
   "platform-iam": "platform.admin.iam",
   contract: "store.contract",
+  "store-contract": "store.contract",
   "platform-workspace": "platform.workspace",
   extension: "extension",
   "platform-asset": "platform.asset",
@@ -184,6 +186,19 @@ const COPY_ROLE_BY_OPERATION = Object.freeze({
 // operationId so a future binding reorder cannot silently widen it.
 const CONTEXT_KIND_BY_OPERATION = Object.freeze({
   changeCurrentWorkspacePassword: "WORKSPACE_PROTOCOL_CONTEXT",
+  terminalReadStoreBasic: "TERMINAL_CREDENTIAL_READ_CONTEXT",
+  terminalReadStoreOrganizationPath: "TERMINAL_CREDENTIAL_READ_CONTEXT",
+  terminalReadStoreActiveContracts: "TERMINAL_CREDENTIAL_READ_CONTEXT",
+  terminalReadContract: "TERMINAL_CREDENTIAL_READ_CONTEXT",
+  terminalReadStoreServicePointAreas: "TERMINAL_CREDENTIAL_READ_CONTEXT",
+  terminalReadServicePointArea: "TERMINAL_CREDENTIAL_READ_CONTEXT",
+  terminalReadStoreServicePoints: "TERMINAL_CREDENTIAL_READ_CONTEXT",
+  terminalReadServicePoint: "TERMINAL_CREDENTIAL_READ_CONTEXT",
+});
+const INTERNAL_PATH_QUERY_WIRE_COMPONENTS = Object.freeze({
+  TerminalContractReadQuery: "java.util.UUID contractRef",
+  TerminalServicePointAreaReadQuery: "java.util.UUID areaRef",
+  TerminalServicePointReadQuery: "java.util.UUID pointRef",
 });
 // A command boundary is intentionally independent from context kind.  Platform
 // credential/session protocols use PLATFORM_COMMAND_CONTEXT today, but they do
@@ -397,11 +412,18 @@ function validateBindingContract(root, binding, routes = routeOperations(root)) 
     seenOperationIds.add(row.operationId);
     const route = routeById.get(row.operationId);
     if (!route) fail("BP_U02_BINDING_OPERATION_UNKNOWN", row.operationId);
+    const expectedWireTypes = ADDITIONAL_ROUTE_WIRE_TYPES[row.operationId];
+    if (expectedWireTypes && (row.wireRequest !== expectedWireTypes[0] || row.wireResponse !== expectedWireTypes[1])) {
+      fail("BP_U02_BINDING_OPERATION_WIRE_DRIFT", row.operationId);
+    }
     if (route.owner !== row.owner) fail("BP_U02_BINDING_OWNER_DRIFT", `${row.operationId}:${row.owner}:${route.owner}`);
     if (route.routeRegistry !== row.routeRegistry) fail("BP_U02_BINDING_ROUTE_REGISTRY_DRIFT", `${row.operationId}:${row.routeRegistry}:${route.routeRegistry}`);
     if (route.path !== row.path || route.normalizedPath !== row.normalizedPath) fail("BP_U02_BINDING_PATH_DRIFT", row.operationId);
     if (route.face !== row.face) fail("BP_U02_BINDING_FACE_DRIFT", row.operationId);
-    if (!wireTypes.has(row.wireRequest) || !wireTypes.has(row.wireResponse)) fail("BP_U02_WIRE_TYPE_UNKNOWN", `${row.operationId}:${row.wireRequest}:${row.wireResponse}`);
+    if ((!wireTypes.has(row.wireRequest) && !Object.hasOwn(INTERNAL_PATH_QUERY_WIRE_COMPONENTS, row.wireRequest))
+      || !wireTypes.has(row.wireResponse)) {
+      fail("BP_U02_WIRE_TYPE_UNKNOWN", `${row.operationId}:${row.wireRequest}:${row.wireResponse}`);
+    }
     const isRead = row.mode === "READ";
     const isCommand = row.mode === "COMMAND";
     if (!MODES.has(row.mode)) fail("BP_U02_BINDING_MODE_INVALID", `${row.operationId}:${row.mode}`);
@@ -412,7 +434,8 @@ function validateBindingContract(root, binding, routes = routeOperations(root)) 
     const expectedCopyRole = COPY_ROLE_BY_OPERATION[row.operationId] || "NONE";
     if (row.copyRole !== expectedCopyRole) fail("BP_U02_BINDING_COPY_ROLE_DRIFT", `${row.operationId}:${row.copyRole}:${expectedCopyRole}`);
     if (isRead !== (route.method === "GET")) fail("BP_U02_BINDING_MODE_METHOD_DRIFT", row.operationId);
-    if (isRead && (row.contextKind !== "READ_CONTEXT" || row.transactionMode !== "OUTSIDE_TRANSACTION")) {
+    const expectedContextKind = CONTEXT_KIND_BY_OPERATION[row.operationId];
+    if (isRead && (row.contextKind !== (expectedContextKind || "READ_CONTEXT") || row.transactionMode !== "OUTSIDE_TRANSACTION")) {
       fail("BP_U02_BINDING_READ_CONTEXT_DRIFT", row.operationId);
     }
     if (isCommand && (row.transactionMode !== "REQUIRED" || !COMMAND_CONTEXTS.has(row.contextKind))) {
@@ -437,7 +460,6 @@ function validateBindingContract(root, binding, routes = routeOperations(root)) 
         fail("BP_U02_BINDING_TERMINAL_CONTEXT_DRIFT", `${row.operationId}:${row.contextKind}:${expectedTerminalContext || "UNKNOWN"}`);
       }
     }
-    const expectedContextKind = CONTEXT_KIND_BY_OPERATION[row.operationId];
     if (expectedContextKind && row.contextKind !== expectedContextKind) {
       fail("BP_U02_BINDING_OPERATION_CONTEXT_DRIFT", `${row.operationId}:${row.contextKind}:${expectedContextKind}`);
     }
@@ -541,12 +563,16 @@ function contextTypeRef(contextKind) {
   if (contextKind === "PLATFORM_COMMAND_CONTEXT") return "OperationBindingTypes.PlatformCommandContext";
   if (contextKind === "PUBLIC_PROTOCOL_CONTEXT") return "OperationBindingTypes.PublicProtocolCommandContext";
   if (contextKind === "TERMINAL_CREDENTIAL_CONTEXT") return "OperationBindingTypes.TerminalCredentialCommandContext";
+  if (contextKind === "TERMINAL_CREDENTIAL_READ_CONTEXT") return "OperationBindingTypes.TerminalCredentialReadContext";
   fail("BP_U02_JAVA_CONTEXT_TYPE_INVALID", contextKind);
 }
 
 function generatedJavaSupportSource(rows) {
   const wireNames = [...new Set(rows.flatMap((row) => [row.wireRequest, row.wireResponse]))].sort();
-  const records = wireNames.map((wireName) => `    public record ${wireName}() {}`).join("\n");
+  const records = wireNames.map((wireName) => {
+    const components = INTERNAL_PATH_QUERY_WIRE_COMPONENTS[wireName] || "";
+    return `    public record ${wireName}(${components}) {}`;
+  }).join("\n");
   return `package ${JAVA_PACKAGE_ROOT};
 
 /**
@@ -581,6 +607,21 @@ public final class OperationBindingTypes {
     private TerminalCredentialCommandContext() {}
   }
 
+  public record TerminalCredentialReadContext(
+      java.util.UUID workspaceUuid,
+      String groupWorkspaceKey,
+      java.util.UUID storeRef,
+      java.util.UUID terminalRef,
+      long bindingGeneration) {
+    public TerminalCredentialReadContext {
+      java.util.Objects.requireNonNull(workspaceUuid, "workspaceUuid");
+      java.util.Objects.requireNonNull(groupWorkspaceKey, "groupWorkspaceKey");
+      java.util.Objects.requireNonNull(storeRef, "storeRef");
+      java.util.Objects.requireNonNull(terminalRef, "terminalRef");
+      if (bindingGeneration < 1) throw new IllegalArgumentException("bindingGeneration is invalid");
+    }
+  }
+
   public static final class Wire {
 ${records}
     private Wire() {}
@@ -595,7 +636,9 @@ function generatedJavaOwnerSource(owner, rows) {
   const className = ownerClassName(owner);
   const packageName = ownerPackage(owner);
   const ownerOperations = rows.filter((row) => row.owner === owner);
-  const readOperations = ownerOperations.filter((row) => row.mode === "READ");
+  const readOperations = ownerOperations.filter((row) => row.mode === "READ" && row.contextKind === "READ_CONTEXT");
+  const terminalCredentialReadOperations = ownerOperations.filter((row) =>
+    row.mode === "READ" && row.contextKind === "TERMINAL_CREDENTIAL_READ_CONTEXT");
   const commandOperations = ownerOperations.filter((row) => row.mode === "COMMAND");
   const adapterMethods = ownerOperations.map((row) => {
     const requestType = javaTypeRef(row.wireRequest);
@@ -605,27 +648,38 @@ function generatedJavaOwnerSource(owner, rows) {
   }).join("\n");
   const descriptors = ownerOperations.map((row) =>
     `  public static final OperationBindingTypes.OperationDescriptor ${descriptorFieldName(row.operationId)} = new OperationBindingTypes.OperationDescriptor(${javaString(row.operationId)}, ${javaString(owner)}, ${javaString(row.routeRegistry)});`).join("\n");
-  const readCases = readOperations.map((row) => {
-    const requestType = javaTypeRef(row.wireRequest);
-    return `      case ${javaString(row.operationId)} -> adapters.${row.operationId}(${descriptorFieldName(row.operationId)}, context, (${requestType}) request);`;
-  }).join("\n");
-  const readDescriptorGuard = readOperations.length === 0 ? "" : `  private static void requireReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
+  const readDescriptorGuard = [...readOperations, ...terminalCredentialReadOperations].length === 0 ? "" : [
+    readOperations.length === 0 ? "" : `  private static void requireReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
     if (descriptor == null) throw new IllegalArgumentException("descriptor is required");
     switch (descriptor.operationId()) {
 ${readOperations.map((row) => `      case ${javaString(row.operationId)} -> { if (descriptor != ${descriptorFieldName(row.operationId)} || !${javaString(owner)}.equals(descriptor.owner()) || !${javaString(row.routeRegistry)}.equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }`).join("\n")}
       default -> throw new IllegalArgumentException("unsupported descriptor");
     }
-  }
-
-  /** Generated closed read branch; Object is confined to this read boundary. */
+  }`,
+    terminalCredentialReadOperations.length === 0 ? "" : `  private static void requireTerminalCredentialReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
+    if (descriptor == null) throw new IllegalArgumentException("descriptor is required");
+    switch (descriptor.operationId()) {
+${terminalCredentialReadOperations.map((row) => `      case ${javaString(row.operationId)} -> { if (descriptor != ${descriptorFieldName(row.operationId)} || !${javaString(owner)}.equals(descriptor.owner()) || !${javaString(row.routeRegistry)}.equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }`).join("\n")}
+      default -> throw new IllegalArgumentException("unsupported descriptor");
+    }
+  }`,
+    readOperations.length === 0 ? "" : `  /** Generated closed read branch; Object is confined to this read boundary. */
   public Object invoke(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, Object request) {
     requireReadDescriptor(descriptor);
     return switch (descriptor.operationId()) {
-${readCases}
+${readOperations.map((row) => `      case ${javaString(row.operationId)} -> adapters.${row.operationId}(${descriptorFieldName(row.operationId)}, context, (${javaTypeRef(row.wireRequest)}) request);`).join("\n")}
       default -> throw new IllegalArgumentException("Unsupported read operation: " + descriptor.operationId());
     };
-  }
-`;
+  }`,
+    terminalCredentialReadOperations.length === 0 ? "" : `  /** Edge-authenticated terminal reads receive verified, secret-free binding facts. */
+  public Object invokeTerminalCredentialRead(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.TerminalCredentialReadContext context, Object request) {
+    requireTerminalCredentialReadDescriptor(descriptor);
+    return switch (descriptor.operationId()) {
+${terminalCredentialReadOperations.map((row) => `      case ${javaString(row.operationId)} -> adapters.${row.operationId}(${descriptorFieldName(row.operationId)}, context, (${javaTypeRef(row.wireRequest)}) request);`).join("\n")}
+      default -> throw new IllegalArgumentException("Unsupported terminal credential read: " + descriptor.operationId());
+    };
+  }`,
+  ].filter(Boolean).join("\n\n");
   const commandMethods = commandOperations.map((row) => {
     const requestType = javaTypeRef(row.wireRequest);
     const responseType = javaTypeRef(row.wireResponse);
@@ -774,11 +828,29 @@ const ADDITIONAL_ROUTE_WIRE_TYPES = Object.freeze({
   setOperationsSalesMenuItemSoldOut: ["SalesMenuManualSoldOutRequest", "SalesMenuCommandReadback"],
   restoreOperationsSalesMenuItemSale: ["SalesMenuManualRestoreRequest", "SalesMenuCommandReadback"],
   getOperationsOrganizationStoreOperatingRule: ["NoBody", "OrganizationStore"],
+  terminalReadStoreBasic: ["NoBody", "TerminalStoreBasicRead"],
+  terminalReadStoreOrganizationPath: ["NoBody", "TerminalStoreOrganizationPathRead"],
+  terminalReadStoreActiveContracts: ["NoBody", "TerminalStoreActiveContractsRead"],
+  terminalReadContract: ["TerminalContractReadQuery", "TerminalContractRead"],
+  terminalReadStoreServicePointAreas: ["NoBody", "TerminalStoreServicePointAreasRead"],
+  terminalReadServicePointArea: ["TerminalServicePointAreaReadQuery", "TerminalServicePointAreaRead"],
+  terminalReadStoreServicePoints: ["NoBody", "TerminalStoreServicePointsRead"],
+  terminalReadServicePoint: ["TerminalServicePointReadQuery", "TerminalServicePointRead"],
 });
 function expandGeneratedCatalogUnitRows(binding, root) {
   const routes = routeOperations(root);
   const routeById = new Map(routes.map((route) => [route.operationId, route]));
-  const rows = binding.operations.filter((row) => routeById.has(row.operationId));
+  const rows = binding.operations
+    .filter((row) => routeById.has(row.operationId))
+    .map((row) => {
+      const wire = ADDITIONAL_ROUTE_WIRE_TYPES[row.operationId];
+      const contextKind = CONTEXT_KIND_BY_OPERATION[row.operationId];
+      return {
+        ...row,
+        ...(wire ? {wireRequest: wire[0], wireResponse: wire[1]} : {}),
+        ...(contextKind ? {contextKind} : {}),
+      };
+    });
   const present = new Set(rows.map((row) => row.operationId));
   for (const route of routes.filter((candidate) => !present.has(candidate.operationId))) {
     const wire = ADDITIONAL_ROUTE_WIRE_TYPES[route.operationId];
@@ -795,7 +867,7 @@ function expandGeneratedCatalogUnitRows(binding, root) {
       adapter: expectedAdapter(route),
       wireRequest: wire[0],
       wireResponse: wire[1],
-      contextKind: mode === "READ" ? "READ_CONTEXT" : "WORKSPACE_EXECUTION_CONTEXT",
+      contextKind: CONTEXT_KIND_BY_OPERATION[route.operationId] || (mode === "READ" ? "READ_CONTEXT" : "WORKSPACE_EXECUTION_CONTEXT"),
       transactionMode: mode === "READ" ? "OUTSIDE_TRANSACTION" : "REQUIRED",
       copyRole: "NONE",
       commandBoundary: expectedCommandBoundary(route.operationId, mode),
@@ -849,11 +921,19 @@ function assertStaticSource(relative, actual) {
     "String.valueOf(operationId)",
   ];
   for (const phrase of forbidden) if (actual.includes(phrase)) fail("BP_U02_DYNAMIC_DISPATCH_OUTPUT", `${relative}:${phrase}`);
-  if (relative.endsWith("OperationBindings.java") && actual.includes("public Object invoke") && !actual.includes("switch (descriptor.operationId())")) {
+  const hasReadDispatcher = /public Object invoke\(/.test(actual);
+  const hasTerminalCredentialReadDispatcher = /public Object invokeTerminalCredentialRead\(/.test(actual);
+  if (relative.endsWith("OperationBindings.java") && (hasReadDispatcher || hasTerminalCredentialReadDispatcher)
+    && !actual.includes("switch (descriptor.operationId())")) {
     fail("BP_U02_CLOSED_SWITCH_MISSING", relative);
   }
-  if (relative.endsWith("OperationBindings.java") && actual.includes("public Object invoke") && (!actual.includes("requireReadDescriptor") || !actual.includes("descriptor !="))) {
+  if (relative.endsWith("OperationBindings.java") && hasReadDispatcher
+    && (!actual.includes("requireReadDescriptor") || !actual.includes("descriptor !="))) {
     fail("BP_U02_DESCRIPTOR_GUARD_MISSING", relative);
+  }
+  if (relative.endsWith("OperationBindings.java") && hasTerminalCredentialReadDispatcher
+    && (!actual.includes("requireTerminalCredentialReadDescriptor") || !actual.includes("descriptor !="))) {
+    fail("BP_U02_TERMINAL_READ_DESCRIPTOR_GUARD_MISSING", relative);
   }
   if (relative.endsWith("OperationBindings.java") && /\bCommandContext\b/.test(actual)) {
     fail("BP_U02_COMMON_COMMAND_CONTEXT_OUTPUT", relative);
@@ -1108,6 +1188,20 @@ function selfTest(root = ROOT) {
     value.operations.find((row) => row.operationId === "changeCurrentWorkspacePassword").contextKind = "WORKSPACE_EXECUTION_CONTEXT";
     fs.writeFileSync(path.join(scratch, BINDINGS_PATH), `${JSON.stringify(value, null, 2)}\n`);
   }, "BP_U02_BINDING_OPERATION_CONTEXT_DRIFT");
+  for (const operationId of Object.keys(CONTEXT_KIND_BY_OPERATION).filter((id) => id.startsWith("terminalRead"))) {
+    mutateAndExpect(root, (scratch) => {
+      const value = readJson(scratch, BINDINGS_PATH);
+      value.operations.find((row) => row.operationId === operationId).contextKind = "READ_CONTEXT";
+      fs.writeFileSync(path.join(scratch, BINDINGS_PATH), `${JSON.stringify(value, null, 2)}\n`);
+    }, "BP_U02_BINDING_READ_CONTEXT_DRIFT");
+    if (ADDITIONAL_ROUTE_WIRE_TYPES[operationId][0] !== "NoBody") {
+      mutateAndExpect(root, (scratch) => {
+        const value = readJson(scratch, BINDINGS_PATH);
+        value.operations.find((row) => row.operationId === operationId).wireRequest = "NoBody";
+        fs.writeFileSync(path.join(scratch, BINDINGS_PATH), `${JSON.stringify(value, null, 2)}\n`);
+      }, "BP_U02_BINDING_OPERATION_WIRE_DRIFT");
+    }
+  }
   mutateAndExpect(root, (scratch) => {
     const value = readJson(scratch, BINDINGS_PATH);
     value.operations.find((row) => row.operationId === "changeCurrentPlatformPassword").commandBoundary = "OWNER_COMMAND";
@@ -1143,7 +1237,7 @@ function selfTest(root = ROOT) {
     const stalePath = path.join(scratch, `${OUTPUT_ROOT}/stale-owner.json`);
     fs.writeFileSync(stalePath, "{}\n");
   }, "BP_U02_GENERATED_OUTPUT_SET_DRIFT", checkOutputs);
-  process.stdout.write("BP_U02_BINDING_SELF_TEST=PASS\nRED=BP_U02_BINDING_COUNT_DRIFT,OPERATION_COUNT_SOURCE_FIELD_UNKNOWN,OPERATION_COUNT_SOURCE_FACE_FIELD_UNKNOWN,OPERATION_COUNT_SOURCE_FACE_SUM_INVALID,BP_U02_COMMAND_FACE_DENOMINATOR_DRIFT,BP_U02_ROUTE_SOURCE_DIGEST_DRIFT,BP_U02_BINDING_EXACT_SET_DRIFT,BP_U02_BINDING_OWNER_DRIFT,BP_U02_BINDING_ADAPTER_IDENTITY_DRIFT,BP_U02_BINDING_PLATFORM_CONTEXT_DRIFT,BP_U02_BINDING_OPERATION_CONTEXT_DRIFT,BP_U02_BINDING_COMMAND_BOUNDARY_DRIFT,BP_U02_BINDING_PATH_DRIFT,BP_U02_BINDING_FACE_DRIFT,BP_U02_WIRE_TYPE_UNKNOWN,BP_U02_BINDING_COPY_ROLE_DRIFT,BP_U02_MULTIPART_ADAPTER_REQUIRED,BP_U02_GENERATED_OUTPUT_SET_DRIFT\n");
+  process.stdout.write("BP_U02_BINDING_SELF_TEST=PASS\nRED=BP_U02_BINDING_COUNT_DRIFT,OPERATION_COUNT_SOURCE_FIELD_UNKNOWN,OPERATION_COUNT_SOURCE_FACE_FIELD_UNKNOWN,OPERATION_COUNT_SOURCE_FACE_SUM_INVALID,BP_U02_COMMAND_FACE_DENOMINATOR_DRIFT,BP_U02_ROUTE_SOURCE_DIGEST_DRIFT,BP_U02_BINDING_EXACT_SET_DRIFT,BP_U02_BINDING_OWNER_DRIFT,BP_U02_BINDING_ADAPTER_IDENTITY_DRIFT,BP_U02_BINDING_PLATFORM_CONTEXT_DRIFT,BP_U02_BINDING_OPERATION_CONTEXT_DRIFT,BP_U02_BINDING_OPERATION_WIRE_DRIFT,BP_U02_BINDING_READ_CONTEXT_DRIFT,BP_U02_BINDING_COMMAND_BOUNDARY_DRIFT,BP_U02_BINDING_PATH_DRIFT,BP_U02_BINDING_FACE_DRIFT,BP_U02_WIRE_TYPE_UNKNOWN,BP_U02_BINDING_COPY_ROLE_DRIFT,BP_U02_MULTIPART_ADAPTER_REQUIRED,BP_U02_GENERATED_OUTPUT_SET_DRIFT\n");
 }
 
 const isDirectInvocation = path.resolve(process.argv[1] || "") === fileURLToPath(import.meta.url);

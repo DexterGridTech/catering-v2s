@@ -33,6 +33,7 @@ import {
   switchDisplayRoleCommand,
   switchInstanceModeCommand,
 } from '@catering-v2s/kernel-base-display-context';
+import {setRuntimeInstanceModeAction} from '../../runtime/src/features/slices/runtimeInstanceMode';
 import {createTransportModule} from '@catering-v2s/kernel-base-transport';
 import {
   createPlatformPorts,
@@ -497,6 +498,33 @@ describe('topology pairing facts', () => {
         .dispatch(topologyActions.markPeerStateSyncSliceApplied({connectionId, sliceName: required[1], revision: 1}));
       expect(selectTopologyRequiredProjectionsReady(runtime.getState(), required)).toBe(true);
 
+      await runtime.dispatchCommand(
+        topologyHostEventCommand,
+        {
+          event: 'state-sync-slice-apply-failed',
+          connectionId,
+          sliceName: required[0],
+          revision: 2,
+        },
+        {requestId: createRequestId()},
+      );
+      expect(selectTopologyRequiredProjectionsReady(runtime.getState(), required)).toBe(false);
+      await runtime.dispatchCommand(
+        topologyHostEventCommand,
+        {
+          event: 'state-sync-slice-apply-failed',
+          connectionId: staleConnectionId,
+          sliceName: required[0],
+          revision: 9,
+        },
+        {requestId: createRequestId()},
+      );
+      expect(selectTopologyRequiredProjectionsReady(runtime.getState(), required)).toBe(false);
+      runtime
+        .getStore()
+        .dispatch(topologyActions.markPeerStateSyncSliceApplied({connectionId, sliceName: required[0], revision: 2}));
+      expect(selectTopologyRequiredProjectionsReady(runtime.getState(), required)).toBe(true);
+
       runtime.getStore().dispatch(topologyActions.setPeerStateSyncConnection(staleConnectionId));
       expect(selectTopologyRequiredProjectionsReady(runtime.getState(), required)).toBe(false);
       runtime
@@ -545,6 +573,84 @@ describe('topology pairing facts', () => {
       );
       await waitForReconciliation();
       expect(selectTopologyFacts(runtime.getState())?.payloadFailure).toBeNull();
+    } finally {
+      await releaseRuntimeForTestAsync(runtime);
+    }
+  });
+
+  it('invalidates readiness for the same failed revision on a replacement connection through the real transfer callback', async () => {
+    const host = new FakeTopologyHost();
+    const peer = new FakePeerChannel();
+    const {runtime} = createTopologyRuntime({host, peer, extraModules: [createTestMembersModule()]});
+    await runtime.start();
+    runtime.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'));
+
+    const transfer = (revision: number, transferId: string, invalidChecksum = false) => {
+      const plan = createTopologyStateTransferPlan({
+        sliceName: membersSyncSliceName,
+        direction: 'master-to-slave',
+        revision,
+        value: {
+          mode: 'authoritative',
+          replaceMissing: true,
+          entries: [{key: 'state', value: {updatedAt: 0, value: {members: [], pending: null}}}],
+        },
+        createTransferId: () => transferId,
+      });
+      expect(plan.status).toBe('ready');
+      if (plan.status !== 'ready') return;
+      for (const frame of plan.frames) {
+        const receivedFrame = invalidChecksum
+          ? {...frame, checksum: `${frame.checksum.startsWith('0') ? '1' : '0'}${frame.checksum.slice(1)}`}
+          : frame;
+        peer.emit({
+          type: 'message',
+          connectionId: currentConnectionId,
+          raw: serializeTopologyWireMessage(receivedFrame),
+        });
+      }
+    };
+    let currentConnectionId = '';
+    const connect = async (connectionId: string, wireId: string): Promise<void> => {
+      currentConnectionId = connectionId;
+      peer.emit({type: 'open', connectionId});
+      peer.emit({
+        type: 'message',
+        connectionId,
+        raw: JSON.stringify({
+          type: 'hello',
+          protocolVersion: 1,
+          moduleName: 'ui.integration.sample-console',
+          wireId,
+          nodeId: `node-master-${connectionId}`,
+          displayName: '主机',
+          instanceMode: 'MASTER',
+          displayRole: 'CHIEF',
+        }),
+      });
+      await waitForReconciliation();
+    };
+
+    try {
+      await connect('failure-connection-a', 'peer-hello-a');
+      transfer(1, 'valid-a');
+      await waitForReconciliation();
+      expect(selectTopologyRequiredProjectionsReady(runtime.getState(), [membersSyncSliceName])).toBe(true);
+      transfer(2, 'failed-a', true);
+      await waitForReconciliation();
+
+      await connect('failure-connection-b', 'peer-hello-b');
+      transfer(1, 'valid-b');
+      await waitForReconciliation();
+      expect(selectTopologyRequiredProjectionsReady(runtime.getState(), [membersSyncSliceName])).toBe(true);
+      transfer(2, 'failed-b', true);
+      await waitForReconciliation();
+
+      expect(selectTopologyRequiredProjectionsReady(runtime.getState(), [membersSyncSliceName])).toBe(false);
+      expect(selectTopologyFacts(runtime.getState())?.payloadFailure).toMatchObject({
+        code: 'TOPOLOGY_CHECKSUM_FAILED',
+        transferId: 'failed-b',
+      });
     } finally {
       await releaseRuntimeForTestAsync(runtime);
     }
@@ -707,6 +813,7 @@ describe('topology pairing facts', () => {
       isPeerAccepted: () => true,
       getConnectionId: () => 'deterministic-lock-1',
       onStateSliceApplied: () => {},
+      onStateSliceApplyFailed: () => {},
       dispatchPayloadFailure: (_context, failure) => failures.push(failure),
       clearPayloadFailure: () => {},
       log: () => {},
@@ -761,6 +868,7 @@ describe('topology pairing facts', () => {
       onStateSliceApplied: ({connectionId, sliceName, revision}) => {
         applied.push({connectionId, sliceName, revision});
       },
+      onStateSliceApplyFailed: () => {},
       dispatchPayloadFailure: () => {},
       clearPayloadFailure: () => {},
       log: () => {},
@@ -1599,6 +1707,293 @@ describe('topology lifecycle integration', () => {
       expect(peer.sentFrames.map(frame => JSON.parse(frame) as {type?: string})).toEqual(
         expect.arrayContaining([expect.objectContaining({type: 'command-result'})]),
       );
+    } finally {
+      await releaseRuntimeForTestAsync(runtime);
+    }
+  });
+
+  it('returns a timed-out peer command first and transfers its actual late actor result once', async () => {
+    const host = new FakeTopologyHost();
+    const peer = new FakePeerChannel();
+    const gate = deferred<StateJsonValue>();
+    const command = defineCommand<Readonly<{readonly value: string}>>('test.topology.late-result', {
+      name: 'run',
+      visibility: 'internal',
+      timeoutMs: 10,
+    });
+    const oversizedCommand = defineCommand<Readonly<{}>>('test.topology.late-result', {
+      name: 'oversized-result',
+      visibility: 'internal',
+    });
+    const actor = defineActor('test.topology.late-result', 'worker', [onCommand(command, () => gate.promise)]);
+    const oversizedActor = defineActor('test.topology.late-result', 'oversized-worker', [
+      onCommand(oversizedCommand, () => ({payload: 'x'.repeat(70_000)})),
+    ]);
+    const appControl: AppControlPort = {
+      ...unavailableAppControlPort,
+      resetRuntime: async input =>
+        Object.freeze({
+          status: 'accepted' as const,
+          requestId: input.requestId,
+          acceptedAt: completedAt,
+          terminalObservation: 'SUCCESSOR_RUNTIME_STARTED' as const,
+        }),
+    };
+    const receiverModule: RuntimeModule = Object.freeze({
+      moduleName: 'test.topology.late-result',
+      kind: 'owner',
+      dependencies: [{moduleName: 'kernel.base.runtime'}],
+      commands: [command, oversizedCommand].map(item => ({name: item.commandName, visibility: item.visibility})),
+      commandDefinitions: [command, oversizedCommand],
+      actors: [actor, oversizedActor].map(item => ({name: item.actorName})),
+      actorDefinitions: [actor, oversizedActor],
+    });
+    const {runtime} = createTopologyRuntime({host, peer, appControl, extraModules: [receiverModule]});
+    await runtime.start();
+    try {
+      const locator: TopologyLocator = Object.freeze({
+        host: '192.0.2.40',
+        port: 43172,
+        basePath: '/terminal-topology',
+        identity: Object.freeze({...identity, nodeId: 'node-late-peer'}),
+      });
+      const paired = await runtime.dispatchCommand(pairTopologyCommand, {locator}, {
+        requestId: createRequestId(),
+        routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'},
+      });
+      expect(paired.status).toBe('completed');
+      runtime.getStore().dispatch(topologyActions.setRepairPending(false));
+      await waitForReconciliation();
+      peer.emit({
+        type: 'message',
+        raw: JSON.stringify({
+          type: 'hello-accepted',
+          protocolVersion: 1,
+          moduleName: 'ui.integration.sample-console',
+          wireId: 'late-peer-accepted',
+          nodeId: 'node-late-peer',
+        }),
+      });
+      await waitForReconciliation();
+
+      peer.emit({
+        type: 'message',
+        raw: JSON.stringify({
+          type: 'command-request',
+          protocolVersion: 1,
+          wireId: 'late-peer-request-wire',
+          requestId: 'late-peer-request',
+          commandId: 'late-peer-command',
+          parentCommandId: null,
+          commandName: command.commandName,
+          payload: {value: 'run'},
+          lateResultTtlMs: 1_000,
+        }),
+      });
+      await new Promise(resolve => setTimeout(resolve, 25));
+      const timedOutFrames = peer.sentFrames
+        .map(raw => JSON.parse(raw) as {type?: string; commandId?: string; status?: string})
+        .filter(frame => frame.type === 'command-result' && frame.commandId === 'late-peer-command');
+      expect(timedOutFrames).toEqual([expect.objectContaining({status: 'timed-out'})]);
+
+      gate.resolve({saved: true});
+      await waitForReconciliation();
+      const results = peer.sentFrames
+        .map(raw => JSON.parse(raw) as {
+          type?: string;
+          requestId?: string;
+          commandId?: string;
+          status?: string;
+          error?: unknown;
+          result?: {actorResults?: Array<{actorKey?: string; status?: string; result?: unknown}>} | null;
+        })
+        .filter(frame => frame.type === 'command-result' && frame.commandId === 'late-peer-command');
+      const lateActorStatus = results[1]?.result?.actorResults?.[0]?.status;
+      const lateActor = results[1]?.result?.actorResults?.[0];
+      if (
+        results.length !== 2 ||
+        results[1]?.status !== 'completed' ||
+        lateActorStatus !== 'completed' ||
+        lateActor?.actorKey !== 'test.topology.late-result.worker' ||
+        JSON.stringify(lateActor.result) !== JSON.stringify({saved: true})
+      ) {
+        throw new Error(
+          `late peer result frame mismatch: ${JSON.stringify(
+            results.map(frame => ({
+              status: frame.status,
+              actor: frame.result?.actorResults?.[0] && {
+                actorKey: frame.result.actorResults[0].actorKey,
+                status: frame.result.actorResults[0].status,
+                result: frame.result.actorResults[0].result,
+              },
+              error: frame.error,
+            })),
+          )}`,
+        );
+      }
+      expect(results).toHaveLength(2);
+      expect(results[1]?.requestId).toBe('late-peer-request');
+
+      peer.emit({
+        type: 'message',
+        raw: JSON.stringify({
+          type: 'command-request',
+          protocolVersion: 1,
+          wireId: 'late-peer-oversized-wire',
+          requestId: null,
+          commandId: 'late-peer-oversized-command',
+          parentCommandId: null,
+          commandName: oversizedCommand.commandName,
+          payload: {},
+        }),
+      });
+      await waitForReconciliation();
+      const oversizedResult = peer.sentFrames
+        .map(raw => JSON.parse(raw) as {type?: string; commandId?: string; status?: string; result?: unknown; error?: {code?: string}})
+        .find(frame => frame.type === 'command-result' && frame.commandId === 'late-peer-oversized-command');
+      expect(oversizedResult).toMatchObject({status: 'error', result: null, error: {code: 'TOPOLOGY_CODEC_FAILED'}});
+    } finally {
+      await releaseRuntimeForTestAsync(runtime);
+    }
+  });
+
+  it('retains a peer handoff through the ordinary timeout and reports the actual result via its wire callback', async () => {
+    const host = new FakeTopologyHost();
+    const peer = new FakePeerChannel();
+    const command = defineCommand<Readonly<{}>>('test.topology.peer-late-result', {
+      name: 'run',
+      visibility: 'internal',
+      defaultTarget: 'peer',
+      timeoutMs: 10,
+    });
+    const module: RuntimeModule = Object.freeze({
+      moduleName: 'test.topology.peer-late-result',
+      kind: 'owner',
+      dependencies: [{moduleName: 'kernel.base.runtime'}],
+      commands: [{name: command.commandName, visibility: command.visibility}],
+      commandDefinitions: [command],
+    });
+    const appControl: AppControlPort = {
+      ...unavailableAppControlPort,
+      resetRuntime: async input =>
+        Object.freeze({
+          status: 'accepted' as const,
+          requestId: input.requestId,
+          acceptedAt: completedAt,
+          terminalObservation: 'SUCCESSOR_RUNTIME_STARTED' as const,
+        }),
+    };
+    const {runtime} = createTopologyRuntime({host, peer, appControl, extraModules: [module]});
+    await runtime.start();
+    try {
+      const locator: TopologyLocator = Object.freeze({
+        host: '192.0.2.41',
+        port: 43172,
+        basePath: '/terminal-topology',
+        identity: Object.freeze({...identity, nodeId: 'node-late-target'}),
+      });
+      const paired = await runtime.dispatchCommand(pairTopologyCommand, {locator}, {
+        requestId: createRequestId(),
+        routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'},
+      });
+      expect(paired.status).toBe('completed');
+      runtime.getStore().dispatch(topologyActions.setRepairPending(false));
+      await waitForReconciliation();
+      peer.emit({
+        type: 'message',
+        raw: JSON.stringify({
+          type: 'hello-accepted',
+          protocolVersion: 1,
+          moduleName: 'ui.integration.sample-console',
+          wireId: 'late-target-accepted',
+          nodeId: 'node-late-target',
+        }),
+      });
+      await waitForReconciliation();
+
+      const observed: unknown[] = [];
+      const requestId = createRequestId();
+      const dispatch = runtime.dispatchCommand(command, {}, {
+        target: 'peer',
+        requestId,
+        lateResultTtlMs: 1_000,
+        lateOutcome: record => observed.push(record),
+      });
+      await waitForReconciliation();
+      const request = peer.sentFrames
+        .map(raw => JSON.parse(raw) as {type?: string; requestId?: string | null; commandId?: string; lateResultTtlMs?: number})
+        .find(frame => frame.type === 'command-request' && frame.commandId !== undefined);
+      expect(request?.lateResultTtlMs).toBe(1_000);
+      expect(request?.requestId).toBe(requestId);
+      const commandId = request?.commandId;
+      expect(commandId).toBeTruthy();
+      const commandFrame = (status: 'timed-out' | 'completed', result: unknown) => ({
+        type: 'command-result',
+        protocolVersion: 1,
+        wireId: `late-target-result-${status}`,
+        requestId,
+        commandId,
+        status,
+        result,
+        error: status === 'completed' ? null : {code: 'TOPOLOGY_UNAVAILABLE', retryable: false},
+      });
+      peer.emit({type: 'message', raw: JSON.stringify(commandFrame('timed-out', null))});
+      expect((await dispatch).status).toBe('timed-out');
+      peer.emit({type: 'message', raw: JSON.stringify({...commandFrame('completed', {actorResults: []}), requestId: 'wrong-request'})});
+      await waitForReconciliation();
+      expect(observed).toEqual([]);
+      peer.emit({
+        type: 'message',
+        raw: JSON.stringify(
+          commandFrame('completed', {
+            actorResults: [
+              {
+                actorKey: 'sample.remote.actor',
+                status: 'completed',
+                startedAt: 10,
+                completedAt: 20,
+                result: {persisted: true},
+                error: null,
+              },
+            ],
+          }),
+        ),
+      });
+      await waitForReconciliation();
+      expect(observed).toMatchObject([
+        {actorKey: 'sample.remote.actor', status: 'completed', result: {persisted: true}},
+      ]);
+
+      const expiredObserved: unknown[] = [];
+      const expiredRequestId = createRequestId();
+      const expiredDispatch = runtime.dispatchCommand(command, {}, {
+        target: 'peer',
+        requestId: expiredRequestId,
+        lateResultTtlMs: 40,
+        lateOutcome: record => expiredObserved.push(record),
+      });
+      await waitForReconciliation();
+      const expiredRequest = peer.sentFrames
+        .map(raw => JSON.parse(raw) as {type?: string; requestId?: string | null; commandId?: string; lateResultTtlMs?: number})
+        .find(frame => frame.type === 'command-request' && frame.requestId === expiredRequestId);
+      expect(expiredRequest?.lateResultTtlMs).toBe(40);
+      expect((await expiredDispatch).status).toBe('timed-out');
+      await new Promise(resolve => setTimeout(resolve, 60));
+      peer.emit({
+        type: 'message',
+        raw: JSON.stringify({
+          type: 'command-result',
+          protocolVersion: 1,
+          wireId: 'late-target-expired-result',
+          requestId: expiredRequestId,
+          commandId: expiredRequest?.commandId,
+          status: 'completed',
+          result: {actorResults: [{actorKey: 'sample.remote.actor', status: 'completed', startedAt: 30, completedAt: 40, result: {persisted: true}, error: null}]},
+          error: null,
+        }),
+      });
+      await waitForReconciliation();
+      expect(expiredObserved).toEqual([]);
     } finally {
       await releaseRuntimeForTestAsync(runtime);
     }

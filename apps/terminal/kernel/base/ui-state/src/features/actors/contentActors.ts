@@ -102,6 +102,7 @@ type NormalizedOpenLayerPayload = Readonly<{
   partKey: string;
   props?: StateJsonValue;
   persistence: 'durable' | 'ephemeral';
+  workspace?: WorkspaceKey;
 }>;
 
 const normalizeOpenLayerPayload = (value: unknown): NormalizedOpenLayerPayload => {
@@ -112,26 +113,37 @@ const normalizeOpenLayerPayload = (value: unknown): NormalizedOpenLayerPayload =
   if (persistence !== 'durable' && persistence !== 'ephemeral') {
     throw new Error(`[ui-state] ${commandName}.persistence must be durable or ephemeral`);
   }
+  const workspace = record.workspace;
+  if (workspace !== undefined && workspace !== 'MAIN' && workspace !== 'BRANCH') {
+    throw new Error(`[ui-state] ${commandName}.workspace must be MAIN or BRANCH`);
+  }
   return Object.freeze({
     displayMode: requireDisplayMode(record.displayMode, commandName),
     layerId: requireString(record, 'layerId', commandName),
     partKey: requireString(record, 'partKey', commandName),
     ...(props === undefined ? {} : {props}),
     persistence,
+    ...(workspace === undefined ? {} : {workspace}),
   });
 };
 
 type NormalizedCloseLayerPayload = Readonly<{
   displayMode: DisplayMode;
   layerId: string;
+  workspace?: WorkspaceKey;
 }>;
 
 const normalizeCloseLayerPayload = (value: unknown): NormalizedCloseLayerPayload => {
   const commandName = 'close-layer';
   const record = requireRecord(value, commandName);
+  const workspace = record.workspace;
+  if (workspace !== undefined && workspace !== 'MAIN' && workspace !== 'BRANCH') {
+    throw new Error(`[ui-state] ${commandName}.workspace must be MAIN or BRANCH`);
+  }
   return Object.freeze({
     displayMode: requireDisplayMode(record.displayMode, commandName),
     layerId: requireString(record, 'layerId', commandName),
+    ...(workspace === undefined ? {} : {workspace}),
   });
 };
 
@@ -214,8 +226,9 @@ type ContentAction =
 const dispatchContentAction = (
   context: ActorExecutionContext,
   action: ContentAction,
+  workspaceOverride?: WorkspaceKey,
 ): Readonly<{workspace: WorkspaceKey; changed: boolean}> => {
-  const workspace = currentWorkspace(context);
+  const workspace = workspaceOverride ?? currentWorkspace(context);
   const instanceMode = selectRuntimeInstanceMode(context.getState());
   assertContentWriteOwnership(context, workspace);
   const before = readContentState(context.getState(), workspace);
@@ -276,6 +289,7 @@ export const createOpenLayerActor = (
         state,
         displayMode: payload.displayMode,
         selectSurfaceForm: input.selectSurfaceForm,
+        workspaceOverride: payload.workspace,
       });
       const entry = input.catalog.byPartKey[payload.partKey];
       if (entry === undefined || !isUiCatalogEntryAvailable(entry, null, catalogContext)) {
@@ -285,7 +299,8 @@ export const createOpenLayerActor = (
           catalogContext,
         });
       }
-      const workspace = currentWorkspace(context);
+      const workspace = payload.workspace ?? currentWorkspace(context);
+      assertContentWriteOwnership(context, workspace);
       const current = readContentState(context.getState(), workspace);
       if (current.contentSets[payload.displayMode].layers.some(layer => layer.layerId === payload.layerId)) {
         context.platformPorts.logger.warn({
@@ -306,6 +321,7 @@ export const createOpenLayerActor = (
               openedAt: nowTimestampMs(),
             }),
           ),
+          payload.workspace,
         ),
         'content',
       );
@@ -318,7 +334,7 @@ export const createCloseLayerActor = (): ActorDefinition =>
       const payload = normalizeCloseLayerPayload(context.command.payload);
       return completeUiStateWrite(
         context,
-        dispatchContentAction(context, contentActions.closeLayer(payload)),
+        dispatchContentAction(context, contentActions.closeLayer(payload), payload.workspace),
         'content',
       );
     }),

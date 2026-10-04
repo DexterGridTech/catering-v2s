@@ -43,6 +43,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
     private final Path evidencePath;
     private final Process process;
     private final TdsRegistrationGateBroker registrationGateBroker;
+    private final TdsDatabasePrincipal databasePrincipal;
     private final long pid;
     private final String startTicks;
     private final Instant startedAt;
@@ -66,6 +67,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
             Path evidencePath,
             Process process,
             TdsRegistrationGateBroker registrationGateBroker,
+            TdsDatabasePrincipal databasePrincipal,
             long pid,
             String startTicks,
             Instant startedAt,
@@ -83,6 +85,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         this.evidencePath = evidencePath;
         this.process = process;
         this.registrationGateBroker = registrationGateBroker;
+        this.databasePrincipal = databasePrincipal;
         this.pid = pid;
         this.startTicks = startTicks;
         this.startedAt = startedAt;
@@ -168,7 +171,18 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         Path logPath = directory.resolve("tds.log");
         Path evidencePath = directory.resolve("process-evidence.json");
         Files.createFile(logPath);
-        TdsRegistrationGateBroker registrationGateBroker = TdsRegistrationGateBroker.start(directory);
+        TdsDatabasePrincipal databasePrincipal = TdsDatabasePrincipal.provision(postgres, instanceName);
+        TdsRegistrationGateBroker registrationGateBroker;
+        try {
+            registrationGateBroker = TdsRegistrationGateBroker.start(directory);
+        } catch (Exception startupFailure) {
+            try {
+                databasePrincipal.close();
+            } catch (Exception cleanupFailure) {
+                startupFailure.addSuppressed(cleanupFailure);
+            }
+            throw startupFailure;
+        }
         int requestedPort = 0;
         String javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java")
                 .toAbsolutePath()
@@ -207,8 +221,8 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         Map<String, String> environment = builder.environment();
         environment.clear();
         environment.put("SPRING_DATASOURCE_URL", postgres.getJdbcUrl());
-        environment.put("SPRING_DATASOURCE_USERNAME", postgres.getUsername());
-        environment.put("SPRING_DATASOURCE_PASSWORD", postgres.getPassword());
+        environment.put("SPRING_DATASOURCE_USERNAME", databasePrincipal.username());
+        environment.put("SPRING_DATASOURCE_PASSWORD", databasePrincipal.password());
         environment.put("V2S_RUNTIME_ENVIRONMENT", "non-production");
         environment.put("V2S_DEV_PROFILE", "backend-acceptance");
         environment.put("V2S_BACKEND_ACCEPTANCE_RUN_ID", runId);
@@ -243,6 +257,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
                     evidencePath,
                     process,
                     registrationGateBroker,
+                    databasePrincipal,
                     pid,
                     startTicks,
                     startedAt,
@@ -287,6 +302,11 @@ final class TdsAcceptanceProcess implements AutoCloseable {
             }
             try {
                 registrationGateBroker.close();
+            } catch (Exception cleanupFailure) {
+                startupFailure.addSuppressed(cleanupFailure);
+            }
+            try {
+                databasePrincipal.close();
             } catch (Exception cleanupFailure) {
                 startupFailure.addSuppressed(cleanupFailure);
             }
@@ -536,6 +556,12 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         } catch (Exception failure) {
             cleanupFailure = failure;
         }
+        try {
+            databasePrincipal.close();
+        } catch (Exception failure) {
+            if (cleanupFailure == null) cleanupFailure = failure;
+            else cleanupFailure.addSuppressed(failure);
+        }
         Integer exitCode = terminated ? process.exitValue() : null;
         boolean expectedStop = gracefullyRequested || forceTerminatedForAcceptanceScenario;
         String cleanup = terminated && expectedStop && cleanupFailure == null ? "PASS" : "FAIL";
@@ -600,6 +626,8 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         static final String HISTORY_RECORDS_SCENARIO_ID = "terminal.connection.history-records";
         static final String HISTORY_OUTAGE_BOUNDED_SCENARIO_ID = "terminal.connection.history-outage-bounded";
         static final String VS13_CROSS_NODE_RECOVERY_SCENARIO_ID = "terminal.connection.vs13.cross-node-recovery";
+        static final String TOPIC_SUBSCRIPTION_SCENARIO_ID = "terminal.connection.topic.active-store-subscription";
+        static final String REMOTE_COMMAND_SCENARIO_ID = "terminal.connection.remote-command";
         static final String VS15_NODE_ID = "vs15-acceptance-node";
         static final String VS13_NODE_A_ID = "vs13-acceptance-node-a";
         static final String VS13_NODE_B_ID = "vs13-acceptance-node-b";
@@ -616,6 +644,8 @@ final class TdsAcceptanceProcess implements AutoCloseable {
             if (VS13_CROSS_NODE_RECOVERY_SCENARIO_ID.equals(scenario)) {
                 return new TdsStartConfiguration(VS13_NODE_A_ID, null);
             }
+            if (TOPIC_SUBSCRIPTION_SCENARIO_ID.equals(scenario)) return new TdsStartConfiguration(null, null);
+            if (REMOTE_COMMAND_SCENARIO_ID.equals(scenario)) return new TdsStartConfiguration(null, null);
             throw new IllegalArgumentException("BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_UNKNOWN");
         }
 

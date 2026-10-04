@@ -243,3 +243,162 @@ store-management、organization-structure、contract-management、store-service-
 记忆仅增正文入口，id/route/assertions/sourceRefs分母未变；没有修改源码/测试/契约或生成索引，
 未运行构建、测试、verify、DEV、reset/seed、L2/UAT等。24V和16项DEV-DATA均计划/NOT_RUN，
 没有本任务运行资源，cleanup=N/A。
+
+## 10 · Dexter后续修正：collectionHash与订阅对象身份
+
+Dexter直接授权将范围缓存由refIds改为resultHash/collectionHash，字段由作者选择。
+本次选collectionHash；正式R-05/R-06改为只保存完整topic身份、摘要与原有topic时间，
+不增加memberCount：固定空集合摘要已足以判断A/B空非空分支。只摘要化成员ID，不摘要正文或时间，
+稳定去重/排序/无歧义编码，HTTP/feature仍取得真实完整数据。无缓存与已有空缓存分开，
+重启保留空摘要及A；事务/并发、提交后通知及同值漏通知限制不变。
+
+订阅对象采用topicKey/ownerRef，项目详情对应项目ID、门店合同集合对应门店ID；
+服务端仍核验当前绑定的集团空间和允许关联范围，不能把客户端ref当授权。
+对象身份不抹去首次本地时间、具体通知确认或多feature订退归属，A/B店实例保持隔离。
+正式R-03、V-02/V-04和§8、规范§4-F、记忆正本指针同步；讨论稿仅增加后续裁决指针，
+不篡改旧讨论与§10原始引用。旧refIds原话由最新直接裁决明确取代。
+
+同根前后回读：本会话最新原话、R-03/R-05/R-06/R-07/R-08及对应V与详设准入、
+规范§4-F、terminal-coding-standard记忆指针和旧讨论缓存段；范围集合的业务语义与HTTP列表
+依旧是refIds，删除的是CBS缓存中的持久成员列表，不对所有refIds字样作机械替换。
+六维route为design/platform/backend/frontend-platform/owner/task-start，9项路径与前次相同；
+另读取deterministic-context-only及适用规范指针。一般失败模式是把变化检测缓存误当业务数据副本、
+把最小对象标识误当整个协议或授权身份；最小解为摘要缓存和对象/绑定/确认的职责分工。
+反例落到V-02/V-04/V-06/V-07：顺序/重复不改变摘要、空集A重启保留、不同店隔离、
+跨空间拒绝、首次时间和更新确认仍有效；不增加新门、全局恢复或第三轮审查。
+
+本次正式需求hash：`631635810d51a5ddf9d913f54d40cc92546a577e830c3fae76fac0784a631bf6`。
+规范hash：`f8001b2e803e9aa39740d9015bc202ec25c0f6c211f3b57d14d2aaa4909f22c5`；
+记忆指针hash：`92c084a4d3c14bfd4ebab2660b232bb11346d5772e2a1637b5b9163a25acb5d6`。
+仅静态文档修订/回读；记忆元数据分母不变，无索引生成、源码/契约/测试实施或动态运行。
+两轮cycle继续关闭，本次字节没有独立verdict；24V与16项DEV-DATA仍为计划/NOT_RUN，cleanup=N/A。
+
+## 11 · Dexter后续要求：逐topic计算和真实command接线
+
+直接原话：“初期我们约定好的这几个topic，每个topic的计算逻辑，尤其是集合topic的计算逻辑，
+在需求里都应该约定好，在哪个command里面增加环节都要列出来”。正式需求新增§4.1a/b/c，
+保持R01—20/V01—24分母，不增业务实体、topic类别或动态授权。
+
+主agent先回读R03—06/R11—12及上一轮SQL/hash裁决，使用仓内cs-code-structure-recall定位公开API，
+重开ContractCommandService的typed/旧参数create/update/invalidate、完整正文/扩展值写入、receipt与SQL，
+确认真实HTTPoperation只转调事实owner。organization交只读子agent提取源码inventory，
+主agent独占文档写入，再由该agent对新增organization表作定向source-to-doc核对。
+agent两次返回均完成：源码inventory＋新增表核对，无文件写入、无运行、无review verdict；
+不重开已结束DESIGN cycle，不把这次定向核对包装成独立整批GO。
+
+源码边界核实：十一类精确/范围事实的表、ID和原始时间分别列出；三个集合谓词固定，SQL唯一/有序
+计算collectionHash与B，A取触发实体实际写入时间。Store/规则共享root时间；合同内容update只发详情；
+区域/点位整表单update也改status，不能只挂transition；swap实际修改两条详情，目录不变；
+内部PROJECT分期及旧参数mutation核心一并覆盖，不按HTTPwrapper重复发布或漏接。
+父区域状态、二维码、管理排序能力等派生readback不由point原始时间覆盖，terminal本期投影限定
+原始实体事实；不为填补派生时间扩大级联写入或TER业务判断。
+
+有限防再犯：§4.1b的完整command表及V01/V14对应静态、focused和真实DEV断言；
+旧重载、receipt回放、无写入重排、同毫秒、回滚/并发、跨店、整单状态和双实体交换为反例。
+最小解为现有owner mutation内有限显式接线；没有动态规则引擎、全局扫描、通用outbox或新业务入口。
+主agent最后回读§4.1三节与当前源码/agent清单并检查相邻R/V和§8一致；未修改任何生产文件。
+
+正式需求当前hash：`1cf2a17d5753b714c4c9a20063840b02bf05b7a831a8421e4e835884205a122b`。
+之前§10的hash仅代表其当时字节；SQL优先实现补充和本节逐topic表均为后续用户要求，
+旧独立verdict不覆盖当前新字节。所有新能力、24V及16项DEV-DATA仍计划/NOT_RUN。
+本次仅需求/来源记录修改，无生成、构建、测试、verify、DEV、reset/seed、L2/UAT，cleanup=N/A。
+
+## 12 · Dexter范围裁决：REGION商业集团父引用必填
+
+Dexter明确确认“这个要补齐，REGION的parentID不可以为空”，将CBS真实关系及已有数据补齐纳入本期，
+取代旧按集团空间单独发现集团的TER规则。不是reviewer建议，也不只是改一个DTO显示字段。
+正式需求增加R-11.1，同步§0.1、R11读取链、§4.1b NODE-REGION、V13及§8；
+规范§4-F和项目记忆正文指针同步。讨论稿旧源码观察只保留为历史并加明确后续裁决指针。
+
+主agent重开createRegion:84/:101、validateParent:1178、typed/旧update持久父引用比较、
+OrganizationHierarchyServiceSql及现有schema定义，确认当前REGION传null且校验要求null，
+不能把这条关系描述成已存在。另重开CommercialGroupReadback、OrganizationCommandPersistence
+对commercial_group_uuid的UUID投影及requireCommercialGroupRef:395；目标是公开商业集团UUID，
+不是内部自增ID、集团空间ID或GROUP组织节点。Corpus G02三层业务树与此目标一致，未改写语料正本。
+
+最小方案：现有owner创建核心保存当前空间真实商业集团UUID，普通更新/状态保留不可清空关系；
+新增单一Flyway迁移匹配已有记录并落实REGION条件非空，错误/歧义引用fail closed。
+详设必须检查CBS公共/旧参数/数据库/后台/generated/读取路径/范围判断/seed与fixture/TER完整影响链，
+补齐时间/version和topic处理，不通过reset、临时DTO或客户端fallback掩盖持久事实缺失。
+不新增集团选择UI、换集团command、多级大区或第二组织事实。一般失败模式为业务树已表达关系，
+持久关系却为空，导致客户端多条发现规则；最小防再犯落点为R11.1数据库/owner/读取要求及V13正反例。
+
+这是Dexter实质补充的需求范围，当前meta明确SCOPE_AMENDMENT；旧两轮cycle保持关闭、旧verdict
+不覆盖这项新范围，不自动发起第三轮或新cycle。若后续获授权审查新范围，应说明该范围触发，
+不得借局部措辞修订重置旧轮次。本次没有任何实施或动态运行授权。
+
+正式需求hash：`b75f0380c276e50ecede63e216d8f0fd8f28994d0eddc3dfb35847607445c84c`。
+规范hash：`3a0174dc948874366a62fbf61437f35ecbd191c64905f761818cb064bd6fda69`；
+记忆指针hash：`fcf530e2b949ed2a36030d59c5846ab608e6728ee86bfa2736d320abd60d769a`。
+记忆id/route/assertions/sourceRefs未变，不生成索引。仅文档/规范指针与来源记录维护；
+源码、契约、migration、seed及测试均未修改或运行，新关系和全部动态验收仍NOT_RUN，cleanup=N/A。
+
+
+## 13 · Dexter简化裁决：两个feature合并为store-basic（2026-10-04）
+
+直接原话：“修改一下需求文档吧，两个feature包合成一个吧，不需要那么多”。
+当前正式需求R-11统一为apps/terminal/kernel/feature/store-basic；R-12保留需求编号，改为同包
+服务点区域/服务点职责，不另建store-service-point包。十一类topic、原始时间/collectionHash、
+HTTP与集合详情复用、订退/确认、持久化及主副同步要求均不缩减，24项V与16项DEV-DATA分母保留。
+
+启动前提仍为本次当前绑定的门店基础信息取得、应用、持久化成功；之后经同包command启动服务点，
+不等待其他资料全ready，服务点局部失败不回滚门店成功。门店成功command按R11保留广播，
+本期不再要求另一个feature安装/跨包订阅、晚加载补读或转发桥；重启/晚安装整个store-basic
+仍走本次门店加载及同包初始化，重复/旧绑定/迟到响应隔离要求保留。数据及局部加载状态归同一owner，
+不强制合并成巨型actor/slice，不新增通用调度/恢复框架。
+
+主agent回读原始用户裁决、当前R07/R11/R12、V08/V14、DEV-DATA-13及§8，修改这些当前条款，
+同步终端规范§4-F及记忆正文指针。讨论稿首部说明旧双包正文仅为历史，用户原话及旧review不改写。
+通用跨feature command/selector、TDC多消费者V11及单消费者失败责任仍保留，不以本期单包删除通用能力。
+只读子agent职责仅为定向文档一致性核对，不写文件、不运行动态命令，不产整批verdict或重开DESIGN cycle。
+
+当前正式需求hash：d321237e7aa19c7ba3267606ff407e95fcccd9a311d3b628020d523cc1145916。
+终端规范hash：1ebe02c0e2f63eac8e0a2950ae75b262f227e2fecb162af6dbb2f406af089bc5。
+记忆指针hash：f6075eef915ee931932e3ee734113d764128630c5af0689762bfe503c0802704。
+原两轮及此前hash只代表历史字节，不覆盖此次合并。记忆元数据未变，不生成索引。
+本次仅文档修改，无源码/契约/依赖/迁移修改，无生成、构建、测试、verify、DEV、reset/seed、L2/UAT；
+新包及动态行为仍NOT_RUN，cleanup=N/A（无新动态资源）。
+
+定向核对结果：只读agent tdp_feature_merge_consistency已正常完成，报告正式需求唯一owner、同包
+command前提、十一topic表、R/V/DEV映射、规范和记忆指针一致，未发现本次合并残留矛盾。
+它核对的正式需求hash与上述hash一致；未写入文件、未运行环境，不将此结果冒称独立整批DESIGN GO。
+主agent再回读R11/R12、验收映射及作者处置记录，确认当前任务仅文档且已完成；active goal为无。
+
+
+## 14 · Dexter要求的作者全文一致性校正（2026-10-04）
+
+授权原话：“你再自己review一下整个需求文档，看看有没有上下文不一致，前后矛盾的地方，全部改好”。
+本次为作者全文核查及文档修正，不创建新DESIGN cycle，不修改旧独立verdict，不产整批GO/NO-GO。
+主agent全文读回§0～10、R01～20（含R11.1）、十一topic/十五command组、24V/16DEV及规范§4-F，
+按review/platform/backend/platform/governance/task-start路由回读适用项目记忆；原始用户裁决仍优先。
+两名只读agent分别辅助核查数据/初始化与远程/范围/验收，没有文档写入、运行或verdict授权。
+
+确认并校正的同根问题（全部为文案一致性或既定要求的追踪修正，不新增产品裁决）：
+
+| 问题族 | 核验与最小修正 | 处置 |
+| --- | --- | --- |
+| 通用排序列与实际成员ref不一致 | R06原ORDER BY id与4.1a区域area_ref/点位point_ref不一致；统一实际引用列，三集合都明确hash及B计算；CBS内部摘要不要求生成到TDC | CONFIRMED，已修正R06/4.1a |
+| 本期门店初始化与下游前提混写 | R07明确首门店查询不要求先有门店成功；服务点才等待本次门店应用持久化，不等待全包；逐数据登记topic | CONFIRMED歧义，已修正R07 |
+| 去重周期与重启/重连混写 | R12的“当前绑定已成功不重做”限定同一本次启动周期；重启仍HTTP，纯连接重连重发有效订阅与已接受时间，不回退空集合0 | CONFIRMED歧义，已修正R07/R12/V08/V14/DEV14/规范 |
+| 共订后加入消费者与已有通道关系不清 | 首次HTTP/初始差异核对不因已有通道跳过，不用迟加入者初始时间回滚已接受时间；无持续per-feature版本、仲裁或全包屏障 | CONFIRMED歧义，已澄清R08/V11 |
+| 集合接受、完整详情与订退结果混写 | 集合所需数据成功应用持久化才确认；缺详情/详情失败、订退失败分别可见，不虚构相应成功，不回滚正确集合；合同完整响应要求不削弱 | CONFIRMED歧义，已澄清R09/§8 |
+| 投递故障隔离与CBS同事务缓存维护易混 | R16明确隔离的是提交后投递/回传，不能允许CBS写成功但范围缓存维护失败；R06/4.1c同事务要求保留 | CONFIRMED歧义，已澄清R16/§8 |
+| 远程负例及有限去重追踪不全 | R13要求协议不支持/失效身份，补入V17；V18及§0.2沿用R14有效记录范围，不暗示无限期exactly-once | CONFIRMED追踪缺项/措辞，已修正V17/V18/§0.2 |
+| 当前授权与旧两轮措辞 | §0及meta区分本次作者校正与已关闭审查；§10原话保留按后句替代，不把旧refIds/两包作为现行条款 | CONFIRMED时态，已澄清 |
+
+反例清单：区域/点位使用错误排序列；同绑定重启凭旧成功跳过服务点查询；仅socket重连覆盖已接受100为0；
+迟加入共订者漏首次核对；缺详情或订退失败被范围ACK冒充成功；投递失败隔离被误用为允许缓存未写；
+未知协议/失效身份远程请求未列负例。防再犯落点为上述R/V及规范本次周期限定，未新增机器门或恢复框架。
+
+只读辅助均正常完成：数据agent指出排序列与初始化周期歧义；范围agent指出V17追踪遗漏，其余疑似
+在线/补报、权限/纯能力、脚本范围、§11a模板与历史原话冲突经上下文反证不成立，不据此增加要求。
+主agent逐项亲自重开正式文档和用户原话后修改，再回读同根R/V/§8；数据agent再次只读回查新字节，
+未发现新增产品语义或相邻冲突。当前源码仅核对协议65536、REGION旧null、runtime晚到事件缺result等
+已引用静态边界，不把它们升级成新能力运行证明。
+
+CBS无缓存空集合初始化/批量A取值、具体容量与留存、失效绑定记录接纳等仍按§8诚实OPEN，
+本次没有替Dexter决定产品取舍，亦未展开详设。11topic、24V、16DEV及单store-basic分母保持，
+所有新增生产行为与动态场景仍NOT_RUN；源码、测试、契约、依赖、迁移与runtime证据未修改。
+未运行生成、编译、测试、verify、DEV、acceptance、reset/seed、L2、UAT或部署；cleanup=N/A。
+
+当前正式需求SHA-256：`a456301df1a4e376e86ee18fab177304a2328ba3d875dc3ff3d2d43713d0a5ea`；规范SHA-256：`47d6b212b87e166de3effb7059de65dbe3f806cff940104f7fdf7f20da43c1da`。

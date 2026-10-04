@@ -1,4 +1,4 @@
-import {createRequestId} from '@catering-v2s/kernel-base-contracts';
+import {createCommandId, createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {
   defineActor,
   onCommand,
@@ -17,6 +17,12 @@ import {
   type TerminalRequestExecutor,
   type TerminalRequestMap,
 } from '../../generated/terminalApi';
+import {
+  terminalTopicKeys,
+  type RemoteCommandMessage,
+  type RemoteReportAckMessage,
+  type TerminalTopicKey,
+} from '../../generated/terminalConnectionProtocol';
 import {moduleName} from '../../moduleName';
 import {
   parseTerminalConnectionMessage,
@@ -25,8 +31,12 @@ import {
 import type {
   TerminalClientState,
   TerminalConnectionCloseReason,
+  TerminalDataReadPayload,
   TerminalDataClientDependencies,
+  RemoteOperationFact,
   TerminalTransportConnection,
+  TerminalTopicNotification,
+  TerminalTopicSubscription,
 } from '../../types/client';
 import {
   selectActivationState,
@@ -46,9 +56,15 @@ import {
   connectTerminalCommand,
   disconnectTerminalCommand,
   initializeTerminalDataClientCommand,
+  readTerminalDataCommand,
   refreshTerminalClientStatusProjectionCommand,
   terminalHeartbeatTickCommand,
+  terminalActivationSucceededCommand,
+  acceptTerminalTopicNotificationCommand,
+  subscribeTerminalTopicCommand,
+  terminalTopicChangedCommand,
   terminalTransportEventCommand,
+  unsubscribeTerminalTopicCommand,
 } from '../commands/terminalDataClientCommands';
 
 const profileId = 'terminal-data-client';
@@ -114,6 +130,42 @@ const isRfc3339Utc = (value: unknown): value is string => {
   return month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth && hour <= 23 && minute <= 59 && second <= 59;
 };
 const isCredentialSecret = (value: string): boolean => /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/.test(value);
+const isCanonicalUuid = (value: unknown): value is string =>
+  typeof value === 'string' && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(value);
+const isTerminalTopicKey = (value: unknown): value is TerminalTopicKey =>
+  typeof value === 'string' && (terminalTopicKeys as readonly string[]).includes(value);
+const createProtocolUuid = (): string | null =>
+  typeof globalThis.crypto?.randomUUID === 'function' ? globalThis.crypto.randomUUID() : null;
+const requireProtocolUuid = (): string => {
+  const value = createProtocolUuid();
+  if (value === null) throw new Error('TERMINAL_PROTOCOL_UUID_UNAVAILABLE');
+  return value;
+};
+const topicIdentityKey = (
+  input: Readonly<{
+    credential: NonNullable<TerminalClientState['credential']>;
+    subscriberKey: string;
+    topicKey: string;
+    ownerRef: string;
+  }>,
+): string =>
+  JSON.stringify([
+    input.credential.groupWorkspaceKey,
+    input.credential.terminalRef,
+    input.credential.storeRef,
+    input.credential.bindingGeneration,
+    input.subscriberKey,
+    input.topicKey,
+    input.ownerRef,
+  ]);
+const topicSubscribeFrame = (subscription: TerminalTopicSubscription): string =>
+  JSON.stringify({
+    type: 'TOPIC_SUBSCRIBE',
+    subscriptionId: subscription.subscriptionId,
+    topicKey: subscription.topicKey,
+    ownerRef: subscription.ownerRef,
+    lastAcceptedTimeEpochMillis: subscription.acceptedTimeEpochMillis,
+  });
 const activationLogCode = (code: string): string => {
   const knownBusinessCode = terminalOperationContracts.activateTerminal.errorCodes.includes(code as never);
   return knownBusinessCode || code === 'TERMINAL_RESPONSE_SCHEMA_INVALID' || code === 'HTTP_DELIVERED_FAILURE'
@@ -295,8 +347,250 @@ export const createTerminalDataClientActor = (
   let heartbeatDeadline: ReturnType<typeof setTimeout> | undefined;
   let sessionReady = false;
   let expectedHeartbeatTimeoutMs = 0;
+  let currentConfigRevision: number | null = null;
   const sentAtBySequence = new Map<number, number>();
+  const remoteOperationLimit = 64;
+  const remoteResultResidenceMs = 7_200_000;
+  const lateRemoteResults = new Map<string, import('@catering-v2s/kernel-base-runtime').ActorExecutionRecord[]>();
 
+  const remoteFactFrom = (
+    message: RemoteCommandMessage,
+    credential: NonNullable<TerminalClientState['credential']>,
+    localRequestId: string,
+    phase: RemoteOperationFact['phase'],
+    addressName: string | null,
+    details: Pick<RemoteOperationFact, 'resultJson' | 'errorCode'> = {},
+  ): RemoteOperationFact => ({
+    remoteOperationId: message.remoteOperationId,
+    requestId: message.requestId,
+    localRequestId,
+    groupWorkspaceKey: credential.groupWorkspaceKey,
+    terminalRef: credential.terminalRef,
+    bindingGeneration: credential.bindingGeneration,
+    addressName,
+    configRevision: currentConfigRevision,
+    commandName: message.commandName,
+    phase,
+    reportId: requireProtocolUuid(),
+    occurredAt: new Date(dependencies.now()).toISOString(),
+    ...details,
+  });
+
+  const sendRemoteReport = async (
+    fact: Pick<RemoteOperationFact, 'remoteOperationId' | 'requestId' | 'phase' | 'reportId' | 'occurredAt' | 'resultJson' | 'errorCode'>,
+  ): Promise<void> => {
+    if (!sessionReady || connection === undefined) return;
+    const raw = JSON.stringify({
+      type: 'REMOTE_REPORT',
+      reportId: fact.reportId,
+      remoteOperationId: fact.remoteOperationId,
+      requestId: fact.requestId,
+      phase: fact.phase,
+      occurredAt: fact.occurredAt,
+      ...(fact.resultJson === undefined ? {} : {result: JSON.parse(fact.resultJson) as Readonly<Record<string, unknown>>}),
+      ...(fact.errorCode === undefined ? {} : {errorCode: fact.errorCode}),
+    });
+    if (terminalConnectionMessageUtf8ByteLength(raw) > 65_536) return;
+    try {
+      await connection.send(raw);
+    } catch {
+      await dependencies.transport.invalid({profileId, cause: 'NETWORK_ERROR'});
+    }
+  };
+
+  const persistRemoteFact = async (context: ActorExecutionContext, fact: RemoteOperationFact): Promise<boolean> => {
+    const previous = readState(context.getState()).remoteOperations[fact.remoteOperationId];
+    context.dispatchAction(terminalDataClientActions.putRemoteOperation(fact));
+    try {
+      await flush(context);
+      return true;
+    } catch {
+      if (previous === undefined) context.dispatchAction(terminalDataClientActions.removeRemoteOperation(fact.remoteOperationId));
+      else context.dispatchAction(terminalDataClientActions.putRemoteOperation(previous));
+      return false;
+    }
+  };
+
+  const persistRemoteRemoval = async (context: ActorExecutionContext, fact: RemoteOperationFact): Promise<boolean> => {
+    context.dispatchAction(terminalDataClientActions.removeRemoteOperation(fact.remoteOperationId));
+    try {
+      await flush(context);
+      lateRemoteResults.delete(fact.remoteOperationId);
+      return true;
+    } catch {
+      context.dispatchAction(terminalDataClientActions.putRemoteOperation(fact));
+      return false;
+    }
+  };
+
+  const resumeRemoteReports = async (context: ActorExecutionContext): Promise<void> => {
+    for (const fact of Object.values(readState(context.getState()).remoteOperations)) {
+      let current = fact;
+      if (fact.phase === 'RECEIVED' || fact.phase === 'STARTED') {
+        const reportId = createProtocolUuid();
+        if (reportId === null) continue;
+        const {resultJson, ...withoutResult} = fact;
+        void resultJson;
+        current = {
+          ...withoutResult,
+          phase: 'UNKNOWN',
+          reportId,
+          occurredAt: new Date(dependencies.now()).toISOString(),
+          errorCode: 'REMOTE_RESULT_UNKNOWN',
+        };
+        if (!(await persistRemoteFact(context, current))) continue;
+      }
+      await sendRemoteReport(current);
+    }
+  };
+
+  const reportRemoteOutcome = async (
+    context: ActorExecutionContext,
+    message: RemoteCommandMessage,
+    credential: NonNullable<TerminalClientState['credential']>,
+    original: RemoteOperationFact,
+    records: readonly import('@catering-v2s/kernel-base-runtime').ActorExecutionRecord[],
+    phase: RemoteOperationFact['phase'],
+    errorCode?: string,
+  ): Promise<void> => {
+    const current = readState(context.getState()).remoteOperations[message.remoteOperationId];
+    if (
+      current === undefined ||
+      current.localRequestId !== original.localRequestId ||
+      current.requestId !== original.requestId ||
+      current.groupWorkspaceKey !== original.groupWorkspaceKey ||
+      current.terminalRef !== original.terminalRef ||
+      current.bindingGeneration !== original.bindingGeneration ||
+      current.addressName !== original.addressName ||
+      current.configRevision !== original.configRevision
+    )
+      return;
+    const result = {
+      actorResults: records.map(record => ({
+        actorKey: record.actorKey,
+        status: record.status,
+        result: record.result,
+        ...(record.error === null ? {} : {errorCode: record.error.code}),
+      })),
+    };
+    let fact = remoteFactFrom(message, credential, original.localRequestId, phase, original.addressName, {
+      ...(errorCode === undefined ? {resultJson: JSON.stringify(result)} : {errorCode}),
+    });
+    const wire = JSON.stringify({
+      type: 'REMOTE_REPORT',
+      reportId: fact.reportId,
+      remoteOperationId: fact.remoteOperationId,
+      requestId: fact.requestId,
+      phase: fact.phase,
+      occurredAt: fact.occurredAt,
+      ...(fact.resultJson === undefined ? {} : {result: JSON.parse(fact.resultJson) as Readonly<Record<string, unknown>>}),
+      ...(fact.errorCode === undefined ? {} : {errorCode: fact.errorCode}),
+    });
+    if (terminalConnectionMessageUtf8ByteLength(wire) > 65_536) {
+      fact = remoteFactFrom(message, credential, original.localRequestId, 'FAILED', original.addressName, {
+        errorCode: 'TERMINAL_RESULT_TOO_LARGE',
+      });
+    }
+    if (await persistRemoteFact(context, fact)) await sendRemoteReport(fact);
+  };
+
+  const runRemoteCommand = async (
+    context: ActorExecutionContext,
+    message: RemoteCommandMessage,
+  ): Promise<Readonly<{status: string}>> => {
+    const client = readState(context.getState());
+    const credential = client.credential;
+    const reject = async (errorCode: string): Promise<Readonly<{status: string}>> => {
+      const reportId = createProtocolUuid();
+      if (reportId !== null) {
+        await sendRemoteReport({
+          remoteOperationId: message.remoteOperationId,
+          requestId: message.requestId,
+          phase: 'FAILED',
+          reportId,
+          occurredAt: new Date(dependencies.now()).toISOString(),
+          errorCode,
+        });
+      }
+      return Object.freeze({status: errorCode});
+    };
+    if (
+      credential === null ||
+      client.activationStatus !== 'active' ||
+      credential.bindingGeneration !== message.bindingGeneration
+    )
+      return reject('TERMINAL_BINDING_INVALID');
+    const prior = client.remoteOperations[message.remoteOperationId];
+    if (prior !== undefined) {
+      if (
+        prior.requestId !== message.requestId ||
+        prior.commandName !== message.commandName ||
+        prior.groupWorkspaceKey !== credential.groupWorkspaceKey ||
+        prior.bindingGeneration !== credential.bindingGeneration ||
+        prior.terminalRef !== credential.terminalRef ||
+        prior.addressName !== client.connection.addressName ||
+        prior.configRevision !== currentConfigRevision
+      )
+        return reject('REMOTE_OPERATION_ID_CONFLICT');
+      await sendRemoteReport(prior);
+      return Object.freeze({status: 'duplicate-reported'});
+    }
+    if (Object.keys(client.remoteOperations).length >= remoteOperationLimit) return reject('REMOTE_OPERATION_LIMIT_REACHED');
+    if (!isRecord(message.parameters)) return reject('REMOTE_PARAMETERS_INVALID');
+    const localRequestId = String(createRequestId());
+    const received = remoteFactFrom(
+      message,
+      credential,
+      localRequestId,
+      'RECEIVED',
+      client.connection.addressName,
+    );
+    if (!(await persistRemoteFact(context, received))) return reject('TERMINAL_PERSISTENCE_FAILED');
+    await sendRemoteReport(received);
+    const started = remoteFactFrom(message, credential, localRequestId, 'STARTED', received.addressName);
+    if (!(await persistRemoteFact(context, started))) return Object.freeze({status: 'start-persistence-failed'});
+    await sendRemoteReport(started);
+    try {
+      const result = await context.dispatchCommand(message.commandName, message.parameters as StateJsonValue, {
+        requestId: localRequestId as never,
+        commandId: createCommandId(),
+        target: 'local',
+        lateOutcome: record => {
+          const records = lateRemoteResults.get(message.remoteOperationId) ?? [];
+          records.push(record);
+          lateRemoteResults.set(message.remoteOperationId, records);
+          const succeeded = records.every(item => item.status === 'completed');
+          void reportRemoteOutcome(
+            context,
+            message,
+            credential,
+            received,
+            records,
+            succeeded ? 'COMPLETED' : 'FAILED',
+            succeeded ? undefined : 'REMOTE_COMMAND_FAILED',
+          );
+        },
+        lateResultTtlMs: remoteResultResidenceMs,
+      });
+      if (result.status === 'timed-out') {
+        await reportRemoteOutcome(context, message, credential, received, result.actorResults, 'UNKNOWN', 'REMOTE_RESULT_UNKNOWN');
+        return Object.freeze({status: 'unknown'});
+      }
+      await reportRemoteOutcome(
+        context,
+        message,
+        credential,
+        received,
+        result.actorResults,
+        result.status === 'completed' ? 'COMPLETED' : 'FAILED',
+        result.status === 'completed' ? undefined : 'REMOTE_COMMAND_FAILED',
+      );
+      return Object.freeze({status: result.status});
+    } catch {
+      await reportRemoteOutcome(context, message, credential, received, [], 'FAILED', 'REMOTE_COMMAND_DISPATCH_FAILED');
+      return Object.freeze({status: 'dispatch-failed'});
+    }
+  };
   const clearHeartbeatDeadline = (): void => {
     if (heartbeatDeadline !== undefined) clearTimeout(heartbeatDeadline);
     heartbeatDeadline = undefined;
@@ -333,6 +627,20 @@ export const createTerminalDataClientActor = (
     await dependencies.transport.stop({profileId});
   };
 
+  const sendCurrentTopicSubscriptions = async (context: ActorExecutionContext): Promise<boolean> => {
+    if (!sessionReady || connection === undefined) return false;
+    const subscriptions = Object.values(readState(context.getState()).topicSubscriptions);
+    for (const subscription of subscriptions) {
+      try {
+        await connection.send(topicSubscribeFrame(subscription));
+      } catch {
+        await dependencies.transport.invalid({profileId, cause: 'NETWORK_ERROR'});
+        return false;
+      }
+    }
+    return true;
+  };
+
   const actor = defineActor(moduleName, 'terminal-data-client', [
     onCommand(refreshTerminalClientStatusProjectionCommand, context => {
       if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER') {
@@ -365,18 +673,117 @@ export const createTerminalDataClientActor = (
       if (result.status !== 'completed') throw new Error(`Terminal auto-connect failed: ${result.status}`);
       return Object.freeze({status: 'connect-requested'});
     }),
+    onCommand(readTerminalDataCommand, async context => {
+      const state = readState(context.getState());
+      const credential = state.credential;
+      const payload = context.command.payload as TerminalDataReadPayload;
+      if (!isHostRuntime(context.getState()) || state.activationStatus !== 'active' || credential === null) {
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
+      }
+      if (
+        payload === null ||
+        typeof payload !== 'object' ||
+        typeof payload.operationId !== 'string' ||
+        !payload.operationId.startsWith('terminalRead') ||
+        terminalOperationContracts[payload.operationId as TerminalOperationId] === undefined
+      ) {
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_READ'});
+      }
+      const pathParameters = {...payload.pathParameters};
+      if (Object.prototype.hasOwnProperty.call(pathParameters, 'storeRef')) {
+        Object.assign(pathParameters, {storeRef: credential.storeRef});
+      }
+      for (const [key, value] of Object.entries(pathParameters)) {
+        if (key === 'storeRef') continue;
+        if (typeof value !== 'string' || value.trim().length === 0) {
+          return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_READ'});
+        }
+      }
+      const headers = Object.freeze({
+        Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`,
+        'X-Terminal-Device-Id': credential.deviceId,
+        'X-Terminal-Ref': credential.terminalRef,
+      });
+      const operation = terminalClient.client[payload.operationId as TerminalDataReadPayload['operationId']];
+      const startedAt = dependencies.now();
+      try {
+        const result = await operation({
+          pathParameters,
+          queryParameters: {},
+          headers,
+          body: {},
+        } as never);
+        await terminalClient.acceptBusinessResponse(
+          profileId,
+          dependencies.businessServerName,
+          result as TerminalOperationResult<TerminalOperationId>,
+        );
+        context.platformPorts.logger
+          .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-read'})
+          .info({
+            category: 'terminal.data.read',
+            event: 'terminal-read-completed',
+            message: 'Generated terminal data read returned a classified result',
+            context: {commandId: context.command.commandId},
+            data: {
+              operationId: payload.operationId,
+              elapsedMs: Math.max(0, dependencies.now() - startedAt),
+              resultKind: result.kind,
+              ...(result.kind === 'success'
+                ? {status: result.status}
+                : result.kind === 'business-rejection'
+                  ? {status: result.status, errorCode: result.errorCode}
+                  : {failureCategory: result.category, code: activationLogCode(result.code)}),
+              ...terminalClient.readAcceptedResponseIdentity(),
+            },
+          });
+        return result;
+      } catch (error) {
+        context.platformPorts.logger
+          .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-read'})
+          .error({
+            category: 'terminal.data.read',
+            event: 'terminal-read-threw',
+            message: 'Generated terminal data read threw before returning a result',
+            context: {commandId: context.command.commandId},
+            data: {operationId: payload.operationId, elapsedMs: Math.max(0, dependencies.now() - startedAt)},
+            error: {
+              name: error instanceof Error ? error.name : 'UnknownError',
+              code: 'TERMINAL_READ_THROWN',
+              message: 'Terminal data read failed',
+            },
+          });
+        return Object.freeze({kind: 'failure', category: 'delivered-failure', code: 'TERMINAL_READ_THROWN'});
+      }
+    }),
     onCommand(activateTerminalCommand, async context => {
       if (!isHostRuntime(context.getState()))
         return Object.freeze({status: 'rejected', reason: 'TERMINAL_CLIENT_HOST_ROLE_REQUIRED'});
-      if (readState(context.getState()).credential !== null)
-        return Object.freeze({status: 'rejected', reason: 'ALREADY_ACTIVE'});
-      const device = await context.platformPorts.device.getDeviceInfo({timeoutMs: callTimeoutMs});
+      const activationState = readState(context.getState());
+      if (activationState.credential !== null) return Object.freeze({status: 'rejected', reason: 'ALREADY_ACTIVE'});
+      if (activationState.activationStatus === 'cancelling')
+        return Object.freeze({status: 'rejected', reason: 'ACTIVATION_IN_PROGRESS'});
+      if (dependencies.canActivate?.(context.getState()) === false)
+        return Object.freeze({status: 'rejected', reason: 'TOPOLOGY_CHANGE_IN_PROGRESS'});
+      context.dispatchAction(terminalDataClientActions.setActivationStatus('activating'));
+      let device: Awaited<ReturnType<typeof context.platformPorts.device.getDeviceInfo>>;
+      try {
+        device = await context.platformPorts.device.getDeviceInfo({timeoutMs: callTimeoutMs});
+      } catch (error) {
+        context.dispatchAction(terminalDataClientActions.setActivationStatus('inactive'));
+        throw error;
+      }
       if (
         device.status !== 'succeeded' ||
         device.value.deviceId.trim().length === 0 ||
         device.value.deviceId.length > 128
       ) {
+        context.dispatchAction(terminalDataClientActions.setActivationStatus('inactive'));
         return Object.freeze({status: 'rejected', reason: 'DEVICE_ID_UNAVAILABLE'});
+      }
+      if (!isHostRuntime(context.getState()) || dependencies.canActivate?.(context.getState()) === false) {
+        context.dispatchAction(terminalDataClientActions.setActivationStatus('inactive'));
+        return Object.freeze({status: 'rejected', reason: 'TOPOLOGY_CHANGE_IN_PROGRESS'});
       }
       const current = readState(context.getState());
       if (current.credential !== null) return Object.freeze({status: 'rejected', reason: 'ALREADY_ACTIVE'});
@@ -441,9 +848,10 @@ export const createTerminalDataClientActor = (
         try {
           pending = await reservation.promise;
         } catch (error) {
-          if (error instanceof Error && error.message.startsWith('SECURE_RANDOM_'))
-            return Object.freeze({status: 'rejected', reason: error.message});
-          throw error;
+          if (!(error instanceof Error) || !error.message.startsWith('SECURE_RANDOM_')) throw error;
+          if (Object.keys(readState(context.getState()).pendingActivations).length === 0)
+            context.dispatchAction(terminalDataClientActions.setActivationStatus('inactive'));
+          return Object.freeze({status: 'rejected', reason: error.message});
         } finally {
           if (pendingByOperationId.get(operationId) === reservation) pendingByOperationId.delete(operationId);
           if (pendingByBusinessIdentity.get(signature) === reservation) pendingByBusinessIdentity.delete(signature);
@@ -483,7 +891,11 @@ export const createTerminalDataClientActor = (
           event: 'activation-request-threw',
           message: 'Terminal activation HTTP request threw before returning a result',
           context: {commandId: context.command.commandId},
-          data: {profileId, operationId: 'activateTerminal', elapsedMs: Math.max(0, dependencies.now() - activationStartedAt)},
+          data: {
+            profileId,
+            operationId: 'activateTerminal',
+            elapsedMs: Math.max(0, dependencies.now() - activationStartedAt),
+          },
           error: {
             name: error instanceof Error ? error.name : 'UnknownError',
             code: 'ACTIVATION_HTTP_CALL_THROWN',
@@ -492,11 +904,12 @@ export const createTerminalDataClientActor = (
         });
         throw error;
       }
-      const activationResultLog: Record<string, string | number> = result.kind === 'success'
-        ? {kind: result.kind, status: result.status}
-        : result.kind === 'business-rejection'
-          ? {kind: result.kind, status: result.status, errorCode: result.errorCode}
-          : {kind: result.kind, category: result.category, code: activationLogCode(result.code)};
+      const activationResultLog: Record<string, string | number> =
+        result.kind === 'success'
+          ? {kind: result.kind, status: result.status}
+          : result.kind === 'business-rejection'
+            ? {kind: result.kind, status: result.status, errorCode: result.errorCode}
+            : {kind: result.kind, category: result.category, code: activationLogCode(result.code)};
       activationLogger[result.kind === 'success' ? 'info' : 'warn']({
         category: 'terminal.activation.http',
         event: 'activation-request-result',
@@ -512,6 +925,9 @@ export const createTerminalDataClientActor = (
       });
       await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
       if (result.kind === 'success') {
+        if (!isHostRuntime(context.getState()) || dependencies.canActivate?.(context.getState()) === false) {
+          return Object.freeze({status: 'rejected', reason: 'ACTIVATION_RESULT_STALE'});
+        }
         context.dispatchAction(
           terminalDataClientActions.replaceCredential(
             Object.freeze({
@@ -526,11 +942,26 @@ export const createTerminalDataClientActor = (
         );
         context.dispatchAction(terminalDataClientActions.removePendingActivation(pending.operationId));
         await flush(context);
-        const connectionResult = await context.dispatchCommand(
-          connectTerminalCommand,
-          Object.freeze({}),
-          {requestId: context.command.requestId ?? createRequestId()},
-        );
+        const activationSucceeded = await context.dispatchCommand(terminalActivationSucceededCommand, {
+          terminalRef: result.body.terminalRef,
+          storeRef: result.body.storeRef,
+          groupWorkspaceKey: result.body.groupWorkspaceKey,
+          bindingGeneration: result.body.bindingGeneration,
+        });
+        if (activationSucceeded.status !== 'completed') {
+          context.platformPorts.logger
+            .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'activation'})
+            .error({
+              category: 'terminal.activation.bootstrap',
+              event: 'activation-success-broadcast-failed',
+              message: 'Terminal activation succeeded but one or more feature consumers failed to start',
+              context: {commandId: context.command.commandId},
+              data: {dispatchStatus: activationSucceeded.status, bindingGeneration: result.body.bindingGeneration},
+            });
+        }
+        const connectionResult = await context.dispatchCommand(connectTerminalCommand, Object.freeze({}), {
+          requestId: context.command.requestId ?? createRequestId(),
+        });
         if (connectionResult.status !== 'completed') {
           context.platformPorts.logger
             .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'connection'})
@@ -551,6 +982,8 @@ export const createTerminalDataClientActor = (
       if (result.kind === 'business-rejection' && result.errorCode === 'TERMINAL_BINDING_ACTIVATION_EXPIRED') {
         context.dispatchAction(terminalDataClientActions.removePendingActivation(pending.operationId));
         await flush(context);
+        if (Object.keys(readState(context.getState()).pendingActivations).length === 0)
+          context.dispatchAction(terminalDataClientActions.setActivationStatus('inactive'));
       }
       return result;
     }),
@@ -559,7 +992,16 @@ export const createTerminalDataClientActor = (
         return Object.freeze({status: 'rejected', reason: 'TERMINAL_CLIENT_HOST_ROLE_REQUIRED'});
       const credential = readState(context.getState()).credential;
       if (credential === null) return Object.freeze({status: 'rejected', reason: 'TERMINAL_NOT_ACTIVE'});
+      const wasConnected =
+        connection !== undefined ||
+        ['connecting', 'awaiting-ready', 'connected', 'backoff'].includes(
+          readState(context.getState()).connection.status,
+        );
+      if (readState(context.getState()).activationStatus === 'cancelling')
+        return Object.freeze({status: 'rejected', reason: 'CANCELLATION_IN_PROGRESS'});
       context.dispatchAction(terminalDataClientActions.setActivationStatus('cancelling'));
+      await closeLocalConnection();
+      context.dispatchAction(terminalDataClientActions.clearConnection());
       const cancellationLogger = context.platformPorts.logger.scope({
         moduleName,
         layer: 'kernel',
@@ -579,12 +1021,23 @@ export const createTerminalDataClientActor = (
           surfaceForm: dependencies.surfaceForm,
         },
       });
-      const result = await terminalClient.client.cancelTerminalActivation({
-        pathParameters: {terminalRef: credential.terminalRef},
-        queryParameters: {},
-        headers: {Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`},
-        body: {deviceId: credential.deviceId},
-      });
+      let result: Awaited<ReturnType<typeof terminalClient.client.cancelTerminalActivation>>;
+      try {
+        result = await terminalClient.client.cancelTerminalActivation({
+          pathParameters: {terminalRef: credential.terminalRef},
+          queryParameters: {},
+          headers: {Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`},
+          body: {deviceId: credential.deviceId},
+        });
+      } catch (error) {
+        context.dispatchAction(terminalDataClientActions.setActivationStatus('active'));
+        if (wasConnected) {
+          await context.dispatchCommand(connectTerminalCommand, Object.freeze({}), {
+            requestId: context.command.requestId ?? createRequestId(),
+          });
+        }
+        throw error;
+      }
       cancellationLogger[result.kind === 'success' ? 'info' : 'warn']({
         category: 'terminal.activation.http',
         event: 'cancel-activation-request-result',
@@ -606,9 +1059,13 @@ export const createTerminalDataClientActor = (
       await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
       if (result.kind !== 'success') {
         context.dispatchAction(terminalDataClientActions.setActivationStatus('active'));
+        if (wasConnected) {
+          await context.dispatchCommand(connectTerminalCommand, Object.freeze({}), {
+            requestId: context.command.requestId ?? createRequestId(),
+          });
+        }
         return result;
       }
-      await closeLocalConnection();
       context.dispatchAction(terminalDataClientActions.setActivationStatus('cancelling'));
       resetRequestId.current = context.command.requestId ?? createRequestId();
       dispatchOfflineReset(context);
@@ -631,6 +1088,8 @@ export const createTerminalDataClientActor = (
       const clientState = readState(context.getState());
       if (clientState.activationStatus === 'cancelling')
         return Object.freeze({status: 'rejected', reason: 'CANCELLATION_IN_PROGRESS'});
+      if (dependencies.canActivate?.(context.getState()) === false)
+        return Object.freeze({status: 'rejected', reason: 'TOPOLOGY_CHANGE_IN_PROGRESS'});
       if (clientState.connection.status === 'connecting') return Object.freeze({status: 'connecting'});
       if (clientState.connection.status === 'awaiting-ready' || clientState.connection.status === 'connected')
         return Object.freeze({status: clientState.connection.status});
@@ -648,6 +1107,15 @@ export const createTerminalDataClientActor = (
           reconnectPolicy,
         });
         connection = opened;
+        if (
+          !isHostRuntime(context.getState()) ||
+          readState(context.getState()).activationStatus === 'cancelling' ||
+          readState(context.getState()).credential !== credential ||
+          dependencies.canActivate?.(context.getState()) === false
+        ) {
+          await closeLocalConnection();
+          return Object.freeze({status: 'rejected', reason: 'CONNECTION_RESULT_STALE'});
+        }
         sessionReady = false;
         context.dispatchAction(
           terminalDataClientActions.setConnection(
@@ -675,13 +1143,185 @@ export const createTerminalDataClientActor = (
       }
     }),
     onCommand(disconnectTerminalCommand, async context => {
+      context.dispatchAction(terminalDataClientActions.clearPendingTopicNotifications());
       await closeLocalConnection();
       context.dispatchAction(terminalDataClientActions.clearConnection());
       return Object.freeze({status: 'disconnected'});
     }),
+    onCommand(subscribeTerminalTopicCommand, async context => {
+      if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
+      const state = readState(context.getState());
+      const credential = state.credential;
+      const payload = context.command.payload;
+      if (
+        state.activationStatus !== 'active' ||
+        credential === null ||
+        typeof payload.subscriberKey !== 'string' ||
+        payload.subscriberKey.length < 1 ||
+        terminalConnectionMessageUtf8ByteLength(payload.subscriberKey) > 128 ||
+        !isTerminalTopicKey(payload.topicKey) ||
+        !isCanonicalUuid(payload.ownerRef) ||
+        !Number.isSafeInteger(payload.initialTimeEpochMillis) ||
+        payload.initialTimeEpochMillis < 0
+      )
+        return Object.freeze({status: 'rejected', reason: 'INVALID_SUBSCRIPTION'});
+      const existing = Object.values(state.topicSubscriptions).find(
+        subscription =>
+          subscription.subscriberKey === payload.subscriberKey &&
+          subscription.topicKey === payload.topicKey &&
+          subscription.ownerRef === payload.ownerRef,
+      );
+      if (existing !== undefined)
+        return Object.freeze({status: 'already-subscribed', subscriptionId: existing.subscriptionId});
+
+      const identityKey = topicIdentityKey({
+        credential,
+        subscriberKey: payload.subscriberKey,
+        topicKey: payload.topicKey,
+        ownerRef: payload.ownerRef,
+      });
+      const acceptedTimeEpochMillis = state.acceptedTopicTimes[identityKey] ?? payload.initialTimeEpochMillis;
+      const subscriptionId = createProtocolUuid();
+      if (subscriptionId === null) return Object.freeze({status: 'failed', reason: 'UUID_GENERATION_UNAVAILABLE'});
+      const subscription: TerminalTopicSubscription = Object.freeze({
+        subscriptionId,
+        identityKey,
+        subscriberKey: payload.subscriberKey,
+        topicKey: payload.topicKey,
+        ownerRef: payload.ownerRef,
+        acceptedTimeEpochMillis,
+        pendingNotification: null,
+      });
+      context.dispatchAction(terminalDataClientActions.putTopicSubscription({subscription, identityKey}));
+      try {
+        await flush(context);
+      } catch {
+        context.dispatchAction(
+          terminalDataClientActions.removeTopicSubscription({subscriptionId: subscription.subscriptionId, identityKey}),
+        );
+        return Object.freeze({status: 'failed', reason: 'PERSISTENCE_FAILED'});
+      }
+      if (sessionReady && connection !== undefined) {
+        try {
+          await connection.send(topicSubscribeFrame(subscription));
+        } catch {
+          await dependencies.transport.invalid({profileId, cause: 'NETWORK_ERROR'});
+          return Object.freeze({status: 'failed', reason: 'SUBSCRIBE_SEND_FAILED'});
+        }
+      }
+      return Object.freeze({status: 'subscribed', subscriptionId: subscription.subscriptionId});
+    }),
+    onCommand(unsubscribeTerminalTopicCommand, async context => {
+      if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
+      const payload = context.command.payload;
+      const subscription = Object.values(readState(context.getState()).topicSubscriptions).find(
+        current =>
+          current.subscriberKey === payload.subscriberKey &&
+          current.topicKey === payload.topicKey &&
+          current.ownerRef === payload.ownerRef,
+      );
+      if (subscription === undefined) return Object.freeze({status: 'not-subscribed'});
+      context.dispatchAction(
+        terminalDataClientActions.removeTopicSubscription({
+          subscriptionId: subscription.subscriptionId,
+          identityKey: subscription.identityKey,
+        }),
+      );
+      try {
+        await flush(context);
+      } catch {
+        context.dispatchAction(
+          terminalDataClientActions.putTopicSubscription({subscription, identityKey: subscription.identityKey}),
+        );
+        context.dispatchAction(
+          terminalDataClientActions.setTopicAcceptedTime({
+            subscriptionId: subscription.subscriptionId,
+            identityKey: subscription.identityKey,
+            acceptedTimeEpochMillis: subscription.acceptedTimeEpochMillis,
+          }),
+        );
+        return Object.freeze({status: 'failed', reason: 'PERSISTENCE_FAILED'});
+      }
+      if (sessionReady && connection !== undefined) {
+        try {
+          await connection.send(
+            JSON.stringify({
+              type: 'TOPIC_UNSUBSCRIBE',
+              subscriptionId: subscription.subscriptionId,
+              topicKey: subscription.topicKey,
+              ownerRef: subscription.ownerRef,
+            }),
+          );
+        } catch {
+          await dependencies.transport.invalid({profileId, cause: 'NETWORK_ERROR'});
+          return Object.freeze({status: 'failed', reason: 'UNSUBSCRIBE_SEND_FAILED'});
+        }
+      }
+      return Object.freeze({status: 'unsubscribed', subscriptionId: subscription.subscriptionId});
+    }),
+    onCommand(acceptTerminalTopicNotificationCommand, async context => {
+      if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
+      const payload = context.command.payload;
+      const current = readState(context.getState());
+      const subscription = current.topicSubscriptions[payload.subscriptionId];
+      const notification = subscription?.pendingNotification;
+      const credential = current.credential;
+      if (
+        credential === null ||
+        current.activationStatus !== 'active' ||
+        subscription === undefined ||
+        subscription.subscriberKey !== payload.subscriberKey ||
+        notification === null ||
+        notification === undefined ||
+        notification.notificationId !== payload.notificationId
+      )
+        return Object.freeze({status: 'rejected', reason: 'STALE_NOTIFICATION'});
+      const previousAcceptedTime = subscription.acceptedTimeEpochMillis;
+      context.dispatchAction(
+        terminalDataClientActions.setTopicAcceptedTime({
+          subscriptionId: subscription.subscriptionId,
+          identityKey: subscription.identityKey,
+          acceptedTimeEpochMillis: notification.topicTimeEpochMillis,
+        }),
+      );
+      try {
+        await flush(context);
+      } catch {
+        context.dispatchAction(
+          terminalDataClientActions.setTopicAcceptedTime({
+            subscriptionId: subscription.subscriptionId,
+            identityKey: subscription.identityKey,
+            acceptedTimeEpochMillis: previousAcceptedTime,
+          }),
+        );
+        return Object.freeze({status: 'failed', reason: 'PERSISTENCE_FAILED'});
+      }
+      if (!sessionReady || connection === undefined) return Object.freeze({status: 'accepted-locally'});
+      try {
+        await connection.send(
+          JSON.stringify({
+            type: 'TOPIC_ACCEPT',
+            notificationId: notification.notificationId,
+            subscriptionId: subscription.subscriptionId,
+            topicKey: subscription.topicKey,
+            ownerRef: subscription.ownerRef,
+            acceptedTimeEpochMillis: notification.topicTimeEpochMillis,
+          }),
+        );
+      } catch {
+        await dependencies.transport.invalid({profileId, cause: 'NETWORK_ERROR'});
+        return Object.freeze({status: 'failed', reason: 'ACCEPT_SEND_FAILED'});
+      }
+      context.dispatchAction(terminalDataClientActions.clearPendingTopicNotification(subscription.subscriptionId));
+      return Object.freeze({status: 'accepted', acceptedTimeEpochMillis: notification.topicTimeEpochMillis});
+    }),
     onCommand(terminalTransportEventCommand, async context => {
       if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
       const event = context.command.payload.event;
+      if (readState(context.getState()).activationStatus === 'cancelling') {
+        if (event.type === 'open') await dependencies.transport.stop({profileId});
+        return Object.freeze({status: 'cancellation-in-progress'});
+      }
       if (event.type === 'message') {
         let parsed: unknown;
         try {
@@ -722,6 +1362,8 @@ export const createTerminalDataClientActor = (
             }),
           );
           await dependencies.transport.ready({profileId, stableAfterMs: Number(parsed.heartbeatIntervalMs)});
+          if (!(await sendCurrentTopicSubscriptions(context))) return null;
+          await resumeRemoteReports(context);
           if (heartbeatTimer !== undefined) clearInterval(heartbeatTimer);
           heartbeatTimer = setInterval(
             () =>
@@ -739,6 +1381,44 @@ export const createTerminalDataClientActor = (
         if (parsed.type === 'SESSION_READY') {
           await dependencies.transport.invalid({profileId, cause: 'PROTOCOL_INVALID'});
           return null;
+        }
+        if (parsed.type === 'REMOTE_COMMAND') {
+          if (
+            !isCanonicalUuid(parsed.remoteOperationId) ||
+            !isCanonicalUuid(parsed.requestId) ||
+            !Number.isSafeInteger(parsed.bindingGeneration) ||
+            Number(parsed.bindingGeneration) < 1 ||
+            typeof parsed.commandName !== 'string' ||
+            terminalConnectionMessageUtf8ByteLength(parsed.commandName) < 1 ||
+            terminalConnectionMessageUtf8ByteLength(parsed.commandName) > 128 ||
+            !isRecord(parsed.parameters)
+          ) {
+            await dependencies.transport.invalid({profileId, cause: 'PROTOCOL_INVALID'});
+            return null;
+          }
+          return runRemoteCommand(context, parsed as unknown as RemoteCommandMessage);
+        }
+        if (parsed.type === 'REMOTE_REPORT_ACK') {
+          if (
+            !isCanonicalUuid(parsed.reportId) ||
+            !isCanonicalUuid(parsed.remoteOperationId) ||
+            !isCanonicalUuid(parsed.requestId) ||
+            !isRfc3339Utc(parsed.acceptedAt)
+          ) {
+            await dependencies.transport.invalid({profileId, cause: 'PROTOCOL_INVALID'});
+            return null;
+          }
+          const fact = readState(context.getState()).remoteOperations[parsed.remoteOperationId];
+          if (
+            fact === undefined ||
+            fact.reportId !== parsed.reportId ||
+            fact.requestId !== parsed.requestId
+          ) return Object.freeze({status: 'stale-remote-report-ack'});
+          if (fact.phase === 'COMPLETED' || fact.phase === 'FAILED') {
+            const removed = await persistRemoteRemoval(context, fact);
+            return Object.freeze({status: removed ? 'remote-report-released' : 'remote-report-release-failed'});
+          }
+          return Object.freeze({status: 'remote-report-acknowledged'});
         }
         if (parsed.type === 'PONG') {
           if (!Number.isSafeInteger(parsed.seq) || Number(parsed.seq) < 1 || !isRfc3339Utc(parsed.serverTs)) {
@@ -770,12 +1450,73 @@ export const createTerminalDataClientActor = (
               data: {profileId, sequence: Number(parsed.seq), rttMs},
             });
         }
+        if (parsed.type === 'TOPIC_CHANGED') {
+          if (
+            !isCanonicalUuid(parsed.notificationId) ||
+            !isCanonicalUuid(parsed.subscriptionId) ||
+            typeof parsed.topicKey !== 'string' ||
+            !isCanonicalUuid(parsed.ownerRef) ||
+            !Number.isSafeInteger(parsed.topicTimeEpochMillis) ||
+            Number(parsed.topicTimeEpochMillis) < 0
+          ) {
+            await dependencies.transport.invalid({profileId, cause: 'PROTOCOL_INVALID'});
+            return null;
+          }
+          const current = readState(context.getState());
+          const subscription = current.topicSubscriptions[parsed.subscriptionId];
+          if (subscription === undefined) return Object.freeze({status: 'stale-topic-notification'});
+          if (subscription.topicKey !== parsed.topicKey || subscription.ownerRef !== parsed.ownerRef) {
+            await dependencies.transport.invalid({profileId, cause: 'PROTOCOL_INVALID'});
+            return null;
+          }
+          const notification: TerminalTopicNotification = Object.freeze({
+            notificationId: parsed.notificationId,
+            subscriptionId: parsed.subscriptionId,
+            topicKey: subscription.topicKey,
+            ownerRef: subscription.ownerRef,
+            topicTimeEpochMillis: Number(parsed.topicTimeEpochMillis),
+          });
+          context.dispatchAction(
+            terminalDataClientActions.setPendingTopicNotification({
+              subscriptionId: subscription.subscriptionId,
+              notification,
+            }),
+          );
+          const credential = current.credential;
+          if (credential === null) return Object.freeze({status: 'stale-topic-binding'});
+          const dispatched = await context.dispatchCommand(terminalTopicChangedCommand, {
+            subscriberKey: subscription.subscriberKey,
+            terminalRef: credential.terminalRef,
+            bindingGeneration: credential.bindingGeneration,
+            notification,
+          });
+          return Object.freeze({status: 'topic-notification-dispatched', dispatchStatus: dispatched.status});
+        }
         if (parsed.type === 'AUTHENTICATE' || parsed.type === 'PING') {
           await dependencies.transport.invalid({profileId, cause: 'PROTOCOL_INVALID'});
         }
         return null;
       }
       if (event.type === 'open') {
+        const persistedRemoteOperations = Object.values(readState(context.getState()).remoteOperations);
+        const nextRevision = event.configRevision ?? null;
+        const hasStaleRemoteOperation = persistedRemoteOperations.some(
+          fact => fact.configRevision !== nextRevision || fact.addressName !== (event.addressName ?? null),
+        );
+        currentConfigRevision = nextRevision;
+        if (hasStaleRemoteOperation) {
+          context.dispatchAction(terminalDataClientActions.clearRemoteOperations());
+          try {
+            await flush(context);
+            lateRemoteResults.clear();
+          } catch {
+            for (const fact of persistedRemoteOperations)
+              context.dispatchAction(terminalDataClientActions.putRemoteOperation(fact));
+            await dependencies.transport.invalid({profileId, cause: 'PERSISTENCE_FAILED'});
+            return Object.freeze({status: 'remote-operation-clear-failed'});
+          }
+        }
+        context.dispatchAction(terminalDataClientActions.clearPendingTopicNotifications());
         if (heartbeatTimer !== undefined) clearInterval(heartbeatTimer);
         clearHeartbeatDeadline();
         heartbeatTimer = undefined;
@@ -809,6 +1550,7 @@ export const createTerminalDataClientActor = (
         return null;
       }
       if (event.type === 'close' || event.type === 'error') {
+        context.dispatchAction(terminalDataClientActions.clearPendingTopicNotifications());
         if (heartbeatTimer !== undefined) clearInterval(heartbeatTimer);
         clearHeartbeatDeadline();
         heartbeatTimer = undefined;
@@ -844,6 +1586,8 @@ export const createTerminalDataClientActor = (
     }),
     onCommand(terminalHeartbeatTickCommand, async context => {
       if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
+      if (readState(context.getState()).activationStatus === 'cancelling')
+        return Object.freeze({status: 'cancellation-in-progress'});
       if (!sessionReady || connection === undefined) return null;
       const current = readState(context.getState());
       const seq = current.nextPingSequence;
@@ -875,6 +1619,7 @@ export const createTerminalDataClientActor = (
       sentAtBySequence.clear();
     },
     afterApplicationReset: async (context, reason) => {
+      lateRemoteResults.clear();
       if (reason !== 'TERMINAL_ACTIVATION_CANCELLED') return;
       const requestId = resetRequestId.current;
       if (requestId === undefined) throw new Error('terminal cancellation reset request id is missing');

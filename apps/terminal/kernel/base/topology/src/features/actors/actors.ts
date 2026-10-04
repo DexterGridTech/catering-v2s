@@ -51,6 +51,7 @@ type TopologyActorInput = Readonly<{
   readonly identityClient?: TopologyIdentityClient;
   readonly peerChannel?: TopologyPeerChannel;
   readonly moduleName?: string;
+  readonly canPair?: (state: import('@catering-v2s/kernel-base-state').StateRoot) => boolean;
 }>;
 
 const topologyCallTimeoutMs = topologyTransportConfig.callTimeoutMs;
@@ -138,7 +139,7 @@ const toTopologyIdentity = (response: TopologyIdentityResponse): TopologyIdentit
     displayRole: response.displayRole,
   });
 
-const ensurePairPreconditions = (context: ActorExecutionContext) => {
+const ensurePairPreconditions = (context: ActorExecutionContext, canPair?: TopologyActorInput['canPair']) => {
   const facts = selectTopologyFacts(context.getState());
   if (facts === undefined || facts.displayCount === null) {
     throw createTopologyFailure({
@@ -173,6 +174,13 @@ const ensurePairPreconditions = (context: ActorExecutionContext) => {
   }
   if (selectTopologyState(context.getState()).repairPending) {
     throw createTopologyFailure({context, code: 'TOPOLOGY_UNAVAILABLE', message: 'Topology repair is pending'});
+  }
+  if (canPair !== undefined && !canPair(context.getState())) {
+    throw createTopologyFailure({
+      context,
+      code: 'TOPOLOGY_UNAVAILABLE',
+      message: 'Terminal activation or connection is active',
+    });
   }
   return facts;
 };
@@ -439,7 +447,7 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       return input.identityClient.query(host);
     }),
     onCommand(pairByHostTopologyCommand, async context => {
-      ensurePairPreconditions(context);
+      ensurePairPreconditions(context, input.canPair);
       let host: string;
       try {
         host = normalizePairHost(context.command.payload.host);
@@ -519,7 +527,7 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       return Object.freeze({type: 'identity' as const, ...peerIdentity});
     }),
     onCommand(pairTopologyCommand, async context => {
-      ensurePairPreconditions(context);
+      ensurePairPreconditions(context, input.canPair);
       const payload = context.command.payload;
       if (input.moduleName !== undefined && payload.locator.identity.moduleName !== input.moduleName) {
         throw createTopologyFailure({
@@ -710,6 +718,20 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       ) {
         context.dispatchAction(
           topologyActions.markPeerStateSyncSliceApplied({
+            connectionId: event.connectionId,
+            sliceName: event.sliceName,
+            revision: event.revision,
+          }),
+        );
+      }
+      if (
+        event.event === 'state-sync-slice-apply-failed' &&
+        event.connectionId &&
+        event.sliceName &&
+        event.revision !== undefined
+      ) {
+        context.dispatchAction(
+          topologyActions.markPeerStateSyncSliceFailed({
             connectionId: event.connectionId,
             sliceName: event.sliceName,
             revision: event.revision,

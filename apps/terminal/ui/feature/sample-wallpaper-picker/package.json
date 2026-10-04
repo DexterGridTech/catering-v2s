@@ -15,8 +15,8 @@
     "@catering-v2s/kernel-base-runtime": "workspace:*",
     "@catering-v2s/kernel-base-state": "workspace:*",
     "@catering-v2s/kernel-base-ui-state": "workspace:*",
-    "@catering-v2s/kernel-feature-sample-wallpaper": "workspace:*",
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*",
+    "@catering-v2s/kernel-feature-sample-wallpaper": "workspace:*",
     "@catering-v2s/ui-base-feature-assembly": "workspace:*",
     "@catering-v2s/ui-base-primitives": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*"

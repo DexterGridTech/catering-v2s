@@ -10,9 +10,18 @@ import {InputScrollArea} from '@catering-v2s/ui-base-input';
 import {MemberRow} from '../MemberRow';
 import {useMemberList} from '../../hooks/useMemberList';
 
-const laptopRootStyle = Object.freeze({flex: 1, minHeight: 0, width: '100%', maxWidth: 960, alignSelf: 'center' as const});
+const laptopRootStyle = Object.freeze({
+  flex: 1,
+  minHeight: 0,
+  width: '100%',
+  maxWidth: 960,
+  alignSelf: 'center' as const,
+});
 
-export const MemberList = ({prefix = 'sample.desk.member-list', showLogout = true}: Readonly<{readonly prefix?: string; readonly showLogout?: boolean}>) => {
+export const MemberList = ({
+  prefix = 'sample.desk.member-list',
+  showLogout = true,
+}: Readonly<{readonly prefix?: string; readonly showLogout?: boolean}>) => {
   const list = useMemberList();
   return (
     <PrimitiveContainer testID={prefix} style={laptopRootStyle}>
@@ -31,11 +40,7 @@ export const MemberList = ({prefix = 'sample.desk.member-list', showLogout = tru
           getItemKey={member => member.memberId}
           rowHeight={64}
           renderItem={member => (
-            <MemberRow
-              testID={`${prefix}:row:${member.memberId}`}
-              name={member.name}
-              phone={member.phone}
-            />
+            <MemberRow testID={`${prefix}:row:${member.memberId}`} name={member.name} phone={member.phone} />
           )}
         />
       )}

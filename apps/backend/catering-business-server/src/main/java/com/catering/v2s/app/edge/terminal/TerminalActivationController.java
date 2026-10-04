@@ -5,7 +5,6 @@ import com.catering.v2s.app.edge.generated.wire.TerminalActivationResult;
 import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi.ActivationOutcome;
 import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi.ActivationResult;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,8 +31,8 @@ public final class TerminalActivationController {
     public ResponseEntity<TerminalActivationResult> activate(
             @PathVariable String groupWorkspaceKey,
             @RequestBody TerminalActivationRequest request,
-            HttpServletRequest servletRequest) {
-        RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(servletRequest);
+            @RequestAttribute(value = RequestCompletionDiagnosticState.REQUEST_ATTRIBUTE, required = false)
+                    RequestCompletionDiagnosticState completion) {
         String requestId = completion == null ? "unavailable" : completion.requestId();
         String correlationId = completion == null ? "unavailable" : completion.correlationId();
         long startedAtNanos = System.nanoTime();
@@ -52,8 +52,14 @@ public final class TerminalActivationController {
                     .addKeyValue("requestId", requestId)
                     .addKeyValue("correlationId", correlationId)
                     .addKeyValue("exceptionType", failure.getClass().getSimpleName())
-                    .addKeyValue("causeType", failure.getCause() == null ? "none" : failure.getCause().getClass().getSimpleName())
-                    .addKeyValue("elapsedMillis", Math.max(0, (System.nanoTime() - startedAtNanos) / 1_000_000))
+                    .addKeyValue(
+                            "causeType",
+                            failure.getCause() == null
+                                    ? "none"
+                                    : failure.getCause().getClass().getSimpleName())
+                    .addKeyValue(
+                            "elapsedMillis",
+                            Math.max(0, (System.nanoTime() - startedAtNanos) / 1_000_000))
                     .log("terminal activation HTTP handler failed");
             throw failure;
         }

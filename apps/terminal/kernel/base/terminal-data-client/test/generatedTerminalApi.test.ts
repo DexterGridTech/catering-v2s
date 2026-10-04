@@ -2,13 +2,25 @@ import {describe, expect, it} from 'vitest';
 import {
   createTerminalApiClient,
   isTerminalActivationResult,
+  isTerminalStoreActiveContractsRead,
   terminalOperationContracts,
 } from '../src/generated/terminalApi';
 import type {TerminalRequestExecutor, TerminalResponseMap} from '../src/generated/terminalApi';
 
 describe('generated terminal API contract', () => {
-  it('selects exactly the two terminal-binding operations and preserves their wire metadata', () => {
-    expect(Object.keys(terminalOperationContracts)).toEqual(['activateTerminal', 'cancelTerminalActivation']);
+  it('selects the two terminal-binding operations and all canonical TDP reads with their wire metadata', () => {
+    expect(Object.keys(terminalOperationContracts)).toEqual([
+      'activateTerminal',
+      'cancelTerminalActivation',
+      'terminalReadContract',
+      'terminalReadServicePoint',
+      'terminalReadServicePointArea',
+      'terminalReadStoreActiveContracts',
+      'terminalReadStoreBasic',
+      'terminalReadStoreOrganizationPath',
+      'terminalReadStoreServicePointAreas',
+      'terminalReadStoreServicePoints',
+    ]);
     expect(terminalOperationContracts.activateTerminal.authorizationMode).toBe('NONE');
     expect(terminalOperationContracts.cancelTerminalActivation.authorizationMode).toBe('TERMINAL_CREDENTIAL');
     expect(terminalOperationContracts.activateTerminal.owner).toBe('terminal-binding');
@@ -16,12 +28,42 @@ describe('generated terminal API contract', () => {
     expect(terminalOperationContracts.activateTerminal.safeRetryable).toBe(true);
     expect(terminalOperationContracts.activateTerminal.errorCodes).toContain('TERMINAL_BINDING_ALREADY_BOUND');
     expect(terminalOperationContracts.cancelTerminalActivation.idempotencyRequired).toBe(false);
+    expect(terminalOperationContracts.terminalReadStoreActiveContracts.authorizationMode).toBe('TERMINAL_CREDENTIAL');
+  });
+
+  it('validates nested owner schemas and array items instead of accepting a wrapper or rejecting every array', () => {
+    const contract = {
+      id: '00000000-0000-4000-8000-000000000001',
+      groupWorkspaceKey: 'mixc',
+      project: {id: 'project-1', code: 'P1', name: 'Project'},
+      store: {id: 'store-1', code: 'S1', name: 'Store'},
+      tenant: {id: 'tenant-1', code: 'T1', name: 'Tenant'},
+      phaseName: 'Current',
+      contractNo: 'C-1',
+      effectiveFrom: '2026-01-01',
+      effectiveTo: null,
+      extensionValues: {},
+      extensionRuleRevision: 1,
+      status: 'VALID',
+      revision: 1,
+      source: 'MANUAL',
+      createdAt: 1,
+      updatedAt: 2,
+      items: [{code: 'BASE', name: 'Base'}],
+    } as const;
+    expect(isTerminalStoreActiveContractsRead({items: [contract], collectionUpdatedAtEpochMillis: 2})).toBe(true);
+    expect(
+      isTerminalStoreActiveContractsRead({
+        items: [{...contract, items: [{code: 3, name: 'Base'}]}],
+        collectionUpdatedAtEpochMillis: 2,
+      }),
+    ).toBe(false);
   });
 
   it('provides typed request parts and classifies success, business rejection, and delivery failures', async () => {
     const body: TerminalResponseMap['activateTerminal'] = {
-      terminalRef: 'terminal-ref',
-      storeRef: 'store-ref',
+      terminalRef: '00000000-0000-4000-8000-000000000001',
+      storeRef: '00000000-0000-4000-8000-000000000002',
       groupWorkspaceKey: 'group-1',
       bindingGeneration: 1,
     };
@@ -74,7 +116,7 @@ describe('generated terminal API contract', () => {
       };
     });
     const rejected = await cancellation.cancelTerminalActivation({
-      pathParameters: {terminalRef: 'terminal-ref'},
+      pathParameters: {terminalRef: '00000000-0000-4000-8000-000000000001'},
       queryParameters: {},
       headers: {Authorization: 'Terminal 1.' + 'A'.repeat(43)},
       body: {bindingGeneration: 1, deviceId: 'device-1'},

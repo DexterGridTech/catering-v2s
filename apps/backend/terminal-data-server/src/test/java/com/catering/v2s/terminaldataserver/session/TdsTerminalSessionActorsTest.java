@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,12 +18,16 @@ import com.catering.v2s.terminaldataserver.config.TdsRuntimeSettings;
 import com.catering.v2s.terminaldataserver.history.TdsConnectionHistoryWriter;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionProtocol;
+import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec.TopicAccept;
+import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec.TopicSubscribe;
+import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec.TopicUnsubscribe;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.BindingKey;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentBinding;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentSessionState;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateWriter;
+import com.catering.v2s.terminaldataserver.state.TdsTerminalTopicRepository;
 import com.catering.v2s.terminaldataserver.websocket.TdsWebSocketConnection;
 import java.time.Duration;
 import java.time.Instant;
@@ -31,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -58,6 +64,7 @@ class TdsTerminalSessionActorsTest {
     private final TdsConnectionHistoryWriter historyWriter = mock(TdsConnectionHistoryWriter.class);
     private final TerminalConnectionFrameCodec codec = mock(TerminalConnectionFrameCodec.class);
     private final TerminalConnectionProtocol protocol = mock(TerminalConnectionProtocol.class);
+    private final TdsTerminalTopicRepository topicRepository = mock(TdsTerminalTopicRepository.class);
     private final TdsRuntimeSettings settings = TdsRuntimeSettings.from(
             "2", "16", Duration.ofSeconds(30), Duration.ofSeconds(90), Duration.ofSeconds(15), Duration.ofSeconds(10));
     private final TdsConnectionCapacityLimiter limiter = new TdsConnectionCapacityLimiter(2, 16);
@@ -72,6 +79,7 @@ class TdsTerminalSessionActorsTest {
                 .thenAnswer(invocation -> new TerminalConnectionProtocol.Close(4000, invocation.getArgument(0)));
         actors = new TdsTerminalSessionActors(
                 repository,
+                topicRepository,
                 stateWriter,
                 historyWriter,
                 settings,
@@ -331,6 +339,7 @@ class TdsTerminalSessionActorsTest {
         trackedSessionLimiter = new TdsConnectionCapacityLimiter(2, 1);
         actors = new TdsTerminalSessionActors(
                 repository,
+                topicRepository,
                 stateWriter,
                 historyWriter,
                 settings,
@@ -372,6 +381,7 @@ class TdsTerminalSessionActorsTest {
         trackedSessionLimiter = new TdsConnectionCapacityLimiter(2, 1);
         actors = new TdsTerminalSessionActors(
                 repository,
+                topicRepository,
                 stateWriter,
                 historyWriter,
                 settings,
@@ -399,6 +409,7 @@ class TdsTerminalSessionActorsTest {
         trackedSessionLimiter = new TdsConnectionCapacityLimiter(2, 1);
         actors = new TdsTerminalSessionActors(
                 repository,
+                topicRepository,
                 stateWriter,
                 historyWriter,
                 settings,
@@ -429,6 +440,7 @@ class TdsTerminalSessionActorsTest {
         trackedSessionLimiter = new TdsConnectionCapacityLimiter(2, 2);
         actors = new TdsTerminalSessionActors(
                 repository,
+                topicRepository,
                 stateWriter,
                 historyWriter,
                 settings,
@@ -532,6 +544,7 @@ class TdsTerminalSessionActorsTest {
         });
         actors = new TdsTerminalSessionActors(
                 repository,
+                topicRepository,
                 stateWriter,
                 historyWriter,
                 settings,
@@ -663,6 +676,147 @@ class TdsTerminalSessionActorsTest {
                 .queueDisconnect(eq(repository.opened.getFirst()), eq("REDIRECT_TO_NEXT_NODE"), any(Runnable.class));
     }
 
+    @Test
+    void activeTopicSubscriptionReplaysLatestAndCoalescesSameMillisecondOnlineChanges() {
+        List<String> frames = new ArrayList<>();
+        List<String> notificationIds = new ArrayList<>();
+        when(codec.topicChanged(anyString(), anyString(), anyString(), any(), anyLong())).thenAnswer(invocation -> {
+            String notificationId = invocation.getArgument(0);
+            notificationIds.add(notificationId);
+            return "{\"type\":\"TOPIC_CHANGED\",\"notificationId\":\"" + notificationId + "\"}";
+        });
+        when(topicRepository.readTime(eq(WORKSPACE), eq("GROUP-1"), eq(STORE), eq("STORE"), eq(STORE)))
+                .thenReturn(OptionalLong.of(100));
+        TdsWebSocketConnection connection = connection("topic-session", frames);
+        begin("topic-attempt", 1, connection);
+        assertThat(register("topic-attempt", 1)).isTrue();
+        frames.clear();
+
+        UUID subscriptionId = UUID.randomUUID();
+        UUID otherStoreRef = UUID.randomUUID();
+        assertThat(actors.subscribeTopic(
+                        TERMINAL, connection, new TopicSubscribe(UUID.randomUUID(), "STORE", otherStoreRef, 100)))
+                .isFalse();
+        assertThat(actors.subscribeTopic(
+                        TERMINAL, connection, new TopicSubscribe(subscriptionId, "STORE", STORE, 100)))
+                .isTrue();
+        assertThat(frames).isEmpty();
+
+        TdsTerminalSessionActors.TopicChange change =
+                new TdsTerminalSessionActors.TopicChange(WORKSPACE, "GROUP-1", "STORE", STORE);
+        actors.topicChanged(new TdsTerminalSessionActors.TopicChange(
+                UUID.randomUUID(), "GROUP-1", "STORE", STORE));
+        actors.topicChanged(new TdsTerminalSessionActors.TopicChange(
+                WORKSPACE, "OTHER-GROUP", "STORE", STORE));
+        actors.topicChanged(new TdsTerminalSessionActors.TopicChange(
+                WORKSPACE, "GROUP-1", "STORE", otherStoreRef));
+        assertThat(frames).isEmpty();
+        actors.topicChanged(change);
+        assertThat(frames).hasSize(1);
+        actors.topicChanged(change);
+        assertThat(frames).hasSize(1);
+
+        actors.acceptTopic(
+                TERMINAL,
+                connection,
+                new TopicAccept(UUID.fromString(notificationIds.getFirst()), subscriptionId, "STORE", STORE, 100));
+        assertThat(frames).hasSize(2);
+        assertThat(notificationIds).hasSize(2);
+
+        actors.unsubscribeTopic(TERMINAL, connection, new TopicUnsubscribe(subscriptionId, "STORE", STORE));
+        actors.topicChanged(change);
+        assertThat(frames).hasSize(2);
+    }
+
+    @Test
+    void listenerReconciliationRereadsActiveTopicAndSendsOnlyNewerOwnerTime() {
+        List<String> frames = new ArrayList<>();
+        List<String> notificationIds = new ArrayList<>();
+        when(codec.topicChanged(anyString(), anyString(), anyString(), any(), anyLong())).thenAnswer(invocation -> {
+            String notificationId = invocation.getArgument(0);
+            notificationIds.add(notificationId);
+            return "{\"type\":\"TOPIC_CHANGED\",\"notificationId\":\"" + notificationId + "\"}";
+        });
+        when(topicRepository.readTime(WORKSPACE, "GROUP-1", STORE, "STORE", STORE))
+                .thenReturn(OptionalLong.of(100), OptionalLong.of(101), OptionalLong.of(101));
+        TdsWebSocketConnection connection = connection("topic-reconcile-session", frames);
+        begin("topic-reconcile-attempt", 1, connection);
+        assertThat(register("topic-reconcile-attempt", 1)).isTrue();
+        frames.clear();
+        UUID subscriptionId = UUID.randomUUID();
+        assertThat(actors.subscribeTopic(
+                        TERMINAL, connection, new TopicSubscribe(subscriptionId, "STORE", STORE, 100)))
+                .isTrue();
+        assertThat(frames).isEmpty();
+
+        actors.reconcileTopicSubscriptions();
+        assertThat(frames).hasSize(1);
+        actors.acceptTopic(
+                TERMINAL,
+                connection,
+                new TopicAccept(UUID.fromString(notificationIds.getFirst()), subscriptionId, "STORE", STORE, 101));
+        assertThat(frames).hasSize(1);
+        verify(topicRepository, times(3)).readTime(WORKSPACE, "GROUP-1", STORE, "STORE", STORE);
+    }
+
+    @Test
+    void retainsTwelveActiveOwnerSubscriptionsAndReleasesThemOnUnsubscribeAndDisconnect() {
+        List<String> frames = new ArrayList<>();
+        List<String> notificationIds = new ArrayList<>();
+        when(codec.topicChanged(anyString(), anyString(), anyString(), any(), anyLong()))
+                .thenAnswer(invocation -> {
+                    String notificationId = invocation.getArgument(0);
+                    notificationIds.add(notificationId);
+                    return "topic-change-" + notificationId;
+                });
+        when(topicRepository.readTime(eq(WORKSPACE), eq("GROUP-1"), eq(STORE), eq("CONTRACT"), any(UUID.class)))
+                .thenReturn(OptionalLong.of(100));
+        TdsWebSocketConnection connection = connection("topic-many-session", frames);
+        begin("topic-many-attempt", 1, connection);
+        assertThat(register("topic-many-attempt", 1)).isTrue();
+        frames.clear();
+
+        List<UUID> ownerRefs = new ArrayList<>();
+        List<UUID> subscriptionIds = new ArrayList<>();
+        for (int index = 0; index < 12; index++) {
+            UUID ownerRef = UUID.randomUUID();
+            UUID subscriptionId = UUID.randomUUID();
+            ownerRefs.add(ownerRef);
+            subscriptionIds.add(subscriptionId);
+            assertThat(actors.subscribeTopic(
+                            TERMINAL,
+                            connection,
+                            new TopicSubscribe(subscriptionId, "CONTRACT", ownerRef, 100)))
+                    .isTrue();
+            actors.topicChanged(new TdsTerminalSessionActors.TopicChange(
+                    WORKSPACE, "GROUP-1", "CONTRACT", ownerRef));
+            actors.acceptTopic(
+                    TERMINAL,
+                    connection,
+                    new TopicAccept(UUID.fromString(notificationIds.getLast()), subscriptionId, "CONTRACT", ownerRef, 100));
+        }
+        assertThat(frames).hasSize(12);
+
+        UUID firstOwner = ownerRefs.getFirst();
+        UUID firstSubscription = subscriptionIds.getFirst();
+        actors.unsubscribeTopic(
+                TERMINAL, connection, new TopicUnsubscribe(firstSubscription, "CONTRACT", firstOwner));
+        actors.topicChanged(new TdsTerminalSessionActors.TopicChange(
+                WORKSPACE, "GROUP-1", "CONTRACT", firstOwner));
+        assertThat(frames).hasSize(12);
+
+        UUID secondOwner = ownerRefs.get(1);
+        actors.topicChanged(new TdsTerminalSessionActors.TopicChange(
+                WORKSPACE, "GROUP-1", "CONTRACT", secondOwner));
+        assertThat(frames).hasSize(13);
+
+        actors.connectionClosed(TERMINAL, "topic-many-attempt", connection);
+        UUID thirdOwner = ownerRefs.get(2);
+        actors.topicChanged(new TdsTerminalSessionActors.TopicChange(
+                WORKSPACE, "GROUP-1", "CONTRACT", thirdOwner));
+        assertThat(frames).hasSize(13);
+    }
+
     private TdsWebSocketConnection connection(String sessionId) {
         return connection(sessionId, new AtomicBoolean(true));
     }
@@ -675,6 +829,21 @@ class TdsTerminalSessionActorsTest {
         when(session.textMessage(anyString())).thenReturn(mock(WebSocketMessage.class));
         return new TdsWebSocketConnection(
                 session, protocol, limiter.tryAcquireUnauthenticated(), Schedulers.immediate());
+    }
+
+    private TdsWebSocketConnection connection(String sessionId, List<String> outboundFrames) {
+        WebSocketSession session = mock(WebSocketSession.class);
+        when(session.getId()).thenReturn(sessionId);
+        when(session.isOpen()).thenReturn(true);
+        when(session.close(any(CloseStatus.class))).thenReturn(Mono.empty());
+        when(session.textMessage(anyString())).thenAnswer(invocation -> {
+            outboundFrames.add(invocation.getArgument(0));
+            return mock(WebSocketMessage.class);
+        });
+        TdsWebSocketConnection connection =
+                new TdsWebSocketConnection(session, protocol, limiter.tryAcquireUnauthenticated(), Schedulers.immediate());
+        connection.outboundMessages().subscribe(ignored -> {});
+        return connection;
     }
 
     private static Verification verification(long generation) {
@@ -716,6 +885,7 @@ class TdsTerminalSessionActorsTest {
     private TdsTerminalSessionActors newActors(RecordingRepository sourceRepository) {
         return new TdsTerminalSessionActors(
                 sourceRepository,
+                topicRepository,
                 stateWriter,
                 historyWriter,
                 settings,

@@ -378,6 +378,20 @@ test('remote TDS launch, readiness, logs and stop are independently manifest-bou
   assert.match(runnerSource, /REMOTE_TDS_RSS_BUDGET_EXCEEDED_AT_READINESS/);
 
   const startBody = runnerSource.slice(runnerSource.indexOf('async function start()'));
+  const javaStart = startBody.indexOf('await startRemoteJava(');
+  const businessReady = startBody.indexOf('await waitForRemoteBusinessReady(', javaStart);
+  const principalProvision = startBody.indexOf('provisionRemoteTdsDatabasePrincipal(', businessReady);
+  const tdsAttempt = startBody.indexOf('remoteTdsStartAttempted.add(', principalProvision);
+  const tdsStart = startBody.indexOf('await startRemoteTds(', tdsAttempt);
+  assert.ok(javaStart >= 0 && businessReady > javaStart);
+  assert.ok(principalProvision > businessReady && tdsAttempt > principalProvision && tdsStart > tdsAttempt,
+    'business Flyway readiness must precede schema grants, which must precede TDS process ownership');
+  const tdsFunction = runnerSource.slice(
+    runnerSource.indexOf('export async function startRemoteTds('),
+    runnerSource.indexOf('export function haproxyImageDigestLookupScript('),
+  );
+  assert.doesNotMatch(tdsFunction, /provisionRemoteTdsDatabasePrincipal\(/,
+    'TDS process launch must not combine schema grants with process-start cleanup accounting');
   const tdsLaunchStart = startBody.indexOf('for (const spec of tdsNodeSpecs)');
   const clusterValidation = startBody.indexOf('const validatedCluster', tdsLaunchStart);
   const tdsLaunchAndReadiness = startBody.slice(tdsLaunchStart, clusterValidation);
@@ -387,6 +401,23 @@ test('remote TDS launch, readiness, logs and stop are independently manifest-bou
     'each TDS build must reach readiness before another bootRun shares the Gradle output tree',
   );
   assert.doesNotMatch(tdsLaunchAndReadiness, /for \(const remoteTds of remoteTdsNodes\)/);
+});
+
+test('TDS terminal-control grants and probes wait for the complete CP-06 object set', () => {
+  const principalProvision = runnerSource.slice(
+    runnerSource.indexOf('function provisionRemoteTdsDatabasePrincipal('),
+    runnerSource.indexOf('function resolveManagedAcceptanceManifest('),
+  );
+  assert.match(principalProvision, /GRANT USAGE ON SCHEMA platform_workspace, store_terminal, organization, terminal_binding, terminal_connection, contract TO \$\{role\}/);
+  assert.doesNotMatch(principalProvision, /GRANT USAGE ON SCHEMA [^;]*terminal_control TO \$\{role\}/,
+    'the stage-independent grant list must not name an object that CP-06 creates');
+  assert.match(principalProvision, /to_regnamespace\('terminal_control'\)/);
+  assert.match(principalProvision, /TDS_TERMINAL_CONTROL_ACCESS_DEFERRED_OBJECTS_ABSENT/);
+  assert.match(principalProvision, /TDS_TERMINAL_CONTROL_OBJECT_SET_INCOMPLETE/);
+  assert.match(principalProvision, /EXECUTE 'GRANT USAGE ON SCHEMA terminal_control/);
+  assert.match(principalProvision, /EXECUTE 'GRANT EXECUTE ON FUNCTION terminal_control\.claim_online_operation/);
+  assert.match(principalProvision, /TDS_TERMINAL_CONTROL_ACCESS_NOT_APPLICABLE_OBJECTS_ABSENT/);
+  assert.match(principalProvision, /TDS_TERMINAL_CONTROL_DIRECT_(SELECT|INSERT|UPDATE|DELETE)_UNEXPECTEDLY_ALLOWED/);
 });
 
 test('remote TDS readiness probe reads the owned process RSS and generates valid shell', () => {
@@ -513,6 +544,9 @@ test('DEV start failure tracks and cleans a possible exact root before Java cont
   const cleanupSyntax = childProcess.spawnSync('bash', ['-n'], {input: cleanupCommand, encoding: 'utf8'});
   assert.equal(cleanupSyntax.status, 0, cleanupSyntax.stderr);
   assert.match(cleanupCommand, /container_ids_csv=""[\s\S]*if test -n "\$container_ids"/);
+  assert.match(cleanupCommand, /process_table=\$\(ps -eo pid=,args=\)/);
+  assert.match(cleanupCommand, /cwd=\$\{cwd%" \(deleted\)"\}/);
+  assert.doesNotMatch(cleanupCommand, /if test ! -e "\$root"; then[\s\S]*?exit 0/);
   assert.deepEqual(
     parseRemoteRootCleanupResult('/tmp/r5-dev-1789419999999-70098-1d53aa6c-cd00-444d-8f9a-125f6ee68081', {
       status: 45,

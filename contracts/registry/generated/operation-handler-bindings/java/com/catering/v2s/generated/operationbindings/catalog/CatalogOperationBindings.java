@@ -150,7 +150,6 @@ public final class CatalogOperationBindings {
     };
   }
 
-
   public OperationBindingTypes.Wire.CatalogItemCommandReadback createOperationsCatalogItem(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogItemCreateRequest request) {
     return adapters.createOperationsCatalogItem(CREATE_OPERATIONS_CATALOG_ITEM_DESCRIPTOR, context, request);
   }

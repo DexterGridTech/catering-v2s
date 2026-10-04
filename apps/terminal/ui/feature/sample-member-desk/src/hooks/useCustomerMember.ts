@@ -28,11 +28,16 @@ export const useCustomerMember = ({
   mode,
   inputPrefix,
   pendingSource,
-}: Readonly<{readonly mode: CustomerMemberMode; readonly inputPrefix?: string; readonly pendingSource?: 'host' | 'branch'}>) => {
+}: Readonly<{
+  readonly mode: CustomerMemberMode;
+  readonly inputPrefix?: string;
+  readonly pendingSource?: 'host' | 'branch';
+}>) => {
   const dispatchCommand = useDispatchCommand();
   const runtimeMode = useUiStateSelector(selectRuntimeInstanceMode);
   const resolvedPendingSource = pendingSource ?? (mode === 'confirm' || runtimeMode === 'MASTER' ? 'host' : 'branch');
-  const pending = useUiStateSelector(resolvedPendingSource === 'host' ? selectHostPendingMember : selectBranchPendingMember) ?? null;
+  const pending =
+    useUiStateSelector(resolvedPendingSource === 'host' ? selectHostPendingMember : selectBranchPendingMember) ?? null;
   const captureInputSnapshot = useInputSnapshot();
   const trackedCommand = useTrackedCommand();
   const requestInFlight = trackedCommand.requestInFlight;
@@ -64,13 +69,13 @@ export const useCustomerMember = ({
       return trackedCommand.run({
         definition: command,
         payload,
-        target: mode === 'confirm' && runtimeMode === 'SLAVE' ? 'peer' : 'local',
+        target: mode === 'confirm' && resolvedPendingSource === 'host' && runtimeMode === 'SLAVE' ? 'peer' : 'local',
         rejectionPolicy: 'RETHROW',
         onOutcome: (_result, outcome) => (outcome === 'system-failure' ? observeSystemFailure(operation) : undefined),
         onRejected: () => observeSystemFailure(operation),
       });
     },
-    [canDecide, mode, observeSystemFailure, runtimeMode, trackedCommand],
+    [canDecide, mode, observeSystemFailure, resolvedPendingSource, runtimeMode, trackedCommand],
   );
 
   const confirm = useCallback(() => {
@@ -85,7 +90,8 @@ export const useCustomerMember = ({
     );
   }, [captureInputSnapshot, decide, memberAgeFieldId, pending]);
   const reject = useCallback(
-    () => (pending === null ? undefined : decide(rejectMemberCommand, {operationId: pending.operationId}, 'reject-member')),
+    () =>
+      pending === null ? undefined : decide(rejectMemberCommand, {operationId: pending.operationId}, 'reject-member'),
     [decide, pending],
   );
   const handBack = useCallback(

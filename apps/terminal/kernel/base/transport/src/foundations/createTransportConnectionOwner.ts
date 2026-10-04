@@ -262,7 +262,7 @@ export const createTransportConnectionOwner = (
       if (event.type === 'open') return;
       publish(profile.profileId, event);
     });
-    publish(profile.profileId, Object.freeze({type: 'open', addressName: address.addressName}));
+    publish(profile.profileId, Object.freeze({type: 'open', addressName: address.addressName, configRevision: snapshot.revision}));
     const readyToken = ++profile.attemptToken;
     profile.readyTimer = schedule(profile.reconnectPolicy.readyTimeoutMs, () =>
       input.dispatchInternal('ready-timeout', profile.profileId, readyToken),

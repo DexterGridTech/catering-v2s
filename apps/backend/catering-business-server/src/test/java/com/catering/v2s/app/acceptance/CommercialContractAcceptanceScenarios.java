@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 final class CommercialContractAcceptanceScenarios {
     private static final RouteIdentity PLATFORM_CONTRACT_OVERVIEW_PAGE = new RouteIdentity(
@@ -287,6 +288,9 @@ final class CommercialContractAcceptanceScenarios {
                         List.of()),
                 Set.of(201));
         String contractId = created.json().path("id").asText();
+        UUID contractRef = UUID.fromString(contractId);
+        long createdAt = contractUpdatedAt(contractRef);
+        assertContractCollectionSnapshot(fixture, List.of(contractRef), createdAt);
         assertEquals(
                 "VALID", created.json().path("status").asText(), "BUSINESS: active owner status maps to wire VALID");
         assertEquals(
@@ -330,6 +334,7 @@ final class CommercialContractAcceptanceScenarios {
                 updated.json().path("items").get(0).path("name").asText(),
                 "BUSINESS: update writes item labels");
         assertEquals(2, updated.json().path("revision").asInt(), "BUSINESS: update uses CAS revision two");
+        assertContractCollectionSnapshot(fixture, List.of(contractRef), createdAt);
         BackendAcceptanceTest.Response invalidated = context.post(
                 OPERATIONS_CONTRACT_INVALIDATE,
                 "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/contracts/" + contractId
@@ -340,6 +345,7 @@ final class CommercialContractAcceptanceScenarios {
         assertEquals(
                 "INVALID", invalidated.json().path("status").asText(), "BUSINESS: invalidation maps to wire INVALID");
         assertEquals(3, invalidated.json().path("revision").asInt(), "BUSINESS: invalidation is versioned");
+        assertContractCollectionSnapshot(fixture, List.of(), contractUpdatedAt(contractRef));
         BackendAcceptanceTest.Response detail = context.get(
                 OPERATIONS_CONTRACT,
                 "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/contracts/" + contractId
@@ -493,6 +499,31 @@ final class CommercialContractAcceptanceScenarios {
                         JsonNodeType.ARRAY,
                         "nullable phase detail items"),
                 "BUSINESS: nullable phase detail preserves ordered item facts");
+    }
+
+    private void assertContractCollectionSnapshot(BackendAcceptanceTest.Fixture fixture, List<UUID> members, long time)
+            throws Exception {
+        String canonicalMembers = members.stream()
+                .map(UUID::toString)
+                .sorted()
+                .collect(java.util.stream.Collectors.joining("\n"));
+        String expectedHash = BackendAcceptanceTest.sha256(
+                canonicalMembers.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        Map<String, Object> snapshot = host.queryForMap(
+                "SELECT collection_hash, topic_time_epoch_millis FROM contract.terminal_topic_snapshot "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? "
+                        + "AND topic_key='VALID_CONTRACT_COLLECTION'",
+                fixture.workspaceUuid(),
+                fixture.groupWorkspaceKey(),
+                fixture.storeId());
+        assertEquals(expectedHash, snapshot.get("collection_hash").toString().trim());
+        assertEquals(time, ((Number) snapshot.get("topic_time_epoch_millis")).longValue());
+    }
+
+    private long contractUpdatedAt(UUID contractRef) {
+        return ((Number) host.queryForMap(
+                        "SELECT updated_at_epoch_millis FROM contract.store_contract WHERE id=?", contractRef)
+                .get("updated_at_epoch_millis")).longValue();
     }
 
     @AcceptanceScenario(

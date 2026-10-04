@@ -13,8 +13,9 @@ import {
 } from '@catering-v2s/ui-base-integration-assembly';
 import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk';
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
-import {createSampleMemberRegistryModule, memberSliceName} from '@catering-v2s/kernel-feature-sample-member-registry';
-import {createSampleStaffSessionModule, sessionSliceName} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry';
+import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {createStoreBasicModule} from '@catering-v2s/kernel-feature-store-basic';
 import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
 import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
@@ -22,6 +23,7 @@ import {
   createTopologyAdminCapability,
   createTopologyModule,
   resolveTopologyCommandTarget,
+  selectTopologyState,
 } from '@catering-v2s/kernel-base-topology';
 import {
   createTopologyIdentityClient,
@@ -37,13 +39,20 @@ import {
   createTerminalActivationParts,
 } from '@catering-v2s/ui-base-terminal-activation';
 import {createServerConfigPanelParts} from '@catering-v2s/ui-base-server-config-panel';
-import {createTerminalDataClientModule} from '@catering-v2s/kernel-base-terminal-data-client';
+import {
+  createTerminalDataClientModule,
+  selectActivationState,
+  selectConnectionState,
+} from '@catering-v2s/kernel-base-terminal-data-client';
 import {
   createSampleConsoleModule,
   selectSampleConsoleBusinessInterlockActive,
+  selectSampleConsoleBusinessMutationAllowed,
+  selectSampleConsoleStaffLoginAllowed,
   startupReadyCommand,
   type SampleConsoleReadyPayload,
 } from '../application/module';
+export {selectSampleConsoleBusinessInterlockActive} from '../application/module';
 import {
   getSurfaceDeclarations,
   terminalSurfaces,
@@ -52,7 +61,6 @@ import {
 } from '../application/terminalSurfaces';
 
 const defaultPersistenceKey = 'sample-console';
-export {selectSampleConsoleBusinessInterlockActive};
 
 const sampleAdminTestPart = definePart({
   partKey: 'sample.console.admin-test',
@@ -138,8 +146,10 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
     resolveCommandTarget: resolveTopologyCommandTarget,
     createTopologyAdminCapability,
     createApplicationModules: ({uiStateModule}) => {
-      const memberRegistryModule = createSampleMemberRegistryModule();
-      const staffSessionModule = createSampleStaffSessionModule();
+      const memberRegistryModule = createSampleMemberRegistryModule({
+        canMutate: selectSampleConsoleBusinessMutationAllowed,
+      });
+      const staffSessionModule = createSampleStaffSessionModule({canLogin: selectSampleConsoleStaffLoginAllowed});
       const serverConfigModule = createServerConfigModule(
         input.serverSpaces ?? (packageJson.serverSpaces as TransportServerConfig),
       );
@@ -160,7 +170,9 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
         now: () => Date.now(),
         surfaceForm,
         appVersion: input.appVersion ?? '1.0.0',
+        canActivate: state => !selectTopologyState(state).repairPending,
       });
+      const storeBasicModule = createStoreBasicModule();
       return [
         serverConfigModule,
         transportModule,
@@ -170,17 +182,27 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
           surfaceForm,
           identityClient: createTopologyIdentityClient(),
           peerChannel: input.topologyPeerChannel,
+          canPair: state => {
+            const activation = selectActivationState(state);
+            const connection = selectConnectionState(state);
+            return (
+              activation.status === 'inactive' &&
+              (connection.status === 'stopped' || connection.status === 'disconnected')
+            );
+          },
           stateSyncSlices: selectStateSyncSlices([
             ...(uiStateModule.stateSlices ?? []),
             ...(staffSessionModule.stateSlices ?? []),
             ...(memberRegistryModule.stateSlices ?? []),
             ...(serverConfigModule.stateSlices ?? []),
             ...(terminalDataClientModule.stateSlices ?? []),
+            ...(storeBasicModule.stateSlices ?? []),
           ]),
         }),
         createSampleConsoleModule(surfaceForm),
         createTerminalActivationModule(),
         terminalDataClientModule,
+        storeBasicModule,
         staffSessionModule,
         memberRegistryModule,
         sampleStaffAuthAssembly.createModule(),

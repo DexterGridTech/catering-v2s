@@ -815,8 +815,10 @@ function expectedResolver(securityMode, operationId) {
   // The terminal credential authenticator is the operation that parses the
   // terminal Authorization header and delegates digest verification to the owner.
   // TERMINAL_CREDENTIAL_AUTHENTICATOR is the generated resolver ID, not a Java class.
-  if (securityMode === 'TERMINAL_CREDENTIAL' && operationId === 'cancelTerminalActivation')
-    return 'CancelTerminalActivationOperation';
+  if (securityMode === 'TERMINAL_CREDENTIAL') {
+    if (operationId === 'cancelTerminalActivation') return 'CancelTerminalActivationOperation';
+    if (operationId.startsWith('terminalRead')) return 'TerminalCredentialVerificationApi';
+  }
   fail('R5_SECURITY_UNKNOWN_AUTHORIZATION_MODE', `${operationId}:${securityMode}`);
 }
 
@@ -827,8 +829,9 @@ function routeUsesExpectedResolver(route, resolver, base) {
   if (
     field &&
     (resolver !== 'CancelTerminalActivationOperation' || new RegExp(`\\b${field}\\.execute\\s*\\(`).test(route.source))
-  )
-    return true;
+    )
+    return resolver !== 'TerminalCredentialVerificationApi' ||
+      (new RegExp(`\\b${field}\\.verify\\s*\\(`).test(route.controllerSource) && /\bverify\s*\(/.test(route.source));
   if (resolver !== 'OperationsSessionResolver') return false;
 
   const supportFields = [
@@ -2265,6 +2268,25 @@ function selfTest(action) {
         workspaceController,
         read(workspaceController, scratch).replaceAll('PlatformSessionResolverRemoved', 'PlatformSessionResolver'),
       );
+      const terminalReadController =
+        `${appRoot}/src/main/java/com/catering/v2s/app/edge/terminal/TerminalDataReadController.java`;
+      const originalTerminalReadController = read(terminalReadController, scratch);
+      const terminalCredentialField = 'private final TerminalCredentialVerificationApi credentials;';
+      if (!originalTerminalReadController.includes(terminalCredentialField))
+        fail('R4_SECURITY_TERMINAL_CREDENTIAL_RESOLVER_SELF_TEST_FIXTURE_MISSING');
+      write(
+        terminalReadController,
+        originalTerminalReadController.replace(terminalCredentialField, 'private final Object credentials;'),
+      );
+      let terminalCredentialResolverRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        terminalCredentialResolverRed = String(error).includes('R5_SECURITY_FACE_RESOLVER_MISSING');
+      }
+      if (!terminalCredentialResolverRed)
+        fail('R5_SECURITY_TERMINAL_CREDENTIAL_RESOLVER_SELF_TEST_NOT_DETECTED');
+      write(terminalReadController, originalTerminalReadController);
       const salesMenuSupport = `${appRoot}/src/main/java/com/catering/v2s/app/edge/operations/salesmenu/SalesMenuEdgeSupport.java`;
       const originalSalesMenuSupport = read(salesMenuSupport, scratch);
       const resolverField = 'private final OperationsSessionResolver sessions;';

@@ -5,14 +5,20 @@ import type {TerminalDataClientDependencies} from '../types/client';
 import {createTerminalDataClientActor} from '../features/actors/terminalDataClientActor';
 import {
   activateTerminalCommand,
+  acceptTerminalTopicNotificationCommand,
   cancelTerminalOfflineCommand,
   cancelTerminaActivationCommand,
   connectTerminalCommand,
   disconnectTerminalCommand,
   initializeTerminalDataClientCommand,
   refreshTerminalClientStatusProjectionCommand,
+  readTerminalDataCommand,
   terminalHeartbeatTickCommand,
+  terminalActivationSucceededCommand,
+  subscribeTerminalTopicCommand,
+  terminalTopicChangedCommand,
   terminalTransportEventCommand,
+  unsubscribeTerminalTopicCommand,
 } from '../features/commands/terminalDataClientCommands';
 import {terminalDataClientStateSlice, terminalDataClientSliceName} from '../features/slices/terminalDataClient';
 import {
@@ -25,10 +31,16 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
   const actorRuntime = createTerminalDataClientActor(dependencies);
   const commandDefinitions = [
     activateTerminalCommand,
+    terminalActivationSucceededCommand,
     cancelTerminaActivationCommand,
     cancelTerminalOfflineCommand,
     connectTerminalCommand,
     disconnectTerminalCommand,
+    subscribeTerminalTopicCommand,
+    unsubscribeTerminalTopicCommand,
+    acceptTerminalTopicNotificationCommand,
+    readTerminalDataCommand,
+    terminalTopicChangedCommand,
     initializeTerminalDataClientCommand,
     refreshTerminalClientStatusProjectionCommand,
     terminalTransportEventCommand,

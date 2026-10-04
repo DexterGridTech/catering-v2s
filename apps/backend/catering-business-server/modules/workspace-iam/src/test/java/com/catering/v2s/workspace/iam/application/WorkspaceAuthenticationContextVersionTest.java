@@ -32,6 +32,7 @@ class WorkspaceAuthenticationContextVersionTest {
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
     private static final long NOW = 1_785_000_000_000L;
+    private static final UUID COMMERCIAL_GROUP_REF = UUID.randomUUID();
     private static Flyway flyway;
     private static JdbcTemplate jdbc;
     private static UUID workspaceId;
@@ -67,14 +68,13 @@ class WorkspaceAuthenticationContextVersionTest {
                 NOW,
                 NOW,
                 NOW);
-        hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, commercialGroups());
         roles = new WorkspaceRoleService(jdbc, () -> NOW);
     }
 
     @Test
     void assignmentAndDataNodeSelectionEachAdvanceContextVersionAndAStaleCompareAndSetCannotAdvanceItAgain() {
-        UUID regionId = hierarchy
-                .create(workspaceId, "context-version-test", "REGION", null, "context-region", "Context region")
+        UUID regionId = hierarchy.createRegion(workspaceId, "context-version-test", "context-region", "Context region")
                 .id();
         UUID accountId = UUID.randomUUID();
         UUID roleId = roles.create(
@@ -151,8 +151,7 @@ class WorkspaceAuthenticationContextVersionTest {
 
     @Test
     void sessionEntryKeepsIdentitySelectionWhenTheSessionHasNoCurrentAssignment() {
-        UUID regionId = hierarchy
-                .create(workspaceId, "context-version-test", "REGION", null, "identity-region", "Identity region")
+        UUID regionId = hierarchy.createRegion(workspaceId, "context-version-test", "identity-region", "Identity region")
                 .id();
         UUID accountId = UUID.randomUUID();
         UUID roleId = roles.create(
@@ -331,6 +330,32 @@ class WorkspaceAuthenticationContextVersionTest {
         } catch (Exception failure) {
             throw new IllegalStateException(failure);
         }
+    }
+
+    private static CommercialGroupLookup commercialGroups() {
+        return new CommercialGroupLookup() {
+            @Override
+            public UUID requireCommercialGroupRef(UUID candidateWorkspace, String groupWorkspaceKey) {
+                if (!workspaceId.equals(candidateWorkspace) || !"context-version-test".equals(groupWorkspaceKey)) {
+                    throw new IllegalArgumentException("fixture commercial group is unavailable");
+                }
+                return COMMERCIAL_GROUP_REF;
+            }
+
+            @Override
+            public boolean isEnterableCommercialGroup(
+                    UUID candidateWorkspace, String groupWorkspaceKey, UUID commercialGroupRef) {
+                return workspaceId.equals(candidateWorkspace)
+                        && "context-version-test".equals(groupWorkspaceKey)
+                        && COMMERCIAL_GROUP_REF.equals(commercialGroupRef);
+            }
+
+            @Override
+            public String describeCommercialGroup(
+                    UUID candidateWorkspace, String groupWorkspaceKey, UUID commercialGroupRef) {
+                return "Context test group";
+            }
+        };
     }
 
     @AfterAll

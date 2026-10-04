@@ -187,17 +187,22 @@ public class ContractTaskReadPersistence {
                         }));
     }
 
-    public List<StoreContractView> fixedStoreContracts(UUID workspaceUuid, String key, UUID storeId) {
+    public List<StoreContractView> fixedStoreContracts(
+            UUID workspaceUuid, String key, UUID storeId, LocalDate today) {
         return jdbc.query(
                 VIEW_SELECT
                         + VIEW_FROM
                         + ContractTaskReadServiceSql
                                 .CONTRACT_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_ID
+                        + ContractTaskReadServiceSql.FIXED_STORE_VIEW_CURRENT
+                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_ORDER_BY
                         + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTRACT_NO,
                 (row, index) -> readView(row),
                 workspaceUuid,
                 key,
-                storeId);
+                storeId,
+                today,
+                today);
     }
 
     public FixedStoreContractPage fixedStoreContractPage(

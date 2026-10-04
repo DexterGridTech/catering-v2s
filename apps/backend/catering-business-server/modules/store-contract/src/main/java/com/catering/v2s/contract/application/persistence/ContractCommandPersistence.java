@@ -18,9 +18,24 @@ import org.springframework.stereotype.Repository;
 public class ContractCommandPersistence {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final JdbcTemplate jdbc;
+    private final ContractTerminalTopicSnapshotPersistence terminalTopics;
 
     public ContractCommandPersistence(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+        this.terminalTopics = new ContractTerminalTopicSnapshotPersistence(jdbc);
+    }
+
+    public void lockActiveCollection(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
+        terminalTopics.lockActiveCollection(workspaceUuid, groupWorkspaceKey, storeRef);
+    }
+
+    public void notifyContract(UUID workspaceUuid, String groupWorkspaceKey, UUID contractRef) {
+        terminalTopics.notifyContract(workspaceUuid, groupWorkspaceKey, contractRef);
+    }
+
+    public void refreshActiveCollection(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, long triggerTime) {
+        terminalTopics.refreshActiveCollection(workspaceUuid, groupWorkspaceKey, storeRef, triggerTime);
     }
 
     public record ContractState(StoreContractReadback readback, String extensionValuesJson) {}

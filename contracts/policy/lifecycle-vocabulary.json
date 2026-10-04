@@ -42,6 +42,7 @@
     {"table": "collaboration.owner_binding", "reason": "协作绑定关系状态"},
     {"table": "business_channel.business_channel", "reason": "经营渠道运行状态"},
     {"table": "sales_menu.sales_collection_activation", "reason": "销售菜单与渠道激活关系状态"},
+    {"table": "terminal_control.online_operation", "reason": "终端远程操作执行与回执过程状态"},
     {"table": "sales_menu.sales_command_receipt", "reason": "销售菜单命令回执过程状态"}
   ]
 }

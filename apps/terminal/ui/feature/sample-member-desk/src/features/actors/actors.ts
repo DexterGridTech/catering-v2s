@@ -1,5 +1,4 @@
 import {
-  clearLayersCommand,
   closeLayerCommand,
   isCurrentWorkspaceOwnedByInstance,
   openLayerCommand,
@@ -9,17 +8,17 @@ import {
 import {
   defineActor,
   onCommand,
+  selectRuntimeInstanceMode,
   type ActorDefinition,
   type ActorExecutionContext,
 } from '@catering-v2s/kernel-base-runtime';
-import {
-  logoutCommand as staffLogoutCommand,
-} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {logoutCommand as staffLogoutCommand} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {
   memberConfirmedCommand as registryMemberConfirmedCommand,
   memberPendingCommand as registryMemberPendingCommand,
   memberRejectedCommand as registryMemberRejectedCommand,
   memberWithdrawnCommand as registryMemberWithdrawnCommand,
+  selectMembers,
   selectHostPendingMember,
   selectPendingMember,
   withdrawMemberCommand as registryWithdrawMemberCommand,
@@ -93,20 +92,28 @@ const isBranchWorkspace = (context: ActorExecutionContext): boolean => {
 const memberListPart = (context: ActorExecutionContext): string =>
   isBranchWorkspace(context) ? 'sample.desk.branch.member-list' : 'sample.desk.member-list';
 
+const memberPart = (context: ActorExecutionContext, part: string): string =>
+  isBranchWorkspace(context) ? `sample.desk.branch.${part}` : `sample.desk.${part}`;
+
 const show = (
   input: Readonly<{
     context: ActorExecutionContext;
     displayMode: typeof primary | typeof secondary;
     partKey: string;
     props?: Readonly<Record<string, string>>;
+    routeContext?: import('@catering-v2s/kernel-base-contracts').CommandRouteContext;
   }>,
 ) => {
-  const dispatch = input.context.dispatchCommand(showScreenCommand, {
+  const payload = {
     displayMode: input.displayMode,
     containerKey: main,
     partKey: input.partKey,
     ...(input.props === undefined ? {} : {props: input.props}),
-  });
+  };
+  const dispatch =
+    input.routeContext === undefined
+      ? input.context.dispatchCommand(showScreenCommand, payload)
+      : input.context.dispatchCommand(showScreenCommand, payload, {routeContext: input.routeContext});
   return dispatch.then(
     result => {
       navigationLog(input.context, 'show-screen-result', {
@@ -138,7 +145,7 @@ const returnToList = async (context: ActorExecutionContext, secondarySurface: bo
 };
 
 const returnToForm = async (context: ActorExecutionContext): Promise<void> => {
-  await show({context, displayMode: primary, partKey: 'sample.desk.member-form'});
+  await show({context, displayMode: primary, partKey: memberPart(context, 'member-form')});
 };
 
 export const createDeskNavigationActor = (): ActorDefinition =>
@@ -218,9 +225,24 @@ export const createDeskPendingActor = (): ActorDefinition =>
 export const createDeskConfirmedActor = (): ActorDefinition =>
   defineActor(moduleName, 'desk-confirmed', [
     onCommand(registryMemberConfirmedCommand, async context => {
-      if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null;
+      const state = context.getState();
+      const {memberId} = context.command.payload;
+      const confirmedMember = selectMembers(state).find(member => member.memberId === memberId);
+      if (confirmedMember === undefined) return null;
+      if (selectRuntimeInstanceMode(state) === 'SLAVE') {
+        // A VICE displays the MASTER's MAIN projection and cannot write there. Keep the
+        // completed BRANCH operation's route ready for when this same device returns CHIEF.
+        await show({
+          context,
+          displayMode: primary,
+          partKey: 'sample.desk.branch.member-list',
+          routeContext: {workspace: 'BRANCH', instanceMode: 'SLAVE', displayMode: 'PRIMARY'},
+        });
+        return null;
+      }
+      if (!isCurrentWorkspaceOwnedByInstance(state)) return null;
       const pending = selectPendingMember(context.getState());
-      if (pending !== null && pending.operationId !== context.command.payload.memberId) return null;
+      if (pending !== null && pending.operationId !== memberId) return null;
       const secondarySurface = hasSecondarySurface(context);
       await returnToList(context, secondarySurface);
       if (secondarySurface) {
@@ -238,13 +260,13 @@ export const createDeskRejectedActor = (): ActorDefinition =>
       await context.dispatchCommand(openLayerCommand, {
         displayMode: primary,
         layerId: 'sample.desk.registry-notice',
-        partKey: 'sample.desk.registry-notice',
+        partKey: memberPart(context, 'registry-notice'),
         props: {reasonCode: context.command.payload.reasonCode},
       });
       if (hasSecondarySurface(context)) {
         await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'});
       } else {
-        await show({context, displayMode: primary, partKey: 'sample.desk.member-form'});
+        await returnToForm(context);
       }
       return null;
     }),
@@ -259,7 +281,7 @@ export const createDeskNoticeActor = (): ActorDefinition =>
         await context.dispatchCommand(openLayerCommand, {
           displayMode: primary,
           layerId: 'sample.desk.discard-confirm',
-          partKey: 'sample.desk.discard-confirm',
+          partKey: memberPart(context, 'discard-confirm'),
           props: {intent: 'cancel-form'},
         });
         return null;
@@ -326,7 +348,7 @@ export const createDeskSystemNoticeActor = (): ActorDefinition =>
       await context.dispatchCommand(openLayerCommand, {
         displayMode: primary,
         layerId: 'sample.desk.system-notice',
-        partKey: 'sample.desk.system-notice',
+        partKey: memberPart(context, 'system-notice'),
         props: {operation: context.command.payload.operation},
         persistence: 'ephemeral',
       });

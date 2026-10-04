@@ -188,6 +188,16 @@ export const skeletonGraph = {
     dependencies: ['kernel.base.contracts', 'kernel.base.state', 'kernel.base.runtime'],
     devDependencies: ['kernel.base.platform-ports'],
   },
+  'kernel.feature.store-basic': {
+    batch: 2,
+    dependencies: [
+      'kernel.base.contracts',
+      'kernel.base.state',
+      'kernel.base.runtime',
+      'kernel.base.terminal-data-client',
+    ],
+    devDependencies: [],
+  },
   'kernel.feature.sample-wallpaper': {
     batch: 2,
     dependencies: ['kernel.base.contracts', 'kernel.base.state', 'kernel.base.runtime'],
@@ -196,6 +206,7 @@ export const skeletonGraph = {
   'ui.feature.sample-staff-auth': {
     batch: 2,
     dependencies: [
+      'kernel.base.display-context',
       'kernel.base.state',
       'kernel.base.ui-state',
       'kernel.base.runtime',
@@ -215,6 +226,7 @@ export const skeletonGraph = {
       'kernel.base.ui-state',
       'kernel.base.runtime',
       'kernel.feature.sample-wallpaper',
+      'kernel.feature.sample-staff-session',
       'ui.base.render',
       'ui.base.primitives',
       'ui.base.feature-assembly',
@@ -242,10 +254,12 @@ export const skeletonGraph = {
     batch: 1,
     dependencies: [
       'kernel.base.contracts',
+      'kernel.base.state',
       'kernel.base.platform-ports',
       'kernel.base.runtime',
       'kernel.base.server-config',
       'kernel.base.terminal-data-client',
+      'kernel.feature.store-basic',
       'kernel.base.topology',
       'kernel.base.transport',
       'kernel.base.display-context',
@@ -267,10 +281,12 @@ export const skeletonGraph = {
     batch: 2,
     dependencies: [
       'kernel.base.contracts',
+      'kernel.base.state',
       'kernel.base.platform-ports',
       'kernel.base.runtime',
       'kernel.base.server-config',
       'kernel.base.terminal-data-client',
+      'kernel.feature.store-basic',
       'kernel.base.topology',
       'kernel.base.transport',
       'kernel.base.display-context',

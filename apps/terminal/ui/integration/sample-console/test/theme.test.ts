@@ -47,8 +47,8 @@ const createSampleAssembly = (input: TestSampleAssemblyInput) =>
               kind: 'response' as const,
               status: 200,
               body: Object.freeze({
-                terminalRef: 'terminal-theme-test',
-                storeRef: 'store-theme-test',
+                terminalRef: '00000000-0000-4000-8000-000000000007',
+                storeRef: '00000000-0000-4000-8000-000000000008',
                 groupWorkspaceKey: 'workspace-theme-test',
                 bindingGeneration: 1,
               }),

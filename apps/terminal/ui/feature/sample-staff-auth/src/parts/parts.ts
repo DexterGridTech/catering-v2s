@@ -13,6 +13,7 @@ const primary = ['PRIMARY'] as const;
 const mainContainer = ['main'] as const;
 const main = ['MAIN'] as const;
 const master = ['MASTER'] as const;
+const masterAndSlave = ['MASTER', 'SLAVE'] as const;
 const slave = ['SLAVE'] as const;
 
 const lmsGuidePair = definePartPair({
@@ -20,7 +21,7 @@ const lmsGuidePair = definePartPair({
   containerKeys: mainContainer,
   displayModes: ['SECONDARY'] as const,
   workspaces: main,
-  instanceModes: slave,
+  instanceModes: masterAndSlave,
   title: '主屏登录引导',
   description: '主机店员尚未登录时在副机显示只读引导',
   components: {laptop: LaptopLmsAuthGuide, mobile: MobileLmsAuthGuide},

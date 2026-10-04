@@ -19,5 +19,9 @@ export const selectTopologyRequiredProjectionsReady = (
   const topology = selectTopologyState(state);
   if (!topology.peerReachable || topology.peerIdentity === null || topology.peerStateSyncConnectionId === null)
     return false;
-  return requiredSliceNames.every(sliceName => topology.peerAppliedStateSyncRevisions[sliceName] !== undefined);
+  return requiredSliceNames.every(sliceName => {
+    const appliedRevision = topology.peerAppliedStateSyncRevisions[sliceName];
+    const failedRevision = topology.peerFailedStateSyncRevisions[sliceName];
+    return appliedRevision !== undefined && (failedRevision === undefined || appliedRevision >= failedRevision);
+  });
 };

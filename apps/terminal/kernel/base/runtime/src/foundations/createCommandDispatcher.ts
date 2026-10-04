@@ -617,8 +617,15 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
         });
       }
       const actorResults =
-        target === 'peer'
-          ? [await dispatchPeer({command, definition, lifecycleContext: context, observer})]
+      target === 'peer'
+          ? [await dispatchPeer({
+              command,
+              definition,
+              lifecycleContext: context,
+              observer,
+              lateOutcome: options.lateOutcome,
+              lateResultTtlMs: options.lateResultTtlMs,
+            })]
           : await Promise.all(
               handlers.map(handler =>
                 dispatchActor({
@@ -628,6 +635,8 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
                   lifecycleContext: context,
                   observer,
                   actorAncestors,
+                  lateOutcome: options.lateOutcome,
+                  lateResultTtlMs: options.lateResultTtlMs,
                 }),
               ),
             );
@@ -712,6 +721,8 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
       pendingResetByRoot.set(String(rootCommandId), reason);
     },
     dispatchInternal,
+    resolveCommandDefinition: commandName =>
+      input.definitionsByName.get(commandName)?.definition as CommandDefinition | undefined,
     emit,
     emitActorRunning,
     emitActorTerminal,

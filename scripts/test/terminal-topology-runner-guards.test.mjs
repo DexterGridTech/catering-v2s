@@ -733,15 +733,20 @@ test('topology cleanup records failed process readback instead of treating it as
   assert.match(source.slice(stageTwoStart, stageTwoEnd), /readCleanupProcessIdentity\(target, errors\)/);
 });
 
-test('runner topology value assertions use exact scoped text instead of substring matching', () => {
+test('runner topology assertions capture visual evidence when Android omits painted primitive text', () => {
   const source = readFileSync(new URL('../../tools/terminal-topology/run-dual-device.mjs', import.meta.url), 'utf8');
   const start = source.indexOf('const assertTopologyValue = async (');
   const end = source.indexOf('\n};', start);
   assert.ok(start >= 0 && end > start, 'topology value assertion helper must exist');
   const helper = source.slice(start, end);
-  assert.match(helper, /hasExactScopedResourceText\(xml, id, text\)/);
+  assert.match(helper, /hasExactScopedResourceText\(observed\.xml, id, text\)/);
   assert.doesNotMatch(helper, /\.includes\(text\)/);
-  assert.match(source, /hasExactScopedResourceText\(xml, 'terminal\.admin:topology:pair-result', '主机服务未能开启'\)/);
+  assert.match(helper, /visualVerification = 'REVIEW_REQUIRED'/);
+  assert.match(helper, /captureStage1Screenshot\(target, `\$\{label\}-visual-state`\)/);
+  assert.match(helper, /recordObservation\(record, target, label, observed\.xml, \[id\]\)/);
+  assert.ok(source.includes("master,\n    'terminal.admin:topology:alert'"));
+  assert.ok(source.includes("nodeForId(xml, 'terminal.admin:topology:failure:reason') !== null"));
+  assert.ok(source.includes("nodeForId(xml, 'terminal.admin:topology:retry') !== null"));
 });
 
 test('stage-one topology navigation waits for unique page content rather than the persistent navigation tab', () => {
@@ -752,8 +757,14 @@ test('stage-one topology navigation waits for unique page content rather than th
   const helper = source.slice(start, end);
   assert.match(helper, /await waitForNode\(target, 'terminal\.admin:topology:title'\)/);
   assert.doesNotMatch(helper, /await waitForNode\(target, 'terminal\.admin:section:topology'\)/);
-  assert.match(helper, /observe\(record, target, 'topology-open',[\s\S]*'terminal\.admin:topology:content-root'[\s\S]*'terminal\.admin:topology:title'/);
-  const ids = readFileSync(new URL('../../apps/terminal/ui/base/admin-shell/src/foundations/adminTestIds.ts', import.meta.url), 'utf8');
+  assert.match(
+    helper,
+    /observe\(record, target, 'topology-open',[\s\S]*'terminal\.admin:topology:content-root'[\s\S]*'terminal\.admin:topology:title'/,
+  );
+  const ids = readFileSync(
+    new URL('../../apps/terminal/ui/base/admin-shell/src/foundations/adminTestIds.ts', import.meta.url),
+    'utf8',
+  );
   assert.match(ids, /section: sectionTestIds\.topology,[\s\S]*contentRoot: 'terminal\.admin:topology:content-root'/);
 });
 
@@ -790,10 +801,19 @@ test('topology runner records only actual UI text from expected resource subtree
   assert.ok(productionObservations.includes('observedText: evidence.observedText'));
   assert.ok(productionObservations.includes('scopeId = null'));
   assert.ok(productionObservations.includes('inspectExpectedUi(xml, expectedIds, expectedTexts, scopeId)'));
-  assert.ok(source.includes('hasExactScopedResourceText(xml, id, text)'));
+  assert.ok(source.includes('hasExactScopedResourceText(observed.xml, id, text)'));
   assert.ok(!source.includes('scopedResourceText(xml, id).includes(text)'));
+  assert.ok(source.includes("master,\n    'terminal.admin:topology:alert'"));
   assert.ok(
-    source.includes("hasExactScopedResourceText(xml, 'terminal.admin:topology:pair-result', '主机服务未能开启')"),
+    source.includes("nodeForId(xml, 'terminal.admin:topology:failure:reason') !== null") &&
+      source.includes("nodeForId(xml, 'terminal.admin:topology:retry') !== null"),
+  );
+  assert.ok(
+    !source.includes("hasExactScopedResourceText(xml, 'terminal.admin:topology:pair-result', '主机服务未能开启')"),
+  );
+  assert.ok(
+    !/assertTopologyValue\([\s\S]{0,180}'terminal\.admin:topology:pair-result'/.test(source),
+    'painted PrimitiveStatusLine values must not be treated as Android-accessible text',
   );
   assert.equal(productionObservations.split('evidence.ambiguousIds.length > 0').length - 1, 2);
   assert.equal(source.split('expectedUiMatches(xml, [rootId, ...expectedIds], expectedTexts, rootId)').length - 1, 2);
@@ -801,6 +821,25 @@ test('topology runner records only actual UI text from expected resource subtree
   assert.ok(source.includes('const nodeForId = findUniqueUiNodeById;'));
   assert.ok(!source.includes('expectedTexts.every(value => xml.includes(value))'));
   assert.ok(!source.includes('observedText: diagnosticTexts'));
+});
+
+test('stage one identifies initial unpaired state from accessible role-choice controls', () => {
+  const source = readFileSync(new URL('../../tools/terminal-topology/run-dual-device.mjs', import.meta.url), 'utf8');
+  const pairStart = source.indexOf('const pairDevices = async');
+  const pairEnd = source.indexOf('\n};', pairStart);
+  assert.ok(pairStart >= 0 && pairEnd > pairStart, 'stage-one pair flow must be present and bounded');
+  const pairFlow = source.slice(pairStart, pairEnd);
+  assert.ok(pairFlow.includes("'master-host-initially-stopped'"));
+  for (const resourceId of [
+    'terminal.admin:frame:IA-18',
+    'terminal.admin:topology:goal-choice',
+    'terminal.admin:topology:action:host-enable',
+    'terminal.admin:topology:goal:slave',
+  ])
+    assert.ok(pairFlow.includes(resourceId), `unpaired-state oracle omits ${resourceId}`);
+  assert.ok(pairFlow.includes("nodeForId(initialTopology, 'terminal.admin:topology:pair-state') !== null"));
+  assert.ok(pairFlow.includes("nodeForId(initialTopology, 'terminal.admin:topology:host-service:state') !== null"));
+  assert.ok(!/master-host-initially-stopped[\s\S]{0,220}assertTopologyValue/.test(pairFlow));
 });
 
 test('TP-A7 heartbeat interval contains no runner-issued input or recovery action', () => {

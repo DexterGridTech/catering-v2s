@@ -426,6 +426,30 @@ class BackendAcceptanceTest {
             "cancelTerminalActivation",
             "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel",
             true);
+    static final RouteIdentity TERMINAL_READ_STORE_BASIC = new RouteIdentity(
+            "terminalReadStoreBasic",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/basic", true);
+    static final RouteIdentity TERMINAL_READ_STORE_ORGANIZATION_PATH = new RouteIdentity(
+            "terminalReadStoreOrganizationPath",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/organization-path", true);
+    static final RouteIdentity TERMINAL_READ_STORE_ACTIVE_CONTRACTS = new RouteIdentity(
+            "terminalReadStoreActiveContracts",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/contracts", true);
+    static final RouteIdentity TERMINAL_READ_CONTRACT = new RouteIdentity(
+            "terminalReadContract",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/contracts/{contractRef}", true);
+    static final RouteIdentity TERMINAL_READ_STORE_SERVICE_POINT_AREAS = new RouteIdentity(
+            "terminalReadStoreServicePointAreas",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas", true);
+    static final RouteIdentity TERMINAL_READ_SERVICE_POINT_AREA = new RouteIdentity(
+            "terminalReadServicePointArea",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/service-point-areas/{areaRef}", true);
+    static final RouteIdentity TERMINAL_READ_STORE_SERVICE_POINTS = new RouteIdentity(
+            "terminalReadStoreServicePoints",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points", true);
+    static final RouteIdentity TERMINAL_READ_SERVICE_POINT = new RouteIdentity(
+            "terminalReadServicePoint",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/service-points/{pointRef}", true);
     static final RouteIdentity OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL = new RouteIdentity(
             "cancelOperationsStoreTerminalActivation",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}"
@@ -1118,7 +1142,25 @@ class BackendAcceptanceTest {
                     "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_TOPOLOGY_PREFLIGHT_REQUIRED");
             return TerminalConnectionContractScenarios.crossNodeRecoveryScenarios(this, tdsAcceptanceProcess);
         }
+        if (TdsAcceptanceProcess.TdsStartConfiguration.TOPIC_SUBSCRIPTION_SCENARIO_ID.equals(selectedScenario)) {
+            assertEquals(
+                    "true",
+                    System.getenv("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT"),
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_TOPOLOGY_PREFLIGHT_REQUIRED");
+            return TerminalConnectionContractScenarios.topicSubscriptionScenarios(this, tdsAcceptanceProcess);
+        }
+        if (TdsAcceptanceProcess.TdsStartConfiguration.REMOTE_COMMAND_SCENARIO_ID.equals(selectedScenario)) {
+            assertEquals(
+                    "true",
+                    System.getenv("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT"),
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_TOPOLOGY_PREFLIGHT_REQUIRED");
+            return TerminalConnectionContractScenarios.remoteCommandScenarios(this, tdsAcceptanceProcess);
+        }
         throw new IllegalArgumentException("BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_UNKNOWN");
+    }
+
+    <T> T acceptanceBean(Class<T> beanType) {
+        return acceptanceApplicationContext.getBean(beanType);
     }
 
     @TestFactory
@@ -1381,8 +1423,8 @@ class BackendAcceptanceTest {
                 "ACCEPTANCE-ROOT",
                 "Acceptance root",
                 AuditActor.system());
-        OrganizationNodeReadback region =
-                hierarchy.create(workspaceUuid, key, "REGION", null, "acceptance-region", "Acceptance Region");
+        OrganizationNodeReadback region = hierarchy.createRegion(
+                workspaceUuid, key, "acceptance-region", "Acceptance Region");
         OrganizationNodeReadback project = hierarchy.create(
                 workspaceUuid,
                 key,

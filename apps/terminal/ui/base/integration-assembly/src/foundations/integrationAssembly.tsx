@@ -237,6 +237,7 @@ export const createDispatchCommand =
       requestId: options.requestId,
       routeContext: options.routeContext,
       routeIntent: options.routeIntent,
+      target: options.target,
     });
 
 export const createSurfaceForDisplayIndex = (assembly: IntegrationAssembly, displayIndex: 0 | 1): ReactElement => {
@@ -514,6 +515,7 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
       requestId: options.requestId,
       routeContext: options.routeContext,
       routeIntent: options.routeIntent,
+      target: options.target,
     });
   let uiStateModule: UiStateModule;
   let topologyCapability: TopologyAdminCapability | undefined;

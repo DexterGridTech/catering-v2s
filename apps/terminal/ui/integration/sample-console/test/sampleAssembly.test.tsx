@@ -32,9 +32,7 @@ import {
   selectPendingMember,
   submitMemberCommand,
 } from '@catering-v2s/kernel-feature-sample-member-registry';
-import {
-  loginCommand,
-} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {loginCommand} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {selectServerConfiguration} from '@catering-v2s/kernel-base-server-config';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import packageJson from '../package.json';
@@ -51,7 +49,12 @@ import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-d
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {needToActivateTerminalCommand} from '@catering-v2s/ui-base-terminal-activation';
 import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-client';
-import {createTestPlatformPorts, TestPeerChannel, type TestPlatformPorts} from './support';
+import {
+  createReadyTerminalNetworkAdapter,
+  createTestPlatformPorts,
+  TestPeerChannel,
+  type TestPlatformPorts,
+} from './support';
 import {
   resetNativeTestRefFactory,
   setNativeTestRefFactory,
@@ -102,23 +105,18 @@ const createSampleAssembly = (input: TestSampleAssemblyInput) =>
     transportNetworkAdapterFactory:
       input.transportNetworkAdapterFactory ??
       (readSnapshot =>
-        Object.freeze({
-          readSnapshot,
-          connect: async () => {
-            throw new Error('WEBSOCKET_NOT_EXPECTED_IN_SAMPLE_CONSOLE_COMPOSITION_TEST');
-          },
-          sendHttp: async () =>
-            Object.freeze({
-              kind: 'response' as const,
-              status: 200,
-              body: Object.freeze({
-                terminalRef: 'terminal-console-test',
-                storeRef: 'store-console-test',
-                groupWorkspaceKey: 'workspace-console-test',
-                bindingGeneration: 1,
-              }),
+        createReadyTerminalNetworkAdapter(readSnapshot, async () =>
+          Object.freeze({
+            kind: 'response' as const,
+            status: 200,
+            body: Object.freeze({
+              terminalRef: '00000000-0000-4000-8000-000000000001',
+              storeRef: '00000000-0000-4000-8000-000000000002',
+              groupWorkspaceKey: 'workspace-console-test',
+              bindingGeneration: 1,
             }),
-        })),
+          }),
+        )),
     nativeLoadingCapability: input.platformPorts.nativeLoadingCapability,
   });
 
@@ -140,9 +138,12 @@ const activateForTest = async (assembly: Awaited<ReturnType<typeof createSampleA
     dispatchOptions(),
   );
   expect(result.status).toBe('completed');
-  expect(result.actorResults.map(item => item.result)).toContainEqual(
-    expect.objectContaining({status: 'activated', terminalRef: 'terminal-console-test'}),
-  );
+  const activation = result.actorResults
+    .map(item => item.result)
+    .find(value => typeof value === 'object' && value !== null && 'status' in value && value.status === 'activated');
+  if (activation === undefined)
+    throw new Error(`TERMINAL_TEST_ACTIVATION_RESULT ${JSON.stringify(result.actorResults)}`);
+  expect(activation).toMatchObject({status: 'activated', terminalRef: '00000000-0000-4000-8000-000000000001'});
   await new Promise(resolve => setTimeout(resolve, 0));
 };
 
@@ -585,8 +586,8 @@ describe('sample-console real assembly', () => {
               kind: 'response' as const,
               status: 200,
               body: Object.freeze({
-                terminalRef: 'terminal-1',
-                storeRef: 'store-1',
+                terminalRef: '00000000-0000-4000-8000-000000000003',
+                storeRef: '00000000-0000-4000-8000-000000000004',
                 groupWorkspaceKey: 'workspace-1',
                 bindingGeneration: 1,
               }),
@@ -603,7 +604,7 @@ describe('sample-console real assembly', () => {
       );
       expect(activation.status).toBe('completed');
       expect(activation.actorResults.map(item => item.result)).toContainEqual(
-        expect.objectContaining({status: 'activated', terminalRef: 'terminal-1'}),
+        expect.objectContaining({status: 'activated', terminalRef: '00000000-0000-4000-8000-000000000003'}),
       );
       expect(requests).toEqual([{pathAndQuery: '/activation', activationCode: '00123456'}]);
       const routeContext = {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'} as const;
@@ -691,7 +692,7 @@ describe('sample-console real assembly', () => {
 
   it('restores an activation screen removed from an already-routed secondary placement', async () => {
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts({displayCount: 2}),
+      platformPorts: createTestPlatformPorts({displayCount: 2, deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample-console-secondary-activation-restored-${Date.now()}`,
       surfaceForm: 'laptop',
     });
@@ -1940,13 +1941,15 @@ describe('sample-console real assembly', () => {
 
   it('retains submitted business state underneath the admin layer', async () => {
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts({displayCount: 2}),
+      platformPorts: createTestPlatformPorts({displayCount: 2, deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample-console-admin-submitted-business-state-${Date.now()}`,
       surfaceForm: 'laptop',
       surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, LANDSCAPE_PRIMARY_FRAME)},
     });
     let renderer: TestRenderer | undefined;
     try {
+      await readyAndActivateForTest(assembly);
+      await loginForTest(assembly);
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME);
       await act(async () => {
         const result = await assembly.runtime.dispatchCommand(
@@ -1981,13 +1984,20 @@ describe('sample-console real assembly', () => {
       releaseDisplayInfo = resolve;
     });
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts({displayCount: 2, displayInfoGate, displayInfoGateAfterCalls: 2}),
+      platformPorts: createTestPlatformPorts({
+        displayCount: 2,
+        deviceInfo: ACTIVATION_DEVICE_INFO,
+        displayInfoGate,
+        displayInfoGateAfterCalls: 2,
+      }),
       persistenceKey: `sample-console-admin-in-flight-${Date.now()}`,
       surfaceForm: 'laptop',
       surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, LANDSCAPE_PRIMARY_FRAME)},
     });
     let renderer: TestRenderer | undefined;
     try {
+      await readyAndActivateForTest(assembly);
+      await loginForTest(assembly);
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME);
       let businessSettled = false;
       const businessPromise = assembly.runtime
@@ -2086,12 +2096,10 @@ describe('sample-console real assembly', () => {
       const businessBefore = selectScreen(firstAssembly.runtime.getState(), 'PRIMARY', 'main');
       expect(businessBefore).toBeDefined();
       const businessPartKey = businessBefore!.partKey;
-      await waitForRecordedValues([plainStorage, protectedStorage], [
-        'admin.console.layer',
-        businessPartKey,
-        'A001',
-        'terminal-console-test',
-      ]);
+      await waitForRecordedValues(
+        [plainStorage, protectedStorage],
+        ['admin.console.layer', businessPartKey, 'A001', '00000000-0000-4000-8000-000000000001'],
+      );
       await releaseRuntimeForTestAsync(firstAssembly.runtime);
       firstAssembly = undefined;
       // Do not unmount the first renderer before hydration: a killed process
@@ -2251,7 +2259,7 @@ describe('sample-console real assembly', () => {
           'ui.integration.sample-console',
         ]),
       );
-      expect(assembly.runtime.descriptors).toHaveLength(13);
+      expect(assembly.runtime.descriptors).toHaveLength(14);
     } finally {
       await releaseRuntimeForTestAsync(assembly.runtime);
     }
@@ -2375,7 +2383,7 @@ describe('sample-console real assembly', () => {
       );
       if (refreshed.status !== 'completed') throw new Error(JSON.stringify(refreshed, null, 2));
       expect(selectScreen(assembly.runtime.getState(), 'SECONDARY', 'main')).toMatchObject({
-        partKey: 'sample.desk.customer-welcome',
+        partKey: 'sample.auth.guide.lms',
       });
     } finally {
       await releaseRuntimeForTestAsync(assembly.runtime);
@@ -2453,6 +2461,8 @@ describe('sample-console real assembly', () => {
     });
     let renderer: TestRenderer | undefined;
     try {
+      await readyAndActivateForTest(assembly);
+      await loginForTest(assembly);
       await act(async () => {
         await assembly.runtime.dispatchCommand(
           submitMemberCommand,
@@ -2511,12 +2521,14 @@ describe('sample-console real assembly', () => {
 
   it('confirms a locally edited secondary age into the member fact only at decision time', async () => {
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts({displayCount: 2}),
+      platformPorts: createTestPlatformPorts({displayCount: 2, deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample-console-age-confirm-test-${Date.now()}`,
       surfaceForm: 'laptop',
     });
     let secondaryRenderer: TestRenderer | undefined;
     try {
+      await readyAndActivateForTest(assembly);
+      await loginForTest(assembly);
       await assembly.runtime.dispatchCommand(
         submitMemberCommand,
         {
@@ -2553,12 +2565,14 @@ describe('sample-console real assembly', () => {
 
   it('does not persist locally edited age when the customer rejects', async () => {
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts({displayCount: 2}),
+      platformPorts: createTestPlatformPorts({displayCount: 2, deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample-console-age-reject-test-${Date.now()}`,
       surfaceForm: 'laptop',
     });
     let secondaryRenderer: TestRenderer | undefined;
     try {
+      await readyAndActivateForTest(assembly);
+      await loginForTest(assembly);
       await assembly.runtime.dispatchCommand(
         submitMemberCommand,
         {
@@ -2593,11 +2607,13 @@ describe('sample-console real assembly', () => {
 
   it('retains rejected pending data for retry and clears it only when the notice is abandoned', async () => {
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts({displayCount: 2}),
+      platformPorts: createTestPlatformPorts({displayCount: 2, deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample-console-retry-abandon-test-${Date.now()}`,
       surfaceForm: 'laptop',
     });
     try {
+      await readyAndActivateForTest(assembly);
+      await loginForTest(assembly);
       await assembly.runtime.dispatchCommand(
         submitMemberCommand,
         {
@@ -2651,11 +2667,13 @@ describe('sample-console real assembly', () => {
 
   it('returns the single-surface hand-back to the member form without a confirmation layer', async () => {
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts({displayCount: 1}),
+      platformPorts: createTestPlatformPorts({displayCount: 1, deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample-console-hand-back-test-${Date.now()}`,
       surfaceForm: 'laptop',
     });
     try {
+      await readyAndActivateForTest(assembly);
+      await loginForTest(assembly);
       await assembly.runtime.dispatchCommand(
         submitMemberCommand,
         {

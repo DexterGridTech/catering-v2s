@@ -3,6 +3,7 @@ import {
   initializeCommand,
   runtimeInstanceModeChangedCommand,
   setRuntimeInstanceModeCommand,
+  helloWorldCommand,
 } from '../features/commands';
 import {runtimeInstanceModeSlice, runtimeInstanceModeSliceName} from '../features/slices/runtimeInstanceMode';
 import {
@@ -17,6 +18,7 @@ import {createSetRuntimeInstanceModeActor} from '../features/actors/setRuntimeIn
 import {createCleanupRequestLedgerActor} from '../features/actors/cleanupRequestLedgerActor';
 import {createRequestLedgerRoleChangedActor} from '../features/actors/requestLedgerRoleChangedActor';
 import {createResetRuntimeAfterSystemFailureActor} from '../features/actors/resetRuntimeAfterSystemFailureActor';
+import {createHelloWorldActor} from '../features/actors/helloWorldActor';
 import {resetRuntimeAfterSystemFailureCommand} from '../features/commands/resetRuntimeAfterSystemFailure';
 import {defaultRequestMaxResidenceMs, defaultRequestRetentionMs, type RuntimeLimits} from '../types/limits';
 
@@ -31,6 +33,7 @@ export const createInternalRuntimeModule = (
   const cleanupActor = createCleanupRequestLedgerActor(getRequestLedgerLimits);
   const roleChangedActor = createRequestLedgerRoleChangedActor();
   const resetRuntimeAfterSystemFailureActor = createResetRuntimeAfterSystemFailureActor();
+  const helloWorldActor = createHelloWorldActor();
 
   return Object.freeze({
     moduleName,
@@ -42,6 +45,7 @@ export const createInternalRuntimeModule = (
       {name: `${moduleName}.cleanup-request-ledger`, visibility: 'internal' as const},
       {name: `${moduleName}.instance-mode-changed`, visibility: 'internal' as const},
       {name: resetRuntimeAfterSystemFailureCommand.commandName, visibility: 'public' as const},
+      {name: helloWorldCommand.commandName, visibility: 'public' as const},
     ],
     commandDefinitions: [
       initializeCommand,
@@ -49,14 +53,16 @@ export const createInternalRuntimeModule = (
       cleanupRequestLedgerCommand,
       runtimeInstanceModeChangedCommand,
       resetRuntimeAfterSystemFailureCommand,
+      helloWorldCommand,
     ],
     actors: [
       {name: 'instance-mode'},
       {name: 'request-ledger-cleanup'},
       {name: 'request-ledger-role-changed'},
       {name: 'reset-runtime-after-system-failure'},
+      {name: 'hello-world'},
     ],
-    actorDefinitions: [actor, cleanupActor, roleChangedActor, resetRuntimeAfterSystemFailureActor],
+    actorDefinitions: [actor, cleanupActor, roleChangedActor, resetRuntimeAfterSystemFailureActor, helloWorldActor],
     slices: [
       {name: runtimeInstanceModeSliceName, persistIntent: 'owner-only' as const},
       {name: runtimeRequestLedgerMasterSliceName, persistIntent: 'never' as const},

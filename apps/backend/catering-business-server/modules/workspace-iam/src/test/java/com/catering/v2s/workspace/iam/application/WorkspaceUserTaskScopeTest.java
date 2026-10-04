@@ -94,16 +94,16 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void regionOperatorOpeningProjectUserManagementReturnsProjectPersonnelAndExcludesPeerBranch() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID group = commercialGroup;
         UUID region = hierarchy
-                .create(workspace, "scope-test", "REGION", null, "scope-region", "Scope region")
+                .createRegion(workspace, "scope-test", "scope-region", "Scope region")
                 .id();
         UUID includedProject = hierarchy
                 .create(workspace, "scope-test", "PROJECT", region, "included-project", "Included project")
                 .id();
         UUID peerRegion = hierarchy
-                .create(workspace, "scope-test", "REGION", null, "peer-region", "Peer region")
+                .createRegion(workspace, "scope-test", "peer-region", "Peer region")
                 .id();
         UUID excludedProject = hierarchy
                 .create(workspace, "scope-test", "PROJECT", peerRegion, "excluded-project", "Excluded project")
@@ -139,10 +139,10 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void groupOperatorOpeningStoreUserManagementProjectsOnlyTheExactStoreAssignmentsInListAndDetail() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID group = commercialGroup;
         UUID region = hierarchy
-                .create(workspace, "scope-test", "REGION", null, "group-store-region", "Group store region")
+                .createRegion(workspace, "scope-test", "group-store-region", "Group store region")
                 .id();
         UUID project = hierarchy
                 .create(workspace, "scope-test", "PROJECT", region, "group-store-project", "Group store project")
@@ -187,7 +187,7 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void fixedGroupUserPageMayUseTheCurrentGroupAssignmentWhenNoDataScopeIsRequired() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID group = commercialGroup;
         CommercialGroupLookup groups = groups(group);
         WorkspaceUserService service =
@@ -200,7 +200,7 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void fixedGroupUserPageIgnoresStaleVisibleDataScopeFromAnotherPage() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID group = commercialGroup;
         CommercialGroupLookup groups = groups(group);
         WorkspaceUserService service =
@@ -212,7 +212,7 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void groupOperatorOpeningHeadCompanyUserManagementUsesTheExplicitHeadCompanySelection() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID group = commercialGroup;
         UUID headCompany = headCompany("aggregate-head-company");
         WorkspaceRoleService roles = new WorkspaceRoleService(jdbc, () -> NOW);
@@ -244,7 +244,7 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void commandTargetResolverUsesTheExplicitHeadCompanyTargetInsteadOfTheVisibleScope() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID group = commercialGroup;
         UUID headCompany = headCompany("command-target-head-company");
         WorkspaceUserService service =
@@ -256,10 +256,10 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void pageBundlesOneHundredAccountsAndThreeAssignmentsWithoutChangingPageBoundaries() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID group = commercialGroup;
         UUID region = hierarchy
-                .create(workspace, "scope-test", "REGION", null, "bundle-region", "Bundle region")
+                .createRegion(workspace, "scope-test", "bundle-region", "Bundle region")
                 .id();
         UUID project = hierarchy
                 .create(workspace, "scope-test", "PROJECT", region, "bundle-project", "Bundle project")
@@ -288,10 +288,10 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void operationsUserPageUsesOnlyConcreteAccountSortKeysAndAStableAccountIdTieBreaker() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID group = commercialGroup;
         UUID region = hierarchy
-                .create(workspace, "scope-test", "REGION", null, "sort-region", "Sort region")
+                .createRegion(workspace, "scope-test", "sort-region", "Sort region")
                 .id();
         UUID project = hierarchy
                 .create(workspace, "scope-test", "PROJECT", region, "sort-project", "Sort project")
@@ -328,7 +328,7 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void platformAccountPageSortsUpdatedAtWithStableAccountIdTieBreaker() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID first = account(
                 UUID.fromString("00000000-0000-0000-0000-000000000011"),
                 "13800000051",
@@ -375,7 +375,7 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void accountRoleCandidateQueryUsesTheCanonicalOwnerReadWithoutAnInvitationTarget() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         WorkspaceRoleService roles = new WorkspaceRoleService(jdbc, () -> NOW);
         String roleName = "Account filter candidate " + UUID.randomUUID();
         roles.create(workspace, "scope-test", roleName, "GROUP", null, Set.of(), Set.of());
@@ -400,13 +400,13 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void peerRegionProjectScopeIsDenied() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID group = commercialGroup;
         UUID region = hierarchy
-                .create(workspace, "scope-test", "REGION", null, "peer-current-region", "Peer current region")
+                .createRegion(workspace, "scope-test", "peer-current-region", "Peer current region")
                 .id();
         UUID peer = hierarchy
-                .create(workspace, "scope-test", "REGION", null, "peer-other-region", "Peer other region")
+                .createRegion(workspace, "scope-test", "peer-other-region", "Peer other region")
                 .id();
         UUID peerProject = hierarchy
                 .create(workspace, "scope-test", "PROJECT", peer, "peer-other-project", "Peer other project")
@@ -420,10 +420,10 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void crossGroupProjectIdIsDenied() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID group = commercialGroup;
         UUID region = hierarchy
-                .create(workspace, "scope-test", "REGION", null, "cross-current-region", "Cross current region")
+                .createRegion(workspace, "scope-test", "cross-current-region", "Cross current region")
                 .id();
         UUID foreignWorkspace = UUID.randomUUID();
         jdbc.update(
@@ -437,7 +437,7 @@ class WorkspaceUserTaskScopeTest {
                 NOW,
                 NOW);
         UUID foreignRegion = hierarchy
-                .create(foreignWorkspace, "foreign-scope", "REGION", null, "foreign-region", "Foreign region")
+                .createRegion(foreignWorkspace, "foreign-scope", "foreign-region", "Foreign region")
                 .id();
         UUID foreignProject = hierarchy
                 .create(
@@ -457,10 +457,10 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void storeAssignmentCannotSelectAnotherStore() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID group = commercialGroup;
         UUID region = hierarchy
-                .create(workspace, "scope-test", "REGION", null, "store-current-region", "Store current region")
+                .createRegion(workspace, "scope-test", "store-current-region", "Store current region")
                 .id();
         UUID project = hierarchy
                 .create(workspace, "scope-test", "PROJECT", region, "store-current-project", "Store current project")
@@ -476,10 +476,10 @@ class WorkspaceUserTaskScopeTest {
 
     @Test
     void projectRevokeRequiresProjectRoleRevokeCapabilityBeforeReceiptReplay() {
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW);
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, () -> NOW, groups(commercialGroup));
         UUID group = commercialGroup;
         UUID region = hierarchy
-                .create(workspace, "scope-test", "REGION", null, "revoke-region", "Revoke region")
+                .createRegion(workspace, "scope-test", "revoke-region", "Revoke region")
                 .id();
         UUID project = hierarchy
                 .create(workspace, "scope-test", "PROJECT", region, "revoke-project", "Revoke project")

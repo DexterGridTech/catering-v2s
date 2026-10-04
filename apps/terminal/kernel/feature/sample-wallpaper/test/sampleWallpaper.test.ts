@@ -57,7 +57,12 @@ describe('sample wallpaper owner module', () => {
           value: expect.objectContaining({value: {wallpaperId: 'w2'}}),
         }),
       ]);
-      expect(runtimeStateSyncForTest(slave).applyAuthoritativeSync('kernel.feature.sample-wallpaper.selection', payload.payload)).toMatchObject({status: 'applied'});
+      expect(
+        runtimeStateSyncForTest(slave).applyAuthoritativeSync(
+          'kernel.feature.sample-wallpaper.selection',
+          payload.payload,
+        ),
+      ).toMatchObject({status: 'applied'});
       expect(selectWallpaperId(slave.getState())).toBe('none');
       const slaveState = {
         ...slave.getState(),
@@ -145,6 +150,23 @@ describe('sample wallpaper owner module', () => {
     expect(selectWallpaperId(runtime.getState())).toBe('w2');
     expect(selectPendingWallpaperId(runtime.getState())).toBeUndefined();
     await releaseRuntimeForTestAsync(runtime);
+  });
+
+  it('does not mutate wallpaper through a direct owner command when the integration guard is closed', async () => {
+    const runtime = createTestRuntime([createSampleWallpaperModule({canMutate: () => false})]);
+    try {
+      await runtime.start();
+      const result = await runtime.dispatchCommand(
+        selectWallpaperCommand,
+        {wallpaperId: 'w2'},
+        {requestId: createRequestId()},
+      );
+      expect(result.status).toBe('error');
+      expect(selectWallpaperId(runtime.getState())).toBe('none');
+      expect(selectPendingWallpaperId(runtime.getState())).toBeUndefined();
+    } finally {
+      await releaseRuntimeForTestAsync(runtime);
+    }
   });
 
   it('rejects confirm without a different pending wallpaper with no state write or child command', async () => {

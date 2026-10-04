@@ -183,18 +183,20 @@ export const parseTopologyWireMessage = (raw: string): TopologyWireMessage => {
     }
     case 'command-request': {
       const value = readCommon(parsed, type);
+      const requiredFields = [
+        'type',
+        'protocolVersion',
+        'wireId',
+        'requestId',
+        'commandId',
+        'parentCommandId',
+        'commandName',
+        'payload',
+      ];
+      const fieldsWithLateWindow = [...requiredFields, 'lateResultTtlMs'];
       if (
         value === null ||
-        !keysAreExactly(value, [
-          'type',
-          'protocolVersion',
-          'wireId',
-          'requestId',
-          'commandId',
-          'parentCommandId',
-          'commandName',
-          'payload',
-        ])
+        (!keysAreExactly(value, requiredFields) && !keysAreExactly(value, fieldsWithLateWindow))
       )
         throw new Error('invalid topology command-request');
       if (
@@ -202,7 +204,11 @@ export const parseTopologyWireMessage = (raw: string): TopologyWireMessage => {
         !isBoundedString(value.commandId, maxIdLength) ||
         !isNullableBoundedString(value.parentCommandId) ||
         !isBoundedString(value.commandName, maxCommandNameLength) ||
-        !isTopologyCommandPayload(value.payload)
+        !isTopologyCommandPayload(value.payload) ||
+        ('lateResultTtlMs' in value &&
+          (!Number.isInteger(value.lateResultTtlMs) ||
+            Number(value.lateResultTtlMs) < 1 ||
+            Number(value.lateResultTtlMs) > 7_200_000))
       )
         throw new Error('invalid topology command-request fields');
       return Object.freeze(value as TopologyWireMessage);

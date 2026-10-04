@@ -1332,15 +1332,16 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "createOperationsContract": {
     "kind": "FIXED",
-    "max": 20,
+    "max": 26,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "from": 20,
+        "to": 26,
+        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
+        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-CONTRACT-CREATE-P3"
       }
     ]
   },
@@ -1388,30 +1389,30 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "createOperationsOrganizationRegion": {
     "kind": "FIXED",
-    "max": 23,
+    "max": 24,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 23,
+        "to": 24,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
   "createOperationsOrganizationStore": {
     "kind": "FIXED",
-    "max": 25,
+    "max": 28,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": 20,
-        "to": 25,
-        "reason": "Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-09-18-STORE-CREATE-P3"
+        "to": 28,
+        "reason": "Dexter authorized implementation-agent single-FIXED-operation exception on 2026-10-05: three managed CP-05 runs measured 28; preserve required TDP snapshots, notifications, complete owner transaction and authoritative readback. Generic P3 ceiling remains 20.",
+        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-STORE-CREATE-P3"
       }
     ]
   },
@@ -1673,14 +1674,14 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "getOperationsContracts": {
     "kind": "FIXED",
-    "max": 12,
+    "max": 10,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 12,
+        "to": 10,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -2597,15 +2598,16 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "invalidateOperationsContract": {
     "kind": "FIXED",
-    "max": 19,
+    "max": 25,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
-        "from": null,
-        "to": 19,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "from": 20,
+        "to": 25,
+        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
+        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-CONTRACT-INVALIDATE-P3"
       }
     ]
   },
@@ -2683,6 +2685,50 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "patchOperationsStoreServicePoint": {
     "kind": "FIXED",
+    "max": 29,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 29,
+        "reason": "Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.",
+        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-SERVICE-POINT-PATCH-P3"
+      }
+    ]
+  },
+  "patchOperationsStoreServicePointArea": {
+    "kind": "FIXED",
+    "max": 24,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 24,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "postOperationsStoreServicePoint": {
+    "kind": "FIXED",
+    "max": 33,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 33,
+        "reason": "Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.",
+        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-SERVICE-POINT-CREATE-P3"
+      }
+    ]
+  },
+  "postOperationsStoreServicePointArea": {
+    "kind": "FIXED",
     "max": 25,
     "measurementScenarioIds": [
       "performance.normal-path"
@@ -2691,107 +2737,66 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": 20,
         "to": 25,
-        "reason": "Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-PATCH-P3"
-      }
-    ]
-  },
-  "patchOperationsStoreServicePointArea": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "postOperationsStoreServicePoint": {
-    "kind": "FIXED",
-    "max": 27,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 27,
-        "reason": "Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-CREATE-P3"
-      }
-    ]
-  },
-  "postOperationsStoreServicePointArea": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
+        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-AREA-CREATE-P3"
       }
     ]
   },
   "postOperationsStoreServicePointAreaOrder": {
     "kind": "FIXED",
-    "max": 21,
+    "max": 23,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 21,
+        "to": 23,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
   "postOperationsStoreServicePointAreaStatus": {
     "kind": "FIXED",
-    "max": 20,
+    "max": 26,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "from": 20,
+        "to": 26,
+        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
+        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-AREA-STATUS-P3"
       }
     ]
   },
   "postOperationsStoreServicePointOrder": {
     "kind": "FIXED",
-    "max": 22,
+    "max": 24,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 22,
+        "to": 24,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
   "postOperationsStoreServicePointStatus": {
     "kind": "FIXED",
-    "max": 22,
+    "max": 28,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
-        "from": null,
-        "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "from": 20,
+        "to": 28,
+        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
+        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-POINT-STATUS-P3"
       }
     ]
   },
@@ -3251,28 +3256,28 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "transitionOperationsOrganizationNodeStatus": {
     "kind": "FIXED",
-    "max": 23,
+    "max": 24,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 23,
+        "to": 24,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
   "transitionOperationsOrganizationStoreStatus": {
     "kind": "FIXED",
-    "max": 18,
+    "max": 20,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 18,
+        "to": 20,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -3321,28 +3326,29 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "updateOperationsCommercialGroup": {
     "kind": "FIXED",
-    "max": 24,
+    "max": 25,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
-        "from": null,
-        "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
+        "from": 20,
+        "to": 25,
+        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
+        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-COMMERCIAL-GROUP-UPDATE-P3"
       }
     ]
   },
   "updateOperationsContract": {
     "kind": "FIXED",
-    "max": 22,
+    "max": 23,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 22,
+        "to": 23,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -3377,20 +3383,6 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "updateOperationsOrganizationNode": {
     "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updateOperationsOrganizationStore": {
-    "kind": "FIXED",
     "max": 23,
     "measurementScenarioIds": [
       "performance.normal-path"
@@ -3400,6 +3392,21 @@ export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
         "from": null,
         "to": 23,
         "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updateOperationsOrganizationStore": {
+    "kind": "FIXED",
+    "max": 25,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": 20,
+        "to": 25,
+        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
+        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-STORE-UPDATE-P3"
       }
     ]
   },

@@ -1,11 +1,14 @@
 import {useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'react';
 import {closeLayerCommand} from '@catering-v2s/kernel-base-ui-state';
+import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
+import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {BUSINESS_FOCUS_SCOPE_ID, useInputController} from '@catering-v2s/ui-base-input';
 import {
   dispatchWithRequestId,
   useDispatchCommand,
   useRenderContext,
   useSurfaceContext,
+  useUiStateSelector,
 } from '@catering-v2s/ui-base-render';
 import {ADMIN_CONSOLE_FOCUS_SCOPE_ID, ADMIN_CONSOLE_LAYER_ID} from '../foundations/adminIdentity';
 import type {AdminLoginProps} from '../hooks/useAdminLogin';
@@ -26,6 +29,9 @@ export type AdminLayerFrameProps = Readonly<{
 export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFrameProps) => {
   const {logger, runtimeFacts} = useRenderContext();
   const surface = useSurfaceContext();
+  const localAdminWorkspace = useUiStateSelector(root =>
+    selectRuntimeInstanceMode(root) === 'SLAVE' && selectDisplayRole(root) === 'VICE' ? 'BRANCH' : undefined,
+  );
   const dispatchCommand = useDispatchCommand();
   const inputController = useInputController();
   const [authenticated, setAuthenticated] = useState(false);
@@ -49,7 +55,11 @@ export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFr
         const request = dispatchWithRequestId({
           dispatchCommand: dispatchRef.current,
           definition: closeLayerCommand,
-          payload: {displayMode: identityDisplayMode, layerId: ADMIN_CONSOLE_LAYER_ID},
+          payload: {
+            displayMode: identityDisplayMode,
+            layerId: ADMIN_CONSOLE_LAYER_ID,
+            ...(localAdminWorkspace === undefined ? {} : {workspace: localAdminWorkspace}),
+          },
         });
         return request
           .then(result => {
@@ -81,7 +91,7 @@ export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFr
           });
       });
     };
-  }, [displayIndex, identityDisplayMode, surfaceKey]);
+  }, [displayIndex, identityDisplayMode, localAdminWorkspace, surfaceKey]);
 
   useLayoutEffect(() => {
     inputController.activateFocusScope(ADMIN_CONSOLE_FOCUS_SCOPE_ID);
@@ -94,7 +104,11 @@ export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFr
     const request = dispatchWithRequestId({
       dispatchCommand,
       definition: closeLayerCommand,
-      payload: {displayMode: surface.displayMode, layerId: ADMIN_CONSOLE_LAYER_ID},
+      payload: {
+        displayMode: surface.displayMode,
+        layerId: ADMIN_CONSOLE_LAYER_ID,
+        ...(localAdminWorkspace === undefined ? {} : {workspace: localAdminWorkspace}),
+      },
     });
     void request
       .then(result => {
@@ -139,7 +153,7 @@ export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFr
           },
         });
       });
-  }, [displayIndex, dispatchCommand, logger, surface.displayMode, surfaceKey]);
+  }, [displayIndex, dispatchCommand, logger, localAdminWorkspace, surface.displayMode, surfaceKey]);
 
   if (!authenticated) {
     return renderLogin({

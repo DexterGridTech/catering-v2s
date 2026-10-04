@@ -37,21 +37,34 @@ final class StoreServicePointAcceptanceScenarios {
         StoreContext store = enabledStore(context);
         AreaView tableArea = createArea(context, store, "TABLE_AREA", "Main table area", "TABLE-MAIN");
         AreaView scanArea = createArea(context, store, "SCAN_AREA", "Entry scan area", "SCAN-MAIN");
+        assertAreaCollectionSnapshot(
+                store, List.of(tableArea.ref(), scanArea.ref()), areaCollectionTime(store));
 
         JsonNode initial = listAreas(context, store);
         assertEquals(2, initial.path("total").asInt(), "BUSINESS: both active areas are listed");
 
+        long collectionTimeBeforeMemberUpdate = areaCollectionTime(store);
         AreaView updated = updateArea(
                 context, store, tableArea, "Main table area updated", "TABLE-MAIN-UPDATED", "TABLE_AREA", "ENABLED");
+        assertAreaCollectionSnapshot(
+                store, List.of(tableArea.ref(), scanArea.ref()), collectionTimeBeforeMemberUpdate);
         assertEquals("Main table area updated", updated.json().path("name").asText());
         assertEquals("TABLE_AREA", updated.json().path("areaType").asText());
+        assertEquals(
+                collectionTimeBeforeMemberUpdate,
+                areaCollectionTime(store),
+                "BUSINESS: updating a member preserves range time when membership hash is unchanged");
 
         AreaView moved = moveArea(context, store, scanArea, "UP");
+        assertAreaCollectionSnapshot(
+                store, List.of(tableArea.ref(), scanArea.ref()), collectionTimeBeforeMemberUpdate);
         assertEquals(
                 "SCAN_AREA", moved.json().path("areaType").asText(), "BUSINESS: area order returns the moved area");
 
         AreaView currentUpdated = area(findItem(listAreas(context, store).path("items"), updated.ref()));
         AreaView disabled = transitionArea(context, store, currentUpdated, "DISABLED");
+        long areaCollectionTimeAfterDisable = areaCollectionTime(store);
+        assertAreaCollectionSnapshot(store, List.of(scanArea.ref()), disabledUpdatedAt(disabled.ref()));
         assertEquals("DISABLED", disabled.json().path("status").asText(), "BUSINESS: area status is persisted");
         JsonNode after = listAreas(context, store);
         assertEquals(2, after.path("total").asInt(), "BUSINESS: disabled area remains in the active list");
@@ -63,6 +76,7 @@ final class StoreServicePointAcceptanceScenarios {
                 "BUSINESS: voiding an area returns the retained historical row");
         assertEquals(
                 1, listAreas(context, store).path("total").asInt(), "BUSINESS: a voided area leaves the current list");
+        assertAreaCollectionSnapshot(store, List.of(scanArea.ref()), areaCollectionTimeAfterDisable);
     }
 
     @AcceptanceScenario(
@@ -114,6 +128,16 @@ final class StoreServicePointAcceptanceScenarios {
                 1,
                 afterPointVoid.path("total").asInt(),
                 "BUSINESS: a voided point leaves the current list without losing the enabled point");
+
+        PointView collectionMember = createTablePoint(
+                context, store, area, "Collection member", "COLLECTION-MEMBER", 2, "HALL", true);
+        assertPointCollectionSnapshot(
+                store,
+                List.of(enabledPoint.ref(), collectionMember.ref()),
+                Math.max(pointUpdatedAt(enabledPoint.ref()), pointUpdatedAt(collectionMember.ref())));
+        PointView collectionMemberDisabled = transitionPoint(context, store, collectionMember, "DISABLED");
+        assertPointCollectionSnapshot(
+                store, List.of(enabledPoint.ref()), pointUpdatedAt(collectionMemberDisabled.ref()));
     }
 
     @AcceptanceScenario(id = "storeServicePointOrdering", module = "ORG", operation = "storeServicePointOrdering")
@@ -1010,6 +1034,77 @@ final class StoreServicePointAcceptanceScenarios {
                 UUID.fromString(json.path("pointRef").asText()),
                 json.path("version").asLong(),
                 json);
+    }
+
+    private void assertAreaCollectionSnapshot(StoreContext store, List<UUID> members, long expectedTime)
+            throws Exception {
+        String canonicalMembers = members.stream()
+                .map(UUID::toString)
+                .sorted()
+                .collect(java.util.stream.Collectors.joining("\n"));
+        String expectedHash = BackendAcceptanceTest.sha256(
+                canonicalMembers.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        Map<String, Object> snapshot = host.queryForMap(
+                "SELECT collection_hash, topic_time_epoch_millis FROM organization.terminal_topic_snapshot "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? "
+                        + "AND topic_key='SERVICE_POINT_AREA_COLLECTION'",
+                store.fixture().workspaceUuid(),
+                store.fixture().groupWorkspaceKey(),
+                store.fixture().storeId());
+        assertEquals(
+                expectedHash,
+                snapshot.get("collection_hash").toString().trim(),
+                "BUSINESS: area snapshot hashes full sorted refs");
+        assertEquals(
+                expectedTime,
+                ((Number) snapshot.get("topic_time_epoch_millis")).longValue(),
+                "BUSINESS: area snapshot time follows the owner transition rule");
+    }
+
+    private void assertPointCollectionSnapshot(StoreContext store, List<UUID> members, long expectedTime)
+            throws Exception {
+        String canonicalMembers = members.stream()
+                .map(UUID::toString)
+                .sorted()
+                .collect(java.util.stream.Collectors.joining("\n"));
+        String expectedHash = BackendAcceptanceTest.sha256(
+                canonicalMembers.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        Map<String, Object> snapshot = host.queryForMap(
+                "SELECT collection_hash, topic_time_epoch_millis FROM organization.terminal_topic_snapshot "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? "
+                        + "AND topic_key='SERVICE_POINT_COLLECTION'",
+                store.fixture().workspaceUuid(),
+                store.fixture().groupWorkspaceKey(),
+                store.fixture().storeId());
+        assertEquals(expectedHash, snapshot.get("collection_hash").toString().trim(),
+                "BUSINESS: point snapshot hashes the complete sorted enabled ref set");
+        assertEquals(expectedTime, ((Number) snapshot.get("topic_time_epoch_millis")).longValue(),
+                "BUSINESS: point snapshot time follows the owner transition rule");
+    }
+
+    private long pointUpdatedAt(UUID pointRef) {
+        return ((Number) host.queryForMap(
+                        "SELECT updated_at_epoch_millis FROM organization.store_service_point WHERE point_ref=?",
+                        pointRef)
+                .get("updated_at_epoch_millis")).longValue();
+    }
+
+    private long areaCollectionTime(StoreContext store) {
+        return ((Number) host.queryForMap(
+                        "SELECT topic_time_epoch_millis FROM organization.terminal_topic_snapshot "
+                                + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? "
+                                + "AND topic_key='SERVICE_POINT_AREA_COLLECTION'",
+                        store.fixture().workspaceUuid(),
+                        store.fixture().groupWorkspaceKey(),
+                        store.fixture().storeId())
+                .get("topic_time_epoch_millis")).longValue();
+    }
+
+    private long disabledUpdatedAt(UUID areaRef) {
+        return ((Number) host.queryForMap(
+                        "SELECT updated_at_epoch_millis FROM organization.store_service_point_area WHERE area_ref=?",
+                        areaRef)
+                .get("updated_at_epoch_millis")).longValue();
     }
 
     private static JsonNode findItem(JsonNode items, UUID ref) {

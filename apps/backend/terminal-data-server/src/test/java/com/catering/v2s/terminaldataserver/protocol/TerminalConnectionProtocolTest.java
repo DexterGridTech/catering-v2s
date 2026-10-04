@@ -3,6 +3,7 @@ package com.catering.v2s.terminaldataserver.protocol;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import com.catering.v2s.terminaldataserver.protocol.generated.TerminalConnectionMessages;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import tools.jackson.databind.json.JsonMapper;
@@ -25,10 +26,25 @@ class TerminalConnectionProtocolTest {
 
     @Test
     void loadsMessageTypesAndFieldClosureFromTheSharedResource() {
-        assertThat(protocol.messageTypes()).containsExactlyInAnyOrder("AUTHENTICATE", "SESSION_READY", "PING", "PONG");
+        assertThat(protocol.messageTypes())
+                .containsExactlyInAnyOrder(
+                        "AUTHENTICATE",
+                        "SESSION_READY",
+                        "PING",
+                        "PONG",
+                        "TOPIC_SUBSCRIBE",
+                        "TOPIC_UNSUBSCRIBE",
+                        "TOPIC_CHANGED",
+                        "TOPIC_ACCEPT",
+                        "REMOTE_COMMAND",
+                        "REMOTE_REPORT",
+                        "REMOTE_REPORT_ACK");
         assertThat(protocol.message("AUTHENTICATE").fieldNames())
                 .containsExactlyInAnyOrder("terminalRef", "terminalCredential", "deviceId", "appVersion");
         assertThat(protocol.message("AUTHENTICATE").firstMessage()).isTrue();
+        assertThat(TerminalConnectionMessages.fieldNamesByType()).containsKey("REMOTE_COMMAND");
+        assertThat(TerminalConnectionMessages.fieldNamesByType().get("REMOTE_REPORT"))
+                .contains("phase", "occurredAt", "result", "errorCode");
     }
 
     @Test

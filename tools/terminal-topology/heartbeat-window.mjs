@@ -26,23 +26,27 @@ export const topologyPeerEventsBetweenMarkers = (logcat, {startMarker, endMarker
   }
 
   const pid = String(processId);
-  const processLine = new RegExp(`^\\s*\\d+(?:\\.\\d+)?\\s+${pid}\\s+\\d+\\s+[VDIWEF]\\s+ReactNativeJS:\\s?(.*)$`);
-  const messages = lines.slice(startIndexes[0] + 1, endIndexes[0]).flatMap(line => {
-    const match = line.match(processLine);
-    return match === null ? [] : [match[1]];
-  });
-  const records = [];
-  for (const message of messages) {
-    if (/^\{\s*timestamp:/.test(message) || records.length === 0) records.push([]);
-    records.at(-1).push(message);
-  }
+  const processLine = new RegExp(
+    `^\\s*(?:\\d+(?:\\.\\d+)?|\\[PHONE_REDACTED\\]\\.\\d+)\\s+${pid}\\s+\\d+\\s+[VDIWEF]\\s+ReactNativeJS:\\s*(\\{.*\\})$`,
+  );
   return Object.freeze(
-    records.flatMap(record => {
-      const text = record.join('\n');
-      const event = text.match(/\bevent:\s*['"]?(topology\.peer\.[A-Za-z0-9_.-]+)/)?.[1];
-      if (event === undefined) return [];
-      const messageType = text.match(/\bmessageType:\s*['"]([A-Za-z0-9_.-]+)['"]/i)?.[1] ?? null;
-      return [Object.freeze({event, messageType})];
+    lines.slice(startIndexes[0] + 1, endIndexes[0]).flatMap(line => {
+      const match = line.match(processLine);
+      if (match === null) return [];
+      let payload;
+      try {
+        payload = JSON.parse(match[1]);
+      } catch {
+        return [];
+      }
+      if (typeof payload.event !== 'string' || !payload.event.startsWith('topology.peer.')) return [];
+      // Each WebSocket message also emits a channel-event envelope. The
+      // corresponding frame-received/frame-sent event carries the message
+      // type; retaining the envelope would misclassify every PING/PONG as
+      // unrelated activity.
+      if (payload.event === 'topology.peer.channel-event' && payload.data?.channelEvent === 'message') return [];
+      const messageType = typeof payload.data?.messageType === 'string' ? payload.data.messageType : null;
+      return [Object.freeze({event: payload.event, messageType})];
     }),
   );
 };
@@ -58,6 +62,7 @@ const decodeXmlText = value =>
 const parseUiHierarchy = xml => {
   const stack = [];
   const nodesById = new Map();
+  const allNodes = [];
   const source = String(xml ?? '');
   const tokenPattern =
     /<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<!\[CDATA\[[\s\S]*?\]\]>|<!DOCTYPE[^>]*>|<\/?[A-Za-z_:][\w:.-]*\b[^>]*>/g;
@@ -102,6 +107,7 @@ const parseUiHierarchy = xml => {
     };
     const parent = stack.at(-1);
     if (parent !== undefined) parent.children.push(node);
+    allNodes.push(node);
     if (name === 'node' && node.resourceId !== '') {
       const matches = nodesById.get(node.resourceId) ?? [];
       matches.push(node);
@@ -114,6 +120,7 @@ const parseUiHierarchy = xml => {
   return {
     hierarchyValid: rootName === 'hierarchy' && stack.length === 0 && !malformed,
     nodesById,
+    allNodes,
   };
 };
 
@@ -226,8 +233,26 @@ export const hasExactScopedResourceText = (xml, resourceId, expectedText) => {
 };
 
 const uniqueKnownStatus = (texts, knownStatuses) => {
-  const matches = texts.filter(text => knownStatuses.includes(text));
-  return matches.length === 1 ? matches[0] : null;
+  const matches = new Set(texts.filter(text => knownStatuses.includes(text)));
+  return matches.size === 1 ? [...matches][0] : null;
+};
+
+const parseBounds = value => {
+  const match = String(value ?? '').match(/^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$/);
+  return match === null ? null : match.slice(1).map(Number);
+};
+
+const textsWithinBounds = (parsed, container) => {
+  const outer = parseBounds(container.bounds);
+  if (outer === null) return [];
+  const [left, top, right, bottom] = outer;
+  return parsed.allNodes.flatMap(node => {
+    if (node.text.length === 0) return [];
+    const inner = parseBounds(node.bounds);
+    if (inner === null) return [];
+    const [textLeft, textTop, textRight, textBottom] = inner;
+    return textLeft >= left && textTop >= top && textRight <= right && textBottom <= bottom ? [node.text] : [];
+  });
 };
 
 export const readHeartbeatTopologyFromXml = xml => {
@@ -240,8 +265,12 @@ export const readHeartbeatTopologyFromXml = xml => {
   if (!evidence.hierarchyValid) {
     return Object.freeze({role: 'UNKNOWN', pairState: 'UNKNOWN', reachability: 'UNKNOWN'});
   }
-  const singleNodeTexts = resourceId =>
-    evidence.idCounts[resourceId] === 1 ? (evidence.scopedTextById[resourceId] ?? []) : [];
+  const parsed = parseUiHierarchy(xml);
+  const singleNodeTexts = resourceId => {
+    if (evidence.idCounts[resourceId] !== 1) return [];
+    const container = parsed.nodesById.get(resourceId)?.[0];
+    return container === undefined ? [] : [...textInSubtree(container), ...textsWithinBounds(parsed, container)];
+  };
   const roleTexts = singleNodeTexts(requiredIds[0]);
   const pairStateTexts = singleNodeTexts(requiredIds[1]);
   const reachabilityTexts = singleNodeTexts(requiredIds[2]);
@@ -262,10 +291,48 @@ export const readHeartbeatTopologyFromXml = xml => {
   });
 };
 
+export const waitForPairedReachableTopology = async ({
+  read,
+  timeoutMs,
+  pollIntervalMs,
+  sleep = ms => new Promise(resolve => setTimeout(resolve, ms)),
+  now = () => Date.now(),
+}) => {
+  const deadline = now() + timeoutMs;
+  const observations = [];
+  while (true) {
+    const topology = await read();
+    observations.push(topology);
+    if (
+      topology.master.role === 'MASTER' &&
+      topology.slave.role === 'SLAVE' &&
+      topology.master.pairState === 'PAIRED' &&
+      topology.slave.pairState === 'PAIRED' &&
+      topology.master.reachability === 'REACHABLE' &&
+      topology.slave.reachability === 'REACHABLE'
+    ) {
+      return Object.freeze({status: 'READY', topology, observations: Object.freeze(observations)});
+    }
+    const remainingMs = deadline - now();
+    if (remainingMs <= 0) {
+      return Object.freeze({status: 'TIMED_OUT', topology, observations: Object.freeze(observations)});
+    }
+    await sleep(Math.min(pollIntervalMs, remainingMs));
+  }
+};
+
 export const topologyLifecycleSnapshot = logcat => {
   const counts = Object.fromEntries(lifecycleEventNames.map(eventName => [eventName, 0]));
   for (const line of `${logcat ?? ''}`.split(/\r?\n/)) {
-    const eventName = line.match(/ReactNativeJS:\s+event:\s+'([^']+)',?\s*$/)?.[1];
+    const payloadText = line.match(/ReactNativeJS:\s*(\{.*\})$/)?.[1];
+    if (payloadText === undefined) continue;
+    let payload;
+    try {
+      payload = JSON.parse(payloadText);
+    } catch {
+      continue;
+    }
+    const eventName = payload.event;
     if (Object.hasOwn(counts, eventName)) counts[eventName] += 1;
   }
   return Object.freeze(counts);

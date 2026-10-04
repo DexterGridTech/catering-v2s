@@ -1,4 +1,5 @@
 import {moduleName as runtime} from '@catering-v2s/kernel-base-runtime';
+import {moduleName as displayContext} from '@catering-v2s/kernel-base-display-context';
 import {moduleName as state} from '@catering-v2s/kernel-base-state';
 import {moduleName as uiState} from '@catering-v2s/kernel-base-ui-state';
 import {moduleName as staffSession} from '@catering-v2s/kernel-feature-sample-staff-session';
@@ -10,6 +11,7 @@ import {moduleName as platformPorts} from '@catering-v2s/kernel-base-platform-po
 
 export const dependencyModuleNames = [
   runtime,
+  displayContext,
   state,
   uiState,
   staffSession,
@@ -19,4 +21,4 @@ export const dependencyModuleNames = [
   featureAssembly,
 ] as const;
 export const devDependencyModuleNames = [platformPorts] as const;
-export const runtimeModuleDependencyNames = [runtime, uiState, staffSession] as const;
+export const runtimeModuleDependencyNames = [runtime, uiState, displayContext, staffSession] as const;

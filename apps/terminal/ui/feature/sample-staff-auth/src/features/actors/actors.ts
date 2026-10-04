@@ -36,16 +36,27 @@ const isContentOwner = (context: ActorExecutionContext): boolean =>
 
 const showLoginStage = (context: ActorExecutionContext): Promise<unknown> => {
   const route = context.command.routeContext;
-  if (route === null || route.displayMode === undefined || route.workspace === undefined || route.instanceMode === undefined)
+  if (
+    route === null ||
+    route.displayMode === undefined ||
+    route.workspace === undefined ||
+    route.instanceMode === undefined
+  )
     return Promise.reject(new Error('[sample-staff-auth] login stage route context is incomplete'));
 
   const partKey =
     route.instanceMode === 'MASTER'
       ? route.displayMode === 'PRIMARY'
         ? 'sample.auth.login'
-        : null
-      : route.displayMode === 'PRIMARY' && route.workspace === 'BRANCH' && selectDisplayRole(context.getState()) === 'CHIEF'
-          ? 'sample.auth.guide.lsp'
+        : route.displayMode === 'SECONDARY' && route.workspace === 'MAIN'
+          ? 'sample.auth.guide.lms'
+          : null
+      : route.displayMode === 'PRIMARY' &&
+          route.workspace === 'BRANCH' &&
+          selectDisplayRole(context.getState()) === 'CHIEF'
+        ? 'sample.auth.guide.lsp'
+        : route.displayMode === 'SECONDARY' && route.workspace === 'MAIN'
+          ? 'sample.auth.guide.lms'
           : null;
   if (partKey === null) return Promise.reject(new Error('[sample-staff-auth] login stage route is unavailable'));
   return context.dispatchCommand(

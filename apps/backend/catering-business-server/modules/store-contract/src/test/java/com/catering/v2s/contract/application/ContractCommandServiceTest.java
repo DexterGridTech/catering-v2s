@@ -3,16 +3,22 @@ package com.catering.v2s.contract.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +28,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.postgresql.PGConnection;
+import org.postgresql.PGNotification;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -78,9 +86,31 @@ class ContractCommandServiceTest {
                 new ExtensionDefinitionPersistence(jdbc, time),
                 new ExtensionCommandReceiptService(jdbc, time),
                 workspaceStatuses);
-        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, time);
+        Map<String, UUID> groupRefs = new java.util.HashMap<>();
+        groupRefs.put("contract-test", UUID.randomUUID());
+        CommercialGroupLookup commercialGroups = new CommercialGroupLookup() {
+            @Override
+            public UUID requireCommercialGroupRef(UUID candidateWorkspace, String groupWorkspaceKey) {
+                UUID result = groupRefs.get(groupWorkspaceKey);
+                if (result == null) throw new IllegalArgumentException("fixture group is unavailable");
+                return result;
+            }
+
+            @Override
+            public boolean isEnterableCommercialGroup(
+                    UUID candidateWorkspace, String groupWorkspaceKey, UUID commercialGroupRef) {
+                return commercialGroupRef.equals(groupRefs.get(groupWorkspaceKey));
+            }
+
+            @Override
+            public String describeCommercialGroup(
+                    UUID candidateWorkspace, String groupWorkspaceKey, UUID commercialGroupRef) {
+                return "Contract test group";
+            }
+        };
+        OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, time, commercialGroups);
         BusinessEntityService entities = new BusinessEntityService(jdbc, time, definitions, hierarchy);
-        var region = hierarchy.create(workspaceId, "contract-test", "REGION", null, "region", "Region");
+        var region = hierarchy.createRegion(workspaceId, "contract-test", "region", "Region");
         var project = hierarchy.create(workspaceId, "contract-test", "PROJECT", region.id(), "project", "Project");
         hierarchy.replaceProjectPhaseNames(
                 workspaceId, "contract-test", project.id(), project.version(), List.of("筹备", "营运"));
@@ -108,6 +138,7 @@ class ContractCommandServiceTest {
                         Map.of())
                 .id();
         secondWorkspaceId = UUID.randomUUID();
+        groupRefs.put("contract-test-b", UUID.randomUUID());
         jdbc.update(
                 "INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, "
                         + "name_normalized, operations_title, status, revision, version, created_at_epoch_millis, "
@@ -117,8 +148,7 @@ class ContractCommandServiceTest {
                 now,
                 now,
                 now);
-        var secondRegion =
-                hierarchy.create(secondWorkspaceId, "contract-test-b", "REGION", null, "region-b", "Region B");
+        var secondRegion = hierarchy.createRegion(secondWorkspaceId, "contract-test-b", "region-b", "Region B");
         var secondProject = hierarchy.create(
                 secondWorkspaceId, "contract-test-b", "PROJECT", secondRegion.id(), "project-b", "Project B");
         hierarchy.replaceProjectPhaseNames(
@@ -246,6 +276,100 @@ class ContractCommandServiceTest {
         var invalidated = contracts.invalidate(workspaceId, "contract-test", updated.id(), updated.version());
         assertEquals("INVALID", invalidated.status());
         assertEquals("NOT_OPERATING", contracts.derivedStoreStatus(workspaceId, "contract-test", storeId));
+    }
+
+    @Test
+    void legacyCreateAndUpdatePublishContractTopicChanges() throws Exception {
+        JdbcTemplate jdbc = jdbc();
+        jdbc.update(
+                "DELETE FROM contract.terminal_topic_snapshot WHERE workspace_uuid=? AND group_workspace_key=? "
+                        + "AND store_ref=? AND topic_key='VALID_CONTRACT_COLLECTION'",
+                workspaceId,
+                "contract-test",
+                storeId);
+        UUID projectId =
+                jdbc.queryForObject("SELECT project_id FROM organization.store WHERE id=?", UUID.class, storeId);
+
+        try (Connection listener = DriverManager.getConnection(
+                        POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+                Statement statement = listener.createStatement()) {
+            statement.execute("LISTEN terminal_binding_events");
+
+            var created = contracts.create(
+                    workspaceId,
+                    "contract-test",
+                    "CT-LEGACY-TOPIC-" + UUID.randomUUID(),
+                    storeId,
+                    projectId,
+                    LocalDate.of(2026, 7, 1),
+                    LocalDate.of(2026, 12, 31),
+                    "营运",
+                    List.of(new ContractCommandService.ItemInput("legacy-tea", "旧入口合同")),
+                    Map.of());
+
+            var createNotifications = readNotifications(statement, listener);
+            assertEquals(2, createNotifications.length, "legacy create wakes exact and collection subscribers");
+            assertTopicNotification(createNotifications, "CONTRACT", created.id());
+            assertTopicNotification(createNotifications, "VALID_CONTRACT_COLLECTION", storeId);
+            assertEquals(
+                    1,
+                    jdbc.queryForObject(
+                            "SELECT count(*) FROM contract.terminal_topic_snapshot WHERE workspace_uuid=? "
+                                    + "AND group_workspace_key=? AND store_ref=? AND topic_key='VALID_CONTRACT_COLLECTION'",
+                            Integer.class,
+                            workspaceId,
+                            "contract-test",
+                            storeId),
+                    "legacy create persists the active-contract collection snapshot");
+
+            now++;
+            long updateTime = now;
+            contracts.update(
+                    workspaceId,
+                    "contract-test",
+                    created.id(),
+                    LocalDate.of(2026, 8, 1),
+                    LocalDate.of(2026, 12, 31),
+                    "筹备",
+                    List.of(new ContractCommandService.ItemInput("legacy-coffee", "更新后的旧入口合同")),
+                    created.version(),
+                    Map.of());
+
+            var updateNotifications = readNotifications(statement, listener);
+            assertEquals(1, updateNotifications.length, "legacy update wakes the exact contract subscriber");
+            assertTopicNotification(updateNotifications, "CONTRACT", created.id());
+            assertEquals(
+                    updateTime,
+                    jdbc.queryForObject(
+                            "SELECT updated_at_epoch_millis FROM contract.store_contract WHERE id=?",
+                            Long.class,
+                            created.id()),
+                    "exact-topic notification follows the committed legacy update time");
+        } finally {
+            jdbc.update(
+                    "DELETE FROM contract.terminal_topic_snapshot WHERE workspace_uuid=? AND group_workspace_key=? "
+                            + "AND store_ref=? AND topic_key='VALID_CONTRACT_COLLECTION'",
+                    workspaceId,
+                    "contract-test",
+                    storeId);
+        }
+    }
+
+    private static PGNotification[] readNotifications(Statement statement, Connection listener) throws Exception {
+        try (ResultSet ignored = statement.executeQuery("SELECT 1")) {
+            // Process notifications delivered while the listener connection was idle.
+        }
+        return listener.unwrap(PGConnection.class).getNotifications();
+    }
+
+    private static void assertTopicNotification(PGNotification[] notifications, String topicKey, UUID ownerRef) {
+        assertTrue(
+                java.util.Arrays.stream(notifications).anyMatch(notification -> {
+                    String payload = notification.getParameter();
+                    return payload.contains("\"topicKey\": \"" + topicKey + "\"")
+                            && payload.contains("\"ownerRef\": \"" + ownerRef + "\"");
+                }),
+                "expected TOPIC_CHANGED for " + topicKey + " owner " + ownerRef);
     }
 
     @Test

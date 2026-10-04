@@ -1,8 +1,8 @@
 {
   "paths": {
-    "/api/platform/group-workspaces/{groupWorkspaceKey}": {
-      "get": {
-        "operationId": "getPlatformGroupWorkspaceDetail",
+    "/api/platform/group-workspaces": {
+      "post": {
+        "operationId": "createPlatformGroupWorkspace",
         "tags": [
           "platform-workspace"
         ],
@@ -11,88 +11,11 @@
         ],
         "x-owner-module": "platform-workspace",
         "x-scenario-ids": [
-          "D01-S02",
-          "D01-S03",
-          "D01-S04",
-          "D01-S06"
-        ],
-        "x-page-key": "PLATFORM-WORKSPACES",
-        "x-idempotency-policy": "FORBIDDEN",
-        "x-error-codes": [
-          "PLATFORM_COMMON_ACCESS_DENIED",
-          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
-          "PLATFORM_COMMON_CONTEXT_STALE",
-          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
-        ],
-        "security": [
-          {
-            "platformSessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceDetail"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        }
-      },
-      "patch": {
-        "operationId": "updatePlatformGroupWorkspaceDisplay",
-        "tags": [
-          "platform-workspace"
-        ],
-        "x-consumer-faces": [
-          "platform-admin"
-        ],
-        "x-owner-module": "platform-workspace",
-        "x-scenario-ids": [
-          "D01-S03"
+          "D01-S02"
         ],
         "x-page-key": "PLATFORM-WORKSPACES",
         "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
-          "PLATFORM_ASSET_BIND_CONFLICT",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
           "PLATFORM_COMMON_CONTEXT_STALE",
@@ -103,6 +26,7 @@
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "PLATFORM_COMMON_VALIDATION_FAILED",
           "PLATFORM_COMMON_VERSION_CONFLICT",
+          "PLATFORM_WORKSPACE_KEY_CONFLICT",
           "PLATFORM_WORKSPACE_NAME_CONFLICT"
         ],
         "security": [
@@ -112,17 +36,6 @@
         ],
         "parameters": [
           {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
-            }
-          },
-          {
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
@@ -134,12 +47,12 @@
           }
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": "Owner readback",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceDetail"
+                  "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceCreateResult"
                 }
               }
             }
@@ -159,107 +72,7 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        },
-        "x-expected-version-policy": "REQUIRED",
-        "x-required-platform-authorization": "REQ_UPDATE_PLATFORM_GROUP_WORKSPACE_DISPLAY",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceDisplayUpdateRequest"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/status": {
-      "post": {
-        "operationId": "transitionPlatformGroupWorkspaceStatus",
-        "tags": [
-          "platform-workspace"
-        ],
-        "x-consumer-faces": [
-          "platform-admin"
-        ],
-        "x-owner-module": "platform-workspace",
-        "x-scenario-ids": [
-          "D01-S04"
-        ],
-        "x-page-key": "PLATFORM-WORKSPACES",
-        "x-idempotency-policy": "REQUIRED_16_128",
-        "x-error-codes": [
-          "PLATFORM_COMMON_ACCESS_DENIED",
-          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
-          "PLATFORM_COMMON_CONTEXT_STALE",
-          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT",
-          "PLATFORM_WORKSPACE_STATUS_TRANSITION_INVALID"
-        ],
-        "security": [
-          {
-            "platformSessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceDetail"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
+          "422": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "429": {
@@ -267,23 +80,23 @@
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
-        "x-expected-version-policy": "REQUIRED",
-        "x-required-platform-authorization": "REQ_TRANSITION_PLATFORM_GROUP_WORKSPACE_STATUS",
+        "x-required-platform-authorization": "REQ_CREATE_PLATFORM_GROUP_WORKSPACE",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceStatusTransitionRequest"
+                "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceCreateRequest"
               }
             }
           }
         }
-      }
-    },
-    "/api/platform/group-workspaces": {
+      },
       "get": {
         "operationId": "listPlatformGroupWorkspaces",
         "tags": [
@@ -301,6 +114,7 @@
         ],
         "x-page-key": "PLATFORM-WORKSPACES",
         "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -411,16 +225,24 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         }
-      },
-      "post": {
-        "operationId": "createPlatformGroupWorkspace",
+      }
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}": {
+      "get": {
+        "operationId": "getPlatformGroupWorkspaceDetail",
         "tags": [
           "platform-workspace"
         ],
@@ -429,23 +251,20 @@
         ],
         "x-owner-module": "platform-workspace",
         "x-scenario-ids": [
-          "D01-S02"
+          "D01-S02",
+          "D01-S03",
+          "D01-S04",
+          "D01-S06"
         ],
         "x-page-key": "PLATFORM-WORKSPACES",
-        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
           "PLATFORM_COMMON_CONTEXT_STALE",
           "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
-          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
-          "PLATFORM_COMMON_RESULT_UNKNOWN",
-          "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT",
-          "PLATFORM_WORKSPACE_KEY_CONFLICT",
-          "PLATFORM_WORKSPACE_NAME_CONFLICT"
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
         ],
         "security": [
           {
@@ -454,23 +273,24 @@
         ],
         "parameters": [
           {
-            "name": "Idempotency-Key",
-            "in": "header",
+            "name": "groupWorkspaceKey",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "minLength": 16,
-              "maxLength": 128
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
             }
           }
         ],
         "responses": {
-          "201": {
+          "200": {
             "description": "Owner readback",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceCreateResult"
+                  "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceDetail"
                 }
               }
             }
@@ -490,24 +310,218 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updatePlatformGroupWorkspaceDisplay",
+        "tags": [
+          "platform-workspace"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "platform-workspace",
+        "x-scenario-ids": [
+          "D01-S03"
+        ],
+        "x-page-key": "PLATFORM-WORKSPACES",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_ASSET_BIND_CONFLICT",
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "PLATFORM_WORKSPACE_NAME_CONFLICT"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
-        "x-required-platform-authorization": "REQ_CREATE_PLATFORM_GROUP_WORKSPACE",
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-platform-authorization": "REQ_UPDATE_PLATFORM_GROUP_WORKSPACE_DISPLAY",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceCreateRequest"
+                "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceDisplayUpdateRequest"
               }
             }
           }
         }
+      }
+    },
+    "/api/platform/assets/staging/{assetRef}/release": {
+      "post": {
+        "operationId": "releasePlatformStagedAsset",
+        "tags": [
+          "platform-asset"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "platform-asset",
+        "x-scenario-ids": [
+          "D01-S02"
+        ],
+        "x-page-key": "PLATFORM-WORKSPACES",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Asset-Bind-Grant",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-platform-authorization": "REQ_RELEASE_PLATFORM_STAGED_ASSET"
       }
     },
     "/api/platform/assets/staging": {
@@ -580,10 +594,16 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
@@ -600,21 +620,21 @@
         }
       }
     },
-    "/api/platform/assets/staging/{assetRef}/release": {
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/status": {
       "post": {
-        "operationId": "releasePlatformStagedAsset",
+        "operationId": "transitionPlatformGroupWorkspaceStatus",
         "tags": [
-          "platform-asset"
+          "platform-workspace"
         ],
         "x-consumer-faces": [
           "platform-admin"
         ],
-        "x-owner-module": "platform-asset",
+        "x-owner-module": "platform-workspace",
         "x-scenario-ids": [
-          "D01-S02"
+          "D01-S04"
         ],
         "x-page-key": "PLATFORM-WORKSPACES",
-        "x-idempotency-policy": "FORBIDDEN",
+        "x-idempotency-policy": "REQUIRED_16_128",
         "x-error-codes": [
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -625,7 +645,8 @@
           "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
           "PLATFORM_COMMON_RESULT_UNKNOWN",
           "PLATFORM_COMMON_VALIDATION_FAILED",
-          "PLATFORM_COMMON_VERSION_CONFLICT"
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "PLATFORM_WORKSPACE_STATUS_TRANSITION_INVALID"
         ],
         "security": [
           {
@@ -634,30 +655,37 @@
         ],
         "parameters": [
           {
-            "name": "assetRef",
+            "name": "groupWorkspaceKey",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128,
-              "format": "uuid"
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
             }
           },
           {
-            "name": "X-Asset-Bind-Grant",
+            "name": "Idempotency-Key",
             "in": "header",
             "required": true,
             "schema": {
               "type": "string",
-              "minLength": 1,
+              "minLength": 16,
               "maxLength": 128
             }
           }
         ],
         "responses": {
-          "204": {
-            "description": "No content"
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceDetail"
+                }
+              }
+            }
           },
           "400": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
@@ -674,14 +702,31 @@
           "409": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
+          "422": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
           "429": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           },
           "500": {
             "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
-        "x-required-platform-authorization": "REQ_RELEASE_PLATFORM_STAGED_ASSET"
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-platform-authorization": "REQ_TRANSITION_PLATFORM_GROUP_WORKSPACE_STATUS",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceStatusTransitionRequest"
+              }
+            }
+          }
+        }
       }
     }
   }

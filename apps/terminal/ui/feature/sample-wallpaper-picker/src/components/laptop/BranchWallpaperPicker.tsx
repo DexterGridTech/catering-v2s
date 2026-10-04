@@ -1,4 +1,9 @@
-import {PrimitiveButton, PrimitiveContainer, PrimitiveLabel, PrimitiveScrollView} from '@catering-v2s/ui-base-primitives';
+import {
+  PrimitiveButton,
+  PrimitiveContainer,
+  PrimitiveLabel,
+  PrimitiveScrollView,
+} from '@catering-v2s/ui-base-primitives';
 import {branchWallpaperOptionTestId, branchWallpaperPickerTestIds} from '../../foundations/wallpaperPickerTestIds';
 import {useWallpaperPicker} from '../../hooks/useWallpaperPicker';
 import {WallpaperOptionCards} from '../WallpaperOptionCards';

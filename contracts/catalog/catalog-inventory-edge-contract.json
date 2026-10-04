@@ -158,21 +158,7 @@
         "CI-API-023",
         "CI-API-024"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 2,
@@ -284,21 +270,7 @@
         "CI-API-002",
         "CI-API-004"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 3,
@@ -424,21 +396,7 @@
         "CI-API-003",
         "CI-API-004"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 20,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 4,
@@ -578,21 +536,7 @@
         "CI-API-005",
         "CI-API-026"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 5,
@@ -764,21 +708,7 @@
         "CI-API-002",
         "CI-API-008"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 6,
@@ -1116,21 +1046,7 @@
         "CI-API-008",
         "CI-API-014"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 45,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 45,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 7,
@@ -1326,21 +1242,7 @@
         "CI-API-008",
         "CI-API-006"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 8,
@@ -1497,21 +1399,7 @@
       "scenarioIds": [
         "CI-API-006"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 9,
@@ -1668,21 +1556,7 @@
       "scenarioIds": [
         "CI-API-006"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 10,
@@ -1863,21 +1737,7 @@
       "scenarioIds": [
         "CI-API-006"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 12,
@@ -1989,21 +1849,7 @@
         "CI-API-005",
         "CI-API-006"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 13,
@@ -2152,21 +1998,7 @@
       "scenarioIds": [
         "CI-API-006"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 14,
@@ -2331,21 +2163,7 @@
       "scenarioIds": [
         "CI-API-006"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 15,
@@ -2510,21 +2328,7 @@
       "scenarioIds": [
         "CI-API-006"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 16,
@@ -2705,21 +2509,7 @@
       "scenarioIds": [
         "CI-API-006"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 16,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 16,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 17,
@@ -2831,21 +2621,7 @@
         "CI-API-005",
         "CI-API-025"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 18,
@@ -3008,21 +2784,7 @@
       "scenarioIds": [
         "CI-API-025"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 19,
@@ -3187,21 +2949,7 @@
       "scenarioIds": [
         "CI-API-025"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 20,
@@ -3382,21 +3130,7 @@
       "scenarioIds": [
         "CI-API-025"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 21,
@@ -3519,21 +3253,7 @@
       "scenarioIds": [
         "CI-API-005"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 22,
@@ -3675,21 +3395,7 @@
         "CI-API-014",
         "CI-API-020"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 23,
@@ -3887,21 +3593,7 @@
         "CI-API-020",
         "CI-API-022"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 32,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 32,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 24,
@@ -4026,21 +3718,7 @@
       "scenarioIds": [
         "CI-API-007"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 25,
@@ -4214,21 +3892,7 @@
         "CI-API-007",
         "CI-API-008"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 26,
@@ -4352,21 +4016,7 @@
         "CI-API-023",
         "CI-API-024"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 27,
@@ -4550,21 +4200,7 @@
         "CI-API-020",
         "CI-API-021"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 28,
@@ -4808,22 +4444,7 @@
         "CI-API-022",
         "CI-API-024"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 49,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 48,
-            "to": 49,
-            "reason": "Dexter 2026-08-26: brand-copy keeps its complete multi-owner closure; three current-tree CP-05 calibration runs measured a stable maximum of 49 after the Store operating-rule gate, with no safe consolidation that preserves all business facts.",
-            "decisionRef": "DEXTER-2026-08-26-BRAND_COPY_CLOSURE_BUDGET"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 29,
@@ -4946,21 +4567,7 @@
       "scenarioIds": [
         "CI-API-010"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 30,
@@ -5091,21 +4698,7 @@
       "scenarioIds": [
         "CI-API-011"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 31,
@@ -5214,21 +4807,7 @@
       "scenarioIds": [
         "CI-API-011"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 32,
@@ -5337,21 +4916,7 @@
       "scenarioIds": [
         "CI-API-011"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 33,
@@ -5474,21 +5039,7 @@
       "scenarioIds": [
         "CI-API-011"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 34,
@@ -5597,21 +5148,7 @@
       "scenarioIds": [
         "CI-API-011"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 35,
@@ -5729,21 +5266,7 @@
         "CI-API-011",
         "CI-API-024"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 36,
@@ -5896,21 +5419,7 @@
       "scenarioIds": [
         "CI-API-012"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 37,
@@ -6063,21 +5572,7 @@
       "scenarioIds": [
         "CI-API-012"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 38,
@@ -6238,21 +5733,7 @@
       "scenarioIds": [
         "CI-API-012"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 39,
@@ -6413,21 +5894,7 @@
       "scenarioIds": [
         "CI-API-012"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 19,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 19,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 40,
@@ -6576,21 +6043,7 @@
       "scenarioIds": [
         "CI-API-009"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 41,
@@ -6761,21 +6214,7 @@
       "scenarioIds": [
         "CI-API-009"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 42,
@@ -6888,21 +6327,7 @@
         "CI-API-002",
         "CI-API-014"
       ],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 43,
@@ -7097,23 +6522,7 @@
       "scenarioIds": [
         "CI-API-008"
       ],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "LINEAR_REQUEST_CARDINALITY",
-        "base": 15,
-        "perItem": 5,
-        "cardinalityPath": "$.items",
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "CP-05 calibrated linear shape"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 44,
@@ -7216,21 +6625,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 45,
@@ -7379,21 +6774,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 46,
@@ -7542,21 +6923,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 48,
@@ -7659,21 +7026,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 10,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 10,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 49,
@@ -7842,21 +7195,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 50,
@@ -8026,21 +7365,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 52,
@@ -8143,21 +7468,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 53,
@@ -8322,21 +7633,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 10,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 10,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 54,
@@ -8513,21 +7810,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 16,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 16,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 60,
@@ -8684,21 +7967,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 61,
@@ -8855,21 +8124,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 62,
@@ -9046,21 +8301,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 63,
@@ -9217,21 +8458,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "REQUIRED"
     },
     {
       "ordinal": 57,
@@ -9326,21 +8553,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 58,
@@ -9443,21 +8656,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     },
     {
       "ordinal": 59,
@@ -9560,21 +8759,7 @@
         "breakdown": []
       },
       "scenarioIds": [],
-      "transaction": "READ_ONLY",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "transaction": "READ_ONLY"
     }
   ],
   "typedProblemCodes": [
@@ -9677,5 +8862,5 @@
       "digest": "aef050c502fe258d421dac93e0bd013de1b58730cd1c6c17fa75268255dae6e8"
     }
   },
-  "contractDigest": "24f4a3092d706e0d177e1efe4b3276b76829e71a027aa348db7c11a329dd47a1"
+  "contractDigest": "7332f7006d65cce20c5ef8e712c63472b4284c7d6643cdeebbe713f18810b804"
 }

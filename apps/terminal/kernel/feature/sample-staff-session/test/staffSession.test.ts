@@ -51,9 +51,15 @@ describe('sample staff session owner module', () => {
     try {
       await host.start();
       await slave.start();
-      await host.dispatchCommand(loginCommand, {operatorName: 'A001', passcode: '1111'}, {requestId: createRequestId()});
+      await host.dispatchCommand(
+        loginCommand,
+        {operatorName: 'A001', passcode: '1111'},
+        {requestId: createRequestId()},
+      );
 
-      const payload = runtimeStateSyncForTest(host).createFullSyncPayload('kernel.feature.sample-staff-session.session');
+      const payload = runtimeStateSyncForTest(host).createFullSyncPayload(
+        'kernel.feature.sample-staff-session.session',
+      );
       expect(payload.status).toBe('ready');
       if (payload.status !== 'ready') return;
       expect(payload.payload.entries).toEqual([
@@ -63,7 +69,12 @@ describe('sample staff session owner module', () => {
         }),
       ]);
 
-      expect(runtimeStateSyncForTest(slave).applyAuthoritativeSync('kernel.feature.sample-staff-session.session', payload.payload)).toMatchObject({status: 'applied'});
+      expect(
+        runtimeStateSyncForTest(slave).applyAuthoritativeSync(
+          'kernel.feature.sample-staff-session.session',
+          payload.payload,
+        ),
+      ).toMatchObject({status: 'applied'});
       expect(selectSessionState(slave.getState())).toMatchObject({status: 'anonymous', operatorName: null});
       const slaveState = {
         ...slave.getState(),
@@ -255,5 +266,21 @@ describe('sample staff session owner module', () => {
       code: 'ERR_TER_RUNTIME_REQUEST_ID_REQUIRED',
     });
     expect(bootstrapSessionCommand.visibility).toBe('internal');
+  });
+
+  it('does not allow a direct business login when the integration qualification guard is closed', async () => {
+    const runtime = createTestRuntime([createSampleStaffSessionModule({canLogin: () => false})]);
+    try {
+      await runtime.start();
+      const result = await runtime.dispatchCommand(
+        loginCommand,
+        {operatorName: 'A001', passcode: '1111'},
+        {requestId: createRequestId()},
+      );
+      expect(result.status).toBe('error');
+      expect(selectSessionState(runtime.getState())).toEqual({status: 'anonymous', operatorName: null});
+    } finally {
+      await releaseRuntimeForTestAsync(runtime);
+    }
   });
 });

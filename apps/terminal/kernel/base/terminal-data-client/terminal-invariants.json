@@ -29,6 +29,9 @@
     "TerminalTransportConnection",
     "TerminalTransportEvent",
     "TerminalOperationResult",
+    "TerminalDataReadPayload",
+    "TerminalReadOperationId",
+    "TerminalActivationSucceededPayload",
     "TERMINAL_OPERATION_IDS",
     "createTerminalApiClient",
     "createTerminalDataClientModule",
@@ -49,6 +52,8 @@
     "moduleKind",
     "moduleName",
     "runtimeModuleDependencyNames",
-    "terminalOperationContracts"
+    "terminalOperationContracts",
+    "readTerminalDataCommand",
+    "terminalActivationSucceededCommand"
   ]
 }

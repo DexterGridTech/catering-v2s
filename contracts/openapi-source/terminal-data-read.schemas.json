@@ -1,0 +1,208 @@
+{
+  "components": {
+    "schemas": {
+      "TerminalStoreBasicRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "store",
+          "operatingRules",
+          "storeUpdatedAtEpochMillis",
+          "operatingRulesUpdatedAtEpochMillis"
+        ],
+        "properties": {
+          "store": {
+            "$ref": "#/components/schemas/OrganizationStore"
+          },
+          "operatingRules": {
+            "$ref": "#/components/schemas/OrganizationStoreOperatingRuleValues"
+          },
+          "storeUpdatedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "operatingRulesUpdatedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TerminalStoreOrganizationPathRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "projectRef",
+          "projectName",
+          "regionRef",
+          "regionName",
+          "commercialGroupRef",
+          "commercialGroupName",
+          "projectUpdatedAtEpochMillis",
+          "regionUpdatedAtEpochMillis",
+          "commercialGroupUpdatedAtEpochMillis"
+        ],
+        "properties": {
+          "projectRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectName": {
+            "type": "string"
+          },
+          "regionRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "regionName": {
+            "type": "string"
+          },
+          "commercialGroupRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "commercialGroupName": {
+            "type": "string"
+          },
+          "projectUpdatedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "regionUpdatedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "commercialGroupUpdatedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TerminalStoreActiveContractsRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "collectionUpdatedAtEpochMillis"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreContract"
+            }
+          },
+          "collectionUpdatedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TerminalContractRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contract",
+          "updatedAtEpochMillis"
+        ],
+        "properties": {
+          "contract": {
+            "$ref": "#/components/schemas/StoreContract"
+          },
+          "updatedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TerminalStoreServicePointAreasRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "collectionUpdatedAtEpochMillis"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreServicePointArea"
+            }
+          },
+          "collectionUpdatedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TerminalServicePointAreaRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "area",
+          "updatedAtEpochMillis"
+        ],
+        "properties": {
+          "area": {
+            "$ref": "#/components/schemas/StoreServicePointArea"
+          },
+          "updatedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TerminalStoreServicePointsRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "collectionUpdatedAtEpochMillis"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreServicePoint"
+            }
+          },
+          "collectionUpdatedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TerminalServicePointRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "servicePoint",
+          "updatedAtEpochMillis"
+        ],
+        "properties": {
+          "servicePoint": {
+            "$ref": "#/components/schemas/StoreServicePoint"
+          },
+          "updatedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "NoBody": {
+        "type": "object",
+        "additionalProperties": false
+      }
+    }
+  }
+}

@@ -568,6 +568,85 @@ class MasterDataLifecycleMigrationIntegrationTest {
                         """));
     }
 
+    @Test
+    void organizationRegionParentMigrationBackfillsRealGroupWithoutChangingHistory() throws Exception {
+        resetDatabase();
+        migrateTo("20261004.000000.000");
+
+        UUID workspace = insertWorkspace("region-parent-migration");
+        long groupWorkspaceId = Long.parseLong(scalarString(
+                "SELECT id FROM platform_workspace.group_workspace WHERE group_workspace_key=?",
+                "region-parent-migration"));
+        UUID commercialGroupRef = UUID.randomUUID();
+        execute(
+                """
+                INSERT INTO organization.commercial_group (
+                    group_workspace_key, group_workspace_id, commercial_group_code, commercial_group_name,
+                    created_by_platform_subject, commercial_group_uuid, created_at_epoch_millis,
+                    updated_at_epoch_millis
+                ) VALUES (?, ?, 'MIGRATION-GROUP', 'Migration group', 'migration-test', ?, 100, 200)
+                """,
+                "region-parent-migration",
+                groupWorkspaceId,
+                commercialGroupRef);
+
+        UUID regionId = UUID.randomUUID();
+        execute(
+                """
+                INSERT INTO organization.organization_node (
+                    id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name,
+                    phase_names, status, version, created_at_epoch_millis, updated_at_epoch_millis
+                ) VALUES (?, ?, 'region-parent-migration', NULL, 'REGION', 'OLD-REGION', 'Old region',
+                          '[]'::jsonb, 'ENABLED', 7, 111, 222)
+                """,
+                regionId,
+                workspace);
+
+        migrateLatest();
+
+        assertEquals(commercialGroupRef.toString(), scalarString(
+                "SELECT parent_id FROM organization.organization_node WHERE id=?", regionId));
+        assertEquals(7, scalarInt("SELECT version FROM organization.organization_node WHERE id=?", regionId));
+        assertEquals(111, scalarInt("SELECT created_at_epoch_millis FROM organization.organization_node WHERE id=?", regionId));
+        assertEquals(222, scalarInt("SELECT updated_at_epoch_millis FROM organization.organization_node WHERE id=?", regionId));
+        SQLException rejectedNullParent = assertThrows(
+                SQLException.class,
+                () -> execute(
+                        """
+                        INSERT INTO organization.organization_node (
+                            id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name,
+                            phase_names, status, version, created_at_epoch_millis, updated_at_epoch_millis
+                        ) VALUES (?, ?, 'region-parent-migration', NULL, 'REGION', 'NEW-NULL', 'Rejected',
+                                  '[]'::jsonb, 'ENABLED', 1, 333, 333)
+                        """,
+                        UUID.randomUUID(),
+                        workspace));
+        assertEquals("23514", rejectedNullParent.getSQLState());
+    }
+
+    @Test
+    void organizationRegionParentMigrationRejectsMissingCommercialGroup() throws Exception {
+        resetDatabase();
+        migrateTo("20261004.000000.000");
+        UUID workspace = insertWorkspace("region-parent-migration-missing-group");
+        UUID regionId = UUID.randomUUID();
+        execute(
+                """
+                INSERT INTO organization.organization_node (
+                    id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name,
+                    phase_names, status, version, created_at_epoch_millis, updated_at_epoch_millis
+                ) VALUES (?, ?, 'region-parent-migration-missing-group', NULL, 'REGION', 'OLD-REGION',
+                          'Old region', '[]'::jsonb, 'ENABLED', 1, 111, 222)
+                """,
+                regionId,
+                workspace);
+
+        FlywayException failure = assertThrows(FlywayException.class, MasterDataLifecycleMigrationIntegrationTest::migrateLatest);
+
+        assertTrue(failure.getMessage().contains("Cannot resolve REGION parent"));
+        assertNull(scalarString("SELECT parent_id FROM organization.organization_node WHERE id=?", regionId));
+    }
+
     private static void migrateTo(String targetVersion) {
         flyway(targetVersion).migrate();
     }

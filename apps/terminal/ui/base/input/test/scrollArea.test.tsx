@@ -282,7 +282,11 @@ describe('InputScrollArea', () => {
         advanceAnimatedTimingsForTests(1);
       });
       expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'});
-      expect(queryRenderedByProps(renderer, {testID: 'ui.base.input:focus-visibility-error'})).toHaveLength(0);
+      expect(
+        queryRenderedByProps(renderer, {
+          testID: 'ui.base.input:focus-visibility-error:scroll-ended-before-visible',
+        }),
+      ).toHaveLength(0);
       await act(async () => {
         scrollView.props.onScroll({nativeEvent: {contentOffset: {y: requestedOffset}}});
       });
@@ -320,9 +324,9 @@ describe('InputScrollArea', () => {
         });
       });
       expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'});
-      expect(getTestNode(renderer, 'ui.base.input:focus-visibility-error').props.children).toBe(
-        '焦点框无法完整显示，请调整窗口尺寸或退出输入',
-      );
+      expect(
+        getTestNode(renderer, 'ui.base.input:focus-visibility-error:scroll-ended-before-visible').props.children,
+      ).toBe('焦点框无法完整显示，请调整窗口尺寸或退出输入');
     } finally {
       setAnimatedTimingAutoFinishForTests(true);
       await act(async () => {
@@ -351,7 +355,7 @@ describe('InputScrollArea', () => {
         vi.advanceTimersByTime(1_500);
       });
       expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'});
-      expect(getTestNode(renderer, 'ui.base.input:focus-visibility-error').props.children).toBe(
+      expect(getTestNode(renderer, 'ui.base.input:focus-visibility-error:scroll-readback-timeout').props.children).toBe(
         '焦点框无法完整显示，请调整窗口尺寸或退出输入',
       );
     } finally {
@@ -413,9 +417,9 @@ describe('InputScrollArea', () => {
       scrollView.props.onScroll({nativeEvent: {contentOffset: {y: 280}}});
     });
 
-    expect(getTestNode(renderer, 'ui.base.input:focus-visibility-error').props.children).toBe(
-      '焦点框无法完整显示，请调整窗口尺寸或退出输入',
-    );
+    expect(
+      getTestNode(renderer, 'ui.base.input:focus-visibility-error:scroll-clamped-before-visible').props.children,
+    ).toBe('焦点框无法完整显示，请调整窗口尺寸或退出输入');
     expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'});
     await act(async () => {
       await renderer.unmount();

@@ -112,11 +112,18 @@ export const CONTROLLED_BUDGET_EXCEPTION_DECISION_SCOPE = Object.freeze({
     Object.keys(INVITATION_ASSIGNMENT_P3_MEASURED_MAX_BY_OPERATION),
   ),
   [SALES_MENU_P3_DECISION_REF]: Object.freeze(Object.keys(SALES_MENU_P3_MEASURED_MAX_BY_OPERATION)),
-  'IMPLEMENTATION-AGENT-2026-09-18-STORE-CREATE-P3': Object.freeze(['createOperationsOrganizationStore']),
-  'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-CREATE-P3': Object.freeze([
+  'IMPLEMENTATION-AGENT-2026-10-05-TDP-STORE-CREATE-P3': Object.freeze(['createOperationsOrganizationStore']),
+  'IMPLEMENTATION-AGENT-2026-10-05-TDP-CONTRACT-CREATE-P3': Object.freeze(['createOperationsContract']),
+  'IMPLEMENTATION-AGENT-2026-10-05-TDP-CONTRACT-INVALIDATE-P3': Object.freeze(['invalidateOperationsContract']),
+  'IMPLEMENTATION-AGENT-2026-10-05-TDP-AREA-CREATE-P3': Object.freeze(['postOperationsStoreServicePointArea']),
+  'IMPLEMENTATION-AGENT-2026-10-05-TDP-AREA-STATUS-P3': Object.freeze(['postOperationsStoreServicePointAreaStatus']),
+  'IMPLEMENTATION-AGENT-2026-10-05-TDP-POINT-STATUS-P3': Object.freeze(['postOperationsStoreServicePointStatus']),
+  'IMPLEMENTATION-AGENT-2026-10-05-TDP-COMMERCIAL-GROUP-UPDATE-P3': Object.freeze(['updateOperationsCommercialGroup']),
+  'IMPLEMENTATION-AGENT-2026-10-05-TDP-STORE-UPDATE-P3': Object.freeze(['updateOperationsOrganizationStore']),
+  'IMPLEMENTATION-AGENT-2026-10-05-TDP-SERVICE-POINT-CREATE-P3': Object.freeze([
     'postOperationsStoreServicePoint',
   ]),
-  'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-PATCH-P3': Object.freeze([
+  'IMPLEMENTATION-AGENT-2026-10-05-TDP-SERVICE-POINT-PATCH-P3': Object.freeze([
     'patchOperationsStoreServicePoint',
   ]),
   'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-ASSET-STAGE-P3': Object.freeze(['stageStoreServicePointImage']),
@@ -262,61 +269,71 @@ const brandCopyBudgetExceptionRecords = Object.freeze([
 // changes the generic P3 ceiling or covers the linear batch operation.
 const STORE_SERVICE_POINT_P3_DECISIONS = Object.freeze({
   createOperationsOrganizationStore: Object.freeze({
-    decisionRef: 'IMPLEMENTATION-AGENT-2026-09-18-STORE-CREATE-P3',
-    measuredMax: 25,
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-10-05-TDP-STORE-CREATE-P3',
+    measuredMax: 28,
     businessFactsEvidence: [
       'source:apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/operations/CreateOperationsOrganizationStoreOperation.java:32-47',
       'source:apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreService.java:createNow',
-      'business-facts:store-create-rule-json-qr-singleton-extension-audit-organization-contract-rule-readback',
-      'measurement:cp05-three-run-max:createOperationsOrganizationStore:25',
+      'source:apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/persistence/OrganizationTerminalTopicSnapshotPersistence.java:initializeEmptyStoreCollections',
+      'business-facts:store-create-rule-json-qr-singleton-extension-audit-organization-contract-rule-readback-terminal-topic-snapshot-and-notifications',
+      'measurement:cp05-three-run-max:createOperationsOrganizationStore:28',
+      'measurement:r5-tc-1791137481434-92098:createOperationsOrganizationStore:28',
+      'measurement:r5-tc-1791138228163-6341:createOperationsOrganizationStore:28',
+      'measurement:r5-tc-1791139155120-23714:createOperationsOrganizationStore:28',
     ],
     sharedMechanismsEvidence: [
       'source:organization:shared-command-receipt-owner-transaction-audit-readback',
       'source:organization:store-operating-rule-codec-and-qr-singleton-persistence',
-      'measurement:cp05-three-run-exact-operation-set:286:unclassified-sql:0',
+      'measurement:cp05-three-run-exact-operation-set:304:unclassified-sql:0',
     ],
     rejectedAlternative:
-      '删除组织详情、合同派生状态或 operating-rule/QR 最终 readback，以硬压到通用 P3=20；这会丢失当前 operation 契约要求的业务事实或让新建后的规则状态无法得到权威确认。',
+      '删除组织详情、合同派生状态、operating-rule/QR 最终 readback、终端topic snapshot或变更通知，以硬压到通用 P3=20；这会丢失当前 operation 契约要求的业务事实、权威确认或TDP数据变化通知。',
     costComparison:
-      '1、20、100 三个批量基数下该 operation 均稳定为 25；同根扫描未发现可安全合并的 owner fan-out，保留完整新建闭包的安全与审计成本高于通用阈值，但只放行该一个 operation。',
+      '1、20、100 三个批量基数的三次受管标定均测得 28；增量来自必需的TDP集合snapshot初始化与两个精确topic通知。通知合并最多消除一项，仍不能达到通用P3=20；将snapshot与业务创建SQL折叠会增加owner耦合且不能安全满足该阈值。业务事实、owner事务与权威读回已复用，故仅对这一FIXED operation记录28，不提高通用P3上限。',
   }),
   postOperationsStoreServicePoint: Object.freeze({
-    decisionRef: 'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-CREATE-P3',
-    measuredMax: 27,
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-10-05-TDP-SERVICE-POINT-CREATE-P3',
+    measuredMax: 33,
     businessFactsEvidence: [
       'source:apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreServicePointController.java:195-211',
       'source:apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreServicePointService.java:createPoint',
-      'business-facts:store-scope-area-type-compatibility-extension-audit-idempotency-owner-readback',
-      'measurement:cp05-three-run-max:postOperationsStoreServicePoint:27',
+      'business-facts:store-scope-area-type-compatibility-extension-audit-idempotency-owner-readback-terminal-snapshot-and-topic-notification',
+      'measurement:cp05-three-run-max:postOperationsStoreServicePoint:33',
+      'measurement:r5-tc-1791137481434-92098:postOperationsStoreServicePoint:33',
+      'measurement:r5-tc-1791138228163-6341:postOperationsStoreServicePoint:33',
+      'measurement:r5-tc-1791139155120-23714:postOperationsStoreServicePoint:33',
     ],
     sharedMechanismsEvidence: [
       'source:organization:shared-owner-scope-gate-receipt-extension-audit-version',
       'source:organization:store-service-point-asset-lifecycle-adapter',
-      'measurement:cp05-three-run-exact-operation-set:286:unclassified-sql:0',
+      'measurement:cp05-three-run-exact-operation-set:304:unclassified-sql:0',
     ],
     rejectedAlternative:
       '删除 area 类型重验、扩展定义校验、审计、幂等/版本或创建后的 point readback，以硬压到通用 P3=20；这会允许错误类型或半成品写入，或者失去权威创建结果。',
     costComparison:
-      '1、20、100 三个批量基数下该 operation 均稳定为 27；owner 事实、事务和 readback 已复用共享机制，未发现不削弱业务语义的安全 consolidation，例外仅绑定该 create operation。',
+      '1、20、100 三个批量基数下该 operation 均稳定为 33；增量来自本期必需的数据变化snapshot与通知。owner事实、事务和readback已复用共享机制，去掉TDP事实会破坏本期通知闭环，例外仅绑定该create operation。',
   }),
   patchOperationsStoreServicePoint: Object.freeze({
-    decisionRef: 'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-PATCH-P3',
-    measuredMax: 25,
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-10-05-TDP-SERVICE-POINT-PATCH-P3',
+    measuredMax: 29,
     businessFactsEvidence: [
       'source:apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreServicePointController.java:225-241',
       'source:apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreServicePointService.java:updatePoint',
-      'business-facts:store-scope-version-type-extension-image-claim-audit-owner-readback',
-      'measurement:cp05-three-run-max:patchOperationsStoreServicePoint:25',
+      'business-facts:store-scope-version-type-extension-image-claim-audit-owner-readback-terminal-snapshot-and-topic-notification',
+      'measurement:cp05-three-run-max:patchOperationsStoreServicePoint:29',
+      'measurement:r5-tc-1791137481434-92098:patchOperationsStoreServicePoint:29',
+      'measurement:r5-tc-1791138228163-6341:patchOperationsStoreServicePoint:29',
+      'measurement:r5-tc-1791139155120-23714:patchOperationsStoreServicePoint:29',
     ],
     sharedMechanismsEvidence: [
       'source:organization:shared-owner-scope-gate-receipt-extension-audit-version',
       'source:asset:shared-stage-claim-release-and-typed-target-core',
-      'measurement:cp05-three-run-exact-operation-set:286:unclassified-sql:0',
+      'measurement:cp05-three-run-exact-operation-set:304:unclassified-sql:0',
     ],
     rejectedAlternative:
       '删除并发锁/版本、扩展校验、图片 claim、审计或更新后的 point readback，以硬压到通用 P3=20；这会破坏保存原子性、资产归属或历史追溯。',
     costComparison:
-      '1、20、100 三个批量基数下该 operation 均稳定为 25；同根 owner/asset 扫描未发现可消除的重复 fan-out，完整更新闭包的成本只对该 operation 放宽。',
+      '1、20、100 三个批量基数下该 operation 均稳定为 29；增量来自本期必需的数据变化snapshot与通知。owner事实、事务、资产claim和readback已复用共享机制，去掉TDP事实会破坏本期通知闭环，例外仅绑定该update operation。',
   }),
   stageStoreServicePointImage: Object.freeze({
     decisionRef: 'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-ASSET-STAGE-P3',
@@ -352,7 +369,9 @@ const storeServicePointBudgetExceptionRecords = Object.freeze(
           from: 20,
           to: decision.measuredMax,
           reason:
-            'Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.',
+            operationId === 'createOperationsOrganizationStore'
+              ? 'Dexter authorized implementation-agent single-FIXED-operation exception on 2026-10-05: three managed CP-05 runs measured 28; preserve required TDP snapshots, notifications, complete owner transaction and authoritative readback. Generic P3 ceiling remains 20.'
+              : 'Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.',
           decisionRef: decision.decisionRef,
         },
       ],
@@ -365,6 +384,84 @@ const storeServicePointBudgetExceptionRecords = Object.freeze(
       narrowScope: operationId,
     }),
   ),
+);
+
+const TDP_ADDITIONAL_P3_DECISIONS = Object.freeze({
+  createOperationsContract: Object.freeze({
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-10-05-TDP-CONTRACT-CREATE-P3',
+    measuredMax: 26,
+    source: 'apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractCommandService.java:create',
+  }),
+  invalidateOperationsContract: Object.freeze({
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-10-05-TDP-CONTRACT-INVALIDATE-P3',
+    measuredMax: 25,
+    source: 'apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractCommandService.java:invalidate',
+  }),
+  postOperationsStoreServicePointArea: Object.freeze({
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-10-05-TDP-AREA-CREATE-P3',
+    measuredMax: 25,
+    source: 'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreServicePointService.java:createArea',
+  }),
+  postOperationsStoreServicePointAreaStatus: Object.freeze({
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-10-05-TDP-AREA-STATUS-P3',
+    measuredMax: 26,
+    source: 'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreServicePointService.java:transitionArea',
+  }),
+  postOperationsStoreServicePointStatus: Object.freeze({
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-10-05-TDP-POINT-STATUS-P3',
+    measuredMax: 28,
+    source: 'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreServicePointService.java:transitionPoint',
+  }),
+  updateOperationsCommercialGroup: Object.freeze({
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-10-05-TDP-COMMERCIAL-GROUP-UPDATE-P3',
+    measuredMax: 25,
+    source: 'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationCommandService.java:updateCommercialGroup',
+  }),
+  updateOperationsOrganizationStore: Object.freeze({
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-10-05-TDP-STORE-UPDATE-P3',
+    measuredMax: 25,
+    source: 'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreService.java:updateNow',
+  }),
+});
+
+const tdpAdditionalBudgetExceptionRecords = Object.freeze(
+  Object.entries(TDP_ADDITIONAL_P3_DECISIONS).map(([operationId, decision]) => {
+    const measurementEvidence = [
+      'r5-tc-1791137481434-92098',
+      'r5-tc-1791138228163-6341',
+      'r5-tc-1791139155120-23714',
+    ].map(runId => `measurement:${runId}:${operationId}:${decision.measuredMax}`);
+    return Object.freeze({
+      operationId,
+      decisionRef: decision.decisionRef,
+      authority: 'IMPLEMENTATION_AGENT',
+      from: 20,
+      to: decision.measuredMax,
+      history: [
+        {
+          from: 20,
+          to: decision.measuredMax,
+          reason: 'Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.',
+          decisionRef: decision.decisionRef,
+        },
+      ],
+      businessFactsPreserved: true,
+      businessFactsEvidence: [
+        `source:${decision.source}`,
+        'business-facts:preserve-owner-mutation-transaction-audit-readback-and-required-tdp-data-change-notification',
+        ...measurementEvidence,
+      ],
+      sharedMechanismsReused: true,
+      sharedMechanismsEvidence: [
+        'source:terminal-topic-snapshot-owner-persistence-and-transactional-pg-notify',
+        'source:existing-owner-command-transaction-and-authoritative-readback',
+        'measurement:cp05-three-run-exact-operation-set:304:unclassified-sql:0',
+      ],
+      rejectedAlternative: '删掉此operation所需的TDP snapshot或topic notification写入以满足通用P3=20，会破坏本专项的数据变化通知闭环。',
+      costComparison: `1、20、100三种批量基数的三次受管标定均测得${decision.measuredMax}；保留owner事实、事务、审计、权威读回和TDP通知的成本高于通用P3=20，但只为${operationId}这一项FIXED操作放宽。`,
+      narrowScope: operationId,
+    });
+  }),
 );
 
 const terminalVoidStatusBudgetExceptionRecord = Object.freeze({
@@ -409,6 +506,7 @@ export const CONTROLLED_BUDGET_EXCEPTION_RECORDS = Object.freeze([
   ...salesMenuBudgetExceptionRecords,
   ...brandCopyBudgetExceptionRecords,
   ...storeServicePointBudgetExceptionRecords,
+  ...tdpAdditionalBudgetExceptionRecords,
   terminalVoidStatusBudgetExceptionRecord,
 ]);
 

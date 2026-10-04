@@ -74,7 +74,6 @@ public final class BusinessChannelOperationBindings {
     };
   }
 
-
   public OperationBindingTypes.Wire.BusinessChannelView createOperationsBusinessChannel(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.BusinessChannelCreateRequest request) {
     return adapters.createOperationsBusinessChannel(CREATE_OPERATIONS_BUSINESS_CHANNEL_DESCRIPTOR, context, request);
   }

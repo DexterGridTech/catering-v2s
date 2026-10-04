@@ -27,7 +27,11 @@ describe('ui.base.dev-host Web platform bindings', () => {
       systemVersion: 'managed',
       logicalProcessorCount: 4,
     });
-    const fixtureDevice = createWebDevicePort(() => 'single', undefined, () => fixture);
+    const fixtureDevice = createWebDevicePort(
+      () => 'single',
+      undefined,
+      () => fixture,
+    );
     await expect(fixtureDevice.getDeviceInfo({timeoutMs: 1_000})).resolves.toMatchObject({
       status: 'succeeded',
       value: fixture,

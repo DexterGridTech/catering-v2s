@@ -25,6 +25,41 @@ import {
   type NativeLoadingCapability,
 } from '@catering-v2s/kernel-base-platform-ports';
 import type {TopologyPeerChannel, TopologyPeerChannelEvent} from '@catering-v2s/kernel-base-transport';
+import type {TransportNetworkAdapter, TransportConnectionEvent} from '@catering-v2s/kernel-base-transport';
+
+export const createReadyTerminalNetworkAdapter = (
+  readSnapshot: TransportNetworkAdapter['readSnapshot'],
+  sendHttp: NonNullable<TransportNetworkAdapter['sendHttp']>,
+): TransportNetworkAdapter =>
+  Object.freeze({
+    readSnapshot,
+    sendHttp,
+    connect: async () => {
+      const listeners = new Set<(event: TransportConnectionEvent) => void>();
+      return Object.freeze({
+        send: async (raw: string) => {
+          const frame = JSON.parse(raw) as {readonly type?: string};
+          if (frame.type !== 'AUTHENTICATE') return;
+          const ready = JSON.stringify({
+            type: 'SESSION_READY',
+            sessionId: 'test-session',
+            nodeId: 'test-node',
+            serverTime: new Date().toISOString(),
+            heartbeatIntervalMs: 60_000,
+            heartbeatTimeoutMs: 180_000,
+          });
+          queueMicrotask(() => listeners.forEach(listener => listener({type: 'message', raw: ready})));
+        },
+        subscribe: (listener: (event: TransportConnectionEvent) => void) => {
+          listeners.add(listener);
+          return () => listeners.delete(listener);
+        },
+        close: async (reason?: string) => {
+          listeners.forEach(listener => listener({type: 'close', code: 1000, reason}));
+        },
+      });
+    },
+  });
 
 const PORT_DESCRIPTOR_KEY = Symbol.for('catering-v2s.platform-ports.descriptor');
 const testPortCapabilities = Object.freeze([

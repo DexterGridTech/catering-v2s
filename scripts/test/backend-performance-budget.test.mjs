@@ -658,6 +658,82 @@ test('CP-05 report retains an active D-39 exception when its operation is classi
   assert.deepEqual(reportOperation.controlledBudgetException, sourceRecord);
 });
 
+test('TDP store creation keeps its measured single-operation exception and rejects it when removed', () => {
+  const operationId = 'createOperationsOrganizationStore';
+  const decisionRef = 'IMPLEMENTATION-AGENT-2026-10-05-TDP-STORE-CREATE-P3';
+  const sourceRecord = CONTROLLED_BUDGET_EXCEPTION_RECORDS.find(record => record.operationId === operationId);
+
+  assert.ok(sourceRecord);
+  assert.equal(sourceRecord.decisionRef, decisionRef);
+  assert.equal(sourceRecord.authority, 'IMPLEMENTATION_AGENT');
+  assert.equal(sourceRecord.from, 20);
+  assert.equal(sourceRecord.to, 28);
+  assert.equal(sourceRecord.narrowScope, operationId);
+  assert.equal(sourceRecord.history.length, 1);
+  assert.equal(sourceRecord.history[0].decisionRef, decisionRef);
+  assert.match(sourceRecord.costComparison, /三个批量基数的三次受管标定均测得 28/);
+
+  const tdpBudgetExpectations = new Map([
+    ['postOperationsStoreServicePoint', ['IMPLEMENTATION-AGENT-2026-10-05-TDP-SERVICE-POINT-CREATE-P3', 33]],
+    ['patchOperationsStoreServicePoint', ['IMPLEMENTATION-AGENT-2026-10-05-TDP-SERVICE-POINT-PATCH-P3', 29]],
+    ['createOperationsContract', ['IMPLEMENTATION-AGENT-2026-10-05-TDP-CONTRACT-CREATE-P3', 26]],
+    ['invalidateOperationsContract', ['IMPLEMENTATION-AGENT-2026-10-05-TDP-CONTRACT-INVALIDATE-P3', 25]],
+    ['postOperationsStoreServicePointArea', ['IMPLEMENTATION-AGENT-2026-10-05-TDP-AREA-CREATE-P3', 25]],
+    ['postOperationsStoreServicePointAreaStatus', ['IMPLEMENTATION-AGENT-2026-10-05-TDP-AREA-STATUS-P3', 26]],
+    ['postOperationsStoreServicePointStatus', ['IMPLEMENTATION-AGENT-2026-10-05-TDP-POINT-STATUS-P3', 28]],
+    ['updateOperationsCommercialGroup', ['IMPLEMENTATION-AGENT-2026-10-05-TDP-COMMERCIAL-GROUP-UPDATE-P3', 25]],
+    ['updateOperationsOrganizationStore', ['IMPLEMENTATION-AGENT-2026-10-05-TDP-STORE-UPDATE-P3', 25]],
+  ]);
+  for (const [tdpOperationId, [tdpDecisionRef, measuredMax]] of tdpBudgetExpectations) {
+    const record = CONTROLLED_BUDGET_EXCEPTION_RECORDS.find(item => item.operationId === tdpOperationId);
+    assert.ok(record, `TDP_P3_EXCEPTION_MISSING:${tdpOperationId}`);
+    assert.equal(record.decisionRef, tdpDecisionRef);
+    assert.equal(record.authority, 'IMPLEMENTATION_AGENT');
+    assert.equal(record.from, 20);
+    assert.equal(record.to, measuredMax);
+    assert.equal(record.narrowScope, tdpOperationId);
+    assert.equal(record.history.length, 1);
+    assert.equal(record.businessFactsPreserved, true);
+    assert.equal(record.sharedMechanismsReused, true);
+    assert.equal(record.businessFactsEvidence.filter(item => item.startsWith('measurement:r5-tc-')).length, 3);
+  }
+
+  assert.deepEqual(
+    budgetReadiness({
+      operationId,
+      category: 'P3',
+      maxDatabaseOperationCount: 28,
+      controlledExceptionRecords: [sourceRecord],
+    }),
+    {
+      status: 'READY',
+      reason: 'SELF_DECIDED_IMPLEMENTATION_EXCEPTION',
+      databaseOperationBudget: {kind: 'FIXED', max: 28},
+      controlledBudgetException: sourceRecord,
+    },
+  );
+  assert.deepEqual(
+    budgetReadiness({
+      operationId,
+      category: 'P3',
+      maxDatabaseOperationCount: 28,
+      controlledExceptionRecords: [],
+    }),
+    {status: 'BLOCKED_ABOVE_CLASS_CEILING', ceiling: 20, measuredMax: 28},
+  );
+  assert.throws(
+    () =>
+      validateControlledBudgetException({
+        operationId,
+        from: fixedBudget(20),
+        to: fixedBudget(28, sourceRecord.history),
+        measuredMax: 28,
+        exception: {...sourceRecord, decisionRef: 'IMPLEMENTATION-AGENT-GROUPED-TDP-BUDGET'},
+      }),
+    /PERFORMANCE_REMEDIATION_EXCEPTION_DECISION_REF_UNKNOWN/,
+  );
+});
+
 test('budget projection rejects report-only controlled exceptions without the source record', () => {
   const operationId = 'reorderOperationsCatalogDictionaryEntry';
   const sourceRecord = controlledExceptionRecord({operationId});

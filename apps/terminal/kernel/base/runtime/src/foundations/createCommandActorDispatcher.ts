@@ -61,6 +61,7 @@ type ActorDispatcherDependencies = Readonly<{
   getPendingResetReason: (rootCommandId: CommandId) => string | undefined;
   setPendingReset: (rootCommandId: CommandId, reason: string | undefined) => void;
   dispatchInternal: DispatchInternal;
+  resolveCommandDefinition: (commandName: string) => CommandDefinition | undefined;
   emit: (transition: LifecycleTransition, observer?: RuntimeLifecycleObserver) => LifecycleEmitterResult;
   emitActorRunning: (
     transition: ActorRunningTransition,
@@ -83,9 +84,20 @@ export const createCommandActorDispatcher = (input: ActorDispatcherDependencies)
       lifecycleContext: LifecycleCommandContext;
       observer?: RuntimeLifecycleObserver;
       actorAncestors?: readonly ActorInvocationAncestor[];
+      lateOutcome?: import('../types/command').LateOutcomeObserver;
+      lateResultTtlMs?: number;
     }>,
   ): Promise<ActorExecutionRecord> => {
-    const {handler, command, definition, lifecycleContext, observer, actorAncestors = []} = dispatchInput;
+    const {
+      handler,
+      command,
+      definition,
+      lifecycleContext,
+      observer,
+      actorAncestors = [],
+      lateOutcome,
+      lateResultTtlMs,
+    } = dispatchInput;
     const actorKey = handler.actor.actorKey;
     const reentry = actorAncestors.some(
       entry => entry.commandName === command.commandName && entry.actorKey === actorKey,
@@ -115,6 +127,20 @@ export const createCommandActorDispatcher = (input: ActorDispatcherDependencies)
     }
 
     const startedAt = nowTimestampMs();
+    let activeLateOutcome = lateOutcome;
+    let lateOutcomeTimer: ReturnType<typeof setTimeout> | undefined;
+    let unregisterLateOutcome: (() => void) | undefined;
+    const clearLateOutcome = (): void => {
+      activeLateOutcome = undefined;
+      if (lateOutcomeTimer !== undefined) clearTimeout(lateOutcomeTimer);
+      lateOutcomeTimer = undefined;
+      unregisterLateOutcome?.();
+      unregisterLateOutcome = undefined;
+    };
+    if (lateOutcome !== undefined && lateResultTtlMs !== undefined) {
+      lateOutcomeTimer = setTimeout(clearLateOutcome, lateResultTtlMs);
+      unregisterLateOutcome = input.registerResource?.(clearLateOutcome);
+    }
     const isStartupReadyCommand = command.commandName === 'ui.integration.sample-console.startup-ready';
     if (isStartupReadyCommand) {
       input.commandLogger(lifecycleContext).info({
@@ -182,10 +208,17 @@ export const createCommandActorDispatcher = (input: ActorDispatcherDependencies)
           flushPersistence: (): Promise<PersistenceOperationResult> => input.stateRuntime.flushPersistence(),
           subscribeState: input.subscribeState,
           dispatchCommand: <TChildPayload extends StateJsonValue>(
-            childDefinition: CommandDefinition<TChildPayload>,
+            childDefinitionOrName: CommandDefinition<TChildPayload> | string,
             childPayload: TChildPayload,
             childOptions: ActorDispatchOptions = {},
           ): Promise<CommandDispatchResult> => {
+            const childDefinition =
+              typeof childDefinitionOrName === 'string'
+                ? input.resolveCommandDefinition(childDefinitionOrName) as CommandDefinition<TChildPayload> | undefined
+                : childDefinitionOrName;
+            if (childDefinition === undefined) {
+              return Promise.reject(new Error(`Unknown runtime command: ${childDefinitionOrName}`));
+            }
             const parentCommandActive = input.getCommandChain(command.commandId) !== undefined;
             const childParent = parentCommandActive ? (childOptions.parentCommandId ?? command.commandId) : undefined;
             if (childOptions.parentCommandId !== undefined && childOptions.parentCommandId !== command.commandId) {
@@ -353,19 +386,41 @@ export const createCommandActorDispatcher = (input: ActorDispatcherDependencies)
       late: boolean,
     ): ActorExecutionRecord | undefined => {
       if (late) {
+        const completedAt = nowTimestampMs();
+        try {
+          activeLateOutcome?.(
+            Object.freeze({
+              actorKey,
+              status: outcome.status === 'completed' ? 'completed' : 'error',
+              startedAt,
+              completedAt,
+              result: outcome.status === 'completed' ? outcome.result : null,
+              error: outcome.status === 'error' ? outcome.error : null,
+            }),
+          );
+        } catch {
+          input.commandLogger(lifecycleContext).error({
+            category: 'runtime.late-outcome',
+            event: 'runtime.late-outcome-observer-failed',
+            message: 'Late outcome observer failed',
+            data: {actorKey, requestId: lifecycleContext.requestId === null ? null : String(lifecycleContext.requestId)},
+          });
+        }
         const kind = outcome.status === 'completed' ? 'actor.late-completed' : 'actor.late-error';
         input.emit(
           {
             kind,
             context: lifecycleContext,
             actorKey,
-            completedAt: nowTimestampMs(),
+            completedAt,
             error: outcome.error,
           },
           observer,
         );
+        clearLateOutcome();
         return undefined;
       }
+      if (outcome.status !== 'timed-out') clearLateOutcome();
       const kind =
         outcome.status === 'completed'
           ? 'actor.completed'

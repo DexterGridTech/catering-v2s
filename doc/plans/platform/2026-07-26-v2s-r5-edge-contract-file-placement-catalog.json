@@ -76,52 +76,216 @@
       "capability": "store-operating-rule",
       "pathFile": "paths/operations-admin/store-operating-rule.paths.json"
     },
-    "getOperationsStoreServicePointAreas": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "getOperationsStoreServicePoints": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "getOperationsStoreQrConfiguration": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "getOperationsStoreServicePoint": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "postOperationsStoreServicePointArea": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "patchOperationsStoreServicePointArea": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "postOperationsStoreServicePointAreaStatus": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "postOperationsStoreServicePointAreaOrder": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "postOperationsStoreServicePoint": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "patchOperationsStoreServicePoint": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "postOperationsStoreServicePointStatus": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "postOperationsStoreServicePointOrder": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "patchOperationsStoreQrConfiguration": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "getOperationsStoreQrChannelCandidates": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "stageStoreServicePointImage": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "releaseStagedStoreServicePointImage": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "getOperationsStoreTerminals": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
-    "getOperationsStoreTerminal": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
-    "postOperationsStoreTerminal": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
-    "putOperationsStoreTerminal": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
-    "postOperationsStoreTerminalStatus": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
-    "getOperationsStoreTerminalAreaCandidates": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
-    "getOperationsStoreTerminalTagCandidates": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
-    "cancelOperationsStoreTerminalActivation": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
-    "activateTerminal": {"capability": "activation", "pathFile": "paths/terminal/activation.paths.json"},
-    "cancelTerminalActivation": {"capability": "activation", "pathFile": "paths/terminal/activation.paths.json"}
+    "getOperationsStoreServicePointAreas": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "getOperationsStoreServicePoints": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "getOperationsStoreQrConfiguration": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "getOperationsStoreServicePoint": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "postOperationsStoreServicePointArea": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "patchOperationsStoreServicePointArea": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "postOperationsStoreServicePointAreaStatus": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "postOperationsStoreServicePointAreaOrder": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "postOperationsStoreServicePoint": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "patchOperationsStoreServicePoint": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "postOperationsStoreServicePointStatus": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "postOperationsStoreServicePointOrder": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "patchOperationsStoreQrConfiguration": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "getOperationsStoreQrChannelCandidates": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "stageStoreServicePointImage": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "releaseStagedStoreServicePointImage": {
+      "capability": "store-service-point-qr",
+      "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"
+    },
+    "getOperationsStoreTerminals": {
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json"
+    },
+    "getOperationsStoreTerminal": {
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json"
+    },
+    "postOperationsStoreTerminal": {
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json"
+    },
+    "putOperationsStoreTerminal": {
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json"
+    },
+    "postOperationsStoreTerminalStatus": {
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json"
+    },
+    "getOperationsStoreTerminalAreaCandidates": {
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json"
+    },
+    "getOperationsStoreTerminalTagCandidates": {
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json"
+    },
+    "cancelOperationsStoreTerminalActivation": {
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json"
+    },
+    "activateTerminal": {
+      "capability": "activation",
+      "pathFile": "paths/terminal/activation.paths.json"
+    },
+    "cancelTerminalActivation": {
+      "capability": "activation",
+      "pathFile": "paths/terminal/activation.paths.json"
+    },
+    "terminalReadStoreBasic": {
+      "capability": "terminal-data-read",
+      "pathFile": "paths/terminal/data-read.paths.json"
+    },
+    "terminalReadStoreOrganizationPath": {
+      "capability": "terminal-data-read",
+      "pathFile": "paths/terminal/data-read.paths.json"
+    },
+    "terminalReadStoreActiveContracts": {
+      "capability": "terminal-data-read",
+      "pathFile": "paths/terminal/data-read.paths.json"
+    },
+    "terminalReadContract": {
+      "capability": "terminal-data-read",
+      "pathFile": "paths/terminal/data-read.paths.json"
+    },
+    "terminalReadStoreServicePointAreas": {
+      "capability": "terminal-data-read",
+      "pathFile": "paths/terminal/data-read.paths.json"
+    },
+    "terminalReadServicePointArea": {
+      "capability": "terminal-data-read",
+      "pathFile": "paths/terminal/data-read.paths.json"
+    },
+    "terminalReadStoreServicePoints": {
+      "capability": "terminal-data-read",
+      "pathFile": "paths/terminal/data-read.paths.json"
+    },
+    "terminalReadServicePoint": {
+      "capability": "terminal-data-read",
+      "pathFile": "paths/terminal/data-read.paths.json"
+    }
   },
   "componentFamilyRules": [
-    {"match": "^(NoBody|NoContent|Problem|EpochMillis|AuditHistory.*|AuditChange.*|AuditValueState|AuditEntity.*|AuditActor.*|AuditTarget.*)$", "family": "common"},
-    {"match": "^(ExternalCapability.*|ExternalSystem.*|ProviderProfile.*|ExternalCollaborationTree|OwnerBinding.*|CapabilityDictionary)$", "family": "collaboration"},
-    {"match": "^(BusinessChannel.*|ExternalProviderCandidate.*)$", "family": "business-channel"},
-    {"match": "^(SalesMenu.*|InventoryAvailabilityFact|ManualSaleStatusFact)$", "family": "sales-menu"},
-    {"match": "^(StoreTerminal.*)$", "family": "store-terminal"},
-    {"match": "^(TerminalActivation|OperationsTerminalActivation).*$", "family": "terminal-binding"},
-    {"match": "^(GroupWorkspace)", "family": "group-workspace"},
-    {"match": "^(CommercialGroup)", "family": "commercial-group"},
-    {"match": "^(PlatformAsset|BinaryAssetContent)", "family": "asset"},
-    {"match": "^(PlatformAdmin|PlatformSession|PlatformCurrent|PlatformLoginOtp|PlatformOtpDispatch|PlatformPasswordRecovery|LoginRequest)", "family": "platform-identity"},
-    {"match": "^(ContractOverview|StoreContract)", "family": "contract"},
-    {"match": "^(Extension)", "family": "extension"},
-    {"match": "^(Brand|Tenant|HeadCompany|BusinessEntity)", "family": "business-entity"},
-    {"match": "^(OrganizationOverview)", "family": "organization-overview"},
-    {"match": "^(OrganizationNode|OrganizationHierarchy|OrganizationProject)", "family": "organization-hierarchy"},
-    {"match": "^(OrganizationStore|OrganizationCandidate)", "family": "store"},
-    {"match": "^(WorkspaceSession|WorkspaceLogin|WorkspacePasswordLogin|WorkspaceCurrent|WorkspaceSelect)", "family": "workspace-session"},
-    {"match": "^(Workspace|OperationsPasswordRecovery|PublicInvitation)", "family": "workspace-access"}
+    {
+      "match": "^(NoBody|NoContent|Problem|EpochMillis|AuditHistory.*|AuditChange.*|AuditValueState|AuditEntity.*|AuditActor.*|AuditTarget.*)$",
+      "family": "common"
+    },
+    {
+      "match": "^(ExternalCapability.*|ExternalSystem.*|ProviderProfile.*|ExternalCollaborationTree|OwnerBinding.*|CapabilityDictionary)$",
+      "family": "collaboration"
+    },
+    {
+      "match": "^(BusinessChannel.*|ExternalProviderCandidate.*)$",
+      "family": "business-channel"
+    },
+    {
+      "match": "^(SalesMenu.*|InventoryAvailabilityFact|ManualSaleStatusFact)$",
+      "family": "sales-menu"
+    },
+    {
+      "match": "^(StoreTerminal.*)$",
+      "family": "store-terminal"
+    },
+    {
+      "match": "^(TerminalActivation|OperationsTerminalActivation).*$",
+      "family": "terminal-binding"
+    },
+    {
+      "match": "^(GroupWorkspace)",
+      "family": "group-workspace"
+    },
+    {
+      "match": "^(CommercialGroup)",
+      "family": "commercial-group"
+    },
+    {
+      "match": "^(PlatformAsset|BinaryAssetContent)",
+      "family": "asset"
+    },
+    {
+      "match": "^(PlatformAdmin|PlatformSession|PlatformCurrent|PlatformLoginOtp|PlatformOtpDispatch|PlatformPasswordRecovery|LoginRequest)",
+      "family": "platform-identity"
+    },
+    {
+      "match": "^(ContractOverview|StoreContract)",
+      "family": "contract"
+    },
+    {
+      "match": "^(Extension)",
+      "family": "extension"
+    },
+    {
+      "match": "^(Brand|Tenant|HeadCompany|BusinessEntity)",
+      "family": "business-entity"
+    },
+    {
+      "match": "^(OrganizationOverview)",
+      "family": "organization-overview"
+    },
+    {
+      "match": "^(OrganizationNode|OrganizationHierarchy|OrganizationProject)",
+      "family": "organization-hierarchy"
+    },
+    {
+      "match": "^(OrganizationStore|OrganizationCandidate)",
+      "family": "store"
+    },
+    {
+      "match": "^(WorkspaceSession|WorkspaceLogin|WorkspacePasswordLogin|WorkspaceCurrent|WorkspaceSelect)",
+      "family": "workspace-session"
+    },
+    {
+      "match": "^(Workspace|OperationsPasswordRecovery|PublicInvitation)",
+      "family": "workspace-access"
+    }
   ],
   "familyToOwner": {
     "common": "common",
@@ -167,33 +331,41 @@
     "InvitationRouteFacts": "components/workspace-iam/workspace-access.schemas.json",
     "ProjectPhaseNames": "components/common/enum.schemas.json",
     "NoBody": "components/common/empty.schemas.json",
-    "NoContent": "components/common/empty.schemas.json"
-    ,"StoreServicePointAreaType": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointType": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointStatus": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointShape": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointOrderDirection": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointArea": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointAreaPage": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointAreaCreateRequest": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointAreaUpdateRequest": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointAreaStatusRequest": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointAreaOrderRequest": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePoint": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointPage": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointCreateRequest": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointUpdateRequest": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointStatusRequest": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointOrderRequest": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointDetail": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreQrConfigurationView": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreQrConfigurationUpdateRequest": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreQrChannelCandidate": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreQrChannelCandidatePage": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointAssetStageRequest": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointAssetStageReadback": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointAssetReleaseRequest": "components/organization/store-service-point-qr.schemas.json"
-    ,"StoreServicePointAssetReleaseReadback": "components/organization/store-service-point-qr.schemas.json"
+    "NoContent": "components/common/empty.schemas.json",
+    "StoreServicePointAreaType": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointType": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointStatus": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointShape": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointOrderDirection": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointArea": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointAreaPage": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointAreaCreateRequest": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointAreaUpdateRequest": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointAreaStatusRequest": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointAreaOrderRequest": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePoint": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointPage": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointCreateRequest": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointUpdateRequest": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointStatusRequest": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointOrderRequest": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointDetail": "components/organization/store-service-point-qr.schemas.json",
+    "StoreQrConfigurationView": "components/organization/store-service-point-qr.schemas.json",
+    "StoreQrConfigurationUpdateRequest": "components/organization/store-service-point-qr.schemas.json",
+    "StoreQrChannelCandidate": "components/organization/store-service-point-qr.schemas.json",
+    "StoreQrChannelCandidatePage": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointAssetStageRequest": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointAssetStageReadback": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointAssetReleaseRequest": "components/organization/store-service-point-qr.schemas.json",
+    "StoreServicePointAssetReleaseReadback": "components/organization/store-service-point-qr.schemas.json",
+    "TerminalStoreBasicRead": "components/terminal/terminal-data-read.schemas.json",
+    "TerminalStoreOrganizationPathRead": "components/terminal/terminal-data-read.schemas.json",
+    "TerminalStoreActiveContractsRead": "components/terminal/terminal-data-read.schemas.json",
+    "TerminalContractRead": "components/terminal/terminal-data-read.schemas.json",
+    "TerminalStoreServicePointAreasRead": "components/terminal/terminal-data-read.schemas.json",
+    "TerminalServicePointAreaRead": "components/terminal/terminal-data-read.schemas.json",
+    "TerminalStoreServicePointsRead": "components/terminal/terminal-data-read.schemas.json",
+    "TerminalServicePointRead": "components/terminal/terminal-data-read.schemas.json"
   },
   "resolvedFieldContract": {
     "requiredOnEveryOperation": [
@@ -219,7 +391,7 @@
   "closure": {
     "sourceOperationCount": 148,
     "plannedAdditionalOperationCount": 82,
-    "expectedResolvedOperationCount": 238,
+    "expectedResolvedOperationCount": 246,
     "expectedUnresolvedOperationCount": 0,
     "expectedAmbiguousOperationCount": 0,
     "sourceComponentCount": 295,
@@ -231,7 +403,7 @@
       "platform-admin": 61,
       "operations-admin": 163,
       "public": 12,
-      "terminal": 2
+      "terminal": 10
     }
   }
 }

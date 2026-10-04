@@ -8,7 +8,11 @@ export const AuthGuide = ({
 }: Readonly<{readonly testID?: string; readonly instruction: string}>) => {
   const qualification = useUiStateSelector(selectHostStaffQualification);
   return (
-    <PrimitiveContainer testID={testID} layout="centered" style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+    <PrimitiveContainer
+      testID={testID}
+      layout="centered"
+      style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}
+    >
       <PrimitiveText testID={`${testID}:message`}>
         {qualification === null || qualification === undefined
           ? '正在等待主机状态'

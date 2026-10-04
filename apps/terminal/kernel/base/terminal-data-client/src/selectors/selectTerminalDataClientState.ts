@@ -5,6 +5,7 @@ import type {
   TerminalClientState,
   TerminalConnectionView,
   TerminalLatencySample,
+  TerminalTopicSubscription,
 } from '../types/client';
 
 const readState = (state: StateRoot): TerminalClientState => {
@@ -19,11 +20,13 @@ export const selectActivationState = (state: StateRoot): TerminalActivationView 
   const status =
     current.activationStatus === 'cancelling'
       ? 'cancelling'
-      : credential !== null
-        ? 'active'
-        : Object.keys(current.pendingActivations).length > 0
-          ? 'activating'
-          : 'inactive';
+      : current.activationStatus === 'activating'
+        ? 'activating'
+        : credential !== null
+          ? 'active'
+          : Object.keys(current.pendingActivations).length > 0
+            ? 'activating'
+            : 'inactive';
   return Object.freeze({
     status,
     terminalRef: credential?.terminalRef ?? null,
@@ -47,3 +50,6 @@ export const selectConnectionLatency = (
       : current.latencySamples.filter(sample => sample.observedAt >= now - 7_200_000).slice(-maxSamples);
   return Object.freeze({lastRttMs: current.lastRttMs, samples: Object.freeze(samples)});
 };
+
+export const selectTerminalTopicSubscriptions = (state: StateRoot): readonly TerminalTopicSubscription[] =>
+  Object.freeze(Object.values(readState(state).topicSubscriptions));

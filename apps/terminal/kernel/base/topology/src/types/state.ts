@@ -20,6 +20,8 @@ export type TopologyState = Readonly<{
   /** Transient state-sync readiness is scoped to the accepted peer connection. */
   readonly peerStateSyncConnectionId: string | null;
   readonly peerAppliedStateSyncRevisions: Readonly<Record<string, number>>;
+  /** Latest authoritative snapshot revision that failed to apply per peer slice. */
+  readonly peerFailedStateSyncRevisions: Readonly<Record<string, number>>;
   readonly hostDesired: boolean;
   /** In-memory command signal; it is not a persisted business fact. */
   readonly hostReconcileRevision: number;

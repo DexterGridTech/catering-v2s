@@ -122,6 +122,53 @@ describe('terminal-data-client selectors', () => {
     expect(selectActivationState(restartedRuntime.getState()).status).toBe('active');
   });
 
+  it('persists accepted topic times but rebuilds active registrations after a runtime restart', async () => {
+    const plainStorage = createFakeStorage();
+    const protectedStorage = createFakeStorage();
+    const firstRuntime = await createPersistenceTestRuntime(plainStorage, protectedStorage);
+    firstRuntime.getStore().dispatch(
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'workspace-1',
+        terminalRef: 'terminal-1',
+        storeRef: 'store-1',
+        deviceId: 'device-1',
+        bindingGeneration: 2,
+        credentialSecret: 'A'.repeat(43),
+      }),
+    );
+    const identityKey =
+      '["workspace-1","terminal-1","store-1",2,"feature.store-basic","STORE","00000000-0000-0000-0000-000000000001"]';
+    const subscriptionId = '8b81d930-f455-407c-88b6-e777934e54c2';
+    firstRuntime.getStore().dispatch(
+      terminalDataClientActions.putTopicSubscription({
+        identityKey,
+        subscription: {
+          subscriptionId,
+          identityKey,
+          subscriberKey: 'feature.store-basic',
+          topicKey: 'STORE',
+          ownerRef: '00000000-0000-0000-0000-000000000001',
+          acceptedTimeEpochMillis: 100,
+          pendingNotification: null,
+        },
+      }),
+    );
+    firstRuntime.getStore().dispatch(
+      terminalDataClientActions.setTopicAcceptedTime({
+        subscriptionId,
+        identityKey,
+        acceptedTimeEpochMillis: 200,
+      }),
+    );
+    expect((await firstRuntime.flushPersistence()).status).toBe('succeeded');
+
+    const restartedRuntime = await createPersistenceTestRuntime(plainStorage, protectedStorage);
+    expect(restartedRuntime.getState()[terminalDataClientStateSlice.name]).toMatchObject({
+      topicSubscriptions: {},
+      acceptedTopicTimes: {[identityKey]: 200},
+    });
+  });
+
   it('does not persist an unfinished activation operation and drops it after a runtime restart', async () => {
     const plainStorage = createFakeStorage();
     const protectedStorage = createFakeStorage();

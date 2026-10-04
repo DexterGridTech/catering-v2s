@@ -40,6 +40,7 @@ export type TopologyHostEventPayload = Readonly<{
     | 'peer-connection-installed'
     | 'peer-unreachable'
     | 'state-sync-slice-applied'
+    | 'state-sync-slice-apply-failed'
     | 'state-transfer-failed'
     | 'state-transfer-recovered';
   readonly frame?: string;

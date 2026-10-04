@@ -135,8 +135,10 @@ export const ServerConfigPanel = ({
   const defaultSpace = config?.defaults.find(space => space.name === selectedSpace);
   const [selectedServerName, setSelectedServerName] = useState(effectiveSpace?.servers[0]?.serverName ?? '');
   const [draft, setDraft] = useState<ConfigDraft>(emptyDraft);
+  const [draftIdentity, setDraftIdentity] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
   const [draftVersion, setDraftVersion] = useState(0);
+  const [addressRowsVersion, setAddressRowsVersion] = useState(0);
   const branch = instanceMode === 'SLAVE';
   const hostProjectionReady = !branch || config?.source === 'host-sync';
   const service = effectiveSpace?.servers.find(server => server.serverName === selectedServerName);
@@ -171,7 +173,13 @@ export const ServerConfigPanel = ({
     }>;
     return draftFrom(source.addresses, source.proxy);
   }, [draftSourceKey]);
-  const editable = !branch && hostProjectionReady && !tracked.requestInFlight;
+  const currentDraftIdentity = JSON.stringify({
+    source: config?.source ?? null,
+    selectedSpace,
+    selectedServerName,
+    draftSourceKey,
+  });
+  const editable = !branch && hostProjectionReady && !tracked.requestInFlight && draftIdentity === currentDraftIdentity;
   const visibleAddresses = editable ? draft.addresses : addresses;
   const serviceOptions = useMemo(
     () => (effectiveSpace?.servers ?? []).map(server => ({value: server.serverName, label: server.serverName})),
@@ -184,9 +192,13 @@ export const ServerConfigPanel = ({
   }, [effectiveSpace, selectedServerName]);
 
   useEffect(() => {
-    if (!hasService) return;
+    if (!hasService) {
+      setDraftIdentity(null);
+      return;
+    }
     setDraft(sourceDraft);
-  }, [config?.source, config?.selectedSpace, selectedServerName, hasService, sourceDraft]);
+    setDraftIdentity(currentDraftIdentity);
+  }, [currentDraftIdentity, hasService, sourceDraft]);
 
   const changeAddress = (index: number, key: keyof AddressDraft, value: string): void => {
     setDraft(current =>
@@ -291,7 +303,7 @@ export const ServerConfigPanel = ({
                     };
                 return (
                   <PrimitiveCard
-                    key={`${fieldBase}:${draftVersion}:${config?.selectedSpace ?? ''}:${selectedServerName}:${draftSourceKey}`}
+                    key={`${fieldBase}:${draftVersion}:${addressRowsVersion}:${draftIdentity ?? 'loading'}`}
                     appearance="admin"
                     testID={`${fieldBase}:card`}
                   >
@@ -329,7 +341,8 @@ export const ServerConfigPanel = ({
                       <PrimitiveButton
                         testID={`${fieldBase}.remove`}
                         appearance="admin-secondary"
-                        onPress={() =>
+                        onPress={() => {
+                          setAddressRowsVersion(version => version + 1);
                           setDraft(current =>
                             Object.freeze({
                               ...current,
@@ -337,8 +350,8 @@ export const ServerConfigPanel = ({
                                 current.addresses.filter((_, addressIndex) => addressIndex !== index),
                               ),
                             }),
-                          )
-                        }
+                          );
+                        }}
                       >
                         移除地址
                       </PrimitiveButton>
@@ -350,7 +363,8 @@ export const ServerConfigPanel = ({
                 <PrimitiveButton
                   testID="terminal.server-config.address.add"
                   appearance="admin-secondary"
-                  onPress={() =>
+                  onPress={() => {
+                    setAddressRowsVersion(version => version + 1);
                     setDraft(current =>
                       Object.freeze({
                         ...current,
@@ -363,8 +377,8 @@ export const ServerConfigPanel = ({
                           }),
                         ]),
                       }),
-                    )
-                  }
+                    );
+                  }}
                 >
                   添加地址
                 </PrimitiveButton>
@@ -394,7 +408,11 @@ export const ServerConfigPanel = ({
                 />
                 <PrimitiveText testID="terminal.server-config.proxy-enabled.label">启用 HTTP 代理</PrimitiveText>
                 {draft.proxyEnabled ? (
-                  <>
+                  <PrimitiveCard
+                    key={`proxy:${draftVersion}:${config?.selectedSpace ?? ''}:${selectedServerName}:${draftSourceKey}`}
+                    appearance="admin"
+                    testID="terminal.server-config.proxy-fields"
+                  >
                     <ConfigField
                       fieldId="terminal.server-config.proxy-host"
                       label="HTTP 代理主机"
@@ -432,7 +450,7 @@ export const ServerConfigPanel = ({
                         代理密码已配置，不显示明文
                       </PrimitiveText>
                     ) : null}
-                  </>
+                  </PrimitiveCard>
                 ) : null}
               </>
             ) : (

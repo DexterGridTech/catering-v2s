@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "generated-owner-operation-binding-index",
-  "operationCount": 296,
+  "operationCount": 304,
   "owners": [
     "asset",
     "business-channel",
@@ -15,6 +15,7 @@
     "platform-iam",
     "platform-workspace",
     "sales-menu",
+    "store-contract",
     "store-terminal",
     "terminal-binding",
     "workspace-iam"
@@ -32,6 +33,7 @@
     "contracts/registry/generated/operation-handler-bindings/platform-iam.json",
     "contracts/registry/generated/operation-handler-bindings/platform-workspace.json",
     "contracts/registry/generated/operation-handler-bindings/sales-menu.json",
+    "contracts/registry/generated/operation-handler-bindings/store-contract.json",
     "contracts/registry/generated/operation-handler-bindings/store-terminal.json",
     "contracts/registry/generated/operation-handler-bindings/terminal-binding.json",
     "contracts/registry/generated/operation-handler-bindings/workspace-iam.json"
@@ -50,6 +52,7 @@
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/platformiam/PlatformIamOperationBindings.java",
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/platformworkspace/PlatformWorkspaceOperationBindings.java",
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/salesmenu/SalesMenuOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/storecontract/StoreContractOperationBindings.java",
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/storeterminal/StoreTerminalOperationBindings.java",
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/terminalbinding/TerminalBindingOperationBindings.java",
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/workspaceiam/WorkspaceIamOperationBindings.java"

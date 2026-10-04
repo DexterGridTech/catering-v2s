@@ -84,7 +84,6 @@ public final class CollaborationOperationBindings {
     };
   }
 
-
   public OperationBindingTypes.Wire.OwnerBindingView createOperationsOwnerBinding(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.OwnerBindingCreateRequest request) {
     return adapters.createOperationsOwnerBinding(CREATE_OPERATIONS_OWNER_BINDING_DESCRIPTOR, context, request);
   }

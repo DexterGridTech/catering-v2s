@@ -644,14 +644,14 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "getPlatformContractOverviewPage": {
     "kind": "FIXED",
-    "max": 9,
+    "max": 8,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 9,
+        "to": 8,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -924,14 +924,14 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "initializeCommercialGroup": {
     "kind": "FIXED",
-    "max": 16,
+    "max": 17,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 16,
+        "to": 17,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]

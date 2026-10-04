@@ -1,24 +1,27 @@
-import {PrimitiveCard, PrimitiveGrid, PrimitiveImage, PrimitiveLabel, PrimitiveRadio} from '@catering-v2s/ui-base-primitives';
+import {
+  PrimitiveCard,
+  PrimitiveGrid,
+  PrimitiveImage,
+  PrimitiveLabel,
+  PrimitiveRadio,
+} from '@catering-v2s/ui-base-primitives';
 import type {ReactElement} from 'react';
 import {assetsById} from '../foundations/assets';
 import {wallpaperIds, wallpaperLabels} from '../foundations/wallpaperCatalog';
 import type {WallpaperId} from '@catering-v2s/kernel-feature-sample-wallpaper';
 
-export const WallpaperOptionCards = (props: Readonly<{
-  readonly testID: string;
-  readonly optionTestId: (wallpaperId: WallpaperId) => string;
-  readonly selected: WallpaperId | undefined;
-  readonly onSelect: (wallpaperId: WallpaperId) => void;
-  readonly style: Readonly<Record<string, unknown>>;
-  readonly cardStyle: Readonly<Record<string, unknown>>;
-  readonly thumbnailStyle: Readonly<Record<string, unknown>>;
-}>): ReactElement => (
-  <PrimitiveGrid
-    testID={props.testID}
-    accessibilityLabel="壁纸选项"
-    accessibilityRole="tablist"
-    style={props.style}
-  >
+export const WallpaperOptionCards = (
+  props: Readonly<{
+    readonly testID: string;
+    readonly optionTestId: (wallpaperId: WallpaperId) => string;
+    readonly selected: WallpaperId | undefined;
+    readonly onSelect: (wallpaperId: WallpaperId) => void;
+    readonly style: Readonly<Record<string, unknown>>;
+    readonly cardStyle: Readonly<Record<string, unknown>>;
+    readonly thumbnailStyle: Readonly<Record<string, unknown>>;
+  }>,
+): ReactElement => (
+  <PrimitiveGrid testID={props.testID} accessibilityLabel="壁纸选项" accessibilityRole="tablist" style={props.style}>
     {wallpaperIds.map(wallpaperId => {
       const source = assetsById[wallpaperId];
       const optionTestId = props.optionTestId(wallpaperId);

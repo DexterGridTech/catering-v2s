@@ -1,6 +1,8 @@
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode} from 'react';
 import {StyleSheet, useWindowDimensions, View} from 'react-native';
 import {openLayerCommand, selectLayers} from '@catering-v2s/kernel-base-ui-state';
+import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
+import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {
   dispatchWithRequestId,
   useDispatchCommand,
@@ -81,9 +83,19 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
   const hostLogicalWidth = hostLogicalSize?.width ?? null;
   const hostLogicalHeight = hostLogicalSize?.height ?? null;
   const hasAdminLayerSelector = useMemo(
-    () => (root: Parameters<typeof selectLayers>[0]) =>
-      selectLayers(root, surface.displayMode).some(layer => layer.layerId === ADMIN_CONSOLE_LAYER_ID),
+    () => (root: Parameters<typeof selectLayers>[0]) => {
+      const workspace =
+        selectRuntimeInstanceMode(root) === 'SLAVE' && selectDisplayRole(root) === 'VICE' ? 'BRANCH' : undefined;
+      return selectLayers(root, surface.displayMode, workspace).some(layer => layer.layerId === ADMIN_CONSOLE_LAYER_ID);
+    },
     [surface.displayMode],
+  );
+  const localAdminWorkspace = useUiStateSelector(
+    useMemo(
+      () => (root: Parameters<typeof selectRuntimeInstanceMode>[0]) =>
+        selectRuntimeInstanceMode(root) === 'SLAVE' && selectDisplayRole(root) === 'VICE' ? 'BRANCH' : undefined,
+      [],
+    ),
   );
   const hasAdminLayer = useUiStateSelector(hasAdminLayerSelector) ?? false;
   const dispatchCommand = useDispatchCommand();
@@ -214,6 +226,7 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
         displayMode: surface.displayMode,
         layerId: ADMIN_CONSOLE_LAYER_ID,
         partKey: ADMIN_CONSOLE_PART_KEY,
+        ...(localAdminWorkspace === undefined ? {} : {workspace: localAdminWorkspace}),
       },
     })
       .then(result => {
@@ -263,6 +276,7 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
     dispatchCommand,
     hasAdminLayer,
     logger,
+    localAdminWorkspace,
     surface.displayMode,
     surface.isHostPrimaryDisplay,
     surface.surfaceIdentity?.displayIndex,

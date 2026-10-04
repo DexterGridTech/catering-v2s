@@ -6,7 +6,12 @@ export const MemberFormScrollContent = ({
   initialPhone,
   editable,
   prefix = 'sample.desk.member-form',
-}: Readonly<{readonly initialName: string; readonly initialPhone: string; readonly editable: boolean; readonly prefix?: string}>) => {
+}: Readonly<{
+  readonly initialName: string;
+  readonly initialPhone: string;
+  readonly editable: boolean;
+  readonly prefix?: string;
+}>) => {
   const name = useInputField({
     fieldId: `${prefix}:name`,
     testID: `${prefix}:name`,
@@ -48,10 +53,7 @@ export const MemberFormScrollContent = ({
         电话
       </PrimitiveLabel>
       <PrimitiveInput {...phone.inputProps} editable={editable} />
-      <PrimitiveLabel
-        testID={`${prefix}:keyboard-alpha-probe-label`}
-        nativeID={`${prefix}:keyboard-alpha-probe`}
-      >
+      <PrimitiveLabel testID={`${prefix}:keyboard-alpha-probe-label`} nativeID={`${prefix}:keyboard-alpha-probe`}>
         英文字符测试（仅 sample）
       </PrimitiveLabel>
       <PrimitiveInput {...alphaProbe.inputProps} editable={editable} />
@@ -63,9 +65,7 @@ export const MemberFormScrollContent = ({
         金额格式测试（仅 sample）
       </PrimitiveLabel>
       <PrimitiveInput {...financialProbe.inputProps} editable={editable} />
-      <PrimitiveStatus testID={`${prefix}:keyboard-financial-probe-notice`}>
-        不保存到会员资料
-      </PrimitiveStatus>
+      <PrimitiveStatus testID={`${prefix}:keyboard-financial-probe-notice`}>不保存到会员资料</PrimitiveStatus>
     </>
   );
 };

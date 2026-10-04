@@ -47,9 +47,11 @@ public final class OrganizationCommandServiceSql {
     public static final String ORGANIZATION_COMMAND_SERVICE_COMMERCIAL_GROUP =
             "extension_values::text, extension_rule_revision FROM organization.commercial_group WHERE ";
     public static final String ORGANIZATION_COMMAND_SERVICE_GROUP_WORKSPACE_KEY = "group_workspace_key=?";
-    public static final String
-            ORGANIZATION_COMMAND_SERVICE_SELECT_COMMERCIAL_GROUP_COMMERCIAL_GROUP_UUID_GROUP_WORKSPACE_KEY =
-                    "SELECT commercial_group_uuid FROM organization.commercial_group WHERE group_workspace_key=?";
+    public static final String ORGANIZATION_COMMAND_SERVICE_SELECT_SCOPED_COMMERCIAL_GROUP_REF =
+            "SELECT cg.commercial_group_uuid FROM organization.commercial_group cg "
+                    + "JOIN platform_workspace.group_workspace gw ON gw.id=cg.group_workspace_id "
+                    + "AND gw.group_workspace_key=cg.group_workspace_key "
+                    + "WHERE gw.workspace_uuid=? AND cg.group_workspace_key=?";
     public static final String ORGANIZATION_COMMAND_SERVICE_SELECT_COMMERCIAL_GROUP_COMMERCIAL_GROUP_UUID =
             "SELECT EXISTS(SELECT 1 FROM organization.commercial_group WHERE commercial_group_uuid=? AND ";
     public static final String ORGANIZATION_COMMAND_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_A = "group_workspace_key=?)";

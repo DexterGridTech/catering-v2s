@@ -2,7 +2,7 @@ import type {NetworkStatusChanged} from '@catering-v2s/kernel-base-platform-port
 import type {TransportHttpProxy, TransportServerAddress} from '@catering-v2s/kernel-base-contracts';
 
 export type TransportConnectionEvent = Readonly<
-  | {readonly type: 'open'; readonly addressName?: string}
+  | {readonly type: 'open'; readonly addressName?: string; readonly configRevision?: number}
   | {readonly type: 'message'; readonly raw: string}
   | {readonly type: 'close'; readonly code?: number; readonly reason?: string}
   | {readonly type: 'error'; readonly reason?: string}

@@ -337,7 +337,7 @@ describe('sample staff auth UI feature', () => {
         containerKeys: ['main'],
         displayModes: ['SECONDARY'],
         workspaces: ['MAIN'],
-        instanceModes: ['SLAVE'],
+        instanceModes: ['MASTER', 'SLAVE'],
         title: '主屏登录引导',
         layerTier: 'standard',
         layerGuard: 'dismissible',
@@ -784,32 +784,49 @@ describe('sample staff auth UI feature', () => {
   });
 
   it.each([
-    ['MASTER primary', 'MASTER', 'CHIEF', {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'}, 'sample.auth.login', 'PRIMARY'],
-    ['SLAVE CHIEF', 'SLAVE', 'CHIEF', {workspace: 'BRANCH', instanceMode: 'SLAVE', displayMode: 'PRIMARY'}, 'sample.auth.guide.lsp', 'PRIMARY'],
-  ] as const)('routes needToLoginStaffCommand for %s', async (_label, mode, role, routeContext, expectedPart, displayMode) => {
-    const actor = createAuthNavigationActor();
-    const handler = actor.handlers.find(handler => handler.commandName === needToLoginStaffCommand.commandName);
-    expect(handler).toBeDefined();
-    const dispatches: Array<Readonly<{commandName: string; payload: unknown}>> = [];
-    const state = {
-      'kernel.base.runtime.instance-mode': {instanceMode: mode},
-      'kernel.base.display-context.display-role': {displayRole: role, powerConfirmation: null},
-    } as RuntimeStateRoot;
-    await handler!.handle({
-      command: {commandName: needToLoginStaffCommand.commandName, payload: {}, routeContext},
-      getState: () => state,
-      dispatchCommand: async (definition: {readonly commandName: string}, payload: unknown) => {
-        dispatches.push({commandName: definition.commandName, payload});
-        return completedResult();
-      },
-    } as never);
-    expect(dispatches).toEqual([
-      {
-        commandName: 'kernel.base.ui-state.show-screen',
-        payload: {displayMode, containerKey: 'main', partKey: expectedPart},
-      },
-    ]);
-  });
+    [
+      'MASTER primary',
+      'MASTER',
+      'CHIEF',
+      {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'},
+      'sample.auth.login',
+      'PRIMARY',
+    ],
+    [
+      'SLAVE CHIEF',
+      'SLAVE',
+      'CHIEF',
+      {workspace: 'BRANCH', instanceMode: 'SLAVE', displayMode: 'PRIMARY'},
+      'sample.auth.guide.lsp',
+      'PRIMARY',
+    ],
+  ] as const)(
+    'routes needToLoginStaffCommand for %s',
+    async (_label, mode, role, routeContext, expectedPart, displayMode) => {
+      const actor = createAuthNavigationActor();
+      const handler = actor.handlers.find(handler => handler.commandName === needToLoginStaffCommand.commandName);
+      expect(handler).toBeDefined();
+      const dispatches: Array<Readonly<{commandName: string; payload: unknown}>> = [];
+      const state = {
+        'kernel.base.runtime.instance-mode': {instanceMode: mode},
+        'kernel.base.display-context.display-role': {displayRole: role, powerConfirmation: null},
+      } as RuntimeStateRoot;
+      await handler!.handle({
+        command: {commandName: needToLoginStaffCommand.commandName, payload: {}, routeContext},
+        getState: () => state,
+        dispatchCommand: async (definition: {readonly commandName: string}, payload: unknown) => {
+          dispatches.push({commandName: definition.commandName, payload});
+          return completedResult();
+        },
+      } as never);
+      expect(dispatches).toEqual([
+        {
+          commandName: 'kernel.base.ui-state.show-screen',
+          payload: {displayMode, containerKey: 'main', partKey: expectedPart},
+        },
+      ]);
+    },
+  );
 
   it('does not route SLAVE VICE locally because it consumes the MASTER secondary projection', async () => {
     const actor = createAuthNavigationActor();

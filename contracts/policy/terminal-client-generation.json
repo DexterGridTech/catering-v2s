@@ -4,12 +4,34 @@
   "face": "terminal",
   "operationCatalog": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
   "openApiPathsRoot": "contracts/openapi/paths",
-  "canonicalSchemas": "contracts/openapi-source/terminal-binding.schemas.json",
+  "canonicalSchemas": [
+    "contracts/openapi-source/terminal-binding.schemas.json",
+    "contracts/openapi-source/terminal-data-read.schemas.json",
+    "contracts/openapi/components/organization/store.schemas.json",
+    "contracts/openapi/components/organization/store-operating-rule-schemas.generated.json",
+    "contracts/openapi/components/contract/contract.schemas.json",
+    "contracts/openapi/components/organization/store-service-point-qr.schemas.json"
+  ],
   "targets": [
     {
       "targetPackage": "apps/terminal/kernel/base/terminal-data-client",
-      "tags": ["terminal-binding"],
-      "includeOperationIds": ["activateTerminal", "cancelTerminalActivation"],
+      "tags": [
+        "terminal-binding",
+        "organization",
+        "store-contract"
+      ],
+      "includeOperationIds": [
+        "activateTerminal",
+        "cancelTerminalActivation",
+        "terminalReadStoreBasic",
+        "terminalReadStoreOrganizationPath",
+        "terminalReadStoreActiveContracts",
+        "terminalReadContract",
+        "terminalReadStoreServicePointAreas",
+        "terminalReadServicePointArea",
+        "terminalReadStoreServicePoints",
+        "terminalReadServicePoint"
+      ],
       "excludeOperationIds": [],
       "stripPathPrefix": "/api/terminal/group-workspaces/{groupWorkspaceKey}",
       "output": "apps/terminal/kernel/base/terminal-data-client/src/generated/terminalApi.ts"

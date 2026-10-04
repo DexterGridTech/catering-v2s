@@ -87,6 +87,24 @@ const rootWithLayers = (layers: readonly object[]): RuntimeStateRoot =>
     }),
   }) as RuntimeStateRoot;
 
+const rootWithViceAdminLayers = (input: Readonly<{mainLayers: readonly object[]; branchLayers: readonly object[]}>) =>
+  Object.freeze({
+    'kernel.base.runtime.instance-mode': Object.freeze({instanceMode: 'SLAVE'}),
+    'kernel.base.display-context.display-role': Object.freeze({displayRole: 'VICE'}),
+    'kernel.base.ui-state.content.MAIN': Object.freeze({
+      contentSets: {
+        PRIMARY: {containers: {}, layers: []},
+        SECONDARY: {containers: {}, layers: input.mainLayers},
+      },
+    }),
+    'kernel.base.ui-state.content.BRANCH': Object.freeze({
+      contentSets: {
+        PRIMARY: {containers: {}, layers: []},
+        SECONDARY: {containers: {}, layers: input.branchLayers},
+      },
+    }),
+  }) as RuntimeStateRoot;
+
 const layerPart = (partKey: string, rendererKey: string, component: ComponentType<object>) =>
   definePart({
     partKey,
@@ -115,6 +133,81 @@ const surfaceWithAdminEntry = (children: ReactElement) =>
 const mount = (element: ReactElement): Promise<RenderResult> => render(element);
 
 describe('LayerStack filtered hydration behavior', () => {
+  it('renders VICE projected business layers with only the local BRANCH admin layer', async () => {
+    const source = createSource();
+    const business = definePart({
+      partKey: 'sample.host-business',
+      rendererKey: 'sample.host-business.renderer',
+      containerKeys: [],
+      displayModes: ['SECONDARY'] as const,
+      workspaces: ['MAIN'] as const,
+      instanceModes: ['MASTER', 'SLAVE'] as const,
+      surfaceForm: ['laptop'] as const,
+      title: 'Host business',
+      description: 'Projected host business',
+      component: () => createElement(Text, {testID: 'host-business'}, 'business'),
+    });
+    const hostAdmin = definePart({
+      partKey: 'sample.host-admin',
+      rendererKey: 'sample.host-admin.renderer',
+      containerKeys: [],
+      displayModes: ['SECONDARY'] as const,
+      workspaces: ['MAIN', 'BRANCH'] as const,
+      instanceModes: ['MASTER', 'SLAVE'] as const,
+      surfaceForm: ['laptop'] as const,
+      title: 'Host admin',
+      description: 'Host admin layer',
+      layerTier: 'admin',
+      component: () => createElement(Text, {testID: 'host-admin'}, 'host admin'),
+    });
+    const localAdmin = definePart({
+      partKey: 'sample.local-admin',
+      rendererKey: 'sample.local-admin.renderer',
+      containerKeys: [],
+      displayModes: ['SECONDARY'] as const,
+      workspaces: ['MAIN', 'BRANCH'] as const,
+      instanceModes: ['MASTER', 'SLAVE'] as const,
+      surfaceForm: ['laptop'] as const,
+      title: 'Local admin',
+      description: 'Local admin layer',
+      layerTier: 'admin',
+      component: () => createElement(Text, {testID: 'local-admin'}, 'local admin'),
+    });
+    source.setRoot(
+      rootWithViceAdminLayers({
+        mainLayers: [
+          {layerId: 'host-business', partKey: business.catalogEntry.partKey, openedAt: 1},
+          {layerId: 'host-admin', partKey: hostAdmin.catalogEntry.partKey, openedAt: 2},
+        ],
+        branchLayers: [{layerId: 'local-admin', partKey: localAdmin.catalogEntry.partKey, openedAt: 3}],
+      }),
+    );
+    const uiCatalog = createUiCatalog([business.catalogEntry, hostAdmin.catalogEntry, localAdmin.catalogEntry]);
+    const rendererCatalog = createRendererCatalog([
+      business.rendererBinding,
+      hostAdmin.rendererBinding,
+      localAdmin.rendererBinding,
+    ]);
+    const renderer = await mount(
+      createElement(
+        RenderProvider,
+        {
+          ...unusedRenderProviderBindings,
+          stateSource: source.stateSource,
+          uiCatalog,
+          rendererCatalog,
+          logger: createLogger(),
+        },
+        createElement(SurfaceRoot, {displayMode: 'SECONDARY', containerKey: 'main'}),
+      ),
+    );
+
+    expect(renderer.getByTestId('host-business')).toBeDefined();
+    expect(renderer.getByTestId('local-admin')).toBeDefined();
+    expect(renderer.queryByTestId('host-admin')).toBeNull();
+    await renderer.unmount();
+  });
+
   it('places the business interlock above business layers, below local admin, and suspends business focus', async () => {
     const source = createSource();
     const businessPart = layerPart('sample.business-layer', 'sample.business-layer.renderer', () => null);
@@ -173,14 +266,11 @@ describe('LayerStack filtered hydration behavior', () => {
     expect(renderer.getByTestId('business-interlock')).toBeDefined();
     expect(renderer.getByTestId('local-admin-layer')).toBeDefined();
     expect(
-      renderer
-        .getAllByTestId(/^ui-base-render:layer:/, {includeHiddenElements: true})
-        .map(node => node.props.testID),
-    ).toEqual([
-      'ui-base-render:layer:business-layer',
-      'ui-base-render:layer:local-admin-layer',
-    ]);
-    expect(renderer.getByTestId('ui-base-render:layer:business-layer', {includeHiddenElements: true}).props).toMatchObject({
+      renderer.getAllByTestId(/^ui-base-render:layer:/, {includeHiddenElements: true}).map(node => node.props.testID),
+    ).toEqual(['ui-base-render:layer:business-layer', 'ui-base-render:layer:local-admin-layer']);
+    expect(
+      renderer.getByTestId('ui-base-render:layer:business-layer', {includeHiddenElements: true}).props,
+    ).toMatchObject({
       accessibilityElementsHidden: true,
       importantForAccessibility: 'no-hide-descendants',
     });

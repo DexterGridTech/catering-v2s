@@ -9,10 +9,13 @@ export const submitMemberCommand = defineCommand<Readonly<{name: string; phone: 
   visibility: 'public',
 });
 
-export const confirmMemberCommand = defineCommand<Readonly<{readonly operationId: string; readonly age?: number}>>(moduleName, {
-  name: 'confirm-member',
-  visibility: 'public',
-});
+export const confirmMemberCommand = defineCommand<Readonly<{readonly operationId: string; readonly age?: number}>>(
+  moduleName,
+  {
+    name: 'confirm-member',
+    visibility: 'public',
+  },
+);
 
 export const rejectMemberCommand = defineCommand<Readonly<{readonly operationId: string}>>(moduleName, {
   name: 'reject-member',
@@ -24,10 +27,13 @@ export const withdrawMemberCommand = defineCommand<Readonly<{readonly operationI
   visibility: 'public',
 });
 
-export const memberPendingCommand = defineCommand<Readonly<{operationId: string; name: string; phone: string}>>(moduleName, {
-  name: 'member-pending',
-  visibility: 'public',
-});
+export const memberPendingCommand = defineCommand<Readonly<{operationId: string; name: string; phone: string}>>(
+  moduleName,
+  {
+    name: 'member-pending',
+    visibility: 'public',
+  },
+);
 
 export const memberConfirmedCommand = defineCommand<Readonly<{memberId: string}>>(moduleName, {
   name: 'member-confirmed',

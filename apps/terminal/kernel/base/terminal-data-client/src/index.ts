@@ -5,6 +5,7 @@ export {
   selectActivationState,
   selectConnectionState,
   selectConnectionLatency,
+  selectTerminalTopicSubscriptions,
 } from './selectors/selectTerminalDataClientState';
 export {selectTerminalClientStatusProjection} from './selectors/selectTerminalDataClientStatusProjection';
 export {terminalClientStatusProjectionSliceName} from './features/slices/terminalClientStatusProjection';
@@ -20,12 +21,28 @@ export type {
   TerminalTransportCommands,
   TerminalTransportConnection,
   TerminalTransportEvent,
+  SubscribeTerminalTopicPayload,
+  UnsubscribeTerminalTopicPayload,
+  AcceptTerminalTopicNotificationPayload,
+  TerminalDataReadPayload,
+  TerminalActivationSucceededPayload,
+  TerminalReadOperationId,
+  TerminalTopicChangedPayload,
+  TerminalTopicNotification,
+  TerminalTopicSubscription,
 } from './types/client';
 export {
   activateTerminalCommand,
+  terminalActivationSucceededCommand,
   cancelTerminaActivationCommand,
   cancelTerminalOfflineCommand,
   connectTerminalCommand,
   disconnectTerminalCommand,
+  subscribeTerminalTopicCommand,
+  unsubscribeTerminalTopicCommand,
+  acceptTerminalTopicNotificationCommand,
+  readTerminalDataCommand,
+  terminalTopicChangedCommand,
 } from './features/commands/terminalDataClientCommands';
 export * from './generated/terminalApi';
+export type {TerminalTopicKey} from './generated/terminalConnectionProtocol';

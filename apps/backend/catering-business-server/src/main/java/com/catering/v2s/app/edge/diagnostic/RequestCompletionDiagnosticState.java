@@ -11,7 +11,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /** Request-local state for the always-on, payload-free completion observer. */
 public final class RequestCompletionDiagnosticState {
-    private static final String ATTRIBUTE = RequestCompletionDiagnosticState.class.getName();
+    public static final String REQUEST_ATTRIBUTE =
+            "com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState";
     private static final String UNKNOWN_ERROR = "PLATFORM_COMMON_RESULT_UNKNOWN";
     private final RequestDiagnosticContext context;
     private final String consumerFace;
@@ -27,7 +28,7 @@ public final class RequestCompletionDiagnosticState {
 
     public static RequestCompletionDiagnosticState getOrCreate(
             HttpServletRequest request, HttpServletResponse response, EdgeRouteFaceRegistry.Definition definition) {
-        Object existing = request.getAttribute(ATTRIBUTE);
+        Object existing = request.getAttribute(REQUEST_ATTRIBUTE);
         if (existing instanceof RequestCompletionDiagnosticState state) return state;
         RequestDiagnosticContext context = HttpRequestMetricsInterceptor.context(request);
         if (context == null) {
@@ -40,12 +41,12 @@ public final class RequestCompletionDiagnosticState {
         }
         RequestCompletionDiagnosticState state =
                 new RequestCompletionDiagnosticState(context, definition.consumerFace());
-        request.setAttribute(ATTRIBUTE, state);
+        request.setAttribute(REQUEST_ATTRIBUTE, state);
         return state;
     }
 
     public static RequestCompletionDiagnosticState find(HttpServletRequest request) {
-        Object value = request.getAttribute(ATTRIBUTE);
+        Object value = request.getAttribute(REQUEST_ATTRIBUTE);
         return value instanceof RequestCompletionDiagnosticState state ? state : null;
     }
 

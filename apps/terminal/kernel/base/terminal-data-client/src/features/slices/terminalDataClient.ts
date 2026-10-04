@@ -7,6 +7,9 @@ import type {
   TerminalConnectionView,
   TerminalCredential,
   TerminalLatencySample,
+  RemoteOperationFact,
+  TerminalTopicNotification,
+  TerminalTopicSubscription,
 } from '../../types/client';
 
 export const terminalDataClientSliceName = `${moduleName}.client` as const;
@@ -20,6 +23,9 @@ const initialState: TerminalClientState = Object.freeze({
   nextPingSequence: 1,
   lastRttMs: 0,
   latencySamples: Object.freeze([]),
+  topicSubscriptions: Object.freeze({}),
+  acceptedTopicTimes: Object.freeze({}),
+  remoteOperations: Object.freeze({}),
 });
 
 const definition = createSlice({
@@ -27,6 +33,16 @@ const definition = createSlice({
   initialState,
   reducers: {
     replaceCredential: (state, action: PayloadAction<TerminalCredential | null>) => {
+      const previous = state.credential;
+      const next = action.payload;
+      if (
+        previous?.terminalRef !== next?.terminalRef ||
+        previous?.bindingGeneration !== next?.bindingGeneration ||
+        previous?.groupWorkspaceKey !== next?.groupWorkspaceKey
+      ) {
+        state.topicSubscriptions = {};
+        state.acceptedTopicTimes = {};
+      }
       state.credential = action.payload;
       state.activationStatus = action.payload === null ? 'inactive' : 'active';
     },
@@ -68,6 +84,71 @@ const definition = createSlice({
           ? []
           : [...state.latencySamples.filter(sample => sample.observedAt >= cutoff), action.payload].slice(-maxSamples);
     },
+    putTopicSubscription: (
+      state,
+      action: PayloadAction<Readonly<{subscription: TerminalTopicSubscription; identityKey: string}>>,
+    ) => {
+      state.topicSubscriptions[action.payload.subscription.subscriptionId] = action.payload.subscription;
+      if (state.acceptedTopicTimes[action.payload.identityKey] === undefined) {
+        state.acceptedTopicTimes[action.payload.identityKey] = action.payload.subscription.acceptedTimeEpochMillis;
+      }
+    },
+    removeTopicSubscription: (
+      state,
+      action: PayloadAction<Readonly<{subscriptionId: string; identityKey: string}>>,
+    ) => {
+      delete state.topicSubscriptions[action.payload.subscriptionId];
+      delete state.acceptedTopicTimes[action.payload.identityKey];
+    },
+    clearTopicSubscriptions: state => {
+      state.topicSubscriptions = {};
+      state.acceptedTopicTimes = {};
+    },
+    setTopicAcceptedTime: (
+      state,
+      action: PayloadAction<Readonly<{subscriptionId: string; identityKey: string; acceptedTimeEpochMillis: number}>>,
+    ) => {
+      const subscription = state.topicSubscriptions[action.payload.subscriptionId];
+      if (subscription === undefined) return;
+      state.acceptedTopicTimes[action.payload.identityKey] = action.payload.acceptedTimeEpochMillis;
+      state.topicSubscriptions[action.payload.subscriptionId] = {
+        ...subscription,
+        acceptedTimeEpochMillis: action.payload.acceptedTimeEpochMillis,
+      };
+    },
+    setPendingTopicNotification: (
+      state,
+      action: PayloadAction<Readonly<{subscriptionId: string; notification: TerminalTopicNotification}>>,
+    ) => {
+      const subscription = state.topicSubscriptions[action.payload.subscriptionId];
+      if (subscription === undefined) return;
+      state.topicSubscriptions[action.payload.subscriptionId] = {
+        ...subscription,
+        pendingNotification: action.payload.notification,
+      };
+    },
+    clearPendingTopicNotifications: state => {
+      for (const [subscriptionId, subscription] of Object.entries(state.topicSubscriptions)) {
+        if (subscription.pendingNotification !== null) {
+          state.topicSubscriptions[subscriptionId] = {...subscription, pendingNotification: null};
+        }
+      }
+    },
+    clearPendingTopicNotification: (state, action: PayloadAction<string>) => {
+      const subscription = state.topicSubscriptions[action.payload];
+      if (subscription?.pendingNotification !== null && subscription !== undefined) {
+        state.topicSubscriptions[action.payload] = {...subscription, pendingNotification: null};
+      }
+    },
+    putRemoteOperation: (state, action: PayloadAction<RemoteOperationFact>) => {
+      state.remoteOperations[action.payload.remoteOperationId] = action.payload;
+    },
+    removeRemoteOperation: (state, action: PayloadAction<string>) => {
+      delete state.remoteOperations[action.payload];
+    },
+    clearRemoteOperations: state => {
+      state.remoteOperations = {};
+    },
     clearConnection: state => {
       state.connection = {...state.connection, status: 'stopped', addressName: null, nodeId: null};
       state.heartbeatIntervalMs = null;
@@ -86,7 +167,11 @@ export const terminalDataClientStateSlice: StateRuntimeSliceRegistration = defin
     name: terminalDataClientSliceName,
     reducer: definition.reducer,
     persistIntent: 'owner-only',
-    persistence: [{kind: 'field', stateKey: 'credential', protection: 'protected', flushMode: 'immediate'}],
+    persistence: [
+      {kind: 'field', stateKey: 'credential', protection: 'protected', flushMode: 'immediate'},
+      {kind: 'field', stateKey: 'acceptedTopicTimes', protection: 'plain', flushMode: 'immediate'},
+      {kind: 'field', stateKey: 'remoteOperations', protection: 'plain', flushMode: 'immediate'},
+    ],
     syncIntent: 'isolated',
   },
 );

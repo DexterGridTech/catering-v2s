@@ -342,9 +342,7 @@ describe('sample wallpaper picker', () => {
     expect(queryRenderedTree(renderer, node => node.props.testID === wallpaperPickerTestIds.logout)).toHaveLength(0);
 
     await fireEvent.press(renderer.getByTestId(branchWallpaperOptionTestId('w3')));
-    expect(calls).toEqual([
-      {name: wallpaperOptionSelectedCommand.commandName, payload: {wallpaperId: 'w3'}},
-    ]);
+    expect(calls).toEqual([{name: wallpaperOptionSelectedCommand.commandName, payload: {wallpaperId: 'w3'}}]);
     await fireEvent.press(renderer.getByTestId(branchWallpaperPickerTestIds.confirm));
     expect(calls[1]).toEqual({name: confirmWallpaperRequestedCommand.commandName, payload: {}});
     await renderer.unmount();
@@ -369,7 +367,9 @@ describe('sample wallpaper picker', () => {
     );
     await fireEvent.press(branchRenderer.getByTestId(branchWallpaperPickerTestIds.exit));
     expect(branchCalls).toEqual([{name: wallpaperPickerExitRequestedCommand.commandName, payload: {}}]);
-    expect(queryRenderedTree(branchRenderer, node => node.props.testID === wallpaperPickerTestIds.logout)).toHaveLength(0);
+    expect(queryRenderedTree(branchRenderer, node => node.props.testID === wallpaperPickerTestIds.logout)).toHaveLength(
+      0,
+    );
     await branchRenderer.unmount();
   });
 

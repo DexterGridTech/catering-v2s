@@ -35,6 +35,10 @@ const tdsAcceptanceProcessSource = readFileSync(
   new URL('../../apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/TdsAcceptanceProcess.java', import.meta.url),
   'utf8',
 );
+const backendAcceptanceSource = readFileSync(
+  new URL('../../apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceTest.java', import.meta.url),
+  'utf8',
+);
 
 function messageFromContract(type, values) {
   const definition = protocolMessages.get(type);
@@ -539,6 +543,33 @@ test('wire client AUTHENTICATE, PING and server frames stay aligned with the sha
 
   const pong = messageFromContract('PONG', {seq: 7, serverTs: '2026-09-28T12:00:01Z'});
   assert.doesNotThrow(() => validatePongMessage(pong, 7));
+});
+
+test('TDS STORE topic subscription is a bounded authenticated wire contract', () => {
+  const scenario = 'terminal.connection.topic.active-store-subscription';
+  assert.ok(wireClientSource.includes(`const TOPIC_SUBSCRIPTION_SCENARIO = '${scenario}'`));
+  assert.ok(terminalAcceptanceSource.includes(`String scenario = "${scenario}";`));
+  assert.ok(tdsAcceptanceProcessSource.includes(`TOPIC_SUBSCRIPTION_SCENARIO_ID = "${scenario}"`));
+  assert.ok(backendAcceptanceSource.includes('topicSubscriptionScenarios(this, tdsAcceptanceProcess)'));
+  const control = validRequest();
+  control.scenario = scenario;
+  delete control.expectedClose;
+  control.topicSubscription = {
+    subscriptionId: '8f9d3b15-ef5a-452a-9c8b-1100ae20dcb1',
+    topicKey: 'STORE',
+    ownerRef: '66abf394-3b77-487a-a344-5a8209dfd573',
+    lastAcceptedTimeEpochMillis: 0,
+  };
+  const parsed = parseControlRequest(JSON.stringify(control));
+  assert.equal(parsed.authenticate.type, 'AUTHENTICATE');
+  assert.equal(parsed.topicSubscription.topicKey, 'STORE');
+  assert.equal(parsed.topicSubscription.lastAcceptedTimeEpochMillis, 0);
+
+  control.topicSubscription.topicKey = 'ARBITRARY';
+  assert.throws(() => parseControlRequest(JSON.stringify(control)), /TERMINAL_WIRE_TOPIC_SUBSCRIPTION_INVALID/);
+  control.topicSubscription.topicKey = 'STORE';
+  control.topicSubscription.extra = true;
+  assert.throws(() => parseControlRequest(JSON.stringify(control)), /TERMINAL_WIRE_TOPIC_SUBSCRIPTION_INVALID/);
 });
 
 test('terminal wire control rejects unbounded, ambiguous, external and malformed credential input', () => {

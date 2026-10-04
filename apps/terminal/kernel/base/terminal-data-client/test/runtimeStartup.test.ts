@@ -64,8 +64,8 @@ const createComposition = (
       kind: 'response',
       status: 200,
       body: {
-        terminalRef: 'terminal-1',
-        storeRef: 'store-1',
+        terminalRef: '00000000-0000-4000-8000-000000000001',
+        storeRef: '00000000-0000-4000-8000-000000000002',
         groupWorkspaceKey: 'workspace-1',
         bindingGeneration: 4,
       },
@@ -230,7 +230,7 @@ describe('terminal-data-client runtime startup', () => {
         expect(selectConnectionState(restoredSlave.runtime.getState()).status).not.toBe('awaiting-ready');
         expect(selectActivationState(restoredSlave.runtime.getState())).toMatchObject({
           status: 'active',
-          terminalRef: 'terminal-1',
+          terminalRef: '00000000-0000-4000-8000-000000000001',
         });
       } finally {
         if (slaveStarted) await releaseRuntimeForTestAsync(restoredSlave.runtime);

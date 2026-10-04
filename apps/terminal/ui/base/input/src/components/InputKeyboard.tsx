@@ -83,7 +83,7 @@ export const InputKeyboard = ({snapshot, interactive, onKey, onLayout, testIDSuf
   );
   return (
     <View
-      testID={`ui.base.input:keyboard-layer${testIDSuffix === undefined ? '' : `:${testIDSuffix}`}`}
+      testID={`ui.base.input:keyboard-layer:${canInteract ? 'interactive' : 'inactive'}${testIDSuffix === undefined ? '' : `:${testIDSuffix}`}`}
       onLayout={onLayout}
       style={{width: frameWidth, pointerEvents: canInteract ? 'auto' : 'none'}}
       accessibilityElementsHidden={!canInteract}

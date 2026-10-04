@@ -29,6 +29,7 @@ vi.mock('@catering-v2s/ui-base-render', async importOriginal => {
       displayMode: 'PRIMARY',
       surfaceIdentity: {surfaceKey: 'PRIMARY', displayIndex: 0, displayMode: 'PRIMARY'},
     }),
+    useUiStateSelector: () => undefined,
   };
 });
 

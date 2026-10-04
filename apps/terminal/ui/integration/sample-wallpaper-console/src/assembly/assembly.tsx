@@ -8,7 +8,11 @@ import {
   createTerminalActivationParts,
 } from '@catering-v2s/ui-base-terminal-activation';
 import {createServerConfigPanelParts} from '@catering-v2s/ui-base-server-config-panel';
-import {createTerminalDataClientModule} from '@catering-v2s/kernel-base-terminal-data-client';
+import {
+  createTerminalDataClientModule,
+  selectActivationState,
+  selectConnectionState,
+} from '@catering-v2s/kernel-base-terminal-data-client';
 import {
   createIntegrationAssembly,
   createStartupReadyPayload,
@@ -20,8 +24,9 @@ import {
 } from '@catering-v2s/ui-base-integration-assembly';
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {sampleWallpaperPickerAssembly, WallpaperBackground} from '@catering-v2s/ui-feature-sample-wallpaper-picker';
-import {createSampleStaffSessionModule, sessionSliceName} from '@catering-v2s/kernel-feature-sample-staff-session';
-import {createSampleWallpaperModule, wallpaperSliceName} from '@catering-v2s/kernel-feature-sample-wallpaper';
+import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {createStoreBasicModule} from '@catering-v2s/kernel-feature-store-basic';
+import {createSampleWallpaperModule} from '@catering-v2s/kernel-feature-sample-wallpaper';
 import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
 import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
@@ -29,6 +34,7 @@ import {
   createTopologyAdminCapability,
   createTopologyModule,
   resolveTopologyCommandTarget,
+  selectTopologyState,
 } from '@catering-v2s/kernel-base-topology';
 import {
   createTopologyIdentityClient,
@@ -40,9 +46,12 @@ import {
 import {
   createSampleWallpaperConsoleModule,
   selectSampleWallpaperConsoleBusinessInterlockActive,
+  selectSampleWallpaperConsoleBusinessMutationAllowed,
+  selectSampleWallpaperConsoleStaffLoginAllowed,
   startupReadyCommand,
   type SampleWallpaperConsoleReadyPayload,
 } from '../application/module';
+export {selectSampleWallpaperConsoleBusinessInterlockActive} from '../application/module';
 import {parts as wallpaperConsoleParts} from '../parts/parts';
 import {
   getSurfaceDeclarations,
@@ -52,7 +61,6 @@ import {
 } from '../application/terminalSurfaces';
 
 const defaultPersistenceKey = 'sample-wallpaper-console';
-export {selectSampleWallpaperConsoleBusinessInterlockActive};
 
 export type WallpaperConsoleAssembly = IntegrationAssembly;
 
@@ -122,8 +130,12 @@ export async function createSampleWallpaperConsoleAssembly(
     resolveCommandTarget: resolveTopologyCommandTarget,
     createTopologyAdminCapability,
     createApplicationModules: ({uiStateModule}) => {
-      const staffSessionModule = createSampleStaffSessionModule();
-      const wallpaperModule = createSampleWallpaperModule();
+      const staffSessionModule = createSampleStaffSessionModule({
+        canLogin: selectSampleWallpaperConsoleStaffLoginAllowed,
+      });
+      const wallpaperModule = createSampleWallpaperModule({
+        canMutate: selectSampleWallpaperConsoleBusinessMutationAllowed,
+      });
       const serverConfigModule = createServerConfigModule(
         input.serverSpaces ?? (packageJson.serverSpaces as TransportServerConfig),
       );
@@ -144,7 +156,9 @@ export async function createSampleWallpaperConsoleAssembly(
         now: () => Date.now(),
         surfaceForm,
         appVersion: input.appVersion ?? '1.0.0',
+        canActivate: state => !selectTopologyState(state).repairPending,
       });
+      const storeBasicModule = createStoreBasicModule();
       return [
         serverConfigModule,
         transportModule,
@@ -154,17 +168,27 @@ export async function createSampleWallpaperConsoleAssembly(
           surfaceForm,
           identityClient: createTopologyIdentityClient(),
           peerChannel: input.topologyPeerChannel,
+          canPair: state => {
+            const activation = selectActivationState(state);
+            const connection = selectConnectionState(state);
+            return (
+              activation.status === 'inactive' &&
+              (connection.status === 'stopped' || connection.status === 'disconnected')
+            );
+          },
           stateSyncSlices: selectStateSyncSlices([
             ...(uiStateModule.stateSlices ?? []),
             ...(staffSessionModule.stateSlices ?? []),
             ...(wallpaperModule.stateSlices ?? []),
             ...(serverConfigModule.stateSlices ?? []),
             ...(terminalDataClientModule.stateSlices ?? []),
+            ...(storeBasicModule.stateSlices ?? []),
           ]),
         }),
         createSampleWallpaperConsoleModule(surfaceForm),
         createTerminalActivationModule(),
         terminalDataClientModule,
+        storeBasicModule,
         staffSessionModule,
         wallpaperModule,
         sampleStaffAuthAssembly.createModule(),

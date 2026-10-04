@@ -325,7 +325,8 @@ export const createServerConfigActor = (
       const hasChanges =
         state.selectedSpace !== defaults.selectedSpace ||
         Object.keys(state.overrides).length > 0 ||
-        Object.keys(state.proxyPasswords).length > 0;
+        Object.keys(state.proxyPasswords).length > 0 ||
+        state.syncedHostDefaults !== null;
       if (!hasChanges) return Object.freeze({changed: false, persistence: 'unchanged'});
       context.dispatchAction(
         actions.replaceConfiguration(
@@ -346,6 +347,7 @@ export const createServerConfigActor = (
       const changed =
         normalized.selectedSpaceReset ||
         normalized.droppedOverrideCount > 0 ||
+        JSON.stringify(current.syncedHostDefaults) !== JSON.stringify(normalized.state.syncedHostDefaults) ||
         JSON.stringify(current.overrides) !== JSON.stringify(normalized.state.overrides) ||
         JSON.stringify(current.proxyPasswords) !== JSON.stringify(normalized.state.proxyPasswords);
       if (changed) context.dispatchAction(actions.replaceConfiguration(normalized.state));

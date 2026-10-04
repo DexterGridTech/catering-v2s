@@ -498,7 +498,7 @@ describe('InputSurfaceFrame measured frame owner', () => {
       pin.props.onPress();
     });
 
-    expect(getNode(renderer, 'ui.base.input:focus-visibility-error').props.children).toBe(
+    expect(getNode(renderer, 'ui.base.input:focus-visibility-error:invalid-focus-rectangle').props.children).toBe(
       '焦点框无法完整显示，请调整窗口尺寸或退出输入',
     );
     expect(getKeyboardState()).toMatchObject({activeFieldId: null, owner: 'none'});
@@ -519,7 +519,7 @@ describe('InputSurfaceFrame measured frame owner', () => {
       pin.props.onPress();
     });
 
-    expect(getNode(renderer, 'ui.base.input:focus-visibility-error').props.children).toBe(
+    expect(getNode(renderer, 'ui.base.input:focus-visibility-error:visible-anchor-unavailable').props.children).toBe(
       '焦点框无法完整显示，请调整窗口尺寸或退出输入',
     );
     expect(getKeyboardState()).toMatchObject({activeFieldId: null, owner: 'none'});

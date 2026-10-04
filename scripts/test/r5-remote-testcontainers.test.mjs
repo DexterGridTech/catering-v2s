@@ -2037,6 +2037,12 @@ test('TDS CONTRACT evidence stays separate from backend business scenario result
   );
   assert.deepEqual(result.summary, {discovered: 1, contractPass: 1, directFailures: 0});
   assert.throws(() => parseTdsContractResult(''), /TDS_CONTRACT_RESULT_REQUIRED/);
+  assert.throws(
+    () => parseTdsContractResult(
+      '{"type":"transport-contract","operation":"terminal.connection.remote-command","module":"TERMINAL_CONTROL_TDS","contract":"PASS","status":"PASS","runId":"backend-acceptance-run-12345678"}',
+    ),
+    /TDS_CONTRACT_RESULT_INVALID/,
+  );
   const failure = parseTdsContractResult(
     '{"type":"transport-contract","operation":"terminal.connection.topology-probe","module":"TERMINAL_DATA_SERVER","contract":"PASS","status":"FAIL","runId":"run"}',
   );

@@ -5,8 +5,20 @@ import {check, selfTest} from '../generate/terminal-client-api.mjs';
 
 test('terminal API generation closes the face/tag operation set and rejects policy drift', () => {
   const result = check();
-  assert.deepEqual(result.operationIds, ['activateTerminal', 'cancelTerminalActivation']);
-  assert.deepEqual(result.outputs.map(output => output.operationIds), [['activateTerminal', 'cancelTerminalActivation']]);
+  const expectedOperationIds = [
+    'activateTerminal',
+    'cancelTerminalActivation',
+    'terminalReadContract',
+    'terminalReadServicePoint',
+    'terminalReadServicePointArea',
+    'terminalReadStoreActiveContracts',
+    'terminalReadStoreBasic',
+    'terminalReadStoreOrganizationPath',
+    'terminalReadStoreServicePointAreas',
+    'terminalReadStoreServicePoints',
+  ];
+  assert.deepEqual(result.operationIds, expectedOperationIds);
+  assert.deepEqual(result.outputs.map(output => output.operationIds), [expectedOperationIds]);
   for (const output of result.outputs) {
     const source = fs.readFileSync(output.output, 'utf8');
     assert.doesNotMatch(source, /^import\s/m);
@@ -18,6 +30,8 @@ test('terminal API generation closes the face/tag operation set and rejects poli
     assert.match(source, /createTerminalApiClient/);
   }
   assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /readonly "Authorization": string/);
+  assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /readonly "X-Terminal-Ref": string/);
+  assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /readonly "X-Terminal-Device-Id": string/);
   assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /isTerminalActivationResult/);
   selfTest();
 });

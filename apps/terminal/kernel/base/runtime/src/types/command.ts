@@ -7,6 +7,9 @@ import type {
 } from '@catering-v2s/kernel-base-contracts';
 import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import type {RuntimeLifecycleObserver} from './journal';
+import type {ActorExecutionRecord} from './execution';
+
+export type LateOutcomeObserver = (record: ActorExecutionRecord) => void;
 
 export type CommandVisibility = 'public' | 'internal';
 
@@ -80,6 +83,9 @@ export type CommandDispatchOptions = Readonly<{
   routeIntent?: CommandRouteIntent;
   target?: CommandTarget;
   onLifecycleEvent?: RuntimeLifecycleObserver;
+  /** Receives actual actor records after an ordinary command timeout; the caller owns its finite lifetime. */
+  lateOutcome?: LateOutcomeObserver;
+  lateResultTtlMs?: number;
 }>;
 
 export type ActorDispatchOptions = Readonly<{
@@ -89,6 +95,8 @@ export type ActorDispatchOptions = Readonly<{
   routeContext?: CommandRouteContext | null;
   routeIntent?: CommandRouteIntent;
   target?: CommandTarget;
+  lateOutcome?: LateOutcomeObserver;
+  lateResultTtlMs?: number;
 }>;
 
 export type DispatchedCommand<TPayload extends StateJsonValue = StateJsonValue> = Readonly<{

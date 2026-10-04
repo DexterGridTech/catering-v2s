@@ -109,6 +109,12 @@ if [[ -n "$tds_contract_scenario" ]]; then
     terminal.connection.vs13.cross-node-recovery)
       expected_topology_preflight=true
       ;;
+    terminal.connection.topic.active-store-subscription)
+      expected_topology_preflight=true
+      ;;
+    terminal.connection.remote-command)
+      expected_topology_preflight=true
+      ;;
     *)
       printf '%s\n' 'BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_SCOPE_INVALID' >&2
       exit 2

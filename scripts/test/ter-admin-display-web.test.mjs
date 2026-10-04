@@ -59,6 +59,7 @@ import {
   projectTerminalActivationLogEvents,
   projectTerminalConnectionHeartbeatLogEvents,
   projectManagedTdsLogLines,
+  projectManagedTerminalActivationBackendLogLines,
   displayedHeartbeatRttMismatch,
   ensureContainedWebDirectory,
   WEB_TERMINAL_BUSINESS_ASSERTION_IDS,
@@ -585,11 +586,11 @@ test('Web A-stage gate requires all exact rows, assertion ids, cleanups, and cur
     ...(row.businessAssertionIds.includes('A-13a')
       ? {
           memberRegistration: {
-          pendingContentMatched: 'PASS',
-          confirmationReadbackMatched: 'PASS',
-          confirmedMemberRowCount: 1,
-          matchingConfirmedMemberRowCount: 1,
-          optionalAgeInputAcceptedAndSubmitted: 'PASS',
+            pendingContentMatched: 'PASS',
+            confirmationReadbackMatched: 'PASS',
+            confirmedMemberRowCount: 1,
+            matchingConfirmedMemberRowCount: 1,
+            optionalAgeInputAcceptedAndSubmitted: 'PASS',
             exactAgeStateReadback: 'OWNER_FOCUSED_PROOF_REQUIRED',
           },
         }
@@ -671,7 +672,9 @@ test('Web A-stage gate requires all exact rows, assertion ids, cleanups, and cur
         ...manifests.slice(memberRowIndex + 1),
       ],
       sourceSha256,
-    ).errors.includes('WEB_A_MEMBER_CONFIRMATION_EVIDENCE_MISSING:terminal-activation-connection|sample-console|laptop'),
+    ).errors.includes(
+      'WEB_A_MEMBER_CONFIRMATION_EVIDENCE_MISSING:terminal-activation-connection|sample-console|laptop',
+    ),
     true,
   );
   assert.equal(
@@ -913,15 +916,15 @@ test('managed activation Web scenario enters the 8-digit fixture through the inp
   assert.ok(runner.includes('managedHttpResults.push'));
   assert.ok(runner.includes("headers['x-request-id']"));
   assert.ok(runner.includes("headers['x-correlation-id']"));
-  assert.ok(
-    compactRunner.includes(
-      "const cancellationRoute = '/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel'",
-    ),
-  );
+  assert.ok(runner.includes('projectManagedTerminalActivationBackendLogLines'));
   assert.ok(runner.includes('manifest.frontendBackendLogCorrelation'));
   assert.ok(runner.includes('collectRemoteTdsLog'));
   assert.ok(runner.includes('projectManagedTdsLogLines'));
   assert.ok(runner.includes('hasRegisteredTdsSession'));
+  assert.ok(runner.includes('readManagedTerminalBindingByName'));
+  assert.ok(runner.includes("managedActivationFixtureState.bindingStatus === 'ACTIVE'"));
+  assert.ok(runner.includes('TER_WEB_MANAGED_FIXTURE_KEY'));
+  assert.ok(runner.includes('WEB_MANAGED_ACTIVATION_FIXTURE_ALREADY_BOUND'));
   assert.ok(runner.includes("['CANCELLED', 'ALREADY_CANCELLED'].includes(cancellationBody?.outcome)"));
   assert.ok(runner.includes("successorRuntimeAdapter: 'NOT_APPLICABLE_IN_EXPO_WEB'"));
   assert.ok(runner.includes("vmSuccessorRuntimeEvidence: 'NOT_RUN'"));
@@ -952,12 +955,7 @@ test('managed activation Web scenario enters the 8-digit fixture through the inp
   assert.ok(runner.includes('routeTemplate: item.routeTemplate'));
   assert.match(runner, /resultClass:\s*await page\s*\.getByTestId\('terminal\.activation\.result'\)/u);
   assert.ok(runner.includes('collectRemoteLog(managedDev.remoteHostTrust.host, managedDev.remoteJava, fullLogPath)'));
-  assert.ok(runner.includes('manifest.backendTerminalHttpLogEvents = lines.flatMap'));
-  assert.ok(
-    compactRunner.includes(
-      "const cancellationRoute = '/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel'",
-    ),
-  );
+  assert.ok(runner.includes('manifest.backendTerminalHttpLogEvents = projectManagedTerminalActivationBackendLogLines'));
   assert.ok(runner.includes('manifest.frontendActivationLogEvents = projectTerminalActivationLogEvents'));
   assert.ok(runner.includes('manifest.browserConsoleFailures = browserConsoleFailures'));
   assert.ok(runner.includes("manifest.frontendLogRead = 'PASS'"));
@@ -1006,7 +1004,10 @@ test('Web member journey uses the shared per-run terminal business fixture witho
   const fixture = terminalBusinessMemberFixture('web-a-1791021504646-071d6f18-c362-48db-8605-b05fca0bffd9');
   assert.match(fixture.name, /^ter[a-f0-9]{10}$/u);
   assert.match(fixture.phone, /^010\d{8}$/u);
-  assert.notDeepEqual(fixture, terminalBusinessMemberFixture('web-a-1791021504647-071d6f18-c362-48db-8605-b05fca0bffd9'));
+  assert.notDeepEqual(
+    fixture,
+    terminalBusinessMemberFixture('web-a-1791021504647-071d6f18-c362-48db-8605-b05fca0bffd9'),
+  );
   assert.match(runner, /const memberFixture = terminalBusinessMemberFixture\(runId\)/u);
   assert.match(runner, /expectedName: memberFixture\.name/u);
   assert.match(runner, /expectedPhone: memberFixture\.phone/u);
@@ -1063,10 +1064,19 @@ test('admin launcher gesture is transformed from current logical canvas coordina
     {category: 'admin.launcher'},
   );
   assert.equal(adminLauncherBindingReady(readyBinding), true);
-  assert.equal(adminLauncherBindingReady({...readyBinding, data: {...readyBinding.data, handlerAttached: false}}), false);
+  assert.equal(
+    adminLauncherBindingReady({...readyBinding, data: {...readyBinding.data, handlerAttached: false}}),
+    false,
+  );
   assert.equal(adminLauncherBindingReady({...readyBinding, data: {...readyBinding.data, hasAdminLayer: true}}), false);
-  assert.equal(adminLauncherBindingReady({...readyBinding, data: {...readyBinding.data, displayMode: 'SECONDARY'}}), false);
-  assert.equal(adminLauncherBindingReady({...readyBinding, scope: {...readyBinding.scope, moduleName: 'fixture'}}), false);
+  assert.equal(
+    adminLauncherBindingReady({...readyBinding, data: {...readyBinding.data, displayMode: 'SECONDARY'}}),
+    false,
+  );
+  assert.equal(
+    adminLauncherBindingReady({...readyBinding, scope: {...readyBinding.scope, moduleName: 'fixture'}}),
+    false,
+  );
   const runner = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/ter-admin-display-web.mjs'), 'utf8');
   const compactRunner = runner.replace(/\s+/gu, ' ');
   assert.ok(runner.includes("event.data?.displayMode === 'PRIMARY'"));
@@ -1079,12 +1089,20 @@ test('admin launcher gesture is transformed from current logical canvas coordina
     restoreOrigin >= 0 && readGeometry > restoreOrigin,
     'launcher geometry must be read after restoring the page origin',
   );
-  const bindingRead = runner.indexOf("event => isExpectedRuntimeLogEvent(event, 'admin.launcher-binding')", readGeometry);
+  const bindingRead = runner.indexOf(
+    "event => isExpectedRuntimeLogEvent(event, 'admin.launcher-binding')",
+    readGeometry,
+  );
   const clickGesture = runner.indexOf('await page.mouse.click(point.x, point.y);', readGeometry);
-  assert.ok(bindingRead > readGeometry && clickGesture > bindingRead, 'read the latest launcher binding before tapping');
-  assert.ok(runner.includes('if (latestBinding === undefined || !adminLauncherBindingReady(latestBinding, \'PRIMARY\'))'));
-  assert.ok(runner.includes('event => adminLauncherBindingReady(event, \'PRIMARY\')'));
-  assert.ok(runner.includes("eventCount: 5"));
+  assert.ok(
+    bindingRead > readGeometry && clickGesture > bindingRead,
+    'read the latest launcher binding before tapping',
+  );
+  assert.ok(
+    runner.includes("if (latestBinding === undefined || !adminLauncherBindingReady(latestBinding, 'PRIMARY'))"),
+  );
+  assert.ok(runner.includes("event => adminLauncherBindingReady(event, 'PRIMARY')"));
+  assert.ok(runner.includes('eventCount: 5'));
   assert.ok(runner.includes('manifest.lastWebEventWait = {'));
   assert.ok(runner.includes('const root = page.getByTestId(`${integrationName}:test-expo:root`);'));
   assert.ok(runner.includes("const candidates = [element, ...element.querySelectorAll('*')];"));
@@ -1195,6 +1213,27 @@ test('TDS log projection keeps run-window lifecycle diagnostics and excludes una
   assert.throws(
     () => projectManagedTdsLogLines([], 'tds-a', '2026-10-03T10:00:00.000+09:00', '2026-10-03T10:00:02.500+09:00', -1),
     /WEB_TDS_LOG_PROJECTION_INPUT_INVALID/u,
+  );
+});
+
+test('managed activation backend log projection keeps request identity and excludes unrelated lines', () => {
+  const projected = projectManagedTerminalActivationBackendLogLines(
+    [
+      '2026-10-03T10:00:01.123+09:00 INFO com.example.SecurityDiagnosticRecorder : request-completed correlationId=corr-1 requestId=req-1 operationId=activateTerminal routeTemplate=/api/terminal/group-workspaces/{groupWorkspaceKey}/activation owner=terminal-binding consumerFace=terminal event=REQUEST_COMPLETED phase=EDGE outcome=SUCCEEDED status=200 databaseOperationCount=9 credentialSecret=discard',
+      '2026-10-03T10:00:02.123+09:00 INFO com.example.SecurityDiagnosticRecorder : request-completed correlationId=corr-2 requestId=req-2 operationId=route.unresolved routeTemplate=/health owner=unknown consumerFace=unknown event=REQUEST_COMPLETED phase=EDGE outcome=SUCCEEDED status=200 databaseOperationCount=0',
+      '2026-10-03T10:00:03.123+09:00 INFO com.example.SecurityDiagnosticRecorder : request-completed correlationId=corr-outside requestId=req-outside operationId=activateTerminal routeTemplate=/api/terminal/group-workspaces/{groupWorkspaceKey}/activation owner=terminal-binding consumerFace=terminal event=REQUEST_COMPLETED phase=EDGE outcome=SUCCEEDED status=200 databaseOperationCount=9',
+    ],
+    '2026-10-03T10:00:00.000+09:00',
+    '2026-10-03T10:00:02.000+09:00',
+  );
+  assert.equal(projected.length, 1);
+  assert.equal(projected[0].event, 'REQUEST_COMPLETED');
+  assert.equal(projected[0].requestId, 'req-1');
+  assert.equal(projected[0].databaseOperationCount, 9);
+  assert.equal(JSON.stringify(projected).includes('discard'), false);
+  assert.throws(
+    () => projectManagedTerminalActivationBackendLogLines([], 'not-a-time', '2026-10-03T10:00:02.000Z'),
+    /WEB_TERMINAL_BACKEND_LOG_PROJECTION_INPUT_INVALID/u,
   );
 });
 

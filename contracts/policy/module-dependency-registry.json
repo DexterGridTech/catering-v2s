@@ -99,6 +99,12 @@
       "sourceRoot": "apps/backend/catering-business-server/modules/terminal-binding",
       "ownerSchema": "terminal_binding",
       "commandApiPackages": ["com.catering.v2s.terminalbinding.api"]
+    },
+    {
+      "moduleKey": "terminal-control",
+      "sourceRoot": "apps/backend/catering-business-server/modules/terminal-control",
+      "ownerSchema": "terminal_control",
+      "commandApiPackages": ["com.catering.v2s.terminalcontrol.api"]
     }
   ],
   "edges": [
@@ -547,6 +553,36 @@
       "rationale": "Terminal-binding rechecks group-workspace enablement inside the activation transaction.",
       "queryId": "terminal-binding-activation-facts",
       "initiatingModule": "terminal-binding",
+      "referencedSchemaObject": "platform_workspace.group_workspace"
+    },
+    {
+      "edgeId": "v2s-task-read-terminal-control-binding",
+      "edgeKind": "TASK_READ",
+      "fromModule": "terminal-control",
+      "toModule": "terminal-binding",
+      "rationale": "Terminal-control validates the current binding identity before it accepts an online command request.",
+      "queryId": "terminal-control-online-invocation-target",
+      "initiatingModule": "terminal-control",
+      "referencedSchemaObject": "terminal_binding.latest_binding"
+    },
+    {
+      "edgeId": "v2s-task-read-terminal-control-terminal",
+      "edgeKind": "TASK_READ",
+      "fromModule": "terminal-control",
+      "toModule": "store-terminal",
+      "rationale": "Terminal-control validates that the bound terminal remains enabled and resolves its store target.",
+      "queryId": "terminal-control-online-invocation-target",
+      "initiatingModule": "terminal-control",
+      "referencedSchemaObject": "store_terminal.terminal"
+    },
+    {
+      "edgeId": "v2s-task-read-terminal-control-workspace",
+      "edgeKind": "TASK_READ",
+      "fromModule": "terminal-control",
+      "toModule": "platform-workspace",
+      "rationale": "Terminal-control rejects online command requests for disabled group workspaces.",
+      "queryId": "terminal-control-online-invocation-target",
+      "initiatingModule": "terminal-control",
       "referencedSchemaObject": "platform_workspace.group_workspace"
     },
     {

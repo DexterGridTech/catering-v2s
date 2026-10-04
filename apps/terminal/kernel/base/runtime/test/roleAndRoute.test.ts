@@ -132,8 +132,8 @@ describe('runtime role and route boundaries', () => {
       },
       flushPersistence: async () => ({status: 'succeeded', writtenKeys: [], removedKeys: []}),
       subscribeState: () => () => undefined,
-      dispatchCommand: async definition => {
-        order.push(definition.commandName);
+      dispatchCommand: async definitionOrName => {
+        order.push(typeof definitionOrName === 'string' ? definitionOrName : definitionOrName.commandName);
         return {requestId: null, commandId: createCommandId(), status: 'completed', actorResults: []};
       },
       requestApplicationReset: () => undefined,

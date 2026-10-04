@@ -6,6 +6,7 @@ import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.app.edge.operations.organization.OperationsTerminalActivationProblem;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.app.edge.terminal.TerminalActivationProblem;
+import com.catering.v2s.app.edge.terminal.TerminalDataReadProblem;
 import com.catering.v2s.app.edge.terminal.TerminalDeviceCredentialProblem;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
@@ -706,6 +707,11 @@ public final class ContractProblemAdvice {
 
     @ExceptionHandler(TerminalActivationProblem.class)
     ResponseEntity<Problem> terminalActivation(TerminalActivationProblem exception, HttpServletRequest request) {
+        return problem(exception.status(), exception.code(), exception.detail(), request);
+    }
+
+    @ExceptionHandler(TerminalDataReadProblem.class)
+    ResponseEntity<Problem> terminalDataRead(TerminalDataReadProblem exception, HttpServletRequest request) {
         return problem(exception.status(), exception.code(), exception.detail(), request);
     }
 

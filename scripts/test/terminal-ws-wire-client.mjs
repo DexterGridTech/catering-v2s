@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import {createHash, randomBytes} from 'node:crypto';
+import {createHash, randomBytes, randomUUID} from 'node:crypto';
 import {createConnection} from 'node:net';
 import {createInflateRaw, deflateRawSync, inflateRawSync, constants as zlibConstants} from 'node:zlib';
 import {createInterface} from 'node:readline';
@@ -230,10 +230,14 @@ const SESSION_PROBE_SCENARIOS = new Set([
   'terminal.connection.history-records',
   'terminal.connection.history-outage-bounded',
   'terminal.connection.vs13.cross-node-recovery',
+  'terminal.connection.topic.active-store-subscription',
+  'terminal.connection.remote-command',
 ]);
 
 const SERVER_ERROR_SCENARIOS = new Set(['terminal.connection.vs12.auth-during-outage']);
 const TRACKED_CAPACITY_SCENARIOS = new Set(['terminal.connection.vs8.tracked-capacity']);
+const TOPIC_SUBSCRIPTION_SCENARIO = 'terminal.connection.topic.active-store-subscription';
+const REMOTE_COMMAND_SCENARIO = 'terminal.connection.remote-command';
 
 function withUnknownMessageField(message) {
   return {
@@ -277,6 +281,7 @@ const SUPPORTED_SCENARIOS = new Set([
   ...OFFER_SCENARIOS,
   ...FRAME_SCENARIOS,
   ...COMPRESSION_SESSION_SCENARIOS,
+  TOPIC_SUBSCRIPTION_SCENARIO,
 ]);
 
 const expectedCloseForRequest = request => {
@@ -334,6 +339,8 @@ export function parseControlRequest(contents) {
     'extensionOffer',
     'deferAuthentication',
     'serverCloseTimeoutMs',
+    'topicSubscription',
+    'remoteOperation',
   ]);
   if (!request || typeof request !== 'object' || Array.isArray(request)
       || Object.keys(request).some(field => !allowedControlFields.has(field))
@@ -386,6 +393,7 @@ export function parseControlRequest(contents) {
     V10_SCENARIOS.has(request.scenario) ||
     TRACKED_CAPACITY_SCENARIOS.has(request.scenario) ||
     SESSION_PROBE_SCENARIOS.has(request.scenario) ||
+    request.scenario === TOPIC_SUBSCRIPTION_SCENARIO ||
     SERVER_ERROR_SCENARIOS.has(request.scenario) ||
     COMPRESSION_SESSION_SCENARIOS.has(request.scenario) ||
     request.scenario === 'terminal.connection.frame.raw-overflow' ||
@@ -453,6 +461,7 @@ export function parseControlRequest(contents) {
     || request.scenario === 'terminal.connection.auth.store-disabled-active'
     || TRACKED_CAPACITY_SCENARIOS.has(request.scenario)
     || SESSION_PROBE_SCENARIOS.has(request.scenario)
+    || request.scenario === TOPIC_SUBSCRIPTION_SCENARIO
     || SERVER_ERROR_SCENARIOS.has(request.scenario)
     || OFFER_SCENARIOS.has(request.scenario)
     || FRAME_SCENARIOS.has(request.scenario)
@@ -472,6 +481,36 @@ export function parseControlRequest(contents) {
   if (request.scenario === 'terminal.connection.compression.session-fallback' && request.extensionOffer != null) {
     throw new Error('TERMINAL_WIRE_CONTROL_EXTENSION_OFFER_FORBIDDEN');
   }
+  let topicSubscription = null;
+  if (request.scenario === TOPIC_SUBSCRIPTION_SCENARIO) {
+    const topic = request.topicSubscription;
+    if (!topic || typeof topic !== 'object' || Array.isArray(topic)
+        || Object.keys(topic).sort().join(',') !== 'lastAcceptedTimeEpochMillis,ownerRef,subscriptionId,topicKey'
+        || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(topic.subscriptionId)
+        || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(topic.ownerRef)
+        || topic.topicKey !== 'STORE'
+        || !Number.isSafeInteger(topic.lastAcceptedTimeEpochMillis)
+        || topic.lastAcceptedTimeEpochMillis < 0) {
+      throw new Error('TERMINAL_WIRE_TOPIC_SUBSCRIPTION_INVALID');
+    }
+    topicSubscription = Object.freeze({...topic});
+  } else if (request.topicSubscription !== undefined) {
+    throw new Error('TERMINAL_WIRE_TOPIC_SUBSCRIPTION_FORBIDDEN');
+  }
+  let remoteOperation = null;
+  if (request.scenario === REMOTE_COMMAND_SCENARIO) {
+    const remote = request.remoteOperation;
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+    if (!remote || typeof remote !== 'object' || Array.isArray(remote)
+        || Object.keys(remote).sort().join(',') !== 'commandName,operationId,requestId'
+        || !uuid.test(remote.operationId) || !uuid.test(remote.requestId)
+        || remote.commandName !== 'kernel.base.runtime.hello-world') {
+      throw new Error('TERMINAL_WIRE_REMOTE_OPERATION_INVALID');
+    }
+    remoteOperation = Object.freeze({...remote});
+  } else if (request.remoteOperation !== undefined) {
+    throw new Error('TERMINAL_WIRE_REMOTE_OPERATION_FORBIDDEN');
+  }
   if (!request.extensionOffer && request.extensionOffer !== null) {
     // Missing means no extension; null is the explicit no-extension form used by Java.
   }
@@ -485,6 +524,8 @@ export function parseControlRequest(contents) {
     expectedClose,
     markerId: requiresMarker ? request.markerId : null,
     serverCloseTimeoutMs: request.serverCloseTimeoutMs ?? FRAME_DEADLINE_MS,
+    topicSubscription,
+    remoteOperation,
   });
 }
 
@@ -1089,6 +1130,9 @@ async function runSessionProbe(request, inputIterator) {
     }
 
     let pongCount = 0;
+    if (request.scenario === REMOTE_COMMAND_SCENARIO) {
+      return await runRemoteCommandProbe(socket, request, eventTypes, sessionId, readyMessage);
+    }
     for (;;) {
       setDiagnosticStage('SESSION_PROBE_WAITING_FOR_COMMAND');
       const {value, done} = await inputIterator.next();
@@ -1185,6 +1229,116 @@ async function runSessionProbe(request, inputIterator) {
   }
 }
 
+async function runRemoteCommandProbe(socket, request, eventTypes, sessionId, readyMessage) {
+  const expected = request.remoteOperation;
+  const readMessage = async expectedType => {
+    for (;;) {
+      const event = await socket.readEvent(FRAME_DEADLINE_MS);
+      if (event.kind === 'close') throw new Error('TERMINAL_WIRE_REMOTE_COMMAND_CLOSED_EARLY');
+      if (event.kind !== 'message') continue;
+      if (event.type === 'PING') {
+        socket.sendText(JSON.stringify({type: 'PONG', seq: event.message.seq, serverTs: new Date().toISOString()}));
+        continue;
+      }
+      if (event.type !== expectedType) throw new Error('TERMINAL_WIRE_REMOTE_COMMAND_MESSAGE_ORDER_INVALID');
+      return event.message;
+    }
+  };
+  setDiagnosticStage('SESSION_PROBE_WAITING_FOR_COMMAND');
+  process.stderr.write(
+    `TERMINAL_WIRE_STAGE=REMOTE_COMMAND_WAITING markerId=${request.markerId} `
+      + `sessionId=${sessionId}\n`,
+  );
+  const command = await readMessage('REMOTE_COMMAND');
+  setDiagnosticStage('SESSION_PROBE_COMMAND_RECEIVED');
+  process.stderr.write(
+    `TERMINAL_WIRE_STAGE=REMOTE_COMMAND_RECEIVED markerId=${request.markerId} `
+      + `fields=${Object.keys(command).sort().join(',')} commandName=${command.commandName ?? 'NONE'} `
+      + `bindingGeneration=${Number.isSafeInteger(command.bindingGeneration) ? command.bindingGeneration : 'INVALID'}\n`,
+  );
+  const credentialGeneration = Number(request.authenticate.terminalCredential.split('.', 1)[0]);
+  if (command.remoteOperationId !== expected.operationId || command.requestId !== expected.requestId
+      || command.commandName !== expected.commandName || command.bindingGeneration !== credentialGeneration) {
+    throw new Error('TERMINAL_WIRE_REMOTE_COMMAND_IDENTITY_MISMATCH');
+  }
+  const reports = [
+    {phase: 'RECEIVED'},
+    {phase: 'STARTED'},
+    {
+      phase: 'COMPLETED',
+      result: {
+        actorResults: [{
+          actorKey: 'kernel.base.runtime.hello-world',
+          status: 'completed',
+          startedAt: Date.now(),
+          completedAt: Date.now(),
+          result: {message: 'helloWorld'},
+          error: null,
+        }],
+      },
+    },
+  ];
+  for (const report of reports) {
+    const reportId = randomUUID();
+    socket.sendText(JSON.stringify({
+      type: 'REMOTE_REPORT',
+      reportId,
+      remoteOperationId: expected.operationId,
+      requestId: expected.requestId,
+      phase: report.phase,
+      occurredAt: new Date().toISOString(),
+      ...(report.result === undefined ? {} : {result: report.result}),
+    }));
+    process.stderr.write(
+      `TERMINAL_WIRE_STAGE=REMOTE_REPORT_SENT markerId=${request.markerId} phase=${report.phase}\n`,
+    );
+    const acknowledgement = await readMessage('REMOTE_REPORT_ACK');
+    if (acknowledgement.reportId !== reportId
+        || acknowledgement.remoteOperationId !== expected.operationId
+        || acknowledgement.requestId !== expected.requestId) {
+      throw new Error('TERMINAL_WIRE_REMOTE_REPORT_ACK_IDENTITY_MISMATCH');
+    }
+    eventTypes.push('REMOTE_REPORT_ACK');
+    process.stderr.write(
+      `TERMINAL_WIRE_STAGE=REMOTE_REPORT_ACKNOWLEDGED markerId=${request.markerId} phase=${report.phase}\n`,
+    );
+  }
+  const staleStartedReportId = randomUUID();
+  socket.sendText(JSON.stringify({
+    type: 'REMOTE_REPORT',
+    reportId: staleStartedReportId,
+    remoteOperationId: expected.operationId,
+    requestId: expected.requestId,
+    phase: 'STARTED',
+    occurredAt: '2026-10-01T00:00:00.000Z',
+  }));
+  process.stderr.write(
+    `TERMINAL_WIRE_STAGE=REMOTE_REPORT_SENT markerId=${request.markerId} phase=STALE_STARTED_AFTER_COMPLETED\n`,
+  );
+  const staleAcknowledgement = await readMessage('REMOTE_REPORT_ACK');
+  if (staleAcknowledgement.reportId !== staleStartedReportId
+      || staleAcknowledgement.remoteOperationId !== expected.operationId
+      || staleAcknowledgement.requestId !== expected.requestId) {
+    throw new Error('TERMINAL_WIRE_STALE_REPORT_ACK_IDENTITY_MISMATCH');
+  }
+  eventTypes.push('REMOTE_REPORT_ACK');
+  process.stderr.write(
+    `TERMINAL_WIRE_STAGE=REMOTE_REPORT_ACKNOWLEDGED markerId=${request.markerId} phase=STALE_STARTED_AFTER_COMPLETED\n`,
+  );
+  socket.sendClose(1000, '');
+  const close = await waitForServerClose(socket);
+  if (close !== null && close.code !== 1000) throw new Error('TERMINAL_WIRE_NORMAL_CLOSE_MISMATCH');
+  return {
+    ...describeHandshake(socket),
+    eventTypes,
+    sessionId,
+    heartbeatIntervalMs: readyMessage.heartbeatIntervalMs,
+    heartbeatTimeoutMs: readyMessage.heartbeatTimeoutMs,
+    remoteOperationId: expected.operationId,
+    clientCloseSent: 1000,
+  };
+}
+
 async function sendSessionProbePing(socket, request, eventTypes, sequence, lastRttMs, writeDiagnostic) {
   const started = process.hrtime.bigint();
   const ping = request.scenario === 'terminal.connection.vs3.unknown-ping-field'
@@ -1209,6 +1363,17 @@ async function sendSessionProbePing(socket, request, eventTypes, sequence, lastR
 async function readSessionReady(socket, eventTypes, markerId) {
   const ready = await socket.readEvent(FRAME_DEADLINE_MS);
   if (ready.kind !== 'message' || ready.type !== 'SESSION_READY') {
+    setDiagnosticStage('SESSION_READY_UNEXPECTED_FRAME');
+    const kind = typeof ready?.kind === 'string' ? ready.kind : 'unknown';
+    const type = typeof ready?.type === 'string' ? ready.type : 'NONE';
+    const closeCode = kind === 'close' && Number.isInteger(ready.code) ? ready.code : 'NONE';
+    const closeReason = kind === 'close' && /^[A-Z0-9_]{1,48}$/.test(ready.reason ?? '')
+      ? ready.reason
+      : 'NONE';
+    process.stderr.write(
+      `TERMINAL_WIRE_STAGE=SESSION_READY_UNEXPECTED_FRAME markerId=${markerId} `
+        + `kind=${kind} type=${type} closeCode=${closeCode} closeReason=${closeReason}\n`,
+    );
     throw new Error('TERMINAL_WIRE_SESSION_READY_MISSING');
   }
   const sessionId = ready.message.sessionId;
@@ -1222,6 +1387,108 @@ async function readSessionReady(socket, eventTypes, markerId) {
   );
   setDiagnosticStage('SESSION_PROBE_READY');
   return ready.message;
+}
+
+async function runTopicSubscriptionProbe(request, inputIterator) {
+  const socket = await RawWebSocketClient.connect(request.url, null);
+  const eventTypes = [];
+  try {
+    socket.sendText(JSON.stringify(request.authenticate));
+    const ready = await readSessionReady(socket, eventTypes, request.markerId);
+    const topic = request.topicSubscription;
+    socket.sendText(JSON.stringify({
+      type: 'TOPIC_SUBSCRIBE',
+      subscriptionId: topic.subscriptionId,
+      topicKey: topic.topicKey,
+      ownerRef: topic.ownerRef,
+      lastAcceptedTimeEpochMillis: topic.lastAcceptedTimeEpochMillis,
+    }));
+    setDiagnosticStage('SESSION_PROBE_WAITING_FOR_COMMAND');
+    const changed = await socket.readEvent(FRAME_DEADLINE_MS);
+    if (changed.kind !== 'message' || changed.type !== 'TOPIC_CHANGED') {
+      throw new Error('TERMINAL_WIRE_TOPIC_CHANGED_MISSING');
+    }
+    requireKnownMessageFields(
+      changed.message,
+      ['notificationId', 'ownerRef', 'subscriptionId', 'topicKey', 'topicTimeEpochMillis', 'type'],
+      'TERMINAL_WIRE_TOPIC_CHANGED_SHAPE_INVALID',
+    );
+    if (changed.message.type !== 'TOPIC_CHANGED'
+        || changed.message.subscriptionId !== topic.subscriptionId
+        || changed.message.topicKey !== topic.topicKey
+        || changed.message.ownerRef !== topic.ownerRef
+        || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(changed.message.notificationId)
+        || !Number.isSafeInteger(changed.message.topicTimeEpochMillis)
+        || changed.message.topicTimeEpochMillis <= topic.lastAcceptedTimeEpochMillis) {
+      throw new Error('TERMINAL_WIRE_TOPIC_CHANGED_SHAPE_INVALID');
+    }
+    eventTypes.push(changed.type);
+    socket.sendText(JSON.stringify({
+      type: 'TOPIC_ACCEPT',
+      notificationId: changed.message.notificationId,
+      subscriptionId: topic.subscriptionId,
+      topicKey: topic.topicKey,
+      ownerRef: topic.ownerRef,
+      acceptedTimeEpochMillis: changed.message.topicTimeEpochMillis,
+    }));
+
+    process.stdout.write(`${JSON.stringify({
+      stage: 'BASELINE_ACCEPTED',
+      scenario: request.scenario,
+      subscriptionId: topic.subscriptionId,
+      topicTimeEpochMillis: changed.message.topicTimeEpochMillis,
+    })}\n`);
+    const control = await inputIterator.next();
+    if (control.done || Buffer.byteLength(control.value, 'utf8') > MAX_CONTROL_BYTES
+        || control.value !== 'UPDATE_COMMITTED') {
+      throw new Error('TERMINAL_WIRE_TOPIC_UPDATE_CONTROL_INVALID');
+    }
+    setDiagnosticStage('SESSION_PROBE_WAITING_FOR_COMMAND');
+    const updated = await socket.readEvent(FRAME_DEADLINE_MS);
+    if (updated.kind !== 'message' || updated.type !== 'TOPIC_CHANGED') {
+      throw new Error('TERMINAL_WIRE_TOPIC_CHANGE_AFTER_UPDATE_MISSING');
+    }
+    requireKnownMessageFields(
+      updated.message,
+      ['notificationId', 'ownerRef', 'subscriptionId', 'topicKey', 'topicTimeEpochMillis', 'type'],
+      'TERMINAL_WIRE_TOPIC_CHANGED_SHAPE_INVALID',
+    );
+    if (updated.message.type !== 'TOPIC_CHANGED'
+        || updated.message.subscriptionId !== topic.subscriptionId
+        || updated.message.topicKey !== topic.topicKey
+        || updated.message.ownerRef !== topic.ownerRef
+        || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(updated.message.notificationId)
+        || !Number.isSafeInteger(updated.message.topicTimeEpochMillis)
+        || updated.message.topicTimeEpochMillis <= changed.message.topicTimeEpochMillis) {
+      throw new Error('TERMINAL_WIRE_TOPIC_CHANGED_UPDATE_SHAPE_INVALID');
+    }
+    eventTypes.push(updated.type);
+    socket.sendText(JSON.stringify({
+      type: 'TOPIC_ACCEPT',
+      notificationId: updated.message.notificationId,
+      subscriptionId: topic.subscriptionId,
+      topicKey: topic.topicKey,
+      ownerRef: topic.ownerRef,
+      acceptedTimeEpochMillis: updated.message.topicTimeEpochMillis,
+    }));
+    socket.sendClose(1000, '');
+    const close = await waitForServerClose(socket);
+    socket.socket.end();
+    if (close === null) throw new Error('TERMINAL_WIRE_TOPIC_CLIENT_CLOSE_NOT_ACKNOWLEDGED');
+    return {
+      status: 'PASS',
+      scenario: request.scenario,
+      sessionId: ready.sessionId,
+      eventTypes,
+      topicKey: topic.topicKey,
+      baselineTopicTimeEpochMillis: changed.message.topicTimeEpochMillis,
+      topicTimeEpochMillis: updated.message.topicTimeEpochMillis,
+      clientCloseSent: 1000,
+      serverCloseReceived: true,
+    };
+  } finally {
+    socket.destroy();
+  }
 }
 
 async function runOffer(request) {
@@ -1324,6 +1591,7 @@ async function runProtocolFailure(request) {
 async function run(request, inputIterator = null) {
   if (request.scenario === NO_FIRST_FRAME_SCENARIO) return runNoFirstFrame(request);
   if (NO_AUTH_CLOSE_SCENARIOS.has(request.scenario)) return runNoFirstFrame(request);
+  if (request.scenario === TOPIC_SUBSCRIPTION_SCENARIO) return runTopicSubscriptionProbe(request, inputIterator);
   if (SESSION_PROBE_SCENARIOS.has(request.scenario)) return runSessionProbe(request, inputIterator);
   if (request.scenario === 'terminal.connection.topology-probe'
       || AUTH_REJECTION_SCENARIOS.has(request.scenario)
@@ -1341,27 +1609,36 @@ async function run(request, inputIterator = null) {
 
 async function readRequest() {
   const input = createInterface({input: process.stdin, crlfDelay: Infinity});
-  const iterator = input[Symbol.asyncIterator]();
-  const first = await iterator.next();
-  if (first.done) throw new Error('TERMINAL_WIRE_CONTROL_CARDINALITY_INVALID');
-  if (Buffer.byteLength(first.value, 'utf8') > MAX_CONTROL_BYTES) {
-    throw new Error('TERMINAL_WIRE_CONTROL_SIZE_INVALID');
+  try {
+    const iterator = input[Symbol.asyncIterator]();
+    const first = await iterator.next();
+    if (first.done) throw new Error('TERMINAL_WIRE_CONTROL_CARDINALITY_INVALID');
+    if (Buffer.byteLength(first.value, 'utf8') > MAX_CONTROL_BYTES) {
+      throw new Error('TERMINAL_WIRE_CONTROL_SIZE_INVALID');
+    }
+    const request = parseControlRequest(first.value);
+    if (SESSION_PROBE_SCENARIOS.has(request.scenario)) {
+      return {request, inputIterator: iterator, controlInput: input};
+    }
+    const extra = [];
+    for await (const line of iterator) {
+      if (line.trim() !== '') extra.push(line);
+    }
+    if (extra.length > 0) throw new Error('TERMINAL_WIRE_CONTROL_CARDINALITY_INVALID');
+    input.close();
+    return {request, inputIterator: null, controlInput: input};
+  } catch (failure) {
+    input.close();
+    throw failure;
   }
-  const request = parseControlRequest(first.value);
-  if (SESSION_PROBE_SCENARIOS.has(request.scenario)) return {request, inputIterator: iterator};
-  const extra = [];
-  for await (const line of iterator) {
-    if (line.trim() !== '') extra.push(line);
-  }
-  if (extra.length > 0) throw new Error('TERMINAL_WIRE_CONTROL_CARDINALITY_INVALID');
-  input.close();
-  return {request, inputIterator: null};
 }
 
 async function main() {
   let scenario = 'terminal.connection.topology-probe';
+  let controlInput = null;
   try {
-    const {request, inputIterator} = await readRequest();
+    const {request, inputIterator, controlInput: openedInput} = await readRequest();
+    controlInput = openedInput;
     scenario = request.scenario;
     diagnosticScenario = scenario;
     diagnosticMarkerId = request.markerId ?? 'NONE';
@@ -1372,11 +1649,24 @@ async function main() {
   } catch (failure) {
     setDiagnosticStage('CLIENT_FAILED');
     const failureCategory = classifyWireFailureForDiagnostics(failure);
-    process.stderr.write(`TERMINAL_WIRE_STAGE=CLIENT_FAILED scenario=${scenario} failureCategory=${failureCategory}\n`);
+    const failureName = failure instanceof Error && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(failure.name)
+      ? failure.name
+      : 'NON_ERROR';
+    const stackLine = failure instanceof Error ? failure.stack?.split('\n')[1] ?? '' : '';
+    const locationMatch = /terminal-ws-wire-client\.mjs:(\d+):(\d+)\)?$/.exec(stackLine.trim());
+    const failureLocation = locationMatch
+      ? `terminal-ws-wire-client.mjs:${locationMatch[1]}:${locationMatch[2]}`
+      : 'UNKNOWN';
+    process.stderr.write(
+      `TERMINAL_WIRE_STAGE=CLIENT_FAILED scenario=${scenario} failureCategory=${failureCategory} `
+        + `failureName=${failureName} failureLocation=${failureLocation}\n`,
+    );
     process.stdout.write(
-      `${JSON.stringify({scenario, status: 'FAIL', failureCategory})}\n`,
+      `${JSON.stringify({scenario, status: 'FAIL', failureCategory, failureName, failureLocation})}\n`,
     );
     process.exitCode = 1;
+  } finally {
+    controlInput?.close();
   }
 }
 

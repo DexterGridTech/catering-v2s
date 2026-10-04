@@ -44,7 +44,6 @@ public final class ExtensionOperationBindings {
     };
   }
 
-
   public OperationBindingTypes.Wire.ExtensionDefinition replaceExtensionDefinition(OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.ExtensionDefinitionUpdateRequest request) {
     return adapters.replaceExtensionDefinition(REPLACE_EXTENSION_DEFINITION_DESCRIPTOR, context, request);
   }

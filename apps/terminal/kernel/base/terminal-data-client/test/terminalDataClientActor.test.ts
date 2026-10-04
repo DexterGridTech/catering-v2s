@@ -6,9 +6,14 @@ import {
   cancelTerminaActivationCommand,
   connectTerminalCommand,
   disconnectTerminalCommand,
+  subscribeTerminalTopicCommand,
+  unsubscribeTerminalTopicCommand,
+  acceptTerminalTopicNotificationCommand,
+  terminalTopicChangedCommand,
   initializeTerminalDataClientCommand,
   terminalHeartbeatTickCommand,
   terminalTransportEventCommand,
+  readTerminalDataCommand,
 } from '../src/features/commands/terminalDataClientCommands';
 import {
   terminalDataClientActions,
@@ -23,18 +28,32 @@ import {
   selectActivationState,
   selectConnectionLatency,
   selectConnectionState,
+  selectTerminalTopicSubscriptions,
 } from '../src/selectors/selectTerminalDataClientState';
 import type {ActorExecutionContext, CommandDefinition} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import type {TransportConnectionEvent} from '@catering-v2s/kernel-base-transport';
+import type {RemoteOperationFact} from '../src/types/client';
 
 const createActivationTestLogger = () => {
   const events: unknown[] = [];
   const logger = {
-    debug: vi.fn((event: unknown) => { events.push(event); return {status: 'succeeded'}; }),
-    info: vi.fn((event: unknown) => { events.push(event); return {status: 'succeeded'}; }),
-    warn: vi.fn((event: unknown) => { events.push(event); return {status: 'succeeded'}; }),
-    error: vi.fn((event: unknown) => { events.push(event); return {status: 'succeeded'}; }),
+    debug: vi.fn((event: unknown) => {
+      events.push(event);
+      return {status: 'succeeded'};
+    }),
+    info: vi.fn((event: unknown) => {
+      events.push(event);
+      return {status: 'succeeded'};
+    }),
+    warn: vi.fn((event: unknown) => {
+      events.push(event);
+      return {status: 'succeeded'};
+    }),
+    error: vi.fn((event: unknown) => {
+      events.push(event);
+      return {status: 'succeeded'};
+    }),
     scope: vi.fn(),
     withContext: vi.fn(),
   };
@@ -49,7 +68,218 @@ const actorState = (clientState: unknown, instanceMode: 'MASTER' | 'SLAVE' = 'MA
     'kernel.base.runtime.instance-mode': {instanceMode},
   }) as StateRoot;
 
+const remoteOperationFact = (index: number, phase: RemoteOperationFact['phase'] = 'COMPLETED'): RemoteOperationFact => ({
+  remoteOperationId: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+  requestId: `10000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+  localRequestId: `20000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+  groupWorkspaceKey: 'workspace-1',
+  terminalRef: 'terminal-1',
+  bindingGeneration: 7,
+  addressName: 'dev',
+  configRevision: 4,
+  commandName: 'test.remote-noop',
+  phase,
+  reportId: `30000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+  occurredAt: '2027-01-01T00:00:00.000Z',
+  ...(phase === 'UNKNOWN' ? {errorCode: 'REMOTE_RESULT_UNKNOWN'} : {resultJson: '{"actorResults":[]}'}),
+});
+
+const createRemoteOperationHarness = (options?: {
+  initialFacts?: readonly RemoteOperationFact[];
+  dispatchCommand?: ActorExecutionContext['dispatchCommand'];
+  flushPersistence?: ActorExecutionContext['flushPersistence'];
+}) => {
+  const secret = 'R'.repeat(43);
+  let state = terminalDataClientReducer(undefined, {type: 'test/init'});
+  state = terminalDataClientReducer(state, terminalDataClientActions.replaceCredential({
+    groupWorkspaceKey: 'workspace-1', terminalRef: 'terminal-1', storeRef: 'store-1', deviceId: 'device-1',
+    bindingGeneration: 7, credentialSecret: secret,
+  }));
+  for (const fact of options?.initialFacts ?? []) {
+    state = terminalDataClientReducer(state, terminalDataClientActions.putRemoteOperation(fact));
+  }
+  const sent: string[] = [];
+  const connection = {send: vi.fn(async (raw: string) => { sent.push(raw); }), subscribe: vi.fn(() => () => undefined)};
+  const transport = {
+    start: vi.fn(async () => connection), ready: vi.fn(async () => undefined), invalid: vi.fn(async () => undefined),
+    stop: vi.fn(async () => undefined), executeHttp: vi.fn(), reportHttpAddressAvailable: vi.fn(async () => undefined),
+  };
+  const dispatchCommand = options?.dispatchCommand ?? vi.fn(async () => ({
+    requestId: 'local-request', commandId: 'local-command', status: 'completed' as const,
+    actorResults: [{actorKey: 'test.actor', status: 'completed' as const, startedAt: 1, completedAt: 2, result: {changed: true}, error: null}],
+  }));
+  const actor = createTerminalDataClientActor({
+    transport, businessServerName: 'terminal-business-api', createCredentialSecret: () => secret,
+    now: () => 1_799_999_640_000, appVersion: 'test', surfaceForm: 'laptop',
+  });
+  const makeContext = (commandName: string, payload: unknown): ActorExecutionContext => ({
+    runtimeId: 'test-runtime', localNodeId: 'test-node', platformPorts: {},
+    command: {commandName, payload, requestId: 'root-request', commandId: 'root-command'} as never,
+    actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
+    getState: () => actorState(state),
+    dispatchAction: (action: unknown) => { state = terminalDataClientReducer(state, action as never); return action as never; },
+    flushPersistence: options?.flushPersistence ?? (async () => ({status: 'succeeded'})),
+    subscribeState: () => () => undefined,
+    dispatchCommand: dispatchCommand as never,
+    requestApplicationReset: () => undefined,
+  }) as unknown as ActorExecutionContext;
+  const handler = actor.actor.handlers.find(item => item.commandName === terminalTransportEventCommand.commandName)!;
+  const runEvent = (event: TransportConnectionEvent) => handler.handle(makeContext(terminalTransportEventCommand.commandName, {event}));
+  const command = (remoteOperationId = '5b7a27c6-2d14-4df5-9e13-07e58798a9cb', requestId = '1e947a10-c7d6-4e37-93e7-587e7a90c111') => ({
+    type: 'REMOTE_COMMAND', remoteOperationId, requestId, bindingGeneration: 7,
+    commandName: 'test.remote-noop', parameters: {scope: 'fixture'},
+  });
+  const connectReady = async (configRevision = 4) => {
+    await actor.actor.handlers.find(item => item.commandName === connectTerminalCommand.commandName)!
+      .handle(makeContext(connectTerminalCommand.commandName, {}));
+    await runEvent({type: 'open', addressName: 'dev', configRevision});
+    await runEvent({type: 'message', raw: JSON.stringify({
+      type: 'SESSION_READY', sessionId: 'session-1', nodeId: 'tds-1', serverTime: '2027-01-01T00:00:00Z',
+      heartbeatIntervalMs: 1_000, heartbeatTimeoutMs: 3_000,
+    })});
+  };
+  return {
+    actor, transport, connection, sent, state: () => state, dispatchCommand, makeContext, runEvent, command, connectReady,
+    dispose: () => actor.dispose(),
+  };
+};
+
 describe('terminal-data-client activation command actor', () => {
+  it('injects the active credential into generated read operations and replaces caller store identity', async () => {
+    const secret = 'A'.repeat(43);
+    const executeHttp = vi.fn(async () => ({
+      kind: 'failure' as const,
+      category: 'not-delivered' as const,
+      code: 'TEST_STOP',
+    }));
+    const actorRuntime = createTerminalDataClientActor({
+      transport: {
+        start: vi.fn(),
+        ready: vi.fn(),
+        invalid: vi.fn(),
+        stop: vi.fn(),
+        executeHttp,
+        reportHttpAddressAvailable: vi.fn(),
+      },
+      businessServerName: 'terminal-business-api',
+      createCredentialSecret: () => secret,
+      now: () => 10,
+      appVersion: 'test',
+      surfaceForm: 'laptop',
+    });
+    const state = terminalDataClientReducer(undefined, {type: 'test/init'});
+    const activeState = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'workspace-1',
+        terminalRef: 'terminal-1',
+        storeRef: 'store-authoritative',
+        deviceId: 'device-1',
+        bindingGeneration: 9,
+        credentialSecret: secret,
+      }),
+    );
+    const handler = actorRuntime.actor.handlers.find(
+      candidate => candidate.commandName === readTerminalDataCommand.commandName,
+    );
+    if (handler === undefined) throw new Error('terminal data read handler missing');
+    const context = {
+      runtimeId: 'test-runtime',
+      localNodeId: 'test-node',
+      platformPorts: {logger: createActivationTestLogger().logger},
+      command: {
+        commandName: readTerminalDataCommand.commandName,
+        commandId: 'read-store',
+        requestId: 'read-store',
+        payload: {operationId: 'terminalReadStoreBasic', pathParameters: {storeRef: 'caller-store'}},
+      },
+      actor: {
+        actorKey: actorRuntime.actor.actorKey,
+        moduleName: actorRuntime.actor.moduleName,
+        actorName: actorRuntime.actor.actorName,
+      },
+      getState: () => actorState(activeState),
+      dispatchAction: (action: unknown) => action as never,
+      flushPersistence: async () => ({status: 'succeeded'}),
+      subscribeState: () => () => undefined,
+      dispatchCommand: async () => ({status: 'completed'}),
+      requestApplicationReset: vi.fn(),
+    } as unknown as ActorExecutionContext;
+
+    await expect(handler.handle(context)).resolves.toMatchObject({kind: 'failure', code: 'TEST_STOP'});
+    expect(executeHttp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        serverName: 'terminal-business-api',
+        method: 'GET',
+        pathAndQuery: '/stores/store-authoritative/basic',
+        headers: {
+          Authorization: `Terminal 9.${secret}`,
+          'X-Terminal-Device-Id': 'device-1',
+          'X-Terminal-Ref': 'terminal-1',
+        },
+      }),
+    );
+    actorRuntime.dispose();
+  });
+
+  it('rejects activation while a topology transition is in progress before reading device identity', async () => {
+    const secret = 'A'.repeat(43);
+    const getDeviceInfo = vi.fn();
+    const actorRuntime = createTerminalDataClientActor({
+      transport: {
+        start: vi.fn(),
+        ready: vi.fn(),
+        invalid: vi.fn(),
+        stop: vi.fn(),
+        executeHttp: vi.fn(),
+        reportHttpAddressAvailable: vi.fn(),
+      },
+      businessServerName: 'terminal-business-api',
+      createCredentialSecret: () => secret,
+      now: () => 1_000,
+      surfaceForm: 'laptop',
+      appVersion: '1.0.0',
+      canActivate: () => false,
+    });
+    const handler = actorRuntime.actor.handlers.find(
+      candidate => candidate.commandName === activateTerminalCommand.commandName,
+    );
+    if (handler === undefined) throw new Error('activate terminal actor handler missing');
+    let state = terminalDataClientReducer(undefined, {type: 'test/init'});
+    const context = {
+      runtimeId: 'test-runtime',
+      localNodeId: 'test-node',
+      platformPorts: {device: {getDeviceInfo}},
+      command: {
+        commandName: activateTerminalCommand.commandName,
+        payload: {activationCode: '12345678'},
+        requestId: 'blocked-activation',
+      },
+      actor: {
+        actorKey: actorRuntime.actor.actorKey,
+        moduleName: actorRuntime.actor.moduleName,
+        actorName: actorRuntime.actor.actorName,
+      },
+      getState: () => actorState(state),
+      dispatchAction: (action: unknown) => {
+        state = terminalDataClientReducer(state, action as never);
+        return action as never;
+      },
+      flushPersistence: async () => ({status: 'succeeded'}),
+      subscribeState: () => () => undefined,
+      dispatchCommand: async () => ({status: 'completed'}),
+      requestApplicationReset: vi.fn(),
+    } as unknown as ActorExecutionContext;
+
+    await expect(handler.handle(context as never)).resolves.toMatchObject({
+      status: 'rejected',
+      reason: 'TOPOLOGY_CHANGE_IN_PROGRESS',
+    });
+    expect(getDeviceInfo).not.toHaveBeenCalled();
+    expect(selectActivationState(actorState(state))).toMatchObject({status: 'inactive'});
+    actorRuntime.dispose();
+  });
+
   it('blocks SLAVE credential actions but allows local disconnect cleanup without touching credentials', async () => {
     const secret = 'A'.repeat(43);
     let state = terminalDataClientReducer(undefined, {type: 'test/init'});
@@ -188,8 +418,8 @@ describe('terminal-data-client activation command actor', () => {
         state,
         terminalDataClientActions.replaceCredential({
           groupWorkspaceKey: 'workspace-1',
-          terminalRef: 'terminal-1',
-          storeRef: 'store-1',
+          terminalRef: '00000000-0000-4000-8000-000000000001',
+          storeRef: '00000000-0000-4000-8000-000000000002',
           deviceId: 'device-1',
           bindingGeneration: 8,
           credentialSecret: secret,
@@ -249,7 +479,7 @@ describe('terminal-data-client activation command actor', () => {
           selectActivationState({[terminalDataClientStateSlice.name]: state} as unknown as StateRoot),
         ).toMatchObject({
           status: 'active',
-          terminalRef: 'terminal-1',
+          terminalRef: '00000000-0000-4000-8000-000000000001',
         });
         expect(transport.invalid).toHaveBeenCalledWith({profileId: 'terminal-data-client', cause: expectedReason});
         expect(reset).not.toHaveBeenCalled();
@@ -275,8 +505,8 @@ describe('terminal-data-client activation command actor', () => {
         correlationId: 'corr-activation-001',
         status: 200,
         body: {
-          terminalRef: 'terminal-1',
-          storeRef: 'store-1',
+          terminalRef: '00000000-0000-4000-8000-000000000001',
+          storeRef: '00000000-0000-4000-8000-000000000002',
           groupWorkspaceKey: 'workspace-1',
           bindingGeneration: 2,
         },
@@ -347,25 +577,34 @@ describe('terminal-data-client activation command actor', () => {
     expect(readback).toMatchObject({status: 'active', bindingGeneration: 2});
     expect(JSON.stringify(readback).includes(secret)).toBe(false);
     expect(second && typeof second === 'object' && 'status' in second ? second.status : '').toBe('activated');
-    expect(activationDiagnostics.events).toEqual(expect.arrayContaining([
-      expect.objectContaining({event: 'activation-request-started', data: expect.objectContaining({operationId: 'activateTerminal'})}),
-      expect.objectContaining({
-        event: 'activation-request-result',
-        data: expect.objectContaining({
-          kind: 'success',
-          status: 200,
-          requestId: 'req-activation-001',
-          correlationId: 'corr-activation-001',
+    expect(activationDiagnostics.events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: 'activation-request-started',
+          data: expect.objectContaining({operationId: 'activateTerminal'}),
         }),
-      }),
-    ]));
+        expect.objectContaining({
+          event: 'activation-request-result',
+          data: expect.objectContaining({
+            kind: 'success',
+            status: 200,
+            requestId: 'req-activation-001',
+            correlationId: 'corr-activation-001',
+          }),
+        }),
+      ]),
+    );
     expect(JSON.stringify(activationDiagnostics.events)).not.toContain(secret);
     expect(JSON.stringify(activationDiagnostics.events)).not.toContain('12345678');
-    expect(dispatchCommand).toHaveBeenCalledTimes(1);
+    expect(dispatchCommand).toHaveBeenCalledTimes(2);
     expect(dispatchCommand).toHaveBeenCalledWith(
       connectTerminalCommand,
       Object.freeze({}),
       expect.objectContaining({requestId: expect.any(String)}),
+    );
+    expect(dispatchCommand).toHaveBeenCalledWith(
+      expect.objectContaining({commandName: expect.stringMatching(/\.activation-succeeded$/)}),
+      expect.objectContaining({terminalRef: '00000000-0000-4000-8000-000000000001', bindingGeneration: 2}),
     );
   });
 
@@ -455,7 +694,12 @@ describe('terminal-data-client activation command actor', () => {
       addressName: 'primary',
       configRevision: 1,
       status: 200,
-      body: {terminalRef: 'terminal-1', storeRef: 'store-1', groupWorkspaceKey: 'workspace-1', bindingGeneration: 7},
+      body: {
+        terminalRef: '00000000-0000-4000-8000-000000000001',
+        storeRef: '00000000-0000-4000-8000-000000000002',
+        groupWorkspaceKey: 'workspace-1',
+        bindingGeneration: 7,
+      },
     };
     // Reverse by HTTP submission order: the first root awaits persistence, so call order need not equal wire order.
     requestResolutions[1]!(response as never);
@@ -691,7 +935,9 @@ describe('terminal-data-client activation command actor', () => {
       }),
     );
     const requests: Array<Record<string, unknown>> = [];
+    const callOrder: string[] = [];
     const executeHttp = vi.fn(async (request: Record<string, unknown>) => {
+      callOrder.push('http');
       requests.push(request);
       if (requests.length === 1)
         return {kind: 'failure' as const, category: 'not-delivered' as const, code: 'NETWORK_ERROR'};
@@ -726,7 +972,9 @@ describe('terminal-data-client activation command actor', () => {
       start: vi.fn(),
       ready: vi.fn(),
       invalid: vi.fn(),
-      stop: vi.fn(async () => undefined),
+      stop: vi.fn(async () => {
+        callOrder.push('stop');
+      }),
       executeHttp,
       reportHttpAddressAvailable: vi.fn(async () => undefined),
     };
@@ -765,22 +1013,26 @@ describe('terminal-data-client activation command actor', () => {
         requestApplicationReset: vi.fn(),
       }) as unknown as ActorExecutionContext;
     const first = await handler.handle(makeContext() as never);
+    expect(callOrder.slice(0, 2)).toEqual(['stop', 'http']);
+    expect(transport.stop).toHaveBeenCalled();
     const second = await handler.handle(makeContext() as never);
     expect(first).toMatchObject({kind: 'failure', category: 'not-delivered'});
     expect(second).toMatchObject({kind: 'business-rejection', errorCode: 'TERMINAL_BINDING_CREDENTIAL_INVALID'});
-    expect(cancellationDiagnostics.events).toEqual(expect.arrayContaining([
-      expect.objectContaining({event: 'cancel-activation-request-started'}),
-      expect.objectContaining({
-        event: 'cancel-activation-request-result',
-        data: expect.objectContaining({
-          kind: 'business-rejection',
-          status: 409,
-          errorCode: 'TERMINAL_BINDING_CREDENTIAL_INVALID',
-          requestId: 'req-cancel-rejected-001',
-          correlationId: 'corr-cancel-rejected-001',
+    expect(cancellationDiagnostics.events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({event: 'cancel-activation-request-started'}),
+        expect.objectContaining({
+          event: 'cancel-activation-request-result',
+          data: expect.objectContaining({
+            kind: 'business-rejection',
+            status: 409,
+            errorCode: 'TERMINAL_BINDING_CREDENTIAL_INVALID',
+            requestId: 'req-cancel-rejected-001',
+            correlationId: 'corr-cancel-rejected-001',
+          }),
         }),
-      }),
-    ]));
+      ]),
+    );
     expect(selectActivationState({[terminalDataClientStateSlice.name]: state} as unknown as StateRoot)).toMatchObject({
       status: 'active',
       terminalRef: 'terminal-1',
@@ -799,24 +1051,28 @@ describe('terminal-data-client activation command actor', () => {
     const reset = vi.fn();
     const success = await handler.handle({
       ...makeContext({
-        device: {getDeviceInfo: async () => ({
-          status: 'succeeded',
-          value: {deviceId: 'ter-web-run-fixture', systemName: 'Web'},
-        })},
+        device: {
+          getDeviceInfo: async () => ({
+            status: 'succeeded',
+            value: {deviceId: 'ter-web-run-fixture', systemName: 'Web'},
+          }),
+        },
         appControl: {resetRuntime: reset},
       }),
       requestApplicationReset: reset,
     } as never);
     expect(success).toEqual({status: 'CANCELLED'});
-    expect(cancellationDiagnostics.events).toContainEqual(expect.objectContaining({
-      event: 'cancel-activation-request-result',
-      data: expect.objectContaining({
-        kind: 'success',
-        status: 200,
-        requestId: 'req-cancel-success-001',
-        correlationId: 'corr-cancel-success-001',
+    expect(cancellationDiagnostics.events).toContainEqual(
+      expect.objectContaining({
+        event: 'cancel-activation-request-result',
+        data: expect.objectContaining({
+          kind: 'success',
+          status: 200,
+          requestId: 'req-cancel-success-001',
+          correlationId: 'corr-cancel-success-001',
+        }),
       }),
-    }));
+    );
     expect(JSON.stringify(cancellationDiagnostics.events)).not.toContain(secret);
     expect(JSON.stringify(cancellationDiagnostics.events)).not.toContain('Authorization');
     expect(transport.stop).toHaveBeenCalledWith({profileId: 'terminal-data-client'});
@@ -824,20 +1080,24 @@ describe('terminal-data-client activation command actor', () => {
     const webResetLog = createActivationTestLogger();
     const webContext = {
       ...makeContext({
-        device: {getDeviceInfo: async () => ({
-          status: 'succeeded',
-          value: {deviceId: 'ter-web-run-fixture', systemName: 'Web'},
-        })},
+        device: {
+          getDeviceInfo: async () => ({
+            status: 'succeeded',
+            value: {deviceId: 'ter-web-run-fixture', systemName: 'Web'},
+          }),
+        },
         appControl: {resetRuntime: reset},
         logger: webResetLog.logger,
       }),
     };
     await actor.afterApplicationReset(webContext as never, 'TERMINAL_ACTIVATION_CANCELLED');
     expect(reset).toHaveBeenCalledTimes(1);
-    expect(webResetLog.events).toContainEqual(expect.objectContaining({
-      event: 'web-runtime-reset-observation-not-applicable',
-      data: {platform: 'Web', outcome: 'in-process-reset'},
-    }));
+    expect(webResetLog.events).toContainEqual(
+      expect.objectContaining({
+        event: 'web-runtime-reset-observation-not-applicable',
+        data: {platform: 'Web', outcome: 'in-process-reset'},
+      }),
+    );
     actor.dispose();
   });
 
@@ -1055,11 +1315,13 @@ describe('terminal-data-client activation command actor', () => {
       lastRttMs: 1_237,
       samples: [{rttMs: 1_237, observedAt: now}],
     });
-    expect(diagnostics.events).toContainEqual(expect.objectContaining({
-      category: 'terminal.connection.heartbeat',
-      event: 'heartbeat-pong-matched',
-      data: {profileId: 'terminal-data-client', sequence: 1, rttMs: 1_237},
-    }));
+    expect(diagnostics.events).toContainEqual(
+      expect.objectContaining({
+        category: 'terminal.connection.heartbeat',
+        event: 'heartbeat-pong-matched',
+        data: {profileId: 'terminal-data-client', sequence: 1, rttMs: 1_237},
+      }),
+    );
     expect(transport.invalid).not.toHaveBeenCalled();
     await findHandler(terminalTransportEventCommand.commandName).handle(
       makeContext(terminalTransportEventCommand.commandName, {
@@ -1079,6 +1341,350 @@ describe('terminal-data-client activation command actor', () => {
       }),
     );
     expect(transport.invalid).toHaveBeenCalledWith({profileId: 'terminal-data-client', cause: 'PROTOCOL_INVALID'});
+    actor.dispose();
+  });
+
+  it('isolates shared topic subscriptions and accepts only the latest matching notification', async () => {
+    const secret = 'A'.repeat(43);
+    let state = terminalDataClientReducer(undefined, {type: 'test/init'});
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'workspace-1',
+        terminalRef: 'terminal-1',
+        storeRef: 'store-1',
+        deviceId: 'device-1',
+        bindingGeneration: 8,
+        credentialSecret: secret,
+      }),
+    );
+    const sentFrames: string[] = [];
+    const dispatchedTopics: unknown[] = [];
+    const connection = {
+      send: vi.fn(async (raw: string) => {
+        sentFrames.push(raw);
+      }),
+      subscribe: vi.fn(() => () => undefined),
+    };
+    const transport = {
+      start: vi.fn(async () => connection),
+      ready: vi.fn(async () => undefined),
+      invalid: vi.fn(async () => undefined),
+      stop: vi.fn(async () => undefined),
+      executeHttp: vi.fn(async () => ({kind: 'failure' as const, category: 'not-delivered' as const, code: 'unused'})),
+      reportHttpAddressAvailable: vi.fn(async () => undefined),
+    };
+    const actor = createTerminalDataClientActor({
+      transport,
+      businessServerName: 'terminal-business-api',
+      createCredentialSecret: () => secret,
+      now: () => 1_000,
+      appVersion: '1.0.0',
+      surfaceForm: 'laptop',
+    });
+    const makeContext = (commandName: string, payload: unknown): ActorExecutionContext =>
+      ({
+        runtimeId: 'test-runtime',
+        localNodeId: 'test-node',
+        platformPorts: {},
+        command: {commandName, payload, requestId: 'request-id', commandId: 'command-id'} as never,
+        actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
+        getState: () => actorState(state),
+        dispatchAction: (action: unknown) => {
+          state = terminalDataClientReducer(state, action as never);
+          return action as never;
+        },
+        flushPersistence: async () => ({status: 'succeeded'}),
+        subscribeState: () => () => undefined,
+        dispatchCommand: async (definition: CommandDefinition, childPayload: StateJsonValue) => {
+          if (definition.commandName === terminalTopicChangedCommand.commandName) dispatchedTopics.push(childPayload);
+          return {status: 'completed'};
+        },
+        requestApplicationReset: () => undefined,
+      }) as unknown as ActorExecutionContext;
+    const findHandler = (commandName: string) => {
+      const handler = actor.actor.handlers.find(candidate => candidate.commandName === commandName);
+      if (handler === undefined) throw new Error(`terminal topic handler missing: ${commandName}`);
+      return handler;
+    };
+    const subscribe = findHandler(subscribeTerminalTopicCommand.commandName);
+    const ownerRef = 'f756e82d-28f5-4d09-9a2a-7d2c6e3f0c1a';
+    const first = await subscribe.handle(
+      makeContext(subscribeTerminalTopicCommand.commandName, {
+        subscriberKey: 'feature.store-basic',
+        topicKey: 'STORE',
+        ownerRef,
+        initialTimeEpochMillis: 100,
+      }),
+    );
+    const duplicate = await subscribe.handle(
+      makeContext(subscribeTerminalTopicCommand.commandName, {
+        subscriberKey: 'feature.store-basic',
+        topicKey: 'STORE',
+        ownerRef,
+        initialTimeEpochMillis: 50,
+      }),
+    );
+    const second = await subscribe.handle(
+      makeContext(subscribeTerminalTopicCommand.commandName, {
+        subscriberKey: 'feature.other',
+        topicKey: 'STORE',
+        ownerRef,
+        initialTimeEpochMillis: 75,
+      }),
+    );
+    const invalidTopic = await subscribe.handle(
+      makeContext(subscribeTerminalTopicCommand.commandName, {
+        subscriberKey: 'feature.invalid',
+        topicKey: 'UNRECOGNIZED',
+        ownerRef,
+        initialTimeEpochMillis: 75,
+      }),
+    );
+    expect(first).toMatchObject({status: 'subscribed'});
+    expect(first).toMatchObject({
+      subscriptionId: expect.stringMatching(/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/),
+    });
+    expect(duplicate).toEqual(expect.objectContaining({status: 'already-subscribed'}));
+    expect(second).toMatchObject({status: 'subscribed'});
+    expect(invalidTopic).toMatchObject({status: 'rejected', reason: 'INVALID_SUBSCRIPTION'});
+    expect(selectTerminalTopicSubscriptions(actorState(state))).toHaveLength(2);
+
+    await findHandler(connectTerminalCommand.commandName).handle(makeContext(connectTerminalCommand.commandName, {}));
+    await findHandler(terminalTransportEventCommand.commandName).handle(
+      makeContext(terminalTransportEventCommand.commandName, {
+        event: {type: 'open', addressName: 'primary'},
+      }),
+    );
+    await findHandler(terminalTransportEventCommand.commandName).handle(
+      makeContext(terminalTransportEventCommand.commandName, {
+        event: {
+          type: 'message',
+          raw: JSON.stringify({
+            type: 'SESSION_READY',
+            sessionId: 'session-1',
+            nodeId: 'tds-1',
+            serverTime: '2026-10-04T00:00:00Z',
+            heartbeatIntervalMs: 1_000,
+            heartbeatTimeoutMs: 3_000,
+          }),
+        },
+      }),
+    );
+    const subscribeFrames = sentFrames.map(raw => JSON.parse(raw)).filter(frame => frame.type === 'TOPIC_SUBSCRIBE');
+    expect(subscribeFrames).toHaveLength(2);
+    expect(subscribeFrames.map(frame => frame.lastAcceptedTimeEpochMillis).sort((left, right) => left - right)).toEqual(
+      [75, 100],
+    );
+
+    const firstSubscription = selectTerminalTopicSubscriptions(actorState(state)).find(
+      item => item.subscriberKey === 'feature.store-basic',
+    );
+    if (firstSubscription === undefined) throw new Error('first topic subscription missing');
+    const deliver = (notificationId: string, time: number) =>
+      findHandler(terminalTransportEventCommand.commandName).handle(
+        makeContext(terminalTransportEventCommand.commandName, {
+          event: {
+            type: 'message',
+            raw: JSON.stringify({
+              type: 'TOPIC_CHANGED',
+              notificationId,
+              subscriptionId: firstSubscription.subscriptionId,
+              topicKey: 'STORE',
+              ownerRef,
+              topicTimeEpochMillis: time,
+            }),
+          },
+        }),
+      );
+    const oldNotificationId = '8b81d930-f455-407c-88b6-e777934e54c2';
+    const currentNotificationId = '9c92ea41-a566-418d-99c7-f888a45f65d3';
+    await deliver(oldNotificationId, 100);
+    await deliver(currentNotificationId, 200);
+    expect(dispatchedTopics).toHaveLength(2);
+    expect(dispatchedTopics[0]).toMatchObject({
+      subscriberKey: 'feature.store-basic',
+      notification: {topicTimeEpochMillis: 100},
+    });
+    expect(
+      await findHandler(acceptTerminalTopicNotificationCommand.commandName).handle(
+        makeContext(acceptTerminalTopicNotificationCommand.commandName, {
+          subscriberKey: 'feature.store-basic',
+          subscriptionId: firstSubscription.subscriptionId,
+          notificationId: oldNotificationId,
+        }),
+      ),
+    ).toMatchObject({status: 'rejected', reason: 'STALE_NOTIFICATION'});
+    expect(
+      await findHandler(acceptTerminalTopicNotificationCommand.commandName).handle(
+        makeContext(acceptTerminalTopicNotificationCommand.commandName, {
+          subscriberKey: 'feature.store-basic',
+          subscriptionId: firstSubscription.subscriptionId,
+          notificationId: currentNotificationId,
+        }),
+      ),
+    ).toMatchObject({status: 'accepted', acceptedTimeEpochMillis: 200});
+    expect(JSON.parse(sentFrames.at(-1) ?? '{}')).toMatchObject({
+      type: 'TOPIC_ACCEPT',
+      notificationId: currentNotificationId,
+      acceptedTimeEpochMillis: 200,
+    });
+    expect(
+      selectTerminalTopicSubscriptions(actorState(state)).find(item => item.subscriberKey === 'feature.store-basic'),
+    ).toMatchObject({acceptedTimeEpochMillis: 200, pendingNotification: null});
+
+    await findHandler(unsubscribeTerminalTopicCommand.commandName).handle(
+      makeContext(unsubscribeTerminalTopicCommand.commandName, {
+        subscriberKey: 'feature.store-basic',
+        topicKey: 'STORE',
+        ownerRef,
+      }),
+    );
+    expect(selectTerminalTopicSubscriptions(actorState(state))).toHaveLength(1);
+    expect(selectTerminalTopicSubscriptions(actorState(state))[0]).toMatchObject({subscriberKey: 'feature.other'});
+    expect(JSON.parse(sentFrames.at(-1) ?? '{}')).toMatchObject({type: 'TOPIC_UNSUBSCRIBE'});
+    actor.dispose();
+  });
+
+  it('resends accepted topic times after reconnect without replacing them with old initialization time', async () => {
+    const secret = 'B'.repeat(43);
+    let state = terminalDataClientReducer(undefined, {type: 'test/init'});
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'workspace-1',
+        terminalRef: 'terminal-1',
+        storeRef: 'store-1',
+        deviceId: 'device-1',
+        bindingGeneration: 9,
+        credentialSecret: secret,
+      }),
+    );
+    const sentFrames: string[] = [];
+    const connection = {
+      send: vi.fn(async (raw: string) => {
+        sentFrames.push(raw);
+      }),
+      subscribe: vi.fn(() => () => undefined),
+    };
+    const transport = {
+      start: vi.fn(async () => connection),
+      ready: vi.fn(async () => undefined),
+      invalid: vi.fn(async () => undefined),
+      stop: vi.fn(async () => undefined),
+      executeHttp: vi.fn(async () => ({kind: 'failure' as const, category: 'not-delivered' as const, code: 'unused'})),
+      reportHttpAddressAvailable: vi.fn(async () => undefined),
+    };
+    const actor = createTerminalDataClientActor({
+      transport,
+      businessServerName: 'terminal-business-api',
+      createCredentialSecret: () => secret,
+      now: () => 1_000,
+      appVersion: '1.0.0',
+      surfaceForm: 'laptop',
+    });
+    const makeContext = (commandName: string, payload: unknown): ActorExecutionContext =>
+      ({
+        runtimeId: 'test-runtime',
+        localNodeId: 'test-node',
+        platformPorts: {},
+        command: {commandName, payload, requestId: 'request-id', commandId: 'command-id'} as never,
+        actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
+        getState: () => actorState(state),
+        dispatchAction: (action: unknown) => {
+          state = terminalDataClientReducer(state, action as never);
+          return action as never;
+        },
+        flushPersistence: async () => ({status: 'succeeded'}),
+        subscribeState: () => () => undefined,
+        dispatchCommand: async () => ({status: 'completed'}),
+        requestApplicationReset: () => undefined,
+      }) as unknown as ActorExecutionContext;
+    const findHandler = (commandName: string) => {
+      const handler = actor.actor.handlers.find(candidate => candidate.commandName === commandName);
+      if (handler === undefined) throw new Error(`terminal topic handler missing: ${commandName}`);
+      return handler;
+    };
+    const ownerRef = 'f756e82d-28f5-4d09-9a2a-7d2c6e3f0c1a';
+    const subscribePayload = {
+      subscriberKey: 'feature.store-basic',
+      topicKey: 'STORE',
+      ownerRef,
+      initialTimeEpochMillis: 100,
+    };
+    await findHandler(subscribeTerminalTopicCommand.commandName).handle(
+      makeContext(subscribeTerminalTopicCommand.commandName, subscribePayload),
+    );
+    await findHandler(connectTerminalCommand.commandName).handle(makeContext(connectTerminalCommand.commandName, {}));
+    const ready = () =>
+      findHandler(terminalTransportEventCommand.commandName).handle(
+        makeContext(terminalTransportEventCommand.commandName, {
+          event: {
+            type: 'message',
+            raw: JSON.stringify({
+              type: 'SESSION_READY',
+              sessionId: 'session-1',
+              nodeId: 'tds-1',
+              serverTime: '2026-10-04T00:00:00Z',
+              heartbeatIntervalMs: 1_000,
+              heartbeatTimeoutMs: 3_000,
+            }),
+          },
+        }),
+      );
+    await findHandler(terminalTransportEventCommand.commandName).handle(
+      makeContext(terminalTransportEventCommand.commandName, {
+        event: {type: 'open', addressName: 'primary'},
+      }),
+    );
+    await ready();
+    const subscriptionId = selectTerminalTopicSubscriptions(actorState(state))[0]!.subscriptionId;
+    await findHandler(terminalTransportEventCommand.commandName).handle(
+      makeContext(terminalTransportEventCommand.commandName, {
+        event: {
+          type: 'message',
+          raw: JSON.stringify({
+            type: 'TOPIC_CHANGED',
+            notificationId: '8b81d930-f455-407c-88b6-e777934e54c2',
+            subscriptionId,
+            topicKey: 'STORE',
+            ownerRef,
+            topicTimeEpochMillis: 200,
+          }),
+        },
+      }),
+    );
+    expect(
+      await findHandler(acceptTerminalTopicNotificationCommand.commandName).handle(
+        makeContext(acceptTerminalTopicNotificationCommand.commandName, {
+          subscriberKey: 'feature.store-basic',
+          subscriptionId,
+          notificationId: '8b81d930-f455-407c-88b6-e777934e54c2',
+        }),
+      ),
+    ).toMatchObject({status: 'accepted', acceptedTimeEpochMillis: 200});
+    expect(selectTerminalTopicSubscriptions(actorState(state))[0]).toMatchObject({acceptedTimeEpochMillis: 200});
+    await findHandler(terminalTransportEventCommand.commandName).handle(
+      makeContext(terminalTransportEventCommand.commandName, {
+        event: {type: 'close', code: 1006},
+      }),
+    );
+    await findHandler(connectTerminalCommand.commandName).handle(makeContext(connectTerminalCommand.commandName, {}));
+    await findHandler(terminalTransportEventCommand.commandName).handle(
+      makeContext(terminalTransportEventCommand.commandName, {
+        event: {type: 'open', addressName: 'primary'},
+      }),
+    );
+    await ready();
+    const subscribeFrames = sentFrames.map(raw => JSON.parse(raw)).filter(frame => frame.type === 'TOPIC_SUBSCRIBE');
+    expect(subscribeFrames.map(frame => frame.lastAcceptedTimeEpochMillis)).toEqual([100, 200]);
+    expect(subscribeFrames[0]?.subscriptionId).toBe(subscribeFrames[1]?.subscriptionId);
+    expect(
+      await findHandler(subscribeTerminalTopicCommand.commandName).handle(
+        makeContext(subscribeTerminalTopicCommand.commandName, {...subscribePayload, initialTimeEpochMillis: 50}),
+      ),
+    ).toMatchObject({status: 'already-subscribed'});
+    expect(selectTerminalTopicSubscriptions(actorState(state))[0]).toMatchObject({acceptedTimeEpochMillis: 200});
     actor.dispose();
   });
 
@@ -1328,10 +1934,14 @@ describe('terminal-data-client activation command actor', () => {
       expect(selectConnectionState({[terminalDataClientStateSlice.name]: state} as unknown as StateRoot).status).toBe(
         'connected',
       );
-      expect(diagnostics.events.filter(value =>
-        typeof value === 'object' && value !== null &&
-        (value as {event?: string}).event === 'heartbeat-pong-matched',
-      )).toHaveLength(6);
+      expect(
+        diagnostics.events.filter(
+          value =>
+            typeof value === 'object' &&
+            value !== null &&
+            (value as {event?: string}).event === 'heartbeat-pong-matched',
+        ),
+      ).toHaveLength(6);
     } finally {
       actorRuntime.dispose();
       vi.useRealTimers();
@@ -1782,6 +2392,323 @@ describe('terminal-data-client activation command actor', () => {
     } finally {
       actor.dispose();
       vi.useRealTimers();
+    }
+  });
+
+  it('persists remote execution before dispatch and releases only after matching result acknowledgement', async () => {
+    const secret = 'R'.repeat(43);
+    let state = terminalDataClientReducer(undefined, {type: 'test/init'});
+    state = terminalDataClientReducer(state, terminalDataClientActions.replaceCredential({
+      groupWorkspaceKey: 'workspace-1', terminalRef: 'terminal-1', storeRef: 'store-1', deviceId: 'device-1',
+      bindingGeneration: 7, credentialSecret: secret,
+    }));
+    const sent: string[] = [];
+    const connection = {send: vi.fn(async (raw: string) => { sent.push(raw); }), subscribe: vi.fn(() => () => undefined)};
+    const transport = {
+      start: vi.fn(async () => connection), ready: vi.fn(async () => undefined), invalid: vi.fn(async () => undefined),
+      stop: vi.fn(async () => undefined), executeHttp: vi.fn(), reportHttpAddressAvailable: vi.fn(async () => undefined),
+    };
+    const childDispatch = vi.fn(async () => ({
+      requestId: 'local-request', commandId: 'local-command', status: 'completed',
+      actorResults: [{actorKey: 'test.actor', status: 'completed', startedAt: 1, completedAt: 2, result: {changed: true}, error: null}],
+    }));
+    const actor = createTerminalDataClientActor({
+      transport, businessServerName: 'terminal-business-api', createCredentialSecret: () => secret,
+      now: () => 1_799_999_640_000, appVersion: 'test', surfaceForm: 'laptop',
+    });
+    const makeContext = (commandName: string, payload: unknown): ActorExecutionContext => ({
+      runtimeId: 'test-runtime', localNodeId: 'test-node', platformPorts: {},
+      command: {commandName, payload, requestId: 'root-request', commandId: 'root-command'} as never,
+      actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
+      getState: () => actorState(state),
+      dispatchAction: (action: unknown) => { state = terminalDataClientReducer(state, action as never); return action as never; },
+      flushPersistence: async () => ({status: 'succeeded'}), subscribeState: () => () => undefined,
+      dispatchCommand: childDispatch as never, requestApplicationReset: () => undefined,
+    }) as unknown as ActorExecutionContext;
+    const handler = actor.actor.handlers.find(item => item.commandName === terminalTransportEventCommand.commandName)!;
+    const runEvent = (event: TransportConnectionEvent) => handler.handle(makeContext(terminalTransportEventCommand.commandName, {event}));
+
+    try {
+      await actor.actor.handlers.find(item => item.commandName === connectTerminalCommand.commandName)!
+        .handle(makeContext(connectTerminalCommand.commandName, {}));
+      await runEvent({type: 'open', addressName: 'dev', configRevision: 4});
+      await runEvent({type: 'message', raw: JSON.stringify({
+        type: 'SESSION_READY', sessionId: 'session-1', nodeId: 'tds-1', serverTime: '2027-01-01T00:00:00Z',
+        heartbeatIntervalMs: 1_000, heartbeatTimeoutMs: 3_000,
+      })});
+      await runEvent({type: 'message', raw: JSON.stringify({
+        type: 'REMOTE_COMMAND', remoteOperationId: '5b7a27c6-2d14-4df5-9e13-07e58798a9cb',
+        requestId: '1e947a10-c7d6-4e37-93a7-c0573a90c51b', bindingGeneration: 7,
+        commandName: 'test.remote-noop', parameters: {scope: 'fixture'},
+      })});
+
+      expect(childDispatch).toHaveBeenCalledWith('test.remote-noop', {scope: 'fixture'}, expect.objectContaining({target: 'local'}));
+      expect(Object.values(state.remoteOperations)).toHaveLength(1);
+      expect(Object.values(state.remoteOperations)[0]).toMatchObject({phase: 'COMPLETED', configRevision: 4});
+      const report = JSON.parse(sent.at(-1) ?? '{}');
+      expect(report).toMatchObject({type: 'REMOTE_REPORT', phase: 'COMPLETED', result: {actorResults: [{actorKey: 'test.actor'}]}});
+      await runEvent({type: 'message', raw: JSON.stringify({
+        type: 'REMOTE_REPORT_ACK', reportId: report.reportId, remoteOperationId: report.remoteOperationId,
+        requestId: report.requestId, acceptedAt: '2027-01-01T00:00:01Z',
+      })});
+      expect(state.remoteOperations).toEqual({});
+    } finally {
+      actor.dispose();
+    }
+  });
+
+  it('replays a retained operation without redispatch and rejects conflicting request identity', async () => {
+    const harness = createRemoteOperationHarness();
+    try {
+      await harness.connectReady();
+      const message = harness.command();
+      await harness.runEvent({type: 'message', raw: JSON.stringify(message)});
+      const firstReport = JSON.parse(harness.sent.at(-1) ?? '{}');
+
+      await expect(harness.runEvent({type: 'message', raw: JSON.stringify(message)})).resolves.toMatchObject({status: 'duplicate-reported'});
+      const replay = JSON.parse(harness.sent.at(-1) ?? '{}');
+      await expect(harness.runEvent({type: 'message', raw: JSON.stringify({...message, requestId: '2e947a10-c7d6-4e37-93e7-587e7a90c222'})}))
+        .resolves.toMatchObject({status: 'REMOTE_OPERATION_ID_CONFLICT'});
+
+      expect(harness.dispatchCommand).toHaveBeenCalledTimes(1);
+      expect(replay).toMatchObject({remoteOperationId: firstReport.remoteOperationId, requestId: firstReport.requestId, reportId: firstReport.reportId});
+      expect(JSON.parse(harness.sent.at(-1) ?? '{}')).toMatchObject({phase: 'FAILED', errorCode: 'REMOTE_OPERATION_ID_CONFLICT'});
+      expect(Object.keys(harness.state().remoteOperations)).toHaveLength(1);
+    } finally {
+      harness.dispose();
+    }
+  });
+
+  it('does not dispatch when RECEIVED or STARTED persistence fails', async () => {
+    const firstFailure = createRemoteOperationHarness({
+      flushPersistence: vi.fn().mockRejectedValue(new Error('storage unavailable')),
+    });
+    try {
+      await firstFailure.connectReady();
+      await expect(firstFailure.runEvent({type: 'message', raw: JSON.stringify(firstFailure.command())}))
+        .resolves.toMatchObject({status: 'TERMINAL_PERSISTENCE_FAILED'});
+      expect(firstFailure.dispatchCommand).not.toHaveBeenCalled();
+      expect(firstFailure.state().remoteOperations).toEqual({});
+      expect(JSON.parse(firstFailure.sent.at(-1) ?? '{}')).toMatchObject({phase: 'FAILED', errorCode: 'TERMINAL_PERSISTENCE_FAILED'});
+    } finally {
+      firstFailure.dispose();
+    }
+
+    const startedFailure = createRemoteOperationHarness({
+      flushPersistence: vi.fn()
+        .mockResolvedValueOnce({status: 'succeeded'})
+        .mockRejectedValueOnce(new Error('storage unavailable')),
+    });
+    try {
+      await startedFailure.connectReady();
+      await expect(startedFailure.runEvent({type: 'message', raw: JSON.stringify(startedFailure.command())}))
+        .resolves.toMatchObject({status: 'start-persistence-failed'});
+      expect(startedFailure.dispatchCommand).not.toHaveBeenCalled();
+      expect(Object.values(startedFailure.state().remoteOperations)).toMatchObject([expect.objectContaining({phase: 'RECEIVED'})]);
+    } finally {
+      startedFailure.dispose();
+    }
+  });
+
+  it('retains an unacknowledged result through duplicate delivery and a failed ACK flush', async () => {
+    const flush = vi.fn()
+      .mockResolvedValueOnce({status: 'succeeded'})
+      .mockResolvedValueOnce({status: 'succeeded'})
+      .mockResolvedValueOnce({status: 'succeeded'})
+      .mockRejectedValueOnce(new Error('storage unavailable'));
+    const harness = createRemoteOperationHarness({flushPersistence: flush});
+    try {
+      await harness.connectReady();
+      const message = harness.command();
+      await harness.runEvent({type: 'message', raw: JSON.stringify(message)});
+      const report = JSON.parse(harness.sent.at(-1) ?? '{}');
+      await harness.runEvent({type: 'message', raw: JSON.stringify({...message})});
+      expect(harness.dispatchCommand).toHaveBeenCalledTimes(1);
+
+      await harness.runEvent({type: 'message', raw: JSON.stringify({
+        type: 'REMOTE_REPORT_ACK', reportId: '4e947a10-c7d6-4e37-93e7-587e7a90c333',
+        remoteOperationId: report.remoteOperationId, requestId: report.requestId, acceptedAt: '2027-01-01T00:00:01Z',
+      })});
+      expect(Object.keys(harness.state().remoteOperations)).toHaveLength(1);
+      await expect(harness.runEvent({type: 'message', raw: JSON.stringify({
+        type: 'REMOTE_REPORT_ACK', reportId: report.reportId, remoteOperationId: report.remoteOperationId,
+        requestId: report.requestId, acceptedAt: '2027-01-01T00:00:01Z',
+      })})).resolves.toMatchObject({status: 'remote-report-release-failed'});
+      expect(Object.keys(harness.state().remoteOperations)).toHaveLength(1);
+      expect(Object.values(harness.state().remoteOperations)[0]).toMatchObject({phase: 'COMPLETED'});
+    } finally {
+      harness.dispose();
+    }
+  });
+
+  it('refuses the sixty-fifth retained operation without evicting existing facts', async () => {
+    const harness = createRemoteOperationHarness({initialFacts: Array.from({length: 64}, (_, index) => remoteOperationFact(index + 1))});
+    try {
+      await harness.connectReady();
+      await expect(harness.runEvent({type: 'message', raw: JSON.stringify(harness.command())}))
+        .resolves.toMatchObject({status: 'REMOTE_OPERATION_LIMIT_REACHED'});
+      expect(harness.dispatchCommand).not.toHaveBeenCalled();
+      expect(Object.keys(harness.state().remoteOperations)).toHaveLength(64);
+      expect(Object.values(harness.state().remoteOperations).map(fact => fact.remoteOperationId))
+        .toEqual(Array.from({length: 64}, (_, index) => remoteOperationFact(index + 1).remoteOperationId));
+    } finally {
+      harness.dispose();
+    }
+  });
+
+  it('marks persisted in-flight work UNKNOWN on reconnect and never redispatches it', async () => {
+    const prior = remoteOperationFact(1, 'STARTED');
+    const harness = createRemoteOperationHarness({initialFacts: [prior]});
+    try {
+      await harness.connectReady();
+      expect(harness.dispatchCommand).not.toHaveBeenCalled();
+      expect(Object.values(harness.state().remoteOperations)[0]).toMatchObject({
+        remoteOperationId: prior.remoteOperationId, requestId: prior.requestId, phase: 'UNKNOWN', errorCode: 'REMOTE_RESULT_UNKNOWN',
+      });
+      expect(JSON.parse(harness.sent.at(-1) ?? '{}')).toMatchObject({type: 'REMOTE_REPORT', phase: 'UNKNOWN', remoteOperationId: prior.remoteOperationId});
+      await harness.runEvent({type: 'message', raw: JSON.stringify(harness.command(prior.remoteOperationId, prior.requestId))});
+      expect(harness.dispatchCommand).not.toHaveBeenCalled();
+      expect(JSON.parse(harness.sent.at(-1) ?? '{}')).toMatchObject({phase: 'UNKNOWN', errorCode: 'REMOTE_RESULT_UNKNOWN'});
+    } finally {
+      harness.dispose();
+    }
+  });
+
+  it('retains STARTED after its durable phase ACK while the local command is still running', async () => {
+    let completeDispatch: ((value: unknown) => void) | undefined;
+    const dispatch = vi.fn(() => new Promise(resolve => { completeDispatch = resolve; }));
+    const harness = createRemoteOperationHarness({dispatchCommand: dispatch as never});
+    try {
+      await harness.connectReady();
+      const commandPending = harness.runEvent({type: 'message', raw: JSON.stringify(harness.command())});
+      await vi.waitFor(() => expect(dispatch).toHaveBeenCalledTimes(1));
+      const started = JSON.parse(harness.sent.at(-1) ?? '{}');
+      expect(started).toMatchObject({type: 'REMOTE_REPORT', phase: 'STARTED'});
+      await harness.runEvent({type: 'message', raw: JSON.stringify({
+        type: 'REMOTE_REPORT_ACK', reportId: started.reportId, remoteOperationId: started.remoteOperationId,
+        requestId: started.requestId, acceptedAt: '2027-01-01T00:00:01Z',
+      })});
+      expect(Object.values(harness.state().remoteOperations)).toMatchObject([expect.objectContaining({phase: 'STARTED'})]);
+
+      completeDispatch?.({
+        requestId: 'local-request', commandId: 'local-command', status: 'completed',
+        actorResults: [{actorKey: 'test.actor', status: 'completed', startedAt: 1, completedAt: 2, result: {changed: true}, error: null}],
+      });
+      await commandPending;
+      expect(Object.values(harness.state().remoteOperations)).toMatchObject([expect.objectContaining({phase: 'COMPLETED'})]);
+    } finally {
+      harness.dispose();
+    }
+  });
+
+  it('reports a late actual result after UNKNOWN without dispatching again', async () => {
+    type Dispatch = NonNullable<ActorExecutionContext['dispatchCommand']>;
+    let lateOutcome: NonNullable<Parameters<Dispatch>[2]>['lateOutcome'];
+    const dispatch = vi.fn(async (_name: string, _payload: unknown, options?: NonNullable<Parameters<Dispatch>[2]>) => {
+      lateOutcome = options?.lateOutcome;
+      return {requestId: 'local-request', commandId: 'local-command', status: 'timed-out', actorResults: []} as never;
+    });
+    const harness = createRemoteOperationHarness({dispatchCommand: dispatch as unknown as Dispatch});
+    try {
+      await harness.connectReady();
+      const message = harness.command();
+      await expect(harness.runEvent({type: 'message', raw: JSON.stringify(message)})).resolves.toMatchObject({status: 'unknown'});
+      expect(Object.values(harness.state().remoteOperations)).toMatchObject([expect.objectContaining({phase: 'UNKNOWN'})]);
+      expect(lateOutcome).toBeTypeOf('function');
+      lateOutcome?.({
+        actorKey: 'test.actor', status: 'completed', startedAt: 1, completedAt: 2,
+        result: {changed: true}, error: null,
+      } as never);
+      await vi.waitFor(() => expect(Object.values(harness.state().remoteOperations)).toMatchObject([
+        expect.objectContaining({phase: 'COMPLETED', resultJson: expect.stringContaining('changed')}),
+      ]));
+      await vi.waitFor(() => expect(JSON.parse(harness.sent.at(-1) ?? '{}')).toMatchObject({phase: 'COMPLETED'}));
+      expect(harness.dispatchCommand).toHaveBeenCalledTimes(1);
+    } finally {
+      harness.dispose();
+    }
+  });
+
+  it('discards the late result after a configuration change has cleared its map entry', async () => {
+    type Dispatch = NonNullable<ActorExecutionContext['dispatchCommand']>;
+    let lateOutcome: NonNullable<Parameters<Dispatch>[2]>['lateOutcome'];
+    const dispatch = vi.fn(async (_name: string, _payload: unknown, options?: NonNullable<Parameters<Dispatch>[2]>) => {
+      lateOutcome = options?.lateOutcome;
+      return {requestId: 'local-request', commandId: 'local-command', status: 'timed-out', actorResults: []} as never;
+    });
+    const harness = createRemoteOperationHarness({dispatchCommand: dispatch as unknown as Dispatch});
+    try {
+      await harness.connectReady();
+      await harness.runEvent({type: 'message', raw: JSON.stringify(harness.command())});
+      expect(Object.values(harness.state().remoteOperations)).toMatchObject([expect.objectContaining({phase: 'UNKNOWN'})]);
+      await harness.runEvent({type: 'open', addressName: 'dev-next', configRevision: 5});
+      expect(harness.state().remoteOperations).toEqual({});
+
+      lateOutcome?.({
+        actorKey: 'test.actor', status: 'completed', startedAt: 1, completedAt: 2,
+        result: {oldConfig: true}, error: null,
+      } as never);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(harness.state().remoteOperations).toEqual({});
+      expect(harness.dispatchCommand).toHaveBeenCalledTimes(1);
+    } finally {
+      harness.dispose();
+    }
+  });
+
+  it('does not restore a late result after root reset clears the persisted map', async () => {
+    type Dispatch = NonNullable<ActorExecutionContext['dispatchCommand']>;
+    let lateOutcome: NonNullable<Parameters<Dispatch>[2]>['lateOutcome'];
+    const dispatch = vi.fn(async (_name: string, _payload: unknown, options?: NonNullable<Parameters<Dispatch>[2]>) => {
+      lateOutcome = options?.lateOutcome;
+      return {requestId: 'local-request', commandId: 'local-command', status: 'timed-out', actorResults: []} as never;
+    });
+    const harness = createRemoteOperationHarness({dispatchCommand: dispatch as unknown as Dispatch});
+    try {
+      await harness.connectReady();
+      await harness.runEvent({type: 'message', raw: JSON.stringify(harness.command())});
+      expect(Object.values(harness.state().remoteOperations)).toMatchObject([expect.objectContaining({phase: 'UNKNOWN'})]);
+
+      const context = harness.makeContext('test.root-reset', {});
+      context.dispatchAction(terminalDataClientActions.clearRemoteOperations());
+      await harness.actor.afterApplicationReset(context as never, 'ROOT_RESET');
+      expect(harness.state().remoteOperations).toEqual({});
+
+      lateOutcome?.({
+        actorKey: 'test.actor', status: 'completed', startedAt: 1, completedAt: 2,
+        result: {oldRuntime: true}, error: null,
+      } as never);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(harness.state().remoteOperations).toEqual({});
+      expect(dispatch).toHaveBeenCalledTimes(1);
+    } finally {
+      harness.dispose();
+    }
+  });
+
+  it('does not restore a late result after server configuration clears its operation', async () => {
+    let completeDispatch: ((value: Awaited<ReturnType<NonNullable<ActorExecutionContext['dispatchCommand']>>>) => void) | undefined;
+    const dispatch = vi.fn(() => new Promise(resolve => { completeDispatch = resolve; }));
+    const harness = createRemoteOperationHarness({dispatchCommand: dispatch as never});
+    try {
+      await harness.connectReady();
+      const commandPending = harness.runEvent({type: 'message', raw: JSON.stringify(harness.command())});
+      await vi.waitFor(() => expect(dispatch).toHaveBeenCalledTimes(1));
+      expect(Object.keys(harness.state().remoteOperations)).toHaveLength(1);
+      await harness.runEvent({type: 'open', addressName: 'dev-next', configRevision: 5});
+      expect(harness.state().remoteOperations).toEqual({});
+
+      completeDispatch?.({
+        requestId: 'local-request', commandId: 'local-command', status: 'completed',
+        actorResults: [{actorKey: 'test.actor', status: 'completed', startedAt: 1, completedAt: 2, result: {oldConfig: true}, error: null}],
+      } as never);
+      await commandPending;
+      expect(harness.state().remoteOperations).toEqual({});
+      expect(dispatch).toHaveBeenCalledTimes(1);
+    } finally {
+      harness.dispose();
     }
   });
 });

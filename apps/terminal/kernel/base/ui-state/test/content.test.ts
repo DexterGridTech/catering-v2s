@@ -337,6 +337,33 @@ describe('ui-state workspace content commands', () => {
     expect(selectScreen(fixture.runtime.getState(), 'SECONDARY', 'root')).toBeUndefined();
   });
 
+  it('keeps a VICE local admin layer in the slave-owned BRANCH without granting MAIN writes', async () => {
+    const fixture = await createFixture();
+    runtimes.push(fixture.runtime);
+    await fixture.runtime.dispatchCommand(switchInstanceModeCommand, {instanceMode: 'SLAVE'}, dispatchOptions());
+    await fixture.runtime.dispatchCommand(switchDisplayRoleCommand, {displayRole: 'VICE'}, dispatchOptions());
+
+    const opened = await fixture.runtime.dispatchCommand(
+      openLayerCommand,
+      {displayMode: 'SECONDARY', layerId: 'local-admin', partKey: 'transient-layer', workspace: 'BRANCH'},
+      dispatchOptions('SECONDARY'),
+    );
+
+    expect(opened.status).toBe('completed');
+    expect(selectLayers(fixture.runtime.getState(), 'SECONDARY')).toHaveLength(0);
+    expect(selectLayers(fixture.runtime.getState(), 'SECONDARY', 'BRANCH')).toMatchObject([
+      {layerId: 'local-admin', partKey: 'transient-layer'},
+    ]);
+
+    const attemptedMainWrite = await fixture.runtime.dispatchCommand(
+      openLayerCommand,
+      {displayMode: 'SECONDARY', layerId: 'main-write', partKey: 'transient-layer', workspace: 'MAIN'},
+      dispatchOptions('SECONDARY'),
+    );
+    expect(attemptedMainWrite.status).toBe('error');
+    expect(selectLayers(fixture.runtime.getState(), 'SECONDARY', 'MAIN')).toHaveLength(0);
+  });
+
   it('restores containers and layers with order, props, and openedAt across a runtime restart', async () => {
     const plainStorage = createFakeStorage();
     const protectedStorage = createFakeStorage();

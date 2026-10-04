@@ -1130,7 +1130,7 @@ const InputSurfaceFrameContents = ({
       ) : null}
       {focusVisibilityFailure !== null ? (
         <View style={[styles.focusVisibilityError, {pointerEvents: 'none'}]}>
-          <PrimitiveStatus testID="ui.base.input:focus-visibility-error">
+          <PrimitiveStatus testID={`ui.base.input:focus-visibility-error:${focusVisibilityFailure.reason}`}>
             焦点框无法完整显示，请调整窗口尺寸或退出输入
           </PrimitiveStatus>
         </View>

@@ -10,9 +10,15 @@ import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
 import type {CommandRouteContext, SurfaceForm} from '@catering-v2s/kernel-base-contracts';
 import {selectScreen, showScreenCommand} from '@catering-v2s/kernel-base-ui-state';
-import {selectTopologyFacts, selectTopologyRequiredProjectionsReady, selectTopologyState} from '@catering-v2s/kernel-base-topology';
+import {
+  selectTopologyFacts,
+  selectTopologyRequiredProjectionsReady,
+  selectTopologyState,
+} from '@catering-v2s/kernel-base-topology';
 import {selectHostStaffQualification, sessionSliceName} from '@catering-v2s/kernel-feature-sample-staff-session';
-import {memberSliceName, selectHostPendingMember} from '@catering-v2s/kernel-feature-sample-member-registry';
+import {memberSliceName} from '@catering-v2s/kernel-feature-sample-member-registry';
+import {serverConfigSliceName} from '@catering-v2s/kernel-base-server-config';
+import {terminalClientStatusProjectionSliceName} from '@catering-v2s/kernel-base-terminal-data-client';
 import {needToActivateTerminalCommand, selectActivationStatusView} from '@catering-v2s/ui-base-terminal-activation';
 import {startMemberDeskCommand} from '@catering-v2s/ui-feature-sample-member-desk';
 import {needToLoginStaffCommand} from '@catering-v2s/ui-feature-sample-staff-auth';
@@ -45,11 +51,31 @@ const requiredPeerProjectionSliceNames = Object.freeze([
   contentStateSliceName('MAIN'),
   sessionSliceName,
   memberSliceName,
+  serverConfigSliceName,
+  terminalClientStatusProjectionSliceName,
 ]);
 
+const hasCurrentActivatedTerminal = (state: StateRoot): boolean => {
+  const activation = selectActivationStatusView(state);
+  return activation !== null && activation.currentPeerValue && activation.activation.status === 'active';
+};
+
 export const selectSampleConsoleBusinessInterlockActive = (state: StateRoot): boolean =>
-  selectRuntimeInstanceMode(state) === 'SLAVE' &&
-  !selectTopologyRequiredProjectionsReady(state, requiredPeerProjectionSliceNames);
+  selectTopologyState(state).repairPending ||
+  (selectRuntimeInstanceMode(state) === 'SLAVE' &&
+    !selectTopologyRequiredProjectionsReady(state, requiredPeerProjectionSliceNames)) ||
+  (selectHostStaffQualification(state)?.status === 'authenticated' && !hasCurrentActivatedTerminal(state));
+
+export const selectSampleConsoleStaffLoginAllowed = (state: StateRoot): boolean =>
+  selectRuntimeInstanceMode(state) === 'MASTER' &&
+  !selectTopologyState(state).repairPending &&
+  hasCurrentActivatedTerminal(state);
+
+export const selectSampleConsoleBusinessMutationAllowed = (state: StateRoot): boolean =>
+  !selectTopologyState(state).repairPending &&
+  !selectSampleConsoleBusinessInterlockActive(state) &&
+  hasCurrentActivatedTerminal(state) &&
+  selectHostStaffQualification(state)?.status === 'authenticated';
 
 const activationPartFor = (surfaceForm: SurfaceForm, route: CommandRouteContext): string | null => {
   if (route.displayMode === undefined || route.workspace === undefined || route.instanceMode === undefined) return null;
@@ -67,15 +93,15 @@ const activationPartFor = (surfaceForm: SurfaceForm, route: CommandRouteContext)
   return null;
 };
 
-const currentStage = (state: StateRoot): Stage | null => {
+export const selectSampleConsoleRouteStage = (state: StateRoot): Stage | null => {
   const topology = selectTopologyState(state);
-  const mode = selectRuntimeInstanceMode(state);
-  if (topology.repairPending || selectSampleConsoleBusinessInterlockActive(state)) return null;
+  if (topology.repairPending) return null;
   const activationView = selectActivationStatusView(state);
   if (activationView === null || !activationView.currentPeerValue) return null;
   const status = activationView.activation.status;
   if (status === 'activating' || status === 'cancelling') return null;
   if (status === 'inactive') return 'activation';
+  if (selectSampleConsoleBusinessInterlockActive(state)) return null;
   const staff = selectHostStaffQualification(state);
   if (staff === null) return null;
   return staff.status === 'authenticated' ? 'business' : 'staff';
@@ -122,50 +148,59 @@ const signature = (state: StateRoot, surfaceForm: SurfaceForm): string => {
     staff?.status ?? null,
     placementsFor(state, surfaceForm).map(({route, key}) => [
       key,
-      route.displayMode === undefined ? null : selectScreen(state, route.displayMode, 'main')?.partKey ?? null,
+      route.displayMode === undefined ? null : (selectScreen(state, route.displayMode, 'main')?.partKey ?? null),
     ]),
   ]);
 };
 
-const routeStage = async (
-  context: ActorExecutionContext,
-  surfaceForm: SurfaceForm,
+const routePlacement = async (
+  input: Readonly<{
+    context: ActorExecutionContext;
+    surfaceForm: SurfaceForm;
+    stage: NonNullable<ReturnType<typeof selectSampleConsoleRouteStage>>;
+    route: ReturnType<typeof placementsFor>[number]['route'];
+  }>,
 ): Promise<void> => {
-  const stage = currentStage(context.getState());
+  const {context, surfaceForm, stage, route} = input;
+  const existing =
+    route.displayMode === undefined ? undefined : selectScreen(context.getState(), route.displayMode, 'main');
+  if (stage === 'activation') {
+    const expected = activationPartFor(surfaceForm, route);
+    if (expected === null || existing?.partKey === expected) return;
+    const result = await context.dispatchCommand(needToActivateTerminalCommand, {}, {routeContext: route});
+    if (result.status !== 'completed') throw new Error(`[sample-console] activation route failed: ${result.status}`);
+    return;
+  }
+  if (stage === 'staff') {
+    const expected =
+      route.instanceMode === 'MASTER' && route.displayMode === 'PRIMARY'
+        ? 'sample.auth.login'
+        : route.displayMode === 'PRIMARY'
+          ? 'sample.auth.guide.lsp'
+          : 'sample.auth.guide.lms';
+    if (existing?.partKey === expected) return;
+    const result = await context.dispatchCommand(needToLoginStaffCommand, {}, {routeContext: route});
+    if (result.status !== 'completed') throw new Error(`[sample-console] staff stage route failed: ${result.status}`);
+    return;
+  }
+  const existingIsBusiness =
+    existing?.partKey.startsWith('sample.desk.') === true &&
+    !(
+      route.instanceMode === 'MASTER' &&
+      route.displayMode === 'PRIMARY' &&
+      existing.partKey === 'sample.desk.customer-welcome'
+    );
+  if (existingIsBusiness) return;
+  const result = await context.dispatchCommand(startMemberDeskCommand, {}, {routeContext: route});
+  if (result.status !== 'completed')
+    throw new Error(`[sample-console] member desk stage route failed: ${result.status}`);
+};
+
+const routeStage = async (context: ActorExecutionContext, surfaceForm: SurfaceForm): Promise<void> => {
+  const stage = selectSampleConsoleRouteStage(context.getState());
   if (stage === null) return;
   for (const placement of placementsFor(context.getState(), surfaceForm)) {
-    const {route} = placement;
-    const existing = route.displayMode === undefined ? undefined : selectScreen(context.getState(), route.displayMode, 'main');
-    if (stage === 'activation') {
-      const expected = activationPartFor(surfaceForm, route);
-      if (expected === null) continue;
-      if (existing?.partKey !== expected) {
-        const result = await context.dispatchCommand(needToActivateTerminalCommand, {}, {routeContext: route});
-        if (result.status !== 'completed') throw new Error(`[sample-console] activation route failed: ${result.status}`);
-      }
-    } else if (stage === 'staff') {
-      if (route.instanceMode === 'MASTER' && route.displayMode === 'SECONDARY') {
-        if (existing?.partKey !== 'sample.desk.customer-welcome') {
-          const result = await context.dispatchCommand(
-            showScreenCommand,
-            {displayMode: 'SECONDARY', containerKey: 'main', partKey: 'sample.desk.customer-welcome'},
-            {routeContext: route},
-          );
-          if (result.status !== 'completed') throw new Error(`[sample-console] customer stage route failed: ${result.status}`);
-        }
-      } else if (existing?.partKey !== (route.instanceMode === 'MASTER' ? 'sample.auth.login' : route.displayMode === 'PRIMARY' ? 'sample.auth.guide.lsp' : 'sample.auth.guide.lms')) {
-        const result = await context.dispatchCommand(needToLoginStaffCommand, {}, {routeContext: route});
-        if (result.status !== 'completed') throw new Error(`[sample-console] staff stage route failed: ${result.status}`);
-      }
-    } else {
-      const existingIsBusiness =
-        existing?.partKey.startsWith('sample.desk.') === true &&
-        !(route.instanceMode === 'MASTER' && route.displayMode === 'PRIMARY' && existing.partKey === 'sample.desk.customer-welcome');
-      if (!existingIsBusiness) {
-        const result = await context.dispatchCommand(startMemberDeskCommand, {}, {routeContext: route});
-        if (result.status !== 'completed') throw new Error(`[sample-console] member desk stage route failed: ${result.status}`);
-      }
-    }
+    await routePlacement({context, surfaceForm, stage, route: placement.route});
   }
 };
 
@@ -194,11 +229,15 @@ export const createSampleConsoleModule = (surfaceForm: SurfaceForm): RuntimeModu
       const partKey = activationPartFor(surfaceForm, route);
       if (partKey === null) return Object.freeze({status: 'rejected', reason: 'ACTIVATION_ROUTE_UNAVAILABLE'});
       if (selectScreen(context.getState(), route.displayMode, 'main')?.partKey !== partKey) {
-        await context.dispatchCommand(showScreenCommand, {
-          displayMode: route.displayMode,
-          containerKey: 'main',
-          partKey,
-        }, {routeContext: route});
+        await context.dispatchCommand(
+          showScreenCommand,
+          {
+            displayMode: route.displayMode,
+            containerKey: 'main',
+            partKey,
+          },
+          {routeContext: route},
+        );
       }
       return Object.freeze({status: 'activation-screen-requested', partKey});
     }),
@@ -235,23 +274,26 @@ export const createSampleConsoleModule = (surfaceForm: SurfaceForm): RuntimeModu
         reconcileScheduled = true;
         queueMicrotask(() => {
           reconcileScheduled = false;
-          void context.dispatchCommand(reconcileStageCommand, {}, {requestId: createRequestId()}).then(result => {
-            if (result.status !== 'completed') {
+          void context
+            .dispatchCommand(reconcileStageCommand, {}, {requestId: createRequestId()})
+            .then(result => {
+              if (result.status !== 'completed') {
+                context.platformPorts.logger.error({
+                  category: 'terminal-stage-routing',
+                  event: 'sample-console.reconcile-rejected',
+                  message: 'Owner-stage reconciliation command did not complete',
+                  data: {status: result.status},
+                });
+              }
+            })
+            .catch(error => {
               context.platformPorts.logger.error({
                 category: 'terminal-stage-routing',
-                event: 'sample-console.reconcile-rejected',
-                message: 'Owner-stage reconciliation command did not complete',
-                data: {status: result.status},
+                event: 'sample-console.reconcile-failed',
+                message: 'Owner-stage reconciliation failed',
+                data: {errorType: error instanceof Error ? error.name : typeof error},
               });
-            }
-          }).catch(error => {
-            context.platformPorts.logger.error({
-              category: 'terminal-stage-routing',
-              event: 'sample-console.reconcile-failed',
-              message: 'Owner-stage reconciliation failed',
-              data: {errorType: error instanceof Error ? error.name : typeof error},
             });
-          });
         });
       });
     },

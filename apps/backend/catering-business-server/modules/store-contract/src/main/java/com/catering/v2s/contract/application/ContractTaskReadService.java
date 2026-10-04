@@ -113,7 +113,8 @@ public class ContractTaskReadService
 
     @Transactional(readOnly = true)
     public List<StoreContractView> fixedStoreContracts(UUID workspaceUuid, String key, UUID storeId) {
-        return persistence.fixedStoreContracts(workspaceUuid, key, storeId);
+        if (businessDate == null) throw new IllegalStateException("business date provider is required");
+        return persistence.fixedStoreContracts(workspaceUuid, key, storeId, businessDate.today());
     }
 
     /** Contract-owner fixed-store profile query: one business-date predicate supplies both total and page. */

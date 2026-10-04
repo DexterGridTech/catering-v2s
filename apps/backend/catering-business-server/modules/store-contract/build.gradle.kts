@@ -17,6 +17,6 @@ dependencies {
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
     testImplementation("org.testcontainers:junit-jupiter:1.21.4")
     testImplementation("org.testcontainers:postgresql:1.21.4")
-    testRuntimeOnly("org.postgresql:postgresql:42.7.7")
+    testImplementation("org.postgresql:postgresql:42.7.7")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

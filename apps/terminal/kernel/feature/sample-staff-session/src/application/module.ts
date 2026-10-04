@@ -1,5 +1,6 @@
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
+import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {
   bootstrapSessionCommand,
@@ -27,8 +28,10 @@ const commands = [
   sessionRestoredAnonymousCommand,
 ] as const;
 
-export const createSampleStaffSessionModule = (): RuntimeModule => {
-  const actors = [createBootstrapActor(), createLoginActor(), createLogoutActor()] as const;
+export const createSampleStaffSessionModule = (
+  input: Readonly<{canLogin?: (state: StateRoot) => boolean}> = {},
+): RuntimeModule => {
+  const actors = [createBootstrapActor(), createLoginActor(input.canLogin), createLogoutActor()] as const;
   return Object.freeze({
     moduleName,
     kind: moduleKind,

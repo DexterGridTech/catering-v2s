@@ -1,6 +1,8 @@
 import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {Animated, BackHandler, Platform, Pressable, StyleSheet, View} from 'react-native';
 import {closeLayerCommand, selectLayers} from '@catering-v2s/kernel-base-ui-state';
+import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
+import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {useRenderContext} from '../contexts/RenderContext';
 import {useSurfaceContext} from '../contexts/SurfaceContext';
 import {useSurfaceFocusBoundary} from '../contexts/SurfaceFocusBoundaryContext';
@@ -122,8 +124,20 @@ export const LayerStack = () => {
   const runtimeStatus = useRenderStatus();
   const catalogContext = useUiCatalogContext(displayMode);
   const layerSelector = useMemo(
-    () => (root: Parameters<typeof selectLayers>[0]) => selectLayers(root, displayMode) as readonly Layer[],
-    [displayMode],
+    () => (root: Parameters<typeof selectLayers>[0]) => {
+      const currentLayers = selectLayers(root, displayMode);
+      if (selectRuntimeInstanceMode(root) !== 'SLAVE' || selectDisplayRole(root) !== 'VICE') {
+        return currentLayers as readonly Layer[];
+      }
+      const localAdminLayers = selectLayers(root, displayMode, 'BRANCH').filter(layer =>
+        isAdminLayer(layer as Layer, uiCatalog, rendererCatalog),
+      );
+      const projectedBusinessLayers = currentLayers.filter(
+        layer => !isAdminLayer(layer as Layer, uiCatalog, rendererCatalog),
+      );
+      return [...projectedBusinessLayers, ...localAdminLayers] as readonly Layer[];
+    },
+    [displayMode, rendererCatalog, uiCatalog],
   );
   const selectedLayers = useUiStateSelector(layerSelector);
   const interlockSelector = selectBusinessInterlockActive ?? alwaysInactiveInterlock;

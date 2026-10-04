@@ -2281,11 +2281,26 @@ function selfTest() {
       fs.writeFileSync(platformTsPath, platformTsSource);
       writeOutputs(scratch);
       checkOutputs(scratch);
-      process.stdout.write('R5_EDGE_CODEGEN_IDENTITY_ONLY_CHECK=PASS\n');
+    process.stdout.write('R5_EDGE_CODEGEN_IDENTITY_ONLY_CHECK=PASS\n');
     } finally {
       if (previousProjectionMode === undefined) delete process.env.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE;
       else process.env.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE = previousProjectionMode;
     }
+    const errorDispositionPath = path.join(scratch, errorsPath);
+    const errorDispositionSource = fs.readFileSync(errorDispositionPath, 'utf8');
+    const errorDisposition = JSON.parse(errorDispositionSource);
+    const dependencyCode = errorDisposition.heritageCodes.find(entry => entry.source === 'PLATFORM_DEPENDENCY_UNAVAILABLE');
+    if (!dependencyCode || dependencyCode.target !== 'PLATFORM_DEPENDENCY_UNAVAILABLE')
+      fail('R5_EDGE_CODEGEN_TDP_DEPENDENCY_CODE_SOURCE_MISSING');
+    dependencyCode.target = null;
+    fs.writeFileSync(errorDispositionPath, normalized(errorDisposition));
+    try {
+      load(scratch);
+      fail('R5_EDGE_CODEGEN_TDP_DEPENDENCY_CODE_RED_NOT_DETECTED');
+    } catch (error) {
+      if (error.code !== 'R5_EDGE_CODEGEN_ERROR_COUNT') throw error;
+    }
+    fs.writeFileSync(errorDispositionPath, errorDispositionSource);
     for (const name of ['PlatformPasswordRecoveryOtpSendRequest', 'OperationsPasswordRecoveryOtpSendRequest']) {
       const source = fs.readFileSync(path.join(scratch, targets.wireJavaRoot, `${name}.java`), 'utf8');
       if (

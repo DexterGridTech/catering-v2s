@@ -56,7 +56,6 @@ public final class PlatformWorkspaceOperationBindings {
     };
   }
 
-
   public OperationBindingTypes.Wire.GroupWorkspaceCreateResult createPlatformGroupWorkspace(OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.GroupWorkspaceCreateRequest request) {
     return adapters.createPlatformGroupWorkspace(CREATE_PLATFORM_GROUP_WORKSPACE_DESCRIPTOR, context, request);
   }

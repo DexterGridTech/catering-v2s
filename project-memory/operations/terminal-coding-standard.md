@@ -26,9 +26,13 @@ sourceRefs: ["doc/platform/terminal-coding-standard.md"]
   topic 初始时间与更新接受确认的最新裁决也回读 §4-F，不沿用旧讨论中的跨包版本覆盖规则。
   远程command、CBS terminal-control记录归属、终端持久记录/重连补报、PG范围缓存与feature失败归属
   的最新裁决同样回读 §4-F，不从旧待定管理面或旧“不补报”建议推导本期范围。
+  范围collectionHash缓存及topicKey/ownerRef订阅对象、服务端范围隔离，回读同节最新正文及
+  **“topic订阅对象与范围隔离（Dexter 2026-10-03）”**，不沿用旧持久refIds表述。
+  REGION父引用及CBS/TER统一组织读取链的后续裁决，回读同节
+  **“TDP组织引用链补齐（Dexter 2026-10-03）”**及正式需求R-11.1；不以旧空父引用源码代替当前目标。
   后续所有TDC业务feature的slice/topic映射、集合响应复用、成员差量订退及单实体详情刷新，
   回读同节 **“使用TDC的业务feature加载与刷新（长期约束，Dexter 2026-10-03）”**；本记忆不复制规则。
-  feature依赖的业务前提、成功command及store-service-point启动顺序，回读同节
+  feature依赖的业务前提、成功command及本期单一store-basic包内服务点启动顺序（2026-10-04合并裁决），回读同节
   **“feature业务前提与成功command（Dexter 2026-10-03启动顺序修正）”**；不沿用旧独立激活启动表述。
   本期DEV后台修改→TER的数据同步必测分母及TER业务判断的排除边界，回读正本§4-F
   **“数据同步验收边界（Dexter 2026-10-03）”**及其引用的正式需求§7.1，不以测试范围另立长期业务禁令。

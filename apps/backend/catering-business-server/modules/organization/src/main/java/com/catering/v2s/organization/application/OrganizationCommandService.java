@@ -242,6 +242,7 @@ public class OrganizationCommandService
                                     "commercialGroupCode", null, code),
                             com.catering.v2s.audit.contract.AuditChange.forNullableScalar(
                                     "commercialGroupName", null, name))));
+            persistence.notifyCommercialGroup(workspaceUuid, groupWorkspaceKey, commercialGroupUuid);
             return OwnerOperationDiagnostics.readback(
                     () -> readback(id, groupWorkspaceKey, code, name, actor.displaySnapshot()));
         } catch (DuplicateKeyException exception) {
@@ -376,6 +377,7 @@ public class OrganizationCommandService
                                 "commercialGroupCode", current.commercialGroupCode(), updated.commercialGroupCode()),
                         com.catering.v2s.audit.contract.AuditChange.forNullableScalar(
                                 "commercialGroupName", current.commercialGroupName(), updated.commercialGroupName()))));
+        persistence.notifyCommercialGroup(workspaceUuid, groupWorkspaceKey, updated.id());
         return updated;
     }
 
@@ -393,7 +395,7 @@ public class OrganizationCommandService
     @Override
     @Transactional(readOnly = true)
     public UUID requireCommercialGroupRef(UUID workspaceUuid, String groupWorkspaceKey) {
-        UUID result = persistence.findCommercialGroupRef(groupWorkspaceKey);
+        UUID result = persistence.findCommercialGroupRef(workspaceUuid, groupWorkspaceKey);
         if (result == null)
             throw new OrganizationCommandException(
                     OrganizationProblem.COMMERCIAL_GROUP_NOT_INITIALIZED, "commercial group is unavailable");

@@ -103,6 +103,45 @@ class TerminalConnectionFrameCodecTest {
     }
 
     @Test
+    void parsesTopicSubscriptionAndAcceptWhileIgnoringUnknownFields() throws Exception {
+        UUID subscriptionId = UUID.randomUUID();
+        UUID ownerRef = UUID.randomUUID();
+        UUID notificationId = UUID.randomUUID();
+        var subscribe = codec.topicSubscribe(
+                "{\"type\":\"TOPIC_SUBSCRIBE\",\"subscriptionId\":\"" + subscriptionId
+                        + "\",\"topicKey\":\"STORE\",\"ownerRef\":\"" + ownerRef
+                        + "\",\"lastAcceptedTimeEpochMillis\":0,\"futureField\":true}");
+        assertThat(subscribe.subscriptionId()).isEqualTo(subscriptionId);
+        assertThat(subscribe.topicKey()).isEqualTo("STORE");
+        assertThat(subscribe.ownerRef()).isEqualTo(ownerRef);
+
+        var accept = codec.topicAccept(
+                "{\"type\":\"TOPIC_ACCEPT\",\"notificationId\":\"" + notificationId
+                        + "\",\"subscriptionId\":\"" + subscriptionId
+                        + "\",\"topicKey\":\"STORE\",\"ownerRef\":\"" + ownerRef
+                        + "\",\"acceptedTimeEpochMillis\":12}");
+        assertThat(accept.notificationId()).isEqualTo(notificationId);
+        assertThat(accept.acceptedTimeEpochMillis()).isEqualTo(12);
+
+        JsonNode changed = mapper.readTree(codec.topicChanged(
+                notificationId.toString(), subscriptionId.toString(), "STORE", ownerRef, 12));
+        assertFieldsMatchProtocol("TOPIC_CHANGED", changed);
+        assertThat(changed.path("topicTimeEpochMillis").asLong()).isEqualTo(12);
+    }
+
+    @Test
+    void rejectsUnknownTopicAndNonCanonicalSubscriptionIds() {
+        UUID ownerRef = UUID.randomUUID();
+        String id = UUID.randomUUID().toString();
+        assertInvalidTopicSubscribe("{\"type\":\"TOPIC_SUBSCRIBE\",\"subscriptionId\":\"" + id
+                + "\",\"topicKey\":\"FUTURE_TOPIC\",\"ownerRef\":\"" + ownerRef
+                + "\",\"lastAcceptedTimeEpochMillis\":0}");
+        assertInvalidTopicSubscribe("{\"type\":\"TOPIC_SUBSCRIBE\",\"subscriptionId\":\"" + id.toUpperCase()
+                + "\",\"topicKey\":\"STORE\",\"ownerRef\":\"" + ownerRef
+                + "\",\"lastAcceptedTimeEpochMillis\":0}");
+    }
+
+    @Test
     void keepsTrailingJsonNestingAndMessageSizeBounds() {
         String validPing = "{\"type\":\"PING\",\"seq\":4,\"clientTs\":\"2026-09-26T12:00:00Z\",\"lastRttMs\":12.5}";
         assertInvalidPing(validPing + " {}");
@@ -142,6 +181,44 @@ class TerminalConnectionFrameCodecTest {
                         """));
     }
 
+    @Test
+    void serializesRemoteCommandAndParsesRemoteReportWithUnknownFieldsIgnored() throws Exception {
+        UUID operationId = UUID.randomUUID();
+        UUID requestId = UUID.randomUUID();
+        JsonNode parameters = mapper.readTree("{\"greeting\":\"hello\"}");
+        String command = codec.remoteCommand(operationId, requestId, 7, "helloWorld", parameters);
+        JsonNode commandNode = mapper.readTree(command);
+        assertFieldsMatchProtocol("REMOTE_COMMAND", commandNode);
+        assertThat(commandNode.path("remoteOperationId").asString()).isEqualTo(operationId.toString());
+        assertThat(commandNode.path("requestId").asString()).isEqualTo(requestId.toString());
+        assertThat(commandNode.path("bindingGeneration").asLong()).isEqualTo(7);
+        assertThat(commandNode.path("parameters").path("greeting").asString()).isEqualTo("hello");
+
+        UUID reportId = UUID.randomUUID();
+        var report = codec.remoteReport("""
+                {"type":"REMOTE_REPORT","reportId":"%s","remoteOperationId":"%s",
+                 "requestId":"%s","phase":"COMPLETED","occurredAt":"2026-10-04T12:00:00Z",
+                 "result":{"actorResults":[]},"futureField":true}
+                """.formatted(reportId, operationId, requestId));
+        assertThat(report.reportId()).isEqualTo(reportId);
+        assertThat(report.operationId()).isEqualTo(operationId);
+        assertThat(report.phase()).isEqualTo("COMPLETED");
+        assertThat(report.result().path("actorResults").isArray()).isTrue();
+        assertThat(report.errorCode()).isNull();
+
+        var reportWithoutOptionalFields = codec.remoteReport("""
+                {"type":"REMOTE_REPORT","reportId":"%s","remoteOperationId":"%s",
+                 "requestId":"%s","phase":"UNKNOWN","occurredAt":"2026-10-04T12:00:00Z"}
+                """.formatted(UUID.randomUUID(), operationId, requestId));
+        assertThat(reportWithoutOptionalFields.result()).isNull();
+        assertThat(reportWithoutOptionalFields.errorCode()).isNull();
+
+        JsonNode ack = mapper.readTree(codec.remoteReportAck(
+                reportId, operationId, requestId, Instant.parse("2026-10-04T12:00:01Z")));
+        assertFieldsMatchProtocol("REMOTE_REPORT_ACK", ack);
+        assertThat(ack.path("acceptedAt").asString()).isEqualTo("2026-10-04T12:00:01Z");
+    }
+
     private void assertFieldsMatchProtocol(String messageType, JsonNode message) {
         Set<String> actual = new HashSet<>();
         message.propertyNames().forEach(actual::add);
@@ -158,6 +235,12 @@ class TerminalConnectionFrameCodecTest {
 
     private void assertInvalidPing(String frame) {
         assertThatIllegalArgumentException().isThrownBy(() -> codec.ping(frame)).withMessage("TDS_WS_MESSAGE_INVALID");
+    }
+
+    private void assertInvalidTopicSubscribe(String frame) {
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> codec.topicSubscribe(frame))
+                .withMessage("TDS_WS_MESSAGE_INVALID");
     }
 
     private static String authenticateFrame(String credential, String deviceId, String appVersion) {

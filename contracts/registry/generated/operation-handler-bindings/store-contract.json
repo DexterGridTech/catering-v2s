@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "generated-owner-operation-bindings",
+  "owner": "store-contract",
+  "operationCount": 2,
+  "readCount": 2,
+  "commandCount": 0,
+  "dispatchStrategy": "CLOSED_SWITCH",
+  "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
+  "dynamicDispatch": false,
+  "operations": [
+    {
+      "operationId": "terminalReadContract",
+      "method": "GET",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/contracts/{contractRef}",
+      "normalizedPath": "/api/terminal/group-workspaces/{groupWorkspaceKey}/contracts/{contractRef}",
+      "face": "terminal",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.store.contract.application.TerminalReadContractOperation",
+      "wireRequest": "TerminalContractReadQuery",
+      "wireResponse": "TerminalContractRead",
+      "contextKind": "TERMINAL_CREDENTIAL_READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE",
+      "dispatchMethod": "terminalReadContract"
+    },
+    {
+      "operationId": "terminalReadStoreActiveContracts",
+      "method": "GET",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/contracts",
+      "normalizedPath": "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/contracts",
+      "face": "terminal",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.store.contract.application.TerminalReadStoreActiveContractsOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "TerminalStoreActiveContractsRead",
+      "contextKind": "TERMINAL_CREDENTIAL_READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE",
+      "dispatchMethod": "terminalReadStoreActiveContracts"
+    }
+  ],
+  "commandContextGroups": {}
+}

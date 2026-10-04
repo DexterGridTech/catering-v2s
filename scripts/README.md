@@ -44,6 +44,13 @@ The module-dependency registry check validates the declared module and edge grap
 
 `scripts/verify` 聚合编译、类型、既有测试、契约生成与架构边界检查。它不启动 DEV、seed、reset 或浏览器；静态通过不能冒充动态业务验收。
 
+### 终端 WebSocket 协议生成
+
+`contracts/protocol/terminal-connection-protocol.json` 是终端 WebSocket 消息与 topic key 的 canonical 来源。运行
+`node scripts/generate/terminal-connection-protocol.mjs --write` 生成 TDS Java message shape 与 TDC TypeScript message union；
+`--check` 核对生成物，`--self-test` 验证消息闭集、仓根/符号链接逃逸及认证凭证遮蔽。`scripts/verify --validate-only`
+包含同一自测与生成物检查。不得手改 `TerminalConnectionMessages.java` 或 `terminalConnectionProtocol.ts`。
+
 ### 门店终端规则单源
 
 `contracts/catalog/store-terminal-rules.json` 是门店终端功能、场景、范围、纸规格、连接方式、打印机品牌与型号的唯一规则住址；JSON Schema 校验结构并按连接方式校验参数语义，生成器再校验闭集引用与跨表关系。修改正本后执行：
@@ -236,7 +243,7 @@ digest、日志与 readiness，以及本机 Vite、tunnel process identity 和�
 文档存在不能冒充 runtime topology proof。浏览器 L2 使用其独立标准与获准拓扑，不因该 DEV 描述自动启动。
 
 若 DEV start 在写出主 `run-manifest.json` 前失败，并留下绑定该 runId 的 `terminal-<runId>.json`，只可用
-`scripts/dev/cleanup-failed-start <runId>` 恢复该失败 run 的 remote-root cleanup。该入口要求本机进程、远端 Java 与所有已登记 TDS 均已有停止 readback，核对 remote host boot id，并在发现任何仍活跃进程或容器时拒绝删除；它只写追加的 cleanup recovery 证据，不改写原始 first failure。
+`scripts/dev/cleanup-failed-start <runId>` 恢复该失败 run 的 remote-root cleanup。该入口要求本机进程和远端 Java 已有停止 readback，核对 remote host boot id，并在发现任何仍活跃的 run-root process（包含 cwd 指向已删除工作目录的进程）、owned container 或无法检查的进程时拒绝删除。若 TDS 在 control file 建立前失败，须以完整 run-root 资源扫描证明无残留；已有 control 的 TDS 则仍需其身份绑定停止 readback。入口只写追加的 cleanup recovery 证据，不改写原始 first failure。
 
 当前 Node 受管入口的 catalog 登记 5 个场景：`terminal.client.multi-instance-isolation` 双 composition 隔离测试，以及 CP-06 加入的 `terminal.dev.lifecycle-and-compression`、`terminal.dev.entry-address-failover`、`terminal.dev.two-device-rebind`、`terminal.dev.three-node-two-entry-handoff` 四个 DEV 场景。CP-05 阶段当时只登记双 composition 测试；这里描述的是当前 catalog。每次只选择一个精确场景。运行前先通过 `scripts/dev/start` 启动当前 R5 DEV，再执行：
 

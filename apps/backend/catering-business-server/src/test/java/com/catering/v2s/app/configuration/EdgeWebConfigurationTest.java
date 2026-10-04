@@ -32,8 +32,14 @@ class EdgeWebConfigurationTest {
         ReadOnlyTaskConnectionScopeInterceptor readScope = mock(ReadOnlyTaskConnectionScopeInterceptor.class);
         ObjectProvider<ReadOnlyTaskConnectionScopeInterceptor> readScopeProvider = mock(ObjectProvider.class);
         when(readScopeProvider.getObject()).thenReturn(readScope);
-        EdgeWebConfiguration configuration = new EdgeWebConfiguration(
-                mock(EdgeRequestContextArgumentResolver.class), provider, readScopeProvider, new ObjectMapper(), "", "");
+        EdgeWebConfiguration configuration =
+                new EdgeWebConfiguration(
+                        mock(EdgeRequestContextArgumentResolver.class),
+                        provider,
+                        readScopeProvider,
+                        new ObjectMapper(),
+                        "",
+                        "");
         CapturingRegistry registry = new CapturingRegistry();
 
         configuration.addInterceptors(registry);

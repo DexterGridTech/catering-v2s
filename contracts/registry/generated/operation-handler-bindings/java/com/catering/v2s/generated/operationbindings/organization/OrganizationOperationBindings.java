@@ -62,6 +62,12 @@ public final class OrganizationOperationBindings {
     OperationBindingTypes.Wire.StoreServicePointArea postOperationsStoreServicePointAreaStatus(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAreaStatusRequest request);
     OperationBindingTypes.Wire.StoreServicePoint postOperationsStoreServicePointOrder(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointOrderRequest request);
     OperationBindingTypes.Wire.StoreServicePoint postOperationsStoreServicePointStatus(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointStatusRequest request);
+    OperationBindingTypes.Wire.TerminalServicePointRead terminalReadServicePoint(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.TerminalCredentialReadContext context, OperationBindingTypes.Wire.TerminalServicePointReadQuery request);
+    OperationBindingTypes.Wire.TerminalServicePointAreaRead terminalReadServicePointArea(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.TerminalCredentialReadContext context, OperationBindingTypes.Wire.TerminalServicePointAreaReadQuery request);
+    OperationBindingTypes.Wire.TerminalStoreBasicRead terminalReadStoreBasic(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.TerminalCredentialReadContext context, OperationBindingTypes.Wire.NoBody request);
+    OperationBindingTypes.Wire.TerminalStoreOrganizationPathRead terminalReadStoreOrganizationPath(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.TerminalCredentialReadContext context, OperationBindingTypes.Wire.NoBody request);
+    OperationBindingTypes.Wire.TerminalStoreServicePointAreasRead terminalReadStoreServicePointAreas(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.TerminalCredentialReadContext context, OperationBindingTypes.Wire.NoBody request);
+    OperationBindingTypes.Wire.TerminalStoreServicePointsRead terminalReadStoreServicePoints(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.TerminalCredentialReadContext context, OperationBindingTypes.Wire.NoBody request);
   }
 
   private final OwnerLocalAdapters adapters;
@@ -122,6 +128,12 @@ public final class OrganizationOperationBindings {
   public static final OperationBindingTypes.OperationDescriptor POST_OPERATIONS_STORE_SERVICE_POINT_AREA_STATUS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("postOperationsStoreServicePointAreaStatus", "organization", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor POST_OPERATIONS_STORE_SERVICE_POINT_ORDER_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("postOperationsStoreServicePointOrder", "organization", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor POST_OPERATIONS_STORE_SERVICE_POINT_STATUS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("postOperationsStoreServicePointStatus", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor TERMINAL_READ_SERVICE_POINT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("terminalReadServicePoint", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor TERMINAL_READ_SERVICE_POINT_AREA_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("terminalReadServicePointArea", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor TERMINAL_READ_STORE_BASIC_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("terminalReadStoreBasic", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor TERMINAL_READ_STORE_ORGANIZATION_PATH_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("terminalReadStoreOrganizationPath", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor TERMINAL_READ_STORE_SERVICE_POINT_AREAS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("terminalReadStoreServicePointAreas", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor TERMINAL_READ_STORE_SERVICE_POINTS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("terminalReadStoreServicePoints", "organization", "edge-face");
 
   private static void requireReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
     if (descriptor == null) throw new IllegalArgumentException("descriptor is required");
@@ -149,6 +161,19 @@ public final class OrganizationOperationBindings {
       case "getOperationsStoreServicePoint" -> { if (descriptor != GET_OPERATIONS_STORE_SERVICE_POINT_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsStoreServicePointAreas" -> { if (descriptor != GET_OPERATIONS_STORE_SERVICE_POINT_AREAS_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsStoreServicePoints" -> { if (descriptor != GET_OPERATIONS_STORE_SERVICE_POINTS_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      default -> throw new IllegalArgumentException("unsupported descriptor");
+    }
+  }
+
+  private static void requireTerminalCredentialReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
+    if (descriptor == null) throw new IllegalArgumentException("descriptor is required");
+    switch (descriptor.operationId()) {
+      case "terminalReadServicePoint" -> { if (descriptor != TERMINAL_READ_SERVICE_POINT_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "terminalReadServicePointArea" -> { if (descriptor != TERMINAL_READ_SERVICE_POINT_AREA_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "terminalReadStoreBasic" -> { if (descriptor != TERMINAL_READ_STORE_BASIC_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "terminalReadStoreOrganizationPath" -> { if (descriptor != TERMINAL_READ_STORE_ORGANIZATION_PATH_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "terminalReadStoreServicePointAreas" -> { if (descriptor != TERMINAL_READ_STORE_SERVICE_POINT_AREAS_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "terminalReadStoreServicePoints" -> { if (descriptor != TERMINAL_READ_STORE_SERVICE_POINTS_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       default -> throw new IllegalArgumentException("unsupported descriptor");
     }
   }
@@ -184,6 +209,19 @@ public final class OrganizationOperationBindings {
     };
   }
 
+  /** Edge-authenticated terminal reads receive verified, secret-free binding facts. */
+  public Object invokeTerminalCredentialRead(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.TerminalCredentialReadContext context, Object request) {
+    requireTerminalCredentialReadDescriptor(descriptor);
+    return switch (descriptor.operationId()) {
+      case "terminalReadServicePoint" -> adapters.terminalReadServicePoint(TERMINAL_READ_SERVICE_POINT_DESCRIPTOR, context, (OperationBindingTypes.Wire.TerminalServicePointReadQuery) request);
+      case "terminalReadServicePointArea" -> adapters.terminalReadServicePointArea(TERMINAL_READ_SERVICE_POINT_AREA_DESCRIPTOR, context, (OperationBindingTypes.Wire.TerminalServicePointAreaReadQuery) request);
+      case "terminalReadStoreBasic" -> adapters.terminalReadStoreBasic(TERMINAL_READ_STORE_BASIC_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
+      case "terminalReadStoreOrganizationPath" -> adapters.terminalReadStoreOrganizationPath(TERMINAL_READ_STORE_ORGANIZATION_PATH_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
+      case "terminalReadStoreServicePointAreas" -> adapters.terminalReadStoreServicePointAreas(TERMINAL_READ_STORE_SERVICE_POINT_AREAS_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
+      case "terminalReadStoreServicePoints" -> adapters.terminalReadStoreServicePoints(TERMINAL_READ_STORE_SERVICE_POINTS_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
+      default -> throw new IllegalArgumentException("Unsupported terminal credential read: " + descriptor.operationId());
+    };
+  }
 
   public OperationBindingTypes.Wire.NoContent addOperationsOrganizationHeadCompanyBrandAuthorization(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.HeadCompanyBrandAuthorizationAddRequest request) {
     return adapters.addOperationsOrganizationHeadCompanyBrandAuthorization(ADD_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_DESCRIPTOR, context, request);

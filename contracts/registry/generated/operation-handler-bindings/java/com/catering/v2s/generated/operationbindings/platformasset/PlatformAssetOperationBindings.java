@@ -46,7 +46,6 @@ public final class PlatformAssetOperationBindings {
     };
   }
 
-
   public OperationBindingTypes.Wire.NoContent releasePlatformStagedAsset(OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.NoBody request) {
     return adapters.releasePlatformStagedAsset(RELEASE_PLATFORM_STAGED_ASSET_DESCRIPTOR, context, request);
   }

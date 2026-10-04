@@ -24,6 +24,7 @@ const createInitialState = (input: CreateTopologyStateInput): TopologyState =>
     peerConnectionRevision: 0,
     peerStateSyncConnectionId: null,
     peerAppliedStateSyncRevisions: Object.freeze({}),
+    peerFailedStateSyncRevisions: Object.freeze({}),
     hostDesired: false,
     hostReconcileRevision: 0,
     hostActual: 'stopped',
@@ -58,6 +59,7 @@ const topologySlice = createSlice({
       peerReachable: false,
       peerStateSyncConnectionId: null,
       peerAppliedStateSyncRevisions: Object.freeze({}),
+      peerFailedStateSyncRevisions: Object.freeze({}),
     }),
     setHostAddress: (state, action: PayloadAction<NonNullable<TopologyState['hostAddress']>>): TopologyState => ({
       ...state!,
@@ -74,6 +76,7 @@ const topologySlice = createSlice({
       peerReachable: false,
       peerStateSyncConnectionId: null,
       peerAppliedStateSyncRevisions: Object.freeze({}),
+      peerFailedStateSyncRevisions: Object.freeze({}),
     }),
     setPeerReachable: (state, action: PayloadAction<boolean>): TopologyState => ({
       ...state!,
@@ -84,11 +87,13 @@ const topologySlice = createSlice({
       peerConnectionRevision: state!.peerConnectionRevision + 1,
       peerStateSyncConnectionId: null,
       peerAppliedStateSyncRevisions: Object.freeze({}),
+      peerFailedStateSyncRevisions: Object.freeze({}),
     }),
     setPeerStateSyncConnection: (state, action: PayloadAction<string | null>): TopologyState => ({
       ...state!,
       peerStateSyncConnectionId: action.payload,
       peerAppliedStateSyncRevisions: Object.freeze({}),
+      peerFailedStateSyncRevisions: Object.freeze({}),
     }),
     markPeerStateSyncSliceApplied: (
       state,
@@ -101,6 +106,29 @@ const topologySlice = createSlice({
         ...state!,
         peerAppliedStateSyncRevisions: Object.freeze({
           ...state!.peerAppliedStateSyncRevisions,
+          [action.payload.sliceName]: action.payload.revision,
+        }),
+        peerFailedStateSyncRevisions: Object.freeze(
+          Object.fromEntries(
+            Object.entries(state!.peerFailedStateSyncRevisions).filter(
+              ([sliceName, failedRevision]) =>
+                sliceName !== action.payload.sliceName || failedRevision > action.payload.revision,
+            ),
+          ),
+        ),
+      };
+    },
+    markPeerStateSyncSliceFailed: (
+      state,
+      action: PayloadAction<Readonly<{connectionId: string; sliceName: string; revision: number}>>,
+    ): TopologyState => {
+      if (state!.peerStateSyncConnectionId !== action.payload.connectionId) return state!;
+      const previousRevision = state!.peerFailedStateSyncRevisions[action.payload.sliceName] ?? 0;
+      if (action.payload.revision <= previousRevision) return state!;
+      return {
+        ...state!,
+        peerFailedStateSyncRevisions: Object.freeze({
+          ...state!.peerFailedStateSyncRevisions,
           [action.payload.sliceName]: action.payload.revision,
         }),
       };

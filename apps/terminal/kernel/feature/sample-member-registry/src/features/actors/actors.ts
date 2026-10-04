@@ -14,10 +14,16 @@ import {
 } from '../commands/commands';
 import {createInvalidMemberPayloadError} from '../../foundations/errors';
 import {moduleName} from '../../moduleName';
-import {selectBranchPendingMember, selectHostPendingMember} from '../../selectors/selectors';
+import {selectBranchPendingMember, selectHostPendingMember, selectMembers} from '../../selectors/selectors';
 import {memberActions} from '../slices/slice';
 import type {PendingMember} from '../../types/types';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
+import type {StateRoot} from '@catering-v2s/kernel-base-state';
+
+export type MemberMutationGuard = (state: StateRoot) => boolean;
+const requireEligible = (guard: MemberMutationGuard | undefined, context: ActorExecutionContext): void => {
+  if (guard !== undefined && !guard(context.getState())) throw new Error('MEMBER_MUTATION_REQUIRES_ACTIVE_SESSION');
+};
 
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -36,9 +42,10 @@ const readPendingPayload = (context: ActorExecutionContext): Omit<PendingMember,
   return Object.freeze({name: value.name, phone: value.phone});
 };
 
-export const createSubmitMemberActor = (): ActorDefinition =>
+export const createSubmitMemberActor = (guard?: MemberMutationGuard): ActorDefinition =>
   defineActor(moduleName, 'submit', [
     onCommand(submitMemberCommand, async context => {
+      requireEligible(guard, context);
       const requestId = context.command.requestId;
       if (requestId === null) throw createInvalidMemberPayloadError(context);
       const pending = Object.freeze({...readPendingPayload(context), operationId: String(requestId)});
@@ -52,14 +59,25 @@ export const createSubmitMemberActor = (): ActorDefinition =>
     }),
   ]);
 
-export const createConfirmMemberActor = (): ActorDefinition =>
+export const createConfirmMemberActor = (guard?: MemberMutationGuard): ActorDefinition =>
   defineActor(moduleName, 'confirm', [
     onCommand(confirmMemberCommand, async context => {
+      requireEligible(guard, context);
       const {operationId} = context.command.payload;
       if (typeof operationId !== 'string' || operationId.length === 0) return null;
       const isMaster = selectRuntimeInstanceMode(context.getState()) === 'MASTER';
-      const pending = isMaster ? selectHostPendingMember(context.getState()) : selectBranchPendingMember(context.getState());
+      const pending = isMaster
+        ? selectHostPendingMember(context.getState())
+        : selectBranchPendingMember(context.getState());
       if (pending === null || pending.operationId !== operationId) return null;
+      if (!isMaster) {
+        const registered = selectMembers(context.getState()).find(member => member.operationId === operationId);
+        if (registered !== undefined) {
+          context.dispatchAction(memberActions.withdrawBranchPending(operationId));
+          await context.dispatchCommand(memberConfirmedCommand, {memberId: registered.memberId});
+          return null;
+        }
+      }
       const requestedAge = context.command.payload.age;
       const age = typeof requestedAge === 'number' && Number.isFinite(requestedAge) ? requestedAge : undefined;
       const member = Object.freeze({
@@ -92,16 +110,21 @@ export const createConfirmMemberActor = (): ActorDefinition =>
     }),
   ]);
 
-export const createRegisterBranchConfirmedMemberActor = (): ActorDefinition =>
+export const createRegisterBranchConfirmedMemberActor = (guard?: MemberMutationGuard): ActorDefinition =>
   defineActor(moduleName, 'register-branch-confirmed', [
     onCommand(registerBranchConfirmedMemberCommand, context => {
+      requireEligible(guard, context);
       if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER') return null;
       const {operationId, name, phone, age} = context.command.payload;
       if (
-        typeof operationId !== 'string' || operationId.length === 0 ||
-        typeof name !== 'string' || name.trim().length === 0 ||
-        typeof phone !== 'string' || phone.trim().length === 0
-      ) throw createInvalidMemberPayloadError(context);
+        typeof operationId !== 'string' ||
+        operationId.length === 0 ||
+        typeof name !== 'string' ||
+        name.trim().length === 0 ||
+        typeof phone !== 'string' ||
+        phone.trim().length === 0
+      )
+        throw createInvalidMemberPayloadError(context);
       const member = Object.freeze({
         memberId: operationId,
         operationId,
@@ -115,12 +138,14 @@ export const createRegisterBranchConfirmedMemberActor = (): ActorDefinition =>
     }),
   ]);
 
-export const createRejectMemberActor = (): ActorDefinition =>
+export const createRejectMemberActor = (guard?: MemberMutationGuard): ActorDefinition =>
   defineActor(moduleName, 'reject', [
     onCommand(rejectMemberCommand, async context => {
-      const pending = selectRuntimeInstanceMode(context.getState()) === 'MASTER'
-        ? selectHostPendingMember(context.getState())
-        : selectBranchPendingMember(context.getState());
+      requireEligible(guard, context);
+      const pending =
+        selectRuntimeInstanceMode(context.getState()) === 'MASTER'
+          ? selectHostPendingMember(context.getState())
+          : selectBranchPendingMember(context.getState());
       if (pending === null || pending.operationId !== context.command.payload.operationId) return null;
       await context.dispatchCommand(memberRejectedCommand, {
         operationId: pending.operationId,
@@ -129,11 +154,16 @@ export const createRejectMemberActor = (): ActorDefinition =>
       return null;
     }),
     onCommand(withdrawMemberCommand, async context => {
+      requireEligible(guard, context);
       const isMaster = selectRuntimeInstanceMode(context.getState()) === 'MASTER';
-      const pending = isMaster ? selectHostPendingMember(context.getState()) : selectBranchPendingMember(context.getState());
+      const pending = isMaster
+        ? selectHostPendingMember(context.getState())
+        : selectBranchPendingMember(context.getState());
       const operationId = context.command.payload.operationId;
       if (pending === null || pending.operationId !== operationId) return null;
-      context.dispatchAction(isMaster ? memberActions.withdrawHostPending(operationId) : memberActions.withdrawBranchPending(operationId));
+      context.dispatchAction(
+        isMaster ? memberActions.withdrawHostPending(operationId) : memberActions.withdrawBranchPending(operationId),
+      );
       await context.dispatchCommand(memberWithdrawnCommand, {operationId});
       return null;
     }),

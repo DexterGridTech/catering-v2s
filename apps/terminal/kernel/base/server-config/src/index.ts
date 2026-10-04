@@ -9,6 +9,7 @@ export {
 } from './features/commands';
 export {selectServerConfiguration} from './selectors/selectServerConfiguration';
 export {resolveServerNetworkSnapshot} from './selectors/selectServerConfiguration';
+export {serverConfigSliceName} from './features/slices/serverConfig';
 export type {
   EffectiveServerConfigView,
   ServerConfigAddressInput,

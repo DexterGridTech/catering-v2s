@@ -56,7 +56,6 @@ public final class StoreTerminalOperationBindings {
     };
   }
 
-
   public OperationBindingTypes.Wire.StoreTerminalMutation postOperationsStoreTerminal(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreTerminalCreateRequest request) {
     return adapters.postOperationsStoreTerminal(POST_OPERATIONS_STORE_TERMINAL_DESCRIPTOR, context, request);
   }

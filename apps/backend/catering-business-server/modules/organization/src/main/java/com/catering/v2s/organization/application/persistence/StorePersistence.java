@@ -15,10 +15,24 @@ import org.springframework.stereotype.Repository;
 public class StorePersistence {
     private final JdbcTemplate jdbc;
     private final OrganizationAuditEventWriter auditEvents;
+    private final OrganizationTerminalTopicSnapshotPersistence terminalTopics;
 
     public StorePersistence(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
         this.auditEvents = new OrganizationAuditEventWriter(jdbc);
+        this.terminalTopics = new OrganizationTerminalTopicSnapshotPersistence(jdbc);
+    }
+
+    public void notifyStore(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
+        terminalTopics.notifyExact(workspaceUuid, groupWorkspaceKey, "STORE", storeRef);
+    }
+
+    public void notifyOperatingRule(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
+        terminalTopics.notifyExact(workspaceUuid, groupWorkspaceKey, "STORE_OPERATING_RULE", storeRef);
+    }
+
+    public void initializeTerminalTopicCollections(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
+        terminalTopics.initializeEmptyStoreCollections(workspaceUuid, groupWorkspaceKey, storeRef);
     }
 
     public UpdateFacts readUpdateFacts(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {

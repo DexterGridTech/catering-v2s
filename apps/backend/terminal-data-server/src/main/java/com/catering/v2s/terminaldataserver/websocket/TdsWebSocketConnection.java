@@ -35,6 +35,7 @@ public final class TdsWebSocketConnection {
     private final AtomicBoolean authenticationReady = new AtomicBoolean();
     private final AtomicBoolean releasePermitOnOutbound = new AtomicBoolean();
     private final AtomicReference<SessionIdentity> persistedSession = new AtomicReference<>();
+    private volatile long bindingGeneration;
     private volatile String closeReason;
 
     public TdsWebSocketConnection(
@@ -73,8 +74,10 @@ public final class TdsWebSocketConnection {
         return authenticationReady.get();
     }
 
-    public boolean sendSessionReady(String text, SessionIdentity identity) {
+    public boolean sendSessionReady(String text, SessionIdentity identity, long generation) {
+        if (generation < 1) throw new IllegalArgumentException("TDS_SESSION_GENERATION_INVALID");
         persistedSession.set(identity);
+        bindingGeneration = generation;
         authenticationReady.set(true);
         releasePermitOnOutbound.set(true);
         boolean accepted = sendText(text);
@@ -83,6 +86,10 @@ public final class TdsWebSocketConnection {
             releasePermitOnOutbound.set(false);
         }
         return accepted;
+    }
+
+    public boolean sendSessionReady(String text, SessionIdentity identity) {
+        return sendSessionReady(text, identity, 1);
     }
 
     public boolean sendText(String text) {
@@ -103,6 +110,10 @@ public final class TdsWebSocketConnection {
 
     public SessionIdentity persistedSession() {
         return persistedSession.get();
+    }
+
+    public long bindingGeneration() {
+        return bindingGeneration;
     }
 
     public String closeReasonOr(String fallback) {

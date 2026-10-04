@@ -5,8 +5,254 @@
     "version": "0.5.0"
   },
   "paths": {
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}": {
+      "$ref": "./paths/public/invitation-acceptance.paths.json#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}"
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete": {
+      "$ref": "./paths/public/invitation-acceptance.paths.json#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}~1complete"
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion": {
+      "$ref": "./paths/public/invitation-acceptance.paths.json#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}~1completion"
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials": {
+      "$ref": "./paths/public/invitation-acceptance.paths.json#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}~1credentials"
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send": {
+      "$ref": "./paths/public/invitation-acceptance.paths.json#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}~1otp~1send"
+    },
+    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify": {
+      "$ref": "./paths/public/invitation-acceptance.paths.json#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}~1otp~1verify"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation": {
+      "$ref": "./paths/terminal/activation.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1activation"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel": {
+      "$ref": "./paths/terminal/activation.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1terminals~1{terminalRef}~1activation~1cancel"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations": {
+      "$ref": "./paths/operations-admin/head-company-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1head-companies~1{headCompanyId}~1brand-authorizations"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies": {
+      "$ref": "./paths/operations-admin/head-company-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1head-companies"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}": {
+      "$ref": "./paths/operations-admin/head-company-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1head-companies~1{headCompanyId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}": {
+      "$ref": "./paths/operations-admin/head-company-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1head-companies~1{headCompanyId}~1brand-authorizations~1{brandId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status": {
+      "$ref": "./paths/operations-admin/head-company-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1head-companies~1{headCompanyId}~1status"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections~1{salesSectionRef}~1items"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1archive"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1copies"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1items~1{salesItemRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections~1{salesSectionRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/item-candidates": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1item-candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1sales-menu-operation-records"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1publication-preview"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1items~1{salesItemRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1sections~1{salesSectionRef}~1items"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1sections"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1items~1{salesItemRef}~1move"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections~1{salesSectionRef}~1move"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1publications"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1items~1{salesItemRef}~1assets~1stage~1{assetRef}~1release"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1name"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections~1{salesSectionRef}~1name"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1items~1{salesItemRef}~1channels~1{channelRef}~1manual-restore"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1channels~1{channelRef}~1activation"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1items~1{salesItemRef}~1channels~1{channelRef}~1manual-sold-out"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1items~1{salesItemRef}~1assets~1stage"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule": {
+      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1schedule"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel": {
+      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1{terminalRef}~1activation~1cancel"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}": {
+      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1{terminalRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates": {
+      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1area-candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals": {
+      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates": {
+      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1tag-candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status": {
+      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1{terminalRef}~1status"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations~1{invitationId}~1cancel"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations~1{invitationId}~1cancel"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations~1{invitationId}~1cancel"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations~1{invitationId}~1cancel"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1invitations~1{invitationId}~1cancel"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1invitations"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations~1candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1user"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1user~1accounts~1{accountId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations~1candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1user"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1user~1accounts~1{accountId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations~1candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1user"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1user~1accounts~1{accountId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations~1candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1user"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1user~1accounts~1{accountId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1invitations~1candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1user"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1user~1accounts~1{accountId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations~1{invitationId}~1reissue"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations~1{invitationId}~1reissue"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations~1{invitationId}~1reissue"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations~1{invitationId}~1reissue"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1invitations~1{invitationId}~1reissue"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1user~1assignments~1{assignmentId}~1revoke"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1user~1assignments~1{assignmentId}~1revoke"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1user~1assignments~1{assignmentId}~1revoke"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1user~1assignments~1{assignmentId}~1revoke"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke": {
+      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1user~1assignments~1{assignmentId}~1revoke"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}~1cancel"
+    },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations": {
       "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts"
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}": {
       "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}"
@@ -14,20 +260,8 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates": {
       "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitation-candidates"
     },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}~1cancel"
-    },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue": {
       "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1invitations~1{invitationId}~1reissue"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status": {
-      "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}~1status"
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset": {
       "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}~1credential-reset"
@@ -35,131 +269,113 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke": {
       "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}~1assignments~1{assignmentId}~1revoke"
     },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview": {
-      "$ref": "./paths/platform-admin/contract-overview.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1contract-overview"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview/{contractId}": {
-      "$ref": "./paths/platform-admin/contract-overview.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1contract-overview~1{contractId}"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/candidates": {
-      "$ref": "./paths/platform-admin/contract-overview.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview~1candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry": {
-      "$ref": "./paths/operations-admin/workspace-auth.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1login-entry"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login": {
-      "$ref": "./paths/operations-admin/workspace-auth.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1password-login"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send": {
-      "$ref": "./paths/operations-admin/workspace-auth.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1otp~1send"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify": {
-      "$ref": "./paths/operations-admin/workspace-auth.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1otp~1verify"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry": {
-      "$ref": "./paths/operations-admin/workspace-auth.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1session~1entry"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context": {
-      "$ref": "./paths/operations-admin/workspace-session.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1session~1context"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password": {
-      "$ref": "./paths/operations-admin/workspace-session.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1session~1password"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node": {
-      "$ref": "./paths/operations-admin/workspace-session.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1session~1data-node"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/logout": {
-      "$ref": "./paths/operations-admin/workspace-session.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1logout"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}": {
-      "$ref": "./paths/platform-admin/group-workspace-management.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/status": {
-      "$ref": "./paths/platform-admin/group-workspace-management.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1status"
-    },
-    "/api/platform/group-workspaces": {
-      "$ref": "./paths/platform-admin/group-workspace-management.paths.json#/paths/~1api~1platform~1group-workspaces"
-    },
-    "/api/platform/assets/staging": {
-      "$ref": "./paths/platform-admin/group-workspace-management.paths.json#/paths/~1api~1platform~1assets~1staging"
-    },
-    "/api/platform/assets/staging/{assetRef}/release": {
-      "$ref": "./paths/platform-admin/group-workspace-management.paths.json#/paths/~1api~1platform~1assets~1staging~1{assetRef}~1release"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview": {
-      "$ref": "./paths/platform-admin/organization-overview.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy": {
-      "$ref": "./paths/platform-admin/organization-overview.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview~1hierarchy"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/{category}/{itemId}": {
-      "$ref": "./paths/platform-admin/organization-overview.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview~1{category}~1{itemId}"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group": {
-      "$ref": "./paths/platform-admin/commercial-group.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1commercial-group"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/roles": {
-      "$ref": "./paths/platform-admin/role-management.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1roles"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}": {
-      "$ref": "./paths/platform-admin/role-management.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1roles~1{roleId}"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status": {
-      "$ref": "./paths/platform-admin/role-management.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1roles~1{roleId}~1status"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions": {
-      "$ref": "./paths/platform-admin/extension-definition.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1extension-definitions"
-    },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}": {
-      "$ref": "./paths/platform-admin/extension-definition.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1extension-definitions~1{entityType}"
-    },
-    "/api/platform/auth/password-login": {
-      "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1password-login"
-    },
-    "/api/platform/auth/session": {
-      "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1session"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status": {
+      "$ref": "./paths/platform-admin/workspace-access.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1accounts~1{accountId}~1status"
     },
     "/api/platform/auth/password": {
       "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1password"
     },
+    "/api/platform/auth/password-recovery/complete": {
+      "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1password-recovery~1complete"
+    },
+    "/api/platform/auth/session": {
+      "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1session"
+    },
     "/api/platform/auth/logout": {
       "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1logout"
+    },
+    "/api/platform/auth/password-login": {
+      "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1password-login"
     },
     "/api/platform/auth/login-otp/send": {
       "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1login-otp~1send"
     },
-    "/api/platform/auth/login-otp/verify": {
-      "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1login-otp~1verify"
+    "/api/platform/auth/password-recovery/otp/send": {
+      "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1password-recovery~1otp~1send"
     },
     "/api/platform/auth/password-recovery/start": {
       "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1password-recovery~1start"
     },
-    "/api/platform/auth/password-recovery/otp/send": {
-      "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1password-recovery~1otp~1send"
+    "/api/platform/auth/login-otp/verify": {
+      "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1login-otp~1verify"
     },
     "/api/platform/auth/password-recovery/otp/verify": {
       "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1password-recovery~1otp~1verify"
     },
-    "/api/platform/auth/password-recovery/complete": {
-      "$ref": "./paths/platform-admin/platform-auth.paths.json#/paths/~1api~1platform~1auth~1password-recovery~1complete"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password": {
+      "$ref": "./paths/operations-admin/workspace-session.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1session~1password"
     },
-    "/api/public/assets/{assetRef}/content": {
-      "$ref": "./paths/public/asset-content.paths.json#/paths/~1api~1public~1assets~1{assetRef}~1content"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/logout": {
+      "$ref": "./paths/operations-admin/workspace-session.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1logout"
     },
-    "/api/platform/admin-users": {
-      "$ref": "./paths/platform-admin/platform-admin-management.paths.json#/paths/~1api~1platform~1admin-users"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context": {
+      "$ref": "./paths/operations-admin/workspace-session.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1session~1context"
     },
-    "/api/platform/admin-users/{platformAdminId}": {
-      "$ref": "./paths/platform-admin/platform-admin-management.paths.json#/paths/~1api~1platform~1admin-users~1{platformAdminId}"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node": {
+      "$ref": "./paths/operations-admin/workspace-session.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1session~1data-node"
     },
-    "/api/platform/admin-users/{platformAdminId}/profile": {
-      "$ref": "./paths/platform-admin/platform-admin-management.paths.json#/paths/~1api~1platform~1admin-users~1{platformAdminId}~1profile"
+    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete": {
+      "$ref": "./paths/public/access-recovery.paths.json#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1complete"
     },
-    "/api/platform/admin-users/{platformAdminId}/status": {
-      "$ref": "./paths/platform-admin/platform-admin-management.paths.json#/paths/~1api~1platform~1admin-users~1{platformAdminId}~1status"
+    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send": {
+      "$ref": "./paths/public/access-recovery.paths.json#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1otp~1send"
     },
-    "/api/platform/admin-users/{platformAdminId}/credential-reset": {
-      "$ref": "./paths/platform-admin/platform-admin-management.paths.json#/paths/~1api~1platform~1admin-users~1{platformAdminId}~1credential-reset"
+    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start": {
+      "$ref": "./paths/public/access-recovery.paths.json#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1start"
+    },
+    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify": {
+      "$ref": "./paths/public/access-recovery.paths.json#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1otp~1verify"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channels"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channels~1{channelRef}~1owner-binding"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channels~1{channelRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/visible-stores": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates~1{templateRef}~1visible-stores"
+    },
+    "/api/operations/external-capability-dictionary": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1external-capability-dictionary"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1external-provider-candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1business-channels"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1business-channels"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-template-candidates": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-template-candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates~1{templateRef}~1status"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates~1{templateRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts": {
+      "$ref": "./paths/operations-admin/contract-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1contracts"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}": {
+      "$ref": "./paths/operations-admin/contract-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1contracts~1{contractId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/candidates": {
+      "$ref": "./paths/operations-admin/contract-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1contracts~1candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/extension-definition": {
+      "$ref": "./paths/operations-admin/contract-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1contracts~1extension-definition"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate": {
+      "$ref": "./paths/operations-admin/contract-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1contracts~1{contractId}~1invalidate"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands": {
       "$ref": "./paths/operations-admin/brand-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1brands"
@@ -170,6 +386,42 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status": {
       "$ref": "./paths/operations-admin/brand-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1brands~1{brandId}~1status"
     },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects": {
+      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1regions~1{regionId}~1projects"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions": {
+      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1regions"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy": {
+      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/hierarchy/extension-definition": {
+      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1hierarchy~1extension-definition"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status": {
+      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1{nodeId}~1status"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/commercial-group": {
+      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1commercial-group"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}": {
+      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1{nodeId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores": {
+      "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates": {
+      "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}": {
+      "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1{storeId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition": {
+      "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1extension-definition"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status": {
+      "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1{storeId}~1status"
+    },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants": {
       "$ref": "./paths/operations-admin/tenant-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1tenants"
     },
@@ -179,230 +431,53 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status": {
       "$ref": "./paths/operations-admin/tenant-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1tenants~1{tenantId}~1status"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies": {
-      "$ref": "./paths/operations-admin/head-company-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1head-companies"
+    "/api/platform/admin-users": {
+      "$ref": "./paths/platform-admin/platform-admin-management.paths.json#/paths/~1api~1platform~1admin-users"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}": {
-      "$ref": "./paths/operations-admin/head-company-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1head-companies~1{headCompanyId}"
+    "/api/platform/admin-users/{platformAdminId}": {
+      "$ref": "./paths/platform-admin/platform-admin-management.paths.json#/paths/~1api~1platform~1admin-users~1{platformAdminId}"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status": {
-      "$ref": "./paths/operations-admin/head-company-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1head-companies~1{headCompanyId}~1status"
+    "/api/platform/admin-users/{platformAdminId}/credential-reset": {
+      "$ref": "./paths/platform-admin/platform-admin-management.paths.json#/paths/~1api~1platform~1admin-users~1{platformAdminId}~1credential-reset"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations": {
-      "$ref": "./paths/operations-admin/head-company-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1head-companies~1{headCompanyId}~1brand-authorizations"
+    "/api/platform/admin-users/{platformAdminId}/status": {
+      "$ref": "./paths/platform-admin/platform-admin-management.paths.json#/paths/~1api~1platform~1admin-users~1{platformAdminId}~1status"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}": {
-      "$ref": "./paths/operations-admin/head-company-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1head-companies~1{headCompanyId}~1brand-authorizations~1{brandId}"
+    "/api/platform/admin-users/{platformAdminId}/profile": {
+      "$ref": "./paths/platform-admin/platform-admin-management.paths.json#/paths/~1api~1platform~1admin-users~1{platformAdminId}~1profile"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/business-entities/extension-definition": {
-      "$ref": "./paths/operations-admin/business-entity-extension.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1business-entities~1extension-definition"
+    "/api/platform/group-workspaces": {
+      "$ref": "./paths/platform-admin/group-workspace-management.paths.json#/paths/~1api~1platform~1group-workspaces"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}": {
+      "$ref": "./paths/platform-admin/group-workspace-management.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations"
+    "/api/platform/assets/staging/{assetRef}/release": {
+      "$ref": "./paths/platform-admin/group-workspace-management.paths.json#/paths/~1api~1platform~1assets~1staging~1{assetRef}~1release"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations"
+    "/api/platform/assets/staging": {
+      "$ref": "./paths/platform-admin/group-workspace-management.paths.json#/paths/~1api~1platform~1assets~1staging"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/status": {
+      "$ref": "./paths/platform-admin/group-workspace-management.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1status"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1invitations"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1owner-bindings"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations~1candidates"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1owner-bindings~1{bindingRef}"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations~1candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations~1candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations~1candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1invitations~1candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations~1{invitationId}~1cancel"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations~1{invitationId}~1cancel"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations~1{invitationId}~1cancel"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations~1{invitationId}~1cancel"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1invitations~1{invitationId}~1cancel"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1invitations~1{invitationId}~1reissue"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1invitations~1{invitationId}~1reissue"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1invitations~1{invitationId}~1reissue"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1invitations~1{invitationId}~1reissue"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1invitations~1{invitationId}~1reissue"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1user"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1user"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1user"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1user"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1user"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1user~1accounts~1{accountId}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1user~1accounts~1{accountId}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1user~1accounts~1{accountId}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1user~1accounts~1{accountId}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1user~1accounts~1{accountId}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1group~1user~1assignments~1{assignmentId}~1revoke"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1region~1user~1assignments~1{assignmentId}~1revoke"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1project~1user~1assignments~1{assignmentId}~1revoke"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1head-company~1user~1assignments~1{assignmentId}~1revoke"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke": {
-      "$ref": "./paths/operations-admin/workspace-access.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1user-management~1store~1user~1assignments~1{assignmentId}~1revoke"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy": {
-      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/hierarchy/extension-definition": {
-      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1hierarchy~1extension-definition"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions": {
-      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1regions"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects": {
-      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1regions~1{regionId}~1projects"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/commercial-group": {
-      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1commercial-group"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}": {
-      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1{nodeId}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status": {
-      "$ref": "./paths/operations-admin/organization-hierarchy.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1hierarchy~1{nodeId}~1status"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores": {
-      "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates": {
-      "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition": {
-      "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1extension-definition"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}": {
-      "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1{storeId}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status": {
-      "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1{storeId}~1status"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches": {
-      "$ref": "./paths/operations-admin/store-operating-rule.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1{storeId}~1operating-rule-switches"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile": {
-      "$ref": "./paths/operations-admin/store-profile.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1store~1profile"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile/contracts": {
-      "$ref": "./paths/operations-admin/store-profile.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1store~1profile~1contracts"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts": {
-      "$ref": "./paths/operations-admin/contract-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1contracts"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/extension-definition": {
-      "$ref": "./paths/operations-admin/contract-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1contracts~1extension-definition"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/candidates": {
-      "$ref": "./paths/operations-admin/contract-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1contracts~1candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}": {
-      "$ref": "./paths/operations-admin/contract-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1contracts~1{contractId}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate": {
-      "$ref": "./paths/operations-admin/contract-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1contracts~1{contractId}~1invalidate"
-    },
-    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}": {
-      "$ref": "./paths/public/invitation-acceptance.paths.json#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}"
-    },
-    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send": {
-      "$ref": "./paths/public/invitation-acceptance.paths.json#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}~1otp~1send"
-    },
-    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify": {
-      "$ref": "./paths/public/invitation-acceptance.paths.json#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}~1otp~1verify"
-    },
-    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials": {
-      "$ref": "./paths/public/invitation-acceptance.paths.json#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}~1credentials"
-    },
-    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete": {
-      "$ref": "./paths/public/invitation-acceptance.paths.json#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}~1complete"
-    },
-    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion": {
-      "$ref": "./paths/public/invitation-acceptance.paths.json#/paths/~1api~1public~1invitations~1{groupWorkspaceKey}~1{invitationToken}~1completion"
-    },
-    "/api/platform/audit-history": {
-      "$ref": "./paths/platform-admin/audit-history.paths.json#/paths/~1api~1platform~1audit-history"
-    },
-    "/api/operations/audit-history": {
-      "$ref": "./paths/operations-admin/audit-history.paths.json#/paths/~1api~1operations~1audit-history"
-    },
-    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start": {
-      "$ref": "./paths/public/access-recovery.paths.json#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1start"
-    },
-    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send": {
-      "$ref": "./paths/public/access-recovery.paths.json#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1otp~1send"
-    },
-    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify": {
-      "$ref": "./paths/public/access-recovery.paths.json#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1otp~1verify"
-    },
-    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete": {
-      "$ref": "./paths/public/access-recovery.paths.json#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1complete"
+    "/api/platform/external-capability-dictionary": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1external-capability-dictionary"
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/external-collaboration": {
       "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1external-collaboration"
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}": {
       "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1external-systems~1{externalSystemCode}"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/owner-bindings": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1provider-profiles~1{providerCode}~1owner-bindings"
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}": {
       "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1provider-profiles~1{providerCode}"
@@ -413,134 +488,38 @@
     "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/status": {
       "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1provider-profiles~1{providerCode}~1status"
     },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/owner-bindings": {
-      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1provider-profiles~1{providerCode}~1owner-bindings"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/roles": {
+      "$ref": "./paths/platform-admin/role-management.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1roles"
     },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}": {
-      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1owner-bindings~1{bindingRef}"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}": {
+      "$ref": "./paths/platform-admin/role-management.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1roles~1{roleId}"
     },
-    "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings": {
-      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1owner-bindings"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status": {
+      "$ref": "./paths/platform-admin/role-management.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1roles~1{roleId}~1status"
     },
-    "/api/platform/external-capability-dictionary": {
-      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1external-capability-dictionary"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}": {
+      "$ref": "./paths/platform-admin/extension-definition.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1extension-definitions~1{entityType}"
     },
-    "/api/operations/external-capability-dictionary": {
-      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1external-capability-dictionary"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions": {
+      "$ref": "./paths/platform-admin/extension-definition.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1extension-definitions"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates": {
-      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1external-provider-candidates"
+    "/api/operations/audit-history": {
+      "$ref": "./paths/operations-admin/audit-history.paths.json#/paths/~1api~1operations~1audit-history"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding": {
-      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channels~1{channelRef}~1owner-binding"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile/contracts": {
+      "$ref": "./paths/operations-admin/store-profile.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1store~1profile~1contracts"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates": {
-      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile": {
+      "$ref": "./paths/operations-admin/store-profile.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1store~1profile"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/visible-stores": {
-      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates~1{templateRef}~1visible-stores"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/business-entities/extension-definition": {
+      "$ref": "./paths/operations-admin/business-entity-extension.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1business-entities~1extension-definition"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}": {
-      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates~1{templateRef}"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches": {
+      "$ref": "./paths/operations-admin/store-operating-rule.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1{storeId}~1operating-rule-switches"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status": {
-      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates~1{templateRef}~1status"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-template-candidates": {
-      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-template-candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels": {
-      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1business-channels"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels": {
-      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1business-channels"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels": {
-      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channels"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}": {
-      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channels~1{channelRef}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections~1{salesSectionRef}~1items"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1items~1{salesItemRef}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1sections"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1sections~1{salesSectionRef}~1items"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1items~1{salesItemRef}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/item-candidates": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1item-candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1publication-preview"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1sales-menu-operation-records"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1copies"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/name": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1name"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/archive": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1archive"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1channels~1{channelRef}~1activation"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1schedule"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections~1{salesSectionRef}~1name"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections~1{salesSectionRef}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/move": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1sections~1{salesSectionRef}~1move"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1items~1{salesItemRef}~1move"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1items~1{salesItemRef}~1assets~1stage"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/assets/stage/{assetRef}/release": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1draft~1items~1{salesItemRef}~1assets~1stage~1{assetRef}~1release"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1publications"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1items~1{salesItemRef}~1channels~1{channelRef}~1manual-sold-out"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore": {
-      "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1items~1{salesItemRef}~1channels~1{channelRef}~1manual-restore"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas": {
-      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points": {
-      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas~1{areaRef}~1service-points"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-channel-candidates": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1qr-channel-candidates"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration": {
       "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1qr-configuration"
@@ -548,53 +527,98 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}": {
       "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-points~1{servicePointRef}"
     },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas~1{areaRef}~1service-points"
+    },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}": {
       "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas~1{areaRef}"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/status": {
-      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas~1{areaRef}~1status"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/order": {
       "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas~1{areaRef}~1order"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/status": {
-      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-points~1{servicePointRef}~1status"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/status": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas~1{areaRef}~1status"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/order": {
       "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-points~1{servicePointRef}~1order"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-channel-candidates": {
-      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1qr-channel-candidates"
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage": {
-      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-assets~1stage"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/status": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-points~1{servicePointRef}~1status"
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release": {
       "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-assets~1stage~1{assetRef}~1release"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals": {
-      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-assets~1stage"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}": {
-      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1{terminalRef}"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry": {
+      "$ref": "./paths/operations-admin/workspace-auth.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1login-entry"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status": {
-      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1{terminalRef}~1status"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry": {
+      "$ref": "./paths/operations-admin/workspace-auth.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1session~1entry"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates": {
-      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1area-candidates"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login": {
+      "$ref": "./paths/operations-admin/workspace-auth.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1password-login"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates": {
-      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1tag-candidates"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send": {
+      "$ref": "./paths/operations-admin/workspace-auth.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1otp~1send"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/activation/cancel": {
-      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1{terminalRef}~1activation~1cancel"
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify": {
+      "$ref": "./paths/operations-admin/workspace-auth.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1otp~1verify"
     },
-    "/api/terminal/group-workspaces/{groupWorkspaceKey}/activation": {
-      "$ref": "./paths/terminal/activation.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1activation"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview/{contractId}": {
+      "$ref": "./paths/platform-admin/contract-overview.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1contract-overview~1{contractId}"
     },
-    "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel": {
-      "$ref": "./paths/terminal/activation.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1terminals~1{terminalRef}~1activation~1cancel"
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview": {
+      "$ref": "./paths/platform-admin/contract-overview.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1contract-overview"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/candidates": {
+      "$ref": "./paths/platform-admin/contract-overview.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview~1candidates"
+    },
+    "/api/platform/audit-history": {
+      "$ref": "./paths/platform-admin/audit-history.paths.json#/paths/~1api~1platform~1audit-history"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy": {
+      "$ref": "./paths/platform-admin/organization-overview.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview~1hierarchy"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/{category}/{itemId}": {
+      "$ref": "./paths/platform-admin/organization-overview.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview~1{category}~1{itemId}"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview": {
+      "$ref": "./paths/platform-admin/organization-overview.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1organization-overview"
+    },
+    "/api/public/assets/{assetRef}/content": {
+      "$ref": "./paths/public/asset-content.paths.json#/paths/~1api~1public~1assets~1{assetRef}~1content"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group": {
+      "$ref": "./paths/platform-admin/commercial-group.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1commercial-group"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/contracts/{contractRef}": {
+      "$ref": "./paths/terminal/data-read.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1contracts~1{contractRef}"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/service-points/{pointRef}": {
+      "$ref": "./paths/terminal/data-read.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1service-points~1{pointRef}"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/service-point-areas/{areaRef}": {
+      "$ref": "./paths/terminal/data-read.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1service-point-areas~1{areaRef}"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/contracts": {
+      "$ref": "./paths/terminal/data-read.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1contracts"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/basic": {
+      "$ref": "./paths/terminal/data-read.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1basic"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/organization-path": {
+      "$ref": "./paths/terminal/data-read.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1organization-path"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas": {
+      "$ref": "./paths/terminal/data-read.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points": {
+      "$ref": "./paths/terminal/data-read.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-points"
     }
   },
   "components": {
@@ -1569,6 +1593,30 @@
       },
       "SalesMenuCommandReadback": {
         "$ref": "./components/sales-menu/sales-menu.schemas.json#/components/schemas/SalesMenuCommandReadback"
+      },
+      "TerminalStoreBasicRead": {
+        "$ref": "./components/terminal/terminal-data-read.schemas.json#/components/schemas/TerminalStoreBasicRead"
+      },
+      "TerminalStoreOrganizationPathRead": {
+        "$ref": "./components/terminal/terminal-data-read.schemas.json#/components/schemas/TerminalStoreOrganizationPathRead"
+      },
+      "TerminalStoreActiveContractsRead": {
+        "$ref": "./components/terminal/terminal-data-read.schemas.json#/components/schemas/TerminalStoreActiveContractsRead"
+      },
+      "TerminalContractRead": {
+        "$ref": "./components/terminal/terminal-data-read.schemas.json#/components/schemas/TerminalContractRead"
+      },
+      "TerminalStoreServicePointAreasRead": {
+        "$ref": "./components/terminal/terminal-data-read.schemas.json#/components/schemas/TerminalStoreServicePointAreasRead"
+      },
+      "TerminalServicePointAreaRead": {
+        "$ref": "./components/terminal/terminal-data-read.schemas.json#/components/schemas/TerminalServicePointAreaRead"
+      },
+      "TerminalStoreServicePointsRead": {
+        "$ref": "./components/terminal/terminal-data-read.schemas.json#/components/schemas/TerminalStoreServicePointsRead"
+      },
+      "TerminalServicePointRead": {
+        "$ref": "./components/terminal/terminal-data-read.schemas.json#/components/schemas/TerminalServicePointRead"
       },
       "EpochMillis": {
         "$ref": "./components/common/time.schemas.json#/components/schemas/EpochMillis"
