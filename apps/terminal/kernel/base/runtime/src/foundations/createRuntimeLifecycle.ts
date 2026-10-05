@@ -20,6 +20,7 @@ type RuntimeLifecycleInput = Readonly<{
   descriptors: readonly RuntimeModuleDescriptor[];
   localNodeId: NodeId;
   platformPorts: PlatformPorts;
+  requestMaxResidenceMs: number;
   getStateRuntime: () => StateRuntime | undefined;
   dispatchCommand: DispatchCommand;
   installPeerDispatchGateway: (gateway: PeerDispatchGateway) => void;
@@ -43,6 +44,7 @@ const createModuleContext = (input: RuntimeLifecycleInput, module: RuntimeModule
     localNodeId: input.localNodeId,
     platformPorts: input.platformPorts,
     descriptors: input.descriptors,
+    requestMaxResidenceMs: input.requestMaxResidenceMs,
     getState: (): StateRoot => stateRuntime.getState(),
     flushPersistence: (): Promise<PersistenceOperationResult> => stateRuntime.flushPersistence(),
     subscribeState: (listener: () => void): (() => void) =>

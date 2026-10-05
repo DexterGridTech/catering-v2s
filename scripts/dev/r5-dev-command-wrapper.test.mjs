@@ -409,6 +409,11 @@ test('TDS terminal-control grants and probes wait for the complete CP-06 object 
     runnerSource.indexOf('function resolveManagedAcceptanceManifest('),
   );
   assert.match(principalProvision, /GRANT USAGE ON SCHEMA platform_workspace, store_terminal, organization, terminal_binding, terminal_connection, contract TO \$\{role\}/);
+  assert.match(
+    principalProvision,
+    /printf %s \$\{quote\(encodedSql\)\} \| base64 -d \| docker exec -i catering-postgres psql -U catering -d "\$database" -v ON_ERROR_STOP=1 -q/,
+    'schema-scoped grants must execute against the application database, not the postgres maintenance database',
+  );
   assert.doesNotMatch(principalProvision, /GRANT USAGE ON SCHEMA [^;]*terminal_control TO \$\{role\}/,
     'the stage-independent grant list must not name an object that CP-06 creates');
   assert.match(principalProvision, /to_regnamespace\('terminal_control'\)/);

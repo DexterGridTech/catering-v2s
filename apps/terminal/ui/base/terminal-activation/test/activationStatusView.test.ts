@@ -73,6 +73,7 @@ const branchState = (ready: boolean, localCredential = false): StateRoot => ({
     peerIdentity: ready ? {deviceId: 'host-device', runtimeId: 'host-runtime', nodeId: 'host-device'} : null,
     peerStateSyncConnectionId: ready ? 'current-peer-connection' : null,
     peerAppliedStateSyncRevisions: ready ? {[terminalClientStatusProjectionSliceName]: 1} : {},
+    peerFailedStateSyncRevisions: {},
   },
 });
 

@@ -107,24 +107,22 @@ class TerminalConnectionFrameCodecTest {
         UUID subscriptionId = UUID.randomUUID();
         UUID ownerRef = UUID.randomUUID();
         UUID notificationId = UUID.randomUUID();
-        var subscribe = codec.topicSubscribe(
-                "{\"type\":\"TOPIC_SUBSCRIBE\",\"subscriptionId\":\"" + subscriptionId
-                        + "\",\"topicKey\":\"STORE\",\"ownerRef\":\"" + ownerRef
-                        + "\",\"lastAcceptedTimeEpochMillis\":0,\"futureField\":true}");
+        var subscribe = codec.topicSubscribe("{\"type\":\"TOPIC_SUBSCRIBE\",\"subscriptionId\":\"" + subscriptionId
+                + "\",\"topicKey\":\"STORE\",\"ownerRef\":\"" + ownerRef
+                + "\",\"lastAcceptedTimeEpochMillis\":0,\"futureField\":true}");
         assertThat(subscribe.subscriptionId()).isEqualTo(subscriptionId);
         assertThat(subscribe.topicKey()).isEqualTo("STORE");
         assertThat(subscribe.ownerRef()).isEqualTo(ownerRef);
 
-        var accept = codec.topicAccept(
-                "{\"type\":\"TOPIC_ACCEPT\",\"notificationId\":\"" + notificationId
-                        + "\",\"subscriptionId\":\"" + subscriptionId
-                        + "\",\"topicKey\":\"STORE\",\"ownerRef\":\"" + ownerRef
-                        + "\",\"acceptedTimeEpochMillis\":12}");
+        var accept = codec.topicAccept("{\"type\":\"TOPIC_ACCEPT\",\"notificationId\":\"" + notificationId
+                + "\",\"subscriptionId\":\"" + subscriptionId
+                + "\",\"topicKey\":\"STORE\",\"ownerRef\":\"" + ownerRef
+                + "\",\"acceptedTimeEpochMillis\":12}");
         assertThat(accept.notificationId()).isEqualTo(notificationId);
         assertThat(accept.acceptedTimeEpochMillis()).isEqualTo(12);
 
-        JsonNode changed = mapper.readTree(codec.topicChanged(
-                notificationId.toString(), subscriptionId.toString(), "STORE", ownerRef, 12));
+        JsonNode changed = mapper.readTree(
+                codec.topicChanged(notificationId.toString(), subscriptionId.toString(), "STORE", ownerRef, 12));
         assertFieldsMatchProtocol("TOPIC_CHANGED", changed);
         assertThat(changed.path("topicTimeEpochMillis").asLong()).isEqualTo(12);
     }
@@ -195,26 +193,30 @@ class TerminalConnectionFrameCodecTest {
         assertThat(commandNode.path("parameters").path("greeting").asString()).isEqualTo("hello");
 
         UUID reportId = UUID.randomUUID();
-        var report = codec.remoteReport("""
+        var report = codec.remoteReport(
+                """
                 {"type":"REMOTE_REPORT","reportId":"%s","remoteOperationId":"%s",
                  "requestId":"%s","phase":"COMPLETED","occurredAt":"2026-10-04T12:00:00Z",
                  "result":{"actorResults":[]},"futureField":true}
-                """.formatted(reportId, operationId, requestId));
+                """
+                        .formatted(reportId, operationId, requestId));
         assertThat(report.reportId()).isEqualTo(reportId);
         assertThat(report.operationId()).isEqualTo(operationId);
         assertThat(report.phase()).isEqualTo("COMPLETED");
         assertThat(report.result().path("actorResults").isArray()).isTrue();
         assertThat(report.errorCode()).isNull();
 
-        var reportWithoutOptionalFields = codec.remoteReport("""
+        var reportWithoutOptionalFields = codec.remoteReport(
+                """
                 {"type":"REMOTE_REPORT","reportId":"%s","remoteOperationId":"%s",
                  "requestId":"%s","phase":"UNKNOWN","occurredAt":"2026-10-04T12:00:00Z"}
-                """.formatted(UUID.randomUUID(), operationId, requestId));
+                """
+                        .formatted(UUID.randomUUID(), operationId, requestId));
         assertThat(reportWithoutOptionalFields.result()).isNull();
         assertThat(reportWithoutOptionalFields.errorCode()).isNull();
 
-        JsonNode ack = mapper.readTree(codec.remoteReportAck(
-                reportId, operationId, requestId, Instant.parse("2026-10-04T12:00:01Z")));
+        JsonNode ack = mapper.readTree(
+                codec.remoteReportAck(reportId, operationId, requestId, Instant.parse("2026-10-04T12:00:01Z")));
         assertFieldsMatchProtocol("REMOTE_REPORT_ACK", ack);
         assertThat(ack.path("acceptedAt").asString()).isEqualTo("2026-10-04T12:00:01Z");
     }

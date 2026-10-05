@@ -32,7 +32,7 @@ import {
 import {createDisplayPlatformPorts, FakeDevicePort} from '../../display-context/test/testSupport';
 import {releaseRuntimeForTest, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing';
 import {createFakeStorage} from '../../state/test/testSupport';
-import {parseLayerEntries} from '../src/foundations/workspaceSlices';
+import {parseLayerEntries, readContentState} from '../src/foundations/workspaceSlices';
 
 const createDependencies = (): readonly RuntimeModule[] => [
   Object.freeze({moduleName: contractsModuleName, kind: 'toolkit' as const, dependencies: []}),
@@ -211,6 +211,33 @@ describe('ui-state workspace content commands', () => {
       partKey: 'customer-receipt',
     });
     expect(selectScreen(fixture.runtime.getState(), 'PRIMARY', 'root')).toBeUndefined();
+  });
+
+  it('writes show-screen to an explicit owned workspace without treating routeContext as the write target', async () => {
+    const fixture = await createFixture();
+    runtimes.push(fixture.runtime);
+
+    await fixture.runtime.dispatchCommand(switchInstanceModeCommand, {instanceMode: 'SLAVE'}, dispatchOptions());
+    const written = await fixture.runtime.dispatchCommand(
+      showScreenCommand,
+      {workspace: 'BRANCH', displayMode: 'PRIMARY', containerKey: 'root', partKey: 'branch-primary'},
+      dispatchOptions(),
+    );
+    expect(written.status).toBe('completed');
+    expect(readContentState(fixture.runtime.getState(), 'BRANCH').contentSets.PRIMARY.containers.root?.partKey).toBe(
+      'branch-primary',
+    );
+
+    await fixture.runtime.dispatchCommand(switchDisplayRoleCommand, {displayRole: 'VICE'}, dispatchOptions('PRIMARY'));
+    expect(selectScreen(fixture.runtime.getState(), 'PRIMARY', 'root')).toBeUndefined();
+
+    const wrongOwner = await fixture.runtime.dispatchCommand(
+      showScreenCommand,
+      {workspace: 'MAIN', displayMode: 'PRIMARY', containerKey: 'root', partKey: 'main-primary'},
+      dispatchOptions(),
+    );
+    expect(wrongOwner.status).toBe('error');
+    expect(readContentState(fixture.runtime.getState(), 'MAIN').contentSets.PRIMARY.containers.root).toBeUndefined();
   });
 
   it('keeps all four workspace/mode buckets isolated', async () => {

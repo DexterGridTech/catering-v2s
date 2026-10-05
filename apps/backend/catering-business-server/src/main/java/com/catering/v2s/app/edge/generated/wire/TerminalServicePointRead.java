@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record TerminalServicePointRead(
-    @com.fasterxml.jackson.annotation.JsonProperty(value = "servicePoint", required = true) StoreServicePoint servicePoint,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "servicePoint", required = true) TerminalServicePointReadServicePoint servicePoint,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "updatedAtEpochMillis", required = true) Long updatedAtEpochMillis
 ) {}

@@ -108,7 +108,7 @@
     },
     {
       "path": "contracts/openapi-source/terminal-data-read.schemas.json",
-      "sha256": "1226a9967dfa4797671a1edc56f2e9f93975c7d2aef58e02e5361f767b1891b1"
+      "sha256": "560f629cfa076829a281c0abd75517933c38f17ea86f5d0bb88308d074fed607"
     }
   ],
   "denominator": {

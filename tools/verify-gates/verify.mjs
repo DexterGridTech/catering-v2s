@@ -53,19 +53,44 @@ const staticCommands = Object.freeze([
     'r5-edge-materialize-path-self-test',
     'node',
     ['scripts/generate/r5-edge-materialize.mjs', '--self-test'],
-    ['R5_EDGE_MATERIALIZE_SELF_TEST=PASS', 'R5_EDGE_TERMINAL_READ_ANONYMOUS_RED=PASS', 'R5_EDGE_TERMINAL_READ_WORKSPACE_SESSION_RED=PASS', 'R5_EDGE_TERMINAL_READ_CREDENTIAL_REQUIREMENT_RED=PASS'],
+    [
+      'R5_EDGE_MATERIALIZE_SELF_TEST=PASS',
+      'R5_EDGE_TERMINAL_READ_ANONYMOUS_RED=PASS',
+      'R5_EDGE_TERMINAL_READ_WORKSPACE_SESSION_RED=PASS',
+      'R5_EDGE_TERMINAL_READ_CREDENTIAL_REQUIREMENT_RED=PASS',
+    ],
   ],
   [
     'terminal-client-api-self-test',
     'node',
     ['scripts/generate/terminal-client-api.mjs', '--self-test'],
-    ['TERMINAL_CLIENT_API_SELF_TEST=PASS', 'RED_ZERO_SELECTOR=PASS', 'RED_WRONG_FACE=PASS', 'RED_GENERATED_DRIFT=PASS', 'RED_MULTIPLE_TARGET_ASSIGNMENT=PASS', 'RED_DUPLICATE_ASSIGNMENT=PASS', 'RED_NON_OWNER_TARGET=PASS', 'RED_SELECTOR_MISMATCH=PASS', 'RED_OUTPUT_ESCAPE=PASS', 'RED_ROOT_ESCAPE=PASS', 'RED_SYMLINK_ESCAPE=PASS', 'RED_TARGET_PACKAGE_SYMLINK_ESCAPE=PASS', 'RED_TARGET_MODULE_NAME_SYMLINK_ESCAPE=PASS'],
+    [
+      'TERMINAL_CLIENT_API_SELF_TEST=PASS',
+      'RED_ZERO_SELECTOR=PASS',
+      'RED_WRONG_FACE=PASS',
+      'RED_GENERATED_DRIFT=PASS',
+      'RED_MULTIPLE_TARGET_ASSIGNMENT=PASS',
+      'RED_DUPLICATE_ASSIGNMENT=PASS',
+      'RED_NON_OWNER_TARGET=PASS',
+      'RED_SELECTOR_MISMATCH=PASS',
+      'RED_OUTPUT_ESCAPE=PASS',
+      'RED_ROOT_ESCAPE=PASS',
+      'RED_SYMLINK_ESCAPE=PASS',
+      'RED_TARGET_PACKAGE_SYMLINK_ESCAPE=PASS',
+      'RED_TARGET_MODULE_NAME_SYMLINK_ESCAPE=PASS',
+    ],
   ],
   [
     'terminal-connection-protocol-self-test',
     'node',
     ['scripts/generate/terminal-connection-protocol.mjs', '--self-test'],
-    ['TDP_PROTOCOL_ROOT_ESCAPE_RED=PASS', 'TDP_PROTOCOL_SYMLINK_ESCAPE_RED=PASS', 'TDP_PROTOCOL_SECRET_TOSTRING_RED=PASS', 'TDP_PROTOCOL_MESSAGE_CLOSURE_RED=PASS', 'TDP_PROTOCOL_SELF_TEST=PASS'],
+    [
+      'TDP_PROTOCOL_ROOT_ESCAPE_RED=PASS',
+      'TDP_PROTOCOL_SYMLINK_ESCAPE_RED=PASS',
+      'TDP_PROTOCOL_SECRET_TOSTRING_RED=PASS',
+      'TDP_PROTOCOL_MESSAGE_CLOSURE_RED=PASS',
+      'TDP_PROTOCOL_SELF_TEST=PASS',
+    ],
   ],
   [
     'terminal-connection-protocol',
@@ -424,7 +449,7 @@ const runtimeCommands = [
   ['U10-affected-l2', 'scripts/check/affected-l2', []],
   ['U11-dev-check', 'scripts/dev/check', []],
   ['U11-seed-dry-run', 'scripts/dev/seed', ['--profile', 'r5-full', '--dry-run']],
-  ['terminal-verify', 'yarn', ['workspace', '@catering-v2s/terminal', 'run', 'verify']],
+  ['terminal-verify', 'yarn', ['workspace', '@catering-v2s/terminal', 'run', 'verify', '--static-verified-by-parent']],
 ];
 
 function fail(reason) {

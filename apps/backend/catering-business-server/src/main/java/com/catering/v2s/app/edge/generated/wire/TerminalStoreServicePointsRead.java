@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record TerminalStoreServicePointsRead(
-    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<StoreServicePoint> items,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<TerminalStoreServicePointsReadItemsItem> items,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "collectionUpdatedAtEpochMillis", required = true) Long collectionUpdatedAtEpochMillis
 ) {}

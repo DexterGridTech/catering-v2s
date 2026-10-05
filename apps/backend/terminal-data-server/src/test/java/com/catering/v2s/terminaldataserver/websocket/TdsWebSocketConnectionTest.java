@@ -81,11 +81,9 @@ class TdsWebSocketConnectionTest {
         ByteBuf queuedPayload = Unpooled.copiedBuffer("QUEUED", StandardCharsets.UTF_8);
         ByteBuf rejectedPayload = Unpooled.copiedBuffer("REJECTED", StandardCharsets.UTF_8);
         WebSocketMessage queued = new WebSocketMessage(
-                WebSocketMessage.Type.TEXT,
-                new NettyDataBufferFactory(ByteBufAllocator.DEFAULT).wrap(queuedPayload));
+                WebSocketMessage.Type.TEXT, new NettyDataBufferFactory(ByteBufAllocator.DEFAULT).wrap(queuedPayload));
         WebSocketMessage rejected = new WebSocketMessage(
-                WebSocketMessage.Type.TEXT,
-                new NettyDataBufferFactory(ByteBufAllocator.DEFAULT).wrap(rejectedPayload));
+                WebSocketMessage.Type.TEXT, new NettyDataBufferFactory(ByteBufAllocator.DEFAULT).wrap(rejectedPayload));
         when(session.textMessage(anyString())).thenReturn(queued, rejected);
         TdsConnectionCapacityLimiter limiter = new TdsConnectionCapacityLimiter(1, 1);
         TdsConnectionCapacityLimiter.Permit permit = limiter.tryAcquireUnauthenticated();

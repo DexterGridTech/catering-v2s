@@ -66,6 +66,7 @@ describe('terminal-data-client package identity', () => {
       `${moduleName}.refresh-status-projection`,
       `${moduleName}.transport-event`,
       `${moduleName}.heartbeat-tick`,
+      `${moduleName}.mutate-remote-operation`,
     ]);
     expect(module.slices).toEqual([
       {name: `${moduleName}.client`, persistIntent: 'owner-only'},

@@ -1,5 +1,6 @@
 package com.catering.v2s.terminalcontrol.api;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Instant;
 import java.util.Objects;
@@ -24,9 +25,25 @@ public interface TerminalControlOwnerApi {
         }
     }
 
-    enum OperationStatus { NOT_SENT, QUEUED, CLAIMED, RECEIVED, STARTED, UNKNOWN, COMPLETED, FAILED }
+    enum OperationStatus {
+        NOT_SENT,
+        QUEUED,
+        CLAIMED,
+        RECEIVED,
+        STARTED,
+        UNKNOWN,
+        COMPLETED,
+        FAILED
+    }
 
-    enum InvocationOutcome { QUEUED, OFFLINE, ALREADY_EXISTS, IDENTITY_CONFLICT, BINDING_INVALID, COMMAND_TOO_LARGE }
+    enum InvocationOutcome {
+        QUEUED,
+        OFFLINE,
+        ALREADY_EXISTS,
+        IDENTITY_CONFLICT,
+        BINDING_INVALID,
+        COMMAND_TOO_LARGE
+    }
 
     record InvokeOnlineCommand(
             UUID operationId,
@@ -71,7 +88,15 @@ public interface TerminalControlOwnerApi {
             JsonNode result,
             String errorCode,
             Instant createdAt,
-            Instant updatedAt) {}
+            Instant updatedAt) {
+        /** An acknowledged claim without a terminal report has no known execution outcome yet. */
+        @JsonProperty("outcome")
+        public OperationStatus outcome() {
+            return status == OperationStatus.CLAIMED && result == null && errorCode == null
+                    ? OperationStatus.UNKNOWN
+                    : status;
+        }
+    }
 
     record ClaimedOperation(
             UUID operationId,
@@ -100,8 +125,10 @@ public interface TerminalControlOwnerApi {
             if (bindingGeneration < 1) throw new IllegalArgumentException("bindingGeneration is invalid");
             nodeId = text(nodeId, 128, "nodeId");
             sessionId = text(sessionId, 128, "sessionId");
-            if (phase != OperationStatus.RECEIVED && phase != OperationStatus.STARTED
-                    && phase != OperationStatus.UNKNOWN && phase != OperationStatus.COMPLETED
+            if (phase != OperationStatus.RECEIVED
+                    && phase != OperationStatus.STARTED
+                    && phase != OperationStatus.UNKNOWN
+                    && phase != OperationStatus.COMPLETED
                     && phase != OperationStatus.FAILED) {
                 throw new IllegalArgumentException("phase is not a terminal report phase");
             }
@@ -114,7 +141,8 @@ public interface TerminalControlOwnerApi {
     record ReportAcceptance(boolean accepted, Instant acceptedAt) {}
 
     private static String text(String value, int max, String name) {
-        if (value == null || value.isBlank() || value.length() > max) throw new IllegalArgumentException(name + " is invalid");
+        if (value == null || value.isBlank() || value.length() > max)
+            throw new IllegalArgumentException(name + " is invalid");
         return value;
     }
 }

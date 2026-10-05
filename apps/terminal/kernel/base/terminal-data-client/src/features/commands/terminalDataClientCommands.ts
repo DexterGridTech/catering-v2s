@@ -10,6 +10,7 @@ import type {
   TerminalDataReadPayload,
   TerminalActivationSucceededPayload,
   UnsubscribeTerminalTopicPayload,
+  RemoteOperationFact,
 } from '../../types/client';
 
 export const activateTerminalCommand = defineCommand<ActivateTerminalPayload>(moduleName, {
@@ -115,6 +116,17 @@ export const terminalTransportEventCommand = defineCommand<Readonly<{event: Term
 });
 export const terminalHeartbeatTickCommand = defineCommand<Readonly<{}>>(moduleName, {
   name: 'heartbeat-tick',
+  visibility: 'internal',
+  allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+
+export type TerminalRemoteOperationMutation =
+  Readonly<{kind: 'put'; fact: RemoteOperationFact}> | Readonly<{kind: 'remove'; remoteOperationId: string}>;
+
+export const terminalRemoteOperationMutationCommand = defineCommand<TerminalRemoteOperationMutation>(moduleName, {
+  name: 'mutate-remote-operation',
   visibility: 'internal',
   allowNoActor: false,
   allowReentry: false,

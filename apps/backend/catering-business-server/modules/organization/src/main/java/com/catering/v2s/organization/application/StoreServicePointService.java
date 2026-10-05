@@ -76,6 +76,113 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
 
     @Override
     @Transactional(readOnly = true)
+    public List<TerminalArea> readTerminalAreas(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
+        requireStore(workspaceUuid, groupWorkspaceKey, storeRef);
+        return jdbc.query(
+                "SELECT area_ref, store_ref, name, code, area_type, status, display_order, version, "
+                        + "created_at_epoch_millis, updated_at_epoch_millis "
+                        + "FROM organization.store_service_point_area "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND status='ENABLED' "
+                        + "ORDER BY area_ref",
+                (row, ignored) -> terminalAreaRow(row),
+                workspaceUuid,
+                groupWorkspaceKey,
+                storeRef);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TerminalArea readTerminalArea(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID areaRef) {
+        requireStore(workspaceUuid, groupWorkspaceKey, storeRef);
+        List<TerminalArea> rows = jdbc.query(
+                "SELECT area_ref, store_ref, name, code, area_type, status, display_order, version, "
+                        + "created_at_epoch_millis, updated_at_epoch_millis "
+                        + "FROM organization.store_service_point_area "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND area_ref=? "
+                        + "AND status <> 'VOIDED'",
+                (row, ignored) -> terminalAreaRow(row),
+                workspaceUuid,
+                groupWorkspaceKey,
+                storeRef,
+                areaRef);
+        if (rows.isEmpty()) throw new BusinessEntityService.OrganizationNotFoundException();
+        return rows.getFirst();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TerminalPoint> readTerminalPoints(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
+        requireStore(workspaceUuid, groupWorkspaceKey, storeRef);
+        return jdbc.query(
+                "SELECT point_ref, store_ref, area_ref, name, code, point_type, status, display_order, "
+                        + "seat_capacity, table_shape, reservable, image_asset_ref, extension_values::text, "
+                        + "extension_rule_revision, version, created_at_epoch_millis, updated_at_epoch_millis "
+                        + "FROM organization.store_service_point "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND status='ENABLED' "
+                        + "ORDER BY point_ref",
+                (row, ignored) -> terminalPointRow(row),
+                workspaceUuid,
+                groupWorkspaceKey,
+                storeRef);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TerminalPoint readTerminalPoint(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID pointRef) {
+        requireStore(workspaceUuid, groupWorkspaceKey, storeRef);
+        List<TerminalPoint> rows = jdbc.query(
+                "SELECT point_ref, store_ref, area_ref, name, code, point_type, status, display_order, "
+                        + "seat_capacity, table_shape, reservable, image_asset_ref, extension_values::text, "
+                        + "extension_rule_revision, version, created_at_epoch_millis, updated_at_epoch_millis "
+                        + "FROM organization.store_service_point "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND point_ref=? "
+                        + "AND status <> 'VOIDED'",
+                (row, ignored) -> terminalPointRow(row),
+                workspaceUuid,
+                groupWorkspaceKey,
+                storeRef,
+                pointRef);
+        if (rows.isEmpty()) throw new BusinessEntityService.OrganizationNotFoundException();
+        return rows.getFirst();
+    }
+
+    private static TerminalArea terminalAreaRow(ResultSet row) throws SQLException {
+        return new TerminalArea(
+                row.getObject("area_ref", UUID.class),
+                row.getObject("store_ref", UUID.class),
+                row.getString("name"),
+                row.getString("code"),
+                row.getString("area_type"),
+                row.getString("status"),
+                row.getLong("display_order"),
+                row.getLong("version"),
+                row.getLong("created_at_epoch_millis"),
+                row.getLong("updated_at_epoch_millis"));
+    }
+
+    private static TerminalPoint terminalPointRow(ResultSet row) throws SQLException {
+        return new TerminalPoint(
+                row.getObject("point_ref", UUID.class),
+                row.getObject("store_ref", UUID.class),
+                row.getObject("area_ref", UUID.class),
+                row.getString("name"),
+                row.getString("code"),
+                row.getString("point_type"),
+                row.getString("status"),
+                row.getLong("display_order"),
+                (Long) row.getObject("seat_capacity"),
+                row.getString("table_shape"),
+                (Boolean) row.getObject("reservable"),
+                row.getObject("image_asset_ref", UUID.class),
+                row.getString("extension_values"),
+                (Long) row.getObject("extension_rule_revision"),
+                row.getLong("version"),
+                row.getLong("created_at_epoch_millis"),
+                row.getLong("updated_at_epoch_millis"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public AreaPage listAreas(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, String cursor, int pageSize) {
         validatePageSize(pageSize);
@@ -386,11 +493,10 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 now,
                 List.of(
                         AuditChange.forNullableScalar("name", null, name),
-                                AuditChange.forNullableScalar("code", null, code),
+                        AuditChange.forNullableScalar("code", null, code),
                         AuditChange.forNullableScalar("areaType", null, type),
                         AuditChange.forNullableScalar("status", null, "ENABLED")));
-        terminalTopics.notifyExact(
-                command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT_AREA", areaRef);
+        terminalTopics.notifyExact(command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT_AREA", areaRef);
         terminalTopics.refreshAreaCollection(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), now);
         return requireAreaRead(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), areaRef);
@@ -655,8 +761,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                         command.reservable(),
                         command.imageAssetRef(),
                         extension));
-        terminalTopics.notifyExact(
-                command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT", pointRef);
+        terminalTopics.notifyExact(command.workspaceUuid(), command.groupWorkspaceKey(), "SERVICE_POINT", pointRef);
         terminalTopics.refreshPointCollection(
                 command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), now);
         return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), pointRef);

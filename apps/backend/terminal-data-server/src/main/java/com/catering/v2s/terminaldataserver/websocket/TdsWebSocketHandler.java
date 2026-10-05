@@ -11,9 +11,8 @@ import com.catering.v2s.terminaldataserver.observability.TdsAsyncLog;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec.Authenticate;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec.Ping;
-import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec.RemoteReport;
-import com.catering.v2s.terminaldataserver.remote.TdsTerminalControlRepository;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionProtocol;
+import com.catering.v2s.terminaldataserver.remote.TdsTerminalControlRepository;
 import com.catering.v2s.terminaldataserver.session.SessionRegistrationGate;
 import com.catering.v2s.terminaldataserver.session.TdsBindingRevocationListener;
 import com.catering.v2s.terminaldataserver.session.TdsConnectionCapacityLimiter;
@@ -25,13 +24,14 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.CloseStatus;
 import org.springframework.web.reactive.socket.WebSocketHandler;
@@ -46,6 +46,7 @@ import reactor.core.scheduler.Scheduler;
 @Component
 public final class TdsWebSocketHandler implements WebSocketHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(TdsWebSocketHandler.class);
+    private static final int MAX_QUEUED_BUSINESS_FRAMES = 64;
     private final TdsRuntimeSettings settings;
     private final TerminalConnectionFrameCodec codec;
     private final TerminalConnectionProtocol protocol;
@@ -111,9 +112,22 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
             Scheduler identityScheduler,
             Scheduler codecScheduler,
             Scheduler logScheduler) {
-        this(settings, codec, protocol, credentialVerification, capacityLimiter, sessionActors, revocationListener,
-                stateWriter, historyWriter, registrationGate, null, databaseScheduler, identityScheduler,
-                codecScheduler, logScheduler);
+        this(
+                settings,
+                codec,
+                protocol,
+                credentialVerification,
+                capacityLimiter,
+                sessionActors,
+                revocationListener,
+                stateWriter,
+                historyWriter,
+                registrationGate,
+                null,
+                databaseScheduler,
+                identityScheduler,
+                codecScheduler,
+                logScheduler);
     }
 
     @Override
@@ -138,6 +152,13 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
         Sinks.One<Void> stopHeartbeatWatch = Sinks.one();
         Sinks.One<Void> firstFrameResolved = Sinks.one();
         Sinks.Many<Long> heartbeatEvents = Sinks.many().replay().latest();
+        Sinks.Many<String> businessFrames =
+                Sinks.many().unicast().onBackpressureBuffer(new ArrayBlockingQueue<>(MAX_QUEUED_BUSINESS_FRAMES));
+
+        Mono<Void> businessMessages = businessFrames
+                .asFlux()
+                .concatMap(serialized -> processAuthenticatedBusinessMessage(connection, serialized))
+                .then();
 
         Mono<Void> receive = session.receive()
                 .doOnNext(ignored -> firstFrameResolved.tryEmitEmpty())
@@ -168,7 +189,8 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                                         attemptReference,
                                         authenticationStage,
                                         heartbeatEvents)
-                                : receiveAuthenticatedMessage(connection, message, lastPingSequence, heartbeatEvents);
+                                : routeAuthenticatedMessage(
+                                        connection, message, lastPingSequence, heartbeatEvents, businessFrames);
                         return handled.doFinally(ignored -> message.release());
                     } catch (RuntimeException | Error setupFailure) {
                         message.release();
@@ -193,6 +215,16 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                     return Mono.empty();
                 })
                 .doFinally(ignored -> {
+                    Sinks.EmitResult businessCompletion = businessFrames.tryEmitComplete();
+                    if (businessCompletion.isFailure() && businessCompletion != Sinks.EmitResult.FAIL_TERMINATED) {
+                        TdsAsyncLog.enqueue(
+                                logScheduler,
+                                () -> LOGGER.warn(
+                                        "event=tds_ws_business_queue_completion_failed connectionId={} "
+                                                + "emitResult={}",
+                                        connection.connectionId(),
+                                        businessCompletion.name()));
+                    }
                     AttemptReference attempt = attemptReference.get();
                     if (attempt != null) {
                         sessionActors.connectionClosed(attempt.terminalRef(), attempt.attemptId(), connection);
@@ -222,7 +254,12 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                 .takeUntilOther(stopHeartbeatWatch.asMono())
                 .then();
 
-        return Mono.when(session.send(connection.outboundMessages()), receive, heartbeatTimeout, firstFrameDeadline)
+        return Mono.when(
+                        session.send(connection.outboundMessages()),
+                        receive,
+                        businessMessages,
+                        heartbeatTimeout,
+                        firstFrameDeadline)
                 .doOnSubscribe(ignored -> TdsAsyncLog.enqueue(
                         logScheduler,
                         () -> LOGGER.info(
@@ -519,29 +556,78 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
         String serialized = message.getPayloadAsText(StandardCharsets.UTF_8);
         return Mono.fromCallable(() -> codec.messageType(serialized))
                 .subscribeOn(codecScheduler)
-                .<Void>flatMap(type -> switch (type) {
-                    case "PING" -> receivePing(connection, message, lastSequence, heartbeatEvents);
-                    case "TOPIC_SUBSCRIBE" -> Mono.fromCallable(() -> codec.topicSubscribe(serialized))
-                            .subscribeOn(codecScheduler)
-                            .<Void>flatMap(request -> Mono.fromCallable(() -> sessionActors.subscribeTopic(
-                                            connection.persistedSession().terminalRef(), connection, request))
-                                    .subscribeOn(databaseScheduler)
-                                    .flatMap(accepted -> accepted ? Mono.empty() : close(connection, "UNKNOWN")));
-                    case "TOPIC_UNSUBSCRIBE" -> Mono.fromCallable(() -> codec.topicUnsubscribe(serialized))
-                            .subscribeOn(codecScheduler)
-                            .<Void>flatMap(request -> Mono.<Void>fromRunnable(() -> sessionActors.unsubscribeTopic(
-                                            connection.persistedSession().terminalRef(), connection, request))
-                                    .subscribeOn(databaseScheduler));
-                    case "TOPIC_ACCEPT" -> Mono.fromCallable(() -> codec.topicAccept(serialized))
-                            .subscribeOn(codecScheduler)
-                            .<Void>flatMap(request -> Mono.<Void>fromRunnable(() -> sessionActors.acceptTopic(
-                                            connection.persistedSession().terminalRef(), connection, request))
-                                    .subscribeOn(databaseScheduler));
-                    case "REMOTE_REPORT" -> receiveRemoteReport(connection, serialized);
-                    default -> close(connection, "UNKNOWN");
+                .<Void>flatMap(type -> type.equals("PING")
+                        ? receivePing(connection, message, lastSequence, heartbeatEvents)
+                        : processAuthenticatedBusinessMessage(connection, serialized, type))
+                .onErrorResume(IllegalArgumentException.class, ignored -> close(connection, "UNKNOWN"))
+                .onErrorResume(ignored -> close(connection, "SERVER_ERROR"));
+    }
+
+    Mono<Void> routeAuthenticatedMessage(
+            TdsWebSocketConnection connection,
+            WebSocketMessage message,
+            AtomicLong lastSequence,
+            Sinks.Many<Long> heartbeatEvents,
+            Sinks.Many<String> businessFrames) {
+        if (!connection.isOpen()) return Mono.empty();
+        if (message.getPayload().readableByteCount() > protocol.maxCompleteDecompressedMessageBytes()) {
+            return closeStandard(connection, protocol.oversizedMessageCloseCode());
+        }
+        if (!connection.isAuthenticationReady() || message.getType() != WebSocketMessage.Type.TEXT) {
+            return close(connection, "UNKNOWN");
+        }
+        String serialized = message.getPayloadAsText(StandardCharsets.UTF_8);
+        return Mono.fromCallable(() -> codec.messageType(serialized))
+                .subscribeOn(codecScheduler)
+                .<Void>flatMap(type -> {
+                    if (type.equals("PING")) return receivePing(connection, message, lastSequence, heartbeatEvents);
+                    Sinks.EmitResult emitted = businessFrames.tryEmitNext(serialized);
+                    if (emitted.isSuccess()) return Mono.empty();
+                    TdsAsyncLog.enqueue(
+                            logScheduler,
+                            () -> LOGGER.warn(
+                                    "event=tds_ws_business_queue_rejected connectionId={} "
+                                            + "queueCapacity={} emitResult={} disposition=CONNECTION_CLOSED",
+                                    connection.connectionId(),
+                                    MAX_QUEUED_BUSINESS_FRAMES,
+                                    emitted.name()));
+                    return close(connection, "SERVER_ERROR");
                 })
                 .onErrorResume(IllegalArgumentException.class, ignored -> close(connection, "UNKNOWN"))
                 .onErrorResume(ignored -> close(connection, "SERVER_ERROR"));
+    }
+
+    private Mono<Void> processAuthenticatedBusinessMessage(TdsWebSocketConnection connection, String serialized) {
+        return Mono.fromCallable(() -> codec.messageType(serialized))
+                .subscribeOn(codecScheduler)
+                .flatMap(type -> processAuthenticatedBusinessMessage(connection, serialized, type))
+                .onErrorResume(IllegalArgumentException.class, ignored -> close(connection, "UNKNOWN"))
+                .onErrorResume(ignored -> close(connection, "SERVER_ERROR"));
+    }
+
+    private Mono<Void> processAuthenticatedBusinessMessage(
+            TdsWebSocketConnection connection, String serialized, String type) {
+        if (!connection.isOpen()) return Mono.empty();
+        return switch (type) {
+            case "TOPIC_SUBSCRIBE" -> Mono.fromCallable(() -> codec.topicSubscribe(serialized))
+                    .subscribeOn(codecScheduler)
+                    .<Void>flatMap(request -> Mono.fromCallable(() -> sessionActors.subscribeTopic(
+                                    connection.persistedSession().terminalRef(), connection, request))
+                            .subscribeOn(databaseScheduler)
+                            .flatMap(accepted -> accepted ? Mono.empty() : close(connection, "UNKNOWN")));
+            case "TOPIC_UNSUBSCRIBE" -> Mono.fromCallable(() -> codec.topicUnsubscribe(serialized))
+                    .subscribeOn(codecScheduler)
+                    .<Void>flatMap(request -> Mono.<Void>fromRunnable(() -> sessionActors.unsubscribeTopic(
+                                    connection.persistedSession().terminalRef(), connection, request))
+                            .subscribeOn(databaseScheduler));
+            case "TOPIC_ACCEPT" -> Mono.fromCallable(() -> codec.topicAccept(serialized))
+                    .subscribeOn(codecScheduler)
+                    .<Void>flatMap(request -> Mono.<Void>fromRunnable(() -> sessionActors.acceptTopic(
+                                    connection.persistedSession().terminalRef(), connection, request))
+                            .subscribeOn(databaseScheduler));
+            case "REMOTE_REPORT" -> receiveRemoteReport(connection, serialized);
+            default -> close(connection, "UNKNOWN");
+        };
     }
 
     private Mono<Void> receiveRemoteReport(TdsWebSocketConnection connection, String serialized) {
@@ -550,19 +636,29 @@ public final class TdsWebSocketHandler implements WebSocketHandler {
                 .subscribeOn(codecScheduler)
                 .flatMap(report -> Mono.fromCallable(() -> {
                             SessionIdentity session = connection.persistedSession();
-                            if (session == null) return null;
-                            boolean accepted = terminalControlRepository.report(
-                                    report.reportId(),
-                                    report.operationId(), report.requestId(), connection.bindingGeneration(), session.sessionId(),
-                                    session.nodeId(), report.phase(), report.occurredAt(), report.result(),
-                                    report.errorCode());
-                            return accepted ? report : null;
+                            return session != null
+                                    && terminalControlRepository.report(
+                                            report.reportId(),
+                                            report.operationId(),
+                                            report.requestId(),
+                                            connection.bindingGeneration(),
+                                            session.sessionId(),
+                                            session.nodeId(),
+                                            report.phase(),
+                                            report.occurredAt(),
+                                            report.result(),
+                                            report.errorCode());
                         })
                         .subscribeOn(databaseScheduler)
                         .flatMap(accepted -> {
-                            if (accepted == null) return close(connection, "UNKNOWN");
+                            if (!accepted) {
+                                LOGGER.warn(
+                                        "event=tds_remote_report_rejected connectionId={} disposition=OWNER_REJECTED",
+                                        connection.connectionId());
+                                return close(connection, "UNKNOWN");
+                            }
                             String ack = codec.remoteReportAck(
-                                    accepted.reportId(), accepted.operationId(), accepted.requestId(), Instant.now());
+                                    report.reportId(), report.operationId(), report.requestId(), Instant.now());
                             return connection.sendText(ack) ? Mono.empty() : close(connection, "SERVER_ERROR");
                         }));
     }

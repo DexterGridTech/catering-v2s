@@ -137,10 +137,12 @@ export const createCommandActorDispatcher = (input: ActorDispatcherDependencies)
       unregisterLateOutcome?.();
       unregisterLateOutcome = undefined;
     };
-    if (lateOutcome !== undefined && lateResultTtlMs !== undefined) {
-      lateOutcomeTimer = setTimeout(clearLateOutcome, lateResultTtlMs);
+    const lateResultRemainingMs =
+      lateResultTtlMs === undefined ? undefined : command.dispatchedAt + lateResultTtlMs - nowTimestampMs();
+    if (lateOutcome !== undefined && lateResultRemainingMs !== undefined && lateResultRemainingMs > 0) {
+      lateOutcomeTimer = setTimeout(clearLateOutcome, lateResultRemainingMs);
       unregisterLateOutcome = input.registerResource?.(clearLateOutcome);
-    }
+    } else if (lateOutcome !== undefined) activeLateOutcome = undefined;
     const isStartupReadyCommand = command.commandName === 'ui.integration.sample-console.startup-ready';
     if (isStartupReadyCommand) {
       input.commandLogger(lifecycleContext).info({
@@ -214,7 +216,8 @@ export const createCommandActorDispatcher = (input: ActorDispatcherDependencies)
           ): Promise<CommandDispatchResult> => {
             const childDefinition =
               typeof childDefinitionOrName === 'string'
-                ? input.resolveCommandDefinition(childDefinitionOrName) as CommandDefinition<TChildPayload> | undefined
+                ? (input.resolveCommandDefinition(childDefinitionOrName) as
+                    CommandDefinition<TChildPayload> | undefined)
                 : childDefinitionOrName;
             if (childDefinition === undefined) {
               return Promise.reject(new Error(`Unknown runtime command: ${childDefinitionOrName}`));
@@ -403,7 +406,10 @@ export const createCommandActorDispatcher = (input: ActorDispatcherDependencies)
             category: 'runtime.late-outcome',
             event: 'runtime.late-outcome-observer-failed',
             message: 'Late outcome observer failed',
-            data: {actorKey, requestId: lifecycleContext.requestId === null ? null : String(lifecycleContext.requestId)},
+            data: {
+              actorKey,
+              requestId: lifecycleContext.requestId === null ? null : String(lifecycleContext.requestId),
+            },
           });
         }
         const kind = outcome.status === 'completed' ? 'actor.late-completed' : 'actor.late-error';

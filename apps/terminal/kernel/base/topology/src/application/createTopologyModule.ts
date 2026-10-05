@@ -258,9 +258,13 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
       });
   };
 
-  const sendMessage = (context: RuntimeModuleContext, message: TopologyWireMessage): void => {
-    const session = currentSession;
-    if (session === undefined || session.state() !== 'open') {
+  const sendMessage = (
+    context: RuntimeModuleContext,
+    message: TopologyWireMessage,
+    expectedSession?: TopologySession,
+  ): void => {
+    const session = expectedSession ?? currentSession;
+    if (session === undefined || session !== currentSession || session.state() !== 'open') {
       topologyPeerLog(context, 'send-rejected', {messageType: message.type, sessionOpen: false}, currentConnectionId);
       throw new Error('topology peer session is not open');
     }

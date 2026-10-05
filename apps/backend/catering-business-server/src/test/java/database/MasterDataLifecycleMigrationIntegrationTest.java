@@ -604,11 +604,16 @@ class MasterDataLifecycleMigrationIntegrationTest {
 
         migrateLatest();
 
-        assertEquals(commercialGroupRef.toString(), scalarString(
-                "SELECT parent_id FROM organization.organization_node WHERE id=?", regionId));
+        assertEquals(
+                commercialGroupRef.toString(),
+                scalarString("SELECT parent_id FROM organization.organization_node WHERE id=?", regionId));
         assertEquals(7, scalarInt("SELECT version FROM organization.organization_node WHERE id=?", regionId));
-        assertEquals(111, scalarInt("SELECT created_at_epoch_millis FROM organization.organization_node WHERE id=?", regionId));
-        assertEquals(222, scalarInt("SELECT updated_at_epoch_millis FROM organization.organization_node WHERE id=?", regionId));
+        assertEquals(
+                111,
+                scalarInt("SELECT created_at_epoch_millis FROM organization.organization_node WHERE id=?", regionId));
+        assertEquals(
+                222,
+                scalarInt("SELECT updated_at_epoch_millis FROM organization.organization_node WHERE id=?", regionId));
         SQLException rejectedNullParent = assertThrows(
                 SQLException.class,
                 () -> execute(
@@ -641,7 +646,8 @@ class MasterDataLifecycleMigrationIntegrationTest {
                 regionId,
                 workspace);
 
-        FlywayException failure = assertThrows(FlywayException.class, MasterDataLifecycleMigrationIntegrationTest::migrateLatest);
+        FlywayException failure =
+                assertThrows(FlywayException.class, MasterDataLifecycleMigrationIntegrationTest::migrateLatest);
 
         assertTrue(failure.getMessage().contains("Cannot resolve REGION parent"));
         assertNull(scalarString("SELECT parent_id FROM organization.organization_node WHERE id=?", regionId));
@@ -681,6 +687,7 @@ class MasterDataLifecycleMigrationIntegrationTest {
             statement.execute("DROP SCHEMA IF EXISTS organization CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS platform_asset CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS sales_menu CASCADE");
+            statement.execute("DROP SCHEMA IF EXISTS terminal_control CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS platform_iam CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS platform_workspace CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS terminal_binding CASCADE");

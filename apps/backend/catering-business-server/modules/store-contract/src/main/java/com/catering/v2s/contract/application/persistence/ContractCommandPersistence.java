@@ -33,8 +33,7 @@ public class ContractCommandPersistence {
         terminalTopics.notifyContract(workspaceUuid, groupWorkspaceKey, contractRef);
     }
 
-    public void refreshActiveCollection(
-            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, long triggerTime) {
+    public void refreshActiveCollection(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, long triggerTime) {
         terminalTopics.refreshActiveCollection(workspaceUuid, groupWorkspaceKey, storeRef, triggerTime);
     }
 

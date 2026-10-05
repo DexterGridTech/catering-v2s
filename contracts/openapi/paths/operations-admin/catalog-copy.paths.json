@@ -33,6 +33,20 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY",
         "x-mutation": true,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 14,
+          "measurementScenarioIds": [
+            "performance.normal-path"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 14,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -102,6 +116,20 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY",
         "x-mutation": true,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 32,
+          "measurementScenarioIds": [
+            "performance.normal-path"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 32,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -172,6 +200,20 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY",
         "x-mutation": true,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 21,
+          "measurementScenarioIds": [
+            "performance.normal-path"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 21,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -242,6 +284,21 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_BRAND_CATALOG_COPY",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_BRAND_CATALOG_COPY",
         "x-mutation": true,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 49,
+          "measurementScenarioIds": [
+            "performance.normal-path"
+          ],
+          "history": [
+            {
+              "from": 48,
+              "to": 49,
+              "reason": "Dexter 2026-08-26: brand-copy keeps its complete multi-owner closure; three current-tree CP-05 calibration runs measured a stable maximum of 49 after the Store operating-rule gate, with no safe consolidation that preserves all business facts.",
+              "decisionRef": "DEXTER-2026-08-26-BRAND_COPY_CLOSURE_BUDGET"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",

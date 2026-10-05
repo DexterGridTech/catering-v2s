@@ -20,7 +20,6 @@ import {
 import {
   terminalTopicKeys,
   type RemoteCommandMessage,
-  type RemoteReportAckMessage,
   type TerminalTopicKey,
 } from '../../generated/terminalConnectionProtocol';
 import {moduleName} from '../../moduleName';
@@ -59,6 +58,7 @@ import {
   readTerminalDataCommand,
   refreshTerminalClientStatusProjectionCommand,
   terminalHeartbeatTickCommand,
+  terminalRemoteOperationMutationCommand,
   terminalActivationSucceededCommand,
   acceptTerminalTopicNotificationCommand,
   subscribeTerminalTopicCommand,
@@ -166,9 +166,22 @@ const topicSubscribeFrame = (subscription: TerminalTopicSubscription): string =>
     ownerRef: subscription.ownerRef,
     lastAcceptedTimeEpochMillis: subscription.acceptedTimeEpochMillis,
   });
+const terminalTransportDiagnosticCodes = new Set([
+  'BROWSER_TRANSPORT_PROXY_UNSUPPORTED',
+  'BROWSER_HTTP_TRANSPORT_FAILED',
+  'BROWSER_HTTP_RESPONSE_TOO_LARGE',
+  'HTTP_EXECUTION_FAILED',
+  'HTTP_TRANSPORT_ERROR',
+  'HTTP_CONFIG_READBACK_FAILED',
+  'HTTP_NETWORK_CONFIGURATION_CHANGED',
+]);
 const activationLogCode = (code: string): string => {
   const knownBusinessCode = terminalOperationContracts.activateTerminal.errorCodes.includes(code as never);
-  return knownBusinessCode || code === 'TERMINAL_RESPONSE_SCHEMA_INVALID' || code === 'HTTP_DELIVERED_FAILURE'
+  const knownTransportCode = terminalTransportDiagnosticCodes.has(code);
+  return knownBusinessCode ||
+    knownTransportCode ||
+    code === 'TERMINAL_RESPONSE_SCHEMA_INVALID' ||
+    code === 'HTTP_DELIVERED_FAILURE'
     ? code
     : 'UNCLASSIFIED_FAILURE';
 };
@@ -346,38 +359,152 @@ export const createTerminalDataClientActor = (
   let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
   let heartbeatDeadline: ReturnType<typeof setTimeout> | undefined;
   let sessionReady = false;
+  let connectionGeneration = 0;
   let expectedHeartbeatTimeoutMs = 0;
   let currentConfigRevision: number | null = null;
+  let remoteOperationEpoch = 0;
   const sentAtBySequence = new Map<number, number>();
   const remoteOperationLimit = 64;
   const remoteResultResidenceMs = 7_200_000;
-  const lateRemoteResults = new Map<string, import('@catering-v2s/kernel-base-runtime').ActorExecutionRecord[]>();
+  type RemoteActorResult = import('@catering-v2s/kernel-base-runtime').ActorExecutionRecord;
+  type LateRemoteResult = {
+    readonly records: Map<string, RemoteActorResult>;
+    expectedActorKeys: Set<string> | null;
+    unknownPersisted: boolean;
+    reported: boolean;
+  };
+  const lateRemoteResults = new Map<string, LateRemoteResult>();
+
+  const flattenActorResults = (records: readonly RemoteActorResult[]): readonly RemoteActorResult[] => {
+    const flattened: RemoteActorResult[] = [];
+    for (const record of records) {
+      const value = record.result;
+      const nested = isRecord(value) && Array.isArray(value.actorResults) ? value.actorResults : null;
+      if (nested !== null) flattened.push(...(nested as RemoteActorResult[]));
+      else flattened.push(record);
+    }
+    return flattened;
+  };
+
+  const reportLateResultWhenComplete = (input: {
+    context: ActorExecutionContext;
+    message: RemoteCommandMessage;
+    credential: NonNullable<TerminalClientState['credential']>;
+    original: RemoteOperationFact;
+    accumulator: LateRemoteResult;
+  }): void => {
+    const {context, message, credential, original, accumulator} = input;
+    if (
+      accumulator.reported ||
+      !accumulator.unknownPersisted ||
+      accumulator.expectedActorKeys === null ||
+      accumulator.expectedActorKeys.size === 0
+    )
+      return;
+    const records = [...accumulator.expectedActorKeys]
+      .map(actorKey => accumulator.records.get(actorKey))
+      .filter((record): record is RemoteActorResult => record !== undefined);
+    if (
+      records.length !== accumulator.expectedActorKeys.size ||
+      records.some(record => record.status !== 'completed' && record.status !== 'error')
+    )
+      return;
+    accumulator.reported = true;
+    const succeeded = records.every(record => record.status === 'completed');
+    void reportRemoteOutcome({
+      context,
+      message,
+      credential,
+      original,
+      records,
+      phase: succeeded ? 'COMPLETED' : 'FAILED',
+      errorCode: succeeded ? undefined : 'REMOTE_COMMAND_FAILED',
+    });
+  };
+
+  const applyRemoteOperationMutation = async (
+    context: ActorExecutionContext,
+    mutation: import('../commands/terminalDataClientCommands').TerminalRemoteOperationMutation,
+  ): Promise<boolean> => {
+    const result = await context.dispatchCommand(terminalRemoteOperationMutationCommand, mutation);
+    return result.status === 'completed';
+  };
+
+  const restoreRemoteOperations = async (
+    context: ActorExecutionContext,
+    facts: readonly RemoteOperationFact[],
+  ): Promise<void> => {
+    for (const fact of facts) await applyRemoteOperationMutation(context, {kind: 'put', fact});
+  };
+
+  const remoteFactMatchesCurrentClient = (
+    context: ActorExecutionContext,
+    fact: RemoteOperationFact,
+    expectedEpoch = remoteOperationEpoch,
+  ): boolean => {
+    const client = readState(context.getState());
+    const credential = client.credential;
+    return (
+      credential !== null &&
+      credential.groupWorkspaceKey === fact.groupWorkspaceKey &&
+      credential.terminalRef === fact.terminalRef &&
+      credential.bindingGeneration === fact.bindingGeneration &&
+      remoteOperationEpoch === expectedEpoch &&
+      currentConfigRevision === fact.configRevision &&
+      client.connection.addressName === fact.addressName
+    );
+  };
+
+  const ownsRemoteFact = (
+    context: ActorExecutionContext,
+    fact: RemoteOperationFact,
+    expectedEpoch = remoteOperationEpoch,
+  ): boolean => {
+    const current = readState(context.getState()).remoteOperations[fact.remoteOperationId];
+    return (
+      current !== undefined &&
+      current.remoteOperationId === fact.remoteOperationId &&
+      current.requestId === fact.requestId &&
+      current.localRequestId === fact.localRequestId &&
+      current.reportId === fact.reportId &&
+      current.phase === fact.phase &&
+      remoteFactMatchesCurrentClient(context, fact, expectedEpoch)
+    );
+  };
 
   const remoteFactFrom = (
-    message: RemoteCommandMessage,
-    credential: NonNullable<TerminalClientState['credential']>,
-    localRequestId: string,
-    phase: RemoteOperationFact['phase'],
-    addressName: string | null,
-    details: Pick<RemoteOperationFact, 'resultJson' | 'errorCode'> = {},
-  ): RemoteOperationFact => ({
-    remoteOperationId: message.remoteOperationId,
-    requestId: message.requestId,
-    localRequestId,
-    groupWorkspaceKey: credential.groupWorkspaceKey,
-    terminalRef: credential.terminalRef,
-    bindingGeneration: credential.bindingGeneration,
-    addressName,
-    configRevision: currentConfigRevision,
-    commandName: message.commandName,
-    phase,
-    reportId: requireProtocolUuid(),
-    occurredAt: new Date(dependencies.now()).toISOString(),
-    ...details,
-  });
+    input: Readonly<{
+      message: RemoteCommandMessage;
+      credential: NonNullable<TerminalClientState['credential']>;
+      localRequestId: string;
+      phase: RemoteOperationFact['phase'];
+      addressName: string | null;
+      details?: Pick<RemoteOperationFact, 'resultJson' | 'errorCode'>;
+    }>,
+  ): RemoteOperationFact => {
+    const {message, credential, localRequestId, phase, addressName, details = {}} = input;
+    return {
+      remoteOperationId: message.remoteOperationId,
+      requestId: message.requestId,
+      localRequestId,
+      groupWorkspaceKey: credential.groupWorkspaceKey,
+      terminalRef: credential.terminalRef,
+      bindingGeneration: credential.bindingGeneration,
+      addressName,
+      configRevision: currentConfigRevision,
+      commandName: message.commandName,
+      phase,
+      reportId: requireProtocolUuid(),
+      occurredAt: new Date(dependencies.now()).toISOString(),
+      ...details,
+    };
+  };
 
   const sendRemoteReport = async (
-    fact: Pick<RemoteOperationFact, 'remoteOperationId' | 'requestId' | 'phase' | 'reportId' | 'occurredAt' | 'resultJson' | 'errorCode'>,
+    fact: Pick<
+      RemoteOperationFact,
+      'remoteOperationId' | 'requestId' | 'phase' | 'reportId' | 'occurredAt' | 'resultJson' | 'errorCode'
+    >,
   ): Promise<void> => {
     if (!sessionReady || connection === undefined) return;
     const raw = JSON.stringify({
@@ -387,7 +514,9 @@ export const createTerminalDataClientActor = (
       requestId: fact.requestId,
       phase: fact.phase,
       occurredAt: fact.occurredAt,
-      ...(fact.resultJson === undefined ? {} : {result: JSON.parse(fact.resultJson) as Readonly<Record<string, unknown>>}),
+      ...(fact.resultJson === undefined
+        ? {}
+        : {result: JSON.parse(fact.resultJson) as Readonly<Record<string, unknown>>}),
       ...(fact.errorCode === undefined ? {} : {errorCode: fact.errorCode}),
     });
     if (terminalConnectionMessageUtf8ByteLength(raw) > 65_536) return;
@@ -398,27 +527,49 @@ export const createTerminalDataClientActor = (
     }
   };
 
-  const persistRemoteFact = async (context: ActorExecutionContext, fact: RemoteOperationFact): Promise<boolean> => {
+  const persistRemoteFact = async (
+    context: ActorExecutionContext,
+    fact: RemoteOperationFact,
+    expectedEpoch = remoteOperationEpoch,
+  ): Promise<boolean> => {
+    if (!remoteFactMatchesCurrentClient(context, fact, expectedEpoch)) return false;
     const previous = readState(context.getState()).remoteOperations[fact.remoteOperationId];
-    context.dispatchAction(terminalDataClientActions.putRemoteOperation(fact));
+    if (!(await applyRemoteOperationMutation(context, {kind: 'put', fact}))) return false;
+    if (!ownsRemoteFact(context, fact, expectedEpoch)) return false;
     try {
       await flush(context);
-      return true;
+      return ownsRemoteFact(context, fact, expectedEpoch);
     } catch {
-      if (previous === undefined) context.dispatchAction(terminalDataClientActions.removeRemoteOperation(fact.remoteOperationId));
-      else context.dispatchAction(terminalDataClientActions.putRemoteOperation(previous));
+      if (!ownsRemoteFact(context, fact, expectedEpoch)) return false;
+      if (previous === undefined)
+        await applyRemoteOperationMutation(context, {kind: 'remove', remoteOperationId: fact.remoteOperationId});
+      else if (remoteFactMatchesCurrentClient(context, previous, expectedEpoch))
+        await applyRemoteOperationMutation(context, {kind: 'put', fact: previous});
       return false;
     }
   };
 
-  const persistRemoteRemoval = async (context: ActorExecutionContext, fact: RemoteOperationFact): Promise<boolean> => {
-    context.dispatchAction(terminalDataClientActions.removeRemoteOperation(fact.remoteOperationId));
+  const persistRemoteRemoval = async (
+    context: ActorExecutionContext,
+    fact: RemoteOperationFact,
+    expectedEpoch = remoteOperationEpoch,
+  ): Promise<boolean> => {
+    if (!ownsRemoteFact(context, fact, expectedEpoch)) return false;
+    if (!(await applyRemoteOperationMutation(context, {kind: 'remove', remoteOperationId: fact.remoteOperationId})))
+      return false;
+    if (!remoteFactMatchesCurrentClient(context, fact, expectedEpoch)) return false;
     try {
       await flush(context);
+      if (readState(context.getState()).remoteOperations[fact.remoteOperationId] !== undefined) return false;
+      if (!remoteFactMatchesCurrentClient(context, fact, expectedEpoch)) return false;
       lateRemoteResults.delete(fact.remoteOperationId);
       return true;
     } catch {
-      context.dispatchAction(terminalDataClientActions.putRemoteOperation(fact));
+      if (
+        remoteFactMatchesCurrentClient(context, fact, expectedEpoch) &&
+        readState(context.getState()).remoteOperations[fact.remoteOperationId] === undefined
+      )
+        await applyRemoteOperationMutation(context, {kind: 'put', fact});
       return false;
     }
   };
@@ -445,16 +596,22 @@ export const createTerminalDataClientActor = (
   };
 
   const reportRemoteOutcome = async (
-    context: ActorExecutionContext,
-    message: RemoteCommandMessage,
-    credential: NonNullable<TerminalClientState['credential']>,
-    original: RemoteOperationFact,
-    records: readonly import('@catering-v2s/kernel-base-runtime').ActorExecutionRecord[],
-    phase: RemoteOperationFact['phase'],
-    errorCode?: string,
+    input: Readonly<{
+      context: ActorExecutionContext;
+      message: RemoteCommandMessage;
+      credential: NonNullable<TerminalClientState['credential']>;
+      original: RemoteOperationFact;
+      records: readonly import('@catering-v2s/kernel-base-runtime').ActorExecutionRecord[];
+      phase: RemoteOperationFact['phase'];
+      expectedEpoch?: number;
+      errorCode?: string;
+    }>,
   ): Promise<void> => {
+    const {context, message, credential, original, records, phase, errorCode} = input;
+    const expectedEpoch = input.expectedEpoch ?? remoteOperationEpoch;
     const current = readState(context.getState()).remoteOperations[message.remoteOperationId];
     if (
+      remoteOperationEpoch !== expectedEpoch ||
       current === undefined ||
       current.localRequestId !== original.localRequestId ||
       current.requestId !== original.requestId ||
@@ -473,8 +630,16 @@ export const createTerminalDataClientActor = (
         ...(record.error === null ? {} : {errorCode: record.error.code}),
       })),
     };
-    let fact = remoteFactFrom(message, credential, original.localRequestId, phase, original.addressName, {
-      ...(errorCode === undefined ? {resultJson: JSON.stringify(result)} : {errorCode}),
+    let fact = remoteFactFrom({
+      message,
+      credential,
+      localRequestId: original.localRequestId,
+      phase,
+      addressName: original.addressName,
+      details: {
+        resultJson: JSON.stringify(result),
+        ...(errorCode === undefined ? {} : {errorCode}),
+      },
     });
     const wire = JSON.stringify({
       type: 'REMOTE_REPORT',
@@ -483,24 +648,33 @@ export const createTerminalDataClientActor = (
       requestId: fact.requestId,
       phase: fact.phase,
       occurredAt: fact.occurredAt,
-      ...(fact.resultJson === undefined ? {} : {result: JSON.parse(fact.resultJson) as Readonly<Record<string, unknown>>}),
+      ...(fact.resultJson === undefined
+        ? {}
+        : {result: JSON.parse(fact.resultJson) as Readonly<Record<string, unknown>>}),
       ...(fact.errorCode === undefined ? {} : {errorCode: fact.errorCode}),
     });
     if (terminalConnectionMessageUtf8ByteLength(wire) > 65_536) {
-      fact = remoteFactFrom(message, credential, original.localRequestId, 'FAILED', original.addressName, {
-        errorCode: 'TERMINAL_RESULT_TOO_LARGE',
+      fact = remoteFactFrom({
+        message,
+        credential,
+        localRequestId: original.localRequestId,
+        phase: 'FAILED',
+        addressName: original.addressName,
+        details: {errorCode: 'TERMINAL_RESULT_TOO_LARGE'},
       });
     }
-    if (await persistRemoteFact(context, fact)) await sendRemoteReport(fact);
+    if (await persistRemoteFact(context, fact, expectedEpoch)) await sendRemoteReport(fact);
   };
 
   const runRemoteCommand = async (
     context: ActorExecutionContext,
     message: RemoteCommandMessage,
   ): Promise<Readonly<{status: string}>> => {
+    const expectedEpoch = remoteOperationEpoch;
     const client = readState(context.getState());
     const credential = client.credential;
     const reject = async (errorCode: string): Promise<Readonly<{status: string}>> => {
+      if (remoteOperationEpoch !== expectedEpoch) return Object.freeze({status: 'operation-cleared'});
       const reportId = createProtocolUuid();
       if (reportId !== null) {
         await sendRemoteReport({
@@ -535,59 +709,102 @@ export const createTerminalDataClientActor = (
       await sendRemoteReport(prior);
       return Object.freeze({status: 'duplicate-reported'});
     }
-    if (Object.keys(client.remoteOperations).length >= remoteOperationLimit) return reject('REMOTE_OPERATION_LIMIT_REACHED');
+    if (Object.keys(client.remoteOperations).length >= remoteOperationLimit)
+      return reject('REMOTE_OPERATION_LIMIT_REACHED');
     if (!isRecord(message.parameters)) return reject('REMOTE_PARAMETERS_INVALID');
     const localRequestId = String(createRequestId());
-    const received = remoteFactFrom(
+    const received = remoteFactFrom({
       message,
       credential,
       localRequestId,
-      'RECEIVED',
-      client.connection.addressName,
-    );
-    if (!(await persistRemoteFact(context, received))) return reject('TERMINAL_PERSISTENCE_FAILED');
+      phase: 'RECEIVED',
+      addressName: client.connection.addressName,
+    });
+    if (!(await persistRemoteFact(context, received, expectedEpoch))) return reject('TERMINAL_PERSISTENCE_FAILED');
     await sendRemoteReport(received);
-    const started = remoteFactFrom(message, credential, localRequestId, 'STARTED', received.addressName);
-    if (!(await persistRemoteFact(context, started))) return Object.freeze({status: 'start-persistence-failed'});
+    const started = remoteFactFrom({
+      message,
+      credential,
+      localRequestId,
+      phase: 'STARTED',
+      addressName: received.addressName,
+    });
+    if (!(await persistRemoteFact(context, started, expectedEpoch)))
+      return Object.freeze({status: 'start-persistence-failed'});
     await sendRemoteReport(started);
+    if (!ownsRemoteFact(context, started, expectedEpoch)) return Object.freeze({status: 'operation-cleared'});
     try {
       const result = await context.dispatchCommand(message.commandName, message.parameters as StateJsonValue, {
         requestId: localRequestId as never,
         commandId: createCommandId(),
         target: 'local',
         lateOutcome: record => {
-          const records = lateRemoteResults.get(message.remoteOperationId) ?? [];
-          records.push(record);
-          lateRemoteResults.set(message.remoteOperationId, records);
-          const succeeded = records.every(item => item.status === 'completed');
-          void reportRemoteOutcome(
-            context,
-            message,
-            credential,
-            received,
-            records,
-            succeeded ? 'COMPLETED' : 'FAILED',
-            succeeded ? undefined : 'REMOTE_COMMAND_FAILED',
-          );
+          if (remoteOperationEpoch !== expectedEpoch) return;
+          const accumulator = lateRemoteResults.get(message.remoteOperationId) ?? {
+            records: new Map<string, RemoteActorResult>(),
+            expectedActorKeys: null,
+            unknownPersisted: false,
+            reported: false,
+          };
+          const records = flattenActorResults([record]);
+          const hasAggregateResult = isRecord(record.result) && Array.isArray(record.result.actorResults);
+          if (hasAggregateResult) accumulator.expectedActorKeys = new Set(records.map(item => item.actorKey));
+          for (const current of records) accumulator.records.set(current.actorKey, current);
+          lateRemoteResults.set(message.remoteOperationId, accumulator);
+          reportLateResultWhenComplete({context, message, credential, original: received, accumulator});
         },
         lateResultTtlMs: remoteResultResidenceMs,
       });
-      if (result.status === 'timed-out') {
-        await reportRemoteOutcome(context, message, credential, received, result.actorResults, 'UNKNOWN', 'REMOTE_RESULT_UNKNOWN');
+      const hasPendingActor = flattenActorResults(result.actorResults).some(record => record.status === 'timed-out');
+      if (result.status === 'timed-out' || hasPendingActor) {
+        const records = flattenActorResults(result.actorResults);
+        const accumulator = lateRemoteResults.get(message.remoteOperationId) ?? {
+          records: new Map<string, RemoteActorResult>(),
+          expectedActorKeys: null,
+          unknownPersisted: false,
+          reported: false,
+        };
+        accumulator.expectedActorKeys = new Set(records.map(record => record.actorKey));
+        const firstRecords = records.filter(record => !accumulator.records.has(record.actorKey));
+        for (const record of firstRecords) accumulator.records.set(record.actorKey, record);
+        lateRemoteResults.set(message.remoteOperationId, accumulator);
+        await reportRemoteOutcome({
+          context,
+          message,
+          credential,
+          original: received,
+          expectedEpoch,
+          records,
+          phase: 'UNKNOWN',
+          errorCode: 'REMOTE_RESULT_UNKNOWN',
+        });
+        accumulator.unknownPersisted = true;
+        reportLateResultWhenComplete({context, message, credential, original: received, accumulator});
         return Object.freeze({status: 'unknown'});
       }
-      await reportRemoteOutcome(
+      lateRemoteResults.delete(message.remoteOperationId);
+      await reportRemoteOutcome({
         context,
         message,
         credential,
-        received,
-        result.actorResults,
-        result.status === 'completed' ? 'COMPLETED' : 'FAILED',
-        result.status === 'completed' ? undefined : 'REMOTE_COMMAND_FAILED',
-      );
+        original: received,
+        expectedEpoch,
+        records: result.actorResults,
+        phase: result.status === 'completed' ? 'COMPLETED' : 'FAILED',
+        errorCode: result.status === 'completed' ? undefined : 'REMOTE_COMMAND_FAILED',
+      });
       return Object.freeze({status: result.status});
     } catch {
-      await reportRemoteOutcome(context, message, credential, received, [], 'FAILED', 'REMOTE_COMMAND_DISPATCH_FAILED');
+      await reportRemoteOutcome({
+        context,
+        message,
+        credential,
+        original: received,
+        expectedEpoch,
+        records: [],
+        phase: 'FAILED',
+        errorCode: 'REMOTE_COMMAND_DISPATCH_FAILED',
+      });
       return Object.freeze({status: 'dispatch-failed'});
     }
   };
@@ -612,6 +829,7 @@ export const createTerminalDataClientActor = (
   };
 
   const clearLocalConnection = (): void => {
+    connectionGeneration += 1;
     if (heartbeatTimer !== undefined) clearInterval(heartbeatTimer);
     clearHeartbeatDeadline();
     heartbeatTimer = undefined;
@@ -642,6 +860,15 @@ export const createTerminalDataClientActor = (
   };
 
   const actor = defineActor(moduleName, 'terminal-data-client', [
+    onCommand(terminalRemoteOperationMutationCommand, context => {
+      const mutation = context.command.payload;
+      if (mutation.kind === 'put') {
+        context.dispatchAction(terminalDataClientActions.putRemoteOperation(mutation.fact));
+      } else {
+        context.dispatchAction(terminalDataClientActions.removeRemoteOperation(mutation.remoteOperationId));
+      }
+      return Object.freeze({status: 'updated'});
+    }),
     onCommand(refreshTerminalClientStatusProjectionCommand, context => {
       if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER') {
         return Object.freeze({status: 'not-host'});
@@ -711,7 +938,6 @@ export const createTerminalDataClientActor = (
           pathParameters,
           queryParameters: {},
           headers,
-          body: {},
         } as never);
         await terminalClient.acceptBusinessResponse(
           profileId,
@@ -942,12 +1168,16 @@ export const createTerminalDataClientActor = (
         );
         context.dispatchAction(terminalDataClientActions.removePendingActivation(pending.operationId));
         await flush(context);
-        const activationSucceeded = await context.dispatchCommand(terminalActivationSucceededCommand, {
-          terminalRef: result.body.terminalRef,
-          storeRef: result.body.storeRef,
-          groupWorkspaceKey: result.body.groupWorkspaceKey,
-          bindingGeneration: result.body.bindingGeneration,
-        });
+        const activationSucceeded = await context.dispatchCommand(
+          terminalActivationSucceededCommand,
+          {
+            terminalRef: result.body.terminalRef,
+            storeRef: result.body.storeRef,
+            groupWorkspaceKey: result.body.groupWorkspaceKey,
+            bindingGeneration: result.body.bindingGeneration,
+          },
+          {requestId: context.command.requestId ?? createRequestId()},
+        );
         if (activationSucceeded.status !== 'completed') {
           context.platformPorts.logger
             .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'activation'})
@@ -956,7 +1186,16 @@ export const createTerminalDataClientActor = (
               event: 'activation-success-broadcast-failed',
               message: 'Terminal activation succeeded but one or more feature consumers failed to start',
               context: {commandId: context.command.commandId},
-              data: {dispatchStatus: activationSucceeded.status, bindingGeneration: result.body.bindingGeneration},
+              data: {
+                dispatchStatus: activationSucceeded.status,
+                bindingGeneration: result.body.bindingGeneration,
+                requestId: activationSucceeded.requestId,
+                actorResults: activationSucceeded.actorResults.map(actorResult => ({
+                  actorKey: actorResult.actorKey,
+                  status: actorResult.status,
+                  errorCode: actorResult.error?.code ?? null,
+                })),
+              },
             });
         }
         const connectionResult = await context.dispatchCommand(connectTerminalCommand, Object.freeze({}), {
@@ -1152,6 +1391,8 @@ export const createTerminalDataClientActor = (
       if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
       const state = readState(context.getState());
       const credential = state.credential;
+      const operationConnection = connection;
+      const operationGeneration = connectionGeneration;
       const payload = context.command.payload;
       if (
         state.activationStatus !== 'active' ||
@@ -1201,6 +1442,21 @@ export const createTerminalDataClientActor = (
         );
         return Object.freeze({status: 'failed', reason: 'PERSISTENCE_FAILED'});
       }
+      const afterFlush = readState(context.getState());
+      if (
+        !isHostRuntime(context.getState()) ||
+        afterFlush.activationStatus !== 'active' ||
+        afterFlush.credential?.terminalRef !== credential.terminalRef ||
+        afterFlush.credential?.storeRef !== credential.storeRef ||
+        afterFlush.credential?.bindingGeneration !== credential.bindingGeneration ||
+        afterFlush.credential?.groupWorkspaceKey !== credential.groupWorkspaceKey ||
+        afterFlush.credential?.deviceId !== credential.deviceId ||
+        afterFlush.credential?.credentialSecret !== credential.credentialSecret ||
+        afterFlush.topicSubscriptions[subscription.subscriptionId]?.identityKey !== identityKey
+      )
+        return Object.freeze({status: 'stale-operation'});
+      if (connectionGeneration !== operationGeneration || connection !== operationConnection)
+        return Object.freeze({status: 'stale-connection'});
       if (sessionReady && connection !== undefined) {
         try {
           await connection.send(topicSubscribeFrame(subscription));
@@ -1213,6 +1469,10 @@ export const createTerminalDataClientActor = (
     }),
     onCommand(unsubscribeTerminalTopicCommand, async context => {
       if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
+      const operationState = readState(context.getState());
+      const credential = operationState.credential;
+      const operationConnection = connection;
+      const operationGeneration = connectionGeneration;
       const payload = context.command.payload;
       const subscription = Object.values(readState(context.getState()).topicSubscriptions).find(
         current =>
@@ -1230,18 +1490,48 @@ export const createTerminalDataClientActor = (
       try {
         await flush(context);
       } catch {
-        context.dispatchAction(
-          terminalDataClientActions.putTopicSubscription({subscription, identityKey: subscription.identityKey}),
-        );
-        context.dispatchAction(
-          terminalDataClientActions.setTopicAcceptedTime({
-            subscriptionId: subscription.subscriptionId,
-            identityKey: subscription.identityKey,
-            acceptedTimeEpochMillis: subscription.acceptedTimeEpochMillis,
-          }),
-        );
+        const afterFlush = readState(context.getState());
+        if (
+          credential !== null &&
+          afterFlush.activationStatus === 'active' &&
+          afterFlush.credential?.terminalRef === credential.terminalRef &&
+          afterFlush.credential?.storeRef === credential.storeRef &&
+          afterFlush.credential?.bindingGeneration === credential.bindingGeneration &&
+          afterFlush.credential?.groupWorkspaceKey === credential.groupWorkspaceKey &&
+          afterFlush.credential?.deviceId === credential.deviceId &&
+          afterFlush.credential?.credentialSecret === credential.credentialSecret
+        )
+          context.dispatchAction(
+            terminalDataClientActions.restoreTopicSubscriptionIfAbsent({
+              subscription,
+              identityKey: subscription.identityKey,
+            }),
+          );
         return Object.freeze({status: 'failed', reason: 'PERSISTENCE_FAILED'});
       }
+      const afterFlush = readState(context.getState());
+      if (
+        credential === null ||
+        afterFlush.activationStatus !== 'active' ||
+        afterFlush.credential?.terminalRef !== credential.terminalRef ||
+        afterFlush.credential?.storeRef !== credential.storeRef ||
+        afterFlush.credential?.bindingGeneration !== credential.bindingGeneration ||
+        afterFlush.credential?.groupWorkspaceKey !== credential.groupWorkspaceKey ||
+        afterFlush.credential?.deviceId !== credential.deviceId ||
+        afterFlush.credential?.credentialSecret !== credential.credentialSecret
+      )
+        return Object.freeze({status: 'stale-operation'});
+      if (
+        Object.values(afterFlush.topicSubscriptions).some(
+          current =>
+            current.subscriberKey === payload.subscriberKey &&
+            current.topicKey === payload.topicKey &&
+            current.ownerRef === payload.ownerRef,
+        )
+      )
+        return Object.freeze({status: 'stale-operation'});
+      if (connectionGeneration !== operationGeneration || connection !== operationConnection)
+        return Object.freeze({status: 'stale-connection'});
       if (sessionReady && connection !== undefined) {
         try {
           await connection.send(
@@ -1277,6 +1567,8 @@ export const createTerminalDataClientActor = (
       )
         return Object.freeze({status: 'rejected', reason: 'STALE_NOTIFICATION'});
       const previousAcceptedTime = subscription.acceptedTimeEpochMillis;
+      const operationConnection = connection;
+      const operationGeneration = connectionGeneration;
       context.dispatchAction(
         terminalDataClientActions.setTopicAcceptedTime({
           subscriptionId: subscription.subscriptionId,
@@ -1288,14 +1580,32 @@ export const createTerminalDataClientActor = (
         await flush(context);
       } catch {
         context.dispatchAction(
-          terminalDataClientActions.setTopicAcceptedTime({
+          terminalDataClientActions.restoreTopicAcceptedTimeIfCurrent({
             subscriptionId: subscription.subscriptionId,
             identityKey: subscription.identityKey,
+            notificationId: notification.notificationId,
+            expectedAcceptedTimeEpochMillis: notification.topicTimeEpochMillis,
             acceptedTimeEpochMillis: previousAcceptedTime,
           }),
         );
         return Object.freeze({status: 'failed', reason: 'PERSISTENCE_FAILED'});
       }
+      const afterFlush = readState(context.getState());
+      const currentSubscription = afterFlush.topicSubscriptions[subscription.subscriptionId];
+      if (
+        afterFlush.credential?.terminalRef !== credential.terminalRef ||
+        afterFlush.credential?.storeRef !== credential.storeRef ||
+        afterFlush.activationStatus !== 'active' ||
+        afterFlush.credential?.bindingGeneration !== credential.bindingGeneration ||
+        afterFlush.credential?.groupWorkspaceKey !== credential.groupWorkspaceKey ||
+        afterFlush.credential?.deviceId !== credential.deviceId ||
+        afterFlush.credential?.credentialSecret !== credential.credentialSecret ||
+        currentSubscription?.identityKey !== subscription.identityKey ||
+        currentSubscription.pendingNotification?.notificationId !== notification.notificationId
+      )
+        return Object.freeze({status: 'stale-notification'});
+      if (connectionGeneration !== operationGeneration || connection !== operationConnection)
+        return Object.freeze({status: 'stale-connection'});
       if (!sessionReady || connection === undefined) return Object.freeze({status: 'accepted-locally'});
       try {
         await connection.send(
@@ -1312,7 +1622,12 @@ export const createTerminalDataClientActor = (
         await dependencies.transport.invalid({profileId, cause: 'NETWORK_ERROR'});
         return Object.freeze({status: 'failed', reason: 'ACCEPT_SEND_FAILED'});
       }
-      context.dispatchAction(terminalDataClientActions.clearPendingTopicNotification(subscription.subscriptionId));
+      context.dispatchAction(
+        terminalDataClientActions.clearPendingTopicNotification({
+          subscriptionId: subscription.subscriptionId,
+          notificationId: notification.notificationId,
+        }),
+      );
       return Object.freeze({status: 'accepted', acceptedTimeEpochMillis: notification.topicTimeEpochMillis});
     }),
     onCommand(terminalTransportEventCommand, async context => {
@@ -1409,11 +1724,8 @@ export const createTerminalDataClientActor = (
             return null;
           }
           const fact = readState(context.getState()).remoteOperations[parsed.remoteOperationId];
-          if (
-            fact === undefined ||
-            fact.reportId !== parsed.reportId ||
-            fact.requestId !== parsed.requestId
-          ) return Object.freeze({status: 'stale-remote-report-ack'});
+          if (fact === undefined || fact.reportId !== parsed.reportId || fact.requestId !== parsed.requestId)
+            return Object.freeze({status: 'stale-remote-report-ack'});
           if (fact.phase === 'COMPLETED' || fact.phase === 'FAILED') {
             const removed = await persistRemoteRemoval(context, fact);
             return Object.freeze({status: removed ? 'remote-report-released' : 'remote-report-release-failed'});
@@ -1484,12 +1796,16 @@ export const createTerminalDataClientActor = (
           );
           const credential = current.credential;
           if (credential === null) return Object.freeze({status: 'stale-topic-binding'});
-          const dispatched = await context.dispatchCommand(terminalTopicChangedCommand, {
-            subscriberKey: subscription.subscriberKey,
-            terminalRef: credential.terminalRef,
-            bindingGeneration: credential.bindingGeneration,
-            notification,
-          });
+          const dispatched = await context.dispatchCommand(
+            terminalTopicChangedCommand,
+            {
+              subscriberKey: subscription.subscriberKey,
+              terminalRef: credential.terminalRef,
+              bindingGeneration: credential.bindingGeneration,
+              notification,
+            },
+            {requestId: context.command.requestId ?? createRequestId()},
+          );
           return Object.freeze({status: 'topic-notification-dispatched', dispatchStatus: dispatched.status});
         }
         if (parsed.type === 'AUTHENTICATE' || parsed.type === 'PING') {
@@ -1498,6 +1814,7 @@ export const createTerminalDataClientActor = (
         return null;
       }
       if (event.type === 'open') {
+        connectionGeneration += 1;
         const persistedRemoteOperations = Object.values(readState(context.getState()).remoteOperations);
         const nextRevision = event.configRevision ?? null;
         const hasStaleRemoteOperation = persistedRemoteOperations.some(
@@ -1505,16 +1822,20 @@ export const createTerminalDataClientActor = (
         );
         currentConfigRevision = nextRevision;
         if (hasStaleRemoteOperation) {
+          remoteOperationEpoch += 1;
           context.dispatchAction(terminalDataClientActions.clearRemoteOperations());
+          let persistenceFailed = false;
           try {
             await flush(context);
-            lateRemoteResults.clear();
           } catch {
-            for (const fact of persistedRemoteOperations)
-              context.dispatchAction(terminalDataClientActions.putRemoteOperation(fact));
+            persistenceFailed = true;
+          }
+          if (persistenceFailed) {
+            await restoreRemoteOperations(context, persistedRemoteOperations);
             await dependencies.transport.invalid({profileId, cause: 'PERSISTENCE_FAILED'});
             return Object.freeze({status: 'remote-operation-clear-failed'});
           }
+          lateRemoteResults.clear();
         }
         context.dispatchAction(terminalDataClientActions.clearPendingTopicNotifications());
         if (heartbeatTimer !== undefined) clearInterval(heartbeatTimer);
@@ -1550,6 +1871,7 @@ export const createTerminalDataClientActor = (
         return null;
       }
       if (event.type === 'close' || event.type === 'error') {
+        connectionGeneration += 1;
         context.dispatchAction(terminalDataClientActions.clearPendingTopicNotifications());
         if (heartbeatTimer !== undefined) clearInterval(heartbeatTimer);
         clearHeartbeatDeadline();
@@ -1619,6 +1941,7 @@ export const createTerminalDataClientActor = (
       sentAtBySequence.clear();
     },
     afterApplicationReset: async (context, reason) => {
+      remoteOperationEpoch += 1;
       lateRemoteResults.clear();
       if (reason !== 'TERMINAL_ACTIVATION_CANCELLED') return;
       const requestId = resetRequestId.current;

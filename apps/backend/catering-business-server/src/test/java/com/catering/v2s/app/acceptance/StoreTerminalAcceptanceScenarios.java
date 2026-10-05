@@ -110,13 +110,12 @@ final class StoreTerminalAcceptanceScenarios {
     void updateConnectionContractStoreName(
             BackendAcceptanceTest.ScenarioContext context, ConnectionFixture connection, String updatedName)
             throws Exception {
-        BackendAcceptanceTest.Fixture projectEditor = host.projectUserFixture(
-                connection.fixture(), Set.of("BC-ORG-STORE-EDIT"));
+        BackendAcceptanceTest.Fixture projectEditor =
+                host.projectUserFixture(connection.fixture(), Set.of("BC-ORG-STORE-EDIT"));
         host.completeInvitation(context, projectEditor);
-        BackendAcceptanceTest.Session session =
-                selectStore(context, projectEditor, host.login(context, projectEditor));
-        String path = "/api/operations/group-workspaces/" + projectEditor.groupWorkspaceKey()
-                + "/organization/stores/" + connection.fixture().storeId();
+        BackendAcceptanceTest.Session session = selectStore(context, projectEditor, host.login(context, projectEditor));
+        String path = "/api/operations/group-workspaces/" + projectEditor.groupWorkspaceKey() + "/organization/stores/"
+                + connection.fixture().storeId();
         BackendAcceptanceTest.Response before = context.get(
                 BackendAcceptanceTest.OPERATIONS_ORGANIZATION_STORE,
                 path + "?expectedContextVersion=" + session.contextVersion(),
@@ -368,24 +367,32 @@ final class StoreTerminalAcceptanceScenarios {
         String storeRef = store.fixture().storeId().toString();
         String base = "/api/terminal/group-workspaces/" + groupKey;
         Map<String, String> headers = terminalReadHeaders(connection);
-        BackendAcceptanceTest.Fixture contractWriter = host.projectUserFixture(
-                store.fixture(), Set.of("BC-CONTRACT-CREATE"));
+        BackendAcceptanceTest.Fixture contractWriter =
+                host.projectUserFixture(store.fixture(), Set.of("BC-CONTRACT-CREATE"));
         host.completeInvitation(context, contractWriter);
-        BackendAcceptanceTest.Session contractWriterSession = selectStore(
-                context, contractWriter, host.login(context, contractWriter));
+        BackendAcceptanceTest.Session contractWriterSession =
+                selectStore(context, contractWriter, host.login(context, contractWriter));
         BackendAcceptanceTest.Response createdContract = context.post(
                 BackendAcceptanceTest.OPERATIONS_CONTRACT_CREATE,
                 "/api/operations/group-workspaces/" + groupKey + "/contracts",
                 contractWriterSession.cookie(),
                 Map.of(
-                        "storeId", storeRef,
-                        "phaseName", "Opening",
-                        "contractNo", "TDP-READ-" + UUID.randomUUID().toString().substring(0, 8),
-                        "effectiveFrom", "2026-01-01",
-                        "effectiveTo", "2026-12-31",
-                        "note", "TDP terminal read contract",
-                        "items", List.of(Map.of("code", "TDP-READ-ITEM", "name", "TDP read item")),
-                        "extensionValues", List.of()),
+                        "storeId",
+                        storeRef,
+                        "phaseName",
+                        "Opening",
+                        "contractNo",
+                        "TDP-READ-" + UUID.randomUUID().toString().substring(0, 8),
+                        "effectiveFrom",
+                        "2026-01-01",
+                        "effectiveTo",
+                        "2026-12-31",
+                        "note",
+                        "TDP terminal read contract",
+                        "items",
+                        List.of(Map.of("code", "TDP-READ-ITEM", "name", "TDP read item")),
+                        "extensionValues",
+                        List.of()),
                 idempotency(),
                 CREATED);
         String contractRef = createdContract.json().path("id").asText();
@@ -397,9 +404,12 @@ final class StoreTerminalAcceptanceScenarios {
                 null,
                 headers,
                 OK);
-        assertEquals(storeRef, basic.json().path("store").path("id").asText(),
+        assertEquals(
+                storeRef,
+                basic.json().path("store").path("id").asText(),
                 "BUSINESS: store-basic is scoped to the verified binding store");
-        assertEquals(groupKey, basic.json().path("store").path("groupWorkspaceKey").asText());
+        assertEquals(
+                groupKey, basic.json().path("store").path("groupWorkspaceKey").asText());
         assertTrue(basic.json().path("operatingRules").isObject());
         assertTrue(basic.json().path("storeUpdatedAtEpochMillis").asLong() > 0);
 
@@ -409,17 +419,23 @@ final class StoreTerminalAcceptanceScenarios {
                 null,
                 headers,
                 OK);
-        assertEquals(store.fixture().projectId().toString(), path.json().path("projectRef").asText());
-        assertEquals(store.fixture().regionId().toString(), path.json().path("regionRef").asText());
-        assertEquals(store.fixture().groupId().toString(), path.json().path("commercialGroupRef").asText());
+        assertEquals(
+                store.fixture().projectId().toString(),
+                path.json().path("projectRef").asText());
+        assertEquals(
+                store.fixture().regionId().toString(),
+                path.json().path("regionRef").asText());
+        assertEquals(
+                store.fixture().groupId().toString(),
+                path.json().path("commercialGroupRef").asText());
         assertTrue(path.json().path("projectUpdatedAtEpochMillis").asLong() > 0);
         assertTrue(path.json().path("regionUpdatedAtEpochMillis").asLong() > 0);
 
         AreaRef area = createArea(context, store, "TABLE_AREA", "TDP终端读取区", "TDP-READ-AREA");
         BackendAcceptanceTest.Response pointCreated = context.post(
                 BackendAcceptanceTest.OPERATIONS_STORE_SERVICE_POINT_CREATE,
-                "/api/operations/group-workspaces/" + groupKey + "/stores/" + storeRef
-                        + "/service-point-areas/" + area.ref() + "/service-points",
+                "/api/operations/group-workspaces/" + groupKey + "/stores/" + storeRef + "/service-point-areas/"
+                        + area.ref() + "/service-points",
                 store.session().cookie(),
                 Map.of(
                         "name", "TDP终端读取桌台",
@@ -447,22 +463,28 @@ final class StoreTerminalAcceptanceScenarios {
                     + contract.path("effectiveFrom").asText() + "/"
                     + contract.path("effectiveTo").asText());
         }
-        assertTrue(hasRef(contracts.json().path("items"), "id", contractRef),
-                "BUSINESS: active contract collection contains the owner-created contract; createdId="
-                        + contractRef + "; returned=id/status/effectiveFrom/effectiveTo " + returnedContractFacts);
+        assertTrue(
+                hasRef(contracts.json().path("items"), "id", contractRef),
+                "BUSINESS: active contract collection contains the owner-created contract; createdId=" + contractRef
+                        + "; returned=id/status/effectiveFrom/effectiveTo " + returnedContractFacts);
         for (JsonNode contract : contracts.json().path("items")) {
             assertEquals("VALID", contract.path("status").asText());
             assertEquals(storeRef, contract.path("store").path("id").asText());
         }
 
         BackendAcceptanceTest.Response contractRead = context.get(
-                BackendAcceptanceTest.TERMINAL_READ_CONTRACT,
-                base + "/contracts/" + contractRef,
-                null,
-                headers,
-                OK);
-        assertEquals(contractRef, contractRead.json().path("contract").path("id").asText());
-        assertEquals("TDP-READ-ITEM", contractRead.json().path("contract").path("items").get(0).path("code").asText());
+                BackendAcceptanceTest.TERMINAL_READ_CONTRACT, base + "/contracts/" + contractRef, null, headers, OK);
+        assertEquals(
+                contractRef, contractRead.json().path("contract").path("id").asText());
+        assertEquals(
+                "TDP-READ-ITEM",
+                contractRead
+                        .json()
+                        .path("contract")
+                        .path("items")
+                        .get(0)
+                        .path("code")
+                        .asText());
 
         BackendAcceptanceTest.Response areas = context.get(
                 BackendAcceptanceTest.TERMINAL_READ_STORE_SERVICE_POINT_AREAS,
@@ -496,8 +518,11 @@ final class StoreTerminalAcceptanceScenarios {
                 null,
                 headers,
                 OK);
-        assertEquals("TDP终端读取桌台", pointRead.json().path("servicePoint").path("name").asText());
-        assertEquals(area.ref().toString(), pointRead.json().path("servicePoint").path("areaRef").asText());
+        assertEquals(
+                "TDP终端读取桌台", pointRead.json().path("servicePoint").path("name").asText());
+        assertEquals(
+                area.ref().toString(),
+                pointRead.json().path("servicePoint").path("areaRef").asText());
 
         BackendAcceptanceTest.Response missingContract = context.get(
                 BackendAcceptanceTest.TERMINAL_READ_CONTRACT,
@@ -519,8 +544,12 @@ final class StoreTerminalAcceptanceScenarios {
                         "X-Terminal-Device-Id", connection.deviceId()),
                 Set.of(403));
         assertProblem(rejected, "TERMINAL_BINDING_CREDENTIAL_INVALID");
-        assertEquals("ACTIVE", readDetail(context, store, connection.terminalRef())
-                .path("binding").path("status").asText(),
+        assertEquals(
+                "ACTIVE",
+                readDetail(context, store, connection.terminalRef())
+                        .path("binding")
+                        .path("status")
+                        .asText(),
                 "BUSINESS: rejected credential does not alter the current binding");
     }
 

@@ -74,7 +74,8 @@ class WorkspaceAuthenticationContextVersionTest {
 
     @Test
     void assignmentAndDataNodeSelectionEachAdvanceContextVersionAndAStaleCompareAndSetCannotAdvanceItAgain() {
-        UUID regionId = hierarchy.createRegion(workspaceId, "context-version-test", "context-region", "Context region")
+        UUID regionId = hierarchy
+                .createRegion(workspaceId, "context-version-test", "context-region", "Context region")
                 .id();
         UUID accountId = UUID.randomUUID();
         UUID roleId = roles.create(
@@ -151,7 +152,8 @@ class WorkspaceAuthenticationContextVersionTest {
 
     @Test
     void sessionEntryKeepsIdentitySelectionWhenTheSessionHasNoCurrentAssignment() {
-        UUID regionId = hierarchy.createRegion(workspaceId, "context-version-test", "identity-region", "Identity region")
+        UUID regionId = hierarchy
+                .createRegion(workspaceId, "context-version-test", "identity-region", "Identity region")
                 .id();
         UUID accountId = UUID.randomUUID();
         UUID roleId = roles.create(

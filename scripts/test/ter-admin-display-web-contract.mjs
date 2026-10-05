@@ -67,6 +67,17 @@ export function hasManagedTerminalBrowserOrigin(origins, port) {
   return origins.includes(`http://127.0.0.1:${port}`);
 }
 
+export function terminalStoreReadOperationForPath(groupWorkspacePath, pathname) {
+  if (typeof groupWorkspacePath !== 'string' || !pathname.startsWith(`${groupWorkspacePath}/stores/`)) return null;
+  const suffix = pathname.slice(groupWorkspacePath.length);
+  if (/^\/stores\/[^/]+\/basic$/u.test(suffix)) return 'terminalReadStoreBasic';
+  if (/^\/stores\/[^/]+\/organization-path$/u.test(suffix)) return 'terminalReadStoreOrganizationPath';
+  if (/^\/stores\/[^/]+\/contracts$/u.test(suffix)) return 'terminalReadStoreActiveContracts';
+  if (/^\/stores\/[^/]+\/service-point-areas$/u.test(suffix)) return 'terminalReadStoreServicePointAreas';
+  if (/^\/stores\/[^/]+\/service-points$/u.test(suffix)) return 'terminalReadStoreServicePoints';
+  return null;
+}
+
 export function webBusinessAssertionSetMatches(expected, observed) {
   if (!Array.isArray(expected) || !Array.isArray(observed)) return false;
   if (expected.some(value => typeof value !== 'string') || observed.some(value => typeof value !== 'string'))
@@ -166,6 +177,22 @@ export function validateWebAStageManifests(manifests, currentSourceSha256) {
       errors.push(`WEB_A_COMMAND_REJECTION_EVIDENCE_MISMATCH:${rowKey}`);
     }
     if (expectedRow.businessAssertionIds.includes('A-02')) {
+      const requiredTerminalReadOperations = [
+        'terminalReadStoreBasic',
+        'terminalReadStoreOrganizationPath',
+        'terminalReadStoreActiveContracts',
+        'terminalReadStoreServicePointAreas',
+        'terminalReadStoreServicePoints',
+      ];
+      const terminalDataReads = Array.isArray(manifest.terminalDataReads) ? manifest.terminalDataReads : [];
+      const terminalDataReadsValid =
+        terminalDataReads.length === requiredTerminalReadOperations.length &&
+        requiredTerminalReadOperations.every(operationId =>
+          terminalDataReads.some(
+            value => value?.operationId === operationId && value.success === true && value.getRequestObserved === true,
+          ),
+        );
+      if (!terminalDataReadsValid) errors.push(`WEB_A_TDP_INITIAL_READ_EVIDENCE_MISSING:${rowKey}`);
       const heartbeat = manifest.matchedHeartbeatRtt;
       const tdsEvents = Array.isArray(manifest.tdsServerLogEvents) ? manifest.tdsServerLogEvents : [];
       const acceptedTdsSessions = new Set(

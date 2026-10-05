@@ -100,8 +100,8 @@ test('ordinary acceptance registry carries the complete current CP-05 budget pro
     registry.map(({operationId, databaseOperationBudget}) => [operationId, databaseOperationBudget]),
   );
 
-  assert.equal(registry.length, 296);
-  assert.equal(Object.keys(actualBudgets).length, 296);
+  assert.equal(registry.length, 304);
+  assert.equal(Object.keys(actualBudgets).length, 304);
   for (const [operationId, expectedBudget] of Object.entries(expectedBudgets)) {
     assert.deepEqual(
       actualBudgets[operationId],

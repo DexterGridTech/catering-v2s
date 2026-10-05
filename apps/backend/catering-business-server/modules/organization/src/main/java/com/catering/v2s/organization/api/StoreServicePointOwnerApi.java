@@ -7,6 +7,14 @@ import java.util.UUID;
 
 /** Organization-owned facts for the store service-point and QR management surface. */
 public interface StoreServicePointOwnerApi {
+    List<TerminalArea> readTerminalAreas(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef);
+
+    TerminalArea readTerminalArea(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID areaRef);
+
+    List<TerminalPoint> readTerminalPoints(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef);
+
+    TerminalPoint readTerminalPoint(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID pointRef);
+
     AreaPage listAreas(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, String cursor, int pageSize);
 
     List<AreaReference> readAreasByRefs(
@@ -73,6 +81,39 @@ public interface StoreServicePointOwnerApi {
             boolean canMoveDown) {}
 
     record AreaReference(UUID areaRef, UUID storeRef, String name, String code, String areaType, String status) {}
+
+    /** Terminal-facing own facts only; it intentionally excludes management projections and computed QR state. */
+    record TerminalArea(
+            UUID areaRef,
+            UUID storeRef,
+            String name,
+            String code,
+            String areaType,
+            String status,
+            long displayOrder,
+            long version,
+            long createdAt,
+            long updatedAt) {}
+
+    /** Terminal-facing own facts only; point membership is independent of parent-area status. */
+    record TerminalPoint(
+            UUID pointRef,
+            UUID storeRef,
+            UUID areaRef,
+            String name,
+            String code,
+            String pointType,
+            String status,
+            long displayOrder,
+            Long seatCapacity,
+            String tableShape,
+            Boolean reservable,
+            UUID imageAssetRef,
+            String extensionValuesJson,
+            Long extensionRuleRevision,
+            long version,
+            long createdAt,
+            long updatedAt) {}
 
     record AreaCandidate(UUID areaRef, String name, String code) {}
 

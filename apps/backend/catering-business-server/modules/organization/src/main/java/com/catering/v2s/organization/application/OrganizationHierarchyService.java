@@ -55,8 +55,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 definitions);
     }
 
-    public OrganizationHierarchyService(
-            JdbcTemplate jdbc, TimeProvider time, CommercialGroupLookup commercialGroups) {
+    public OrganizationHierarchyService(JdbcTemplate jdbc, TimeProvider time, CommercialGroupLookup commercialGroups) {
         this(
                 new OrganizationHierarchyPersistence(jdbc),
                 time,
@@ -92,8 +91,8 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
     @Override
     @Transactional
     public OrganizationNodeReadback createRegion(CreateRegionCommand command) {
-        UUID commercialGroupRef = requireCommercialGroup(
-                command.workspaceUuid(), command.groupWorkspaceKey(), command.ownerScopeGrant());
+        UUID commercialGroupRef =
+                requireCommercialGroup(command.workspaceUuid(), command.groupWorkspaceKey(), command.ownerScopeGrant());
         return receipts.execute(
                 command.workspaceUuid(),
                 command.idempotencyKey(),
@@ -354,6 +353,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 now,
                 actor,
                 "[{\"fieldKey\":\"name\",\"after\":\"" + json(created.name()) + "\"}]");
+        persistence.notifyTerminalTopic(workspaceUuid, groupWorkspaceKey, type, id);
         return created;
     }
 
@@ -759,13 +759,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
         if (!List.of("ENABLED", "DISABLED", "VOIDED").contains(status)
                 || "VOIDED".equals(current.status())
                 || current.version() != expectedVersion
-                || persistence.updateStatus(
-                                nodeId,
-                                workspaceUuid,
-                                groupWorkspaceKey,
-                                status,
-                                now,
-                                expectedVersion)
+                || persistence.updateStatus(nodeId, workspaceUuid, groupWorkspaceKey, status, now, expectedVersion)
                         != 1) {
             throw new OrganizationConflictException();
         }
@@ -792,9 +786,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             String status,
             String idempotencyKey) {
         requireCurrentParent(
-                workspaceUuid,
-                groupWorkspaceKey,
-                requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null));
+                workspaceUuid, groupWorkspaceKey, requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null));
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
@@ -812,9 +804,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             String idempotencyKey,
             AuditActor actor) {
         requireCurrentParent(
-                workspaceUuid,
-                groupWorkspaceKey,
-                requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null));
+                workspaceUuid, groupWorkspaceKey, requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null));
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
@@ -1012,9 +1002,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             long expectedVersion,
             String idempotencyKey) {
         requireCurrentParent(
-                workspaceUuid,
-                groupWorkspaceKey,
-                requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null));
+                workspaceUuid, groupWorkspaceKey, requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null));
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,

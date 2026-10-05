@@ -99,7 +99,7 @@ describe('transport connection owner', () => {
     await channel.send('{"type":"AUTHENTICATE"}');
     owner.ready('ter', 1_000);
     expect(connection.send).toHaveBeenCalledTimes(1);
-    expect(events).toEqual([{type: 'open', addressName: 'backup'}]);
+    expect(events).toEqual([{type: 'open', addressName: 'backup', configRevision: 1}]);
 
     await owner.invalid('ter', 'REDIRECT_TO_NEXT_NODE');
     expect(connection.close).toHaveBeenCalledTimes(1);
@@ -353,12 +353,12 @@ describe('transport connection owner', () => {
     await owner.start({profileId: 'ter', serverName: 'terminal-data-server', reconnectPolicy});
     const events: TransportConnectionEvent[] = [];
     const unsubscribe = owner.connectionFor('ter').subscribe(event => events.push(event));
-    expect(events).toEqual([{type: 'open', addressName: 'primary'}]);
+    expect(events).toEqual([{type: 'open', addressName: 'primary', configRevision: 1}]);
     connection.emit({type: 'message', raw: '{"type":"SESSION_READY"}'});
     unsubscribe();
     connection.emit({type: 'message', raw: '{"type":"PING"}'});
     expect(events).toEqual([
-      {type: 'open', addressName: 'primary'},
+      {type: 'open', addressName: 'primary', configRevision: 1},
       {type: 'message', raw: '{"type":"SESSION_READY"}'},
     ]);
     await owner.dispose();
@@ -391,7 +391,7 @@ describe('transport connection owner', () => {
     await owner.start({profileId: 'ter', serverName: 'terminal-data-server', reconnectPolicy});
     const events: TransportConnectionEvent[] = [];
     owner.connectionFor('ter').subscribe(event => events.push(event));
-    expect(events).toEqual([{type: 'open', addressName: 'primary'}]);
+    expect(events).toEqual([{type: 'open', addressName: 'primary', configRevision: 1}]);
 
     await owner.invalid('ter', 'NODE_UNAVAILABLE');
     await timers.advanceBy(10_000);
@@ -400,8 +400,8 @@ describe('transport connection owner', () => {
 
     expect(connectCount).toBe(2);
     expect(events).toEqual([
-      {type: 'open', addressName: 'primary'},
-      {type: 'open', addressName: 'primary'},
+      {type: 'open', addressName: 'primary', configRevision: 1},
+      {type: 'open', addressName: 'primary', configRevision: 1},
     ]);
     await owner.dispose();
   });

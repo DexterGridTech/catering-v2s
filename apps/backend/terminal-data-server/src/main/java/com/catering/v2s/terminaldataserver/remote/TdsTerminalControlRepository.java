@@ -27,11 +27,15 @@ public class TdsTerminalControlRepository {
                 "SELECT operation_id, request_id, terminal_ref, binding_generation, target_session_id, "
                         + "command_name, parameters FROM terminal_control.claim_online_operation(?, ?)",
                 (result, row) -> new ClaimedOperation(
-                        result.getObject("operation_id", UUID.class), result.getObject("request_id", UUID.class),
-                        result.getObject("terminal_ref", UUID.class), result.getLong("binding_generation"),
-                        result.getString("target_session_id"), result.getString("command_name"),
+                        result.getObject("operation_id", UUID.class),
+                        result.getObject("request_id", UUID.class),
+                        result.getObject("terminal_ref", UUID.class),
+                        result.getLong("binding_generation"),
+                        result.getString("target_session_id"),
+                        result.getString("command_name"),
                         parse(result.getString("parameters"))),
-                operationId, nodeId);
+                operationId,
+                nodeId);
         return rows.isEmpty() ? null : rows.getFirst();
     }
 
@@ -50,9 +54,16 @@ public class TdsTerminalControlRepository {
                 "SELECT accepted FROM terminal_control.accept_terminal_report("
                         + "?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?)",
                 (row, rowNumber) -> row.getBoolean("accepted"),
-                reportId, operationId, requestId, bindingGeneration,
-                nodeId, sessionId, phase, Timestamp.from(occurredAt),
-                result == null ? null : write(result), errorCode);
+                reportId,
+                operationId,
+                requestId,
+                bindingGeneration,
+                nodeId,
+                sessionId,
+                phase,
+                Timestamp.from(occurredAt),
+                result == null ? null : write(result),
+                errorCode);
         return !rows.isEmpty() && rows.getFirst();
     }
 

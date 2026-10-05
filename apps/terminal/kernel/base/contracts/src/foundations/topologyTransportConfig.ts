@@ -23,6 +23,7 @@ export type TopologyTransportConfig = Readonly<{
 }>;
 
 const basePath = rawTopologyTransportConfig.basePath.replace(/\/+$/, '');
+export const topologyLateResultMaxTtlMs = 7_200_000;
 
 export const topologyTransportConfig: TopologyTransportConfig = Object.freeze({
   port: rawTopologyTransportConfig.port,

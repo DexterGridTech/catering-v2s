@@ -3,6 +3,7 @@ import type {ReactElement} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
+import {switchDisplayRoleCommand, switchInstanceModeCommand} from '@catering-v2s/kernel-base-display-context';
 import {selectServerConfiguration} from '@catering-v2s/kernel-base-server-config';
 import packageJson from '../package.json';
 import {StyleSheet} from 'react-native';
@@ -414,6 +415,36 @@ describe('sample2 wallpaper console assembly', () => {
     ];
     try {
       for (const [index, item] of routes.entries()) {
+        if (index === 2) {
+          const slaveMode = await assembly.runtime.dispatchCommand(
+            switchInstanceModeCommand,
+            {instanceMode: 'SLAVE'},
+            {
+              requestId: createRequestId(),
+              routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'},
+            },
+          );
+          expect(slaveMode.status).toBe('completed');
+          const viceRole = await assembly.runtime.dispatchCommand(
+            switchDisplayRoleCommand,
+            {displayRole: 'VICE'},
+            {
+              requestId: createRequestId(),
+              routeContext: {workspace: 'BRANCH', instanceMode: 'SLAVE', displayMode: 'PRIMARY'},
+            },
+          );
+          expect(viceRole.status).toBe('completed');
+        } else if (index === 3) {
+          const chiefRole = await assembly.runtime.dispatchCommand(
+            switchDisplayRoleCommand,
+            {displayRole: 'CHIEF'},
+            {
+              requestId: createRequestId(),
+              routeContext: {workspace: 'MAIN', instanceMode: 'SLAVE', displayMode: 'SECONDARY'},
+            },
+          );
+          expect(chiefRole.status).toBe('completed');
+        }
         const result = await assembly.runtime.dispatchCommand(
           needToActivateTerminalCommand,
           {},

@@ -428,28 +428,34 @@ class BackendAcceptanceTest {
             true);
     static final RouteIdentity TERMINAL_READ_STORE_BASIC = new RouteIdentity(
             "terminalReadStoreBasic",
-            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/basic", true);
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/basic",
+            true);
     static final RouteIdentity TERMINAL_READ_STORE_ORGANIZATION_PATH = new RouteIdentity(
             "terminalReadStoreOrganizationPath",
-            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/organization-path", true);
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/organization-path",
+            true);
     static final RouteIdentity TERMINAL_READ_STORE_ACTIVE_CONTRACTS = new RouteIdentity(
             "terminalReadStoreActiveContracts",
-            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/contracts", true);
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/contracts",
+            true);
     static final RouteIdentity TERMINAL_READ_CONTRACT = new RouteIdentity(
-            "terminalReadContract",
-            "/api/terminal/group-workspaces/{groupWorkspaceKey}/contracts/{contractRef}", true);
+            "terminalReadContract", "/api/terminal/group-workspaces/{groupWorkspaceKey}/contracts/{contractRef}", true);
     static final RouteIdentity TERMINAL_READ_STORE_SERVICE_POINT_AREAS = new RouteIdentity(
             "terminalReadStoreServicePointAreas",
-            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas", true);
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas",
+            true);
     static final RouteIdentity TERMINAL_READ_SERVICE_POINT_AREA = new RouteIdentity(
             "terminalReadServicePointArea",
-            "/api/terminal/group-workspaces/{groupWorkspaceKey}/service-point-areas/{areaRef}", true);
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/service-point-areas/{areaRef}",
+            true);
     static final RouteIdentity TERMINAL_READ_STORE_SERVICE_POINTS = new RouteIdentity(
             "terminalReadStoreServicePoints",
-            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points", true);
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points",
+            true);
     static final RouteIdentity TERMINAL_READ_SERVICE_POINT = new RouteIdentity(
             "terminalReadServicePoint",
-            "/api/terminal/group-workspaces/{groupWorkspaceKey}/service-points/{pointRef}", true);
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/service-points/{pointRef}",
+            true);
     static final RouteIdentity OPERATIONS_STORE_TERMINAL_ACTIVATION_CANCEL = new RouteIdentity(
             "cancelOperationsStoreTerminalActivation",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}"
@@ -1423,8 +1429,8 @@ class BackendAcceptanceTest {
                 "ACCEPTANCE-ROOT",
                 "Acceptance root",
                 AuditActor.system());
-        OrganizationNodeReadback region = hierarchy.createRegion(
-                workspaceUuid, key, "acceptance-region", "Acceptance Region");
+        OrganizationNodeReadback region =
+                hierarchy.createRegion(workspaceUuid, key, "acceptance-region", "Acceptance Region");
         OrganizationNodeReadback project = hierarchy.create(
                 workspaceUuid,
                 key,

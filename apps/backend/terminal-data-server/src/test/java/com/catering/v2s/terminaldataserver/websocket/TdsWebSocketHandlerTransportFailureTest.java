@@ -7,8 +7,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -25,8 +25,8 @@ import com.catering.v2s.terminaldataserver.session.SessionRegistrationGate;
 import com.catering.v2s.terminaldataserver.session.TdsBindingRevocationListener;
 import com.catering.v2s.terminaldataserver.session.TdsConnectionCapacityLimiter;
 import com.catering.v2s.terminaldataserver.session.TdsTerminalSessionActors;
-import com.catering.v2s.terminaldataserver.state.TdsConnectionStateWriter;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
+import com.catering.v2s.terminaldataserver.state.TdsConnectionStateWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
@@ -36,6 +36,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -62,9 +63,15 @@ class TdsWebSocketHandlerTransportFailureTest {
         when(session.textMessage(anyString())).thenReturn(mock(WebSocketMessage.class));
         when(session.close(any(CloseStatus.class))).thenReturn(Mono.empty());
 
-        TerminalConnectionProtocol protocol = new TerminalConnectionProtocol(JsonMapper.builder().build());
+        TerminalConnectionProtocol protocol =
+                new TerminalConnectionProtocol(JsonMapper.builder().build());
         TdsRuntimeSettings settings = TdsRuntimeSettings.from(
-                "1", "1", Duration.ofSeconds(30), Duration.ofSeconds(90), Duration.ofSeconds(15), Duration.ofSeconds(5));
+                "1",
+                "1",
+                Duration.ofSeconds(30),
+                Duration.ofSeconds(90),
+                Duration.ofSeconds(15),
+                Duration.ofSeconds(5));
         TdsTerminalControlRepository terminalControl = mock(TdsTerminalControlRepository.class);
         UUID operationId = UUID.randomUUID();
         UUID requestId = UUID.randomUUID();
@@ -102,26 +109,108 @@ class TdsWebSocketHandlerTransportFailureTest {
                 Schedulers.immediate(),
                 Schedulers.immediate());
 
-        String report = """
+        String report =
+                """
                 {"type":"REMOTE_REPORT","reportId":"%s","remoteOperationId":"%s",
                  "requestId":"%s","phase":"COMPLETED","occurredAt":"2026-10-05T00:00:00Z",
                  "result":{"ok":true}}
-                """.formatted(reportId, operationId, requestId);
+                """
+                        .formatted(reportId, operationId, requestId);
         ByteBuf payload = Unpooled.copiedBuffer(report, StandardCharsets.UTF_8);
         WebSocketMessage message = new WebSocketMessage(
                 WebSocketMessage.Type.TEXT, new NettyDataBufferFactory(ByteBufAllocator.DEFAULT).wrap(payload));
 
         try {
-            handler.receiveAuthenticatedMessage(connection, message, new AtomicLong(), Sinks.many().replay().latest())
+            handler.receiveAuthenticatedMessage(
+                            connection,
+                            message,
+                            new AtomicLong(),
+                            Sinks.many().replay().latest())
                     .block(Duration.ofSeconds(2));
 
-            verify(terminalControl).report(
-                    eq(reportId), eq(operationId), eq(requestId), eq(3L), eq("session-a"), eq("node-a"),
-                    eq("COMPLETED"), any(Instant.class), any(), isNull());
+            verify(terminalControl)
+                    .report(
+                            eq(reportId),
+                            eq(operationId),
+                            eq(requestId),
+                            eq(3L),
+                            eq("session-a"),
+                            eq("node-a"),
+                            eq("COMPLETED"),
+                            any(Instant.class),
+                            any(),
+                            isNull());
             ArgumentCaptor<String> frames = ArgumentCaptor.forClass(String.class);
             verify(session).textMessage(frames.capture());
             assertTrue(frames.getAllValues().stream().noneMatch(value -> value.contains("REMOTE_REPORT_ACK")));
             verify(session).close(new CloseStatus(4000, "SERVER_ERROR"));
+        } finally {
+            connection.finish();
+            message.release();
+        }
+    }
+
+    @Test
+    void remoteReportOwnerRejectionClosesWithoutAcknowledgingReport() {
+        WebSocketSession session = mock(WebSocketSession.class);
+        when(session.getId()).thenReturn("remote-report-owner-rejected");
+        when(session.isOpen()).thenReturn(true);
+        when(session.textMessage(anyString())).thenReturn(mock(WebSocketMessage.class));
+        when(session.close(any(CloseStatus.class))).thenReturn(Mono.empty());
+        TerminalConnectionProtocol protocol =
+                new TerminalConnectionProtocol(JsonMapper.builder().build());
+        TdsRuntimeSettings settings = TdsRuntimeSettings.from(
+                "1",
+                "1",
+                Duration.ofSeconds(30),
+                Duration.ofSeconds(90),
+                Duration.ofSeconds(15),
+                Duration.ofSeconds(5));
+        TdsTerminalControlRepository terminalControl = mock(TdsTerminalControlRepository.class);
+        when(terminalControl.report(
+                        any(), any(), any(), anyLong(), anyString(), anyString(), anyString(), any(), any(), any()))
+                .thenReturn(false);
+        SessionIdentity identity = new SessionIdentity(
+                UUID.randomUUID(), "group-key", UUID.randomUUID(), "node-a", "session-a", 1, Instant.now());
+        TdsConnectionCapacityLimiter limiter = new TdsConnectionCapacityLimiter(1, 1);
+        TdsWebSocketConnection connection = new TdsWebSocketConnection(
+                session, protocol, limiter.tryAcquireUnauthenticated(), Schedulers.immediate());
+        connection.outboundMessages().subscribe(ignored -> {});
+        assertTrue(connection.sendSessionReady("SESSION_READY", identity, 3));
+        TdsWebSocketHandler handler = new TdsWebSocketHandler(
+                settings,
+                new TerminalConnectionFrameCodec(TdsWireJsonConfiguration.createWireObjectMapper(), protocol),
+                protocol,
+                mock(TerminalCredentialVerificationApi.class),
+                limiter,
+                mock(TdsTerminalSessionActors.class),
+                mock(TdsBindingRevocationListener.class),
+                mock(TdsConnectionStateWriter.class),
+                mock(TdsConnectionHistoryWriter.class),
+                mock(SessionRegistrationGate.class),
+                terminalControl,
+                Schedulers.immediate(),
+                Schedulers.immediate(),
+                Schedulers.immediate(),
+                Schedulers.immediate());
+        String report = "{\"type\":\"REMOTE_REPORT\",\"reportId\":\"%s\",".formatted(UUID.randomUUID())
+                + "\"remoteOperationId\":\"%s\",\"requestId\":\"%s\",".formatted(UUID.randomUUID(), UUID.randomUUID())
+                + "\"phase\":\"COMPLETED\",\"occurredAt\":\"2026-10-05T00:00:00Z\","
+                + "\"result\":{\"ok\":true}}";
+        WebSocketMessage message = textMessage(report);
+
+        try {
+            handler.receiveAuthenticatedMessage(
+                            connection,
+                            message,
+                            new AtomicLong(),
+                            Sinks.many().replay().latest())
+                    .block(Duration.ofSeconds(2));
+
+            ArgumentCaptor<String> frames = ArgumentCaptor.forClass(String.class);
+            verify(session, times(1)).textMessage(frames.capture());
+            assertEquals("SESSION_READY", frames.getValue());
+            verify(session).close(new CloseStatus(4000, "UNKNOWN"));
         } finally {
             connection.finish();
             message.release();
@@ -372,5 +461,81 @@ class TdsWebSocketHandlerTransportFailureTest {
             ping.release();
             rejectingCodecScheduler.dispose();
         }
+    }
+
+    @Test
+    void pingRoutesAheadOfQueuedBusinessFrames() throws Exception {
+        WebSocketSession session = mock(WebSocketSession.class);
+        when(session.getId()).thenReturn("ping-bypasses-business-queue");
+        when(session.isOpen()).thenReturn(true);
+        when(session.textMessage(anyString())).thenReturn(mock(WebSocketMessage.class));
+        when(session.close(any(CloseStatus.class))).thenReturn(Mono.empty());
+        TerminalConnectionProtocol protocol =
+                new TerminalConnectionProtocol(JsonMapper.builder().build());
+        TdsRuntimeSettings settings = TdsRuntimeSettings.from(
+                "1",
+                "1",
+                Duration.ofSeconds(30),
+                Duration.ofSeconds(90),
+                Duration.ofSeconds(15),
+                Duration.ofSeconds(5));
+        TdsConnectionCapacityLimiter limiter = new TdsConnectionCapacityLimiter(1, 1);
+        TdsWebSocketConnection connection = new TdsWebSocketConnection(
+                session, protocol, limiter.tryAcquireUnauthenticated(), Schedulers.immediate());
+        connection.outboundMessages().subscribe(ignored -> {});
+        assertTrue(connection.sendSessionReady("SESSION_READY", null));
+        TdsWebSocketHandler handler = new TdsWebSocketHandler(
+                settings,
+                new TerminalConnectionFrameCodec(TdsWireJsonConfiguration.createWireObjectMapper(), protocol),
+                protocol,
+                mock(TerminalCredentialVerificationApi.class),
+                limiter,
+                mock(TdsTerminalSessionActors.class),
+                mock(TdsBindingRevocationListener.class),
+                mock(TdsConnectionStateWriter.class),
+                mock(TdsConnectionHistoryWriter.class),
+                mock(SessionRegistrationGate.class),
+                Schedulers.immediate(),
+                Schedulers.immediate(),
+                Schedulers.immediate(),
+                Schedulers.immediate());
+        Sinks.Many<String> businessFrames = Sinks.many().unicast().onBackpressureBuffer(new ArrayBlockingQueue<>(1));
+        AtomicLong lastSequence = new AtomicLong();
+        Sinks.Many<Long> heartbeatEvents = Sinks.many().replay().latest();
+        String report = "{\"type\":\"REMOTE_REPORT\",\"reportId\":\"report-1\","
+                + "\"remoteOperationId\":\"operation-1\",\"requestId\":\"request-1\","
+                + "\"phase\":\"COMPLETED\",\"occurredAt\":\"2026-10-05T00:00:00Z\","
+                + "\"result\":{\"ok\":true}}";
+        WebSocketMessage reportMessage = textMessage(report);
+        WebSocketMessage pingMessage =
+                textMessage("{\"type\":\"PING\",\"seq\":7,\"clientTs\":\"2026-10-05T00:00:00Z\",\"lastRttMs\":12.5}");
+
+        try {
+            handler.routeAuthenticatedMessage(connection, reportMessage, lastSequence, heartbeatEvents, businessFrames)
+                    .block(Duration.ofSeconds(1));
+            handler.routeAuthenticatedMessage(connection, pingMessage, lastSequence, heartbeatEvents, businessFrames)
+                    .block(Duration.ofSeconds(1));
+
+            assertEquals(report, businessFrames.asFlux().next().block(Duration.ofSeconds(1)));
+            ArgumentCaptor<String> frames = ArgumentCaptor.forClass(String.class);
+            verify(session, times(2)).textMessage(frames.capture());
+            assertEquals("SESSION_READY", frames.getAllValues().getFirst());
+            var pong =
+                    JsonMapper.builder().build().readTree(frames.getAllValues().getLast());
+            assertEquals("PONG", pong.path("type").asText());
+            assertEquals(7, pong.path("seq").asLong());
+            verify(session, never()).close(any(CloseStatus.class));
+        } finally {
+            connection.finish();
+            reportMessage.release();
+            pingMessage.release();
+            businessFrames.tryEmitComplete();
+        }
+    }
+
+    private static WebSocketMessage textMessage(String text) {
+        ByteBuf payload = Unpooled.copiedBuffer(text, StandardCharsets.UTF_8);
+        return new WebSocketMessage(
+                WebSocketMessage.Type.TEXT, new NettyDataBufferFactory(ByteBufAllocator.DEFAULT).wrap(payload));
     }
 }

@@ -117,6 +117,12 @@ public class ContractTaskReadService
         return persistence.fixedStoreContracts(workspaceUuid, key, storeId, businessDate.today());
     }
 
+    /** Full terminal collection by ACTIVE status; calendar validity belongs only to administrative projections. */
+    @Transactional(readOnly = true)
+    public List<StoreContractView> activeTerminalStoreContracts(UUID workspaceUuid, String key, UUID storeId) {
+        return persistence.activeTerminalStoreContracts(workspaceUuid, key, storeId);
+    }
+
     /** Contract-owner fixed-store profile query: one business-date predicate supplies both total and page. */
     @Transactional(readOnly = true)
     public FixedStoreContractPage fixedStoreContractPage(

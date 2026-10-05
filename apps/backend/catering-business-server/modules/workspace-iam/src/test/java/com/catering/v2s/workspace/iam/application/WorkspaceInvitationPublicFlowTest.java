@@ -110,16 +110,17 @@ class WorkspaceInvitationPublicFlowTest {
                 "public-flow");
         hierarchy = new OrganizationHierarchyService(jdbc, time, commercialGroups);
         BusinessEntityService entities = new BusinessEntityService(jdbc, time, definitions, hierarchy);
-        regionId = hierarchy.createRegion(workspaceId, "public-flow", "region", "Region").id();
+        regionId = hierarchy
+                .createRegion(workspaceId, "public-flow", "region", "Region")
+                .id();
         roleId = roles.create(workspaceId, "public-flow", "Region user", "REGION", null, Set.of(), Set.of())
                 .id();
         OrganizationTaskPathService taskPaths = new OrganizationTaskPathService(jdbc, commercialGroups);
         OrganizationAssignmentCandidateService candidates =
                 new OrganizationAssignmentCandidateService(jdbc, commercialGroups, taskPaths);
         WorkspaceAssignmentScopeService assignments = new WorkspaceAssignmentScopeService(jdbc);
-        WorkspaceUserService user =
-                new WorkspaceUserService(
-                        jdbc, hierarchy, entities, roles, commercialGroups, candidates, assignments, taskPaths);
+        WorkspaceUserService user = new WorkspaceUserService(
+                jdbc, hierarchy, entities, roles, commercialGroups, candidates, assignments, taskPaths);
         ObjectProvider<DevFixedOtpIssuer> fixedOtpIssuer = Mockito.mock(ObjectProvider.class);
         invitations = new WorkspaceInvitationService(
                 jdbc,
@@ -524,7 +525,9 @@ class WorkspaceInvitationPublicFlowTest {
     void userUsesOwnerPathAndScopeInsteadOfAnUnboundedAccountList() {
         UUID accountId = UUID.randomUUID();
         UUID assignmentId = UUID.randomUUID();
-        UUID scopeId = hierarchy.createRegion(workspaceId, "public-flow", "user-scope", "User scope").id();
+        UUID scopeId = hierarchy
+                .createRegion(workspaceId, "public-flow", "user-scope", "User scope")
+                .id();
         jdbc.update(
                 "INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, "
                         + "mobile_normalized, login_name_normalized, display_name, status, version, "
@@ -572,7 +575,9 @@ class WorkspaceInvitationPublicFlowTest {
         assertEquals(1, pathNodes.size());
         assertEquals("user-scope", pathNodes.getFirst().code());
         assertEquals("User scope", pathNodes.getFirst().name());
-        UUID emptyScopeId = hierarchy.createRegion(workspaceId, "public-flow", "empty-scope", "Empty scope").id();
+        UUID emptyScopeId = hierarchy
+                .createRegion(workspaceId, "public-flow", "empty-scope", "Empty scope")
+                .id();
         assertEquals(
                 0,
                 user.page(WorkspaceUserService.AccountPageQuery.forPlatform(
@@ -650,7 +655,9 @@ class WorkspaceInvitationPublicFlowTest {
 
     @Test
     void platformInvitationPageDoesNotComposeTypeOrganizationAndRoleAcrossDifferentIntents() {
-        UUID otherRegionId = hierarchy.createRegion(workspaceId, "public-flow", "other-region", "Other region").id();
+        UUID otherRegionId = hierarchy
+                .createRegion(workspaceId, "public-flow", "other-region", "Other region")
+                .id();
         UUID otherRoleId = new WorkspaceRoleService(jdbc, () -> NOW)
                 .create(workspaceId, "public-flow", "Other region user", "REGION", null, Set.of(), Set.of())
                 .id();
@@ -694,7 +701,9 @@ class WorkspaceInvitationPublicFlowTest {
 
     @Test
     void platformInvitationCreationRejectsMixedTargetsBeforePersistence() {
-        UUID otherRegionId = hierarchy.createRegion(workspaceId, "public-flow", "mixed-region", "Mixed region").id();
+        UUID otherRegionId = hierarchy
+                .createRegion(workspaceId, "public-flow", "mixed-region", "Mixed region")
+                .id();
         assertThrows(
                 WorkspaceInvitationService.InvitationValidationException.class,
                 () -> invitations.create(

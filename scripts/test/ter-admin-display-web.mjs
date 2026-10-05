@@ -62,6 +62,7 @@ import {
   ensureContainedWebDirectory,
   expectedWebBusinessAssertionIds,
   hasManagedTerminalBrowserOrigin,
+  terminalStoreReadOperationForPath,
   webBusinessAssertionSetMatches,
   parseListeningProcessIds,
   pipeExpoOutput,
@@ -88,6 +89,13 @@ const runId = process.argv[2];
 if (!/^[A-Za-z0-9][A-Za-z0-9._-]{2,79}$/.test(runId ?? '')) throw new Error('TER_ADMIN_DISPLAY_RUN_ID_REQUIRED');
 const surfaceForm = process.argv[7] ?? 'laptop';
 if (!['laptop', 'mobile'].includes(surfaceForm)) throw new Error('TER_ADMIN_DISPLAY_WEB_SURFACE_FORM_INVALID');
+const failureOwnerArgument = process.argv[4] ?? null;
+const failureOwner = failureOwnerArgument === '-' ? null : failureOwnerArgument;
+if (failureOwner !== null && !/^[A-Za-z0-9:._-]{1,160}$/.test(failureOwner)) {
+  throw new Error('TER_ADMIN_DISPLAY_FAILURE_OWNER_INVALID');
+}
+const scenarioScopeProblem = webScenarioScopeError({integrationName, webScenario, surfaceForm, failureOwner});
+if (scenarioScopeProblem !== null) throw new Error(scenarioScopeProblem);
 const keyboardScenario = [
   'keyboard-member-journey',
   'keyboard-login',
@@ -201,14 +209,6 @@ if (isManagedActivationScenario) {
     throw new Error('WEB_MANAGED_DEV_TERMINAL_CORS_ORIGIN_NOT_CONFIGURED');
   }
 }
-const failureOwnerArgument = process.argv[4] ?? null;
-const failureOwner = failureOwnerArgument === '-' ? null : failureOwnerArgument;
-if (failureOwner !== null && !/^[A-Za-z0-9:._-]{1,160}$/.test(failureOwner)) {
-  throw new Error('TER_ADMIN_DISPLAY_FAILURE_OWNER_INVALID');
-}
-const scenarioScopeProblem = webScenarioScopeError({integrationName, webScenario, surfaceForm, failureOwner});
-if (scenarioScopeProblem !== null) throw new Error(scenarioScopeProblem);
-
 const files = collectWebSourceFiles(root);
 const sourceSnapshotBefore = Object.freeze({files, sha256: hashWebSourceFiles(root, files)});
 ensureContainedWebDirectory(root, runtimeRoot);
@@ -820,6 +820,11 @@ try {
       /\/activation\/cancel$/u.test(pathname)
     )
       return 'cancel-activation';
+    const storeReadOperation =
+      managedGroupWorkspacePath === null
+        ? null
+        : terminalStoreReadOperationForPath(managedGroupWorkspacePath, pathname);
+    if (storeReadOperation !== null) return storeReadOperation;
     return pathname.startsWith(`/${['api', 'terminal'].join('/')}/`) ? 'other-terminal-api' : null;
   };
   page.on('request', request => {
@@ -2098,6 +2103,7 @@ try {
       submitEnabled: await page.getByTestId('terminal.activation.submit').isEnabled(),
       inputOwnerCompleted: 'PASS',
     };
+    const terminalDataReadCheckpoint = captureWebLogCheckpoint();
     const activationResponsePromise = page.waitForResponse(
       response => {
         try {
@@ -2334,6 +2340,31 @@ try {
     });
     const latencyBeforeCancellation = latencyReadback.displayText;
     manifest.matchedHeartbeatRtt = latencyReadback.matchedHeartbeat;
+    const requiredTerminalReadOperations = [
+      'terminalReadStoreBasic',
+      'terminalReadStoreOrganizationPath',
+      'terminalReadStoreActiveContracts',
+      'terminalReadStoreServicePointAreas',
+      'terminalReadStoreServicePoints',
+    ];
+    const terminalReadEvents = parseJsonEventsAfterByteOffset(
+      fs.readFileSync(logPath),
+      terminalDataReadCheckpoint,
+    ).filter(event => event.event === 'terminal-read-completed');
+    const terminalDataReads = requiredTerminalReadOperations.map(operationId => {
+      const success = terminalReadEvents.some(
+        event => event.data?.operationId === operationId && event.data?.resultKind === 'success',
+      );
+      const getRequestObserved = managedHttpRequests.some(
+        request => request.operation === operationId && request.method === 'GET',
+      );
+      return Object.freeze({operationId, success, getRequestObserved});
+    });
+    if (terminalDataReads.some(value => !value.success || !value.getRequestObserved)) {
+      manifest.terminalDataReads = terminalDataReads;
+      throw new Error('WEB_TDP_INITIAL_TERMINAL_READS_NOT_CONFIRMED');
+    }
+    manifest.terminalDataReads = terminalDataReads;
     recordBusinessAssertion('A-05a');
     recordWebScenarioStep('TDS_STATUS_AND_LATENCY_CONFIRMED');
     if (!managedWebSocketPaths.some(value => value.loopback && value.pathMatchesTdsContract)) {

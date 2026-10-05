@@ -47,8 +47,8 @@ public class EdgeWebConfiguration implements WebMvcConfigurer {
         this.readOnlyTaskConnectionScopeInterceptor = readOnlyTaskConnectionScopeInterceptor;
         this.objectMapper = objectMapper;
         this.runtimeEnvironment = Objects.requireNonNull(runtimeEnvironment, "runtimeEnvironment");
-        this.terminalBrowserAllowedOrigins = Objects.requireNonNull(
-                terminalBrowserAllowedOrigins, "terminalBrowserAllowedOrigins");
+        this.terminalBrowserAllowedOrigins =
+                Objects.requireNonNull(terminalBrowserAllowedOrigins, "terminalBrowserAllowedOrigins");
     }
 
     @Override
@@ -71,10 +71,19 @@ public class EdgeWebConfiguration implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         List<String> origins = terminalBrowserOrigins();
         if (origins.isEmpty()) return;
-        configureTerminalBrowserCors(
-                registry.addMapping("/api/terminal/group-workspaces/*/activation"), origins);
+        configureTerminalBrowserCors(registry.addMapping("/api/terminal/group-workspaces/*/activation"), origins);
         configureTerminalBrowserCors(
                 registry.addMapping("/api/terminal/group-workspaces/*/terminals/*/activation/cancel"), origins);
+        List.of(
+                        "/api/terminal/group-workspaces/*/contracts/*",
+                        "/api/terminal/group-workspaces/*/service-points/*",
+                        "/api/terminal/group-workspaces/*/service-point-areas/*",
+                        "/api/terminal/group-workspaces/*/stores/*/contracts",
+                        "/api/terminal/group-workspaces/*/stores/*/basic",
+                        "/api/terminal/group-workspaces/*/stores/*/organization-path",
+                        "/api/terminal/group-workspaces/*/stores/*/service-point-areas",
+                        "/api/terminal/group-workspaces/*/stores/*/service-points")
+                .forEach(path -> configureTerminalBrowserReadCors(registry.addMapping(path), origins));
     }
 
     private List<String> terminalBrowserOrigins() {
@@ -112,9 +121,26 @@ public class EdgeWebConfiguration implements WebMvcConfigurer {
 
     private static void configureTerminalBrowserCors(
             org.springframework.web.servlet.config.annotation.CorsRegistration registration, List<String> origins) {
-        registration.allowedOrigins(origins.toArray(String[]::new))
+        registration
+                .allowedOrigins(origins.toArray(String[]::new))
                 .allowedMethods("POST")
-                .allowedHeaders("Authorization", "Content-Type", "X-Correlation-Id", "X-Request-Id")
+                .allowedHeaders(
+                        "Authorization",
+                        "Content-Type",
+                        "X-Correlation-Id",
+                        "X-Request-Id",
+                        "X-Terminal-Device-Id",
+                        "X-Terminal-Ref")
+                .maxAge(300);
+    }
+
+    private static void configureTerminalBrowserReadCors(
+            org.springframework.web.servlet.config.annotation.CorsRegistration registration, List<String> origins) {
+        registration
+                .allowedOrigins(origins.toArray(String[]::new))
+                .allowedMethods("GET")
+                .allowedHeaders(
+                        "Authorization", "X-Correlation-Id", "X-Request-Id", "X-Terminal-Device-Id", "X-Terminal-Ref")
                 .maxAge(300);
     }
 

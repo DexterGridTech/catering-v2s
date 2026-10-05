@@ -623,13 +623,7 @@ public class StoreService {
         long now = time.currentEpochMillis();
         if (!VALID_STATUS.contains(status)
                 || "VOIDED".equals(before.status())
-                || persistence.transitionStatus(
-                                id,
-                                workspaceUuid,
-                                groupWorkspaceKey,
-                                status,
-                                now,
-                                expectedVersion)
+                || persistence.transitionStatus(id, workspaceUuid, groupWorkspaceKey, status, now, expectedVersion)
                         != 1) throw new BusinessEntityService.OrganizationConflictException();
         OrganizationEntityReadback updated = OwnerOperationDiagnostics.readback(
                 () -> reads.requireEntity(ServiceNodeTypes.STORE, workspaceUuid, groupWorkspaceKey, id));

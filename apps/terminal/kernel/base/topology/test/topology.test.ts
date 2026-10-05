@@ -1726,6 +1726,9 @@ describe('topology lifecycle integration', () => {
       visibility: 'internal',
     });
     const actor = defineActor('test.topology.late-result', 'worker', [onCommand(command, () => gate.promise)]);
+    const completedActor = defineActor('test.topology.late-result', 'completed-worker', [
+      onCommand(command, () => ({saved: 'immediate'})),
+    ]);
     const oversizedActor = defineActor('test.topology.late-result', 'oversized-worker', [
       onCommand(oversizedCommand, () => ({payload: 'x'.repeat(70_000)})),
     ]);
@@ -1745,8 +1748,8 @@ describe('topology lifecycle integration', () => {
       dependencies: [{moduleName: 'kernel.base.runtime'}],
       commands: [command, oversizedCommand].map(item => ({name: item.commandName, visibility: item.visibility})),
       commandDefinitions: [command, oversizedCommand],
-      actors: [actor, oversizedActor].map(item => ({name: item.actorName})),
-      actorDefinitions: [actor, oversizedActor],
+      actors: [actor, completedActor, oversizedActor].map(item => ({name: item.actorName})),
+      actorDefinitions: [actor, completedActor, oversizedActor],
     });
     const {runtime} = createTopologyRuntime({host, peer, appControl, extraModules: [receiverModule]});
     await runtime.start();
@@ -1757,10 +1760,14 @@ describe('topology lifecycle integration', () => {
         basePath: '/terminal-topology',
         identity: Object.freeze({...identity, nodeId: 'node-late-peer'}),
       });
-      const paired = await runtime.dispatchCommand(pairTopologyCommand, {locator}, {
-        requestId: createRequestId(),
-        routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'},
-      });
+      const paired = await runtime.dispatchCommand(
+        pairTopologyCommand,
+        {locator},
+        {
+          requestId: createRequestId(),
+          routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'},
+        },
+      );
       expect(paired.status).toBe('completed');
       runtime.getStore().dispatch(topologyActions.setRepairPending(false));
       await waitForReconciliation();
@@ -1799,14 +1806,17 @@ describe('topology lifecycle integration', () => {
       gate.resolve({saved: true});
       await waitForReconciliation();
       const results = peer.sentFrames
-        .map(raw => JSON.parse(raw) as {
-          type?: string;
-          requestId?: string;
-          commandId?: string;
-          status?: string;
-          error?: unknown;
-          result?: {actorResults?: Array<{actorKey?: string; status?: string; result?: unknown}>} | null;
-        })
+        .map(
+          raw =>
+            JSON.parse(raw) as {
+              type?: string;
+              requestId?: string;
+              commandId?: string;
+              status?: string;
+              error?: unknown;
+              result?: {actorResults?: Array<{actorKey?: string; status?: string; result?: unknown}>} | null;
+            },
+        )
         .filter(frame => frame.type === 'command-result' && frame.commandId === 'late-peer-command');
       const lateActorStatus = results[1]?.result?.actorResults?.[0]?.status;
       const lateActor = results[1]?.result?.actorResults?.[0];
@@ -1849,7 +1859,16 @@ describe('topology lifecycle integration', () => {
       });
       await waitForReconciliation();
       const oversizedResult = peer.sentFrames
-        .map(raw => JSON.parse(raw) as {type?: string; commandId?: string; status?: string; result?: unknown; error?: {code?: string}})
+        .map(
+          raw =>
+            JSON.parse(raw) as {
+              type?: string;
+              commandId?: string;
+              status?: string;
+              result?: unknown;
+              error?: {code?: string};
+            },
+        )
         .find(frame => frame.type === 'command-result' && frame.commandId === 'late-peer-oversized-command');
       expect(oversizedResult).toMatchObject({status: 'error', result: null, error: {code: 'TOPOLOGY_CODEC_FAILED'}});
     } finally {
@@ -1892,10 +1911,14 @@ describe('topology lifecycle integration', () => {
         basePath: '/terminal-topology',
         identity: Object.freeze({...identity, nodeId: 'node-late-target'}),
       });
-      const paired = await runtime.dispatchCommand(pairTopologyCommand, {locator}, {
-        requestId: createRequestId(),
-        routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'},
-      });
+      const paired = await runtime.dispatchCommand(
+        pairTopologyCommand,
+        {locator},
+        {
+          requestId: createRequestId(),
+          routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'},
+        },
+      );
       expect(paired.status).toBe('completed');
       runtime.getStore().dispatch(topologyActions.setRepairPending(false));
       await waitForReconciliation();
@@ -1913,17 +1936,25 @@ describe('topology lifecycle integration', () => {
 
       const observed: unknown[] = [];
       const requestId = createRequestId();
-      const dispatch = runtime.dispatchCommand(command, {}, {
-        target: 'peer',
-        requestId,
-        lateResultTtlMs: 1_000,
-        lateOutcome: record => observed.push(record),
-      });
+      const dispatch = runtime.dispatchCommand(
+        command,
+        {},
+        {
+          target: 'peer',
+          requestId,
+          lateResultTtlMs: 1_000,
+          lateOutcome: record => observed.push(record),
+        },
+      );
       await waitForReconciliation();
       const request = peer.sentFrames
-        .map(raw => JSON.parse(raw) as {type?: string; requestId?: string | null; commandId?: string; lateResultTtlMs?: number})
+        .map(
+          raw =>
+            JSON.parse(raw) as {type?: string; requestId?: string | null; commandId?: string; lateResultTtlMs?: number},
+        )
         .find(frame => frame.type === 'command-request' && frame.commandId !== undefined);
-      expect(request?.lateResultTtlMs).toBe(1_000);
+      expect(request?.lateResultTtlMs).toBeGreaterThan(0);
+      expect(request?.lateResultTtlMs).toBeLessThanOrEqual(1_000);
       expect(request?.requestId).toBe(requestId);
       const commandId = request?.commandId;
       expect(commandId).toBeTruthy();
@@ -1939,7 +1970,10 @@ describe('topology lifecycle integration', () => {
       });
       peer.emit({type: 'message', raw: JSON.stringify(commandFrame('timed-out', null))});
       expect((await dispatch).status).toBe('timed-out');
-      peer.emit({type: 'message', raw: JSON.stringify({...commandFrame('completed', {actorResults: []}), requestId: 'wrong-request'})});
+      peer.emit({
+        type: 'message',
+        raw: JSON.stringify({...commandFrame('completed', {actorResults: []}), requestId: 'wrong-request'}),
+      });
       await waitForReconciliation();
       expect(observed).toEqual([]);
       peer.emit({
@@ -1961,22 +1995,34 @@ describe('topology lifecycle integration', () => {
       });
       await waitForReconciliation();
       expect(observed).toMatchObject([
-        {actorKey: 'sample.remote.actor', status: 'completed', result: {persisted: true}},
+        {
+          actorKey: 'kernel.base.runtime.peer-dispatch',
+          result: {
+            actorResults: [{actorKey: 'sample.remote.actor', status: 'completed', result: {persisted: true}}],
+          },
+        },
       ]);
 
       const expiredObserved: unknown[] = [];
       const expiredRequestId = createRequestId();
-      const expiredDispatch = runtime.dispatchCommand(command, {}, {
-        target: 'peer',
-        requestId: expiredRequestId,
-        lateResultTtlMs: 40,
-        lateOutcome: record => expiredObserved.push(record),
-      });
+      const expiredDispatch = runtime.dispatchCommand(
+        command,
+        {},
+        {
+          target: 'peer',
+          requestId: expiredRequestId,
+          lateResultTtlMs: 1,
+          lateOutcome: record => expiredObserved.push(record),
+        },
+      );
       await waitForReconciliation();
       const expiredRequest = peer.sentFrames
-        .map(raw => JSON.parse(raw) as {type?: string; requestId?: string | null; commandId?: string; lateResultTtlMs?: number})
+        .map(
+          raw =>
+            JSON.parse(raw) as {type?: string; requestId?: string | null; commandId?: string; lateResultTtlMs?: number},
+        )
         .find(frame => frame.type === 'command-request' && frame.requestId === expiredRequestId);
-      expect(expiredRequest?.lateResultTtlMs).toBe(40);
+      expect(expiredRequest?.lateResultTtlMs).toBe(1);
       expect((await expiredDispatch).status).toBe('timed-out');
       await new Promise(resolve => setTimeout(resolve, 60));
       peer.emit({
@@ -1988,7 +2034,18 @@ describe('topology lifecycle integration', () => {
           requestId: expiredRequestId,
           commandId: expiredRequest?.commandId,
           status: 'completed',
-          result: {actorResults: [{actorKey: 'sample.remote.actor', status: 'completed', startedAt: 30, completedAt: 40, result: {persisted: true}, error: null}]},
+          result: {
+            actorResults: [
+              {
+                actorKey: 'sample.remote.actor',
+                status: 'completed',
+                startedAt: 30,
+                completedAt: 40,
+                result: {persisted: true},
+                error: null,
+              },
+            ],
+          },
           error: null,
         }),
       });
@@ -1997,7 +2054,7 @@ describe('topology lifecycle integration', () => {
     } finally {
       await releaseRuntimeForTestAsync(runtime);
     }
-  });
+  }, 10_000);
 
   it('tracks concurrent remote cancellations by command id and leaves unknown cancels as no-ops', async () => {
     const host = new FakeTopologyHost();
@@ -2181,8 +2238,16 @@ describe('topology lifecycle integration', () => {
       });
       peer.emit({type: 'message', connectionId: 'status-1', raw: JSON.stringify(request(errored, 'status-error'))});
       await new Promise<void>(resolve => setTimeout(resolve, 25));
-      const statuses = peer.sentFrames
-        .map(raw => JSON.parse(raw) as {type?: string; commandId?: string; status?: string})
+      const frames = peer.sentFrames.map(
+        raw =>
+          JSON.parse(raw) as {
+            type?: string;
+            commandId?: string;
+            status?: string;
+            result?: {actorResults?: Array<{error?: {message?: string} | null}>} | null;
+          },
+      );
+      const statuses = frames
         .filter(frame => frame.type === 'command-result')
         .filter(frame => frame.commandId?.startsWith('status-'));
       expect(statuses).toEqual(
@@ -2194,6 +2259,11 @@ describe('topology lifecycle integration', () => {
         ]),
       );
       expect(statuses).toHaveLength(4);
+      const partialFailure = statuses.find(frame => frame.commandId === 'status-partial');
+      const partialErrorMessage = partialFailure?.result?.actorResults?.find(record => record.error !== null)?.error
+        ?.message;
+      expect(partialErrorMessage).toEqual(expect.stringContaining('execution failed'));
+      expect(partialErrorMessage).not.toBe('ERR_TER_RUNTIME_COMMAND_EXECUTION_FAILED');
     } finally {
       await releaseRuntimeForTestAsync(runtime);
     }

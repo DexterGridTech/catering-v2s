@@ -30,6 +30,7 @@ spotless {
             "**/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
             "**/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
             "**/com/catering/v2s/organization/domain/generated/StoreOperatingRuleCatalog.java",
+            "**/com/catering/v2s/terminaldataserver/protocol/generated/**",
             "**/build/generated/**",
         )
         palantirJavaFormat("2.39.0").formatJavadoc(true)
@@ -67,6 +68,7 @@ subprojects {
                 "**/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
                 "**/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
                 "**/com/catering/v2s/organization/domain/generated/StoreOperatingRuleCatalog.java",
+                "**/com/catering/v2s/terminaldataserver/protocol/generated/**",
                 "**/build/generated/**",
             )
             palantirJavaFormat("2.39.0").formatJavadoc(true)
@@ -86,6 +88,7 @@ subprojects {
                     "**/app/edge/generated/**",
                     "**/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
                     "**/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+                    "**/com/catering/v2s/terminaldataserver/protocol/generated/**",
                     "**/build/generated/**",
                 )
             }.files.flatMap { source ->

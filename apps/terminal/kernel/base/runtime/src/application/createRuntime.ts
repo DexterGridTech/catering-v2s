@@ -321,6 +321,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
     descriptors,
     localNodeId: input.localNodeId,
     platformPorts: input.platformPorts,
+    requestMaxResidenceMs: limits.requestMaxResidenceMs,
     getStateRuntime: () => stateRuntime,
     dispatchCommand: dispatchForContext,
     installPeerDispatchGateway,

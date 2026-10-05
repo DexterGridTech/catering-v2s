@@ -9,21 +9,23 @@ import com.catering.v2s.app.edge.generated.wire.StoreContractProject;
 import com.catering.v2s.app.edge.generated.wire.StoreContractStatus;
 import com.catering.v2s.app.edge.generated.wire.StoreContractStore;
 import com.catering.v2s.app.edge.generated.wire.StoreContractTenant;
-import com.catering.v2s.app.edge.generated.wire.StoreServicePoint;
-import com.catering.v2s.app.edge.generated.wire.StoreServicePointArea;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointAreaType;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointStatus;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointType;
 import com.catering.v2s.app.edge.generated.wire.TerminalContractRead;
 import com.catering.v2s.app.edge.generated.wire.TerminalServicePointAreaRead;
+import com.catering.v2s.app.edge.generated.wire.TerminalServicePointAreaReadArea;
 import com.catering.v2s.app.edge.generated.wire.TerminalServicePointRead;
+import com.catering.v2s.app.edge.generated.wire.TerminalServicePointReadServicePoint;
 import com.catering.v2s.app.edge.generated.wire.TerminalStoreActiveContractsRead;
 import com.catering.v2s.app.edge.generated.wire.TerminalStoreBasicRead;
 import com.catering.v2s.app.edge.generated.wire.TerminalStoreOrganizationPathRead;
 import com.catering.v2s.app.edge.generated.wire.TerminalStoreServicePointAreasRead;
+import com.catering.v2s.app.edge.generated.wire.TerminalStoreServicePointAreasReadItemsItem;
 import com.catering.v2s.app.edge.generated.wire.TerminalStoreServicePointsRead;
-import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
+import com.catering.v2s.app.edge.generated.wire.TerminalStoreServicePointsReadItemsItem;
 import com.catering.v2s.app.edge.problem.ContractProblemAdvice;
+import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.contract.application.ContractTaskReadService;
 import com.catering.v2s.organization.api.OrganizationNodeReadback;
@@ -38,8 +40,6 @@ import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Credential;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -50,13 +50,13 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -66,20 +66,18 @@ import tools.jackson.databind.ObjectMapper;
 public class TerminalDataReadController {
     private static final Logger log = LoggerFactory.getLogger(TerminalDataReadController.class);
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final int PAGE_SIZE = 20;
     private static final String AUTHORIZATION_PREFIX = "Terminal ";
 
     @ExceptionHandler({DataAccessResourceFailureException.class, TransientDataAccessException.class})
     ResponseEntity<ContractProblemAdvice.Problem> dependencyUnavailable(
             RuntimeException exception, EdgeRequestContext request) {
-        log.atWarn().addKeyValue("event", "TERMINAL_DATA_READ_DEPENDENCY_UNAVAILABLE")
+        log.atWarn()
+                .addKeyValue("event", "TERMINAL_DATA_READ_DEPENDENCY_UNAVAILABLE")
                 .addKeyValue("exceptionType", exception.getClass().getSimpleName())
                 .log("Terminal data read dependency is unavailable");
-        return ContractProblemAdvice.problem(
-                HttpStatus.SERVICE_UNAVAILABLE,
-                "PLATFORM_DEPENDENCY_UNAVAILABLE",
-                "终端资料暂时无法读取，请稍后重试",
-                request);
+        String code = "PLATFORM_DEPENDENCY_UNAVAILABLE";
+        String detail = "终端资料暂时无法读取，请稍后重试";
+        return ContractProblemAdvice.problem(HttpStatus.SERVICE_UNAVAILABLE, code, detail, request);
     }
 
     private final TerminalCredentialVerificationApi credentials;
@@ -112,19 +110,34 @@ public class TerminalDataReadController {
         Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
         UUID requestedStore = uuid(storeRef);
         requireSameStore(binding, requestedStore);
-        OrganizationOverviewTaskReadService.Item detail = organizationReads.store(
-                binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef());
+        OrganizationOverviewTaskReadService.Item detail =
+                organizationReads.store(binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef());
         var rules = entities.requireStoreOperatingRuleSwitches(
                 binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef());
-        OrganizationStoreOperatingRuleValues ruleWire = JSON.convertValue(rules.values().asMap(),
-                OrganizationStoreOperatingRuleValues.class);
+        OrganizationStoreOperatingRuleValues ruleWire =
+                JSON.convertValue(rules.values().asMap(), OrganizationStoreOperatingRuleValues.class);
         OrganizationStore storeWire = new OrganizationStore(
-                detail.id().toString(), detail.groupWorkspaceKey(), detail.code(), detail.name(),
-                project(detail.project()), brand(detail.brand()), tenant(detail.tenant()),
-                detail.headCompany() == null ? null : new com.catering.v2s.app.edge.generated.wire.OrganizationStoreHeadCompany(
-                        detail.headCompany().id().toString(), detail.headCompany().code(), detail.headCompany().name(), null),
-                detail.notes(), OrganizationStoreStatus.valueOf(detail.status()), extensionValues(detail.extensionValues()),
-                detail.extensionRuleRevision(), detail.version(), detail.createdAt(), detail.updatedAt(),
+                detail.id().toString(),
+                detail.groupWorkspaceKey(),
+                detail.code(),
+                detail.name(),
+                project(detail.project()),
+                brand(detail.brand()),
+                tenant(detail.tenant()),
+                detail.headCompany() == null
+                        ? null
+                        : new com.catering.v2s.app.edge.generated.wire.OrganizationStoreHeadCompany(
+                                detail.headCompany().id().toString(),
+                                detail.headCompany().code(),
+                                detail.headCompany().name(),
+                                null),
+                detail.notes(),
+                OrganizationStoreStatus.valueOf(detail.status()),
+                extensionValues(detail.extensionValues()),
+                detail.extensionRuleRevision(),
+                detail.version(),
+                detail.createdAt(),
+                detail.updatedAt(),
                 contracts.derivedStoreStatus(binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef()),
                 ruleWire);
         logRead("terminalReadStoreBasic", binding);
@@ -142,8 +155,8 @@ public class TerminalDataReadController {
         Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
         requireSameStore(binding, uuid(storeRef));
         var snapshot = organizationReads.hierarchy(binding.workspaceUuid(), binding.groupWorkspaceKey());
-        OrganizationOverviewTaskReadService.Item store = organizationReads.store(
-                binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef());
+        OrganizationOverviewTaskReadService.Item store =
+                organizationReads.store(binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef());
         UUID projectRef = store.project().id();
         OrganizationNodeReadback project = node(snapshot.nodes(), projectRef);
         OrganizationNodeReadback region = node(snapshot.nodes(), project.parentId());
@@ -151,8 +164,15 @@ public class TerminalDataReadController {
         if (!group.id().equals(region.parentId())) throw TerminalDataReadProblem.denied();
         logRead("terminalReadStoreOrganizationPath", binding);
         return new TerminalStoreOrganizationPathRead(
-                project.id(), project.name(), region.id(), region.name(), group.id(), group.commercialGroupName(),
-                project.updatedAtEpochMillis(), region.updatedAtEpochMillis(), group.updatedAtEpochMillis());
+                project.id(),
+                project.name(),
+                region.id(),
+                region.name(),
+                group.id(),
+                group.commercialGroupName(),
+                project.updatedAtEpochMillis(),
+                region.updatedAtEpochMillis(),
+                group.updatedAtEpochMillis());
     }
 
     @GetMapping("/stores/{storeRef}/contracts")
@@ -165,14 +185,15 @@ public class TerminalDataReadController {
             @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
         Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
         requireSameStore(binding, uuid(storeRef));
-        List<ContractTaskReadService.StoreContractView> all = contracts.fixedStoreContracts(
+        List<ContractTaskReadService.StoreContractView> active = contracts.activeTerminalStoreContracts(
                 binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef());
-        List<ContractTaskReadService.StoreContractView> active = all.stream()
-                .sorted(Comparator.comparing(ContractTaskReadService.StoreContractView::contractNo))
-                .toList();
         logRead("terminalReadStoreActiveContracts", binding);
-        return new TerminalStoreActiveContractsRead(active.stream().map(TerminalDataReadController::contract).toList(),
-                active.stream().mapToLong(ContractTaskReadService.StoreContractView::updatedAt).max().orElse(0));
+        return new TerminalStoreActiveContractsRead(
+                active.stream().map(TerminalDataReadController::contract).toList(),
+                active.stream()
+                        .mapToLong(ContractTaskReadService.StoreContractView::updatedAt)
+                        .max()
+                        .orElse(0));
     }
 
     @GetMapping("/contracts/{contractRef}")
@@ -200,15 +221,17 @@ public class TerminalDataReadController {
             @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
         Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
         requireSameStore(binding, uuid(storeRef));
-        List<StoreServicePointOwnerApi.Area> all = readAreas(binding);
-        List<StoreServicePointOwnerApi.Area> enabled = all.stream()
-                .filter(value -> "ENABLED".equals(value.status()))
-                .sorted(Comparator.comparingLong(StoreServicePointOwnerApi.Area::displayOrder)
-                        .thenComparing(StoreServicePointOwnerApi.Area::areaRef))
-                .toList();
+        List<StoreServicePointOwnerApi.TerminalArea> enabled = servicePoints.readTerminalAreas(
+                binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef());
         logRead("terminalReadStoreServicePointAreas", binding);
-        return new TerminalStoreServicePointAreasRead(enabled.stream().map(TerminalDataReadController::area).toList(),
-                enabled.stream().mapToLong(StoreServicePointOwnerApi.Area::updatedAt).max().orElse(0));
+        return new TerminalStoreServicePointAreasRead(
+                enabled.stream()
+                        .map(TerminalDataReadController::terminalAreaItem)
+                        .toList(),
+                enabled.stream()
+                        .mapToLong(StoreServicePointOwnerApi.TerminalArea::updatedAt)
+                        .max()
+                        .orElse(0));
     }
 
     @GetMapping("/service-point-areas/{areaRef}")
@@ -221,11 +244,10 @@ public class TerminalDataReadController {
             @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
         Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
         UUID requested = uuid(areaRef);
-        StoreServicePointOwnerApi.Area value = readAreas(binding).stream()
-                .filter(area -> area.areaRef().equals(requested) && "ENABLED".equals(area.status()))
-                .findFirst().orElseThrow(TerminalDataReadProblem::notFound);
+        StoreServicePointOwnerApi.TerminalArea value = servicePoints.readTerminalArea(
+                binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef(), requested);
         logRead("terminalReadServicePointArea", binding);
-        return new TerminalServicePointAreaRead(area(value), value.updatedAt());
+        return new TerminalServicePointAreaRead(terminalArea(value), value.updatedAt());
     }
 
     @GetMapping("/stores/{storeRef}/service-points")
@@ -238,15 +260,17 @@ public class TerminalDataReadController {
             @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
         Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
         requireSameStore(binding, uuid(storeRef));
-        List<StoreServicePointOwnerApi.Point> all = readPoints(binding);
-        List<StoreServicePointOwnerApi.Point> enabled = all.stream()
-                .filter(value -> "ENABLED".equals(value.status()))
-                .sorted(Comparator.comparingLong(StoreServicePointOwnerApi.Point::displayOrder)
-                        .thenComparing(StoreServicePointOwnerApi.Point::pointRef))
-                .toList();
+        List<StoreServicePointOwnerApi.TerminalPoint> enabled = servicePoints.readTerminalPoints(
+                binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef());
         logRead("terminalReadStoreServicePoints", binding);
-        return new TerminalStoreServicePointsRead(enabled.stream().map(TerminalDataReadController::point).toList(),
-                enabled.stream().mapToLong(StoreServicePointOwnerApi.Point::updatedAt).max().orElse(0));
+        return new TerminalStoreServicePointsRead(
+                enabled.stream()
+                        .map(TerminalDataReadController::terminalPointItem)
+                        .toList(),
+                enabled.stream()
+                        .mapToLong(StoreServicePointOwnerApi.TerminalPoint::updatedAt)
+                        .max()
+                        .orElse(0));
     }
 
     @GetMapping("/service-points/{pointRef}")
@@ -258,26 +282,30 @@ public class TerminalDataReadController {
             @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
             @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
         Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
-        StoreServicePointOwnerApi.Point value = servicePoints.readPoint(
+        StoreServicePointOwnerApi.TerminalPoint value = servicePoints.readTerminalPoint(
                 binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef(), uuid(pointRef));
-        if (!"ENABLED".equals(value.status())) throw TerminalDataReadProblem.notFound();
         logRead("terminalReadServicePoint", binding);
-        return new TerminalServicePointRead(point(value), value.updatedAt());
+        return new TerminalServicePointRead(terminalPoint(value), value.updatedAt());
     }
 
     private Verification verify(String groupKey, String authorization, String terminalRef, String deviceId) {
-        if (!GroupWorkspaceKey.isValid(groupKey) || terminalRef == null || deviceId == null
-                || deviceId.isBlank() || deviceId.length() > 128 || authorization == null
+        if (!GroupWorkspaceKey.isValid(groupKey)
+                || terminalRef == null
+                || deviceId == null
+                || deviceId.isBlank()
+                || deviceId.length() > 128
+                || authorization == null
                 || !authorization.startsWith(AUTHORIZATION_PREFIX)) throw invalid();
         UUID terminal = uuid(terminalRef);
         String serialized = authorization.substring(AUTHORIZATION_PREFIX.length());
         try (TerminalCredentialContext context = TerminalCredentialParser.parseCredential(serialized)) {
             byte[] digest = context.secretDigest();
             try {
-                Verification verification = credentials.verify(new Credential(
-                        groupKey, terminal, context.generation(), digest, deviceId));
+                Verification verification =
+                        credentials.verify(new Credential(groupKey, terminal, context.generation(), digest, deviceId));
                 if (verification.outcome() != Outcome.VERIFIED) throw problem(verification.outcome());
-                if (!groupKey.equals(verification.groupWorkspaceKey()) || !terminal.equals(verification.terminalRef())) {
+                if (!groupKey.equals(verification.groupWorkspaceKey())
+                        || !terminal.equals(verification.terminalRef())) {
                     throw TerminalDataReadProblem.denied();
                 }
                 return verification;
@@ -285,40 +313,14 @@ public class TerminalDataReadController {
                 java.util.Arrays.fill(digest, (byte) 0);
             }
         } catch (IllegalArgumentException malformed) {
-            throw invalid();
+            throw invalid(malformed);
         }
-    }
-
-    private List<StoreServicePointOwnerApi.Area> readAreas(Verification binding) {
-        List<StoreServicePointOwnerApi.Area> result = new ArrayList<>();
-        String cursor = null;
-        do {
-            StoreServicePointOwnerApi.AreaPage page = servicePoints.listAreas(
-                    binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef(), cursor, PAGE_SIZE);
-            result.addAll(page.items());
-            cursor = page.nextCursor();
-        } while (cursor != null);
-        return List.copyOf(result);
-    }
-
-    private List<StoreServicePointOwnerApi.Point> readPoints(Verification binding) {
-        List<StoreServicePointOwnerApi.Point> result = new ArrayList<>();
-        for (StoreServicePointOwnerApi.Area area : readAreas(binding)) {
-            if (!"ENABLED".equals(area.status())) continue;
-            String cursor = null;
-            do {
-                StoreServicePointOwnerApi.PointPage page = servicePoints.listPoints(
-                        binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef(), area.areaRef(), cursor,
-                        PAGE_SIZE);
-                result.addAll(page.items());
-                cursor = page.nextCursor();
-            } while (cursor != null);
-        }
-        return List.copyOf(result);
     }
 
     private static OrganizationNodeReadback node(List<OrganizationNodeReadback> nodes, UUID ref) {
-        return nodes.stream().filter(value -> value.id().equals(ref)).findFirst()
+        return nodes.stream()
+                .filter(value -> value.id().equals(ref))
+                .findFirst()
                 .orElseThrow(TerminalDataReadProblem::denied);
     }
 
@@ -327,12 +329,19 @@ public class TerminalDataReadController {
     }
 
     private static UUID uuid(String value) {
-        try { return UUID.fromString(value); }
-        catch (RuntimeException malformed) { throw invalid(); }
+        try {
+            return UUID.fromString(value);
+        } catch (RuntimeException malformed) {
+            throw invalid(malformed);
+        }
     }
 
     private static InvalidEdgeRequestException invalid() {
         return new InvalidEdgeRequestException("terminal read request is invalid");
+    }
+
+    private static InvalidEdgeRequestException invalid(Throwable cause) {
+        return new InvalidEdgeRequestException("terminal read request is invalid", cause);
     }
 
     private static TerminalDataReadProblem problem(Outcome outcome) {
@@ -345,7 +354,8 @@ public class TerminalDataReadController {
     }
 
     private static void logRead(String operationId, Verification binding) {
-        log.atInfo().addKeyValue("event", "TERMINAL_DATA_READ_COMPLETED")
+        log.atInfo()
+                .addKeyValue("event", "TERMINAL_DATA_READ_COMPLETED")
                 .addKeyValue("operationId", operationId)
                 .addKeyValue("terminalRef", binding.terminalRef())
                 .addKeyValue("storeRef", binding.storeRef())
@@ -374,8 +384,11 @@ public class TerminalDataReadController {
     private static JsonNode extensionValues(Map<String, String> values) {
         var result = JSON.createObjectNode();
         values.forEach((key, value) -> {
-            try { result.set(key, JSON.readTree(value)); }
-            catch (Exception failure) { throw new IllegalStateException("organization owner emitted invalid extension JSON", failure); }
+            try {
+                result.set(key, JSON.readTree(value));
+            } catch (Exception failure) {
+                throw new IllegalStateException("organization owner emitted invalid extension JSON", failure);
+            }
         });
         return result;
     }
@@ -384,39 +397,126 @@ public class TerminalDataReadController {
         JsonNode extensionValues = JSON.createObjectNode();
         var object = (tools.jackson.databind.node.ObjectNode) extensionValues;
         value.extensionValues().forEach((key, raw) -> {
-            try { object.set(key, JSON.readTree(raw)); }
-            catch (Exception failure) { throw new IllegalStateException("contract owner emitted invalid extension JSON", failure); }
+            try {
+                object.set(key, JSON.readTree(raw));
+            } catch (Exception failure) {
+                throw new IllegalStateException("contract owner emitted invalid extension JSON", failure);
+            }
         });
         return new StoreContract(
-                value.id().toString(), value.groupWorkspaceKey(),
-                new StoreContractProject(value.project().id().toString(), value.project().code(), value.project().name()),
-                new StoreContractStore(value.store().id().toString(), value.store().code(), value.store().name()),
-                new StoreContractTenant(value.tenant().id().toString(), value.tenant().code(), value.tenant().name()),
-                value.phaseName(), value.contractNo(), value.effectiveFrom().toString(),
-                value.effectiveTo() == null ? null : value.effectiveTo().toString(), value.note(), extensionValues,
-                value.extensionRuleRevision(), StoreContractStatus.valueOf(value.status()), value.revision(), value.source(),
-                value.createdAt(), value.updatedAt(), value.items().stream()
-                        .map(item -> new StoreContractItem(item.code(), item.name())).toList(), value.phaseNameSnapshot());
+                value.id().toString(),
+                value.groupWorkspaceKey(),
+                new StoreContractProject(
+                        value.project().id().toString(),
+                        value.project().code(),
+                        value.project().name()),
+                new StoreContractStore(
+                        value.store().id().toString(),
+                        value.store().code(),
+                        value.store().name()),
+                new StoreContractTenant(
+                        value.tenant().id().toString(),
+                        value.tenant().code(),
+                        value.tenant().name()),
+                value.phaseName(),
+                value.contractNo(),
+                value.effectiveFrom().toString(),
+                value.effectiveTo() == null ? null : value.effectiveTo().toString(),
+                value.note(),
+                extensionValues,
+                value.extensionRuleRevision(),
+                StoreContractStatus.valueOf(value.status()),
+                value.revision(),
+                value.source(),
+                value.createdAt(),
+                value.updatedAt(),
+                value.items().stream()
+                        .map(item -> new StoreContractItem(item.code(), item.name()))
+                        .toList(),
+                value.phaseNameSnapshot());
     }
 
-    private static StoreServicePointArea area(StoreServicePointOwnerApi.Area value) {
-        return new StoreServicePointArea(value.areaRef(), value.storeRef(), value.name(), value.code(),
-                StoreServicePointAreaType.valueOf(value.areaType()), StoreServicePointStatus.valueOf(value.status()),
-                value.displayOrder(), value.version(), value.createdAt(), value.updatedAt(), value.canMoveUp(), value.canMoveDown());
+    private static TerminalServicePointAreaReadArea terminalArea(StoreServicePointOwnerApi.TerminalArea value) {
+        return new TerminalServicePointAreaReadArea(
+                value.areaRef(),
+                value.storeRef(),
+                value.name(),
+                value.code(),
+                StoreServicePointAreaType.valueOf(value.areaType()),
+                StoreServicePointStatus.valueOf(value.status()),
+                value.displayOrder(),
+                value.version(),
+                value.createdAt(),
+                value.updatedAt());
     }
 
-    private static StoreServicePoint point(StoreServicePointOwnerApi.Point value) {
-        return new StoreServicePoint(value.pointRef(), value.storeRef(), value.areaRef(), value.name(), value.code(),
-                StoreServicePointType.valueOf(value.pointType()), StoreServicePointStatus.valueOf(value.status()),
-                value.displayOrder(), json(value.seatCapacity()), json(value.tableShape()), json(value.reservable()),
-                value.imageAssetRef(), parseJson(value.extensionValuesJson()), json(value.extensionRuleRevision()),
-                value.effectiveAvailable(), json(value.qrUrl()), value.version(), value.createdAt(), value.updatedAt(),
-                value.canMoveUp(), value.canMoveDown());
+    private static TerminalStoreServicePointAreasReadItemsItem terminalAreaItem(
+            StoreServicePointOwnerApi.TerminalArea value) {
+        return new TerminalStoreServicePointAreasReadItemsItem(
+                value.areaRef(),
+                value.storeRef(),
+                value.name(),
+                value.code(),
+                StoreServicePointAreaType.valueOf(value.areaType()),
+                StoreServicePointStatus.valueOf(value.status()),
+                value.displayOrder(),
+                value.version(),
+                value.createdAt(),
+                value.updatedAt());
     }
 
-    private static JsonNode json(Object value) { return value == null ? null : JSON.valueToTree(value); }
+    private static TerminalServicePointReadServicePoint terminalPoint(StoreServicePointOwnerApi.TerminalPoint value) {
+        return new TerminalServicePointReadServicePoint(
+                value.pointRef(),
+                value.storeRef(),
+                value.areaRef(),
+                value.name(),
+                value.code(),
+                StoreServicePointType.valueOf(value.pointType()),
+                StoreServicePointStatus.valueOf(value.status()),
+                value.displayOrder(),
+                json(value.seatCapacity()),
+                json(value.tableShape()),
+                json(value.reservable()),
+                value.imageAssetRef(),
+                parseJson(value.extensionValuesJson()),
+                json(value.extensionRuleRevision()),
+                value.version(),
+                value.createdAt(),
+                value.updatedAt());
+    }
+
+    private static TerminalStoreServicePointsReadItemsItem terminalPointItem(
+            StoreServicePointOwnerApi.TerminalPoint value) {
+        return new TerminalStoreServicePointsReadItemsItem(
+                value.pointRef(),
+                value.storeRef(),
+                value.areaRef(),
+                value.name(),
+                value.code(),
+                StoreServicePointType.valueOf(value.pointType()),
+                StoreServicePointStatus.valueOf(value.status()),
+                value.displayOrder(),
+                json(value.seatCapacity()),
+                json(value.tableShape()),
+                json(value.reservable()),
+                value.imageAssetRef(),
+                parseJson(value.extensionValuesJson()),
+                json(value.extensionRuleRevision()),
+                value.version(),
+                value.createdAt(),
+                value.updatedAt());
+    }
+
+    private static JsonNode json(Object value) {
+        return value == null ? null : JSON.valueToTree(value);
+    }
+
     private static JsonNode parseJson(String value) {
-        try { return JSON.readTree(value == null ? "{}" : value); }
-        catch (Exception failure) { throw new IllegalStateException("service point owner emitted invalid extension JSON", failure); }
+        try {
+            return JSON.readTree(value == null ? "{}" : value);
+        } catch (Exception failure) {
+            throw new IllegalStateException("service point owner emitted invalid extension JSON", failure);
+        }
     }
 }

@@ -108,6 +108,7 @@ const show = (
     displayMode: input.displayMode,
     containerKey: main,
     partKey: input.partKey,
+    ...(input.routeContext?.workspace === undefined ? {} : {workspace: input.routeContext.workspace}),
     ...(input.props === undefined ? {} : {props: input.props}),
   };
   const dispatch =

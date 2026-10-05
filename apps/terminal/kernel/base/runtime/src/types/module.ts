@@ -70,6 +70,7 @@ export type RuntimeModuleContext = Readonly<{
   localNodeId: NodeId;
   platformPorts: PlatformPorts;
   descriptors: readonly RuntimeModuleDescriptor[];
+  requestMaxResidenceMs: number;
   getState: () => StateRoot;
   flushPersistence: () => Promise<PersistenceOperationResult>;
   subscribeState: (listener: () => void) => () => void;

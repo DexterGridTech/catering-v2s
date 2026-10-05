@@ -26,29 +26,43 @@ public class TdsTerminalTopicRepository {
     }
 
     public OptionalLong readTime(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            UUID boundStoreRef,
-            String topicKey,
-            UUID ownerRef) {
-        if (workspaceUuid == null || groupWorkspaceKey == null || boundStoreRef == null
-                || topicKey == null || ownerRef == null) {
+            UUID workspaceUuid, String groupWorkspaceKey, UUID boundStoreRef, String topicKey, UUID ownerRef) {
+        if (workspaceUuid == null
+                || groupWorkspaceKey == null
+                || boundStoreRef == null
+                || topicKey == null
+                || ownerRef == null) {
             throw new IllegalArgumentException("TDS_TOPIC_IDENTITY_INVALID");
         }
-        String sql = switch (topicKey) {
-            case "VALID_CONTRACT_COLLECTION" -> READ_CONTRACT_COLLECTION;
-            case "SERVICE_POINT_AREA_COLLECTION", "SERVICE_POINT_COLLECTION" -> READ_ORGANIZATION_COLLECTION;
-            case "CONTRACT" -> READ_CONTRACT_EXACT;
-            case "STORE", "PROJECT", "REGION", "COMMERCIAL_GROUP", "STORE_OPERATING_RULE",
-                    "SERVICE_POINT_AREA", "SERVICE_POINT" -> READ_ORGANIZATION_EXACT;
-            default -> throw new IllegalArgumentException("TDS_TOPIC_KEY_INVALID");
-        };
-        Object[] arguments = switch (topicKey) {
-            case "VALID_CONTRACT_COLLECTION", "SERVICE_POINT_AREA_COLLECTION", "SERVICE_POINT_COLLECTION" ->
-                new Object[] {workspaceUuid, groupWorkspaceKey, boundStoreRef, topicKey};
-            default -> new Object[] {workspaceUuid, groupWorkspaceKey, boundStoreRef, topicKey, ownerRef};
-        };
+        String sql =
+                switch (topicKey) {
+                    case "VALID_CONTRACT_COLLECTION" -> READ_CONTRACT_COLLECTION;
+                    case "SERVICE_POINT_AREA_COLLECTION", "SERVICE_POINT_COLLECTION" -> READ_ORGANIZATION_COLLECTION;
+                    case "CONTRACT" -> READ_CONTRACT_EXACT;
+                    case "STORE",
+                            "PROJECT",
+                            "REGION",
+                            "COMMERCIAL_GROUP",
+                            "STORE_OPERATING_RULE",
+                            "SERVICE_POINT_AREA",
+                            "SERVICE_POINT" -> READ_ORGANIZATION_EXACT;
+                    default -> throw new IllegalArgumentException("TDS_TOPIC_KEY_INVALID");
+                };
+        Object[] arguments =
+                switch (topicKey) {
+                    case "VALID_CONTRACT_COLLECTION",
+                            "SERVICE_POINT_AREA_COLLECTION",
+                            "SERVICE_POINT_COLLECTION" -> new Object[] {
+                        workspaceUuid, groupWorkspaceKey, boundStoreRef, topicKey
+                    };
+                    default -> new Object[] {workspaceUuid, groupWorkspaceKey, boundStoreRef, topicKey, ownerRef};
+                };
         Long value = jdbc.query(sql, result -> result.next() ? result.getLong(1) : null, arguments);
+        if (value == null && "VALID_CONTRACT_COLLECTION".equals(topicKey)) {
+            // A newly created store may have no contracts and therefore no snapshot row yet.
+            // The authenticated binding supplies the store scope; zero is the initial empty-set baseline.
+            return OptionalLong.of(0);
+        }
         return value == null ? OptionalLong.empty() : OptionalLong.of(value);
     }
 }

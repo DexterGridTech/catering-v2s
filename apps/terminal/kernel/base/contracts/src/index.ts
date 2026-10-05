@@ -74,6 +74,7 @@ export {
   topologyReassemblyTimeoutMs,
   topologyPeerCommandMaxInflight,
   topologyCancelledCommandTtlMs,
+  topologyLateResultMaxTtlMs,
 } from './foundations/topologyTransportConfig';
 export type {TopologyTransportConfig} from './foundations/topologyTransportConfig';
 

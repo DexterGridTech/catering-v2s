@@ -325,6 +325,12 @@ export function exportArtifactPaths(applicationDirectory) {
   return [path.join(applicationDirectory, 'dist')];
 }
 
+export function parseStaticExecutionMode(argv) {
+  if (argv.length === 0) return 'RUN_STATIC';
+  if (argv.length === 1 && argv[0] === '--static-verified-by-parent') return 'REUSE_PARENT_STATIC';
+  throw new Error('TERMINAL_VERIFY_ACCEPTS_ONLY_PARENT_STATIC_MARKER');
+}
+
 export function preexistingExportArtifacts(applicationDirectory) {
   return exportArtifactPaths(applicationDirectory).filter(artifactPath => fs.existsSync(artifactPath));
 }
@@ -336,10 +342,15 @@ export function cleanupExportArtifacts(paths) {
 }
 
 function main() {
+  const staticExecutionMode = parseStaticExecutionMode(process.argv.slice(2));
   debugLog('verify.start', {cwd: repoRoot, pid: process.pid, node: process.version});
-  debugLog('phase.start', {phase: 'static'});
-  run('static', process.execPath, [staticPath]);
-  debugLog('phase.finish', {phase: 'static', outcome: 'PASS'});
+  if (staticExecutionMode === 'RUN_STATIC') {
+    debugLog('phase.start', {phase: 'static'});
+    run('static', process.execPath, [staticPath]);
+    debugLog('phase.finish', {phase: 'static', outcome: 'PASS'});
+  } else {
+    debugLog('phase.finish', {phase: 'static', outcome: 'REUSED_PARENT_PASS'});
+  }
   for (const taskName of ['typecheck', 'test', 'lint', 'clean']) runTurboDryRun(taskName);
   debugLog('phase.start', {phase: 'turbo-typecheck'});
   run('typecheck', 'yarn', ['turbo', 'run', 'typecheck', ...terminalFilters]);

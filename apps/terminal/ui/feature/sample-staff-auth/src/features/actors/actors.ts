@@ -61,7 +61,7 @@ const showLoginStage = (context: ActorExecutionContext): Promise<unknown> => {
   if (partKey === null) return Promise.reject(new Error('[sample-staff-auth] login stage route is unavailable'));
   return context.dispatchCommand(
     showScreenCommand,
-    {displayMode: route.displayMode, containerKey: 'main', partKey},
+    {workspace: route.workspace, displayMode: route.displayMode, containerKey: 'main', partKey},
     {routeContext: route},
   );
 };

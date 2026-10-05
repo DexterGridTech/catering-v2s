@@ -12,6 +12,7 @@ import {
   cleanupExportArtifacts,
   exportArtifactPaths,
   expectedTaskOwners,
+  parseStaticExecutionMode,
   preexistingExportArtifacts,
 } from './verify.mjs';
 
@@ -61,6 +62,8 @@ const expectedTestPackages = [
   '@catering-v2s/ui-base-input',
   '@catering-v2s/ui-base-primitives',
   '@catering-v2s/ui-base-render',
+  '@catering-v2s/ui-base-server-config-panel',
+  '@catering-v2s/ui-base-terminal-activation',
   '@catering-v2s/ui-feature-sample-member-desk',
   '@catering-v2s/ui-feature-sample-staff-auth',
   '@catering-v2s/ui-feature-sample-wallpaper-picker',
@@ -93,6 +96,8 @@ const realTestPackages = [
   '@catering-v2s/ui-base-input',
   '@catering-v2s/ui-base-primitives',
   '@catering-v2s/ui-base-render',
+  '@catering-v2s/ui-base-server-config-panel',
+  '@catering-v2s/ui-base-terminal-activation',
   '@catering-v2s/ui-feature-sample-member-desk',
   '@catering-v2s/ui-feature-sample-staff-auth',
   '@catering-v2s/ui-feature-sample-wallpaper-picker',
@@ -146,7 +151,10 @@ for (const generatedSegment of ['.gradle', '.kotlin', '.runtime', '.turbo', 'bui
 }
 
 assert.deepEqual(expectedTaskOwners('test', 2).sort(), expectedTestPackages);
-assert.deepEqual(expectedLintPackages.length, 31);
+assert.equal(parseStaticExecutionMode([]), 'RUN_STATIC');
+assert.equal(parseStaticExecutionMode(['--static-verified-by-parent']), 'REUSE_PARENT_STATIC');
+assert.throws(() => parseStaticExecutionMode(['--skip-static']), /TERMINAL_VERIFY_ACCEPTS_ONLY_PARENT_STATIC_MARKER/);
+assert.deepEqual(expectedLintPackages.length, 34);
 const turboTestDryRunFixture = {
   packages: ['@catering-v2s/ui-base-render'],
   tasks: [
@@ -238,7 +246,7 @@ try {
   fs.writeFileSync(fakeYarnPath, '#!/usr/bin/env node\nprocess.exit(17);\n');
   fs.chmodSync(fakeYarnPath, 0o755);
 
-  const result = spawnSync(process.execPath, [verifyPath], {
+  const result = spawnSync(process.execPath, [verifyPath, '--static-verified-by-parent'], {
     cwd: repoRoot,
     encoding: 'utf8',
     env: {...process.env, PATH: `${fixtureDirectory}:${process.env.PATH}`},

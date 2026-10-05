@@ -117,10 +117,11 @@ class TdsBindingRevocationListenerTest {
         when(connection.getAutoCommit()).thenReturn(true);
         when(pgConnection.getBackendPID()).thenReturn(73);
         when(notification.getName()).thenReturn("terminal_binding_events");
-        when(notification.getParameter()).thenReturn("{\"v\":1,\"kind\":\"TOPIC_CHANGED\","
-                + "\"workspaceUuid\":\"11111111-1111-4111-8111-111111111111\","
-                + "\"groupWorkspaceKey\":\"GROUP-1\",\"topicKey\":\"STORE\","
-                + "\"ownerRef\":\"22222222-2222-4222-8222-222222222222\"}");
+        when(notification.getParameter())
+                .thenReturn("{\"v\":1,\"kind\":\"TOPIC_CHANGED\","
+                        + "\"workspaceUuid\":\"11111111-1111-4111-8111-111111111111\","
+                        + "\"groupWorkspaceKey\":\"GROUP-1\",\"topicKey\":\"STORE\","
+                        + "\"ownerRef\":\"22222222-2222-4222-8222-222222222222\"}");
         when(pgConnection.getNotifications(anyInt())).thenAnswer(invocation -> {
             if (firstNotification.compareAndSet(true, false)) return new PGNotification[] {notification};
             resumedPolling.countDown();

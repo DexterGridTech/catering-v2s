@@ -98,7 +98,26 @@ const definition = createSlice({
       action: PayloadAction<Readonly<{subscriptionId: string; identityKey: string}>>,
     ) => {
       delete state.topicSubscriptions[action.payload.subscriptionId];
-      delete state.acceptedTopicTimes[action.payload.identityKey];
+      if (!Object.values(state.topicSubscriptions).some(item => item.identityKey === action.payload.identityKey))
+        delete state.acceptedTopicTimes[action.payload.identityKey];
+    },
+    restoreTopicSubscriptionIfAbsent: (
+      state,
+      action: PayloadAction<Readonly<{subscription: TerminalTopicSubscription; identityKey: string}>>,
+    ) => {
+      const {subscription, identityKey} = action.payload;
+      if (
+        Object.values(state.topicSubscriptions).some(
+          item =>
+            item.subscriberKey === subscription.subscriberKey &&
+            item.topicKey === subscription.topicKey &&
+            item.ownerRef === subscription.ownerRef,
+        )
+      )
+        return;
+      state.topicSubscriptions[subscription.subscriptionId] = subscription;
+      if (state.acceptedTopicTimes[identityKey] === undefined)
+        state.acceptedTopicTimes[identityKey] = subscription.acceptedTimeEpochMillis;
     },
     clearTopicSubscriptions: state => {
       state.topicSubscriptions = {};
@@ -110,6 +129,30 @@ const definition = createSlice({
     ) => {
       const subscription = state.topicSubscriptions[action.payload.subscriptionId];
       if (subscription === undefined) return;
+      state.acceptedTopicTimes[action.payload.identityKey] = action.payload.acceptedTimeEpochMillis;
+      state.topicSubscriptions[action.payload.subscriptionId] = {
+        ...subscription,
+        acceptedTimeEpochMillis: action.payload.acceptedTimeEpochMillis,
+      };
+    },
+    restoreTopicAcceptedTimeIfCurrent: (
+      state,
+      action: PayloadAction<
+        Readonly<{
+          subscriptionId: string;
+          identityKey: string;
+          notificationId: string;
+          expectedAcceptedTimeEpochMillis: number;
+          acceptedTimeEpochMillis: number;
+        }>
+      >,
+    ) => {
+      const subscription = state.topicSubscriptions[action.payload.subscriptionId];
+      if (
+        subscription?.pendingNotification?.notificationId !== action.payload.notificationId ||
+        state.acceptedTopicTimes[action.payload.identityKey] !== action.payload.expectedAcceptedTimeEpochMillis
+      )
+        return;
       state.acceptedTopicTimes[action.payload.identityKey] = action.payload.acceptedTimeEpochMillis;
       state.topicSubscriptions[action.payload.subscriptionId] = {
         ...subscription,
@@ -134,10 +177,13 @@ const definition = createSlice({
         }
       }
     },
-    clearPendingTopicNotification: (state, action: PayloadAction<string>) => {
-      const subscription = state.topicSubscriptions[action.payload];
-      if (subscription?.pendingNotification !== null && subscription !== undefined) {
-        state.topicSubscriptions[action.payload] = {...subscription, pendingNotification: null};
+    clearPendingTopicNotification: (
+      state,
+      action: PayloadAction<Readonly<{subscriptionId: string; notificationId: string}>>,
+    ) => {
+      const subscription = state.topicSubscriptions[action.payload.subscriptionId];
+      if (subscription?.pendingNotification?.notificationId === action.payload.notificationId) {
+        state.topicSubscriptions[action.payload.subscriptionId] = {...subscription, pendingNotification: null};
       }
     },
     putRemoteOperation: (state, action: PayloadAction<RemoteOperationFact>) => {

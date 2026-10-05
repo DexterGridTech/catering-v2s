@@ -22,9 +22,17 @@ import tools.jackson.databind.node.ObjectNode;
 public final class TerminalConnectionFrameCodec {
     private static final long MAX_SAFE_INTEGER = 9_007_199_254_740_991L;
     private static final Set<String> TOPIC_KEYS = Set.of(
-            "STORE", "PROJECT", "REGION", "COMMERCIAL_GROUP", "STORE_OPERATING_RULE",
-            "VALID_CONTRACT_COLLECTION", "CONTRACT", "SERVICE_POINT_AREA_COLLECTION",
-            "SERVICE_POINT_AREA", "SERVICE_POINT_COLLECTION", "SERVICE_POINT");
+            "STORE",
+            "PROJECT",
+            "REGION",
+            "COMMERCIAL_GROUP",
+            "STORE_OPERATING_RULE",
+            "VALID_CONTRACT_COLLECTION",
+            "CONTRACT",
+            "SERVICE_POINT_AREA_COLLECTION",
+            "SERVICE_POINT_AREA",
+            "SERVICE_POINT_COLLECTION",
+            "SERVICE_POINT");
 
     private final ObjectMapper objectMapper;
     private final TerminalConnectionProtocol protocol;
@@ -86,7 +94,8 @@ public final class TerminalConnectionFrameCodec {
 
     public String messageType(String serialized) {
         if (serialized == null
-                || serialized.getBytes(StandardCharsets.UTF_8).length > protocol.maxCompleteDecompressedMessageBytes()) {
+                || serialized.getBytes(StandardCharsets.UTF_8).length
+                        > protocol.maxCompleteDecompressedMessageBytes()) {
             throw invalidMessage();
         }
         try {
@@ -172,14 +181,15 @@ public final class TerminalConnectionFrameCodec {
     }
 
     public String remoteCommand(
-            UUID operationId,
-            UUID requestId,
-            long bindingGeneration,
-            String commandName,
-            JsonNode parameters) {
-        if (operationId == null || requestId == null || bindingGeneration < 1
-                || commandName == null || commandName.isBlank() || commandName.length() > 128
-                || parameters == null || !parameters.isObject()) {
+            UUID operationId, UUID requestId, long bindingGeneration, String commandName, JsonNode parameters) {
+        if (operationId == null
+                || requestId == null
+                || bindingGeneration < 1
+                || commandName == null
+                || commandName.isBlank()
+                || commandName.length() > 128
+                || parameters == null
+                || !parameters.isObject()) {
             throw new IllegalArgumentException("TDS_REMOTE_COMMAND_INVALID");
         }
         ObjectNode message = objectMapper.createObjectNode();
@@ -200,9 +210,7 @@ public final class TerminalConnectionFrameCodec {
         }
         JsonNode result = message.get("result");
         if (result != null && !result.isObject()) throw invalidMessage();
-        String errorCode = message.has("errorCode")
-                ? requiredUtf8Text(message, "errorCode", 1, 128)
-                : null;
+        String errorCode = message.has("errorCode") ? requiredUtf8Text(message, "errorCode", 1, 128) : null;
         return new RemoteReport(
                 canonicalUuid(message, "reportId"),
                 canonicalUuid(message, "remoteOperationId"),
@@ -282,8 +290,11 @@ public final class TerminalConnectionFrameCodec {
 
     private static long nonNegativeSafeInteger(JsonNode parent, String field) {
         JsonNode value = parent.get(field);
-        if (value == null || !value.isIntegralNumber() || !value.canConvertToLong()
-                || value.asLong() < 0 || value.asLong() > MAX_SAFE_INTEGER) {
+        if (value == null
+                || !value.isIntegralNumber()
+                || !value.canConvertToLong()
+                || value.asLong() < 0
+                || value.asLong() > MAX_SAFE_INTEGER) {
             throw invalidMessage();
         }
         return value.asLong();
@@ -332,7 +343,8 @@ public final class TerminalConnectionFrameCodec {
 
     public record Ping(long sequence, Instant clientTimestamp, double lastRttMs) {}
 
-    public record TopicSubscribe(UUID subscriptionId, String topicKey, UUID ownerRef, long lastAcceptedTimeEpochMillis) {}
+    public record TopicSubscribe(
+            UUID subscriptionId, String topicKey, UUID ownerRef, long lastAcceptedTimeEpochMillis) {}
 
     public record TopicUnsubscribe(UUID subscriptionId, String topicKey, UUID ownerRef) {}
 

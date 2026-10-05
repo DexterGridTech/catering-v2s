@@ -132,7 +132,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/StoreServicePointArea"
+              "$ref": "#/components/schemas/TerminalServicePointAreaData"
             }
           },
           "collectionUpdatedAtEpochMillis": {
@@ -151,7 +151,7 @@
         ],
         "properties": {
           "area": {
-            "$ref": "#/components/schemas/StoreServicePointArea"
+            "$ref": "#/components/schemas/TerminalServicePointAreaData"
           },
           "updatedAtEpochMillis": {
             "type": "integer",
@@ -171,7 +171,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/StoreServicePoint"
+              "$ref": "#/components/schemas/TerminalServicePointData"
             }
           },
           "collectionUpdatedAtEpochMillis": {
@@ -190,13 +190,54 @@
         ],
         "properties": {
           "servicePoint": {
-            "$ref": "#/components/schemas/StoreServicePoint"
+            "$ref": "#/components/schemas/TerminalServicePointData"
           },
           "updatedAtEpochMillis": {
             "type": "integer",
             "format": "int64",
             "minimum": 0
           }
+        }
+      },
+      "TerminalServicePointAreaData": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["areaRef", "storeRef", "name", "code", "areaType", "status", "displayOrder", "version", "createdAt", "updatedAt"],
+        "properties": {
+          "areaRef": {"type": "string", "format": "uuid"},
+          "storeRef": {"type": "string", "format": "uuid"},
+          "name": {"type": "string", "minLength": 1, "maxLength": 160},
+          "code": {"type": "string", "minLength": 1, "maxLength": 160},
+          "areaType": {"$ref": "#/components/schemas/StoreServicePointAreaType"},
+          "status": {"$ref": "#/components/schemas/StoreServicePointStatus"},
+          "displayOrder": {"type": "integer", "minimum": 0},
+          "version": {"type": "integer", "format": "int64", "minimum": 0},
+          "createdAt": {"type": "integer", "format": "int64", "minimum": 0},
+          "updatedAt": {"type": "integer", "format": "int64", "minimum": 0}
+        }
+      },
+      "TerminalServicePointData": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pointRef", "storeRef", "areaRef", "name", "code", "pointType", "status", "displayOrder", "extensionValues", "version", "createdAt", "updatedAt"],
+        "properties": {
+          "pointRef": {"type": "string", "format": "uuid"},
+          "storeRef": {"type": "string", "format": "uuid"},
+          "areaRef": {"type": "string", "format": "uuid"},
+          "name": {"type": "string", "minLength": 1, "maxLength": 160},
+          "code": {"type": "string", "minLength": 1, "maxLength": 160},
+          "pointType": {"$ref": "#/components/schemas/StoreServicePointType"},
+          "status": {"$ref": "#/components/schemas/StoreServicePointStatus"},
+          "displayOrder": {"type": "integer", "minimum": 0},
+          "seatCapacity": {"type": ["integer", "null"], "minimum": 1, "maximum": 10000},
+          "tableShape": {"allOf": [{"$ref": "#/components/schemas/StoreServicePointShape"}], "nullable": true},
+          "reservable": {"type": ["boolean", "null"]},
+          "imageAssetRef": {"type": ["string", "null"], "format": "uuid"},
+          "extensionValues": {"type": "object", "additionalProperties": true},
+          "extensionRuleRevision": {"type": ["integer", "null"], "format": "int64", "minimum": 0},
+          "version": {"type": "integer", "format": "int64", "minimum": 0},
+          "createdAt": {"type": "integer", "format": "int64", "minimum": 0},
+          "updatedAt": {"type": "integer", "format": "int64", "minimum": 0}
         }
       },
       "NoBody": {

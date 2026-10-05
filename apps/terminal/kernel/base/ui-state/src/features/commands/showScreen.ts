@@ -1,5 +1,5 @@
 import type {DisplayMode} from '@catering-v2s/kernel-base-display-context';
-import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
+import type {StateJsonValue, WorkspaceKey} from '@catering-v2s/kernel-base-state';
 import {defineCommand} from '@catering-v2s/kernel-base-runtime';
 import {moduleName} from '../../moduleName';
 
@@ -7,6 +7,7 @@ type ShowScreenPayload = Readonly<{
   readonly displayMode: DisplayMode;
   readonly containerKey: string;
   readonly partKey: string;
+  readonly workspace?: WorkspaceKey;
   readonly instanceId?: string;
   readonly props?: StateJsonValue;
 }>;

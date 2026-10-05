@@ -1,8 +1,8 @@
 package com.catering.v2s.app.edge.terminal;
 
+import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.app.edge.generated.wire.TerminalActivationRequest;
 import com.catering.v2s.app.edge.generated.wire.TerminalActivationResult;
-import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi.ActivationOutcome;
 import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi.ActivationResult;
 import java.util.Objects;
@@ -11,8 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -57,9 +57,7 @@ public final class TerminalActivationController {
                             failure.getCause() == null
                                     ? "none"
                                     : failure.getCause().getClass().getSimpleName())
-                    .addKeyValue(
-                            "elapsedMillis",
-                            Math.max(0, (System.nanoTime() - startedAtNanos) / 1_000_000))
+                    .addKeyValue("elapsedMillis", Math.max(0, (System.nanoTime() - startedAtNanos) / 1_000_000))
                     .log("terminal activation HTTP handler failed");
             throw failure;
         }

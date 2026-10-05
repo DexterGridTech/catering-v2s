@@ -6,18 +6,18 @@ import com.catering.v2s.terminaldataserver.config.TdsRuntimeSettings;
 import com.catering.v2s.terminaldataserver.history.TdsConnectionHistoryEvent;
 import com.catering.v2s.terminaldataserver.history.TdsConnectionHistoryWriter;
 import com.catering.v2s.terminaldataserver.observability.TdsAsyncLog;
-import com.catering.v2s.terminaldataserver.remote.TdsTerminalControlRepository.ClaimedOperation;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec.TopicAccept;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec.TopicSubscribe;
 import com.catering.v2s.terminaldataserver.protocol.TerminalConnectionFrameCodec.TopicUnsubscribe;
+import com.catering.v2s.terminaldataserver.remote.TdsTerminalControlRepository.ClaimedOperation;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.BindingKey;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentBinding;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.CurrentSessionState;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository.SessionIdentity;
-import com.catering.v2s.terminaldataserver.state.TdsTerminalTopicRepository;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateWriter;
+import com.catering.v2s.terminaldataserver.state.TdsTerminalTopicRepository;
 import com.catering.v2s.terminaldataserver.websocket.TdsWebSocketConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -363,15 +363,20 @@ public final class TdsTerminalSessionActors {
                     return false;
                 }
                 String payload = codec.remoteCommand(
-                        operation.operationId(), operation.requestId(), operation.bindingGeneration(),
-                        operation.commandName(), operation.parameters());
+                        operation.operationId(),
+                        operation.requestId(),
+                        operation.bindingGeneration(),
+                        operation.commandName(),
+                        operation.parameters());
                 boolean sent = active.connection().sendText(payload);
                 if (!sent) {
                     TdsAsyncLog.enqueue(
                             logScheduler,
                             () -> LOGGER.warn(
                                     "event=tds_remote_command_send_rejected operationId={} terminalRef={} sessionId={}",
-                                    operation.operationId(), operation.terminalRef(), operation.targetSessionId()));
+                                    operation.operationId(),
+                                    operation.terminalRef(),
+                                    operation.targetSessionId()));
                 }
                 return sent;
             }
@@ -471,8 +476,7 @@ public final class TdsTerminalSessionActors {
                     currentSession = repository.readCurrentSession(identity);
                 } catch (RuntimeException failure) {
                     synchronized (monitor) {
-                        discardOpenedCandidate(
-                                attemptId, attempt, connection, identity, trackedPermit, "SERVER_ERROR");
+                        discardOpenedCandidate(attemptId, attempt, connection, identity, trackedPermit, "SERVER_ERROR");
                     }
                     throw failure;
                 }
@@ -577,19 +581,25 @@ public final class TdsTerminalSessionActors {
                 session = active;
                 if (session == null || session.connection() != connection) return false;
                 if (!validBoundTopic(session, request.topicKey(), request.ownerRef())) return false;
-                TopicSubscription existing = session.subscriptions().get(request.subscriptionId().toString());
+                TopicSubscription existing =
+                        session.subscriptions().get(request.subscriptionId().toString());
                 if (existing != null) {
                     return existing.matches(request.topicKey(), request.ownerRef());
                 }
                 subscription = new TopicSubscription(
-                        request.subscriptionId().toString(), request.topicKey(), request.ownerRef(),
+                        request.subscriptionId().toString(),
+                        request.topicKey(),
+                        request.ownerRef(),
                         request.lastAcceptedTimeEpochMillis());
                 session.subscriptions().put(subscription.subscriptionId, subscription);
             }
             try {
                 OptionalLong current = topicRepository.readTime(
-                        session.identity().workspaceUuid(), session.identity().groupWorkspaceKey(),
-                        session.storeRef(), request.topicKey(), request.ownerRef());
+                        session.identity().workspaceUuid(),
+                        session.identity().groupWorkspaceKey(),
+                        session.storeRef(),
+                        request.topicKey(),
+                        request.ownerRef());
                 if (current.isEmpty()) return rejectMissingTopic(session, subscription);
                 return sendTopicChange(session, subscription, current.getAsLong(), false);
             } catch (RuntimeException failure) {
@@ -608,7 +618,8 @@ public final class TdsTerminalSessionActors {
         private void unsubscribeTopic(TdsWebSocketConnection connection, TopicUnsubscribe request) {
             synchronized (monitor) {
                 if (active == null || active.connection() != connection) return;
-                TopicSubscription current = active.subscriptions().get(request.subscriptionId().toString());
+                TopicSubscription current =
+                        active.subscriptions().get(request.subscriptionId().toString());
                 if (current != null && current.matches(request.topicKey(), request.ownerRef())) {
                     active.subscriptions().remove(current.subscriptionId);
                 }
@@ -622,7 +633,8 @@ public final class TdsTerminalSessionActors {
             synchronized (monitor) {
                 session = active;
                 if (session == null || session.connection() != connection) return;
-                subscription = session.subscriptions().get(request.subscriptionId().toString());
+                subscription =
+                        session.subscriptions().get(request.subscriptionId().toString());
                 if (subscription == null
                         || !subscription.matches(request.topicKey(), request.ownerRef())
                         || !request.notificationId().toString().equals(subscription.pendingNotificationId)
@@ -635,8 +647,11 @@ public final class TdsTerminalSessionActors {
             }
             try {
                 OptionalLong current = topicRepository.readTime(
-                        session.identity().workspaceUuid(), session.identity().groupWorkspaceKey(),
-                        session.storeRef(), subscription.topicKey, subscription.ownerRef);
+                        session.identity().workspaceUuid(),
+                        session.identity().groupWorkspaceKey(),
+                        session.storeRef(),
+                        subscription.topicKey,
+                        subscription.ownerRef);
                 if (current.isPresent()) {
                     sendTopicChange(session, subscription, current.getAsLong(), hadOnlineChangeWhilePending);
                 }
@@ -661,8 +676,11 @@ public final class TdsTerminalSessionActors {
             for (TopicSubscription subscription : matches) {
                 try {
                     OptionalLong current = topicRepository.readTime(
-                            session.identity().workspaceUuid(), session.identity().groupWorkspaceKey(),
-                            session.storeRef(), subscription.topicKey, subscription.ownerRef);
+                            session.identity().workspaceUuid(),
+                            session.identity().groupWorkspaceKey(),
+                            session.storeRef(),
+                            subscription.topicKey,
+                            subscription.ownerRef);
                     if (current.isPresent()) sendTopicChange(session, subscription, current.getAsLong(), true);
                 } catch (RuntimeException failure) {
                     session.connection().close("SERVER_ERROR");
@@ -682,8 +700,11 @@ public final class TdsTerminalSessionActors {
             for (TopicSubscription subscription : subscriptions) {
                 try {
                     OptionalLong current = topicRepository.readTime(
-                            session.identity().workspaceUuid(), session.identity().groupWorkspaceKey(),
-                            session.storeRef(), subscription.topicKey, subscription.ownerRef);
+                            session.identity().workspaceUuid(),
+                            session.identity().groupWorkspaceKey(),
+                            session.storeRef(),
+                            subscription.topicKey,
+                            subscription.ownerRef);
                     if (current.isPresent()) sendTopicChange(session, subscription, current.getAsLong(), false);
                 } catch (RuntimeException failure) {
                     session.connection().close("SERVER_ERROR");
@@ -702,7 +723,7 @@ public final class TdsTerminalSessionActors {
                     if (onlineWakeup) subscription.dirtyWhilePending = true;
                     return true;
                 }
-                if (!onlineWakeup && currentTime <= subscription.lastAcceptedTime) return true;
+                if (!onlineWakeup && currentTime == subscription.lastAcceptedTime) return true;
                 String notificationId = UUID.randomUUID().toString();
                 String payload = codec.topicChanged(
                         notificationId,
@@ -734,8 +755,11 @@ public final class TdsTerminalSessionActors {
 
         private boolean validBoundTopic(ActiveSession session, String topicKey, UUID ownerRef) {
             return switch (topicKey) {
-                case "STORE", "STORE_OPERATING_RULE", "VALID_CONTRACT_COLLECTION",
-                        "SERVICE_POINT_AREA_COLLECTION", "SERVICE_POINT_COLLECTION" -> ownerRef.equals(session.storeRef());
+                case "STORE",
+                        "STORE_OPERATING_RULE",
+                        "VALID_CONTRACT_COLLECTION",
+                        "SERVICE_POINT_AREA_COLLECTION",
+                        "SERVICE_POINT_COLLECTION" -> ownerRef.equals(session.storeRef());
                 case "PROJECT", "REGION", "COMMERCIAL_GROUP", "CONTRACT", "SERVICE_POINT_AREA", "SERVICE_POINT" -> true;
                 default -> false;
             };

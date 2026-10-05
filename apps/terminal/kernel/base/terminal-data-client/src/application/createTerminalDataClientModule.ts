@@ -14,6 +14,7 @@ import {
   refreshTerminalClientStatusProjectionCommand,
   readTerminalDataCommand,
   terminalHeartbeatTickCommand,
+  terminalRemoteOperationMutationCommand,
   terminalActivationSucceededCommand,
   subscribeTerminalTopicCommand,
   terminalTopicChangedCommand,
@@ -45,6 +46,7 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
     refreshTerminalClientStatusProjectionCommand,
     terminalTransportEventCommand,
     terminalHeartbeatTickCommand,
+    terminalRemoteOperationMutationCommand,
   ] as const;
   return Object.freeze({
     moduleName,

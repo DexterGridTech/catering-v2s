@@ -82,6 +82,7 @@
     "localNodeId",
     "platformPorts",
     "descriptors",
+    "requestMaxResidenceMs",
     "getState",
     "flushPersistence",
     "subscribeState",

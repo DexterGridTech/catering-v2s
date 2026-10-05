@@ -6,9 +6,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.ResultSetExtractor;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 /** Store-contract owner persistence for terminal contract topic facts. */
 public final class ContractTerminalTopicSnapshotPersistence {
@@ -31,11 +31,7 @@ public final class ContractTerminalTopicSnapshotPersistence {
         notifyTopic(workspaceUuid, groupWorkspaceKey, "CONTRACT", contractRef);
     }
 
-    public void refreshActiveCollection(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            UUID storeRef,
-            long triggerTime) {
+    public void refreshActiveCollection(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, long triggerTime) {
         CollectionSummary summary = jdbc.query(
                 "SELECT id, updated_at_epoch_millis FROM contract.store_contract "
                         + "WHERE workspace_uuid = ? AND group_workspace_key = ? AND store_id = ? AND status = 'ACTIVE' "
@@ -70,7 +66,8 @@ public final class ContractTerminalTopicSnapshotPersistence {
 
         jdbc.update(
                 "INSERT INTO contract.terminal_topic_snapshot "
-                        + "(workspace_uuid, group_workspace_key, store_ref, topic_key, collection_hash, topic_time_epoch_millis) "
+                        + "(workspace_uuid, group_workspace_key, store_ref, topic_key, collection_hash, "
+                        + "topic_time_epoch_millis) "
                         + "VALUES (?, ?, ?, 'VALID_CONTRACT_COLLECTION', ?, ?) "
                         + "ON CONFLICT (workspace_uuid, group_workspace_key, store_ref, topic_key) "
                         + "DO UPDATE SET collection_hash = EXCLUDED.collection_hash, "
@@ -88,7 +85,8 @@ public final class ContractTerminalTopicSnapshotPersistence {
                 (PreparedStatementCreator) connection -> {
                     var statement = connection.prepareStatement(
                             "SELECT pg_notify(?, jsonb_build_object('v', 1, 'kind', 'TOPIC_CHANGED', "
-                                    + "'workspaceUuid', ?, 'groupWorkspaceKey', ?, 'topicKey', ?, 'ownerRef', ?)::text)");
+                                    + "'workspaceUuid', ?, 'groupWorkspaceKey', ?, 'topicKey', ?, "
+                                    + "'ownerRef', ?)::text)");
                     statement.setString(1, CHANNEL);
                     statement.setObject(2, workspaceUuid);
                     statement.setString(3, groupWorkspaceKey);

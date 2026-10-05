@@ -47,7 +47,9 @@ describe('runtime actor result boundary', () => {
     ]);
     const runtime = createRuntime(
       createTestRuntimeInput({
-        modules: [moduleFor('test.named-dispatch', [parentCommand, childCommand, missingCommand], [parentActor, childActor])],
+        modules: [
+          moduleFor('test.named-dispatch', [parentCommand, childCommand, missingCommand], [parentActor, childActor]),
+        ],
       }),
     );
     await runtime.start();
@@ -125,18 +127,20 @@ describe('runtime actor result boundary', () => {
     );
     await runtime.start();
     const lateOutcomes: unknown[] = [];
-    const timedOut = await runtime.dispatchCommand(command, {}, {
-      lateResultTtlMs: 1_000,
-      lateOutcome: record => lateOutcomes.push(record),
-    });
+    const timedOut = await runtime.dispatchCommand(
+      command,
+      {},
+      {
+        lateResultTtlMs: 1_000,
+        lateOutcome: record => lateOutcomes.push(record),
+      },
+    );
     expect(timedOut.status).toBe('timed-out');
     expect(timedOut.actorResults[0]?.status).toBe('timed-out');
     gate.resolve({late: true});
     await Promise.resolve();
     await new Promise(resolve => setTimeout(resolve, 0));
-    expect(lateOutcomes).toEqual([
-      expect.objectContaining({status: 'completed', result: {late: true}, error: null}),
-    ]);
+    expect(lateOutcomes).toEqual([expect.objectContaining({status: 'completed', result: {late: true}, error: null})]);
     const lateJournalEvent = runtime.journal.list().find(event => event.kind === 'actor.late-completed');
     expect(lateJournalEvent).toBeDefined();
     expect(lateJournalEvent).not.toHaveProperty('result');
@@ -158,10 +162,14 @@ describe('runtime actor result boundary', () => {
     );
     await runtime.start();
     const lateOutcomes: unknown[] = [];
-    const timedOut = await runtime.dispatchCommand(command, {}, {
-      lateResultTtlMs: 5,
-      lateOutcome: record => lateOutcomes.push(record),
-    });
+    const timedOut = await runtime.dispatchCommand(
+      command,
+      {},
+      {
+        lateResultTtlMs: 5,
+        lateOutcome: record => lateOutcomes.push(record),
+      },
+    );
     expect(timedOut.status).toBe('timed-out');
     await new Promise(resolve => setTimeout(resolve, 10));
     gate.resolve({late: true});

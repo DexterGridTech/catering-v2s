@@ -19,7 +19,7 @@ export const createWallpaperConsoleExitActor = (): ActorDefinition =>
       if (partKey === null || route === null) return null;
       await context.dispatchCommand(
         showScreenCommand,
-        {displayMode: 'PRIMARY', containerKey: 'main', partKey},
+        {workspace: route.workspace, displayMode: 'PRIMARY', containerKey: 'main', partKey},
         {routeContext: route},
       );
       return Object.freeze({status: 'wallpaper-selection-exited', partKey});

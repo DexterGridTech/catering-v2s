@@ -8,7 +8,7 @@ import type {
   TopologyWireErrorCode,
   TopologyWireMessage,
 } from '../types/topology';
-import {topologyReassemblyMaxBytes} from './topologyTransportConfig';
+import {topologyLateResultMaxTtlMs, topologyReassemblyMaxBytes} from './topologyTransportConfig';
 
 export const topologyProtocolVersion = 1 as const;
 export const topologyMaxFrameBytes = 64 * 1024;
@@ -194,10 +194,7 @@ export const parseTopologyWireMessage = (raw: string): TopologyWireMessage => {
         'payload',
       ];
       const fieldsWithLateWindow = [...requiredFields, 'lateResultTtlMs'];
-      if (
-        value === null ||
-        (!keysAreExactly(value, requiredFields) && !keysAreExactly(value, fieldsWithLateWindow))
-      )
+      if (value === null || (!keysAreExactly(value, requiredFields) && !keysAreExactly(value, fieldsWithLateWindow)))
         throw new Error('invalid topology command-request');
       if (
         !isNullableBoundedString(value.requestId) ||
@@ -208,7 +205,7 @@ export const parseTopologyWireMessage = (raw: string): TopologyWireMessage => {
         ('lateResultTtlMs' in value &&
           (!Number.isInteger(value.lateResultTtlMs) ||
             Number(value.lateResultTtlMs) < 1 ||
-            Number(value.lateResultTtlMs) > 7_200_000))
+            Number(value.lateResultTtlMs) > topologyLateResultMaxTtlMs))
       )
         throw new Error('invalid topology command-request fields');
       return Object.freeze(value as TopologyWireMessage);

@@ -22,6 +22,16 @@ function safeFailureLine(value) {
     .slice(0, 300);
 }
 
+function safeFailureFrames(value) {
+  return String(value ?? '')
+    .split(/\r?\n/)
+    .map(line => line.match(/^\s*at (?:.*?\s+\()?(.+):(\d+):(\d+)\)?$/))
+    .filter(Boolean)
+    .slice(0, 4)
+    .map(([, file, line, column]) => `${path.basename(file)}:${line}:${column}`)
+    .join('>');
+}
+
 export function summarizeVitestFailureReport(report) {
   if (!Array.isArray(report?.testResults)) {
     const keys =
@@ -38,6 +48,7 @@ export function summarizeVitestFailureReport(report) {
         file: path.basename(file.name ?? 'unknown-test-file'),
         test: safeFailureLine(assertion.fullName ?? assertion.title ?? 'unknown test'),
         detail: safeFailureLine(assertion.failureMessages?.[0] ?? ''),
+        frames: safeFailureFrames(assertion.failureMessages?.[0] ?? ''),
       }));
   });
   if (failedAssertions.length === 0) {
@@ -54,7 +65,10 @@ export function summarizeVitestFailureReport(report) {
   }
   return failedAssertions
     .slice(0, 10)
-    .map(({file, test, detail}) => `VITEST_FAILED_TEST file=${file} test=${test}${detail ? ` detail=${detail}` : ''}`)
+    .map(
+      ({file, test, detail, frames}) =>
+        `VITEST_FAILED_TEST file=${file} test=${test}${detail ? ` detail=${detail}` : ''}${frames ? ` frames=${frames}` : ''}`,
+    )
     .join('\n');
 }
 

@@ -261,6 +261,7 @@ export const createSampleWallpaperConsoleModule = (surfaceForm: SurfaceForm): Ru
         await context.dispatchCommand(
           showScreenCommand,
           {
+            workspace: route.workspace,
             displayMode: route.displayMode,
             containerKey: 'main',
             partKey,

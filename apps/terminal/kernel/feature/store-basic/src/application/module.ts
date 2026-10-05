@@ -1,4 +1,5 @@
 import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
+import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
 import {createStoreBasicActors} from '../features/actors/actors';
@@ -17,6 +18,14 @@ const commands = [
   refreshStoreBasicTopicCommand,
 ] as const;
 
+const safeErrorCode = (error: unknown): string => {
+  if (error instanceof Error) return error.name;
+  if (typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string') {
+    return error.code;
+  }
+  return typeof error;
+};
+
 export const createStoreBasicModule = (): RuntimeModule => {
   const actors = createStoreBasicActors();
   return Object.freeze({
@@ -31,7 +40,7 @@ export const createStoreBasicModule = (): RuntimeModule => {
     stateSlices: [storeBasicStateRegistration],
     install: (context: RuntimeModuleContext) => {
       void context
-        .dispatchCommand(initializeStoreBasicCommand, Object.freeze({}))
+        .dispatchCommand(initializeStoreBasicCommand, Object.freeze({}), {requestId: createRequestId()})
         .then(result => {
           if (result.status !== 'completed') {
             context.platformPorts.logger
@@ -51,7 +60,7 @@ export const createStoreBasicModule = (): RuntimeModule => {
               category: 'terminal.store-basic.initialization',
               event: 'startup-command-threw',
               message: 'Store basic initialization command failed before returning',
-              data: {errorType: error instanceof Error ? error.name : typeof error},
+              data: {errorCode: safeErrorCode(error)},
             });
         });
     },

@@ -66,6 +66,7 @@ import {
   expectedWebAStageRows,
   expectedWebBusinessAssertionIds,
   hasManagedTerminalBrowserOrigin,
+  terminalStoreReadOperationForPath,
   validateWebAStageManifests,
   webBusinessAssertionSetMatches,
   releaseManagedWebRunLock,
@@ -526,6 +527,32 @@ test('Web business evidence rejects a missing, extra, or duplicated observed ass
   assert.equal(webBusinessAssertionSetMatches(expected, ['A-02', 'A-05a', 'A-10a', 'A-10a']), false);
 });
 
+test('managed terminal store-read request paths map to their generated operation identities', () => {
+  const base = '/api/terminal/group-workspaces/aurora';
+  assert.equal(terminalStoreReadOperationForPath(base, `${base}/stores/store-1/basic`), 'terminalReadStoreBasic');
+  assert.equal(
+    terminalStoreReadOperationForPath(base, `${base}/stores/store-1/organization-path`),
+    'terminalReadStoreOrganizationPath',
+  );
+  assert.equal(
+    terminalStoreReadOperationForPath(base, `${base}/stores/store-1/contracts`),
+    'terminalReadStoreActiveContracts',
+  );
+  assert.equal(
+    terminalStoreReadOperationForPath(base, `${base}/stores/store-1/service-point-areas`),
+    'terminalReadStoreServicePointAreas',
+  );
+  assert.equal(
+    terminalStoreReadOperationForPath(base, `${base}/stores/store-1/service-points`),
+    'terminalReadStoreServicePoints',
+  );
+  assert.equal(terminalStoreReadOperationForPath(base, `${base}/stores/store-1/unknown`), null);
+  assert.equal(
+    terminalStoreReadOperationForPath('/api/terminal/group-workspaces/other', `${base}/stores/store-1/basic`),
+    null,
+  );
+});
+
 test('Web A-stage gate requires all exact rows, assertion ids, cleanups, and current source bytes', () => {
   const sourceSha256 = 'a'.repeat(64);
   const managedDevRunId = 'r5-dev-1790922860937-77212-d6aee404-6382-43b0-804f-b9becf3f5c3c';
@@ -572,6 +599,13 @@ test('Web A-stage gate requires all exact rows, assertion ids, cleanups, and cur
             {event: 'tds_session_registered', nodeId: 'tds-a', connectionId: 'conn-1'},
           ],
           frontendBackendLogCorrelation: {activation: 'PASS', 'cancel-activation': 'PASS'},
+          terminalDataReads: [
+            {operationId: 'terminalReadStoreBasic', success: true, getRequestObserved: true},
+            {operationId: 'terminalReadStoreOrganizationPath', success: true, getRequestObserved: true},
+            {operationId: 'terminalReadStoreActiveContracts', success: true, getRequestObserved: true},
+            {operationId: 'terminalReadStoreServicePointAreas', success: true, getRequestObserved: true},
+            {operationId: 'terminalReadStoreServicePoints', success: true, getRequestObserved: true},
+          ],
           matchedHeartbeatRtt: {sequence: 1, rttMs: 12},
           activationResult: {tdsSessionRouteObserved: 'PASS'},
         }
@@ -767,6 +801,13 @@ test('Web A-stage gate requires all exact rows, assertion ids, cleanups, and cur
     ).errors.includes(
       'WEB_A_ACTIVATION_BACKEND_TDS_OR_RTT_EVIDENCE_MISSING:terminal-activation-connection|sample-console|laptop',
     ),
+    true,
+  );
+  assert.equal(
+    validateWebAStageManifests(
+      [{...manifests[0], terminalDataReads: []}, ...manifests.slice(1)],
+      sourceSha256,
+    ).errors.includes('WEB_A_TDP_INITIAL_READ_EVIDENCE_MISSING:terminal-activation-connection|sample-console|laptop'),
     true,
   );
   assert.equal(
@@ -1101,7 +1142,7 @@ test('admin launcher gesture is transformed from current logical canvas coordina
   assert.ok(
     runner.includes("if (latestBinding === undefined || !adminLauncherBindingReady(latestBinding, 'PRIMARY'))"),
   );
-  assert.ok(runner.includes("event => adminLauncherBindingReady(event, 'PRIMARY')"));
+  assert.ok(compactRunner.includes("event => adminLauncherBindingReady(event, 'PRIMARY')"));
   assert.ok(runner.includes('eventCount: 5'));
   assert.ok(runner.includes('manifest.lastWebEventWait = {'));
   assert.ok(runner.includes('const root = page.getByTestId(`${integrationName}:test-expo:root`);'));

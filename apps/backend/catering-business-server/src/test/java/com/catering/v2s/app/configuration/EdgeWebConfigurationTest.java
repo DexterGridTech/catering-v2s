@@ -7,19 +7,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.catering.v2s.app.edge.diagnostic.HttpRequestMetricsInterceptor;
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticInterceptor;
 import com.catering.v2s.app.edge.diagnostic.ReadOnlyTaskConnectionScopeInterceptor;
 import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticInterceptor;
 import com.catering.v2s.app.edge.session.EdgeRequestContextArgumentResolver;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 
@@ -32,14 +32,13 @@ class EdgeWebConfigurationTest {
         ReadOnlyTaskConnectionScopeInterceptor readScope = mock(ReadOnlyTaskConnectionScopeInterceptor.class);
         ObjectProvider<ReadOnlyTaskConnectionScopeInterceptor> readScopeProvider = mock(ObjectProvider.class);
         when(readScopeProvider.getObject()).thenReturn(readScope);
-        EdgeWebConfiguration configuration =
-                new EdgeWebConfiguration(
-                        mock(EdgeRequestContextArgumentResolver.class),
-                        provider,
-                        readScopeProvider,
-                        new ObjectMapper(),
-                        "",
-                        "");
+        EdgeWebConfiguration configuration = new EdgeWebConfiguration(
+                mock(EdgeRequestContextArgumentResolver.class),
+                provider,
+                readScopeProvider,
+                new ObjectMapper(),
+                "",
+                "");
         CapturingRegistry registry = new CapturingRegistry();
 
         configuration.addInterceptors(registry);
@@ -53,25 +52,35 @@ class EdgeWebConfigurationTest {
     }
 
     @Test
-    void enablesOnlyConfiguredLoopbackTerminalActivationOriginsOutsideProduction() {
+    void enablesConfiguredLoopbackTerminalOriginsForActivationCancellationAndGeneratedReads() {
         EdgeWebConfiguration configuration = configuration("non-production", "http://127.0.0.1:8093");
         CapturingCorsRegistry registry = new CapturingCorsRegistry();
 
         configuration.addCorsMappings(registry);
 
         Map<String, CorsConfiguration> mappings = registry.mappings();
-        assertEquals(2, mappings.size());
-        assertTerminalPostMapping(
-                mappings.get("/api/terminal/group-workspaces/*/activation"), "http://127.0.0.1:8093");
+        assertEquals(10, mappings.size());
+        assertTerminalPostMapping(mappings.get("/api/terminal/group-workspaces/*/activation"), "http://127.0.0.1:8093");
         assertTerminalPostMapping(
                 mappings.get("/api/terminal/group-workspaces/*/terminals/*/activation/cancel"),
                 "http://127.0.0.1:8093");
+        for (String path : List.of(
+                "/api/terminal/group-workspaces/*/contracts/*",
+                "/api/terminal/group-workspaces/*/service-points/*",
+                "/api/terminal/group-workspaces/*/service-point-areas/*",
+                "/api/terminal/group-workspaces/*/stores/*/contracts",
+                "/api/terminal/group-workspaces/*/stores/*/basic",
+                "/api/terminal/group-workspaces/*/stores/*/organization-path",
+                "/api/terminal/group-workspaces/*/stores/*/service-point-areas",
+                "/api/terminal/group-workspaces/*/stores/*/service-points")) {
+            assertTerminalGetMapping(mappings.get(path), "http://127.0.0.1:8093");
+        }
     }
 
     @Test
     void rejectsConfiguredTerminalBrowserCorsInProductionAndLeavesUnconfiguredCorsDisabled() {
-        IllegalStateException configuredProductionError = assertThrows(IllegalStateException.class,
-                () -> configuration("production", "http://127.0.0.1:8093")
+        IllegalStateException configuredProductionError =
+                assertThrows(IllegalStateException.class, () -> configuration("production", "http://127.0.0.1:8093")
                         .addCorsMappings(new CapturingCorsRegistry()));
         assertEquals("TERMINAL_BROWSER_CORS_REQUIRES_NON_PRODUCTION", configuredProductionError.getMessage());
 
@@ -95,7 +104,24 @@ class EdgeWebConfigurationTest {
         assertNotNull(configuration);
         assertEquals(List.of(origin), configuration.getAllowedOrigins());
         assertEquals(List.of("POST"), configuration.getAllowedMethods());
-        assertEquals(List.of("Authorization", "Content-Type", "X-Correlation-Id", "X-Request-Id"),
+        assertEquals(
+                List.of(
+                        "Authorization",
+                        "Content-Type",
+                        "X-Correlation-Id",
+                        "X-Request-Id",
+                        "X-Terminal-Device-Id",
+                        "X-Terminal-Ref"),
+                configuration.getAllowedHeaders());
+        assertTrue(!Boolean.TRUE.equals(configuration.getAllowCredentials()));
+    }
+
+    private static void assertTerminalGetMapping(CorsConfiguration configuration, String origin) {
+        assertNotNull(configuration);
+        assertEquals(List.of(origin), configuration.getAllowedOrigins());
+        assertEquals(List.of("GET"), configuration.getAllowedMethods());
+        assertEquals(
+                List.of("Authorization", "X-Correlation-Id", "X-Request-Id", "X-Terminal-Device-Id", "X-Terminal-Ref"),
                 configuration.getAllowedHeaders());
         assertTrue(!Boolean.TRUE.equals(configuration.getAllowCredentials()));
     }

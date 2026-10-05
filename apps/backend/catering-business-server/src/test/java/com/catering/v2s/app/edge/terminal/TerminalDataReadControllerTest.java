@@ -8,12 +8,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.catering.v2s.app.edge.problem.ContractProblemAdvice;
+import com.catering.v2s.app.edge.session.EdgeRequestContextArgumentResolver;
 import com.catering.v2s.contract.application.ContractTaskReadService;
 import com.catering.v2s.organization.api.StoreServicePointOwnerApi;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OperationsOrganizationTaskReadService;
-import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Credential;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
@@ -44,9 +43,11 @@ class TerminalDataReadControllerTest {
         when(organizationReads.store(WORKSPACE, GROUP_KEY, STORE))
                 .thenThrow(new DataAccessResourceFailureException("fixture database unavailable"));
 
-        TerminalDataReadController controller = new TerminalDataReadController(
-                credentials, entities, organizationReads, servicePoints, contracts);
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(controller).build();
+        TerminalDataReadController controller =
+                new TerminalDataReadController(credentials, entities, organizationReads, servicePoints, contracts);
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(controller)
+                .setCustomArgumentResolvers(new EdgeRequestContextArgumentResolver())
+                .build();
 
         mvc.perform(get("/api/terminal/group-workspaces/{group}/stores/{store}/basic", GROUP_KEY, STORE)
                         .header("Authorization", "Terminal 1." + SECRET)

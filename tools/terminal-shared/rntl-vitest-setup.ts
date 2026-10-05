@@ -33,8 +33,24 @@ beforeAll(() => {
 });
 
 afterEach(async () => {
-  const {cleanup} = await import('@testing-library/react-native');
-  await cleanupRntlTestCase(cleanup, resetNativeTestRefFactory);
+  let cleanup: (() => Promise<void>) | undefined;
+  try {
+    ({cleanup} = await import('@testing-library/react-native'));
+  } catch (error) {
+    console.error(
+      'RNTL_TEST_CLEANUP_FAILURE phase=import errorType=' + (error instanceof Error ? error.name : 'unknown'),
+    );
+    resetNativeTestRefFactory();
+    throw error;
+  }
+  try {
+    await cleanupRntlTestCase(cleanup, resetNativeTestRefFactory);
+  } catch (error) {
+    console.error(
+      'RNTL_TEST_CLEANUP_FAILURE phase=cleanup errorType=' + (error instanceof Error ? error.name : 'unknown'),
+    );
+    throw error;
+  }
 });
 
 afterAll(() => {

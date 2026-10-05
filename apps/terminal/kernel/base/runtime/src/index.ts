@@ -55,7 +55,6 @@ export {
   runtimeInstanceModeChangedCommand,
   setRuntimeInstanceModeCommand,
   resetRuntimeAfterSystemFailureCommand,
-  helloWorldCommand,
 } from './features/commands';
 export {selectRuntimeInstanceMode} from './selectors/selectRuntimeInstanceMode';
 

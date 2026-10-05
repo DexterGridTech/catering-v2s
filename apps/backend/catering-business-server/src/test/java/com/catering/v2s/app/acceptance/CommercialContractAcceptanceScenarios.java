@@ -503,12 +503,10 @@ final class CommercialContractAcceptanceScenarios {
 
     private void assertContractCollectionSnapshot(BackendAcceptanceTest.Fixture fixture, List<UUID> members, long time)
             throws Exception {
-        String canonicalMembers = members.stream()
-                .map(UUID::toString)
-                .sorted()
-                .collect(java.util.stream.Collectors.joining("\n"));
-        String expectedHash = BackendAcceptanceTest.sha256(
-                canonicalMembers.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String canonicalMembers =
+                members.stream().map(UUID::toString).sorted().collect(java.util.stream.Collectors.joining("\n"));
+        String expectedHash =
+                BackendAcceptanceTest.sha256(canonicalMembers.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         Map<String, Object> snapshot = host.queryForMap(
                 "SELECT collection_hash, topic_time_epoch_millis FROM contract.terminal_topic_snapshot "
                         + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? "
@@ -522,8 +520,9 @@ final class CommercialContractAcceptanceScenarios {
 
     private long contractUpdatedAt(UUID contractRef) {
         return ((Number) host.queryForMap(
-                        "SELECT updated_at_epoch_millis FROM contract.store_contract WHERE id=?", contractRef)
-                .get("updated_at_epoch_millis")).longValue();
+                                "SELECT updated_at_epoch_millis FROM contract.store_contract WHERE id=?", contractRef)
+                        .get("updated_at_epoch_millis"))
+                .longValue();
     }
 
     @AcceptanceScenario(

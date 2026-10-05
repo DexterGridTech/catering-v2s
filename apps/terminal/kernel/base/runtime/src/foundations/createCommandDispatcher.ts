@@ -2,6 +2,7 @@ import {
   createAppError,
   createCommandId,
   nowTimestampMs,
+  topologyLateResultMaxTtlMs,
   type AppError,
   type CommandId,
 } from '@catering-v2s/kernel-base-contracts';
@@ -507,6 +508,19 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
     }>,
   ): Promise<CommandDispatchResult> => {
     const {definition, payload, options = {}, observer, actorAncestors = []} = dispatchInput;
+    const requestedLateResultTtlMs = options.lateResultTtlMs;
+    if (
+      (options.lateOutcome !== undefined && requestedLateResultTtlMs === undefined) ||
+      (requestedLateResultTtlMs !== undefined &&
+        (!Number.isInteger(requestedLateResultTtlMs) ||
+          requestedLateResultTtlMs < 1 ||
+          requestedLateResultTtlMs > topologyLateResultMaxTtlMs))
+    )
+      throw new Error('ERR_TER_RUNTIME_LATE_RESULT_TTL_INVALID');
+    const lateResultTtlMs =
+      requestedLateResultTtlMs === undefined
+        ? undefined
+        : Math.min(requestedLateResultTtlMs, input.limits.requestMaxResidenceMs);
     validateRegisteredDefinition(definition);
 
     const requestId = options.requestId ?? null;
@@ -617,15 +631,17 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
         });
       }
       const actorResults =
-      target === 'peer'
-          ? [await dispatchPeer({
-              command,
-              definition,
-              lifecycleContext: context,
-              observer,
-              lateOutcome: options.lateOutcome,
-              lateResultTtlMs: options.lateResultTtlMs,
-            })]
+        target === 'peer'
+          ? [
+              await dispatchPeer({
+                command,
+                definition,
+                lifecycleContext: context,
+                observer,
+                lateOutcome: options.lateOutcome,
+                lateResultTtlMs,
+              }),
+            ]
           : await Promise.all(
               handlers.map(handler =>
                 dispatchActor({
@@ -636,7 +652,7 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
                   observer,
                   actorAncestors,
                   lateOutcome: options.lateOutcome,
-                  lateResultTtlMs: options.lateResultTtlMs,
+                  lateResultTtlMs,
                 }),
               ),
             );

@@ -109,11 +109,22 @@ BEGIN
     SELECT operation.status, operation.last_report_id
       INTO current_status, current_report_id
       FROM terminal_control.online_operation operation
+      JOIN terminal_binding.latest_binding binding
+        ON binding.workspace_uuid = operation.workspace_uuid
+       AND binding.group_workspace_key = operation.group_workspace_key
+       AND binding.terminal_ref = operation.terminal_ref
+       AND binding.generation = operation.binding_generation
+       AND binding.binding_status = 'ACTIVE'
+      JOIN terminal_connection.latest_state session
+        ON session.workspace_uuid = operation.workspace_uuid
+       AND session.group_workspace_key = operation.group_workspace_key
+       AND session.terminal_ref = operation.terminal_ref
+       AND session.node_id = p_node_id
+       AND session.session_id = p_session_id
+       AND session.disconnected_at_epoch_millis IS NULL
      WHERE operation.operation_id = p_operation_id
        AND operation.request_id = p_request_id
        AND operation.binding_generation = p_binding_generation
-       AND operation.target_node_id = p_node_id
-       AND operation.target_session_id = p_session_id
        AND operation.status IN ('CLAIMED', 'RECEIVED', 'STARTED', 'UNKNOWN', 'COMPLETED', 'FAILED')
      FOR UPDATE;
 

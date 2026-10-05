@@ -43,6 +43,7 @@ The module-dependency registry check validates the declared module and edge grap
 ## R4 verification
 
 `scripts/verify` 聚合编译、类型、既有测试、契约生成与架构边界检查。它不启动 DEV、seed、reset 或浏览器；静态通过不能冒充动态业务验收。
+默认 `scripts/verify` 已先执行终端静态门，再调用终端完整验证的其余步骤；传给终端入口的 `--static-verified-by-parent` 仅避免同一轮内重复运行终端静态门。直接执行 `yarn workspace @catering-v2s/terminal run verify` 仍会自行执行完整静态门。
 
 ### 终端 WebSocket 协议生成
 

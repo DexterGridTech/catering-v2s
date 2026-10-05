@@ -144,12 +144,14 @@ describe('runtime CP-A1 foundations', () => {
   it('recovers runtime instance mode across runtime instances through shared plain storage', async () => {
     const sharedPlain = createSharedMemoryStoragePort();
     let flushFirstRuntime: (() => Promise<unknown>) | undefined;
+    let firstRuntimeResidenceLimit: number | undefined;
     const captureFlushModule: RuntimeModule = Object.freeze({
       moduleName: 'test.capture',
       kind: 'toolkit',
       dependencies: [{moduleName, required: true}],
       install: (context: RuntimeModuleContext) => {
         flushFirstRuntime = context.flushPersistence;
+        firstRuntimeResidenceLimit = context.requestMaxResidenceMs;
       },
     });
     const firstRuntime = createRuntime(
@@ -162,6 +164,8 @@ describe('runtime CP-A1 foundations', () => {
     await firstRuntime.start();
     await firstRuntime.dispatchCommand(setRuntimeInstanceModeCommand, {instanceMode: 'SLAVE'});
     expect(flushFirstRuntime).toBeDefined();
+    expect(firstRuntimeResidenceLimit).toEqual(expect.any(Number));
+    expect(firstRuntimeResidenceLimit).toBeGreaterThan(0);
     const flushResult = await flushFirstRuntime?.();
     expect(flushResult).toMatchObject({status: 'succeeded'});
 

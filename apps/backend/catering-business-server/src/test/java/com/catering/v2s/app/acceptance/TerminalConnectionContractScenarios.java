@@ -1,11 +1,11 @@
 package com.catering.v2s.app.acceptance;
 
+import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi;
-import java.io.IOException;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URI;
@@ -29,9 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -143,8 +143,7 @@ final class TerminalConnectionContractScenarios {
     }
 
     static Stream<DynamicTest> remoteCommandScenarios(BackendAcceptanceTest host, TdsAcceptanceProcess tds) {
-        return Stream.of(DynamicTest.dynamicTest(
-                "terminal.connection.remote-command", () -> remoteCommand(host, tds)));
+        return Stream.of(DynamicTest.dynamicTest("terminal.connection.remote-command", () -> remoteCommand(host, tds)));
     }
 
     private static void remoteCommand(BackendAcceptanceTest host, TdsAcceptanceProcess tds) throws Exception {
@@ -166,17 +165,27 @@ final class TerminalConnectionContractScenarios {
             Map<String, Object> request = new LinkedHashMap<>();
             request.put("scenario", scenario);
             request.put("markerId", markerId);
-            request.put("url", tds.websocketBaseUrl() + "/tdp/" + fixture.fixture().groupWorkspaceKey() + "/ws");
-            request.put("authenticate", Map.of(
-                    "type", "AUTHENTICATE",
-                    "terminalRef", fixture.terminalRef().toString(),
-                    "terminalCredential", fixture.generation() + "." + fixture.credentialSecret(),
-                    "deviceId", fixture.deviceId(),
-                    "appVersion", "backend-acceptance"));
-            request.put("remoteOperation", Map.of(
-                    "operationId", operationId.toString(),
-                    "requestId", requestId.toString(),
-                    "commandName", "kernel.base.runtime.hello-world"));
+            request.put(
+                    "url", tds.websocketBaseUrl() + "/tdp/" + fixture.fixture().groupWorkspaceKey() + "/ws");
+            request.put(
+                    "authenticate",
+                    Map.of(
+                            "type",
+                            "AUTHENTICATE",
+                            "terminalRef",
+                            fixture.terminalRef().toString(),
+                            "terminalCredential",
+                            fixture.generation() + "." + fixture.credentialSecret(),
+                            "deviceId",
+                            fixture.deviceId(),
+                            "appVersion",
+                            "backend-acceptance"));
+            request.put(
+                    "remoteOperation",
+                    Map.of(
+                            "operationId", operationId.toString(),
+                            "requestId", requestId.toString(),
+                            "commandName", "kernel.base.runtime.hello-world"));
             wire = startWireClient(request, log, true);
             requireWireMarker(
                     wire,
@@ -189,8 +198,8 @@ final class TerminalConnectionContractScenarios {
 
             TerminalControlOwnerApi owner = host.acceptanceBean(TerminalControlOwnerApi.class);
             ObjectNode parameters = host.mapper.createObjectNode();
-            TerminalControlOwnerApi.InvocationResult invocation = owner.invokeOnline(
-                    new TerminalControlOwnerApi.InvokeOnlineCommand(
+            TerminalControlOwnerApi.InvocationResult invocation =
+                    owner.invokeOnline(new TerminalControlOwnerApi.InvokeOnlineCommand(
                             operationId,
                             requestId,
                             fixture.fixture().groupWorkspaceKey(),
@@ -199,16 +208,23 @@ final class TerminalConnectionContractScenarios {
                             "kernel.base.runtime.hello-world",
                             parameters));
             Assertions.assertEquals(TerminalControlOwnerApi.InvocationOutcome.QUEUED, invocation.outcome());
-            Assertions.assertEquals(TerminalControlOwnerApi.OperationStatus.QUEUED, invocation.operation().status());
+            Assertions.assertEquals(
+                    TerminalControlOwnerApi.OperationStatus.QUEUED,
+                    invocation.operation().status());
             JsonNode wireResult = awaitWireResult(wire, log, CLIENT_DEADLINE, scenario);
             Assertions.assertEquals("PASS", wireResult.path("status").asText());
-            Assertions.assertEquals(operationId.toString(), wireResult.path("remoteOperationId").asText());
+            Assertions.assertEquals(
+                    operationId.toString(), wireResult.path("remoteOperationId").asText());
             Assertions.assertEquals(
                     List.of(
-                            "SESSION_READY", "REMOTE_REPORT_ACK", "REMOTE_REPORT_ACK", "REMOTE_REPORT_ACK",
+                            "SESSION_READY",
+                            "REMOTE_REPORT_ACK",
+                            "REMOTE_REPORT_ACK",
+                            "REMOTE_REPORT_ACK",
                             "REMOTE_REPORT_ACK"),
-                    JSON.convertValue(wireResult.path("eventTypes"), JSON.getTypeFactory()
-                            .constructCollectionType(List.class, String.class)));
+                    JSON.convertValue(
+                            wireResult.path("eventTypes"),
+                            JSON.getTypeFactory().constructCollectionType(List.class, String.class)));
             Assertions.assertEquals(1000, wireResult.path("clientCloseSent").asInt());
 
             TerminalControlOwnerApi.OperationView completed = owner.readOperation(operationId);
@@ -217,14 +233,30 @@ final class TerminalConnectionContractScenarios {
             Assertions.assertEquals("terminal-data-server", completed.targetNodeId());
             Assertions.assertEquals(TerminalControlOwnerApi.OperationStatus.COMPLETED, completed.status());
             Assertions.assertEquals(
-                    "helloWorld", completed.result().path("actorResults").get(0).path("result").path("message").asText());
+                    "helloWorld",
+                    completed
+                            .result()
+                            .path("actorResults")
+                            .get(0)
+                            .path("result")
+                            .path("message")
+                            .asText());
             Assertions.assertNull(completed.errorCode());
             TerminalControlOwnerApi.OperationView afterStaleStarted = owner.readOperation(operationId);
             Assertions.assertNotNull(afterStaleStarted, "TERMINAL_CONTROL_LATE_REPORT_READBACK_MISSING");
-            Assertions.assertEquals(TerminalControlOwnerApi.OperationStatus.COMPLETED, afterStaleStarted.status(),
+            Assertions.assertEquals(
+                    TerminalControlOwnerApi.OperationStatus.COMPLETED,
+                    afterStaleStarted.status(),
                     "TERMINAL_CONTROL_LATE_STARTED_REGRESSED_TERMINAL_STATE");
             Assertions.assertEquals(
-                    "helloWorld", afterStaleStarted.result().path("actorResults").get(0).path("result").path("message").asText(),
+                    "helloWorld",
+                    afterStaleStarted
+                            .result()
+                            .path("actorResults")
+                            .get(0)
+                            .path("result")
+                            .path("message")
+                            .asText(),
                     "TERMINAL_CONTROL_LATE_STARTED_REPLACED_COMPLETED_RESULT");
             business.performConnectionRevocation(
                     context, fixture, StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
@@ -241,9 +273,12 @@ final class TerminalConnectionContractScenarios {
                     Map.entry("requestId", requestId),
                     Map.entry("targetNodeId", completed.targetNodeId()),
                     Map.entry("terminalStatus", completed.status().name()),
-                    Map.entry("actorResult", completed.result().path("actorResults").get(0).path("result")),
+                    Map.entry(
+                            "actorResult",
+                            completed.result().path("actorResults").get(0).path("result")),
                     Map.entry("fixtureCancelled", fixtureCancelled)));
-            System.out.printf("BACKEND_ACCEPTANCE_TDS_CONTRACT operation=%s CONTRACT=PASS runId=%s status=COMPLETED%n",
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT operation=%s CONTRACT=PASS runId=%s status=COMPLETED%n",
                     scenario, runId);
         } catch (Exception | Error failure) {
             scenarioFailure = failure;
@@ -252,13 +287,14 @@ final class TerminalConnectionContractScenarios {
         } finally {
             Process wireToStop = wire;
             Path wireLog = log;
-            Throwable cleanupFailure = wireToStop == null
-                    ? null
-                    : attemptCleanup(null, () -> stopOwnedClient(wireToStop, wireLog));
+            Throwable cleanupFailure =
+                    wireToStop == null ? null : attemptCleanup(null, () -> stopOwnedClient(wireToStop, wireLog));
             if (fixture != null && !fixtureCancelled) {
                 try {
                     business.performConnectionRevocation(
-                            context, fixture, StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
+                            context,
+                            fixture,
+                            StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
                     business.assertConnectionFixtureInactive(context, fixture);
                     fixtureCancelled = true;
                 } catch (Exception | Error failure) {
@@ -285,7 +321,8 @@ final class TerminalConnectionContractScenarios {
         boolean listenerRecoveryRequired = false;
         Throwable scenarioFailure = null;
         try {
-            StoreTerminalAcceptanceScenarios.ConnectionFixture first = business.createConnectionContractFixture(context);
+            StoreTerminalAcceptanceScenarios.ConnectionFixture first =
+                    business.createConnectionContractFixture(context);
             fixtures.add(first);
             StoreTerminalAcceptanceScenarios.ConnectionFixture second =
                     business.createConnectionContractFixture(context, first);
@@ -293,7 +330,8 @@ final class TerminalConnectionContractScenarios {
             Path script = terminalWireClientScript();
             clients.add(startTopicWireClient(tds, script, scenario, first));
             clients.add(startTopicWireClient(tds, script, scenario, second));
-            long baselineOwnerTime = clients.getFirst().baseline().path("topicTimeEpochMillis").asLong();
+            long baselineOwnerTime =
+                    clients.getFirst().baseline().path("topicTimeEpochMillis").asLong();
             Assertions.assertTrue(baselineOwnerTime > 0, "TDS_TOPIC_OWNER_TIME_NOT_READ");
             Assertions.assertEquals(
                     baselineOwnerTime,
@@ -328,7 +366,8 @@ final class TerminalConnectionContractScenarios {
 
             List<JsonNode> results = new ArrayList<>();
             for (TopicWireClient client : clients) {
-                Assertions.assertTrue(client.process().waitFor(CLIENT_DEADLINE.toMillis(), TimeUnit.MILLISECONDS),
+                Assertions.assertTrue(
+                        client.process().waitFor(CLIENT_DEADLINE.toMillis(), TimeUnit.MILLISECONDS),
                         "TERMINAL_WIRE_TOPIC_SUBSCRIPTION_DEADLINE_EXCEEDED");
                 String outputLine = client.output().readLine();
                 Assertions.assertEquals(0, client.process().exitValue(), "TERMINAL_WIRE_CLIENT_EXIT_NONZERO");
@@ -338,12 +377,16 @@ final class TerminalConnectionContractScenarios {
                 Assertions.assertEquals("PASS", result.path("status").asText());
                 Assertions.assertEquals(scenario, result.path("scenario").asText());
                 Assertions.assertEquals("STORE", result.path("topicKey").asText());
-                Assertions.assertEquals(List.of("SESSION_READY", "TOPIC_CHANGED", "TOPIC_CHANGED"),
-                        JSON.convertValue(result.path("eventTypes"), JSON.getTypeFactory()
-                                .constructCollectionType(List.class, String.class)));
                 Assertions.assertEquals(
-                        baselineOwnerTime, result.path("baselineTopicTimeEpochMillis").asLong());
-                Assertions.assertTrue(result.path("topicTimeEpochMillis").asLong() > baselineOwnerTime,
+                        List.of("SESSION_READY", "TOPIC_CHANGED", "TOPIC_CHANGED"),
+                        JSON.convertValue(
+                                result.path("eventTypes"),
+                                JSON.getTypeFactory().constructCollectionType(List.class, String.class)));
+                Assertions.assertEquals(
+                        baselineOwnerTime,
+                        result.path("baselineTopicTimeEpochMillis").asLong());
+                Assertions.assertTrue(
+                        result.path("topicTimeEpochMillis").asLong() > baselineOwnerTime,
                         "TDS_TOPIC_OWNER_TIME_DID_NOT_ADVANCE_AFTER_HTTP_UPDATE");
                 if (!results.isEmpty()) {
                     Assertions.assertEquals(
@@ -373,18 +416,29 @@ final class TerminalConnectionContractScenarios {
                     Map.entry("topicKey", "STORE"),
                     Map.entry("ownerRef", storeRef),
                     Map.entry("baselineOwnerRawTimeRead", baselineOwnerTime),
-                    Map.entry("updatedOwnerRawTimeRead", result.path("topicTimeEpochMillis").asLong()),
+                    Map.entry(
+                            "updatedOwnerRawTimeRead",
+                            result.path("topicTimeEpochMillis").asLong()),
                     Map.entry("eventTypes", List.of("SESSION_READY", "TOPIC_CHANGED", "TOPIC_CHANGED")),
                     Map.entry("acceptedNotification", true),
                     Map.entry("listenerBackendPidBeforeRestart", previousListenerBackendPid),
                     Map.entry("listenerBackendPidAfterRestart", reconnectedListenerBackendPid),
                     Map.entry("fixtureCancelled", cancelledFixtures.size() == fixtures.size()),
                     Map.entry("liveSessionsReceivingUpdate", results.size()),
-                    Map.entry("sessionOwnerTimes", results.stream()
-                            .map(resultValue -> resultValue.path("topicTimeEpochMillis").asLong())
-                            .toList()),
-                    Map.entry("clientPids", clients.stream().map(client -> client.process().pid()).toList())));
-            System.out.printf("BACKEND_ACCEPTANCE_TDS_CONTRACT operation=%s CONTRACT=PASS runId=%s liveSessions=%d%n",
+                    Map.entry(
+                            "sessionOwnerTimes",
+                            results.stream()
+                                    .map(resultValue -> resultValue
+                                            .path("topicTimeEpochMillis")
+                                            .asLong())
+                                    .toList()),
+                    Map.entry(
+                            "clientPids",
+                            clients.stream()
+                                    .map(client -> client.process().pid())
+                                    .toList())));
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT operation=%s CONTRACT=PASS runId=%s liveSessions=%d%n",
                     scenario, runId, results.size());
         } catch (Exception | Error failure) {
             scenarioFailure = failure;
@@ -426,7 +480,9 @@ final class TerminalConnectionContractScenarios {
                 if (cancelledFixtures.contains(fixture.terminalRef())) continue;
                 try {
                     business.performConnectionRevocation(
-                            context, fixture, StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
+                            context,
+                            fixture,
+                            StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
                     business.assertConnectionFixtureInactive(context, fixture);
                     cancelledFixtures.add(fixture.terminalRef());
                 } catch (Exception | Error failure) {
@@ -459,25 +515,35 @@ final class TerminalConnectionContractScenarios {
                 tds.websocketBaseUrl() + "/tdp/" + fixture.fixture().groupWorkspaceKey() + "/ws",
                 "authenticate",
                 Map.of(
-                        "type", "AUTHENTICATE",
-                        "terminalRef", fixture.terminalRef().toString(),
-                        "terminalCredential", fixture.generation() + "." + fixture.credentialSecret(),
-                        "deviceId", fixture.deviceId(),
-                        "appVersion", "backend-acceptance"),
+                        "type",
+                        "AUTHENTICATE",
+                        "terminalRef",
+                        fixture.terminalRef().toString(),
+                        "terminalCredential",
+                        fixture.generation() + "." + fixture.credentialSecret(),
+                        "deviceId",
+                        fixture.deviceId(),
+                        "appVersion",
+                        "backend-acceptance"),
                 "topicSubscription",
                 Map.of(
-                        "subscriptionId", UUID.randomUUID().toString(),
-                        "topicKey", "STORE",
-                        "ownerRef", storeRef,
-                        "lastAcceptedTimeEpochMillis", 0));
-        ProcessBuilder builder = new ProcessBuilder(
-                requiredEnvironment("V2S_TERMINAL_WIRE_NODE_BINARY"), script.toString());
+                        "subscriptionId",
+                        UUID.randomUUID().toString(),
+                        "topicKey",
+                        "STORE",
+                        "ownerRef",
+                        storeRef,
+                        "lastAcceptedTimeEpochMillis",
+                        0));
+        ProcessBuilder builder =
+                new ProcessBuilder(requiredEnvironment("V2S_TERMINAL_WIRE_NODE_BINARY"), script.toString());
         builder.directory(Path.of(System.getProperty("user.dir")).toFile());
         Path wireLog = wireClientLog(tds, markerId);
         builder.redirectError(ProcessBuilder.Redirect.appendTo(wireLog.toFile()));
         Process node = builder.start();
         try {
-            BufferedReader output = new BufferedReader(new InputStreamReader(node.getInputStream(), StandardCharsets.UTF_8));
+            BufferedReader output =
+                    new BufferedReader(new InputStreamReader(node.getInputStream(), StandardCharsets.UTF_8));
             node.getOutputStream().write((JSON.writeValueAsString(request) + "\n").getBytes(StandardCharsets.UTF_8));
             node.getOutputStream().flush();
             JsonNode baseline =

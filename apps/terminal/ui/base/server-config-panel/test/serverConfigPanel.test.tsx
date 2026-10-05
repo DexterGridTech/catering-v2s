@@ -258,7 +258,7 @@ describe('server-config admin panel', () => {
           ...defaults.spaces[0]!,
           servers: Object.freeze([
             Object.freeze({
-              ...defaults.spaces[0]!.servers[0]!,
+              serverName: 'business',
               addresses: Object.freeze([
                 {addressName: 'A', baseUrl: 'https://a.example.test/api'},
                 {addressName: 'B', baseUrl: 'https://b.example.test/api'},

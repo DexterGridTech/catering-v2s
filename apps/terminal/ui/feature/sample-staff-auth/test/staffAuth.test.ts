@@ -822,7 +822,7 @@ describe('sample staff auth UI feature', () => {
       expect(dispatches).toEqual([
         {
           commandName: 'kernel.base.ui-state.show-screen',
-          payload: {displayMode, containerKey: 'main', partKey: expectedPart},
+          payload: {workspace: routeContext.workspace, displayMode, containerKey: 'main', partKey: expectedPart},
         },
       ]);
     },

@@ -9,8 +9,8 @@ import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence;
-import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -315,7 +315,8 @@ class ContractCommandServiceTest {
                     1,
                     jdbc.queryForObject(
                             "SELECT count(*) FROM contract.terminal_topic_snapshot WHERE workspace_uuid=? "
-                                    + "AND group_workspace_key=? AND store_ref=? AND topic_key='VALID_CONTRACT_COLLECTION'",
+                                    + "AND group_workspace_key=? AND store_ref=? "
+                                    + "AND topic_key='VALID_CONTRACT_COLLECTION'",
                             Integer.class,
                             workspaceId,
                             "contract-test",

@@ -113,6 +113,7 @@
     "topologyCompressionThresholdBytes",
     "topologyMaxFrameBytes",
     "topologyPeerCommandMaxInflight",
+    "topologyLateResultMaxTtlMs",
     "topologyProtocolVersion",
     "topologyReassemblyMaxBytes",
     "topologyReassemblyMaxInflightTransfers",

@@ -87,17 +87,135 @@ describe('runtime peer gateway', () => {
     });
     const lateRuntime = createRuntime(createTestRuntimeInput({modules: [lateModule]}));
     await lateRuntime.start();
-    const timedOut = await lateRuntime.dispatchCommand(lateCommand, {});
+    const lateRecords: unknown[] = [];
+    const timedOut = await lateRuntime.dispatchCommand(
+      lateCommand,
+      {},
+      {
+        lateResultTtlMs: 1_000,
+        lateOutcome: record => lateRecords.push(record),
+      },
+    );
     expect(timedOut.status).toBe('timed-out');
     expect(timedOut.actorResults[0]?.status).toBe('timed-out');
-    late.resolve({requestId: null, commandId: createCommandId(), status: 'completed', actorResults: []});
+    const actualRecord = {
+      actorKey: 'test.peer.remote',
+      status: 'completed' as const,
+      startedAt: 10,
+      completedAt: 20,
+      result: {persisted: true},
+      error: null,
+    };
+    late.resolve({requestId: null, commandId: createCommandId(), status: 'completed', actorResults: [actualRecord]});
     await Promise.resolve();
     await new Promise(resolve => setTimeout(resolve, 0));
+    expect(lateRecords).toMatchObject([
+      {
+        actorKey: 'kernel.base.runtime.peer-dispatch',
+        result: {actorResults: [actualRecord]},
+      },
+    ]);
     expect(lateRuntime.journal.list()).toEqual(
       expect.arrayContaining([
         expect.objectContaining({kind: 'actor.late-completed', actorKey: 'kernel.base.runtime.peer-dispatch'}),
       ]),
     );
+  });
+
+  it('forwards partial actor facts from a late peer timeout after local timeout', async () => {
+    const command = defineCommand<Readonly<{}>>('test.peer.partial-late', {
+      name: 'run',
+      visibility: 'internal',
+      defaultTarget: 'peer',
+      timeoutMs: 5,
+    });
+    const late = deferred<CommandDispatchResult>();
+    const gateway: PeerDispatchGateway = {dispatchCommand: async () => late.promise};
+    const module = Object.freeze({
+      ...moduleFor('test.peer.partial-late', [command]),
+      install: (context: Parameters<NonNullable<RuntimeModule['install']>>[0]) =>
+        context.installPeerDispatchGateway(gateway),
+    });
+    const runtime = createRuntime(createTestRuntimeInput({modules: [module]}));
+    await runtime.start();
+    const lateRecords: unknown[] = [];
+    const result = await runtime.dispatchCommand(
+      command,
+      {},
+      {
+        lateResultTtlMs: 1_000,
+        lateOutcome: record => lateRecords.push(record),
+      },
+    );
+    expect(result.status).toBe('timed-out');
+    const actualRecord = {
+      actorKey: 'test.peer.partial-worker',
+      status: 'timed-out' as const,
+      startedAt: 10,
+      completedAt: null,
+      result: null,
+      error: null,
+    };
+    late.resolve({requestId: null, commandId: createCommandId(), status: 'timed-out', actorResults: [actualRecord]});
+    await Promise.resolve();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(lateRecords).toMatchObject([
+      {
+        actorKey: 'kernel.base.runtime.peer-dispatch',
+        result: {actorResults: [actualRecord]},
+      },
+    ]);
+  });
+
+  it('forwards actor facts from a late peer error after local timeout', async () => {
+    const command = defineCommand<Readonly<{}>>('test.peer.error-late', {
+      name: 'run',
+      visibility: 'internal',
+      defaultTarget: 'peer',
+      timeoutMs: 5,
+    });
+    const late = deferred<CommandDispatchResult>();
+    const gateway: PeerDispatchGateway = {dispatchCommand: async () => late.promise};
+    const module = Object.freeze({
+      ...moduleFor('test.peer.error-late', [command]),
+      install: (context: Parameters<NonNullable<RuntimeModule['install']>>[0]) =>
+        context.installPeerDispatchGateway(gateway),
+    });
+    const runtime = createRuntime(createTestRuntimeInput({modules: [module]}));
+    await runtime.start();
+    const lateRecords: unknown[] = [];
+    const result = await runtime.dispatchCommand(
+      command,
+      {},
+      {
+        lateResultTtlMs: 1_000,
+        lateOutcome: record => lateRecords.push(record),
+      },
+    );
+    expect(result.status).toBe('timed-out');
+    const failedRecord = {
+      actorKey: 'test.peer.remote-worker',
+      status: 'error' as const,
+      startedAt: 10,
+      completedAt: 20,
+      result: null,
+      error: {
+        key: 'test.peer.remote_failure',
+        code: 'REMOTE_FAILURE',
+        message: 'remote operation failed',
+        category: 'SYSTEM' as const,
+        severity: 'MEDIUM' as const,
+      },
+    };
+    late.resolve({requestId: null, commandId: createCommandId(), status: 'error', actorResults: [failedRecord]});
+    await Promise.resolve();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(lateRecords).toMatchObject([
+      {
+        actorKey: 'kernel.base.runtime.peer-dispatch',
+        result: {actorResults: [failedRecord]},
+      },
+    ]);
   });
 
   it('P-3 installs exactly one gateway and forwards opaque identity options by reference', async () => {
@@ -148,5 +266,37 @@ describe('runtime peer gateway', () => {
       key: 'kernel.base.runtime.lifecycle_failed',
       message: 'Runtime lifecycle failed',
     });
+  });
+
+  it('caps a remote result observer to the configured Runtime residence limit', async () => {
+    const command = peerCommand('bounded-late-result');
+    let forwardedTtl: number | undefined;
+    const gateway: PeerDispatchGateway = {
+      dispatchCommand: async (_command, options) => {
+        forwardedTtl = options?.lateResultTtlMs;
+        return {requestId: null, commandId: createCommandId(), status: 'completed', actorResults: []};
+      },
+    };
+    const module = Object.freeze({
+      ...moduleFor('test.peer', [command]),
+      install: (context: Parameters<NonNullable<RuntimeModule['install']>>[0]) =>
+        context.installPeerDispatchGateway(gateway),
+    });
+    const runtime = createRuntime({
+      ...createTestRuntimeInput({modules: [module]}),
+      limits: {maxCommandDepth: 2, requestRetentionMs: 100, requestMaxResidenceMs: 130_000},
+    });
+    await runtime.start();
+
+    await runtime.dispatchCommand(
+      command,
+      {},
+      {
+        lateResultTtlMs: 500_000,
+        lateOutcome: () => undefined,
+      },
+    );
+
+    expect(forwardedTtl).toBe(130_000);
   });
 });

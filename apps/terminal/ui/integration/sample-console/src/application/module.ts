@@ -232,6 +232,7 @@ export const createSampleConsoleModule = (surfaceForm: SurfaceForm): RuntimeModu
         await context.dispatchCommand(
           showScreenCommand,
           {
+            workspace: route.workspace,
             displayMode: route.displayMode,
             containerKey: 'main',
             partKey,

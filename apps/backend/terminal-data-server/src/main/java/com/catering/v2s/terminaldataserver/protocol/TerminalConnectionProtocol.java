@@ -76,10 +76,9 @@ public final class TerminalConnectionProtocol {
         }
         if (loadedMessages.isEmpty()) throw invalidContract("messages are empty");
         messages = Map.copyOf(loadedMessages);
-        if (!TerminalConnectionMessages.fieldNamesByType().equals(messages.entrySet().stream()
-                .collect(java.util.stream.Collectors.toUnmodifiableMap(
-                        Map.Entry::getKey,
-                        entry -> {
+        if (!TerminalConnectionMessages.fieldNamesByType()
+                .equals(messages.entrySet().stream()
+                        .collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> {
                             Set<String> fields = new HashSet<>(entry.getValue().fieldNames());
                             fields.add("type");
                             return Set.copyOf(fields);

@@ -14,13 +14,15 @@ import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPer
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.CommercialGroupReadback;
+import com.catering.v2s.organization.api.OperationsOrganizationHierarchyCommandApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.organization.api.OrganizationNodeReadback;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
+import com.catering.v2s.organization.application.persistence.OrganizationTerminalTopicSnapshotPersistence;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
-import com.catering.v2s.organization.application.persistence.OrganizationTerminalTopicSnapshotPersistence;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.time.Instant;
@@ -29,15 +31,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import org.postgresql.PGConnection;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.postgresql.PGConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -258,7 +259,9 @@ class OrganizationOwnerServiceTest {
             assertTrue(firstLocked.await(5, TimeUnit.SECONDS), "first transaction acquired the scope lock");
 
             Future<?> second = executor.submit(() -> transactions.executeWithoutResult(status -> {
-                db.queryForObject("SELECT set_config('application_name', ?, true)", String.class,
+                db.queryForObject(
+                        "SELECT set_config('application_name', ?, true)",
+                        String.class,
                         "tdp_topic_collection_waiter_" + suffix);
                 secondStarted.countDown();
                 topics.lockAreaCollection(workspaceId, "organization-test", storeRef);
@@ -266,7 +269,8 @@ class OrganizationOwnerServiceTest {
                 topics.refreshAreaCollection(workspaceId, "organization-test", storeRef, NOW + 2);
             }));
             assertTrue(secondStarted.await(5, TimeUnit.SECONDS), "second transaction reached the lock call");
-            assertTrue(awaitAdvisoryLockWaiter("tdp_topic_collection_waiter_" + suffix),
+            assertTrue(
+                    awaitAdvisoryLockWaiter("tdp_topic_collection_waiter_" + suffix),
                     "second transaction is blocked on the same PostgreSQL advisory lock");
 
             releaseFirst.countDown();
@@ -278,13 +282,15 @@ class OrganizationOwnerServiceTest {
             assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS), "concurrency test workers terminated");
         }
 
-        assertEquals(2, db.queryForObject(
-                "SELECT count(*) FROM organization.store_service_point_area WHERE workspace_uuid=? "
-                        + "AND group_workspace_key=? AND store_ref=? AND status='ENABLED'",
-                Integer.class,
-                workspaceId,
-                "organization-test",
-                storeRef));
+        assertEquals(
+                2,
+                db.queryForObject(
+                        "SELECT count(*) FROM organization.store_service_point_area WHERE workspace_uuid=? "
+                                + "AND group_workspace_key=? AND store_ref=? AND status='ENABLED'",
+                        Integer.class,
+                        workspaceId,
+                        "organization-test",
+                        storeRef));
         String actualHash = db.queryForObject(
                 "SELECT collection_hash FROM organization.terminal_topic_snapshot WHERE workspace_uuid=? "
                         + "AND group_workspace_key=? AND store_ref=? AND topic_key='SERVICE_POINT_AREA_COLLECTION'",
@@ -293,7 +299,8 @@ class OrganizationOwnerServiceTest {
                 "organization-test",
                 storeRef);
         String expectedHash = db.queryForObject(
-                "SELECT encode(sha256(convert_to(coalesce(string_agg(area_ref::text, E'\\n' ORDER BY area_ref::text), ''), 'UTF8')), 'hex') "
+                "SELECT encode(sha256(convert_to(coalesce(string_agg(area_ref::text, E'\\n' "
+                        + "ORDER BY area_ref::text), ''), 'UTF8')), 'hex') "
                         + "FROM organization.store_service_point_area WHERE workspace_uuid=? AND group_workspace_key=? "
                         + "AND store_ref=? AND status='ENABLED'",
                 String.class,
@@ -301,13 +308,19 @@ class OrganizationOwnerServiceTest {
                 "organization-test",
                 storeRef);
         assertEquals(expectedHash, actualHash, "the final snapshot includes both serialized committed members");
-        assertEquals(NOW + 2, db.queryForObject(
-                "SELECT topic_time_epoch_millis FROM organization.terminal_topic_snapshot WHERE workspace_uuid=? "
-                        + "AND group_workspace_key=? AND store_ref=? AND topic_key='SERVICE_POINT_AREA_COLLECTION'",
-                Long.class,
-                workspaceId,
-                "organization-test",
-                storeRef));
+        assertEquals(
+                NOW + 2,
+                db.queryForObject(
+                        """
+                        SELECT topic_time_epoch_millis
+                        FROM organization.terminal_topic_snapshot
+                        WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=?
+                          AND topic_key='SERVICE_POINT_AREA_COLLECTION'
+                        """,
+                        Long.class,
+                        workspaceId,
+                        "organization-test",
+                        storeRef));
     }
 
     @Test
@@ -315,17 +328,13 @@ class OrganizationOwnerServiceTest {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         UUID storeRef = createTerminalTopicTestStore(suffix);
 
-        try (Connection listener = dataSource.getConnection(); Statement statement = listener.createStatement()) {
+        try (Connection listener = dataSource.getConnection();
+                Statement statement = listener.createStatement()) {
             statement.execute("LISTEN terminal_binding_events");
 
             var current = entities.requireEntity("STORE", workspaceId, "organization-test", storeRef);
             var transitioned = entities.transitionEntityStatus(
-                    "STORE",
-                    workspaceId,
-                    "organization-test",
-                    storeRef,
-                    "DISABLED",
-                    current.version());
+                    "STORE", workspaceId, "organization-test", storeRef, "DISABLED", current.version());
             assertEquals("DISABLED", transitioned.status());
 
             statement.executeQuery("SELECT 1").close();
@@ -358,41 +367,53 @@ class OrganizationOwnerServiceTest {
 
         var topics = new OrganizationTerminalTopicSnapshotPersistence(db);
         var transactions = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
-        try (Connection listener = dataSource.getConnection(); Statement statement = listener.createStatement()) {
+        try (Connection listener = dataSource.getConnection();
+                Statement statement = listener.createStatement()) {
             statement.execute("LISTEN terminal_binding_events");
             statement.execute("SELECT pg_notify('terminal_binding_events', 'rollback-control')");
             statement.executeQuery("SELECT 1").close();
             PGConnection pgConnection = listener.unwrap(PGConnection.class);
             var controlNotifications = pgConnection.getNotifications();
-            assertTrue(controlNotifications != null && controlNotifications.length == 1,
+            assertTrue(
+                    controlNotifications != null && controlNotifications.length == 1,
                     "listener receives the committed control event");
             assertEquals("rollback-control", controlNotifications[0].getParameter());
 
-            assertThrows(IllegalStateException.class, () -> transactions.executeWithoutResult(status -> {
-                topics.lockAreaCollection(workspaceId, "organization-test", storeRef);
-                insertTopicTestArea(db, storeRef, suffix + "-rollback", NOW + 3);
-                topics.refreshAreaCollection(workspaceId, "organization-test", storeRef, NOW + 3);
-                throw new IllegalStateException("rollback owner mutation");
-            }));
+            assertThrows(
+                    IllegalStateException.class,
+                    () -> transactions.executeWithoutResult(status -> {
+                        topics.lockAreaCollection(workspaceId, "organization-test", storeRef);
+                        insertTopicTestArea(db, storeRef, suffix + "-rollback", NOW + 3);
+                        topics.refreshAreaCollection(workspaceId, "organization-test", storeRef, NOW + 3);
+                        throw new IllegalStateException("rollback owner mutation");
+                    }));
 
-            assertEquals(0, db.queryForObject(
-                    "SELECT count(*) FROM organization.store_service_point_area WHERE workspace_uuid=? "
-                            + "AND group_workspace_key=? AND store_ref=? AND code=?",
-                    Integer.class,
-                    workspaceId,
-                    "organization-test",
-                    storeRef,
-                    suffix + "-rollback"));
-            assertEquals(0, db.queryForObject(
-                    "SELECT count(*) FROM organization.terminal_topic_snapshot WHERE workspace_uuid=? "
-                            + "AND group_workspace_key=? AND store_ref=? AND topic_key='SERVICE_POINT_AREA_COLLECTION'",
-                    Integer.class,
-                    workspaceId,
-                    "organization-test",
-                    storeRef));
+            assertEquals(
+                    0,
+                    db.queryForObject(
+                            "SELECT count(*) FROM organization.store_service_point_area WHERE workspace_uuid=? "
+                                    + "AND group_workspace_key=? AND store_ref=? AND code=?",
+                            Integer.class,
+                            workspaceId,
+                            "organization-test",
+                            storeRef,
+                            suffix + "-rollback"));
+            assertEquals(
+                    0,
+                    db.queryForObject(
+                            """
+                            SELECT count(*) FROM organization.terminal_topic_snapshot
+                            WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=?
+                              AND topic_key='SERVICE_POINT_AREA_COLLECTION'
+                            """,
+                            Integer.class,
+                            workspaceId,
+                            "organization-test",
+                            storeRef));
             statement.executeQuery("SELECT 1").close();
             var notifications = pgConnection.getNotifications();
-            assertTrue(notifications == null || notifications.length == 0,
+            assertTrue(
+                    notifications == null || notifications.length == 0,
                     "rolled-back topic wake-ups are not visible to listeners");
         }
     }
@@ -980,7 +1001,7 @@ class OrganizationOwnerServiceTest {
     }
 
     @Test
-    void hierarchyWritesBindTheirOwnerGrantBeforeReceiptReplay() {
+    void hierarchyWritesBindTheirOwnerGrantBeforeReceiptReplay() throws Exception {
         UUID groupId = UUID.randomUUID();
         OrganizationHierarchyService ownerHierarchy = new OrganizationHierarchyService(
                 jdbc(),
@@ -1018,16 +1039,32 @@ class OrganizationOwnerServiceTest {
                 "GROUP",
                 groupId,
                 List.of(groupId));
-        var region = ownerHierarchy.createRegion(
+        var regionCommand = new OperationsOrganizationHierarchyCommandApi.CreateRegionCommand(
                 workspaceId,
                 "organization-test",
                 "GRANT-R",
                 "Grant region",
                 null,
-                Map.of(),
+                new com.catering.v2s.extension.api.ExtensionSubmission(List.of()),
                 "organization-hierarchy-grant-0001",
                 actor,
                 groupGrant);
+        OrganizationNodeReadback region;
+        try (Connection listener = dataSource.getConnection();
+                Statement statement = listener.createStatement()) {
+            statement.execute("LISTEN terminal_binding_events");
+            region = ownerHierarchy.createRegion(regionCommand);
+            statement.executeQuery("SELECT 1").close();
+            var createNotifications = listener.unwrap(PGConnection.class).getNotifications();
+            assertEquals(1, createNotifications.length, "typed region creation publishes one topic notification");
+            assertTrue(createNotifications[0].getParameter().contains("\"topicKey\": \"REGION\""));
+            ownerHierarchy.createRegion(regionCommand);
+            statement.executeQuery("SELECT 1").close();
+            var replayNotifications = listener.unwrap(PGConnection.class).getNotifications();
+            assertTrue(
+                    replayNotifications == null || replayNotifications.length == 0,
+                    "replaying the typed region receipt does not publish a duplicate topic notification");
+        }
         var wrongGroupGrant = new OperationsOwnerScopeGrant(
                 workspaceId,
                 "organization-test",
@@ -1073,7 +1110,7 @@ class OrganizationOwnerServiceTest {
                 "REGION",
                 region.id(),
                 List.of(groupId, region.id()));
-        var project = ownerHierarchy.createProject(
+        var projectCommand = new OperationsOrganizationHierarchyCommandApi.CreateProjectCommand(
                 workspaceId,
                 "organization-test",
                 region.id(),
@@ -1081,10 +1118,26 @@ class OrganizationOwnerServiceTest {
                 "Grant project",
                 null,
                 List.of("Phase"),
-                Map.of(),
+                new com.catering.v2s.extension.api.ExtensionSubmission(List.of()),
                 "organization-hierarchy-grant-0002",
                 actor,
                 regionGrant);
+        OrganizationNodeReadback project;
+        try (Connection listener = dataSource.getConnection();
+                Statement statement = listener.createStatement()) {
+            statement.execute("LISTEN terminal_binding_events");
+            project = ownerHierarchy.createProject(projectCommand);
+            statement.executeQuery("SELECT 1").close();
+            var createNotifications = listener.unwrap(PGConnection.class).getNotifications();
+            assertEquals(1, createNotifications.length, "typed project creation publishes one topic notification");
+            assertTrue(createNotifications[0].getParameter().contains("\"topicKey\": \"PROJECT\""));
+            ownerHierarchy.createProject(projectCommand);
+            statement.executeQuery("SELECT 1").close();
+            var replayNotifications = listener.unwrap(PGConnection.class).getNotifications();
+            assertTrue(
+                    replayNotifications == null || replayNotifications.length == 0,
+                    "replaying the typed project receipt does not publish a duplicate topic notification");
+        }
         var updateGrant = new OperationsOwnerScopeGrant(
                 workspaceId,
                 "organization-test",
@@ -1167,8 +1220,8 @@ class OrganizationOwnerServiceTest {
     @Test
     void hierarchyUpdateOnlyRewritesProjectPhasesWhenFactsChange() {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
-        var region = hierarchy.createRegion(
-                workspaceId, "organization-test", "CP10-PHASE-R-" + suffix, "CP10 phase region");
+        var region =
+                hierarchy.createRegion(workspaceId, "organization-test", "CP10-PHASE-R-" + suffix, "CP10 phase region");
         var project = hierarchy.create(
                 workspaceId,
                 "organization-test",
@@ -1601,8 +1654,7 @@ class OrganizationOwnerServiceTest {
 
     @Test
     void hierarchyPageKeepsItsPredicateCountAndAncestryInsideTheHierarchyOwner() {
-        var region =
-                hierarchy.createRegion(workspaceId, "organization-test", "CANONICAL-R", "Canonical region");
+        var region = hierarchy.createRegion(workspaceId, "organization-test", "CANONICAL-R", "Canonical region");
         var project = hierarchy.create(
                 workspaceId, "organization-test", "PROJECT", region.id(), "CANONICAL-P", "Canonical project");
         hierarchy.replaceProjectPhaseNames(
@@ -2083,22 +2135,17 @@ class OrganizationOwnerServiceTest {
                 "91310000HEAD" + suffix,
                 Map.of());
         entities.addHeadCompanyBrandAuthorization(
-                workspaceId,
-                "organization-test",
-                head.id(),
-                brand.id(),
-                "topic-auth-" + suffix,
-                AuditActor.system());
+                workspaceId, "organization-test", head.id(), brand.id(), "topic-auth-" + suffix, AuditActor.system());
         return entities.createStore(
-                workspaceId,
-                "organization-test",
-                project.id(),
-                tenant.id(),
-                brand.id(),
-                head.id(),
-                "topic-store-" + suffix,
-                "Topic store " + suffix,
-                Map.of("floorArea", "10"))
+                        workspaceId,
+                        "organization-test",
+                        project.id(),
+                        tenant.id(),
+                        brand.id(),
+                        head.id(),
+                        "topic-store-" + suffix,
+                        "Topic store " + suffix,
+                        Map.of("floorArea", "10"))
                 .id();
     }
 
@@ -2131,11 +2178,11 @@ class OrganizationOwnerServiceTest {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
         while (System.nanoTime() < deadline) {
             Integer waiters = jdbc().queryForObject(
-                    "SELECT count(*) FROM pg_stat_activity activity JOIN pg_locks lock "
-                            + "ON lock.pid=activity.pid WHERE activity.application_name=? "
-                            + "AND lock.locktype='advisory' AND NOT lock.granted",
-                    Integer.class,
-                    applicationName);
+                            "SELECT count(*) FROM pg_stat_activity activity JOIN pg_locks lock "
+                                    + "ON lock.pid=activity.pid WHERE activity.application_name=? "
+                                    + "AND lock.locktype='advisory' AND NOT lock.granted",
+                            Integer.class,
+                            applicationName);
             if (waiters != null && waiters > 0) return true;
             Thread.sleep(10);
         }

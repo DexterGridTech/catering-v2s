@@ -2,9 +2,9 @@ package com.catering.v2s.terminalcontrol.application;
 
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.ClaimedOperation;
-import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.InvokeOnlineCommand;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.InvocationOutcome;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.InvocationResult;
+import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.InvokeOnlineCommand;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.OperationView;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.ReportAcceptance;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.TerminalReport;
@@ -48,7 +48,9 @@ public class TerminalControlOwnerService implements TerminalControlOwnerApi {
         OperationView previous = persistence.readOperation(command.operationId());
         if (previous != null) {
             return new InvocationResult(
-                    sameOperation(previous, command) ? InvocationOutcome.ALREADY_EXISTS : InvocationOutcome.IDENTITY_CONFLICT,
+                    sameOperation(previous, command)
+                            ? InvocationOutcome.ALREADY_EXISTS
+                            : InvocationOutcome.IDENTITY_CONFLICT,
                     previous);
         }
 
@@ -106,7 +108,9 @@ public class TerminalControlOwnerService implements TerminalControlOwnerApi {
         OperationView current = persistence.readOperation(command.operationId());
         if (current == null) throw new IllegalStateException("TERMINAL_OPERATION_INSERT_READBACK_MISSING");
         return new InvocationResult(
-                sameOperation(current, command) ? InvocationOutcome.ALREADY_EXISTS : InvocationOutcome.IDENTITY_CONFLICT,
+                sameOperation(current, command)
+                        ? InvocationOutcome.ALREADY_EXISTS
+                        : InvocationOutcome.IDENTITY_CONFLICT,
                 current);
     }
 

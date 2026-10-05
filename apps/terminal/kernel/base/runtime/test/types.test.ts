@@ -40,6 +40,7 @@ describe('runtime type and public-shape boundaries', () => {
       'localNodeId',
       'platformPorts',
       'descriptors',
+      'requestMaxResidenceMs',
       'getState',
       'flushPersistence',
       'subscribeState',
@@ -62,7 +63,7 @@ describe('runtime type and public-shape boundaries', () => {
       'dispatchCommand',
       'requestApplicationReset',
     ];
-    expect(new Set(moduleKeys).size).toBe(12);
+    expect(new Set(moduleKeys).size).toBe(13);
     expect(new Set(actorKeys).size).toBe(11);
     expect(moduleKeys).not.toContain('requestApplicationReset' as never);
     expect(actorKeys).not.toContain('installPeerDispatchGateway' as never);

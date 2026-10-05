@@ -6,8 +6,8 @@ import type {
   OrganizationStore,
   OrganizationStoreOperatingRuleValues,
   StoreContract,
-  StoreServicePoint,
-  StoreServicePointArea,
+  TerminalServicePointData,
+  TerminalServicePointAreaData,
   TerminalStoreOrganizationPathRead,
   TerminalTopicKey,
 } from '@catering-v2s/kernel-base-terminal-data-client';
@@ -51,8 +51,8 @@ const setOrganizationPath = createAction<TerminalStoreOrganizationPathRead>(
 const setActiveContracts = createAction<StoreFact<readonly StoreContract[]>>(
   `${storeBasicSliceName}/setActiveContracts`,
 );
-const setAreas = createAction<StoreFact<readonly StoreServicePointArea[]>>(`${storeBasicSliceName}/setAreas`);
-const setServicePoints = createAction<StoreFact<readonly StoreServicePoint[]>>(
+const setAreas = createAction<StoreFact<readonly TerminalServicePointAreaData[]>>(`${storeBasicSliceName}/setAreas`);
+const setServicePoints = createAction<StoreFact<readonly TerminalServicePointData[]>>(
   `${storeBasicSliceName}/setServicePoints`,
 );
 const reset = createAction(`${storeBasicSliceName}/reset`);
@@ -82,8 +82,7 @@ export const storeBasicReducer = (
     return Object.freeze({
       ...state,
       readStates: readStatesFor(state, action.payload.topicKey, action.payload.status),
-      failures:
-        action.payload.status === 'loaded' ? failuresFor(state, action.payload.topicKey, null) : state.failures,
+      failures: action.payload.status === 'loaded' ? failuresFor(state, action.payload.topicKey, null) : state.failures,
     });
   if (setFailure.match(action))
     return Object.freeze({...state, failures: failuresFor(state, action.payload.topicKey, action.payload.errorCode)});

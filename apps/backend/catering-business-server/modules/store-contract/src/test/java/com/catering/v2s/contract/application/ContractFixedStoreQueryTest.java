@@ -1,6 +1,9 @@
 package com.catering.v2s.contract.application;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import java.time.Instant;
@@ -73,6 +76,23 @@ class ContractFixedStoreQueryTest {
                 1,
                 20);
         assertEquals(1, occurrences(jdbc.countSql, "c.status='INVALID'"));
+    }
+
+    @Test
+    void terminalCollectionUsesPersistedActiveStatusWithoutCalendarPredicates() {
+        var jdbc = new RecordingJdbcTemplate();
+        var service = new ContractTaskReadService(jdbc, null);
+        UUID workspaceId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+
+        service.activeTerminalStoreContracts(workspaceId, "workspace-a", storeId);
+
+        assertTrue(jdbc.pageSql.contains("c.status='ACTIVE'"));
+        assertTrue(jdbc.pageSql.endsWith("ORDER BY c.id"));
+        String whereClause = jdbc.pageSql.substring(jdbc.pageSql.indexOf(" WHERE "), jdbc.pageSql.indexOf(" ORDER BY"));
+        assertFalse(whereClause.contains("effective_from"));
+        assertFalse(whereClause.contains("effective_to"));
+        assertArrayEquals(new Object[] {workspaceId, "workspace-a", storeId}, jdbc.pageArgs);
     }
 
     private static int occurrences(String value, String token) {

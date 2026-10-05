@@ -1,5 +1,9 @@
 package com.catering.v2s.terminalcontrol.application;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -7,8 +11,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.InvokeOnlineCommand;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.InvocationOutcome;
+import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.InvokeOnlineCommand;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.OperationStatus;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.OperationView;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.PersistenceUnavailableException;
@@ -19,13 +23,9 @@ import com.catering.v2s.terminalcontrol.persistence.TerminalControlPersistence.O
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.UUID;
-import org.springframework.dao.DataAccessResourceFailureException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.springframework.dao.DataAccessResourceFailureException;
 
 class TerminalControlOwnerServiceTest {
     private final TerminalControlPersistence persistence = mock(TerminalControlPersistence.class);
@@ -44,7 +44,13 @@ class TerminalControlOwnerServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         command = new InvokeOnlineCommand(
-                operationId, requestId, "mixc", terminalRef, 3, "helloWorld", mapper.readTree("{\"greeting\":\"hello\"}"));
+                operationId,
+                requestId,
+                "mixc",
+                terminalRef,
+                3,
+                "helloWorld",
+                mapper.readTree("{\"greeting\":\"hello\"}"));
         binding = new BindingTarget(workspaceUuid, storeRef);
         session = new OnlineSession("tds-1", "session-1", 12);
     }
@@ -87,7 +93,12 @@ class TerminalControlOwnerServiceTest {
     @Test
     void rejectsOversizedWireCommandBeforeReadingBindingOrWritingIntent() throws Exception {
         var oversized = new InvokeOnlineCommand(
-                operationId, requestId, "mixc", terminalRef, 3, "helloWorld",
+                operationId,
+                requestId,
+                "mixc",
+                terminalRef,
+                3,
+                "helloWorld",
                 mapper.readTree("{\"large\":\"" + "x".repeat(66_000) + "\"}"));
 
         var result = service.invokeOnline(oversized);
@@ -118,8 +129,8 @@ class TerminalControlOwnerServiceTest {
         when(persistence.insertQueued(command, binding, session))
                 .thenThrow(new DataAccessResourceFailureException("database unavailable"));
 
-        PersistenceUnavailableException failure = assertThrows(
-                PersistenceUnavailableException.class, () -> service.invokeOnline(command));
+        PersistenceUnavailableException failure =
+                assertThrows(PersistenceUnavailableException.class, () -> service.invokeOnline(command));
 
         assertEquals(PersistenceUnavailableException.CODE, failure.getMessage());
         verify(persistence, never()).notifyTarget(operationId);
@@ -130,8 +141,8 @@ class TerminalControlOwnerServiceTest {
         when(persistence.readOperation(operationId))
                 .thenThrow(new DataAccessResourceFailureException("database unavailable"));
 
-        PersistenceUnavailableException failure = assertThrows(
-                PersistenceUnavailableException.class, () -> service.readOperation(operationId));
+        PersistenceUnavailableException failure =
+                assertThrows(PersistenceUnavailableException.class, () -> service.readOperation(operationId));
 
         assertEquals(PersistenceUnavailableException.CODE, failure.getMessage());
     }
@@ -139,19 +150,41 @@ class TerminalControlOwnerServiceTest {
     @Test
     void resultPersistenceFailureDoesNotReturnAnAcknowledgement() throws Exception {
         TerminalReport report = new TerminalReport(
-                UUID.randomUUID(), operationId, requestId, 3, "tds-1", "session-1", OperationStatus.COMPLETED,
-                Instant.parse("2026-10-05T00:00:00Z"), mapper.readTree("{\"done\":true}"), null);
+                UUID.randomUUID(),
+                operationId,
+                requestId,
+                3,
+                "tds-1",
+                "session-1",
+                OperationStatus.COMPLETED,
+                Instant.parse("2026-10-05T00:00:00Z"),
+                mapper.readTree("{\"done\":true}"),
+                null);
         when(persistence.accept(report)).thenThrow(new DataAccessResourceFailureException("database unavailable"));
 
-        PersistenceUnavailableException failure = assertThrows(
-                PersistenceUnavailableException.class, () -> service.acceptTerminalReport(report));
+        PersistenceUnavailableException failure =
+                assertThrows(PersistenceUnavailableException.class, () -> service.acceptTerminalReport(report));
 
         assertEquals(PersistenceUnavailableException.CODE, failure.getMessage());
     }
 
     private OperationView operation(OperationStatus status, String nodeId, String sessionId) {
-        return new OperationView(operationId, requestId, workspaceUuid, "mixc", storeRef, terminalRef, 3,
-                nodeId, sessionId, status, "helloWorld", command.parameters(), null, null,
-                Instant.parse("2026-10-04T12:00:00Z"), Instant.parse("2026-10-04T12:00:00Z"));
+        return new OperationView(
+                operationId,
+                requestId,
+                workspaceUuid,
+                "mixc",
+                storeRef,
+                terminalRef,
+                3,
+                nodeId,
+                sessionId,
+                status,
+                "helloWorld",
+                command.parameters(),
+                null,
+                null,
+                Instant.parse("2026-10-04T12:00:00Z"),
+                Instant.parse("2026-10-04T12:00:00Z"));
     }
 }

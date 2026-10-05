@@ -1,7 +1,7 @@
 package com.catering.v2s.terminaldataserver.session;
 
-import com.catering.v2s.terminaldataserver.observability.TdsAsyncLog;
 import com.catering.v2s.terminaldataserver.config.TdsRuntimeSettings;
+import com.catering.v2s.terminaldataserver.observability.TdsAsyncLog;
 import com.catering.v2s.terminaldataserver.remote.TdsTerminalControlRepository;
 import com.catering.v2s.terminaldataserver.remote.TdsTerminalControlRepository.ClaimedOperation;
 import com.catering.v2s.terminaldataserver.state.TdsConnectionStateRepository;
@@ -22,8 +22,8 @@ import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.server.context.WebServerApplicationContext;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
@@ -156,10 +156,10 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
 
     private void logListenerFailure(String stage, Throwable failure, int backendPid) {
         String candidateFailureType = failure.getClass().getSimpleName();
-        String failureType = candidateFailureType != null
-                        && candidateFailureType.matches("[A-Za-z_$][A-Za-z0-9_$]{0,63}")
-                ? candidateFailureType
-                : "UNKNOWN";
+        String failureType =
+                candidateFailureType != null && candidateFailureType.matches("[A-Za-z_$][A-Za-z0-9_$]{0,63}")
+                        ? candidateFailureType
+                        : "UNKNOWN";
         TdsAsyncLog.enqueue(
                 logScheduler,
                 () -> LOGGER.warn(
@@ -276,8 +276,15 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
             return;
         }
         boolean accepted = terminalControlRepository.report(
-                UUID.randomUUID(), operation.operationId(), operation.requestId(), operation.bindingGeneration(),
-                operation.targetSessionId(), runtimeSettings.nodeId(), "FAILED", java.time.Instant.now(), null,
+                UUID.randomUUID(),
+                operation.operationId(),
+                operation.requestId(),
+                operation.bindingGeneration(),
+                operation.targetSessionId(),
+                runtimeSettings.nodeId(),
+                "FAILED",
+                java.time.Instant.now(),
+                null,
                 "TDS_TARGET_SESSION_UNAVAILABLE");
         logRemoteOperation(operationId, accepted ? "FAILED_NO_ACTIVE_SOCKET" : "FAILURE_REPORT_REJECTED");
     }
@@ -331,7 +338,8 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
                     canonicalUuid(node, "ownerRef"));
         }
         JsonNode terminal = node.get("terminalRef");
-        if (terminal == null || !terminal.isString()) throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID");
+        if (terminal == null || !terminal.isString())
+            throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID");
         try {
             UUID terminalRef = UUID.fromString(terminal.asString());
             if (!terminalRef.toString().equals(terminal.asString())) {
@@ -359,7 +367,10 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
 
     private static String requiredText(JsonNode node, String field, int maxLength) {
         JsonNode value = node.get(field);
-        if (value == null || !value.isString() || value.asString().isBlank() || value.asString().length() > maxLength) {
+        if (value == null
+                || !value.isString()
+                || value.asString().isBlank()
+                || value.asString().length() > maxLength) {
             throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID");
         }
         return value.asString();
@@ -369,7 +380,8 @@ public final class TdsBindingRevocationListener implements SmartLifecycle {
         String value = requiredText(node, field, 36);
         try {
             UUID parsed = UUID.fromString(value);
-            if (!parsed.toString().equals(value)) throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID");
+            if (!parsed.toString().equals(value))
+                throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID");
             return parsed;
         } catch (IllegalArgumentException malformed) {
             throw new IllegalArgumentException("TDS_NOTIFICATION_PAYLOAD_INVALID", malformed);

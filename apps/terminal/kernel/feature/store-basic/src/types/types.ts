@@ -2,8 +2,8 @@ import type {
   OrganizationStore,
   OrganizationStoreOperatingRuleValues,
   StoreContract,
-  StoreServicePoint,
-  StoreServicePointArea,
+  TerminalServicePointData,
+  TerminalServicePointAreaData,
   TerminalStoreOrganizationPathRead,
 } from '@catering-v2s/kernel-base-terminal-data-client';
 
@@ -25,8 +25,8 @@ export type StoreBasicState = Readonly<{
   operatingRules: StoreFact<OrganizationStoreOperatingRuleValues> | null;
   organizationPath: TerminalStoreOrganizationPathRead | null;
   activeContracts: StoreFact<readonly StoreContract[]> | null;
-  areas: StoreFact<readonly StoreServicePointArea[]> | null;
-  servicePoints: StoreFact<readonly StoreServicePoint[]> | null;
+  areas: StoreFact<readonly TerminalServicePointAreaData[]> | null;
+  servicePoints: StoreFact<readonly TerminalServicePointData[]> | null;
   readStates: StoreBasicReadStates;
   failures: StoreBasicFailures;
 }>;

@@ -262,7 +262,10 @@ export const createTransportConnectionOwner = (
       if (event.type === 'open') return;
       publish(profile.profileId, event);
     });
-    publish(profile.profileId, Object.freeze({type: 'open', addressName: address.addressName, configRevision: snapshot.revision}));
+    publish(
+      profile.profileId,
+      Object.freeze({type: 'open', addressName: address.addressName, configRevision: snapshot.revision}),
+    );
     const readyToken = ++profile.attemptToken;
     profile.readyTimer = schedule(profile.reconnectPolicy.readyTimeoutMs, () =>
       input.dispatchInternal('ready-timeout', profile.profileId, readyToken),
@@ -558,7 +561,15 @@ export const createTransportConnectionOwner = (
           bucket.add(listener);
           listeners.set(profileId, bucket);
           if (profileForConnection.connection !== undefined && profileForConnection.currentAddress !== undefined) {
-            listener(Object.freeze({type: 'open', addressName: profileForConnection.currentAddress.addressName}));
+            listener(
+              Object.freeze({
+                type: 'open',
+                addressName: profileForConnection.currentAddress.addressName,
+                ...(profileForConnection.snapshotRevision === undefined
+                  ? {}
+                  : {configRevision: profileForConnection.snapshotRevision}),
+              }),
+            );
           }
           return () => {
             bucket.delete(listener);

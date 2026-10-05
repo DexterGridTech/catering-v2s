@@ -72,6 +72,7 @@ type NormalizedShowPayload = Readonly<{
   displayMode: DisplayMode;
   containerKey: string;
   partKey: string;
+  workspace?: WorkspaceKey;
   instanceId?: string;
   props?: StateJsonValue;
 }>;
@@ -82,6 +83,10 @@ const normalizeShowPayload = (value: unknown): NormalizedShowPayload => {
   const displayMode = requireDisplayMode(record.displayMode, commandName);
   const containerKey = requireString(record, 'containerKey', commandName);
   const partKey = requireString(record, 'partKey', commandName);
+  const workspace = record.workspace;
+  if (workspace !== undefined && workspace !== 'MAIN' && workspace !== 'BRANCH') {
+    throw new Error(`[ui-state] ${commandName}.workspace must be MAIN or BRANCH`);
+  }
   const instanceId = record.instanceId;
   if (instanceId !== undefined && (typeof instanceId !== 'string' || instanceId.trim().length === 0)) {
     throw new Error(`[ui-state] ${commandName}.instanceId must be non-empty when provided`);
@@ -91,6 +96,7 @@ const normalizeShowPayload = (value: unknown): NormalizedShowPayload => {
     displayMode,
     containerKey,
     partKey,
+    ...(workspace === undefined ? {} : {workspace}),
     ...(instanceId === undefined ? {} : {instanceId}),
     ...(props === undefined ? {} : {props}),
   });
@@ -269,7 +275,7 @@ export const createShowScreenActor = (): ActorDefinition =>
       const payload = normalizeShowPayload(context.command.payload);
       return completeUiStateWrite(
         context,
-        dispatchContentAction(context, contentActions.showScreen(payload)),
+        dispatchContentAction(context, contentActions.showScreen(payload), payload.workspace),
         'content',
       );
     }),

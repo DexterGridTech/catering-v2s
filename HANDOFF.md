@@ -6,6 +6,10 @@
 
 TER 已裁定延期的外部/仓外能力边界登记如下；这些行只记录事实与触发条件，不授权后续实施。
 
+### TER 更新方案的发布信任边界（需求阶段，未实施）
+
+`doc/plans/platform/2026-10-05-ter-version-and-js-apk-update-formal-requirements-claude.md` R-03/§0.1 不引入独立 HOT 代码签名/PKI。下载摘要与可信授权通路可以发现传输损坏、关联指定内容，但不能抵御发布服务及包/规则管理权限被攻破后一起替换目标与摘要；HOT JS 因而仍信任获授权的发布链。APK 系统签名校验不能替代 HOT 的独立发布者认证。这是明确的残余信任边界，不是当前已有更新器的漏洞结论，也不要求本期追加签名平台。未来若 Dexter 改变发布威胁模型、授权独立 HOT 发布者认证，须单独做 decision/设计，并证明签名、信任根、撤销及离线校验；本段不扩展既有表的固定 activation token 或授予实施权。
+
 | id | currentBoundary | deferredReason | risk | activationTrigger | futureAcceptanceEvidence | decisionSource |
 |---|---|---|---|---|---|---|
 | TER_TOPOLOGY_PAIRING_TRUST | 当前 pairing locator 使用 activation token 形态，不做认证或授信握手 | 双机样例范围明确不做认证；token 不是身份授信 | 恶意网络环境不能依赖该样例拓扑提供信任 | TOPOLOGY_AUTHENTICATION_AUTHORIZED | 明确认证协议、凭据生命周期、重放/撤销与双设备证据 | `doc/plans/platform/2026-09-17-ter-dual-machine-topology-requirements-claude.md` §0.3 |

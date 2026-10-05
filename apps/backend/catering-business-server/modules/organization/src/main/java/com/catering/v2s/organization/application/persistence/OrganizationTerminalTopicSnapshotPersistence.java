@@ -6,9 +6,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.ResultSetExtractor;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 /** Owner-local persistence for terminal topic wake-ups and the two organization collection snapshots. */
 public final class OrganizationTerminalTopicSnapshotPersistence {
@@ -37,7 +37,8 @@ public final class OrganizationTerminalTopicSnapshotPersistence {
     public void initializeEmptyStoreCollections(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
         jdbc.update(
                 "INSERT INTO organization.terminal_topic_snapshot "
-                        + "(workspace_uuid, group_workspace_key, store_ref, topic_key, collection_hash, topic_time_epoch_millis) "
+                        + "(workspace_uuid, group_workspace_key, store_ref, topic_key, collection_hash, "
+                        + "topic_time_epoch_millis) "
                         + "VALUES (?, ?, ?, 'SERVICE_POINT_AREA_COLLECTION', ?, 0), "
                         + "(?, ?, ?, 'SERVICE_POINT_COLLECTION', ?, 0) ON CONFLICT DO NOTHING",
                 workspaceUuid,
@@ -50,13 +51,13 @@ public final class OrganizationTerminalTopicSnapshotPersistence {
                 EMPTY_HASH);
     }
 
-    public void notifyExact(
-            UUID workspaceUuid, String groupWorkspaceKey, String topicKey, UUID ownerRef) {
+    public void notifyExact(UUID workspaceUuid, String groupWorkspaceKey, String topicKey, UUID ownerRef) {
         jdbc.execute(
                 (PreparedStatementCreator) connection -> {
                     var statement = connection.prepareStatement(
                             "SELECT pg_notify(?, jsonb_build_object('v', 1, 'kind', 'TOPIC_CHANGED', "
-                                    + "'workspaceUuid', ?, 'groupWorkspaceKey', ?, 'topicKey', ?, 'ownerRef', ?)::text)");
+                                    + "'workspaceUuid', ?, 'groupWorkspaceKey', ?, 'topicKey', ?, "
+                                    + "'ownerRef', ?)::text)");
                     statement.setString(1, CHANNEL);
                     statement.setObject(2, workspaceUuid);
                     statement.setString(3, groupWorkspaceKey);
@@ -67,8 +68,7 @@ public final class OrganizationTerminalTopicSnapshotPersistence {
                 java.sql.PreparedStatement::execute);
     }
 
-    public void refreshAreaCollection(
-            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, long triggerTime) {
+    public void refreshAreaCollection(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, long triggerTime) {
         refreshCollection(
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -80,8 +80,7 @@ public final class OrganizationTerminalTopicSnapshotPersistence {
                 triggerTime);
     }
 
-    public void refreshPointCollection(
-            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, long triggerTime) {
+    public void refreshPointCollection(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, long triggerTime) {
         refreshCollection(
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -118,9 +117,7 @@ public final class OrganizationTerminalTopicSnapshotPersistence {
                     statement.setObject(3, storeRef);
                     statement.setString(4, topicKey);
                 },
-                result -> result.next()
-                        ? new Existing(result.getString(1), result.getLong(2))
-                        : null);
+                result -> result.next() ? new Existing(result.getString(1), result.getLong(2)) : null);
         if (existing != null && existing.collectionHash().equals(hash)) return;
 
         long topicTime;
@@ -134,8 +131,10 @@ public final class OrganizationTerminalTopicSnapshotPersistence {
 
         jdbc.update(
                 "INSERT INTO organization.terminal_topic_snapshot "
-                        + "(workspace_uuid, group_workspace_key, store_ref, topic_key, collection_hash, topic_time_epoch_millis) "
-                        + "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (workspace_uuid, group_workspace_key, store_ref, topic_key) "
+                        + "(workspace_uuid, group_workspace_key, store_ref, topic_key, collection_hash, "
+                        + "topic_time_epoch_millis) "
+                        + "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT "
+                        + "(workspace_uuid, group_workspace_key, store_ref, topic_key) "
                         + "DO UPDATE SET collection_hash = EXCLUDED.collection_hash, "
                         + "topic_time_epoch_millis = EXCLUDED.topic_time_epoch_millis",
                 workspaceUuid,

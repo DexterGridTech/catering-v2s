@@ -42,6 +42,11 @@ type PeerDispatcherDependencies = Readonly<{
 }>;
 
 const peerActorKey = 'kernel.base.runtime.peer-dispatch';
+type PeerOutcome = Readonly<{
+  status: 'completed' | 'timed-out' | 'error';
+  actorResults: readonly ActorExecutionRecord[];
+  error: LedgerError | null;
+}>;
 
 export const createCommandPeerDispatcher = (input: PeerDispatcherDependencies) => {
   const dispatchPeer = async <TPayload extends StateJsonValue>(
@@ -55,6 +60,15 @@ export const createCommandPeerDispatcher = (input: PeerDispatcherDependencies) =
     }>,
   ): Promise<ActorExecutionRecord> => {
     const {command, definition, lifecycleContext, observer, lateOutcome, lateResultTtlMs} = dispatchInput;
+    const lateResultExpiresAt = lateResultTtlMs === undefined ? undefined : command.dispatchedAt + lateResultTtlMs;
+    const lateResultRemainingMs =
+      lateResultTtlMs === undefined ? undefined : command.dispatchedAt + lateResultTtlMs - nowTimestampMs();
+    const activeLateOutcome =
+      lateResultRemainingMs !== undefined && lateResultRemainingMs > 0 ? lateOutcome : undefined;
+    const reportLateOutcome = (record: ActorExecutionRecord): void => {
+      if (lateResultExpiresAt === undefined || nowTimestampMs() >= lateResultExpiresAt) return;
+      activeLateOutcome?.(record);
+    };
     const startedAt = nowTimestampMs();
     const runningRecord = input.emitActorRunning(
       {
@@ -103,13 +117,25 @@ export const createCommandPeerDispatcher = (input: PeerDispatcherDependencies) =
         commandId: command.commandId,
         parentCommandId: command.parentCommandId,
         routeContext: command.routeContext,
-        ...(lateResultTtlMs === undefined ? {} : {lateResultTtlMs}),
-        ...(lateOutcome === undefined
+        ...(activeLateOutcome === undefined || lateResultRemainingMs === undefined
+          ? {}
+          : {lateResultTtlMs: lateResultRemainingMs}),
+        ...(activeLateOutcome === undefined
           ? {}
           : {
               onLateResult: (records: readonly ActorExecutionRecord[]) => {
+                if (records.length > 0)
+                  reportLateOutcome(
+                    Object.freeze({
+                      actorKey: peerActorKey,
+                      status: 'completed',
+                      startedAt,
+                      completedAt: nowTimestampMs(),
+                      result: {actorResults: records} as unknown as StateJsonValue,
+                      error: null,
+                    }),
+                  );
                 for (const record of records) {
-                  lateOutcome(record);
                   input.emit(
                     {
                       kind: record.status === 'completed' ? 'actor.late-completed' : 'actor.late-error',
@@ -126,31 +152,30 @@ export const createCommandPeerDispatcher = (input: PeerDispatcherDependencies) =
       })
       .then(result => {
         if (result.status === 'completed')
-          return {
-            status: 'completed' as const,
-            result: lateOutcome === undefined ? null : {actorResults: result.actorResults as unknown as StateJsonValue},
-            error: null,
-          };
-        if (result.status === 'timed-out') return {status: 'timed-out' as const, result: null, error: null};
+          return {status: 'completed', actorResults: result.actorResults, error: null} satisfies PeerOutcome;
+        if (result.status === 'timed-out')
+          return {status: 'timed-out', actorResults: result.actorResults, error: null} satisfies PeerOutcome;
         return {
-          status: 'error' as const,
-          result: null,
+          status: 'error',
+          actorResults: result.actorResults,
           error: input.toLedgerError(input.createPeerResultError(lifecycleContext)),
-        };
+        } satisfies PeerOutcome;
       })
-      .catch(error => ({status: 'error' as const, result: null, error: input.normalize(error, command)}));
+      .catch(
+        error => ({status: 'error', actorResults: [], error: input.normalize(error, command)}) satisfies PeerOutcome,
+      );
     let timedOutLocally = false;
     // See the local actor timer: the executor assigns this before the promise
     // is returned, so cleanup never needs an unreachable undefined branch.
     let timeoutHandle!: ReturnType<typeof setTimeout>;
-    const timeout = new Promise<Readonly<{status: 'timed-out'; result: null; error: null}>>(resolve => {
+    const timeout = new Promise<PeerOutcome>(resolve => {
       timeoutHandle = setTimeout(() => {
         timedOutLocally = true;
-        resolve({status: 'timed-out', result: null, error: null});
+        resolve({status: 'timed-out', actorResults: [], error: null});
       }, definition.timeoutMs);
     });
     const unregisterTimeout = input.registerResource?.(() => clearTimeout(timeoutHandle));
-    const outcome = await Promise.race([peerPromise, timeout]);
+    const outcome: PeerOutcome = await Promise.race([peerPromise, timeout]);
     clearTimeout(timeoutHandle);
     unregisterTimeout?.();
     const kind =
@@ -166,16 +191,42 @@ export const createCommandPeerDispatcher = (input: PeerDispatcherDependencies) =
         actorKey: peerActorKey,
         startedAt,
         completedAt: nowTimestampMs(),
-        result: null,
+        result:
+          outcome.actorResults.length === 0
+            ? null
+            : ({actorResults: outcome.actorResults} as unknown as StateJsonValue),
         error: outcome.error,
       },
       observer,
     );
+    const reportLatePeerResults = (actorResults: readonly ActorExecutionRecord[]): void => {
+      if (actorResults.length === 0) return;
+      reportLateOutcome(
+        Object.freeze({
+          actorKey: peerActorKey,
+          status: 'completed',
+          startedAt,
+          completedAt: nowTimestampMs(),
+          result: {actorResults} as unknown as StateJsonValue,
+          error: null,
+        }),
+      );
+    };
     if (timedOutLocally) {
-      if (lateOutcome === undefined) void peerGateway.cancelCommand?.(command.commandId).catch(() => undefined);
+      if (activeLateOutcome === undefined) void peerGateway.cancelCommand?.(command.commandId).catch(() => undefined);
       void peerPromise
-        .then(lateOutcome => {
-          if (lateOutcome.status === 'completed') {
+        .then(peerOutcome => {
+          if (peerOutcome.status === 'completed') {
+            reportLateOutcome(
+              Object.freeze({
+                actorKey: peerActorKey,
+                status: 'completed',
+                startedAt,
+                completedAt: nowTimestampMs(),
+                result: {actorResults: peerOutcome.actorResults} as unknown as StateJsonValue,
+                error: null,
+              }),
+            );
             input.emit(
               {
                 kind: 'actor.late-completed',
@@ -186,14 +237,17 @@ export const createCommandPeerDispatcher = (input: PeerDispatcherDependencies) =
               },
               observer,
             );
-          } else if (lateOutcome.status === 'error') {
+          } else if (peerOutcome.status === 'timed-out') {
+            reportLatePeerResults(peerOutcome.actorResults);
+          } else if (peerOutcome.status === 'error') {
+            reportLatePeerResults(peerOutcome.actorResults);
             input.emit(
               {
                 kind: 'actor.late-error',
                 context: lifecycleContext,
                 actorKey: peerActorKey,
                 completedAt: nowTimestampMs(),
-                error: lateOutcome.error,
+                error: peerOutcome.error,
               },
               observer,
             );

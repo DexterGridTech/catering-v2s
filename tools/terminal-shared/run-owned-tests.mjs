@@ -136,6 +136,8 @@ async function main() {
         vitestPath,
         [
           'run',
+          '--root',
+          packageRoot,
           '--config',
           'vitest.config.ts',
           '--reporter=json',

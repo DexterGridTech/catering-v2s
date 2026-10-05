@@ -187,8 +187,7 @@ public class ContractTaskReadPersistence {
                         }));
     }
 
-    public List<StoreContractView> fixedStoreContracts(
-            UUID workspaceUuid, String key, UUID storeId, LocalDate today) {
+    public List<StoreContractView> fixedStoreContracts(UUID workspaceUuid, String key, UUID storeId, LocalDate today) {
         return jdbc.query(
                 VIEW_SELECT
                         + VIEW_FROM
@@ -203,6 +202,20 @@ public class ContractTaskReadPersistence {
                 storeId,
                 today,
                 today);
+    }
+
+    /** Terminal collection semantics follow persisted ACTIVE status, not the administrative date view. */
+    public List<StoreContractView> activeTerminalStoreContracts(UUID workspaceUuid, String key, UUID storeId) {
+        return jdbc.query(
+                VIEW_SELECT
+                        + VIEW_FROM
+                        + ContractTaskReadServiceSql
+                                .CONTRACT_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_ID
+                        + "c.status='ACTIVE' ORDER BY c.id",
+                (row, index) -> readView(row),
+                workspaceUuid,
+                key,
+                storeId);
     }
 
     public FixedStoreContractPage fixedStoreContractPage(

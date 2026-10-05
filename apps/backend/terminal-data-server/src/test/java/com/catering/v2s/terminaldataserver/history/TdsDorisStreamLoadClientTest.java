@@ -147,7 +147,8 @@ class TdsDorisStreamLoadClientTest {
                 firstHandlerFinished.countDown();
             }
         });
-        HttpClient delegate = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(100)).build();
+        HttpClient delegate =
+                HttpClient.newBuilder().connectTimeout(Duration.ofMillis(100)).build();
         HttpClient httpClient = mock(HttpClient.class);
         when(httpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
                 .thenAnswer(invocation -> {
@@ -183,8 +184,7 @@ class TdsDorisStreamLoadClientTest {
 
             releaseBody.countDown();
             assertThat(firstHandlerFinished.await(2, TimeUnit.SECONDS)).isTrue();
-            TdsDorisStreamLoadClient.LoadResult nextBatch =
-                    client.load("next-batch-label", new byte[] {'{', '}'});
+            TdsDorisStreamLoadClient.LoadResult nextBatch = client.load("next-batch-label", new byte[] {'{', '}'});
             assertThat(nextBatch.disposition()).isEqualTo(TdsDorisStreamLoadClient.Disposition.COMPLETE);
             assertThat(requests.get()).isEqualTo(2);
         } finally {
@@ -195,7 +195,9 @@ class TdsDorisStreamLoadClientTest {
     }
 
     private TdsDorisStreamLoadClient client(Duration requestTimeout) {
-        return client(requestTimeout, HttpClient.newBuilder().connectTimeout(Duration.ofMillis(100)).build());
+        return client(
+                requestTimeout,
+                HttpClient.newBuilder().connectTimeout(Duration.ofMillis(100)).build());
     }
 
     private TdsDorisStreamLoadClient client(Duration requestTimeout, HttpClient httpClient) {
